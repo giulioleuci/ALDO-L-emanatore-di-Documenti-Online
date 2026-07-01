@@ -4,3 +4,4 @@ coverage/
 .remember/
 # GasLibraryFactory is a separate repo, vendored as a built artifact
 GasLibraryFactory/
+.superpowers/

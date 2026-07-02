@@ -1,7 +1,7 @@
 import { PipelineContext } from '../../../src/infrastructure/pipelines/PipelineContext';
 import {
-  AnalyzeContextStep, GenerateNameStep, SelectTemplateStep, CloneTemplateStep,
-  RenderTemplateStep, RegisterDocumentStep
+  AnalyzeContextStep, PrepareInfrastructureStep, GenerateNameStep, SelectTemplateStep,
+  CloneTemplateStep, RenderTemplateStep, RegisterDocumentStep
 } from '../../../src/infrastructure/steps/documentSteps';
 import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
@@ -29,6 +29,28 @@ test('AnalyzeContextStep: empty CONDIZIONE => shouldGenerate true', () => {
   const ctx = baseCtx();
   new AnalyzeContextStep().execute(ctx);
   expect(ctx.get('shouldGenerate')).toBe(true);
+});
+
+test('PrepareInfrastructureStep creates folder and registers it in LOG_FOLD (10 §5)', () => {
+  const ctx = baseCtx();
+  const drive = new FakeDriveFacade();
+  const db = new FakeDatabase(fixtureTables());
+  new PrepareInfrastructureStep(drive, db).execute(ctx);
+  const folderId = ctx.get<string>('destFolderId')!;
+  expect(drive.folders.get('Verbali/5')).toBe(folderId);
+  expect(ctx.get('destFolderPath')).toBe('Verbali/5');
+  const row = db.table('LOG_FOLD').find((r) => r.ID === folderId);
+  expect(row?.PATH).toBe('Verbali/5');
+});
+
+test('PrepareInfrastructureStep reuses an existing folder without a duplicate LOG_FOLD row', () => {
+  const ctx = baseCtx();
+  const drive = new FakeDriveFacade();
+  const existing = drive.createFolder('Verbali/5'); // pre-existing folder
+  const db = new FakeDatabase(fixtureTables());
+  new PrepareInfrastructureStep(drive, db).execute(ctx);
+  expect(ctx.get('destFolderId')).toBe(existing);
+  expect(db.table('LOG_FOLD').findAll()).toHaveLength(0); // not re-registered
 });
 
 test('GenerateNameStep resolves FILE_NAME placeholders', () => {

@@ -2,7 +2,7 @@ import { ClasseRepository } from '../../../src/infrastructure/repositories/Class
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
-import { EntityNotFoundError } from '../../../src/domain/errors/DomainError';
+import { EntityNotFoundError, ValidationError } from '../../../src/domain/errors/DomainError';
 
 function repo(): ClasseRepository {
   return new ClasseRepository(new FakeDatabase(fixtureTables()));
@@ -28,6 +28,11 @@ test('getAlunniAttivi applies AlunniAttiviSpec', () => {
 
 test('findById returns null for unknown class', () => {
   expect(repo().findById(ClasseId.of('9Z'))).toBeNull();
+});
+
+test('findById throws on a malformed row missing INDIRIZZO (fail loud, no "undefined" coercion)', () => {
+  const db = new FakeDatabase({ CLASSI: [{ ID: '2B', ANNO: 2 }] });
+  expect(() => new ClasseRepository(db).findById(ClasseId.of('2B'))).toThrow(ValidationError);
 });
 
 test('getConsiglioDiClasse throws when a teacher column references an unknown docente', () => {

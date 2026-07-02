@@ -10,7 +10,7 @@ import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { Genere } from '../../domain/value-objects/enums';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
 import { TABLE, COL_CLASSI, COL_DOCENTI, COL_MATERIE, COL_ALUNNI } from '../../config/schema';
-import { EntityNotFoundError } from '../../domain/errors/DomainError';
+import { EntityNotFoundError, ValidationError } from '../../domain/errors/DomainError';
 
 export class ClasseRepository implements IClasseRepository {
   constructor(private readonly db: IDatabase) {}
@@ -18,7 +18,12 @@ export class ClasseRepository implements IClasseRepository {
   findById(id: ClasseId): Classe | null {
     const row = this.db.table(TABLE.CLASSI).find((r) => r[COL_CLASSI.ID] === id.value);
     if (!row) return null;
-    return new Classe(id, String(row[COL_CLASSI.ID]), AnnoCorso.of(Number(row[COL_CLASSI.ANNO])), String(row[COL_CLASSI.INDIRIZZO]));
+    // Fail loud on a malformed persisted row rather than coercing missing cells to "undefined".
+    const indirizzo = row[COL_CLASSI.INDIRIZZO];
+    if (typeof indirizzo !== 'string' || indirizzo.trim() === '') {
+      throw new ValidationError(`Classe ${id.value}: colonna INDIRIZZO mancante o non valida`);
+    }
+    return new Classe(id, id.value, AnnoCorso.of(Number(row[COL_CLASSI.ANNO])), indirizzo);
   }
 
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse {

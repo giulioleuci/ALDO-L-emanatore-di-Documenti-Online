@@ -23,4 +23,17 @@ declare global {
     table(name: string): SheetTable;
     save(): void;
   }
+
+  // --- GoogleApiWrapper (L2): Drive/Document facade globals ---
+  class DriveService {
+    findFolderByPath(path: string): string | null;
+    createFolderPath(path: string): string;
+    copyFile(templateId: string, name: string, folderId: string): string;
+    setPermission(fileId: string, email: string, permesso: string): void;
+    trashFile(fileId: string): void;
+    countFiles(folderId: string): number;
+  }
+  class WorkspaceTemplateEngine {
+    renderDoc(fileId: string, replacements: Record<string, string>): void;
+  }
 }

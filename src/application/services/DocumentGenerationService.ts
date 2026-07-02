@@ -35,7 +35,7 @@ export class DocumentGenerationService {
     new DocumentoPipeline((fileId) => this.drive.deleteFile(fileId))
       .addStep(new AnalyzeContextStep())
       .addStep(new CheckDuplicatesStep(this.db))
-      .addStep(new PrepareInfrastructureStep(this.drive))
+      .addStep(new PrepareInfrastructureStep(this.drive, this.db))
       .addStep(new GenerateNameStep())
       .addStep(new SelectTemplateStep())
       .addStep(new CloneTemplateStep(this.drive))

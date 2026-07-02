@@ -4,7 +4,7 @@ import type { Cdu } from '../../application/context/Cdu';
 import type { IDriveFacade } from '../facades/DriveServiceFacade';
 import type { IDatabase, Row } from '../db/Database';
 import type { GeneratorStrategy } from '../../application/strategies/GeneratorStrategy';
-import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
+import { TABLE, COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD } from '../../config/schema';
 import { StatoDocumento, SchemaSottocartelle } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 
@@ -52,11 +52,25 @@ export class CheckDuplicatesStep extends Step {
 
 export class PrepareInfrastructureStep extends Step {
   readonly name = 'PrepareInfrastructureStep';
-  constructor(private readonly drive: IDriveFacade) { super(); }
+  constructor(
+    private readonly drive: IDriveFacade,
+    private readonly db: IDatabase
+  ) { super(); }
   override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
   protected _executeLogic(ctx: PipelineContext): void {
     const path = resolvePlaceholders(String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]), cdu(ctx));
-    const folderId = this.drive.findFolderByPath(path) ?? this.drive.createFolder(path);
+    let folderId = this.drive.findFolderByPath(path);
+    if (folderId === null) {
+      // Folder did not exist: create it and register it in LOG_FOLD (ref 10 §5 step 4).
+      folderId = this.drive.createFolder(path);
+      const row: Row = {
+        [COL_LOG_FOLD.ID]: folderId,
+        [COL_LOG_FOLD.PATH]: path,
+        [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${folderId}`
+      };
+      this.db.table(TABLE.LOG_FOLD).insert(row);
+      this.db.save();
+    }
     ctx.set('destFolderId', folderId);
     ctx.set('destFolderPath', path);
   }

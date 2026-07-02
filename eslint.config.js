@@ -14,23 +14,35 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
+    // Classic project mode, scoped to TS sources only: tsconfig.eslint.json is a
+    // superset of tsconfig.json (adds test/**/*.ts) so a single project covers both
+    // src and test type-aware linting. Root JS/CJS tooling files are intentionally
+    // left unscoped below (no parserOptions.project) so they parse without requiring
+    // tsconfig membership.
+    files: ['src/**/*.ts', 'test/**/*.ts'],
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['*.config.js', '*.config.cjs'] },
+        project: ['./tsconfig.eslint.json'],
         tsconfigRootDir: import.meta.dirname
       }
     }
   },
-  // Root JS/CJS tooling config files are not part of the tsconfig project graph;
+  // Root JS/CJS tooling files are not part of the tsconfig project graph;
   // lint them without type-aware rules so `eslint .` doesn't choke on parserOptions.project resolution.
   {
-    files: ['*.config.js', '*.config.cjs'],
+    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: { globals: { ...globals.node } }
   },
   {
-    files: ['*.config.js', '*.config.cjs'],
-    rules: { '@typescript-eslint/no-require-imports': 'off' }
+    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { args: 'all', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+      ]
+    }
   },
   // Global gate: native GAS globals forbidden everywhere by default
   {

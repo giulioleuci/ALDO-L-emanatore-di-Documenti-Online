@@ -23,7 +23,11 @@ const checksum = crypto.createHash('sha256').update(fs.readFileSync(dest)).diges
 fs.writeFileSync(path.join(vendorDir, 'CHECKSUM'), checksum + '\n');
 
 let version = 'unknown';
-try { version = JSON.parse(fs.readFileSync(path.join(monorepo, 'package.json'), 'utf8')).version; } catch (_) {}
+try {
+  version = JSON.parse(fs.readFileSync(path.join(monorepo, 'package.json'), 'utf8')).version;
+} catch (_err) {
+  // best-effort: keep version = 'unknown' if package.json is unreadable/unparsable
+}
 fs.writeFileSync(path.join(vendorDir, 'VERSION'), `${version}\n`);
 
 console.log(`vendor: refreshed gaslibs.Code.js (v${version}, sha256 ${checksum.slice(0, 12)}...)`);

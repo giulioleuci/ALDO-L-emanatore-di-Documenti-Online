@@ -162,7 +162,6 @@ if (fs.existsSync(appsscriptSrc)) {
 step(6, TOTAL_STEPS, 'GAS V8 compatibility post-processing...');
 
 let code = fs.readFileSync(codeJsPath, 'utf8');
-const originalSize = Buffer.byteLength(code, 'utf8');
 let patchCount = 0;
 let warningCount = 0;
 

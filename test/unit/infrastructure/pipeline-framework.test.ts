@@ -35,3 +35,23 @@ test('shouldExecute=false skips step', () => {
   new DocumentoPipeline(() => {}).addStep(new Skipped()).execute(ctx);
   expect(ctx.get('ran')).toBeUndefined();
 });
+
+test('non-critical step failure is logged, swallowed, and the pipeline continues', () => {
+  class SoftBoom extends Step {
+    readonly name = 'SoftBoom';
+    protected critical = false;
+    protected _executeLogic(): void { throw new Error('soft'); }
+  }
+  const rolledBack: string[] = [];
+  const ctx = new PipelineContext();
+  ctx.set('newFileId', 'file_1');
+  expect(() =>
+    new DocumentoPipeline((id) => rolledBack.push(id))
+      .addStep(new SoftBoom())
+      .addStep(new SetFlag())
+      .execute(ctx)
+  ).not.toThrow();
+  expect(ctx.get('ran')).toBe(true); // step after the non-critical failure still ran
+  expect(ctx.errors.some((e) => e.includes('SoftBoom'))).toBe(true);
+  expect(rolledBack).toEqual([]); // non-critical failure never triggers rollback
+});

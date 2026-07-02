@@ -9,6 +9,7 @@ test('range [1,5] enforced (03 invariant)', () => {
 
 test('predicates per 03', () => {
   expect(AnnoCorso.of(1).isPrima()).toBe(true);
+  expect(AnnoCorso.of(2).isSeconda()).toBe(true);
   expect(AnnoCorso.of(2).isPrimoBiennio()).toBe(true);
   expect(AnnoCorso.of(3).isSecondoBiennio()).toBe(true);
   expect(AnnoCorso.of(5).isTerminale()).toBe(true);

@@ -756,7 +756,7 @@ export const COL_CLASSI = {
 } as const;
 
 export const COL_DOCENTI = {
-  EMAIL: 'EMAIL', COGNOMENOME: 'COGNOMENOME', GENERE: 'GENERE'
+  EMAIL: 'EMAIL', COGNOME: 'COGNOME', NOME: 'NOME', GENERE: 'GENERE'
 } as const;
 
 export const COL_MATERIE = {
@@ -1230,8 +1230,8 @@ export function fixtureTables(): Record<string, Row[]> {
         MATE: 'rossi@school.it', FISI: 'bianchi@school.it' }
     ],
     DOCENTI: [
-      { EMAIL: 'rossi@school.it', COGNOMENOME: 'ROSSI MARIO', GENERE: 'M' },
-      { EMAIL: 'bianchi@school.it', COGNOMENOME: 'BIANCHI LUCIA', GENERE: 'F' }
+      { EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: 'M' },
+      { EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI', NOME: 'LUCIA', GENERE: 'F' }
     ],
     MATERIE: [
       { ID: 'MATE', SINTESI: 'Matematica', ESAME_CFG: null },
@@ -1302,7 +1302,7 @@ git commit -m "feat(infra): Database port + fake + fixtures (ref 01)"
 
 **Interfaces:**
 - Consumes: `Email`, `Genere`, `appellativo`, `ClasseId`, `AnnoCorso`.
-- Produces: `Docente` with `.email:Email`, `.cognomeNome:string`, `.genere:Genere`, `nomeConAppellativo(): string`; `Classe` with `.id:ClasseId`, `.nome:string`, `.anno:AnnoCorso`, `.indirizzo:string`.
+- Produces: `Docente` with `.email:Email`, `.cognome:string`, `.nome:string`, `.genere:Genere`, `cognomeNome(): string`, `nomeConAppellativo(): string`; `Classe` with `.id:ClasseId`, `.nome:string`, `.anno:AnnoCorso`, `.indirizzo:string`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1316,8 +1316,9 @@ import { AnnoCorso } from '../../../src/domain/value-objects/AnnoCorso';
 import { Genere } from '../../../src/domain/value-objects/enums';
 
 test('Docente appellativo from genere (03/04)', () => {
-  const d = new Docente(Email.of('rossi@school.it'), 'ROSSI MARIO', Genere.M);
+  const d = new Docente(Email.of('rossi@school.it'), 'ROSSI', 'MARIO', Genere.M);
   expect(d.nomeConAppellativo()).toBe('Prof. ROSSI MARIO');
+  expect(d.cognomeNome()).toBe('ROSSI MARIO');
 });
 
 test('Classe exposes anagrafica', () => {
@@ -1342,11 +1343,15 @@ import { Genere, appellativo } from '../value-objects/enums';
 export class Docente {
   constructor(
     public readonly email: Email,
-    public readonly cognomeNome: string,
+    public readonly cognome: string,
+    public readonly nome: string,
     public readonly genere: Genere
   ) {}
+  cognomeNome(): string {
+    return `${this.cognome} ${this.nome}`;
+  }
   nomeConAppellativo(): string {
-    return `${appellativo(this.genere)} ${this.cognomeNome}`;
+    return `${appellativo(this.genere)} ${this.cognomeNome()}`;
   }
 }
 ```
@@ -1401,8 +1406,8 @@ import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { Genere } from '../../../src/domain/value-objects/enums';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 
-const rossi = new Docente(Email.of('rossi@school.it'), 'ROSSI MARIO', Genere.M);
-const bianchi = new Docente(Email.of('bianchi@school.it'), 'BIANCHI LUCIA', Genere.F);
+const rossi = new Docente(Email.of('rossi@school.it'), 'ROSSI', 'MARIO', Genere.M);
+const bianchi = new Docente(Email.of('bianchi@school.it'), 'BIANCHI', 'LUCIA', Genere.F);
 
 test('exposes materie and unique docenti', () => {
   const cdc = new ConsiglioDiClasse([
@@ -1678,7 +1683,7 @@ export class ClasseRepository implements IClasseRepository {
     const map = new Map<string, Docente>();
     for (const d of this.db.table(TABLE.DOCENTI).findAll()) {
       const email = String(d[COL_DOCENTI.EMAIL]);
-      map.set(email, new Docente(Email.of(email), String(d[COL_DOCENTI.COGNOMENOME]), (d[COL_DOCENTI.GENERE] === 'M' ? Genere.M : Genere.F)));
+      map.set(email, new Docente(Email.of(email), String(d[COL_DOCENTI.COGNOME]), String(d[COL_DOCENTI.NOME]), (d[COL_DOCENTI.GENERE] === 'M' ? Genere.M : Genere.F)));
     }
     return map;
   }

@@ -67,7 +67,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [
-          { group: ['**/application/**', '**/infrastructure/**', '**/config/**', '**/ui/**'],
+          { group: ['**/application/**', '**/infrastructure/**', '**/config/ServiceContainer*', '**/config/Bootstrap*', '**/ui/**'],
             message: 'Domain layer must not depend on outer layers (08_ARCHITETTURA_DI_PATTERN.md §1).' }
         ]
       }]

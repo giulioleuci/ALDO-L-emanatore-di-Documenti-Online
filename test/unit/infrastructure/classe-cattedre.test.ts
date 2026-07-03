@@ -15,10 +15,10 @@ function classe(id: string) {
 
 test('finders: attive / anno / indirizzo / articolate (06 §3)', () => {
   const r = repo();
-  expect(r.findAttive().map((c) => c.id)).toEqual(['5A']);
+  expect(r.findAttive().map((c) => c.id)).toEqual(['5A', '1F', '1F-LSO', '1F-LSS']);
   expect(r.findByAnno(3).map((c) => c.id)).toEqual(['3B']);
   expect(r.findByIndirizzo(IndirizzoId.of('ITI')).map((c) => c.id)).toEqual(['3B']);
-  expect(r.findArticolate()).toEqual([]);
+  expect(r.findArticolate().map((c) => c.id)).toEqual(['1F', '1F-LSO', '1F-LSS']);
 });
 
 test('cattedra matrix: getDocentiPerMateria + unknown materia throws', () => {

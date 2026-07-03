@@ -36,6 +36,21 @@ test('findAttivi / findAttiviInClasse filter inactive', () => {
   expect(repo().findAttiviInClasse(ClasseId.of('5A')).map((a) => a.id)).toEqual(['a1@school.it']);
 });
 
+test('aggregate navigation delegates into member repositories (06 §1)', () => {
+  const r = repo();
+  const a1 = r.findById('a1@school.it')!;
+  expect(r.getPiani(a1).map((p) => p.tipo)).toEqual(['PEI']);
+  expect(r.getCarenze(a1).map((c) => c.progressivo)).toEqual([2, 1]);
+  expect(r.getOreASLTotali(a1)).toBe(100);
+  const a2 = r.findById('a2@school.it')!;
+  expect(r.getStoricoMovimenti(a2).map((m) => m.tipo)).toEqual(['CAMBIO', 'IN']);
+});
+
+test('findConBES loads students with a BES plan (06 §1)', () => {
+  // a1 has PEI, a2 has PDP_DSA (both BES); a3 only PFP (not BES).
+  expect(repo().findConBES().map((a) => a.id)).toEqual(['a2@school.it', 'a1@school.it']);
+});
+
 test('Alunno specs (07 §1): isSatisfiedBy + toQueryObject', () => {
   const a1 = Alunno.fromData({ EMAIL: 'a1', CLASSE: '5A', RAPPR_STUD: true, RELIGIONE: 'SI' });
   const a2 = Alunno.fromData({ EMAIL: 'a2', CLASSE: '5A', RIPETENTE: true, RELIGIONE: 'NO' });

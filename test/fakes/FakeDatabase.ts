@@ -7,7 +7,8 @@ const DEFAULT_PK: Record<string, string> = {
   DIPART: 'ID', RUOLI: 'ID', CONF_DOC: 'ID', CONF_MAIL: 'ID', LOG_DOCS: 'ID', LOG_FOLD: 'ID',
   // Composite-PK tables: getByPK single-column is unused (repos use getAllRows+filter);
   // first key part is listed only so pkFor does not fall back to 'ID'.
-  PIANI: 'STUDENTE', CARENZE: 'STUDENTE', PROGETTI: 'CLASSE', MOV_ALUNNI: 'STUDENTE', ASL: 'STUDENTE'
+  PIANI: 'STUDENTE', CARENZE: 'STUDENTE', PROGETTI: 'CLASSE', MOV_ALUNNI: 'STUDENTE', ASL: 'STUDENTE',
+  SUPPLENZE: 'TITOLARE', VARIAZIONI_CATTEDRA: 'CLASSE_ID'
 };
 
 /**

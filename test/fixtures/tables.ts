@@ -80,6 +80,17 @@ export function fixtureTables(): Record<string, Row[]> {
       { STUDENTE: 'a1@school.it', ANNO: '2025-2026', ORE: 60 },
       { STUDENTE: 'a2@school.it', ANNO: '2025-2026', ORE: 30 }
     ],
+    SUPPLENZE: [
+      // Chain: rossi replaced by bianchi (5A/ITA); bianchi in turn replaced by verdi (same context).
+      { TITOLARE: 'rossi@school.it', SUPPLENTE: 'bianchi@school.it', DAL: '2025-11-01', AL: '2025-11-30', CLASSI: '5A,4B', MATERIE: '*' },
+      { TITOLARE: 'bianchi@school.it', SUPPLENTE: 'verdi@school.it', DAL: '2025-11-10', AL: '2025-11-20', CLASSI: '5A', MATERIE: 'ITA' },
+      // Unrelated, expired.
+      { TITOLARE: 'verdi@school.it', SUPPLENTE: 'rossi@school.it', DAL: '2025-09-01', AL: '2025-09-05', CLASSI: '*', MATERIE: '*' }
+    ],
+    VARIAZIONI_CATTEDRA: [
+      { CLASSE_ID: '5A,3B', MATERIA_ID: 'MATE', VECCHIO_TITOLARE: 'rossi@school.it', NUOVO_TITOLARE: 'bianchi@school.it', DATA_DECORRENZA: '2025-10-01' },
+      { CLASSE_ID: '1F', MATERIA_ID: 'FISI', VECCHIO_TITOLARE: 'bianchi@school.it', NUOVO_TITOLARE: 'verdi@school.it', DATA_DECORRENZA: '2025-10-15' }
+    ],
     LOG_DOCS: [],
     LOG_FOLD: []
   };

@@ -75,6 +75,8 @@ declare global {
       exceptionService?: unknown,
       options?: { dryRun?: boolean }
     );
+    readonly database: RepositoryDatabase;
+    readonly tableName: string;
     find(specification: SpecificationLike): T[];
     findOne(specification: SpecificationLike): T | null;
     findById(id: string): T | null;

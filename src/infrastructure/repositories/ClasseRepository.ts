@@ -1,35 +1,33 @@
-import type { IDatabase } from '../db/Database';
 import type { IClasseRepository, RepoRow } from '../../domain/repositories/IClasseRepository';
 import { Classe } from '../../domain/entities/Classe';
 import { Docente } from '../../domain/entities/Docente';
 import { ConsiglioDiClasse, type Cattedra } from '../../domain/entities/ConsiglioDiClasse';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
-import { AnnoCorso } from '../../domain/value-objects/AnnoCorso';
-import { Email } from '../../domain/value-objects/Email';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
-import { Genere } from '../../domain/value-objects/enums';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
-import { TABLE, COL_CLASSI, COL_DOCENTI, COL_MATERIE, COL_ALUNNI } from '../../config/schema';
-import { EntityNotFoundError, ValidationError } from '../../domain/errors/DomainError';
+import { TABLE, COL_DOCENTI, COL_MATERIE, COL_ALUNNI } from '../../config/schema';
+import { EntityNotFoundError } from '../../domain/errors/DomainError';
 
-export class ClasseRepository implements IClasseRepository {
-  constructor(private readonly db: IDatabase) {}
+/**
+ * CLASSI repository on the DomainRepositoryLib Repository base. Standard CRUD
+ * (findById/findAll/find/save…) comes from the base; the SGSA-specific queries
+ * below read cross-table rows through the injected database's `tables` seam.
+ */
+export class ClasseRepository extends Repository<Classe> implements IClasseRepository {
+  constructor(database: RepositoryDatabase) {
+    super(database, TABLE.CLASSI, Classe);
+  }
 
-  findById(id: ClasseId): Classe | null {
-    const row = this.db.table(TABLE.CLASSI).find((r) => r[COL_CLASSI.ID] === id.value);
-    if (!row) return null;
-    // Fail loud on a malformed persisted row rather than coercing missing cells to "undefined".
-    const indirizzo = row[COL_CLASSI.INDIRIZZO];
-    if (typeof indirizzo !== 'string' || indirizzo.trim() === '') {
-      throw new ValidationError(`Classe ${id.value}: colonna INDIRIZZO mancante o non valida`);
-    }
-    return new Classe(id, id.value, AnnoCorso.of(Number(row[COL_CLASSI.ANNO])), indirizzo);
+  // Base findById takes a string PK; accept a ClasseId too for domain callers.
+  // Hydration runs Classe.fromData → the constructor fails loud on malformed rows.
+  override findById(id: string | ClasseId): Classe | null {
+    return super.findById(typeof id === 'string' ? id : id.value);
   }
 
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse {
-    const classe = this.db.table(TABLE.CLASSI).find((r) => r[COL_CLASSI.ID] === id.value);
+    const classe = this.database.tables[TABLE.CLASSI]!.getByPK(id.value);
     if (!classe) throw new EntityNotFoundError(`Classe ${id.value} non trovata`);
-    const materie = this.db.table(TABLE.MATERIE).findAll();
+    const materie = this.database.tables[TABLE.MATERIE]!.getAllRows();
     const docentiByEmail = this.indexDocenti();
     const cattedre: Cattedra[] = [];
     for (const m of materie) {
@@ -45,16 +43,14 @@ export class ClasseRepository implements IClasseRepository {
 
   getAlunniAttivi(id: ClasseId): RepoRow[] {
     const spec = new AlunniAttiviSpec();
-    return this.db.table(TABLE.ALUNNI)
-      .findAll()
-      .filter((r) => r[COL_ALUNNI.CLASSE] === id.value && spec.isSatisfiedBy(r));
+    const rows = this.database.tables[TABLE.ALUNNI]!.getAllRows() as unknown as RepoRow[];
+    return rows.filter((r) => r[COL_ALUNNI.CLASSE] === id.value && spec.isSatisfiedBy(r));
   }
 
   private indexDocenti(): Map<string, Docente> {
     const map = new Map<string, Docente>();
-    for (const d of this.db.table(TABLE.DOCENTI).findAll()) {
-      const email = String(d[COL_DOCENTI.EMAIL]);
-      map.set(email, new Docente(Email.of(email), String(d[COL_DOCENTI.COGNOME]), String(d[COL_DOCENTI.NOME]), (d[COL_DOCENTI.GENERE] === 'M' ? Genere.M : Genere.F)));
+    for (const d of this.database.tables[TABLE.DOCENTI]!.getAllRows()) {
+      map.set(String(d[COL_DOCENTI.EMAIL]), Docente.fromData(d));
     }
     return map;
   }

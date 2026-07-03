@@ -47,6 +47,12 @@ export class VariazioneCattedra extends Entity {
     return this.applicaAClasse(classe) && this.applicaAMateria(materia);
   }
 
+  /** True if the change has taken effect by the given date (DATA_DECORRENZA ≤ data, ref 01 §4). */
+  isDecorsaA(data: Date): boolean {
+    const dec = new Date(this.dataDecorrenza);
+    return !Number.isNaN(dec.getTime()) && dec.getTime() <= data.getTime();
+  }
+
   override toData(): EntityData {
     return {
       [COL_VARIAZIONI.CLASSE_ID]: this.classeIdRaw,

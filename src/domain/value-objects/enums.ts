@@ -17,6 +17,7 @@ export enum FormatoOutput { GDOC = 'GDOC', GSHEET = 'GSHEET', PDF = 'PDF', TEXT 
 export enum TipoIstituto {
   LICEO = 'LICEO', ITS = 'ITS', IEFP = 'IEFP', PROFESSIONALE = 'PROFESSIONALE', TECNICO = 'TECNICO'
 }
+export enum ReligioneScelta { SI = 'SI', NO = 'NO', ALT = 'ALT' }
 
 export function appellativo(g: Genere): string {
   return g === Genere.M ? 'Prof.' : 'Prof.ssa';

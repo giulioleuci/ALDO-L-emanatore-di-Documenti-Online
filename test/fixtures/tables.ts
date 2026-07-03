@@ -4,11 +4,12 @@ export function fixtureTables(): Record<string, Row[]> {
   return {
     CLASSI: [
       { ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: null, RUOLI: '{"SEGRETARIO":"rossi@school.it"}', ATTIVA: true,
-        MATE: 'rossi@school.it', FISI: 'bianchi@school.it' }
+        COORD: 'rossi@school.it', IRC: 'bianchi@school.it', MATE: 'rossi@school.it', FISI: 'bianchi@school.it' }
     ],
     DOCENTI: [
-      { EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: 'M' },
-      { EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI', NOME: 'LUCIA', GENERE: 'F' }
+      { EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: 'M', DIPART: 'SCIENTIFICO_DIP', ITP: false },
+      { EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI', NOME: 'LUCIA', GENERE: 'F', DIPART: 'SCIENTIFICO_DIP', ITP: false },
+      { EMAIL: 'verdi@school.it', COGNOME: 'VERDI', NOME: 'GIO', GENERE: 'M', DIPART: 'LETTERE', ITP: true }
     ],
     MATERIE: [
       { ID: 'MATE', NOME: 'Matematica', SINTESI: 'Matematica', ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}' },

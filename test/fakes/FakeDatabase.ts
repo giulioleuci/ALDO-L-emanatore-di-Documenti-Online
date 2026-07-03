@@ -8,7 +8,7 @@ const DEFAULT_PK: Record<string, string> = {
   // Composite-PK tables: getByPK single-column is unused (repos use getAllRows+filter);
   // first key part is listed only so pkFor does not fall back to 'ID'.
   PIANI: 'STUDENTE', CARENZE: 'STUDENTE', PROGETTI: 'CLASSE', MOV_ALUNNI: 'STUDENTE', ASL: 'STUDENTE',
-  SUPPLENZE: 'TITOLARE', VARIAZIONI_CATTEDRA: 'CLASSE_ID'
+  SUPPLENZE: 'TITOLARE', VARIAZIONI_CATTEDRA: 'CLASSE_ID', MASTER: 'ANNO_SCOLASTICO'
 };
 
 /**

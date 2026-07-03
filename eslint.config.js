@@ -30,12 +30,12 @@ export default tseslint.config(
   // Root JS/CJS tooling files are not part of the tsconfig project graph;
   // lint them without type-aware rules so `eslint .` doesn't choke on parserOptions.project resolution.
   {
-    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs'],
+    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs', 'test/**/*.cjs'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: { globals: { ...globals.node } }
   },
   {
-    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs'],
+    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs', 'test/**/*.cjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-unused-vars': [

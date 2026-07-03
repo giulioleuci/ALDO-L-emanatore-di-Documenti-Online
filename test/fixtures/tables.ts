@@ -25,6 +25,11 @@ export function fixtureTables(): Record<string, Row[]> {
         SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE', PERMESSI: null, POST_PROCESSO: null,
         PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' }
     ],
+    INDIRIZZI: [
+      { ID: 'SCIENTIFICO', NOME: 'Liceo scientifico', NOME_SINTETICO: 'Scientifico', TIPO: 'LICEO' },
+      { ID: 'LSSA', NOME: 'Liceo scientifico scienze applicate', NOME_SINTETICO: 'Scienze applicate', TIPO: 'LICEO' },
+      { ID: 'ITI', NOME: 'Istituto tecnico industriale', NOME_SINTETICO: 'Tecnico industriale', TIPO: 'TECNICO' }
+    ],
     LOG_DOCS: [],
     LOG_FOLD: []
   };

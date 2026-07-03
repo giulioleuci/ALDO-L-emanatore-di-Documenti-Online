@@ -36,4 +36,81 @@ declare global {
   class WorkspaceTemplateEngine {
     renderDoc(fileId: string, replacements: Record<string, string>): void;
   }
+
+  // --- DomainRepositoryLib (L3): DDD base classes (from its public API) ---
+  type EntityData = Record<string, unknown>;
+
+  abstract class Entity {
+    constructor(data?: EntityData);
+    id: string | null;
+    readonly createdAt: Date;
+    readonly updatedAt: Date;
+    markDirty(fieldName: string): void;
+    isDirty(fieldName: string): boolean;
+    getDirtyFields(): string[];
+    hasDirtyFields(): boolean;
+    storeOriginalData(data: EntityData): void;
+    equals(other: Entity): boolean;
+    toData(): EntityData;
+  }
+
+  // Minimal seam Repository requires of its injected database (satisfied by
+  // SheetDBLib's DatabaseService at runtime, or FakeDatabaseService in tests).
+  interface RepositoryTable {
+    getByPK(id: string): EntityData | null;
+    getAllRows(): EntityData[];
+  }
+  interface RepositoryDatabase {
+    tables: Record<string, RepositoryTable>;
+    save(): void;
+  }
+
+  abstract class Repository<T extends Entity = Entity> {
+    constructor(
+      database: RepositoryDatabase,
+      tableName: string,
+      EntityClass: new (data?: EntityData) => T,
+      logger?: unknown,
+      cache?: unknown,
+      exceptionService?: unknown,
+      options?: { dryRun?: boolean }
+    );
+    find(specification: SpecificationLike): T[];
+    findOne(specification: SpecificationLike): T | null;
+    findById(id: string): T | null;
+    findByIdOrFail(id: string): T;
+    findAll(): T[];
+    exists(specification: SpecificationLike): boolean;
+    count(specification: SpecificationLike): number;
+    save(entity: T, options?: { dryRun?: boolean }): void;
+    saveMany(entities: T[]): void;
+    getTableName(): string;
+  }
+
+  interface SpecificationLike {
+    isSatisfiedBy(entity: unknown): boolean;
+    toQueryObject?(): Record<string, unknown> | null;
+    and(other: SpecificationLike): SpecificationLike;
+    or(other: SpecificationLike): SpecificationLike;
+    not(): SpecificationLike;
+  }
+  abstract class Specification implements SpecificationLike {
+    abstract isSatisfiedBy(entity: unknown): boolean;
+    and(other: SpecificationLike): SpecificationLike;
+    or(other: SpecificationLike): SpecificationLike;
+    not(): SpecificationLike;
+  }
+  class FieldSpecification extends Specification {
+    constructor(field: string, operator: string, value: unknown);
+    isSatisfiedBy(entity: unknown): boolean;
+    toQueryObject(): Record<string, unknown> | null;
+  }
+  class FunctionSpecification extends Specification {
+    constructor(predicate: (entity: unknown) => boolean);
+    isSatisfiedBy(entity: unknown): boolean;
+  }
+  class CompositeSpecification extends Specification {
+    isSatisfiedBy(entity: unknown): boolean;
+  }
+  class EntityNotFoundException extends Error {}
 }

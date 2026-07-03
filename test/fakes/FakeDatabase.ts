@@ -4,7 +4,7 @@ import type { IDatabase, IReadableTable, Row } from '../../src/infrastructure/db
 // DomainRepositoryLib Repository seam's getByPK(id).
 const DEFAULT_PK: Record<string, string> = {
   CLASSI: 'ID', DOCENTI: 'EMAIL', ALUNNI: 'EMAIL', MATERIE: 'ID', INDIRIZZI: 'ID',
-  DIPART: 'ID', RUOLI: 'ID', CONF_DOC: 'ID', CONF_MAIL: 'ID', LOG_DOCS: 'ID', LOG_FOLD: 'ID',
+  DIPART: 'ID', RUOLI: 'ID', CONF_DOC: 'ID', CONF_MAIL: 'ID', CONF_IMP: 'ID', LOG_DOCS: 'ID', LOG_FOLD: 'ID',
   // Composite-PK tables: getByPK single-column is unused (repos use getAllRows+filter);
   // first key part is listed only so pkFor does not fall back to 'ID'.
   PIANI: 'STUDENTE', CARENZE: 'STUDENTE', PROGETTI: 'CLASSE', MOV_ALUNNI: 'STUDENTE', ASL: 'STUDENTE',

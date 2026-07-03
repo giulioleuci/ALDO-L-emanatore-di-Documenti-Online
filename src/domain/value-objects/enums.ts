@@ -23,6 +23,12 @@ export enum TipoPiano {
 }
 export enum TipoProgetto { ASL = 'ASL', ORIENTAMENTO = 'ORIENTAMENTO', ALTRO = 'ALTRO' }
 export enum TipoMovimento { IN = 'IN', OUT = 'OUT', CAMBIO = 'CAMBIO' }
+export enum ProcessoInvio {
+  PER_COORDINATORE = 'PER_COORDINATORE', PER_DOCENTE = 'PER_DOCENTE', PER_CDC = 'PER_CDC',
+  PER_ALUNNO = 'PER_ALUNNO', PER_GENITORI_ALUNNO = 'PER_GENITORI_ALUNNO', PER_CARENZA = 'PER_CARENZA'
+}
+export enum GestioneSupplenti { SOLO_TITOLARI = 'SOLO_TITOLARI', SOLO_SUPPLENTI = 'SOLO_SUPPLENTI', ENTRAMBI = 'ENTRAMBI' }
+export enum StatoEmail { SUCCESS = 'SUCCESS', ERROR = 'ERROR', PENDING = 'PENDING' }
 
 export function appellativo(g: Genere): string {
   return g === Genere.M ? 'Prof.' : 'Prof.ssa';

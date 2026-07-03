@@ -1,0 +1,39 @@
+import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import { ConfigurazioneEmailRepository } from '../../../src/infrastructure/repositories/ConfigurazioneEmailRepository';
+import { ConfigurazioneImportRepository } from '../../../src/infrastructure/repositories/ConfigurazioneImportRepository';
+import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
+import { fixtureTables } from '../../../test/fixtures/tables';
+import { ProcessoInvio } from '../../../src/domain/value-objects/enums';
+
+function db() { return new FakeDatabase(fixtureTables()); }
+
+test('CONF_DOC: findByTipo + simple-form template id + condition/overwrite (06 §8)', () => {
+  const r = new ConfigurazioneDocumentoRepository(db());
+  const verbali = r.findByTipo('VERBALE');
+  expect(verbali.map((c) => c.id)).toEqual(['CD1']);
+  expect(r.getTemplateId(verbali[0]!)).toBe('tmpl_verbale');
+  expect(verbali[0]!.hasNoCondizione()).toBe(true);
+  expect(verbali[0]!.isOverwrite()).toBe(false);
+  expect(r.findByTipo('NOPE')).toEqual([]);
+});
+
+test('CONF_MAIL: findByProcesso + boxes + header default + noreply (06 §9)', () => {
+  const r = new ConfigurazioneEmailRepository(db());
+  const cdc = r.findByProcesso(ProcessoInvio.PER_CDC);
+  expect(cdc.map((c) => c.id)).toEqual(['CDC_OTTOBRE']);
+  expect(r.getBoxes(cdc[0]!)).toEqual([{ tipo: 'carenze' }]);
+  expect(cdc[0]!.getColoreHeader()).toBe('#007bff'); // default
+  expect(cdc[0]!.isNoreply()).toBe(true);
+
+  const fam = r.findByProcesso(ProcessoInvio.PER_GENITORI_ALUNNO)[0]!;
+  expect(fam.getColoreHeader()).toBe('#ff0000');
+  expect(fam.getBoxes()).toEqual([]); // null BOX_CFG
+  expect(fam.getCondizione()).toBe('carenze > 0');
+});
+
+test('CONF_IMP: findAttivi + findByTarget + config parse (06 §10)', () => {
+  const r = new ConfigurazioneImportRepository(db());
+  expect(r.findAttivi().map((c) => c.id)).toEqual(['IMPORT_ALUNNI']);
+  expect(r.findByTarget('ALUNNI')[0]!.getConfig()).toEqual({ searchStrategy: 'FILE_SINGOLO' });
+  expect(r.findByTarget('DOCENTI')[0]!.getConfig()).toEqual({});
+});

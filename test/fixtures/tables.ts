@@ -30,6 +30,10 @@ export function fixtureTables(): Record<string, Row[]> {
       { ID: 'LSSA', NOME: 'Liceo scientifico scienze applicate', NOME_SINTETICO: 'Scienze applicate', TIPO: 'LICEO' },
       { ID: 'ITI', NOME: 'Istituto tecnico industriale', NOME_SINTETICO: 'Tecnico industriale', TIPO: 'TECNICO' }
     ],
+    DIPART: [
+      { ID: 'SCIENTIFICO_DIP', NOME: 'Dipartimento scientifico', CAPO: 'rossi@school.it', MATERIE: 'MATE,FISI' },
+      { ID: 'LETTERE', NOME: 'Dipartimento di lettere', CAPO: '', MATERIE: 'ITA' }
+    ],
     RUOLI: [
       { ID: 'REF_BES', NOME: 'Referente BES', DOCENTE: 'rossi@school.it,bianchi@school.it' },
       { ID: 'AN_DIG', NOME: 'Animatore digitale', DOCENTE: 'bianchi@school.it' }

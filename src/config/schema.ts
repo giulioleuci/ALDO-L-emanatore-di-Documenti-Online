@@ -9,6 +9,10 @@ export const COL_RUOLI = {
   ID: 'ID', NOME: 'NOME', DOCENTE: 'DOCENTE'
 } as const;
 
+export const COL_DIPART = {
+  ID: 'ID', NOME: 'NOME', CAPO: 'CAPO', MATERIE: 'MATERIE'
+} as const;
+
 export const COL_CLASSI = {
   ID: 'ID', ANNO: 'ANNO', INDIRIZZO: 'INDIRIZZO', ARTICOLAZIONE: 'ARTICOLAZIONE',
   RUOLI: 'RUOLI', ATTIVA: 'ATTIVA'

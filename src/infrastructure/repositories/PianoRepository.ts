@@ -1,0 +1,31 @@
+import { Piano } from '../../domain/entities/Piano';
+import { PianiPerAlunnoSpec, PianiPerTipoSpec } from '../../domain/specifications/PianoSpecs';
+import type { Email } from '../../domain/value-objects/Email';
+import type { TipoPiano } from '../../domain/value-objects/enums';
+import { TABLE } from '../../config/schema';
+
+/**
+ * PIANI repository on the DomainRepositoryLib Repository base. Composite PK
+ * (STUDENTE, TIPO) — the base single-key findById does not apply (ref 06 §12);
+ * queries load rows and filter in memory.
+ */
+export class PianoRepository extends Repository<Piano> {
+  constructor(database: RepositoryDatabase) {
+    super(database, TABLE.PIANI, Piano);
+  }
+
+  findByAlunno(email: Email): Piano[] {
+    const spec = new PianiPerAlunnoSpec(email);
+    return this.findAll().filter((p) => spec.isSatisfiedBy(p));
+  }
+
+  findByTipo(tipo: TipoPiano): Piano[] {
+    const spec = new PianiPerTipoSpec(tipo);
+    return this.findAll().filter((p) => spec.isSatisfiedBy(p));
+  }
+
+  /** Emails of students having at least one BES plan (feeds AlunniBESSpec). */
+  getStudentiConBESEmails(): Set<string> {
+    return new Set(this.findAll().filter((p) => p.isBES()).map((p) => p.studente));
+  }
+}

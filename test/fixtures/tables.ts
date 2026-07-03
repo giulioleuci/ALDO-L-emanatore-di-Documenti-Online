@@ -103,6 +103,15 @@ export function fixtureTables(): Record<string, Row[]> {
       { CLASSE_ID: '5A,3B', MATERIA_ID: 'MATE', VECCHIO_TITOLARE: 'rossi@school.it', NUOVO_TITOLARE: 'bianchi@school.it', DATA_DECORRENZA: '2025-10-01' },
       { CLASSE_ID: '1F', MATERIA_ID: 'FISI', VECCHIO_TITOLARE: 'bianchi@school.it', NUOVO_TITOLARE: 'verdi@school.it', DATA_DECORRENZA: '2025-10-15' }
     ],
+    MASTER: [
+      // Always kept in descending ANNO_SCOLASTICO order: first row = current year.
+      { ANNO_SCOLASTICO: '2025-2026', ID_SPREADSHEET: 'ss_2526', ID_CARTELLA_GOOGLE: 'fold_2526',
+        DIRIGENTE_SCOLASTICO: 'prof.ssa MARIA BIANCHI', SUPERVISORE_EMAIL: 'super@school.it' },
+      { ANNO_SCOLASTICO: '2024-2025', ID_SPREADSHEET: 'ss_2425', ID_CARTELLA_GOOGLE: 'fold_2425',
+        DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI', SUPERVISORE_EMAIL: '' },
+      { ANNO_SCOLASTICO: '2023-2024', ID_SPREADSHEET: 'ss_2324', ID_CARTELLA_GOOGLE: 'fold_2324',
+        DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI', SUPERVISORE_EMAIL: '' }
+    ],
     LOG_DOCS: [],
     LOG_FOLD: []
   };

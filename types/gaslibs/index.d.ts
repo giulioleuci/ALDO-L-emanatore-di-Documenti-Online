@@ -59,6 +59,8 @@ declare global {
   interface RepositoryTable {
     getByPK(id: string): EntityData | null;
     getAllRows(): EntityData[];
+    /** Append-only insert (used for audit-trail LOG tables; ref DomainRepositoryLib table seam). */
+    insertRow(row: EntityData): void;
   }
   interface RepositoryDatabase {
     tables: Record<string, RepositoryTable>;

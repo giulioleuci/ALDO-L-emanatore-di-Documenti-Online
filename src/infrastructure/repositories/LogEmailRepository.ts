@@ -1,0 +1,42 @@
+import { LogEmail } from '../../domain/entities/LogEmail';
+import { StatoEmail } from '../../domain/value-objects/enums';
+import type { Email } from '../../domain/value-objects/Email';
+import { TABLE, COL_LOG_MAIL } from '../../config/schema';
+
+/**
+ * LOG_MAIL repository on the DomainRepositoryLib Repository base. Composite PK
+ * (PATTERN, DESTINATARI, DATA) — direct PK lookup does not apply (ref 06 §19);
+ * queries load rows and filter in memory. Append-only audit trail.
+ */
+export class LogEmailRepository extends Repository<LogEmail> {
+  constructor(database: RepositoryDatabase) {
+    super(database, TABLE.LOG_MAIL, LogEmail);
+  }
+
+  findByPattern(patternId: string): LogEmail[] {
+    return this.findAll().filter((l) => l.pattern === patternId);
+  }
+
+  findByStato(stato: StatoEmail): LogEmail[] {
+    return this.findAll().filter((l) => l.stato === stato);
+  }
+
+  findFailed(): LogEmail[] {
+    return this.findByStato(StatoEmail.ERROR);
+  }
+
+  /** Appends a send record with DESTINATARI as CSV and DATA = now (ref 06 §19). */
+  registraInvio(patternId: string, destinatari: Email[], stato: StatoEmail, allegati?: Record<string, unknown>, errore?: string): LogEmail {
+    const log = LogEmail.fromData({
+      [COL_LOG_MAIL.PATTERN]: patternId,
+      [COL_LOG_MAIL.DESTINATARI]: destinatari.map((e) => e.value).join(','),
+      [COL_LOG_MAIL.DATA]: new Date().toISOString(),
+      [COL_LOG_MAIL.STATO]: stato,
+      [COL_LOG_MAIL.ALLEGATI]: allegati === undefined ? null : JSON.stringify(allegati),
+      [COL_LOG_MAIL.ERRORE]: errore ?? ''
+    });
+    this.database.tables[TABLE.LOG_MAIL]!.insertRow(log.toData());
+    this.database.save();
+    return log;
+  }
+}

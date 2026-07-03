@@ -8,7 +8,7 @@ const DEFAULT_PK: Record<string, string> = {
   // Composite-PK tables: getByPK single-column is unused (repos use getAllRows+filter);
   // first key part is listed only so pkFor does not fall back to 'ID'.
   PIANI: 'STUDENTE', CARENZE: 'STUDENTE', PROGETTI: 'CLASSE', MOV_ALUNNI: 'STUDENTE', ASL: 'STUDENTE',
-  SUPPLENZE: 'TITOLARE', VARIAZIONI_CATTEDRA: 'CLASSE_ID', MASTER: 'ANNO_SCOLASTICO'
+  SUPPLENZE: 'TITOLARE', VARIAZIONI_CATTEDRA: 'CLASSE_ID', MASTER: 'ANNO_SCOLASTICO', LOG_MAIL: 'PATTERN'
 };
 
 /**
@@ -22,6 +22,7 @@ class FakeTable implements IReadableTable {
   insert(row: Row): void { this.rows.push(row); }
   // DomainRepositoryLib Repository seam:
   getAllRows(): Row[] { return this.rows.slice(); }
+  insertRow(row: Row): void { this.rows.push(row); }
   getByPK(id: string): Row | null {
     return this.rows.find((r) => String(r[this.pkColumn]) === String(id)) ?? null;
   }

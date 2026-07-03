@@ -15,8 +15,13 @@ export function fixtureTables(): Record<string, Row[]> {
       { ID: 'FISI', NOME: 'Fisica', SINTESI: 'Fisica', ESAME_CFG: null }
     ],
     ALUNNI: [
-      { EMAIL: 'a1@school.it', COGNOMENOME: 'VERDI ANNA', CLASSE: '5A', ATTIVO: true },
-      { EMAIL: 'a2@school.it', COGNOMENOME: 'NERI PAOLO', CLASSE: '5A', ATTIVO: false }
+      { EMAIL: 'a1@school.it', COGNOMENOME: 'VERDI ANNA', CLASSE: '5A', RELIGIONE: 'SI', ATTIVO: true,
+        RIPETENTE: false, RAPPR_STUD: true, TUTOR_1: 'genitore1@x.it', TUTOR_2: '',
+        CURRICULUM: '{"INTERP":["CHITARRA","PIANO"]}' },
+      { EMAIL: 'a2@school.it', COGNOMENOME: 'NERI PAOLO', CLASSE: '5A', RELIGIONE: 'NO', ATTIVO: false,
+        RIPETENTE: true, RAPPR_STUD: false, TUTOR_1: 'genitore2@x.it', TUTOR_2: 'genitore3@x.it', CURRICULUM: null },
+      { EMAIL: 'a3@school.it', COGNOMENOME: 'BLU CARLA', CLASSE: '5A', RELIGIONE: 'ALT', ATTIVO: false,
+        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null }
     ],
     CONF_DOC: [
       { ID: 'CD1', TIPO: 'VERBALE', GENERATORE: 'VERBALE_CDC', CONDIZIONE: null,

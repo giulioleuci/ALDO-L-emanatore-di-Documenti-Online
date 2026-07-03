@@ -14,6 +14,9 @@ export enum Genere { M = 'M', F = 'F' }
 export enum PermessoACL { SCRITTURA = 'SCRITTURA', LETTURA = 'LETTURA', COMMENTO = 'COMMENTO' }
 export enum GestioneArticolazione { ARTICOLATA = 'ARTICOLATA', COMPLETA = 'COMPLETA' }
 export enum FormatoOutput { GDOC = 'GDOC', GSHEET = 'GSHEET', PDF = 'PDF', TEXT = 'TEXT' }
+export enum TipoIstituto {
+  LICEO = 'LICEO', ITS = 'ITS', IEFP = 'IEFP', PROFESSIONALE = 'PROFESSIONALE', TECNICO = 'TECNICO'
+}
 
 export function appellativo(g: Genere): string {
   return g === Genere.M ? 'Prof.' : 'Prof.ssa';

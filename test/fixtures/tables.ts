@@ -35,6 +35,11 @@ export function fixtureTables(): Record<string, Row[]> {
       { ID: 'LSSA', NOME: 'Liceo scientifico scienze applicate', NOME_SINTETICO: 'Scienze applicate', TIPO: 'LICEO' },
       { ID: 'ITI', NOME: 'Istituto tecnico industriale', NOME_SINTETICO: 'Tecnico industriale', TIPO: 'TECNICO' }
     ],
+    PIANI: [
+      { STUDENTE: 'a1@school.it', TIPO: 'PEI', PARAMETRI: '{"gravita":"media"}' },
+      { STUDENTE: 'a2@school.it', TIPO: 'PDP_DSA', PARAMETRI: null },
+      { STUDENTE: 'a3@school.it', TIPO: 'PFP', PARAMETRI: null }
+    ],
     DIPART: [
       { ID: 'SCIENTIFICO_DIP', NOME: 'Dipartimento scientifico', CAPO: 'rossi@school.it', MATERIE: 'MATE,FISI' },
       { ID: 'LETTERE', NOME: 'Dipartimento di lettere', CAPO: '', MATERIE: 'ITA' }

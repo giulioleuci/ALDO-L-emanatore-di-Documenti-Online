@@ -40,6 +40,18 @@ export function fixtureTables(): Record<string, Row[]> {
         SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE', PERMESSI: null, POST_PROCESSO: null,
         PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' }
     ],
+    CONF_MAIL: [
+      { ID: 'CDC_OTTOBRE', OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}', PROCESSO: 'PER_CDC',
+        BOX_CFG: '[{"tipo":"carenze"}]', TESTO: '<p>Gentili colleghi</p>', SUPPLENTI: 'ENTRAMBI', NOREPLY: true,
+        COLORE_HEADER: '', CONDIZIONE: null, POST_PROCESSO: null },
+      { ID: 'CARENZE_FAM', OGGETTO: 'Comunicazione carenze', PROCESSO: 'PER_GENITORI_ALUNNO',
+        BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: false, COLORE_HEADER: '#ff0000',
+        CONDIZIONE: 'carenze > 0', POST_PROCESSO: null }
+    ],
+    CONF_IMP: [
+      { ID: 'IMPORT_ALUNNI', TARGET: 'ALUNNI', CONFIG: '{"searchStrategy":"FILE_SINGOLO"}', ATTIVO: true },
+      { ID: 'IMPORT_DOCENTI', TARGET: 'DOCENTI', CONFIG: null, ATTIVO: false }
+    ],
     INDIRIZZI: [
       { ID: 'SCIENTIFICO', NOME: 'Liceo scientifico', NOME_SINTETICO: 'Scientifico', TIPO: 'LICEO' },
       { ID: 'LSSA', NOME: 'Liceo scientifico scienze applicate', NOME_SINTETICO: 'Scienze applicate', TIPO: 'LICEO' },

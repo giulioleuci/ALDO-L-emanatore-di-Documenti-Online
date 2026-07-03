@@ -10,9 +10,10 @@ import { AlunnoRepository } from './AlunnoRepository';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
+import { ArticolazioneConfig } from '../../domain/value-objects/ArticolazioneConfig';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
 import { TABLE, COL_DOCENTI, COL_MATERIE, COL_ALUNNI, COL_CLASSI } from '../../config/schema';
-import { EntityNotFoundError, MateriaNotFoundError } from '../../domain/errors/DomainError';
+import { EntityNotFoundError, MateriaNotFoundError, ValidationError } from '../../domain/errors/DomainError';
 
 /** Dynamic per-subject column names in the CLASSI cattedra matrix (ref 06 §3). */
 interface MateriaColumns { main: string; itp: string }
@@ -140,6 +141,93 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   getStudenti(classe: Classe, soloAttivi = false): Alunno[] {
     const studenti = this.alunni.findByClasse(classe.classeId);
     return soloAttivi ? studenti.filter((a) => a.isAttivo()) : studenti;
+  }
+
+  // --- Articolazione (ref 05, 06 §3) ---
+
+  getArticolazione(classe: Classe): ArticolazioneConfig | null {
+    return ArticolazioneConfig.fromJson(this.rowOf(classe)[COL_CLASSI.ARTICOLAZIONE]);
+  }
+
+  isArticolata(classe: Classe): boolean {
+    return this.getArticolazione(classe) !== null;
+  }
+
+  /** Partner of a partner class; null for a parent (use getClassiPartner) or a standard class. */
+  getClassePartner(classe: Classe): Classe | null {
+    const config = this.getArticolazione(classe);
+    if (config === null || config.partner === null) return null;
+    return this.requireClasse(config.partner);
+  }
+
+  /** The two partners of a parent class. Throws if called on a partner; [] for a standard class. */
+  getClassiPartner(classe: Classe): Classe[] {
+    const config = this.getArticolazione(classe);
+    if (config === null) return [];
+    if (config.isPartner()) {
+      throw new ValidationError(`getClassiPartner va chiamato solo sulla classe parent; ${classe.id ?? '?'} è una partner`);
+    }
+    return config.partners.map((id) => this.requireClasse(id));
+  }
+
+  getClasseParent(classe: Classe): Classe | null {
+    const config = this.getArticolazione(classe);
+    if (config === null || config.parent === null) return null;
+    return this.requireClasse(config.parent);
+  }
+
+  /** The class itself plus all related classes (parent + partners), deduped by id. */
+  getGruppoArticolazione(classe: Classe): Classe[] {
+    const byId = new Map<string, Classe>();
+    const add = (c: Classe | null): void => { if (c?.id != null) byId.set(c.id, c); };
+    add(classe);
+    const config = this.getArticolazione(classe);
+    if (config !== null) {
+      if (config.isParent()) {
+        for (const p of this.getClassiPartner(classe)) add(p);
+      } else {
+        add(this.getClasseParent(classe));
+        add(this.getClassePartner(classe));
+      }
+    }
+    return [...byId.values()];
+  }
+
+  /** CDC of the articulated group: this class merged with parent's partners / partner's counterpart. */
+  getAllDocentiCDCArticolata(classe: Classe): Docente[] {
+    const byEmail = new Map<string, Docente>();
+    const add = (docenti: Docente[]): void => { for (const d of docenti) if (d.id != null) byEmail.set(d.id, d); };
+    add(this.getAllDocentiCDC(classe));
+    const config = this.getArticolazione(classe);
+    if (config !== null) {
+      if (config.isParent()) {
+        for (const p of this.getClassiPartner(classe)) add(this.getAllDocentiCDC(p));
+      } else {
+        const partner = this.getClassePartner(classe);
+        if (partner !== null) add(this.getAllDocentiCDC(partner));
+      }
+    }
+    return [...byEmail.values()].sort((a, b) => a.cognome.localeCompare(b.cognome));
+  }
+
+  /**
+   * Cattedra teacher resolved across an articulation: with no articolazione it
+   * is the plain getDocentiPerMateria; otherwise, when a student indirizzo is
+   * given, the group class of that indirizzo is used (ref 05 §3, 06 §3).
+   */
+  getDocentiPerMateriaArticolata(classe: Classe, materia: MateriaId, indirizzoStudente?: IndirizzoId): Docente[] {
+    const config = this.getArticolazione(classe);
+    if (config === null || indirizzoStudente === undefined) {
+      return this.getDocentiPerMateria(classe, materia);
+    }
+    const target = this.getGruppoArticolazione(classe).find((c) => c.indirizzo === indirizzoStudente.value);
+    return target === undefined ? [] : this.getDocentiPerMateria(target, materia);
+  }
+
+  private requireClasse(id: ClasseId): Classe {
+    const classe = this.findById(id);
+    if (classe === null) throw new EntityNotFoundError(`Classe partner/parent ${id.value} non trovata`);
+    return classe;
   }
 
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse {

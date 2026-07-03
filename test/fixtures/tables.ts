@@ -7,7 +7,13 @@ export function fixtureTables(): Record<string, Row[]> {
         ATTIVA: true, COORD: 'rossi@school.it', IRC: 'bianchi@school.it', STORICO: '4A,3A',
         MATE: 'rossi@school.it', FISI: 'bianchi@school.it' },
       { ID: '3B', ANNO: 3, INDIRIZZO: 'ITI', ARTICOLAZIONE: null, RUOLI: null, ATTIVA: false,
-        COORD: '', MATE: 'bianchi@school.it' }
+        COORD: '', MATE: 'bianchi@school.it' },
+      { ID: '1F', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ATTIVA: true, COORD: 'rossi@school.it',
+        ARTICOLAZIONE: '{"parent":null,"partner":null,"partners":"1F-LSO,1F-LSS"}', MATE: 'rossi@school.it' },
+      { ID: '1F-LSO', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ATTIVA: true, COORD: 'rossi@school.it',
+        ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSS","partners":null}', MATE: 'rossi@school.it', FISI: 'bianchi@school.it' },
+      { ID: '1F-LSS', ANNO: 1, INDIRIZZO: 'LSSA', ATTIVA: true, COORD: 'rossi@school.it',
+        ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSO","partners":null}', MATE: 'rossi@school.it', FISI: 'verdi@school.it' }
     ],
     DOCENTI: [
       { EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: 'M', DIPART: 'SCIENTIFICO_DIP', ITP: false },

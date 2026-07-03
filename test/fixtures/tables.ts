@@ -3,8 +3,11 @@ import type { Row } from '../../src/infrastructure/db/Database';
 export function fixtureTables(): Record<string, Row[]> {
   return {
     CLASSI: [
-      { ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: null, RUOLI: '{"SEGRETARIO":"rossi@school.it"}', ATTIVA: true,
-        COORD: 'rossi@school.it', IRC: 'bianchi@school.it', MATE: 'rossi@school.it', FISI: 'bianchi@school.it' }
+      { ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: null, RUOLI: '{"SEGRETARIO":"rossi@school.it","TUTOR_ASL":"rossi@school.it,bianchi@school.it"}',
+        ATTIVA: true, COORD: 'rossi@school.it', IRC: 'bianchi@school.it', STORICO: '4A,3A',
+        MATE: 'rossi@school.it', FISI: 'bianchi@school.it' },
+      { ID: '3B', ANNO: 3, INDIRIZZO: 'ITI', ARTICOLAZIONE: null, RUOLI: null, ATTIVA: false,
+        COORD: '', MATE: 'bianchi@school.it' }
     ],
     DOCENTI: [
       { EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: 'M', DIPART: 'SCIENTIFICO_DIP', ITP: false },

@@ -48,6 +48,28 @@ export function fixtureTables(): Record<string, Row[]> {
       { ID: 'REF_BES', NOME: 'Referente BES', DOCENTE: 'rossi@school.it,bianchi@school.it' },
       { ID: 'AN_DIG', NOME: 'Animatore digitale', DOCENTE: 'bianchi@school.it' }
     ],
+    CARENZE: [
+      { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, CLASSE: '5A', DATA: '2026-02-15', NOTIFICATO: '',
+        ASSENZE: true, MATE: '4.5', FISI: 'Studio scarso' },
+      { STUDENTE: 'a1@school.it', PROGRESSIVO: 2, CLASSE: '5A', DATA: '2026-05-20',
+        NOTIFICATO: '2026-05-21T10:00:00.000Z', ASSENZE: false, MATE: '5' },
+      { STUDENTE: 'a2@school.it', PROGRESSIVO: 1, CLASSE: '5A', DATA: '2025-12-01', NOTIFICATO: '',
+        ASSENZE: false, FISI: '3' }
+    ],
+    PROGETTI: [
+      { CLASSE: '5A', TIPO: 'ASL', NOME: 'Stage aziendale', REFERENTE: 'rossi@school.it', ORE: 80, ORE_ASL: 70 },
+      { CLASSE: '5A', TIPO: 'ORIENTAMENTO', NOME: 'Open day', REFERENTE: 'bianchi@school.it', ORE: 10, ORE_ASL: 0 }
+    ],
+    MOV_ALUNNI: [
+      { STUDENTE: 'a2@school.it', TIPO: 'IN', DATA: '2025-09-15', DA: 'ALTRO ISTITUTO', A: '5A' },
+      { STUDENTE: 'a2@school.it', TIPO: 'CAMBIO', DATA: '2026-01-10', DA: '5A', A: '5B' },
+      { STUDENTE: 'a3@school.it', TIPO: 'OUT', DATA: '2026-03-01', DA: '5A', A: 'RITIRO' }
+    ],
+    ASL: [
+      { STUDENTE: 'a1@school.it', ANNO: '2024-2025', ORE: 40 },
+      { STUDENTE: 'a1@school.it', ANNO: '2025-2026', ORE: 60 },
+      { STUDENTE: 'a2@school.it', ANNO: '2025-2026', ORE: 30 }
+    ],
     LOG_DOCS: [],
     LOG_FOLD: []
   };

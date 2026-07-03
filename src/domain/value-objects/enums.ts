@@ -21,6 +21,8 @@ export enum ReligioneScelta { SI = 'SI', NO = 'NO', ALT = 'ALT' }
 export enum TipoPiano {
   PDP_DSA = 'PDP_DSA', PDP_BES = 'PDP_BES', PDP_STRANIERI = 'PDP_STRANIERI', PEI = 'PEI', PFP = 'PFP'
 }
+export enum TipoProgetto { ASL = 'ASL', ORIENTAMENTO = 'ORIENTAMENTO', ALTRO = 'ALTRO' }
+export enum TipoMovimento { IN = 'IN', OUT = 'OUT', CAMBIO = 'CAMBIO' }
 
 export function appellativo(g: Genere): string {
   return g === Genere.M ? 'Prof.' : 'Prof.ssa';

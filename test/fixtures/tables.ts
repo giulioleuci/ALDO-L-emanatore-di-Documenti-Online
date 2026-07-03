@@ -11,8 +11,8 @@ export function fixtureTables(): Record<string, Row[]> {
       { EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI', NOME: 'LUCIA', GENERE: 'F' }
     ],
     MATERIE: [
-      { ID: 'MATE', SINTESI: 'Matematica', ESAME_CFG: null },
-      { ID: 'FISI', SINTESI: 'Fisica', ESAME_CFG: null }
+      { ID: 'MATE', NOME: 'Matematica', SINTESI: 'Matematica', ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}' },
+      { ID: 'FISI', NOME: 'Fisica', SINTESI: 'Fisica', ESAME_CFG: null }
     ],
     ALUNNI: [
       { EMAIL: 'a1@school.it', COGNOMENOME: 'VERDI ANNA', CLASSE: '5A', ATTIVO: true },

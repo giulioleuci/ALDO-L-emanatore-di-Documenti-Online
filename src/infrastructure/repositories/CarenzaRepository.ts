@@ -7,7 +7,8 @@ import { ValoreCarenza } from '../../domain/value-objects/ValoreCarenza';
 import type { Alunno } from '../../domain/entities/Alunno';
 import type { Classe } from '../../domain/entities/Classe';
 import type { AnnoScolastico } from '../../domain/value-objects/AnnoScolastico';
-import { TABLE, COL_MATERIE } from '../../config/schema';
+import { MateriaNotFoundError } from '../../domain/errors/DomainError';
+import { TABLE, COL_MATERIE, COL_CARENZE } from '../../config/schema';
 
 /** Dynamic per-subject column names in the CARENZE matrix (ref 06 §Colonne dinamiche). */
 interface MateriaColumns { main: string; itp: string }
@@ -71,6 +72,22 @@ export class CarenzaRepository extends Repository<Carenza> {
       if (valore !== null) result.set(MateriaId.of(id), valore);
     }
     return result;
+  }
+
+  /**
+   * Sets (or clears, with null) the shortfall value for one subject of a CARENZE
+   * row and persists it (ref 06 §11). CARENZE has a composite PK, so the row is
+   * resolved by (STUDENTE, PROGRESSIVO) via the library table's composite write.
+   */
+  setCarenzaMateria(carenza: Carenza, materia: MateriaId, valore: ValoreCarenza | null): void {
+    const cols = this.materieColumns.get(materia.value);
+    if (cols === undefined) throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
+    const row = { ...carenza.toData(), [cols.main]: valore === null ? '' : valore.toString() };
+    this.database.tables[TABLE.CARENZE]!.updateRowWhere(
+      { [COL_CARENZE.STUDENTE]: carenza.studente, [COL_CARENZE.PROGRESSIVO]: carenza.progressivo },
+      row
+    );
+    this.database.save();
   }
 
   private inAnnoScolastico(c: Carenza, anno: AnnoScolastico): boolean {

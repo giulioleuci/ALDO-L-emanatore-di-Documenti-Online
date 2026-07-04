@@ -12,7 +12,9 @@ import { CarenzaFocusProvider } from './providers/CarenzaFocusProvider';
 import { RappresentantiProvider } from './providers/RappresentantiProvider';
 import { StatisticheProvider } from './providers/StatisticheProvider';
 import { StoricoProvider } from './providers/StoricoProvider';
+import { SwapAndEnrichInterceptor } from './interceptors/SwapAndEnrichInterceptor';
 import { CdcAssembler } from './CdcAssembler';
+import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
@@ -38,9 +40,11 @@ export class ContextEngineFactory {
     const materie = new MateriaRepository(database);
     const oreAsl = new OreASLRepository(database);
     const logDocs = new LogDocumentoRepository(database);
+    const supplenze = new SupplenzaRepository(database);
     const cdc = new CdcAssembler(classi, materie);
 
     return new ContextBuilder()
+      .registerInterceptor(new SwapAndEnrichInterceptor(new LoggerService(), docenti, supplenze))
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
       .registerProvider('class', new ClasseProvider(classi, alunni))
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))

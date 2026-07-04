@@ -1,6 +1,7 @@
 import { Email } from '../value-objects/Email';
 import { TipoMovimento } from '../value-objects/enums';
 import { COL_MOV_ALUNNI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface MovimentoAlunnoData {
   [key: string]: unknown;
@@ -11,7 +12,7 @@ export interface MovimentoAlunnoData {
  * (STUDENTE, TIPO, DATA); no single-column id (ref 01/04 §16). Part of the
  * Alunno aggregate (its mobility history).
  */
-export class MovimentoAlunno extends Entity {
+export class MovimentoAlunno extends AldoEntity {
   public readonly studente: string;
   public readonly tipo: TipoMovimento;
   public readonly data: string;

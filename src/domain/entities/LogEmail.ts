@@ -1,5 +1,6 @@
 import { StatoEmail } from '../value-objects/enums';
 import { COL_LOG_MAIL } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface LogEmailData {
   [key: string]: unknown;
@@ -9,7 +10,7 @@ export interface LogEmailData {
  * LOG_MAIL entity — append-only audit record of a sent email (ref 04, 06 §19).
  * Composite PK (PATTERN, DESTINATARI, DATA); no single-column id.
  */
-export class LogEmail extends Entity {
+export class LogEmail extends AldoEntity {
   public readonly pattern: string;
   public readonly destinatariRaw: string;
   public readonly data: string;

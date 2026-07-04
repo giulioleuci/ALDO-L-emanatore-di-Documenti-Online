@@ -20,9 +20,14 @@ class FakeTable implements IReadableTable {
   findAll(): Row[] { return this.rows.slice(); }
   find(predicate: (row: Row) => boolean): Row | null { return this.rows.find(predicate) ?? null; }
   insert(row: Row): void { this.rows.push(row); }
-  // DomainRepositoryLib Repository seam:
+  // DomainRepositoryLib Repository.save() write seam:
   getAllRows(): Row[] { return this.rows.slice(); }
-  insertRow(row: Row): void { this.rows.push(row); }
+  insertRow(row: Row): Row { this.rows.push(row); return row; }
+  updateRowById(id: string, row: Row): void {
+    const i = this.rows.findIndex((r) => String(r[this.pkColumn]) === String(id));
+    if (i === -1) this.rows.push(row);
+    else this.rows[i] = row;
+  }
   getByPK(id: string): Row | null {
     return this.rows.find((r) => String(r[this.pkColumn]) === String(id)) ?? null;
   }

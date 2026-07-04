@@ -2,6 +2,7 @@ import { Email } from '../value-objects/Email';
 import { MateriaId } from '../value-objects/MateriaId';
 import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { COL_DIPART } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface DipartimentoData {
   [COL_DIPART.ID]?: string;
@@ -15,7 +16,7 @@ export interface DipartimentoData {
  * DIPART entity (PK = ID). CAPO is a teacher email; MATERIE is a CSV of MateriaId
  * (ref 01/04). Cross-entity navigation to Docente/Materia is wired by services.
  */
-export class Dipartimento extends Entity {
+export class Dipartimento extends AldoEntity {
   public readonly nome: string;
   private readonly capoRaw: string;
   private readonly materieRaw: string;

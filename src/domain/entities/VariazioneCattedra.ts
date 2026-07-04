@@ -3,6 +3,7 @@ import { CsvScope } from '../value-objects/CsvScope';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_VARIAZIONI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface VariazioneCattedraData {
   [key: string]: unknown;
@@ -13,7 +14,7 @@ export interface VariazioneCattedraData {
  * school year has begun, Priority 2 in role resolution (ref 04 §15). Composite
  * PK (CLASSE_ID, MATERIA_ID), both CSV matched by containment. Aggregate Root.
  */
-export class VariazioneCattedra extends Entity {
+export class VariazioneCattedra extends AldoEntity {
   private readonly classeIdRaw: string;
   private readonly materiaIdRaw: string;
   public readonly vecchioTitolare: string;

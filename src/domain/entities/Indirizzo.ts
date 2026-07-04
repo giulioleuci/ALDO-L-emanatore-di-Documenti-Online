@@ -1,6 +1,7 @@
 import { IndirizzoId } from '../value-objects/IndirizzoId';
 import { TipoIstituto } from '../value-objects/enums';
 import { COL_INDIRIZZI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface IndirizzoData {
   [COL_INDIRIZZI.ID]?: string;
@@ -11,7 +12,7 @@ export interface IndirizzoData {
 }
 
 /** INDIRIZZI entity (PK = ID). Study-path lookup (ref 01, 04). */
-export class Indirizzo extends Entity {
+export class Indirizzo extends AldoEntity {
   public readonly nome: string;
   public readonly nomeSintetico: string;
   public readonly tipo: TipoIstituto;

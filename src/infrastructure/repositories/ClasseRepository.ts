@@ -230,6 +230,38 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return classe;
   }
 
+  // --- Write-back of coordinators / roles (ref 06 §3) ---
+  // CLASSI is a wide dynamic-column table and the Classe entity carries only its
+  // fixed columns, so these column-level edits persist through the library's
+  // table seam (updateRowById) rather than Repository.save(entity), which would
+  // dehydrate only the fixed columns and drop the cattedra matrix.
+
+  setCoordinatori(classe: Classe, coordinatori: Docente[]): void {
+    this.writeColumn(classe, COL_CLASSI.COORD, coordinatori.map((d) => d.id ?? '').filter((e) => e !== '').join(','));
+  }
+
+  /** Sets RUOLI[nomeRuolo] to the CSV of the given teachers, or removes the key when empty. */
+  setDocentiRuolo(classe: Classe, nomeRuolo: string, docenti: Docente[]): void {
+    const row = this.rowOf(classe);
+    const raw = row[COL_CLASSI.RUOLI];
+    const ruoli = typeof raw === 'string' && raw.trim() !== '' ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    const emails = docenti.map((d) => d.id ?? '').filter((e) => e !== '');
+    if (emails.length === 0) delete ruoli[nomeRuolo];
+    else ruoli[nomeRuolo] = emails.join(',');
+    this.writeColumn(classe, COL_CLASSI.RUOLI, JSON.stringify(ruoli));
+  }
+
+  /** Shortcut for single-holder roles (ref 06 §3). */
+  setRuolo(classe: Classe, nomeRuolo: string, docente: Docente): void {
+    this.setDocentiRuolo(classe, nomeRuolo, [docente]);
+  }
+
+  private writeColumn(classe: Classe, colonna: string, valore: string): void {
+    const row = { ...this.rowOf(classe), [colonna]: valore };
+    this.database.tables[TABLE.CLASSI]!.updateRowById(classe.id ?? '', row);
+    this.database.save();
+  }
+
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse {
     const classe = this.database.tables[TABLE.CLASSI]!.getByPK(id.value);
     if (!classe) throw new EntityNotFoundError(`Classe ${id.value} non trovata`);

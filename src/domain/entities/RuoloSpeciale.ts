@@ -1,5 +1,6 @@
 import { Email } from '../value-objects/Email';
 import { COL_RUOLI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface RuoloSpecialeData {
   [COL_RUOLI.ID]?: string;
@@ -12,7 +13,7 @@ export interface RuoloSpecialeData {
  * RUOLI entity (PK = ID) — a special institute role held by one or more teachers
  * (DOCENTE is a CSV of emails, ref 01/04). A role may have multiple holders.
  */
-export class RuoloSpeciale extends Entity {
+export class RuoloSpeciale extends AldoEntity {
   public readonly nome: string;
   private readonly docenteRaw: string;
 

@@ -4,6 +4,7 @@ import { CsvScope } from '../value-objects/CsvScope';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_SUPPLENZE } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface SupplenzaData {
   [key: string]: unknown;
@@ -14,7 +15,7 @@ export interface SupplenzaData {
  * resolution (ref 04 §14). Composite PK (TITOLARE, SUPPLENTE, DAL, CLASSI,
  * MATERIE); no single-column id. Aggregate Root, correlated to Docente.
  */
-export class Supplenza extends Entity {
+export class Supplenza extends AldoEntity {
   public readonly titolare: string;
   public readonly supplente: string;
   private readonly dalRaw: string;
@@ -57,6 +58,21 @@ export class Supplenza extends Entity {
 
   applicaAContesto(classe: ClasseId, materia: MateriaId): boolean {
     return this.applicaAClasse(classe) && this.applicaAMateria(materia);
+  }
+
+  getClassiScope(): CsvScope { return this.classi; }
+  getMaterieScope(): CsvScope { return this.materie; }
+
+  /**
+   * True when this supplenza's period and (class ∧ subject) context both overlap
+   * another's — the condition the creation invariant forbids (ref 04 §14).
+   */
+  contestoOverlaps(other: Supplenza): boolean {
+    const periodiSiSovrappongono = this.getPeriodo().contiene(other.getPeriodo().dal)
+      || other.getPeriodo().contiene(this.getPeriodo().dal);
+    return periodiSiSovrappongono
+      && this.classi.overlaps(other.getClassiScope())
+      && this.materie.overlaps(other.getMaterieScope());
   }
 
   override toData(): EntityData {

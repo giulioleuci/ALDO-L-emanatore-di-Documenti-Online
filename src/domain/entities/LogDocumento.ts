@@ -1,5 +1,6 @@
 import { StatoDocumento } from '../value-objects/enums';
 import { COL_LOG_DOCS } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface LogDocumentoData {
   [key: string]: unknown;
@@ -15,7 +16,7 @@ function csv(cell: unknown): string[] {
  * containment (ref 01). cambiaStato/notifica mutate in memory + mark dirty; the
  * repository persists via save() (persistence-seam increment).
  */
-export class LogDocumento extends Entity {
+export class LogDocumento extends AldoEntity {
   public readonly idGen: string;
   public readonly tipo: string;
   public readonly nome: string;

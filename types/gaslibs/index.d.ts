@@ -56,11 +56,15 @@ declare global {
 
   // Minimal seam Repository requires of its injected database (satisfied by
   // SheetDBLib's DatabaseService at runtime, or FakeDatabaseService in tests).
+  // The write seam DomainRepositoryLib's Repository.save() drives: insertRow on
+  // create (returns the stored row so the entity id can be read back),
+  // updateRowById on update. Satisfied by SheetDBLib's table at runtime, or
+  // FakeDatabase's FakeTable in tests.
   interface RepositoryTable {
     getByPK(id: string): EntityData | null;
     getAllRows(): EntityData[];
-    /** Append-only insert (used for audit-trail LOG tables; ref DomainRepositoryLib table seam). */
-    insertRow(row: EntityData): void;
+    insertRow(row: EntityData): EntityData;
+    updateRowById(id: string, row: EntityData): void;
   }
   interface RepositoryDatabase {
     tables: Record<string, RepositoryTable>;

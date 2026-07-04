@@ -1,6 +1,7 @@
 import { Email } from '../value-objects/Email';
 import { AnnoScolastico } from '../value-objects/AnnoScolastico';
 import { COL_ASL } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface OreASLData {
   [key: string]: unknown;
@@ -11,7 +12,7 @@ export interface OreASLData {
  * (STUDENTE, ANNO); no single-column id (ref 01/04 §17). Part of the Alunno
  * aggregate.
  */
-export class OreASL extends Entity {
+export class OreASL extends AldoEntity {
   public readonly studente: string;
   public readonly anno: string;
   private ore: number;

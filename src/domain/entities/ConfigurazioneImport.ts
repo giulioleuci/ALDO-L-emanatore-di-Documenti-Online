@@ -1,4 +1,5 @@
 import { COL_CONF_IMP } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface ConfigurazioneImportData {
   [key: string]: unknown;
@@ -7,7 +8,7 @@ export interface ConfigurazioneImportData {
 /**
  * CONF_IMP entity (PK = ID) — an ETL import job config (ref 01, 06 §10).
  */
-export class ConfigurazioneImport extends Entity {
+export class ConfigurazioneImport extends AldoEntity {
   public readonly target: string;
   private readonly attivo: boolean;
   private readonly configRaw: string | null;

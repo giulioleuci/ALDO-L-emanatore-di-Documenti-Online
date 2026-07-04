@@ -28,6 +28,12 @@ class FakeTable implements IReadableTable {
     if (i === -1) this.rows.push(row);
     else this.rows[i] = row;
   }
+  updateRowWhere(match: Row, row: Row): void {
+    const keys = Object.keys(match);
+    const i = this.rows.findIndex((r) => keys.every((k) => String(r[k]) === String(match[k])));
+    if (i === -1) this.rows.push(row);
+    else this.rows[i] = row;
+  }
   getByPK(id: string): Row | null {
     return this.rows.find((r) => String(r[this.pkColumn]) === String(id)) ?? null;
   }

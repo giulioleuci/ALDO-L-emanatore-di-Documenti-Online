@@ -65,6 +65,11 @@ declare global {
     getAllRows(): EntityData[];
     insertRow(row: EntityData): EntityData;
     updateRowById(id: string, row: EntityData): void;
+    // Composite-key write: replace the single row matching ALL `match` columns
+    // (append if none). Composite-PK tables have no single physical key, so their
+    // repositories resolve the target row by business columns; a real adapter
+    // implements this via getAllRows + a physical-key/row-index write.
+    updateRowWhere(match: EntityData, row: EntityData): void;
   }
   interface RepositoryDatabase {
     tables: Record<string, RepositoryTable>;

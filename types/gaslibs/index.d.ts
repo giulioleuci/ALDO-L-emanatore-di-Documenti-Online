@@ -12,6 +12,14 @@ declare global {
     error(msg: string, ...args: unknown[]): void;
   }
 
+  // --- GasExpressionEngineLib (L2): safe AST expression evaluation (no eval) ---
+  // evaluate() resolves {{path}} placeholders from `context` then evaluates the
+  // expression (custom operators: in/between/match; functions: len/abs/round…).
+  class ExpressionEngineService {
+    constructor(options: { logger: LoggerService; utils?: unknown; cache?: unknown });
+    evaluate(expression: string, context?: Record<string, unknown>): unknown;
+  }
+
   // --- SheetDBLib (L2): minimal read/write surface used by the slice ---
   type SheetRow = Record<string, string | number | boolean | null>;
   interface SheetTable {

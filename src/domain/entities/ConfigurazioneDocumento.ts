@@ -48,6 +48,11 @@ export class ConfigurazioneDocumento extends AldoEntity {
     return this.modelliRaw === null ? {} : (JSON.parse(this.modelliRaw) as Record<string, unknown>);
   }
 
+  /** Raw parsed MODELLI: the simple object form `{templateId}` or the conditional array. */
+  getModelliJson(): unknown {
+    return this.modelliRaw === null ? null : JSON.parse(this.modelliRaw);
+  }
+
   /** Template id in the simple MODELLI form {"templateId": "..."}; null otherwise (ref 06 §8). */
   getTemplateIdSemplice(): string | null {
     const t = this.getModelli().templateId;

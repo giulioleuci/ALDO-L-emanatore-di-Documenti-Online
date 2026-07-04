@@ -49,6 +49,10 @@ declare global {
   abstract class ContextInterceptor {
     constructor(logger: LoggerService);
     intercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
+    // Template-method hooks overridden by subclasses (public `intercept` wraps them
+    // with validation, timing and logging).
+    protected _shouldIntercept(name: string, data: unknown, context: unknown, options?: unknown): boolean;
+    protected _performIntercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
   }
 
   // --- SheetDBLib (L2): minimal read/write surface used by the slice ---

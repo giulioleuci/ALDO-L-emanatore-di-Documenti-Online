@@ -38,7 +38,12 @@ export function fixtureTables(): Record<string, Row[]> {
         MODELLI: '{"templateId":"tmpl_verbale"}', FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
         PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}', PATH_OUT_SOTTOCARTELLE: null,
         SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE', PERMESSI: null, POST_PROCESSO: null,
-        PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' }
+        PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' },
+      { ID: 'CD_ESAME', TIPO: 'VERBALE', GENERATORE: 'VERBALE_CDC',
+        CONDIZIONE: '{{focus.classe.anagrafica.anno}} == 5',
+        MODELLI: '[{"condizione":"{{focus.classe.anagrafica.anno}} == 5","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
+        FILE_NAME: null, PATH_OUT: null, PATH_OUT_SOTTOCARTELLE: null, SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
+        PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' }
     ],
     CONF_MAIL: [
       { ID: 'CDC_OTTOBRE', OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}', PROCESSO: 'PER_CDC',

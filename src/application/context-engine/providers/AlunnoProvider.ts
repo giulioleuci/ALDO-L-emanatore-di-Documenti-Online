@@ -5,6 +5,7 @@ import type { AlunnoRepository } from '../../../infrastructure/repositories/Alun
 import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
 import type { OreASLRepository } from '../../../infrastructure/repositories/OreASLRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
+import type { CdcAssembler } from '../CdcAssembler';
 import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
 import { setAlunnoEntity } from '../techEntities';
 import { curriculumRecord } from '../mappers/carenzeMapper';
@@ -21,7 +22,8 @@ export class AlunnoProvider implements ContextProvider {
   constructor(
     private readonly alunni: AlunnoRepository,
     private readonly classi: ClasseRepository,
-    private readonly oreAsl: OreASLRepository
+    private readonly oreAsl: OreASLRepository,
+    private readonly cdc?: CdcAssembler
   ) {}
 
   provide(cdu: Cdu, params: BuildParams): void {
@@ -44,6 +46,12 @@ export class AlunnoProvider implements ContextProvider {
         piani: { items: [], hasPiani: false, hasBes: false }
       }
     };
+    // Per-alunno filtered council (14 §1.3): built here because alunno recipes
+    // don't run the consiglio provider. Only when a CdcAssembler is wired in.
+    if (this.cdc !== undefined) {
+      focusAlunno.consiglioDiClasseFiltrato = this.cdc.assembleFiltrato(classe, alunno.religione);
+    }
+
     cdu.focus.alunno = focusAlunno;
   }
 

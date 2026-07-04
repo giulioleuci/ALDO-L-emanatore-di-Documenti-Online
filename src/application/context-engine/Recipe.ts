@@ -34,6 +34,8 @@ export interface BuildParams {
   tipoOperazione?: string;
   idEsecuzione?: string;
   materiaCorrente?: string | null;
+  /** For the PER_CARENZA pipeline: which CARENZE progressivo of the student is in focus (02 §4.3). */
+  carenzaProgressivo?: number;
 }
 
 export const DEFAULT_OPTIONS: RecipeOptions = {

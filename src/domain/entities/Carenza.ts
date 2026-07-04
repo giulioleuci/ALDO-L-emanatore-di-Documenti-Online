@@ -53,6 +53,9 @@ export class Carenza extends AldoEntity {
 
   hasAssenzeElevate(): boolean { return this.assenze; }
 
+  /** Free-text NOTE cell (ref 01, 02 §4.3); '' when absent. */
+  getNote(): string { return typeof this.raw[COL_CARENZE.NOTE] === 'string' ? (this.raw[COL_CARENZE.NOTE] as string) : ''; }
+
   /** Number of subjects with a shortfall in the map supplied by the repository (ref 04 §11). */
   getNumeroCarenze(carenzePerMateria: Map<MateriaId, ValoreCarenza>): number {
     return carenzePerMateria.size;

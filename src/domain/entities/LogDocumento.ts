@@ -37,6 +37,7 @@ export class LogDocumento extends AldoEntity {
 
   getStato(): StatoDocumento { return this.stato; }
   getLink(): string { return typeof this.raw[COL_LOG_DOCS.LINK] === 'string' ? (this.raw[COL_LOG_DOCS.LINK] as string) : ''; }
+  getDataCreazione(): string { return typeof this.raw[COL_LOG_DOCS.DATA_CREAZ] === 'string' ? (this.raw[COL_LOG_DOCS.DATA_CREAZ] as string) : ''; }
   isNotificato(): boolean { return this.notificato.trim().length > 0; }
 
   containsClasse(classeId: string): boolean { return csv(this.raw[COL_LOG_DOCS.CLASSI]).includes(classeId); }

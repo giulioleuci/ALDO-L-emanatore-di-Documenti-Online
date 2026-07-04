@@ -1,0 +1,26 @@
+import type { ContextProvider } from '../ContextProvider';
+import type { Cdu } from '../Cdu';
+import type { LogDocumentoRepository } from '../../../infrastructure/repositories/LogDocumentoRepository';
+import { getAlunnoEntity } from '../techEntities';
+
+/**
+ * Fills `focus.alunno.didattica.documenti` from LOG_DOCS via
+ * LogDocumentoRepository.findByUtente() (09 §4, 02 §4.2). Active in the
+ * ALUNNO_DETTAGLIATO and FAMIGLIA_COMPLETO recipes.
+ */
+export class DocumentiProvider implements ContextProvider {
+  constructor(private readonly logDocs: LogDocumentoRepository) {}
+
+  provide(cdu: Cdu): void {
+    const focusAlunno = cdu.focus.alunno;
+    if (focusAlunno === undefined) return;
+    const items = this.logDocs.findByUtente(getAlunnoEntity(cdu).email).map((l) => ({
+      nome: l.nome,
+      link: l.getLink(),
+      tipo: l.tipo,
+      stato: l.getStato(),
+      dataCreazione: l.getDataCreazione()
+    }));
+    focusAlunno.didattica.documenti = { items, hasDocumenti: items.length > 0 };
+  }
+}

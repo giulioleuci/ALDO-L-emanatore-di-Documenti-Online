@@ -1,6 +1,7 @@
 import { MateriaId } from '../value-objects/MateriaId';
 import { EsameConfig } from '../value-objects/EsameConfig';
 import { COL_MATERIE } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface MateriaData {
   [COL_MATERIE.ID]?: string;
@@ -11,7 +12,7 @@ export interface MateriaData {
 }
 
 /** MATERIE entity (PK = ID). Subject-catalogue lookup (ref 01, 04). */
-export class Materia extends Entity {
+export class Materia extends AldoEntity {
   public readonly nome: string;
   public readonly sintesi: string;
   private readonly esameCfgRaw: string | null;

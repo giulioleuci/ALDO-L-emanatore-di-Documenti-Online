@@ -1,4 +1,5 @@
 import { COL_LOG_FOLD } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface LogCartellaData {
   [key: string]: unknown;
@@ -12,7 +13,7 @@ function csv(cell: unknown): string[] {
  * LOG_FOLD entity (PK = Drive Folder ID, ref 04 §19) — append-only audit record
  * of a created Drive folder. CLASSI is CSV, matched by containment (ref 01).
  */
-export class LogCartella extends Entity {
+export class LogCartella extends AldoEntity {
   public readonly tipo: string;
   public readonly nome: string;
   private readonly raw: Record<string, unknown>;

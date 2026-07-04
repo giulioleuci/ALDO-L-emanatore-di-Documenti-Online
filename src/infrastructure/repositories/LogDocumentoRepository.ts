@@ -60,4 +60,20 @@ export class LogDocumentoRepository extends Repository<LogDocumento> {
     this.database.save();
     return log;
   }
+
+  /**
+   * Changes STATO and persists via the DomainRepositoryLib Repository.save()
+   * update path (ref 06 §17). LOG_DOCS has a single Drive-File-ID PK and the
+   * entity carries the full row, so the library's save() applies directly.
+   */
+  cambiaStato(logDoc: LogDocumento, nuovoStato: StatoDocumento): void {
+    logDoc.cambiaStato(nuovoStato);
+    this.save(logDoc);
+  }
+
+  /** Stamps NOTIFICATO and persists via Repository.save() (ref 06 §17). */
+  registraNotifica(logDoc: LogDocumento): void {
+    logDoc.notifica();
+    this.save(logDoc);
+  }
 }

@@ -3,6 +3,7 @@ import { ClasseId } from '../value-objects/ClasseId';
 import { MateriaId } from '../value-objects/MateriaId';
 import { ReligioneScelta } from '../value-objects/enums';
 import { COL_ALUNNI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface AlunnoData {
   [key: string]: unknown;
@@ -12,7 +13,7 @@ export interface AlunnoData {
  * ALUNNI entity (PK = EMAIL). Root of the student aggregate (ref 04/05). For
  * articulated classes, CLASSE holds the partner-class id (ref 01).
  */
-export class Alunno extends Entity {
+export class Alunno extends AldoEntity {
   public readonly cognomeNome: string;
   public readonly classe: string;
   public readonly religione: ReligioneScelta;

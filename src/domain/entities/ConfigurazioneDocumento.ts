@@ -1,5 +1,6 @@
 import { FormatoOutput } from '../value-objects/enums';
 import { COL_CONF_DOC } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface ConfigurazioneDocumentoData {
   [key: string]: unknown;
@@ -12,7 +13,7 @@ export interface ConfigurazioneDocumentoData {
  * MODELLI selection land with the ContextEngine/expression increment; here the
  * simple-form template id and the static config accessors are provided.
  */
-export class ConfigurazioneDocumento extends Entity {
+export class ConfigurazioneDocumento extends AldoEntity {
   public readonly tipo: string;
   public readonly generatore: string;
   public readonly formato: FormatoOutput;

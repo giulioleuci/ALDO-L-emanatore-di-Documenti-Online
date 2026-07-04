@@ -2,6 +2,7 @@ import { ClasseId } from '../value-objects/ClasseId';
 import { AnnoCorso } from '../value-objects/AnnoCorso';
 import { ValidationError } from '../errors/DomainError';
 import { COL_CLASSI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface ClasseData {
   [COL_CLASSI.ID]?: string;
@@ -15,7 +16,7 @@ export interface ClasseData {
  * Fails loud on a malformed row (missing INDIRIZZO / invalid ANNO) rather than
  * coercing to "undefined"/NaN. `anno` is exposed as an AnnoCorso VO.
  */
-export class Classe extends Entity {
+export class Classe extends AldoEntity {
   public readonly nome: string;
   public readonly indirizzo: string;
   private readonly _anno: AnnoCorso;

@@ -1,6 +1,7 @@
 import { ClasseId } from '../value-objects/ClasseId';
 import { TipoProgetto } from '../value-objects/enums';
 import { COL_PROGETTI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface ProgettoData {
   [key: string]: unknown;
@@ -11,7 +12,7 @@ export interface ProgettoData {
  * (CLASSE, TIPO, NOME); no single-column id (ref 01/04 §13). Part of the Classe
  * aggregate.
  */
-export class Progetto extends Entity {
+export class Progetto extends AldoEntity {
   public readonly classe: string;
   public readonly tipo: TipoProgetto;
   public readonly nome: string;

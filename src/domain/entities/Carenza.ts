@@ -3,6 +3,7 @@ import { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
 import type { ValoreCarenza } from '../value-objects/ValoreCarenza';
 import { COL_CARENZE } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface CarenzaData {
   [key: string]: unknown;
@@ -15,7 +16,7 @@ export interface CarenzaData {
  * cell resolution is done by CarenzaRepository, which owns the dynamic column
  * map; this entity retains its raw row so the repository can read those cells.
  */
-export class Carenza extends Entity {
+export class Carenza extends AldoEntity {
   public readonly studente: string;
   public readonly progressivo: number;
   public readonly classe: string;

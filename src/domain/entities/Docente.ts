@@ -2,6 +2,7 @@ import { Email } from '../value-objects/Email';
 import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { Genere, appellativo } from '../value-objects/enums';
 import { COL_DOCENTI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface DocenteData {
   [COL_DOCENTI.EMAIL]?: string;
@@ -15,7 +16,7 @@ export interface DocenteData {
  * DOCENTI entity (PK = EMAIL). Hydrated from a flat row via {@link Docente.fromData};
  * the Email VO is reconstructed on access. DOCENTI has separate COGNOME/NOME (ref 01).
  */
-export class Docente extends Entity {
+export class Docente extends AldoEntity {
   public cognome: string;
   public nome: string;
   public genere: Genere;

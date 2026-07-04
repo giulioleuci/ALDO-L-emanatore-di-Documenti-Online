@@ -1,10 +1,12 @@
 import { Supplenza } from '../../domain/entities/Supplenza';
 import { DocenteRepository } from './DocenteRepository';
-import { EntityNotFoundError } from '../../domain/errors/DomainError';
+import { EntityNotFoundError, ValidationError } from '../../domain/errors/DomainError';
 import type { Docente } from '../../domain/entities/Docente';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
-import { TABLE } from '../../config/schema';
+import { TABLE, COL_SUPPLENZE } from '../../config/schema';
+
+function isoDate(d: Date): string { return d.toISOString().slice(0, 10); }
 
 /**
  * SUPPLENZE repository on the DomainRepositoryLib Repository base. Composite PK
@@ -39,6 +41,30 @@ export class SupplenzaRepository extends Repository<Supplenza> {
    */
   findSupplenzaSpecifica(titolare: Docente, data: Date, classe?: ClasseId, materia?: MateriaId): Supplenza | null {
     return this.resolveChain(titolare.id ?? '', data, classe, materia, new Set<string>());
+  }
+
+  /**
+   * Creates and appends a supplenza, enforcing the invariant that a teacher has
+   * no two supplenze with overlapping periods for the same class+subject context
+   * (ref 04 §14, 06 §14). Appends through the library table seam; throws (without
+   * creating) on violation.
+   */
+  creaSupplenza(titolare: Docente, supplente: Docente, dal: Date, al: Date | null, classi: string, materie: string): Supplenza {
+    const nuova = Supplenza.fromData({
+      [COL_SUPPLENZE.TITOLARE]: titolare.id ?? '',
+      [COL_SUPPLENZE.SUPPLENTE]: supplente.id ?? '',
+      [COL_SUPPLENZE.DAL]: isoDate(dal),
+      [COL_SUPPLENZE.AL]: al === null ? '' : isoDate(al),
+      [COL_SUPPLENZE.CLASSI]: classi,
+      [COL_SUPPLENZE.MATERIE]: materie
+    });
+    const conflitto = this.findByTitolare(titolare).find((s) => nuova.contestoOverlaps(s));
+    if (conflitto !== undefined) {
+      throw new ValidationError(`Supplenza sovrapposta per ${titolare.id ?? '?'} nello stesso contesto classe+materia`);
+    }
+    this.database.tables[TABLE.SUPPLENZE]!.insertRow(nuova.toData());
+    this.database.save();
+    return nuova;
   }
 
   getTitolare(supplenza: Supplenza): Docente {

@@ -1,5 +1,6 @@
 import { ProcessoInvio, GestioneSupplenti } from '../value-objects/enums';
 import { COL_CONF_MAIL } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface ConfigurazioneEmailData {
   [key: string]: unknown;
@@ -11,7 +12,7 @@ const DEFAULT_HEADER_COLOR = '#007bff';
  * CONF_MAIL entity (PK = ID) — a complete email-notification pattern (ref 04,
  * 06 §9). Aggregate Root correlated to LogEmail.
  */
-export class ConfigurazioneEmail extends Entity {
+export class ConfigurazioneEmail extends AldoEntity {
   public readonly oggetto: string;
   public readonly processo: ProcessoInvio;
   public readonly supplenti: GestioneSupplenti;

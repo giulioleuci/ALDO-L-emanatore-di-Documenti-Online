@@ -23,4 +23,11 @@ export class CsvScope {
 
   /** True if `*` or the id is in the CSV. */
   applica(id: string): boolean { return this.wildcard || this.values.has(id); }
+
+  /** True if the two scopes share at least one id (a wildcard overlaps anything). */
+  overlaps(other: CsvScope): boolean {
+    if (this.wildcard || other.wildcard) return true;
+    for (const v of this.values) if (other.values.has(v)) return true;
+    return false;
+  }
 }

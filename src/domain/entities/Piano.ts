@@ -1,6 +1,7 @@
 import { Email } from '../value-objects/Email';
 import { TipoPiano } from '../value-objects/enums';
 import { COL_PIANI } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface PianoData {
   [key: string]: unknown;
@@ -11,7 +12,7 @@ export interface PianoData {
  * there is no single-column id (ref 01). Every TipoPiano except PFP implies BES
  * (ref 03). Part of the Alunno aggregate.
  */
-export class Piano extends Entity {
+export class Piano extends AldoEntity {
   public readonly studente: string;
   public readonly tipo: TipoPiano;
   private readonly parametriRaw: string | null;

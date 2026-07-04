@@ -1,5 +1,6 @@
 import { AnnoScolastico } from '../value-objects/AnnoScolastico';
 import { COL_MASTER } from '../../config/schema';
+import { AldoEntity } from './AldoEntity';
 
 export interface MasterConfigData {
   [key: string]: unknown;
@@ -11,7 +12,7 @@ export interface MasterConfigData {
  * the optional BCC supervisor. The source of truth that replaces PropertiesService
  * for SPREADSHEET_ID.
  */
-export class MasterConfig extends Entity {
+export class MasterConfig extends AldoEntity {
   public readonly annoScolasticoRaw: string;
   public readonly idSpreadsheet: string;
   public readonly idCartellaRoot: string;

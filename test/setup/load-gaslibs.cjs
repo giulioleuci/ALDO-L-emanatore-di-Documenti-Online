@@ -12,3 +12,11 @@ const code = fs.readFileSync(bundlePath, 'utf8');
 // Deliberate: execute the self-contained, checksum-verified vendored bundle with
 // this===global so its classes register on globalThis (not untrusted input).
 new Function(code).call(global);
+
+// The library's LoggerService writes through GAS's native `Logger` global, which
+// the real GAS runtime provides but Node does not. Stub it so library code paths
+// that log (e.g. Repository.save) run under Jest. Test-harness shim only — real
+// logging is exercised in the GAS online smoke tests, never here.
+if (typeof global.Logger === 'undefined') {
+  global.Logger = { log() {}, clear() {}, getLog() { return ''; } };
+}

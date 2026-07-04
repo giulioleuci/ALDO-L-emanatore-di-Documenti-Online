@@ -20,6 +20,37 @@ declare global {
     evaluate(expression: string, context?: Record<string, unknown>): unknown;
   }
 
+  // --- ContextEngine (L3): registry + interceptor building blocks ---
+  // SGSA's ContextBuilder assembles the nested CDU itself (spec 09 §2, which the
+  // library's flat-keyed ContextAssembler does not do), but reuses these public
+  // components: the ProviderRegistry (Registry Pattern), the InterceptorRegistry
+  // + ContextInterceptor middleware (SwapAndEnrichInterceptor), and the shared
+  // ExpressionEngine for conditions.
+  interface LibContextProvider { provide(...args: unknown[]): unknown }
+  interface LibContextInterceptor {
+    intercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
+  }
+  class ProviderRegistry {
+    constructor(logger: LoggerService);
+    registerSingleton(type: string, instance: LibContextProvider): this;
+    registerFactory(type: string, factory: () => LibContextProvider): this;
+    get(type: string): LibContextProvider;
+    has(type: string): boolean;
+    unregister(type: string): boolean;
+    clear(): this;
+    getRegisteredTypes(): string[];
+  }
+  class InterceptorRegistry {
+    constructor(logger: LoggerService);
+    registerSingleton(type: string, instance: LibContextInterceptor): this;
+    getAll(): LibContextInterceptor[];
+    getRegisteredTypes(): string[];
+  }
+  abstract class ContextInterceptor {
+    constructor(logger: LoggerService);
+    intercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
+  }
+
   // --- SheetDBLib (L2): minimal read/write surface used by the slice ---
   type SheetRow = Record<string, string | number | boolean | null>;
   interface SheetTable {

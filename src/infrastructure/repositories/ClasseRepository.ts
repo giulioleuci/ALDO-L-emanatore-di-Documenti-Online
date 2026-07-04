@@ -258,6 +258,17 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return this.getClassiPartner(parent);
   }
 
+  /** Every subject the teacher holds in this class, tagged main vs itp column (09 §4). */
+  getMaterieDelDocente(classe: Classe, docenteEmail: string): Array<{ sigla: string; isItp: boolean }> {
+    const row = this.rowOf(classe);
+    const out: Array<{ sigla: string; isItp: boolean }> = [];
+    for (const [sigla, cols] of this.materieColumns) {
+      if (this.csvEmails(row[cols.main]).includes(docenteEmail)) out.push({ sigla, isItp: false });
+      else if (this.csvEmails(row[cols.itp]).includes(docenteEmail)) out.push({ sigla, isItp: true });
+    }
+    return out;
+  }
+
   /** First subject (sigla) the teacher holds in this class (main or itp column), or null. */
   getMateriaDocente(classe: Classe, docenteEmail: string): string | null {
     const row = this.rowOf(classe);

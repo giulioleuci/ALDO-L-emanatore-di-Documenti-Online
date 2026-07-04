@@ -22,6 +22,7 @@ export class Alunno extends AldoEntity {
   private readonly rappresentante: boolean;
   private readonly tutor1: string;
   private readonly tutor2: string;
+  private readonly rapprGen: string;
   private readonly curriculumRaw: string | null;
 
   constructor(data: AlunnoData = {}) {
@@ -35,6 +36,7 @@ export class Alunno extends AldoEntity {
     this.rappresentante = data[COL_ALUNNI.RAPPR_STUD] === true;
     this.tutor1 = typeof data[COL_ALUNNI.TUTOR_1] === 'string' ? (data[COL_ALUNNI.TUTOR_1] as string) : '';
     this.tutor2 = typeof data[COL_ALUNNI.TUTOR_2] === 'string' ? (data[COL_ALUNNI.TUTOR_2] as string) : '';
+    this.rapprGen = typeof data[COL_ALUNNI.RAPPR_GEN] === 'string' ? (data[COL_ALUNNI.RAPPR_GEN] as string) : '';
     this.curriculumRaw = typeof data[COL_ALUNNI.CURRICULUM] === 'string' ? (data[COL_ALUNNI.CURRICULUM] as string) : null;
   }
 
@@ -44,6 +46,9 @@ export class Alunno extends AldoEntity {
   isAttivo(): boolean { return this.attivo; }
   isRipetente(): boolean { return this.ripetente; }
   isRappresentante(): boolean { return this.rappresentante; }
+
+  /** Free-text parent representative name (ALUNNI.RAPPR_GEN); '' when none (ref 01, 02 §4.1). */
+  getRappresentanteGenitore(): string { return this.rapprGen; }
 
   /** Non-empty tutor emails (TUTOR_1, TUTOR_2). */
   getTutors(): Email[] {
@@ -75,7 +80,8 @@ export class Alunno extends AldoEntity {
       [COL_ALUNNI.RIPETENTE]: this.ripetente,
       [COL_ALUNNI.RAPPR_STUD]: this.rappresentante,
       [COL_ALUNNI.TUTOR_1]: this.tutor1,
-      [COL_ALUNNI.TUTOR_2]: this.tutor2
+      [COL_ALUNNI.TUTOR_2]: this.tutor2,
+      [COL_ALUNNI.RAPPR_GEN]: this.rapprGen
     };
   }
 

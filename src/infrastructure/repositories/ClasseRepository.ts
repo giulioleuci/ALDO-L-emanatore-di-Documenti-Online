@@ -224,6 +224,61 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return target === undefined ? [] : this.getDocentiPerMateria(target, materia);
   }
 
+  /**
+   * Splits the articulated group's subjects into shared vs per-group separate,
+   * comparing the two partner classes' teacher columns (ref 05 §3, 09 §9). A
+   * subject taught by the same teacher(s) in both partners is shared; otherwise
+   * it is separate, listed under each group that teaches it. Ordered by the
+   * parent's `partners` [primo, secondo]. Returns null for a non-articulated class.
+   */
+  getMaterieArticolazione(classe: Classe): { condivise: string[]; separatePrimoGruppo: string[]; separateSecondoGruppo: string[] } | null {
+    if (this.getArticolazione(classe) === null) return null;
+    const [primo, secondo] = this.orderedPartners(classe);
+    if (primo === undefined || secondo === undefined) return null;
+    const condivise: string[] = [];
+    const separatePrimoGruppo: string[] = [];
+    const separateSecondoGruppo: string[] = [];
+    for (const sigla of this.materieColumns.keys()) {
+      const materia = MateriaId.of(sigla);
+      const e1 = this.emailSet(this.getDocentiPerMateria(primo, materia));
+      const e2 = this.emailSet(this.getDocentiPerMateria(secondo, materia));
+      if (e1.size > 0 && e2.size > 0 && this.sameSet(e1, e2)) { condivise.push(sigla); continue; }
+      if (e1.size > 0) separatePrimoGruppo.push(sigla);
+      if (e2.size > 0) separateSecondoGruppo.push(sigla);
+    }
+    return { condivise, separatePrimoGruppo, separateSecondoGruppo };
+  }
+
+  /** The parent's two partners in canonical [primo, secondo] order, from any class in the group. */
+  private orderedPartners(classe: Classe): Classe[] {
+    const config = this.getArticolazione(classe);
+    if (config === null) return [];
+    const parent = config.isParent() ? classe : this.getClasseParent(classe);
+    if (parent === null) return [];
+    return this.getClassiPartner(parent);
+  }
+
+  /** First subject (sigla) the teacher holds in this class (main or itp column), or null. */
+  getMateriaDocente(classe: Classe, docenteEmail: string): string | null {
+    const row = this.rowOf(classe);
+    for (const [sigla, cols] of this.materieColumns) {
+      if (this.csvEmails(row[cols.main]).includes(docenteEmail) || this.csvEmails(row[cols.itp]).includes(docenteEmail)) {
+        return sigla;
+      }
+    }
+    return null;
+  }
+
+  private emailSet(docenti: Docente[]): Set<string> {
+    return new Set(docenti.map((d) => d.id ?? '').filter((e) => e !== ''));
+  }
+
+  private sameSet(a: Set<string>, b: Set<string>): boolean {
+    if (a.size !== b.size) return false;
+    for (const x of a) if (!b.has(x)) return false;
+    return true;
+  }
+
   private requireClasse(id: ClasseId): Classe {
     const classe = this.findById(id);
     if (classe === null) throw new EntityNotFoundError(`Classe partner/parent ${id.value} non trovata`);

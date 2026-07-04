@@ -12,6 +12,7 @@ import { CarenzaFocusProvider } from './providers/CarenzaFocusProvider';
 import { RappresentantiProvider } from './providers/RappresentantiProvider';
 import { StatisticheProvider } from './providers/StatisticheProvider';
 import { StoricoProvider } from './providers/StoricoProvider';
+import { CdcAssembler } from './CdcAssembler';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
@@ -37,12 +38,13 @@ export class ContextEngineFactory {
     const materie = new MateriaRepository(database);
     const oreAsl = new OreASLRepository(database);
     const logDocs = new LogDocumentoRepository(database);
+    const cdc = new CdcAssembler(classi, materie);
 
     return new ContextBuilder()
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
       .registerProvider('class', new ClasseProvider(classi, alunni))
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))
-      .registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl))
+      .registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, cdc))
       .registerProvider('tutor', new TutorProvider(classi))
       .registerProvider('consiglio', new ConsiglioClasseProvider(classi, materie))
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))

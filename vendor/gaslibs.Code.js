@@ -2081,26 +2081,32 @@ class DateUtils {
 
 
 
-  formatDate(date, format = 'YYYY-MM-DD') {
+
+
+
+
+  formatDate(date, format = 'YYYY-MM-DD', options = {}) {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
       return null;
     }
+    const utc = options !== null && typeof options === 'object' && options.utc === true;
     const pad = num => String(num).padStart(2, '0');
+    const year = utc ? date.getUTCFullYear() : date.getFullYear();
     const replacements = {
-      YYYY: date.getFullYear(),
-      yyyy: date.getFullYear(),
+      YYYY: year,
+      yyyy: year,
       
-      YY: String(date.getFullYear()).slice(-2),
-      yy: String(date.getFullYear()).slice(-2),
+      YY: String(year).slice(-2),
+      yy: String(year).slice(-2),
       
-      MM: pad(date.getMonth() + 1),
-      DD: pad(date.getDate()),
-      dd: pad(date.getDate()),
+      MM: pad((utc ? date.getUTCMonth() : date.getMonth()) + 1),
+      DD: pad(utc ? date.getUTCDate() : date.getDate()),
+      dd: pad(utc ? date.getUTCDate() : date.getDate()),
       
-      HH: pad(date.getHours()),
-      mm: pad(date.getMinutes()),
-      ss: pad(date.getSeconds()),
-      SSS: String(date.getMilliseconds()).padStart(3, '0')
+      HH: pad(utc ? date.getUTCHours() : date.getHours()),
+      mm: pad(utc ? date.getUTCMinutes() : date.getMinutes()),
+      ss: pad(utc ? date.getUTCSeconds() : date.getSeconds()),
+      SSS: String(utc ? date.getUTCMilliseconds() : date.getMilliseconds()).padStart(3, '0')
     };
     let result = format;
     for (const [token, value] of Object.entries(replacements)) {
@@ -2138,8 +2144,12 @@ class DateUtils {
 
 
   _diffMs(date1, date2) {
-    if (!(date1 instanceof Date) || !(date2 instanceof Date)) return null;
-    if (isNaN(date1.getTime()) || isNaN(date2.getTime())) return null;
+    if (!(date1 instanceof Date) || !(date2 instanceof Date)) {
+      return null;
+    }
+    if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
+      return null;
+    }
     return date2.getTime() - date1.getTime();
   }
   addDays(date, days) {

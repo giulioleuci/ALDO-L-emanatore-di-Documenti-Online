@@ -53,6 +53,19 @@ test('vendored DomainRepositoryLib classes are available as globals', () => {
   expect(typeof EntityNotFoundException).toBe('function');
 });
 
+test('vendored PipelineFramework, WorkspaceTemplateEngine, RoleResolutionLib and JobRunnerLib globals are loaded', () => {
+  expect(typeof Pipeline).toBe('function');
+  expect(typeof Step).toBe('function');
+  expect(typeof PipelineContext).toBe('function');
+  expect(typeof PlaceholderService).toBe('function');
+  expect(typeof Mustache).toBe('function');
+  expect(typeof Delegation).toBe('function');
+  expect(typeof InMemoryDelegationSource).toBe('function');
+  expect(typeof Scope).toBe('function');
+  expect(typeof JobRunnerService).toBe('function');
+  expect(typeof JobDefinitionRegistry).toBe('function');
+});
+
 test('an Entity subclass hydrates and dehydrates', () => {
   const f = Foo.fromData({ id: 'a', x: 7 });
   expect(f.id).toBe('a');

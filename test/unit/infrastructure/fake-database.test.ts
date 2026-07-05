@@ -15,3 +15,29 @@ test('insert + save accumulates', () => {
   db.save();
   expect(db.table(TABLE.LOG_DOCS).find((r) => r.ID === 'x')).not.toBeNull();
 });
+
+// Transaction seam mirrors SheetDBLib's DatabaseService semantics.
+
+test('rollback reverts mutations made inside the transaction', () => {
+  const db = new FakeDatabase(fixtureTables());
+  db.beginTransaction();
+  db.table(TABLE.LOG_DOCS).insert({ ID: 'x', STATO: 'GENERATO' });
+  db.rollback();
+  expect(db.table(TABLE.LOG_DOCS).findAll()).toHaveLength(0);
+});
+
+test('commit keeps mutations and counts as a flush', () => {
+  const db = new FakeDatabase(fixtureTables());
+  db.beginTransaction();
+  db.table(TABLE.LOG_DOCS).insert({ ID: 'x', STATO: 'GENERATO' });
+  db.commit();
+  expect(db.table(TABLE.LOG_DOCS).findAll()).toHaveLength(1);
+  expect(db.saved).toBe(1);
+});
+
+test('save() during an open transaction throws, like SheetDBLib', () => {
+  const db = new FakeDatabase(fixtureTables());
+  db.beginTransaction();
+  expect(() => db.save()).toThrow(/during a transaction/);
+  db.rollback();
+});

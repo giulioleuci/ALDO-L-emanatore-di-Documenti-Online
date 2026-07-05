@@ -1,14 +1,16 @@
 import type { GeneratorStrategy } from './GeneratorStrategy';
-import type { Cdu } from '../context/Cdu';
-import type { IDocumentFacade } from '../../infrastructure/facades/DocumentServiceFacade';
+import type { Cdu } from '../context-engine/Cdu';
+import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 
+/**
+ * VERBALE_CDC generator. Rendering is fully delegated to WorkspaceTemplateEngine
+ * (via ITemplateEngine): the Drive template carries the `{{focus...}}` tags and
+ * the CDU is the rendering context, so no placeholder map is built in code
+ * (ref 10 §9, 02 — templates read CDU paths directly).
+ */
 export class VerbaleGeneratorStrategy implements GeneratorStrategy {
-  constructor(private readonly doc: IDocumentFacade) {}
+  constructor(private readonly templates: ITemplateEngine) {}
   render(fileId: string, cdu: Cdu): void {
-    this.doc.replaceText(fileId, {
-      '{{focus.classe.anagrafica.nome}}': cdu.focus.classe.anagrafica.nome,
-      '{{focus.classe.anagrafica.anno}}': String(cdu.focus.classe.anagrafica.anno),
-      '{{meta.date.oggi.breve}}': cdu.meta.date.oggi.breve
-    });
+    this.templates.processDocument(fileId, cdu as unknown as Record<string, unknown>);
   }
 }

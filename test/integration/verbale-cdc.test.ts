@@ -1,46 +1,63 @@
 import { DocumentGenerationService } from '../../src/application/services/DocumentGenerationService';
-import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
-import { ContextBuilder } from '../../src/application/context/ContextBuilder';
+import { ContextEngineFactory } from '../../src/application/context-engine/ContextEngineFactory';
 import { VerbaleGeneratorStrategy } from '../../src/application/strategies/VerbaleGeneratorStrategy';
+import { ConfigurazioneDocumentoRepository } from '../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import { ExpressionEngineFacade } from '../../src/infrastructure/facades/ExpressionEngineFacade';
+import type { GeneratorStrategy } from '../../src/application/strategies/GeneratorStrategy';
 import { FakeDatabase } from '../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../fakes/FakeDriveFacade';
-import { FakeDocumentFacade } from '../fakes/FakeDocumentFacade';
+import { FakeTemplateEngine } from '../fakes/FakeTemplateEngine';
 import { fixtureTables } from '../fixtures/tables';
 import { ClasseId } from '../../src/domain/value-objects/ClasseId';
 import { COL_LOG_DOCS } from '../../src/config/schema';
+import type { Row } from '../../src/infrastructure/db/Database';
 
-function wire() {
-  const db = new FakeDatabase(fixtureTables());
+function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: GeneratorStrategy) {
+  const db = new FakeDatabase(tables);
   const drive = new FakeDriveFacade();
-  const doc = new FakeDocumentFacade();
-  const repo = new ClasseRepository(db);
-  const builder = new ContextBuilder(repo, new Date('2026-07-01T09:00:00Z'));
-  const registry = new Map([['VERBALE_CDC', new VerbaleGeneratorStrategy(doc)]]);
-  const service = new DocumentGenerationService(db, drive, builder, registry);
-  return { db, drive, doc, service };
+  const templates = new FakeTemplateEngine();
+  const service = new DocumentGenerationService({
+    db,
+    drive,
+    contextBuilder: ContextEngineFactory.create(db),
+    strategyRegistry: new Map([['VERBALE_CDC', strategy ?? new VerbaleGeneratorStrategy(templates)]]),
+    templates,
+    expressionEngine: new ExpressionEngineFacade(),
+    configs: new ConfigurazioneDocumentoRepository(db),
+    now: new Date('2026-07-01T09:00:00Z')
+  });
+  return { db, drive, templates, service };
 }
 
 test('generates a Verbale CdC end-to-end (ref 10 full pipeline)', () => {
-  const { db, drive, doc, service } = wire();
+  const { db, drive, templates, service } = wire();
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
 
   expect(result.status).toBe('GENERATO');
   expect(result.fileId).not.toBeNull();
 
-  // Drive: folder created + template copied
+  // Drive: folder created + template copied; names rendered by WorkspaceTemplateEngine
   expect(drive.folders.get('Verbali/5')).toBeDefined();
   expect(drive.copies[0]!.templateId).toBe('tmpl_verbale');
   expect(drive.copies[0]!.name).toBe('Verbale_5A_01/07/2026');
 
-  // Document: placeholders rendered from CDU
-  const repl = doc.replacementsFor(result.fileId!);
-  expect(repl['{{focus.classe.anagrafica.nome}}']).toBe('5A');
+  // Document: rendered with the assembled CDU as the template context
+  const rendered = templates.contextFor(result.fileId!) as {
+    focus: { classe: { anagrafica: { nome: string } } };
+    meta: { date: { oggi: { breve: string } } };
+  };
+  expect(rendered.focus.classe.anagrafica.nome).toBe('5A');
+  expect(rendered.meta.date.oggi.breve).toBe('01/07/2026');
 
   // LOG_DOCS: audit row persisted with correct columns (ref 01, 10 §11)
   const row = db.table('LOG_DOCS').find((r) => r[COL_LOG_DOCS.ID] === result.fileId);
   expect(row?.[COL_LOG_DOCS.STATO]).toBe('GENERATO');
   expect(row?.[COL_LOG_DOCS.CLASSI]).toBe('5A');
   expect(row?.[COL_LOG_DOCS.TIPO]).toBe('VERBALE');
+
+  // SheetDBLib transaction boundary: exactly one commit, no rollback
+  expect(db.committed).toBe(1);
+  expect(db.rolledBack).toBe(0);
 });
 
 test('second run is deduplicated by CheckDuplicatesStep (10 §4)', () => {
@@ -49,4 +66,33 @@ test('second run is deduplicated by CheckDuplicatesStep (10 §4)', () => {
   const second = service.generateForClasse(ClasseId.of('5A'), 'CD1');
   expect(second.status).toBe('SKIPPED');
   expect(db.table('LOG_DOCS').findAll()).toHaveLength(1);
+});
+
+test('conditional CONF_DOC (CD_ESAME) evaluates CONDIZIONE and conditional MODELLI via the expression engine', () => {
+  const tables = fixtureTables();
+  // CD_ESAME has FILE_NAME/PATH_OUT null in the fixture; give it renderable values.
+  tables.CONF_DOC![1]!.FILE_NAME = 'Esame_{{focus.classe.anagrafica.nome}}';
+  tables.CONF_DOC![1]!.PATH_OUT = 'Esami/{{focus.classe.anagrafica.anno}}';
+  const { drive, service } = wire(tables);
+  const result = service.generateForClasse(ClasseId.of('5A'), 'CD_ESAME');
+  expect(result.status).toBe('GENERATO');
+  expect(drive.copies[0]!.templateId).toBe('tmpl_esame'); // {{anno}} == 5 entry won
+});
+
+test('critical failure rolls back Drive clone and DB transaction (10 §8 + SheetDBLib rollback)', () => {
+  const boomStrategy: GeneratorStrategy = {
+    render: () => {
+      throw new Error('render esploso');
+    }
+  };
+  const { db, drive, service } = wire(fixtureTables(), boomStrategy);
+  expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(/RenderTemplate/);
+  // Drive: the orphan clone was deleted by the onError rollback
+  expect(drive.copies).toHaveLength(1);
+  expect(drive.deleted).toEqual([drive.copies[0]!.fileId]);
+  // DB: LOG_FOLD/LOG_DOCS mutations reverted by the transaction rollback
+  expect(db.rolledBack).toBe(1);
+  expect(db.committed).toBe(0);
+  expect(db.table('LOG_DOCS').findAll()).toHaveLength(0);
+  expect(db.table('LOG_FOLD').findAll()).toHaveLength(0);
 });

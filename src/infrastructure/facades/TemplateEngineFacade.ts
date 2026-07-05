@@ -1,0 +1,35 @@
+/**
+ * Port + adapter for WorkspaceTemplateEngine (L2). SGSA never resolves
+ * `{{...}}` placeholders itself: FILE_NAME / PATH_OUT strings and document
+ * bodies are all rendered by the library's PlaceholderService with the CDU as
+ * the nested context (ref 10 §5/§6, 14 §6 — filters like `| date`,
+ * `| uppercase` come from the library's Mustache pipe-filter engine). The port
+ * keeps callers agnostic of the library.
+ */
+export interface ITemplateEngine {
+  /** Renders a `{{path | filter}}` string template against the CDU context. */
+  processString(template: string, context: Record<string, unknown>): string;
+  /** In-place structural rendering of a Google Doc (loops, tables, placeholders). */
+  processDocument(fileId: string, context: Record<string, unknown>): void;
+}
+
+export class TemplateEngineFacade implements ITemplateEngine {
+  private readonly service: PlaceholderService;
+
+  constructor(service?: PlaceholderService) {
+    if (service !== undefined) {
+      this.service = service;
+    } else {
+      const logger = new LoggerService();
+      this.service = new PlaceholderService({ logger, mustache: new Mustache({ logger }) });
+    }
+  }
+
+  processString(template: string, context: Record<string, unknown>): string {
+    return this.service.processString(template, context);
+  }
+
+  processDocument(fileId: string, context: Record<string, unknown>): void {
+    this.service.processDocument(fileId, context);
+  }
+}

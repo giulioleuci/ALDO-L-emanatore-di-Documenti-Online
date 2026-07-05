@@ -1,64 +1,104 @@
-import { Step } from '../pipelines/Step';
-import type { PipelineContext } from '../pipelines/PipelineContext';
-import type { Cdu } from '../../application/context/Cdu';
+import type { Cdu } from '../../application/context-engine/Cdu';
 import type { IDriveFacade } from '../facades/DriveServiceFacade';
+import type { ITemplateEngine } from '../facades/TemplateEngineFacade';
+import type { IExpressionEngine } from '../facades/ExpressionEngineFacade';
 import type { IDatabase, Row } from '../db/Database';
 import type { GeneratorStrategy } from '../../application/strategies/GeneratorStrategy';
+import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
+import type { ConfigurazioneDocumentoRepository } from '../repositories/ConfigurazioneDocumentoRepository';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD } from '../../config/schema';
 import { StatoDocumento, SchemaSottocartelle } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 
-// Minimal placeholder resolver over CDU dotted paths (production: WorkspaceTemplateEngine).
-export function resolvePlaceholders(template: string, cdu: Cdu): string {
-  return template.replace(/\{\{([^}]+)\}\}/g, (_m, path: string) => {
-    const parts = path.trim().split('.');
-    let cur: unknown = cdu;
-    for (const p of parts) {
-      if (cur && typeof cur === 'object' && p in (cur as Record<string, unknown>)) cur = (cur as Record<string, unknown>)[p];
-      else return '';
-    }
-    if (cur == null) return '';
-    return typeof cur === 'string' || typeof cur === 'number' || typeof cur === 'boolean' ? String(cur) : '';
-  });
-}
-function cfg(ctx: PipelineContext): Row { return ctx.get<Row>('config')!; }
-function cdu(ctx: PipelineContext): Cdu { return ctx.get<Cdu>('cdu')!; }
+/**
+ * Pipeline steps of the document-generation process (ref 10), built on the
+ * PipelineFramework (L3) `Step` base class: lifecycle, context validation
+ * (requiredKeys), conditional execution (shouldExecuteCondition) and error
+ * wrapping all come from the library. Only the business logic of each step
+ * lives here (`_executeLogic`).
+ *
+ * Conditions (CONF_DOC.CONDIZIONE, conditional MODELLI) are evaluated by
+ * GasExpressionEngineLib via ConfigurazioneDocumentoRepository; placeholder
+ * strings (FILE_NAME, PATH_OUT) are rendered by WorkspaceTemplateEngine via
+ * ITemplateEngine. Nothing is parsed or substituted in-house.
+ */
 
+/** Steps whose failure aborts the pipeline and rolls back the cloned file (10 §8). */
+export const CRITICAL_STEPS: ReadonlySet<string> = new Set([
+  'SelectTemplate',
+  'CloneTemplate',
+  'RenderTemplate',
+  'RegisterDocument'
+]);
+
+/** Gate shared by every step after AnalyzeContext (10 §1). */
+const generateGate = (ctx: PipelineContext): boolean => ctx.get('shouldGenerate') === true;
+
+function cfg(ctx: PipelineContext): Row {
+  return ctx.get<Row>('config')!;
+}
+function confDoc(ctx: PipelineContext): ConfigurazioneDocumento {
+  return ctx.get<ConfigurazioneDocumento>('confDoc')!;
+}
+function cdu(ctx: PipelineContext): Cdu {
+  return ctx.get<Cdu>('cdu')!;
+}
+function cduRecord(ctx: PipelineContext): Record<string, unknown> {
+  return cdu(ctx) as unknown as Record<string, unknown>;
+}
+function classeNome(ctx: PipelineContext): string {
+  return cdu(ctx).focus.classe?.anagrafica.nome ?? '';
+}
+
+/** Step 1 (10 §1): CONDIZIONE evaluated by GasExpressionEngineLib over the CDU. */
 export class AnalyzeContextStep extends Step {
-  readonly name = 'AnalyzeContextStep';
+  constructor(
+    logger: LoggerService,
+    private readonly configs: ConfigurazioneDocumentoRepository,
+    private readonly engine: IExpressionEngine
+  ) {
+    super('AnalyzeContext', logger, { requiredKeys: ['config', 'confDoc', 'cdu'] });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
-    const cond = cfg(ctx)[COL_CONF_DOC.CONDIZIONE];
-    // Slice scope: empty/null condition => generate. Non-empty conditions are evaluated by
-    // GasExpressionEngineLib in the breadth plan (10 §3).
-    ctx.set('shouldGenerate', cond == null || String(cond).trim() === '');
+    this.setResult(ctx, 'shouldGenerate', this.configs.shouldGenerate(confDoc(ctx), cduRecord(ctx), this.engine));
   }
 }
 
+/** Step 2 (10 §4): dedup on LOG_DOCS unless SCHEMA_SOTTOCARTELLE is MULTIPLO_PER_CLASSE. */
 export class CheckDuplicatesStep extends Step {
-  readonly name = 'CheckDuplicatesStep';
-  constructor(private readonly db: IDatabase) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+  constructor(
+    logger: LoggerService,
+    private readonly db: IDatabase
+  ) {
+    super('CheckDuplicates', logger, { shouldExecuteCondition: generateGate });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
     const schema = String(cfg(ctx)[COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]);
     if (schema === String(SchemaSottocartelle.MULTIPLO_PER_CLASSE)) return; // no dedup (10 §4)
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
-    const classe = cdu(ctx).focus.classe.anagrafica.nome;
+    const classe = classeNome(ctx);
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) => r[COL_LOG_DOCS.ID_GEN] === idGen && String(r[COL_LOG_DOCS.CLASSI] ?? '').split(',').includes(classe)
     );
-    if (existing) { ctx.set('shouldGenerate', false); ctx.addError(`Duplicato per ${classe}`); }
+    if (existing) {
+      this.setResult(ctx, 'shouldGenerate', false);
+      this.setResult(ctx, 'skipReason', `Duplicato per ${classe}`);
+    }
   }
 }
 
+/** Step 3-4 (10 §5): PATH_OUT rendered by WorkspaceTemplateEngine; folder created + logged in LOG_FOLD. */
 export class PrepareInfrastructureStep extends Step {
-  readonly name = 'PrepareInfrastructureStep';
   constructor(
+    logger: LoggerService,
     private readonly drive: IDriveFacade,
-    private readonly db: IDatabase
-  ) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+    private readonly db: IDatabase,
+    private readonly templates: ITemplateEngine
+  ) {
+    super('PrepareInfrastructure', logger, { shouldExecuteCondition: generateGate });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
-    const path = resolvePlaceholders(String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]), cdu(ctx));
+    const path = this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]), cduRecord(ctx));
     let folderId = this.drive.findFolderByPath(path);
     if (folderId === null) {
       // Folder did not exist: create it and register it in LOG_FOLD (ref 10 §5 step 4).
@@ -68,61 +108,68 @@ export class PrepareInfrastructureStep extends Step {
         [COL_LOG_FOLD.PATH]: path,
         [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${folderId}`
       };
+      // Persisted by the service's transaction commit (SheetDBLib forbids
+      // save() inside an open transaction).
       this.db.table(TABLE.LOG_FOLD).insert(row);
-      this.db.save();
     }
-    ctx.set('destFolderId', folderId);
-    ctx.set('destFolderPath', path);
+    this.setResult(ctx, 'destFolderId', folderId);
+    this.setResult(ctx, 'destFolderPath', path);
   }
 }
 
+/** Step 5 (10 §6): FILE_NAME rendered by WorkspaceTemplateEngine over the CDU. */
 export class GenerateNameStep extends Step {
-  readonly name = 'GenerateNameStep';
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+  constructor(
+    logger: LoggerService,
+    private readonly templates: ITemplateEngine
+  ) {
+    super('GenerateName', logger, { shouldExecuteCondition: generateGate });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
-    ctx.set('nomeFile', resolvePlaceholders(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME]), cdu(ctx)));
+    this.setResult(ctx, 'nomeFile', this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME]), cduRecord(ctx)));
   }
 }
 
+/** Step 6 (10 §7): MODELLI resolution — conditional entries evaluated by GasExpressionEngineLib. */
 export class SelectTemplateStep extends Step {
-  readonly name = 'SelectTemplateStep';
-  protected override critical = true;
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+  constructor(
+    logger: LoggerService,
+    private readonly configs: ConfigurazioneDocumentoRepository,
+    private readonly engine: IExpressionEngine
+  ) {
+    super('SelectTemplate', logger, { shouldExecuteCondition: generateGate });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
-    const raw = cfg(ctx)[COL_CONF_DOC.MODELLI];
-    if (raw == null) throw new PipelineError('CONF_DOC.MODELLI obbligatorio'); // 10 §7
-    const parsed = JSON.parse(String(raw)) as { templateId?: string } | Array<{ condizione: string; templateId: string }>;
-    if (Array.isArray(parsed)) {
-      // Slice scope: pick first with condizione 'true'; full evaluation in breadth plan.
-      const match = parsed.find((m) => m.condizione.trim() === 'true');
-      if (!match) throw new PipelineError('Nessun template applicabile');
-      ctx.set('templateId', match.templateId);
-    } else {
-      if (!parsed.templateId) throw new PipelineError('templateId mancante');
-      ctx.set('templateId', parsed.templateId);
-    }
+    this.setResult(ctx, 'templateId', this.configs.resolveTemplateId(confDoc(ctx), cduRecord(ctx), this.engine));
   }
 }
 
+/** Step 7 (10 §8): clone of the Drive template — point of no return. */
 export class CloneTemplateStep extends Step {
-  readonly name = 'CloneTemplateStep';
-  protected override critical = true; // point of no return (10 §8)
-  constructor(private readonly drive: IDriveFacade) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+  constructor(
+    logger: LoggerService,
+    private readonly drive: IDriveFacade
+  ) {
+    super('CloneTemplate', logger, {
+      shouldExecuteCondition: generateGate,
+      requiredKeys: ['templateId', 'nomeFile', 'destFolderId']
+    });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
-    const fileId = this.drive.copyFile(
-      ctx.get<string>('templateId')!, ctx.get<string>('nomeFile')!, ctx.get<string>('destFolderId')!
-    );
-    ctx.set('newFileId', fileId);
-    ctx.set('newFileLink', `https://drive.google.com/file/d/${fileId}/view`);
+    const fileId = this.drive.copyFile(ctx.get<string>('templateId')!, ctx.get<string>('nomeFile')!, ctx.get<string>('destFolderId')!);
+    this.setResult(ctx, 'newFileId', fileId);
+    this.setResult(ctx, 'newFileLink', `https://drive.google.com/file/d/${fileId}/view`);
   }
 }
 
+/** Step 8 (10 §9): rendering delegated to the GENERATORE strategy (→ WorkspaceTemplateEngine). */
 export class RenderTemplateStep extends Step {
-  readonly name = 'RenderTemplateStep';
-  protected override critical = true;
-  constructor(private readonly registry: Map<string, GeneratorStrategy>) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+  constructor(
+    logger: LoggerService,
+    private readonly registry: Map<string, GeneratorStrategy>
+  ) {
+    super('RenderTemplate', logger, { shouldExecuteCondition: generateGate, requiredKeys: ['newFileId'] });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
     const generatore = String(cfg(ctx)[COL_CONF_DOC.GENERATORE]);
     const strategy = this.registry.get(generatore);
@@ -131,26 +178,36 @@ export class RenderTemplateStep extends Step {
   }
 }
 
+/** Step 9 (10 §10): ACL application — full role-resolution ACLs land in the breadth plan (14). */
 export class ApplyPermissionsStep extends Step {
-  readonly name = 'ApplyPermissionsStep';
-  constructor(private readonly drive: IDriveFacade) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean {
-    return ctx.get('shouldGenerate') === true && cfg(ctx)[COL_CONF_DOC.PERMESSI] != null;
+  constructor(
+    logger: LoggerService,
+    private readonly drive: IDriveFacade
+  ) {
+    super('ApplyPermissions', logger, {
+      shouldExecuteCondition: (ctx) => generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.PERMESSI] != null
+    });
   }
   protected _executeLogic(ctx: PipelineContext): void {
     // Slice scope: PERMESSI is null in the fixture, so this step is skipped.
     // Full role-resolution ACL application lands in the breadth plan (10 §10, 14).
     const perms = JSON.parse(String(cfg(ctx)[COL_CONF_DOC.PERMESSI])) as { file?: Array<{ ruolo: string; permesso: string }> };
-    for (const p of perms.file ?? []) ctx.addSuccess(`ACL ${p.ruolo}:${p.permesso}`);
+    for (const p of perms.file ?? []) this.logger.info(`ACL ${p.ruolo}:${p.permesso}`);
     void this.drive;
   }
 }
 
+/** Step 10 (10 §11): audit row in LOG_DOCS. */
 export class RegisterDocumentStep extends Step {
-  readonly name = 'RegisterDocumentStep';
-  protected override critical = true;
-  constructor(private readonly db: IDatabase) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean { return ctx.get('shouldGenerate') === true; }
+  constructor(
+    logger: LoggerService,
+    private readonly db: IDatabase
+  ) {
+    super('RegisterDocument', logger, {
+      shouldExecuteCondition: generateGate,
+      requiredKeys: ['newFileId', 'nomeFile']
+    });
+  }
   protected _executeLogic(ctx: PipelineContext): void {
     const row: Row = {
       [COL_LOG_DOCS.ID]: ctx.get<string>('newFileId')!,
@@ -160,23 +217,27 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',
       [COL_LOG_DOCS.LINK]: ctx.get<string>('newFileLink') ?? '',
-      [COL_LOG_DOCS.CLASSI]: cdu(ctx).focus.classe.anagrafica.nome,
+      [COL_LOG_DOCS.CLASSI]: classeNome(ctx),
       [COL_LOG_DOCS.DATA_CREAZ]: cdu(ctx).meta.date.oggi.breve
     };
+    // Persisted by the service's transaction commit (10 §11).
     this.db.table(TABLE.LOG_DOCS).insert(row);
-    this.db.save();
   }
 }
 
+/** Step 11 (10 §12): post-process actions — land in the breadth plan. */
 export class PostProcessStep extends Step {
-  readonly name = 'PostProcessStep';
-  constructor(private readonly db: IDatabase) { super(); }
-  override shouldExecute(ctx: PipelineContext): boolean {
-    return ctx.get('shouldGenerate') === true && cfg(ctx)[COL_CONF_DOC.POST_PROCESSO] != null;
+  constructor(
+    logger: LoggerService,
+    private readonly db: IDatabase
+  ) {
+    super('PostProcess', logger, {
+      shouldExecuteCondition: (ctx) => generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.POST_PROCESSO] != null
+    });
   }
-  protected _executeLogic(ctx: PipelineContext): void {
-    // Slice scope: POST_PROCESSO is null in the fixture (skipped). Actions AGGIORNA_STATO_DOC etc.
-    // land in the breadth plan (10 §12).
-    void ctx; this.db.save();
+  protected _executeLogic(): void {
+    // Slice scope: POST_PROCESSO is null in the fixture (skipped). Actions
+    // AGGIORNA_STATO_DOC etc. land in the breadth plan (10 §12).
+    void this.db;
   }
 }

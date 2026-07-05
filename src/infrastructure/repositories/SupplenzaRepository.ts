@@ -6,14 +6,20 @@ import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import { TABLE, COL_SUPPLENZE } from '../../config/schema';
 
-function isoDate(d: Date): string { return d.toISOString().slice(0, 10); }
+const utils = new UtilsService();
+/** ISO day via CoreUtilsLib (UTC — deterministic across host timezones). */
+function isoDate(d: Date): string { return utils.formatDate(d, 'YYYY-MM-DD', { utc: true }) ?? ''; }
+
+/** Role token used when crawling the supply-delegation graph (RoleResolutionLib). */
+const RUOLO_TITOLARE_CATTEDRA = 'TITOLARE_CATTEDRA';
 
 /**
  * SUPPLENZE repository on the DomainRepositoryLib Repository base. Composite PK
  * (TITOLARE, SUPPLENTE, DAL, CLASSI, MATERIE) — base findById does not apply
  * (ref 06 §14); queries load rows and filter in memory. Priority 1 in role
- * resolution. creaSupplenza (write + overlap invariant) lands with the
- * persistence-seam increment.
+ * resolution: the transitive supply-of-supply crawl (cycle-guarded) is
+ * delegated to RoleResolutionLib's delegation-chain engine; only the domain
+ * applicability filter (period + class/subject context) lives here.
  */
 export class SupplenzaRepository extends Repository<Supplenza> {
   private readonly docenti: DocenteRepository;
@@ -37,10 +43,48 @@ export class SupplenzaRepository extends Repository<Supplenza> {
 
   /**
    * The effective supply teacher for a titolare/date/context, following the
-   * replacement chain to the end (supply-of-supply), cycle-guarded (ref 06 §14).
+   * replacement chain to the end (supply-of-supply) (ref 06 §14).
+   *
+   * The domain filter (active period, class/subject applicability) is SGSA
+   * business logic; the transitive graph crawl with cycle detection is
+   * RoleResolutionLib's job: applicable SUPPLENZE become library `Delegation`
+   * value objects and `InMemoryDelegationSource.getDelegationChain` walks
+   * titolare → supplente → supplente-del-supplente to the end of the chain.
    */
   findSupplenzaSpecifica(titolare: Docente, data: Date, classe?: ClasseId, materia?: MateriaId): Supplenza | null {
-    return this.resolveChain(titolare.id ?? '', data, classe, materia, new Set<string>());
+    const email = titolare.id ?? '';
+    if (email === '') return null;
+
+    const applicabili = this.findAll().filter((s) =>
+      s.isAttivaData(data) &&
+      (classe === undefined || s.applicaAClasse(classe)) &&
+      (materia === undefined || s.applicaAMateria(materia)) &&
+      // A self-substitution row is domain-invalid (and rejected by the library);
+      // skipping it leaves the titolare in charge, as resolution semantics require.
+      s.titolare !== s.supplente
+    );
+    if (applicabili.length === 0) return null;
+
+    const source = new InMemoryDelegationSource();
+    const byArc = new Map<string, Supplenza>();
+    applicabili.forEach((s, i) => {
+      const periodo = s.getPeriodo();
+      source.addDelegation(new Delegation({
+        id: `${s.id ?? 'SUPPLENZA'}#${i}`,
+        principalId: s.titolare,
+        delegateId: s.supplente,
+        roleIds: '*',
+        validFrom: periodo.dal,
+        validTo: periodo.al
+      }));
+      const arc = `${s.titolare}→${s.supplente}`;
+      if (!byArc.has(arc)) byArc.set(arc, s);
+    });
+
+    const chain = source.getDelegationChain(email, RUOLO_TITOLARE_CATTEDRA, Scope.global(), data);
+    if (chain.length === 0) return null;
+    const last = chain[chain.length - 1]!;
+    return byArc.get(`${last.principalId}→${last.delegateId}`) ?? null;
   }
 
   /**
@@ -73,24 +117,6 @@ export class SupplenzaRepository extends Repository<Supplenza> {
 
   getSupplente(supplenza: Supplenza): Docente {
     return this.requireDocente(supplenza.supplente);
-  }
-
-  private matchFor(titolareEmail: string, data: Date, classe?: ClasseId, materia?: MateriaId): Supplenza | null {
-    return this.findAll().find((s) =>
-      s.titolare === titolareEmail &&
-      s.isAttivaData(data) &&
-      (classe === undefined || s.applicaAClasse(classe)) &&
-      (materia === undefined || s.applicaAMateria(materia))
-    ) ?? null;
-  }
-
-  private resolveChain(titolareEmail: string, data: Date, classe: ClasseId | undefined, materia: MateriaId | undefined, visited: Set<string>): Supplenza | null {
-    if (titolareEmail === '' || visited.has(titolareEmail)) return null;
-    visited.add(titolareEmail);
-    const match = this.matchFor(titolareEmail, data, classe, materia);
-    if (match === null) return null;
-    const deeper = this.resolveChain(match.supplente, data, classe, materia, visited);
-    return deeper ?? match;
   }
 
   private requireDocente(email: string): Docente {

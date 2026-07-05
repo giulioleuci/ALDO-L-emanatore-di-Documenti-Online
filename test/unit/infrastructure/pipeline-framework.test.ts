@@ -1,57 +1,79 @@
-import { PipelineContext } from '../../../src/infrastructure/pipelines/PipelineContext';
-import { Step } from '../../../src/infrastructure/pipelines/Step';
-import { DocumentoPipeline } from '../../../src/infrastructure/pipelines/DocumentoPipeline';
+// Harness test: proves the vendored PipelineFramework globals (Pipeline, Step,
+// PipelineContext) behave as SGSA's document pipeline relies on — conditional
+// gating, non-critical continuation (stopOnError:false), critical stop via
+// requestStop from the onError hook, and execution-history telemetry.
+
+const logger = new LoggerService();
 
 class SetFlag extends Step {
-  readonly name = 'SetFlag';
-  protected critical = false;
-  protected _executeLogic(ctx: PipelineContext): void { ctx.set('ran', true); }
-}
-class Boom extends Step {
-  readonly name = 'Boom';
-  protected critical = true;
-  protected _executeLogic(): void { throw new Error('kaboom'); }
-}
-
-test('steps run in order and log success', () => {
-  const ctx = new PipelineContext();
-  new DocumentoPipeline(() => {}).addStep(new SetFlag()).execute(ctx);
-  expect(ctx.get('ran')).toBe(true);
-  expect(ctx.logEsecuzione.some((l) => l.includes('SetFlag'))).toBe(true);
-});
-
-test('critical step failure triggers rollback of newFileId (10 §8)', () => {
-  const ctx = new PipelineContext();
-  ctx.set('newFileId', 'file_9');
-  const rolledBack: string[] = [];
-  const pipe = new DocumentoPipeline((id) => rolledBack.push(id)).addStep(new Boom());
-  expect(() => pipe.execute(ctx)).toThrow('kaboom');
-  expect(rolledBack).toEqual(['file_9']);
-});
-
-test('shouldExecute=false skips step', () => {
-  class Skipped extends SetFlag { override shouldExecute(): boolean { return false; } }
-  const ctx = new PipelineContext();
-  new DocumentoPipeline(() => {}).addStep(new Skipped()).execute(ctx);
-  expect(ctx.get('ran')).toBeUndefined();
-});
-
-test('non-critical step failure is logged, swallowed, and the pipeline continues', () => {
-  class SoftBoom extends Step {
-    readonly name = 'SoftBoom';
-    protected critical = false;
-    protected _executeLogic(): void { throw new Error('soft'); }
+  constructor() {
+    super('SetFlag', logger, { shouldExecuteCondition: (ctx) => ctx.get('skip') !== true });
   }
+  protected _executeLogic(ctx: PipelineContext): void {
+    this.setResult(ctx, 'ran', true);
+  }
+}
+
+class Boom extends Step {
+  constructor(name = 'Boom') {
+    super(name, logger);
+  }
+  protected _executeLogic(): void {
+    throw new Error('kaboom');
+  }
+}
+
+test('steps run in order and are recorded in the execution history', () => {
+  const ctx = new Pipeline(logger).addStep(new SetFlag()).execute({});
+  expect(ctx.get('ran')).toBe(true);
+  const history = ctx.getExecutionHistory();
+  expect(history.map((h) => `${h.stepName}:${h.status}`)).toEqual(['SetFlag:completed']);
+});
+
+test('shouldExecuteCondition=false skips the step (recorded as skipped)', () => {
+  const ctx = new Pipeline(logger).addStep(new SetFlag()).execute({ skip: true });
+  expect(ctx.get('ran')).toBeNull();
+  expect(ctx.getExecutionHistory()[0]!.status).toBe('skipped');
+});
+
+test('stopOnError:false — a failing step is recorded and the pipeline continues (non-critical semantics)', () => {
+  const pipeline = new Pipeline(logger, null, { stopOnError: false });
+  const ctx = pipeline.addStep(new Boom()).addStep(new SetFlag()).execute({});
+  expect(ctx.get('ran')).toBe(true); // step after the failure still ran
+  const summary = ctx.getSummary();
+  expect(summary.failedSteps).toBe(1);
+  expect(summary.completedSteps).toBe(1);
+});
+
+test('critical semantics — onError hook rolls back and requestStop halts the pipeline (10 §8)', () => {
   const rolledBack: string[] = [];
-  const ctx = new PipelineContext();
-  ctx.set('newFileId', 'file_1');
-  expect(() =>
-    new DocumentoPipeline((id) => rolledBack.push(id))
-      .addStep(new SoftBoom())
-      .addStep(new SetFlag())
-      .execute(ctx)
-  ).not.toThrow();
-  expect(ctx.get('ran')).toBe(true); // step after the non-critical failure still ran
-  expect(ctx.errors.some((e) => e.includes('SoftBoom'))).toBe(true);
-  expect(rolledBack).toEqual([]); // non-critical failure never triggers rollback
+  const pipeline = new Pipeline(logger, null, { stopOnError: false });
+  pipeline
+    .addStep(new Boom('CloneTemplate'))
+    .addStep(new SetFlag())
+    .onError((step, ctx, error) => {
+      rolledBack.push(String(ctx.get('newFileId')));
+      ctx.setFlag('criticalError', `${step.getName()}: ${error.message}`);
+      ctx.requestStop('critical');
+    });
+  const ctx = pipeline.execute({ newFileId: 'file_9' });
+  expect(rolledBack).toEqual(['file_9']);
+  // the library wraps the failure in a StepExecutionError
+  expect(ctx.getFlag('criticalError')).toBe("CloneTemplate: Step 'CloneTemplate' failed: kaboom");
+  expect(ctx.get('ran')).toBeNull(); // steps after the stop never ran
+  expect(ctx.getSummary().stopRequested).toBe(true);
+});
+
+test('requiredKeys are validated by the library before executing the logic', () => {
+  class Needy extends Step {
+    constructor() {
+      super('Needy', logger, { requiredKeys: ['mustExist'] });
+    }
+    protected _executeLogic(ctx: PipelineContext): void {
+      this.setResult(ctx, 'ran', true);
+    }
+  }
+  const ctx = new Pipeline(logger, null, { stopOnError: false }).addStep(new Needy()).execute({});
+  expect(ctx.get('ran')).toBeNull();
+  expect(ctx.getSummary().failedSteps).toBe(1);
 });

@@ -1,5 +1,5 @@
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
-import { FakeDocumentFacade } from '../../../test/fakes/FakeDocumentFacade';
+import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 
 test('FakeDriveFacade findOrCreate + copy records calls', () => {
   const drive = new FakeDriveFacade();
@@ -11,8 +11,10 @@ test('FakeDriveFacade findOrCreate + copy records calls', () => {
   expect(fileId).toMatch(/^file_/);
 });
 
-test('FakeDocumentFacade stores last replacements', () => {
-  const doc = new FakeDocumentFacade();
-  doc.replaceText('file_1', { '{{focus.classe.anagrafica.nome}}': '5A' });
-  expect(doc.replacementsFor('file_1')['{{focus.classe.anagrafica.nome}}']).toBe('5A');
+test('FakeTemplateEngine renders strings via the real vendored engine and records document renders', () => {
+  const templates = new FakeTemplateEngine();
+  const cdu = { focus: { classe: { anagrafica: { nome: '5A' } } } };
+  expect(templates.processString('Verbale_{{focus.classe.anagrafica.nome}}', cdu)).toBe('Verbale_5A');
+  templates.processDocument('file_1', cdu);
+  expect(templates.contextFor('file_1')).toBe(cdu);
 });

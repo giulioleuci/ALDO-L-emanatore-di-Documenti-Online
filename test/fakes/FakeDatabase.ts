@@ -37,16 +37,25 @@ class FakeTable implements IReadableTable {
   getByPK(id: string): Row | null {
     return this.rows.find((r) => String(r[this.pkColumn]) === String(id)) ?? null;
   }
+  // SheetDBLib-like transaction seam: snapshot/restore of the row cache.
+  snapshotRows(): Row[] { return this.rows.map((r) => ({ ...r })); }
+  restoreRows(rows: Row[]): void { this.rows = rows; }
 }
 
 /**
  * Fake database serving both the pipeline's IDatabase port and lib-based
  * repositories' RepositoryDatabase seam over a single in-memory store.
+ * Transactions mirror SheetDBLib's DatabaseService semantics: row caches are
+ * snapshotted at beginTransaction, save() throws while a transaction is open,
+ * commit() flushes, rollback() restores the snapshot.
  */
 export class FakeDatabase implements IDatabase {
   public saved = 0;
+  public committed = 0;
+  public rolledBack = 0;
   private readonly store = new Map<string, FakeTable>();
   private readonly pkOverrides: Record<string, string>;
+  private transactionSnapshot: Map<string, Row[]> | null = null;
   /** DomainRepositoryLib Repository seam: `database.tables[name].getByPK/getAllRows`. */
   public readonly tables: Record<string, FakeTable>;
 
@@ -72,5 +81,39 @@ export class FakeDatabase implements IDatabase {
 
   table(name: string): IReadableTable { return this.getTable(name); }
 
-  save(): void { this.saved += 1; }
+  save(): void {
+    if (this.transactionSnapshot !== null) {
+      throw new Error('Cannot call save() during a transaction. Use commit() to apply changes.');
+    }
+    this.saved += 1;
+  }
+
+  beginTransaction(): void {
+    if (this.transactionSnapshot !== null) {
+      throw new Error('Transaction already in progress. Commit or rollback current transaction first.');
+    }
+    this.transactionSnapshot = new Map();
+    for (const [name, tbl] of this.store) this.transactionSnapshot.set(name, tbl.snapshotRows());
+  }
+
+  commit(): void {
+    if (this.transactionSnapshot === null) {
+      throw new Error('No transaction in progress. Call beginTransaction() first.');
+    }
+    this.transactionSnapshot = null;
+    this.saved += 1; // commit flushes pending writes, like save() outside a transaction
+    this.committed += 1;
+  }
+
+  rollback(): void {
+    if (this.transactionSnapshot === null) {
+      throw new Error('No transaction in progress. Call beginTransaction() first.');
+    }
+    for (const [name, tbl] of this.store) {
+      const snapshot = this.transactionSnapshot.get(name);
+      tbl.restoreRows(snapshot ?? []); // tables created inside the transaction revert to empty
+    }
+    this.transactionSnapshot = null;
+    this.rolledBack += 1;
+  }
 }

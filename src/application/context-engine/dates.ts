@@ -5,24 +5,23 @@ const MESI = [
   'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
 ];
 
-function due(n: number): string { return n < 10 ? `0${n}` : String(n); }
+const utils = new UtilsService();
 
 /**
- * Formats the CDU `meta.date.oggi` block (02 §2). All fields are derived in UTC
- * so assembly is deterministic and independent of the host timezone.
+ * Formats the CDU `meta.date.oggi` block (02 §2). Token formatting is delegated
+ * to CoreUtilsLib's UtilsService.formatDate with `utc:true`, so assembly is
+ * deterministic and independent of the host timezone; only the Italian
+ * extended-month wording required by the spec is domain knowledge here.
  */
 export function formatOggi(d: Date): CduMeta['date']['oggi'] {
-  const giorno = due(d.getUTCDate());
-  const mese = due(d.getUTCMonth() + 1);
-  const anno = String(d.getUTCFullYear());
-  const ora = `${due(d.getUTCHours())}:${due(d.getUTCMinutes())}`;
+  const fmt = (pattern: string): string => utils.formatDate(d, pattern, { utc: true }) ?? '';
   return {
-    breve: `${giorno}/${mese}/${anno}`,
-    estesa: `${giorno} ${MESI[d.getUTCMonth()]} ${anno}`,
-    iso: `${anno}-${mese}-${giorno}`,
-    giorno,
-    mese,
-    anno,
-    ora
+    breve: fmt('DD/MM/YYYY'),
+    estesa: `${fmt('DD')} ${MESI[d.getUTCMonth()]} ${fmt('YYYY')}`,
+    iso: fmt('YYYY-MM-DD'),
+    giorno: fmt('DD'),
+    mese: fmt('MM'),
+    anno: fmt('YYYY'),
+    ora: fmt('HH:mm')
   };
 }

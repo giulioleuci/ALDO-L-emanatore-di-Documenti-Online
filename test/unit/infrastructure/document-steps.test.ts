@@ -1,6 +1,6 @@
 import {
   AnalyzeContextStep, CheckDuplicatesStep, PrepareInfrastructureStep, GenerateNameStep,
-  SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, RegisterDocumentStep, CRITICAL_STEPS
+  SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, RegisterDocumentStep, PostProcessStep, CRITICAL_STEPS
 } from '../../../src/infrastructure/steps/documentSteps';
 import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
@@ -139,4 +139,26 @@ test('RegisterDocumentStep writes LOG_DOCS row with STATO GENERATO (persisted at
 
 test('critical steps are exactly the rollback points of 10 §8', () => {
   expect([...CRITICAL_STEPS].sort()).toEqual(['CloneTemplate', 'RegisterDocument', 'RenderTemplate', 'SelectTemplate']);
+});
+
+test('PostProcessStep runs shared POST_PROCESSO actions (10 §12)', () => {
+  const tables = fixtureTables();
+  tables['LOG_DOCS'] = [{ ID: 'file_9', ID_GEN: 'CD1', STATO: 'GENERATO', CLASSI: '5A' }];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  const row = {
+    ...fixtureTables().CONF_DOC[0]!,
+    POST_PROCESSO: JSON.stringify([{ tipo: 'AGGIORNA_STATO_DOC', stato: 'ARCHIVIATO', criteri: { ID: 'file_9' } }])
+  };
+  ctx.set('config', row);
+  new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date('2026-07-05T10:00:00Z')).execute(ctx);
+  expect(db.tables['LOG_DOCS']!.getByPK('file_9')!['STATO']).toBe('ARCHIVIATO');
+  expect(ctx.get('postProcessUpdated')).toBe(1);
+});
+
+test('PostProcessStep skipped when POST_PROCESSO is null', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db); // fixture CD1 has POST_PROCESSO null
+  new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx);
+  expect(ctx.get('postProcessUpdated')).toBeNull();
 });

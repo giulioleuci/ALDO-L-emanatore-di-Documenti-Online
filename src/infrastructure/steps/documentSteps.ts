@@ -9,6 +9,7 @@ import type { ConfigurazioneDocumentoRepository } from '../repositories/Configur
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD } from '../../config/schema';
 import { StatoDocumento, SchemaSottocartelle } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
+import { executePostProcess, type PostProcessDb } from './postProcessActions';
 
 /**
  * Pipeline steps of the document-generation process (ref 10), built on the
@@ -225,19 +226,27 @@ export class RegisterDocumentStep extends Step {
   }
 }
 
-/** Step 11 (10 §12): post-process actions — land in the breadth plan. */
+/** Step 11 (10 §12): POST_PROCESSO actions via the shared executor; persistence is the service transaction's. */
 export class PostProcessStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly db: IDatabase
+    private readonly db: IDatabase & PostProcessDb,
+    private readonly templates: ITemplateEngine,
+    private readonly now: Date
   ) {
     super('PostProcess', logger, {
       shouldExecuteCondition: (ctx) => generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.POST_PROCESSO] != null
     });
   }
-  protected _executeLogic(): void {
-    // Slice scope: POST_PROCESSO is null in the fixture (skipped). Actions
-    // AGGIORNA_STATO_DOC etc. land in the breadth plan (10 §12).
-    void this.db;
+  protected _executeLogic(ctx: PipelineContext): void {
+    const updated = executePostProcess(
+      String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO]),
+      cduRecord(ctx),
+      this.db,
+      this.templates,
+      this.now,
+      this.logger
+    );
+    this.setResult(ctx, 'postProcessUpdated', updated);
   }
 }

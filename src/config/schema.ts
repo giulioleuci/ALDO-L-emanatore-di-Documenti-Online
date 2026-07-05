@@ -74,7 +74,8 @@ export const COL_DOCENTI = {
 } as const;
 
 export const COL_MATERIE = {
-  ID: 'ID', NOME: 'NOME', SINTESI: 'SINTESI', ESAME_CFG: 'ESAME_CFG'
+  ID: 'ID', NOME: 'NOME', SINTESI: 'SINTESI', COLORE_1: 'COLORE_1', COLORE_2: 'COLORE_2',
+  SIMBOLO: 'SIMBOLO', ESAME_CFG: 'ESAME_CFG'
 } as const;
 
 export const COL_ALUNNI = {

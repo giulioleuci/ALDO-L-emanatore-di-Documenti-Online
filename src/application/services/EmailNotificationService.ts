@@ -142,6 +142,33 @@ export class EmailNotificationService {
     return result;
   }
 
+  /**
+   * Runs the pipeline for one already-enumerated target (batch seam, 11 §14).
+   * Returns the per-target outcome; skipped = the CONDIZIONE gated the send.
+   */
+  sendToTarget(patternId: string, target: EmailTarget): { sent: number; errors: string[]; skipped: boolean } {
+    const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);
+    if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
+    const conf = this.deps.confMail.findById(patternId);
+    if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
+    const ctx = this.buildPipeline().execute({
+      config: row,
+      confMail: conf,
+      emailTarget: target,
+      now: this.deps.now,
+      testEmail: this.testEmail
+    });
+    if (ctx.get('shouldSend') === false) return { sent: 0, errors: [], skipped: true };
+    return { sent: ctx.get<number>('sentCount') ?? 0, errors: ctx.get<string[]>('sendErrors') ?? [], skipped: false };
+  }
+
+  /** The pattern's configuration entity (batch seam). */
+  getConfigurazione(patternId: string): ConfigurazioneEmail {
+    const conf = this.deps.confMail.findById(patternId);
+    if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
+    return conf;
+  }
+
   /** The 8 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */
   private buildPipeline(): Pipeline {
     const d = this.deps;

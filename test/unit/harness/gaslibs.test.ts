@@ -66,6 +66,39 @@ test('vendored PipelineFramework, WorkspaceTemplateEngine, RoleResolutionLib and
   expect(typeof JobDefinitionRegistry).toBe('function');
 });
 
+test('vendored GoogleApiWrapper MailService and ComposableContentLib globals are loaded', () => {
+  expect(typeof MailService).toBe('function');
+  expect(typeof ContentComposer).toBe('function');
+  expect(typeof BlockRegistry).toBe('function');
+  expect(typeof RendererRegistry).toBe('function');
+  expect(typeof HtmlRenderer).toBe('function');
+  expect(typeof SimpleContentBlock).toBe('function');
+  expect(typeof CompositionRecipe).toBe('function');
+  expect(typeof BlockDataContext).toBe('function');
+});
+
+test('ComposableContentLib composes a function-template block end-to-end', () => {
+  const blocks = new BlockRegistry({});
+  blocks.register({
+    definition: { id: 'probe', name: 'Probe', supportedFormats: ['html'] },
+    factory: (definition, config) =>
+      new SimpleContentBlock(definition, {
+        ...config,
+        dataExtractor: (ctx) => ctx.get('focus.value'),
+        emptyChecker: (d) => d === null,
+        templates: { html: 'probe' }
+      })
+  });
+  const renderers = new RendererRegistry({ registerDefaults: false });
+  renderers.register(new HtmlRenderer({ templates: { probe: (data: unknown) => `<b>${String(data)}</b>` } }));
+  const composer = new ContentComposer({ blockRegistry: blocks, rendererRegistry: renderers });
+  const result = composer.compose(
+    { id: 'r', name: 'r', blocks: [{ instanceId: 'p1', blockType: 'probe' }] },
+    { focus: { value: 42 } }
+  );
+  expect(result.content).toBe('<b>42</b>');
+});
+
 test('an Entity subclass hydrates and dehydrates', () => {
   const f = Foo.fromData({ id: 'a', x: 7 });
   expect(f.id).toBe('a');

@@ -12,12 +12,14 @@ import {
   SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, ApplyPermissionsStep,
   RegisterDocumentStep, PostProcessStep, CRITICAL_STEPS
 } from '../../infrastructure/steps/documentSteps';
+import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';
 
 export interface DocumentGenerationDeps {
-  db: IDatabase;
+  /** Persistence port + the RepositoryDatabase seam (POST_PROCESSO row updates). */
+  db: IDatabase & PostProcessDb;
   drive: IDriveFacade;
   /** Modular CDU assembler (context-engine, spec 09) wired via ContextEngineFactory. */
   contextBuilder: ContextBuilder;
@@ -41,7 +43,7 @@ export interface DocumentGenerationDeps {
  * 10 §8), and the CDU assembly recipe.
  */
 export class DocumentGenerationService {
-  private readonly db: IDatabase;
+  private readonly db: IDatabase & PostProcessDb;
   private readonly drive: IDriveFacade;
   private readonly contextBuilder: ContextBuilder;
   private readonly strategyRegistry: Map<string, GeneratorStrategy>;
@@ -127,7 +129,7 @@ export class DocumentGenerationService {
       .addStep(new RenderTemplateStep(this.logger, this.strategyRegistry))
       .addStep(new ApplyPermissionsStep(this.logger, this.drive))
       .addStep(new RegisterDocumentStep(this.logger, this.db))
-      .addStep(new PostProcessStep(this.logger, this.db));
+      .addStep(new PostProcessStep(this.logger, this.db, this.templates, this.now));
 
     pipeline.onError((step, ctx, error) => {
       if (!CRITICAL_STEPS.has(step.getName())) return;

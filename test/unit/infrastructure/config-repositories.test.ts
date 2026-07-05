@@ -22,7 +22,7 @@ test('CONF_MAIL: findByProcesso + boxes + header default + noreply (06 §9)', ()
   const r = new ConfigurazioneEmailRepository(db());
   const cdc = r.findByProcesso(ProcessoInvio.PER_CDC);
   expect(cdc.map((c) => c.id)).toEqual(['CDC_OTTOBRE']);
-  expect(r.getBoxes(cdc[0]!)).toEqual([{ tipo: 'carenze' }]);
+  expect(r.getBoxes(cdc[0]!)).toEqual([{ TIPO_BOX: 'carenze' }]);
   expect(cdc[0]!.getColoreHeader()).toBe('#007bff'); // default
   expect(cdc[0]!.isNoreply()).toBe(true);
 

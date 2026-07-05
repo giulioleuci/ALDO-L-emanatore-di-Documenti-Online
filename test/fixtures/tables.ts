@@ -21,8 +21,10 @@ export function fixtureTables(): Record<string, Row[]> {
       { EMAIL: 'verdi@school.it', COGNOME: 'VERDI', NOME: 'GIO', GENERE: 'M', DIPART: 'LETTERE', ITP: true }
     ],
     MATERIE: [
-      { ID: 'MATE', NOME: 'Matematica', SINTESI: 'Matematica', ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}' },
-      { ID: 'FISI', NOME: 'Fisica', SINTESI: 'Fisica', ESAME_CFG: null }
+      { ID: 'MATE', NOME: 'Matematica', SINTESI: 'Matematica', COLORE_1: '#c0392b', COLORE_2: '#fdecea',
+        SIMBOLO: '📐', ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}' },
+      { ID: 'FISI', NOME: 'Fisica', SINTESI: 'Fisica', COLORE_1: '#2980b9', COLORE_2: '#eaf2fd',
+        SIMBOLO: '🔭', ESAME_CFG: null }
     ],
     ALUNNI: [
       { EMAIL: 'a1@school.it', COGNOMENOME: 'VERDI ANNA', CLASSE: '5A', RELIGIONE: 'SI', ATTIVO: true,
@@ -47,11 +49,17 @@ export function fixtureTables(): Record<string, Row[]> {
     ],
     CONF_MAIL: [
       { ID: 'CDC_OTTOBRE', OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}', PROCESSO: 'PER_CDC',
-        BOX_CFG: '[{"tipo":"carenze"}]', TESTO: '<p>Gentili colleghi</p>', SUPPLENTI: 'ENTRAMBI', NOREPLY: true,
+        BOX_CFG: '[{"TIPO_BOX":"carenze"}]', TESTO: '<p>Gentili colleghi</p>', SUPPLENTI: 'ENTRAMBI', NOREPLY: true,
         COLORE_HEADER: '', CONDIZIONE: null, POST_PROCESSO: null },
       { ID: 'CARENZE_FAM', OGGETTO: 'Comunicazione carenze', PROCESSO: 'PER_GENITORI_ALUNNO',
         BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: false, COLORE_HEADER: '#ff0000',
-        CONDIZIONE: 'carenze > 0', POST_PROCESSO: null }
+        CONDIZIONE: 'carenze > 0', POST_PROCESSO: null },
+      { ID: 'CARENZE_NOTIFICA', OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}', PROCESSO: 'PER_CARENZA',
+        BOX_CFG: '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
+        TESTO: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
+        SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: true, COLORE_HEADER: '',
+        CONDIZIONE: null,
+        POST_PROCESSO: '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]' }
     ],
     CONF_IMP: [
       { ID: 'IMPORT_ALUNNI', TARGET: 'ALUNNI', CONFIG: '{"searchStrategy":"FILE_SINGOLO"}', ATTIVO: true },
@@ -118,6 +126,7 @@ export function fixtureTables(): Record<string, Row[]> {
         DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI', SUPERVISORE_EMAIL: '' }
     ],
     LOG_DOCS: [],
-    LOG_FOLD: []
+    LOG_FOLD: [],
+    LOG_MAIL: []
   };
 }

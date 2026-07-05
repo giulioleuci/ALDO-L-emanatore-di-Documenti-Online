@@ -25,6 +25,19 @@ export class LogEmailRepository extends Repository<LogEmail> {
     return this.findByStato(StatoEmail.ERROR);
   }
 
+  /** Flips an existing record to SUCCESS via the composite-key write seam (ref 11 §16). */
+  marcaSuccesso(log: LogEmail): void {
+    this.database.tables[TABLE.LOG_MAIL]!.updateRowWhere(
+      {
+        [COL_LOG_MAIL.PATTERN]: log.pattern,
+        [COL_LOG_MAIL.DESTINATARI]: log.destinatariRaw,
+        [COL_LOG_MAIL.DATA]: log.data
+      },
+      { ...log.toData(), [COL_LOG_MAIL.STATO]: StatoEmail.SUCCESS }
+    );
+    this.database.save();
+  }
+
   /** Appends a send record with DESTINATARI as CSV and DATA = now (ref 06 §19). */
   registraInvio(patternId: string, destinatari: Email[], stato: StatoEmail, allegati?: Record<string, unknown>, errore?: string): LogEmail {
     const log = LogEmail.fromData({

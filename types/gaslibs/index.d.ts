@@ -352,4 +352,147 @@ declare global {
     isSatisfiedBy(entity: unknown): boolean;
   }
   class EntityNotFoundException extends Error {}
+
+  // --- GoogleApiWrapper (L2): MailService (GmailApp abstraction with retry + rate limit) ---
+  interface MailSendOptions {
+    to: string | string[];
+    subject: string;
+    body?: string;
+    htmlBody?: string;
+    cc?: string | string[];
+    bcc?: string | string[];
+    replyTo?: string;
+    name?: string;
+    noReply?: boolean;
+    attachments?: unknown[];
+  }
+  interface MailSendResult {
+    success: boolean;
+    error?: string;
+  }
+  class MailService {
+    constructor(
+      logger: unknown,
+      utils: { sleep(ms: number): void },
+      exceptionService?: unknown,
+      options?: { rateLimitMs?: number }
+    );
+    send(emailOptions: MailSendOptions): MailSendResult;
+    sendBatch(emails: MailSendOptions[]): {
+      successful: MailSendOptions[];
+      failed: Array<{ email: MailSendOptions; error: string }>;
+    };
+    getQuotaUsage(): number;
+  }
+
+  // --- ComposableContentLib (L4): declarative block composition (box rendering) ---
+  interface BlockDefinitionInput {
+    id: string;
+    name: string;
+    description?: string;
+    supportedFormats?: string[];
+    /** 'hide' (default) drops the block when isEmpty; 'show' keeps it. */
+    emptyBehavior?: string;
+    containerType?: string;
+  }
+  interface BlockDataContextLike {
+    get(path: string, defaultValue?: unknown): unknown;
+    has(path: string): boolean;
+    getAll(): Record<string, unknown>;
+  }
+  class BlockDataContext implements BlockDataContextLike {
+    constructor(data?: Record<string, unknown>, globalContext?: Record<string, unknown>);
+    get(path: string, defaultValue?: unknown): unknown;
+    has(path: string): boolean;
+    getAll(): Record<string, unknown>;
+  }
+  /** Template values are either `{{path}}` strings or functions `(data, options) => string`. */
+  type BlockTemplate = string | ((data: unknown, options: { config: Record<string, unknown> }) => string);
+  class HtmlRenderer {
+    constructor(options?: { logger?: unknown; templates?: Record<string, BlockTemplate> });
+    getFormat(): string;
+  }
+  class RendererRegistry {
+    constructor(options?: { logger?: unknown; registerDefaults?: boolean });
+    register(renderer: HtmlRenderer): void;
+    get(format: string): unknown;
+  }
+  abstract class ContentBlock {
+    constructor(definition: unknown, config?: Record<string, unknown>);
+    abstract getData(context: BlockDataContextLike): unknown;
+    abstract isEmpty(data: unknown): boolean;
+    abstract getTemplateId(format: string): string;
+  }
+  class SimpleContentBlock extends ContentBlock {
+    constructor(
+      definition: unknown,
+      config: {
+        dataExtractor: (context: BlockDataContextLike) => unknown;
+        emptyChecker?: (data: unknown) => boolean;
+        templates: Record<string, string>;
+        [key: string]: unknown;
+      }
+    );
+    getData(context: BlockDataContextLike): unknown;
+    isEmpty(data: unknown): boolean;
+    getTemplateId(format: string): string;
+  }
+  class BlockRegistry {
+    constructor(options?: { logger?: unknown });
+    register(registration: {
+      definition: BlockDefinitionInput;
+      factory: (definition: unknown, config: Record<string, unknown>) => ContentBlock;
+    }): unknown;
+    has(blockType: string): boolean;
+  }
+  interface CompositionBlockInput {
+    instanceId: string;
+    blockType: string;
+    /** 'always' | 'never' | boolean expression evaluated against the context. */
+    visibility?: string;
+    order?: number;
+    config?: Record<string, unknown>;
+  }
+  interface CompositionRecipeInput {
+    id: string;
+    name: string;
+    outputFormat?: string;
+    blocks: CompositionBlockInput[];
+    separator?: string;
+  }
+  class CompositionRecipe {
+    constructor(definition: CompositionRecipeInput);
+    getOrderedBlocks(): CompositionBlockInput[];
+  }
+  interface BlockResultView {
+    instanceId: string;
+    blockType: string;
+    isEmpty: boolean;
+    isVisible: boolean;
+    content: string;
+    error?: Error;
+  }
+  interface CompositionResultView {
+    content: string;
+    blocks: BlockResultView[];
+    errors?: Array<{ instanceId: string; error: Error }>;
+  }
+  class ContentComposer {
+    constructor(options: {
+      blockRegistry: BlockRegistry;
+      rendererRegistry: RendererRegistry;
+      logger?: unknown;
+      expressionEngine?: unknown;
+    });
+    compose(
+      recipe: CompositionRecipeInput | CompositionRecipe,
+      context: Record<string, unknown> | BlockDataContext,
+      options?: { format?: string; continueOnError?: boolean }
+    ): CompositionResultView;
+    composeToString(
+      recipe: CompositionRecipeInput | CompositionRecipe,
+      context: Record<string, unknown> | BlockDataContext,
+      options?: { format?: string; continueOnError?: boolean }
+    ): string;
+  }
 }

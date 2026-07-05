@@ -70,7 +70,7 @@ export function executePostProcess(
         break;
       case 'AGGIORNA_CAMPO':
         updated += updateMatching(db, action.tab ?? '', criteri, {
-          [action.col ?? '']: templates.processString(String(action.valore ?? ''), cdu)
+          [action.col ?? '']: templates.processString(typeof action.valore === 'string' ? action.valore : '', cdu)
         });
         break;
       case 'AGGIORNA_STATO_DOC':

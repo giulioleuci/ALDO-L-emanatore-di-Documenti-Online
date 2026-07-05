@@ -53,7 +53,13 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_HEADER: '', CONDIZIONE: null, POST_PROCESSO: null },
       { ID: 'CARENZE_FAM', OGGETTO: 'Comunicazione carenze', PROCESSO: 'PER_GENITORI_ALUNNO',
         BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: false, COLORE_HEADER: '#ff0000',
-        CONDIZIONE: 'carenze > 0', POST_PROCESSO: null }
+        CONDIZIONE: 'carenze > 0', POST_PROCESSO: null },
+      { ID: 'CARENZE_NOTIFICA', OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}', PROCESSO: 'PER_CARENZA',
+        BOX_CFG: '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
+        TESTO: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
+        SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: true, COLORE_HEADER: '',
+        CONDIZIONE: null,
+        POST_PROCESSO: '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]' }
     ],
     CONF_IMP: [
       { ID: 'IMPORT_ALUNNI', TARGET: 'ALUNNI', CONFIG: '{"searchStrategy":"FILE_SINGOLO"}', ATTIVO: true },

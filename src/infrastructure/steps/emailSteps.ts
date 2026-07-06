@@ -15,7 +15,7 @@ import type { LogEmailRepository } from '../repositories/LogEmailRepository';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import { recipe } from '../../application/context-engine/Recipe';
 import { salutoPerTarget } from '../../application/email/saluto';
-import { createBoxComposer, renderBoxes } from '../../application/email/boxes';
+import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../../application/email/boxes';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, GestioneSupplenti } from '../../domain/value-objects/enums';
@@ -209,13 +209,15 @@ export class ComposeEmailStep extends Step {
       noReplyBlock +
       '</div>';
 
-    const htmlSoloContenuto = `<p>${saluto},</p>${testo}${boxes.join('')}`;
+    // Saluto/oggetto embed sheet-sourced names; the header colour lands in a
+    // style attribute — all pass the same escaping/whitelisting as the boxes.
+    const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}`;
     const htmlCompleto =
       '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="margin:0; padding:0; background-color:#f4f4f4;">' +
       '<div style="max-width:600px; margin:0 auto; background-color:#ffffff; box-shadow:0 0 10px rgba(0,0,0,0.1);">' +
-      `<div style="background-color:${conf.getColoreHeader()}; color:#ffffff; padding:20px; font-size:20px; font-weight:bold;">` +
-      `${ctx.get<string>('oggettoRisolto') ?? ''}</div>` +
+      `<div style="background-color:${safeColor(conf.getColoreHeader(), '#007bff')}; color:#ffffff; padding:20px; font-size:20px; font-weight:bold;">` +
+      `${escapeHtml(ctx.get<string>('oggettoRisolto') ?? '')}</div>` +
       `<div style="padding:20px;">${htmlSoloContenuto}${footer}</div>` +
       '</div></body></html>';
 

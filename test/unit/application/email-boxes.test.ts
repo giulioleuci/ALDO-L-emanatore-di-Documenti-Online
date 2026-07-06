@@ -1,6 +1,8 @@
 import {
   mapCarenzeFormatoB,
   escapeHtml,
+  safeColor,
+  safeUrl,
   createBoxComposer,
   renderBoxes,
   wrapBox
@@ -132,4 +134,23 @@ test('note box escapes free-text HTML from CARENZE.NOTE', () => {
   const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'note' }]), cdu, materie(), templates);
   expect(out.boxes['note']!.html).toContain('&lt;script&gt;');
   expect(out.boxes['note']!.html).not.toContain('<script>');
+});
+
+test('safeColor whitelists hex/keywords; safeUrl blocks javascript: schemes (security review)', () => {
+  expect(safeColor('#c0392b', '#ddd')).toBe('#c0392b');
+  expect(safeColor('red', '#ddd')).toBe('red');
+  expect(safeColor('red;"><script>', '#ddd')).toBe('#ddd');
+  expect(safeUrl('https://drive.google.com/x')).toBe('https://drive.google.com/x');
+  expect(safeUrl('javascript:alert(1)')).toBe('#');
+});
+
+test('documenti box neutralises javascript: links and hostile colours', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  const didattica = (cdu['focus'] as { alunno: { didattica: { documenti: { items: unknown[] } } } }).alunno.didattica;
+  didattica.documenti.items = [{ nome: 'Doc', link: 'javascript:alert(1)', tipo: 'PDP', stato: 'GENERATO', dataCreazione: '' }];
+  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'documenti' }]), cdu, materie(), templates);
+  expect(out.boxes['documenti']!.html).toContain('href="#"');
+  expect(out.boxes['documenti']!.html).not.toContain('javascript:');
 });

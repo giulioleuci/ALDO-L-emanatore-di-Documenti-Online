@@ -52,10 +52,20 @@ export function escapeHtml(raw: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** Sheet-sourced colours go into style attributes: only hex codes or CSS keywords pass. */
+export function safeColor(raw: string, fallback: string): string {
+  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(raw) ? raw : fallback;
+}
+
+/** Sheet-sourced link targets: only http(s) URLs pass (blocks javascript:/data: schemes). */
+export function safeUrl(raw: string): string {
+  return /^https?:\/\//i.test(raw.trim()) ? raw.trim() : '#';
+}
+
 /** FormattatoreDatiEmail standard container (11 §11). */
 export function wrapBox(titolo: string, coloreBordo: string, contenutoInterno: string): string {
   return (
-    `<div style="margin:20px 0; padding:15px; border-left:4px solid ${coloreBordo}; background-color:#f9f9f9;">` +
+    `<div style="margin:20px 0; padding:15px; border-left:4px solid ${safeColor(coloreBordo, DEFAULT_BORDER)}; background-color:#f9f9f9;">` +
     `<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">${escapeHtml(titolo)}</h3>` +
     `${contenutoInterno}</div>`
   );
@@ -84,10 +94,11 @@ function renderCarenzeBox(data: unknown): string {
   const rows = data as CarenzaFormatoB[];
   return rows
     .map((r) => {
-      const sfondo = r.colore2 !== '' ? ` background-color:${r.colore2};` : '';
+      const colore2 = safeColor(r.colore2, '');
+      const sfondo = colore2 !== '' ? ` background-color:${colore2};` : '';
       const titolo = r.simbolo !== '' ? `${r.simbolo} ${r.nomeSintesi}` : r.nomeSintesi;
       return (
-        `<div style="border-left:4px solid ${r.colore};${sfondo} padding:12px 12px 12px 16px; margin-bottom:10px;">` +
+        `<div style="border-left:4px solid ${safeColor(r.colore, DEFAULT_BORDER)};${sfondo} padding:12px 12px 12px 16px; margin-bottom:10px;">` +
         `<h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">${escapeHtml(titolo)}</h3>` +
         `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(r.descrizione)}</div></div>`
       );
@@ -98,7 +109,7 @@ function renderCarenzeBox(data: unknown): string {
 function renderDocumentiBox(data: unknown): string {
   const items = data as DocumentoItem[];
   const righe = items
-    .map((d) => `<li><a href="${escapeHtml(d.link)}" target="_blank">${escapeHtml(d.nome)}</a></li>`)
+    .map((d) => `<li><a href="${escapeHtml(safeUrl(d.link))}" target="_blank">${escapeHtml(d.nome)}</a></li>`)
     .join('');
   return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
 }

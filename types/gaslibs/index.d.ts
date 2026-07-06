@@ -58,10 +58,14 @@ declare global {
   // --- SheetDBLib (L2): ORM entry point (tables, save, ACID-like transactions) ---
   interface SheetTableService {
     getRows(): Record<string, unknown>[];
+    getAllRows(): Record<string, unknown>[];
+    getByPK(pkValue: string): Record<string, unknown> | null;
     insertRow(data: Record<string, unknown>): Record<string, unknown>;
     updateRowById(id: string, data: Record<string, unknown>): void;
     patchRow(id: string, partialData: Record<string, unknown>): void;
     deleteRowById(id: string): void;
+    defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): unknown;
+    setPrimaryKey(columnName: string): unknown;
   }
   class DatabaseService {
     constructor(spreadsheetId: string, logger: LoggerService, utils?: unknown, cache?: unknown);
@@ -70,6 +74,29 @@ declare global {
     beginTransaction(): void;
     commit(): void;
     rollback(): void;
+  }
+  /** SheetDBLib table (the concrete class behind DatabaseService.tables). */
+  class TableService {
+    constructor(
+      sheetName: string,
+      spreadsheetId: string,
+      spreadsheetService: unknown,
+      logger: LoggerService,
+      utils: unknown,
+      preloadedData?: unknown[][] | null,
+      schemaValidator?: unknown
+    );
+    getRows(): Record<string, unknown>[];
+    getAllRows(): Record<string, unknown>[];
+    getByPK(pkValue: string): Record<string, unknown> | null;
+    insertRow(data: Record<string, unknown>): Record<string, unknown>;
+    updateRowById(id: string, data: Record<string, unknown>): Record<string, unknown>;
+    patchRow(id: string, partialData: Record<string, unknown>): Record<string, unknown>;
+    deleteRowById(id: string): void;
+    /** Computed column added to reads; excluded from physical writes. */
+    defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): TableService;
+    setPrimaryKey(columnName: string): TableService;
+    flush(options?: Record<string, unknown>): number;
   }
 
   // --- GoogleApiWrapper (L2): Drive/Document facade globals ---

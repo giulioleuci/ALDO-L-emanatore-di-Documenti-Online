@@ -3,6 +3,7 @@ import type { MasterSheetRepository } from '../../infrastructure/repositories/Ma
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
 import type { LogEmail } from '../../domain/entities/LogEmail';
 import type { EmailNotificationService } from './EmailNotificationService';
+import { escapeHtml } from '../email/boxes';
 
 export interface EmailRetryOptions {
   /** Give up after this many failed attempts for the same (PATTERN, DESTINATARI) (default 3, 11 §16). */
@@ -81,7 +82,8 @@ export class EmailRetryService {
     this.gmail.sendEmail({
       to: [config.supervisoreEmail],
       subject: `[SGSA] Errore permanente invio email — pattern ${record.pattern}`,
-      htmlBody: `<p>${msg}</p>`
+      // msg embeds LOG_MAIL free text (ERRORE) — escaped before HTML interpolation.
+      htmlBody: `<p>${escapeHtml(msg)}</p>`
     });
   }
 }

@@ -42,11 +42,21 @@ export interface RenderedBox {
 
 const DEFAULT_BORDER = '#ddd';
 
+/** Escapes sheet-sourced free text before HTML interpolation (names, notes, error strings). */
+export function escapeHtml(raw: string): string {
+  return raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** FormattatoreDatiEmail standard container (11 §11). */
 export function wrapBox(titolo: string, coloreBordo: string, contenutoInterno: string): string {
   return (
     `<div style="margin:20px 0; padding:15px; border-left:4px solid ${coloreBordo}; background-color:#f9f9f9;">` +
-    `<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">${titolo}</h3>` +
+    `<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">${escapeHtml(titolo)}</h3>` +
     `${contenutoInterno}</div>`
   );
 }
@@ -78,8 +88,8 @@ function renderCarenzeBox(data: unknown): string {
       const titolo = r.simbolo !== '' ? `${r.simbolo} ${r.nomeSintesi}` : r.nomeSintesi;
       return (
         `<div style="border-left:4px solid ${r.colore};${sfondo} padding:12px 12px 12px 16px; margin-bottom:10px;">` +
-        `<h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">${titolo}</h3>` +
-        `<div style="font-size:14px; color:#555; line-height:1.5;">${r.descrizione}</div></div>`
+        `<h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">${escapeHtml(titolo)}</h3>` +
+        `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(r.descrizione)}</div></div>`
       );
     })
     .join('');
@@ -88,13 +98,14 @@ function renderCarenzeBox(data: unknown): string {
 function renderDocumentiBox(data: unknown): string {
   const items = data as DocumentoItem[];
   const righe = items
-    .map((d) => `<li><a href="${d.link}" target="_blank">${d.nome}</a></li>`)
+    .map((d) => `<li><a href="${escapeHtml(d.link)}" target="_blank">${escapeHtml(d.nome)}</a></li>`)
     .join('');
   return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
 }
 
 function renderNoteBox(data: unknown): string {
-  return `<div style="font-size:14px; color:#555; line-height:1.5;">${String(data)}</div>`;
+  // CARENZE.NOTE is free text (11 §11) — escaped before interpolation.
+  return `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(String(data))}</div>`;
 }
 
 function renderAssenzeBox(): string {

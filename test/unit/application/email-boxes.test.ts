@@ -1,5 +1,6 @@
 import {
   mapCarenzeFormatoB,
+  escapeHtml,
   createBoxComposer,
   renderBoxes,
   wrapBox
@@ -114,4 +115,21 @@ test('wrapBox produces the standard container (11 §11)', () => {
   expect(html).toContain('border-left:4px solid #123456');
   expect(html).toContain('<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">Titolo</h3>');
   expect(html).toContain('<p>x</p>');
+});
+
+test('escapeHtml neutralises sheet-sourced markup (security review finding)', () => {
+
+  expect(escapeHtml('<img src=x onerror=alert(1)>')).toBe('&lt;img src=x onerror=alert(1)&gt;');
+  const out = render([{ TIPO_BOX: 'note' }]);
+  expect(out.boxes['note']!.html).not.toContain('<script');
+});
+
+test('note box escapes free-text HTML from CARENZE.NOTE', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  (cdu['focus'] as { carenza: { note: string } }).carenza.note = '<script>alert(1)</script>';
+  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'note' }]), cdu, materie(), templates);
+  expect(out.boxes['note']!.html).toContain('&lt;script&gt;');
+  expect(out.boxes['note']!.html).not.toContain('<script>');
 });

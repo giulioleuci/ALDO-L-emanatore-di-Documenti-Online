@@ -412,6 +412,44 @@ declare global {
     getQuotaUsage(): number;
   }
 
+  // --- GoogleApiWrapper (L2): ServiceFactory DI container + UI/Properties wrappers ---
+  interface LibPropertiesService {
+    getProperty(key: string): string | null;
+    setProperty(key: string, value: string): unknown;
+    deleteProperty(key: string): unknown;
+  }
+  interface LibMenuBuilder {
+    addItem(caption: string, functionName: string): LibMenuBuilder;
+    addSeparator(): LibMenuBuilder;
+    addToUi(): void;
+  }
+  interface LibPromptResponse {
+    getResponseText(): string;
+    getSelectedButton(): unknown;
+  }
+  interface LibUiService {
+    createMenu(caption: string): LibMenuBuilder;
+    alert(title: string, message: string, buttonSet?: unknown): unknown;
+    prompt(title: string, message: string, buttonSet?: unknown): LibPromptResponse;
+    createSidebar(): unknown;
+  }
+  class ServiceFactory {
+    static configure(config?: Record<string, unknown>): void;
+    static reset(resetConfig?: boolean): void;
+    static getLogger(): LoggerService;
+    static getUtilitiesService(): UtilsService;
+    static getDriveService(): DriveService;
+    static getMailService(options?: Record<string, unknown>): MailService;
+    static getPropertiesService(): LibPropertiesService;
+    static getUiService(): LibUiService;
+  }
+
+  // --- GasProcessMonitorLib (L4): monitoring sidebar ---
+  class DashboardUi {
+    constructor(uiService: LibUiService, logger: LoggerService);
+    createSidebar(jobId: string, title?: string, options?: Record<string, unknown>): void;
+  }
+
   // --- ComposableContentLib (L4): declarative block composition (box rendering) ---
   interface BlockDefinitionInput {
     id: string;

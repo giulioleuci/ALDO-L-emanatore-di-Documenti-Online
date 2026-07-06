@@ -58,10 +58,14 @@ declare global {
   // --- SheetDBLib (L2): ORM entry point (tables, save, ACID-like transactions) ---
   interface SheetTableService {
     getRows(): Record<string, unknown>[];
+    getAllRows(): Record<string, unknown>[];
+    getByPK(pkValue: string): Record<string, unknown> | null;
     insertRow(data: Record<string, unknown>): Record<string, unknown>;
     updateRowById(id: string, data: Record<string, unknown>): void;
     patchRow(id: string, partialData: Record<string, unknown>): void;
     deleteRowById(id: string): void;
+    defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): unknown;
+    setPrimaryKey(columnName: string): unknown;
   }
   class DatabaseService {
     constructor(spreadsheetId: string, logger: LoggerService, utils?: unknown, cache?: unknown);
@@ -70,6 +74,29 @@ declare global {
     beginTransaction(): void;
     commit(): void;
     rollback(): void;
+  }
+  /** SheetDBLib table (the concrete class behind DatabaseService.tables). */
+  class TableService {
+    constructor(
+      sheetName: string,
+      spreadsheetId: string,
+      spreadsheetService: unknown,
+      logger: LoggerService,
+      utils: unknown,
+      preloadedData?: unknown[][] | null,
+      schemaValidator?: unknown
+    );
+    getRows(): Record<string, unknown>[];
+    getAllRows(): Record<string, unknown>[];
+    getByPK(pkValue: string): Record<string, unknown> | null;
+    insertRow(data: Record<string, unknown>): Record<string, unknown>;
+    updateRowById(id: string, data: Record<string, unknown>): Record<string, unknown>;
+    patchRow(id: string, partialData: Record<string, unknown>): Record<string, unknown>;
+    deleteRowById(id: string): void;
+    /** Computed column added to reads; excluded from physical writes. */
+    defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): TableService;
+    setPrimaryKey(columnName: string): TableService;
+    flush(options?: Record<string, unknown>): number;
   }
 
   // --- GoogleApiWrapper (L2): Drive/Document facade globals ---
@@ -383,6 +410,44 @@ declare global {
       failed: Array<{ email: MailSendOptions; error: string }>;
     };
     getQuotaUsage(): number;
+  }
+
+  // --- GoogleApiWrapper (L2): ServiceFactory DI container + UI/Properties wrappers ---
+  interface LibPropertiesService {
+    getProperty(key: string): string | null;
+    setProperty(key: string, value: string): unknown;
+    deleteProperty(key: string): unknown;
+  }
+  interface LibMenuBuilder {
+    addItem(caption: string, functionName: string): LibMenuBuilder;
+    addSeparator(): LibMenuBuilder;
+    addToUi(): void;
+  }
+  interface LibPromptResponse {
+    getResponseText(): string;
+    getSelectedButton(): unknown;
+  }
+  interface LibUiService {
+    createMenu(caption: string): LibMenuBuilder;
+    alert(title: string, message: string, buttonSet?: unknown): unknown;
+    prompt(title: string, message: string, buttonSet?: unknown): LibPromptResponse;
+    createSidebar(): unknown;
+  }
+  class ServiceFactory {
+    static configure(config?: Record<string, unknown>): void;
+    static reset(resetConfig?: boolean): void;
+    static getLogger(): LoggerService;
+    static getUtilitiesService(): UtilsService;
+    static getDriveService(): DriveService;
+    static getMailService(options?: Record<string, unknown>): MailService;
+    static getPropertiesService(): LibPropertiesService;
+    static getUiService(): LibUiService;
+  }
+
+  // --- GasProcessMonitorLib (L4): monitoring sidebar ---
+  class DashboardUi {
+    constructor(uiService: LibUiService, logger: LoggerService);
+    createSidebar(jobId: string, title?: string, options?: Record<string, unknown>): void;
   }
 
   // --- ComposableContentLib (L4): declarative block composition (box rendering) ---

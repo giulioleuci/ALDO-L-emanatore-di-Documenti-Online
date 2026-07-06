@@ -28,8 +28,14 @@ const SINGLE_PK: Record<string, string> = {
   [TABLE.MASTER]: 'ANNO_SCOLASTICO'
 };
 
+/** Scalar cell → string key part; non-scalars never form a key. */
+function cell(v: unknown): string {
+  return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v) : '';
+}
+
 function stripVirtual(row: Record<string, unknown>): Row {
-  const { [VIRTUAL_PK]: _omitted, ...rest } = row;
+  const rest = { ...row };
+  delete rest[VIRTUAL_PK];
   return rest as Row;
 }
 
@@ -44,7 +50,7 @@ class SheetTableAdapter implements IReadableTable {
     this.composite = COMPOSITE_PK[tableName];
     if (this.composite !== undefined) {
       const parts = this.composite;
-      this.table.defineVirtualColumn(VIRTUAL_PK, (row) => parts.map((c) => String(row[c] ?? '')).join(SEP));
+      this.table.defineVirtualColumn(VIRTUAL_PK, (row) => parts.map((c) => cell(row[c])).join(SEP));
       this.table.setPrimaryKey(VIRTUAL_PK);
     } else {
       this.singlePk = SINGLE_PK[tableName];
@@ -54,8 +60,8 @@ class SheetTableAdapter implements IReadableTable {
 
   /** The library key value identifying `row` (composite synthetic or single column). */
   private keyOf(row: Record<string, unknown>): string {
-    if (this.composite !== undefined) return this.composite.map((c) => String(row[c] ?? '')).join(SEP);
-    return String(row[this.singlePk ?? Object.keys(row)[0] ?? ''] ?? '');
+    if (this.composite !== undefined) return this.composite.map((c) => cell(row[c])).join(SEP);
+    return cell(row[this.singlePk ?? Object.keys(row)[0] ?? '']);
   }
 
   // --- IReadableTable (pipeline port) ---
@@ -91,7 +97,7 @@ class SheetTableAdapter implements IReadableTable {
       this.table.insertRow(row);
       return;
     }
-    const key = this.composite !== undefined ? String(hit[VIRTUAL_PK] ?? this.keyOf(hit)) : this.keyOf(stripVirtual(hit));
+    const key = this.composite !== undefined ? cell(hit[VIRTUAL_PK]) : this.keyOf(stripVirtual(hit));
     this.table.updateRowById(key, row);
   }
 }

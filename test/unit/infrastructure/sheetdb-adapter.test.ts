@@ -64,7 +64,7 @@ function seed() {
 
 test('IDatabase port: findAll/find/insert over real TableService rows', () => {
   const { db } = libDb(seed());
-  const adapter = new SheetDbAdapter(db as unknown as DatabaseService);
+  const adapter = new SheetDbAdapter(db);
   const rows = adapter.table('CLASSI').findAll();
   expect(rows).toHaveLength(2);
   expect(rows[0]!['ID']).toBe('5A');
@@ -75,14 +75,14 @@ test('IDatabase port: findAll/find/insert over real TableService rows', () => {
 
 test('RepositoryDatabase seam: getByPK on single-PK table', () => {
   const { db } = libDb(seed());
-  const adapter = new SheetDbAdapter(db as unknown as DatabaseService);
+  const adapter = new SheetDbAdapter(db);
   expect(adapter.tables['CLASSI']!.getByPK('5A')?.['ANNO']).toBe(5);
   expect(adapter.tables['CLASSI']!.getByPK('9Z')).toBeNull();
 });
 
 test('composite-PK table: updateRowWhere targets the exact row via synthetic __PK (no library extension)', () => {
   const { db } = libDb(seed());
-  const adapter = new SheetDbAdapter(db as unknown as DatabaseService);
+  const adapter = new SheetDbAdapter(db);
   // Both a1 rows share STUDENTE — the virtual composite key disambiguates.
   adapter.tables['CARENZE']!.updateRowWhere(
     { STUDENTE: 'a1@school.it', PROGRESSIVO: 1 },
@@ -96,7 +96,7 @@ test('composite-PK table: updateRowWhere targets the exact row via synthetic __P
 
 test('rows returned by the adapter do not leak the synthetic __PK column', () => {
   const { db } = libDb(seed());
-  const adapter = new SheetDbAdapter(db as unknown as DatabaseService);
+  const adapter = new SheetDbAdapter(db);
   for (const row of adapter.table('CARENZE').findAll()) {
     expect(Object.keys(row)).not.toContain('__PK');
   }
@@ -105,7 +105,7 @@ test('rows returned by the adapter do not leak the synthetic __PK column', () =>
 
 test('transaction methods delegate to the library service (save forbidden inside transaction)', () => {
   const { db } = libDb(seed());
-  const adapter = new SheetDbAdapter(db as unknown as DatabaseService);
+  const adapter = new SheetDbAdapter(db);
   adapter.beginTransaction();
   expect(() => adapter.save()).toThrow(/transaction/);
   adapter.rollback();

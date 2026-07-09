@@ -11,6 +11,10 @@ import { EmailNotificationService } from '../application/services/EmailNotificat
 import { EmailBatchService } from '../application/services/EmailBatchService';
 import { EmailRetryService } from '../application/services/EmailRetryService';
 import { ImportService, type ImportResult } from '../application/services/ImportService';
+import { RisolutoreRuoliService } from '../application/services/RisolutoreRuoliService';
+import { ReportService } from '../application/services/ReportService';
+import { AggregatoreDati } from '../application/services/AggregatoreDati';
+import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
 import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
@@ -75,10 +79,12 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         templates: deps.templates,
         expressionEngine: deps.expressionEngine,
         configs: new ConfigurazioneDocumentoRepository(deps.db),
+        roleResolver: new RisolutoreRuoliService(deps.db),
         now: deps.now,
         logger
       })
   );
+  c.register('risolutoreRuoli', () => new RisolutoreRuoliService(deps.db));
   c.register(
     'documentBatchService',
     (container) => new DocumentBatchService(new ClasseRepository(deps.db), container.get<DocumentGenerationService>('documentGenerationService'))
@@ -102,6 +108,9 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     const engine = deps.importEngine;
     c.register('importService', () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db)));
   }
+  c.register('reportService', () => new ReportService(deps.db));
+  c.register('aggregatoreDati', () => new AggregatoreDati(deps.db));
+  c.register('alberoCartelle', () => new AlberoCartelle(deps.drive, deps.db));
   return c;
 }
 

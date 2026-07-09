@@ -6,10 +6,43 @@ import type { IDatabase, Row } from '../db/Database';
 import type { GeneratorStrategy } from '../../application/strategies/GeneratorStrategy';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { ConfigurazioneDocumentoRepository } from '../repositories/ConfigurazioneDocumentoRepository';
-import { TABLE, COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD } from '../../config/schema';
-import { StatoDocumento, SchemaSottocartelle } from '../../domain/value-objects/enums';
+import type { Email } from '../../domain/value-objects/Email';
+import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
+import { StatoDocumento, SchemaSottocartelle, GestioneSupplenti } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
+import { AlberoCartelle } from '../services/AlberoCartelle';
+
+/**
+ * Role-resolution port consumed by ApplyPermissionsStep (10 §10). Satisfied
+ * structurally by the application-layer RisolutoreRuoliService (14 §1), injected
+ * from the composition root so this infrastructure step stays decoupled from it.
+ */
+export interface IRoleResolver {
+  risolvi(ruolo: string, cdu: Cdu, options?: { regolaSupplente?: GestioneSupplenti }): Email[];
+}
+
+/** One CONF_DOC.PERMESSI ACL entry (10 §10). */
+interface AclEntry {
+  ruolo: string;
+  permesso: string;
+}
+interface PermessiConfig {
+  file?: AclEntry[];
+  folder?: AclEntry[];
+  regolaSupplente?: { file?: string; folder?: string };
+}
+
+function parseRegola(raw: string | undefined): GestioneSupplenti {
+  switch (raw) {
+    case 'SOLO_SUPPLENTI':
+      return GestioneSupplenti.SOLO_SUPPLENTI;
+    case 'ENTRAMBI':
+      return GestioneSupplenti.ENTRAMBI;
+    default:
+      return GestioneSupplenti.SOLO_TITOLARI;
+  }
+}
 
 /**
  * Pipeline steps of the document-generation process (ref 10), built on the
@@ -100,19 +133,11 @@ export class PrepareInfrastructureStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const path = this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]), cduRecord(ctx));
-    let folderId = this.drive.findFolderByPath(path);
-    if (folderId === null) {
-      // Folder did not exist: create it and register it in LOG_FOLD (ref 10 §5 step 4).
-      folderId = this.drive.createFolder(path);
-      const row: Row = {
-        [COL_LOG_FOLD.ID]: folderId,
-        [COL_LOG_FOLD.PATH]: path,
-        [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${folderId}`
-      };
-      // Persisted by the service's transaction commit (SheetDBLib forbids
-      // save() inside an open transaction).
-      this.db.table(TABLE.LOG_FOLD).insert(row);
-    }
+    // findOrCreate over LOG_FOLD + Drive (14 §4); the LOG_FOLD insert is committed
+    // by the service transaction (SheetDBLib forbids save() while one is open).
+    const classe = classeNome(ctx);
+    const options = classe !== '' ? { classe } : {};
+    const { folderId } = new AlberoCartelle(this.drive, this.db).findOrCreate(path, options);
     this.setResult(ctx, 'destFolderId', folderId);
     this.setResult(ctx, 'destFolderPath', path);
   }
@@ -179,22 +204,37 @@ export class RenderTemplateStep extends Step {
   }
 }
 
-/** Step 9 (10 §10): ACL application — full role-resolution ACLs land in the breadth plan (14). */
+/** Step 9 (10 §10): ACL — abstract roles resolved to emails and applied to file & folder. */
 export class ApplyPermissionsStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly drive: IDriveFacade
+    private readonly drive: IDriveFacade,
+    private readonly roles: IRoleResolver
   ) {
     super('ApplyPermissions', logger, {
       shouldExecuteCondition: (ctx) => generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.PERMESSI] != null
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    // Slice scope: PERMESSI is null in the fixture, so this step is skipped.
-    // Full role-resolution ACL application lands in the breadth plan (10 §10, 14).
-    const perms = JSON.parse(String(cfg(ctx)[COL_CONF_DOC.PERMESSI])) as { file?: Array<{ ruolo: string; permesso: string }> };
-    for (const p of perms.file ?? []) this.logger.info(`ACL ${p.ruolo}:${p.permesso}`);
-    void this.drive;
+    const perms = JSON.parse(String(cfg(ctx)[COL_CONF_DOC.PERMESSI])) as PermessiConfig;
+    const cduObj = cdu(ctx);
+    // Supplenza routing is applied separately for file and folder (14 §1.2).
+    const fileId = ctx.get<string>('newFileId');
+    if (fileId !== null) {
+      this.applica(perms.file ?? [], fileId, cduObj, parseRegola(perms.regolaSupplente?.file));
+    }
+    const folderId = ctx.get<string>('destFolderId');
+    if (folderId !== null) {
+      this.applica(perms.folder ?? [], folderId, cduObj, parseRegola(perms.regolaSupplente?.folder));
+    }
+  }
+
+  private applica(acl: AclEntry[], targetId: string, cduObj: Cdu, regola: GestioneSupplenti): void {
+    for (const { ruolo, permesso } of acl) {
+      for (const email of this.roles.risolvi(ruolo, cduObj, { regolaSupplente: regola })) {
+        this.drive.setPermission(targetId, email.value, permesso);
+      }
+    }
   }
 }
 

@@ -10,7 +10,8 @@ import { recipe } from '../context-engine/Recipe';
 import {
   AnalyzeContextStep, CheckDuplicatesStep, PrepareInfrastructureStep, GenerateNameStep,
   SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, ApplyPermissionsStep,
-  RegisterDocumentStep, PostProcessStep, CRITICAL_STEPS
+  RegisterDocumentStep, PostProcessStep, CRITICAL_STEPS,
+  type IRoleResolver
 } from '../../infrastructure/steps/documentSteps';
 import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
@@ -29,6 +30,8 @@ export interface DocumentGenerationDeps {
   /** GasExpressionEngineLib port (CONDIZIONE + conditional MODELLI). */
   expressionEngine: IExpressionEngine;
   configs: ConfigurazioneDocumentoRepository;
+  /** Role -> Email resolver for ACL application (14 §1); RisolutoreRuoliService satisfies it. */
+  roleResolver: IRoleResolver;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
   now: Date;
   logger?: LoggerService;
@@ -50,6 +53,7 @@ export class DocumentGenerationService {
   private readonly templates: ITemplateEngine;
   private readonly expressionEngine: IExpressionEngine;
   private readonly configs: ConfigurazioneDocumentoRepository;
+  private readonly roleResolver: IRoleResolver;
   private readonly now: Date;
   private readonly logger: LoggerService;
 
@@ -61,6 +65,7 @@ export class DocumentGenerationService {
     this.templates = deps.templates;
     this.expressionEngine = deps.expressionEngine;
     this.configs = deps.configs;
+    this.roleResolver = deps.roleResolver;
     this.now = deps.now;
     this.logger = deps.logger ?? new LoggerService();
   }
@@ -127,7 +132,7 @@ export class DocumentGenerationService {
       .addStep(new SelectTemplateStep(this.logger, this.configs, this.expressionEngine))
       .addStep(new CloneTemplateStep(this.logger, this.drive))
       .addStep(new RenderTemplateStep(this.logger, this.strategyRegistry))
-      .addStep(new ApplyPermissionsStep(this.logger, this.drive))
+      .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver))
       .addStep(new RegisterDocumentStep(this.logger, this.db))
       .addStep(new PostProcessStep(this.logger, this.db, this.templates, this.now));
 

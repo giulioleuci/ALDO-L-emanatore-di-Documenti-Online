@@ -11,6 +11,7 @@ export interface MateriaData {
   [COL_MATERIE.COLORE_2]?: string;
   [COL_MATERIE.SIMBOLO]?: string;
   [COL_MATERIE.ESAME_CFG]?: string | null;
+  [COL_MATERIE.EVOLUZIONE]?: string | null;
   [key: string]: unknown;
 }
 
@@ -25,6 +26,7 @@ export class Materia extends AldoEntity {
   public readonly colore2: string;
   public readonly simbolo: string;
   private readonly esameCfgRaw: string | null;
+  private readonly evoluzioneRaw: string | null;
 
   constructor(data: MateriaData = {}) {
     super(data);
@@ -39,6 +41,8 @@ export class Materia extends AldoEntity {
     this.simbolo = typeof sym === 'string' ? sym : '';
     const raw = data[COL_MATERIE.ESAME_CFG];
     this.esameCfgRaw = typeof raw === 'string' ? raw : null;
+    const evo = data[COL_MATERIE.EVOLUZIONE];
+    this.evoluzioneRaw = typeof evo === 'string' ? evo : null;
   }
 
   get materiaId(): MateriaId {
@@ -49,6 +53,21 @@ export class Materia extends AldoEntity {
     return EsameConfig.fromJson(this.esameCfgRaw);
   }
 
+  /**
+   * MATERIE.EVOLUZIONE (13 §8): `{ "<SIGLA>": number[] }` mapping each historical
+   * sigla to the course years it applied to (e.g. `{"GST":[1,2],"STO":[3,4,5]}`).
+   * Empty when absent. Used to reconcile shortfall sigle across school years.
+   */
+  getEvoluzione(): Record<string, number[]> {
+    if (this.evoluzioneRaw === null || this.evoluzioneRaw.trim() === '') return {};
+    const parsed = JSON.parse(this.evoluzioneRaw) as Record<string, unknown>;
+    const out: Record<string, number[]> = {};
+    for (const [sigla, anni] of Object.entries(parsed)) {
+      if (Array.isArray(anni)) out[sigla] = anni.filter((n): n is number => typeof n === 'number');
+    }
+    return out;
+  }
+
   override toData(): EntityData {
     return {
       [COL_MATERIE.ID]: this.id,
@@ -57,7 +76,8 @@ export class Materia extends AldoEntity {
       [COL_MATERIE.COLORE_1]: this.colore1,
       [COL_MATERIE.COLORE_2]: this.colore2,
       [COL_MATERIE.SIMBOLO]: this.simbolo,
-      [COL_MATERIE.ESAME_CFG]: this.esameCfgRaw
+      [COL_MATERIE.ESAME_CFG]: this.esameCfgRaw,
+      [COL_MATERIE.EVOLUZIONE]: this.evoluzioneRaw
     };
   }
 

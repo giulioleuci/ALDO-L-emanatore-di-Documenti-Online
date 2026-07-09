@@ -35,7 +35,7 @@ function readSheetRows(
   if (target === undefined) return [];
   const hasHeaders = options.hasHeaders !== false;
   const range = options.range;
-  const fullRange = range !== undefined ? (range.includes('!') ? range : `${target.name}!${range}`) : `${target.name}!A1:Z${target.rowCount ?? 1000}`;
+  const fullRange = range !== undefined ? (range.includes('!') ? range : `${target.name}!${range}`) : `${target.name}!A1:Z${target.gridProperties.rowCount ?? 1000}`;
   const values = sheets.getRanges(sheetId, fullRange);
   if (values.length === 0) return [];
   const headers = hasHeaders ? (values[0] as unknown[]) : values[0]!.map((_, i) => `Col_${i}`);

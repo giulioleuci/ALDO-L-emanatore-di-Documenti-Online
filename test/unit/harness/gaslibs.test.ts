@@ -145,6 +145,23 @@ test('vendored DriveService/PermissionService instances expose the real bound AP
   expect(typeof perms.shareWithUsers).toBe('function');
 });
 
+test('vendored SpreadsheetService exposes the real bound API surface (Sheet-write generators, 10 §9)', () => {
+  // getSheetInfo's real return shape nests row/column counts under
+  // gridProperties (not flat rowCount/columnCount) — caught via this same
+  // "construct the real class" methodology that found the DriveServiceFacade bug.
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const sheets = new SpreadsheetService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  expect(typeof sheets.getSheetInfo).toBe('function');
+  expect(typeof sheets.getRanges).toBe('function');
+  expect(typeof sheets.updateRanges).toBe('function');
+  expect(typeof sheets.appendRows).toBe('function');
+  expect(typeof sheets.formatRanges).toBe('function');
+  expect(typeof sheets.createSheets).toBe('function');
+  expect(typeof sheets.protectRanges).toBe('function');
+});
+
 test('vendored ProcessMonitorService exposes the real job-progress API', () => {
   const logger = new LoggerService();
   // Stateful fake cache so hasJob (which reads state back) can be exercised.

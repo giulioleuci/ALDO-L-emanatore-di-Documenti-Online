@@ -11,7 +11,10 @@ const logger = new LoggerService();
 /** A SpreadsheetService double returning fixed rows per sheetId, matching the real getSheetInfo/getRanges contract. */
 function fakeSpreadsheets(bySheetId: Record<string, unknown[][]>): SpreadsheetService {
   return {
-    getSheetInfo: (sheetId: string) => (bySheetId[sheetId] !== undefined ? [{ name: 'Sheet1', rowCount: 10, columnCount: 5 }] : []),
+    getSheetInfo: (sheetId: string) =>
+      bySheetId[sheetId] !== undefined
+        ? [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 10, columnCount: 5 } }]
+        : [],
     getRanges: (sheetId: string) => bySheetId[sheetId] ?? []
   };
 }

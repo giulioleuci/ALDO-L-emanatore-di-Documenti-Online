@@ -464,9 +464,56 @@ declare global {
     prompt(title: string, message: string, buttonSet?: unknown): LibPromptResponse;
     createSidebar(): unknown;
   }
+  interface SpreadsheetSheetInfo {
+    name: string;
+    sheetId: number;
+    index: number;
+    hidden: boolean;
+    /** Row/column counts live here, NOT flat on the sheet-info object — real API shape, ref DriveServiceFacade fix precedent. */
+    gridProperties: { rowCount?: number; columnCount?: number };
+  }
+  interface SpreadsheetRangeUpdate {
+    range: string;
+    values: unknown[][];
+  }
+  interface SpreadsheetUpdateResult {
+    totalUpdatedCells: number;
+    totalUpdatedRows: number;
+    totalUpdatedColumns: number;
+    totalUpdatedSheets: number;
+  }
+  interface SpreadsheetFormatRequest {
+    range: string;
+    format: Record<string, unknown>;
+  }
+  interface SpreadsheetProtectRequest {
+    range: string;
+    description?: string;
+    warningOnly?: boolean;
+    editors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean };
+  }
+  interface SpreadsheetProtectResult {
+    spreadsheetId: string;
+    protectedCount: number;
+    protectedRangeIds: number[];
+  }
+  interface SpreadsheetCreateSheetRequest {
+    title: string;
+    index?: number;
+  }
   class SpreadsheetService {
-    getSheetInfo(spreadsheetId: string): Array<{ name: string; rowCount?: number; columnCount?: number }>;
-    getRanges(spreadsheetId: string, range: string): unknown[][];
+    getSheetInfo(spreadsheetId: string, options?: { includeHidden?: boolean }): SpreadsheetSheetInfo[];
+    /** Single range -> values grid. Array of ranges -> Record<range, values grid> (not used by ALDO yet). */
+    getRanges(spreadsheetId: string, ranges: string): unknown[][];
+    updateRanges(spreadsheetId: string, updates: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[], options?: { valueInputOption?: string }): SpreadsheetUpdateResult;
+    appendRows(spreadsheetId: string, appends: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[], options?: Record<string, unknown>): unknown;
+    formatRanges(spreadsheetId: string, requests: SpreadsheetFormatRequest | SpreadsheetFormatRequest[], options?: Record<string, unknown>): unknown;
+    createSheets(spreadsheetId: string, requests: SpreadsheetCreateSheetRequest | SpreadsheetCreateSheetRequest[], options?: Record<string, unknown>): unknown;
+    protectRanges(
+      spreadsheetId: string,
+      requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[],
+      options?: { globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean } }
+    ): SpreadsheetProtectResult;
   }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;

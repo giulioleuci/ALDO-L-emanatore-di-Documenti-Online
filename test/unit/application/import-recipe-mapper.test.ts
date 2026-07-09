@@ -41,11 +41,34 @@ describe('toLibraryRecipe (12 §3): ALDO CONF_IMP.CONFIG vocabulary -> GasDataIm
       .toThrow(ConfigurationError);
   });
 
-  test('CERCA_CARTELLE_CLASSE / CERCA_DOCUMENTI are explicitly deferred (typed error, not silent misbehaviour)', () => {
+  test('CERCA_CARTELLE_CLASSE maps to the custom source with folderTipo', () => {
+    const recipe = toLibraryRecipe(conf({
+      searchStrategy: 'CERCA_CARTELLE_CLASSE', folderTipo: 'GRIGLIE_VOTI', key: 'ID', conflictResolution: 'IGNORE'
+    }));
+    expect(recipe.source).toEqual({
+      type: 'CERCA_CARTELLE_CLASSE',
+      config: { folderTipo: 'GRIGLIE_VOTI', tabName: undefined, range: undefined, hasHeaders: undefined }
+    });
+  });
+
+  test('CERCA_CARTELLE_CLASSE without folderTipo is a configuration error', () => {
     expect(() => toLibraryRecipe(conf({ searchStrategy: 'CERCA_CARTELLE_CLASSE', key: 'ID', conflictResolution: 'IGNORE' })))
-      .toThrow(/CERCA_CARTELLE_CLASSE/);
+      .toThrow(ConfigurationError);
+  });
+
+  test('CERCA_DOCUMENTI maps to the custom source with idGen/tipo/stato', () => {
+    const recipe = toLibraryRecipe(conf({
+      searchStrategy: 'CERCA_DOCUMENTI', idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO', key: 'ID', conflictResolution: 'IGNORE'
+    }));
+    expect(recipe.source).toEqual({
+      type: 'CERCA_DOCUMENTI',
+      config: { idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO', tabName: undefined, range: undefined, hasHeaders: undefined }
+    });
+  });
+
+  test('CERCA_DOCUMENTI without idGen is a configuration error', () => {
     expect(() => toLibraryRecipe(conf({ searchStrategy: 'CERCA_DOCUMENTI', key: 'ID', conflictResolution: 'IGNORE' })))
-      .toThrow(/CERCA_DOCUMENTI/);
+      .toThrow(ConfigurationError);
   });
 
   test('missing fileId under FILE_SINGOLO is a configuration error', () => {

@@ -5,6 +5,18 @@ import { ConfigurationError } from '../../domain/errors/DomainError';
 export interface AldoImportConfig {
   searchStrategy: 'FILE_SINGOLO' | 'CERCA_CARTELLE_CLASSE' | 'CERCA_DOCUMENTI';
   fileId?: string;
+  /** CERCA_CARTELLE_CLASSE: LOG_FOLD.TIPO to scan for in each active class's folders. */
+  folderTipo?: string;
+  /** CERCA_DOCUMENTI: LOG_DOCS.ID_GEN to search for. */
+  idGen?: string;
+  /** CERCA_DOCUMENTI: optional LOG_DOCS.TIPO filter. */
+  tipo?: string;
+  /** CERCA_DOCUMENTI: optional LOG_DOCS.STATO filter. */
+  stato?: string;
+  /** CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI: optional sheet-tab/range/header overrides. */
+  tabName?: string;
+  range?: string;
+  hasHeaders?: boolean;
   map?: Record<string, string>;
   key: string;
   conflictResolution: 'IGNORE' | 'OVERWRITE' | 'TIMESTAMP';
@@ -17,26 +29,47 @@ const CONFLICT_MAP: Record<AldoImportConfig['conflictResolution'], ImportLoadCon
   TIMESTAMP: 'UPSERT'
 };
 
+function buildSource(conf: ConfigurazioneImport, cfg: Partial<AldoImportConfig>): { type: string; config: Record<string, unknown> } {
+  switch (cfg.searchStrategy) {
+    case 'FILE_SINGOLO': {
+      if (cfg.fileId === undefined || cfg.fileId.trim() === '') {
+        throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.fileId obbligatorio per FILE_SINGOLO`);
+      }
+      return { type: 'SheetById', config: { sheetId: cfg.fileId } };
+    }
+    case 'CERCA_CARTELLE_CLASSE': {
+      if (cfg.folderTipo === undefined || cfg.folderTipo.trim() === '') {
+        throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.folderTipo obbligatorio per CERCA_CARTELLE_CLASSE`);
+      }
+      return {
+        type: 'CERCA_CARTELLE_CLASSE',
+        config: { folderTipo: cfg.folderTipo, tabName: cfg.tabName, range: cfg.range, hasHeaders: cfg.hasHeaders }
+      };
+    }
+    case 'CERCA_DOCUMENTI': {
+      if (cfg.idGen === undefined || cfg.idGen.trim() === '') {
+        throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.idGen obbligatorio per CERCA_DOCUMENTI`);
+      }
+      return {
+        type: 'CERCA_DOCUMENTI',
+        config: { idGen: cfg.idGen, tipo: cfg.tipo, stato: cfg.stato, tabName: cfg.tabName, range: cfg.range, hasHeaders: cfg.hasHeaders }
+      };
+    }
+    default:
+      throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: strategia sorgente "${String(cfg.searchStrategy)}" sconosciuta (12 §3)`);
+  }
+}
+
 /**
  * Translates a CONF_IMP row into the GasDataImporter recipe shape (ref 12 §3).
- * FILE_SINGOLO is the only search strategy implemented so far — the library's
- * `SheetById` source strategy covers it exactly. `CERCA_CARTELLE_CLASSE`
- * (scan per-class Drive folders) and `CERCA_DOCUMENTI` (search `LOG_DOCS`)
- * need custom `SourceStrategy` subclasses registered via
- * `ImportEngine.registerCustomSource`; deferred (typed error, not silent
- * misbehaviour) to a follow-up plan — see project memory.
+ * FILE_SINGOLO maps to the library's own `SheetById` source strategy;
+ * `CERCA_CARTELLE_CLASSE` (scan per-class Drive folders) and
+ * `CERCA_DOCUMENTI` (search `LOG_DOCS`) map to the custom `SourceStrategy`
+ * subclasses in `CustomSourceStrategies.ts`, registered with the engine via
+ * `ImportEngine.registerCustomSource` at composition-root time (Bootstrap.ts).
  */
 export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
   const cfg = conf.getConfig() as Partial<AldoImportConfig>;
-  if (cfg.searchStrategy !== 'FILE_SINGOLO') {
-    throw new ConfigurationError(
-      `CONF_IMP ${conf.id ?? '?'}: strategia sorgente "${String(cfg.searchStrategy)}" non ancora implementata ` +
-        '(solo FILE_SINGOLO è disponibile; CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI richiedono SourceStrategy custom).'
-    );
-  }
-  if (cfg.fileId === undefined || cfg.fileId.trim() === '') {
-    throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.fileId obbligatorio per FILE_SINGOLO`);
-  }
   if (cfg.key === undefined || cfg.key.trim() === '') {
     throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.key obbligatorio`);
   }
@@ -59,7 +92,7 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
 
   const recipe: ImportRecipe = {
     name: conf.id ?? 'import',
-    source: { type: 'SheetById', config: { sheetId: cfg.fileId } },
+    source: buildSource(conf, cfg),
     load
   };
   if (cfg.map !== undefined) recipe.transform = { mapping: cfg.map };

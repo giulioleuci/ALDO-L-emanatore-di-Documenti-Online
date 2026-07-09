@@ -505,7 +505,8 @@ declare global {
 
   // --- GasDataImporter (L3): ETL recipe engine ---
   interface ImportSourceConfig {
-    type: 'SheetById' | 'Folder';
+    /** Built-in 'SheetById' | 'Folder', or any type registered via ImportEngine.registerCustomSource. */
+    type: string;
     config: Record<string, unknown>;
   }
   interface ImportTransformConfig {
@@ -542,6 +543,9 @@ declare global {
     getTransform(): ImportTransformConfig;
     getLoad(): ImportLoadConfig;
     getSummary(): Record<string, unknown>;
+    /** Whitelists a custom source.type for recipe validation (idempotent). */
+    static registerSourceType(type: string): void;
+    static readonly VALID_SOURCE_TYPES: string[];
   }
   class ImportEngine {
     constructor(
@@ -558,9 +562,21 @@ declare global {
     _executeExtract(config: ImportConfiguration): Record<string, unknown>[];
     _executeTransform(data: Record<string, unknown>[], config: ImportConfiguration): Record<string, unknown>[];
     _executeLoad(data: Record<string, unknown>[], config: ImportConfiguration): ImportLoadResult;
+    /** Registers a custom SourceStrategy subclass under `name` (source.type) and whitelists the type. */
+    registerCustomSource(name: string, strategyClass: new (logger: LoggerService, dependencies: Record<string, unknown>) => SourceStrategy): void;
   }
   class ImportError extends Error {
     code: string;
+  }
+  /** Base class for custom extraction sources (registered via ImportEngine.registerCustomSource). */
+  abstract class SourceStrategy {
+    constructor(logger?: LoggerService);
+    /** Public entry point: validates the result is an array and wraps failures as SourceError. */
+    extract(config: Record<string, unknown>): Record<string, unknown>[];
+    /** Subclasses implement this — must return an array of row objects. */
+    protected abstract _extractData(config: Record<string, unknown>): Record<string, unknown>[];
+    protected _validateConfig(config: Record<string, unknown>, requiredFields: string[]): void;
+    protected _coerceValue(value: unknown): unknown;
   }
 
   // --- ComposableContentLib (L4): declarative block composition (box rendering) ---

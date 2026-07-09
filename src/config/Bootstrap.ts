@@ -25,8 +25,11 @@ import type { ContextBuilder } from '../application/context-engine/ContextBuilde
 import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import { ConfigurazioneImportRepository } from '../infrastructure/repositories/ConfigurazioneImportRepository';
 import { ClasseRepository } from '../infrastructure/repositories/ClasseRepository';
+import { LogCartellaRepository } from '../infrastructure/repositories/LogCartellaRepository';
+import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
+import { createCercaCartelleClasseStrategy, createCercaDocumentiStrategy } from '../application/import/CustomSourceStrategies';
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
 import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade';
 import { GmailServiceFacade } from '../infrastructure/facades/GmailServiceFacade';
@@ -197,22 +200,30 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   const annoCorrente = new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
   const db = new SheetDbAdapter(new DatabaseService(annoCorrente.idSpreadsheet, logger));
 
+  const driveService = ServiceFactory.getDriveService();
+  const spreadsheetService = ServiceFactory.getSpreadsheetService();
+
+  // GasDataImporter's Loader writes through the raw SheetDBLib table API
+  // (insertRows/updateRowById), not the ALDO IDatabase port — a second
+  // DatabaseService instance over the same spreadsheet, scoped to this one
+  // execution (menu launches run one operation at a time, ref 15 §8).
+  const importEngine = new ImportEngine(logger, driveService, spreadsheetService, new DatabaseService(annoCorrente.idSpreadsheet, logger));
+  // CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI (12 §3) are ALDO-specific source
+  // strategies, not part of the library's built-in vocabulary — registered
+  // here at the composition root so ImportRecipeMapper's recipes resolve.
+  importEngine.registerCustomSource(
+    'CERCA_CARTELLE_CLASSE',
+    createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), driveService, spreadsheetService)
+  );
+  importEngine.registerCustomSource('CERCA_DOCUMENTI', createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheetService));
+
   runtime = buildAldoContainer({
     db,
     drive: new DriveServiceFacade(ServiceFactory.getDriveService(), ServiceFactory.getPermissionService(), annoCorrente.idCartellaRoot),
     gmail: new GmailServiceFacade(ServiceFactory.getMailService()),
     templates: new TemplateEngineFacade(),
     expressionEngine: new ExpressionEngineFacade(),
-    // GasDataImporter's Loader writes through the raw SheetDBLib table API
-    // (insertRows/updateRowById), not the ALDO IDatabase port — a second
-    // DatabaseService instance over the same spreadsheet, scoped to this one
-    // execution (menu launches run one operation at a time, ref 15 §8).
-    importEngine: new ImportEngine(
-      logger,
-      ServiceFactory.getDriveService(),
-      ServiceFactory.getSpreadsheetService(),
-      new DatabaseService(annoCorrente.idSpreadsheet, logger)
-    ),
+    importEngine,
     monitor: new ProcessMonitorFacade(new ProcessMonitorService(logger, ServiceFactory.getCacheService(), ServiceFactory.getPropertiesService())),
     now,
     logger

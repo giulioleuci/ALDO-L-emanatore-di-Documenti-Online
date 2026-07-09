@@ -165,3 +165,29 @@ test('vendored ProcessMonitorService exposes the real job-progress API', () => {
   monitor.completeJob('job1', 'done');
   expect(monitor.hasJob('job1')).toBe(true);
 });
+
+test('custom SourceStrategy registered via ImportEngine.registerCustomSource works end-to-end (GasLibraryFactory extensibility fix)', () => {
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const drive = new DriveService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const sheets = new SpreadsheetService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const db = { tables: { DEST: { getAllRows: () => [], insertRows: () => undefined } }, save: () => undefined };
+
+  class ProbeSourceStrategy extends SourceStrategy {
+    protected _extractData(config: Record<string, unknown>): Record<string, unknown>[] {
+      return [{ EMAIL: `probe@${String(config['marker'])}` }];
+    }
+  }
+
+  const engine = new ImportEngine(logger, drive, sheets, db as unknown as DatabaseService);
+  engine.registerCustomSource('ProbeSource', ProbeSourceStrategy);
+
+  const config = new ImportConfiguration({
+    name: 'probe',
+    source: { type: 'ProbeSource', config: { marker: 'x' } },
+    load: { targetTable: 'DEST', conflictResolution: 'INSERT_ONLY' }
+  });
+  const extracted = engine._executeExtract(config);
+  expect(extracted).toEqual([{ EMAIL: 'probe@x' }]);
+});

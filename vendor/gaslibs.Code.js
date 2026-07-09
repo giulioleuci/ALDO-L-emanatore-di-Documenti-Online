@@ -58977,6 +58977,31 @@ class ImportConfiguration {
 
 
 
+
+
+  static registerSourceType(type) {
+    if (!ImportConfiguration.VALID_SOURCE_TYPES.includes(type)) {
+      ImportConfiguration.VALID_SOURCE_TYPES.push(type);
+    }
+  }
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
   constructor(recipe, logger = console) {
     this._logger = logger;
     this._validate(recipe);
@@ -59213,12 +59238,6 @@ class ImportConfiguration {
 
 
 ImportConfiguration_defineProperty(ImportConfiguration, "VALID_SOURCE_TYPES", ['SheetById', 'Folder']);
-
-
-
-
-
-
 ImportConfiguration_defineProperty(ImportConfiguration, "VALID_CONFLICT_STRATEGIES", ['INSERT_ONLY', 'UPDATE_ONLY', 'UPSERT', 'OVERWRITE']);
 
 ;
@@ -60904,6 +60923,7 @@ class ImportPipelineExecutor {
   }
 }
 ;
+
 class ImportStrategyRegistry {
   constructor(facade) {
     this.facade = facade;
@@ -60911,6 +60931,10 @@ class ImportStrategyRegistry {
   registerCustomSource(name, strategyClass) {
     this.facade.logger.info(`[ImportEngine] Registering custom source strategy: ${name}`);
     this.facade._sourceFactory.registerStrategy(name, strategyClass);
+    
+    
+    
+    ImportConfiguration.registerSourceType(name);
   }
   getAvailableSourceTypes() {
     return this.facade._sourceFactory.getAvailableStrategies();

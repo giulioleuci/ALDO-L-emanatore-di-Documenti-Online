@@ -43,6 +43,7 @@ export class LogDocumento extends AldoEntity {
 
   containsClasse(classeId: string): boolean { return csv(this.raw[COL_LOG_DOCS.CLASSI]).includes(classeId); }
   containsUtente(email: string): boolean { return csv(this.raw[COL_LOG_DOCS.UTENTI]).includes(email); }
+  getClassi(): string[] { return csv(this.raw[COL_LOG_DOCS.CLASSI]); }
 
   /** Updates STATO (transition validation is the service's job, ref 04 §18). Marks dirty. */
   cambiaStato(nuovoStato: StatoDocumento): void {

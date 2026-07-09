@@ -2,6 +2,7 @@ import { DocumentGenerationService } from '../../src/application/services/Docume
 import { ContextEngineFactory } from '../../src/application/context-engine/ContextEngineFactory';
 import { VerbaleGeneratorStrategy } from '../../src/application/strategies/VerbaleGeneratorStrategy';
 import { ConfigurazioneDocumentoRepository } from '../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import { RisolutoreRuoliService } from '../../src/application/services/RisolutoreRuoliService';
 import { ExpressionEngineFacade } from '../../src/infrastructure/facades/ExpressionEngineFacade';
 import type { GeneratorStrategy } from '../../src/application/strategies/GeneratorStrategy';
 import { FakeDatabase } from '../fakes/FakeDatabase';
@@ -24,6 +25,7 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
+    roleResolver: new RisolutoreRuoliService(db),
     now: new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };
@@ -95,4 +97,30 @@ test('critical failure rolls back Drive clone and DB transaction (10 §8 + Sheet
   expect(db.committed).toBe(0);
   expect(db.table('LOG_DOCS').findAll()).toHaveLength(0);
   expect(db.table('LOG_FOLD').findAll()).toHaveLength(0);
+});
+
+test('applies CONF_DOC.PERMESSI ACLs end-to-end via role resolution (10 §10, 14 §1)', () => {
+  const tables = fixtureTables();
+  tables.CONF_DOC = tables.CONF_DOC!.map((r) =>
+    r.ID === 'CD1'
+      ? {
+          ...r,
+          PERMESSI: JSON.stringify({
+            file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }],
+            folder: [{ ruolo: 'CDC', permesso: 'LETTURA' }],
+            regolaSupplente: { file: 'SOLO_TITOLARI', folder: 'SOLO_TITOLARI' }
+          })
+        }
+      : r
+  );
+  const { db, drive, service } = wire(tables);
+  const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
+  expect(result.status).toBe('GENERATO');
+
+  const fileAcls = drive.permissions.filter((p) => p.fileId === result.fileId);
+  expect(fileAcls).toEqual([{ fileId: result.fileId, email: 'rossi@school.it', permesso: 'SCRITTURA' }]);
+  const folderId = drive.folders.get('Verbali/5');
+  const folderAcls = drive.permissions.filter((p) => p.fileId === folderId).map((p) => p.email).sort();
+  expect(folderAcls).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  expect(db.table('LOG_DOCS').findAll()).toHaveLength(1);
 });

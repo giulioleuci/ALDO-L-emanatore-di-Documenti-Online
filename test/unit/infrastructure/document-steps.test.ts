@@ -1,7 +1,9 @@
 import {
   AnalyzeContextStep, CheckDuplicatesStep, PrepareInfrastructureStep, GenerateNameStep,
-  SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, RegisterDocumentStep, PostProcessStep, CRITICAL_STEPS
+  SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, RegisterDocumentStep, PostProcessStep,
+  ApplyPermissionsStep, CRITICAL_STEPS
 } from '../../../src/infrastructure/steps/documentSteps';
+import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
 import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
@@ -161,4 +163,32 @@ test('PostProcessStep skipped when POST_PROCESSO is null', () => {
   const ctx = baseCtx(db); // fixture CD1 has POST_PROCESSO null
   new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx);
   expect(ctx.get('postProcessUpdated')).toBeNull();
+});
+
+test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §10, 14 §1)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const perms = {
+    file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }],
+    folder: [{ ruolo: 'CDC', permesso: 'LETTURA' }],
+    regolaSupplente: { file: 'SOLO_TITOLARI', folder: 'SOLO_TITOLARI' }
+  };
+  ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: JSON.stringify(perms) });
+  ctx.set('newFileId', 'file_1');
+  ctx.set('destFolderId', 'folder_1');
+  const drive = new FakeDriveFacade();
+  new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+
+  const fileAcls = drive.permissions.filter((p) => p.fileId === 'file_1');
+  expect(fileAcls).toEqual([{ fileId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }]);
+  const folderAcls = drive.permissions.filter((p) => p.fileId === 'folder_1').map((p) => p.email).sort();
+  expect(folderAcls).toEqual(['bianchi@school.it', 'rossi@school.it']);
+});
+
+test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db); // CD1 has PERMESSI null
+  const drive = new FakeDriveFacade();
+  new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+  expect(drive.permissions).toEqual([]);
 });

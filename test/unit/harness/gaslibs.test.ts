@@ -126,3 +126,21 @@ test('vendored GasDataImporter globals are loaded', () => {
   expect(typeof ImportConfiguration).toBe('function');
   expect(typeof ImportError).toBe('function');
 });
+
+test('vendored DriveService/PermissionService instances expose the real bound API surface', () => {
+  // Constructed directly (not via ServiceFactory, which needs a live GAS
+  // CacheService) to verify the class shape offline: the constructor binds
+  // the fileManager/folderManager/metadataService methods onto the instance.
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const drive = new DriveService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  expect(typeof drive.deleteFiles).toBe('function');
+  expect(typeof drive.copyFiles).toBe('function');
+  expect(typeof drive.getFileByIdStandard).toBe('function');
+  expect(typeof drive.createFolder).toBe('function');
+  expect(typeof drive.getFiles).toBe('function');
+  expect(typeof drive.searchFiles).toBe('function');
+  const perms = new PermissionService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  expect(typeof perms.shareWithUsers).toBe('function');
+});

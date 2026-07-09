@@ -191,7 +191,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
 
   runtime = buildAldoContainer({
     db,
-    drive: new DriveServiceFacade(ServiceFactory.getDriveService()),
+    drive: new DriveServiceFacade(ServiceFactory.getDriveService(), ServiceFactory.getPermissionService(), annoCorrente.idCartellaRoot),
     gmail: new GmailServiceFacade(ServiceFactory.getMailService()),
     templates: new TemplateEngineFacade(),
     expressionEngine: new ExpressionEngineFacade(),

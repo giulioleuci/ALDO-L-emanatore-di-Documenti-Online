@@ -99,14 +99,45 @@ declare global {
     flush(options?: Record<string, unknown>): number;
   }
 
-  // --- GoogleApiWrapper (L2): Drive/Document facade globals ---
+  // --- GoogleApiWrapper (L1/L2): Drive globals (the REAL bound API, verified
+  // against the vendored bundle — DriveService composes DriveFileManager/
+  // DriveFolderManager/DriveMetadataService and binds their methods onto the
+  // instance; there is no findFolderByPath/copyFile/setPermission/trashFile/
+  // countFiles on the library itself. DriveServiceFacade composes these into
+  // ALDO's higher-level IDriveFacade contract). ---
+  interface DriveBatchOutcome<T> {
+    successful: Array<{ id: string; status: number; data: T }>;
+    failed: Array<{ id: string; status: number; error: Error }>;
+  }
+  interface DriveFileMetadata {
+    id: string;
+    name: string;
+    mimeType: string;
+    parents?: string[];
+  }
   class DriveService {
-    findFolderByPath(path: string): string | null;
-    createFolderPath(path: string): string;
-    copyFile(templateId: string, name: string, folderId: string): string;
-    setPermission(fileId: string, email: string, permesso: string): void;
-    trashFile(fileId: string): void;
-    countFiles(folderId: string): number;
+    // DriveFileManager
+    deleteFiles(fileIds: string | string[], options?: { permanently?: boolean }): DriveBatchOutcome<null>;
+    copyFiles(
+      requests: Array<{ fileId: string; name?: string; destinationFolder?: string }>,
+      options?: Record<string, unknown>
+    ): DriveBatchOutcome<{ id: string; name: string; parents: string[] }>;
+    /** Native DriveApp File/Folder object (e.g. for `.getBlob()`). */
+    getFileByIdStandard(fileId: string): { getBlob(): unknown };
+    // DriveFolderManager
+    createFolder(folderName: string, parentFolderId?: string | null, options?: Record<string, unknown>): unknown;
+    // DriveMetadataService
+    getFiles(fileIds: string | string[], options?: { fields?: string }): DriveFileMetadata | Record<string, DriveFileMetadata | null>;
+    searchFiles(query: string, options?: { maxResults?: number; orderBy?: string }): DriveFileMetadata[];
+  }
+  class PermissionService {
+    /** `role` is a Drive API v3 role: 'writer' | 'reader' | 'commenter'. */
+    shareWithUsers(
+      fileIds: string | string[],
+      permissions: Array<{ type?: string; role: string; email: string; sendEmail?: boolean }>,
+      options?: { sendNotificationEmail?: boolean }
+    ): DriveBatchOutcome<unknown>;
+    removeAccess(fileIds: string | string[], emailsOrPermissionIds: string | string[]): DriveBatchOutcome<unknown>;
   }
 
   // --- WorkspaceTemplateEngine (L2): Mustache engine + PlaceholderService facade ---
@@ -447,6 +478,7 @@ declare global {
     static getPropertiesService(): LibPropertiesService;
     static getUiService(): LibUiService;
     static getSpreadsheetService(): SpreadsheetService;
+    static getPermissionService(): PermissionService;
   }
 
   // --- GasProcessMonitorLib (L4): monitoring sidebar ---

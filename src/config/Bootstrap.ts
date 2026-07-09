@@ -16,6 +16,8 @@ import { ReportService } from '../application/services/ReportService';
 import { AggregatoreDati } from '../application/services/AggregatoreDati';
 import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
 import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
+import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/DocumentoGenericoGeneratorStrategy';
+import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/DocPersonalizzatoGeneratorStrategy';
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
@@ -66,7 +68,15 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('contextBuilder', () => ContextEngineFactory.create(deps.db));
   c.register('strategyRegistry', () => {
     // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value implemented.
-    return new Map<string, GeneratorStrategy>([['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)]]);
+    // SHEET_CON_MATERIE / SHEET_CON_MATERIE_E_PERMESSI / DOCUMENTO_CON_TABELLE_IMPORTATE
+    // need Sheet-structural facade capabilities (column insertion, range
+    // protection, table import) not yet built; a CONF_DOC using them fails
+    // typed at RenderTemplateStep ("GENERATORE non registrato").
+    return new Map<string, GeneratorStrategy>([
+      ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
+      ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
+      ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
+    ]);
   });
   c.register(
     'documentGenerationService',

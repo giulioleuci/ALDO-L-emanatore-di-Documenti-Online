@@ -200,7 +200,7 @@ export class RenderTemplateStep extends Step {
     const generatore = String(cfg(ctx)[COL_CONF_DOC.GENERATORE]);
     const strategy = this.registry.get(generatore);
     if (!strategy) throw new PipelineError(`GENERATORE non registrato: ${generatore}`); // 10 §9
-    strategy.render(ctx.get<string>('newFileId')!, cdu(ctx));
+    strategy.render(ctx.get<string>('newFileId')!, cdu(ctx), confDoc(ctx));
   }
 }
 

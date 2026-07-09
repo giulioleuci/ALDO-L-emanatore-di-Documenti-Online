@@ -7,10 +7,11 @@ import type { GeneratorStrategy } from '../../application/strategies/GeneratorSt
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { ConfigurazioneDocumentoRepository } from '../repositories/ConfigurazioneDocumentoRepository';
 import type { Email } from '../../domain/value-objects/Email';
-import { TABLE, COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD } from '../../config/schema';
+import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import { StatoDocumento, SchemaSottocartelle, GestioneSupplenti } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
+import { AlberoCartelle } from '../services/AlberoCartelle';
 
 /**
  * Role-resolution port consumed by ApplyPermissionsStep (10 §10). Satisfied
@@ -132,19 +133,11 @@ export class PrepareInfrastructureStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const path = this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]), cduRecord(ctx));
-    let folderId = this.drive.findFolderByPath(path);
-    if (folderId === null) {
-      // Folder did not exist: create it and register it in LOG_FOLD (ref 10 §5 step 4).
-      folderId = this.drive.createFolder(path);
-      const row: Row = {
-        [COL_LOG_FOLD.ID]: folderId,
-        [COL_LOG_FOLD.PATH]: path,
-        [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${folderId}`
-      };
-      // Persisted by the service's transaction commit (SheetDBLib forbids
-      // save() inside an open transaction).
-      this.db.table(TABLE.LOG_FOLD).insert(row);
-    }
+    // findOrCreate over LOG_FOLD + Drive (14 §4); the LOG_FOLD insert is committed
+    // by the service transaction (SheetDBLib forbids save() while one is open).
+    const classe = classeNome(ctx);
+    const options = classe !== '' ? { classe } : {};
+    const { folderId } = new AlberoCartelle(this.drive, this.db).findOrCreate(path, options);
     this.setResult(ctx, 'destFolderId', folderId);
     this.setResult(ctx, 'destFolderPath', path);
   }

@@ -14,13 +14,14 @@ import { AggregatoreDati } from '../../../src/application/services/AggregatoreDa
 import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import { JOB_TYPE_INVIO_EMAIL } from '../../../src/application/services/EmailBatchService';
-import { JOB_TYPE_GENERAZIONE_DOCUMENTI } from '../../../src/application/services/DocumentBatchService';
+import { DocumentBatchService, JOB_TYPE_GENERAZIONE_DOCUMENTI } from '../../../src/application/services/DocumentBatchService';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
+import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
@@ -134,4 +135,22 @@ test('riprendiJobSospeso re-registers BOTH batch registries so the library can p
   riprendiJobSospeso(container(), runner);
   expect(calls[0]!.jobName).toBe('');
   expect(calls[0]!.registered.sort()).toEqual([JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL].sort());
+});
+
+test('deps.monitor flows through to both batch services (15 §9)', () => {
+  const monitor = new FakeProcessMonitor();
+  const c = buildAldoContainer({
+    db: new FakeDatabase(fixtureTables()),
+    drive: new FakeDriveFacade(),
+    gmail: new FakeGmailFacade(),
+    templates: new FakeTemplateEngine(),
+    expressionEngine: new ExpressionEngineFacade(),
+    monitor,
+    now: NOW
+  });
+  const docBatch = c.get<DocumentBatchService>('documentBatchService');
+  const gen = docBatch.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_gen_CD1' });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+  expect(monitor.registered).toEqual(['job_gen_CD1']);
 });

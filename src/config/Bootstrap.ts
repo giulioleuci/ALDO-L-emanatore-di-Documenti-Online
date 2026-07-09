@@ -3,6 +3,7 @@ import type { IGmailFacade } from '../infrastructure/facades/GmailServiceFacade'
 import type { ITemplateEngine } from '../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../infrastructure/facades/ExpressionEngineFacade';
 import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
+import type { IProcessMonitor } from '../infrastructure/facades/ProcessMonitorFacade';
 import type { EmailDb } from '../application/services/EmailNotificationService';
 import { ServiceContainer } from './ServiceContainer';
 import { DocumentGenerationService } from '../application/services/DocumentGenerationService';
@@ -32,6 +33,7 @@ import { GmailServiceFacade } from '../infrastructure/facades/GmailServiceFacade
 import { TemplateEngineFacade } from '../infrastructure/facades/TemplateEngineFacade';
 import { ExpressionEngineFacade } from '../infrastructure/facades/ExpressionEngineFacade';
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
+import { ProcessMonitorFacade } from '../infrastructure/facades/ProcessMonitorFacade';
 import { ConfigurationError } from '../domain/errors/DomainError';
 
 /** ScriptProperties key holding the Master Sheet spreadsheet id (15 §7, 06 §0). */
@@ -51,6 +53,8 @@ export interface BootstrapDeps {
    * when running under GAS.
    */
   importEngine?: ImportEngine;
+  /** GasProcessMonitorLib port (15 §9) — sidebar progress for the two batch jobs. */
+  monitor?: IProcessMonitor;
   now: Date;
   logger?: LoggerService;
 }
@@ -97,12 +101,16 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('risolutoreRuoli', () => new RisolutoreRuoliService(deps.db));
   c.register(
     'documentBatchService',
-    (container) => new DocumentBatchService(new ClasseRepository(deps.db), container.get<DocumentGenerationService>('documentGenerationService'))
+    (container) =>
+      new DocumentBatchService(new ClasseRepository(deps.db), container.get<DocumentGenerationService>('documentGenerationService'), deps.monitor)
   );
   c.register('emailNotificationService', () =>
     EmailNotificationService.create(deps.db, deps.gmail, deps.templates, deps.now, deps.drive, logger)
   );
-  c.register('emailBatchService', (container) => new EmailBatchService(container.get<EmailNotificationService>('emailNotificationService')));
+  c.register(
+    'emailBatchService',
+    (container) => new EmailBatchService(container.get<EmailNotificationService>('emailNotificationService'), deps.monitor)
+  );
   c.register(
     'emailRetryService',
     (container) =>
@@ -205,6 +213,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
       ServiceFactory.getSpreadsheetService(),
       new DatabaseService(annoCorrente.idSpreadsheet, logger)
     ),
+    monitor: new ProcessMonitorFacade(new ProcessMonitorService(logger, ServiceFactory.getCacheService(), ServiceFactory.getPropertiesService())),
     now,
     logger
   });

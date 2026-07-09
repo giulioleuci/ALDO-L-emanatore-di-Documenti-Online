@@ -1,4 +1,5 @@
 import type { EmailNotificationService } from './EmailNotificationService';
+import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 
 /** Job type under which the batch send handler is registered in JobRunnerLib. */
 export const JOB_TYPE_INVIO_EMAIL = 'INVIO_EMAIL_BATCH';
@@ -32,15 +33,23 @@ export interface EmailBatchResult {
  * `params.resumeState`. Targets are re-enumerated on resume and consumed from
  * `nextIndex`, so the PROCESSO enumeration must be stable across runs
  * (self-marking patterns like PER_CARENZA shrink naturally via POST_PROCESSO).
+ *
+ * Per-target error isolation (15 §8) already lives inside the pipeline itself:
+ * `SendEmailStep` never throws, it collects failures as strings — so no
+ * try/catch is needed here, unlike `DocumentBatchService`.
  */
 export class EmailBatchService {
-  constructor(private readonly email: EmailNotificationService) {}
+  constructor(
+    private readonly email: EmailNotificationService,
+    private readonly monitor?: IProcessMonitor
+  ) {}
 
   /** JobRunnerLib handler: one checkpoint per chunk of targets. */
   *batchSendHandler(
-    params: JobHandlerParams & { patternId?: string; chunkSize?: number }
+    params: JobHandlerParams & { patternId?: string; chunkSize?: number; jobId?: string }
   ): Generator<EmailBatchCheckpoint, EmailBatchResult, void> {
     const patternId = String(params.patternId ?? '');
+    const jobId = String(params.jobId ?? patternId);
     const chunkSize = Number(params.chunkSize ?? EMAIL_CHUNK_SIZE);
     const resume = (params.resumeState ?? null) as EmailBatchResumeState | null;
     const targets = this.email.enumerateTargets(this.email.getConfigurazione(patternId));
@@ -49,6 +58,11 @@ export class EmailBatchService {
     const errors = resume === null ? [] : resume.errors.slice();
     let sent = resume?.sent ?? 0;
     let i = resume?.nextIndex ?? 0;
+
+    if (resume === null) {
+      this.monitor?.registerJob(jobId);
+      this.monitor?.startJob(jobId);
+    }
 
     while (i < targets.length) {
       const fine = Math.min(i + chunkSize, targets.length);
@@ -59,15 +73,20 @@ export class EmailBatchService {
         errors.push(...esito.errors);
         processed.push(target.target);
       }
+      const percentage = (i / targets.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, `${processed.length}/${targets.length} destinatari elaborati`);
       yield {
-        percentage: (i / targets.length) * 100,
+        percentage,
         nextIndex: i,
         processed: processed.slice(),
         sent,
         errors: errors.slice()
       };
     }
-    return { success: errors.length === 0, totale: targets.length, processed, sent, errors };
+
+    const success = errors.length === 0;
+    this.monitor?.completeJob(jobId, `${sent} email inviate, ${errors.length} errori`);
+    return { success, totale: targets.length, processed, sent, errors };
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */
@@ -80,7 +99,7 @@ export class EmailBatchService {
     return runner.run(
       jobName,
       JOB_TYPE_INVIO_EMAIL,
-      { patternId },
+      { patternId, jobId: jobName },
       (queue) => this.registerJobHandlers(queue),
       forceRestart
     );

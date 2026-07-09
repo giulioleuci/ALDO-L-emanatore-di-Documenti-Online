@@ -5,13 +5,15 @@ import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
+import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
-function wire() {
+function wire(monitor?: FakeProcessMonitor) {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const service = new EmailBatchService(EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade()));
+  const notification = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
+  const service = new EmailBatchService(notification, monitor);
   return { gmail, service };
 }
 
@@ -57,4 +59,26 @@ test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {
   const queue = { registerJobHandler: (type: string) => { registered.push(type); } } as unknown as JobQueueLike;
   service.registerJobHandlers(queue);
   expect(registered).toEqual([JOB_TYPE_INVIO_EMAIL]);
+});
+
+test('GasProcessMonitorLib progress calls (15 §9): register/start once, progress per chunk, complete at the end', () => {
+  const monitor = new FakeProcessMonitor();
+  const { service } = wire(monitor);
+  drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1, jobId: 'job_mail_1', resumeState: null }));
+  expect(monitor.registered).toEqual(['job_mail_1']);
+  expect(monitor.started).toEqual(['job_mail_1']);
+  expect(monitor.progress).toHaveLength(2);
+  expect(monitor.completed).toHaveLength(1);
+});
+
+test('resume does not re-register/re-start the job', () => {
+  const monitor = new FakeProcessMonitor();
+  const { service } = wire(monitor);
+  drain(service.batchSendHandler({
+    patternId: 'CDC_OTTOBRE', chunkSize: 1, jobId: 'job_mail_1',
+    resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+  }));
+  expect(monitor.registered).toEqual([]);
+  expect(monitor.started).toEqual([]);
+  expect(monitor.completed).toHaveLength(1);
 });

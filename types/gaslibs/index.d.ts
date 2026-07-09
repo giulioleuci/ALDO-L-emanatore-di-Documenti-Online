@@ -479,9 +479,25 @@ declare global {
     static getUiService(): LibUiService;
     static getSpreadsheetService(): SpreadsheetService;
     static getPermissionService(): PermissionService;
+    /** Raw cache FACTORY (exposes getScriptCache()) — NOT the resolved cache getCache() returns. */
+    static getCacheService(): { getScriptCache(): unknown };
   }
 
-  // --- GasProcessMonitorLib (L4): monitoring sidebar ---
+  // --- GasProcessMonitorLib (L4): job progress tracking + monitoring sidebar ---
+  class ProcessMonitorService {
+    constructor(logger: LoggerService, cacheService: unknown, propertiesService: unknown);
+    registerJob(jobId: string): void;
+    startJob(jobId: string): void;
+    updateProgress(jobId: string, percentage: number, message?: string): void;
+    logStepStart(jobId: string, stepName: string): void;
+    logStepComplete(jobId: string, stepName: string, success: boolean): void;
+    logStepSkipped(jobId: string, stepName: string): void;
+    setError(jobId: string, error: unknown): void;
+    completeJob(jobId: string, message?: string): void;
+    getJobState(jobId: string): Record<string, unknown> | null;
+    hasJob(jobId: string): boolean;
+    clearJob(jobId: string): void;
+  }
   class DashboardUi {
     constructor(uiService: LibUiService, logger: LoggerService);
     createSidebar(jobId: string, title?: string, options?: Record<string, unknown>): void;

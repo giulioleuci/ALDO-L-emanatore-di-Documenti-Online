@@ -10,6 +10,9 @@
  * and is attached NON-enumerable (never serialized — see 02 §7).
  */
 
+import type { LazyRef } from '../storico/LazyRef';
+import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
+
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
   anagrafica: { nome: string; cognome: string; email: string; genere: string; appellativo: string };
@@ -151,6 +154,8 @@ export interface CduAlunno {
       items: Array<{ nome: string; link: string; tipo: string; stato: string; dataCreazione: string }>;
       hasDocumenti: boolean;
     };
+    /** Lazy prior-years history (13 §2/§3), populated only when `includiStorico` is true. */
+    storico?: LazyRef<AnnoAlunnoStorico[]>;
   };
 }
 

@@ -4,13 +4,14 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
+import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
 function wire() {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const service = new EmailBatchService(EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW));
+  const service = new EmailBatchService(EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade()));
   return { gmail, service };
 }
 

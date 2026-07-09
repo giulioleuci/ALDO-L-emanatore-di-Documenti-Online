@@ -4,6 +4,7 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
+import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../src/infrastructure/db/Database';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
@@ -13,7 +14,7 @@ function wire(extraConfMail: Row[] = []) {
   tables['CONF_MAIL'] = [...tables['CONF_MAIL']!, ...extraConfMail];
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW);
+  const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
   return { db, gmail, service };
 }
 

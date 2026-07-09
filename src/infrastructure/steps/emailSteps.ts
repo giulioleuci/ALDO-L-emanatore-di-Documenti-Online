@@ -12,7 +12,10 @@ import type { MateriaRepository } from '../repositories/MateriaRepository';
 import type { SupplenzaRepository } from '../repositories/SupplenzaRepository';
 import type { MasterSheetRepository } from '../repositories/MasterSheetRepository';
 import type { LogEmailRepository } from '../repositories/LogEmailRepository';
+import type { LogDocumentoRepository } from '../repositories/LogDocumentoRepository';
+import type { IDriveFacade } from '../facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
+import { getClasseEntity } from '../../application/context-engine/techEntities';
 import { recipe } from '../../application/context-engine/Recipe';
 import { salutoPerTarget } from '../../application/email/saluto';
 import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../../application/email/boxes';
@@ -190,9 +193,32 @@ export class RenderBoxesStep extends Step {
 export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly templates: ITemplateEngine
+    private readonly templates: ITemplateEngine,
+    private readonly logDocs: LogDocumentoRepository,
+    private readonly drive: IDriveFacade
   ) {
     super('ComposeEmail', logger, { shouldExecuteCondition: sendGate, requiredKeys: ['cdu', 'oggettoRisolto'] });
+  }
+
+  /**
+   * Attachment resolution (11 §13): only when a class is in focus. The optional
+   * tipo/stato filters come from the first BOX_CFG entry whose
+   * `DATI_SORGENTE.metodo` is `documentiPerClasse` (14 §2 vocabulary) — the
+   * same box that would otherwise render these documents, reused here so the
+   * filter is configured once per pattern, not duplicated.
+   */
+  private resolveAllegati(conf: ConfigurazioneEmail, built: Cdu): unknown[] {
+    if (built.focus.classe === undefined) return [];
+    const boxConfig = conf.getBoxes().find((b) => {
+      const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
+      return sorgente?.metodo === 'documentiPerClasse';
+    });
+    const filtri = (boxConfig?.['DATI_SORGENTE'] as { filtri?: { tipo?: string; stato?: string } } | undefined)?.filtri ?? {};
+    const classe = getClasseEntity(built);
+    const documenti = this.logDocs
+      .findByClasse(classe)
+      .filter((d) => (filtri.tipo === undefined || d.tipo === filtri.tipo) && (filtri.stato === undefined || String(d.getStato()) === filtri.stato));
+    return documenti.map((d) => this.drive.getFileBlob(d.id ?? ''));
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const conf = confMail(ctx);
@@ -224,9 +250,7 @@ export class ComposeEmailStep extends Step {
     if (built.render !== undefined) built.render.body = { htmlCompleto, htmlSoloContenuto };
     if (built.destinatario !== undefined) built.destinatario.comunicazione.testoContenutoPuro = htmlSoloContenuto;
     this.setResult(ctx, 'corpoHtml', htmlCompleto);
-    // Attachment blobs (11 §13) require live Drive access; the offline slice
-    // sends without attachments — the composition root wires real blobs.
-    this.setResult(ctx, 'allegati', []);
+    this.setResult(ctx, 'allegati', this.resolveAllegati(conf, built));
   }
 }
 

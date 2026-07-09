@@ -6,6 +6,7 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
+import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../src/infrastructure/db/Database';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
@@ -22,7 +23,7 @@ function wire(logMailRows: Row[]) {
   tables['LOG_MAIL'] = logMailRows;
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const emailService = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW);
+  const emailService = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
   const retry = new EmailRetryService(
     new LogEmailRepository(db), emailService, gmail, new MasterSheetRepository(db)
   );

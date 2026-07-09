@@ -100,7 +100,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     (container) => new DocumentBatchService(new ClasseRepository(deps.db), container.get<DocumentGenerationService>('documentGenerationService'))
   );
   c.register('emailNotificationService', () =>
-    EmailNotificationService.create(deps.db, deps.gmail, deps.templates, deps.now, logger)
+    EmailNotificationService.create(deps.db, deps.gmail, deps.templates, deps.now, deps.drive, logger)
   );
   c.register('emailBatchService', (container) => new EmailBatchService(container.get<EmailNotificationService>('emailNotificationService')));
   c.register(

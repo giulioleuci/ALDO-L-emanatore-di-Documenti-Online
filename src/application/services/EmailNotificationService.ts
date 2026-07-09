@@ -1,5 +1,6 @@
 import type { IDatabase } from '../../infrastructure/db/Database';
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
+import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
@@ -19,6 +20,7 @@ import { ClasseRepository } from '../../infrastructure/repositories/ClasseReposi
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import { ConfigurazioneEmailRepository } from '../../infrastructure/repositories/ConfigurazioneEmailRepository';
 import { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
+import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
@@ -32,6 +34,8 @@ export type EmailDb = IDatabase & PostProcessDb & RepositoryDatabase;
 export interface EmailNotificationDeps {
   db: EmailDb;
   gmail: IGmailFacade;
+  /** Attachment blob resolution (11 §13). */
+  drive: IDriveFacade;
   contextBuilder: ContextBuilder;
   templates: ITemplateEngine;
   expressionEngine: IExpressionEngine;
@@ -41,6 +45,7 @@ export interface EmailNotificationDeps {
   carenze: CarenzaRepository;
   confMail: ConfigurazioneEmailRepository;
   logMail: LogEmailRepository;
+  logDocs: LogDocumentoRepository;
   master: MasterSheetRepository;
   supplenze: SupplenzaRepository;
   materie: MateriaRepository;
@@ -79,10 +84,11 @@ export class EmailNotificationService {
   }
 
   /** Convenience wiring over one database (composition-root shortcut and tests). */
-  static create(db: EmailDb, gmail: IGmailFacade, templates: ITemplateEngine, now: Date, logger?: LoggerService): EmailNotificationService {
+  static create(db: EmailDb, gmail: IGmailFacade, templates: ITemplateEngine, now: Date, drive: IDriveFacade, logger?: LoggerService): EmailNotificationService {
     const base: EmailNotificationDeps = {
       db,
       gmail,
+      drive,
       templates,
       now,
       contextBuilder: ContextEngineFactory.create(db),
@@ -93,6 +99,7 @@ export class EmailNotificationService {
       carenze: new CarenzaRepository(db),
       confMail: new ConfigurazioneEmailRepository(db),
       logMail: new LogEmailRepository(db),
+      logDocs: new LogDocumentoRepository(db),
       master: new MasterSheetRepository(db),
       supplenze: new SupplenzaRepository(db),
       materie: new MateriaRepository(db)
@@ -176,7 +183,7 @@ export class EmailNotificationService {
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates))
-      .addStep(new ComposeEmailStep(this.logger, d.templates))
+      .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
       .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.supplenze))
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))
       .addStep(new LogEmailStep(this.logger, d.logMail))

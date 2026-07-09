@@ -14,10 +14,12 @@ import { MateriaRepository } from '../../../src/infrastructure/repositories/Mate
 import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
+import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
+import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../src/infrastructure/db/Database';
 
 const logger = new LoggerService();
@@ -78,7 +80,7 @@ function runThroughCompose(w: Wiring): void {
   buildStep(w).execute(w.ctx);
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
-  new ComposeEmailStep(logger, w.templates).execute(w.ctx);
+  new ComposeEmailStep(logger, w.templates, new LogDocumentoRepository(w.db), new FakeDriveFacade()).execute(w.ctx);
 }
 
 // --- Step 1: BuildCDUStep ---
@@ -152,6 +154,24 @@ test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () 
   expect(html).toContain('comunicazione automatica');
   expect(html).toContain('non sarà monitorata'); // NOREPLY warning block
   expect(w.ctx.get('allegati')).toEqual([]);
+});
+
+test('ComposeEmailStep resolves class-attached documents as blobs (11 §13)', () => {
+  const w = wire();
+  w.db.table('LOG_DOCS').insert({ ID: 'doc1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' });
+  w.db.table('LOG_DOCS').insert({ ID: 'doc2', ID_GEN: 'CD1', TIPO: 'PDP', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' });
+  runThroughCompose(w);
+  expect(w.ctx.get('allegati')).toEqual(['blob:doc1', 'blob:doc2']);
+});
+
+test('ComposeEmailStep filters attachments by the documentiPerClasse BOX_CFG entry (11 §13, 14 §2)', () => {
+  const w = wire({
+    BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '', DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PDP' } } }])
+  });
+  w.db.table('LOG_DOCS').insert({ ID: 'doc1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' });
+  w.db.table('LOG_DOCS').insert({ ID: 'doc2', ID_GEN: 'CD1', TIPO: 'PDP', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' });
+  runThroughCompose(w);
+  expect(w.ctx.get('allegati')).toEqual(['blob:doc2']);
 });
 
 test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and omits noReply block when false', () => {

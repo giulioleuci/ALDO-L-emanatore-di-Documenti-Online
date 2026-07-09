@@ -3,13 +3,14 @@ import { FakeDatabase } from '../fakes/FakeDatabase';
 import { fixtureTables } from '../fixtures/tables';
 import { FakeTemplateEngine } from '../fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../fakes/FakeGmailFacade';
+import { FakeDriveFacade } from '../fakes/FakeDriveFacade';
 
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window
 
 function wire() {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW);
+  const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
   return { db, gmail, service };
 }
 

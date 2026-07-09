@@ -8,6 +8,10 @@ import {
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
 import { EmailRetryService } from '../../../src/application/services/EmailRetryService';
+import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
+import { ReportService } from '../../../src/application/services/ReportService';
+import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
+import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import { JOB_TYPE_INVIO_EMAIL } from '../../../src/application/services/EmailBatchService';
 import { JOB_TYPE_GENERAZIONE_DOCUMENTI } from '../../../src/application/services/DocumentBatchService';
@@ -68,6 +72,10 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.get('emailRetryService')).toBeInstanceOf(EmailRetryService);
   expect(c.has('documentBatchService')).toBe(true);
   expect(c.has('emailBatchService')).toBe(true);
+  expect(c.get('risolutoreRuoli')).toBeInstanceOf(RisolutoreRuoliService);
+  expect(c.get('reportService')).toBeInstanceOf(ReportService);
+  expect(c.get('aggregatoreDati')).toBeInstanceOf(AggregatoreDati);
+  expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
 });
 
 test('the wired email service actually sends through the container graph (smoke)', () => {

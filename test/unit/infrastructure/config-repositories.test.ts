@@ -35,6 +35,16 @@ test('CONF_MAIL: findByProcesso + boxes + header default + noreply (06 §9)', ()
 test('CONF_IMP: findAttivi + findByTarget + config parse (06 §10)', () => {
   const r = new ConfigurazioneImportRepository(db());
   expect(r.findAttivi().map((c) => c.id)).toEqual(['IMPORT_ALUNNI']);
-  expect(r.findByTarget('ALUNNI')[0]!.getConfig()).toEqual({ searchStrategy: 'FILE_SINGOLO' });
+  expect(r.findByTarget('ALUNNI')[0]!.getConfig()).toMatchObject({ searchStrategy: 'FILE_SINGOLO', fileId: 'sheet_alunni' });
   expect(r.findByTarget('DOCENTI')[0]!.getConfig()).toEqual({});
+});
+
+test('findById works after the list-cache is populated (regression: local cache field name must not shadow Repository.cache)', () => {
+  // findAttivi() populates the repository's OWN list cache; findById() then goes
+  // through the DomainRepositoryLib base class, which owns an unrelated `cache`
+  // slot. If both used the field name `cache`, the local array would silently
+  // overwrite the base's CacheService slot and findById would throw.
+  const r = new ConfigurazioneImportRepository(db());
+  r.findAttivi();
+  expect(r.findById('IMPORT_ALUNNI')?.target).toBe('ALUNNI');
 });

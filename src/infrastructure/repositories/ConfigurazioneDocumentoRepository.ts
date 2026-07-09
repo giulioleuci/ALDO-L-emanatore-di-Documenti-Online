@@ -12,15 +12,18 @@ interface ModelloCondizionale { condizione?: string; templateId?: string }
  * GasExpressionEngineLib (via IExpressionEngine), never in-house.
  */
 export class ConfigurazioneDocumentoRepository extends Repository<ConfigurazioneDocumento> {
-  private cache: ConfigurazioneDocumento[] | null = null;
+  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
+  // already owns a `this.cache` field (a CacheService slot used by findById);
+  // reusing that name silently breaks findById after this local cache populates.
+  private listCache: ConfigurazioneDocumento[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.CONF_DOC, ConfigurazioneDocumento);
   }
 
   private all(): ConfigurazioneDocumento[] {
-    if (this.cache === null) this.cache = this.findAll();
-    return this.cache;
+    if (this.listCache === null) this.listCache = this.findAll();
+    return this.listCache;
   }
 
   findAllCached(): ConfigurazioneDocumento[] {

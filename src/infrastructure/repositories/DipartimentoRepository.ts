@@ -11,15 +11,18 @@ import { TABLE } from '../../config/schema';
  * here we expose the CAPO email and the department's MateriaId list.
  */
 export class DipartimentoRepository extends Repository<Dipartimento> {
-  private cache: Dipartimento[] | null = null;
+  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
+  // already owns a `this.cache` field (a CacheService slot used by findById);
+  // reusing that name silently breaks findById after this local cache populates.
+  private listCache: Dipartimento[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.DIPART, Dipartimento);
   }
 
   private all(): Dipartimento[] {
-    if (this.cache === null) this.cache = this.findAll();
-    return this.cache;
+    if (this.listCache === null) this.listCache = this.findAll();
+    return this.listCache;
   }
 
   findAllCached(): Dipartimento[] {

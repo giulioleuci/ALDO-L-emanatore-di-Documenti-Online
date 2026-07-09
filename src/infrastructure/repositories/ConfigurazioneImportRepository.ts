@@ -6,15 +6,18 @@ import { TABLE } from '../../config/schema';
  * ref 06 §10). Small, stable config table, cached for the session.
  */
 export class ConfigurazioneImportRepository extends Repository<ConfigurazioneImport> {
-  private cache: ConfigurazioneImport[] | null = null;
+  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
+  // already owns a `this.cache` field (a CacheService slot used by findById);
+  // reusing that name silently breaks findById after this local cache populates.
+  private listCache: ConfigurazioneImport[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.CONF_IMP, ConfigurazioneImport);
   }
 
   private all(): ConfigurazioneImport[] {
-    if (this.cache === null) this.cache = this.findAll();
-    return this.cache;
+    if (this.listCache === null) this.listCache = this.findAll();
+    return this.listCache;
   }
 
   /** Enabled import jobs (ref 06 §10). */

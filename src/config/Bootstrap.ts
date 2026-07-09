@@ -10,11 +10,13 @@ import { DocumentBatchService } from '../application/services/DocumentBatchServi
 import { EmailNotificationService } from '../application/services/EmailNotificationService';
 import { EmailBatchService } from '../application/services/EmailBatchService';
 import { EmailRetryService } from '../application/services/EmailRetryService';
+import { ImportService, type ImportResult } from '../application/services/ImportService';
 import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import { ConfigurazioneImportRepository } from '../infrastructure/repositories/ConfigurazioneImportRepository';
 import { ClasseRepository } from '../infrastructure/repositories/ClasseRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
@@ -36,6 +38,13 @@ export interface BootstrapDeps {
   gmail: IGmailFacade;
   templates: ITemplateEngine;
   expressionEngine: IExpressionEngine;
+  /**
+   * GasDataImporter engine (12 §3). Optional: only FILE_SINGOLO imports are
+   * implemented so far, and constructing the real engine needs live
+   * DriveService/SpreadsheetService — the composition root only builds one
+   * when running under GAS.
+   */
+  importEngine?: ImportEngine;
   now: Date;
   logger?: LoggerService;
 }
@@ -89,6 +98,10 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         { logger }
       )
   );
+  if (deps.importEngine !== undefined) {
+    const engine = deps.importEngine;
+    c.register('importService', () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db)));
+  }
   return c;
 }
 
@@ -102,9 +115,18 @@ export function avviaInvioNotificheDataDriven(c: ServiceContainer, patternId: st
   return c.get<EmailBatchService>('emailBatchService').start(runner, `mail_${patternId}`, patternId);
 }
 
-/** Data-driven launcher (15 §4): ETL import — pending ImportService (12 §3). */
-export function avviaImportazioneDataDriven(_c: ServiceContainer, configId: string): never {
-  throw new ConfigurationError(`Importazione ${configId} non disponibile: ImportService non ancora implementato (12 §3)`);
+/**
+ * Data-driven launcher (15 §4): ETL import (12 §3). Executed synchronously —
+ * `eseguiImportazione` is a single execution, not an iteration (15 §6); it is
+ * NOT wrapped in JobRunnerLib, unlike the two batch launchers above.
+ */
+export function avviaImportazioneDataDriven(c: ServiceContainer, configId: string): ImportResult {
+  if (!c.has('importService')) {
+    throw new ConfigurationError(
+      `Importazione ${configId} non disponibile: nessun ImportEngine configurato (12 §3, richiede DriveService/SpreadsheetService live)`
+    );
+  }
+  return c.get<ImportService>('importService').executeImport(configId);
 }
 
 /**
@@ -154,6 +176,16 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     gmail: new GmailServiceFacade(ServiceFactory.getMailService()),
     templates: new TemplateEngineFacade(),
     expressionEngine: new ExpressionEngineFacade(),
+    // GasDataImporter's Loader writes through the raw SheetDBLib table API
+    // (insertRows/updateRowById), not the ALDO IDatabase port — a second
+    // DatabaseService instance over the same spreadsheet, scoped to this one
+    // execution (menu launches run one operation at a time, ref 15 §8).
+    importEngine: new ImportEngine(
+      logger,
+      ServiceFactory.getDriveService(),
+      ServiceFactory.getSpreadsheetService(),
+      new DatabaseService(annoCorrente.idSpreadsheet, logger)
+    ),
     now,
     logger
   });

@@ -98,8 +98,27 @@ test('avviaInvioNotificheDataDriven starts the email batch job (15 §4/§6)', ()
   expect(calls[0]).toMatchObject({ jobName: 'mail_CDC_OTTOBRE', jobType: JOB_TYPE_INVIO_EMAIL, params: { patternId: 'CDC_OTTOBRE' } });
 });
 
-test('avviaImportazioneDataDriven fails typed until ImportService lands (12 §3)', () => {
+test('avviaImportazioneDataDriven fails typed when no ImportEngine is configured (12 §3)', () => {
   expect(() => avviaImportazioneDataDriven(container(), 'IMPORT_ALUNNI')).toThrow(ConfigurationError);
+});
+
+test('avviaImportazioneDataDriven runs the real ImportService when an ImportEngine is wired (12 §3)', () => {
+  const engine = {
+    _executeExtract: () => [{ A: 'a1@x.it', B: 'ROSSI' }],
+    _executeTransform: (data: Record<string, unknown>[]) => data.map((r) => ({ EMAIL: r['A'], COGNOMENOME: r['B'] })),
+    _executeLoad: (data: Record<string, unknown>[]) => ({ success: true, inserted: data.length, updated: 0, skipped: 0, deleted: 0, total: data.length })
+  } as unknown as ImportEngine;
+  const c = buildAldoContainer({
+    db: new FakeDatabase(fixtureTables()),
+    drive: new FakeDriveFacade(),
+    gmail: new FakeGmailFacade(),
+    templates: new FakeTemplateEngine(),
+    expressionEngine: new ExpressionEngineFacade(),
+    importEngine: engine,
+    now: NOW
+  });
+  const result = avviaImportazioneDataDriven(c, 'IMPORT_ALUNNI');
+  expect(result).toEqual({ inseriti: 1, aggiornati: 0, saltati: 0, ghost: 0, errori: [] });
 });
 
 test('riprendiJobSospeso re-registers BOTH batch registries so the library can pick by job type (15 §5)', () => {

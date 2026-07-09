@@ -62,7 +62,9 @@ export function fixtureTables(): Record<string, Row[]> {
         POST_PROCESSO: '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]' }
     ],
     CONF_IMP: [
-      { ID: 'IMPORT_ALUNNI', TARGET: 'ALUNNI', CONFIG: '{"searchStrategy":"FILE_SINGOLO"}', ATTIVO: true },
+      { ID: 'IMPORT_ALUNNI', TARGET: 'ALUNNI',
+        CONFIG: '{"searchStrategy":"FILE_SINGOLO","fileId":"sheet_alunni","map":{"A":"EMAIL","B":"COGNOMENOME"},"key":"EMAIL","conflictResolution":"IGNORE"}',
+        ATTIVO: true },
       { ID: 'IMPORT_DOCENTI', TARGET: 'DOCENTI', CONFIG: null, ATTIVO: false }
     ],
     INDIRIZZI: [

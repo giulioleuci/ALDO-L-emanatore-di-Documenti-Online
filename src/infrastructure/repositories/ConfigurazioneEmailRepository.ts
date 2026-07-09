@@ -7,15 +7,18 @@ import { TABLE } from '../../config/schema';
  * ref 06 §9). Small, stable config table, cached for the session.
  */
 export class ConfigurazioneEmailRepository extends Repository<ConfigurazioneEmail> {
-  private cache: ConfigurazioneEmail[] | null = null;
+  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
+  // already owns a `this.cache` field (a CacheService slot used by findById);
+  // reusing that name silently breaks findById after this local cache populates.
+  private listCache: ConfigurazioneEmail[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.CONF_MAIL, ConfigurazioneEmail);
   }
 
   private all(): ConfigurazioneEmail[] {
-    if (this.cache === null) this.cache = this.findAll();
-    return this.cache;
+    if (this.listCache === null) this.listCache = this.findAll();
+    return this.listCache;
   }
 
   findAllCached(): ConfigurazioneEmail[] {

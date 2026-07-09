@@ -10,15 +10,18 @@ import { TABLE } from '../../config/schema';
  * always the current year — no computation, no global "current year" flag.
  */
 export class MasterSheetRepository extends Repository<MasterConfig> {
-  private cache: MasterConfig[] | null = null;
+  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
+  // already owns a `this.cache` field (a CacheService slot used by findById);
+  // reusing that name silently breaks findById after this local cache populates.
+  private listCache: MasterConfig[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.MASTER, MasterConfig);
   }
 
   private all(): MasterConfig[] {
-    if (this.cache === null) this.cache = this.findAll();
-    return this.cache;
+    if (this.listCache === null) this.listCache = this.findAll();
+    return this.listCache;
   }
 
   /** Config for a specific school year (YYYY-YYYY), or null (ref 06 §0). */

@@ -10,7 +10,10 @@ import { TABLE } from '../../config/schema';
  * session (ref 06 §Caching).
  */
 export class IndirizzoRepository extends Repository<Indirizzo> {
-  private cache: Indirizzo[] | null = null;
+  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
+  // already owns a `this.cache` field (a CacheService slot used by findById);
+  // reusing that name silently breaks findById after this local cache populates.
+  private listCache: Indirizzo[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.INDIRIZZI, Indirizzo);
@@ -18,8 +21,8 @@ export class IndirizzoRepository extends Repository<Indirizzo> {
 
   /** All indirizzi, loaded once and cached for the session. */
   private all(): Indirizzo[] {
-    if (this.cache === null) this.cache = this.findAll();
-    return this.cache;
+    if (this.listCache === null) this.listCache = this.findAll();
+    return this.listCache;
   }
 
   findAllCached(): Indirizzo[] {

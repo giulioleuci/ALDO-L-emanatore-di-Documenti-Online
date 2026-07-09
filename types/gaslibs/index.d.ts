@@ -433,6 +433,10 @@ declare global {
     prompt(title: string, message: string, buttonSet?: unknown): LibPromptResponse;
     createSidebar(): unknown;
   }
+  class SpreadsheetService {
+    getSheetInfo(spreadsheetId: string): Array<{ name: string; rowCount?: number; columnCount?: number }>;
+    getRanges(spreadsheetId: string, range: string): unknown[][];
+  }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
     static reset(resetConfig?: boolean): void;
@@ -442,12 +446,73 @@ declare global {
     static getMailService(options?: Record<string, unknown>): MailService;
     static getPropertiesService(): LibPropertiesService;
     static getUiService(): LibUiService;
+    static getSpreadsheetService(): SpreadsheetService;
   }
 
   // --- GasProcessMonitorLib (L4): monitoring sidebar ---
   class DashboardUi {
     constructor(uiService: LibUiService, logger: LoggerService);
     createSidebar(jobId: string, title?: string, options?: Record<string, unknown>): void;
+  }
+
+  // --- GasDataImporter (L3): ETL recipe engine ---
+  interface ImportSourceConfig {
+    type: 'SheetById' | 'Folder';
+    config: Record<string, unknown>;
+  }
+  interface ImportTransformConfig {
+    mapping?: Record<string, string>;
+    calculated?: Record<string, string>;
+    normalization?: Record<string, unknown>;
+    validation?: string | string[];
+  }
+  interface ImportLoadConfig {
+    targetTable: string;
+    conflictResolution: 'INSERT_ONLY' | 'UPDATE_ONLY' | 'UPSERT' | 'OVERWRITE';
+    conflictKey?: string;
+    updateIfNewer?: { enabled: boolean; timestampColumn?: string };
+  }
+  interface ImportRecipe {
+    name: string;
+    source: ImportSourceConfig;
+    transform?: ImportTransformConfig;
+    load: ImportLoadConfig;
+  }
+  interface ImportLoadResult {
+    success: boolean;
+    inserted: number;
+    updated: number;
+    skipped: number;
+    deleted: number;
+    total: number;
+  }
+  /** Wraps a raw recipe with validation; thrown by the constructor on invalid shape. */
+  class ImportConfiguration {
+    constructor(recipe: ImportRecipe, logger?: unknown);
+    getName(): string;
+    getSource(): ImportSourceConfig;
+    getTransform(): ImportTransformConfig;
+    getLoad(): ImportLoadConfig;
+    getSummary(): Record<string, unknown>;
+  }
+  class ImportEngine {
+    constructor(
+      logger: LoggerService,
+      driveService: DriveService,
+      spreadsheetService: SpreadsheetService,
+      databaseService: DatabaseService,
+      expressionEngine?: ExpressionEngineService | null,
+      exceptionService?: unknown,
+      monitor?: unknown
+    );
+    runImport(recipe: ImportRecipe, options?: { dryRun?: boolean; jobId?: string }): Record<string, unknown>;
+    /** Bound pipeline phases (library exposes these on the instance despite the leading underscore). */
+    _executeExtract(config: ImportConfiguration): Record<string, unknown>[];
+    _executeTransform(data: Record<string, unknown>[], config: ImportConfiguration): Record<string, unknown>[];
+    _executeLoad(data: Record<string, unknown>[], config: ImportConfiguration): ImportLoadResult;
+  }
+  class ImportError extends Error {
+    code: string;
   }
 
   // --- ComposableContentLib (L4): declarative block composition (box rendering) ---

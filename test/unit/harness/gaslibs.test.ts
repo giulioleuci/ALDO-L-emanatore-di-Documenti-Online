@@ -120,3 +120,9 @@ test('find(FunctionSpecification) filters in memory', () => {
   expect(found).toHaveLength(1);
   expect(found[0]!.id).toBe('a');
 });
+
+test('vendored GasDataImporter globals are loaded', () => {
+  expect(typeof ImportEngine).toBe('function');
+  expect(typeof ImportConfiguration).toBe('function');
+  expect(typeof ImportError).toBe('function');
+});

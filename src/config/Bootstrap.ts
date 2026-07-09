@@ -19,7 +19,10 @@ import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
 import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
 import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/DocumentoGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/DocPersonalizzatoGeneratorStrategy';
+import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';
+import { SheetMaterieConPermessiGeneratorStrategy } from '../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
+import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositories/ConfigurazioneDocumentoRepository';
@@ -56,6 +59,12 @@ export interface BootstrapDeps {
    * when running under GAS.
    */
   importEngine?: ImportEngine;
+  /**
+   * GoogleApiWrapper SpreadsheetService (10 §9), needed by the two Sheet-writing
+   * generator strategies (SHEET_CON_MATERIE/_E_PERMESSI). Optional for the same
+   * reason as importEngine: constructing it needs live GAS services.
+   */
+  spreadsheets?: SpreadsheetService;
   /** GasProcessMonitorLib port (15 §9) — sidebar progress for the two batch jobs. */
   monitor?: IProcessMonitor;
   now: Date;
@@ -75,15 +84,25 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('contextBuilder', () => ContextEngineFactory.create(deps.db));
   c.register('strategyRegistry', () => {
     // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value implemented.
-    // SHEET_CON_MATERIE / SHEET_CON_MATERIE_E_PERMESSI / DOCUMENTO_CON_TABELLE_IMPORTATE
-    // need Sheet-structural facade capabilities (column insertion, range
-    // protection, table import) not yet built; a CONF_DOC using them fails
-    // typed at RenderTemplateStep ("GENERATORE non registrato").
-    return new Map<string, GeneratorStrategy>([
+    // DOCUMENTO_CON_TABELLE_IMPORTATE still needs Sheet-table-import facade
+    // capability not yet built; a CONF_DOC using it fails typed at
+    // RenderTemplateStep ("GENERATORE non registrato"). The two SHEET_CON_MATERIE*
+    // strategies need a live SpreadsheetService (deps.spreadsheets, GAS-only) —
+    // omitted (and thus unregistered, same fallback) when running off-GAS.
+    const registry = new Map<string, GeneratorStrategy>([
       ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
       ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
       ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
     ]);
+    if (deps.spreadsheets !== undefined) {
+      const materie = new MateriaRepository(deps.db);
+      registry.set('SHEET_CON_MATERIE', new SheetMaterieGeneratorStrategy(deps.spreadsheets, materie, deps.templates));
+      registry.set(
+        'SHEET_CON_MATERIE_E_PERMESSI',
+        new SheetMaterieConPermessiGeneratorStrategy(deps.spreadsheets, materie, deps.templates, new RisolutoreRuoliService(deps.db))
+      );
+    }
+    return registry;
   });
   c.register(
     'documentGenerationService',
@@ -224,6 +243,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     templates: new TemplateEngineFacade(),
     expressionEngine: new ExpressionEngineFacade(),
     importEngine,
+    spreadsheets: spreadsheetService,
     monitor: new ProcessMonitorFacade(new ProcessMonitorService(logger, ServiceFactory.getCacheService(), ServiceFactory.getPropertiesService())),
     now,
     logger

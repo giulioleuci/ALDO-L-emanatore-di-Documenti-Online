@@ -37,6 +37,12 @@ describe('RisolutoreRuoliService — class roles (14 §1.1)', () => {
     // but bianchi remains via FISI. Verify rossi present, and no duplication.
     expect(emails(service, 'DOCENTI_NO_RELIGIONE', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
   });
+
+  test('DOCENTI_IRC_ALT merges CLASSI.IRC + CLASSI.ALT, deduped (MAT_NON_STANDARD §2.C)', () => {
+    const { cdu, service } = build({});
+    // 5A: IRC = bianchi, no ALT column set — merge degrades to just IRC.
+    expect(emails(service, 'DOCENTI_IRC_ALT', cdu)).toEqual(['bianchi@school.it']);
+  });
 });
 
 describe('RisolutoreRuoliService — single-teacher roles (14 §1.1)', () => {

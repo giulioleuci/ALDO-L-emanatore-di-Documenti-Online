@@ -97,6 +97,8 @@ export class RisolutoreRuoliService {
       ['CDC', (c) => docenti(this.cdcCompleto(c.classe))],
       ['CDC_FILTER_ALUNNO', (c) => docenti(this.cdcFiltrato(c))],
       ['DOCENTI_NO_RELIGIONE', (c) => docenti(this.classi.getAllDocentiCDC(c.classe))],
+      // REL/ALT merged column protection (MAT_NON_STANDARD §2.C) — IRC + ALT deduped by email.
+      ['DOCENTI_IRC_ALT', (c) => docenti(this.docentiIrcAlt(c.classe))],
       // --- Single-teacher roles from CLASSI.RUOLI JSON ---
       ['SEGRETARIO_CDC', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'SEGRETARIO'))],
       ['TUTOR_ASL', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ASL'))],
@@ -121,6 +123,15 @@ export class RisolutoreRuoliService {
       ...this.classi.getDocentiIRC(classe),
       ...this.classi.getDocentiALT(classe)
     ];
+  }
+
+  /** IRC + ALT teachers, deduped by email (MAT_NON_STANDARD §2.C — NOT resolved via DOCENTE_MATERIA: IRC/ALT are CLASSI columns, not MATERIE rows). */
+  private docentiIrcAlt(classe: Classe): Docente[] {
+    const byEmail = new Map<string, Docente>();
+    for (const d of [...this.classi.getDocentiIRC(classe), ...this.classi.getDocentiALT(classe)]) {
+      if (d.id !== null) byEmail.set(d.id, d);
+    }
+    return [...byEmail.values()];
   }
 
   /** Filtered council for the alunno in focus — reuses the CDU VM built by CdcAssembler (14 §1.3). */

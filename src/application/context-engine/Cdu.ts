@@ -120,6 +120,8 @@ export interface CduClasse {
     genitori: Array<{ nomeCompleto: string }>;
   };
   consiglioDiClasse?: DocenteCdcVM[];
+  /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
+  elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
   studenti?: {
     listaCompleta: AlunnoContestoVM[];
     statistiche?: {

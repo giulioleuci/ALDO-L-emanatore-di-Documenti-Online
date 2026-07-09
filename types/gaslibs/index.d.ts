@@ -515,12 +515,49 @@ declare global {
       options?: { globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean } }
     ): SpreadsheetProtectResult;
   }
+  interface DocumentStructureElement {
+    index: number;
+    startIndex: number;
+    endIndex: number;
+    type: 'PARAGRAPH' | 'TABLE' | 'SECTION_BREAK' | 'UNKNOWN';
+    text?: string;
+  }
+  interface DocumentTextMatch {
+    elementIndex: number;
+    text: string;
+    type: 'TEXT' | 'TABLE_TEXT';
+  }
+  interface DocumentScanResult {
+    tables: unknown[];
+    textMatches: DocumentTextMatch[];
+  }
+  interface DocumentCreateTableOptions {
+    headerRow?: boolean;
+    alternatingRows?: boolean;
+    columnWidths?: number[];
+  }
+  interface DocumentBuilderExecuteResult {
+    success: boolean;
+    error?: unknown;
+  }
+  class DocumentBuilder {
+    replaceText(searchPattern: string, replacement: string): DocumentBuilder;
+    createTable(data: string[][], options?: DocumentCreateTableOptions): DocumentBuilder;
+    execute(): DocumentBuilderExecuteResult;
+  }
+  class DocumentService {
+    /** Returns a fluent op-batching builder; nothing executes until `.execute()` (10 §9 table import). */
+    document(documentId: string): DocumentBuilder;
+    /** Docs-structure scan filtered to paragraphs/table cells containing any of `textPatterns` (default `['{{']`). */
+    scanDocumentStructure(documentId: string, textPatterns?: string[]): DocumentScanResult;
+  }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
     static reset(resetConfig?: boolean): void;
     static getLogger(): LoggerService;
     static getUtilitiesService(): UtilsService;
     static getDriveService(): DriveService;
+    static getDocumentService(): DocumentService;
     static getMailService(options?: Record<string, unknown>): MailService;
     static getPropertiesService(): LibPropertiesService;
     static getUiService(): LibUiService;

@@ -162,6 +162,19 @@ test('vendored SpreadsheetService exposes the real bound API surface (Sheet-writ
   expect(typeof sheets.protectRanges).toBe('function');
 });
 
+test('vendored DocumentService exposes document()/scanDocumentStructure (DOCUMENTO_CON_TABELLE_IMPORTATE, 10 §9)', () => {
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  expect(typeof documents.document).toBe('function');
+  expect(typeof documents.scanDocumentStructure).toBe('function');
+  const builder = documents.document('doc1');
+  expect(typeof builder.replaceText).toBe('function');
+  expect(typeof builder.createTable).toBe('function');
+  expect(typeof builder.execute).toBe('function');
+});
+
 test('vendored ProcessMonitorService exposes the real job-progress API', () => {
   const logger = new LoggerService();
   // Stateful fake cache so hasJob (which reads state back) can be exercised.

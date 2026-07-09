@@ -21,7 +21,9 @@ import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/Do
 import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
+import { DocumentoConTabelleImportateGeneratorStrategy } from '../application/strategies/DocumentoConTabelleImportateGeneratorStrategy';
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
+import { DocumentTableFacade } from '../infrastructure/facades/DocumentTableFacade';
 import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
@@ -65,6 +67,8 @@ export interface BootstrapDeps {
    * reason as importEngine: constructing it needs live GAS services.
    */
   spreadsheets?: SpreadsheetService;
+  /** GoogleApiWrapper DocumentService (10 §9), needed by DOCUMENTO_CON_TABELLE_IMPORTATE. Optional for the same reason as importEngine/spreadsheets. */
+  documents?: DocumentService;
   /** GasProcessMonitorLib port (15 §9) — sidebar progress for the two batch jobs. */
   monitor?: IProcessMonitor;
   now: Date;
@@ -83,12 +87,11 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('db', () => deps.db);
   c.register('contextBuilder', () => ContextEngineFactory.create(deps.db));
   c.register('strategyRegistry', () => {
-    // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value implemented.
-    // DOCUMENTO_CON_TABELLE_IMPORTATE still needs Sheet-table-import facade
-    // capability not yet built; a CONF_DOC using it fails typed at
-    // RenderTemplateStep ("GENERATORE non registrato"). The two SHEET_CON_MATERIE*
-    // strategies need a live SpreadsheetService (deps.spreadsheets, GAS-only) —
-    // omitted (and thus unregistered, same fallback) when running off-GAS.
+    // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value
+    // implemented. The Sheet/Doc-structural strategies need a live
+    // SpreadsheetService/DocumentService (deps.spreadsheets/deps.documents,
+    // GAS-only) — omitted (and thus unregistered — RenderTemplateStep then
+    // fails typed with "GENERATORE non registrato") when running off-GAS.
     const registry = new Map<string, GeneratorStrategy>([
       ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
       ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
@@ -101,6 +104,12 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         'SHEET_CON_MATERIE_E_PERMESSI',
         new SheetMaterieConPermessiGeneratorStrategy(deps.spreadsheets, materie, deps.templates, new RisolutoreRuoliService(deps.db))
       );
+      if (deps.documents !== undefined) {
+        registry.set(
+          'DOCUMENTO_CON_TABELLE_IMPORTATE',
+          new DocumentoConTabelleImportateGeneratorStrategy(deps.templates, deps.spreadsheets, new DocumentTableFacade(deps.documents))
+        );
+      }
     }
     return registry;
   });
@@ -221,6 +230,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
 
   const driveService = ServiceFactory.getDriveService();
   const spreadsheetService = ServiceFactory.getSpreadsheetService();
+  const documentService = ServiceFactory.getDocumentService();
 
   // GasDataImporter's Loader writes through the raw SheetDBLib table API
   // (insertRows/updateRowById), not the ALDO IDatabase port — a second
@@ -244,6 +254,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     expressionEngine: new ExpressionEngineFacade(),
     importEngine,
     spreadsheets: spreadsheetService,
+    documents: documentService,
     monitor: new ProcessMonitorFacade(new ProcessMonitorService(logger, ServiceFactory.getCacheService(), ServiceFactory.getPropertiesService())),
     now,
     logger

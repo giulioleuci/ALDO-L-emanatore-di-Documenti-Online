@@ -136,9 +136,15 @@ step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
   const core = fs.readFileSync(aldoCoreBundle, 'utf8');
 
   if (mode === 'production') {
-    const minified = minify_sync(prelude, { format: { comments: false } });
-    if (minified.error || typeof minified.code !== 'string') {
-      fail(`Failed to minify vendor prelude: ${minified.error ? minified.error.message : 'no code produced'}`);
+    let minified;
+    try {
+      minified = minify_sync(prelude, { format: { comments: false } });
+    } catch (e) {
+      fail(`Failed to minify vendor prelude: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    }
+    if (typeof minified.code !== 'string') {
+      fail('Failed to minify vendor prelude: no code produced');
       process.exit(1);
     }
     fs.writeFileSync(codeJsPath, minified.code + '\n;\n' + core, 'utf8');

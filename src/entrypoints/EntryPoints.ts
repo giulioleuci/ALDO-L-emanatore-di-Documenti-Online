@@ -29,14 +29,14 @@ declare global {
 }
 
 /** Menu wrapper (15 §4): prompts for a CONF_DOC.ID, then starts batch document generation. */
-export function menu_avvioGenerazioneDocumenti(): void {
+function menu_avvioGenerazioneDocumenti(): void {
   menuGenerazioneDocumenti(new GasUiFacade(), (configId) =>
     avviaGenerazioneDataDriven(initAldo(), configId, creaJobRunner())
   );
 }
 
 /** Menu wrapper (15 §4): prompts for a CONF_MAIL.ID, then starts a mass email send. */
-export function menu_avvioComunicazioniEmail(): void {
+function menu_avvioComunicazioniEmail(): void {
   menuComunicazioniEmail(new GasUiFacade(), (patternId) =>
     avviaInvioNotificheDataDriven(initAldo(), patternId, creaJobRunner())
   );
@@ -62,12 +62,12 @@ export function menu_avvioComunicazioniEmail(): void {
 // ---------------------------------------------------------------------------
 
 /** Launches document generation for the CONF_DOC row "PAGELLE_1Q" (example — edit the id before use). */
-export function generaPagelle(): void {
+function generaPagelle(): void {
   avviaGenerazioneDataDriven(initAldo(), 'PAGELLE_1Q', creaJobRunner());
 }
 
 /** Sends the CONF_MAIL "ASSENZE_SETTIMANALI" notification pattern (example — edit the id before use). */
-export function inviaNotificaAssenze(): void {
+function inviaNotificaAssenze(): void {
   avviaInvioNotificheDataDriven(initAldo(), 'ASSENZE_SETTIMANALI', creaJobRunner());
 }
 

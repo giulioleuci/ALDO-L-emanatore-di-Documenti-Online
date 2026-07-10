@@ -56,15 +56,12 @@ module.exports = (env) => {
     output: {
       filename: 'EntryPoints.js',
       path: path.resolve(__dirname, 'dist'),
-      library: { type: 'this' },
-      clean: false
+      clean: false,
+      iife: false
     },
     resolve: { extensions: ['.ts', '.js', '.json'] },
     module: { rules: [babelRule] },
-    optimization: { minimize: false },
-    plugins: [
-      new GasPlugin({ autoGlobalExportsFiles: [path.resolve(__dirname, 'src/entrypoints/EntryPoints.ts')], comment: true })
-    ]
+    optimization: { minimize: false }
   };
 
   return [coreConfig, entrypointsConfig];

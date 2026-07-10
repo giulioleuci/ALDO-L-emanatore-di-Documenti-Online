@@ -633,8 +633,15 @@ if (mode === 'production') {
   const entryPointsContent = fs.existsSync(entryPointsFinalPath) ? fs.readFileSync(entryPointsFinalPath, 'utf8') : '';
 
   const launcherNames = ['menu_avvioGenerazioneDocumenti', 'menu_avvioComunicazioniEmail', 'generaPagelle', 'inviaNotificaAssenze'];
+  // menu_avvioGenerazioneDocumenti/menu_avvioComunicazioniEmail legitimately
+  // appear in Code.js as STRING data: src/presentation/Menu.ts's vociMenu()
+  // (bundled into core) registers GAS menu items by function-name string
+  // (menu.addItem(label, 'funcName')), and that file is part of core, not
+  // EntryPoints.ts. Only the two non-interactive example launchers — never
+  // referenced anywhere in core — are safe to check by bare name.
+  const namesForbiddenInCodeJs = ['generaPagelle', 'inviaNotificaAssenze'];
 
-  const leakedIntoCodeJs = launcherNames.filter((name) => codeJsContent.includes(name));
+  const leakedIntoCodeJs = namesForbiddenInCodeJs.filter((name) => codeJsContent.includes(name));
   if (leakedIntoCodeJs.length > 0) {
     fail(`Code.js unexpectedly contains launcher source: ${leakedIntoCodeJs.join(', ')}`);
     productionVerifyPassed = false;
@@ -775,7 +782,9 @@ Expected: a substantial line count (multi-line, readable — dozens of lines, no
 
 - [ ] **Step 7: Confirm `dist/Code.js` does NOT contain the launcher source in `production` mode**
 
-Run: `grep -c "menu_avvioGenerazioneDocumenti\|menu_avvioComunicazioniEmail\|generaPagelle\|inviaNotificaAssenze" dist/Code.js`
+Note: `menu_avvioGenerazioneDocumenti`/`menu_avvioComunicazioniEmail` legitimately appear in `Code.js` as plain string data (`src/presentation/Menu.ts`'s `vociMenu()`, bundled into core, registers GAS menu items via `menu.addItem(label, 'funcName')` — a string reference, not a function definition). Only the two non-interactive example launchers, never referenced anywhere in core, must be absent by name.
+
+Run: `grep -c "generaPagelle\|inviaNotificaAssenze" dist/Code.js`
 Expected: `0`.
 
 - [ ] **Step 8: Confirm no test-file leakage in either production output file**

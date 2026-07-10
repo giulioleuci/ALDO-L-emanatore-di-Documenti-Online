@@ -10,23 +10,19 @@ import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { fixtureTables } from '../../fixtures/tables';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
+import type { MaterieGroups } from '../../../src/application/strategies/SheetMaterieGeneratorStrategy';
 
 class FakeSpreadsheetService {
-  updateCalls: Array<{ range: string; values: unknown[][] }> = [];
   protectCalls: Array<{ range: string; description?: string; editors?: { users?: string[] } }> = [];
-  constructor(
-    private readonly sheets: SpreadsheetSheetInfo[],
-    private readonly ranges: Record<string, unknown[][]>
-  ) {}
+  constructor(private readonly sheets: SpreadsheetSheetInfo[]) {}
   getSheetInfo(): SpreadsheetSheetInfo[] {
     return this.sheets;
   }
-  getRanges(_id: string, range: string): unknown[][] {
-    return this.ranges[range] ?? [];
+  getRanges(): unknown[][] {
+    throw new Error('not used by these strategies anymore (column placement is template-driven)');
   }
-  updateRanges(_id: string, updates: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[]): SpreadsheetUpdateResult {
-    this.updateCalls.push(...(Array.isArray(updates) ? updates : [updates]));
-    return { totalUpdatedCells: 0, totalUpdatedRows: 0, totalUpdatedColumns: 0, totalUpdatedSheets: 0 };
+  updateRanges(): SpreadsheetUpdateResult {
+    throw new Error('not used by these strategies anymore (column placement is template-driven)');
   }
   appendRows(): unknown {
     throw new Error('not used by these strategies');
@@ -84,49 +80,56 @@ function buildCdu(db: FakeDatabase, classeId: string): Cdu {
 }
 
 describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
-  test('inserts one column per class subject, header = MATERIE.SINTESI, at the first empty column after the header row', () => {
+  test('places one dynamic_columns group entry per class subject, header = MATERIE.SINTESI, in sorted order', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
-    const sheets = new FakeSpreadsheetService(sheetInfo(), { 'Sheet1!1:1': [['NOME', 'COGNOME']] });
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
-    expect(sheets.updateCalls).toContainEqual({ range: 'Sheet1!C1:D1', values: [['Fisica', 'Matematica']] });
+    const context = templates.sheetContextFor('file_1');
+    const groups = context?.['materieColonne'] as MaterieGroups;
+    expect(groups.group1).toEqual([
+      { sigla: 'FISI', header: 'Fisica' },
+      { sigla: 'MATE', header: 'Matematica' }
+    ]);
+    expect(groups.group2).toBeUndefined();
+    expect(groups.group3).toBeUndefined();
   });
 
-  test('CONF_DOC.PARAMETRI overrides sheetName/headerRow/startColumn', () => {
+  test('CONF_DOC.PARAMETRI.sheetName selects the target sheet/tab', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
-    const sheets = new FakeSpreadsheetService(sheetInfo('Voti'), {});
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
+    const sheets = new FakeSpreadsheetService(sheetInfo('Voti'));
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
 
-    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE', { sheetName: 'Voti', headerRow: 2, startColumn: 5 }));
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE', { sheetName: 'Voti' }));
 
-    expect(sheets.updateCalls).toContainEqual({ range: 'Voti!E2:F2', values: [['Fisica', 'Matematica']] });
+    expect(templates.renderedSheets).toHaveLength(1);
+    expect(templates.renderedSheets[0]?.sheetId).toBe('file_1');
+    expect(templates.renderedSheets[0]?.sheetName).toBe('Voti');
   });
 
-  test('substitutes only cells containing "{{", leaving other cells untouched', () => {
+  test('renders the sheet exactly once — column expansion and generic substitution share a single processSheet call', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
-    const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 2, 2), {
-      'Sheet1!1:1': [[]],
-      'Sheet1!A1:B2': [
-        ['{{focus.classe.anagrafica.nome}}', 'Static'],
-        ['Row2', null]
-      ]
-    });
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
-    expect(sheets.updateCalls).toContainEqual({ range: 'Sheet1!A1', values: [['5A']] });
-    expect(sheets.updateCalls.some((u) => u.range === 'Sheet1!B1')).toBe(false);
+    expect(templates.renderedSheets).toHaveLength(1);
+    const context = templates.sheetContextFor('file_1');
+    expect(context?.['focus']).toBeDefined();
   });
 
   test('throws a ConfigurationError when the CDU has no focus.classe', () => {
     const db = new FakeDatabase(fixtureTables());
-    const sheets = new FakeSpreadsheetService(sheetInfo(), {});
+    const sheets = new FakeSpreadsheetService(sheetInfo());
     const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
     const cdu = { meta: {}, focus: {}, tech: { entita: {}, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } } } as unknown as Cdu;
 
@@ -136,10 +139,35 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
   test('throws a ConfigurationError when the configured sheet name does not exist', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
-    const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1'), {});
+    const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1'));
     const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
 
     expect(() => strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE', { sheetName: 'Assente' }))).toThrow(ConfigurationError);
+  });
+
+  test('articulated class: shared subjects first, then each partner group with its own label (10 §9)', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '1F');
+    cdu.focus.classe!.articolazione = {
+      partner: null,
+      partners: ['1F-LSO', '1F-LSS'],
+      parent: null,
+      materieCondivise: ['MATE'],
+      materieSeparatePrimoGruppo: ['FISI'],
+      materieSeparateSecondoGruppo: ['FISI']
+    };
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
+
+    const groups = templates.sheetContextFor('file_1')?.['materieColonne'] as MaterieGroups;
+    expect(groups.group1).toEqual([{ sigla: 'MATE', header: 'Matematica' }]);
+    expect(groups.group2).toEqual([{ sigla: 'FISI', header: 'Fisica' }]);
+    expect(groups.group2Label).toBe('1F-LSO');
+    expect(groups.group3).toEqual([{ sigla: 'FISI', header: 'Fisica' }]);
+    expect(groups.group3Label).toBe('1F-LSS');
   });
 });
 
@@ -147,7 +175,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
   test('protects each subject column for its resolved teacher(s) + the coordinator, skipping group-label columns', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
-    const sheets = new FakeSpreadsheetService(sheetInfo(), { 'Sheet1!1:1': [[]] });
+    const sheets = new FakeSpreadsheetService(sheetInfo());
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
       new MateriaRepository(db),
@@ -158,8 +186,8 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     // Columns are alphabetical: A=Fisica (bianchi), B=Matematica (rossi); COORD=rossi on both.
-    const colA = sheets.protectCalls.find((r) => r.range === 'Sheet1!A2:A20');
-    const colB = sheets.protectCalls.find((r) => r.range === 'Sheet1!B2:B20');
+    const colA = sheets.protectCalls.find((r) => r.range === 'Sheet1!A:A');
+    const colB = sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B');
     expect(colA?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
     expect(colB?.editors?.users?.sort()).toEqual(['rossi@school.it']);
   });
@@ -169,7 +197,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const cdu = buildCdu(db, '3B');
     // 3B is inactive but still has a MATE column in the fixture; force an empty CDC to exercise the guard.
     cdu.focus.classe!.consiglioDiClasse = [];
-    const sheets = new FakeSpreadsheetService(sheetInfo(), { 'Sheet1!1:1': [[]] });
+    const sheets = new FakeSpreadsheetService(sheetInfo());
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
       new MateriaRepository(db),
@@ -180,5 +208,30 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     expect(sheets.protectCalls).toEqual([]);
+  });
+
+  test('articulated class: label columns get no ACL, partner-specific columns are protected by their own teacher', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '1F');
+    cdu.focus.classe!.articolazione = {
+      partner: null,
+      partners: ['1F-LSO', '1F-LSS'],
+      parent: null,
+      materieCondivise: ['MATE'],
+      materieSeparatePrimoGruppo: ['FISI'],
+      materieSeparateSecondoGruppo: ['FISI']
+    };
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      new RisolutoreRuoliService(db)
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    // column layout order: A=MATE (group1), B=label(1F-LSO, no ACL), C=FISI (group2), D=label(1F-LSS, no ACL), E=FISI (group3)
+    expect(sheets.protectCalls.map((r) => r.range).sort()).toEqual(['Sheet1!A:A', 'Sheet1!C:C', 'Sheet1!E:E']);
   });
 });

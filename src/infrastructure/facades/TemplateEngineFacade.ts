@@ -9,8 +9,17 @@
 export interface ITemplateEngine {
   /** Renders a `{{path | filter}}` string template against the CDU context. */
   processString(template: string, context: Record<string, unknown>): string;
-  /** In-place structural rendering of a Google Doc (loops, tables, placeholders). */
+  /** In-place structural rendering of a Google Doc (loops, tables, placeholders). Throws on render failure. */
   processDocument(fileId: string, context: Record<string, unknown>): void;
+  /**
+   * Batch structural rendering of a Google Sheet (matrix/dynamic-column expansion,
+   * placeholders). Throws on render failure. Returns the resolved
+   * `{{dynamic_columns[...]}}` column layouts (flattened across every placeholder
+   * found), so a caller can know which spreadsheet column each templated item
+   * landed in — e.g. to apply an ACL the directive's own static `acl=` expression
+   * can't express (role-resolution/supplenza-chain logic).
+   */
+  processSheet(sheetId: string, context: Record<string, unknown>, sheetName?: string): SheetColumnLayout[];
 }
 
 export class TemplateEngineFacade implements ITemplateEngine {
@@ -30,6 +39,13 @@ export class TemplateEngineFacade implements ITemplateEngine {
   }
 
   processDocument(fileId: string, context: Record<string, unknown>): void {
-    this.service.processDocument(fileId, context);
+    const success = this.service.processDocument(fileId, context);
+    if (!success) throw new Error(`TemplateEngineFacade.processDocument(${fileId}): PlaceholderService.processDocument returned false`);
+  }
+
+  processSheet(sheetId: string, context: Record<string, unknown>, sheetName?: string): SheetColumnLayout[] {
+    const result = this.service.processSheet(sheetId, context, sheetName ?? undefined);
+    if (!result.success) throw new Error(`TemplateEngineFacade.processSheet(${sheetId}): PlaceholderService.processSheet returned success:false`);
+    return result.layouts.flatMap((l) => l.columns);
   }
 }

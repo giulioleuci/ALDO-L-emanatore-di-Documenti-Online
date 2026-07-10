@@ -1,4 +1,4 @@
-import { SheetMaterieGeneratorStrategy, columnIndexToLetters, type MateriaColumn } from './SheetMaterieGeneratorStrategy';
+import { SheetMaterieGeneratorStrategy, columnIndexToLetters } from './SheetMaterieGeneratorStrategy';
 import type { Cdu } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
@@ -8,20 +8,35 @@ import { GestioneSupplenti } from '../../domain/value-objects/enums';
 
 /**
  * SHEET_CON_MATERIE_E_PERMESSI generator (10 §9): identical to
- * SheetMaterieGeneratorStrategy plus batch range protection — after the
- * subject columns are inserted, every subject-holding teacher (chain-resolved
- * through active supplenze, `GestioneSupplenti.ENTRAMBI` so both titolare and
- * supplente can write during a substitution) gets write access restricted to
- * their own column; the class coordinator is added to every column's editor
- * list for full access. Group-label pseudo-columns (`sigla === null`,
- * articulated classes) carry no ACL — they are structural headers, not
- * subject columns.
+ * SheetMaterieGeneratorStrategy plus batch range protection — after
+ * `dynamic_columns` expands the subject columns, every subject-holding
+ * teacher (chain-resolved through active supplenze,
+ * `GestioneSupplenti.ENTRAMBI` so both titolare and supplente can write
+ * during a substitution) gets write access to their own column (the whole
+ * column, `scope=column` semantics — matching `dynamic_columns`' own default
+ * ACL scope, since the resolved layout carries no header-row information to
+ * exclude); the class coordinator is added to every column's editor list for
+ * full access. Group-label pseudo-columns (`isLabel: true`, articulated
+ * classes) carry no ACL — they are structural headers, not subject columns.
  *
  * Does NOT implement the separate MAT_NON_STANDARD.md
  * `{{focus.classe.elencoMaterieConPermessi}}` REL/ALT horizontal-expansion
- * placeholder — that needs new WorkspaceTemplateEngine (L2) structural-expansion
- * capability, out of scope here. `ElencoMaterieConPermessi.ts` and the
- * `DOCENTI_IRC_ALT` role already exist as forward-compatible groundwork for it.
+ * placeholder. Re-verified against library source (2026-07-10): the claim
+ * that WorkspaceTemplateEngine lacks this structural-expansion capability was
+ * WRONG — `PlaceholderService.processSheet`'s `{{dynamic_columns[source=...,
+ * value=...,acl=...,scope=column]}}` directive
+ * (`WorkspaceTemplateEngine/src/processors/SheetProcessor.js#_prepareDynamicColumnRequests`)
+ * already does exactly this: one column per source-array item, with a
+ * per-item header path and an optional per-item ACL protecting the whole
+ * column. This strategy still doesn't use the directive's own static `acl=`
+ * for ITS OWN protection, because the editor list needs full
+ * role-resolution/supplenza-chain logic (`RisolutoreRuoliService`) the
+ * directive's static per-item expression can't express — that logic stays
+ * here, in `protectColumns`, applied to the layout `dynamic_columns` already
+ * resolved. Wiring `elencoMaterieConPermessi` itself onto `dynamic_columns` is
+ * a genuine, separate scope decision (new CONF_DOC.PARAMETRI/template
+ * contract for REL/ALT), left out of this task; `ElencoMaterieConPermessi.ts`
+ * and the `DOCENTI_IRC_ALT` role remain forward-compatible groundwork for it.
  */
 export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGeneratorStrategy {
   constructor(
@@ -34,29 +49,30 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   }
 
   override render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
-    const layout = this.insertColumns(fileId, cdu, config);
-    this.protectColumns(fileId, cdu, layout);
-    this.substitutePlaceholders(fileId, layout.sheetName, cdu);
+    const { sheetName, layout, siglaOrder } = this.renderColumns(fileId, cdu, config);
+    this.protectColumns(fileId, cdu, sheetName, layout, siglaOrder);
   }
 
   private protectColumns(
     fileId: string,
     cdu: Cdu,
-    layout: { sheetName: string; headerRow: number; startIndex: number; columns: MateriaColumn[] }
+    sheetName: string,
+    layout: SheetColumnLayout[],
+    siglaOrder: Array<string | null>
   ): void {
-    const { sheetName, headerRow, startIndex, columns } = layout;
-    if (!columns.some((c) => c.sigla !== null)) return;
+    const hasDataColumn = layout.some((c) => !c.isLabel);
+    if (!hasDataColumn) return;
     const coordinatori = this.roles.risolvi('COORDINATORI', cdu).map((e) => e.value);
-    const info = this.sheets.getSheetInfo(fileId).find((s) => s.name === sheetName);
-    const lastRow = info?.gridProperties.rowCount ?? headerRow + 1000;
-    const requests = columns
+    const requests = layout
       .map((column, i) => {
-        if (column.sigla === null) return null;
-        const docenti = this.resolveDocentiMateria(cdu, column.sigla);
-        const col = columnIndexToLetters(startIndex + i);
+        if (column.isLabel) return null;
+        const sigla = siglaOrder[i];
+        if (sigla === null || sigla === undefined) return null;
+        const docenti = this.resolveDocentiMateria(cdu, sigla);
+        const col = columnIndexToLetters(column.column - 1);
         return {
-          range: `${sheetName}!${col}${headerRow + 1}:${col}${lastRow}`,
-          description: `Colonna materia ${column.sigla} (10 §9)`,
+          range: `${sheetName}!${col}:${col}`,
+          description: `Colonna materia ${sigla} (10 §9)`,
           editors: { users: [...new Set([...docenti, ...coordinatori])] }
         };
       })

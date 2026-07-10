@@ -155,6 +155,25 @@ declare global {
     render(template: string, context?: Record<string, unknown> | null): string;
     registerFilter(filter: unknown): void;
   }
+  /** One resolved `{{dynamic_columns[...]}}` column (data column or, from the 2nd
+   * group onward, a structural label column — `isLabel: true`, never ACL'd). */
+  interface SheetColumnLayout {
+    header: unknown;
+    /** 1-based spreadsheet column number. */
+    column: number;
+    isLabel: boolean;
+  }
+  /** One `{{dynamic_columns[...]}}` placeholder's fully-resolved layout. */
+  interface SheetGroupLayout {
+    sheetName: string;
+    headerRow: number;
+    startColumn: number;
+    columns: SheetColumnLayout[];
+  }
+  interface SheetProcessResult {
+    success: boolean;
+    layouts: SheetGroupLayout[];
+  }
   class PlaceholderService {
     constructor(options: {
       logger: LoggerService;
@@ -166,7 +185,12 @@ declare global {
     processString(template: string, context?: Record<string, unknown> | null): string;
     resolve(template: string, context?: Record<string, unknown> | null): string;
     processDocument(documentId: string, context?: Record<string, unknown>): boolean;
-    processSheet(sheetId: string, context?: Record<string, unknown>, sheetName?: string): boolean;
+    /** Return shape changed from `boolean` to `{success, layouts}`: `layouts` reports,
+     * per `{{dynamic_columns[...]}}` placeholder found while scanning, the resolved
+     * column positions — needed by callers (e.g. ACL logic) that can't be expressed by
+     * the directive's own static `acl=` expression. `success` is `false` (layouts
+     * empty) on any processing error, matching the pre-existing swallow-and-log behavior. */
+    processSheet(sheetId: string, context?: Record<string, unknown>, sheetName?: string): SheetProcessResult;
   }
 
   // --- PipelineFramework (L3): Pipeline / Step / PipelineContext ---

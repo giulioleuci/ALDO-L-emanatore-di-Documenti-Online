@@ -23920,6 +23920,7 @@ class _SheetProcessor {
 
 
 
+
   process(sheetId, context, sheetName) {
     
     const sheetInfo = this.spreadsheetService.getSheetInfo(sheetId);
@@ -23928,10 +23929,13 @@ class _SheetProcessor {
     const sheetsToProcess = sheetName ? sheetInfo.filter(s => s.name === sheetName) : sheetInfo;
     if (sheetsToProcess.length === 0) {
       this.logger.warn(`No sheets found to process. Sheet name: ${sheetName || 'all'}`);
-      return;
+      return {
+        layouts: []
+      };
     }
     const batchRequests = [];
     const allProtectionRequests = [];
+    const layouts = [];
     for (const sheet of sheetsToProcess) {
       this.logger.debug(`--- Analyzing sheet for batch update: ${sheet.name} ---`);
 
@@ -23960,10 +23964,14 @@ class _SheetProcessor {
             this.logger.debug(`Found dynamic columns in ${cellA1}: ${originalValue}`);
             const {
               valueRequests,
-              protectionRequests
+              protectionRequests,
+              layout
             } = this._prepareDynamicColumnRequests(sheet.name, row, column, originalValue, context);
             batchRequests.push(...valueRequests);
             allProtectionRequests.push(...protectionRequests);
+            if (layout) {
+              layouts.push(layout);
+            }
           } else {
             const substitutedValue = this.mustache.render(originalValue, context);
             if (substitutedValue !== originalValue) {
@@ -23990,9 +23998,78 @@ class _SheetProcessor {
     } else {
       this.logger.debug('No substitutions to perform in the sheet.');
     }
+    return {
+      layouts
+    };
   }
 
   
+
+
+
+
+
+
+  _parseDynamicColumnParams(paramsStr) {
+    const params = {};
+    paramsStr.split(',').forEach(p => {
+      const parts = p.split('=');
+      if (parts.length === 2) {
+        params[parts[0].trim()] = parts[1].trim();
+      }
+    });
+    return params;
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _bucketDynamicColumnGroups(params) {
+    const suffixes = new Set();
+    if (params.source !== undefined) {
+      suffixes.add(1);
+    }
+    Object.keys(params).forEach(key => {
+      const m = key.match(/^(?:source|value|acl|scope|label)(\d+)$/);
+      if (m) {
+        suffixes.add(Number(m[1]));
+      }
+    });
+    return [...suffixes].sort((a, b) => a - b).map(n => {
+      const suffix = n === 1 ? '' : String(n);
+      return {
+        source: params[`source${suffix}`],
+        value: params[`value${suffix}`],
+        acl: params[`acl${suffix}`],
+        scope: params[`scope${suffix}`] || 'column',
+        label: params[`label${suffix}`]
+      };
+    }).filter(g => g.source !== undefined);
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -24010,40 +24087,36 @@ class _SheetProcessor {
         this.logger.warn(`Invalid dynamic_columns placeholder: ${placeholder}`);
         return {
           valueRequests: [],
-          protectionRequests: []
+          protectionRequests: [],
+          layout: null
         };
       }
-      const paramsStr = match[1];
-      const params = {};
-      paramsStr.split(',').forEach(p => {
-        const parts = p.split('=');
-        if (parts.length === 2) {
-          params[parts[0].trim()] = parts[1].trim();
-        }
-      });
-      const {
-        source,
-        value: valueProp,
-        acl: aclProp,
-        scope = 'column'
-      } = params;
-      if (!source) {
+      const params = this._parseDynamicColumnParams(match[1]);
+      const groups = this._bucketDynamicColumnGroups(params);
+      if (groups.length === 0) {
         this.logger.warn(`Missing 'source' parameter in dynamic_columns: ${placeholder}`);
         return {
           valueRequests: [],
-          protectionRequests: []
+          protectionRequests: [],
+          layout: null
         };
       }
-      const sourceData = this.mustache.getValue(source, context);
-      if (!Array.isArray(sourceData)) {
-        this.logger.warn(`Data source '${source}' for dynamic_columns is not an array.`);
+
+      
+      
+      
+      const firstSourceData = this.mustache.getValue(groups[0].source, context);
+      if (!Array.isArray(firstSourceData)) {
+        this.logger.warn(`Data source '${groups[0].source}' for dynamic_columns is not an array.`);
         return {
           valueRequests: [],
-          protectionRequests: []
+          protectionRequests: [],
+          layout: null
         };
       }
       const valueRequests = [];
       const protectionRequests = [];
+      const columns = [];
       const quotedSheetName = `'${sheetName}'`;
 
       
@@ -24052,38 +24125,84 @@ class _SheetProcessor {
         range: `${quotedSheetName}!${rangePlaceholder}`,
         values: [['']]
       });
-      for (let i = 0; i < sourceData.length; i++) {
-        const item = sourceData[i];
-        const colNum = startColumn + i;
-        const colLetter = this._columnToLetter(colNum);
-        const cellA1 = colLetter + startRow;
-
-        
-        const headerValue = valueProp ? this.mustache.getValue(valueProp, item) : '';
-        valueRequests.push({
-          range: `${quotedSheetName}!${cellA1}`,
-          values: [[headerValue ?? '']]
-        });
-
-        
-        if (aclProp) {
-          const acl = this.mustache.getValue(aclProp, item);
-          if (acl) {
-            const protectionRange = scope === 'range' ? cellA1 : `${colLetter}:${colLetter}`;
-            protectionRequests.push({
-              range: `${quotedSheetName}!${protectionRange}`,
-              description: `[WTE] Dynamic Column: ${source}`,
-              editors: {
-                users: Array.isArray(acl) ? acl : [acl]
-              }
-            });
-          }
+      let col = startColumn;
+      groups.forEach((group, groupIndex) => {
+        const sourceData = groupIndex === 0 ? firstSourceData : this.mustache.getValue(group.source, context);
+        if (!Array.isArray(sourceData)) {
+          this.logger.warn(`Data source '${group.source}' for dynamic_columns is not an array.`);
+          return;
         }
-      }
+        
+        
+        
+        
+        
+        if (groupIndex > 0 && sourceData.length === 0) {
+          return;
+        }
+
+        
+        
+        
+        if (groupIndex > 0 && group.label) {
+          const labelValue = this.mustache.getValue(group.label, context);
+          const labelText = labelValue !== undefined && labelValue !== null ? labelValue : group.label;
+          const colLetter = this._columnToLetter(col);
+          valueRequests.push({
+            range: `${quotedSheetName}!${colLetter}${startRow}`,
+            values: [[labelText]]
+          });
+          columns.push({
+            header: labelText,
+            column: col,
+            isLabel: true
+          });
+          col += 1;
+        }
+        sourceData.forEach(item => {
+          const colLetter = this._columnToLetter(col);
+          const cellA1 = colLetter + startRow;
+
+          
+          const headerValue = group.value ? this.mustache.getValue(group.value, item) : '';
+          const resolvedHeader = headerValue ?? '';
+          valueRequests.push({
+            range: `${quotedSheetName}!${cellA1}`,
+            values: [[resolvedHeader]]
+          });
+          columns.push({
+            header: resolvedHeader,
+            column: col,
+            isLabel: false
+          });
+
+          
+          if (group.acl) {
+            const acl = this.mustache.getValue(group.acl, item);
+            if (acl) {
+              const protectionRange = group.scope === 'range' ? cellA1 : `${colLetter}:${colLetter}`;
+              protectionRequests.push({
+                range: `${quotedSheetName}!${protectionRange}`,
+                description: `[WTE] Dynamic Column: ${group.source}`,
+                editors: {
+                  users: Array.isArray(acl) ? acl : [acl]
+                }
+              });
+            }
+          }
+          col += 1;
+        });
+      });
       this.logger.debug(`Prepared ${valueRequests.length} value updates and ${protectionRequests.length} protections for dynamic columns.`);
       return {
         valueRequests,
-        protectionRequests
+        protectionRequests,
+        layout: {
+          sheetName,
+          headerRow: startRow,
+          startColumn,
+          columns
+        }
       };
     } catch (e) {
       this.logger.error(`Error preparing dynamic columns: ${e.message}`);
@@ -24093,7 +24212,8 @@ class _SheetProcessor {
           range: `'${sheetName}'!${errorCellA1}`,
           values: [[`ERROR: ${e.message}`]]
         }],
-        protectionRequests: []
+        protectionRequests: [],
+        layout: null
       };
     }
   }
@@ -24221,7 +24341,9 @@ class _SheetProcessor {
     for (const req of batchRequests) {
       
       const rangeMatch = req.range.match(/^'([^']+)'!([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?$/);
-      if (!rangeMatch) continue;
+      if (!rangeMatch) {
+        continue;
+      }
       const [, name,, startRowStr, endColStr, endRowStr] = rangeMatch;
       const endRow = endRowStr ? parseInt(endRowStr, 10) : parseInt(startRowStr, 10);
       const endCol = endColStr || rangeMatch[2];
@@ -24244,7 +24366,9 @@ class _SheetProcessor {
     
     for (const [name, needed] of Object.entries(maxNeeded)) {
       const info = sheetMap[name];
-      if (!info) continue;
+      if (!info) {
+        continue;
+      }
       const newRowCount = Math.max(needed.maxRow, info.rowCount);
       const newColCount = Math.max(needed.maxCol, info.columnCount);
       if (newRowCount > info.rowCount || newColCount > info.columnCount) {
@@ -24427,6 +24551,14 @@ class MyPlaceholderService {
 
 
 
+
+
+
+
+
+
+
+
   processSheet(sheetId, context = {}, sheetName = null) {
     
     if (typeof sheetId !== 'string' || sheetId.trim() === '') {
@@ -24443,12 +24575,18 @@ class MyPlaceholderService {
     }
     try {
       this.logger.debug(`Starting sheet processing (Facade): ${sheetId}`);
-      this.sheetProcessor.process(sheetId, context, sheetName);
+      const result = this.sheetProcessor.process(sheetId, context, sheetName);
       this.logger.debug(`Sheet ${sheetId} processed successfully.`);
-      return true;
+      return {
+        success: true,
+        layouts: result && result.layouts || []
+      };
     } catch (error) {
       this.logger.error(`Failed to process sheet ${sheetId}: ${error.message}\nStack: ${error.stack}`);
-      return false;
+      return {
+        success: false,
+        layouts: []
+      };
     }
   }
 }
@@ -57098,6 +57236,141 @@ class ContextStepExecutor {
   assembleAsync(recipe, initialParams = {}, options = {}) {
     return this.assemble(recipe, initialParams, options);
   }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _executeMutatingProvider(providerConfig, sharedTarget, initialParams, options = {}) {
+    const providerName = providerConfig.name;
+    const providerType = providerConfig.type;
+    this.facade._logger.debug(`[${providerName}] Executing provider (mutate mode) of type: ${providerType}`);
+    const provider = this.facade._providerRegistry.get(providerType);
+    if (this.facade._exceptionService) {
+      this.facade._exceptionService.executeWithRetry(() => provider.provide(sharedTarget, initialParams, options), {}, this.facade._maxRetries);
+    } else {
+      provider.provide(sharedTarget, initialParams, options);
+    }
+    if (this.facade._interceptorRegistry) {
+      const interceptors = this.facade._interceptorRegistry.getAll();
+      if (interceptors.length > 0) {
+        this.facade._logger.debug(`[${providerName}] Applying ${interceptors.length} interceptor(s) (mutate mode)`);
+        for (const interceptor of interceptors) {
+          interceptor.intercept(providerName, sharedTarget, sharedTarget, options);
+        }
+      }
+    }
+    this.facade._logger.info(`[${providerName}] Provider execution completed (mutate mode)`);
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  assembleInto(sharedTarget, recipe, initialParams = {}, options = {}) {
+    if (sharedTarget == null || typeof sharedTarget !== 'object') {
+      throw new Error('ContextAssembler.assembleInto: sharedTarget is required and must be an object');
+    }
+    if (!recipe || typeof recipe !== 'object') {
+      throw new Error('ContextAssembler.assembleInto: recipe is required and must be an object');
+    }
+    if (initialParams !== null && typeof initialParams !== 'object') {
+      throw new Error('ContextAssembler.assembleInto: initialParams must be an object or null');
+    }
+    if (options !== null && typeof options !== 'object') {
+      throw new Error('ContextAssembler.assembleInto: options must be an object or null');
+    }
+    const startTime = Date.now();
+    try {
+      this.facade._logger.info('Starting mutation-mode context assembly...');
+      const validatedRecipe = this.facade._recipeParser.parse(recipe);
+      let executedProviders = 0;
+      let skippedProviders = 0;
+      for (const providerConfig of validatedRecipe.providers) {
+        const providerName = providerConfig.name;
+        try {
+          
+          
+          
+          const shouldExecute = this._evaluateCondition(providerConfig.condition, initialParams, sharedTarget);
+          if (!shouldExecute) {
+            this.facade._logger.info(`[${providerName}] Skipped (condition not met)`);
+            skippedProviders++;
+            continue;
+          }
+          this._executeMutatingProvider(providerConfig, sharedTarget, initialParams, options);
+          executedProviders++;
+        } catch (error) {
+          this.facade._logger.error(`[${providerName}] Provider execution failed: ${error.message}`);
+          throw new ContextEngineError(`Provider '${providerName}' failed: ${error.message}`, {
+            providerName,
+            providerType: providerConfig.type,
+            originalError: error
+          });
+        }
+      }
+      const durationMs = Date.now() - startTime;
+      this.facade._logger.info(`Mutation-mode context assembly completed in ${durationMs}ms ` + `(${executedProviders} executed, ${skippedProviders} skipped)`);
+      return sharedTarget;
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      this.facade._logger.error(`Mutation-mode context assembly failed after ${durationMs}ms: ${error.message}`);
+      if (error instanceof ContextEngineError) {
+        throw error;
+      }
+      throw new ContextEngineError(`Mutation-mode context assembly failed: ${error.message}`, {
+        originalError: error
+      });
+    }
+  }
 }
 ;
 class ContextDependencyAnalyzer {
@@ -57138,6 +57411,16 @@ class ContextDependencyAnalyzer {
   }
 }
 ;
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -57290,7 +57573,7 @@ class ContextAssembler {
     
     this._stepExecutor = new ContextStepExecutor(this);
     this._dependencyAnalyzer = new ContextDependencyAnalyzer(this);
-    const executionMethods = ['_evaluateCondition', '_executeProvider', 'assemble', 'assembleAsync'];
+    const executionMethods = ['_evaluateCondition', '_executeProvider', '_executeMutatingProvider', 'assemble', 'assembleAsync', 'assembleInto'];
     executionMethods.forEach(m => {
       this[m] = this._stepExecutor[m].bind(this._stepExecutor);
     });
@@ -57933,6 +58216,8 @@ class DataProvider {
 
 
 
+
+
 class ContextInterceptor {
   
 
@@ -58036,6 +58321,56 @@ class ContextInterceptor {
       this._logger.error(`[${name}] Interception failed: ${error.message}`);
       throw new Error(`Interceptor failed for '${name}': ${error.message}`);
     }
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _forEachAt(data, path, itemFn) {
+    const array = get(data, path);
+    if (!Array.isArray(array)) {
+      this._logger.debug(`ContextInterceptor._forEachAt: path '${path}' does not resolve to an array - no-op`);
+      return;
+    }
+    array.forEach((item, index) => {
+      const outcome = itemFn(item, index, array);
+      if (outcome == null) {
+        
+        return;
+      }
+      switch (outcome.action) {
+        case 'replace':
+          array[index] = outcome.value;
+          break;
+        case 'annotate':
+          Object.assign(array[index], outcome.meta);
+          break;
+        case 'skip':
+        default:
+          break;
+      }
+    });
   }
 }
 ;
@@ -58289,6 +58624,22 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   constructor(logger, substitutionLookup, config = {}) {
     super(logger);
 
@@ -58336,6 +58687,19 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
 
 
     this._optionFlag = config.optionFlag || 'applyOverrides';
+
+    
+
+
+
+
+
+    if (config.targetPaths !== undefined && config.targetPaths !== null) {
+      if (!Array.isArray(config.targetPaths) || config.targetPaths.some(p => typeof p !== 'string')) {
+        throw new Error('SwapAndEnrichInterceptor: config.targetPaths must be an array of strings if provided');
+      }
+    }
+    this._targetPaths = config.targetPaths || null;
   }
 
   
@@ -58348,9 +58712,13 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
 
 
 
+
   _shouldIntercept(name, data, context, options) {
     
-    if (options[this._optionFlag] !== true) {
+    
+    
+    
+    if (this._targetPaths === null && options[this._optionFlag] !== true) {
       this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Option flag '${this._optionFlag}' not enabled`);
       return false;
     }
@@ -58374,7 +58742,18 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
 
 
 
+
+
+
+
+
+
+
+
   _performIntercept(name, data, context, options) {
+    if (this._targetPaths !== null) {
+      return this._performIntercept_targetPaths(name, data, context, options);
+    }
     try {
       
       this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Checking for substitution...`);
@@ -58403,6 +58782,36 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
       this._logger.error(`[${name}] SwapAndEnrichInterceptor: Substitution lookup failed: ${error.message}`);
       throw new Error(`Substitution lookup failed: ${error.message}`);
     }
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _performIntercept_targetPaths(name, data, context, options) {
+    for (const path of this._targetPaths) {
+      this._forEachAt(data, path, (item, _index, _array) => {
+        try {
+          return this._substitutionLookup(item, context, options);
+        } catch (error) {
+          this._logger.error(`[${name}] SwapAndEnrichInterceptor: Substitution lookup failed for path '${path}': ${error.message}`);
+          throw new Error(`Substitution lookup failed: ${error.message}`);
+        }
+      });
+    }
+    return data;
   }
 }
 ;

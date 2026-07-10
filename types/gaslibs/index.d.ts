@@ -27,11 +27,17 @@ declare global {
   }
 
   // --- ContextEngine (L3): registry + interceptor building blocks ---
-  // SGSA's ContextBuilder assembles the nested CDU itself (spec 09 §2, which the
-  // library's flat-keyed ContextAssembler does not do), but reuses these public
-  // components: the ProviderRegistry (Registry Pattern), the InterceptorRegistry
-  // + ContextInterceptor middleware (SwapAndEnrichInterceptor), and the shared
-  // ExpressionEngine for conditions.
+  // SGSA's ContextBuilder assembles the nested CDU via the library's
+  // ContextAssembler.assembleInto() MUTATION mode (added for exactly this use
+  // case): every registered provider receives the SAME shared CDU object
+  // across the whole recipe run and mutates it in place (matching
+  // ContextProvider.provide(cdu, params, options): void), instead of the
+  // library's original `assemble()` flat, provider-name-keyed merge — which
+  // remains available/unchanged for consumers that want that shape. Reused
+  // as-is: ProviderRegistry (Registry Pattern), InterceptorRegistry +
+  // ContextInterceptor middleware (SwapAndEnrichInterceptor, generalized with
+  // `targetPaths` for per-item nested-array swaps — see below), and the
+  // shared ExpressionEngine for conditions.
   interface LibContextProvider { provide(...args: unknown[]): unknown }
   interface LibContextInterceptor {
     intercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
@@ -59,6 +65,88 @@ declare global {
     // with validation, timing and logging).
     protected _shouldIntercept(name: string, data: unknown, context: unknown, options?: unknown): boolean;
     protected _performIntercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
+    /**
+     * Walks the array resolved at `path` (dot-path, e.g.
+     * 'focus.classe.consiglioDiClasse') on `data` and calls
+     * `itemFn(item, index, array)` for each element. `itemFn` may mutate the
+     * item in place (return undefined/null) or return a 3-way outcome
+     * `{ action: 'replace', value } | { action: 'annotate', meta } | { action: 'skip' }`
+     * that this helper applies. No-op (with a debug log) if `path` does not
+     * resolve to an array.
+     */
+    protected _forEachAt(
+      data: unknown,
+      path: string,
+      itemFn: (item: unknown, index: number, array: unknown[]) => void | null | {
+        action: 'replace' | 'annotate' | 'skip';
+        value?: unknown;
+        meta?: Record<string, unknown>;
+      }
+    ): void;
+  }
+  interface ContextAssemblerRecipe {
+    providers: Array<{
+      name: string;
+      type: string;
+      parameters?: Record<string, unknown>;
+      condition?: string | null;
+      postProcess?: Array<{ type: string; [key: string]: unknown }>;
+    }>;
+  }
+  /**
+   * Facade for assembling data contexts from declarative JSON recipes.
+   * `assemble()` (flat mode) merges each provider's RETURN VALUE into a fresh
+   * `{ providerName: output }` map. `assembleInto()` (mutation mode) instead
+   * has every provider MUTATE the same `sharedTarget` object in place across
+   * the whole recipe run and IGNORES provider return values — this is the
+   * mode SGSA's ContextBuilder uses to assemble the nested CDU.
+   */
+  class ContextAssembler {
+    constructor(
+      logger: LoggerService,
+      providerRegistry: ProviderRegistry,
+      expressionEngine?: unknown | null,
+      exceptionService?: unknown | null,
+      interceptorRegistry?: InterceptorRegistry | null,
+      options?: { maxRetries?: number }
+    );
+    assemble(recipe: ContextAssemblerRecipe, initialParams?: Record<string, unknown>, options?: Record<string, unknown>): Record<string, unknown>;
+    assembleAsync(recipe: ContextAssemblerRecipe, initialParams?: Record<string, unknown>, options?: Record<string, unknown>): Record<string, unknown>;
+    /** Mutation mode — see class doc. Returns `sharedTarget` (mutated in place) for convenience. */
+    assembleInto<T extends object>(
+      sharedTarget: T,
+      recipe: ContextAssemblerRecipe,
+      initialParams?: object,
+      options?: object
+    ): T;
+  }
+  /**
+   * Entity substitution interceptor. Default (atomic) mode swaps the WHOLE
+   * `data` payload via `substitutionLookup(data, context, options) => substitute|null`.
+   * `config.targetPaths` mode instead walks one or more nested arrays (via
+   * the base class's `_forEachAt`) and calls `substitutionLookup(item,
+   * context, options)` once PER ITEM, expecting back `null` (no swap) or a
+   * `_forEachAt` 3-way outcome descriptor — this is what SGSA uses to make an
+   * independent per-docente decision under the GestioneSupplenti 3-way rule
+   * across `focus.classe.consiglioDiClasse`/`focus.alunno.consiglioDiClasseFiltrato`,
+   * with the rule itself read from `options` inside the callback (NOT via the
+   * library's own boolean `optionFlag`/`_shouldIntercept` gate, which is
+   * skipped automatically once `targetPaths` is configured — see the
+   * library's JSDoc for why a single global boolean can't express an N-way
+   * per-item rule).
+   */
+  class SwapAndEnrichInterceptor extends ContextInterceptor {
+    constructor(
+      logger: LoggerService,
+      substitutionLookup: (item: unknown, context: unknown, options: unknown) => unknown,
+      config?: {
+        originalPropertyName?: string;
+        metadataFlags?: Record<string, unknown>;
+        targetProviders?: string[] | null;
+        optionFlag?: string;
+        targetPaths?: string[] | null;
+      }
+    );
   }
 
   // --- SheetDBLib (L2): ORM entry point (tables, save, ACID-like transactions) ---

@@ -4,28 +4,46 @@ import type { BuildParams, Recipe } from './Recipe';
 import { formatOggi } from './dates';
 
 /**
- * Assembles the CDU (spec 09 §2). SGSA owns the nested-merge assembly loop
- * because the library's ContextAssembler produces a flat provider-keyed map, not
- * the aggregated CDU; but it is built ON the ContextEngine library's reusable
- * components — the `ProviderRegistry` (Registry Pattern) stores/resolves
- * providers by recipe token, and the `InterceptorRegistry` + `ContextInterceptor`
- * middleware apply cross-cutting enrichment (e.g. SwapAndEnrichInterceptor for
- * supplenti) after each provider.
+ * Assembles the CDU (spec 09 §2), built ON the ContextEngine library's
+ * reusable components: the `ProviderRegistry` (Registry Pattern) stores/
+ * resolves providers by recipe token, the `InterceptorRegistry` +
+ * `ContextInterceptor` middleware apply cross-cutting enrichment (e.g.
+ * SwapAndEnrichInterceptor for supplenti) after each provider, and —
+ * assembly itself — the library's `ContextAssembler.assembleInto()`
+ * MUTATION mode: every provider receives the SAME shared CDU across the
+ * whole recipe run and mutates it in place (matching
+ * `ContextProvider.provide(cdu, params, options): void`), instead of the
+ * library's original `assemble()`, which merges each provider's RETURN
+ * VALUE into a flat, provider-name-keyed map — not the shape SGSA's CDU
+ * needs, since multiple providers read from and write into the SAME nested
+ * paths in declared order (e.g. `piani` overwriting the `isBes` placeholder
+ * `student` already wrote — see the provider dependency table in
+ * `Recipe.ts`). `assembleInto` was added to GasLibraryFactory precisely to
+ * close this gap; the assembler still owns recipe-declared execution order,
+ * per-provider condition evaluation, retry, and running the registered
+ * interceptors after each provider step — `ContextBuilder` no longer
+ * hand-rolls any of that.
  *
  * build():
  *   1. initialize an empty CDU (meta from params, `tech` attached non-enumerable)
- *   2. for each recipe token: resolve the provider, let it populate its section,
- *      then run every registered interceptor over the CDU
+ *   2. map `recipe.providers` (ordered tokens) onto the library's recipe shape
+ *      and call `assembleInto(cdu, libRecipe, params, recipe.options)`
  *   3. return the CDU (tech never serialized — 02 §7)
  */
 export class ContextBuilder {
   private readonly providers: ProviderRegistry;
   private readonly interceptors: InterceptorRegistry;
+  private readonly assembler: ContextAssembler;
 
   constructor(logger?: LoggerService) {
     const log = logger ?? new LoggerService();
     this.providers = new ProviderRegistry(log);
     this.interceptors = new InterceptorRegistry(log);
+    // No expressionEngine/exceptionService: ALDO recipes carry no per-provider
+    // `condition`/retry config (RECIPES in Recipe.ts is a plain ordered token
+    // list) — provider lookup (ProviderRegistry) is what ContextBuilder needs
+    // from ContextAssembler here.
+    this.assembler = new ContextAssembler(log, this.providers, null, null, this.interceptors);
   }
 
   /** Register a provider under its recipe token (09 §4). */
@@ -42,16 +60,13 @@ export class ContextBuilder {
 
   build(params: BuildParams, recipe: Recipe): Cdu {
     const cdu = this.initCdu(params, recipe);
-    const activeInterceptors = this.interceptors.getAll();
-    for (const token of recipe.providers) {
-      // ProviderRegistry.get throws ProviderNotFoundError for an unknown token
-      // (09 §4: "un token non presente produce un errore di configurazione").
-      const provider: ContextProvider = this.providers.get(token);
-      provider.provide(cdu, params, recipe.options);
-      for (const interceptor of activeInterceptors) {
-        interceptor.intercept(token, cdu, cdu, recipe.options);
-      }
-    }
+    // ProviderRegistry.get (invoked inside assembleInto) throws
+    // ProviderNotFoundError for an unknown token (09 §4: "un token non
+    // presente produce un errore di configurazione").
+    const libRecipe: ContextAssemblerRecipe = {
+      providers: recipe.providers.map((token) => ({ name: token, type: token }))
+    };
+    this.assembler.assembleInto(cdu, libRecipe, params, recipe.options);
     return cdu;
   }
 

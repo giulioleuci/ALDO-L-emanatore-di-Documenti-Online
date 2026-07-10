@@ -13,7 +13,7 @@ import { RappresentantiProvider } from './providers/RappresentantiProvider';
 import { StatisticheProvider } from './providers/StatisticheProvider';
 import { StoricoProvider } from './providers/StoricoProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
-import { SwapAndEnrichInterceptor } from './interceptors/SwapAndEnrichInterceptor';
+import { createSupplentiSubstitutionLookup } from './interceptors/SupplentiSubstitutionLookup';
 import { CdcAssembler } from './CdcAssembler';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
@@ -45,7 +45,20 @@ export class ContextEngineFactory {
     const cdc = new CdcAssembler(classi, materie);
 
     return new ContextBuilder()
-      .registerInterceptor(new SwapAndEnrichInterceptor(new LoggerService(), docenti, supplenze))
+      .registerInterceptor(
+        new SwapAndEnrichInterceptor(new LoggerService(), createSupplentiSubstitutionLookup(docenti, supplenze), {
+          // 09 §5: SwapAndEnrichInterceptor runs after `consiglio`/`student` (the two
+          // providers that (re)write cdu.focus.classe.consiglioDiClasse /
+          // cdu.focus.alunno.consiglioDiClasseFiltrato). `targetPaths` puts the
+          // library's generalized per-item `_forEachAt` walk to use instead of its
+          // single-atomic-payload swap; the 3-way GestioneSupplenti decision lives
+          // entirely in the substitutionLookup callback (see
+          // SupplentiSubstitutionLookup.ts), so the library's own boolean
+          // optionFlag gate is intentionally not relied on here.
+          targetProviders: ['consiglio', 'student'],
+          targetPaths: ['focus.classe.consiglioDiClasse', 'focus.alunno.consiglioDiClasseFiltrato']
+        })
+      )
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
       .registerProvider('class', new ClasseProvider(classi, alunni))
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))

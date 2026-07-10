@@ -15651,7 +15651,9 @@ class DocumentTableManager {
       }
       const table = tables[tableIndex];
       const numRows = table.getNumRows();
-      if (numRows === 0) throw new Error('Table has no rows');
+      if (numRows === 0) {
+        throw new Error('Table has no rows');
+      }
       const firstRow = table.getRow(0);
       if (columnIndex >= firstRow.getNumCells()) {
         throw new Error(`Column index ${columnIndex} out of bounds`);
@@ -15684,7 +15686,9 @@ class DocumentTableManager {
       }
       const table = tables[tableIndex];
       const numRows = table.getNumRows();
-      if (numRows === 0) throw new Error('Table has no rows');
+      if (numRows === 0) {
+        throw new Error('Table has no rows');
+      }
       const firstRow = table.getRow(0);
       if (columnIndex > firstRow.getNumCells()) {
         throw new Error(`Column index ${columnIndex} out of bounds (max: ${firstRow.getNumCells()})`);
@@ -15716,7 +15720,9 @@ class DocumentTableManager {
       }
       const table = tables[tableIndex];
       const numRows = table.getNumRows();
-      if (numRows === 0) throw new Error('Table has no rows');
+      if (numRows === 0) {
+        throw new Error('Table has no rows');
+      }
       let newColumnIndex = 0;
       for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
         const row = table.getRow(rowIndex);
@@ -15747,7 +15753,9 @@ class DocumentTableManager {
         throw new Error(`Table index ${tableIndex} out of bounds`);
       }
       const table = tables[tableIndex];
-      if (table.getNumRows() === 0) throw new Error('Table has no rows');
+      if (table.getNumRows() === 0) {
+        throw new Error('Table has no rows');
+      }
       const firstRow = table.getRow(0);
       if (columnIndex >= firstRow.getNumCells()) {
         throw new Error(`Column index ${columnIndex} out of bounds`);
@@ -15774,7 +15782,9 @@ class DocumentTableManager {
         throw new Error(`Table index ${tableIndex} out of bounds`);
       }
       const table = tables[tableIndex];
-      if (table.getNumRows() === 0) throw new Error('Table has no rows');
+      if (table.getNumRows() === 0) {
+        throw new Error('Table has no rows');
+      }
       const firstRow = table.getRow(0);
       if (columnIndex >= firstRow.getNumCells()) {
         throw new Error(`Column index ${columnIndex} out of bounds`);
@@ -15972,10 +15982,18 @@ class DocumentTableManager {
         throw new Error(`Column index ${columnIndex} out of bounds`);
       }
       const cell = row.getCell(columnIndex);
-      if (padding.top !== undefined) cell.setPaddingTop(padding.top);
-      if (padding.bottom !== undefined) cell.setPaddingBottom(padding.bottom);
-      if (padding.left !== undefined) cell.setPaddingLeft(padding.left);
-      if (padding.right !== undefined) cell.setPaddingRight(padding.right);
+      if (padding.top !== undefined) {
+        cell.setPaddingTop(padding.top);
+      }
+      if (padding.bottom !== undefined) {
+        cell.setPaddingBottom(padding.bottom);
+      }
+      if (padding.left !== undefined) {
+        cell.setPaddingLeft(padding.left);
+      }
+      if (padding.right !== undefined) {
+        cell.setPaddingRight(padding.right);
+      }
       this._logger.debug(`Set cell [${rowIndex}, ${columnIndex}] padding in table ${tableIndex}`);
       return {
         success: true,
@@ -16250,6 +16268,46 @@ class DocumentTableManager {
 
 
 
+
+
+
+  _applyTableStyling(table, data, options = {}) {
+    if (options.headerRow && data.length > 0) {
+      const headerRow = table.getRow(0);
+      const numCells = headerRow.getNumCells();
+      for (let i = 0; i < numCells; i++) {
+        headerRow.getCell(i).editAsText().setBold(true);
+      }
+    }
+    if (options.alternatingRows && data.length > 1) {
+      const lightGray = '#f3f3f3';
+      for (let rowIndex = 1; rowIndex < table.getNumRows(); rowIndex++) {
+        if (rowIndex % 2 === 1) {
+          const row = table.getRow(rowIndex);
+          const numCells = row.getNumCells();
+          for (let cellIndex = 0; cellIndex < numCells; cellIndex++) {
+            row.getCell(cellIndex).setBackgroundColor(lightGray);
+          }
+        }
+      }
+    }
+    if (options.columnWidths && Array.isArray(options.columnWidths)) {
+      for (let colIndex = 0; colIndex < options.columnWidths.length; colIndex++) {
+        const width = options.columnWidths[colIndex];
+        if (width && table.getNumRows() > 0) {
+          table.getRow(0).getCell(colIndex).setWidth(width);
+        }
+      }
+    }
+  }
+
+  
+
+
+
+
+
+
   _createTableWithStandardAPI(documentId, op) {
     const data = op.data;
     const options = op.options || {};
@@ -16257,33 +16315,7 @@ class DocumentTableManager {
       const doc = this.facade.openStandard(documentId);
       const body = doc.getBody();
       const table = body.appendTable(data);
-      if (options.headerRow && data.length > 0) {
-        const headerRow = table.getRow(0);
-        const numCells = headerRow.getNumCells();
-        for (let i = 0; i < numCells; i++) {
-          headerRow.getCell(i).editAsText().setBold(true);
-        }
-      }
-      if (options.alternatingRows && data.length > 1) {
-        const lightGray = '#f3f3f3';
-        for (let rowIndex = 1; rowIndex < table.getNumRows(); rowIndex++) {
-          if (rowIndex % 2 === 1) {
-            const row = table.getRow(rowIndex);
-            const numCells = row.getNumCells();
-            for (let cellIndex = 0; cellIndex < numCells; cellIndex++) {
-              row.getCell(cellIndex).setBackgroundColor(lightGray);
-            }
-          }
-        }
-      }
-      if (options.columnWidths && Array.isArray(options.columnWidths)) {
-        for (let colIndex = 0; colIndex < options.columnWidths.length; colIndex++) {
-          const width = options.columnWidths[colIndex];
-          if (width && table.getNumRows() > 0) {
-            table.getRow(0).getCell(colIndex).setWidth(width);
-          }
-        }
-      }
+      this._applyTableStyling(table, data, options);
       this._logger.debug(`Created table with ${data.length} rows using standard API`);
       return {
         success: true,
@@ -16292,6 +16324,57 @@ class DocumentTableManager {
       };
     } catch (error) {
       this._logger.error(`Failed to create table with standard API: ${error.message}`);
+      throw error;
+    }
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  insertTableAtMarker(documentId, markerText, data, options = {}) {
+    try {
+      const doc = this.facade.openStandard(documentId);
+      const body = doc.getBody();
+      const rangeElement = body.findText(markerText);
+      if (!rangeElement) {
+        throw new Error(`Marker text "${markerText}" not found in document ${documentId}`);
+      }
+
+      
+      
+      
+      
+      let element = rangeElement.getElement();
+      while (typeof element.getParent === 'function' && element.getParent() !== body) {
+        element = element.getParent();
+      }
+      const childIndex = body.getChildIndex(element);
+      const table = body.insertTable(childIndex + 1, data);
+      this._applyTableStyling(table, data, options);
+      this._logger.debug(`Inserted table with ${data.length} rows at marker "${markerText}" in document ${documentId}`);
+      return {
+        success: true,
+        rows: data.length,
+        columns: data[0] ? data[0].length : 0,
+        foundElementIndex: childIndex
+      };
+    } catch (error) {
+      this._logger.error(`Failed to insert table at marker: ${error.message}`);
       throw error;
     }
   }
@@ -16890,7 +16973,7 @@ class DocumentService extends GoogleService {
     
     this._delegate([{
       manager: this._tableManager,
-      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI']
+      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
     }, {
       manager: this._contentExtractor,
       methods: ['getRawDocumentStructure', 'getDocumentBody', 'scanDocumentStructure']

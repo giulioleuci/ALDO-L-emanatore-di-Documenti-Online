@@ -19,6 +19,7 @@ class FakeDocumentBuilder {
 class FakeDocumentService {
   builders: Record<string, FakeDocumentBuilder> = {};
   scanResult: DocumentScanResult = { tables: [], textMatches: [] };
+  insertTableAtMarkerCalls: Array<{ documentId: string; markerText: string; data: string[][]; options?: Record<string, unknown> }> = [];
   document(documentId: string): FakeDocumentBuilder {
     const b = this.builders[documentId] ?? new FakeDocumentBuilder();
     this.builders[documentId] = b;
@@ -26,6 +27,9 @@ class FakeDocumentService {
   }
   scanDocumentStructure(): DocumentScanResult {
     return this.scanResult;
+  }
+  insertTableAtMarker(documentId: string, markerText: string, data: string[][], options?: Record<string, unknown>): void {
+    this.insertTableAtMarkerCalls.push({ documentId, markerText, data, options });
   }
 }
 
@@ -67,6 +71,28 @@ describe('DocumentTableFacade (10 §9)', () => {
     facade.appendTable('doc1', []);
 
     expect(documents.builders['doc1']?.ops).toEqual([{ type: 'createTable', args: [[['a', 'b']], { headerRow: true }] }]);
+  });
+
+  test('insertTableAtMarker delegates directly to DocumentService.insertTableAtMarker (imperative call, bypasses the op-queue)', () => {
+    const documents = new FakeDocumentService();
+    const facade = new DocumentTableFacade(documents);
+
+    facade.insertTableAtMarker('doc1', '{{TABELLA:sheet_1}}', [['a', 'b']], { headerRow: true });
+
+    expect(documents.insertTableAtMarkerCalls).toEqual([
+      { documentId: 'doc1', markerText: '{{TABELLA:sheet_1}}', data: [['a', 'b']], options: { headerRow: true } }
+    ]);
+    // Positional insertion does not go through the fluent DocumentBuilder op-queue.
+    expect(documents.builders['doc1']).toBeUndefined();
+  });
+
+  test('insertTableAtMarker skips the call entirely for empty data', () => {
+    const documents = new FakeDocumentService();
+    const facade = new DocumentTableFacade(documents);
+
+    facade.insertTableAtMarker('doc1', '{{TABELLA:sheet_1}}', []);
+
+    expect(documents.insertTableAtMarkerCalls).toEqual([]);
   });
 
   test('throws when the builder reports failure', () => {

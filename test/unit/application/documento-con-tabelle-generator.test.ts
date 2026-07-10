@@ -6,15 +6,23 @@ import type { Cdu } from '../../../src/application/context-engine/Cdu';
 class FakeDocumentTableFacade implements IDocumentTableFacade {
   removed: Array<{ fileId: string; marker: string }> = [];
   appended: Array<{ fileId: string; data: string[][]; options?: { headerRow?: boolean } }> = [];
+  insertedAtMarker: Array<{ fileId: string; marker: string; data: string[][]; options?: { headerRow?: boolean } }> = [];
+  /** Records the interleaved call order ('insert' | 'remove') per marker, to assert insert-before-remove. */
+  callOrder: string[] = [];
   constructor(private readonly placeholders: TablePlaceholder[]) {}
   findTablePlaceholders(): TablePlaceholder[] {
     return this.placeholders;
   }
   removeText(fileId: string, marker: string): void {
     this.removed.push({ fileId, marker });
+    this.callOrder.push(`remove:${marker}`);
   }
   appendTable(fileId: string, data: string[][], options?: { headerRow?: boolean }): void {
     this.appended.push({ fileId, data, options });
+  }
+  insertTableAtMarker(fileId: string, marker: string, data: string[][], options?: { headerRow?: boolean }): void {
+    this.insertedAtMarker.push({ fileId, marker, data, options });
+    this.callOrder.push(`insert:${marker}`);
   }
 }
 
@@ -59,7 +67,7 @@ function fakeCdu(): Cdu {
 }
 
 describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
-  test('for each {{TABELLA:<id>}} marker: removes it, reads the sheet, appends it as a table, then runs the generic placeholder pass', () => {
+  test('for each {{TABELLA:<id>}} marker: reads the sheet, inserts it as a table at the marker position, THEN removes the marker, then runs the generic placeholder pass', () => {
     const placeholders: TablePlaceholder[] = [{ marker: '{{TABELLA:sheet_1}}', sheetFileId: 'sheet_1' }];
     const tables = new FakeDocumentTableFacade(placeholders);
     const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 3, 2), {
@@ -75,14 +83,25 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
 
     strategy.render('doc1', cdu);
 
-    expect(tables.removed).toEqual([{ fileId: 'doc1', marker: '{{TABELLA:sheet_1}}' }]);
-    expect(tables.appended).toEqual([
-      { fileId: 'doc1', data: [['NOME', 'VOTO'], ['Rossi', '8']], options: { headerRow: true } }
+    expect(tables.insertedAtMarker).toEqual([
+      {
+        fileId: 'doc1',
+        marker: '{{TABELLA:sheet_1}}',
+        data: [
+          ['NOME', 'VOTO'],
+          ['Rossi', '8']
+        ],
+        options: { headerRow: true }
+      }
     ]);
+    expect(tables.removed).toEqual([{ fileId: 'doc1', marker: '{{TABELLA:sheet_1}}' }]);
+    // Insertion (which relies on findText locating the marker) must happen before removal.
+    expect(tables.callOrder).toEqual(['insert:{{TABELLA:sheet_1}}', 'remove:{{TABELLA:sheet_1}}']);
+    expect(tables.appended).toEqual([]);
     expect(templates.contextFor('doc1')).toEqual(cdu);
   });
 
-  test('no {{TABELLA:...}} markers -> no removals/appends, still runs the generic placeholder pass', () => {
+  test('no {{TABELLA:...}} markers -> no insertions/removals, still runs the generic placeholder pass', () => {
     const tables = new FakeDocumentTableFacade([]);
     const sheets = new FakeSpreadsheetService(sheetInfo(), {});
     const templates = new FakeTemplateEngine();
@@ -91,11 +110,11 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     strategy.render('doc2', fakeCdu());
 
     expect(tables.removed).toEqual([]);
-    expect(tables.appended).toEqual([]);
+    expect(tables.insertedAtMarker).toEqual([]);
     expect(templates.contextFor('doc2')).not.toBeNull();
   });
 
-  test('a missing sheet (getSheetInfo returns nothing) yields an empty table (appendTable no-ops on empty data)', () => {
+  test('a missing sheet (getSheetInfo returns nothing) skips insertTableAtMarker for empty data, but still removes the marker', () => {
     const placeholders: TablePlaceholder[] = [{ marker: '{{TABELLA:sheet_missing}}', sheetFileId: 'sheet_missing' }];
     const tables = new FakeDocumentTableFacade(placeholders);
     const sheets = new FakeSpreadsheetService([], {});
@@ -103,6 +122,7 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
 
     strategy.render('doc3', fakeCdu());
 
-    expect(tables.appended).toEqual([{ fileId: 'doc3', data: [], options: { headerRow: true } }]);
+    expect(tables.insertedAtMarker).toEqual([]);
+    expect(tables.removed).toEqual([{ fileId: 'doc3', marker: '{{TABELLA:sheet_missing}}' }]);
   });
 });

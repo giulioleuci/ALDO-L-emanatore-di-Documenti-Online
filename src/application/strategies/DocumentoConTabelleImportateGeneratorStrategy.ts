@@ -14,17 +14,14 @@ function cellToString(cell: unknown): string {
 /**
  * DOCUMENTO_CON_TABELLE_IMPORTATE generator (10 §9): extends
  * DocumentoGenericoGeneratorStrategy. Before the generic `{{...}}`
- * substitution runs, finds every `{{TABELLA:<sheetFileId>}}` marker, strips
- * it (so it isn't mistaken for a CDU path by the generic pass — a stripped
- * marker resolves to nothing rather than an empty-string artifact), reads
- * the referenced Sheet's first tab in full, and appends it as a table.
- *
- * See `IDocumentTableFacade` for why this *appends* rather than inserting at
- * the marker's exact position: the vendored GoogleApiWrapper
- * `DocumentTableManager` only exposes `body.appendTable()` (no
- * positional/index-based insertion), so with several markers, tables land at
- * the end of the document in placeholder-scan order, not literally where
- * each marker sat.
+ * substitution runs, finds every `{{TABELLA:<sheetFileId>}}` marker, reads
+ * the referenced Sheet's first tab in full, and inserts it as a table
+ * exactly where that marker sat (`insertTableAtMarker`), then strips the
+ * marker text so it isn't mistaken for a CDU path by the generic pass (a
+ * stripped marker resolves to nothing rather than an empty-string
+ * artifact). Insertion happens BEFORE marker removal: `insertTableAtMarker`
+ * locates the marker via `findText`, so removing it first would make it
+ * unfindable for positional insertion.
  */
 export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGenericoGeneratorStrategy {
   constructor(
@@ -37,9 +34,11 @@ export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGene
 
   override render(fileId: string, cdu: Cdu): void {
     for (const placeholder of this.tables.findTablePlaceholders(fileId)) {
-      this.tables.removeText(fileId, placeholder.marker);
       const data = this.readSheetAsStrings(placeholder.sheetFileId);
-      this.tables.appendTable(fileId, data, { headerRow: true });
+      if (data.length > 0) {
+        this.tables.insertTableAtMarker(fileId, placeholder.marker, data, { headerRow: true });
+      }
+      this.tables.removeText(fileId, placeholder.marker);
     }
     super.render(fileId, cdu);
   }

@@ -551,11 +551,24 @@ declare global {
     createTable(data: string[][], options?: DocumentCreateTableOptions): DocumentBuilder;
     execute(): DocumentBuilderExecuteResult;
   }
+  interface DocumentInsertTableAtMarkerResult {
+    success: boolean;
+    rows: number;
+    columns: number;
+    foundElementIndex: number;
+  }
   class DocumentService {
     /** Returns a fluent op-batching builder; nothing executes until `.execute()` (10 §9 table import). */
     document(documentId: string): DocumentBuilder;
     /** Docs-structure scan filtered to paragraphs/table cells containing any of `textPatterns` (default `['{{']`). */
     scanDocumentStructure(documentId: string, textPatterns?: string[]): DocumentScanResult;
+    /**
+     * Inserts a table immediately after the paragraph containing the literal `markerText`
+     * (found via native `body.findText`), instead of appending at the document's end.
+     * Throws if `markerText` is not found. Does NOT remove the marker text itself — the
+     * caller is expected to remove it separately (e.g. via a `replaceText`/`removeText` call).
+     */
+    insertTableAtMarker(documentId: string, markerText: string, data: string[][], options?: DocumentCreateTableOptions): DocumentInsertTableAtMarkerResult;
   }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;

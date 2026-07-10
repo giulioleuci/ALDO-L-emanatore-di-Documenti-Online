@@ -1,37 +1,71 @@
 const path = require('path');
 const GasPlugin = require('gas-webpack-plugin');
+const TerserPlugin = require('minimizer-webpack-plugin');
+
+const babelRule = {
+  test: /\.ts$/,
+  exclude: [/node_modules/, /\.test\.ts$/],
+  use: {
+    loader: 'babel-loader',
+    options: {
+      presets: [
+        ['@babel/preset-env', { targets: { chrome: '80' }, modules: false }],
+        ['@babel/preset-typescript', {}]
+      ]
+    }
+  }
+};
 
 module.exports = (env) => {
   const readable = !!(env && env.readable);
-  return {
+
+  const coreConfig = {
+    name: 'core',
     mode: 'production',
     entry: './src/index.ts',
     devtool: 'source-map',
     output: {
-      filename: 'aldo.js',
+      filename: 'aldo-core.js',
       path: path.resolve(__dirname, 'dist'),
       library: { type: 'this' },
       clean: false
     },
     resolve: { extensions: ['.ts', '.js', '.json'] },
-    module: {
-      rules: [
-        {
-          test: /\.ts$/,
-          exclude: [/node_modules/, /\.test\.ts$/],
-          use: {
-            loader: 'babel-loader',
-            options: {
-              presets: [
-                ['@babel/preset-env', { targets: { chrome: '80' }, modules: false }],
-                ['@babel/preset-typescript', {}]
-              ]
-            }
-          }
-        }
+    module: { rules: [babelRule] },
+    optimization: {
+      minimize: !readable,
+      minimizer: [
+        new TerserPlugin({
+          extractComments: false,
+          terserOptions: { format: { comments: false } }
+        })
       ]
     },
-    optimization: { minimize: !readable },
-    plugins: [new GasPlugin({ autoGlobalExportsFiles: [path.resolve(__dirname, 'src/index.ts')], comments: false })]
+    plugins: [new GasPlugin({ autoGlobalExportsFiles: [path.resolve(__dirname, 'src/index.ts')], comment: false })]
   };
+
+  // Document-generation/email-sending entry points (docs/superpowers/specs/
+  // 2026-07-11-production-split-build-design.md): always readable, always
+  // commented, regardless of --env readable or the ALDO build mode — this
+  // file is meant to be opened and read/extended by a human.
+  const entrypointsConfig = {
+    name: 'entrypoints',
+    mode: 'production',
+    entry: './src/entrypoints/EntryPoints.ts',
+    devtool: 'source-map',
+    output: {
+      filename: 'EntryPoints.js',
+      path: path.resolve(__dirname, 'dist'),
+      library: { type: 'this' },
+      clean: false
+    },
+    resolve: { extensions: ['.ts', '.js', '.json'] },
+    module: { rules: [babelRule] },
+    optimization: { minimize: false },
+    plugins: [
+      new GasPlugin({ autoGlobalExportsFiles: [path.resolve(__dirname, 'src/entrypoints/EntryPoints.ts')], comment: true })
+    ]
+  };
+
+  return [coreConfig, entrypointsConfig];
 };

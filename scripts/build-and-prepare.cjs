@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { minify_sync } = require('terser');
 
 const c = {
   reset: '\x1b[0m',
@@ -68,23 +69,26 @@ const appsscriptSrc = path.join(rootDir, 'appsscript.json');
 const appsscriptDest = path.join(distDir, 'appsscript.json');
 
 const vendorBundle = path.join(rootDir, 'vendor', 'gaslibs.Code.js');
-const aldoBundle = path.join(distDir, 'aldo.js');
+const aldoCoreBundle = path.join(distDir, 'aldo-core.js');
+const entryPointsBundle = path.join(distDir, 'EntryPoints.js');
 
 const webpackCmd = mode === 'production' ? 'npx webpack' : 'npx webpack --env readable';
 
-// Steps: Clean, Vendor verify, Webpack, Prelude concat, Copy appsscript.json,
-// V8 patch, Configure deployment files, Source map index, [offline tests], Summary
-const TOTAL_STEPS = mode === 'testoffline' ? 10 : 9;
+// Steps: Clean, Vendor verify, Webpack, Compose Code.js/EntryPoints.js,
+// Copy appsscript.json, V8 patch, Configure deployment files, Source map
+// index, [production verify | testoffline offline tests], Summary
+const TOTAL_STEPS = mode === 'testing' ? 9 : 10;
 
 heading('ALDO (SGSA) - Build and Prepare');
 info(`Mode:         ${c.bold}${mode.toUpperCase()}${c.reset}`);
 if (mode === 'testoffline') {
-  info(`Code.js:      Readable (not minified), no comments`);
+  info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
   info(`Offline tests: Will run after build (unit + integration)`);
+} else if (mode === 'production') {
+  info(`Code.js:      Vendor + ALDO core — minified (Terser), no comments`);
+  info(`EntryPoints.js: ALDO document-gen/email-sending launchers — readable, with comments`);
 } else {
-  info(
-    `Code.js:      ${mode === 'production' ? 'Minified (Terser), no comments' : 'Readable (not minified), no comments'}`
-  );
+  info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
 }
 
 step(1, TOTAL_STEPS, 'Cleaning dist directory...');
@@ -116,20 +120,42 @@ try {
   process.exit(1);
 }
 
-if (!fs.existsSync(aldoBundle)) {
-  fail('dist/aldo.js was not produced by Webpack');
+if (!fs.existsSync(aldoCoreBundle)) {
+  fail('dist/aldo-core.js was not produced by Webpack');
+  process.exit(1);
+}
+if (!fs.existsSync(entryPointsBundle)) {
+  fail('dist/EntryPoints.js was not produced by Webpack');
   process.exit(1);
 }
 
-step(4, TOTAL_STEPS, 'Concatenating vendor prelude + ALDO bundle into Code.js...');
+step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
 
 {
   const prelude = fs.readFileSync(vendorBundle, 'utf8');
-  const aldo = fs.readFileSync(aldoBundle, 'utf8');
-  fs.writeFileSync(codeJsPath, prelude + '\n;\n' + aldo, 'utf8');
-  fs.rmSync(aldoBundle, { force: true });
-  fs.rmSync(aldoBundle + '.map', { force: true });
-  ok('Wrote dist/Code.js (vendor prelude + ALDO bundle)');
+  const core = fs.readFileSync(aldoCoreBundle, 'utf8');
+
+  if (mode === 'production') {
+    const minified = minify_sync(prelude, { format: { comments: false } });
+    if (minified.error || typeof minified.code !== 'string') {
+      fail(`Failed to minify vendor prelude: ${minified.error ? minified.error.message : 'no code produced'}`);
+      process.exit(1);
+    }
+    fs.writeFileSync(codeJsPath, minified.code + '\n;\n' + core, 'utf8');
+    ok('Wrote dist/Code.js (vendor prelude minified + ALDO core, minified, no comments)');
+    ok('Kept dist/EntryPoints.js separate (readable, with comments)');
+    fs.rmSync(aldoCoreBundle, { force: true });
+    fs.rmSync(aldoCoreBundle + '.map', { force: true });
+    fs.rmSync(entryPointsBundle + '.map', { force: true });
+  } else {
+    const entrypoints = fs.readFileSync(entryPointsBundle, 'utf8');
+    fs.writeFileSync(codeJsPath, prelude + '\n;\n' + core + '\n;\n' + entrypoints, 'utf8');
+    ok('Wrote dist/Code.js (vendor prelude + ALDO core + ALDO entry points)');
+    fs.rmSync(aldoCoreBundle, { force: true });
+    fs.rmSync(aldoCoreBundle + '.map', { force: true });
+    fs.rmSync(entryPointsBundle, { force: true });
+    fs.rmSync(entryPointsBundle + '.map', { force: true });
+  }
 }
 
 if (!fs.existsSync(codeJsPath)) {
@@ -317,6 +343,24 @@ if (patchCount > 0) {
   ok('No patches needed — Code.js unchanged');
 }
 
+if (mode === 'production') {
+  const entryPointsFinalPath = path.join(distDir, 'EntryPoints.js');
+  const entryPointsCode = fs.readFileSync(entryPointsFinalPath, 'utf8');
+  let entryWarnings = 0;
+  for (const { label, regex, reason } of scanPatterns) {
+    const matches = entryPointsCode.match(regex);
+    if (matches) {
+      warn(`EntryPoints.js: found ${matches.length} instance(s) of ${c.bold}${label}${c.reset}`);
+      info(`  Reason: ${reason}`);
+      entryWarnings += matches.length;
+    }
+  }
+  if (entryWarnings === 0) {
+    ok('EntryPoints.js: no GAS V8 compatibility issues detected (scan-only, not rewritten)');
+  }
+  warningCount += entryWarnings;
+}
+
 if (warningCount > 0) {
   warn(
     `${warningCount} compatibility warning(s) detected — review above for details`
@@ -398,6 +442,89 @@ step(8, TOTAL_STEPS, 'Generating source map index...');
 
   fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
   ok(`Generated source-map-index.json`);
+}
+
+if (mode === 'production') {
+  step(9, TOTAL_STEPS, 'Verifying production split output...');
+
+  let productionVerifyPassed = true;
+  const codeJsContent = fs.readFileSync(codeJsPath, 'utf8');
+  const entryPointsFinalPath = path.join(distDir, 'EntryPoints.js');
+  const entryPointsContent = fs.existsSync(entryPointsFinalPath) ? fs.readFileSync(entryPointsFinalPath, 'utf8') : '';
+
+  const launcherNames = ['menu_avvioGenerazioneDocumenti', 'menu_avvioComunicazioniEmail', 'generaPagelle', 'inviaNotificaAssenze'];
+  // menu_avvioGenerazioneDocumenti/menu_avvioComunicazioniEmail legitimately
+  // appear in Code.js as STRING data: src/presentation/Menu.ts's vociMenu()
+  // (bundled into core) registers GAS menu items by function-name string
+  // (menu.addItem(label, 'funcName')), and that file is part of core, not
+  // EntryPoints.ts. Only the two non-interactive example launchers — never
+  // referenced anywhere in core — are safe to check by bare name.
+  const namesForbiddenInCodeJs = ['generaPagelle', 'inviaNotificaAssenze'];
+
+  const leakedIntoCodeJs = namesForbiddenInCodeJs.filter((name) => codeJsContent.includes(name));
+  if (leakedIntoCodeJs.length > 0) {
+    fail(`Code.js unexpectedly contains launcher source: ${leakedIntoCodeJs.join(', ')}`);
+    productionVerifyPassed = false;
+  } else {
+    ok('Code.js does not contain document-generation/email-sending launcher source');
+  }
+
+  if (codeJsContent.includes('/**')) {
+    fail('Code.js contains JSDoc comment blocks — expected fully comment-stripped minified output');
+    productionVerifyPassed = false;
+  } else {
+    ok('Code.js contains no JSDoc comment blocks (minified, comment-free)');
+  }
+
+  if (!fs.existsSync(entryPointsFinalPath)) {
+    fail('dist/EntryPoints.js was not produced');
+    productionVerifyPassed = false;
+  } else {
+    if (!entryPointsContent.includes('/**')) {
+      fail('EntryPoints.js contains no JSDoc comment blocks — expected readable, commented output');
+      productionVerifyPassed = false;
+    } else {
+      ok('EntryPoints.js retains JSDoc comment blocks');
+    }
+
+    const missingFromEntryPoints = launcherNames.filter((name) => !entryPointsContent.includes(name));
+    if (missingFromEntryPoints.length > 0) {
+      fail(`EntryPoints.js is missing expected launcher(s): ${missingFromEntryPoints.join(', ')}`);
+      productionVerifyPassed = false;
+    } else {
+      ok('EntryPoints.js contains all expected launcher functions');
+    }
+
+    const lineCount = entryPointsContent.split('\n').length || 1;
+    const avgLineLength = entryPointsContent.length / lineCount;
+    if (avgLineLength > 200) {
+      fail(`EntryPoints.js looks minified (avg line length ${avgLineLength.toFixed(0)} chars) — expected readable multi-line output`);
+      productionVerifyPassed = false;
+    } else {
+      ok(`EntryPoints.js is readable (avg line length ${avgLineLength.toFixed(0)} chars over ${lineCount} lines)`);
+    }
+  }
+
+  const testLeakLabels = [
+    ['Code.js', codeJsContent],
+    ['EntryPoints.js', entryPointsContent]
+  ];
+  let testLeakFound = false;
+  for (const [label, content] of testLeakLabels) {
+    if (content.includes('__tests__') || content.includes('.test.ts')) {
+      fail(`${label} contains test-file references — test code leaked into the production bundle`);
+      productionVerifyPassed = false;
+      testLeakFound = true;
+    }
+  }
+  if (!testLeakFound) {
+    ok('No test-file references found in production output');
+  }
+
+  if (!productionVerifyPassed) {
+    fail('Production split verification failed — see above');
+    process.exit(1);
+  }
 }
 
 let offlineTestsPassed = false;

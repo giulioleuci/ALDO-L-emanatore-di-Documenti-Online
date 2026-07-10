@@ -185,12 +185,11 @@ Opera su un Google Doc. Sostituisce i placeholder con dati del CDU tramite `Work
 
 **`SheetMaterieGeneratorStrategy`**  
 Opera su un Google Sheet. Dopo la copia del template:
-1. Legge le materie della classe dal CDU (`focus.classe.consiglioDiClasse`)
-2. Inserisce una colonna per ogni materia, usando `MATERIE.SINTESI` come intestazione
-3. Per classi articolate, inserisce prima le materie condivise tra i partner e poi — separate da intestazione di gruppo — le materie specifiche per ciascun indirizzo
-4. Sostituisce i placeholder non strutturali tramite `WorkspaceTemplateEngine`
+1. Legge le materie della classe dal CDU (`focus.classe.consiglioDiClasse`) e risolve l'intestazione di ciascuna (`MATERIE.SINTESI`, con fallback alla sigla)
+2. Costruisce sul context i gruppi di colonne attesi dal placeholder `{{dynamic_columns[...]}}` incorporato nel template Drive: per classi articolate, materie condivise tra i partner prima, poi — separate da una colonna etichetta di gruppo — le materie specifiche per ciascun indirizzo
+3. Invoca `WorkspaceTemplateEngine.processSheet`, che espande le colonne (posizionandole a partire dalla cella del placeholder) e sostituisce in un unico passaggio anche i placeholder non strutturali del foglio
 
-`CONF_DOC.PARAMETRI` può specificare: nome del foglio target, riga di intestazione colonne, colonna di partenza.
+`CONF_DOC.PARAMETRI` può specificare: nome del foglio target (facoltativo, per selezionare una scheda non predefinita). La posizione delle colonne materia è determinata dal placeholder `{{dynamic_columns[...]}}` incorporato nel template Drive, non più da `PARAMETRI`.
 
 **`SheetMaterieConPermessiGeneratorStrategy`**  
 Identica a `SheetMaterieGeneratorStrategy` con l'aggiunta di protezione range batch. Dopo l'inserimento delle colonne, applica la protezione tramite `GoogleApiWrapper` (L1): ogni docente del CDC riceve il permesso di scrittura esclusivamente sulle proprie colonne materia; il coordinatore riceve accesso completo. La risoluzione dei docenti per colonna usa `RoleResolutionLib` (L4) per gestire le supplenze attive.

@@ -1,9 +1,12 @@
 // ALDO entry points (15 §2-§5). GAS calls top-level global functions by name;
 // gas-webpack-plugin hoists the `(globalThis as any).<name> = ...` assignments
 // to true globals. Everything below is delegation: onOpen builds the menu only
-// (no DI init, 15 §2); menu wrappers collect input and delegate to the
-// data-driven launchers of Bootstrap; `resumeJob` is the JobRunnerLib timed
-// trigger target (the library resolves the suspended job from the trigger id).
+// (no DI init, 15 §2); menu_avvioImportazioni is a data-driven launcher wrapper;
+// `resumeJob` is the JobRunnerLib timed trigger target (the library resolves the
+// suspended job from the trigger id). The document-generation and email-sending
+// launchers live in src/entrypoints/EntryPoints.ts, a separate, human-readable
+// GAS script file — this file exposes the identifiers that file calls as true
+// globals (GAS shares one global namespace across every script file).
 import {
   initAldo,
   creaJobRunner,
@@ -23,18 +26,6 @@ export function onOpen(): void {
   costruisciMenu(new GasUiFacade());
 }
 
-export function menu_avvioGenerazioneDocumenti(): void {
-  menuGenerazioneDocumenti(new GasUiFacade(), (configId) =>
-    avviaGenerazioneDataDriven(initAldo(), configId, creaJobRunner())
-  );
-}
-
-export function menu_avvioComunicazioniEmail(): void {
-  menuComunicazioniEmail(new GasUiFacade(), (patternId) =>
-    avviaInvioNotificheDataDriven(initAldo(), patternId, creaJobRunner())
-  );
-}
-
 export function menu_avvioImportazioni(): void {
   menuImportazioni(new GasUiFacade(), (configId) => avviaImportazioneDataDriven(initAldo(), configId));
 }
@@ -47,8 +38,17 @@ export function resumeJob(): void {
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).aldoPing = aldoPing;
 (globalThis as any).onOpen = onOpen;
-(globalThis as any).menu_avvioGenerazioneDocumenti = menu_avvioGenerazioneDocumenti;
-(globalThis as any).menu_avvioComunicazioniEmail = menu_avvioComunicazioniEmail;
 (globalThis as any).menu_avvioImportazioni = menu_avvioImportazioni;
 (globalThis as any).resumeJob = resumeJob;
+
+// Exposed for src/entrypoints/EntryPoints.ts (production split build, docs/superpowers/specs/2026-07-11-production-split-build-design.md):
+// that file calls these by name as ambient globals instead of importing them,
+// so it stays a small, standalone, human-readable GAS script file.
+(globalThis as any).initAldo = initAldo;
+(globalThis as any).creaJobRunner = creaJobRunner;
+(globalThis as any).avviaGenerazioneDataDriven = avviaGenerazioneDataDriven;
+(globalThis as any).avviaInvioNotificheDataDriven = avviaInvioNotificheDataDriven;
+(globalThis as any).menuGenerazioneDocumenti = menuGenerazioneDocumenti;
+(globalThis as any).menuComunicazioniEmail = menuComunicazioniEmail;
+(globalThis as any).GasUiFacade = GasUiFacade;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

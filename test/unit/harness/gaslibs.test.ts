@@ -213,11 +213,15 @@ test('custom SourceStrategy registered via ImportEngine.registerCustomSource wor
   const engine = new ImportEngine(logger, drive, sheets, db as unknown as DatabaseService);
   engine.registerCustomSource('ProbeSource', ProbeSourceStrategy);
 
-  const config = new ImportConfiguration({
-    name: 'probe',
-    source: { type: 'ProbeSource', config: { marker: 'x' } },
-    load: { targetTable: 'DEST', conflictResolution: 'INSERT_ONLY' }
-  });
-  const extracted = engine._executeExtract(config);
+  let extracted: Record<string, unknown>[] = [];
+  engine.runImport(
+    {
+      name: 'probe',
+      source: { type: 'ProbeSource', config: { marker: 'x' } },
+      transform: { mapping: { EMAIL: 'EMAIL' } },
+      load: { targetTable: 'DEST', conflictResolution: 'INSERT_ONLY' }
+    },
+    { dryRun: true, postTransform: (data) => { extracted = data; return data; } }
+  );
   expect(extracted).toEqual([{ EMAIL: 'probe@x' }]);
 });

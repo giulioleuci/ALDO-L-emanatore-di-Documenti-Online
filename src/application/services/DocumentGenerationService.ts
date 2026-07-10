@@ -3,6 +3,7 @@ import type { IDatabase } from '../../infrastructure/db/Database';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
+import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { ConfigurazioneDocumentoRepository } from '../../infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
@@ -34,6 +35,8 @@ export interface DocumentGenerationDeps {
   roleResolver: IRoleResolver;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
   now: Date;
+  /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
+  monitor?: IProcessMonitor | undefined;
   logger?: LoggerService;
 }
 
@@ -55,6 +58,7 @@ export class DocumentGenerationService {
   private readonly configs: ConfigurazioneDocumentoRepository;
   private readonly roleResolver: IRoleResolver;
   private readonly now: Date;
+  private readonly monitor: IProcessMonitor | undefined;
   private readonly logger: LoggerService;
 
   constructor(deps: DocumentGenerationDeps) {
@@ -67,10 +71,12 @@ export class DocumentGenerationService {
     this.configs = deps.configs;
     this.roleResolver = deps.roleResolver;
     this.now = deps.now;
+    this.monitor = deps.monitor;
     this.logger = deps.logger ?? new LoggerService();
   }
 
-  generateForClasse(target: ClasseId, confDocId: string): { fileId: string | null; status: string } {
+  /** `jobId` (batch seam, 15 §9): when provided, per-step telemetry is logged via IProcessMonitor. */
+  generateForClasse(target: ClasseId, confDocId: string, jobId?: string): { fileId: string | null; status: string } {
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
@@ -96,7 +102,7 @@ export class DocumentGenerationService {
     this.db.beginTransaction();
     let ctx: PipelineContext;
     try {
-      ctx = this.buildPipeline().execute({ config: row, confDoc: config, cdu });
+      ctx = this.buildPipeline(jobId).execute({ config: row, confDoc: config, cdu });
     } catch (e) {
       this.db.rollback();
       throw e;
@@ -122,7 +128,7 @@ export class DocumentGenerationService {
    * the pipeline continues (old `critical` flag semantics); a critical failure
    * rolls back the orphan clone and requests a graceful stop.
    */
-  private buildPipeline(): Pipeline {
+  private buildPipeline(jobId?: string): Pipeline {
     const pipeline = new Pipeline(this.logger, null, { name: 'DocumentoPipeline', stopOnError: false });
     pipeline
       .addStep(new AnalyzeContextStep(this.logger, this.configs, this.expressionEngine))
@@ -143,6 +149,14 @@ export class DocumentGenerationService {
       ctx.setFlag('criticalError', `${step.getName()}: ${error.message}`);
       ctx.requestStop(`critical step failed: ${step.getName()}`);
     });
+
+    // Per-step telemetry (15 §9) for the batch monitoring dashboard — a no-op when
+    // this pipeline runs outside a monitored batch (jobId undefined, e.g. single-doc calls).
+    if (this.monitor !== undefined && jobId !== undefined) {
+      const monitor = this.monitor;
+      pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
+      pipeline.afterStep((step, _ctx, result) => monitor.logStepComplete(jobId, step.getName(), result.success));
+    }
 
     return pipeline;
   }

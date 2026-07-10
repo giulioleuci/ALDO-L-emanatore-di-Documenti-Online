@@ -113,9 +113,24 @@ test('avviaImportazioneDataDriven fails typed when no ImportEngine is configured
 
 test('avviaImportazioneDataDriven runs the real ImportService when an ImportEngine is wired (12 §3)', () => {
   const engine = {
-    _executeExtract: () => [{ A: 'a1@x.it', B: 'ROSSI' }],
-    _executeTransform: (data: Record<string, unknown>[]) => data.map((r) => ({ EMAIL: r['A'], COGNOMENOME: r['B'] })),
-    _executeLoad: (data: Record<string, unknown>[]) => ({ success: true, inserted: data.length, updated: 0, skipped: 0, deleted: 0, total: data.length })
+    runImport: (
+      recipe: ImportRecipe,
+      options: { postTransform?: (data: Record<string, unknown>[], config: ImportConfiguration) => Record<string, unknown>[] } = {}
+    ) => {
+      const extracted = [{ A: 'a1@x.it', B: 'ROSSI' }];
+      let mapped: Record<string, unknown>[] = extracted.map((r) => ({ EMAIL: r['A'], COGNOMENOME: r['B'] }));
+      const configuration = { getLoad: () => recipe.load } as unknown as ImportConfiguration;
+      if (options.postTransform) mapped = options.postTransform(mapped, configuration);
+      const loadResult = { success: true, inserted: mapped.length, updated: 0, skipped: 0, deleted: 0, total: mapped.length };
+      return {
+        success: true,
+        importName: recipe.name,
+        durationMs: 0,
+        extract: { rowsExtracted: extracted.length, rowCount: extracted.length },
+        transform: { rowsTransformed: mapped.length, recordsProcessed: mapped.length },
+        load: { ...loadResult, recordsProcessed: loadResult.total, failed: 0 }
+      };
+    }
   } as unknown as ImportEngine;
   const c = buildAldoContainer({
     db: new FakeDatabase(fixtureTables()),

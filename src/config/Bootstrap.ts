@@ -126,6 +126,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         configs: new ConfigurazioneDocumentoRepository(deps.db),
         roleResolver: new RisolutoreRuoliService(deps.db),
         now: deps.now,
+        monitor: deps.monitor,
         logger
       })
   );
@@ -136,7 +137,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       new DocumentBatchService(new ClasseRepository(deps.db), container.get<DocumentGenerationService>('documentGenerationService'), deps.monitor)
   );
   c.register('emailNotificationService', () =>
-    EmailNotificationService.create(deps.db, deps.gmail, deps.templates, deps.now, deps.drive, logger)
+    EmailNotificationService.create(deps.db, deps.gmail, deps.templates, deps.now, deps.drive, logger, deps.monitor)
   );
   c.register(
     'emailBatchService',

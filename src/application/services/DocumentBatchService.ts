@@ -63,7 +63,7 @@ export class DocumentBatchService {
       const classe = attive[i]!;
       let message = `Generazione documento classe ${classe.id ?? '?'}`;
       try {
-        this.documenti.generateForClasse(classe.classeId, confDocId);
+        this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${classe.id ?? '?'}: ${reason}`);

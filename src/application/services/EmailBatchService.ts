@@ -68,7 +68,7 @@ export class EmailBatchService {
       const fine = Math.min(i + chunkSize, targets.length);
       for (; i < fine; i++) {
         const target = targets[i]!;
-        const esito = this.email.sendToTarget(patternId, target);
+        const esito = this.email.sendToTarget(patternId, target, jobId);
         sent += esito.sent;
         errors.push(...esito.errors);
         processed.push(target.target);

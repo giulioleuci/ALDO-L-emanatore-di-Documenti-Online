@@ -5,28 +5,36 @@ import { fixtureTables } from '../../../test/fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 
 /**
- * A minimal ImportEngine double implementing the exact bound-method contract
- * ImportService calls (_executeExtract/_executeTransform/_executeLoad), so
- * these tests exercise ImportService's orchestration (ghost filtering,
- * counting, sequencing) without needing SpreadsheetApp/DriveApp.
+ * A minimal ImportEngine double implementing the public `runImport(recipe, options)`
+ * facade — mirroring `ImportPipelineExecutor._executePipeline`'s extract ->
+ * transform -> postTransform-hook -> load sequencing — so these tests exercise
+ * ImportService's orchestration (ghost filtering via the hook, counting,
+ * sequencing) the same way the real library does, without needing
+ * SpreadsheetApp/DriveApp.
  */
 function fakeEngine(sourceRows: Record<string, unknown>[], loader: (data: Record<string, unknown>[], targetTable: string) => ImportLoadResult) {
   const calls: string[] = [];
   return {
     calls,
     engine: {
-      _executeExtract: () => {
+      runImport: (recipe: ImportRecipe, options: { postTransform?: (data: Record<string, unknown>[], config: ImportConfiguration) => Record<string, unknown>[] } = {}) => {
         calls.push('extract');
-        return sourceRows;
-      },
-      _executeTransform: (data: Record<string, unknown>[]) => {
+        const extracted = sourceRows;
         calls.push('transform');
         // Mirrors the library's mapping: A->EMAIL, B->COGNOMENOME, source col C passthrough as NOTE.
-        return data.map((r) => ({ EMAIL: r['A'], COGNOMENOME: r['B'], NOTE: r['C'] ?? null }));
-      },
-      _executeLoad: (data: Record<string, unknown>[], config: ImportConfiguration) => {
+        let mapped: Record<string, unknown>[] = extracted.map((r) => ({ EMAIL: r['A'], COGNOMENOME: r['B'], NOTE: r['C'] ?? null }));
+        const configuration = { getLoad: () => recipe.load } as unknown as ImportConfiguration;
+        if (options.postTransform) mapped = options.postTransform(mapped, configuration);
         calls.push('load');
-        return loader(data, config.getLoad().targetTable);
+        const loadResult = loader(mapped, recipe.load.targetTable);
+        return {
+          success: true,
+          importName: recipe.name,
+          durationMs: 0,
+          extract: { rowsExtracted: extracted.length, rowCount: extracted.length },
+          transform: { rowsTransformed: mapped.length, recordsProcessed: mapped.length },
+          load: { ...loadResult, recordsProcessed: loadResult.total, failed: 0 }
+        };
       }
     } as unknown as ImportEngine
   };

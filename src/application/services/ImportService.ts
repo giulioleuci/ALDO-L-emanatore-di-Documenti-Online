@@ -21,6 +21,14 @@ const META_COLUMNS = ['DATA_MODIFICA'];
  * Detection, applied between transform and load: a mapped row where every
  * non-key, non-metadata field is empty is dropped before it ever reaches the
  * library's conflict-resolution strategies, and counted separately.
+ *
+ * Runs through the library's public `ImportEngine.runImport(recipe, options)`
+ * facade rather than calling the private `_executeExtract`/`_executeTransform`
+ * /`_executeLoad` phase methods directly, via `runImport`'s `postTransform`
+ * hook (`(transformedData, config) => filteredData`) — this keeps ghost
+ * filtering entirely inside the library's own pipeline, so imports still get
+ * `GasResilienceLib`-backed retry/backoff and `GasProcessMonitorLib` job
+ * progress reporting, both of which the private-method bypass silently lost.
  */
 export class ImportService {
   constructor(
@@ -37,25 +45,26 @@ export class ImportService {
     }
 
     const recipe = toLibraryRecipe(conf);
-    const configuration = new ImportConfiguration(recipe);
+    let ghostCount = 0;
 
-    const extracted = this.engine._executeExtract(configuration);
-    const mapped = this.engine._executeTransform(extracted, configuration);
+    const result = this.engine.runImport(recipe, {
+      postTransform: (mapped, configuration) => {
+        const load = configuration.getLoad();
+        const keyColumns = load.conflictKey === undefined ? [] : [load.conflictKey];
+        const metaColumns = load.updateIfNewer?.timestampColumn !== undefined
+          ? [...META_COLUMNS, load.updateIfNewer.timestampColumn]
+          : META_COLUMNS;
+        const toLoad = mapped.filter((row) => !isGhostRecord(row, keyColumns, metaColumns));
+        ghostCount = mapped.length - toLoad.length;
+        return toLoad;
+      }
+    });
 
-    const load = configuration.getLoad();
-    const keyColumns = load.conflictKey === undefined ? [] : [load.conflictKey];
-    const metaColumns = load.updateIfNewer?.timestampColumn !== undefined
-      ? [...META_COLUMNS, load.updateIfNewer.timestampColumn]
-      : META_COLUMNS;
-    const ghosts = mapped.filter((row) => isGhostRecord(row, keyColumns, metaColumns));
-    const toLoad = mapped.filter((row) => !isGhostRecord(row, keyColumns, metaColumns));
-
-    const loadResult = this.engine._executeLoad(toLoad, configuration);
     return {
-      inseriti: loadResult.inserted,
-      aggiornati: loadResult.updated,
-      saltati: loadResult.skipped,
-      ghost: ghosts.length,
+      inseriti: result.load.inserted,
+      aggiornati: result.load.updated,
+      saltati: result.load.skipped,
+      ghost: ghostCount,
       errori: []
     };
   }

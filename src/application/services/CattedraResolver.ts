@@ -18,6 +18,19 @@ import type { MateriaId } from '../../domain/value-objects/MateriaId';
  *
  * The first priority that produces a match wins; lower priorities are not
  * consulted for that holder.
+ *
+ * Deliberately not built on `RoleResolutionLib`: that library models generic,
+ * explicitly-registered actor delegation chains (Alice→Bob→Charlie style
+ * `RoleRegistry`/`DelegationSource`/`RoutingPolicy`), not a date-scoped
+ * priority lookup across three differently-shaped Sheet tables (SUPPLENZE /
+ * VARIAZIONI_CATTEDRA / CLASSI). The one place this class's neighbourhood
+ * *does* fit the library's model — the transitive supply-of-supply crawl
+ * within a single SUPPLENZE chain — is delegated correctly via
+ * `SupplenzaRepository.findSupplenzaSpecifica` -> `RoleResolutionLib.getDelegationChain`.
+ * Wrapping the outer 3-source chain itself would require extending the
+ * library with a "priority-ordered source list" resolution mode that can
+ * wrap heterogeneous data sources as `DelegationSource`-like adapters; until
+ * that exists (or is judged not worth building), this hierarchy stays here.
  */
 export class CattedraResolver {
   private readonly classi: ClasseRepository;

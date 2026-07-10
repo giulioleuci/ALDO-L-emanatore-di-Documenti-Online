@@ -213,7 +213,16 @@ export class RisolutoreRuoliService {
     return out;
   }
 
-  /** Supplenza routing (14 §1.2) mirroring the email pipeline's ResolveRecipientsStep. */
+  /**
+   * Supplenza routing (14 §1.2) mirroring the email pipeline's ResolveRecipientsStep.
+   *
+   * Hand-rolled rather than `RoleResolutionLib`-driven for the same reason as
+   * `CattedraResolver`: this is the SGSA-specific SUPPLENZE → VARIAZIONI_CATTEDRA
+   * → CLASSI priority chain, not the library's generic delegation-chain model.
+   * The chain-resolved "active substitute for a given titolare" sub-lookup
+   * *is* delegated to the library via `SupplenzaRepository.findSupplenzaSpecifica`
+   * -> `RoleResolutionLib.getDelegationChain`, immediately below.
+   */
   private applicaSupplenze(docenti: Docente[], ctx: RoleContext, regola: GestioneSupplenti): Email[] {
     const out: Email[] = [];
     for (const titolare of docenti) {

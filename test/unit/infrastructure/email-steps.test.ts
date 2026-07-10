@@ -296,6 +296,19 @@ test('LogEmailStep records SUCCESS in LOG_MAIL (11 §9)', () => {
   expect(rows[0]!['STATO']).toBe('SUCCESS');
 });
 
+test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 §9)', () => {
+  const w = wire();
+  w.db.table('LOG_DOCS').insert({ ID: 'doc1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' });
+  w.db.table('LOG_DOCS').insert({ ID: 'doc2', ID_GEN: 'CD1', TIPO: 'PDP', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' });
+  runThroughCompose(w);
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+  send(w, new FakeGmailFacade());
+  new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
+  const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
+  const allegati = JSON.parse(String(row['ALLEGATI'])) as { docs: string[]; folders: string[] };
+  expect(allegati.docs).toEqual(['doc1', 'doc2']);
+});
+
 test('LogEmailStep records ERROR with message when a send failed (11 §9)', () => {
   const w = wire();
   runThroughCompose(w);

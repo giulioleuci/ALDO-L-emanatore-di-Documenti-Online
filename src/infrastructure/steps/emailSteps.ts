@@ -207,8 +207,8 @@ export class ComposeEmailStep extends Step {
    * same box that would otherwise render these documents, reused here so the
    * filter is configured once per pattern, not duplicated.
    */
-  private resolveAllegati(conf: ConfigurazioneEmail, built: Cdu): unknown[] {
-    if (built.focus.classe === undefined) return [];
+  private resolveAllegati(conf: ConfigurazioneEmail, built: Cdu): { ids: string[]; blobs: unknown[] } {
+    if (built.focus.classe === undefined) return { ids: [], blobs: [] };
     const boxConfig = conf.getBoxes().find((b) => {
       const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
       return sorgente?.metodo === 'documentiPerClasse';
@@ -218,7 +218,8 @@ export class ComposeEmailStep extends Step {
     const documenti = this.logDocs
       .findByClasse(classe)
       .filter((d) => (filtri.tipo === undefined || d.tipo === filtri.tipo) && (filtri.stato === undefined || String(d.getStato()) === filtri.stato));
-    return documenti.map((d) => this.drive.getFileBlob(d.id ?? ''));
+    const ids = documenti.map((d) => d.id ?? '');
+    return { ids, blobs: ids.map((id) => this.drive.getFileBlob(id)) };
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const conf = confMail(ctx);
@@ -249,8 +250,10 @@ export class ComposeEmailStep extends Step {
 
     if (built.render !== undefined) built.render.body = { htmlCompleto, htmlSoloContenuto };
     if (built.destinatario !== undefined) built.destinatario.comunicazione.testoContenutoPuro = htmlSoloContenuto;
+    const allegati = this.resolveAllegati(conf, built);
     this.setResult(ctx, 'corpoHtml', htmlCompleto);
-    this.setResult(ctx, 'allegati', this.resolveAllegati(conf, built));
+    this.setResult(ctx, 'allegati', allegati.blobs);
+    this.setResult(ctx, 'allegatiIds', allegati.ids);
   }
 }
 
@@ -370,7 +373,7 @@ export class LogEmailStep extends Step {
     const errors = ctx.get<string[]>('sendErrors') ?? [];
     const stato = errors.length > 0 ? StatoEmail.ERROR : StatoEmail.SUCCESS;
     const destinatari = (ctx.get<string[]>('sentTo') ?? []).map((e) => Email.of(e));
-    const allegatiInfo = { docs: [], folders: [] };
+    const allegatiInfo = { docs: ctx.get<string[]>('allegatiIds') ?? [], folders: [] };
     this.logMail.registraInvio(
       String(cfg(ctx)[COL_CONF_MAIL.ID]),
       destinatari,

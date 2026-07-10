@@ -3,6 +3,7 @@ import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFaca
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
+import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { EmailTarget } from '../email/saluto';
@@ -51,6 +52,8 @@ export interface EmailNotificationDeps {
   materie: MateriaRepository;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
   now: Date;
+  /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
+  monitor?: IProcessMonitor;
   logger?: LoggerService;
 }
 
@@ -73,18 +76,20 @@ export interface SendPatternResult {
  * the CONF_MAIL record, never from code branches per pattern.
  */
 export class EmailNotificationService {
-  private readonly deps: Required<Omit<EmailNotificationDeps, 'logger'>>;
+  private readonly deps: Required<Omit<EmailNotificationDeps, 'logger' | 'monitor'>>;
+  private readonly monitor: IProcessMonitor | undefined;
   private readonly logger: LoggerService;
   private testEmail: string | null = null;
 
   constructor(deps: EmailNotificationDeps) {
-    const { logger, ...rest } = deps;
+    const { logger, monitor, ...rest } = deps;
     this.deps = rest;
+    this.monitor = monitor;
     this.logger = logger ?? new LoggerService();
   }
 
   /** Convenience wiring over one database (composition-root shortcut and tests). */
-  static create(db: EmailDb, gmail: IGmailFacade, templates: ITemplateEngine, now: Date, drive: IDriveFacade, logger?: LoggerService): EmailNotificationService {
+  static create(db: EmailDb, gmail: IGmailFacade, templates: ITemplateEngine, now: Date, drive: IDriveFacade, logger?: LoggerService, monitor?: IProcessMonitor): EmailNotificationService {
     const base: EmailNotificationDeps = {
       db,
       gmail,
@@ -105,6 +110,7 @@ export class EmailNotificationService {
       materie: new MateriaRepository(db)
     };
     if (logger !== undefined) base.logger = logger;
+    if (monitor !== undefined) base.monitor = monitor;
     return new EmailNotificationService(base);
   }
 
@@ -153,12 +159,12 @@ export class EmailNotificationService {
    * Runs the pipeline for one already-enumerated target (batch seam, 11 §14).
    * Returns the per-target outcome; skipped = the CONDIZIONE gated the send.
    */
-  sendToTarget(patternId: string, target: EmailTarget): { sent: number; errors: string[]; skipped: boolean } {
+  sendToTarget(patternId: string, target: EmailTarget, jobId?: string): { sent: number; errors: string[]; skipped: boolean } {
     const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);
     if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
-    const ctx = this.buildPipeline().execute({
+    const ctx = this.buildPipeline(jobId).execute({
       config: row,
       confMail: conf,
       emailTarget: target,
@@ -177,9 +183,9 @@ export class EmailNotificationService {
   }
 
   /** The 8 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */
-  private buildPipeline(): Pipeline {
+  private buildPipeline(jobId?: string): Pipeline {
     const d = this.deps;
-    return new Pipeline(this.logger, null, { name: 'NotificaPipeline', stopOnError: false })
+    const pipeline = new Pipeline(this.logger, null, { name: 'NotificaPipeline', stopOnError: false })
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates))
@@ -188,6 +194,16 @@ export class EmailNotificationService {
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))
       .addStep(new LogEmailStep(this.logger, d.logMail))
       .addStep(new PostProcessEmailStep(this.logger, d.db, d.templates));
+
+    // Per-step telemetry (15 §9) for the batch monitoring dashboard — a no-op when
+    // this pipeline runs outside a monitored batch (jobId undefined, e.g. sendPattern).
+    if (this.monitor !== undefined && jobId !== undefined) {
+      const monitor = this.monitor;
+      pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
+      pipeline.afterStep((step, _ctx, result) => monitor.logStepComplete(jobId, step.getName(), result.success));
+    }
+
+    return pipeline;
   }
 
   /** Logical recipients per CONF_MAIL.PROCESSO (11 §3, §12). */

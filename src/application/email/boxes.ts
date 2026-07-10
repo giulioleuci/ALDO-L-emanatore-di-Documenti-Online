@@ -42,24 +42,22 @@ export interface RenderedBox {
 
 const DEFAULT_BORDER = '#ddd';
 
-/** Escapes sheet-sourced free text before HTML interpolation (names, notes, error strings). */
+/**
+ * HTML-context escaping (XSS prevention) delegated to CoreUtilsLib's
+ * `HtmlSanitizer` (Task C2 of the delegation audit) — thin re-exports so
+ * existing import sites (`emailSteps.ts`, this module's own renderers) keep
+ * working unchanged.
+ */
 export function escapeHtml(raw: string): string {
-  return raw
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return HtmlSanitizer.escapeHtml(raw);
 }
 
-/** Sheet-sourced colours go into style attributes: only hex codes or CSS keywords pass. */
 export function safeColor(raw: string, fallback: string): string {
-  return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(raw) ? raw : fallback;
+  return HtmlSanitizer.safeColor(raw, fallback);
 }
 
-/** Sheet-sourced link targets: only http(s) URLs pass (blocks javascript:/data: schemes). */
 export function safeUrl(raw: string): string {
-  return /^https?:\/\//i.test(raw.trim()) ? raw.trim() : '#';
+  return HtmlSanitizer.safeUrl(raw);
 }
 
 /** FormattatoreDatiEmail standard container (11 §11). */

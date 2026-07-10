@@ -102,6 +102,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   ExceptionServiceInterface: () => (ExceptionServiceInterface),
   ExpressionEngineInterface: () => (ExpressionEngineInterface),
   HashUtils: () => (HashUtils),
+  HtmlSanitizer: () => (HtmlSanitizer),
   InterfaceRegistry: () => (InterfaceRegistry),
   LodashFacade: () => (LodashFacade),
   LoggerInterface: () => (LoggerInterface),
@@ -8087,6 +8088,53 @@ class ValidationUtils {
 
 
 
+
+class HtmlSanitizer {
+  
+
+
+
+
+
+  static escapeHtml(value) {
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  
+
+
+
+
+
+
+  static safeColor(value, fallback) {
+    return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(value) ? value : fallback;
+  }
+
+  
+
+
+
+
+
+
+  static safeUrl(value) {
+    return /^https?:\/\//i.test(value.trim()) ? value.trim() : '#';
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
 class BaseError extends Error {
   
 
@@ -10636,6 +10684,9 @@ class ConfigurationBuilder {
 ;
 const testing = {};
 ;
+
+
+
 
 
 
@@ -60801,6 +60852,7 @@ class ImportPipelineExecutor {
     const dryRun = options.dryRun === true;
     const maxRetries = options.maxRetries || 3;
     const jobId = options.jobId || null;
+    const postTransform = typeof options.postTransform === 'function' ? options.postTransform : null;
     this.facade.logger.info(`[ImportEngine] Starting import: ${recipe.name || 'Unnamed'}`);
     if (dryRun) {
       this.facade.logger.warn('[ImportEngine] DRY RUN mode - data will not be persisted');
@@ -60811,7 +60863,7 @@ class ImportPipelineExecutor {
       this.facade.logger.info(`[ImportEngine] Configuration validated: ${JSON.stringify(config.getSummary())}`);
 
       
-      const executeWithRetry = this.facade._exceptionService ? () => this.facade._exceptionService.executeWithRetry(() => this._executePipeline(config, dryRun, jobId), {}, maxRetries) : () => this._executePipeline(config, dryRun, jobId);
+      const executeWithRetry = this.facade._exceptionService ? () => this.facade._exceptionService.executeWithRetry(() => this._executePipeline(config, dryRun, jobId, postTransform), {}, maxRetries) : () => this._executePipeline(config, dryRun, jobId, postTransform);
       const result = executeWithRetry();
       const duration = Date.now() - startTime;
       this.facade.logger.info(`[ImportEngine] Import completed successfully in ${duration}ms`);
@@ -60834,7 +60886,7 @@ class ImportPipelineExecutor {
       });
     }
   }
-  _executePipeline(config, dryRun, jobId = null) {
+  _executePipeline(config, dryRun, jobId = null, postTransform = null) {
     
     if (this.facade._monitor && jobId) {
       this.facade._monitor.registerJob(jobId);
@@ -60852,7 +60904,10 @@ class ImportPipelineExecutor {
       
       (_this$facade$_monitor5 = this.facade._monitor) === null || _this$facade$_monitor5 === void 0 || _this$facade$_monitor5.logStepStart(jobId, 'Transform');
       (_this$facade$_monitor6 = this.facade._monitor) === null || _this$facade$_monitor6 === void 0 || _this$facade$_monitor6.updateProgress(jobId, 40, 'Transforming data...');
-      const transformedData = this._executeTransform(extractedData, config);
+      let transformedData = this._executeTransform(extractedData, config);
+      if (postTransform) {
+        transformedData = postTransform(transformedData, config);
+      }
       (_this$facade$_monitor7 = this.facade._monitor) === null || _this$facade$_monitor7 === void 0 || _this$facade$_monitor7.logStepComplete(jobId, 'Transform', true);
       (_this$facade$_monitor8 = this.facade._monitor) === null || _this$facade$_monitor8 === void 0 || _this$facade$_monitor8.updateProgress(jobId, 66, `Transformed ${transformedData.length} rows`);
 
@@ -61035,6 +61090,10 @@ class ImportEngine {
   }
 
   
+
+
+
+
 
 
 

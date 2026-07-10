@@ -119,11 +119,21 @@ test('wrapBox produces the standard container (11 §11)', () => {
   expect(html).toContain('<p>x</p>');
 });
 
-test('escapeHtml neutralises sheet-sourced markup (security review finding)', () => {
-
+// Detailed escapeHtml/safeColor/safeUrl case-by-case coverage now lives in
+// GasLibraryFactory/CoreUtilsLib/src/__tests__/HtmlSanitizer.test.js (Task C2:
+// boxes.ts delegates to the library's HtmlSanitizer). Cases faithfully ported
+// there: the <img onerror> markup case, the full &<>"' character set, the
+// <script> tag case, hex/keyword safeColor acceptance, the malicious-colour
+// rejection case, http(s) safeUrl acceptance, and the javascript: rejection
+// case. Kept here: thin delegation assertions proving boxes.ts's exported
+// functions produce the same output as the library, plus the box-level
+// integration tests below (unchanged) which exercise real template rendering.
+test('escapeHtml/safeColor/safeUrl delegate to the library HtmlSanitizer', () => {
   expect(escapeHtml('<img src=x onerror=alert(1)>')).toBe('&lt;img src=x onerror=alert(1)&gt;');
-  const out = render([{ TIPO_BOX: 'note' }]);
-  expect(out.boxes['note']!.html).not.toContain('<script');
+  expect(safeColor('#c0392b', '#ddd')).toBe('#c0392b');
+  expect(safeColor('red;"><script>', '#ddd')).toBe('#ddd');
+  expect(safeUrl('https://drive.google.com/x')).toBe('https://drive.google.com/x');
+  expect(safeUrl('javascript:alert(1)')).toBe('#');
 });
 
 test('note box escapes free-text HTML from CARENZE.NOTE', () => {
@@ -134,14 +144,6 @@ test('note box escapes free-text HTML from CARENZE.NOTE', () => {
   const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'note' }]), cdu, materie(), templates);
   expect(out.boxes['note']!.html).toContain('&lt;script&gt;');
   expect(out.boxes['note']!.html).not.toContain('<script>');
-});
-
-test('safeColor whitelists hex/keywords; safeUrl blocks javascript: schemes (security review)', () => {
-  expect(safeColor('#c0392b', '#ddd')).toBe('#c0392b');
-  expect(safeColor('red', '#ddd')).toBe('red');
-  expect(safeColor('red;"><script>', '#ddd')).toBe('#ddd');
-  expect(safeUrl('https://drive.google.com/x')).toBe('https://drive.google.com/x');
-  expect(safeUrl('javascript:alert(1)')).toBe('#');
 });
 
 test('documenti box neutralises javascript: links and hostile colours', () => {

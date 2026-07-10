@@ -12,6 +12,12 @@ declare global {
     error(msg: string, ...args: unknown[]): void;
   }
 
+  class HtmlSanitizer {
+    static escapeHtml(value: string): string;
+    static safeColor(value: string, fallback: string): string;
+    static safeUrl(value: string): string;
+  }
+
   // --- GasExpressionEngineLib (L2): safe AST expression evaluation (no eval) ---
   // evaluate() resolves {{path}} placeholders from `context` then evaluates the
   // expression (custom operators: in/between/match; functions: len/abs/round…).

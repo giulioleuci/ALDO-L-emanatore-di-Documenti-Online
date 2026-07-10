@@ -5,48 +5,25 @@ import { ConfigurationError } from '../../domain/errors/DomainError';
 
 const SPREADSHEET_MIME = 'application/vnd.google-apps.spreadsheet';
 
-/** Mirrors the vendored SourceStrategy._coerceValue exactly (numeric/boolean string coercion). */
-function coerceValue(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (typeof value !== 'string') return value;
-  if (value.trim() === '') return value;
-  const num = Number(value);
-  if (!isNaN(num) && isFinite(num)) return num;
-  const lower = value.toLowerCase();
-  if (lower === 'true') return true;
-  if (lower === 'false') return false;
-  return value;
-}
-
 /**
- * Reads every row of a Google Sheet's first (or named) tab, mirroring the
- * vendored `SheetByIdStrategy._extractData` exactly (getSheetInfo → pick tab →
- * getRanges → header/row split → _coerceValue) so the two custom strategies
- * below behave identically to the library's own SheetById source.
+ * Reads every row of a Google Sheet's first (or named) tab by delegating to
+ * the library's own `SheetByIdStrategy` (tab/range resolution, header split,
+ * and value coercion all happen inside its `extract()`), so the two custom
+ * strategies below behave identically to the library's own SheetById source
+ * without ALDO re-deriving that logic by hand.
  */
 function readSheetRows(
+  logger: LoggerService,
   sheets: SpreadsheetService,
   sheetId: string,
   options: { tabName?: string | undefined; range?: string | undefined; hasHeaders?: boolean | undefined } = {}
 ): Record<string, unknown>[] {
-  const info = sheets.getSheetInfo(sheetId);
-  if (info.length === 0) return [];
-  const target = options.tabName !== undefined ? info.find((s) => s.name === options.tabName) : info[0];
-  if (target === undefined) return [];
-  const hasHeaders = options.hasHeaders !== false;
-  const range = options.range;
-  const fullRange = range !== undefined ? (range.includes('!') ? range : `${target.name}!${range}`) : `${target.name}!A1:Z${target.gridProperties.rowCount ?? 1000}`;
-  const values = sheets.getRanges(sheetId, fullRange);
-  if (values.length === 0) return [];
-  const headers = hasHeaders ? (values[0] as unknown[]) : values[0]!.map((_, i) => `Col_${i}`);
-  const dataRows = hasHeaders ? values.slice(1) : values;
-  return dataRows.map((row) => {
-    const obj: Record<string, unknown> = {};
-    headers.forEach((h, i) => {
-      obj[String(h)] = coerceValue(row[i] ?? null);
-    });
-    return obj;
-  });
+  const strategy = new SheetByIdStrategy(logger, sheets);
+  const config: { sheetId: string; tabName?: string; range?: string; hasHeaders?: boolean } = { sheetId };
+  if (options.tabName !== undefined) config.tabName = options.tabName;
+  if (options.range !== undefined) config.range = options.range;
+  if (options.hasHeaders !== undefined) config.hasHeaders = options.hasHeaders;
+  return strategy.extract(config);
 }
 
 /**
@@ -78,7 +55,7 @@ export function createCercaCartelleClasseStrategy(
         for (const cartella of cartelle) {
           const files = drive.searchFiles(`'${cartella.id}' in parents and mimeType='${SPREADSHEET_MIME}' and trashed=false`);
           for (const file of files) {
-            for (const row of readSheetRows(sheets, file.id, readOptions)) {
+            for (const row of readSheetRows(this.logger, sheets, file.id, readOptions)) {
               out.push({ ...row, _CLASSE: classe.nome });
             }
           }
@@ -116,7 +93,7 @@ export function createCercaDocumentiStrategy(
       const out: Record<string, unknown>[] = [];
       for (const doc of documenti) {
         const classe = doc.getClassi()[0] ?? '';
-        for (const row of readSheetRows(sheets, doc.id ?? '', readOptions)) {
+        for (const row of readSheetRows(this.logger, sheets, doc.id ?? '', readOptions)) {
           out.push({ ...row, _CLASSE: classe });
         }
       }

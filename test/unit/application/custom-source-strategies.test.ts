@@ -9,11 +9,11 @@ import type { Row } from '../../../src/infrastructure/db/Database';
 const logger = new LoggerService();
 
 /** A SpreadsheetService double returning fixed rows per sheetId, matching the real getSheetInfo/getRanges contract. */
-function fakeSpreadsheets(bySheetId: Record<string, unknown[][]>): SpreadsheetService {
+function fakeSpreadsheets(bySheetId: Record<string, unknown[][]>, columnCount = 5): SpreadsheetService {
   return {
     getSheetInfo: (sheetId: string) =>
       bySheetId[sheetId] !== undefined
-        ? [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 10, columnCount: 5 } }]
+        ? [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 10, columnCount } }]
         : [],
     getRanges: (sheetId: string) => bySheetId[sheetId] ?? []
   };
@@ -73,6 +73,17 @@ describe('CERCA_CARTELLE_CLASSE custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tablesWithFolders());
     const Strategy = createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), fakeDrive({}), fakeSpreadsheets({}));
     expect(() => new Strategy(logger).extract({})).toThrow();
+  });
+
+  test('with no explicit range, resolves the full-sheet range from gridProperties.columnCount (not hardcoded to column Z) — delegated SheetByIdStrategy behavior', () => {
+    const db = new FakeDatabase(tablesWithFolders());
+    const drive = fakeDrive({ fold_5a: [{ id: 'sheet_5a', name: 'Griglia 5A' }] });
+    // 30 columns -> last column letter is 'AD', beyond the old hardcoded 'Z' cap.
+    const spreadsheets = fakeSpreadsheets({ sheet_5a: [['NOME'], ['Rossi']] }, 30);
+    const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
+    const Strategy = createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), drive, spreadsheets);
+    new Strategy(logger).extract({ folderTipo: 'GRIGLIE_VOTI' });
+    expect(getRangesSpy).toHaveBeenCalledWith('sheet_5a', 'Sheet1!A1:AD10');
   });
 });
 

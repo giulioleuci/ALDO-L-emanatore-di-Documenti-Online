@@ -619,6 +619,14 @@ declare global {
     deleted: number;
     total: number;
   }
+  interface ImportRunResult {
+    success: boolean;
+    importName: string;
+    durationMs: number;
+    extract: { rowsExtracted: number; rowCount: number };
+    transform: { rowsTransformed: number; recordsProcessed: number };
+    load: ImportLoadResult & { recordsProcessed: number; failed: number };
+  }
   /** Wraps a raw recipe with validation; thrown by the constructor on invalid shape. */
   class ImportConfiguration {
     constructor(recipe: ImportRecipe, logger?: unknown);
@@ -641,11 +649,16 @@ declare global {
       exceptionService?: unknown,
       monitor?: unknown
     );
-    runImport(recipe: ImportRecipe, options?: { dryRun?: boolean; jobId?: string }): Record<string, unknown>;
-    /** Bound pipeline phases (library exposes these on the instance despite the leading underscore). */
-    _executeExtract(config: ImportConfiguration): Record<string, unknown>[];
-    _executeTransform(data: Record<string, unknown>[], config: ImportConfiguration): Record<string, unknown>[];
-    _executeLoad(data: Record<string, unknown>[], config: ImportConfiguration): ImportLoadResult;
+    runImport(
+      recipe: ImportRecipe,
+      options?: {
+        dryRun?: boolean;
+        jobId?: string;
+        maxRetries?: number;
+        /** Hook invoked after Transform and before Load with `(transformedData, config) => filteredData`, letting the caller filter/mutate the batch (e.g. Ghost Record Detection) without reaching into private pipeline-phase methods. */
+        postTransform?: (data: Record<string, unknown>[], config: ImportConfiguration) => Record<string, unknown>[];
+      }
+    ): ImportRunResult;
     /** Registers a custom SourceStrategy subclass under `name` (source.type) and whitelists the type. */
     registerCustomSource(name: string, strategyClass: new (logger: LoggerService, dependencies: Record<string, unknown>) => SourceStrategy): void;
   }
@@ -655,12 +668,24 @@ declare global {
   /** Base class for custom extraction sources (registered via ImportEngine.registerCustomSource). */
   abstract class SourceStrategy {
     constructor(logger?: LoggerService);
+    protected logger: LoggerService;
     /** Public entry point: validates the result is an array and wraps failures as SourceError. */
     extract(config: Record<string, unknown>): Record<string, unknown>[];
     /** Subclasses implement this — must return an array of row objects. */
     protected abstract _extractData(config: Record<string, unknown>): Record<string, unknown>[];
     protected _validateConfig(config: Record<string, unknown>, requiredFields: string[]): void;
     protected _coerceValue(value: unknown): unknown;
+  }
+  /** Built-in SourceStrategy reading rows from a Google Sheet by ID (resolves tab, full-sheet or explicit range, header split, and value coercion). */
+  class SheetByIdStrategy extends SourceStrategy {
+    constructor(logger: LoggerService, spreadsheetService: SpreadsheetService);
+    /**
+     * @param config.sheetId physical spreadsheet identifier (required).
+     * @param config.tabName Target tab name (defaults to the first sheet).
+     * @param config.range A1 notation range; when omitted, resolves the full sheet from gridProperties (no 26-column cap).
+     * @param config.hasHeaders If true (default), treats the first row as property keys.
+     */
+    extract(config: { sheetId: string; tabName?: string; range?: string; hasHeaders?: boolean }): Record<string, unknown>[];
   }
 
   // --- ComposableContentLib (L4): declarative block composition (box rendering) ---

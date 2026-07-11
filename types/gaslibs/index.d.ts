@@ -291,6 +291,9 @@ declare global {
     });
     processString(template: string, context?: Record<string, unknown> | null): string;
     resolve(template: string, context?: Record<string, unknown> | null): string;
+    /** Also expands `{{table[source=<contextPath>, headerRow=<bool>]}}` in place
+     * (ref REPORT_GLF.md B7): `source` must resolve to a non-empty 2D array
+     * already shaped as table rows/cells. */
     processDocument(documentId: string, context?: Record<string, unknown>): boolean;
     /** Return shape changed from `boolean` to `{success, layouts}`: `layouts` reports,
      * per `{{dynamic_columns[...]}}` placeholder found while scanning, the resolved

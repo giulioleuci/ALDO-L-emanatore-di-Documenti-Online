@@ -18,6 +18,16 @@ declare global {
     static safeUrl(value: string): string;
   }
 
+  /** Generic lazy-singleton DI container (ref REPORT_GLF.md B8). */
+  class LazyServiceContainer {
+    constructor(options?: { logger?: unknown; entityName?: string });
+    register<T>(name: string, factory: (container: LazyServiceContainer) => T): void;
+    has(name: string): boolean;
+    get<T>(name: string): T;
+    reset(): void;
+    clear(): void;
+  }
+
   // --- GasExpressionEngineLib (L2): safe AST expression evaluation (no eval) ---
   // evaluate() resolves {{path}} placeholders from `context` then evaluates the
   // expression (custom operators: in/between/match; functions: len/abs/round…).

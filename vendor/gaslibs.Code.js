@@ -104,6 +104,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   HashUtils: () => (HashUtils),
   HtmlSanitizer: () => (HtmlSanitizer),
   InterfaceRegistry: () => (InterfaceRegistry),
+  LazyServiceContainer: () => (LazyServiceContainer),
   LodashFacade: () => (LodashFacade),
   LoggerInterface: () => (LoggerInterface),
   LoggerService: () => (LoggerService),
@@ -8606,6 +8607,106 @@ class Registry {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+class LazyServiceContainer {
+  
+
+
+
+
+  constructor({
+    logger = null,
+    entityName = 'service'
+  } = {}) {
+    this._factories = new Registry({
+      logger,
+      entityName
+    });
+    this._singletons = new Registry({
+      logger,
+      entityName: `${entityName} instance`
+    });
+  }
+
+  
+
+
+
+
+
+  register(name, factory) {
+    this._factories.register(name, factory);
+    this._singletons.unregister(name);
+  }
+
+  
+
+
+
+  has(name) {
+    return this._factories.has(name);
+  }
+
+  
+
+
+
+
+
+
+
+  get(name) {
+    if (this._singletons.has(name)) {
+      return this._singletons.get(name);
+    }
+    const factory = this._factories.get(name);
+    if (!factory) {
+      throw new Error(`LazyServiceContainer: no factory registered for '${name}'`);
+    }
+    const instance = factory(this);
+    this._singletons.set(name, instance);
+    return instance;
+  }
+
+  
+
+
+
+  reset() {
+    this._singletons.clear();
+  }
+
+  
+
+
+  clear() {
+    this._factories.clear();
+    this._singletons.clear();
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
 class TypeGuards {
   
   
@@ -10685,6 +10786,9 @@ class ConfigurationBuilder {
 ;
 const testing = {};
 ;
+
+
+
 
 
 

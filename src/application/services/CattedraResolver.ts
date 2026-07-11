@@ -19,18 +19,15 @@ import type { MateriaId } from '../../domain/value-objects/MateriaId';
  * The first priority that produces a match wins; lower priorities are not
  * consulted for that holder.
  *
- * Deliberately not built on `RoleResolutionLib`: that library models generic,
- * explicitly-registered actor delegation chains (Alice→Bob→Charlie style
- * `RoleRegistry`/`DelegationSource`/`RoutingPolicy`), not a date-scoped
- * priority lookup across three differently-shaped Sheet tables (SUPPLENZE /
- * VARIAZIONI_CATTEDRA / CLASSI). The one place this class's neighbourhood
- * *does* fit the library's model — the transitive supply-of-supply crawl
- * within a single SUPPLENZE chain — is delegated correctly via
- * `SupplenzaRepository.findSupplenzaSpecifica` -> `RoleResolutionLib.getDelegationChain`.
- * Wrapping the outer 3-source chain itself would require extending the
- * library with a "priority-ordered source list" resolution mode that can
- * wrap heterogeneous data sources as `DelegationSource`-like adapters; until
- * that exists (or is judged not worth building), this hierarchy stays here.
+ * Priority 2-over-3 ("resolve the nominal holder") is a
+ * `RoleResolutionLib.PriorityChainResolver` over two heterogeneous sources
+ * (ref REPORT_GLF.md B3) — the first source that "applies" (returns non-null,
+ * even an empty array) wins, distinct from a plain `??` fallback because a
+ * matched-but-unresolved variazione must NOT fall through to CLASSI. Priority
+ * 1 ("redirect to the active substitute") stays a separate step: it doesn't
+ * choose between independent sources, it redirects whichever holder Priority
+ * 2/3 already produced, via the library's transitive delegation crawl
+ * (`SupplenzaRepository.findSupplenzaSpecifica` -> `RoleResolutionLib.getDelegationChain`).
  */
 export class CattedraResolver {
   private readonly classi: ClasseRepository;
@@ -70,16 +67,28 @@ export class CattedraResolver {
     return this.resolveTitolari(classe, materia, data)[0] ?? null;
   }
 
-  // Priority 2 over Priority 3.
+  // Priority 2 over Priority 3, via PriorityChainResolver (ref REPORT_GLF.md B3).
   private baseTitolari(classe: Classe, materia: MateriaId, data: Date): Docente[] {
+    const resolver = new PriorityChainResolver<[Classe, MateriaId, Date], Docente[]>([
+      (c, m, d) => this.daVariazione(c, m, d),
+      (c, m) => this.classi.getDocentiPerMateria(c, m)
+    ]);
+    return resolver.resolve(classe, materia, data) ?? [];
+  }
+
+  /**
+   * Priority 2 source: null (defer to Priority 3) when no variazione applies;
+   * otherwise the resolved holder — possibly `[]` if VARIAZIONI_CATTEDRA points
+   * at a docente that no longer exists, which correctly stops the chain rather
+   * than falling through to the CLASSI nominal holder.
+   */
+  private daVariazione(classe: Classe, materia: MateriaId, data: Date): Docente[] | null {
     const variazione = this.variazioni
       .findByClasse(classe.classeId)
       .find((v) => v.applicaAMateria(materia) && v.isDecorsaA(data));
-    if (variazione !== undefined) {
-      const nuovo = this.docenti.findById(variazione.nuovoTitolare);
-      return nuovo === null ? [] : [nuovo];
-    }
-    return this.classi.getDocentiPerMateria(classe, materia);
+    if (variazione === undefined) return null;
+    const nuovo = this.docenti.findById(variazione.nuovoTitolare);
+    return nuovo === null ? [] : [nuovo];
   }
 
   // Priority 1: redirect a holder to the chain-resolved active substitute.

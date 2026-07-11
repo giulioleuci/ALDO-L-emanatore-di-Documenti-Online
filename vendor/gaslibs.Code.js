@@ -1414,6 +1414,7 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   InMemoryDelegationSource: () => (InMemoryDelegationSource),
   InvalidScopeError: () => (InvalidScopeError),
   NoActorFoundError: () => (NoActorFoundError),
+  PriorityChainResolver: () => (PriorityChainResolver),
   ResolutionResult: () => (ResolutionResult),
   ResolutionStrategy: () => (ResolutionStrategy),
   Role: () => (Role),
@@ -67574,7 +67575,9 @@ const RoutingPolicy = Object.freeze({
   
   PRINCIPAL_PRIMARY_DELEGATE_CC: 'PRINCIPAL_PRIMARY_DELEGATE_CC',
   
-  CHAIN_ALL: 'CHAIN_ALL'
+  CHAIN_ALL: 'CHAIN_ALL',
+  
+  DELEGATE_OR_PRINCIPAL: 'DELEGATE_OR_PRINCIPAL'
 });
 
 
@@ -67609,7 +67612,8 @@ function getRoutingPolicyDescription(policy) {
     [RoutingPolicy.BOTH_EQUAL]: 'Notify both equally',
     [RoutingPolicy.DELEGATE_PRIMARY_PRINCIPAL_CC]: 'Delegate as primary, principal in CC',
     [RoutingPolicy.PRINCIPAL_PRIMARY_DELEGATE_CC]: 'Principal as primary, delegate in CC',
-    [RoutingPolicy.CHAIN_ALL]: 'Notify entire delegation chain'
+    [RoutingPolicy.CHAIN_ALL]: 'Notify entire delegation chain',
+    [RoutingPolicy.DELEGATE_OR_PRINCIPAL]: 'Notify the delegate if resolved, otherwise the principal'
   };
   return descriptions[policy] || 'Unknown routing policy';
 }
@@ -68748,6 +68752,8 @@ class RoutingResolver {
         return this._resolvePrincipalPrimaryDelegateCC(principalActor, effectiveActor);
       case RoutingPolicy.CHAIN_ALL:
         return this._resolveChainAll(principalActor, delegationChain);
+      case RoutingPolicy.DELEGATE_OR_PRINCIPAL:
+        return this._resolveDelegateOrPrincipal(principalActor, effectiveActor);
       default:
         this._logger.warn(`Unknown routing policy: ${policy}, using DELEGATE_ONLY`);
         return this._resolveDelegateOnly(effectiveActor);
@@ -68894,6 +68900,29 @@ class RoutingResolver {
       metadata: {
         policy: RoutingPolicy.CHAIN_ALL,
         chainActorIds: delegationChain ? delegationChain.getAllActorIds() : []
+      }
+    });
+  }
+
+  
+
+
+
+
+
+
+
+  _resolveDelegateOrPrincipal(principalActor, effectiveActor) {
+    const chosen = effectiveActor || principalActor;
+    if (!chosen) {
+      return RoutingResult.empty();
+    }
+    return new RoutingResult({
+      primary: [chosen],
+      cc: [],
+      bcc: [],
+      metadata: {
+        policy: RoutingPolicy.DELEGATE_OR_PRINCIPAL
       }
     });
   }
@@ -70232,6 +70261,61 @@ class RoleResolver {
   }
 }
 ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class PriorityChainResolver {
+  
+
+
+
+
+
+
+  constructor(resolvers) {
+    if (!Array.isArray(resolvers) || resolvers.length === 0) {
+      throw new TypeError('PriorityChainResolver requires a non-empty array of resolver functions');
+    }
+    this._resolvers = resolvers;
+  }
+
+  
+
+
+
+
+
+  resolve(...args) {
+    for (const resolver of this._resolvers) {
+      const result = resolver(...args);
+      if (result !== null && result !== undefined) {
+        return result;
+      }
+    }
+    return null;
+  }
+}
+;
+
 
 
 

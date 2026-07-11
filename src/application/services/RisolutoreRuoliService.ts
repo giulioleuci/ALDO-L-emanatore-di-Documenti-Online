@@ -214,16 +214,33 @@ export class RisolutoreRuoliService {
   }
 
   /**
-   * Supplenza routing (14 §1.2) mirroring the email pipeline's ResolveRecipientsStep.
-   *
-   * Hand-rolled rather than `RoleResolutionLib`-driven for the same reason as
-   * `CattedraResolver`: this is the SGSA-specific SUPPLENZE → VARIAZIONI_CATTEDRA
-   * → CLASSI priority chain, not the library's generic delegation-chain model.
-   * The chain-resolved "active substitute for a given titolare" sub-lookup
-   * *is* delegated to the library via `SupplenzaRepository.findSupplenzaSpecifica`
-   * -> `RoleResolutionLib.getDelegationChain`, immediately below.
+   * Maps SGSA's `GestioneSupplenti` (14 §1.2) onto `RoleResolutionLib`'s
+   * `RoutingPolicy` (ref REPORT_GLF.md B4): SOLO_SUPPLENTI is
+   * `DELEGATE_OR_PRINCIPAL` (substitute if one is active, else the titolare —
+   * distinct from `DELEGATE_ONLY`, which would drop the recipient entirely
+   * when there's no substitute), ENTRAMBI is `BOTH_EQUAL`, SOLO_TITOLARI is
+   * `PRINCIPAL_ONLY`.
+   */
+  private static readonly ROUTING_POLICY: Record<GestioneSupplenti, RoutingPolicyValue> = {
+    [GestioneSupplenti.SOLO_SUPPLENTI]: RoutingPolicy.DELEGATE_OR_PRINCIPAL,
+    [GestioneSupplenti.ENTRAMBI]: RoutingPolicy.BOTH_EQUAL,
+    [GestioneSupplenti.SOLO_TITOLARI]: RoutingPolicy.PRINCIPAL_ONLY
+  };
+
+  private readonly routing = new RoutingResolver();
+
+  /**
+   * Supplenza routing (14 §1.2) mirroring the email pipeline's
+   * ResolveRecipientsStep. The domain lookup (active period, class/subject
+   * applicability, chain-resolved supply-of-supply) stays SGSA-specific via
+   * `SupplenzaRepository.findSupplenzaSpecifica` -> the library's transitive
+   * delegation crawl; once resolved to a (titolare, supplente|null) pair, the
+   * SOLO_SUPPLENTI/ENTRAMBI/SOLO_TITOLARI decision is delegated to
+   * `RoleResolutionLib.RoutingResolver` instead of a hand-rolled switch (ref
+   * REPORT_GLF.md B4).
    */
   private applicaSupplenze(docenti: Docente[], ctx: RoleContext, regola: GestioneSupplenti): Email[] {
+    const policy = RisolutoreRuoliService.ROUTING_POLICY[regola];
     const out: Email[] = [];
     for (const titolare of docenti) {
       const titolareEmail = titolare.id ?? '';
@@ -234,18 +251,29 @@ export class RisolutoreRuoliService {
         ctx.classe.classeId,
         ctx.materiaCorrente ?? undefined
       );
-      const supplente = supplenza?.supplente ?? null;
-      switch (regola) {
-        case GestioneSupplenti.SOLO_SUPPLENTI:
-          out.push(Email.of(supplente ?? titolareEmail));
-          break;
-        case GestioneSupplenti.ENTRAMBI:
-          out.push(Email.of(titolareEmail));
-          if (supplente !== null) out.push(Email.of(supplente));
-          break;
-        default: // SOLO_TITOLARI
-          out.push(Email.of(titolareEmail));
-      }
+      const supplenteEmail = supplenza?.supplente ?? null;
+
+      const principal = new Actor(titolareEmail, ActorType.PERSON, titolareEmail, titolareEmail);
+      const effective = supplenteEmail === null
+        ? null
+        : new Actor(supplenteEmail, ActorType.PERSON, supplenteEmail, supplenteEmail);
+
+      const result = this.routing.resolve({
+        principalActor: principal,
+        effectiveActor: effective,
+        // No active substitute -> RoutingResolver short-circuits to the
+        // principal alone regardless of policy, matching every regola's
+        // "no supplenza" behavior (fallback for SOLO_SUPPLENTI, single entry
+        // for ENTRAMBI, unaffected for SOLO_TITOLARI).
+        delegationChain: { isEmpty: () => effective === null },
+        routingPolicy: policy
+      });
+
+      // BOTH_EQUAL orders [effective, principal]; SGSA keeps titolare first.
+      const ordered = policy === RoutingPolicy.BOTH_EQUAL
+        ? [...result.primary].sort((a) => (a.id === titolareEmail ? -1 : 1))
+        : result.primary;
+      for (const actor of ordered) out.push(Email.of(actor.identifier));
     }
     return out;
   }

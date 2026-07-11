@@ -415,6 +415,62 @@ declare global {
     clear(): void;
   }
 
+  // --- RoleResolutionLib: routing (ref REPORT_GLF.md B4) and priority-chain
+  // resolution (ref B3), used by RisolutoreRuoliService/CattedraResolver
+  // instead of hand-rolled policy switches / source-priority if-chains.
+  type RoutingPolicyValue =
+    | 'DELEGATE_ONLY'
+    | 'PRINCIPAL_ONLY'
+    | 'BOTH_EQUAL'
+    | 'DELEGATE_PRIMARY_PRINCIPAL_CC'
+    | 'PRINCIPAL_PRIMARY_DELEGATE_CC'
+    | 'CHAIN_ALL'
+    | 'DELEGATE_OR_PRINCIPAL';
+  const RoutingPolicy: Record<
+    | 'DELEGATE_ONLY'
+    | 'PRINCIPAL_ONLY'
+    | 'BOTH_EQUAL'
+    | 'DELEGATE_PRIMARY_PRINCIPAL_CC'
+    | 'PRINCIPAL_PRIMARY_DELEGATE_CC'
+    | 'CHAIN_ALL'
+    | 'DELEGATE_OR_PRINCIPAL',
+    RoutingPolicyValue
+  >;
+  const ActorType: Record<'PERSON' | 'SYSTEM' | 'GROUP', string>;
+  class Actor {
+    constructor(id: string, type: string, identifier: string, displayName: string, metadata?: Record<string, unknown>);
+    readonly id: string;
+    readonly type: string;
+    readonly identifier: string;
+    readonly displayName: string;
+  }
+  class RoutingResult {
+    readonly primary: Actor[];
+    readonly cc: Actor[];
+    readonly bcc: Actor[];
+    readonly metadata: Record<string, unknown>;
+  }
+  class RoutingResolver {
+    constructor(options?: { logger?: unknown; defaultPolicy?: RoutingPolicyValue });
+    resolve(params: {
+      principalActor: Actor | null;
+      effectiveActor?: Actor | null;
+      delegationChain?: { isEmpty(): boolean } | null;
+      routingPolicy?: RoutingPolicyValue | null;
+    }): RoutingResult;
+  }
+  /**
+   * Tries an ordered list of resolver functions, returning the first
+   * non-null/non-undefined result — for priority-ordered lookups over
+   * heterogeneous data sources (e.g. SGSA's SUPPLENZE -> VARIAZIONI_CATTEDRA ->
+   * CLASSI hierarchy), distinct from RoleResolver's transitive delegation
+   * crawl over one homogeneous RoleRegistry.
+   */
+  class PriorityChainResolver<TArgs extends unknown[], TResult> {
+    constructor(resolvers: Array<(...args: TArgs) => TResult | null | undefined>);
+    resolve(...args: TArgs): TResult | null;
+  }
+
   // --- JobRunnerLib (L3): long-running jobs via generator functions ---
   type JobHandlerParams = Record<string, unknown> & { resumeState?: unknown };
   type JobHandler = (params: JobHandlerParams) => Generator<unknown, unknown, unknown>;

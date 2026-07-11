@@ -127,6 +127,35 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
       .toEqual(['rossi@school.it', 'verdi@school.it']);
   });
 
+  // REPORT_GLF.md B4: with no active supplenza, RoutingResolver's
+  // no-delegation-chain short-circuit must yield the titolare alone under
+  // every regola — including SOLO_SUPPLENTI, which otherwise falls back to
+  // the titolare rather than dropping the recipient (DELEGATE_OR_PRINCIPAL,
+  // not DELEGATE_ONLY).
+  test('SOLO_SUPPLENTI falls back to the titolare when no supplenza is active', () => {
+    const { cdu, service } = build({});
+    expect(emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI }))
+      .toEqual(['rossi@school.it']);
+  });
+
+  test('ENTRAMBI yields only the titolare when no supplenza is active (no duplicate)', () => {
+    const { cdu, service } = build({});
+    expect(emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI }))
+      .toEqual(['rossi@school.it']);
+  });
+
+  test('applicaSupplenze routes through RoleResolutionLib.RoutingResolver, not a hand-rolled switch', () => {
+    const { cdu, service } = buildAt(INSIDE_WINDOW);
+    const resolveSpy = jest.spyOn(RoutingResolver.prototype, 'resolve');
+
+    emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI });
+
+    expect(resolveSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ routingPolicy: RoutingPolicy.BOTH_EQUAL })
+    );
+    resolveSpy.mockRestore();
+  });
+
   test('student/family roles are never subject to supplenza routing', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
     expect(emails(service, 'GENITORI_CLASSE', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI }))

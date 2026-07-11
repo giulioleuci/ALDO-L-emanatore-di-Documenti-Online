@@ -54,3 +54,21 @@ test('Priority 1 via wildcard materie applies to a different subject', () => {
   // before the supply period, the nominal holder stands.
   expect(resolver.resolveTitolare(classe, FIS, new Date('2025-10-15'))!.id).toBe('bianchi@s.it');
 });
+
+// REPORT_GLF.md B3: PriorityChainResolver must treat "a variazione applies but
+// resolves to nobody" as a match that stops the chain, not a defer that falls
+// through to the CLASSI nominal holder — an empty-array hit is not a miss.
+test('a variazione pointing at a non-existent docente yields no holder, not the CLASSI fallback', () => {
+  const db = new FakeDatabase({
+    MATERIE: [{ ID: 'MAT' }],
+    DOCENTI: [{ EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' }],
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it' }],
+    VARIAZIONI_CATTEDRA: [
+      { CLASSE_ID: '5A', MATERIA_ID: 'MAT', VECCHIO_TITOLARE: 'rossi@s.it', NUOVO_TITOLARE: 'ghost@s.it', DATA_DECORRENZA: '2025-10-01' }
+    ]
+  });
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+
+  expect(resolver.resolveTitolari(classe, MAT, new Date('2025-10-15'))).toEqual([]);
+});

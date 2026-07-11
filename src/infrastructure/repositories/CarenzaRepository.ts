@@ -37,7 +37,7 @@ export class CarenzaRepository extends Repository<Carenza> {
   /** Shortfalls of a student, most recent first, optionally filtered by school year (ref 06 §11). */
   findByAlunno(alunno: Alunno, options?: { annoScolastico?: AnnoScolastico }): Carenza[] {
     const spec = new CarenzePerAlunnoSpec(alunno.email);
-    let rows = this.findAll().filter((c) => spec.isSatisfiedBy(c));
+    let rows = this.find(spec);
     if (options?.annoScolastico !== undefined) {
       rows = rows.filter((c) => this.inAnnoScolastico(c, options.annoScolastico!));
     }
@@ -47,7 +47,7 @@ export class CarenzaRepository extends Repository<Carenza> {
   /** Shortfalls of a class; with an exact date filter when supplied (ref 06 §11). */
   findByClasse(classe: Classe, data?: Date): Carenza[] {
     const spec = new CarenzePerClasseSpec(classe.classeId);
-    let rows = this.findAll().filter((c) => spec.isSatisfiedBy(c));
+    let rows = this.find(spec);
     if (data !== undefined) {
       const iso = data.toISOString().slice(0, 10);
       rows = rows.filter((c) => c.data.slice(0, 10) === iso);
@@ -58,7 +58,7 @@ export class CarenzaRepository extends Repository<Carenza> {
   /** Shortfalls with NOTIFICATO null or empty (ref 06 §11). */
   findNonNotificate(): Carenza[] {
     const spec = new CarenzeNonNotificateSpec();
-    return this.findAll().filter((c) => spec.isSatisfiedBy(c));
+    return this.find(spec);
   }
 
   /**
@@ -76,8 +76,13 @@ export class CarenzaRepository extends Repository<Carenza> {
 
   /**
    * Sets (or clears, with null) the shortfall value for one subject of a CARENZE
-   * row and persists it (ref 06 §11). CARENZE has a composite PK, so the row is
-   * resolved by (STUDENTE, PROGRESSIVO) via the library table's composite write.
+   * row and persists it (ref 06 §11). Unlike CLASSI (ref ClasseRepository ref
+   * REPORT_GLF.md B2), Carenza.toData() already round-trips its full raw row
+   * (see Carenza entity), so no column is dropped here; this stays on
+   * `updateRowWhere` rather than `Repository.save()` because CARENZE's
+   * composite PK (STUDENTE, PROGRESSIVO) is resolved by business columns, not
+   * a single `entity.id` — the write path both the real SheetDbAdapter and the
+   * FakeDatabase test double agree on.
    */
   setCarenzaMateria(carenza: Carenza, materia: MateriaId, valore: ValoreCarenza | null): void {
     const cols = this.materieColumns.get(materia.value);

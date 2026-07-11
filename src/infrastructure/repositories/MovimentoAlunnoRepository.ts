@@ -17,12 +17,12 @@ export class MovimentoAlunnoRepository extends Repository<MovimentoAlunno> {
   /** Movements of a student, most recent first (ref 06 §15). */
   findByAlunno(alunno: Alunno): MovimentoAlunno[] {
     const spec = new MovimentiPerAlunnoSpec(alunno.email);
-    return this.findAll().filter((m) => spec.isSatisfiedBy(m)).sort((a, b) => b.data.localeCompare(a.data));
+    return this.find(spec).sort((a, b) => b.data.localeCompare(a.data));
   }
 
   /** Movements of a given type (ref 06 §15). */
   findByTipo(tipo: TipoMovimento): MovimentoAlunno[] {
     const spec = new MovimentiPerTipoSpec(tipo);
-    return this.findAll().filter((m) => spec.isSatisfiedBy(m));
+    return this.find(spec);
   }
 }

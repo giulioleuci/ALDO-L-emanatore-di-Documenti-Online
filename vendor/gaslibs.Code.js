@@ -62124,6 +62124,7 @@ class Entity {
     this._originalData = {};
     this._domainEvents = [];
     this._validationErrors = [];
+    this._dynamicColumns = {};
   }
 
   
@@ -62249,6 +62250,57 @@ class Entity {
 
   getOriginalValue(fieldName) {
     return this._originalData[fieldName];
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  captureDynamicColumns(data) {
+    if (typeof this.constructor.getKnownColumns !== 'function' || !data) {
+      return;
+    }
+    const known = new Set(this.constructor.getKnownColumns());
+    this._dynamicColumns = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (!known.has(key)) {
+        this._dynamicColumns[key] = value;
+      }
+    }
+  }
+
+  
+
+
+
+
+
+
+  getDynamicColumns() {
+    return {
+      ...this._dynamicColumns
+    };
+  }
+
+  
+
+
+
+
+
+
+
+  setDynamicColumn(column, value) {
+    this._dynamicColumns[column] = value;
+    this.markDirty(column);
   }
 
   
@@ -63087,31 +63139,7 @@ class EntityMapper {
     }
 
     
-    if (typeof entity.toData === 'function') {
-      const data = entity.toData();
-
-      
-      for (const [fieldName, transformer] of this._customTransformers) {
-        if (fieldName in data) {
-          data[fieldName] = transformer.toData(data[fieldName]);
-        }
-      }
-
-      
-      this._applyDynamicFieldDehydration(data, entity);
-
-      
-      this._applyJsonExpansionDehydration(data);
-      return data;
-    }
-
-    
-    const data = {};
-    const keys = Object.keys(entity).filter(k => !k.startsWith('_'));
-    for (const key of keys) {
-      const value = entity[key];
-      data[key] = this._serializeValue(value);
-    }
+    const data = typeof entity.toData === 'function' ? entity.toData() : this._serializeEntityFields(entity);
 
     
     for (const [fieldName, transformer] of this._customTransformers) {
@@ -63125,7 +63153,48 @@ class EntityMapper {
 
     
     this._applyJsonExpansionDehydration(data);
+
+    
+    
+    
+    this._applyDynamicColumnPassthrough(data, entity);
     return data;
+  }
+
+  
+
+
+
+
+
+
+  _serializeEntityFields(entity) {
+    const data = {};
+    const keys = Object.keys(entity).filter(k => !k.startsWith('_'));
+    for (const key of keys) {
+      data[key] = this._serializeValue(entity[key]);
+    }
+    return data;
+  }
+
+  
+
+
+
+
+
+
+
+  _applyDynamicColumnPassthrough(data, entity) {
+    if (typeof entity.getDynamicColumns !== 'function') {
+      return;
+    }
+    const dynamicColumns = entity.getDynamicColumns();
+    for (const [key, value] of Object.entries(dynamicColumns)) {
+      if (!(key in data)) {
+        data[key] = value;
+      }
+    }
   }
 
   
@@ -63195,12 +63264,14 @@ class EntityMapper {
     this._applyDynamicFieldHydration(transformedData);
 
     
-    if (typeof EntityClass.fromData === 'function') {
-      return EntityClass.fromData(transformedData);
-    }
+    const entity = typeof EntityClass.fromData === 'function' ? EntityClass.fromData(transformedData) : new EntityClass(transformedData);
 
     
-    return new EntityClass(transformedData);
+    
+    if (entity && typeof entity.captureDynamicColumns === 'function') {
+      entity.captureDynamicColumns(transformedData);
+    }
+    return entity;
   }
 
   
@@ -63490,9 +63561,23 @@ class QueryTranslator {
     if (!queryBuilder) {
       throw new SpecificationException('Query builder is required', 'QueryTranslator');
     }
+    if (this._hasQueryObjectCriteria(specification)) {
+      try {
+        this.logger.debug(`Translating specification via toQueryObject(): ${specification.constructor.name}`);
+        return this._applyQueryObject(specification.toQueryObject(), queryBuilder);
+      } catch (error) {
+        if (error instanceof SpecificationException) {
+          throw error;
+        }
+        throw new SpecificationException(`Failed to translate specification: ${error.message}`, 'QueryTranslator', {
+          specification: specification.toString(),
+          error: error.message
+        });
+      }
+    }
 
     
-    if (!specification.canBeTranslatedToQuery()) {
+    if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
       throw new SpecificationException(`Specification ${specification.constructor.name} cannot be translated to a database query`, 'QueryTranslator', {
         specification: specification.toString()
       });
@@ -63516,6 +63601,32 @@ class QueryTranslator {
 
 
 
+
+
+
+  _hasQueryObjectCriteria(specification) {
+    return typeof specification.toQueryObject === 'function' && specification.toQueryObject() !== null && specification.toQueryObject() !== undefined;
+  }
+
+  
+
+
+
+
+
+
+  _applyQueryObject(criteria, queryBuilder) {
+    for (const [column, value] of Object.entries(criteria)) {
+      queryBuilder.where(column, '=', value);
+    }
+    return queryBuilder;
+  }
+
+  
+
+
+
+
   validate(specification) {
     if (!specification) {
       return {
@@ -63523,7 +63634,13 @@ class QueryTranslator {
         reason: 'Specification is null or undefined'
       };
     }
-    if (!specification.canBeTranslatedToQuery()) {
+    if (this._hasQueryObjectCriteria(specification)) {
+      return {
+        valid: true,
+        reason: null
+      };
+    }
+    if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
       return {
         valid: false,
         reason: `${specification.constructor.name} cannot be translated to a database query`

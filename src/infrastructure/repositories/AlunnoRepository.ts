@@ -40,7 +40,7 @@ export class AlunnoRepository extends Repository<Alunno> {
 
   findByClasse(classeId: ClasseId): Alunno[] {
     const spec = new AlunniInClasseSpec(classeId);
-    return this.findAll().filter((a) => spec.isSatisfiedBy(a)).sort((x, y) => this.byCognomeNome(x, y));
+    return this.find(spec).sort((x, y) => this.byCognomeNome(x, y));
   }
 
   findAttivi(): Alunno[] {

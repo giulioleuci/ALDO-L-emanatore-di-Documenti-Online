@@ -53,6 +53,17 @@ export class Classe extends AldoEntity {
     return new Classe(data);
   }
 
+  /**
+   * Opts CLASSI into the DomainRepositoryLib dynamic-column passthrough (ref
+   * REPORT_GLF.md B2): every hydrated column outside this fixed set (COORD,
+   * RUOLI, IRC, ALT, STORICO, ARTICOLAZIONE, ATTIVA, and the per-subject
+   * cattedra matrix generated at runtime from MATERIE) is captured verbatim and
+   * merged back unmodified by `Repository.save()`.
+   */
+  static getKnownColumns(): string[] {
+    return [COL_CLASSI.ID, COL_CLASSI.ANNO, COL_CLASSI.INDIRIZZO];
+  }
+
   /** Ergonomic constructor from domain values (tests, in-memory building). */
   static create(id: ClasseId, anno: AnnoCorso, indirizzo: string): Classe {
     return new Classe({

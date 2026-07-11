@@ -454,6 +454,13 @@ declare global {
     storeOriginalData(data: EntityData): void;
     equals(other: Entity): boolean;
     toData(): EntityData;
+    // Opt-in dynamic-column passthrough (ref REPORT_GLF.md B2): a subclass
+    // declaring a static getKnownColumns() has every other hydrated column
+    // captured here and merged back unmodified by Repository.save(), unless
+    // overridden via setDynamicColumn().
+    captureDynamicColumns(data: EntityData): void;
+    getDynamicColumns(): EntityData;
+    setDynamicColumn(column: string, value: unknown): void;
   }
 
   // Minimal seam Repository requires of its injected database (satisfied by
@@ -473,8 +480,13 @@ declare global {
     // implements this via getAllRows + a physical-key/row-index write.
     updateRowWhere(match: EntityData, row: EntityData): void;
   }
+  interface RepositoryQueryBuilder {
+    where(column: string, operator: string, value: unknown): RepositoryQueryBuilder;
+    execute(): EntityData[];
+  }
   interface RepositoryDatabase {
     tables: Record<string, RepositoryTable>;
+    select(columns: string[]): { from(tableName: string): RepositoryQueryBuilder };
     save(): void;
   }
 
@@ -490,21 +502,32 @@ declare global {
     );
     readonly database: RepositoryDatabase;
     readonly tableName: string;
-    find(specification: SpecificationLike): T[];
-    findOne(specification: SpecificationLike): T | null;
+    find(specification: QueryableSpecification): T[];
+    findOne(specification: QueryableSpecification): T | null;
     findById(id: string): T | null;
     findByIdOrFail(id: string): T;
     findAll(): T[];
-    exists(specification: SpecificationLike): boolean;
-    count(specification: SpecificationLike): number;
+    exists(specification: QueryableSpecification): boolean;
+    count(specification: QueryableSpecification): number;
     save(entity: T, options?: { dryRun?: boolean }): void;
     saveMany(entities: T[]): void;
     getTableName(): string;
   }
 
-  interface SpecificationLike {
+  // The minimal shape Repository.find()/QueryTranslator actually need. GLF's own
+  // FieldSpecification/CompositeSpecification (SpecificationLike, with and/or/not
+  // and canBeTranslatedToQuery/toQuery) satisfy it, and so do ALDO's domain-pure
+  // `Specification<T>` implementations, which only ever provide isSatisfiedBy +
+  // toQueryObject (ref REPORT_GLF.md B1/A1) to keep the domain layer free of any
+  // GLF/query-builder import.
+  interface QueryableSpecification {
     isSatisfiedBy(entity: unknown): boolean;
     toQueryObject?(): Record<string, unknown> | null;
+    canBeTranslatedToQuery?(): boolean;
+    toQuery?(queryBuilder: RepositoryQueryBuilder): RepositoryQueryBuilder;
+  }
+
+  interface SpecificationLike extends QueryableSpecification {
     and(other: SpecificationLike): SpecificationLike;
     or(other: SpecificationLike): SpecificationLike;
     not(): SpecificationLike;

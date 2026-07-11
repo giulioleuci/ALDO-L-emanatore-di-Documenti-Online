@@ -1,4 +1,5 @@
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { Docente } from '../../../src/domain/entities/Docente';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
@@ -45,4 +46,57 @@ test('getConsiglioDiClasse throws when a teacher column references an unknown do
   expect(() => new ClasseRepository(db).getConsiglioDiClasse(ClasseId.of('1A'))).toThrow(
     EntityNotFoundError
   );
+});
+
+// REPORT_GLF.md B2: setCoordinatori/setDocentiRuolo now persist via
+// Repository.save() using the DomainRepositoryLib dynamic-column passthrough
+// (Classe.getKnownColumns()) instead of a hand-built row spread — these tests
+// verify the cattedra matrix columns are not silently dropped on a single-
+// column write.
+test('setCoordinatori updates COORD and preserves the cattedra matrix columns', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const r = new ClasseRepository(db);
+  const classe = r.findById(ClasseId.of('5A'))!;
+  const rossi = Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' });
+
+  r.setCoordinatori(classe, [rossi]);
+
+  const row = db.tables.CLASSI.getByPK('5A')!;
+  expect(row.COORD).toBe('rossi@school.it');
+  expect(row.MATE).toBe('rossi@school.it');
+  expect(row.FISI).toBe('bianchi@school.it');
+  expect(row.ID).toBe('5A');
+  expect(row.ANNO).toBe(5);
+});
+
+test('setRuolo sets a RUOLI JSON key without dropping other keys or matrix columns', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const r = new ClasseRepository(db);
+  const classe = r.findById(ClasseId.of('5A'))!;
+  const bianchi = Docente.fromData({ EMAIL: 'bianchi@school.it', DIPART: 'X' });
+
+  r.setRuolo(classe, 'SEGRETARIO', bianchi);
+
+  const row = db.tables.CLASSI.getByPK('5A')!;
+  const ruoli = JSON.parse(row.RUOLI as string) as Record<string, string>;
+  expect(ruoli.SEGRETARIO).toBe('bianchi@school.it');
+  expect(ruoli.TUTOR_ASL).toBe('rossi@school.it,bianchi@school.it');
+  expect(row.MATE).toBe('rossi@school.it');
+  expect(row.FISI).toBe('bianchi@school.it');
+});
+
+test('two sequential dynamic-column writes on the same Classe instance both stick', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const r = new ClasseRepository(db);
+  const classe = r.findById(ClasseId.of('5A'))!;
+  const bianchi = Docente.fromData({ EMAIL: 'bianchi@school.it', DIPART: 'X' });
+
+  r.setCoordinatori(classe, [bianchi]);
+  r.setRuolo(classe, 'SEGRETARIO', bianchi);
+
+  const row = db.tables.CLASSI.getByPK('5A')!;
+  const ruoli = JSON.parse(row.RUOLI as string) as Record<string, string>;
+  expect(row.COORD).toBe('bianchi@school.it');
+  expect(ruoli.SEGRETARIO).toBe('bianchi@school.it');
+  expect(row.MATE).toBe('rossi@school.it');
 });

@@ -17,12 +17,12 @@ export class ProgettoRepository extends Repository<Progetto> {
   /** Projects assigned to a class (ref 06 §13). */
   findByClasse(classe: Classe): Progetto[] {
     const spec = new ProgettiPerClasseSpec(classe.classeId);
-    return this.findAll().filter((p) => spec.isSatisfiedBy(p));
+    return this.find(spec);
   }
 
   /** Projects of a given type (ref 06 §13). */
   findByTipo(tipo: TipoProgetto): Progetto[] {
     const spec = new ProgettiPerTipoSpec(tipo);
-    return this.findAll().filter((p) => spec.isSatisfiedBy(p));
+    return this.find(spec);
   }
 }

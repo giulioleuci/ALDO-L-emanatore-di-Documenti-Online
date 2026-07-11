@@ -16,12 +16,12 @@ export class PianoRepository extends Repository<Piano> {
 
   findByAlunno(email: Email): Piano[] {
     const spec = new PianiPerAlunnoSpec(email);
-    return this.findAll().filter((p) => spec.isSatisfiedBy(p));
+    return this.find(spec);
   }
 
   findByTipo(tipo: TipoPiano): Piano[] {
     const spec = new PianiPerTipoSpec(tipo);
-    return this.findAll().filter((p) => spec.isSatisfiedBy(p));
+    return this.find(spec);
   }
 
   /** Emails of students having at least one BES plan (feeds AlunniBESSpec). */

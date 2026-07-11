@@ -23,13 +23,13 @@ export class DocenteRepository extends Repository<Docente> {
   /** Teachers of a department (ref 06 §2). */
   findByDipartimento(dipartId: DipartimentoId): Docente[] {
     const spec = new DocentiPerDipartimentoSpec(dipartId);
-    return this.findAll().filter((d) => spec.isSatisfiedBy(d));
+    return this.find(spec);
   }
 
   /** ITP (laboratory) teachers (ref 06 §2). */
   findITP(): Docente[] {
     const spec = new DocentiITPSpec();
-    return this.findAll().filter((d) => spec.isSatisfiedBy(d));
+    return this.find(spec);
   }
 
   /**

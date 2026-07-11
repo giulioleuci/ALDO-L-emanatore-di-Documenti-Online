@@ -1,4 +1,5 @@
 import type { IDatabase, IReadableTable, Row } from '../../src/infrastructure/db/Database';
+import { createSelect, type EqualityQueryBuilder } from '../../src/infrastructure/db/Database';
 
 // Default primary-key column per table (ref 01_SCHEMA_DATABASE.md), used by the
 // DomainRepositoryLib Repository seam's getByPK(id).
@@ -80,6 +81,11 @@ export class FakeDatabase implements IDatabase {
   }
 
   table(name: string): IReadableTable { return this.getTable(name); }
+
+  /** Mirrors SheetDbAdapter.select() so tests exercise the same Repository.find() query-pushdown path. */
+  select(columns: string[]): { from(tableName: string): EqualityQueryBuilder } {
+    return createSelect((tableName) => this.getTable(tableName).getAllRows())(columns);
+  }
 
   save(): void {
     if (this.transactionSnapshot !== null) {

@@ -297,10 +297,11 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   }
 
   // --- Write-back of coordinators / roles (ref 06 §3) ---
-  // CLASSI is a wide dynamic-column table and the Classe entity carries only its
-  // fixed columns, so these column-level edits persist through the library's
-  // table seam (updateRowById) rather than Repository.save(entity), which would
-  // dehydrate only the fixed columns and drop the cattedra matrix.
+  // CLASSI is a wide dynamic-column table (per-subject cattedra matrix generated
+  // at runtime from MATERIE); Classe.getKnownColumns() opts it into
+  // DomainRepositoryLib's dynamic-column passthrough (ref REPORT_GLF.md B2), so
+  // these column-level edits persist through Repository.save(entity): the
+  // library merges every other captured column back in unmodified.
 
   setCoordinatori(classe: Classe, coordinatori: Docente[]): void {
     this.writeColumn(classe, COL_CLASSI.COORD, coordinatori.map((d) => d.id ?? '').filter((e) => e !== '').join(','));
@@ -323,9 +324,12 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   }
 
   private writeColumn(classe: Classe, colonna: string, valore: string): void {
-    const row = { ...this.rowOf(classe), [colonna]: valore };
-    this.database.tables[TABLE.CLASSI]!.updateRowById(classe.id ?? '', row);
-    this.database.save();
+    // Refresh the passthrough snapshot from the current row first, so columns
+    // this `classe` instance never hydrated through (or that changed since) are
+    // not lost when save() merges captured dynamic columns back in.
+    classe.captureDynamicColumns(this.rowOf(classe));
+    classe.setDynamicColumn(colonna, valore);
+    this.save(classe);
   }
 
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse {

@@ -18,13 +18,13 @@ export class OreASLRepository extends Repository<OreASL> {
   /** Records of a student, most recent year first (ref 06 §16). */
   findByAlunno(alunno: Alunno): OreASL[] {
     const spec = new OreASLPerAlunnoSpec(alunno.email);
-    return this.findAll().filter((o) => spec.isSatisfiedBy(o)).sort((a, b) => b.anno.localeCompare(a.anno));
+    return this.find(spec).sort((a, b) => b.anno.localeCompare(a.anno));
   }
 
   /** All students for a given year (ref 06 §16). */
   findByAnno(anno: AnnoScolastico): OreASL[] {
     const spec = new OreASLPerAnnoSpec(anno);
-    return this.findAll().filter((o) => spec.isSatisfiedBy(o));
+    return this.find(spec);
   }
 
   /** Existing record, or a fresh in-memory record with ORE = 0 (ref 06 §16). */

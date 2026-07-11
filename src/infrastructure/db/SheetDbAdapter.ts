@@ -1,4 +1,5 @@
 import type { IDatabase, IReadableTable, Row } from './Database';
+import { createSelect, type EqualityQueryBuilder } from './Database';
 import { TABLE, COL_CARENZE, COL_LOG_MAIL } from '../../config/schema';
 
 /**
@@ -124,6 +125,11 @@ export class SheetDbAdapter implements IDatabase {
 
   table(name: string): IReadableTable {
     return this.adapterFor(name);
+  }
+
+  /** DomainRepositoryLib Repository.find() query-pushdown seam (ref REPORT_GLF.md B1/A1). */
+  select(columns: string[]): { from(tableName: string): EqualityQueryBuilder } {
+    return createSelect((tableName) => this.adapterFor(tableName).getAllRows())(columns);
   }
 
   save(): void {

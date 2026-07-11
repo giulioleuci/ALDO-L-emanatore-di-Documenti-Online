@@ -35,6 +35,30 @@ function resolveCriteri(
   return out;
 }
 
+/**
+ * Resolves rows matching `match` via the indexed lookup seam for single-column
+ * criteria — building the index on first use for that (table, column) pair, so
+ * repeated actions in the same POST_PROCESSO array against the same column
+ * benefit from O(1) lookups on the second and later hits — falling back to a
+ * full scan for multi-column criteria (ref REPORT_GLF.md A3).
+ */
+function findMatchingRows(
+  table: RepositoryTable,
+  keys: string[],
+  match: Record<string, string>
+): EntityData[] {
+  if (keys.length === 1) {
+    const column = keys[0]!;
+    let hits = table.indexedLookup(column, match[column]);
+    if (hits === null) {
+      table.createIndex(column);
+      hits = table.indexedLookup(column, match[column]);
+    }
+    if (hits !== null) return hits;
+  }
+  return table.getAllRows().filter((r) => keys.every((k) => String(r[k]) === match[k]));
+}
+
 function updateMatching(
   db: PostProcessDb,
   tab: string,
@@ -44,7 +68,7 @@ function updateMatching(
   const table = db.tables[tab];
   if (table === undefined) return 0;
   const keys = Object.keys(match);
-  const hits = table.getAllRows().filter((r) => keys.every((k) => String(r[k]) === match[k]));
+  const hits = findMatchingRows(table, keys, match);
   for (const row of hits) {
     table.updateRowWhere({ ...row }, { ...row, ...patch });
   }

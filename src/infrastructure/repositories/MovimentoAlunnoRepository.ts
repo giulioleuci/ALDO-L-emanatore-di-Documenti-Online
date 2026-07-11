@@ -2,7 +2,7 @@ import { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
 import { MovimentiPerAlunnoSpec, MovimentiPerTipoSpec } from '../../domain/specifications/MovimentoAlunnoSpecs';
 import type { Alunno } from '../../domain/entities/Alunno';
 import type { TipoMovimento } from '../../domain/value-objects/enums';
-import { TABLE } from '../../config/schema';
+import { TABLE, COL_MOV_ALUNNI } from '../../config/schema';
 
 /**
  * MOV_ALUNNI repository on the DomainRepositoryLib Repository base. Composite PK
@@ -12,6 +12,8 @@ import { TABLE } from '../../config/schema';
 export class MovimentoAlunnoRepository extends Repository<MovimentoAlunno> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.MOV_ALUNNI, MovimentoAlunno);
+    // O(1) hot-lookup index for findByAlunno (ref REPORT_GLF.md A2).
+    database.tables[TABLE.MOV_ALUNNI]!.createIndex(COL_MOV_ALUNNI.STUDENTE);
   }
 
   /** Movements of a student, most recent first (ref 06 §15). */

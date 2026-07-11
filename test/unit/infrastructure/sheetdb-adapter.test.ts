@@ -94,6 +94,34 @@ test('composite-PK table: updateRowWhere targets the exact row via synthetic __P
   expect(rows.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 2)!['NOTIFICATO']).toBe('già');
 });
 
+test('updateRowWhere resolves an exact-PK match via getByPK, not a full scan (ref A3)', () => {
+  const { db } = libDb(seed());
+  const carenzeTable = db.tables['CARENZE']!;
+  const getByPkSpy = jest.spyOn(carenzeTable, 'getByPK');
+  const getAllRowsSpy = jest.spyOn(carenzeTable, 'getAllRows');
+  const adapter = new SheetDbAdapter(db);
+
+  adapter.tables['CARENZE']!.updateRowWhere(
+    { STUDENTE: 'a1@school.it', PROGRESSIVO: 1 },
+    { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, NOTIFICATO: 'x', MATE: '4.5' }
+  );
+
+  expect(getByPkSpy).toHaveBeenCalledWith('a1@school.it::1');
+  expect(getAllRowsSpy).not.toHaveBeenCalled();
+});
+
+test('updateRowWhere falls back to a full scan for a non-PK match', () => {
+  const { db } = libDb(seed());
+  const carenzeTable = db.tables['CARENZE']!;
+  const getAllRowsSpy = jest.spyOn(carenzeTable, 'getAllRows');
+  const adapter = new SheetDbAdapter(db);
+
+  // MATE alone is not CARENZE's declared PK (STUDENTE, PROGRESSIVO).
+  adapter.tables['CARENZE']!.updateRowWhere({ MATE: '4.5' }, { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, NOTIFICATO: '', MATE: '9' });
+
+  expect(getAllRowsSpy).toHaveBeenCalled();
+});
+
 test('rows returned by the adapter do not leak the synthetic __PK column', () => {
   const { db } = libDb(seed());
   const adapter = new SheetDbAdapter(db);
@@ -111,4 +139,33 @@ test('transaction methods delegate to the library service (save forbidden inside
   adapter.rollback();
   adapter.save();
   expect((db as unknown as { saved: number }).saved).toBe(1);
+});
+
+// REPORT_GLF.md A2: createIndex/indexedLookup against the real vendored
+// TableSearchEngine (not the FakeDatabase test double), and select()'s
+// EqualityQueryBuilder actually taking the indexed path once one exists.
+test('indexedLookup returns null before createIndex, then matching rows after', () => {
+  const { db } = libDb(seed());
+  const adapter = new SheetDbAdapter(db);
+
+  expect(adapter.tables['CARENZE']!.indexedLookup('STUDENTE', 'a1@school.it')).toBeNull();
+
+  adapter.tables['CARENZE']!.createIndex('STUDENTE');
+  const hits = adapter.tables['CARENZE']!.indexedLookup('STUDENTE', 'a1@school.it');
+
+  expect(hits).not.toBeNull();
+  expect(hits!.map((r) => r['PROGRESSIVO']).sort()).toEqual([1, 2]);
+  expect(hits!.every((r) => !('__PK' in r))).toBe(true);
+});
+
+test('select().from().where().execute() uses the index once built, and stays correct without one', () => {
+  const { db } = libDb(seed());
+  const adapter = new SheetDbAdapter(db);
+
+  const beforeIndex = adapter.select(['*']).from('CARENZE').where('STUDENTE', '=', 'a1@school.it').execute();
+  expect(beforeIndex.map((r) => r['PROGRESSIVO']).sort()).toEqual([1, 2]);
+
+  adapter.tables['CARENZE']!.createIndex('STUDENTE');
+  const afterIndex = adapter.select(['*']).from('CARENZE').where('STUDENTE', '=', 'a1@school.it').execute();
+  expect(afterIndex.map((r) => r['PROGRESSIVO']).sort()).toEqual([1, 2]);
 });

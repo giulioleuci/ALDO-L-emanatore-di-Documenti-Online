@@ -32,6 +32,8 @@ export class CarenzaRepository extends Repository<Carenza> {
         this.materieColumns.set(id, { main: id, itp: `${id}.itp` });
       }
     }
+    // O(1) hot-lookup index for findByAlunno (ref REPORT_GLF.md A2).
+    database.tables[TABLE.CARENZE]!.createIndex(COL_CARENZE.STUDENTE);
   }
 
   /** Shortfalls of a student, most recent first, optionally filtered by school year (ref 06 §11). */

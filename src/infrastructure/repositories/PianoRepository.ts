@@ -2,7 +2,7 @@ import { Piano } from '../../domain/entities/Piano';
 import { PianiPerAlunnoSpec, PianiPerTipoSpec } from '../../domain/specifications/PianoSpecs';
 import type { Email } from '../../domain/value-objects/Email';
 import type { TipoPiano } from '../../domain/value-objects/enums';
-import { TABLE } from '../../config/schema';
+import { TABLE, COL_PIANI } from '../../config/schema';
 
 /**
  * PIANI repository on the DomainRepositoryLib Repository base. Composite PK
@@ -12,6 +12,8 @@ import { TABLE } from '../../config/schema';
 export class PianoRepository extends Repository<Piano> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.PIANI, Piano);
+    // O(1) hot-lookup index for findByAlunno (ref REPORT_GLF.md A2).
+    database.tables[TABLE.PIANI]!.createIndex(COL_PIANI.STUDENTE);
   }
 
   findByAlunno(email: Email): Piano[] {

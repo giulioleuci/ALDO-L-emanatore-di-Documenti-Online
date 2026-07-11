@@ -27,13 +27,23 @@ export class SupplenzaRepository extends Repository<Supplenza> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.SUPPLENZE, Supplenza);
     this.docenti = new DocenteRepository(database);
+    // O(1) hot-lookup indices for findByTitolare/findBySupplente (ref
+    // REPORT_GLF.md A2). SUPPLENZE has no Specification here (the filter is a
+    // direct entity-field predicate, not a domain spec), so this bypasses
+    // Repository.find() and calls the indexed lookup seam directly.
+    database.tables[TABLE.SUPPLENZE]!.createIndex(COL_SUPPLENZE.TITOLARE);
+    database.tables[TABLE.SUPPLENZE]!.createIndex(COL_SUPPLENZE.SUPPLENTE);
   }
 
   findByTitolare(docente: Docente): Supplenza[] {
+    const hits = this.database.tables[TABLE.SUPPLENZE]!.indexedLookup(COL_SUPPLENZE.TITOLARE, docente.id);
+    if (hits !== null) return hits.map((row) => Supplenza.fromData(row));
     return this.findAll().filter((s) => s.titolare === docente.id);
   }
 
   findBySupplente(docente: Docente): Supplenza[] {
+    const hits = this.database.tables[TABLE.SUPPLENZE]!.indexedLookup(COL_SUPPLENZE.SUPPLENTE, docente.id);
+    if (hits !== null) return hits.map((row) => Supplenza.fromData(row));
     return this.findAll().filter((s) => s.supplente === docente.id);
   }
 

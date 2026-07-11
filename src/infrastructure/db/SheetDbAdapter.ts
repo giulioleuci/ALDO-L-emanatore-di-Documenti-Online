@@ -1,4 +1,4 @@
-import type { IDatabase, IReadableTable, Row } from './Database';
+import type { IDatabase, IReadableTable, Row, IndexedLookup } from './Database';
 import { createSelect, type EqualityQueryBuilder } from './Database';
 import { TABLE, COL_CARENZE, COL_LOG_MAIL } from '../../config/schema';
 
@@ -90,16 +90,42 @@ class SheetTableAdapter implements IReadableTable {
   updateRowById(id: string, row: Row): void {
     this.table.updateRowById(id, row);
   }
-  /** Composite-key write: replace the single row matching ALL `match` columns (append if none). */
+  /**
+   * Composite-key write: replace the single row matching ALL `match` columns
+   * (append if none). When `match` supplies exactly this table's declared
+   * primary-key columns (the common case: repositories match on the same
+   * composite/single key the adapter set up in the constructor), resolves the
+   * row via `getByPK` in O(1) instead of a linear scan (ref REPORT_GLF.md A3).
+   */
   updateRowWhere(match: Row, row: Row): void {
     const keys = Object.keys(match);
-    const hit = this.table.getAllRows().find((r) => keys.every((k) => String(r[k]) === String(match[k])));
+    const hit = this.isExactKeyMatch(keys)
+      ? this.table.getByPK(this.keyOf(match)) ?? undefined
+      : this.table.getAllRows().find((r) => keys.every((k) => String(r[k]) === String(match[k])));
     if (hit === undefined) {
       this.table.insertRow(row);
       return;
     }
     const key = this.composite !== undefined ? cell(hit[VIRTUAL_PK]) : this.keyOf(stripVirtual(hit));
     this.table.updateRowById(key, row);
+  }
+
+  /** True when `matchKeys` is exactly this table's declared PK column set. */
+  private isExactKeyMatch(matchKeys: string[]): boolean {
+    const declared = this.composite ?? (this.singlePk !== undefined ? [this.singlePk] : undefined);
+    if (declared === undefined || matchKeys.length !== declared.length) return false;
+    return declared.every((c) => matchKeys.includes(c));
+  }
+
+  /** O(1) hot-lookup index on a physical column (ref REPORT_GLF.md A2). */
+  createIndex(columnName: string): void {
+    this.table.createIndex(columnName);
+  }
+
+  /** Exact-match lookup via a previously built index; null if none exists for `columnName`. */
+  indexedLookup(columnName: string, value: unknown): Row[] | null {
+    const hits = this.table._indexedLookup(columnName, value);
+    return hits === null ? null : hits.map(stripVirtual);
   }
 }
 
@@ -127,9 +153,18 @@ export class SheetDbAdapter implements IDatabase {
     return this.adapterFor(name);
   }
 
-  /** DomainRepositoryLib Repository.find() query-pushdown seam (ref REPORT_GLF.md B1/A1). */
+  /**
+   * DomainRepositoryLib Repository.find() query-pushdown seam (ref REPORT_GLF.md
+   * B1/A1), using a per-table index when one was built (ref A2) instead of a
+   * full scan for single-equality-clause queries.
+   */
   select(columns: string[]): { from(tableName: string): EqualityQueryBuilder } {
-    return createSelect((tableName) => this.adapterFor(tableName).getAllRows())(columns);
+    const indexedLookupFor = (tableName: string): IndexedLookup =>
+      (column, value) => this.adapterFor(tableName).indexedLookup(column, value);
+    return createSelect(
+      (tableName) => this.adapterFor(tableName).getAllRows(),
+      indexedLookupFor
+    )(columns);
   }
 
   save(): void {

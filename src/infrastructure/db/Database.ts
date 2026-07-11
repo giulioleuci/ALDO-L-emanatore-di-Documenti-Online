@@ -20,17 +20,26 @@ export interface IDatabase {
   rollback(): void;
 }
 
+/** Exact-match index lookup on one column; null means "no index built" (caller must scan). */
+export type IndexedLookup = (column: string, value: unknown) => Row[] | null;
+
 /**
  * Minimal AdvancedQueryBuilder-shaped adapter satisfying DomainRepositoryLib's
  * `Repository.find()` query-pushdown path (`database.select(['*']).from(table)`)
  * for the equality-only criteria ALDO's domain `Specification.toQueryObject()`
  * produces (ref REPORT_GLF.md B1). Only `.where(col, '=', val)` chains are ever
- * built by that path, so a fuller operator set is unnecessary here.
+ * built by that path, so a fuller operator set is unnecessary here. When the
+ * query is a single equality clause on a column with a `SheetTableAdapter`/
+ * `FakeTable` index (ref REPORT_GLF.md A2), `execute()` uses the O(1) indexed
+ * lookup instead of a full table scan.
  */
 export class EqualityQueryBuilder {
   private readonly wheres: Array<[string, unknown]> = [];
 
-  constructor(private readonly getRows: () => Row[]) {}
+  constructor(
+    private readonly getRows: () => Row[],
+    private readonly indexedLookup?: IndexedLookup
+  ) {}
 
   where(column: string, _operator: string, value: unknown): this {
     this.wheres.push([column, value]);
@@ -38,6 +47,11 @@ export class EqualityQueryBuilder {
   }
 
   execute(): Row[] {
+    if (this.wheres.length === 1 && this.indexedLookup !== undefined) {
+      const [column, value] = this.wheres[0]!;
+      const indexed = this.indexedLookup(column, value);
+      if (indexed !== null) return indexed;
+    }
     return this.getRows().filter((row) =>
       this.wheres.every(([column, value]) => row[column] === value));
   }
@@ -45,9 +59,13 @@ export class EqualityQueryBuilder {
 
 /** Builds the `{ from(tableName) }` shape DomainRepositoryLib's Repository.find() calls after `select()`. */
 export function createSelect(
-  getRowsForTable: (tableName: string) => Row[]
+  getRowsForTable: (tableName: string) => Row[],
+  getIndexedLookupForTable?: (tableName: string) => IndexedLookup
 ): (columns: string[]) => { from(tableName: string): EqualityQueryBuilder } {
   return () => ({
-    from: (tableName: string) => new EqualityQueryBuilder(() => getRowsForTable(tableName))
+    from: (tableName: string) => new EqualityQueryBuilder(
+      () => getRowsForTable(tableName),
+      getIndexedLookupForTable?.(tableName)
+    )
   });
 }

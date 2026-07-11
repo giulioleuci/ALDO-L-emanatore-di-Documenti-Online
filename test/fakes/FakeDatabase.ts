@@ -1,4 +1,4 @@
-import type { IDatabase, IReadableTable, Row } from '../../src/infrastructure/db/Database';
+import type { IDatabase, IReadableTable, Row, IndexedLookup } from '../../src/infrastructure/db/Database';
 import { createSelect, type EqualityQueryBuilder } from '../../src/infrastructure/db/Database';
 
 // Default primary-key column per table (ref 01_SCHEMA_DATABASE.md), used by the
@@ -17,6 +17,8 @@ const DEFAULT_PK: Record<string, string> = {
  * and the DomainRepositoryLib Repository seam (getByPK/getAllRows).
  */
 class FakeTable implements IReadableTable {
+  private readonly indexedColumns = new Set<string>();
+
   constructor(private rows: Row[], private readonly pkColumn: string) {}
   findAll(): Row[] { return this.rows.slice(); }
   find(predicate: (row: Row) => boolean): Row | null { return this.rows.find(predicate) ?? null; }
@@ -41,6 +43,16 @@ class FakeTable implements IReadableTable {
   // SheetDBLib-like transaction seam: snapshot/restore of the row cache.
   snapshotRows(): Row[] { return this.rows.map((r) => ({ ...r })); }
   restoreRows(rows: Row[]): void { this.rows = rows; }
+
+  // O(1) hot-lookup index seam (ref REPORT_GLF.md A2). Recomputed on each
+  // lookup rather than incrementally maintained — the fake's row counts never
+  // approach the scale where that would matter, and this avoids staleness
+  // after insertRow/updateRowById/restoreRows.
+  createIndex(columnName: string): void { this.indexedColumns.add(columnName); }
+  indexedLookup(columnName: string, value: unknown): Row[] | null {
+    if (!this.indexedColumns.has(columnName)) return null;
+    return this.rows.filter((r) => r[columnName] === value);
+  }
 }
 
 /**
@@ -84,7 +96,12 @@ export class FakeDatabase implements IDatabase {
 
   /** Mirrors SheetDbAdapter.select() so tests exercise the same Repository.find() query-pushdown path. */
   select(columns: string[]): { from(tableName: string): EqualityQueryBuilder } {
-    return createSelect((tableName) => this.getTable(tableName).getAllRows())(columns);
+    const indexedLookupFor = (tableName: string): IndexedLookup =>
+      (column, value) => this.getTable(tableName).indexedLookup(column, value);
+    return createSelect(
+      (tableName) => this.getTable(tableName).getAllRows(),
+      indexedLookupFor
+    )(columns);
   }
 
   save(): void {

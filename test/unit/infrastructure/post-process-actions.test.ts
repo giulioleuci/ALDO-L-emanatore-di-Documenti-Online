@@ -72,6 +72,50 @@ test('no matching rows ⇒ 0 updates and no phantom insert', () => {
   expect(db.tables['CARENZE']!.getAllRows()).toHaveLength(before);
 });
 
+test('single-column criteri build an index on first use and reuse it for later actions (ref A3)', () => {
+  const tables = fixtureTables();
+  tables['LOG_DOCS'] = [
+    { ID: 'file_1', ID_GEN: 'CD1', STATO: 'GENERATO', CLASSI: '5A' },
+    { ID: 'file_2', ID_GEN: 'CD1', STATO: 'GENERATO', CLASSI: '5A' }
+  ];
+  const db = new FakeDatabase(tables);
+  const logDocs = db.tables['LOG_DOCS']!;
+  const createIndexSpy = jest.spyOn(logDocs, 'createIndex');
+  const indexedLookupSpy = jest.spyOn(logDocs, 'indexedLookup');
+  const getAllRowsSpy = jest.spyOn(logDocs, 'getAllRows');
+
+  const actions = JSON.stringify([
+    { tipo: 'AGGIORNA_STATO_DOC', stato: 'NOTIFICATO', criteri: { ID: 'file_1' } },
+    { tipo: 'AGGIORNA_STATO_DOC', stato: 'NOTIFICATO', criteri: { ID: 'file_2' } }
+  ]);
+  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+
+  expect(n).toBe(2);
+  expect(db.tables['LOG_DOCS']!.getByPK('file_1')!['STATO']).toBe('NOTIFICATO');
+  expect(db.tables['LOG_DOCS']!.getByPK('file_2')!['STATO']).toBe('NOTIFICATO');
+  // Index built once on first action, reused (not rebuilt) on the second.
+  expect(createIndexSpy).toHaveBeenCalledTimes(1);
+  expect(indexedLookupSpy).toHaveBeenCalledWith('ID', 'file_1');
+  expect(indexedLookupSpy).toHaveBeenCalledWith('ID', 'file_2');
+  expect(getAllRowsSpy).not.toHaveBeenCalled();
+});
+
+test('multi-column criteri still fall back to a full scan', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const carenze = db.tables['CARENZE']!;
+  const getAllRowsSpy = jest.spyOn(carenze, 'getAllRows');
+  const actions = JSON.stringify([
+    {
+      tipo: 'INSERISCI_TIMESTAMP',
+      tab: 'CARENZE',
+      col: 'NOTIFICATO',
+      criteri: { STUDENTE: '{{focus.alunno.anagrafica.email}}', DATA: '{{focus.carenza.data}}' }
+    }
+  ]);
+  executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  expect(getAllRowsSpy).toHaveBeenCalled();
+});
+
 test('unknown action type is skipped with a warning, others still run', () => {
   const db = new FakeDatabase(fixtureTables());
   const actions = JSON.stringify([

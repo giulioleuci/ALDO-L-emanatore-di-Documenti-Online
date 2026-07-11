@@ -11,9 +11,15 @@ import { TABLE, COL_LOG_MAIL } from '../../config/schema';
 export class LogEmailRepository extends Repository<LogEmail> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.LOG_MAIL, LogEmail);
+    // O(1) hot-lookup index for findByPattern (ref REPORT_GLF.md A2). LOG_MAIL
+    // has no Specification here (direct entity-field predicate), so this
+    // bypasses Repository.find() and calls the indexed lookup seam directly.
+    database.tables[TABLE.LOG_MAIL]!.createIndex(COL_LOG_MAIL.PATTERN);
   }
 
   findByPattern(patternId: string): LogEmail[] {
+    const hits = this.database.tables[TABLE.LOG_MAIL]!.indexedLookup(COL_LOG_MAIL.PATTERN, patternId);
+    if (hits !== null) return hits.map((row) => LogEmail.fromData(row));
     return this.findAll().filter((l) => l.pattern === patternId);
   }
 

@@ -160,6 +160,11 @@ declare global {
     deleteRowById(id: string): void;
     defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): unknown;
     setPrimaryKey(columnName: string): unknown;
+    // O(1) exact-match lookup seam (ref REPORT_GLF.md A2): createIndex builds a
+    // Map-based memory index; _indexedLookup returns matching rows or null when
+    // no index has been built for that column (caller falls back to a scan).
+    createIndex(columnName: string): unknown;
+    _indexedLookup(columnName: string, value: unknown): Record<string, unknown>[] | null;
   }
   class DatabaseService {
     constructor(spreadsheetId: string, logger: LoggerService, utils?: unknown, cache?: unknown);
@@ -191,6 +196,8 @@ declare global {
     defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): TableService;
     setPrimaryKey(columnName: string): TableService;
     flush(options?: Record<string, unknown>): number;
+    createIndex(columnName: string): TableService;
+    _indexedLookup(columnName: string, value: unknown): Record<string, unknown>[] | null;
   }
 
   // --- GoogleApiWrapper (L1/L2): Drive globals (the REAL bound API, verified
@@ -479,6 +486,9 @@ declare global {
     // repositories resolve the target row by business columns; a real adapter
     // implements this via getAllRows + a physical-key/row-index write.
     updateRowWhere(match: EntityData, row: EntityData): void;
+    // O(1) hot-lookup index seam (ref REPORT_GLF.md A2).
+    createIndex(columnName: string): void;
+    indexedLookup(columnName: string, value: unknown): EntityData[] | null;
   }
   interface RepositoryQueryBuilder {
     where(column: string, operator: string, value: unknown): RepositoryQueryBuilder;

@@ -13,6 +13,8 @@ import { TABLE, COL_ASL } from '../../config/schema';
 export class OreASLRepository extends Repository<OreASL> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.ASL, OreASL);
+    // O(1) hot-lookup index for findByAlunno (ref REPORT_GLF.md A2).
+    database.tables[TABLE.ASL]!.createIndex(COL_ASL.STUDENTE);
   }
 
   /** Records of a student, most recent year first (ref 06 §16). */

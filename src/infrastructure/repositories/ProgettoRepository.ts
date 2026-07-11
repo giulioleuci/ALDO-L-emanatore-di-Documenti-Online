@@ -2,7 +2,7 @@ import { Progetto } from '../../domain/entities/Progetto';
 import { ProgettiPerClasseSpec, ProgettiPerTipoSpec } from '../../domain/specifications/ProgettoSpecs';
 import type { Classe } from '../../domain/entities/Classe';
 import type { TipoProgetto } from '../../domain/value-objects/enums';
-import { TABLE } from '../../config/schema';
+import { TABLE, COL_PROGETTI } from '../../config/schema';
 
 /**
  * PROGETTI repository on the DomainRepositoryLib Repository base. Composite PK
@@ -12,6 +12,8 @@ import { TABLE } from '../../config/schema';
 export class ProgettoRepository extends Repository<Progetto> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.PROGETTI, Progetto);
+    // O(1) hot-lookup index for findByClasse (ref REPORT_GLF.md A2).
+    database.tables[TABLE.PROGETTI]!.createIndex(COL_PROGETTI.CLASSE);
   }
 
   /** Projects assigned to a class (ref 06 §13). */

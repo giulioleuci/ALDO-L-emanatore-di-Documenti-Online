@@ -141,6 +141,16 @@ test('transaction methods delegate to the library service (save forbidden inside
   expect((db as unknown as { saved: number }).saved).toBe(1);
 });
 
+// REPORT_GLF.md B9: getDatabaseService() lets callers (e.g. GasDataImporter's
+// ImportEngine, via Bootstrap.ts) share the exact same DatabaseService instance
+// the adapter wraps instead of opening a second one over the same spreadsheet.
+test('getDatabaseService returns the exact instance the adapter was constructed with', () => {
+  const { db } = libDb(seed());
+  const adapter = new SheetDbAdapter(db);
+
+  expect(adapter.getDatabaseService()).toBe(db);
+});
+
 // REPORT_GLF.md A2: createIndex/indexedLookup against the real vendored
 // TableSearchEngine (not the FakeDatabase test double), and select()'s
 // EqualityQueryBuilder actually taking the indexed path once one exists.

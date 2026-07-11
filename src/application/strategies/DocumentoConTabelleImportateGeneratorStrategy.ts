@@ -1,5 +1,4 @@
 import { DocumentoGenericoGeneratorStrategy } from './DocumentoGenericoGeneratorStrategy';
-import { columnIndexToLetters } from './SheetMaterieGeneratorStrategy';
 import type { Cdu } from '../context-engine/Cdu';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IDocumentTableFacade } from '../../infrastructure/facades/DocumentTableFacade';
@@ -24,12 +23,16 @@ function cellToString(cell: unknown): string {
  * unfindable for positional insertion.
  */
 export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGenericoGeneratorStrategy {
+  private readonly sheetReader: SheetByIdStrategy;
+
   constructor(
     templates: ITemplateEngine,
-    private readonly sheets: SpreadsheetService,
-    private readonly tables: IDocumentTableFacade
+    sheets: SpreadsheetService,
+    private readonly tables: IDocumentTableFacade,
+    logger: LoggerService = new LoggerService()
   ) {
     super(templates);
+    this.sheetReader = new SheetByIdStrategy(logger, sheets);
   }
 
   override render(fileId: string, cdu: Cdu): void {
@@ -43,13 +46,25 @@ export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGene
     super.render(fileId, cdu);
   }
 
-  /** Every non-blank row of the sheet's first tab, cells coerced to strings (Docs tables are text-only). */
+  /**
+   * Every non-blank row of the sheet's first tab, cells coerced to strings
+   * (Docs tables are text-only). Range resolution (tab, full-sheet extent from
+   * gridProperties) is shared with `CustomSourceStrategies.ts` via
+   * `SheetByIdStrategy.extractRaw()` (ref REPORT_GLF.md A4/B6) instead of being
+   * re-derived here. A referenced sheet with no accessible tabs is not an
+   * error for this marker — the placeholder is simply removed with no table
+   * inserted (mirrors the pre-extractRaw behavior of `getSheetInfo()[0] === undefined`).
+   */
   private readSheetAsStrings(sheetFileId: string): string[][] {
-    const info = this.sheets.getSheetInfo(sheetFileId)[0];
-    if (info === undefined) return [];
-    const rowCount = info.gridProperties.rowCount ?? 1000;
-    const colCount = info.gridProperties.columnCount ?? 26;
-    const values = this.sheets.getRanges(sheetFileId, `${info.name}!A1:${columnIndexToLetters(colCount - 1)}${rowCount}`);
-    return values.filter((row) => row.some((cell) => cellToString(cell).trim() !== '')).map((row) => row.map(cellToString));
+    let values: unknown[][];
+    try {
+      values = this.sheetReader.extractRaw({ sheetId: sheetFileId });
+    } catch (error) {
+      if (error instanceof SourceError && error.code === 'NO_SHEETS_FOUND') return [];
+      throw error;
+    }
+    return values
+      .map((row) => row.map(cellToString))
+      .filter((row) => row.some((cell) => cell.trim() !== ''));
   }
 }

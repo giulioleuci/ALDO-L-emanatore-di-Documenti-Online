@@ -829,6 +829,8 @@ declare global {
   class ImportError extends Error {
     code: string;
   }
+  /** Extraction-phase failure (e.g. inaccessible sheet, missing tab, no sheets at all). */
+  class SourceError extends ImportError {}
   /** Base class for custom extraction sources (registered via ImportEngine.registerCustomSource). */
   abstract class SourceStrategy {
     constructor(logger?: LoggerService);
@@ -850,6 +852,13 @@ declare global {
      * @param config.hasHeaders If true (default), treats the first row as property keys.
      */
     extract(config: { sheetId: string; tabName?: string; range?: string; hasHeaders?: boolean }): Record<string, unknown>[];
+    /**
+     * Same sheet/tab/range resolution as `extract()`, but returns the raw grid
+     * (`string[][]`-shaped, header row included) instead of header-mapped row
+     * objects — for callers needing a raw table (e.g. inserting into a Google
+     * Doc) rather than import-recipe rows (ref REPORT_GLF.md B6).
+     */
+    extractRaw(config: { sheetId: string; tabName?: string; range?: string }): unknown[][];
   }
 
   // --- ComposableContentLib (L4): declarative block composition (box rendering) ---

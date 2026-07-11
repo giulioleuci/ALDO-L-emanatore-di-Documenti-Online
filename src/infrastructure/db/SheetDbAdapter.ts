@@ -140,6 +140,19 @@ export class SheetDbAdapter implements IDatabase {
     });
   }
 
+  /**
+   * The raw SheetDBLib `DatabaseService` this adapter wraps (ref REPORT_GLF.md
+   * B9): `GasDataImporter`'s `Loader` writes through the library's own table
+   * API (`insertRows`/`updateRowById`/`deleteRowById`), which `SheetTableAdapter`
+   * doesn't implement — so `ImportEngine` needs the underlying service, not the
+   * adapter. Exposing it lets callers share one `DatabaseService` per
+   * spreadsheet per execution instead of opening a second one just for the
+   * importer.
+   */
+  getDatabaseService(): DatabaseService {
+    return this.service;
+  }
+
   private adapterFor(name: string): SheetTableAdapter {
     let adapter = this.cache.get(name);
     if (adapter === undefined) {

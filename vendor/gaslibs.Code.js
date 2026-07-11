@@ -59983,9 +59983,40 @@ class SheetByIdStrategy extends SourceStrategy {
 
 
   _extractData(config) {
+    const hasHeaders = config.hasHeaders !== false; 
+    const values = this._resolveValues(config);
+    const data = this._arrayToObjects(values, hasHeaders);
+    this.logger.info(`[SheetByIdStrategy] Extracted ${data.length} rows from sheet`);
+    return data;
+  }
+
+  
+
+
+
+
+
+
+
+
+
+  extractRaw(config) {
+    this.logger.info(`[SheetByIdStrategy] Extracting raw grid with config:`, JSON.stringify(config));
+    return this._resolveValues(config);
+  }
+
+  
+
+
+
+
+
+
+
+
+  _resolveValues(config) {
     this._validateConfig(config, ['sheetId']);
     const sheetId = config.sheetId;
-    const hasHeaders = config.hasHeaders !== false; 
     const range = config.range || '';
     const tabName = config.tabName;
     try {
@@ -60036,11 +60067,7 @@ class SheetByIdStrategy extends SourceStrategy {
         this.logger.warn(`[SheetByIdStrategy] No data found in range ${fullRange}`);
         return [];
       }
-
-      
-      const data = this._arrayToObjects(values, hasHeaders);
-      this.logger.info(`[SheetByIdStrategy] Extracted ${data.length} rows from sheet`);
-      return data;
+      return values;
     } catch (error) {
       if (error instanceof SourceError) {
         throw error;

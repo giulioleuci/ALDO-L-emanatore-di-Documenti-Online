@@ -107,7 +107,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       if (deps.documents !== undefined) {
         registry.set(
           'DOCUMENTO_CON_TABELLE_IMPORTATE',
-          new DocumentoConTabelleImportateGeneratorStrategy(deps.templates, deps.spreadsheets, new DocumentTableFacade(deps.documents))
+          new DocumentoConTabelleImportateGeneratorStrategy(deps.templates, deps.spreadsheets, new DocumentTableFacade(deps.documents), logger)
         );
       }
     }
@@ -234,10 +234,11 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   const documentService = ServiceFactory.getDocumentService();
 
   // GasDataImporter's Loader writes through the raw SheetDBLib table API
-  // (insertRows/updateRowById), not the ALDO IDatabase port — a second
-  // DatabaseService instance over the same spreadsheet, scoped to this one
-  // execution (menu launches run one operation at a time, ref 15 §8).
-  const importEngine = new ImportEngine(logger, driveService, spreadsheetService, new DatabaseService(annoCorrente.idSpreadsheet, logger));
+  // (insertRows/updateRowById/deleteRowById), not the ALDO IDatabase port —
+  // SheetDbAdapter.getDatabaseService() (ref REPORT_GLF.md B9) shares the same
+  // DatabaseService instance `db` already opened over this spreadsheet,
+  // instead of opening a second one for the importer.
+  const importEngine = new ImportEngine(logger, driveService, spreadsheetService, db.getDatabaseService());
   // CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI (12 §3) are ALDO-specific source
   // strategies, not part of the library's built-in vocabulary — registered
   // here at the composition root so ImportRecipeMapper's recipes resolve.

@@ -103,20 +103,17 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
 
   /**
    * Resolves the target CDU class, builds the `materieColonne` groups object,
-   * and renders the sheet in one `processSheet` call. Returns the resolved
-   * column layout plus a parallel `sigla`/`null` array (same index alignment
-   * as the layout, `null` at label-column positions) so the `_E_PERMESSI`
-   * subclass can map each protected column back to the subject it holds —
-   * `SheetColumnLayout` itself only carries `header`/`column`/`isLabel`, not
-   * a business identifier, so this bookkeeping is ALDO-side: we control the
-   * exact order items were placed into each source array, and that order is
-   * preserved 1:1 by `dynamic_columns`.
+   * and renders the sheet in one `processSheet` call. Each resolved
+   * `SheetColumnLayout` entry carries its own source `MateriaColumn` (`item`,
+   * ref REPORT_GLF.md B5), so the `_E_PERMESSI` subclass reads
+   * `column.item.sigla` directly instead of a parallel positionally-tracked
+   * array.
    */
   protected renderColumns(
     fileId: string,
     cdu: Cdu,
     config: ConfigurazioneDocumento
-  ): { sheetName: string; layout: SheetColumnLayout[]; siglaOrder: Array<string | null> } {
+  ): { sheetName: string; layout: SheetColumnLayout[] } {
     const classe = cdu.focus.classe;
     if (classe === undefined) {
       throw new ConfigurationError(`CONF_DOC ${config.id ?? '?'}: SHEET_CON_MATERIE richiede focus.classe nel CDU`);
@@ -131,8 +128,7 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
     const groups = this.buildGroups(classe);
     const context: Record<string, unknown> = { ...(cdu as unknown as Record<string, unknown>), materieColonne: groups };
     const layout = this.templates.processSheet(fileId, context, params.sheetName);
-    const siglaOrder = this.buildSiglaOrder(groups);
-    return { sheetName: resolvedSheetName, layout, siglaOrder };
+    return { sheetName: resolvedSheetName, layout };
   }
 
   /** Ordered groups for the class's subjects (articulated: shared -> per-partner; non-articulated: one dedup+sorted group). */
@@ -154,14 +150,6 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
       for (const m of d.materie) sigle.add(m.sigla);
     }
     return { group1: this.resolveMateriaColumns([...sigle].sort((a, b) => a.localeCompare(b))) };
-  }
-
-  /** Parallel `sigla`/`null` array matching the exact order `dynamic_columns` will place columns in: group1 items, then (if present) group2's label + items, then (if present) group3's label + items. `null` marks a label-column position. */
-  protected buildSiglaOrder(groups: MaterieGroups): Array<string | null> {
-    const order: Array<string | null> = groups.group1.map((c) => c.sigla);
-    if (groups.group2 !== undefined) order.push(null, ...groups.group2.map((c) => c.sigla));
-    if (groups.group3 !== undefined) order.push(null, ...groups.group3.map((c) => c.sigla));
-    return order;
   }
 
   /** Resolves each sigla's display text (ports the pre-refactor `columnsFor`'s lookup logic: `MateriaRepository.findByIdCached(...).sintesi`, falling back to the sigla itself) BEFORE the item is placed on the context, so the template's `value=header` expression is a plain field read. */

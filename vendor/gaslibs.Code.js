@@ -24156,7 +24156,8 @@ class _SheetProcessor {
           columns.push({
             header: labelText,
             column: col,
-            isLabel: true
+            isLabel: true,
+            item: null
           });
           col += 1;
         }
@@ -24171,10 +24172,15 @@ class _SheetProcessor {
             range: `${quotedSheetName}!${cellA1}`,
             values: [[resolvedHeader]]
           });
+          
+          
+          
+          
           columns.push({
             header: resolvedHeader,
             column: col,
-            isLabel: false
+            isLabel: false,
+            item
           });
 
           

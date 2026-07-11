@@ -257,6 +257,8 @@ declare global {
     /** 1-based spreadsheet column number. */
     column: number;
     isLabel: boolean;
+    /** Raw source-array entry this column was resolved from; null for label columns (ref REPORT_GLF.md B5). */
+    item: unknown;
   }
   /** One `{{dynamic_columns[...]}}` placeholder's fully-resolved layout. */
   interface SheetGroupLayout {

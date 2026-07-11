@@ -60,11 +60,11 @@ export class FakeTemplateEngine implements ITemplateEngine {
     buckets.forEach((bucket, i) => {
       if (i > 0 && bucket.items.length === 0) return;
       if (i > 0 && bucket.label !== undefined) {
-        columns.push({ header: bucket.label, column: col, isLabel: true });
+        columns.push({ header: bucket.label, column: col, isLabel: true, item: null });
         col += 1;
       }
       bucket.items.forEach((item) => {
-        columns.push({ header: item.header, column: col, isLabel: false });
+        columns.push({ header: item.header, column: col, isLabel: false, item });
         col += 1;
       });
     });

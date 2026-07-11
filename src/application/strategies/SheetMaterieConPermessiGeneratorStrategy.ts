@@ -1,4 +1,5 @@
 import { SheetMaterieGeneratorStrategy, columnIndexToLetters } from './SheetMaterieGeneratorStrategy';
+import type { MateriaColumn } from './SheetMaterieGeneratorStrategy';
 import type { Cdu } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
@@ -49,25 +50,26 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   }
 
   override render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
-    const { sheetName, layout, siglaOrder } = this.renderColumns(fileId, cdu, config);
-    this.protectColumns(fileId, cdu, sheetName, layout, siglaOrder);
+    const { sheetName, layout } = this.renderColumns(fileId, cdu, config);
+    this.protectColumns(fileId, cdu, sheetName, layout);
   }
 
-  private protectColumns(
-    fileId: string,
-    cdu: Cdu,
-    sheetName: string,
-    layout: SheetColumnLayout[],
-    siglaOrder: Array<string | null>
-  ): void {
+  /**
+   * Maps each rendered column back to its subject via `column.item.sigla`
+   * (ref REPORT_GLF.md B5) — `dynamic_columns` now carries the raw
+   * `MateriaColumn` source item on every non-label column, replacing the
+   * previous parallel `siglaOrder` array this class had to reconstruct by
+   * hand from the same group-building logic `renderColumns` used.
+   */
+  private protectColumns(fileId: string, cdu: Cdu, sheetName: string, layout: SheetColumnLayout[]): void {
     const hasDataColumn = layout.some((c) => !c.isLabel);
     if (!hasDataColumn) return;
     const coordinatori = this.roles.risolvi('COORDINATORI', cdu).map((e) => e.value);
     const requests = layout
-      .map((column, i) => {
+      .map((column) => {
         if (column.isLabel) return null;
-        const sigla = siglaOrder[i];
-        if (sigla === null || sigla === undefined) return null;
+        const sigla = (column.item as MateriaColumn | null)?.sigla;
+        if (sigla === undefined) return null;
         const docenti = this.resolveDocentiMateria(cdu, sigla);
         const col = columnIndexToLetters(column.column - 1);
         return {

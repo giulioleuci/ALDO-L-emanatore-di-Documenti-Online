@@ -3,7 +3,10 @@ import {
   avviaGenerazioneDataDriven,
   avviaInvioNotificheDataDriven,
   avviaImportazioneDataDriven,
-  riprendiJobSospeso
+  riprendiJobSospeso,
+  initAldo,
+  resetAldo,
+  PROP_MASTER_SPREADSHEET_ID
 } from '../../../src/config/Bootstrap';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
@@ -22,6 +25,7 @@ import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
+import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
@@ -184,6 +188,86 @@ describe('buildAldoContainer — optional generator strategies', () => {
     const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never, documents: {} as never });
     const registry = c.get<Map<string, unknown>>('strategyRegistry');
     expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(true);
+  });
+});
+
+describe('initAldo — singleton reuse + missing master id', () => {
+  const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
+  function fakeTable() {
+    return {
+      getAllRows: jest.fn().mockReturnValue([]),
+      getByPK: jest.fn().mockReturnValue(null),
+      insertRow: jest.fn((row: unknown) => row),
+      updateRowById: jest.fn(),
+      defineVirtualColumn: jest.fn(),
+      setPrimaryKey: jest.fn(),
+      createIndex: jest.fn(),
+      _indexedLookup: jest.fn().mockReturnValue(null)
+    };
+  }
+
+  function mockDatabaseServiceGlobal() {
+    const original = (global as unknown as { DatabaseService: unknown }).DatabaseService;
+    const fakeDb = {
+      tables: new Proxy({}, { get: () => fakeTable() }),
+      save: jest.fn(),
+      beginTransaction: jest.fn(),
+      commit: jest.fn(),
+      rollback: jest.fn()
+    };
+    (global as unknown as { DatabaseService: unknown }).DatabaseService = jest.fn().mockImplementation(() => fakeDb);
+    return () => {
+      (global as unknown as { DatabaseService: unknown }).DatabaseService = original;
+    };
+  }
+
+  function mockServiceFactory() {
+    const spies = [
+      jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue(fakeLogger as never),
+      jest.spyOn(ServiceFactory, 'getDriveService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getSpreadsheetService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getDocumentService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getPermissionService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getMailService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getPropertiesService').mockReturnValue({} as never)
+    ];
+    return () => spies.forEach((s) => s.mockRestore());
+  }
+
+  afterEach(() => {
+    resetAldo();
+  });
+
+  test('returns the same ServiceContainer instance on a second call (singleton)', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const restoreFactory = mockServiceFactory();
+    const fakeMaster = { idSpreadsheet: 'ss1', idCartellaRoot: 'root1' } as never;
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue(fakeMaster);
+    try {
+      const props = { get: jest.fn().mockReturnValue('SPREADSHEET_ID_1'), set: jest.fn() };
+      const first = initAldo(new Date('2026-01-01'), props as never);
+      const second = initAldo(new Date('2026-06-01'), props as never);
+      expect(second).toBe(first);
+      // rebuild happened exactly once even though initAldo was called twice
+      expect(findConfigSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
+  });
+
+  test.each([null, '', '   '])('throws ConfigurationError when the master id property is %p', (value) => {
+    resetAldo();
+    const props = { get: jest.fn().mockReturnValue(value), set: jest.fn() };
+    expect(() => initAldo(new Date(), props as never)).toThrow(ConfigurationError);
+    expect(() => initAldo(new Date(), props as never)).toThrow(
+      new RegExp(`${PROP_MASTER_SPREADSHEET_ID} mancante`)
+    );
   });
 });
 

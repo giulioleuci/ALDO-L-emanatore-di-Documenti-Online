@@ -55,9 +55,9 @@ function getArg(name) {
 
 const mode = getArg('mode') || 'testing';
 
-if (!['production', 'testing', 'testoffline'].includes(mode)) {
+if (!['production', 'testing', 'testoffline', 'online'].includes(mode)) {
   console.error(
-    `${c.red}Error: Invalid mode "${mode}". Use --mode=production, --mode=testing, or --mode=testoffline${c.reset}`
+    `${c.red}Error: Invalid mode "${mode}". Use --mode=production, --mode=testing, --mode=testoffline, or --mode=online${c.reset}`
   );
   process.exit(1);
 }
@@ -76,8 +76,9 @@ const webpackCmd = mode === 'production' ? 'npx webpack' : 'npx webpack --env re
 
 // Steps: Clean, Vendor verify, Webpack, Compose Code.js/EntryPoints.js,
 // Copy appsscript.json, V8 patch, Configure deployment files, Source map
-// index, [production verify | testoffline offline tests], Summary
-const TOTAL_STEPS = mode === 'testing' ? 9 : 10;
+// index, [production verify | testoffline/online offline tests],
+// [online: gas-source-map.json generation], Summary
+const TOTAL_STEPS = mode === 'testing' ? 9 : mode === 'online' ? 11 : 10;
 
 heading('ALDO (SGSA) - Build and Prepare');
 info(`Mode:         ${c.bold}${mode.toUpperCase()}${c.reset}`);
@@ -153,6 +154,48 @@ step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
     fs.rmSync(aldoCoreBundle, { force: true });
     fs.rmSync(aldoCoreBundle + '.map', { force: true });
     fs.rmSync(entryPointsBundle + '.map', { force: true });
+  } else if (mode === 'online') {
+    const entrypoints = fs.readFileSync(entryPointsBundle, 'utf8');
+    const combined = prelude + '\n;\n' + core + '\n;\n' + entrypoints;
+    let stripped;
+    try {
+      stripped = minify_sync(combined, { compress: false, mangle: false, format: { comments: false, beautify: true } });
+    } catch (e) {
+      fail(`Failed to strip comments from combined online-mode bundle: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    }
+    if (typeof stripped.code !== 'string') {
+      fail('Failed to strip comments from combined online-mode bundle: no code produced');
+      process.exit(1);
+    }
+    fs.writeFileSync(codeJsPath, stripped.code, 'utf8');
+    ok('Wrote dist/Code.js (vendor + ALDO core + entry points, unminified structure, comments stripped)');
+    fs.rmSync(aldoCoreBundle, { force: true });
+    fs.rmSync(entryPointsBundle, { force: true });
+    // aldo-core.js.map / EntryPoints.js.map are kept on disk (not rmSync'd
+    // here) so the gas-source-map.json generation step can index them; they
+    // are removed after indexing instead.
+
+    const onlineTestsBundle = path.join(distDir, 'OnlineTests.js');
+    if (!fs.existsSync(onlineTestsBundle)) {
+      fail('dist/OnlineTests.js was not produced by Webpack');
+      process.exit(1);
+    }
+    const onlineTestsSrc = fs.readFileSync(onlineTestsBundle, 'utf8');
+    let strippedTests;
+    try {
+      strippedTests = minify_sync(onlineTestsSrc, { compress: false, mangle: false, format: { comments: false, beautify: true } });
+    } catch (e) {
+      fail(`Failed to strip comments from OnlineTests.js: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    }
+    if (typeof strippedTests.code !== 'string') {
+      fail('Failed to strip comments from OnlineTests.js: no code produced');
+      process.exit(1);
+    }
+    fs.writeFileSync(onlineTestsBundle, strippedTests.code, 'utf8');
+    ok('Wrote dist/OnlineTests.js (unminified structure, comments stripped, kept separate from Code.js)');
+    // OnlineTests.js.map is likewise kept on disk for the gas-source-map.json step.
   } else {
     const entrypoints = fs.readFileSync(entryPointsBundle, 'utf8');
     fs.writeFileSync(codeJsPath, prelude + '\n;\n' + core + '\n;\n' + entrypoints, 'utf8');

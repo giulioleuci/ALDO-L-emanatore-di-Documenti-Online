@@ -46,7 +46,7 @@ describe('SampleDatabaseBuilder', () => {
     expect(master.rows[0].ID_CARTELLA_GOOGLE).toBeDefined();
   });
 
-  it('seeds a SUPPLENZE row and a VARIAZIONI_CATTEDRA row on the same class/subject/date window', () => {
+  it('seeds a SUPPLENZE row and a VARIAZIONI_CATTEDRA row on the same class/subject/date window, targeting different teachers', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
     new SampleDatabaseBuilder(factory, drive, () => new Date('2026-07-11T10:00:00Z')).build();
@@ -57,6 +57,11 @@ describe('SampleDatabaseBuilder', () => {
     expect(variazioni).toHaveLength(1);
     expect(supplenze[0].CLASSI).toBe(variazioni[0].CLASSE_ID);
     expect(supplenze[0].MATERIE).toBe(variazioni[0].MATERIA_ID);
+
+    // The two sources must disagree on the resolved teacher, otherwise a role-resolution test
+    // asserting "SUPPLENZE wins" would pass even if priority-resolution logic picked
+    // VARIAZIONI_CATTEDRA instead (see SampleDatabaseBuilder.seedSupplenzeEVariazioni).
+    expect(supplenze[0].SUPPLENTE).not.toBe(variazioni[0].NUOVO_TITOLARE);
   });
 
   it('seeds exactly one articolata partner-class pair in CLASSI, and enrolls one ALUNNI row in the partner class', () => {

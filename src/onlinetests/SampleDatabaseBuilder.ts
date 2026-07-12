@@ -59,6 +59,7 @@ const CLASSE_BASE = '4A';
 const CLASSE_PARTNER = '4A-LC';
 const DOCENTE_1 = 'docente1@onlinetest.aldo.local';
 const DOCENTE_2 = 'docente2@onlinetest.aldo.local';
+const DOCENTE_3 = 'docente3@onlinetest.aldo.local';
 const MATERIA_1 = 'MAT1';
 const INDIRIZZO_1 = 'IND1';
 const DIPART_1 = 'DIPART1';
@@ -163,6 +164,14 @@ export class SampleDatabaseBuilder {
       [COL_DOCENTI.DIPART]: DIPART_1,
       [COL_DOCENTI.ITP]: false
     });
+    sample.appendRow(TABLE.DOCENTI, {
+      [COL_DOCENTI.EMAIL]: DOCENTE_3,
+      [COL_DOCENTI.COGNOME]: 'Verdi',
+      [COL_DOCENTI.NOME]: 'Paolo',
+      [COL_DOCENTI.GENERE]: 'M',
+      [COL_DOCENTI.DIPART]: DIPART_1,
+      [COL_DOCENTI.ITP]: false
+    });
   }
 
   /** 2 CLASSI rows: a plain class and its articolata partner (05_AGGREGATI_E_CLASSI_ARTICOLATE.md). */
@@ -234,7 +243,11 @@ export class SampleDatabaseBuilder {
   /**
    * 1 SUPPLENZE + 1 VARIAZIONI_CATTEDRA row on the same class/subject/date window as the CLASSI
    * nominal assignment (`DOCENTE_1`), so the SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI priority
-   * chain has a real 3-way case to resolve.
+   * chain has a real 3-way case to resolve. The two rows deliberately name DIFFERENT teachers
+   * (`DOCENTE_2` for SUPPLENZE.SUPPLENTE, `DOCENTE_3` for VARIAZIONI_CATTEDRA.NUOVO_TITOLARE) so a
+   * role-resolution test asserting "SUPPLENZE wins" is load-bearing: if priority-resolution logic
+   * regressed to pick VARIAZIONI_CATTEDRA (or the CLASSI fallback) instead, the resolved teacher
+   * would visibly differ from DOCENTE_2.
    */
   private seedSupplenzeEVariazioni(sample: ISampleSpreadsheet): void {
     sample.appendRow(TABLE.SUPPLENZE, {
@@ -249,7 +262,7 @@ export class SampleDatabaseBuilder {
       [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_BASE,
       [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: MATERIA_1,
       [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: DOCENTE_1,
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: DOCENTE_2,
+      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: DOCENTE_3,
       [COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA]: '2026-07-05'
     });
   }

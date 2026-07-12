@@ -152,6 +152,41 @@ test('riprendiJobSospeso re-registers BOTH batch registries so the library can p
   expect(calls[0]!.registered.sort()).toEqual([JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL].sort());
 });
 
+describe('buildAldoContainer — optional generator strategies', () => {
+  function baseDeps() {
+    return {
+      db: new FakeDatabase(fixtureTables()),
+      drive: new FakeDriveFacade(),
+      gmail: new FakeGmailFacade(),
+      templates: new FakeTemplateEngine(),
+      expressionEngine: new ExpressionEngineFacade(),
+      now: NOW
+    };
+  }
+
+  test('does not register SHEET_CON_MATERIE/SHEET_CON_MATERIE_E_PERMESSI/DOCUMENTO_CON_TABELLE_IMPORTATE when deps.spreadsheets is undefined', () => {
+    const c = buildAldoContainer(baseDeps());
+    const registry = c.get<Map<string, unknown>>('strategyRegistry');
+    expect(registry.has('SHEET_CON_MATERIE')).toBe(false);
+    expect(registry.has('SHEET_CON_MATERIE_E_PERMESSI')).toBe(false);
+    expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(false);
+  });
+
+  test('registers SHEET_CON_MATERIE and SHEET_CON_MATERIE_E_PERMESSI when deps.spreadsheets is provided, but not DOCUMENTO_CON_TABELLE_IMPORTATE without deps.documents', () => {
+    const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
+    const registry = c.get<Map<string, unknown>>('strategyRegistry');
+    expect(registry.has('SHEET_CON_MATERIE')).toBe(true);
+    expect(registry.has('SHEET_CON_MATERIE_E_PERMESSI')).toBe(true);
+    expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(false);
+  });
+
+  test('registers DOCUMENTO_CON_TABELLE_IMPORTATE when both deps.spreadsheets and deps.documents are provided', () => {
+    const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never, documents: {} as never });
+    const registry = c.get<Map<string, unknown>>('strategyRegistry');
+    expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(true);
+  });
+});
+
 test('deps.monitor flows through to both batch services (15 §9)', () => {
   const monitor = new FakeProcessMonitor();
   const c = buildAldoContainer({

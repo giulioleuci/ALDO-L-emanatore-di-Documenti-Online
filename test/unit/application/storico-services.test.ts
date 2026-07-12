@@ -4,7 +4,9 @@ import { StoricoAlunniService } from '../../../src/application/storico/StoricoAl
 import { StoricoDocumentiService } from '../../../src/application/storico/StoricoDocumentiService';
 import { StoricoClassiService } from '../../../src/application/storico/StoricoClassiService';
 import { StoricoDocentiService } from '../../../src/application/storico/StoricoDocentiService';
+import { MasterStoricoDatabaseProvider } from '../../../src/application/storico/StoricoDatabaseProvider';
 import type { StoricoDatabaseProvider, AnnoStorico } from '../../../src/application/storico/StoricoDatabaseProvider';
+import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { Materia } from '../../../src/domain/entities/Materia';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
@@ -152,4 +154,17 @@ test('StoricoDocentiService scans historical CLASSI for the teacher across all c
   const [record] = service.perDocente('rossi@school.it', 1);
   expect(record!.classi).toEqual([{ classe: '4A', materia: 'MATE' }]);
   expect(service.perDocente('nessuno@school.it', 1)[0]!.classi).toEqual([]);
+});
+
+// --- MasterStoricoDatabaseProvider ---
+
+describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
+  it('returns an empty array and never calls the Master Sheet when profondita <= 0', () => {
+    const master = { findAnniStorici: jest.fn() } as unknown as MasterSheetRepository;
+    const provider = new MasterStoricoDatabaseProvider(master, new LoggerService());
+
+    expect(provider.anniStorici(0)).toEqual([]);
+    expect(provider.anniStorici(-3)).toEqual([]);
+    expect(master.findAnniStorici).not.toHaveBeenCalled();
+  });
 });

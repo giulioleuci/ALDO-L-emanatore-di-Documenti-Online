@@ -176,11 +176,12 @@ describe('StoricoDocentiService.perDocente — no matches', () => {
 
 describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
   it('returns an empty array and never calls the Master Sheet when profondita <= 0', () => {
-    const master = { findAnniStorici: jest.fn() } as unknown as MasterSheetRepository;
+    const findAnniStorici = jest.fn();
+    const master = { findAnniStorici } as unknown as MasterSheetRepository;
     const provider = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
     expect(provider.anniStorici(0)).toEqual([]);
     expect(provider.anniStorici(-3)).toEqual([]);
-    expect(master.findAnniStorici).not.toHaveBeenCalled();
+    expect(findAnniStorici).not.toHaveBeenCalled();
   });
 });

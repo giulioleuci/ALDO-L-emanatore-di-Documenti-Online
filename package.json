@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "test": "jest --config jest.config.cjs",
     "test:integration": "jest --config jest.integration.config.cjs",
+    "test:build": "jest --config jest.build.config.cjs",
     "refresh:vendor": "node scripts/refresh-vendor.cjs",
     "verify:vendor": "node scripts/verify-vendor.cjs",
     "build:testing": "node scripts/build-and-prepare.cjs --mode=testing",

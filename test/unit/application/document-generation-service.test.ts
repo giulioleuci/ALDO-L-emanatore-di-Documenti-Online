@@ -12,8 +12,7 @@ import { fixtureTables } from '../../fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { TABLE } from '../../../src/config/schema';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
-import type { Row, IDatabase, IReadableTable } from '../../../src/infrastructure/db/Database';
-import type { PostProcessDb } from '../../../src/infrastructure/steps/postProcessActions';
+import type { Row, IReadableTable } from '../../../src/infrastructure/db/Database';
 
 /**
  * A FakeDatabase whose LOG_DOCS.find() always misses, while every other
@@ -26,7 +25,7 @@ class LogDocsNeverFoundDatabase extends FakeDatabase {
     const real = super.table(name);
     if (name !== TABLE.LOG_DOCS) return real;
     return new Proxy(real, {
-      get(target, prop, receiver) {
+      get(target, prop, receiver): unknown {
         if (prop === 'find') return () => null;
         return Reflect.get(target, prop, receiver);
       }
@@ -40,7 +39,7 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), options: { strate
   const templates = new FakeTemplateEngine();
   const registry = options.registry ?? new Map([['VERBALE_CDC', options.strategy ?? new VerbaleGeneratorStrategy(templates)]]);
   const service = new DocumentGenerationService({
-    db: db as unknown as IDatabase & PostProcessDb,
+    db,
     drive,
     contextBuilder: ContextEngineFactory.create(db),
     strategyRegistry: registry,

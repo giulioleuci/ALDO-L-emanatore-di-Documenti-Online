@@ -249,8 +249,8 @@ describe('initAldo — singleton reuse + missing master id', () => {
       .mockReturnValue(fakeMaster);
     try {
       const props = { get: jest.fn().mockReturnValue('SPREADSHEET_ID_1'), set: jest.fn() };
-      const first = initAldo(new Date('2026-01-01'), props as never);
-      const second = initAldo(new Date('2026-06-01'), props as never);
+      const first = initAldo(new Date('2026-01-01'), props);
+      const second = initAldo(new Date('2026-06-01'), props);
       expect(second).toBe(first);
       // rebuild happened exactly once even though initAldo was called twice
       expect(findConfigSpy).toHaveBeenCalledTimes(1);

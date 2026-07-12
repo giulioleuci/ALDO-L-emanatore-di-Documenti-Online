@@ -5,6 +5,12 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { minify_sync } = require('terser');
 
+// The script body below is otherwise fully synchronous top-to-bottom; it is
+// wrapped in an async function solely so the online-mode gas-source-map.json
+// step (which awaits SourceMapConsumer.with(...)) can use `await` in place.
+// Every other step's behavior/order is unchanged.
+async function main() {
+
 const c = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
@@ -128,6 +134,16 @@ if (!fs.existsSync(aldoCoreBundle)) {
 if (!fs.existsSync(entryPointsBundle)) {
   fail('dist/EntryPoints.js was not produced by Webpack');
   process.exit(1);
+}
+
+// Webpack always builds all three entries (core, entrypoints, onlinetests —
+// see webpack.config.cjs), regardless of build mode. OnlineTests.js is only
+// a deliverable in --mode=online; for every other mode, discard it here so
+// dist/ output shape is unaffected (production/testing/testoffline stay
+// byte-identical-shape to before the online mode was added).
+if (mode !== 'online') {
+  fs.rmSync(path.join(distDir, 'OnlineTests.js'), { force: true });
+  fs.rmSync(path.join(distDir, 'OnlineTests.js.map'), { force: true });
 }
 
 step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
@@ -610,6 +626,51 @@ if (mode === 'testoffline') {
   }
 }
 
+if (mode === 'online') {
+  step(10, TOTAL_STEPS, 'Generating gas-source-map.json (online mode)...');
+
+  const { SourceMapConsumer } = require('source-map');
+  const gasMapEntries = [];
+
+  async function indexMap(generatedFileLabel, mapPath) {
+    if (!fs.existsSync(mapPath)) {
+      warn(`No source map found at ${mapPath} — skipping`);
+      return;
+    }
+    const rawMap = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+    await SourceMapConsumer.with(rawMap, null, (consumer) => {
+      const seen = new Set();
+      consumer.eachMapping((m) => {
+        if (m.source === null || m.originalLine === null) return;
+        const originalFile = m.source.replace(/^webpack:\/\/aldo-sgsa\//, '').replace(/^\.\//, '');
+        if (originalFile.startsWith('node_modules/') || originalFile.startsWith('webpack/')) return;
+        const key = `${m.generatedLine}:${originalFile}:${m.originalLine}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        gasMapEntries.push({
+          file: generatedFileLabel,
+          generatedLine: m.generatedLine,
+          originalFile,
+          originalLine: m.originalLine
+        });
+      });
+    });
+  }
+
+  await indexMap('Code.js', path.join(distDir, 'aldo-core.js.map'));
+  await indexMap('Code.js', path.join(distDir, 'EntryPoints.js.map'));
+  await indexMap('OnlineTests.js', path.join(distDir, 'OnlineTests.js.map'));
+
+  gasMapEntries.sort((a, b) => a.file.localeCompare(b.file) || a.generatedLine - b.generatedLine);
+  fs.writeFileSync(path.join(distDir, 'gas-source-map.json'), JSON.stringify(gasMapEntries, null, 2), 'utf8');
+  ok(`Generated gas-source-map.json (${gasMapEntries.length} entries)`);
+
+  // .map files are no longer needed after indexing — remove them same as other modes
+  for (const p of [path.join(distDir, 'aldo-core.js.map'), path.join(distDir, 'EntryPoints.js.map'), path.join(distDir, 'OnlineTests.js.map')]) {
+    fs.rmSync(p, { force: true });
+  }
+}
+
 const summaryStep = TOTAL_STEPS;
 step(summaryStep, TOTAL_STEPS, 'Build summary');
 
@@ -667,3 +728,10 @@ log(`${'='.repeat(80)}\n`);
 if (mode === 'testoffline' && !offlineTestsPassed) {
   process.exit(1);
 }
+
+}
+
+main().catch((e) => {
+  console.error(e instanceof Error ? e.stack || e.message : String(e));
+  process.exit(1);
+});

@@ -156,6 +156,22 @@ test('StoricoDocentiService scans historical CLASSI for the teacher across all c
   expect(service.perDocente('nessuno@school.it', 1)[0]!.classi).toEqual([]);
 });
 
+describe('StoricoDocentiService.perDocente — no matches', () => {
+  test('returns one AnnoDocenteStorico per year with an empty classi array when the teacher taught nothing that year', () => {
+    const tables = fixtureTables();
+    const claseRowSenzaDocente: Row = {
+      ID: '4A', ANNO: 4, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: null, RUOLI: null, ATTIVA: true,
+      COORD: '', MATE: '', FISI: ''
+    };
+    tables.CLASSI = [claseRowSenzaDocente];
+    const service = new StoricoDocentiService(fakeProvider([annoStorico('2023-2024', tables)]));
+
+    expect(service.perDocente('prof.nessuno@example.com')).toEqual([
+      { anno: '2023-2024', classi: [] }
+    ]);
+  });
+});
+
 // --- MasterStoricoDatabaseProvider ---
 
 describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {

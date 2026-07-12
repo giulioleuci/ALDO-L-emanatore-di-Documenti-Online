@@ -1,4 +1,4 @@
-import { executePostProcess } from '../../../src/infrastructure/steps/postProcessActions';
+import { executePostProcess, type PostProcessDb } from '../../../src/infrastructure/steps/postProcessActions';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
@@ -123,4 +123,82 @@ test('unknown action type is skipped with a warning, others still run', () => {
     { tipo: 'INSERISCI_TIMESTAMP', tab: 'CARENZE', col: 'NOTIFICATO', criteri: { STUDENTE: 'a2@school.it' } }
   ]);
   expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(1);
+});
+
+// --- A20: action-type switch and updateMatching column-scan fallback ---
+
+describe('postProcessActions — updateMatching guard and findMatchingRows fallback (A20)', () => {
+  test('updateMatching returns 0 without scanning when the target table does not exist in db.tables', () => {
+    // A plain-object PostProcessDb (unlike FakeDatabase's Proxy-backed `tables`,
+    // which auto-vivifies any table name) so `db.tables[tab]` really is
+    // `undefined` and the `table === undefined` guard is exercised for real.
+    const db: PostProcessDb = { tables: {} };
+    const actions = JSON.stringify([
+      { tipo: 'INSERISCI_TIMESTAMP', tab: 'TABELLA_INESISTENTE', col: 'NOTIFICATO', criteri: { ID: 'x' } }
+    ]);
+    const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+    expect(n).toBe(0);
+  });
+
+  test('findMatchingRows falls back to a full scan when no indexed column produces a hit', () => {
+    const rows: EntityData[] = [{ ID: 'r1', STAMP: '' }];
+    const getAllRowsSpy = jest.fn(() => rows);
+    const updateRowWhereSpy = jest.fn((match: EntityData, row: EntityData) => {
+      const i = rows.findIndex((r) => r['ID'] === match['ID']);
+      if (i !== -1) rows[i] = row;
+    });
+    const createIndexSpy = jest.fn();
+    // Even after createIndex is called, the lookup keeps reporting no hit —
+    // the single-column indexed path is exhausted and findMatchingRows must
+    // still fall back to a full getAllRows() scan rather than returning [].
+    const indexedLookupSpy = jest.fn(() => null);
+    const table: RepositoryTable = {
+      getByPK: (id) => rows.find((r) => r['ID'] === id) ?? null,
+      getAllRows: getAllRowsSpy,
+      insertRow: (row) => { rows.push(row); return row; },
+      updateRowById: () => { /* unused */ },
+      updateRowWhere: updateRowWhereSpy,
+      createIndex: createIndexSpy,
+      indexedLookup: indexedLookupSpy
+    };
+    const db: PostProcessDb = { tables: { CUSTOM: table } };
+    const actions = JSON.stringify([
+      { tipo: 'INSERISCI_TIMESTAMP', tab: 'CUSTOM', col: 'STAMP', criteri: { ID: 'r1' } }
+    ]);
+    const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+    expect(n).toBe(1);
+    expect(createIndexSpy).toHaveBeenCalledWith('ID');
+    expect(getAllRowsSpy).toHaveBeenCalled();
+    expect(updateRowWhereSpy).toHaveBeenCalledWith({ ID: 'r1', STAMP: '' }, { ID: 'r1', STAMP: NOW.toISOString() });
+  });
+
+  test('applies AGGIORNA_CAMPO, rendering action.valore as a template against the CDU', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const templates = new FakeTemplateEngine();
+    const processStringSpy = jest.spyOn(templates, 'processString');
+    const actions = JSON.stringify([
+      {
+        tipo: 'AGGIORNA_CAMPO',
+        tab: 'ALUNNI',
+        col: 'NOTE',
+        valore: 'Notificato il {{focus.carenza.data}}',
+        criteri: { EMAIL: '{{focus.alunno.anagrafica.email}}' }
+      }
+    ]);
+    const n = executePostProcess(actions, cdu(), db, templates, NOW, logger);
+    expect(n).toBe(1);
+    expect(processStringSpy).toHaveBeenCalledWith('Notificato il {{focus.carenza.data}}', cdu());
+    expect(db.tables['ALUNNI']!.getByPK('a1@school.it')!['NOTE']).toBe('Notificato il 2026-02-15');
+  });
+
+  test("applies AGGIORNA_STATO_DOC, defaulting action.tab to TABLE.LOG_DOCS and action.stato to '' when unset", () => {
+    const tables = fixtureTables();
+    tables['LOG_DOCS'] = [{ ID: 'file_1', ID_GEN: 'CD1', STATO: 'GENERATO', CLASSI: '5A' }];
+    const db = new FakeDatabase(tables);
+    // No `tab` and no `stato` in the action ⇒ defaults to TABLE.LOG_DOCS and ''.
+    const actions = JSON.stringify([{ tipo: 'AGGIORNA_STATO_DOC', criteri: { ID: 'file_1' } }]);
+    const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+    expect(n).toBe(1);
+    expect(db.tables['LOG_DOCS']!.getByPK('file_1')!['STATO']).toBe('');
+  });
 });

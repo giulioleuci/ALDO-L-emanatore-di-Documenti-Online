@@ -6,6 +6,10 @@ import type { Cdu } from '../../../src/application/context-engine/Cdu';
 import { GestioneSupplenti } from '../../../src/domain/value-objects/enums';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
+import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
+import { Docente } from '../../../src/domain/entities/Docente';
+import type { Row } from '../../../src/infrastructure/db/Database';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -160,5 +164,134 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
     expect(emails(service, 'GENITORI_CLASSE', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI }))
       .toEqual(['genitore1@x.it']);
+  });
+});
+
+describe('RisolutoreRuoliService — every private resolver empty-result branch', () => {
+  test('cdcFiltrato (CDC_FILTER_ALUNNO) returns [] when ctx.cdu.focus.alunno is undefined (classe-scoped target)', () => {
+    // build() defaults to a classe target/CLASSE_COMPLETA recipe -> focus.alunno is never populated.
+    const { cdu, service } = build({});
+    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual([]);
+  });
+
+  test('CDC_FILTER_ALUNNO resolves the filtered council for a real alunno target', () => {
+    const { cdu, service } = build({ target: 'a1@school.it', tipoTarget: 'alunno' }, 'ALUNNO_COMPLETO');
+    // a1: RELIGIONE SI -> IRC teacher (bianchi) included alongside subject teacher (rossi).
+    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  });
+
+  test('cdcFiltrato skips council members whose email has no matching record in the service\'s own DocenteRepository', () => {
+    // The CDU is built (and its consiglioDiClasseFiltrato VM populated) over a
+    // full DOCENTI table, but the service is constructed over a second database
+    // that is missing bianchi — cdcFiltrato re-looks-up each VM email through
+    // its own DocenteRepository, so bianchi must be silently dropped there.
+    const fullTables = fixtureTables();
+    const dbFull = new FakeDatabase(fullTables);
+    const cdu = ContextEngineFactory.create(dbFull).build(
+      { target: 'a1@school.it', tipoTarget: 'alunno', now: NOW },
+      recipe('ALUNNO_COMPLETO')
+    );
+
+    const tablesMissingBianchi = fixtureTables();
+    tablesMissingBianchi.DOCENTI = (tablesMissingBianchi.DOCENTI as Row[]).filter((r) => r['EMAIL'] !== 'bianchi@school.it');
+    const dbMissingBianchi = new FakeDatabase(tablesMissingBianchi);
+    const service = new RisolutoreRuoliService(dbMissingBianchi);
+
+    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual(['rossi@school.it']);
+  });
+
+  test('docenteMateria (DOCENTE_MATERIA) returns [] when ctx.materiaCorrente is null (no materiaCorrente supplied)', () => {
+    const { cdu, service } = build({}); // materiaCorrente omitted -> null
+    expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual([]);
+  });
+
+  test('capoDipartimento (CAPO_DIPARTIMENTO) returns [] when no dipartimento matches materiaCorrente', () => {
+    // 'ZZZZ' is a validly-shaped MateriaId but appears in no DIPART.MATERIE CSV.
+    const { cdu, service } = build({ materiaCorrente: 'ZZZZ' });
+    expect(emails(service, 'CAPO_DIPARTIMENTO', cdu)).toEqual([]);
+  });
+
+  test('capoDipartimento returns [] when the matching dipartimento has no capo email', () => {
+    // LETTERE (MATERIE: 'ITA') has CAPO: '' in the fixture.
+    const { cdu, service } = build({ materiaCorrente: 'ITA' });
+    expect(emails(service, 'CAPO_DIPARTIMENTO', cdu)).toEqual([]);
+  });
+
+  test('capoDipartimento returns [] when the capo email does not match any Docente', () => {
+    const tables = fixtureTables();
+    tables.DIPART = [
+      { ID: 'SCIENTIFICO_DIP', NOME: 'Dipartimento scientifico', CAPO: 'ghost@school.it', MATERIE: 'MATE,FISI' },
+      { ID: 'LETTERE', NOME: 'Dipartimento di lettere', CAPO: '', MATERIE: 'ITA' }
+    ];
+    const db = new FakeDatabase(tables);
+    const cdu = ContextEngineFactory.create(db).build(
+      { target: '5A', tipoTarget: 'classe', now: NOW, materiaCorrente: 'MATE' },
+      recipe('CLASSE_COMPLETA')
+    );
+    const service = new RisolutoreRuoliService(db);
+    expect(emails(service, 'CAPO_DIPARTIMENTO', cdu)).toEqual([]);
+  });
+
+  test('exam-commission resolver (DOCENTE_PRIMA_PROVA) skips materie with null esameConfig and materie whose prova does not match the indirizzo', () => {
+    // 3B is indirizzo ITI: MATE's prima_prova (SCIENTIFICO) doesn't match, and
+    // FISI has ESAME_CFG null — both skipped, yielding no commission teachers.
+    const { cdu, service } = build({ target: '3B', tipoTarget: 'classe' });
+    expect(emails(service, 'DOCENTE_PRIMA_PROVA', cdu)).toEqual([]);
+  });
+
+  test('exam-commission resolver (DOCENTE_PRIMA_PROVA) resolves the matching prova teacher when the indirizzo matches', () => {
+    // 5A is indirizzo SCIENTIFICO: MATE's prima_prova matches -> rossi (MATE teacher).
+    const { cdu, service } = build({});
+    expect(emails(service, 'DOCENTE_PRIMA_PROVA', cdu)).toEqual(['rossi@school.it']);
+  });
+
+  test('alunnoEmail (ALUNNO) returns [] when the focus alunno is undefined (classe-scoped target)', () => {
+    const { cdu, service } = build({});
+    expect(emails(service, 'ALUNNO', cdu)).toEqual([]);
+  });
+
+  test('famiglia (FAMIGLIA) returns [] when the focus alunno is undefined (classe-scoped target)', () => {
+    const { cdu, service } = build({});
+    expect(emails(service, 'FAMIGLIA', cdu)).toEqual([]);
+  });
+
+  test('famiglia (FAMIGLIA) returns [] when AlunnoRepository has no matching record for the focus alunno', () => {
+    // Same split-database trick as the cdcFiltrato coverage above: the CDU
+    // carries a1's focus over the full ALUNNI table, but the service resolves
+    // through a database where a1's ALUNNI row has been removed.
+    const dbFull = new FakeDatabase(fixtureTables());
+    const cdu = ContextEngineFactory.create(dbFull).build(
+      { target: 'a1@school.it', tipoTarget: 'alunno', now: NOW },
+      recipe('ALUNNO_COMPLETO')
+    );
+
+    const tablesMissingA1 = fixtureTables();
+    tablesMissingA1.ALUNNI = (tablesMissingA1.ALUNNI as Row[]).filter((r) => r['EMAIL'] !== 'a1@school.it');
+    const service = new RisolutoreRuoliService(new FakeDatabase(tablesMissingA1));
+
+    expect(emails(service, 'FAMIGLIA', cdu)).toEqual([]);
+  });
+
+  test('the supplenza-routing loop skips a docente with a blank id, and orders BOTH_EQUAL results with titolare first', () => {
+    const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z');
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = ContextEngineFactory.create(db).build(
+      { target: '5A', tipoTarget: 'classe', now: INSIDE_WINDOW },
+      recipe('CLASSE_COMPLETA')
+    );
+    const service = new RisolutoreRuoliService(db);
+    const rossi = new DocenteRepository(db).findById('rossi@school.it')!;
+    // No EMAIL key at all -> Docente.id is null -> titolareEmail resolves to '' in applicaSupplenze.
+    const ghost = new Docente({ COGNOME: 'GHOST', NOME: 'X', GENERE: 'M' });
+
+    const spy = jest.spyOn(ClasseRepository.prototype, 'getCoordinatori').mockReturnValue([ghost, rossi]);
+    try {
+      // ENTRAMBI + INSIDE_WINDOW: rossi has an active chain-resolved substitute (verdi).
+      const result = service.risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI });
+      // Ghost (blank id) contributes nothing; rossi's BOTH_EQUAL pair keeps titolare first.
+      expect(result.map((e) => e.value)).toEqual(['rossi@school.it', 'verdi@school.it']);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

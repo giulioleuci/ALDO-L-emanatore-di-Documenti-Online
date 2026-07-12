@@ -18,6 +18,12 @@ const babelRule = {
 
 module.exports = (env) => {
   const readable = !!(env && env.readable);
+  // Signaled from scripts/build-and-prepare.cjs's --mode=online webpack
+  // invocation only (`npx webpack --env readable --env online`). Every other
+  // build mode (production/testing/testoffline) must NOT build the online
+  // test suite entry — it would just be bundled and then immediately deleted
+  // by build-and-prepare.cjs's cleanup step, wasting build time.
+  const online = !!(env && env.online);
 
   const coreConfig = {
     name: 'core',
@@ -83,5 +89,9 @@ module.exports = (env) => {
     optimization: { minimize: false }
   };
 
-  return [coreConfig, entrypointsConfig, onlinetestsConfig];
+  const configs = [coreConfig, entrypointsConfig];
+  if (online) {
+    configs.push(onlinetestsConfig);
+  }
+  return configs;
 };

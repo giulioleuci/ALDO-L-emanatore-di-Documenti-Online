@@ -78,7 +78,12 @@ const vendorBundle = path.join(rootDir, 'vendor', 'gaslibs.Code.js');
 const aldoCoreBundle = path.join(distDir, 'aldo-core.js');
 const entryPointsBundle = path.join(distDir, 'EntryPoints.js');
 
-const webpackCmd = mode === 'production' ? 'npx webpack' : 'npx webpack --env readable';
+const webpackCmd =
+  mode === 'production'
+    ? 'npx webpack'
+    : mode === 'online'
+      ? 'npx webpack --env readable --env online'
+      : 'npx webpack --env readable';
 
 // Steps: Clean, Vendor verify, Webpack, Compose Code.js/EntryPoints.js,
 // Copy appsscript.json, V8 patch, Configure deployment files, Source map
@@ -153,6 +158,29 @@ if (mode !== 'online') {
 
 step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
 
+// Populated only in online mode (see below): the exact 1-based line-number
+// offsets marking where `core`'s and `entrypoints`'s stripped content start
+// within the final dist/Code.js (see the stripComments/onlineCoreLineOffset
+// computation further down). Used by the gas-source-map.json generation step.
+let onlineCoreLineOffset = 0;
+let onlineEntrypointsLineOffset = 0;
+
+// Populated only in online mode: JSON source-map strings PRODUCED BY TERSER
+// ITSELF for the comment-stripping pass on `core` / `entrypoints` /
+// OnlineTests.js — i.e. they map RAW (pre-strip) line/column positions
+// (exactly the `generatedLine`/`generatedColumn` values read out of
+// aldo-core.js.map / EntryPoints.js.map / OnlineTests.js.map, since those
+// webpack-produced maps describe positions in the pre-strip bundle) to their
+// corresponding position in the ACTUAL STRIPPED text that was written to
+// disk. This is necessary because Terser's `beautify: true` printer does not
+// preserve a uniform 1:1 line correspondence with its input when it removes
+// comments (a single constant per-component offset is not enough — see the
+// gas-source-map.json generation step for the full explanation and the
+// empirical numbers that motivated this).
+let onlineCoreTerserMapJson = null;
+let onlineEntrypointsTerserMapJson = null;
+let onlineOnlineTestsTerserMapJson = null;
+
 {
   const prelude = fs.readFileSync(vendorBundle, 'utf8');
   const core = fs.readFileSync(aldoCoreBundle, 'utf8');
@@ -177,19 +205,71 @@ step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
     fs.rmSync(entryPointsBundle + '.map', { force: true });
   } else if (mode === 'online') {
     const entrypoints = fs.readFileSync(entryPointsBundle, 'utf8');
-    const combined = prelude + '\n;\n' + core + '\n;\n' + entrypoints;
-    let stripped;
-    try {
-      stripped = minify_sync(combined, { compress: false, mangle: false, format: { comments: false, beautify: true } });
-    } catch (e) {
-      fail(`Failed to strip comments from combined online-mode bundle: ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(1);
-    }
-    if (typeof stripped.code !== 'string') {
-      fail('Failed to strip comments from combined online-mode bundle: no code produced');
-      process.exit(1);
-    }
-    fs.writeFileSync(codeJsPath, stripped.code, 'utf8');
+
+    // Each of prelude/core/entrypoints is run through Terser SEPARATELY
+    // (rather than concatenating raw source into one string and minifying
+    // once) so the per-component line offsets used by the gas-source-map.json
+    // step further down can be computed EXACTLY from each stripped part's own
+    // line count, rather than approximated from pre-Terser source line
+    // counts. This distinction matters a lot in practice: Terser's printer
+    // does not preserve a 1:1 correspondence between input and output line
+    // numbers when reformatting a large program under `beautify: true` —
+    // empirically, minifying the ~75k-line vendor prelude alone this way
+    // compacts it to ~46k lines (JSDoc/comment removal plus Terser's own
+    // line-breaking heuristics), a ~38% reduction that a naive
+    // pre-Terser-line-count offset would not predict. With `compress: false`
+    // and `mangle: false` there is no cross-module dead-code elimination,
+    // inlining, or renaming, so minifying prelude/core/entrypoints
+    // independently and concatenating the *results* is equivalent (for our
+    // purposes — comment stripping only) to minifying the raw concatenation
+    // as one program, while making the resulting offsets exact rather than
+    // best-effort.
+    // `withMap: true` additionally asks Terser to emit its OWN source map
+    // for this transformation (raw src -> stripped code); Terser always
+    // names the single anonymous input source "0" in that map, regardless
+    // of the `filename` passed in `sourceMap` (which only sets the *output*
+    // file name recorded in the map). That per-component map is what lets
+    // the gas-source-map.json step below translate a raw (pre-strip)
+    // generatedLine/generatedColumn — exactly what aldo-core.js.map /
+    // EntryPoints.js.map / OnlineTests.js.map report — into its real
+    // position in the stripped text actually written to disk.
+    const stripComments = (src, label, withMap) => {
+      const opts = { compress: false, mangle: false, format: { comments: false, beautify: true } };
+      if (withMap) {
+        opts.sourceMap = { filename: label, includeSources: false };
+      }
+      let result;
+      try {
+        result = minify_sync(src, opts);
+      } catch (e) {
+        fail(`Failed to strip comments from ${label}: ${e instanceof Error ? e.message : String(e)}`);
+        process.exit(1);
+      }
+      if (typeof result.code !== 'string') {
+        fail(`Failed to strip comments from ${label}: no code produced`);
+        process.exit(1);
+      }
+      return { code: result.code, mapJson: withMap ? result.map : null };
+    };
+
+    const strippedPrelude = stripComments(prelude, 'vendor prelude', false).code;
+    const coreStrip = stripComments(core, 'aldo-core.js', true);
+    const strippedCore = coreStrip.code;
+    onlineCoreTerserMapJson = coreStrip.mapJson;
+    const entrypointsStrip = stripComments(entrypoints, 'EntryPoints.js', true);
+    const strippedEntrypoints = entrypointsStrip.code;
+    onlineEntrypointsTerserMapJson = entrypointsStrip.mapJson;
+
+    const countNewlines = (s) => (s.match(/\n/g) || []).length;
+    // '\n;\n' is a literal 2-newline separator (the previous part's last line
+    // is terminated by the first '\n'; ';' is its own line; the trailing
+    // '\n' ends that line) — matches the exact separator used below when
+    // concatenating the stripped parts, so these offsets are exact positions
+    // in the actual written dist/Code.js, not an approximation.
+    onlineCoreLineOffset = countNewlines(strippedPrelude) + 2;
+    onlineEntrypointsLineOffset = onlineCoreLineOffset + countNewlines(strippedCore) + 2;
+
+    fs.writeFileSync(codeJsPath, strippedPrelude + '\n;\n' + strippedCore + '\n;\n' + strippedEntrypoints, 'utf8');
     ok('Wrote dist/Code.js (vendor + ALDO core + entry points, unminified structure, comments stripped)');
     fs.rmSync(aldoCoreBundle, { force: true });
     fs.rmSync(entryPointsBundle, { force: true });
@@ -203,18 +283,10 @@ step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
       process.exit(1);
     }
     const onlineTestsSrc = fs.readFileSync(onlineTestsBundle, 'utf8');
-    let strippedTests;
-    try {
-      strippedTests = minify_sync(onlineTestsSrc, { compress: false, mangle: false, format: { comments: false, beautify: true } });
-    } catch (e) {
-      fail(`Failed to strip comments from OnlineTests.js: ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(1);
-    }
-    if (typeof strippedTests.code !== 'string') {
-      fail('Failed to strip comments from OnlineTests.js: no code produced');
-      process.exit(1);
-    }
-    fs.writeFileSync(onlineTestsBundle, strippedTests.code, 'utf8');
+    const onlineTestsStrip = stripComments(onlineTestsSrc, 'OnlineTests.js', true);
+    const strippedTestsCode = onlineTestsStrip.code;
+    onlineOnlineTestsTerserMapJson = onlineTestsStrip.mapJson;
+    fs.writeFileSync(onlineTestsBundle, strippedTestsCode, 'utf8');
     ok('Wrote dist/OnlineTests.js (unminified structure, comments stripped, kept separate from Code.js)');
     // OnlineTests.js.map is likewise kept on disk for the gas-source-map.json step.
   } else {
@@ -257,91 +329,125 @@ if (fs.existsSync(appsscriptSrc)) {
 
 step(6, TOTAL_STEPS, 'GAS V8 compatibility post-processing...');
 
-let code = fs.readFileSync(codeJsPath, 'utf8');
+// The five structural GAS-V8 patches below must be applied to every file
+// that actually runs in the live GAS V8 runtime. In online mode that is
+// BOTH dist/Code.js and dist/OnlineTests.js (the online GAS test suite runs
+// in the same Apps Script project/runtime as the app code), so this is
+// factored into a function and invoked once per file rather than being
+// Code.js-specific.
+function applyGasV8CompatPatches(inputCode, fileLabel) {
+  let code = inputCode;
+  let patchCount = 0;
+
+  {
+    const regex = /Object\.hasOwn\(/g;
+    const matches = code.match(regex);
+    if (matches) {
+      code = code.replace(regex, 'Object.prototype.hasOwnProperty.call(');
+      patchCount += matches.length;
+      ok(`${fileLabel}: replaced ${matches.length} instance(s) of Object.hasOwn() → Object.prototype.hasOwnProperty.call()`);
+    } else {
+      ok(`${fileLabel}: no Object.hasOwn() found (already compatible)`);
+    }
+  }
+
+  {
+    const regex = /\.replaceAll\(("[^"]*"|'[^']*'),\s*/g;
+    const matches = code.match(regex);
+    if (matches) {
+      code = code.replace(
+        /\.replaceAll\(("[^"]*"|'[^']*'),\s*("[^"]*"|'[^']*'|[^)]+)\)/g,
+        '.split($1).join($2)'
+      );
+      patchCount += matches.length;
+      ok(`${fileLabel}: replaced ${matches.length} instance(s) of .replaceAll() → .split().join()`);
+    } else {
+      ok(`${fileLabel}: no .replaceAll() with string literal found (already compatible)`);
+    }
+  }
+
+  {
+    const target =
+      '/\\p{Lu}?\\p{Ll}+|[0-9]+|\\p{Lu}+(?!\\p{Ll})|\\p{Emoji_Presentation}|\\p{Extended_Pictographic}|\\p{L}+/gu';
+    if (code.includes(target)) {
+      const replacement =
+        "(function(){try{return new RegExp('\\\\p{Lu}?\\\\p{Ll}+|[0-9]+|\\\\p{Lu}+(?!\\\\p{Ll})|\\\\p{L}+','gu')}catch(e){return /[A-Z]?[a-z]+|[0-9]+|[A-Z]+(?![a-z])/g}})()";
+      code = code.replace(target, replacement);
+      patchCount++;
+      ok(`${fileLabel}: replaced es-toolkit CASE_SPLIT_PATTERN regex with GAS-safe fallback`);
+    } else {
+      ok(`${fileLabel}: no es-toolkit CASE_SPLIT_PATTERN regex found (already compatible)`);
+    }
+  }
+
+  {
+    const target = '"^(\\\\p{Extended_Pictographic}|\\\\p{Emoji_Component})+$"';
+    if (code.includes(target)) {
+      const replacement =
+        '"^[\\\\u{1F600}-\\\\u{1F64F}\\\\u{1F300}-\\\\u{1F5FF}\\\\u{1F680}-\\\\u{1F6FF}\\\\u{1F900}-\\\\u{1F9FF}\\\\u{1FA00}-\\\\u{1FA6F}\\\\u{1FA70}-\\\\u{1FAFF}\\\\u{2600}-\\\\u{26FF}\\\\u{2700}-\\\\u{27BF}\\\\u{FE00}-\\\\u{FE0F}\\\\u{200D}\\\\u{20E3}\\\\u{E0020}-\\\\u{E007F}]+$"';
+      code = code.replace(target, replacement);
+      patchCount++;
+      ok(`${fileLabel}: replaced Zod emoji regex with GAS-safe Unicode range fallback`);
+    } else {
+      ok(`${fileLabel}: no Zod emoji regex found (already compatible)`);
+    }
+  }
+
+  {
+    const urlUsages = (code.match(/new URL\(/g) || []).length;
+    if (urlUsages > 0) {
+      const shim = [
+        'if(typeof URL==="undefined"){',
+        'var URL=function(u){',
+        'if(typeof u!=="string")throw new TypeError("Invalid URL");',
+        'var m=u.match(/^(([a-zA-Z][a-zA-Z0-9+.-]*):)?\\/\\/([^/?#]*)([^?#]*)(\\?[^#]*)?(#.*)?$/);',
+        'if(!m)throw new TypeError("Invalid URL");',
+        'this.protocol=(m[2]||"")+":";',
+        'this.hostname=m[3]||"";',
+        'this.host=this.hostname;',
+        'this.pathname=m[4]||"/";',
+        'this.search=m[5]||"";',
+        'this.hash=m[6]||"";',
+        'this.href=u;',
+        'this.origin=this.protocol+"//"+this.hostname;',
+        '};',
+        '}'
+      ].join('');
+
+      code = shim + ';' + code;
+      patchCount++;
+      ok(`${fileLabel}: injected URL constructor shim (${urlUsages} usage(s) of new URL() found)`);
+    } else {
+      ok(`${fileLabel}: no new URL() found (no shim needed)`);
+    }
+  }
+
+  return { code, patchCount };
+}
+
+let code;
 let patchCount = 0;
+let codePatchCount = 0;
+let onlineTestsPatchCount = 0;
 let warningCount = 0;
 
 {
-  const regex = /Object\.hasOwn\(/g;
-  const matches = code.match(regex);
-  if (matches) {
-    code = code.replace(regex, 'Object.prototype.hasOwnProperty.call(');
-    patchCount += matches.length;
-    ok(`Replaced ${matches.length} instance(s) of Object.hasOwn() → Object.prototype.hasOwnProperty.call()`);
-  } else {
-    ok('No Object.hasOwn() found (already compatible)');
-  }
+  const result = applyGasV8CompatPatches(fs.readFileSync(codeJsPath, 'utf8'), 'Code.js');
+  code = result.code;
+  codePatchCount = result.patchCount;
+  patchCount += result.patchCount;
 }
 
-{
-  const regex = /\.replaceAll\(("[^"]*"|'[^']*'),\s*/g;
-  const matches = code.match(regex);
-  if (matches) {
-    code = code.replace(
-      /\.replaceAll\(("[^"]*"|'[^']*'),\s*("[^"]*"|'[^']*'|[^)]+)\)/g,
-      '.split($1).join($2)'
-    );
-    patchCount += matches.length;
-    ok(`Replaced ${matches.length} instance(s) of .replaceAll() → .split().join()`);
-  } else {
-    ok('No .replaceAll() with string literal found (already compatible)');
-  }
-}
-
-{
-  const target =
-    '/\\p{Lu}?\\p{Ll}+|[0-9]+|\\p{Lu}+(?!\\p{Ll})|\\p{Emoji_Presentation}|\\p{Extended_Pictographic}|\\p{L}+/gu';
-  if (code.includes(target)) {
-    const replacement =
-      "(function(){try{return new RegExp('\\\\p{Lu}?\\\\p{Ll}+|[0-9]+|\\\\p{Lu}+(?!\\\\p{Ll})|\\\\p{L}+','gu')}catch(e){return /[A-Z]?[a-z]+|[0-9]+|[A-Z]+(?![a-z])/g}})()";
-    code = code.replace(target, replacement);
-    patchCount++;
-    ok('Replaced es-toolkit CASE_SPLIT_PATTERN regex with GAS-safe fallback');
-  } else {
-    ok('No es-toolkit CASE_SPLIT_PATTERN regex found (already compatible)');
-  }
-}
-
-{
-  const target = '"^(\\\\p{Extended_Pictographic}|\\\\p{Emoji_Component})+$"';
-  if (code.includes(target)) {
-    const replacement =
-      '"^[\\\\u{1F600}-\\\\u{1F64F}\\\\u{1F300}-\\\\u{1F5FF}\\\\u{1F680}-\\\\u{1F6FF}\\\\u{1F900}-\\\\u{1F9FF}\\\\u{1FA00}-\\\\u{1FA6F}\\\\u{1FA70}-\\\\u{1FAFF}\\\\u{2600}-\\\\u{26FF}\\\\u{2700}-\\\\u{27BF}\\\\u{FE00}-\\\\u{FE0F}\\\\u{200D}\\\\u{20E3}\\\\u{E0020}-\\\\u{E007F}]+$"';
-    code = code.replace(target, replacement);
-    patchCount++;
-    ok('Replaced Zod emoji regex with GAS-safe Unicode range fallback');
-  } else {
-    ok('No Zod emoji regex found (already compatible)');
-  }
-}
-
-{
-  const urlUsages = (code.match(/new URL\(/g) || []).length;
-  if (urlUsages > 0) {
-    const shim = [
-      'if(typeof URL==="undefined"){',
-      'var URL=function(u){',
-      'if(typeof u!=="string")throw new TypeError("Invalid URL");',
-      'var m=u.match(/^(([a-zA-Z][a-zA-Z0-9+.-]*):)?\\/\\/([^/?#]*)([^?#]*)(\\?[^#]*)?(#.*)?$/);',
-      'if(!m)throw new TypeError("Invalid URL");',
-      'this.protocol=(m[2]||"")+":";',
-      'this.hostname=m[3]||"";',
-      'this.host=this.hostname;',
-      'this.pathname=m[4]||"/";',
-      'this.search=m[5]||"";',
-      'this.hash=m[6]||"";',
-      'this.href=u;',
-      'this.origin=this.protocol+"//"+this.hostname;',
-      '};',
-      '}'
-    ].join('');
-
-    code = shim + ';' + code;
-    patchCount++;
-    ok(`Injected URL constructor shim (${urlUsages} usage(s) of new URL() found)`);
-  } else {
-    ok('No new URL() found (no shim needed)');
-  }
+// OnlineTests.js runs in the same real GAS V8 environment as Code.js (it is
+// pushed into the same Apps Script project in online mode), so it needs the
+// exact same compatibility patches applied — not just Code.js.
+let onlineTestsPatchedCode = null;
+if (mode === 'online') {
+  const onlineTestsBundle = path.join(distDir, 'OnlineTests.js');
+  const result = applyGasV8CompatPatches(fs.readFileSync(onlineTestsBundle, 'utf8'), 'OnlineTests.js');
+  onlineTestsPatchedCode = result.code;
+  onlineTestsPatchCount = result.patchCount;
+  patchCount += result.patchCount;
 }
 
 const scanPatterns = [
@@ -406,11 +512,35 @@ if (patchedSize > GAS_FILE_SIZE_LIMIT) {
   ok(`Code.js size: ${sizeKB} KB (within GAS limits)`);
 }
 
-if (patchCount > 0) {
+if (codePatchCount > 0) {
   fs.writeFileSync(codeJsPath, code, 'utf8');
-  ok(`Wrote patched Code.js (${patchCount} fix(es) applied)`);
+  ok(`Wrote patched Code.js (${codePatchCount} fix(es) applied)`);
 } else {
   ok('No patches needed — Code.js unchanged');
+}
+
+if (mode === 'online') {
+  const onlineTestsBundle = path.join(distDir, 'OnlineTests.js');
+  if (onlineTestsPatchCount > 0) {
+    fs.writeFileSync(onlineTestsBundle, onlineTestsPatchedCode, 'utf8');
+    ok(`Wrote patched OnlineTests.js (${onlineTestsPatchCount} fix(es) applied)`);
+  } else {
+    ok('No patches needed — OnlineTests.js unchanged');
+  }
+
+  let onlineTestsWarnings = 0;
+  for (const { label, regex, reason } of scanPatterns) {
+    const matches = onlineTestsPatchedCode.match(regex);
+    if (matches) {
+      warn(`OnlineTests.js: found ${matches.length} instance(s) of ${c.bold}${label}${c.reset}`);
+      info(`  Reason: ${reason}`);
+      onlineTestsWarnings += matches.length;
+    }
+  }
+  if (onlineTestsWarnings === 0) {
+    ok('OnlineTests.js: no GAS V8 compatibility issues detected');
+  }
+  warningCount += onlineTestsWarnings;
 }
 
 if (mode === 'production') {
@@ -637,7 +767,51 @@ if (mode === 'online') {
   const { SourceMapConsumer } = require('source-map');
   const gasMapEntries = [];
 
-  async function indexMap(generatedFileLabel, mapPath) {
+  // aldo-core.js.map / EntryPoints.js.map / OnlineTests.js.map each describe
+  // positions in their PRE-STRIP webpack bundle (aldo-core.js /
+  // EntryPoints.js / the OnlineTests.js webpack produced before step 4's
+  // Terser pass), not the actual STRIPPED text that step 4 wrote to disk.
+  // Two corrections are needed to translate a raw `m.generatedLine` into a
+  // real dist/Code.js (or dist/OnlineTests.js) line:
+  //
+  // 1. `terserConsumer` (built from the source map Terser itself produced
+  //    while comment-stripping that component in step 4) translates the raw
+  //    pre-strip line/column into its real position in the STRIPPED text.
+  //    This is necessary — not just an approximation nicety — because
+  //    Terser's `beautify: true` printer does not preserve a uniform 1:1
+  //    line correspondence with its input when it removes comments: the
+  //    reduction is proportional to how comment-heavy each region of the
+  //    source is, so a single constant offset per component would
+  //    increasingly overshoot for content deeper into a comment-heavy file
+  //    (empirically, e.g., the ~75k-line vendor prelude alone compacts to
+  //    ~46k lines this way — a non-uniform ~38% reduction, not evenly
+  //    distributed). Using Terser's own map avoids that drift and (unlike a
+  //    naive offset) never points past the end of the actual written file.
+  // 2. `lineOffset` (onlineCoreLineOffset / onlineEntrypointsLineOffset,
+  //    computed in step 4 from the ACTUAL stripped text's own line counts)
+  //    then shifts that stripped-component-local line to its real position
+  //    in the merged dist/Code.js (`strippedPrelude + '\n;\n' + strippedCore
+  //    + '\n;\n' + strippedEntrypoints`). OnlineTests.js is a standalone
+  //    webpack entry (never merged with anything else), so it needs no
+  //    lineOffset — only the terserConsumer correction.
+  //
+  // This is still a best-effort debugging aid, not a formally verified map:
+  // Terser's own source map is trusted as accurate for its own
+  // transformation (a reasonable assumption — it's the same tool
+  // authoritatively describing its own output), but no independent proof of
+  // that is attempted here; that is considered adequately in-scope
+  // precision for symbolicating a GAS stack trace back to approximate
+  // original source locations.
+  async function buildTerserConsumer(mapJson) {
+    if (!mapJson) return null;
+    return new SourceMapConsumer(JSON.parse(mapJson));
+  }
+
+  const coreTerserConsumer = await buildTerserConsumer(onlineCoreTerserMapJson);
+  const entrypointsTerserConsumer = await buildTerserConsumer(onlineEntrypointsTerserMapJson);
+  const onlineTestsTerserConsumer = await buildTerserConsumer(onlineOnlineTestsTerserMapJson);
+
+  async function indexMap(generatedFileLabel, mapPath, lineOffset, terserConsumer) {
     if (!fs.existsSync(mapPath)) {
       warn(`No source map found at ${mapPath} — skipping`);
       return;
@@ -649,12 +823,43 @@ if (mode === 'online') {
         if (m.source === null || m.originalLine === null) return;
         const originalFile = m.source.replace(/^webpack:\/\/aldo-sgsa\//, '').replace(/^\.\//, '');
         if (originalFile.startsWith('node_modules/') || originalFile.startsWith('webpack/')) return;
-        const key = `${m.generatedLine}:${originalFile}:${m.originalLine}`;
+
+        let strippedLine = m.generatedLine;
+        if (terserConsumer) {
+          // Terser's own map: source "0" (its fixed name for a single
+          // anonymous input string) -> stripped output position. Try
+          // LEAST_UPPER_BOUND first (nearest mapped position at/after this
+          // one — handles the common case where the exact line was a
+          // comment/blank line that got removed entirely), then fall back
+          // to GREATEST_LOWER_BOUND, then to the raw pre-strip line as a
+          // last resort so we still emit a (less precise) entry rather than
+          // silently dropping it.
+          let pos = terserConsumer.generatedPositionFor({
+            source: '0',
+            line: m.generatedLine,
+            column: m.generatedColumn || 0,
+            bias: SourceMapConsumer.LEAST_UPPER_BOUND
+          });
+          if (pos == null || typeof pos.line !== 'number') {
+            pos = terserConsumer.generatedPositionFor({
+              source: '0',
+              line: m.generatedLine,
+              column: m.generatedColumn || 0,
+              bias: SourceMapConsumer.GREATEST_LOWER_BOUND
+            });
+          }
+          if (pos && typeof pos.line === 'number') {
+            strippedLine = pos.line;
+          }
+        }
+
+        const generatedLine = strippedLine + lineOffset;
+        const key = `${generatedLine}:${originalFile}:${m.originalLine}`;
         if (seen.has(key)) return;
         seen.add(key);
         gasMapEntries.push({
           file: generatedFileLabel,
-          generatedLine: m.generatedLine,
+          generatedLine,
           originalFile,
           originalLine: m.originalLine
         });
@@ -662,9 +867,13 @@ if (mode === 'online') {
     });
   }
 
-  await indexMap('Code.js', path.join(distDir, 'aldo-core.js.map'));
-  await indexMap('Code.js', path.join(distDir, 'EntryPoints.js.map'));
-  await indexMap('OnlineTests.js', path.join(distDir, 'OnlineTests.js.map'));
+  await indexMap('Code.js', path.join(distDir, 'aldo-core.js.map'), onlineCoreLineOffset, coreTerserConsumer);
+  await indexMap('Code.js', path.join(distDir, 'EntryPoints.js.map'), onlineEntrypointsLineOffset, entrypointsTerserConsumer);
+  await indexMap('OnlineTests.js', path.join(distDir, 'OnlineTests.js.map'), 0, onlineTestsTerserConsumer);
+
+  if (coreTerserConsumer) coreTerserConsumer.destroy();
+  if (entrypointsTerserConsumer) entrypointsTerserConsumer.destroy();
+  if (onlineTestsTerserConsumer) onlineTestsTerserConsumer.destroy();
 
   gasMapEntries.sort((a, b) => a.file.localeCompare(b.file) || a.generatedLine - b.generatedLine);
   fs.writeFileSync(path.join(distDir, 'gas-source-map.json'), JSON.stringify(gasMapEntries, null, 2), 'utf8');

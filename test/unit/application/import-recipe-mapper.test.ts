@@ -75,6 +75,47 @@ describe('toLibraryRecipe (12 §3): ALDO CONF_IMP.CONFIG vocabulary -> GasDataIm
     expect(() => toLibraryRecipe(conf({ searchStrategy: 'FILE_SINGOLO', key: 'EMAIL', conflictResolution: 'IGNORE' })))
       .toThrow(ConfigurationError);
   });
+
+  test('blank fileId under FILE_SINGOLO is a configuration error', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'FILE_SINGOLO', fileId: '   ', key: 'EMAIL', conflictResolution: 'IGNORE' })))
+      .toThrow(/CONFIG.fileId obbligatorio/);
+  });
+
+  test('blank folderTipo under CERCA_CARTELLE_CLASSE is a configuration error', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'CERCA_CARTELLE_CLASSE', folderTipo: '  ', key: 'ID', conflictResolution: 'IGNORE' })))
+      .toThrow(/CONFIG.folderTipo obbligatorio/);
+  });
+
+  test('blank idGen under CERCA_DOCUMENTI is a configuration error', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'CERCA_DOCUMENTI', idGen: '  ', key: 'ID', conflictResolution: 'IGNORE' })))
+      .toThrow(/CONFIG.idGen obbligatorio/);
+  });
+
+  test('an unknown searchStrategy is a configuration error (default case)', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'STRATEGIA_INESISTENTE', key: 'ID', conflictResolution: 'IGNORE' })))
+      .toThrow(/strategia sorgente "STRATEGIA_INESISTENTE" sconosciuta/);
+  });
+
+  test('missing CONFIG.key is a configuration error (validated before source strategy is dispatched)', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'FILE_SINGOLO', fileId: 'x', conflictResolution: 'IGNORE' })))
+      .toThrow(/CONFIG.key obbligatorio/);
+  });
+
+  test('blank CONFIG.key is a configuration error', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'FILE_SINGOLO', fileId: 'x', key: '   ', conflictResolution: 'IGNORE' })))
+      .toThrow(/CONFIG.key obbligatorio/);
+  });
+
+  test('missing CONFIG.conflictResolution is a configuration error', () => {
+    expect(() => toLibraryRecipe(conf({ searchStrategy: 'FILE_SINGOLO', fileId: 'x', key: 'EMAIL' })))
+      .toThrow(/CONFIG.conflictResolution obbligatorio/);
+  });
+
+  test('TIMESTAMP with a blank timestampColumn is a configuration error', () => {
+    expect(() => toLibraryRecipe(conf({
+      searchStrategy: 'FILE_SINGOLO', fileId: 'x', key: 'EMAIL', conflictResolution: 'TIMESTAMP', timestampColumn: '   '
+    }))).toThrow(/CONFIG.timestampColumn obbligatorio per conflictResolution TIMESTAMP/);
+  });
 });
 
 describe('isGhostRecord (12 §3): after mapping, before conflict handling', () => {

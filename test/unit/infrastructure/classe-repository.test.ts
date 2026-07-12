@@ -109,7 +109,7 @@ test('two sequential dynamic-column writes on the same Classe instance both stic
 
 describe('ClasseRepository — remaining uncovered branches (A16)', () => {
   test('constructor skips a MATERIE row with a blank/non-string ID when building the cattedra column map', () => {
-    const db = new FakeDatabase({ ...fixtureTables(), MATERIE: [...fixtureTables().MATERIE, { ID: '', SINTESI: 'Invalid' }] });
+    const db = new FakeDatabase({ ...fixtureTables(), MATERIE: [...(fixtureTables().MATERIE ?? []), { ID: '', SINTESI: 'Invalid' }] });
     const r = new ClasseRepository(db);
     const classe = r.findById(ClasseId.of('5A'))!;
     expect(() => r.getDocentiPerMateria(classe, MateriaId.of('ZZ'))).toThrow(MateriaNotFoundError);
@@ -155,7 +155,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: [
-        ...fixtureTables().CLASSI,
+        ...(fixtureTables().CLASSI ?? []),
         { ID: '', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSS","partners":null}' }
       ]
     });
@@ -174,7 +174,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: [
-        ...fixtureTables().CLASSI,
+        ...(fixtureTables().CLASSI ?? []),
         { ID: '1F-ORPHAN', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: '{"parent":"1F","partner":null,"partners":null}', MATE: 'rossi@school.it' }
       ]
     });
@@ -195,7 +195,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: [
-        ...fixtureTables().CLASSI,
+        ...(fixtureTables().CLASSI ?? []),
         { ID: '1F-ORPHAN', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: '{"parent":"1F","partner":null,"partners":null}', MATE: 'rossi@school.it' }
       ]
     });
@@ -221,7 +221,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: [
-        ...fixtureTables().CLASSI,
+        ...(fixtureTables().CLASSI ?? []),
         { ID: 'CHILD-ORPHAN', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: '{"parent":"3B","partner":"1F-LSS","partners":null}', MATE: 'rossi@school.it' }
       ]
     });
@@ -234,7 +234,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: [
-        ...fixtureTables().CLASSI,
+        ...(fixtureTables().CLASSI ?? []),
         { ID: 'DANGLING', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: '{"parent":null,"partner":"1F-LSS","partners":null}', MATE: 'rossi@school.it' }
       ]
     });
@@ -267,7 +267,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
   test('getMaterieArticolazione does not list a subject for the group that has zero teachers of it', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
-      MATERIE: [...fixtureTables().MATERIE, { ID: 'ITA', SINTESI: 'Italiano' }, { ID: 'STOR', SINTESI: 'Storia' }],
+      MATERIE: [...(fixtureTables().MATERIE ?? []), { ID: 'ITA', SINTESI: 'Italiano' }, { ID: 'STOR', SINTESI: 'Storia' }],
       CLASSI: fixtureTables().CLASSI.map((c) => {
         if (c.ID === '1F-LSO') return { ...c, ITA: 'rossi@school.it' }; // only LSO teaches ITA
         if (c.ID === '1F-LSS') return { ...c, STOR: 'verdi@school.it' }; // only LSS teaches STOR
@@ -317,7 +317,7 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: [
-        ...fixtureTables().CLASSI,
+        ...(fixtureTables().CLASSI ?? []),
         { ID: 'GHOST-PARTNER', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: '{"parent":"1F","partner":"NOPE","partners":null}', MATE: 'rossi@school.it' }
       ]
     });

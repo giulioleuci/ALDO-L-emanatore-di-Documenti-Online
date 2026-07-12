@@ -59,13 +59,13 @@ test('getTitolare / getSupplente resolve Docente entities', () => {
 describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain branches', () => {
   test('findByTitolare falls back to a full scan when indexedLookup returns null', () => {
     const { r, db } = repoAndDb();
-    jest.spyOn(db.tables[TABLE.SUPPLENZE], 'indexedLookup').mockReturnValue(null);
+    jest.spyOn(db.tables.SUPPLENZE!, 'indexedLookup').mockReturnValue(null);
     expect(r.findByTitolare(rossi).map((s) => s.supplente)).toEqual(['bianchi@school.it']);
   });
 
   test('findBySupplente falls back to a full scan when indexedLookup returns null', () => {
     const { r, db } = repoAndDb();
-    jest.spyOn(db.tables[TABLE.SUPPLENZE], 'indexedLookup').mockReturnValue(null);
+    jest.spyOn(db.tables.SUPPLENZE!, 'indexedLookup').mockReturnValue(null);
     expect(r.findBySupplente(rossi).map((s) => s.titolare)).toEqual(['verdi@school.it']);
   });
 
@@ -105,7 +105,7 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
     const db = new FakeDatabase({
       ...fixtureTables(),
       SUPPLENZE: [
-        ...fixtureTables().SUPPLENZE,
+        ...(fixtureTables().SUPPLENZE ?? []),
         // Same arc (rossi→bianchi) as the fixture row, also active on 15/11.
         { TITOLARE: 'rossi@school.it', SUPPLENTE: 'bianchi@school.it', DAL: '2025-11-05', AL: '2025-11-25', CLASSI: '5A', MATERIE: '*' }
       ]
@@ -138,7 +138,7 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
     const db = new FakeDatabase({
       ...fixtureTables(),
       SUPPLENZE: [
-        ...fixtureTables().SUPPLENZE,
+        ...(fixtureTables().SUPPLENZE ?? []),
         { TITOLARE: null, SUPPLENTE: 'bianchi@school.it', DAL: '2026-02-01', AL: '2026-02-10', CLASSI: '9Z', MATERIE: 'FISI' }
       ]
     });

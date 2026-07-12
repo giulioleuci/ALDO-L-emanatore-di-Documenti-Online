@@ -129,3 +129,29 @@ test('getFileBlob returns the native Blob via getFileByIdStandard (11 §13)', ()
   expect(facade.getFileBlob('file_1')).toBe('BLOB');
   expect(drive.getFileByIdStandard).toHaveBeenCalledWith('file_1');
 });
+
+describe('DriveServiceFacade — copyFile failure', () => {
+  test('throws with the underlying error message when the copy fails', () => {
+    const { perms } = fakeDrive();
+    const drive = { copyFiles: jest.fn().mockReturnValue({ successful: [], failed: [{ error: { message: 'quota exceeded' } }] }) };
+    const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+    expect(() => facade.copyFile('TPL', 'name', 'FOLDER')).toThrow('Copia file TPL fallita: quota exceeded');
+  });
+
+  test('throws with a fallback message when no failure detail is available', () => {
+    const { perms } = fakeDrive();
+    const drive = { copyFiles: jest.fn().mockReturnValue({ successful: [], failed: [] }) };
+    const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+    expect(() => facade.copyFile('TPL', 'name', 'FOLDER')).toThrow('Copia file TPL fallita: errore sconosciuto');
+  });
+});
+
+describe('DriveServiceFacade — setPermission default role', () => {
+  test('defaults to reader for an unrecognized permesso value', () => {
+    const { drive } = fakeDrive();
+    const perms = { shareWithUsers: jest.fn() };
+    const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+    facade.setPermission('FILE1', 'a@b.com', 'RUOLO_INESISTENTE');
+    expect(perms.shareWithUsers).toHaveBeenCalledWith(['FILE1'], [{ type: 'user', role: 'reader', email: 'a@b.com' }], {});
+  });
+});

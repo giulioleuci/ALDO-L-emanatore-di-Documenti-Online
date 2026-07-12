@@ -125,4 +125,56 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), fakeSpreadsheets({}));
     expect(() => new Strategy(logger).extract({})).toThrow();
   });
+
+  test('optional tipo filter narrows the search, skipping documents whose tipo does not match', () => {
+    const db = new FakeDatabase(tablesWithDocs());
+    const spreadsheets = fakeSpreadsheets({ other_doc: [['NOME'], ['Gialli']] });
+    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    // other_doc has idGen CD1/tipo VERBALE — only it matches this tipo filter.
+    const rows = new Strategy(logger).extract({ idGen: 'CD1', tipo: 'VERBALE' });
+    expect(rows).toEqual([{ NOME: 'Gialli', _CLASSE: '5A' }]);
+  });
+
+  test('a document failing either the tipo or stato filter is excluded even when idGen matches', () => {
+    const db = new FakeDatabase(tablesWithDocs());
+    const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
+    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    // sheet_doc2 shares idGen/tipo with sheet_doc1 but has STATO ARCHIVIATO, not GENERATO.
+    const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO' });
+    expect(rows).toEqual([{ NOME: 'Verdi', _CLASSE: '5A' }]);
+  });
+
+  test("defaults _CLASSE to '' when the matching LOG_DOCS row's CLASSI is blank (getClassi()[0] is undefined)", () => {
+    const tables = tablesWithDocs();
+    tables.LOG_DOCS = [{ ID: 'sheet_doc3', ID_GEN: 'CD_NOCLASSE', TIPO: 'GRIGLIA', STATO: 'GENERATO', CLASSI: '', UTENTI: '' }];
+    const db = new FakeDatabase(tables);
+    const spreadsheets = fakeSpreadsheets({ sheet_doc3: [['NOME'], ['Blu']] });
+    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const rows = new Strategy(logger).extract({ idGen: 'CD_NOCLASSE' });
+    expect(rows).toEqual([{ NOME: 'Blu', _CLASSE: '' }]);
+  });
+
+  test('readSheetRows options: with no tabName/range/hasHeaders in config, resolves against the default tab (Sheet1) and full range', () => {
+    const db = new FakeDatabase(tablesWithDocs());
+    const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
+    const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
+    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO' });
+    // No explicit tabName/range supplied -> SheetByIdStrategy falls back to sheet1's own name/range.
+    expect(getRangesSpy).toHaveBeenCalledWith('sheet_doc1', 'Sheet1!A1:E10');
+  });
+
+  test('readSheetRows options: an explicit tabName/range in config is passed through to the read', () => {
+    const tables = tablesWithDocs();
+    tables.LOG_DOCS = [{ ID: 'sheet_doc4', ID_GEN: 'CD_RANGE', TIPO: 'GRIGLIA', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' }];
+    const db = new FakeDatabase(tables);
+    const spreadsheets = fakeSpreadsheets({ sheet_doc4: [['NOME'], ['Rosa']] });
+    const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
+    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    // fakeSpreadsheets' single fixed tab is always named 'Sheet1'; passing it explicitly
+    // together with an explicit range still proves both options are threaded through
+    // (as opposed to the default-range test above, which supplies neither).
+    new Strategy(logger).extract({ idGen: 'CD_RANGE', tabName: 'Sheet1', range: 'A1:B2' });
+    expect(getRangesSpy).toHaveBeenCalledWith('sheet_doc4', 'Sheet1!A1:B2');
+  });
 });

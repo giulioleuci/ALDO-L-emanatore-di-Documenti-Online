@@ -88,7 +88,12 @@ const TOTAL_STEPS = mode === 'testing' ? 9 : mode === 'online' ? 11 : 10;
 
 heading('ALDO (SGSA) - Build and Prepare');
 info(`Mode:         ${c.bold}${mode.toUpperCase()}${c.reset}`);
-if (mode === 'testoffline') {
+if (mode === 'online') {
+  info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, unminified structure, comments stripped`);
+  info(`OnlineTests.js: ALDO online GAS test suite, separate file, unminified structure, comments stripped`);
+  info(`gas-source-map.json: Line-level map from both output files back to original src/**/*.ts`);
+  info(`Offline tests: Will run after build (unit + integration), as a pre-push sanity gate`);
+} else if (mode === 'testoffline') {
   info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
   info(`Offline tests: Will run after build (unit + integration)`);
 } else if (mode === 'production') {
@@ -594,7 +599,7 @@ if (mode === 'production') {
 
 let offlineTestsPassed = false;
 
-if (mode === 'testoffline') {
+if (mode === 'testoffline' || mode === 'online') {
   step(9, TOTAL_STEPS, 'Running offline tests (unit + integration)...');
 
   let unitPassed = false;
@@ -678,7 +683,7 @@ const finalFiles = fs
   .readdirSync(distDir)
   .filter((f) => fs.statSync(path.join(distDir, f)).isFile());
 
-if (mode === 'testoffline') {
+if (mode === 'testoffline' || mode === 'online') {
   heading(offlineTestsPassed ? 'Build & Test Complete — All Tests Passed' : 'Build Complete — Tests Failed');
 } else {
   heading('Build Complete — Ready for Deployment');
@@ -691,7 +696,7 @@ info(`Source maps:      Code.js.map (if present) + source-map-index.json (exclud
 if (warningCount > 0) {
   info(`Warnings:         ${c.yellow}${warningCount}${c.reset}`);
 }
-if (mode === 'testoffline') {
+if (mode === 'testoffline' || mode === 'online') {
   info(
     `Offline tests:    ${offlineTestsPassed ? `${c.green}PASSED${c.reset}` : `${c.red}FAILED${c.reset}`}`
   );
@@ -713,7 +718,7 @@ log(`    ${c.dim}─────────────────────
 log(`    ${c.bold}Total: ${totalKB} KB${c.reset}`);
 
 log('');
-if (mode === 'testoffline') {
+if (mode === 'testoffline' || mode === 'online') {
   if (offlineTestsPassed) {
     info(`${c.green}The compiled bundle passed all offline validation tests.${c.reset}`);
     info(`Next step: ${c.bold}clasp push${c.reset} (or run --mode=production for deployment)`);
@@ -725,7 +730,7 @@ if (mode === 'testoffline') {
 }
 log(`${'='.repeat(80)}\n`);
 
-if (mode === 'testoffline' && !offlineTestsPassed) {
+if ((mode === 'testoffline' || mode === 'online') && !offlineTestsPassed) {
   process.exit(1);
 }
 

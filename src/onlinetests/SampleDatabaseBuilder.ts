@@ -31,11 +31,35 @@ export interface SampleDatabase {
   sampleFolderUrl: string;
 }
 
+export const CLASSE_BASE = '4A';
+export const CLASSE_PARTNER = '4A-LC';
+export const DOCENTE_1 = 'docente1@onlinetest.aldo.local';
+export const DOCENTE_2 = 'docente2@onlinetest.aldo.local';
+export const DOCENTE_3 = 'docente3@onlinetest.aldo.local';
+// MateriaId.of only accepts [A-Z]{2,10} (domain/value-objects/MateriaId.ts) — no digits.
+export const MATERIA_1 = 'MAT';
+export const INDIRIZZO_1 = 'IND1';
+export const DIPART_1 = 'DIPART1';
+export const CONF_DOC_ID = 'DOC_ONLINETEST';
+export const CONF_MAIL_ID = 'MAIL_ONLINETEST';
+
+/** Email of the `i`-th seeded ALUNNI row (1-based), matching {@link SampleDatabaseBuilder.seedAlunni}. */
+export function alunnoEmail(i: number): string {
+  return `alunno${i}@onlinetest.aldo.local`;
+}
+
+/** The one ALUNNI row enrolled in {@link CLASSE_PARTNER} (05_AGGREGATI_E_CLASSI_ARTICOLATE.md). */
+export const ALUNNO_PARTNER_EMAIL = alunnoEmail(5);
+
 /** Header row (in stable column order) for every non-MASTER `TABLE.*` entry, keyed by table name. */
 const HEADERS: Record<string, string[]> = {
   [TABLE.ALUNNI]: Object.values(COL_ALUNNI),
   [TABLE.DOCENTI]: Object.values(COL_DOCENTI),
-  [TABLE.CLASSI]: Object.values(COL_CLASSI),
+  // MATERIA_1 is a dynamic per-subject cattedra column (ref 06 §3), not part of
+  // the fixed COL_CLASSI set — appended here so seedClassi can write the
+  // CLASSI (priority 3) nominal holder that the role-resolution priority
+  // chain (SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI) falls back to.
+  [TABLE.CLASSI]: [...Object.values(COL_CLASSI), MATERIA_1],
   [TABLE.MATERIE]: Object.values(COL_MATERIE),
   [TABLE.INDIRIZZI]: Object.values(COL_INDIRIZZI),
   [TABLE.DIPART]: Object.values(COL_DIPART),
@@ -54,15 +78,6 @@ const HEADERS: Record<string, string[]> = {
   [TABLE.LOG_FOLD]: Object.values(COL_LOG_FOLD),
   [TABLE.LOG_MAIL]: Object.values(COL_LOG_MAIL)
 };
-
-const CLASSE_BASE = '4A';
-const CLASSE_PARTNER = '4A-LC';
-const DOCENTE_1 = 'docente1@onlinetest.aldo.local';
-const DOCENTE_2 = 'docente2@onlinetest.aldo.local';
-const DOCENTE_3 = 'docente3@onlinetest.aldo.local';
-const MATERIA_1 = 'MAT1';
-const INDIRIZZO_1 = 'IND1';
-const DIPART_1 = 'DIPART1';
 
 /**
  * Builds a throwaway, self-explanatory sample SGSA database: one sheet per `TABLE.*` (01
@@ -180,7 +195,10 @@ export class SampleDatabaseBuilder {
       [COL_CLASSI.ID]: CLASSE_BASE,
       [COL_CLASSI.ANNO]: 4,
       [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
-      [COL_CLASSI.ARTICOLAZIONE]: '',
+      // ArticolazioneConfig.fromJson (ref 05 §2) parses ARTICOLAZIONE as JSON, not
+      // a bare class id — a symmetric partner-only pair (parent: null on both
+      // sides) is one of its three valid shapes (see ArticolazioneConfig.ts doc).
+      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({ parent: null, partner: CLASSE_PARTNER, partners: null }),
       [COL_CLASSI.RUOLI]: '',
       [COL_CLASSI.ATTIVA]: true,
       [COL_CLASSI.COORD]: DOCENTE_1,
@@ -188,13 +206,18 @@ export class SampleDatabaseBuilder {
       [COL_CLASSI.ALT]: '',
       [COL_CLASSI.SEZ]: 'A',
       [COL_CLASSI.TERMINALE]: false,
-      [COL_CLASSI.STORICO]: false
+      [COL_CLASSI.STORICO]: false,
+      // Priority 3 (CLASSI) nominal cattedra holder for MATERIA_1 — the base
+      // the SUPPLENZE/VARIAZIONI_CATTEDRA rows below override (see
+      // seedSupplenzeEVariazioni). Written to a dynamic column keyed by
+      // MATERIA_1's sigla (ref 06 §3), appended to HEADERS[TABLE.CLASSI] above.
+      [MATERIA_1]: DOCENTE_1
     });
     sample.appendRow(TABLE.CLASSI, {
       [COL_CLASSI.ID]: CLASSE_PARTNER,
       [COL_CLASSI.ANNO]: 4,
       [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
-      [COL_CLASSI.ARTICOLAZIONE]: CLASSE_BASE,
+      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({ parent: null, partner: CLASSE_BASE, partners: null }),
       [COL_CLASSI.RUOLI]: '',
       [COL_CLASSI.ATTIVA]: true,
       [COL_CLASSI.COORD]: DOCENTE_2,
@@ -210,7 +233,7 @@ export class SampleDatabaseBuilder {
   private seedAlunni(sample: ISampleSpreadsheet): void {
     for (let i = 1; i <= 4; i++) {
       sample.appendRow(TABLE.ALUNNI, {
-        [COL_ALUNNI.EMAIL]: `alunno${i}@onlinetest.aldo.local`,
+        [COL_ALUNNI.EMAIL]: alunnoEmail(i),
         [COL_ALUNNI.COGNOMENOME]: `Alunno${i} Test`,
         [COL_ALUNNI.CLASSE]: CLASSE_BASE,
         [COL_ALUNNI.RELIGIONE]: true,
@@ -225,7 +248,7 @@ export class SampleDatabaseBuilder {
       });
     }
     sample.appendRow(TABLE.ALUNNI, {
-      [COL_ALUNNI.EMAIL]: 'alunno5@onlinetest.aldo.local',
+      [COL_ALUNNI.EMAIL]: ALUNNO_PARTNER_EMAIL,
       [COL_ALUNNI.COGNOMENOME]: 'Alunno5 Test',
       [COL_ALUNNI.CLASSE]: CLASSE_PARTNER,
       [COL_ALUNNI.RELIGIONE]: true,
@@ -269,17 +292,23 @@ export class SampleDatabaseBuilder {
 
   private seedConfDoc(sample: ISampleSpreadsheet): void {
     sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: 'DOC_ONLINETEST',
+      [COL_CONF_DOC.ID]: CONF_DOC_ID,
       [COL_CONF_DOC.TIPO]: 'ONLINETEST',
-      [COL_CONF_DOC.GENERATORE]: 'DOC',
+      // DOCUMENTO_GENERICO (10 §9): plain {{...}} substitution, registered in
+      // buildAldoContainer's strategyRegistry with no extra deps (Bootstrap.ts)
+      // — 'DOC' is not a GENERATORE the registry ever knows.
+      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
       [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: '',
-      [COL_CONF_DOC.FILE_NAME]: 'ONLINETEST_{{classe.id}}',
+      // Simple-form MODELLI (ConfigurazioneDocumentoRepository.resolveTemplateId,
+      // ref 06 §8): a bare templateId string throws "MODELLI privo di
+      // templateId" — the {"templateId": "..."} object form is required.
+      [COL_CONF_DOC.MODELLI]: '{"templateId":"TEMPLATE_ONLINETEST"}',
+      [COL_CONF_DOC.FILE_NAME]: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_ONLINETEST_OUTPUT',
       [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
       [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
       [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null, // PostProcessStep gates on `!= null`, not truthiness
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'PDF'
@@ -288,16 +317,25 @@ export class SampleDatabaseBuilder {
 
   private seedConfMail(sample: ISampleSpreadsheet): void {
     sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: 'MAIL_ONLINETEST',
+      [COL_CONF_MAIL.ID]: CONF_MAIL_ID,
       [COL_CONF_MAIL.OGGETTO]: '[ALDO ONLINE TEST] Notifica di prova',
-      [COL_CONF_MAIL.PROCESSO]: 'ONLINETEST',
-      [COL_CONF_MAIL.BOX_CFG]: '',
+      // ProcessoInvio.PER_ALUNNO (enums.ts): EmailNotificationService.enumerateTargets
+      // switches on this value and has no default — 'ONLINETEST' is not a member,
+      // which silently falls through to `undefined` instead of an EmailTarget[].
+      [COL_CONF_MAIL.PROCESSO]: 'PER_ALUNNO',
+      // ConfigurazioneEmail.getBoxes() JSON.parse()s any non-null BOX_CFG raw
+      // value unconditionally (ConfigurazioneEmail.ts) — an empty string throws
+      // "Unexpected end of JSON input" instead of being treated as "no boxes"
+      // the way CONDIZIONE's blank-string handling is. A valid empty-array
+      // literal sidesteps that regardless of how the real Sheet round-trips a
+      // blank cell (empty string vs null).
+      [COL_CONF_MAIL.BOX_CFG]: '[]',
       [COL_CONF_MAIL.TESTO]: 'Messaggio di prova generato dalla suite di test online ALDO.',
       [COL_CONF_MAIL.SUPPLENTI]: false,
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: ''
+      [COL_CONF_MAIL.POST_PROCESSO]: null // PostProcessEmailStep gates on `!= null`, not truthiness
     });
   }
 

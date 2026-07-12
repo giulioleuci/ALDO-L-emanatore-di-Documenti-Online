@@ -227,7 +227,8 @@ describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty optio
     // CDU whose focus.classe is undefined -> classeNome(ctx) === ''.
     ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PATH_OUT: 'Verbali/Fisso' });
     ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
-    ctx.set('cdu', { focus: {} } as unknown as Cdu);
+    const minimalCdu: Cdu = { focus: {} };
+    ctx.set('cdu', minimalCdu);
     ctx.set('shouldGenerate', true);
     const findOrCreateSpy = jest.spyOn(AlberoCartelle.prototype, 'findOrCreate').mockReturnValue({ folderId: 'f2', created: true });
     new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);

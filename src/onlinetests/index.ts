@@ -46,13 +46,19 @@ export interface OnlineTestDeps {
  */
 export function executeOnlineTests(overrides: Partial<OnlineTestDeps> = {}): OnlineTestReport {
   const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory();
-  // '' as rootFolderId: DriveFolderManager.createFolder treats a falsy parentFolderId as "create in
-  // My Drive root" (see GoogleApiWrapper's DriveFolderManager.createFolder doc) — there is no
-  // pre-existing root to anchor to yet, since this call is what MINTS the throwaway root folder
-  // that later becomes MASTER.ID_CARTELLA_GOOGLE (and thus the root every other DriveServiceFacade,
-  // including initAldo()'s own, anchors to from then on).
-  const drive = overrides.drive ?? new DriveServiceFacade(ServiceFactory.getDriveService(), ServiceFactory.getPermissionService(), '');
   const clock = overrides.clock ?? ((): Date => new Date());
+  // `DriveServiceFacade`'s `rootFolderId` anchors every relative path (see its class doc comment)
+  // and is documented as normally being an already-existing `MasterConfig.idCartellaRoot` — there
+  // is no such root yet at this bootstrap step, since this is what MINTS the throwaway root folder
+  // for the whole online-test run. Rather than pass an undocumented `''` sentinel through the
+  // facade, mint the real folder directly via `DriveService.createFolder`'s own documented
+  // `parentFolderId?: string | null` (types/gaslibs/index.d.ts) and hand the facade a real,
+  // non-empty anchor id, matching its documented contract for every subsequent Drive operation.
+  const drive = overrides.drive ?? new DriveServiceFacade(
+    ServiceFactory.getDriveService(),
+    ServiceFactory.getPermissionService(),
+    mintRootFolder(`_ALDO_ONLINETEST_ROOT_${clock().toISOString()}`)
+  );
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const initAldoFn = overrides.initAldo ?? initAldo;
   const activeUserEmail = overrides.activeUserEmail ?? ((): string => new SessionActiveUserFacade().getEmail());
@@ -74,6 +80,22 @@ export function executeOnlineTests(overrides: Partial<OnlineTestDeps> = {}): Onl
   registerPipelineChecks(runner, container, sample, activeUserEmail());
 
   return runner.report();
+}
+
+/**
+ * Mints the throwaway root Drive folder for one online-test run by calling GLF's
+ * `DriveService.createFolder` directly (`ServiceFactory` — a GoogleApiWrapper DI global, not one
+ * of the native GAS service globals ESLint's `no-restricted-globals` gate restricts to
+ * `src/infrastructure/facades/**` — so this needs no eslint scoping exception, unlike
+ * {@link GasSampleSpreadsheetFactory} which touches `SpreadsheetApp` directly). Its
+ * `parentFolderId?: string | null` param (types/gaslibs/index.d.ts) documents `null` as "create at
+ * My Drive root", giving this bootstrap step a real folder id with no pre-existing anchor to hang
+ * off — unlike every *other* Drive operation in this suite, which anchors to this folder via
+ * {@link DriveServiceFacade}'s `rootFolderId` once it exists.
+ */
+function mintRootFolder(name: string): string {
+  const folder = ServiceFactory.getDriveService().createFolder(name, null) as { id: string };
+  return folder.id;
 }
 
 /** GAS Run-dropdown entry point (design spec §2): no arguments, so it runs with no setup. */

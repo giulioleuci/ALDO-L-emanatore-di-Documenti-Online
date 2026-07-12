@@ -3,6 +3,7 @@ import { StatoDocumento } from '../../../src/domain/value-objects/enums';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import { LogCartellaRepository } from '../../../src/infrastructure/repositories/LogCartellaRepository';
 
 function aggregatore(tables: Record<string, Row[]> = fixtureTables()): AggregatoreDati {
   return new AggregatoreDati(new FakeDatabase(tables));
@@ -61,4 +62,47 @@ test('the full-table load is memoized: later inserts are not observed (N+1 preve
   db.table('CARENZE').insert({ STUDENTE: 'a1@school.it', PROGRESSIVO: 9, CLASSE: '5A', DATA: '2026-06-01', MATE: '3' });
   const after = agg.getCarenzePerAlunno('a1@school.it').length;
   expect(after).toBe(before); // served from the memoized snapshot, not re-read
+});
+
+test('perMetodo routes documentiPerClasse and cartellePerClasse to their accessors (14 §2)', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [{ ID: 'd1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A,3B', UTENTI: '' }];
+  tables.LOG_FOLD = [
+    { ID: 'f1', PATH: 'Verbali/5', LINK: '', CLASSI: '5A', UTENTI: '' },
+    { ID: 'f2', PATH: 'Verbali/3', LINK: '', CLASSI: '3B', UTENTI: '' }
+  ];
+  const agg = aggregatore(tables);
+  expect((agg.perMetodo('documentiPerClasse', { classeId: '5A' }, logger) as { id: string }[]).map((d) => d.id)).toEqual(['d1']);
+  expect((agg.perMetodo('cartellePerClasse', { classeId: '5A' }, logger) as { id: string | undefined }[]).map((f) => f.id ?? '')).toEqual(['f1']);
+});
+
+test('perMetodo logs a warning with the unknown metodo name and returns null (11 §5)', () => {
+  const agg = aggregatore();
+  const warnSpy = jest.spyOn(logger, 'warn');
+  const result = agg.perMetodo('boh', {}, logger);
+  expect(result).toBeNull();
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('metodo DATI_SORGENTE sconosciuto "boh"'));
+  warnSpy.mockRestore();
+});
+
+test('getDocumentiPerAlunno filters by sottotipo too, and only matches when ALL provided filtri match (14 §2)', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    { ID: 'd1', ID_GEN: 'CD1', TIPO: 'PDP', SOTTOTIPO: 'ANNUALE', STATO: 'GENERATO', UTENTI: 'a1@school.it', CLASSI: '5A' },
+    { ID: 'd2', ID_GEN: 'CD1', TIPO: 'PDP', SOTTOTIPO: 'INTERMEDIO', STATO: 'GENERATO', UTENTI: 'a1@school.it', CLASSI: '5A' }
+  ];
+  const agg = aggregatore(tables);
+  expect(agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'ANNUALE' }).map((d) => d.id)).toEqual(['d1']);
+  expect(agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'INESISTENTE' })).toEqual([]);
+  expect(agg.getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP', sottotipo: 'ANNUALE' }).map((d) => d.id)).toEqual(['d1']);
+});
+
+test('allCartelle() memoizes LOG_FOLD: cartellePerClasse called twice reads the table only once (N+1 prevention)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const findAllSpy = jest.spyOn(LogCartellaRepository.prototype, 'findAll');
+  const agg = new AggregatoreDati(db);
+  agg.getCartellePerClasse('5A');
+  agg.getCartellePerClasse('3B');
+  expect(findAllSpy).toHaveBeenCalledTimes(1);
+  findAllSpy.mockRestore();
 });

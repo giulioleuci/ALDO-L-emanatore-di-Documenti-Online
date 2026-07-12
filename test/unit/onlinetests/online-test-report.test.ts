@@ -24,7 +24,10 @@ describe('TestRunner', () => {
 
   it('never throws out of add() even when fn throws a non-Error value', () => {
     const runner = new TestRunner();
-    expect(() => runner.add('check-3', undefined, () => { throw 'stringa'; })).not.toThrow();
+    expect(() => runner.add('check-3', undefined, () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- deliberately exercises the non-Error catch branch
+      throw 'stringa';
+    })).not.toThrow();
     expect(runner.report().results[0]).toEqual({ name: 'check-3', status: 'fail', message: 'stringa' });
   });
 

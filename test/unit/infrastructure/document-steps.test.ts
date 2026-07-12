@@ -15,6 +15,8 @@ import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
+import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
+import { SchemaSottocartelle } from '../../../src/domain/value-objects/enums';
 
 const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();
@@ -191,4 +193,125 @@ test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {
   const drive = new FakeDriveFacade();
   new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
   expect(drive.permissions).toEqual([]);
+});
+
+describe('CheckDuplicatesStep — SCHEMA_SOTTOCARTELLE MULTIPLO_PER_CLASSE skip branch', () => {
+  test('skips dedup checking entirely (no early-return on a matching LOG_DOCS row) when SCHEMA_SOTTOCARTELLE is MULTIPLO_PER_CLASSE', () => {
+    const tables = fixtureTables();
+    // Row that WOULD otherwise trigger the dedup early-return (same ID_GEN + classe as CD1/5A).
+    tables.LOG_DOCS = [{ ID: 'old', ID_GEN: 'CD1', CLASSI: '5A', STATO: 'GENERATO' }];
+    const db = new FakeDatabase(tables);
+    const ctx = baseCtx(db);
+    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, SCHEMA_SOTTOCARTELLE: SchemaSottocartelle.MULTIPLO_PER_CLASSE });
+    new CheckDuplicatesStep(logger, db).execute(ctx);
+    // Gate untouched: still true (as baseCtx set it), no skipReason recorded.
+    expect(ctx.get('shouldGenerate')).toBe(true);
+    expect(ctx.get('skipReason')).toBeNull();
+  });
+});
+
+describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty options to AlberoCartelle.findOrCreate', () => {
+  test('passes { classe } when classeNome(ctx) is non-empty', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db); // buildCdu targets classe '5A' -> focus.classe.anagrafica.nome === '5A'
+    const findOrCreateSpy = jest.spyOn(AlberoCartelle.prototype, 'findOrCreate').mockReturnValue({ folderId: 'f1', created: true });
+    new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);
+    expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/5', { classe: '5A' });
+    findOrCreateSpy.mockRestore();
+  });
+
+  test('calls AlberoCartelle.findOrCreate without a classe option when classeNome(ctx) is empty', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = new PipelineContext();
+    // A literal PATH_OUT (no {{focus.classe...}} placeholder) + a minimal fake
+    // CDU whose focus.classe is undefined -> classeNome(ctx) === ''.
+    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PATH_OUT: 'Verbali/Fisso' });
+    ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
+    ctx.set('cdu', { focus: {} } as unknown as Cdu);
+    ctx.set('shouldGenerate', true);
+    const findOrCreateSpy = jest.spyOn(AlberoCartelle.prototype, 'findOrCreate').mockReturnValue({ folderId: 'f2', created: true });
+    new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);
+    expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/Fisso', {});
+    findOrCreateSpy.mockRestore();
+  });
+});
+
+describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola mapping (via observable supplenza routing)', () => {
+  const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z'); // rossi -> bianchi -> verdi chain active for 5A
+
+  function buildCduAt(db: FakeDatabase, now: Date): Cdu {
+    return ContextEngineFactory.create(db).build({ target: '5A', tipoTarget: 'classe', now }, recipe('CLASSE_COMPLETA'));
+  }
+
+  test('does not call applica for file when ctx.get("newFileId") is null (no file ACLs applied)', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      PERMESSI: JSON.stringify({ file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }], folder: [] })
+    });
+    ctx.set('destFolderId', 'folder_1'); // newFileId intentionally left unset (null)
+    const drive = new FakeDriveFacade();
+    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+    expect(drive.permissions).toEqual([]);
+  });
+
+  test('does not call applica for folder when ctx.get("destFolderId") is null (no folder ACLs applied)', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      PERMESSI: JSON.stringify({ file: [], folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }] })
+    });
+    ctx.set('newFileId', 'file_1'); // destFolderId intentionally left unset (null)
+    const drive = new FakeDriveFacade();
+    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+    expect(drive.permissions).toEqual([]);
+  });
+
+  test.each([
+    ['SOLO_SUPPLENTI', ['verdi@school.it']],
+    ['ENTRAMBI', ['rossi@school.it', 'verdi@school.it']],
+    [undefined, ['rossi@school.it']],
+    ['QUALCOSA_DI_IGNOTO', ['rossi@school.it']]
+  ])('regolaSupplente.file=%p maps to the GestioneSupplenti routing that resolves to %p', (regolaFile, expected) => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCduAt(db, INSIDE_WINDOW);
+    const ctx = new PipelineContext();
+    const perms: Record<string, unknown> = { file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }], folder: [] };
+    if (regolaFile !== undefined) perms['regolaSupplente'] = { file: regolaFile };
+    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: JSON.stringify(perms) });
+    ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
+    ctx.set('cdu', cdu);
+    ctx.set('shouldGenerate', true);
+    ctx.set('newFileId', 'file_1');
+    const drive = new FakeDriveFacade();
+    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+    const fileEmails = drive.permissions.filter((p) => p.fileId === 'file_1').map((p) => p.email).sort();
+    expect(fileEmails).toEqual(expected);
+  });
+
+  test('calls applica for both file and folder when both ids are present, using their respective regolaSupplente', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCduAt(db, INSIDE_WINDOW);
+    const ctx = new PipelineContext();
+    const perms = {
+      file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }],
+      folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }],
+      regolaSupplente: { file: 'SOLO_SUPPLENTI', folder: 'ENTRAMBI' }
+    };
+    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: JSON.stringify(perms) });
+    ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
+    ctx.set('cdu', cdu);
+    ctx.set('shouldGenerate', true);
+    ctx.set('newFileId', 'file_1');
+    ctx.set('destFolderId', 'folder_1');
+    const drive = new FakeDriveFacade();
+    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+
+    const fileEmails = drive.permissions.filter((p) => p.fileId === 'file_1').map((p) => p.email).sort();
+    const folderEmails = drive.permissions.filter((p) => p.fileId === 'folder_1').map((p) => p.email).sort();
+    expect(fileEmails).toEqual(['verdi@school.it']); // SOLO_SUPPLENTI -> chain-resolved delegate only
+    expect(folderEmails).toEqual(['rossi@school.it', 'verdi@school.it']); // ENTRAMBI -> both
+  });
 });

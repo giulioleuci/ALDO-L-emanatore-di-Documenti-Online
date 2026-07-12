@@ -574,6 +574,7 @@ step(7, TOTAL_STEPS, 'Configuring deployment files...');
 *.map.json
 source-map-index.json
 test-file-map.json
+gas-source-map.json
 *.log
 *.tmp
 **/__tests__/**

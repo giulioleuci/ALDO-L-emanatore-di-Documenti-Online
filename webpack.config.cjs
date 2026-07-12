@@ -64,5 +64,24 @@ module.exports = (env) => {
     optimization: { minimize: false }
   };
 
-  return [coreConfig, entrypointsConfig];
+  // Online GAS test suite (docs/superpowers/specs/2026-07-11-offline-online-test-expansion-design.md):
+  // always its own output file, never concatenated into Code.js, so it can be
+  // pushed or removed from the Apps Script project independently of app code.
+  const onlinetestsConfig = {
+    name: 'onlinetests',
+    mode: 'production',
+    entry: './src/onlinetests/index.ts',
+    devtool: 'source-map',
+    output: {
+      filename: 'OnlineTests.js',
+      path: path.resolve(__dirname, 'dist'),
+      clean: false,
+      iife: false
+    },
+    resolve: { extensions: ['.ts', '.js', '.json'] },
+    module: { rules: [babelRule] },
+    optimization: { minimize: false }
+  };
+
+  return [coreConfig, entrypointsConfig, onlinetestsConfig];
 };

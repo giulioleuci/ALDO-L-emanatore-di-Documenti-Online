@@ -61,6 +61,15 @@ export default tseslint.config(
     files: ['src/infrastructure/facades/**/*.ts'],
     rules: { 'no-restricted-globals': 'off', 'no-restricted-syntax': 'off' }
   },
+  // Sanctioned exception, scoped to this single file (GasLibraryFactory/CLAUDE.md's
+  // "Sanctioned exceptions" list includes GasOnlineTestFramework/** because it "runs inside
+  // real GAS by design"; this file is the analogous L2 boundary for src/onlinetests/** — see
+  // its class doc comment). Deliberately NOT src/onlinetests/**, to keep the exception as
+  // narrow as GoogleApiWrapper's own single-purpose L2 role.
+  {
+    files: ['src/onlinetests/GasSampleSpreadsheetFactory.ts'],
+    rules: { 'no-restricted-globals': 'off', 'no-restricted-syntax': 'off' }
+  },
   // Domain layer boundary: no upward/lateral imports
   {
     files: ['src/domain/**/*.ts'],

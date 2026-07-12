@@ -179,3 +179,59 @@ test('select().from().where().execute() uses the index once built, and stays cor
   const afterIndex = adapter.select(['*']).from('CARENZE').where('STUDENTE', '=', 'a1@school.it').execute();
   expect(afterIndex.map((r) => r['PROGRESSIVO']).sort()).toEqual([1, 2]);
 });
+
+describe('SheetDbAdapter.updateRowWhere — insert-vs-update and isExactKeyMatch branches', () => {
+  test('single-PK table: inserts a new row when the exact-PK match misses (getByPK returns undefined)', () => {
+    const { db } = libDb(seed());
+    const adapter = new SheetDbAdapter(db);
+
+    // ID is CLASSI's declared single PK — {ID: 'X'} is an exact-key match, but no row has ID 'X'.
+    adapter.tables['CLASSI']!.updateRowWhere({ ID: 'X' }, { ID: 'X', ANNO: 1, ATTIVA: true });
+
+    const rows = adapter.table('CLASSI').findAll();
+    expect(rows).toHaveLength(3);
+    expect(rows.find((r) => r['ID'] === 'X')).toEqual({ ID: 'X', ANNO: 1, ATTIVA: true });
+  });
+
+  test('single-PK table: inserts a new row when the match keys are not an exact PK match and no row satisfies every key', () => {
+    const { db } = libDb(seed());
+    const adapter = new SheetDbAdapter(db);
+
+    // ANNO alone is not CLASSI's declared PK (ID) — full scan runs, finds no match, inserts.
+    adapter.tables['CLASSI']!.updateRowWhere({ ANNO: 99 }, { ID: '9Z', ANNO: 99, ATTIVA: true });
+
+    const rows = adapter.table('CLASSI').findAll();
+    expect(rows).toHaveLength(3);
+    expect(rows.some((r) => r['ID'] === '9Z' && r['ANNO'] === 99)).toBe(true);
+  });
+
+  test('composite-PK table: updates the existing row (by composite __PK) when the table has a matching row', () => {
+    const { db } = libDb(seed());
+    const adapter = new SheetDbAdapter(db);
+
+    adapter.tables['CARENZE']!.updateRowWhere(
+      { STUDENTE: 'a2@school.it', PROGRESSIVO: 1 },
+      { STUDENTE: 'a2@school.it', PROGRESSIVO: 1, NOTIFICATO: '', MATE: 'AGGIORNATO' }
+    );
+
+    const updated = adapter.table('CARENZE').find((r) => r['STUDENTE'] === 'a2@school.it');
+    expect(updated?.['MATE']).toBe('AGGIORNATO');
+    expect(adapter.table('CARENZE').findAll()).toHaveLength(3);
+  });
+
+  test('isExactKeyMatch is false (falls to full-scan path) when matchKeys.length differs from the declared composite PK', () => {
+    const { db } = libDb(seed());
+    const adapter = new SheetDbAdapter(db);
+
+    // Only one of CARENZE's two composite key columns (STUDENTE, PROGRESSIVO) is
+    // supplied — isExactKeyMatch must be false, forcing the full-scan path, which
+    // still finds and updates the unique matching row.
+    adapter.tables['CARENZE']!.updateRowWhere(
+      { STUDENTE: 'a2@school.it' },
+      { STUDENTE: 'a2@school.it', PROGRESSIVO: 1, NOTIFICATO: '', MATE: 'X' }
+    );
+
+    expect(adapter.table('CARENZE').find((r) => r['STUDENTE'] === 'a2@school.it')?.['MATE']).toBe('X');
+    expect(adapter.table('CARENZE').findAll()).toHaveLength(3);
+  });
+});

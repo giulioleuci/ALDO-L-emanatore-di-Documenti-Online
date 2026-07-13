@@ -497,6 +497,26 @@ declare global {
     /** Token-based date formatting (YYYY, MM, DD, HH, mm, ss, SSS); `utc:true` derives tokens from UTC components. */
     formatDate(date: Date, format?: string, options?: { utc?: boolean }): string | null;
     formatISODate(date: Date): string | null;
+    /** Basic `user@domain.tld` format validation (not a deliverability check). */
+    isValidEmail(email: string): boolean;
+  }
+  /**
+   * Generic date-range VO: containment/duration/overlap + an open-ended sentinel,
+   * so callers stop hand-rolling `Date.getTime()` arithmetic and magic-number
+   * "infinity" sentinels for open-ended periods (ref ALDO_GLF_AUDIT_RESULTS.md B-2).
+   */
+  class DateRange {
+    constructor(start: Date, end?: Date | null);
+    readonly start: Date;
+    readonly end: Date;
+    /** True if `end` is the open-ended sentinel (no upper bound was supplied). */
+    isOpenEnded(): boolean;
+    /** True if `date` falls within `[start, end]` inclusive. */
+    contains(date: Date): boolean;
+    /** Whole-day span, truncated. */
+    durationInDays(): number;
+    /** True if this range and `other` share at least one instant. */
+    overlaps(other: DateRange): boolean;
   }
   class JobDefinitionRegistry {
     constructor(logger: LoggerService);
@@ -1042,4 +1062,58 @@ declare global {
       options?: { format?: string; continueOnError?: boolean }
     ): string;
   }
+
+  // --- GasOnlineTestFramework (independent): test harness running inside real GAS
+  // (ref ALDO_GLF_AUDIT_RESULTS.md K-1/K-2) — only ever used from src/onlinetests/**. ---
+  interface OnlineTestRunResult {
+    passed: number;
+    failed: number;
+    skipped: number;
+    errors: Array<{ path: string; message: string; stack?: string }>;
+  }
+  class EnhancedTestRunner {
+    register(path: string, fn: () => void, options?: { skip?: boolean; timeout?: number }): this;
+    addHook(type: 'beforeAll' | 'afterAll' | 'beforeEach' | 'afterEach', fn: () => void): this;
+    run(filter?: string | RegExp | null): OnlineTestRunResult;
+  }
+  const runner: EnhancedTestRunner;
+  class SmartAssert {
+    static equals(actual: unknown, expected: unknown, message?: string): void;
+    static notEquals(actual: unknown, expected: unknown, message?: string): void;
+    static greaterThan(actual: number | Date, expected: number | Date, message?: string): void;
+    static lessThan(actual: number | Date, expected: number | Date, message?: string): void;
+    static isTrue(actual: unknown, message?: string): void;
+    static isFalse(actual: unknown, message?: string): void;
+    static isNull(actual: unknown, message?: string): void;
+    static notNull(actual: unknown, message?: string): void;
+    static deepEquals(actual: unknown, expected: unknown, message?: string): void;
+    static isType(actual: unknown, expectedType: string, message?: string): void;
+    static isNumber(actual: unknown, message?: string): void;
+    static isString(actual: unknown, message?: string): void;
+    static contains(array: unknown[], value: unknown, message?: string): void;
+    static fail(message?: string): void;
+    static throws(fn: () => void, message?: string): void;
+  }
+  /**
+   * Persistent-artifact resource manager for online tests (ref K-1): reuses named Drive
+   * folders/spreadsheets across runs instead of minting throwaway ones that are never cleaned
+   * up. `getOrCreateNamedFolder`/`getOrCreateNamedSpreadsheet` generalize the class's own
+   * hardcoded `getRootFolder`/`getSpreadsheet` to an arbitrary caller-supplied name.
+   */
+  class TestContext {
+    readonly TEST_ROOT_NAME: string;
+    readonly TEST_SS_NAME: string;
+    readonly TEST_DOC_NAME: string;
+    readonly apiCallCount: number;
+    getRootFolder(): unknown;
+    getOrCreateNamedFolder(name: string, parentFolder?: unknown | null): unknown;
+    getSpreadsheet(): unknown;
+    getOrCreateNamedSpreadsheet(name: string, parentFolder?: unknown | null): unknown;
+    getDocument(): unknown;
+    /** Strips protections/named ranges/extra sheets back to one blank "Sheet1"; defaults to `getSpreadsheet()`. */
+    resetSpreadsheet(ss?: unknown): void;
+    resetDocument(): void;
+    resetAll(): void;
+  }
+  const testContext: TestContext;
 }

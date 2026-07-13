@@ -99,6 +99,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   ConfigurationBuilder: () => (ConfigurationBuilder),
   ConfigurationError: () => (ConfigurationError),
   DataProviderInterface: () => (DataProviderInterface),
+  DateRange: () => (DateRange),
   ExceptionServiceInterface: () => (ExceptionServiceInterface),
   ExpressionEngineInterface: () => (ExpressionEngineInterface),
   HashUtils: () => (HashUtils),
@@ -8136,6 +8137,60 @@ class HtmlSanitizer {
 
 
 
+const OPEN_ENDED_SENTINEL_MS = 8640000000000000;
+class DateRange {
+  
+
+
+
+
+  constructor(start, end = null) {
+    if (!(start instanceof Date) || isNaN(start.getTime())) {
+      throw new TypeError('DateRange: start must be a valid Date');
+    }
+    const resolvedEnd = end === null || end === undefined ? new Date(OPEN_ENDED_SENTINEL_MS) : end;
+    if (!(resolvedEnd instanceof Date) || isNaN(resolvedEnd.getTime())) {
+      throw new TypeError('DateRange: end must be a valid Date or null/undefined');
+    }
+    if (start.getTime() > resolvedEnd.getTime()) {
+      throw new TypeError('DateRange: start must not be after end');
+    }
+    this.start = start;
+    this.end = resolvedEnd;
+  }
+
+  
+  isOpenEnded() {
+    return this.end.getTime() === OPEN_ENDED_SENTINEL_MS;
+  }
+
+  
+  contains(date) {
+    return date.getTime() >= this.start.getTime() && date.getTime() <= this.end.getTime();
+  }
+
+  
+  durationInDays() {
+    return DateUtils.MILLIS_PER_DAY === 0 ? 0 : Math.trunc((this.end.getTime() - this.start.getTime()) / DateUtils.MILLIS_PER_DAY);
+  }
+
+  
+  overlaps(other) {
+    return this.start.getTime() <= other.end.getTime() && other.start.getTime() <= this.end.getTime();
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
 
 class BaseError extends Error {
   
@@ -10786,6 +10841,10 @@ class ConfigurationBuilder {
 ;
 const testing = {};
 ;
+
+
+
+
 
 
 
@@ -66098,7 +66157,10 @@ class EnhancedTestRunner {
       const duration = new Date().getTime() - startTime;
       this._log(`[TEST:END] PASS | Duration: ${duration}ms`);
       this.results.passed++;
-    } catch (error) {
+    } catch (rawError) {
+      
+      
+      const error = rawError instanceof Error ? rawError : new Error(String(rawError));
       const duration = new Date().getTime() - startTime;
       this._log(`[ERROR:STACK] ${error.stack}`);
       this._log(`[TEST:END] FAIL | Duration: ${duration}ms`);
@@ -66411,15 +66473,10 @@ class TestContext {
 
 
   getRootFolder() {
-    if (this._rootFolder) return this._rootFolder;
-    this._trackApiCall();
-    const folders = DriveApp.getFoldersByName(this.TEST_ROOT_NAME);
-    if (folders.hasNext()) {
-      this._rootFolder = folders.next();
-    } else {
-      this._trackApiCall();
-      this._rootFolder = DriveApp.createFolder(this.TEST_ROOT_NAME);
+    if (this._rootFolder) {
+      return this._rootFolder;
     }
+    this._rootFolder = this.getOrCreateNamedFolder(this.TEST_ROOT_NAME);
     return this._rootFolder;
   }
 
@@ -66427,21 +66484,56 @@ class TestContext {
 
 
 
-  getSpreadsheet() {
-    if (this._spreadsheet) return this._spreadsheet;
+
+
+
+
+  getOrCreateNamedFolder(name, parentFolder = null) {
     this._trackApiCall();
-    const files = DriveApp.getFilesByName(this.TEST_SS_NAME);
-    if (files.hasNext()) {
-      const file = files.next();
-      this._spreadsheet = SpreadsheetApp.openById(file.getId());
-    } else {
-      this._trackApiCall();
-      this._spreadsheet = SpreadsheetApp.create(this.TEST_SS_NAME);
-      const file = DriveApp.getFileById(this._spreadsheet.getId());
-      this._trackApiCall();
-      file.moveTo(this.getRootFolder());
+    const folders = parentFolder ? parentFolder.getFoldersByName(name) : DriveApp.getFoldersByName(name);
+    if (folders.hasNext()) {
+      return folders.next();
     }
+    this._trackApiCall();
+    return parentFolder ? parentFolder.createFolder(name) : DriveApp.createFolder(name);
+  }
+
+  
+
+
+
+  getSpreadsheet() {
+    if (this._spreadsheet) {
+      return this._spreadsheet;
+    }
+    this._spreadsheet = this.getOrCreateNamedSpreadsheet(this.TEST_SS_NAME, this.getRootFolder());
     return this._spreadsheet;
+  }
+
+  
+
+
+
+
+
+
+
+
+
+  getOrCreateNamedSpreadsheet(name, parentFolder = null) {
+    this._trackApiCall();
+    const files = parentFolder ? parentFolder.getFilesByName(name) : DriveApp.getFilesByName(name);
+    if (files.hasNext()) {
+      return SpreadsheetApp.openById(files.next().getId());
+    }
+    this._trackApiCall();
+    const spreadsheet = SpreadsheetApp.create(name);
+    if (parentFolder) {
+      const file = DriveApp.getFileById(spreadsheet.getId());
+      this._trackApiCall();
+      file.moveTo(parentFolder);
+    }
+    return spreadsheet;
   }
 
   
@@ -66453,7 +66545,7 @@ class TestContext {
       try {
         this._document.getBody();
         return this._document;
-      } catch (e) {
+      } catch (_e) {
         
         this._trackApiCall();
         this._document = DocumentApp.openById(this._document.getId());
@@ -66533,7 +66625,7 @@ class TestContext {
     try {
       const body = doc.getBody();
       body.clear();
-    } catch (e) {
+    } catch (_e) {
       
       this._document = DocumentApp.openById(doc.getId());
       this._document.getBody().clear();

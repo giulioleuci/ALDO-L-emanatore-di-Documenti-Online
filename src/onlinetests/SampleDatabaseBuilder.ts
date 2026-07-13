@@ -86,20 +86,21 @@ const HEADERS: Record<string, string[]> = {
  * articolata class pair (05_AGGREGATI_E_CLASSI_ARTICOLATE.md). See
  * docs/superpowers/specs/2026-07-11-offline-online-test-expansion-design.md §2.
  *
- * Depends only on injectable ports (`ISampleSpreadsheetFactory`, `IDriveFacade`) and a clock
- * function, so it is fully testable offline; the real GAS-backed factory lives elsewhere, inside
- * `GoogleApiWrapper`-only code.
+ * Depends only on injectable ports (`ISampleSpreadsheetFactory`, `IDriveFacade`), so it is fully
+ * testable offline; the real GAS-backed factory lives elsewhere, inside `GoogleApiWrapper`-only
+ * code. Every artifact it builds uses a fixed (non-timestamped) name, so `IDriveFacade
+ * .createFolder`'s idempotent find-or-create and `GasSampleSpreadsheetFactory`'s
+ * testContext-backed reuse (ref ALDO_GLF_AUDIT_RESULTS.md K-1) both resolve the SAME Drive
+ * artifacts across repeated online-test runs instead of minting new ones every time.
  */
 export class SampleDatabaseBuilder {
   constructor(
     private readonly spreadsheets: ISampleSpreadsheetFactory,
-    private readonly drive: IDriveFacade,
-    private readonly clock: () => Date
+    private readonly drive: IDriveFacade
   ) {}
 
   build(): SampleDatabase {
-    const stamp = this.clock().toISOString();
-    const baseName = `_ALDO_ONLINETEST_${stamp}`;
+    const baseName = '_ALDO_ONLINETEST';
 
     const folderId = this.drive.createFolder(baseName);
     const sampleFolderUrl = `https://drive.google.com/drive/folders/${folderId}`;

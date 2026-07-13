@@ -9,9 +9,24 @@ This is an **implementation workspace**, not a single codebase. The task is to b
 Two top-level directories:
 
 - **`SPECS_ALDO/`** — The authoritative design spec for SGSA (17 Markdown files, **written in Italian**). This describes the domain, database, and services to be *implemented*. As of now the application itself is largely unimplemented; these documents are the blueprint.
-- **`GasLibraryFactory/`** — A mature, self-contained monorepo of 16 Google Apps Script libraries (its own git repo, build, and tests). SGSA *references and extends* these libraries; it must not reimplement functionality they already provide. This directory has **its own `CLAUDE.md`** with deep detail on the build pipeline, GAS V8 compatibility patches, source maps, and library-debugging workflow — read it before touching library source. You MUST **ONLY** use the docs in `GasLibraryFactory//DOCS_LIBS` and not read the code if not extremally necessary.
+- **`GasLibraryFactory/`** — A mature, self-contained monorepo of 16 Google Apps Script libraries (its own git repo, build, and tests). SGSA *references and extends* these libraries; it must not reimplement functionality they already provide. This directory has **its own `CLAUDE.md`** with deep detail on the build pipeline, GAS V8 compatibility patches, source maps, and library-debugging workflow — read it before touching library source. You MUST **ONLY** use the docs in `GasLibraryFactory/DOCS_LIBS` and not read the library code if not extremely necessary.
 
-## Sources of truth (precedence)
+`src/` (this repo's actual application code), `test/`, and the build tooling below are the implementation of SGSA itself, layered on top of those two reference directories.
+
+## GasLibraryFactory-first: the most important constraint
+
+Along with GAS-online compatibility, this is the single most important constraint of the entire project: **`GasLibraryFactory` must always be used wherever possible, and application code must never reimplement logic it already provides.** The long-term goal is not just to build SGSA, but to grow `GasLibraryFactory` into a maximally-reusable monorepo that other projects can build on — every case handled in ALDO with custom code instead of a library extension is coverage `GasLibraryFactory` permanently doesn't gain.
+
+This means, for **every** non-trivial coding choice, before writing implementation code you MUST:
+
+1. **Check `GasLibraryFactory/DOCS_LIBS` first** for existing logic, utilities, facades, or patterns that already solve (or nearly solve) the problem. Do this before designing a solution in `src/`, not after.
+2. **If a full match exists**, use it directly — do not wrap, re-derive, or partially copy its logic into ALDO.
+3. **If only a partial match exists** (the library covers part of the need, or covers a similar case but not quite this one), **stop and ask the user** whether they want `GasLibraryFactory` extended to cover the new case, rather than defaulting to writing custom logic in `src/`. Do not silently choose the custom-code path.
+4. **Only write ALDO-local code** when the user confirms extending the library is out of scope for the case at hand, or the logic is genuinely SGSA-domain-specific (e.g. CDU shape, `CONF_DOC`/`CONF_MAIL` interpretation) and has no place in a general-purpose GAS library.
+
+When in doubt about whether something belongs in the library or in ALDO, ask — don't guess.
+
+## Sources of truth
 
 When any SGSA spec document conflicts with another, these two win, in order:
 
@@ -30,10 +45,61 @@ When any SGSA spec document conflicts with another, these two win, in order:
 
 The domain is Clean Architecture: Presentation → Application Services → Domain (entities, value objects, aggregates, repositories, specifications) → Infrastructure. The Domain layer is agnostic of Google Sheets/Drive/Gmail.
 
+## Repository layout (`src/`)
+
+- `src/domain/` — entities, value objects, specifications, repository interfaces, `DomainError`. No GAS/library imports.
+- `src/application/` — use-case services (`services/`), document-generation strategies (`strategies/`, one class per `CONF_DOC` generator type), the CDU assembler (`context-engine/`, with `providers/`, `mappers/`, `interceptors/` subfolders), and data-import orchestration (`import/`).
+- `src/infrastructure/` — `facades/` wrap `GasLibraryFactory` library calls and native GAS services behind ALDO-owned interfaces (e.g. `IDriveFacade`, `IGmailFacade`, `ITemplateEngine`); `repositories/` implement the domain repository interfaces over `SheetDbAdapter`; `steps/` and `services/` hold infra-level helpers (e.g. `AlberoCartelle`).
+- `src/presentation/Menu.ts` — builds the Sheets UI menu; takes a UI facade, contains no business logic.
+- `src/config/` — the composition root: `ServiceContainer.ts` (thin typed wrapper over `CoreUtilsLib.LazyServiceContainer`), `Bootstrap.ts` (`initAldo()` wires every real facade/service/repository), `schema.ts`.
+- `src/entrypoints/EntryPoints.ts` — a deliberately separate, human-readable GAS script file. It calls functions like `initAldo`, `avviaGenerazioneDataDriven` as ambient globals (not imports) because GAS shares one global namespace across script files in a project.
+- `src/index.ts` — the other half of the entrypoint split: declares/imports the real functions and assigns them onto `globalThis` so GAS can call them by name (`onOpen`, `menu_avvioImportazioni`, `resumeJob`, plus everything `EntryPoints.ts` needs exposed). `onOpen` only builds the menu — it never triggers `initAldo()` eagerly.
+- `src/onlinetests/` — a separate webpack entry (`checks/`) of live-GAS smoke tests, built only in `--mode=online`; see Build modes below.
+
+Test tree mirrors `src/` under `test/unit/`; `test/integration/` and `test/build/` are separate Jest projects (see below). `test/fakes/` and `test/fixtures/` hold shared test doubles/data.
 
 ## Critical constraints when writing code
 
-- **Target is GAS V8**, not Node. ONLY synchronous code; avoid Node-specific and unsupported browser APIs. Source uses modern TS but is transpiled (Babel → Chrome 80) and patched for GAS by a script similar to `scripts/build-and-prepare.cjs`.
+- **Target is GAS V8**, not Node. ONLY synchronous code; avoid Node-specific and unsupported browser APIs. Source uses modern TS but is transpiled (Babel → Chrome 80) and patched for GAS by `scripts/build-and-prepare.cjs`.
 - **Native GAS service globals** (`DriveApp`, `SpreadsheetApp`, `DocumentApp`, `PropertiesService`, `CacheService`, `UrlFetchApp`, `Utilities`, `Session`, `ScriptApp`, `LockService`, `MailApp`) may only be touched inside **`GoogleApiWrapper` (L2)**. Everything else routes through a wrapper service. This is enforced by ESLint (`no-restricted-globals`); leaks fail `npm run lint`. (Narrow sanctioned exceptions exist — documented in `GasLibraryFactory/CLAUDE.md`.)
 - **Never edit `dist/*`** — it is generated. Fix source modules only.
 - The library dependency graph is strictly layered (L0→L4) with **no circular dependencies**; keep new code within its layer's allowed dependencies.
+- New services/repositories/facades are wired in `src/config/Bootstrap.ts` and resolved through `ServiceContainer`, never constructed ad hoc inside application code.
+
+## Commands
+
+```bash
+npm run typecheck          # tsc --noEmit
+npm run lint               # eslint .
+npm run lint:fix
+npm run format              # prettier --write .
+
+npm test                    # unit tests (test/unit/**, jest.config.cjs)
+npm run test:integration    # test/integration/**, jest.integration.config.cjs
+npm run test:build          # test/build/**, jest.build.config.cjs — validates build output shape
+
+npm run build:testing       # scripts/build-and-prepare.cjs --mode=testing (default)
+npm run build:testoffline   # --mode=testoffline
+npm run build:production    # --mode=production
+npm run build:online        # --mode=online (also runs the offline test suite as a push gate)
+
+npm run push:testing        # build:testing then clasp push
+npm run push:online         # build:online then clasp push
+
+npm run refresh:vendor      # scripts/refresh-vendor.cjs — pulls GasLibraryFactory's built bundle into vendor/
+npm run verify:vendor       # scripts/verify-vendor.cjs
+```
+
+Run a single test file: `npx jest --config jest.config.cjs path/to/File.test.ts` (swap the config for the integration/build variants as needed). Run a single test by name: add `-t "test name"`.
+
+All four jest configs share `test/setup/load-gaslibs.cjs` as a setup file and use `ts-jest` against `tsconfig.eslint.json`.
+
+## Build modes
+
+`scripts/build-and-prepare.cjs --mode=<production|testing|testoffline|online>` bundles `src/` (via webpack) together with the prebuilt `vendor/gaslibs.Code.js` library bundle into `dist/Code.js`, plus `dist/EntryPoints.js` from `src/entrypoints/EntryPoints.ts`. Key differences:
+
+- `testing`/`testoffline`/`production` build only the main webpack entry; `online` additionally builds the `onlinetests` entry into `OnlineTests.js` and applies V8-compat patches to it, then discards it for every other mode.
+- `online` mode generates `gas-source-map.json`, mapping minified `Code.js`/`OnlineTests.js` lines back to original TS source, and runs the full offline test suite as a pre-push gate (`push:online` fails if offline tests fail).
+- `production` mode minifies via Terser; `testing`/`testoffline` keep readable output for debugging in the Apps Script editor.
+
+`clasp push` excludes `gas-source-map.json` (it's a debugging artifact, not a deployable file).

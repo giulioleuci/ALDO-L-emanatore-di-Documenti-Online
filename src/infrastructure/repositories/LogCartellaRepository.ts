@@ -18,6 +18,9 @@ interface RegistraOptions {
 export class LogCartellaRepository extends Repository<LogCartella> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.LOG_FOLD, LogCartella);
+    // O(1) hot-lookup index for findByTipo (ref ALDO_GLF_AUDIT_RESULTS.md D-3), matching
+    // LogEmailRepository.findByPattern's pattern.
+    database.tables[TABLE.LOG_FOLD]!.createIndex(COL_LOG_FOLD.TIPO);
   }
 
   findByClasse(classe: Classe): LogCartella[] {
@@ -25,6 +28,8 @@ export class LogCartellaRepository extends Repository<LogCartella> {
   }
 
   findByTipo(tipo: string): LogCartella[] {
+    const hits = this.database.tables[TABLE.LOG_FOLD]!.indexedLookup(COL_LOG_FOLD.TIPO, tipo);
+    if (hits !== null) return hits.map((row) => LogCartella.fromData(row));
     return this.findAll().filter((l) => l.tipo === tipo);
   }
 

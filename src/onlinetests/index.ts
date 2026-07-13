@@ -45,26 +45,26 @@ export interface OnlineTestDeps {
  * the real `initAldo`, `SessionActiveUserFacade`) only when the caller does not override it.
  */
 export function executeOnlineTests(overrides: Partial<OnlineTestDeps> = {}): OnlineTestReport {
-  const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory();
   const clock = overrides.clock ?? ((): Date => new Date());
   // `DriveServiceFacade`'s `rootFolderId` anchors every relative path (see its class doc comment)
   // and is documented as normally being an already-existing `MasterConfig.idCartellaRoot` — there
-  // is no such root yet at this bootstrap step, since this is what MINTS the throwaway root folder
-  // for the whole online-test run. Rather than pass an undocumented `''` sentinel through the
-  // facade, mint the real folder directly via `DriveService.createFolder`'s own documented
-  // `parentFolderId?: string | null` (types/gaslibs/index.d.ts) and hand the facade a real,
-  // non-empty anchor id, matching its documented contract for every subsequent Drive operation.
+  // is no such root yet at this bootstrap step, since this is what resolves the persistent root
+  // folder for the whole online-test run. Fixed name + `testContext.getOrCreateNamedFolder` (ref
+  // ALDO_GLF_AUDIT_RESULTS.md K-1) reuses the SAME folder across runs instead of minting a fresh,
+  // never-deleted one every time (the previous per-run-timestamped-name behaviour).
+  const rootFolder = overrides.spreadsheetFactory === undefined ? mintRootFolder() : null;
+  const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
   const drive = overrides.drive ?? new DriveServiceFacade(
     ServiceFactory.getDriveService(),
     ServiceFactory.getPermissionService(),
-    mintRootFolder(`_ALDO_ONLINETEST_ROOT_${clock().toISOString()}`)
+    (rootFolder as NonNullable<typeof rootFolder>).getId()
   );
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const initAldoFn = overrides.initAldo ?? initAldo;
   const activeUserEmail = overrides.activeUserEmail ?? ((): string => new SessionActiveUserFacade().getEmail());
   const log = overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
 
-  const sample = new SampleDatabaseBuilder(spreadsheetFactory, drive, clock).build();
+  const sample = new SampleDatabaseBuilder(spreadsheetFactory, drive).build();
 
   const previousMasterId = properties.get(PROP_MASTER_SPREADSHEET_ID);
   if (previousMasterId !== null && previousMasterId.trim() !== '') {
@@ -82,20 +82,20 @@ export function executeOnlineTests(overrides: Partial<OnlineTestDeps> = {}): Onl
   return runner.report();
 }
 
+const ONLINETEST_ROOT_FOLDER_NAME = '_ALDO_ONLINETEST_ROOT';
+
 /**
- * Mints the throwaway root Drive folder for one online-test run by calling GLF's
- * `DriveService.createFolder` directly (`ServiceFactory` — a GoogleApiWrapper DI global, not one
- * of the native GAS service globals ESLint's `no-restricted-globals` gate restricts to
- * `src/infrastructure/facades/**` — so this needs no eslint scoping exception, unlike
- * {@link GasSampleSpreadsheetFactory} which touches `SpreadsheetApp` directly). Its
- * `parentFolderId?: string | null` param (types/gaslibs/index.d.ts) documents `null` as "create at
- * My Drive root", giving this bootstrap step a real folder id with no pre-existing anchor to hang
- * off — unlike every *other* Drive operation in this suite, which anchors to this folder via
- * {@link DriveServiceFacade}'s `rootFolderId` once it exists.
+ * Resolves the persistent root Drive folder for online-test runs via
+ * `GasOnlineTestFramework.testContext.getOrCreateNamedFolder` (ref ALDO_GLF_AUDIT_RESULTS.md K-1):
+ * a fixed name reused across runs, instead of the previous per-run-timestamped `DriveService
+ * .createFolder` call that minted (and never cleaned up) a brand-new folder every time. Legitimate
+ * per the `GasOnlineTestFramework/**` "runs inside real GAS by design" sanctioned exception in
+ * `GasLibraryFactory/CLAUDE.md` — `src/onlinetests/**` only ever executes inside a live online-test
+ * run, never the production request path — so this needs no eslint scoping exception, same as
+ * {@link GasSampleSpreadsheetFactory}.
  */
-function mintRootFolder(name: string): string {
-  const folder = ServiceFactory.getDriveService().createFolder(name, null) as { id: string };
-  return folder.id;
+function mintRootFolder(): GoogleAppsScript.Drive.Folder {
+  return testContext.getOrCreateNamedFolder(ONLINETEST_ROOT_FOLDER_NAME) as GoogleAppsScript.Drive.Folder;
 }
 
 /** GAS Run-dropdown entry point (design spec §2): no arguments, so it runs with no setup. */

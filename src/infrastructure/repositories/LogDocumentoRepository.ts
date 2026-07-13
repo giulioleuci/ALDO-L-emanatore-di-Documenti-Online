@@ -23,6 +23,11 @@ interface RegistraOptions {
 export class LogDocumentoRepository extends Repository<LogDocumento> {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.LOG_DOCS, LogDocumento);
+    // O-1) hot-lookup index for findByStato (ref ALDO_GLF_AUDIT_RESULTS.md D-2). LOG_DOCS
+    // has no Specification here (direct entity-field predicate), so this bypasses
+    // Repository.find() and calls the indexed lookup seam directly, matching
+    // LogEmailRepository.findByPattern's pattern.
+    database.tables[TABLE.LOG_DOCS]!.createIndex(COL_LOG_DOCS.STATO);
   }
 
   findByClasse(classe: Classe): LogDocumento[] {
@@ -34,6 +39,8 @@ export class LogDocumentoRepository extends Repository<LogDocumento> {
   }
 
   findByStato(stato: StatoDocumento): LogDocumento[] {
+    const hits = this.database.tables[TABLE.LOG_DOCS]!.indexedLookup(COL_LOG_DOCS.STATO, stato);
+    if (hits !== null) return hits.map((row) => LogDocumento.fromData(row));
     return this.findAll().filter((l) => l.getStato() === stato);
   }
 

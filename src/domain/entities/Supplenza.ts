@@ -68,9 +68,7 @@ export class Supplenza extends AldoEntity {
    * another's — the condition the creation invariant forbids (ref 04 §14).
    */
   contestoOverlaps(other: Supplenza): boolean {
-    const periodiSiSovrappongono = this.getPeriodo().contiene(other.getPeriodo().dal)
-      || other.getPeriodo().contiene(this.getPeriodo().dal);
-    return periodiSiSovrappongono
+    return this.getPeriodo().overlaps(other.getPeriodo())
       && this.classi.overlaps(other.getClassiScope())
       && this.materie.overlaps(other.getMaterieScope());
   }

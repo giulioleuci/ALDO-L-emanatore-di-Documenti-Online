@@ -1,28 +1,28 @@
 import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 
 /**
- * Real `SpreadsheetApp`-backed implementation of {@link ISampleSpreadsheetFactory}.
+ * `GasOnlineTestFramework.testContext`-backed implementation of {@link ISampleSpreadsheetFactory}
+ * (ref ALDO_GLF_AUDIT_RESULTS.md K-1). `testContext.getOrCreateNamedSpreadsheet` reuses an
+ * existing named spreadsheet across online-test runs instead of always minting a new one via bare
+ * `SpreadsheetApp.create` — that reuse-by-name capability is exactly what GLF's dedicated online
+ * test-harness library provides and ALDO previously hand-rolled without it (leaving a fresh,
+ * never-deleted spreadsheet in Drive after every run). `resetSpreadsheet` then strips any
+ * leftover sheets from a prior run back to the single default sheet a brand-new spreadsheet would
+ * have, so {@link SampleDatabaseBuilder}'s `addSheet` calls always start from the same clean slate.
  *
- * Neither `GasLibraryFactory/DOCS_LIBS/*.md` nor `types/gaslibs/index.d.ts` documents any
- * GLF-wrapped way to mint a brand-new named spreadsheet file — the vendored libraries only
- * operate on spreadsheets that already have an ID (`createSheets` adds tabs, `appendRows`
- * appends data to an existing sheet). SGSA's production `src/` code has no precedent for
- * creating a spreadsheet either, because it always assumes one already exists.
- *
- * This file is therefore a second, deliberate native-global exception, analogous to the
- * `GasOnlineTestFramework/**` entry in `GasLibraryFactory/CLAUDE.md`'s "Sanctioned exceptions
- * (the only ones)" list: that framework "runs inside real GAS by design," and so does this one
- * — `src/onlinetests/**` only ever executes inside a live online-test run against real Google
- * Workspace, never in the production request path. This class plays the exact role
- * `GoogleApiWrapper` plays for production code: it IS the L2 boundary for this test suite, the
- * one place allowed to touch `SpreadsheetApp` directly, so that {@link SampleDatabaseBuilder}
- * itself stays fully unit-testable offline via the `ISampleSpreadsheetFactory` port. It is not a
- * leak of the "native GAS globals only inside `GoogleApiWrapper`" rule; it is the documented
- * exception applied to a second, equally legitimate boundary.
+ * This class plays the same L2-boundary role for `SpreadsheetApp`-adjacent calls that
+ * `GoogleApiWrapper` plays for production code — legitimate per the `GasOnlineTestFramework/**`
+ * "runs inside real GAS by design" sanctioned exception in `GasLibraryFactory/CLAUDE.md`, mirrored
+ * here since `src/onlinetests/**` only ever executes inside a live online-test run, never the
+ * production request path — so {@link SampleDatabaseBuilder} itself stays fully unit-testable
+ * offline via the `ISampleSpreadsheetFactory` port.
  */
 export class GasSampleSpreadsheetFactory implements ISampleSpreadsheetFactory {
+  constructor(private readonly rootFolder: unknown = null) {}
+
   createSpreadsheet(name: string): ISampleSpreadsheet {
-    const spreadsheet = SpreadsheetApp.create(name);
+    const spreadsheet = testContext.getOrCreateNamedSpreadsheet(name, this.rootFolder) as GoogleAppsScript.Spreadsheet.Spreadsheet;
+    testContext.resetSpreadsheet(spreadsheet);
     return new GasSampleSpreadsheet(spreadsheet);
   }
 }

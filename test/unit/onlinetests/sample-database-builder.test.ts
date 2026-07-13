@@ -19,7 +19,7 @@ describe('SampleDatabaseBuilder', () => {
   it('creates one sheet per TABLE entry with the correct header row, plus a separate master spreadsheet', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
-    const builder = new SampleDatabaseBuilder(factory, drive, () => new Date('2026-07-11T10:00:00Z'));
+    const builder = new SampleDatabaseBuilder(factory, drive);
 
     const db = builder.build();
 
@@ -36,7 +36,7 @@ describe('SampleDatabaseBuilder', () => {
   it('creates the MASTER sheet only in the separate master spreadsheet, with one row pointing at the sample DB and folder', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
-    const builder = new SampleDatabaseBuilder(factory, drive, () => new Date('2026-07-11T10:00:00Z'));
+    const builder = new SampleDatabaseBuilder(factory, drive);
 
     const db = builder.build();
 
@@ -49,7 +49,7 @@ describe('SampleDatabaseBuilder', () => {
   it('seeds a SUPPLENZE row and a VARIAZIONI_CATTEDRA row on the same class/subject/date window, targeting different teachers', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
-    new SampleDatabaseBuilder(factory, drive, () => new Date('2026-07-11T10:00:00Z')).build();
+    new SampleDatabaseBuilder(factory, drive).build();
 
     const supplenze = factory.__sheets.get(TABLE.SUPPLENZE)!.rows;
     const variazioni = factory.__sheets.get(TABLE.VARIAZIONI_CATTEDRA)!.rows;
@@ -67,7 +67,7 @@ describe('SampleDatabaseBuilder', () => {
   it('seeds exactly one articolata partner-class pair in CLASSI, and enrolls one ALUNNI row in the partner class', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
-    new SampleDatabaseBuilder(factory, drive, () => new Date('2026-07-11T10:00:00Z')).build();
+    new SampleDatabaseBuilder(factory, drive).build();
 
     const classi = factory.__sheets.get(TABLE.CLASSI)!.rows;
     expect(classi.length).toBeGreaterThanOrEqual(2);
@@ -82,19 +82,19 @@ describe('SampleDatabaseBuilder', () => {
   it('seeds a CONF_DOC row and a CONF_MAIL row', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
-    new SampleDatabaseBuilder(factory, drive, () => new Date('2026-07-11T10:00:00Z')).build();
+    new SampleDatabaseBuilder(factory, drive).build();
 
     expect(factory.__sheets.get(TABLE.CONF_DOC)!.rows).toHaveLength(1);
     expect(factory.__sheets.get(TABLE.CONF_MAIL)!.rows).toHaveLength(1);
   });
 
-  it('names throwaway artifacts using the injected clock timestamp', () => {
+  it('names artifacts with a fixed (non-timestamped) base name, so repeated runs resolve the same Drive resources (ref ALDO_GLF_AUDIT_RESULTS.md K-1)', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
-    const clockIso = '2026-07-11T10:00:00.000Z';
-    new SampleDatabaseBuilder(factory, drive, () => new Date(clockIso)).build();
+    new SampleDatabaseBuilder(factory, drive).build();
+    new SampleDatabaseBuilder(factory, drive).build();
 
     const names = factory.createSpreadsheet.mock.calls.map((c: unknown[]) => c[0] as string);
-    expect(names.every((n: string) => n.startsWith(`_ALDO_ONLINETEST_${clockIso}`))).toBe(true);
+    expect(names).toEqual(['_ALDO_ONLINETEST_SAMPLE', '_ALDO_ONLINETEST_MASTER', '_ALDO_ONLINETEST_SAMPLE', '_ALDO_ONLINETEST_MASTER']);
   });
 });

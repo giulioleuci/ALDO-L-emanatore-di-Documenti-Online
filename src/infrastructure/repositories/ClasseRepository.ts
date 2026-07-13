@@ -12,7 +12,8 @@ import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { ArticolazioneConfig } from '../../domain/value-objects/ArticolazioneConfig';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
-import { TABLE, COL_DOCENTI, COL_MATERIE, COL_ALUNNI, COL_CLASSI } from '../../config/schema';
+import { ClassiAttiveSpec, ClassiPerAnnoSpec, ClassiPerIndirizzoSpec, ClassiArticolateSpec } from '../../domain/specifications/ClasseSpecs';
+import { TABLE, COL_DOCENTI, COL_MATERIE, COL_CLASSI } from '../../config/schema';
 import { EntityNotFoundError, MateriaNotFoundError, ValidationError } from '../../domain/errors/DomainError';
 
 /** Dynamic per-subject column names in the CLASSI cattedra matrix (ref 06 §3). */
@@ -56,19 +57,19 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   // --- Domain-specific finders (ref 06 §3) ---
 
   findAttive(): Classe[] {
-    return this.rows().filter((r) => r[COL_CLASSI.ATTIVA] === true).map((r) => Classe.fromData(r));
+    return this.find(new ClassiAttiveSpec());
   }
 
   findByAnno(anno: number): Classe[] {
-    return this.rows().filter((r) => Number(r[COL_CLASSI.ANNO]) === anno).map((r) => Classe.fromData(r));
+    return this.find(new ClassiPerAnnoSpec(anno));
   }
 
   findByIndirizzo(indirizzoId: IndirizzoId): Classe[] {
-    return this.rows().filter((r) => r[COL_CLASSI.INDIRIZZO] === indirizzoId.value).map((r) => Classe.fromData(r));
+    return this.find(new ClassiPerIndirizzoSpec(indirizzoId));
   }
 
   findArticolate(): Classe[] {
-    return this.rows().filter((r) => this.hasArticolazione(r)).map((r) => Classe.fromData(r));
+    return this.find(new ClassiArticolateSpec());
   }
 
   // --- Cattedra matrix (dynamic columns, ref 06 §3) ---
@@ -349,10 +350,11 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return new ConsiglioDiClasse(cattedre);
   }
 
+  /** Delegates to AlunnoRepository instead of reaching into TABLE.ALUNNI directly (ref ALDO_GLF_AUDIT_RESULTS.md D-1). */
   getAlunniAttivi(id: ClasseId): RepoRow[] {
-    const spec = new AlunniAttiviSpec();
-    const rows = this.database.tables[TABLE.ALUNNI]!.getAllRows() as unknown as RepoRow[];
-    return rows.filter((r) => r[COL_ALUNNI.CLASSE] === id.value && spec.isSatisfiedBy(r));
+    return this.alunni.find(new AlunniAttiviSpec())
+      .filter((a) => a.classe === id.value)
+      .map((a) => a.toData() as unknown as RepoRow);
   }
 
   private indexDocenti(): Map<string, Docente> {
@@ -363,19 +365,10 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return map;
   }
 
-  private rows(): Record<string, unknown>[] {
-    return this.database.tables[TABLE.CLASSI]!.getAllRows();
-  }
-
   private rowOf(classe: Classe): Record<string, unknown> {
     const row = this.database.tables[TABLE.CLASSI]!.getByPK(classe.id ?? '');
     if (row === null) throw new EntityNotFoundError(`Classe ${classe.id ?? '?'} non trovata`);
     return row;
-  }
-
-  private hasArticolazione(row: Record<string, unknown>): boolean {
-    const a = row[COL_CLASSI.ARTICOLAZIONE];
-    return typeof a === 'string' && a.trim().length > 0;
   }
 
   /** Emails from a CSV cell, trimmed and non-empty. */

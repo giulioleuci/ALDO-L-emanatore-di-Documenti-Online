@@ -1,11 +1,15 @@
 import { ConfigurazioneImport } from '../../domain/entities/ConfigurazioneImport';
+import type { IConfigurazioneImportRepository } from '../../domain/repositories/IConfigurazioneImportRepository';
 import { TABLE } from '../../config/schema';
 
 /**
  * CONF_IMP repository on the DomainRepositoryLib Repository base (PK = ID,
  * ref 06 §10). Small, stable config table, cached for the session.
  */
-export class ConfigurazioneImportRepository extends Repository<ConfigurazioneImport> {
+export class ConfigurazioneImportRepository
+  extends Repository<ConfigurazioneImport>
+  implements IConfigurazioneImportRepository
+{
   // Named listCache (not `cache`): DomainRepositoryLib's base Repository
   // already owns a `this.cache` field (a CacheService slot used by findById);
   // reusing that name silently breaks findById after this local cache populates.

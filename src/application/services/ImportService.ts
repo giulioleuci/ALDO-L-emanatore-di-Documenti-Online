@@ -1,4 +1,4 @@
-import type { ConfigurazioneImportRepository } from '../../infrastructure/repositories/ConfigurazioneImportRepository';
+import type { IConfigurazioneImportRepository } from '../../domain/repositories/IConfigurazioneImportRepository';
 import { toLibraryRecipe, isGhostRecord } from '../import/ImportRecipeMapper';
 import { PipelineError } from '../../domain/errors/DomainError';
 
@@ -33,7 +33,7 @@ const META_COLUMNS = ['DATA_MODIFICA'];
 export class ImportService {
   constructor(
     private readonly engine: ImportEngine,
-    private readonly configs: ConfigurazioneImportRepository
+    private readonly configs: IConfigurazioneImportRepository
   ) {}
 
   /** Runs one CONF_IMP job end to end (ref 12 §3, steps 1-8). */

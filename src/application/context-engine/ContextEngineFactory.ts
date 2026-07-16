@@ -19,6 +19,7 @@ import { SupplenzaRepository } from '../../infrastructure/repositories/Supplenza
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
+import type { IRuoloSpecialeRepository } from '../../domain/repositories/IRuoloSpecialeRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
@@ -35,7 +36,7 @@ import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDoc
 export class ContextEngineFactory {
   static create(database: RepositoryDatabase): ContextBuilder {
     const master = new MasterSheetRepository(database);
-    const ruoli = new RuoloSpecialeRepository(database);
+    const ruoli: IRuoloSpecialeRepository = new RuoloSpecialeRepository(database);
     const docenti = new DocenteRepository(database);
     const classi = new ClasseRepository(database);
     const alunni = new AlunnoRepository(database);

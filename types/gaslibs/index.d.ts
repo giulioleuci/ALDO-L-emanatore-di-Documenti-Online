@@ -919,6 +919,11 @@ declare global {
     getUuid(): string;
     formatDate(date: Date, timeZone: string, format: string): string;
   }
+  /** GoogleApiWrapper facade over the native Session global (ref GoogleApiWrapper/src/services/UserService.js). */
+  class UserService {
+    constructor(logger?: LoggerService);
+    getActiveUserEmail(): string;
+  }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
     static reset(resetConfig?: boolean): void;
@@ -934,6 +939,7 @@ declare global {
     static getUiService(): LibUiService;
     static getSpreadsheetService(): SpreadsheetService;
     static getPermissionService(): PermissionService;
+    static getUserService(): UserService;
     /** Raw cache FACTORY (exposes getScriptCache()) — NOT the resolved cache getCache() returns. */
     static getCacheService(): { getScriptCache(): unknown };
   }

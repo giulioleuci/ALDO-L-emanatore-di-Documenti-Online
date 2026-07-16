@@ -6,6 +6,7 @@ import type { ValoreCarenza } from '../value-objects/ValoreCarenza';
 import type { AnnoScolastico } from '../value-objects/AnnoScolastico';
 
 export interface ICarenzaRepository {
+  findAll(): Carenza[];
   findByAlunno(alunno: Alunno, options?: { annoScolastico?: AnnoScolastico }): Carenza[];
   findByClasse(classe: Classe, data?: Date): Carenza[];
   findNonNotificate(): Carenza[];

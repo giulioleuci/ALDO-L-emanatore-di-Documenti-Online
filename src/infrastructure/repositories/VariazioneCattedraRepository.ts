@@ -1,4 +1,5 @@
 import { VariazioneCattedra } from '../../domain/entities/VariazioneCattedra';
+import type { IVariazioneCattedraRepository } from '../../domain/repositories/IVariazioneCattedraRepository';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import type { Email } from '../../domain/value-objects/Email';
@@ -14,7 +15,10 @@ import { TABLE, COL_VARIAZIONI } from '../../config/schema';
  * Composite PK (CLASSE_ID, MATERIA_ID) — both CSV, matched by containment in
  * memory, never a direct PK lookup (ref 06 §20). Priority 2 in role resolution.
  */
-export class VariazioneCattedraRepository extends Repository<VariazioneCattedra> {
+export class VariazioneCattedraRepository
+  extends Repository<VariazioneCattedra>
+  implements IVariazioneCattedraRepository
+{
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.VARIAZIONI_CATTEDRA, VariazioneCattedra);
     // O(1) hot-lookup index for findByNuovoTitolare (ref ALDO_GLF_AUDIT_RESULTS.md D-4):

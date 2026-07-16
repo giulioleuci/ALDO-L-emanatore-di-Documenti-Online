@@ -3,6 +3,7 @@ import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepo
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { VariazioneCattedraRepository } from '../../infrastructure/repositories/VariazioneCattedraRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
+import type { IVariazioneCattedraRepository } from '../../domain/repositories/IVariazioneCattedraRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
@@ -34,7 +35,7 @@ export class CattedraResolver {
   private readonly classi: ClasseRepository;
   private readonly docenti: DocenteRepository;
   private readonly supplenze: ISupplenzaRepository;
-  private readonly variazioni: VariazioneCattedraRepository;
+  private readonly variazioni: IVariazioneCattedraRepository;
 
   constructor(database: RepositoryDatabase) {
     this.classi = new ClasseRepository(database);

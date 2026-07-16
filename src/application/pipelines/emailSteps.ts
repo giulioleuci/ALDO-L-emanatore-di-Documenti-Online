@@ -7,7 +7,7 @@ import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionE
 import type { IGmailFacade, EmailSendOptions } from '../../infrastructure/facades/GmailServiceFacade';
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
-import type { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
@@ -84,7 +84,7 @@ export class BuildCDUStep extends Step {
     logger: LoggerService,
     private readonly contextBuilder: ContextBuilder,
     private readonly docenti: IDocenteRepository,
-    private readonly alunni: AlunnoRepository
+    private readonly alunni: IAlunnoRepository
   ) {
     super('BuildCDU', logger, { requiredKeys: ['config', 'confMail', 'emailTarget', 'now'] });
   }

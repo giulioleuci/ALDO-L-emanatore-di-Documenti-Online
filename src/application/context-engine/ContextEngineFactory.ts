@@ -24,6 +24,7 @@ import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepo
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import { OreASLRepository } from '../../infrastructure/repositories/OreASLRepository';
@@ -42,7 +43,7 @@ export class ContextEngineFactory {
     const ruoli: IRuoloSpecialeRepository = new RuoloSpecialeRepository(database);
     const docenti: IDocenteRepository = new DocenteRepository(database);
     const classi = new ClasseRepository(database);
-    const alunni = new AlunnoRepository(database);
+    const alunni: IAlunnoRepository = new AlunnoRepository(database);
     const materie: IMateriaRepository = new MateriaRepository(database);
     const oreAsl: IOreASLRepository = new OreASLRepository(database);
     const logDocs = new LogDocumentoRepository(database);

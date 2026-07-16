@@ -1,7 +1,7 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, CduAlunno } from '../Cdu';
 import type { BuildParams } from '../Recipe';
-import type { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
 import type { IOreASLRepository } from '../../../domain/repositories/IOreASLRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
@@ -20,7 +20,7 @@ import { EntityNotFoundError } from '../../../domain/errors/DomainError';
  */
 export class AlunnoProvider implements ContextProvider {
   constructor(
-    private readonly alunni: AlunnoRepository,
+    private readonly alunni: IAlunnoRepository,
     private readonly classi: ClasseRepository,
     private readonly oreAsl: IOreASLRepository,
     private readonly cdc?: CdcAssembler

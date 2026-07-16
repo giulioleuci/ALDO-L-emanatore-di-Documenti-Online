@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
-import type { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import { getAlunnoEntity } from '../techEntities';
 
 /**
@@ -10,7 +10,7 @@ import { getAlunnoEntity } from '../techEntities';
  * dependency: `student` before `piani`).
  */
 export class PianiProvider implements ContextProvider {
-  constructor(private readonly alunni: AlunnoRepository) {}
+  constructor(private readonly alunni: IAlunnoRepository) {}
 
   provide(cdu: Cdu): void {
     const focusAlunno = cdu.focus.alunno;

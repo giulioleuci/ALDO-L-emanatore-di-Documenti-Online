@@ -1,5 +1,6 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
@@ -48,7 +49,7 @@ export class StoricoAlunniService {
   perAlunno(alunnoEmail: string, profondita = 1): AnnoAlunnoStorico[] {
     const out: AnnoAlunnoStorico[] = [];
     for (const { anno, db } of this.provider.anniStorici(profondita)) {
-      const alunni = new AlunnoRepository(db);
+      const alunni: IAlunnoRepository = new AlunnoRepository(db);
       const classi = new ClasseRepository(db);
       const carenze: ICarenzaRepository = new CarenzaRepository(db);
       const piani: IPianoRepository = new PianoRepository(db);

@@ -2,7 +2,7 @@ import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, CduClasse } from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
-import type { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { Classe } from '../../../domain/entities/Classe';
 import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
@@ -18,7 +18,7 @@ import { EntityNotFoundError, ValidationError } from '../../../domain/errors/Dom
 export class ClasseProvider implements ContextProvider {
   constructor(
     private readonly classi: ClasseRepository,
-    private readonly alunni?: AlunnoRepository
+    private readonly alunni?: IAlunnoRepository
   ) {}
 
   provide(cdu: Cdu, params: BuildParams): void {

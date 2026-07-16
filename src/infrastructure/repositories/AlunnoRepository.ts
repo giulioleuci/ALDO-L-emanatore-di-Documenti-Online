@@ -4,6 +4,7 @@ import { CarenzaRepository } from './CarenzaRepository';
 import { PianoRepository } from './PianoRepository';
 import { OreASLRepository } from './OreASLRepository';
 import { MovimentoAlunnoRepository } from './MovimentoAlunnoRepository';
+import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { Carenza } from '../../domain/entities/Carenza';
 import type { Piano } from '../../domain/entities/Piano';
 import type { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
@@ -20,7 +21,7 @@ import { TABLE } from '../../config/schema';
  * to their repositories, built over the same database. The ClasseRepository-
  * dependent methods (getClasse/getIndirizzoStudente/articolazione) land in R2.
  */
-export class AlunnoRepository extends Repository<Alunno> {
+export class AlunnoRepository extends Repository<Alunno> implements IAlunnoRepository {
   private readonly carenze: CarenzaRepository;
   private readonly piani: PianoRepository;
   private readonly oreAsl: OreASLRepository;

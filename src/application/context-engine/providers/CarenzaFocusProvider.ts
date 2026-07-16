@@ -1,7 +1,7 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { BuildParams } from '../Recipe';
-import type { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
+import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import { getAlunnoEntity } from '../techEntities';
 
 /**
@@ -11,7 +11,7 @@ import { getAlunnoEntity } from '../techEntities';
  * recent shortfall of the student is used. Does nothing if the student has none.
  */
 export class CarenzaFocusProvider implements ContextProvider {
-  constructor(private readonly alunni: AlunnoRepository) {}
+  constructor(private readonly alunni: IAlunnoRepository) {}
 
   provide(cdu: Cdu, params: BuildParams): void {
     const carenze = this.alunni.getCarenze(getAlunnoEntity(cdu)); // most recent first

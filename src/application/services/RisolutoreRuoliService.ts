@@ -11,6 +11,7 @@ import type { IRuoloSpecialeRepository } from '../../domain/repositories/IRuoloS
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
+import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import { Email } from '../../domain/value-objects/Email';
@@ -53,7 +54,7 @@ type RoleStrategy = (ctx: RoleContext) => RoleResult;
 export class RisolutoreRuoliService {
   private readonly classi: ClasseRepository;
   private readonly docenti: IDocenteRepository;
-  private readonly alunni: AlunnoRepository;
+  private readonly alunni: IAlunnoRepository;
   private readonly dipartimenti: IDipartimentoRepository;
   private readonly materie: IMateriaRepository;
   private readonly ruoli: IRuoloSpecialeRepository;

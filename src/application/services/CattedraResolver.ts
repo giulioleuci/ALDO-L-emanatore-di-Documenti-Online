@@ -1,4 +1,5 @@
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { VariazioneCattedraRepository } from '../../infrastructure/repositories/VariazioneCattedraRepository';
@@ -33,7 +34,7 @@ import type { MateriaId } from '../../domain/value-objects/MateriaId';
  * (`SupplenzaRepository.findSupplenzaSpecifica` -> `RoleResolutionLib.getDelegationChain`).
  */
 export class CattedraResolver {
-  private readonly classi: ClasseRepository;
+  private readonly classi: IClasseRepository;
   private readonly docenti: IDocenteRepository;
   private readonly supplenze: ISupplenzaRepository;
   private readonly variazioni: IVariazioneCattedraRepository;

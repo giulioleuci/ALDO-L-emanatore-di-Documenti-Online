@@ -1,4 +1,5 @@
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
@@ -64,7 +65,7 @@ export interface ASLReport {
  * qualitative shortfall with no grade) counts as GRAVE.
  */
 export class ReportService {
-  private readonly classi: ClasseRepository;
+  private readonly classi: IClasseRepository;
   private readonly docenti: IDocenteRepository;
   private readonly alunni: IAlunnoRepository;
   private readonly carenze: ICarenzaRepository;

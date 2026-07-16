@@ -2,6 +2,7 @@ import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import { PianoRepository } from '../../infrastructure/repositories/PianoRepository';
@@ -50,7 +51,7 @@ export class StoricoAlunniService {
     const out: AnnoAlunnoStorico[] = [];
     for (const { anno, db } of this.provider.anniStorici(profondita)) {
       const alunni: IAlunnoRepository = new AlunnoRepository(db);
-      const classi = new ClasseRepository(db);
+      const classi: IClasseRepository = new ClasseRepository(db);
       const carenze: ICarenzaRepository = new CarenzaRepository(db);
       const piani: IPianoRepository = new PianoRepository(db);
       const movimenti: IMovimentoAlunnoRepository = new MovimentoAlunnoRepository(db);

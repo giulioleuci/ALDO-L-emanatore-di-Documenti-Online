@@ -1,5 +1,6 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 
 export interface DocenteMateriaStorico {
@@ -34,7 +35,7 @@ export class StoricoClassiService {
         out.push({ anno, nomeStorico: null, docenti: [] });
         continue;
       }
-      const classi = new ClasseRepository(db);
+      const classi: IClasseRepository = new ClasseRepository(db);
       const classe = classi.findById(nomeStorico);
       const docenti: DocenteMateriaStorico[] = [];
       if (classe !== null) {

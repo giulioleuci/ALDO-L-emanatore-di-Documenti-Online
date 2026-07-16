@@ -1,5 +1,6 @@
 import type { Cdu } from '../context-engine/Cdu';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import { DipartimentoRepository } from '../../infrastructure/repositories/DipartimentoRepository';
@@ -52,7 +53,7 @@ type RoleStrategy = (ctx: RoleContext) => RoleResult;
  * substitute the email pipeline uses).
  */
 export class RisolutoreRuoliService {
-  private readonly classi: ClasseRepository;
+  private readonly classi: IClasseRepository;
   private readonly docenti: IDocenteRepository;
   private readonly alunni: IAlunnoRepository;
   private readonly dipartimenti: IDipartimentoRepository;

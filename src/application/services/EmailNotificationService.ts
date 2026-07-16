@@ -29,6 +29,7 @@ import { ContextEngineFactory } from '../context-engine/ContextEngineFactory';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import { ConfigurazioneEmailRepository } from '../../infrastructure/repositories/ConfigurazioneEmailRepository';
 import type { IConfigurazioneEmailRepository } from '../../domain/repositories/IConfigurazioneEmailRepository';
@@ -57,7 +58,7 @@ export interface EmailNotificationDeps {
   expressionEngine: IExpressionEngine;
   docenti: IDocenteRepository;
   alunni: IAlunnoRepository;
-  classi: ClasseRepository;
+  classi: IClasseRepository;
   carenze: ICarenzaRepository;
   confMail: IConfigurazioneEmailRepository;
   logMail: ILogEmailRepository;

@@ -1,5 +1,6 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 
 export interface ClasseMateriaStorico {
   classe: string;
@@ -24,7 +25,7 @@ export class StoricoDocentiService {
   perDocente(docenteEmail: string, profondita = 1): AnnoDocenteStorico[] {
     const out: AnnoDocenteStorico[] = [];
     for (const { anno, db } of this.provider.anniStorici(profondita)) {
-      const classi = new ClasseRepository(db);
+      const classi: IClasseRepository = new ClasseRepository(db);
       const trovate: ClasseMateriaStorico[] = [];
       for (const classe of classi.findAll()) {
         for (const m of classi.getMaterieDelDocente(classe, docenteEmail)) {

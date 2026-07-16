@@ -1,4 +1,5 @@
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import { LogCartellaRepository } from '../../infrastructure/repositories/LogCartellaRepository';
@@ -27,7 +28,7 @@ export interface DocumentoFiltri {
  * GAS session) and discard it afterwards.
  */
 export class AggregatoreDati {
-  private readonly classi: ClasseRepository;
+  private readonly classi: IClasseRepository;
   private readonly carenze: ICarenzaRepository;
   private readonly logDocs: ILogDocumentoRepository;
   private readonly logFold: ILogCartellaRepository;

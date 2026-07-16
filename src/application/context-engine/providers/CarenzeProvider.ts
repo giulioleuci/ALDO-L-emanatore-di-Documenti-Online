@@ -1,7 +1,7 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
-import type { MateriaRepository } from '../../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import { getAlunnoEntity } from '../techEntities';
 import { carenzeDettaglioSemplice } from '../mappers/carenzeMapper';
 
@@ -14,7 +14,7 @@ export class CarenzeProvider implements ContextProvider {
 
   constructor(
     private readonly alunni: AlunnoRepository,
-    private readonly materie: MateriaRepository
+    private readonly materie: IMateriaRepository
   ) {}
 
   provide(cdu: Cdu): void {

@@ -1,7 +1,7 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
-import type { MateriaRepository } from '../../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import { CdcAssembler } from '../CdcAssembler';
 import { getClasseEntity } from '../techEntities';
 
@@ -15,7 +15,7 @@ import { getClasseEntity } from '../techEntities';
 export class ConsiglioClasseProvider implements ContextProvider {
   private readonly cdc: CdcAssembler;
 
-  constructor(classi: ClasseRepository, materie: MateriaRepository) {
+  constructor(classi: ClasseRepository, materie: IMateriaRepository) {
     this.cdc = new CdcAssembler(classi, materie);
   }
 

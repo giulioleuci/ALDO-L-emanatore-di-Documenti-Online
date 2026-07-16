@@ -5,7 +5,7 @@ import {
 import type { MateriaColumn } from './SheetMaterieGeneratorStrategy';
 import type { Cdu } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { RisolutoreRuoliService } from '../services/RisolutoreRuoliService';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
@@ -45,7 +45,7 @@ import { GestioneSupplenti } from '../../domain/value-objects/enums';
 export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGeneratorStrategy {
   constructor(
     sheets: SpreadsheetService,
-    materie: MateriaRepository,
+    materie: IMateriaRepository,
     templates: ITemplateEngine,
     private readonly roles: RisolutoreRuoliService
   ) {

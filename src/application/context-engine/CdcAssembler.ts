@@ -1,6 +1,6 @@
 import type { DocenteCdcVM } from './Cdu';
 import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
-import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
@@ -18,7 +18,7 @@ const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
 export class CdcAssembler {
   constructor(
     private readonly classi: ClasseRepository,
-    private readonly materie: MateriaRepository
+    private readonly materie: IMateriaRepository
   ) {}
 
   /** Full council of the class (09 §4): articulated councils span the whole group. */

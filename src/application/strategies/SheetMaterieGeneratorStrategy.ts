@@ -1,7 +1,7 @@
 import type { GeneratorStrategy } from './GeneratorStrategy';
 import type { Cdu, CduClasse } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ConfigurationError } from '../../domain/errors/DomainError';
@@ -93,7 +93,7 @@ function readParams(config: ConfigurazioneDocumento): SheetMaterieParams {
 export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
   constructor(
     protected readonly sheets: SpreadsheetService,
-    protected readonly materie: MateriaRepository,
+    protected readonly materie: IMateriaRepository,
     protected readonly templates: ITemplateEngine
   ) {}
 

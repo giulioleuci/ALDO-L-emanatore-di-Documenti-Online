@@ -11,6 +11,7 @@ import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEm
 import type { Classe } from '../../domain/entities/Classe';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
@@ -57,7 +58,7 @@ export interface EmailNotificationDeps {
   logDocs: LogDocumentoRepository;
   master: MasterSheetRepository;
   supplenze: ISupplenzaRepository;
-  materie: MateriaRepository;
+  materie: IMateriaRepository;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
   now: Date;
   /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */

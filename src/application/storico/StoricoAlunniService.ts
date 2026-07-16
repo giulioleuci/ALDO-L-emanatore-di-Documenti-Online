@@ -6,6 +6,7 @@ import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepos
 import { PianoRepository } from '../../infrastructure/repositories/PianoRepository';
 import { MovimentoAlunnoRepository } from '../../infrastructure/repositories/MovimentoAlunnoRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import { Email } from '../../domain/value-objects/Email';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { TipoMovimento } from '../../domain/value-objects/enums';
@@ -50,7 +51,7 @@ export class StoricoAlunniService {
       const carenze: ICarenzaRepository = new CarenzaRepository(db);
       const piani = new PianoRepository(db);
       const movimenti = new MovimentoAlunnoRepository(db);
-      const materie = new MateriaRepository(db);
+      const materie: IMateriaRepository = new MateriaRepository(db);
 
       const alunno = alunni.findById(alunnoEmail);
       const classe =

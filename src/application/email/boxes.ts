@@ -1,5 +1,5 @@
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
-import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 
 /**
@@ -72,7 +72,7 @@ export function wrapBox(titolo: string, coloreBordo: string, contenutoInterno: s
 /** Enriches the CDU carenze dettaglio with MATERIE colours/symbol (formato B, 11 §11). */
 export function mapCarenzeFormatoB(
   dettaglio: Array<{ materia: string; voto: string }>,
-  materie: MateriaRepository
+  materie: IMateriaRepository
 ): CarenzaFormatoB[] {
   return dettaglio.map((d) => {
     const materia = materie.findById(d.materia);
@@ -242,7 +242,7 @@ function str(v: unknown): string {
  */
 function aggregaDati(
   cdu: Record<string, unknown>,
-  materie: MateriaRepository
+  materie: IMateriaRepository
 ): Record<string, unknown> {
   const focus = cdu['focus'] as
     | {
@@ -273,7 +273,7 @@ export function renderBoxes(
   composer: ContentComposer,
   confMail: ConfigurazioneEmail,
   cdu: Record<string, unknown>,
-  materie: MateriaRepository,
+  materie: IMateriaRepository,
   templates: ITemplateEngine
 ): { ordered: string[]; boxes: Record<string, RenderedBox> } {
   const cfgs = confMail.getBoxes();

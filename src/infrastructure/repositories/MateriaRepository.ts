@@ -1,4 +1,5 @@
 import { Materia } from '../../domain/entities/Materia';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import {
   MaterieEsamePrimaSpec,
   MaterieEsameSecondaSpec
@@ -11,7 +12,7 @@ import { TABLE } from '../../config/schema';
  * MATERIE repository on the DomainRepositoryLib Repository base. Small, stable
  * lookup table: loaded once and cached for the session (ref 06 §4/§Caching).
  */
-export class MateriaRepository extends Repository<Materia> {
+export class MateriaRepository extends Repository<Materia> implements IMateriaRepository {
   // Named listCache (not `cache`): DomainRepositoryLib's base Repository
   // already owns a `this.cache` field (a CacheService slot used by findById);
   // reusing that name silently breaks findById after this local cache populates.

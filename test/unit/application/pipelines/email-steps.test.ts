@@ -7,28 +7,28 @@ import {
   SendEmailStep,
   LogEmailStep,
   PostProcessEmailStep
-} from '../../../src/infrastructure/steps/emailSteps';
-import { ConfigurazioneEmail } from '../../../src/domain/entities/ConfigurazioneEmail';
-import { Docente } from '../../../src/domain/entities/Docente';
-import { Alunno } from '../../../src/domain/entities/Alunno';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
-import type { Cdu } from '../../../src/application/context-engine/Cdu';
-import type { EmailTarget } from '../../../src/application/email/saluto';
-import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
-import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
+} from '../../../../src/application/pipelines/emailSteps';
+import { ConfigurazioneEmail } from '../../../../src/domain/entities/ConfigurazioneEmail';
+import { Docente } from '../../../../src/domain/entities/Docente';
+import { Alunno } from '../../../../src/domain/entities/Alunno';
+import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import type { Cdu } from '../../../../src/application/context-engine/Cdu';
+import type { EmailTarget } from '../../../../src/application/email/saluto';
+import { ExpressionEngineFacade } from '../../../../src/infrastructure/facades/ExpressionEngineFacade';
+import { DocenteRepository } from '../../../../src/infrastructure/repositories/DocenteRepository';
 
-import { AlunnoRepository } from '../../../src/infrastructure/repositories/AlunnoRepository';
-import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
-import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
-import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
-import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
-import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
-import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
-import { fixtureTables } from '../../../test/fixtures/tables';
-import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
-import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
-import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
-import type { Row } from '../../../src/infrastructure/db/Database';
+import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
+import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
+import { SupplenzaRepository } from '../../../../src/infrastructure/repositories/SupplenzaRepository';
+import { MasterSheetRepository } from '../../../../src/infrastructure/repositories/MasterSheetRepository';
+import { LogEmailRepository } from '../../../../src/infrastructure/repositories/LogEmailRepository';
+import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
+import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
+import { fixtureTables } from '../../../../test/fixtures/tables';
+import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
+import { FakeGmailFacade } from '../../../../test/fakes/FakeGmailFacade';
+import { FakeDriveFacade } from '../../../../test/fakes/FakeDriveFacade';
+import type { Row } from '../../../../src/infrastructure/db/Database';
 
 const logger = new LoggerService();
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window

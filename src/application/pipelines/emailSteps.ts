@@ -1,29 +1,29 @@
-import type { Cdu, CduDestinatario } from '../../application/context-engine/Cdu';
-import type { ContextBuilder } from '../../application/context-engine/ContextBuilder';
-import type { BuildParams } from '../../application/context-engine/Recipe';
-import type { EmailTarget } from '../../application/email/saluto';
-import type { ITemplateEngine } from '../facades/TemplateEngineFacade';
-import type { IExpressionEngine } from '../facades/ExpressionEngineFacade';
-import type { IGmailFacade, EmailSendOptions } from '../facades/GmailServiceFacade';
-import type { IDatabase, Row } from '../db/Database';
-import type { DocenteRepository } from '../repositories/DocenteRepository';
-import type { AlunnoRepository } from '../repositories/AlunnoRepository';
-import type { MateriaRepository } from '../repositories/MateriaRepository';
-import type { SupplenzaRepository } from '../repositories/SupplenzaRepository';
-import type { MasterSheetRepository } from '../repositories/MasterSheetRepository';
-import type { LogEmailRepository } from '../repositories/LogEmailRepository';
-import type { LogDocumentoRepository } from '../repositories/LogDocumentoRepository';
-import type { IDriveFacade } from '../facades/DriveServiceFacade';
+import type { Cdu, CduDestinatario } from '../context-engine/Cdu';
+import type { ContextBuilder } from '../context-engine/ContextBuilder';
+import type { BuildParams } from '../context-engine/Recipe';
+import type { EmailTarget } from '../email/saluto';
+import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
+import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
+import type { IGmailFacade, EmailSendOptions } from '../../infrastructure/facades/GmailServiceFacade';
+import type { IDatabase, Row } from '../../infrastructure/db/Database';
+import type { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
+import type { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
+import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
+import type { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
+import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
+import type { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
+import type { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
-import { getClasseEntity } from '../../application/context-engine/techEntities';
-import { recipe } from '../../application/context-engine/Recipe';
-import { salutoPerTarget } from '../../application/email/saluto';
+import { getClasseEntity } from '../context-engine/techEntities';
+import { recipe } from '../context-engine/Recipe';
+import { salutoPerTarget } from '../email/saluto';
 import {
   createBoxComposer,
   renderBoxes,
   escapeHtml,
   safeColor
-} from '../../application/email/boxes';
+} from '../email/boxes';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, GestioneSupplenti } from '../../domain/value-objects/enums';

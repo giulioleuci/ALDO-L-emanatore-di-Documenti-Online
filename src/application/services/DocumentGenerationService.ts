@@ -21,8 +21,8 @@ import {
   PostProcessStep,
   CRITICAL_STEPS,
   type IRoleResolver
-} from '../../infrastructure/steps/documentSteps';
-import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
+} from '../pipelines/documentSteps';
+import type { PostProcessDb } from '../pipelines/postProcessActions';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';

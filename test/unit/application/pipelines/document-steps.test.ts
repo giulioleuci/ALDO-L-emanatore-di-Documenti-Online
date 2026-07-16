@@ -10,21 +10,21 @@ import {
   PostProcessStep,
   ApplyPermissionsStep,
   CRITICAL_STEPS
-} from '../../../src/infrastructure/steps/documentSteps';
-import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
-import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
-import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
-import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
-import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
-import { recipe } from '../../../src/application/context-engine/Recipe';
-import type { Cdu } from '../../../src/application/context-engine/Cdu';
-import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
-import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
-import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
-import { fixtureTables } from '../../../test/fixtures/tables';
-import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
-import { SchemaSottocartelle } from '../../../src/domain/value-objects/enums';
+} from '../../../../src/application/pipelines/documentSteps';
+import { RisolutoreRuoliService } from '../../../../src/application/services/RisolutoreRuoliService';
+import { VerbaleGeneratorStrategy } from '../../../../src/application/strategies/VerbaleGeneratorStrategy';
+import { ConfigurazioneDocumento } from '../../../../src/domain/entities/ConfigurazioneDocumento';
+import { ConfigurazioneDocumentoRepository } from '../../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import { ExpressionEngineFacade } from '../../../../src/infrastructure/facades/ExpressionEngineFacade';
+import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import { recipe } from '../../../../src/application/context-engine/Recipe';
+import type { Cdu } from '../../../../src/application/context-engine/Cdu';
+import { FakeDriveFacade } from '../../../../test/fakes/FakeDriveFacade';
+import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
+import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
+import { fixtureTables } from '../../../../test/fixtures/tables';
+import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
+import { SchemaSottocartelle } from '../../../../src/domain/value-objects/enums';
 
 const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();

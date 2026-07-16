@@ -1,11 +1,11 @@
-import type { Cdu } from '../../application/context-engine/Cdu';
-import type { IDriveFacade } from '../facades/DriveServiceFacade';
-import type { ITemplateEngine } from '../facades/TemplateEngineFacade';
-import type { IExpressionEngine } from '../facades/ExpressionEngineFacade';
-import type { IDatabase, Row } from '../db/Database';
-import type { GeneratorStrategy } from '../../application/strategies/GeneratorStrategy';
+import type { Cdu } from '../context-engine/Cdu';
+import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
+import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
+import type { IDatabase, Row } from '../../infrastructure/db/Database';
+import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import type { ConfigurazioneDocumentoRepository } from '../repositories/ConfigurazioneDocumentoRepository';
+import type { ConfigurazioneDocumentoRepository } from '../../infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import type { Email } from '../../domain/value-objects/Email';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import {
@@ -15,7 +15,7 @@ import {
 } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
-import { AlberoCartelle } from '../services/AlberoCartelle';
+import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 
 /**
  * Role-resolution port consumed by ApplyPermissionsStep (10 §10). Satisfied

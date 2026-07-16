@@ -1,4 +1,4 @@
-import type { ITemplateEngine } from '../facades/TemplateEngineFacade';
+import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import { TABLE, COL_LOG_DOCS } from '../../config/schema';
 
 /**

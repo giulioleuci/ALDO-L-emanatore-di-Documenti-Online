@@ -1,10 +1,10 @@
 import {
   executePostProcess,
   type PostProcessDb
-} from '../../../src/infrastructure/steps/postProcessActions';
-import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
-import { fixtureTables } from '../../../test/fixtures/tables';
-import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
+} from '../../../../src/application/pipelines/postProcessActions';
+import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
+import { fixtureTables } from '../../../../test/fixtures/tables';
+import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
 
 const logger = new LoggerService();
 const NOW = new Date('2026-07-05T10:00:00.000Z');

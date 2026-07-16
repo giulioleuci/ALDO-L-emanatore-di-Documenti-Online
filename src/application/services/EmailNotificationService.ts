@@ -4,7 +4,7 @@ import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFaca
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
-import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
+import type { PostProcessDb } from '../pipelines/postProcessActions';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
@@ -18,7 +18,7 @@ import {
   SendEmailStep,
   LogEmailStep,
   PostProcessEmailStep
-} from '../../infrastructure/steps/emailSteps';
+} from '../pipelines/emailSteps';
 import { ExpressionEngineFacade } from '../../infrastructure/facades/ExpressionEngineFacade';
 import { ContextEngineFactory } from '../context-engine/ContextEngineFactory';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';

@@ -11,6 +11,7 @@ import type { Classe } from '../../domain/entities/Classe';
 import type { AnnoScolastico } from '../../domain/value-objects/AnnoScolastico';
 import { MateriaNotFoundError } from '../../domain/errors/DomainError';
 import { TABLE, COL_MATERIE, COL_CARENZE } from '../../config/schema';
+import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 
 /** Dynamic per-subject column names in the CARENZE matrix (ref 06 §Colonne dinamiche). */
 interface MateriaColumns {
@@ -25,7 +26,7 @@ interface MateriaColumns {
  * built at construction from MATERIE. Write-through methods (setCarenzaMateria)
  * land with the persistence-seam increment.
  */
-export class CarenzaRepository extends Repository<Carenza> {
+export class CarenzaRepository extends Repository<Carenza> implements ICarenzaRepository {
   private readonly materieColumns: Map<string, MateriaColumns>;
 
   constructor(database: RepositoryDatabase) {

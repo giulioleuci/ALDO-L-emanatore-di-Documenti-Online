@@ -4,6 +4,7 @@ import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoReposi
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import { OreASLRepository } from '../../infrastructure/repositories/OreASLRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { ValoreCarenza } from '../../domain/value-objects/ValoreCarenza';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -62,7 +63,7 @@ export class ReportService {
   private readonly classi: ClasseRepository;
   private readonly docenti: DocenteRepository;
   private readonly alunni: AlunnoRepository;
-  private readonly carenze: CarenzaRepository;
+  private readonly carenze: ICarenzaRepository;
   private readonly asl: OreASLRepository;
   private readonly logDocs: LogDocumentoRepository;
 

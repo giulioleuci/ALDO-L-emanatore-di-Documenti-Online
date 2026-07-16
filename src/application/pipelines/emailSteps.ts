@@ -11,7 +11,7 @@ import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoReposit
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
-import type { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
+import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
@@ -418,7 +418,7 @@ export class SendEmailStep extends Step {
 export class LogEmailStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly logMail: LogEmailRepository
+    private readonly logMail: ILogEmailRepository
   ) {
     super('LogEmail', logger, { shouldExecuteCondition: sendGate, requiredKeys: ['sentTo'] });
   }

@@ -1,4 +1,4 @@
-import type { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
+import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
 import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
 import type { LogEmail } from '../../domain/entities/LogEmail';
@@ -28,7 +28,7 @@ export class EmailRetryService {
   private readonly logger: LoggerService;
 
   constructor(
-    private readonly logMail: LogEmailRepository,
+    private readonly logMail: ILogEmailRepository,
     private readonly emailService: EmailNotificationService,
     private readonly gmail: IGmailFacade,
     private readonly master: MasterSheetRepository,

@@ -1,5 +1,6 @@
 import { LogEmail } from '../../domain/entities/LogEmail';
 import { StatoEmail } from '../../domain/value-objects/enums';
+import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
 import type { Email } from '../../domain/value-objects/Email';
 import { TABLE, COL_LOG_MAIL } from '../../config/schema';
 
@@ -8,7 +9,7 @@ import { TABLE, COL_LOG_MAIL } from '../../config/schema';
  * (PATTERN, DESTINATARI, DATA) — direct PK lookup does not apply (ref 06 §19);
  * queries load rows and filter in memory. Append-only audit trail.
  */
-export class LogEmailRepository extends Repository<LogEmail> {
+export class LogEmailRepository extends Repository<LogEmail> implements ILogEmailRepository {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.LOG_MAIL, LogEmail);
     // O(1) hot-lookup index for findByPattern (ref REPORT_GLF.md A2). LOG_MAIL

@@ -5,7 +5,7 @@ import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionE
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import type { ConfigurazioneDocumentoRepository } from '../../infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import type { Email } from '../../domain/value-objects/Email';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import {
@@ -92,7 +92,7 @@ function classeNome(ctx: PipelineContext): string {
 export class AnalyzeContextStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly configs: ConfigurazioneDocumentoRepository,
+    private readonly configs: IConfigurazioneDocumentoRepository,
     private readonly engine: IExpressionEngine
   ) {
     super('AnalyzeContext', logger, { requiredKeys: ['config', 'confDoc', 'cdu'] });
@@ -179,7 +179,7 @@ export class GenerateNameStep extends Step {
 export class SelectTemplateStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly configs: ConfigurazioneDocumentoRepository,
+    private readonly configs: IConfigurazioneDocumentoRepository,
     private readonly engine: IExpressionEngine
   ) {
     super('SelectTemplate', logger, { shouldExecuteCondition: generateGate });

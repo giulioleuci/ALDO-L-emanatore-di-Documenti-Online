@@ -4,7 +4,7 @@ import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFaca
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
-import type { ConfigurazioneDocumentoRepository } from '../../infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
 import { recipe } from '../context-engine/Recipe';
@@ -38,7 +38,7 @@ export interface DocumentGenerationDeps {
   templates: ITemplateEngine;
   /** GasExpressionEngineLib port (CONDIZIONE + conditional MODELLI). */
   expressionEngine: IExpressionEngine;
-  configs: ConfigurazioneDocumentoRepository;
+  configs: IConfigurazioneDocumentoRepository;
   /** Role -> Email resolver for ACL application (14 §1); RisolutoreRuoliService satisfies it. */
   roleResolver: IRoleResolver;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
@@ -63,7 +63,7 @@ export class DocumentGenerationService {
   private readonly strategyRegistry: Map<string, GeneratorStrategy>;
   private readonly templates: ITemplateEngine;
   private readonly expressionEngine: IExpressionEngine;
-  private readonly configs: ConfigurazioneDocumentoRepository;
+  private readonly configs: IConfigurazioneDocumentoRepository;
   private readonly roleResolver: IRoleResolver;
   private readonly now: Date;
   private readonly monitor: IProcessMonitor | undefined;

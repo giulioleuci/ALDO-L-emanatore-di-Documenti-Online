@@ -1,5 +1,6 @@
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { IExpressionEngine } from '../facades/ExpressionEngineFacade';
+import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { TABLE } from '../../config/schema';
 
@@ -14,7 +15,10 @@ interface ModelloCondizionale {
  * generation and conditional template selection are evaluated through
  * GasExpressionEngineLib (via IExpressionEngine), never in-house.
  */
-export class ConfigurazioneDocumentoRepository extends Repository<ConfigurazioneDocumento> {
+export class ConfigurazioneDocumentoRepository
+  extends Repository<ConfigurazioneDocumento>
+  implements IConfigurazioneDocumentoRepository
+{
   // Named listCache (not `cache`): DomainRepositoryLib's base Repository
   // already owns a `this.cache` field (a CacheService slot used by findById);
   // reusing that name silently breaks findById after this local cache populates.

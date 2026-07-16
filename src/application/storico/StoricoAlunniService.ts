@@ -6,6 +6,7 @@ import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepos
 import { PianoRepository } from '../../infrastructure/repositories/PianoRepository';
 import type { IPianoRepository } from '../../domain/repositories/IPianoRepository';
 import { MovimentoAlunnoRepository } from '../../infrastructure/repositories/MovimentoAlunnoRepository';
+import type { IMovimentoAlunnoRepository } from '../../domain/repositories/IMovimentoAlunnoRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import { Email } from '../../domain/value-objects/Email';
@@ -51,7 +52,7 @@ export class StoricoAlunniService {
       const classi = new ClasseRepository(db);
       const carenze: ICarenzaRepository = new CarenzaRepository(db);
       const piani: IPianoRepository = new PianoRepository(db);
-      const movimenti = new MovimentoAlunnoRepository(db);
+      const movimenti: IMovimentoAlunnoRepository = new MovimentoAlunnoRepository(db);
       const materie: IMateriaRepository = new MateriaRepository(db);
 
       const alunno = alunni.findById(alunnoEmail);
@@ -89,8 +90,8 @@ export class StoricoAlunniService {
   }
 
   private esito(
-    movimenti: MovimentoAlunnoRepository,
-    alunno: Parameters<MovimentoAlunnoRepository['findByAlunno']>[0]
+    movimenti: IMovimentoAlunnoRepository,
+    alunno: Parameters<IMovimentoAlunnoRepository['findByAlunno']>[0]
   ): Esito {
     const storia = movimenti.findByAlunno(alunno);
     if (storia.some((m) => m.tipo === TipoMovimento.OUT)) return 'RITIRATO';

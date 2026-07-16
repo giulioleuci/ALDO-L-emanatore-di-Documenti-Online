@@ -3,6 +3,7 @@ import { ClasseRepository } from '../../infrastructure/repositories/ClasseReposi
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import { DipartimentoRepository } from '../../infrastructure/repositories/DipartimentoRepository';
+import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
@@ -50,7 +51,7 @@ export class RisolutoreRuoliService {
   private readonly classi: ClasseRepository;
   private readonly docenti: DocenteRepository;
   private readonly alunni: AlunnoRepository;
-  private readonly dipartimenti: DipartimentoRepository;
+  private readonly dipartimenti: IDipartimentoRepository;
   private readonly materie: MateriaRepository;
   private readonly ruoli: RuoloSpecialeRepository;
   private readonly supplenze: ISupplenzaRepository;

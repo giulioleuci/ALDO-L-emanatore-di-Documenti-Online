@@ -2,7 +2,7 @@ import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { MasterSheetRepository } from '../../../infrastructure/repositories/MasterSheetRepository';
 import type { IRuoloSpecialeRepository } from '../../../domain/repositories/IRuoloSpecialeRepository';
-import type { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
+import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 
 /** Conventional RUOLI ids for the two institute-wide staff roles (02 §3). */
 const RUOLO_REFERENTE_BES = 'REF_BES';
@@ -17,7 +17,7 @@ export class SchoolProvider implements ContextProvider {
   constructor(
     private readonly master: MasterSheetRepository,
     private readonly ruoli: IRuoloSpecialeRepository,
-    private readonly docenti: DocenteRepository
+    private readonly docenti: IDocenteRepository
   ) {}
 
   provide(cdu: Cdu): void {

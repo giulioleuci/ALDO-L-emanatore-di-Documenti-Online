@@ -12,6 +12,7 @@ import type { Classe } from '../../domain/entities/Classe';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
+import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
@@ -49,7 +50,7 @@ export interface EmailNotificationDeps {
   contextBuilder: ContextBuilder;
   templates: ITemplateEngine;
   expressionEngine: IExpressionEngine;
-  docenti: DocenteRepository;
+  docenti: IDocenteRepository;
   alunni: AlunnoRepository;
   classi: ClasseRepository;
   carenze: ICarenzaRepository;

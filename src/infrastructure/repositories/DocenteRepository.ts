@@ -5,6 +5,7 @@ import {
   DocentiITPSpec
 } from '../../domain/specifications/DocenteSpecs';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
+import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { Dipartimento } from '../../domain/entities/Dipartimento';
 import type { DipartimentoId } from '../../domain/value-objects/DipartimentoId';
 import { TABLE, COL_CLASSI } from '../../config/schema';
@@ -15,7 +16,7 @@ import { TABLE, COL_CLASSI } from '../../config/schema';
  * getMaterieInsegnate, getSupplenzaAttiva) lands with the ClasseRepository
  * dynamic-column work (R2b) and SupplenzaRepository (R2d).
  */
-export class DocenteRepository extends Repository<Docente> {
+export class DocenteRepository extends Repository<Docente> implements IDocenteRepository {
   private readonly dipartimenti: DipartimentoRepository;
 
   constructor(database: RepositoryDatabase) {

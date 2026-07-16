@@ -1,6 +1,6 @@
 import type { Cdu, DocenteCdcVM } from '../Cdu';
 import type { RecipeOptions } from '../Recipe';
-import type { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
+import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 import type { ISupplenzaRepository } from '../../../domain/repositories/ISupplenzaRepository';
 import type { Classe } from '../../../domain/entities/Classe';
 import type { Docente } from '../../../domain/entities/Docente';
@@ -37,7 +37,7 @@ import { GestioneSupplenti } from '../../../domain/value-objects/enums';
  * encapsulate in a subclass.
  */
 export function createSupplentiSubstitutionLookup(
-  docenti: DocenteRepository,
+  docenti: IDocenteRepository,
   supplenze: ISupplenzaRepository
 ): (
   item: unknown,

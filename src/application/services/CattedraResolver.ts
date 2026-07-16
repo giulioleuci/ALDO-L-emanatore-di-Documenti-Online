@@ -4,6 +4,7 @@ import { SupplenzaRepository } from '../../infrastructure/repositories/Supplenza
 import { VariazioneCattedraRepository } from '../../infrastructure/repositories/VariazioneCattedraRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { IVariazioneCattedraRepository } from '../../domain/repositories/IVariazioneCattedraRepository';
+import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
@@ -33,7 +34,7 @@ import type { MateriaId } from '../../domain/value-objects/MateriaId';
  */
 export class CattedraResolver {
   private readonly classi: ClasseRepository;
-  private readonly docenti: DocenteRepository;
+  private readonly docenti: IDocenteRepository;
   private readonly supplenze: ISupplenzaRepository;
   private readonly variazioni: IVariazioneCattedraRepository;
 

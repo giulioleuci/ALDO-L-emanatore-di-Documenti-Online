@@ -6,7 +6,7 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IGmailFacade, EmailSendOptions } from '../../infrastructure/facades/GmailServiceFacade';
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
-import type { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
+import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
@@ -83,7 +83,7 @@ export class BuildCDUStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly contextBuilder: ContextBuilder,
-    private readonly docenti: DocenteRepository,
+    private readonly docenti: IDocenteRepository,
     private readonly alunni: AlunnoRepository
   ) {
     super('BuildCDU', logger, { requiredKeys: ['config', 'confMail', 'emailTarget', 'now'] });
@@ -304,7 +304,7 @@ export class ComposeEmailStep extends Step {
 export class ResolveRecipientsStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly docenti: DocenteRepository,
+    private readonly docenti: IDocenteRepository,
     private readonly supplenze: ISupplenzaRepository
   ) {
     super('ResolveRecipients', logger, {

@@ -5,6 +5,7 @@ import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepo
 import { OreASLRepository } from '../../infrastructure/repositories/OreASLRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
+import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { ValoreCarenza } from '../../domain/value-objects/ValoreCarenza';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -61,7 +62,7 @@ export interface ASLReport {
  */
 export class ReportService {
   private readonly classi: ClasseRepository;
-  private readonly docenti: DocenteRepository;
+  private readonly docenti: IDocenteRepository;
   private readonly alunni: AlunnoRepository;
   private readonly carenze: ICarenzaRepository;
   private readonly asl: OreASLRepository;

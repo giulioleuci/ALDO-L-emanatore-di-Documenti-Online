@@ -4,6 +4,7 @@ import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoReposi
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import { OreASLRepository } from '../../infrastructure/repositories/OreASLRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
@@ -68,7 +69,7 @@ export class ReportService {
   private readonly alunni: IAlunnoRepository;
   private readonly carenze: ICarenzaRepository;
   private readonly asl: IOreASLRepository;
-  private readonly logDocs: LogDocumentoRepository;
+  private readonly logDocs: ILogDocumentoRepository;
 
   constructor(database: RepositoryDatabase) {
     this.classi = new ClasseRepository(database);

@@ -1,6 +1,6 @@
 import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import type { LogCartellaRepository } from '../../infrastructure/repositories/LogCartellaRepository';
-import type { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 
 const SPREADSHEET_MIME = 'application/vnd.google-apps.spreadsheet';
@@ -81,7 +81,7 @@ export function createCercaCartelleClasseStrategy(
  * Google Sheet) and tags each with `_CLASSE` from the log record's CLASSI.
  */
 export function createCercaDocumentiStrategy(
-  logDocs: LogDocumentoRepository,
+  logDocs: ILogDocumentoRepository,
   sheets: SpreadsheetService
 ): new (logger?: LoggerService) => SourceStrategy {
   return class CercaDocumentiStrategy extends SourceStrategy {

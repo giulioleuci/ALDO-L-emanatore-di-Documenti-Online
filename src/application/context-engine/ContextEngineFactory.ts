@@ -30,6 +30,7 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import { OreASLRepository } from '../../infrastructure/repositories/OreASLRepository';
 import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 
 /**
  * Wires a ContextBuilder with every provider registered under its recipe token
@@ -46,7 +47,7 @@ export class ContextEngineFactory {
     const alunni: IAlunnoRepository = new AlunnoRepository(database);
     const materie: IMateriaRepository = new MateriaRepository(database);
     const oreAsl: IOreASLRepository = new OreASLRepository(database);
-    const logDocs = new LogDocumentoRepository(database);
+    const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(database);
     const supplenze: ISupplenzaRepository = new SupplenzaRepository(database);
     const cdc = new CdcAssembler(classi, materie);
 

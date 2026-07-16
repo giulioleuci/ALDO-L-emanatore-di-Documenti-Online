@@ -3,6 +3,7 @@ import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepo
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import { LogCartellaRepository } from '../../infrastructure/repositories/LogCartellaRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { Carenza } from '../../domain/entities/Carenza';
 import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import type { LogCartella } from '../../domain/entities/LogCartella';
@@ -27,7 +28,7 @@ export interface DocumentoFiltri {
 export class AggregatoreDati {
   private readonly classi: ClasseRepository;
   private readonly carenze: ICarenzaRepository;
-  private readonly logDocs: LogDocumentoRepository;
+  private readonly logDocs: ILogDocumentoRepository;
   private readonly logFold: LogCartellaRepository;
 
   private carenzeCache: Carenza[] | null = null;

@@ -12,7 +12,7 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
-import type { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import { getClasseEntity } from '../context-engine/techEntities';
@@ -224,7 +224,7 @@ export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly templates: ITemplateEngine,
-    private readonly logDocs: LogDocumentoRepository,
+    private readonly logDocs: ILogDocumentoRepository,
     private readonly drive: IDriveFacade
   ) {
     super('ComposeEmail', logger, {

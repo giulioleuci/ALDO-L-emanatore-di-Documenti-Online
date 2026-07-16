@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
-import type { LogDocumentoRepository } from '../../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
 import { getAlunnoEntity } from '../techEntities';
 
 /**
@@ -9,7 +9,7 @@ import { getAlunnoEntity } from '../techEntities';
  * ALUNNO_DETTAGLIATO and FAMIGLIA_COMPLETO recipes.
  */
 export class DocumentiProvider implements ContextProvider {
-  constructor(private readonly logDocs: LogDocumentoRepository) {}
+  constructor(private readonly logDocs: ILogDocumentoRepository) {}
 
   provide(cdu: Cdu): void {
     const focusAlunno = cdu.focus.alunno;

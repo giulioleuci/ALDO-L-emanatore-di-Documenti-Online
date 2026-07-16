@@ -1,5 +1,6 @@
 import { LogDocumento } from '../../domain/entities/LogDocumento';
 import { StatoDocumento } from '../../domain/value-objects/enums';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Email } from '../../domain/value-objects/Email';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -20,7 +21,10 @@ interface RegistraOptions {
  * persistence (an update) and getClasse/getUtente navigation land with the
  * persistence-seam increment.
  */
-export class LogDocumentoRepository extends Repository<LogDocumento> {
+export class LogDocumentoRepository
+  extends Repository<LogDocumento>
+  implements ILogDocumentoRepository
+{
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.LOG_DOCS, LogDocumento);
     // O-1) hot-lookup index for findByStato (ref ALDO_GLF_AUDIT_RESULTS.md D-2). LOG_DOCS

@@ -33,6 +33,7 @@ import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepo
 import { ConfigurazioneEmailRepository } from '../../infrastructure/repositories/ConfigurazioneEmailRepository';
 import { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
@@ -57,7 +58,7 @@ export interface EmailNotificationDeps {
   carenze: ICarenzaRepository;
   confMail: ConfigurazioneEmailRepository;
   logMail: LogEmailRepository;
-  logDocs: LogDocumentoRepository;
+  logDocs: ILogDocumentoRepository;
   master: MasterSheetRepository;
   supplenze: ISupplenzaRepository;
   materie: IMateriaRepository;

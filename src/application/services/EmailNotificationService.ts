@@ -9,6 +9,7 @@ import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { Classe } from '../../domain/entities/Classe';
+import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
@@ -49,7 +50,7 @@ export interface EmailNotificationDeps {
   docenti: DocenteRepository;
   alunni: AlunnoRepository;
   classi: ClasseRepository;
-  carenze: CarenzaRepository;
+  carenze: ICarenzaRepository;
   confMail: ConfigurazioneEmailRepository;
   logMail: LogEmailRepository;
   logDocs: LogDocumentoRepository;

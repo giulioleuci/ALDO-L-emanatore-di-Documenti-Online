@@ -63,7 +63,9 @@ export class EmailRetryService {
         result.retried += 1;
       } else {
         this.logger.warn(
-          `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
+          PiiRedactor.redact(
+            `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
+          )
         );
       }
     }
@@ -75,7 +77,7 @@ export class EmailRetryService {
     const msg =
       `Invio email permanentemente fallito dopo ${tentativi} tentativi: ` +
       `pattern ${record.pattern}, destinatari ${record.destinatariRaw} (${record.errore})`;
-    this.logger.error(`EmailRetry: ${msg}`);
+    this.logger.error(`EmailRetry: ${PiiRedactor.redact(msg)}`);
     const config = this.master.findConfigAnnoCorrente();
     if (!config.hasSupervisore()) {
       this.logger.warn('EmailRetry: SUPERVISORE_EMAIL assente — nessuna notifica admin inviata');

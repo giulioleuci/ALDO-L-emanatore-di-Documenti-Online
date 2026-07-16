@@ -351,7 +351,7 @@ export class EmailNotificationService {
     for (const carenza of this.deps.carenze.findNonNotificate()) {
       const alunno = this.deps.alunni.findById(carenza.studente);
       if (alunno === null) {
-        this.logger.warn(`PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`);
+        this.logger.warn(PiiRedactor.redact(`PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`));
         continue;
       }
       const tutors = alunno.getTutors().map((t) => t.value);

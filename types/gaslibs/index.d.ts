@@ -18,6 +18,13 @@ declare global {
     static safeUrl(value: string): string;
   }
 
+  /** CoreUtilsLib PII-safe logging helper (ref CoreUtilsLib/src/internal/PiiRedactor.js). */
+  class PiiRedactor {
+    static redact(message: string): string;
+    static redactEmails(message: string, label?: string): string;
+    static containsPii(message: string): boolean;
+  }
+
   /** Generic lazy-singleton DI container (ref REPORT_GLF.md B8). */
   class LazyServiceContainer {
     constructor(options?: { logger?: unknown; entityName?: string });

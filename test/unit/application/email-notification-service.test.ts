@@ -508,6 +508,25 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     expect(withIdNoTutor.emails).toEqual(['withid-notutor@x.it']);
   });
 
+  test('targetsPerCarenza redacts the missing alunno email in the warn log', () => {
+    const { db, gmail } = wire();
+    const carenzeStub = {
+      findNonNotificate: () => [Carenza.fromData({ STUDENTE: 'ghost@x.it', PROGRESSIVO: 1 })]
+    } as unknown as CarenzaRepository;
+    const alunniStub = {
+      findById: () => null
+    } as unknown as AlunnoRepository;
+    const warnMock = jest.fn();
+    const logger = { warn: warnMock, error: jest.fn() } as unknown as LoggerService;
+    const service = new EmailNotificationService(
+      fullDeps(db, gmail, { carenze: carenzeStub, alunni: alunniStub, logger })
+    );
+    service.enumerateTargets(conf('PER_CARENZA'));
+    expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
+    const warnCalls = warnMock.mock.calls.map((args: unknown[]) => args[0] as string);
+    expect(warnCalls.some((msg) => msg.includes('@'))).toBe(false);
+  });
+
   test('sendToTarget falls back to 0 sent / no errors on the success path when the build fails before shouldSend is set', () => {
     const { db, gmail } = wire();
     const service = new EmailNotificationService(

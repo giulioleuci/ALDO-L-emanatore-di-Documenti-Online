@@ -391,7 +391,7 @@ export class SendEmailStep extends Step {
       } else {
         // MUST log, collect and continue (11 §8).
         const msg = result.error ?? 'errore di invio sconosciuto';
-        this.logger.error(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`);
+        this.logger.error(PiiRedactor.redact(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`));
         errors.push(msg);
       }
     }

@@ -352,6 +352,26 @@ test('send failure is collected, does not break the pipeline (11 §8)', () => {
   expect(gmail.sent).toHaveLength(1);
 });
 
+test('send failure redacts the recipient email in the error log (11 §8)', () => {
+  const w = wire();
+  runThroughCompose(w);
+  w.ctx.set('destinatariFinali', [{ emails: ['broken@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  gmail.failFor.add('broken@x.it');
+  const errorMock = jest.fn();
+  const mockLogger = {
+    trace: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: errorMock
+  } as unknown as LoggerService;
+  new SendEmailStep(mockLogger, gmail, new MasterSheetRepository(w.db)).execute(w.ctx);
+  expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
+  const errorCalls = errorMock.mock.calls.map((args: unknown[]) => args[0] as string);
+  expect(errorCalls.some((msg) => msg.includes('@'))).toBe(false);
+});
+
 // --- Steps 7-8: LogEmailStep + PostProcessEmailStep ---
 
 test('LogEmailStep records SUCCESS in LOG_MAIL (11 §9)', () => {

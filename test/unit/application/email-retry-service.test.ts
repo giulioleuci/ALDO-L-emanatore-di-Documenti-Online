@@ -22,7 +22,7 @@ function failedRow(data: string, destinatari = 'genitore1@x.it'): Row {
   };
 }
 
-function wire(logMailRows: Row[]) {
+function wire(logMailRows: Row[], logger?: LoggerService) {
   const tables = fixtureTables();
   tables['LOG_MAIL'] = logMailRows;
   const db = new FakeDatabase(tables);
@@ -38,7 +38,8 @@ function wire(logMailRows: Row[]) {
     new LogEmailRepository(db),
     emailService,
     gmail,
-    new MasterSheetRepository(db)
+    new MasterSheetRepository(db),
+    logger ? { logger } : {}
   );
   return { db, gmail, retry };
 }
@@ -89,4 +90,31 @@ test('successful records are ignored', () => {
   const result = retry.retryFailed();
   expect(result).toEqual({ retried: 0, permanent: 0 });
   expect(gmail.sent).toHaveLength(0);
+});
+
+test('retryFailed redacts the recipient email in the warn log on a failed re-send', () => {
+  const warnMock = jest.fn();
+  const logger = { warn: warnMock, error: jest.fn() } as unknown as LoggerService;
+  const { gmail, retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], logger);
+  // Force the resend itself to fail so the retry falls into the warn branch.
+  gmail.failFor.add('genitore1@x.it');
+  retry.retryFailed();
+  expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
+  const warnCalls = warnMock.mock.calls.map((args: unknown[]) => args[0] as string);
+  expect(warnCalls.some((msg) => msg.includes('@'))).toBe(false);
+});
+
+test('registraPermanente redacts the recipient email in the error log on permanent failure', () => {
+  const errorMock = jest.fn();
+  const logger = { warn: jest.fn(), error: errorMock } as unknown as LoggerService;
+  const rows = [
+    failedRow('2026-06-28T10:00:00.000Z'),
+    failedRow('2026-06-29T10:00:00.000Z'),
+    failedRow('2026-06-30T10:00:00.000Z')
+  ];
+  const { retry } = wire(rows, logger);
+  retry.retryFailed();
+  expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
+  const errorCalls = errorMock.mock.calls.map((args: unknown[]) => args[0] as string);
+  expect(errorCalls.some((msg) => msg.includes('@'))).toBe(false);
 });

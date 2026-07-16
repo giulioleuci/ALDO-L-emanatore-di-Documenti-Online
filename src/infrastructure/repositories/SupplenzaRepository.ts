@@ -1,6 +1,7 @@
 import { Supplenza } from '../../domain/entities/Supplenza';
 import { DocenteRepository } from './DocenteRepository';
 import { EntityNotFoundError, ValidationError } from '../../domain/errors/DomainError';
+import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { Docente } from '../../domain/entities/Docente';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
@@ -23,7 +24,7 @@ const RUOLO_TITOLARE_CATTEDRA = 'TITOLARE_CATTEDRA';
  * delegated to RoleResolutionLib's delegation-chain engine; only the domain
  * applicability filter (period + class/subject context) lives here.
  */
-export class SupplenzaRepository extends Repository<Supplenza> {
+export class SupplenzaRepository extends Repository<Supplenza> implements ISupplenzaRepository {
   private readonly docenti: DocenteRepository;
 
   constructor(database: RepositoryDatabase) {

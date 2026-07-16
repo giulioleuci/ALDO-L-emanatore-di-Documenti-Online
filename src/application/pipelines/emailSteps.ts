@@ -9,7 +9,7 @@ import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import type { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
 import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
-import type { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
+import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
 import type { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
@@ -305,7 +305,7 @@ export class ResolveRecipientsStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly docenti: DocenteRepository,
-    private readonly supplenze: SupplenzaRepository
+    private readonly supplenze: ISupplenzaRepository
   ) {
     super('ResolveRecipients', logger, {
       shouldExecuteCondition: sendGate,

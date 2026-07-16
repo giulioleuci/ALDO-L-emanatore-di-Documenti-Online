@@ -10,6 +10,7 @@ import type { EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { Classe } from '../../domain/entities/Classe';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
+import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
@@ -55,7 +56,7 @@ export interface EmailNotificationDeps {
   logMail: LogEmailRepository;
   logDocs: LogDocumentoRepository;
   master: MasterSheetRepository;
-  supplenze: SupplenzaRepository;
+  supplenze: ISupplenzaRepository;
   materie: MateriaRepository;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
   now: Date;

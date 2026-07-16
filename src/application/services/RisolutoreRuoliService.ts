@@ -6,6 +6,7 @@ import { DipartimentoRepository } from '../../infrastructure/repositories/Dipart
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
+import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import { Email } from '../../domain/value-objects/Email';
@@ -52,7 +53,7 @@ export class RisolutoreRuoliService {
   private readonly dipartimenti: DipartimentoRepository;
   private readonly materie: MateriaRepository;
   private readonly ruoli: RuoloSpecialeRepository;
-  private readonly supplenze: SupplenzaRepository;
+  private readonly supplenze: ISupplenzaRepository;
   private readonly registro: Map<string, RoleStrategy>;
 
   constructor(database: RepositoryDatabase) {

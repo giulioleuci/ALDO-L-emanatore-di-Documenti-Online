@@ -1,7 +1,7 @@
 import type { Cdu, DocenteCdcVM } from '../Cdu';
 import type { RecipeOptions } from '../Recipe';
 import type { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
-import type { SupplenzaRepository } from '../../../infrastructure/repositories/SupplenzaRepository';
+import type { ISupplenzaRepository } from '../../../domain/repositories/ISupplenzaRepository';
 import type { Classe } from '../../../domain/entities/Classe';
 import type { Docente } from '../../../domain/entities/Docente';
 import { MateriaId } from '../../../domain/value-objects/MateriaId';
@@ -38,7 +38,7 @@ import { GestioneSupplenti } from '../../../domain/value-objects/enums';
  */
 export function createSupplentiSubstitutionLookup(
   docenti: DocenteRepository,
-  supplenze: SupplenzaRepository
+  supplenze: ISupplenzaRepository
 ): (
   item: unknown,
   context: unknown,
@@ -101,7 +101,7 @@ function effettivoSupplente(
   titolare: Docente,
   classe: Classe,
   date: Date,
-  supplenze: SupplenzaRepository
+  supplenze: ISupplenzaRepository
 ): string | null {
   for (const m of vm.materie) {
     const supp = supplenze.findSupplenzaSpecifica(

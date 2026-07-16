@@ -16,6 +16,7 @@ import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvide
 import { createSupplentiSubstitutionLookup } from './interceptors/SupplentiSubstitutionLookup';
 import { CdcAssembler } from './CdcAssembler';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
+import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
@@ -41,7 +42,7 @@ export class ContextEngineFactory {
     const materie = new MateriaRepository(database);
     const oreAsl = new OreASLRepository(database);
     const logDocs = new LogDocumentoRepository(database);
-    const supplenze = new SupplenzaRepository(database);
+    const supplenze: ISupplenzaRepository = new SupplenzaRepository(database);
     const cdc = new CdcAssembler(classi, materie);
 
     return new ContextBuilder()

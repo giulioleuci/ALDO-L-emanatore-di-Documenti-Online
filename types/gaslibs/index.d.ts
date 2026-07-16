@@ -905,11 +905,21 @@ declare global {
       options?: DocumentCreateTableOptions
     ): DocumentInsertTableAtMarkerResult;
   }
+  /** GoogleApiWrapper's native Utilities API wrapper (ref GoogleApiWrapper/src/services/UtilitiesService.js). */
+  class UtilitiesService {
+    constructor(logger?: LoggerService, exceptionService?: unknown);
+    sleep(milliseconds: number): void;
+    getUuid(): string;
+    formatDate(date: Date, timeZone: string, format: string): string;
+  }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
     static reset(resetConfig?: boolean): void;
     static getLogger(): LoggerService;
-    static getUtilitiesService(): UtilsService;
+    /** GoogleApiWrapper's own native-API wrapper (sleep, getUuid, formatDate w/ timezone, ...) — NOT the CoreUtilsLib UtilsService below. */
+    static getUtilitiesService(): UtilitiesService;
+    /** CoreUtilsLib's foundational UtilsService (formatDate w/ tokens, formatISODate, isValidEmail, ...). */
+    static getUtils(): UtilsService;
     static getDriveService(): DriveService;
     static getDocumentService(): DocumentService;
     static getMailService(options?: Record<string, unknown>): MailService;

@@ -344,7 +344,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
 export function creaJobRunner(): JobRunnerService {
   return new JobRunnerService(
     ServiceFactory.getLogger(),
-    ServiceFactory.getUtilitiesService(),
+    ServiceFactory.getUtils(),
     new JobDefinitionRegistry(ServiceFactory.getLogger())
   );
 }

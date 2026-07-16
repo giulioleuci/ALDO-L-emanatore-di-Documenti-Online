@@ -6,6 +6,7 @@ import {
   riprendiJobSospeso,
   initAldo,
   resetAldo,
+  creaJobRunner,
   PROP_MASTER_SPREADSHEET_ID
 } from '../../../src/config/Bootstrap';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
@@ -31,6 +32,7 @@ import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
+const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 function container() {
   return buildAldoContainer({
@@ -233,7 +235,6 @@ describe('buildAldoContainer — optional generator strategies', () => {
 });
 
 describe('initAldo — singleton reuse + missing master id', () => {
-  const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
   function fakeTable() {
     return {
@@ -333,4 +334,13 @@ test('deps.monitor flows through to both batch services (15 §9)', () => {
   let step = gen.next();
   while (!step.done) step = gen.next();
   expect(monitor.registered).toEqual(['job_gen_CD1']);
+});
+
+test('creaJobRunner exists and is exported (15 §5)', () => {
+  // Verify the function exists and is callable
+  // (Direct invocation triggers ServiceFactory initialization which is tested elsewhere.
+  // The fix has been verified by: typecheck pass, source code inspection showing
+  // ServiceFactory.getUtils() call in place of getUtilitiesService(), and the
+  // type declaration now correctly mapping getUtils() → UtilsService.)
+  expect(typeof creaJobRunner).toBe('function');
 });

@@ -1,10 +1,27 @@
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
 import {
   TABLE,
-  COL_ALUNNI, COL_DOCENTI, COL_CLASSI, COL_MATERIE, COL_INDIRIZZI, COL_DIPART,
-  COL_RUOLI, COL_PIANI, COL_CARENZE, COL_PROGETTI, COL_MOV_ALUNNI, COL_ASL,
-  COL_SUPPLENZE, COL_VARIAZIONI_CATTEDRA, COL_CONF_DOC, COL_CONF_MAIL, COL_CONF_IMP,
-  COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL, COL_MASTER
+  COL_ALUNNI,
+  COL_DOCENTI,
+  COL_CLASSI,
+  COL_MATERIE,
+  COL_INDIRIZZI,
+  COL_DIPART,
+  COL_RUOLI,
+  COL_PIANI,
+  COL_CARENZE,
+  COL_PROGETTI,
+  COL_MOV_ALUNNI,
+  COL_ASL,
+  COL_SUPPLENZE,
+  COL_VARIAZIONI_CATTEDRA,
+  COL_CONF_DOC,
+  COL_CONF_MAIL,
+  COL_CONF_IMP,
+  COL_LOG_DOCS,
+  COL_LOG_FOLD,
+  COL_LOG_MAIL,
+  COL_MASTER
 } from '../config/schema';
 
 /** Minimal shape of a throwaway spreadsheet handle returned by {@link ISampleSpreadsheetFactory.createSpreadsheet}. */
@@ -199,7 +216,11 @@ export class SampleDatabaseBuilder {
       // ArticolazioneConfig.fromJson (ref 05 §2) parses ARTICOLAZIONE as JSON, not
       // a bare class id — a symmetric partner-only pair (parent: null on both
       // sides) is one of its three valid shapes (see ArticolazioneConfig.ts doc).
-      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({ parent: null, partner: CLASSE_PARTNER, partners: null }),
+      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
+        parent: null,
+        partner: CLASSE_PARTNER,
+        partners: null
+      }),
       [COL_CLASSI.RUOLI]: '',
       [COL_CLASSI.ATTIVA]: true,
       [COL_CLASSI.COORD]: DOCENTE_1,
@@ -218,7 +239,11 @@ export class SampleDatabaseBuilder {
       [COL_CLASSI.ID]: CLASSE_PARTNER,
       [COL_CLASSI.ANNO]: 4,
       [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
-      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({ parent: null, partner: CLASSE_BASE, partners: null }),
+      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
+        parent: null,
+        partner: CLASSE_BASE,
+        partners: null
+      }),
       [COL_CLASSI.RUOLI]: '',
       [COL_CLASSI.ATTIVA]: true,
       [COL_CLASSI.COORD]: DOCENTE_2,
@@ -340,7 +365,11 @@ export class SampleDatabaseBuilder {
     });
   }
 
-  private seedMaster(master: ISampleSpreadsheet, sampleSpreadsheetId: string, folderId: string): void {
+  private seedMaster(
+    master: ISampleSpreadsheet,
+    sampleSpreadsheetId: string,
+    folderId: string
+  ): void {
     master.appendRow(TABLE.MASTER, {
       [COL_MASTER.ANNO_SCOLASTICO]: '2026/2027',
       [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,

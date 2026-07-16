@@ -22,8 +22,12 @@ export class AnnoScolastico {
     return new AnnoScolastico(`${inizio}-${fine}`);
   }
 
-  getAnnoInizio(): number { return Number(ANNO_RE.exec(this.value)![1]); }
-  getAnnoFine(): number { return Number(ANNO_RE.exec(this.value)![2]); }
+  getAnnoInizio(): number {
+    return Number(ANNO_RE.exec(this.value)![1]);
+  }
+  getAnnoFine(): number {
+    return Number(ANNO_RE.exec(this.value)![2]);
+  }
 
   getAnnoSuccessivo(): AnnoScolastico {
     const i = this.getAnnoInizio() + 1;
@@ -35,5 +39,7 @@ export class AnnoScolastico {
     return AnnoScolastico.of(`${i}-${i + 1}`);
   }
 
-  equals(other: AnnoScolastico): boolean { return this.value === other.value; }
+  equals(other: AnnoScolastico): boolean {
+    return this.value === other.value;
+  }
 }

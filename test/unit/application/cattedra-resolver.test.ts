@@ -14,10 +14,23 @@ function seed() {
     ],
     CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it', FIS: 'bianchi@s.it' }],
     VARIAZIONI_CATTEDRA: [
-      { CLASSE_ID: '5A', MATERIA_ID: 'MAT', VECCHIO_TITOLARE: 'rossi@s.it', NUOVO_TITOLARE: 'bianchi@s.it', DATA_DECORRENZA: '2025-10-01' }
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'bianchi@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      }
     ],
     SUPPLENZE: [
-      { TITOLARE: 'bianchi@s.it', SUPPLENTE: 'verdi@s.it', DAL: '2025-11-01', AL: '2025-11-30', CLASSI: '5A', MATERIE: '*' }
+      {
+        TITOLARE: 'bianchi@s.it',
+        SUPPLENTE: 'verdi@s.it',
+        DAL: '2025-11-01',
+        AL: '2025-11-30',
+        CLASSI: '5A',
+        MATERIE: '*'
+      }
     ]
   };
 }
@@ -50,7 +63,9 @@ test('Priority 1 — active supplenza overrides everything (over a variazione ho
 test('Priority 1 via wildcard materie applies to a different subject', () => {
   const { resolver, classe } = ctx();
   // FIS nominal holder bianchi (no variazione) → supplenza MATERIE '*' → verdi.
-  expect(resolver.resolveTitolari(classe, FIS, new Date('2025-11-15')).map((d) => d.id)).toEqual(['verdi@s.it']);
+  expect(resolver.resolveTitolari(classe, FIS, new Date('2025-11-15')).map((d) => d.id)).toEqual([
+    'verdi@s.it'
+  ]);
   // before the supply period, the nominal holder stands.
   expect(resolver.resolveTitolare(classe, FIS, new Date('2025-10-15'))!.id).toBe('bianchi@s.it');
 });
@@ -64,7 +79,13 @@ test('a variazione pointing at a non-existent docente yields no holder, not the 
     DOCENTI: [{ EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' }],
     CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it' }],
     VARIAZIONI_CATTEDRA: [
-      { CLASSE_ID: '5A', MATERIA_ID: 'MAT', VECCHIO_TITOLARE: 'rossi@s.it', NUOVO_TITOLARE: 'ghost@s.it', DATA_DECORRENZA: '2025-10-01' }
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'ghost@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      }
     ]
   });
   const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;

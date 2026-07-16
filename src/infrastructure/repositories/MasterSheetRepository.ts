@@ -32,7 +32,8 @@ export class MasterSheetRepository extends Repository<MasterConfig> {
   /** Current-year config: the first (top) row of the descending-ordered sheet (ref 06 §0). */
   findConfigAnnoCorrente(): MasterConfig {
     const first = this.all()[0];
-    if (first === undefined) throw new EntityNotFoundError('Master Sheet vuoto: nessun anno configurato');
+    if (first === undefined)
+      throw new EntityNotFoundError('Master Sheet vuoto: nessun anno configurato');
     return first;
   }
 
@@ -41,7 +42,13 @@ export class MasterSheetRepository extends Repository<MasterConfig> {
     return this.all().slice(1, 1 + Math.max(0, limit));
   }
 
-  getSpreadsheetId(config: MasterConfig): string { return config.idSpreadsheet; }
-  getCartellaRoot(config: MasterConfig): string { return config.idCartellaRoot; }
-  getDirigente(config: MasterConfig): string { return config.dirigente; }
+  getSpreadsheetId(config: MasterConfig): string {
+    return config.idSpreadsheet;
+  }
+  getCartellaRoot(config: MasterConfig): string {
+    return config.idCartellaRoot;
+  }
+  getDirigente(config: MasterConfig): string {
+    return config.dirigente;
+  }
 }

@@ -10,7 +10,13 @@ const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supp
 function wire() {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
+  const service = EmailNotificationService.create(
+    db,
+    gmail,
+    new FakeTemplateEngine(),
+    NOW,
+    new FakeDriveFacade()
+  );
   return { db, gmail, service };
 }
 
@@ -72,10 +78,16 @@ test('send failure ⇒ LOG_MAIL ERROR, post-process skipped, batch continues (re
   expect(result.sent).toBe(1);
   expect(result.errors).toHaveLength(1);
 
-  const states = db.tables['LOG_MAIL']!.getAllRows().map((r) => r['STATO']).sort();
+  const states = db.tables['LOG_MAIL']!.getAllRows()
+    .map((r) => r['STATO'])
+    .sort();
   expect(states).toEqual(['ERROR', 'SUCCESS']);
   // a1's carenza still non-notified; a2's stamped.
   const carenze = db.tables['CARENZE']!.getAllRows();
-  expect(carenze.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1)!['NOTIFICATO']).toBe('');
-  expect(String(carenze.find((r) => r['STUDENTE'] === 'a2@school.it')!['NOTIFICATO'])).toBe(NOW.toISOString());
+  expect(
+    carenze.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1)!['NOTIFICATO']
+  ).toBe('');
+  expect(String(carenze.find((r) => r['STUDENTE'] === 'a2@school.it')!['NOTIFICATO'])).toBe(
+    NOW.toISOString()
+  );
 });

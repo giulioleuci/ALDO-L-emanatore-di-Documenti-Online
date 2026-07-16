@@ -4,6 +4,5 @@ coverage/
 *.log
 .clasp.json
 .remember/
-# GasLibraryFactory is a separate repo, vendored as a built artifact
-GasLibraryFactory/
+
 .superpowers/

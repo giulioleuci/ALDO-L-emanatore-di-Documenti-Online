@@ -16,7 +16,10 @@ import { EntityNotFoundError, ValidationError } from '../../../domain/errors/Dom
  * students).
  */
 export class ClasseProvider implements ContextProvider {
-  constructor(private readonly classi: ClasseRepository, private readonly alunni?: AlunnoRepository) {}
+  constructor(
+    private readonly classi: ClasseRepository,
+    private readonly alunni?: AlunnoRepository
+  ) {}
 
   provide(cdu: Cdu, params: BuildParams): void {
     const classe = this.resolveClasse(params);
@@ -60,11 +63,15 @@ export class ClasseProvider implements ContextProvider {
 
   private resolveClasse(params: BuildParams): Classe {
     if (params.tipoTarget === 'alunno') {
-      if (this.alunni === undefined) throw new ValidationError('ClasseProvider: un target alunno richiede AlunnoRepository');
+      if (this.alunni === undefined)
+        throw new ValidationError('ClasseProvider: un target alunno richiede AlunnoRepository');
       const alunno = this.alunni.findById(params.target);
       if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
       const classe = this.classi.findById(alunno.classe);
-      if (classe === null) throw new EntityNotFoundError(`Classe ${alunno.classe} dell'alunno ${params.target} non trovata`);
+      if (classe === null)
+        throw new EntityNotFoundError(
+          `Classe ${alunno.classe} dell'alunno ${params.target} non trovata`
+        );
       return classe;
     }
     const classe = this.classi.findById(params.target);

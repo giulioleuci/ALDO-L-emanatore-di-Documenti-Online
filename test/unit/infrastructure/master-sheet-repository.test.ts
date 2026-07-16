@@ -9,11 +9,18 @@ function repo(): MasterSheetRepository {
 }
 
 test('MasterConfig: PK, anno VO, supervisore flag (01 §0)', () => {
-  const m = MasterConfig.fromData({ ANNO_SCOLASTICO: '2025-2026', ID_SPREADSHEET: 'ss', ID_CARTELLA_GOOGLE: 'f', SUPERVISORE_EMAIL: 'x@y.it' });
+  const m = MasterConfig.fromData({
+    ANNO_SCOLASTICO: '2025-2026',
+    ID_SPREADSHEET: 'ss',
+    ID_CARTELLA_GOOGLE: 'f',
+    SUPERVISORE_EMAIL: 'x@y.it'
+  });
   expect(m.id).toBe('2025-2026');
   expect(m.annoScolastico.getAnnoInizio()).toBe(2025);
   expect(m.hasSupervisore()).toBe(true);
-  expect(MasterConfig.fromData({ ANNO_SCOLASTICO: '2024-2025', SUPERVISORE_EMAIL: '' }).hasSupervisore()).toBe(false);
+  expect(
+    MasterConfig.fromData({ ANNO_SCOLASTICO: '2024-2025', SUPERVISORE_EMAIL: '' }).hasSupervisore()
+  ).toBe(false);
 });
 
 test('findConfigAnnoCorrente returns the first (top) row (06 §0)', () => {

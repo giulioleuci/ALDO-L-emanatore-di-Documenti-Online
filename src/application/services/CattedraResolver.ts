@@ -92,8 +92,18 @@ export class CattedraResolver {
   }
 
   // Priority 1: redirect a holder to the chain-resolved active substitute.
-  private applicaSupplenza(titolare: Docente, classe: Classe, materia: MateriaId, data: Date): Docente {
-    const supplenza = this.supplenze.findSupplenzaSpecifica(titolare, data, classe.classeId, materia);
+  private applicaSupplenza(
+    titolare: Docente,
+    classe: Classe,
+    materia: MateriaId,
+    data: Date
+  ): Docente {
+    const supplenza = this.supplenze.findSupplenzaSpecifica(
+      titolare,
+      data,
+      classe.classeId,
+      materia
+    );
     if (supplenza === null) return titolare;
     return this.docenti.findById(supplenza.supplente) ?? titolare;
   }

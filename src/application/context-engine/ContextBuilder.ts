@@ -95,7 +95,12 @@ export class ContextBuilder {
     // 02 §7 / 09 §2: `tech` MUST be non-enumerable so it never appears in
     // JSON.stringify() (prevents giant/circular logs). Values stay mutable so
     // providers can attach live entities during assembly.
-    Object.defineProperty(base, 'tech', { value: tech, enumerable: false, writable: true, configurable: true });
+    Object.defineProperty(base, 'tech', {
+      value: tech,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    });
     return base as Cdu;
   }
 }

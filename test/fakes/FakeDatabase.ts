@@ -1,15 +1,37 @@
-import type { IDatabase, IReadableTable, Row, IndexedLookup } from '../../src/infrastructure/db/Database';
+import type {
+  IDatabase,
+  IReadableTable,
+  Row,
+  IndexedLookup
+} from '../../src/infrastructure/db/Database';
 import { createSelect, type EqualityQueryBuilder } from '../../src/infrastructure/db/Database';
 
 // Default primary-key column per table (ref 01_SCHEMA_DATABASE.md), used by the
 // DomainRepositoryLib Repository seam's getByPK(id).
 const DEFAULT_PK: Record<string, string> = {
-  CLASSI: 'ID', DOCENTI: 'EMAIL', ALUNNI: 'EMAIL', MATERIE: 'ID', INDIRIZZI: 'ID',
-  DIPART: 'ID', RUOLI: 'ID', CONF_DOC: 'ID', CONF_MAIL: 'ID', CONF_IMP: 'ID', LOG_DOCS: 'ID', LOG_FOLD: 'ID',
+  CLASSI: 'ID',
+  DOCENTI: 'EMAIL',
+  ALUNNI: 'EMAIL',
+  MATERIE: 'ID',
+  INDIRIZZI: 'ID',
+  DIPART: 'ID',
+  RUOLI: 'ID',
+  CONF_DOC: 'ID',
+  CONF_MAIL: 'ID',
+  CONF_IMP: 'ID',
+  LOG_DOCS: 'ID',
+  LOG_FOLD: 'ID',
   // Composite-PK tables: getByPK single-column is unused (repos use getAllRows+filter);
   // first key part is listed only so pkFor does not fall back to 'ID'.
-  PIANI: 'STUDENTE', CARENZE: 'STUDENTE', PROGETTI: 'CLASSE', MOV_ALUNNI: 'STUDENTE', ASL: 'STUDENTE',
-  SUPPLENZE: 'TITOLARE', VARIAZIONI_CATTEDRA: 'CLASSE_ID', MASTER: 'ANNO_SCOLASTICO', LOG_MAIL: 'PATTERN'
+  PIANI: 'STUDENTE',
+  CARENZE: 'STUDENTE',
+  PROGETTI: 'CLASSE',
+  MOV_ALUNNI: 'STUDENTE',
+  ASL: 'STUDENTE',
+  SUPPLENZE: 'TITOLARE',
+  VARIAZIONI_CATTEDRA: 'CLASSE_ID',
+  MASTER: 'ANNO_SCOLASTICO',
+  LOG_MAIL: 'PATTERN'
 };
 
 /**
@@ -19,13 +41,27 @@ const DEFAULT_PK: Record<string, string> = {
 class FakeTable implements IReadableTable {
   private readonly indexedColumns = new Set<string>();
 
-  constructor(private rows: Row[], private readonly pkColumn: string) {}
-  findAll(): Row[] { return this.rows.slice(); }
-  find(predicate: (row: Row) => boolean): Row | null { return this.rows.find(predicate) ?? null; }
-  insert(row: Row): void { this.rows.push(row); }
+  constructor(
+    private rows: Row[],
+    private readonly pkColumn: string
+  ) {}
+  findAll(): Row[] {
+    return this.rows.slice();
+  }
+  find(predicate: (row: Row) => boolean): Row | null {
+    return this.rows.find(predicate) ?? null;
+  }
+  insert(row: Row): void {
+    this.rows.push(row);
+  }
   // DomainRepositoryLib Repository.save() write seam:
-  getAllRows(): Row[] { return this.rows.slice(); }
-  insertRow(row: Row): Row { this.rows.push(row); return row; }
+  getAllRows(): Row[] {
+    return this.rows.slice();
+  }
+  insertRow(row: Row): Row {
+    this.rows.push(row);
+    return row;
+  }
   updateRowById(id: string, row: Row): void {
     const i = this.rows.findIndex((r) => String(r[this.pkColumn]) === String(id));
     if (i === -1) this.rows.push(row);
@@ -41,14 +77,20 @@ class FakeTable implements IReadableTable {
     return this.rows.find((r) => String(r[this.pkColumn]) === String(id)) ?? null;
   }
   // SheetDBLib-like transaction seam: snapshot/restore of the row cache.
-  snapshotRows(): Row[] { return this.rows.map((r) => ({ ...r })); }
-  restoreRows(rows: Row[]): void { this.rows = rows; }
+  snapshotRows(): Row[] {
+    return this.rows.map((r) => ({ ...r }));
+  }
+  restoreRows(rows: Row[]): void {
+    this.rows = rows;
+  }
 
   // O(1) hot-lookup index seam (ref REPORT_GLF.md A2). Recomputed on each
   // lookup rather than incrementally maintained — the fake's row counts never
   // approach the scale where that would matter, and this avoids staleness
   // after insertRow/updateRowById/restoreRows.
-  createIndex(columnName: string): void { this.indexedColumns.add(columnName); }
+  createIndex(columnName: string): void {
+    this.indexedColumns.add(columnName);
+  }
   indexedLookup(columnName: string, value: unknown): Row[] | null {
     if (!this.indexedColumns.has(columnName)) return null;
     return this.rows.filter((r) => r[columnName] === value);
@@ -77,9 +119,12 @@ export class FakeDatabase implements IDatabase {
     for (const [name, rows] of Object.entries(seed)) {
       this.store.set(name, new FakeTable(rows, this.pkFor(name)));
     }
-    this.tables = new Proxy<Record<string, FakeTable>>({}, {
-      get: (_target, name: string): FakeTable => this.getTable(name)
-    });
+    this.tables = new Proxy<Record<string, FakeTable>>(
+      {},
+      {
+        get: (_target, name: string): FakeTable => this.getTable(name)
+      }
+    );
   }
 
   private pkFor(name: string): string {
@@ -88,16 +133,23 @@ export class FakeDatabase implements IDatabase {
 
   private getTable(name: string): FakeTable {
     let tbl = this.store.get(name);
-    if (!tbl) { tbl = new FakeTable([], this.pkFor(name)); this.store.set(name, tbl); }
+    if (!tbl) {
+      tbl = new FakeTable([], this.pkFor(name));
+      this.store.set(name, tbl);
+    }
     return tbl;
   }
 
-  table(name: string): IReadableTable { return this.getTable(name); }
+  table(name: string): IReadableTable {
+    return this.getTable(name);
+  }
 
   /** Mirrors SheetDbAdapter.select() so tests exercise the same Repository.find() query-pushdown path. */
   select(columns: string[]): { from(tableName: string): EqualityQueryBuilder } {
-    const indexedLookupFor = (tableName: string): IndexedLookup =>
-      (column, value) => this.getTable(tableName).indexedLookup(column, value);
+    const indexedLookupFor =
+      (tableName: string): IndexedLookup =>
+      (column, value) =>
+        this.getTable(tableName).indexedLookup(column, value);
     return createSelect(
       (tableName) => this.getTable(tableName).getAllRows(),
       indexedLookupFor
@@ -113,7 +165,9 @@ export class FakeDatabase implements IDatabase {
 
   beginTransaction(): void {
     if (this.transactionSnapshot !== null) {
-      throw new Error('Transaction already in progress. Commit or rollback current transaction first.');
+      throw new Error(
+        'Transaction already in progress. Commit or rollback current transaction first.'
+      );
     }
     this.transactionSnapshot = new Map();
     for (const [name, tbl] of this.store) this.transactionSnapshot.set(name, tbl.snapshotRows());

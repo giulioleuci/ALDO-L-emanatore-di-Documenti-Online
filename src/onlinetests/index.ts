@@ -53,16 +53,21 @@ export function executeOnlineTests(overrides: Partial<OnlineTestDeps> = {}): Onl
   // ALDO_GLF_AUDIT_RESULTS.md K-1) reuses the SAME folder across runs instead of minting a fresh,
   // never-deleted one every time (the previous per-run-timestamped-name behaviour).
   const rootFolder = overrides.spreadsheetFactory === undefined ? mintRootFolder() : null;
-  const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
-  const drive = overrides.drive ?? new DriveServiceFacade(
-    ServiceFactory.getDriveService(),
-    ServiceFactory.getPermissionService(),
-    (rootFolder as NonNullable<typeof rootFolder>).getId()
-  );
+  const spreadsheetFactory =
+    overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
+  const drive =
+    overrides.drive ??
+    new DriveServiceFacade(
+      ServiceFactory.getDriveService(),
+      ServiceFactory.getPermissionService(),
+      (rootFolder as NonNullable<typeof rootFolder>).getId()
+    );
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const initAldoFn = overrides.initAldo ?? initAldo;
-  const activeUserEmail = overrides.activeUserEmail ?? ((): string => new SessionActiveUserFacade().getEmail());
-  const log = overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
+  const activeUserEmail =
+    overrides.activeUserEmail ?? ((): string => new SessionActiveUserFacade().getEmail());
+  const log =
+    overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
 
   const sample = new SampleDatabaseBuilder(spreadsheetFactory, drive).build();
 
@@ -95,7 +100,9 @@ const ONLINETEST_ROOT_FOLDER_NAME = '_ALDO_ONLINETEST_ROOT';
  * {@link GasSampleSpreadsheetFactory}.
  */
 function mintRootFolder(): GoogleAppsScript.Drive.Folder {
-  return testContext.getOrCreateNamedFolder(ONLINETEST_ROOT_FOLDER_NAME) as GoogleAppsScript.Drive.Folder;
+  return testContext.getOrCreateNamedFolder(
+    ONLINETEST_ROOT_FOLDER_NAME
+  ) as GoogleAppsScript.Drive.Folder;
 }
 
 /** GAS Run-dropdown entry point (design spec §2): no arguments, so it runs with no setup. */

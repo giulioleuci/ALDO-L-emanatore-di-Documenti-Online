@@ -11,7 +11,11 @@ import type { Materia } from '../../domain/entities/Materia';
  * sigla contains that year. Returns the original sigla unchanged if no
  * MATERIA declares it (no reconciliation data available).
  */
-export function reconcileSigla(siglaStorica: string, annoCorso: number, materie: Materia[]): string {
+export function reconcileSigla(
+  siglaStorica: string,
+  annoCorso: number,
+  materie: Materia[]
+): string {
   for (const materia of materie) {
     const anni = materia.getEvoluzione()[siglaStorica];
     if (anni !== undefined && anni.includes(annoCorso)) {

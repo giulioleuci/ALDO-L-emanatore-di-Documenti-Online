@@ -24,7 +24,11 @@ import type { MaterieGroups } from '../../src/application/strategies/SheetMateri
  */
 export class FakeTemplateEngine implements ITemplateEngine {
   public rendered: Array<{ fileId: string; context: Record<string, unknown> }> = [];
-  public renderedSheets: Array<{ sheetId: string; context: Record<string, unknown>; sheetName: string | undefined }> = [];
+  public renderedSheets: Array<{
+    sheetId: string;
+    context: Record<string, unknown>;
+    sheetName: string | undefined;
+  }> = [];
   private readonly real = new TemplateEngineFacade();
 
   processString(template: string, context: Record<string, unknown>): string {
@@ -35,7 +39,11 @@ export class FakeTemplateEngine implements ITemplateEngine {
     this.rendered.push({ fileId, context });
   }
 
-  processSheet(sheetId: string, context: Record<string, unknown>, sheetName?: string): SheetColumnLayout[] {
+  processSheet(
+    sheetId: string,
+    context: Record<string, unknown>,
+    sheetName?: string
+  ): SheetColumnLayout[] {
     this.renderedSheets.push({ sheetId, context, sheetName });
     return this.resolveDynamicColumns(context['materieColonne']);
   }
@@ -51,9 +59,13 @@ export class FakeTemplateEngine implements ITemplateEngine {
   private resolveDynamicColumns(materieColonne: unknown): SheetColumnLayout[] {
     if (materieColonne === null || typeof materieColonne !== 'object') return [];
     const groups = materieColonne as MaterieGroups;
-    const buckets: Array<{ items: { sigla: string; header: string }[]; label?: string }> = [{ items: groups.group1 }];
-    if (groups.group2 !== undefined) buckets.push({ items: groups.group2, label: groups.group2Label });
-    if (groups.group3 !== undefined) buckets.push({ items: groups.group3, label: groups.group3Label });
+    const buckets: Array<{ items: { sigla: string; header: string }[]; label?: string }> = [
+      { items: groups.group1 }
+    ];
+    if (groups.group2 !== undefined)
+      buckets.push({ items: groups.group2, label: groups.group2Label });
+    if (groups.group3 !== undefined)
+      buckets.push({ items: groups.group3, label: groups.group3Label });
 
     const columns: SheetColumnLayout[] = [];
     let col = 1;

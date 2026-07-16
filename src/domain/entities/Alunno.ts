@@ -34,21 +34,39 @@ export class Alunno extends AldoEntity {
     this.attivo = data[COL_ALUNNI.ATTIVO] === true;
     this.ripetente = data[COL_ALUNNI.RIPETENTE] === true;
     this.rappresentante = data[COL_ALUNNI.RAPPR_STUD] === true;
-    this.tutor1 = typeof data[COL_ALUNNI.TUTOR_1] === 'string' ? (data[COL_ALUNNI.TUTOR_1] as string) : '';
-    this.tutor2 = typeof data[COL_ALUNNI.TUTOR_2] === 'string' ? (data[COL_ALUNNI.TUTOR_2] as string) : '';
-    this.rapprGen = typeof data[COL_ALUNNI.RAPPR_GEN] === 'string' ? (data[COL_ALUNNI.RAPPR_GEN] as string) : '';
-    this.curriculumRaw = typeof data[COL_ALUNNI.CURRICULUM] === 'string' ? (data[COL_ALUNNI.CURRICULUM] as string) : null;
+    this.tutor1 =
+      typeof data[COL_ALUNNI.TUTOR_1] === 'string' ? (data[COL_ALUNNI.TUTOR_1] as string) : '';
+    this.tutor2 =
+      typeof data[COL_ALUNNI.TUTOR_2] === 'string' ? (data[COL_ALUNNI.TUTOR_2] as string) : '';
+    this.rapprGen =
+      typeof data[COL_ALUNNI.RAPPR_GEN] === 'string' ? (data[COL_ALUNNI.RAPPR_GEN] as string) : '';
+    this.curriculumRaw =
+      typeof data[COL_ALUNNI.CURRICULUM] === 'string'
+        ? (data[COL_ALUNNI.CURRICULUM] as string)
+        : null;
   }
 
-  get email(): Email { return Email.of(this.id ?? ''); }
-  get classeId(): ClasseId { return ClasseId.of(this.classe); }
+  get email(): Email {
+    return Email.of(this.id ?? '');
+  }
+  get classeId(): ClasseId {
+    return ClasseId.of(this.classe);
+  }
 
-  isAttivo(): boolean { return this.attivo; }
-  isRipetente(): boolean { return this.ripetente; }
-  isRappresentante(): boolean { return this.rappresentante; }
+  isAttivo(): boolean {
+    return this.attivo;
+  }
+  isRipetente(): boolean {
+    return this.ripetente;
+  }
+  isRappresentante(): boolean {
+    return this.rappresentante;
+  }
 
   /** Free-text parent representative name (ALUNNI.RAPPR_GEN); '' when none (ref 01, 02 §4.1). */
-  getRappresentanteGenitore(): string { return this.rapprGen; }
+  getRappresentanteGenitore(): string {
+    return this.rapprGen;
+  }
 
   /** Non-empty tutor emails (TUTOR_1, TUTOR_2). */
   getTutors(): Email[] {

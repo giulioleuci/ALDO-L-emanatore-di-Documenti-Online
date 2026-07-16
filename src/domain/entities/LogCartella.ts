@@ -6,7 +6,12 @@ export interface LogCartellaData {
 }
 
 function csv(cell: unknown): string[] {
-  return typeof cell === 'string' ? cell.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : [];
+  return typeof cell === 'string'
+    ? cell
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    : [];
 }
 
 /**
@@ -22,12 +27,20 @@ export class LogCartella extends AldoEntity {
     super(data);
     this.raw = { ...data };
     this.id = typeof data[COL_LOG_FOLD.ID] === 'string' ? (data[COL_LOG_FOLD.ID] as string) : null;
-    this.tipo = typeof data[COL_LOG_FOLD.TIPO] === 'string' ? (data[COL_LOG_FOLD.TIPO] as string) : '';
-    this.nome = typeof data[COL_LOG_FOLD.NOME] === 'string' ? (data[COL_LOG_FOLD.NOME] as string) : '';
+    this.tipo =
+      typeof data[COL_LOG_FOLD.TIPO] === 'string' ? (data[COL_LOG_FOLD.TIPO] as string) : '';
+    this.nome =
+      typeof data[COL_LOG_FOLD.NOME] === 'string' ? (data[COL_LOG_FOLD.NOME] as string) : '';
   }
 
-  getLink(): string { return typeof this.raw[COL_LOG_FOLD.LINK] === 'string' ? (this.raw[COL_LOG_FOLD.LINK] as string) : ''; }
-  containsClasse(classeId: string): boolean { return csv(this.raw[COL_LOG_FOLD.CLASSI]).includes(classeId); }
+  getLink(): string {
+    return typeof this.raw[COL_LOG_FOLD.LINK] === 'string'
+      ? (this.raw[COL_LOG_FOLD.LINK] as string)
+      : '';
+  }
+  containsClasse(classeId: string): boolean {
+    return csv(this.raw[COL_LOG_FOLD.CLASSI]).includes(classeId);
+  }
 
   override toData(): EntityData {
     return { ...this.raw };

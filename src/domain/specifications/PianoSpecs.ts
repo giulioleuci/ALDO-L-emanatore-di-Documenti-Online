@@ -8,15 +8,23 @@ import { COL_PIANI } from '../../config/schema';
 /** PIANI of a student (ref 07 §8). */
 export class PianiPerAlunnoSpec implements Specification<Piano> {
   constructor(private readonly email: Email) {}
-  isSatisfiedBy(p: Piano): boolean { return p.studente === this.email.value; }
-  toQueryObject(): Record<string, unknown> { return { [COL_PIANI.STUDENTE]: this.email.value }; }
+  isSatisfiedBy(p: Piano): boolean {
+    return p.studente === this.email.value;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_PIANI.STUDENTE]: this.email.value };
+  }
 }
 
 /** PIANI of a given type (ref 07 §8). */
 export class PianiPerTipoSpec implements Specification<Piano> {
   constructor(private readonly tipo: TipoPiano) {}
-  isSatisfiedBy(p: Piano): boolean { return p.tipo === this.tipo; }
-  toQueryObject(): Record<string, unknown> { return { [COL_PIANI.TIPO]: this.tipo }; }
+  isSatisfiedBy(p: Piano): boolean {
+    return p.tipo === this.tipo;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_PIANI.TIPO]: this.tipo };
+  }
 }
 
 /**
@@ -26,8 +34,12 @@ export class PianiPerTipoSpec implements Specification<Piano> {
  */
 export class AlunniBESSpec implements Specification<Alunno> {
   constructor(private readonly besStudentEmails: Set<string>) {}
-  isSatisfiedBy(a: Alunno): boolean { return this.besStudentEmails.has(a.email.value); }
-  toQueryObject(): null { return null; }
+  isSatisfiedBy(a: Alunno): boolean {
+    return this.besStudentEmails.has(a.email.value);
+  }
+  toQueryObject(): null {
+    return null;
+  }
   static fromPiani(besStudentEmails: Iterable<string>): AlunniBESSpec {
     return new AlunniBESSpec(new Set(besStudentEmails));
   }

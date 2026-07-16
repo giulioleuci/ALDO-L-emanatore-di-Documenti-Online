@@ -14,7 +14,9 @@ test('FakeDriveFacade findOrCreate + copy records calls', () => {
 test('FakeTemplateEngine renders strings via the real vendored engine and records document renders', () => {
   const templates = new FakeTemplateEngine();
   const cdu = { focus: { classe: { anagrafica: { nome: '5A' } } } };
-  expect(templates.processString('Verbale_{{focus.classe.anagrafica.nome}}', cdu)).toBe('Verbale_5A');
+  expect(templates.processString('Verbale_{{focus.classe.anagrafica.nome}}', cdu)).toBe(
+    'Verbale_5A'
+  );
   templates.processDocument('file_1', cdu);
   expect(templates.contextFor('file_1')).toBe(cdu);
 });

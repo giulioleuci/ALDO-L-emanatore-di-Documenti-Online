@@ -12,7 +12,11 @@ export interface IDriveFacade {
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
 /** ALDO PermessoACL -> Drive API v3 sharing role (14 §4). */
-const ROLE_MAP: Record<string, string> = { SCRITTURA: 'writer', LETTURA: 'reader', COMMENTO: 'commenter' };
+const ROLE_MAP: Record<string, string> = {
+  SCRITTURA: 'writer',
+  LETTURA: 'reader',
+  COMMENTO: 'commenter'
+};
 
 /**
  * Real Drive facade (14 §4, 08 §3.4). Composes the vendored GoogleApiWrapper
@@ -46,18 +50,25 @@ export class DriveServiceFacade implements IDriveFacade {
   createFolder(path: string): string {
     let parent = this.rootFolderId;
     for (const segment of segments(path)) {
-      const folder = this.drive.createFolder(segment, parent, { returnExistingIfFound: true }) as { id: string };
+      const folder = this.drive.createFolder(segment, parent, { returnExistingIfFound: true }) as {
+        id: string;
+      };
       parent = folder.id;
     }
     return parent;
   }
 
   copyFile(templateId: string, name: string, folderId: string): string {
-    const result = this.drive.copyFiles([{ fileId: templateId, name, destinationFolder: folderId }], {});
+    const result = this.drive.copyFiles(
+      [{ fileId: templateId, name, destinationFolder: folderId }],
+      {}
+    );
     const copied = result.successful[0];
     if (copied === undefined) {
       const failure = result.failed[0];
-      throw new Error(`Copia file ${templateId} fallita: ${failure?.error.message ?? 'errore sconosciuto'}`);
+      throw new Error(
+        `Copia file ${templateId} fallita: ${failure?.error.message ?? 'errore sconosciuto'}`
+      );
     }
     return copied.data.id;
   }
@@ -81,7 +92,10 @@ export class DriveServiceFacade implements IDriveFacade {
 }
 
 function segments(path: string): string[] {
-  return path.split('/').map((s) => s.trim()).filter((s) => s.length > 0);
+  return path
+    .split('/')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 /** Escapes single quotes for Drive API v3 `q` string literals. */

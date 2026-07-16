@@ -1,12 +1,20 @@
 import { DocumentoConTabelleImportateGeneratorStrategy } from '../../../src/application/strategies/DocumentoConTabelleImportateGeneratorStrategy';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
-import type { IDocumentTableFacade, TablePlaceholder } from '../../../src/infrastructure/facades/DocumentTableFacade';
+import type {
+  IDocumentTableFacade,
+  TablePlaceholder
+} from '../../../src/infrastructure/facades/DocumentTableFacade';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 
 class FakeDocumentTableFacade implements IDocumentTableFacade {
   removed: Array<{ fileId: string; marker: string }> = [];
   appended: Array<{ fileId: string; data: string[][]; options?: { headerRow?: boolean } }> = [];
-  insertedAtMarker: Array<{ fileId: string; marker: string; data: string[][]; options?: { headerRow?: boolean } }> = [];
+  insertedAtMarker: Array<{
+    fileId: string;
+    marker: string;
+    data: string[][];
+    options?: { headerRow?: boolean };
+  }> = [];
   /** Records the interleaved call order ('insert' | 'remove') per marker, to assert insert-before-remove. */
   callOrder: string[] = [];
   constructor(private readonly placeholders: TablePlaceholder[]) {}
@@ -20,7 +28,12 @@ class FakeDocumentTableFacade implements IDocumentTableFacade {
   appendTable(fileId: string, data: string[][], options?: { headerRow?: boolean }): void {
     this.appended.push({ fileId, data, options });
   }
-  insertTableAtMarker(fileId: string, marker: string, data: string[][], options?: { headerRow?: boolean }): void {
+  insertTableAtMarker(
+    fileId: string,
+    marker: string,
+    data: string[][],
+    options?: { headerRow?: boolean }
+  ): void {
     this.insertedAtMarker.push({ fileId, marker, data, options });
     this.callOrder.push(`insert:${marker}`);
   }
@@ -60,15 +73,24 @@ function sheetInfo(name = 'Sheet1', rowCount = 5, columnCount = 3): SpreadsheetS
 
 function fakeCdu(): Cdu {
   return {
-    meta: { date: { oggi: { breve: '09/07/2026' } }, parametriInput: { target: 'x', tipoTarget: 'classe', opzioni: {} } },
+    meta: {
+      date: { oggi: { breve: '09/07/2026' } },
+      parametriInput: { target: 'x', tipoTarget: 'classe', opzioni: {} }
+    },
     focus: {},
-    tech: { entita: {}, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } }
+    tech: {
+      entita: {},
+      servizi: [],
+      pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
+    }
   } as unknown as Cdu;
 }
 
 describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
   test('for each {{TABELLA:<id>}} marker: reads the sheet, inserts it as a table at the marker position, THEN removes the marker, then runs the generic placeholder pass', () => {
-    const placeholders: TablePlaceholder[] = [{ marker: '{{TABELLA:sheet_1}}', sheetFileId: 'sheet_1' }];
+    const placeholders: TablePlaceholder[] = [
+      { marker: '{{TABELLA:sheet_1}}', sheetFileId: 'sheet_1' }
+    ];
     const tables = new FakeDocumentTableFacade(placeholders);
     const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 3, 2), {
       'Sheet1!A1:B3': [
@@ -115,10 +137,16 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
   });
 
   test('a missing sheet (getSheetInfo returns nothing) skips insertTableAtMarker for empty data, but still removes the marker', () => {
-    const placeholders: TablePlaceholder[] = [{ marker: '{{TABELLA:sheet_missing}}', sheetFileId: 'sheet_missing' }];
+    const placeholders: TablePlaceholder[] = [
+      { marker: '{{TABELLA:sheet_missing}}', sheetFileId: 'sheet_missing' }
+    ];
     const tables = new FakeDocumentTableFacade(placeholders);
     const sheets = new FakeSpreadsheetService([], {});
-    const strategy = new DocumentoConTabelleImportateGeneratorStrategy(new FakeTemplateEngine(), sheets, tables);
+    const strategy = new DocumentoConTabelleImportateGeneratorStrategy(
+      new FakeTemplateEngine(),
+      sheets,
+      tables
+    );
 
     strategy.render('doc3', fakeCdu());
 

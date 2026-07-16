@@ -76,17 +76,27 @@ export class DocumentBatchService {
     }
 
     const success = errori.length === 0;
-    this.monitor?.completeJob(jobId, `${processed.length} classi elaborate, ${errori.length} errori`);
+    this.monitor?.completeJob(
+      jobId,
+      `${processed.length} classi elaborate, ${errori.length} errori`
+    );
     return { success, totale: attive.length, processed, errori };
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
-    queue.registerJobHandler(JOB_TYPE_GENERAZIONE_DOCUMENTI, (params) => this.batchGenerateHandler(params));
+    queue.registerJobHandler(JOB_TYPE_GENERAZIONE_DOCUMENTI, (params) =>
+      this.batchGenerateHandler(params)
+    );
   }
 
   /** Starts the batch through JobRunnerLib (state + resume triggers managed by the library). */
-  start(runner: JobRunnerService, jobName: string, confDocId: string, forceRestart = false): unknown {
+  start(
+    runner: JobRunnerService,
+    jobName: string,
+    confDocId: string,
+    forceRestart = false
+  ): unknown {
     return runner.run(
       jobName,
       JOB_TYPE_GENERAZIONE_DOCUMENTI,

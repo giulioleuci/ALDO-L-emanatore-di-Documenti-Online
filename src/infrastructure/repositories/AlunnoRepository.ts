@@ -54,7 +54,9 @@ export class AlunnoRepository extends Repository<Alunno> {
   /** Students with at least one BES plan (ref 06 §1). Delegates to PianoRepository. */
   findConBES(): Alunno[] {
     const besEmails = this.piani.getStudentiConBESEmails();
-    return this.findAll().filter((a) => besEmails.has(a.email.value)).sort((x, y) => this.byCognomeNome(x, y));
+    return this.findAll()
+      .filter((a) => besEmails.has(a.email.value))
+      .sort((x, y) => this.byCognomeNome(x, y));
   }
 
   getTutors(alunno: Alunno): Email[] {

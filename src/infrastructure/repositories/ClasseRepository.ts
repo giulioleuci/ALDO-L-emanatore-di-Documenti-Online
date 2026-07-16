@@ -12,12 +12,24 @@ import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { ArticolazioneConfig } from '../../domain/value-objects/ArticolazioneConfig';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
-import { ClassiAttiveSpec, ClassiPerAnnoSpec, ClassiPerIndirizzoSpec, ClassiArticolateSpec } from '../../domain/specifications/ClasseSpecs';
+import {
+  ClassiAttiveSpec,
+  ClassiPerAnnoSpec,
+  ClassiPerIndirizzoSpec,
+  ClassiArticolateSpec
+} from '../../domain/specifications/ClasseSpecs';
 import { TABLE, COL_DOCENTI, COL_MATERIE, COL_CLASSI } from '../../config/schema';
-import { EntityNotFoundError, MateriaNotFoundError, ValidationError } from '../../domain/errors/DomainError';
+import {
+  EntityNotFoundError,
+  MateriaNotFoundError,
+  ValidationError
+} from '../../domain/errors/DomainError';
 
 /** Dynamic per-subject column names in the CLASSI cattedra matrix (ref 06 §3). */
-interface MateriaColumns { main: string; itp: string }
+interface MateriaColumns {
+  main: string;
+  itp: string;
+}
 
 /**
  * CLASSI repository on the DomainRepositoryLib Repository base. Standard CRUD
@@ -76,13 +88,15 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
 
   getDocentiPerMateria(classe: Classe, materia: MateriaId): Docente[] {
     const cols = this.materieColumns.get(materia.value);
-    if (cols === undefined) throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
+    if (cols === undefined)
+      throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
     return this.loadDocenti(this.rowOf(classe)[cols.main]);
   }
 
   getITPPerMateria(classe: Classe, materia: MateriaId): Docente[] {
     const cols = this.materieColumns.get(materia.value);
-    if (cols === undefined) throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
+    if (cols === undefined)
+      throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
     return this.loadDocenti(this.rowOf(classe)[cols.itp]);
   }
 
@@ -130,12 +144,19 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   getStorico(classe: Classe): ClasseId[] {
     const raw = this.rowOf(classe)[COL_CLASSI.STORICO];
     if (typeof raw !== 'string') return [];
-    return raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0).map((s) => ClasseId.of(s));
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .map((s) => ClasseId.of(s));
   }
 
   getIndirizzo(classe: Classe): Indirizzo {
     const ind = this.indirizzi.findByIdCached(IndirizzoId.of(classe.indirizzo));
-    if (ind === null) throw new EntityNotFoundError(`Indirizzo ${classe.indirizzo} non trovato (classe ${classe.id ?? '?'})`);
+    if (ind === null)
+      throw new EntityNotFoundError(
+        `Indirizzo ${classe.indirizzo} non trovato (classe ${classe.id ?? '?'})`
+      );
     return ind;
   }
 
@@ -166,7 +187,9 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     const config = this.getArticolazione(classe);
     if (config === null) return [];
     if (config.isPartner()) {
-      throw new ValidationError(`getClassiPartner va chiamato solo sulla classe parent; ${classe.id ?? '?'} è una partner`);
+      throw new ValidationError(
+        `getClassiPartner va chiamato solo sulla classe parent; ${classe.id ?? '?'} è una partner`
+      );
     }
     return config.partners.map((id) => this.requireClasse(id));
   }
@@ -180,7 +203,9 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   /** The class itself plus all related classes (parent + partners), deduped by id. */
   getGruppoArticolazione(classe: Classe): Classe[] {
     const byId = new Map<string, Classe>();
-    const add = (c: Classe | null): void => { if (c?.id != null) byId.set(c.id, c); };
+    const add = (c: Classe | null): void => {
+      if (c?.id != null) byId.set(c.id, c);
+    };
     add(classe);
     const config = this.getArticolazione(classe);
     if (config !== null) {
@@ -197,7 +222,9 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   /** CDC of the articulated group: this class merged with parent's partners / partner's counterpart. */
   getAllDocentiCDCArticolata(classe: Classe): Docente[] {
     const byEmail = new Map<string, Docente>();
-    const add = (docenti: Docente[]): void => { for (const d of docenti) if (d.id != null) byEmail.set(d.id, d); };
+    const add = (docenti: Docente[]): void => {
+      for (const d of docenti) if (d.id != null) byEmail.set(d.id, d);
+    };
     add(this.getAllDocentiCDC(classe));
     const config = this.getArticolazione(classe);
     if (config !== null) {
@@ -216,12 +243,18 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
    * is the plain getDocentiPerMateria; otherwise, when a student indirizzo is
    * given, the group class of that indirizzo is used (ref 05 §3, 06 §3).
    */
-  getDocentiPerMateriaArticolata(classe: Classe, materia: MateriaId, indirizzoStudente?: IndirizzoId): Docente[] {
+  getDocentiPerMateriaArticolata(
+    classe: Classe,
+    materia: MateriaId,
+    indirizzoStudente?: IndirizzoId
+  ): Docente[] {
     const config = this.getArticolazione(classe);
     if (config === null || indirizzoStudente === undefined) {
       return this.getDocentiPerMateria(classe, materia);
     }
-    const target = this.getGruppoArticolazione(classe).find((c) => c.indirizzo === indirizzoStudente.value);
+    const target = this.getGruppoArticolazione(classe).find(
+      (c) => c.indirizzo === indirizzoStudente.value
+    );
     return target === undefined ? [] : this.getDocentiPerMateria(target, materia);
   }
 
@@ -232,7 +265,13 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
    * it is separate, listed under each group that teaches it. Ordered by the
    * parent's `partners` [primo, secondo]. Returns null for a non-articulated class.
    */
-  getMaterieArticolazione(classe: Classe): { condivise: string[]; separatePrimoGruppo: string[]; separateSecondoGruppo: string[] } | null {
+  getMaterieArticolazione(
+    classe: Classe
+  ): {
+    condivise: string[];
+    separatePrimoGruppo: string[];
+    separateSecondoGruppo: string[];
+  } | null {
     if (this.getArticolazione(classe) === null) return null;
     const [primo, secondo] = this.orderedPartners(classe);
     if (primo === undefined || secondo === undefined) return null;
@@ -243,7 +282,10 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       const materia = MateriaId.of(sigla);
       const e1 = this.emailSet(this.getDocentiPerMateria(primo, materia));
       const e2 = this.emailSet(this.getDocentiPerMateria(secondo, materia));
-      if (e1.size > 0 && e2.size > 0 && this.sameSet(e1, e2)) { condivise.push(sigla); continue; }
+      if (e1.size > 0 && e2.size > 0 && this.sameSet(e1, e2)) {
+        condivise.push(sigla);
+        continue;
+      }
       if (e1.size > 0) separatePrimoGruppo.push(sigla);
       if (e2.size > 0) separateSecondoGruppo.push(sigla);
     }
@@ -260,12 +302,16 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   }
 
   /** Every subject the teacher holds in this class, tagged main vs itp column (09 §4). */
-  getMaterieDelDocente(classe: Classe, docenteEmail: string): Array<{ sigla: string; isItp: boolean }> {
+  getMaterieDelDocente(
+    classe: Classe,
+    docenteEmail: string
+  ): Array<{ sigla: string; isItp: boolean }> {
     const row = this.rowOf(classe);
     const out: Array<{ sigla: string; isItp: boolean }> = [];
     for (const [sigla, cols] of this.materieColumns) {
       if (this.csvEmails(row[cols.main]).includes(docenteEmail)) out.push({ sigla, isItp: false });
-      else if (this.csvEmails(row[cols.itp]).includes(docenteEmail)) out.push({ sigla, isItp: true });
+      else if (this.csvEmails(row[cols.itp]).includes(docenteEmail))
+        out.push({ sigla, isItp: true });
     }
     return out;
   }
@@ -274,7 +320,10 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   getMateriaDocente(classe: Classe, docenteEmail: string): string | null {
     const row = this.rowOf(classe);
     for (const [sigla, cols] of this.materieColumns) {
-      if (this.csvEmails(row[cols.main]).includes(docenteEmail) || this.csvEmails(row[cols.itp]).includes(docenteEmail)) {
+      if (
+        this.csvEmails(row[cols.main]).includes(docenteEmail) ||
+        this.csvEmails(row[cols.itp]).includes(docenteEmail)
+      ) {
         return sigla;
       }
     }
@@ -293,7 +342,8 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
 
   private requireClasse(id: ClasseId): Classe {
     const classe = this.findById(id);
-    if (classe === null) throw new EntityNotFoundError(`Classe partner/parent ${id.value} non trovata`);
+    if (classe === null)
+      throw new EntityNotFoundError(`Classe partner/parent ${id.value} non trovata`);
     return classe;
   }
 
@@ -305,14 +355,24 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   // library merges every other captured column back in unmodified.
 
   setCoordinatori(classe: Classe, coordinatori: Docente[]): void {
-    this.writeColumn(classe, COL_CLASSI.COORD, coordinatori.map((d) => d.id ?? '').filter((e) => e !== '').join(','));
+    this.writeColumn(
+      classe,
+      COL_CLASSI.COORD,
+      coordinatori
+        .map((d) => d.id ?? '')
+        .filter((e) => e !== '')
+        .join(',')
+    );
   }
 
   /** Sets RUOLI[nomeRuolo] to the CSV of the given teachers, or removes the key when empty. */
   setDocentiRuolo(classe: Classe, nomeRuolo: string, docenti: Docente[]): void {
     const row = this.rowOf(classe);
     const raw = row[COL_CLASSI.RUOLI];
-    const ruoli = typeof raw === 'string' && raw.trim() !== '' ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    const ruoli =
+      typeof raw === 'string' && raw.trim() !== ''
+        ? (JSON.parse(raw) as Record<string, unknown>)
+        : {};
     const emails = docenti.map((d) => d.id ?? '').filter((e) => e !== '');
     if (emails.length === 0) delete ruoli[nomeRuolo];
     else ruoli[nomeRuolo] = emails.join(',');
@@ -344,7 +404,8 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       const cellEmail = classe[materiaId];
       if (typeof cellEmail !== 'string' || cellEmail.trim() === '') continue;
       const docente = docentiByEmail.get(cellEmail.trim());
-      if (!docente) throw new EntityNotFoundError(`Docente ${cellEmail} (materia ${materiaId}) non in DOCENTI`);
+      if (!docente)
+        throw new EntityNotFoundError(`Docente ${cellEmail} (materia ${materiaId}) non in DOCENTI`);
       cattedre.push({ materia: MateriaId.of(materiaId), docente });
     }
     return new ConsiglioDiClasse(cattedre);
@@ -352,7 +413,8 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
 
   /** Delegates to AlunnoRepository instead of reaching into TABLE.ALUNNI directly (ref ALDO_GLF_AUDIT_RESULTS.md D-1). */
   getAlunniAttivi(id: ClasseId): RepoRow[] {
-    return this.alunni.find(new AlunniAttiviSpec())
+    return this.alunni
+      .find(new AlunniAttiviSpec())
       .filter((a) => a.classe === id.value)
       .map((a) => a.toData() as unknown as RepoRow);
   }
@@ -374,7 +436,10 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   /** Emails from a CSV cell, trimmed and non-empty. */
   private csvEmails(cell: unknown): string[] {
     if (typeof cell !== 'string') return [];
-    return cell.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+    return cell
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   }
 
   /** Loads Docente entities from a CSV cell, skipping emails absent from DOCENTI. */

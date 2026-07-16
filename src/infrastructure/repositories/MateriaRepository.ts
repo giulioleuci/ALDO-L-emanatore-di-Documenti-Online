@@ -1,5 +1,8 @@
 import { Materia } from '../../domain/entities/Materia';
-import { MaterieEsamePrimaSpec, MaterieEsameSecondaSpec } from '../../domain/specifications/MaterieEsameSpec';
+import {
+  MaterieEsamePrimaSpec,
+  MaterieEsameSecondaSpec
+} from '../../domain/specifications/MaterieEsameSpec';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import type { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { TABLE } from '../../config/schema';

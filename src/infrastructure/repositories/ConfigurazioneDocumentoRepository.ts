@@ -3,7 +3,10 @@ import type { IExpressionEngine } from '../facades/ExpressionEngineFacade';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { TABLE } from '../../config/schema';
 
-interface ModelloCondizionale { condizione?: string; templateId?: string }
+interface ModelloCondizionale {
+  condizione?: string;
+  templateId?: string;
+}
 
 /**
  * CONF_DOC repository on the DomainRepositoryLib Repository base (PK = ID,
@@ -45,7 +48,11 @@ export class ConfigurazioneDocumentoRepository extends Repository<Configurazione
    * 10 Step 1): no CONDIZIONE → true; otherwise the expression is evaluated by
    * GasExpressionEngineLib with the CDU as the `{{...}}` context.
    */
-  shouldGenerate(config: ConfigurazioneDocumento, context: Record<string, unknown>, engine: IExpressionEngine): boolean {
+  shouldGenerate(
+    config: ConfigurazioneDocumento,
+    context: Record<string, unknown>,
+    engine: IExpressionEngine
+  ): boolean {
     const condizione = config.getCondizione();
     return condizione === null || engine.evaluateBoolean(condizione, context);
   }
@@ -56,19 +63,29 @@ export class ConfigurazioneDocumentoRepository extends Repository<Configurazione
    * with a satisfied `condizione` (evaluated by GasExpressionEngineLib) wins.
    * Throws when no template applies.
    */
-  resolveTemplateId(config: ConfigurazioneDocumento, context: Record<string, unknown>, engine: IExpressionEngine): string {
+  resolveTemplateId(
+    config: ConfigurazioneDocumento,
+    context: Record<string, unknown>,
+    engine: IExpressionEngine
+  ): string {
     const json = config.getModelliJson();
     if (Array.isArray(json)) {
       for (const modello of json as ModelloCondizionale[]) {
         const cond = modello.condizione;
-        if (typeof modello.templateId === 'string' && (cond === undefined || cond === 'true' || engine.evaluateBoolean(cond, context))) {
+        if (
+          typeof modello.templateId === 'string' &&
+          (cond === undefined || cond === 'true' || engine.evaluateBoolean(cond, context))
+        ) {
           return modello.templateId;
         }
       }
-      throw new PipelineError(`CONF_DOC ${config.id ?? '?'}: nessun template applicabile per il contesto`);
+      throw new PipelineError(
+        `CONF_DOC ${config.id ?? '?'}: nessun template applicabile per il contesto`
+      );
     }
     const semplice = config.getTemplateIdSemplice();
-    if (semplice === null) throw new PipelineError(`CONF_DOC ${config.id ?? '?'}: MODELLI privo di templateId`);
+    if (semplice === null)
+      throw new PipelineError(`CONF_DOC ${config.id ?? '?'}: MODELLI privo di templateId`);
     return semplice;
   }
 }

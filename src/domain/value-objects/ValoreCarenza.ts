@@ -15,7 +15,9 @@ export class ValoreCarenza {
 
   static voto(valore: number): ValoreCarenza {
     if (typeof valore !== 'number' || !Number.isFinite(valore)) {
-      throw new ValidationError(`ValoreCarenza VOTO: valore numerico richiesto, ricevuto "${valore}"`);
+      throw new ValidationError(
+        `ValoreCarenza VOTO: valore numerico richiesto, ricevuto "${valore}"`
+      );
     }
     return new ValoreCarenza('VOTO', valore);
   }
@@ -41,7 +43,13 @@ export class ValoreCarenza {
     return Number.isFinite(n) && s !== '' ? ValoreCarenza.voto(n) : ValoreCarenza.nota(s);
   }
 
-  isVoto(): boolean { return this.tipo === 'VOTO'; }
-  isNota(): boolean { return this.tipo === 'NOTA'; }
-  toString(): string { return String(this.valore); }
+  isVoto(): boolean {
+    return this.tipo === 'VOTO';
+  }
+  isNota(): boolean {
+    return this.tipo === 'NOTA';
+  }
+  toString(): string {
+    return String(this.valore);
+  }
 }

@@ -1,5 +1,8 @@
 import { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
-import { MovimentiPerAlunnoSpec, MovimentiPerTipoSpec } from '../../domain/specifications/MovimentoAlunnoSpecs';
+import {
+  MovimentiPerAlunnoSpec,
+  MovimentiPerTipoSpec
+} from '../../domain/specifications/MovimentoAlunnoSpecs';
 import type { Alunno } from '../../domain/entities/Alunno';
 import type { TipoMovimento } from '../../domain/value-objects/enums';
 import { TABLE, COL_MOV_ALUNNI } from '../../config/schema';

@@ -18,7 +18,10 @@ export class LogEmailRepository extends Repository<LogEmail> {
   }
 
   findByPattern(patternId: string): LogEmail[] {
-    const hits = this.database.tables[TABLE.LOG_MAIL]!.indexedLookup(COL_LOG_MAIL.PATTERN, patternId);
+    const hits = this.database.tables[TABLE.LOG_MAIL]!.indexedLookup(
+      COL_LOG_MAIL.PATTERN,
+      patternId
+    );
     if (hits !== null) return hits.map((row) => LogEmail.fromData(row));
     return this.findAll().filter((l) => l.pattern === patternId);
   }
@@ -45,7 +48,13 @@ export class LogEmailRepository extends Repository<LogEmail> {
   }
 
   /** Appends a send record with DESTINATARI as CSV and DATA = now (ref 06 §19). */
-  registraInvio(patternId: string, destinatari: Email[], stato: StatoEmail, allegati?: Record<string, unknown>, errore?: string): LogEmail {
+  registraInvio(
+    patternId: string,
+    destinatari: Email[],
+    stato: StatoEmail,
+    allegati?: Record<string, unknown>,
+    errore?: string
+  ): LogEmail {
     const log = LogEmail.fromData({
       [COL_LOG_MAIL.PATTERN]: patternId,
       [COL_LOG_MAIL.DESTINATARI]: destinatari.map((e) => e.value).join(','),

@@ -9,9 +9,17 @@ import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
 import { recipe } from '../context-engine/Recipe';
 import {
-  AnalyzeContextStep, CheckDuplicatesStep, PrepareInfrastructureStep, GenerateNameStep,
-  SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, ApplyPermissionsStep,
-  RegisterDocumentStep, PostProcessStep, CRITICAL_STEPS,
+  AnalyzeContextStep,
+  CheckDuplicatesStep,
+  PrepareInfrastructureStep,
+  GenerateNameStep,
+  SelectTemplateStep,
+  CloneTemplateStep,
+  RenderTemplateStep,
+  ApplyPermissionsStep,
+  RegisterDocumentStep,
+  PostProcessStep,
+  CRITICAL_STEPS,
   type IRoleResolver
 } from '../../infrastructure/steps/documentSteps';
 import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
@@ -76,7 +84,11 @@ export class DocumentGenerationService {
   }
 
   /** `jobId` (batch seam, 15 §9): when provided, per-step telemetry is logged via IProcessMonitor. */
-  generateForClasse(target: ClasseId, confDocId: string, jobId?: string): { fileId: string | null; status: string } {
+  generateForClasse(
+    target: ClasseId,
+    confDocId: string,
+    jobId?: string
+  ): { fileId: string | null; status: string } {
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
@@ -116,9 +128,14 @@ export class DocumentGenerationService {
     this.db.commit();
 
     const fileId = ctx.get<string>('newFileId');
-    const status = fileId !== null
-      ? String(this.db.table(TABLE.LOG_DOCS).find((r) => r[COL_LOG_DOCS.ID] === fileId)?.[COL_LOG_DOCS.STATO] ?? 'UNKNOWN')
-      : 'SKIPPED';
+    const status =
+      fileId !== null
+        ? String(
+            this.db.table(TABLE.LOG_DOCS).find((r) => r[COL_LOG_DOCS.ID] === fileId)?.[
+              COL_LOG_DOCS.STATO
+            ] ?? 'UNKNOWN'
+          )
+        : 'SKIPPED';
     return { fileId, status };
   }
 
@@ -129,7 +146,10 @@ export class DocumentGenerationService {
    * rolls back the orphan clone and requests a graceful stop.
    */
   private buildPipeline(jobId?: string): Pipeline {
-    const pipeline = new Pipeline(this.logger, null, { name: 'DocumentoPipeline', stopOnError: false });
+    const pipeline = new Pipeline(this.logger, null, {
+      name: 'DocumentoPipeline',
+      stopOnError: false
+    });
     pipeline
       .addStep(new AnalyzeContextStep(this.logger, this.configs, this.expressionEngine))
       .addStep(new CheckDuplicatesStep(this.logger, this.db))
@@ -155,7 +175,9 @@ export class DocumentGenerationService {
     if (this.monitor !== undefined && jobId !== undefined) {
       const monitor = this.monitor;
       pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
-      pipeline.afterStep((step, _ctx, result) => monitor.logStepComplete(jobId, step.getName(), result.success));
+      pipeline.afterStep((step, _ctx, result) =>
+        monitor.logStepComplete(jobId, step.getName(), result.success)
+      );
     }
 
     return pipeline;

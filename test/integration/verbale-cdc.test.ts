@@ -21,7 +21,9 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
     db,
     drive,
     contextBuilder: ContextEngineFactory.create(db),
-    strategyRegistry: new Map([['VERBALE_CDC', strategy ?? new VerbaleGeneratorStrategy(templates)]]),
+    strategyRegistry: new Map([
+      ['VERBALE_CDC', strategy ?? new VerbaleGeneratorStrategy(templates)]
+    ]),
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
@@ -118,9 +120,14 @@ test('applies CONF_DOC.PERMESSI ACLs end-to-end via role resolution (10 §10, 14
   expect(result.status).toBe('GENERATO');
 
   const fileAcls = drive.permissions.filter((p) => p.fileId === result.fileId);
-  expect(fileAcls).toEqual([{ fileId: result.fileId, email: 'rossi@school.it', permesso: 'SCRITTURA' }]);
+  expect(fileAcls).toEqual([
+    { fileId: result.fileId, email: 'rossi@school.it', permesso: 'SCRITTURA' }
+  ]);
   const folderId = drive.folders.get('Verbali/5');
-  const folderAcls = drive.permissions.filter((p) => p.fileId === folderId).map((p) => p.email).sort();
+  const folderAcls = drive.permissions
+    .filter((p) => p.fileId === folderId)
+    .map((p) => p.email)
+    .sort();
   expect(folderAcls).toEqual(['bianchi@school.it', 'rossi@school.it']);
   expect(db.table('LOG_DOCS').findAll()).toHaveLength(1);
 });

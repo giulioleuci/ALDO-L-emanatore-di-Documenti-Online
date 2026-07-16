@@ -44,24 +44,24 @@ Il Domain Layer è completamente agnostico rispetto all'infrastruttura: non cono
 
 SGSA si basa su una gerarchia di librerie riusabili (`GasLibraryFactory`), organizzate in livelli da L0 (fondamenta) a L4 (dominio):
 
-| Livello | Libreria | Responsabilità |
-|---------|----------|----------------|
-| **L0** | `CoreUtilsLib` | Utility generali, helpers primitivi |
-| **L0** | `GasResilienceLib` | Retry, exponential backoff, gestione rate limit |
-| **L0** | `GasOnlineTestFramework` | Framework di test in-cloud |
-| **L1** | `GoogleApiWrapper` | Accesso batch-first alle Google API (Drive, Docs, Sheets) |
-| **L1** | `GasSchemaValidatorLib` | Validazione strutturale dati (Zod-based) |
-| **L2** | `SheetDBLib` | ORM-lite su Google Sheets, query builder |
-| **L2** | `GasExpressionEngineLib` | Parser e valutatore di espressioni logiche AST-based |
-| **L2** | `WorkspaceTemplateEngine` | Motore di template per documenti e testi con placeholder |
-| **L3** | `JobRunnerLib` | Gestione processi lunghi con generator + trigger temporizzati |
-| **L3** | `PipelineFramework` | Pipeline ETL a step sequenziali |
-| **L3** | `ContextEngine` | Dependency Injection dei dati (CDU builder) |
-| **L3** | `DomainRepositoryLib` | Base class per i repository DDD |
-| **L3** | `GasDataImporter` | ETL da file esterni |
-| **L4** | `RoleResolutionLib` | Risoluzione ruoli astratti → email reali con supplenze |
-| **L4** | `ComposableContentLib` | Composizione di contenuto HTML modulare |
-| **L4** | `GasProcessMonitorLib` | Monitoraggio processi batch con sidebar HTML |
+| Livello | Libreria                  | Responsabilità                                                |
+| ------- | ------------------------- | ------------------------------------------------------------- |
+| **L0**  | `CoreUtilsLib`            | Utility generali, helpers primitivi                           |
+| **L0**  | `GasResilienceLib`        | Retry, exponential backoff, gestione rate limit               |
+| **L0**  | `GasOnlineTestFramework`  | Framework di test in-cloud                                    |
+| **L1**  | `GoogleApiWrapper`        | Accesso batch-first alle Google API (Drive, Docs, Sheets)     |
+| **L1**  | `GasSchemaValidatorLib`   | Validazione strutturale dati (Zod-based)                      |
+| **L2**  | `SheetDBLib`              | ORM-lite su Google Sheets, query builder                      |
+| **L2**  | `GasExpressionEngineLib`  | Parser e valutatore di espressioni logiche AST-based          |
+| **L2**  | `WorkspaceTemplateEngine` | Motore di template per documenti e testi con placeholder      |
+| **L3**  | `JobRunnerLib`            | Gestione processi lunghi con generator + trigger temporizzati |
+| **L3**  | `PipelineFramework`       | Pipeline ETL a step sequenziali                               |
+| **L3**  | `ContextEngine`           | Dependency Injection dei dati (CDU builder)                   |
+| **L3**  | `DomainRepositoryLib`     | Base class per i repository DDD                               |
+| **L3**  | `GasDataImporter`         | ETL da file esterni                                           |
+| **L4**  | `RoleResolutionLib`       | Risoluzione ruoli astratti → email reali con supplenze        |
+| **L4**  | `ComposableContentLib`    | Composizione di contenuto HTML modulare                       |
+| **L4**  | `GasProcessMonitorLib`    | Monitoraggio processi batch con sidebar HTML                  |
 
 SGSA non reimplementa funzionalità già offerte da queste librerie. Le referenzia, le configura e le estende con la logica di business specifica del dominio scolastico.
 
@@ -108,21 +108,21 @@ Nessun comportamento del sistema è hard-coded. Tipo di documento, template Driv
 
 ## 6. Indice della documentazione
 
-| File | Contenuto |
-|------|-----------|
-| `01_SCHEMA_DATABASE.md` | Schema fisico completo di tutte le tabelle |
-| `02_CDU_STRUTTURA.md` | Struttura canonica del Contesto Dati Unificato |
-| `03_VALUE_OBJECTS_ED_ENUM.md` | Tutti i Value Object e gli Enum del dominio |
-| `04_DOMINIO_ENTITA.md` | Tutte le entità, ruoli, metodi di dominio, classificazione aggregate |
-| `05_AGGREGATI_E_CLASSI_ARTICOLATE.md` | Invarianti degli aggregati e gestione classi articolate |
-| `06_REPOSITORY.md` | Contratti e implementazione dei 21 repository |
-| `07_SPECIFICATIONS.md` | Catalogo delle 64+ Specification con composizioni predefinite |
-| `08_ARCHITETTURA_DI_PATTERN.md` | Architettura a layer, DI Container, Bootstrap, pattern utilizzati |
-| `09_CONTEXT_ENGINE.md` | CDU Builder, Recipe, Provider, Interceptor, Mapper |
-| `10_PIPELINE_DOCUMENTI.md` | Pipeline di generazione documenti (10 step) |
-| `11_PIPELINE_EMAIL.md` | Pipeline email (8 step) e Box Rendering System |
-| `12_SERVIZI_APPLICATIVI.md` | Servizi applicativi: generazione, email, import, report |
-| `13_SERVIZI_STORICI.md` | Accesso ai dati degli anni scolastici precedenti |
-| `14_SERVIZI_UTILITY.md` | Servizi trasversali: ruoli, aggregatori, cartelle, motori |
-| `15_UI_E_JOB_RUNNER.md` | Menu utente, entry point, Job Runner, monitoraggio |
-| `MAT_NON_STANDARD.md` | Specifica del placeholder `{{focus.classe.elencoMaterieConPermessi}}` per l'espansione orizzontale delle materie con permessi granulari (Google Sheets) |
+| File                                  | Contenuto                                                                                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01_SCHEMA_DATABASE.md`               | Schema fisico completo di tutte le tabelle                                                                                                              |
+| `02_CDU_STRUTTURA.md`                 | Struttura canonica del Contesto Dati Unificato                                                                                                          |
+| `03_VALUE_OBJECTS_ED_ENUM.md`         | Tutti i Value Object e gli Enum del dominio                                                                                                             |
+| `04_DOMINIO_ENTITA.md`                | Tutte le entità, ruoli, metodi di dominio, classificazione aggregate                                                                                    |
+| `05_AGGREGATI_E_CLASSI_ARTICOLATE.md` | Invarianti degli aggregati e gestione classi articolate                                                                                                 |
+| `06_REPOSITORY.md`                    | Contratti e implementazione dei 21 repository                                                                                                           |
+| `07_SPECIFICATIONS.md`                | Catalogo delle 64+ Specification con composizioni predefinite                                                                                           |
+| `08_ARCHITETTURA_DI_PATTERN.md`       | Architettura a layer, DI Container, Bootstrap, pattern utilizzati                                                                                       |
+| `09_CONTEXT_ENGINE.md`                | CDU Builder, Recipe, Provider, Interceptor, Mapper                                                                                                      |
+| `10_PIPELINE_DOCUMENTI.md`            | Pipeline di generazione documenti (10 step)                                                                                                             |
+| `11_PIPELINE_EMAIL.md`                | Pipeline email (8 step) e Box Rendering System                                                                                                          |
+| `12_SERVIZI_APPLICATIVI.md`           | Servizi applicativi: generazione, email, import, report                                                                                                 |
+| `13_SERVIZI_STORICI.md`               | Accesso ai dati degli anni scolastici precedenti                                                                                                        |
+| `14_SERVIZI_UTILITY.md`               | Servizi trasversali: ruoli, aggregatori, cartelle, motori                                                                                               |
+| `15_UI_E_JOB_RUNNER.md`               | Menu utente, entry point, Job Runner, monitoraggio                                                                                                      |
+| `MAT_NON_STANDARD.md`                 | Specifica del placeholder `{{focus.classe.elencoMaterieConPermessi}}` per l'espansione orizzontale delle materie con permessi granulari (Google Sheets) |

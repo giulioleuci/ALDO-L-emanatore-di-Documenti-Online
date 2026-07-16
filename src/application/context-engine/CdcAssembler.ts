@@ -16,12 +16,17 @@ const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
  * the articulation tagging (COMUNE/SEPARATO_*) in one place.
  */
 export class CdcAssembler {
-  constructor(private readonly classi: ClasseRepository, private readonly materie: MateriaRepository) {}
+  constructor(
+    private readonly classi: ClasseRepository,
+    private readonly materie: MateriaRepository
+  ) {}
 
   /** Full council of the class (09 §4): articulated councils span the whole group. */
   assembleForClasse(classe: Classe): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
-    const docenti = isArticolata ? this.classi.getAllDocentiCDCArticolata(classe) : this.classi.getAllDocentiCDC(classe);
+    const docenti = isArticolata
+      ? this.classi.getAllDocentiCDCArticolata(classe)
+      : this.classi.getAllDocentiCDC(classe);
     return this.toVMs(docenti, classe, isArticolata);
   }
 
@@ -34,7 +39,9 @@ export class CdcAssembler {
    */
   assembleFiltrato(classe: Classe, religione: ReligioneScelta): DocenteCdcVM[] {
     const byEmail = new Map<string, Docente>();
-    const add = (docenti: Docente[]): void => { for (const d of docenti) if (d.id !== null) byEmail.set(d.id, d); };
+    const add = (docenti: Docente[]): void => {
+      for (const d of docenti) if (d.id !== null) byEmail.set(d.id, d);
+    };
     add(this.classi.getAllDocentiCDC(classe));
     if (religione === ReligioneScelta.SI) add(this.classi.getDocentiIRC(classe));
     else if (religione === ReligioneScelta.ALT) add(this.classi.getDocentiALT(classe));
@@ -44,15 +51,36 @@ export class CdcAssembler {
 
   private toVMs(docenti: Docente[], classe: Classe, isArticolata: boolean): DocenteCdcVM[] {
     const coord = new Set(this.classi.getCoordinatori(classe).map((d) => d.id ?? ''));
-    const tutorAsl = new Set(this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((d) => d.id ?? ''));
-    const tutorOrient = new Set(this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((d) => d.id ?? ''));
+    const tutorAsl = new Set(
+      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((d) => d.id ?? '')
+    );
+    const tutorOrient = new Set(
+      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((d) => d.id ?? '')
+    );
     const partners = this.orderedPartners(classe);
-    return docenti.map((d, i) => this.buildVM(d, classe, isArticolata, partners, coord, tutorAsl, tutorOrient, i < docenti.length - 1));
+    return docenti.map((d, i) =>
+      this.buildVM(
+        d,
+        classe,
+        isArticolata,
+        partners,
+        coord,
+        tutorAsl,
+        tutorOrient,
+        i < docenti.length - 1
+      )
+    );
   }
 
   private buildVM(
-    d: Docente, classe: Classe, isArticolata: boolean, partners: Classe[],
-    coord: Set<string>, tutorAsl: Set<string>, tutorOrient: Set<string>, isNotLast: boolean
+    d: Docente,
+    classe: Classe,
+    isArticolata: boolean,
+    partners: Classe[],
+    coord: Set<string>,
+    tutorAsl: Set<string>,
+    tutorOrient: Set<string>,
+    isNotLast: boolean
   ): DocenteCdcVM {
     const email = d.id ?? '';
     const materieRaw = this.materieRawOf(classe, email, isArticolata);
@@ -60,7 +88,13 @@ export class CdcAssembler {
     const isTutorAsl = tutorAsl.has(email);
     const isTutorOrientamento = tutorOrient.has(email);
     return {
-      anagrafica: { nome: d.nome, cognome: d.cognome, email, genere: d.genere, appellativo: d.getAppellativo() },
+      anagrafica: {
+        nome: d.nome,
+        cognome: d.cognome,
+        email,
+        genere: d.genere,
+        appellativo: d.getAppellativo()
+      },
       materie: materieRaw.map((m) => ({
         sigla: m.sigla,
         nome: this.materie.findByIdCached(MateriaId.of(m.sigla))?.nome ?? m.sigla,
@@ -80,7 +114,11 @@ export class CdcAssembler {
     };
   }
 
-  private materieRawOf(classe: Classe, email: string, isArticolata: boolean): Array<{ sigla: string; isItp: boolean }> {
+  private materieRawOf(
+    classe: Classe,
+    email: string,
+    isArticolata: boolean
+  ): Array<{ sigla: string; isItp: boolean }> {
     if (!isArticolata) return this.classi.getMaterieDelDocente(classe, email);
     const byMateria = new Map<string, boolean>();
     for (const g of this.classi.getGruppoArticolazione(classe)) {
@@ -91,7 +129,11 @@ export class CdcAssembler {
     return [...byMateria].map(([sigla, isItp]) => ({ sigla, isItp }));
   }
 
-  private tipoArticolazione(isArticolata: boolean, partners: Classe[], email: string): DocenteCdcVM['tipoArticolazione'] {
+  private tipoArticolazione(
+    isArticolata: boolean,
+    partners: Classe[],
+    email: string
+  ): DocenteCdcVM['tipoArticolazione'] {
     if (!isArticolata || partners.length < 2) return null;
     const inPrimo = this.classi.getMaterieDelDocente(partners[0]!, email).length > 0;
     const inSecondo = this.classi.getMaterieDelDocente(partners[1]!, email).length > 0;
@@ -101,7 +143,11 @@ export class CdcAssembler {
     return null;
   }
 
-  private descrizione(isCoordinatore: boolean, isTutorAsl: boolean, isTutorOrientamento: boolean): string[] {
+  private descrizione(
+    isCoordinatore: boolean,
+    isTutorAsl: boolean,
+    isTutorOrientamento: boolean
+  ): string[] {
     const out: string[] = [];
     if (isCoordinatore) out.push('Coordinatore');
     if (isTutorAsl) out.push('Tutor ASL');

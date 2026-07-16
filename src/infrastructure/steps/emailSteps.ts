@@ -18,7 +18,12 @@ import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEm
 import { getClasseEntity } from '../../application/context-engine/techEntities';
 import { recipe } from '../../application/context-engine/Recipe';
 import { salutoPerTarget } from '../../application/email/saluto';
-import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../../application/email/boxes';
+import {
+  createBoxComposer,
+  renderBoxes,
+  escapeHtml,
+  safeColor
+} from '../../application/email/boxes';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, GestioneSupplenti } from '../../domain/value-objects/enums';
@@ -126,7 +131,14 @@ export class BuildCDUStep extends Step {
               appellativo: '',
               genere: ''
             }
-          : { nome: '', cognome: '', nomeCompleto: '', email: t.emails[0] ?? '', appellativo: '', genere: '' };
+          : {
+              nome: '',
+              cognome: '',
+              nomeCompleto: '',
+              email: t.emails[0] ?? '',
+              appellativo: '',
+              genere: ''
+            };
 
     return {
       anagrafica,
@@ -141,7 +153,11 @@ export class BuildCDUStep extends Step {
       contesto: {
         sostituisce: null,
         classiCompetenza:
-          t.classiCompetenza.length > 0 ? t.classiCompetenza : t.tipoTarget === 'classe' ? [t.target] : [],
+          t.classiCompetenza.length > 0
+            ? t.classiCompetenza
+            : t.tipoTarget === 'classe'
+              ? [t.target]
+              : [],
         materieCompetenza: []
       },
       comunicazione: {
@@ -163,7 +179,11 @@ export class ValutaCondizioniInvioStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const condizione = confMail(ctx).getCondizione();
-    this.setResult(ctx, 'shouldSend', condizione === null ? true : this.engine.evaluateBoolean(condizione, cduRecord(ctx)));
+    this.setResult(
+      ctx,
+      'shouldSend',
+      condizione === null ? true : this.engine.evaluateBoolean(condizione, cduRecord(ctx))
+    );
   }
 }
 
@@ -175,15 +195,25 @@ export class RenderBoxesStep extends Step {
     private readonly materie: MateriaRepository,
     private readonly templates: ITemplateEngine
   ) {
-    super('RenderBoxes', logger, { shouldExecuteCondition: sendGate, requiredKeys: ['cdu', 'confMail'] });
+    super('RenderBoxes', logger, {
+      shouldExecuteCondition: sendGate,
+      requiredKeys: ['cdu', 'confMail']
+    });
     this.composer = createBoxComposer(logger, templates);
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const built = cdu(ctx);
-    const result = renderBoxes(this.composer, confMail(ctx), cduRecord(ctx), this.materie, this.templates);
+    const result = renderBoxes(
+      this.composer,
+      confMail(ctx),
+      cduRecord(ctx),
+      this.materie,
+      this.templates
+    );
     built.render = { boxes: result.boxes, body: { htmlCompleto: '', htmlSoloContenuto: '' } };
     const oggetto = this.templates.processString(confMail(ctx).oggetto, cduRecord(ctx));
-    if (built.destinatario !== undefined) built.destinatario.comunicazione.oggettoCalcolato = oggetto;
+    if (built.destinatario !== undefined)
+      built.destinatario.comunicazione.oggettoCalcolato = oggetto;
     this.setResult(ctx, 'boxHtmlOrdered', result.ordered);
     this.setResult(ctx, 'oggettoRisolto', oggetto);
   }
@@ -197,7 +227,10 @@ export class ComposeEmailStep extends Step {
     private readonly logDocs: LogDocumentoRepository,
     private readonly drive: IDriveFacade
   ) {
-    super('ComposeEmail', logger, { shouldExecuteCondition: sendGate, requiredKeys: ['cdu', 'oggettoRisolto'] });
+    super('ComposeEmail', logger, {
+      shouldExecuteCondition: sendGate,
+      requiredKeys: ['cdu', 'oggettoRisolto']
+    });
   }
 
   /**
@@ -207,17 +240,26 @@ export class ComposeEmailStep extends Step {
    * same box that would otherwise render these documents, reused here so the
    * filter is configured once per pattern, not duplicated.
    */
-  private resolveAllegati(conf: ConfigurazioneEmail, built: Cdu): { ids: string[]; blobs: unknown[] } {
+  private resolveAllegati(
+    conf: ConfigurazioneEmail,
+    built: Cdu
+  ): { ids: string[]; blobs: unknown[] } {
     if (built.focus.classe === undefined) return { ids: [], blobs: [] };
     const boxConfig = conf.getBoxes().find((b) => {
       const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
       return sorgente?.metodo === 'documentiPerClasse';
     });
-    const filtri = (boxConfig?.['DATI_SORGENTE'] as { filtri?: { tipo?: string; stato?: string } } | undefined)?.filtri ?? {};
+    const filtri =
+      (boxConfig?.['DATI_SORGENTE'] as { filtri?: { tipo?: string; stato?: string } } | undefined)
+        ?.filtri ?? {};
     const classe = getClasseEntity(built);
     const documenti = this.logDocs
       .findByClasse(classe)
-      .filter((d) => (filtri.tipo === undefined || d.tipo === filtri.tipo) && (filtri.stato === undefined || String(d.getStato()) === filtri.stato));
+      .filter(
+        (d) =>
+          (filtri.tipo === undefined || d.tipo === filtri.tipo) &&
+          (filtri.stato === undefined || String(d.getStato()) === filtri.stato)
+      );
     const ids = documenti.map((d) => d.id ?? '');
     return { ids, blobs: ids.map((id) => this.drive.getFileBlob(id)) };
   }
@@ -249,7 +291,8 @@ export class ComposeEmailStep extends Step {
       '</div></body></html>';
 
     if (built.render !== undefined) built.render.body = { htmlCompleto, htmlSoloContenuto };
-    if (built.destinatario !== undefined) built.destinatario.comunicazione.testoContenutoPuro = htmlSoloContenuto;
+    if (built.destinatario !== undefined)
+      built.destinatario.comunicazione.testoContenutoPuro = htmlSoloContenuto;
     const allegati = this.resolveAllegati(conf, built);
     this.setResult(ctx, 'corpoHtml', htmlCompleto);
     this.setResult(ctx, 'allegati', allegati.blobs);
@@ -264,7 +307,10 @@ export class ResolveRecipientsStep extends Step {
     private readonly docenti: DocenteRepository,
     private readonly supplenze: SupplenzaRepository
   ) {
-    super('ResolveRecipients', logger, { shouldExecuteCondition: sendGate, requiredKeys: ['emailTarget', 'confMail'] });
+    super('ResolveRecipients', logger, {
+      shouldExecuteCondition: sendGate,
+      requiredKeys: ['emailTarget', 'confMail']
+    });
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const t = target(ctx);
@@ -282,7 +328,8 @@ export class ResolveRecipientsStep extends Step {
     // Per-class substitute resolution — a multi-class coordinatore can have
     // different supplenti on different classes (11 §12).
     const perClasse = classi.map(
-      (c) => this.supplenze.findSupplenzaSpecifica(titolare, now(ctx), ClasseId.of(c))?.supplente ?? null
+      (c) =>
+        this.supplenze.findSupplenzaSpecifica(titolare, now(ctx), ClasseId.of(c))?.supplente ?? null
     );
     const titolareEmail = titolare.id ?? '';
     const supplenti = [...new Set(perClasse.filter((s): s is string => s !== null))];
@@ -299,7 +346,11 @@ export class ResolveRecipientsStep extends Step {
       default: // SOLO_TITOLARI
         finali = [titolareEmail];
     }
-    this.setResult(ctx, 'destinatariFinali', finali.map((email) => ({ emails: [email] })) satisfies Destinazione[]);
+    this.setResult(
+      ctx,
+      'destinatariFinali',
+      finali.map((email) => ({ emails: [email] })) satisfies Destinazione[]
+    );
   }
 }
 
@@ -354,7 +405,9 @@ export class SendEmailStep extends Step {
   private findSupervisore(): string | null {
     const config = this.master.findConfigAnnoCorrente();
     if (!config.hasSupervisore()) {
-      this.logger.warn('SendEmail: SUPERVISORE_EMAIL assente per l\'anno corrente — invio senza BCC supervisore');
+      this.logger.warn(
+        "SendEmail: SUPERVISORE_EMAIL assente per l'anno corrente — invio senza BCC supervisore"
+      );
       return null;
     }
     return config.supervisoreEmail;
@@ -394,7 +447,9 @@ export class PostProcessEmailStep extends Step {
   ) {
     super('PostProcessEmail', logger, {
       shouldExecuteCondition: (ctx) =>
-        sendGate(ctx) && (ctx.get<number>('sentCount') ?? 0) > 0 && cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO] != null
+        sendGate(ctx) &&
+        (ctx.get<number>('sentCount') ?? 0) > 0 &&
+        cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO] != null
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {

@@ -11,7 +11,12 @@ function repo(): IndirizzoRepository {
 }
 
 test('Indirizzo hydrates from a flat row', () => {
-  const i = Indirizzo.fromData({ ID: 'SCIENTIFICO', NOME: 'Liceo scientifico', NOME_SINTETICO: 'Scientifico', TIPO: 'LICEO' });
+  const i = Indirizzo.fromData({
+    ID: 'SCIENTIFICO',
+    NOME: 'Liceo scientifico',
+    NOME_SINTETICO: 'Scientifico',
+    TIPO: 'LICEO'
+  });
   expect(i.id).toBe('SCIENTIFICO');
   expect(i.nomeSintetico).toBe('Scientifico');
   expect(i.tipo).toBe(TipoIstituto.LICEO);
@@ -28,8 +33,17 @@ test('findByIdCached resolves via the session cache', () => {
 });
 
 test('findByTipo filters via IndirizziPerTipoSpec', () => {
-  expect(repo().findByTipo(TipoIstituto.LICEO).map((i) => i.id).sort()).toEqual(['LSSA', 'SCIENTIFICO']);
-  expect(repo().findByTipo(TipoIstituto.TECNICO).map((i) => i.id)).toEqual(['ITI']);
+  expect(
+    repo()
+      .findByTipo(TipoIstituto.LICEO)
+      .map((i) => i.id)
+      .sort()
+  ).toEqual(['LSSA', 'SCIENTIFICO']);
+  expect(
+    repo()
+      .findByTipo(TipoIstituto.TECNICO)
+      .map((i) => i.id)
+  ).toEqual(['ITI']);
 });
 
 test('IndirizziPerTipoSpec: isSatisfiedBy + toQueryObject (07 §5)', () => {

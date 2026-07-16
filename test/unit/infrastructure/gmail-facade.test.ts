@@ -51,8 +51,14 @@ describe('GmailServiceFacade', () => {
   });
 
   test('propagates library failure result', () => {
-    const mail = { send: (): MailSendResult => ({ success: false, error: 'quota' }) } as unknown as MailService;
-    const res = new GmailServiceFacade(mail).sendEmail({ to: ['a@x.it'], subject: 'S', htmlBody: '' });
+    const mail = {
+      send: (): MailSendResult => ({ success: false, error: 'quota' })
+    } as unknown as MailService;
+    const res = new GmailServiceFacade(mail).sendEmail({
+      to: ['a@x.it'],
+      subject: 'S',
+      htmlBody: ''
+    });
     expect(res).toEqual({ success: false, error: 'quota' });
   });
 });

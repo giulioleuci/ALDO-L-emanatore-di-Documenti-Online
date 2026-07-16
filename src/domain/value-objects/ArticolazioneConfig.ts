@@ -24,21 +24,38 @@ export class ArticolazioneConfig {
   static fromJson(raw: unknown): ArticolazioneConfig | null {
     if (typeof raw !== 'string' || raw.trim() === '') return null;
     const obj = JSON.parse(raw) as ArticolazioneJson;
-    const parent = typeof obj.parent === 'string' && obj.parent.trim() !== '' ? ClasseId.of(obj.parent.trim()) : null;
-    const partner = typeof obj.partner === 'string' && obj.partner.trim() !== '' ? ClasseId.of(obj.partner.trim()) : null;
-    const partners = typeof obj.partners === 'string'
-      ? obj.partners.split(',').map((s) => s.trim()).filter((s) => s.length > 0).map((s) => ClasseId.of(s))
-      : [];
+    const parent =
+      typeof obj.parent === 'string' && obj.parent.trim() !== ''
+        ? ClasseId.of(obj.parent.trim())
+        : null;
+    const partner =
+      typeof obj.partner === 'string' && obj.partner.trim() !== ''
+        ? ClasseId.of(obj.partner.trim())
+        : null;
+    const partners =
+      typeof obj.partners === 'string'
+        ? obj.partners
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
+            .map((s) => ClasseId.of(s))
+        : [];
     if (parent === null && partner === null && partners.length === 0) return null;
     if (partners.length > 0 && partners.length !== 2) {
-      throw new ValidationError(`ARTICOLAZIONE parent: 'partners' deve contenere esattamente due ClasseId, trovati ${partners.length}`);
+      throw new ValidationError(
+        `ARTICOLAZIONE parent: 'partners' deve contenere esattamente due ClasseId, trovati ${partners.length}`
+      );
     }
     return new ArticolazioneConfig(parent, partner, partners);
   }
 
   /** Parent class: carries the two partners CSV. */
-  isParent(): boolean { return this.partners.length > 0; }
+  isParent(): boolean {
+    return this.partners.length > 0;
+  }
 
   /** Partner class: points to a parent. */
-  isPartner(): boolean { return this.parent !== null; }
+  isPartner(): boolean {
+    return this.parent !== null;
+  }
 }

@@ -74,7 +74,11 @@ export class EmailBatchService {
         processed.push(target.target);
       }
       const percentage = (i / targets.length) * 100;
-      this.monitor?.updateProgress(jobId, percentage, `${processed.length}/${targets.length} destinatari elaborati`);
+      this.monitor?.updateProgress(
+        jobId,
+        percentage,
+        `${processed.length}/${targets.length} destinatari elaborati`
+      );
       yield {
         percentage,
         nextIndex: i,
@@ -95,7 +99,12 @@ export class EmailBatchService {
   }
 
   /** Starts the batch through JobRunnerLib (state + resume triggers managed by the library). */
-  start(runner: JobRunnerService, jobName: string, patternId: string, forceRestart = false): unknown {
+  start(
+    runner: JobRunnerService,
+    jobName: string,
+    patternId: string,
+    forceRestart = false
+  ): unknown {
     return runner.run(
       jobName,
       JOB_TYPE_INVIO_EMAIL,

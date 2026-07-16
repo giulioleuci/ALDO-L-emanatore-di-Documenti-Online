@@ -13,5 +13,7 @@
  * persistence logic; correctness is still guaranteed at construction time.
  */
 export abstract class AldoEntity extends Entity {
-  validate(): boolean { return true; }
+  validate(): boolean {
+    return true;
+  }
 }

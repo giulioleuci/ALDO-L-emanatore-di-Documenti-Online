@@ -21,7 +21,13 @@ test('creates a new folder and registers it in LOG_FOLD (14 §4)', () => {
 
 test('reuses a folder already recorded in LOG_FOLD without touching Drive (findOrCreate cache)', () => {
   const { drive, db, albero } = wire();
-  db.table('LOG_FOLD').insert({ ID: 'existing_fold', PATH: 'Verbali/5', LINK: '', CLASSI: '5A', UTENTI: '' });
+  db.table('LOG_FOLD').insert({
+    ID: 'existing_fold',
+    PATH: 'Verbali/5',
+    LINK: '',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
   const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
   expect(res).toEqual({ folderId: 'existing_fold', created: false });
   expect(drive.folders.size).toBe(0); // never created on Drive
@@ -37,7 +43,13 @@ test('reuses a folder that exists on Drive but is not in LOG_FOLD, without a dup
 
 test('a LOG_FOLD row for the same path but a different classe does not match (per-classe scoping)', () => {
   const { db, albero } = wire();
-  db.table('LOG_FOLD').insert({ ID: 'other', PATH: 'Verbali/5', LINK: '', CLASSI: '3B', UTENTI: '' });
+  db.table('LOG_FOLD').insert({
+    ID: 'other',
+    PATH: 'Verbali/5',
+    LINK: '',
+    CLASSI: '3B',
+    UTENTI: ''
+  });
   const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
   expect(res.created).toBe(true);
   expect(res.folderId).not.toBe('other');

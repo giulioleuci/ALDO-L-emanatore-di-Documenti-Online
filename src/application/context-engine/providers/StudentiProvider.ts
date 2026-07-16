@@ -36,19 +36,26 @@ export class StudentiProvider implements ContextProvider {
       for (const partner of this.classi.getClassiPartner(classe)) {
         const vms = this.classi.getStudenti(partner).map((a) => this.buildVM(a));
         const sigla = partner.indirizzo;
-        if (!(sigla in perIndirizzo)) { perIndirizzo[sigla] = []; indirizziPresenti.push(sigla); }
+        if (!(sigla in perIndirizzo)) {
+          perIndirizzo[sigla] = [];
+          indirizziPresenti.push(sigla);
+        }
         perIndirizzo[sigla]!.push(...vms);
         listaCompleta.push(...vms);
       }
       focusClasse.studenti = { listaCompleta, perIndirizzo, indirizziPresenti };
     } else {
-      focusClasse.studenti = { listaCompleta: this.classi.getStudenti(classe).map((a) => this.buildVM(a)) };
+      focusClasse.studenti = {
+        listaCompleta: this.classi.getStudenti(classe).map((a) => this.buildVM(a))
+      };
     }
   }
 
   private buildVM(alunno: Alunno): AlunnoContestoVM {
     const dettaglio = carenzeDettaglioSemplice(this.alunni.getCarenze(alunno), this.sigle());
-    const pianiItems = this.alunni.getPiani(alunno).map((p) => ({ tipo: p.tipo, isBes: p.isBES() }));
+    const pianiItems = this.alunni
+      .getPiani(alunno)
+      .map((p) => ({ tipo: p.tipo, isBes: p.isBES() }));
     const hasBes = pianiItems.some((p) => p.isBes);
     return {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
@@ -69,7 +76,10 @@ export class StudentiProvider implements ContextProvider {
 
   private sigle(): string[] {
     if (this.sigleCache === null) {
-      this.sigleCache = this.materie.findAllCached().map((m) => m.id ?? '').filter((s) => s !== '');
+      this.sigleCache = this.materie
+        .findAllCached()
+        .map((m) => m.id ?? '')
+        .filter((s) => s !== '');
     }
     return this.sigleCache;
   }

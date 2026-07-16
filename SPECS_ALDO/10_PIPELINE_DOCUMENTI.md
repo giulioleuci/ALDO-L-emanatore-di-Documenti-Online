@@ -45,6 +45,7 @@ DocumentoPipeline (10 step):
 **Colonne DB lette:** `CONF_DOC.CONDIZIONE`
 
 **Logica:**
+
 - Se `CONDIZIONE` è null o vuoto → `shouldGenerate = true`
 - Altrimenti → valuta l'espressione tramite `GasExpressionEngineLib` (L2) con il CDU come contesto
 - Scrive `shouldGenerate` nel contesto
@@ -52,6 +53,7 @@ DocumentoPipeline (10 step):
 **Note:** Gli step successivi verificano `shouldGenerate = true` nel proprio `shouldExecute()`. Se `false`, la pipeline si conclude silenziosamente.
 
 **Esempi di condizione:**
+
 ```
 {{focus.classe.anagrafica.anno}} == 5
 {{focus.alunno.didattica.piani.hasBes}} == true && {{focus.alunno.didattica.carenze.hasCarenze}} == true
@@ -67,16 +69,17 @@ DocumentoPipeline (10 step):
 **Tabella consultata:** `LOG_DOCS` (campi `ID_GEN`, `CLASSI`, `UTENTI`, `MATERIA`, `SOTTOTIPO`); `CLASSI` e `UTENTI` sono CSV, la ricerca per singola classe/utente avviene per contenimento (CONTAINS)
 
 **Logica:**
+
 - `CONF_DOC.SCHEMA_SOTTOCARTELLE` determina la granularità dei criteri di ricerca duplicati in `LOG_DOCS`:
 
-| Valore | Criteri di ricerca |
-|--------|---------------------|
-| `UNO PER CLASSE` | `ID_GEN` + `CLASSI` (CONTAINS) |
-| `UNO PER DOCENTE` | `ID_GEN` + `UTENTI` (contiene il docente) |
-| `UNO PER CLASSE PER MATERIA` | `ID_GEN` + `CLASSI` (CONTAINS) + `MATERIA` |
-| `UNO PER PIANO PERSONALIZZATO` | `ID_GEN` + `UTENTI` (contiene l'alunno) + `SOTTOTIPO` (tipo piano) |
-| `UNICO PER SCUOLA` | `ID_GEN` soltanto |
-| `MULTIPLO PER CLASSE` | nessun controllo: `shouldGenerate` resta sempre `true` (più documenti consentiti per lo stesso contesto) |
+| Valore                         | Criteri di ricerca                                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `UNO PER CLASSE`               | `ID_GEN` + `CLASSI` (CONTAINS)                                                                           |
+| `UNO PER DOCENTE`              | `ID_GEN` + `UTENTI` (contiene il docente)                                                                |
+| `UNO PER CLASSE PER MATERIA`   | `ID_GEN` + `CLASSI` (CONTAINS) + `MATERIA`                                                               |
+| `UNO PER PIANO PERSONALIZZATO` | `ID_GEN` + `UTENTI` (contiene l'alunno) + `SOTTOTIPO` (tipo piano)                                       |
+| `UNICO PER SCUOLA`             | `ID_GEN` soltanto                                                                                        |
+| `MULTIPLO PER CLASSE`          | nessun controllo: `shouldGenerate` resta sempre `true` (più documenti consentiti per lo stesso contesto) |
 
 - Se esiste un record che soddisfa i criteri risultanti e `parametri.overwrite != true` → `shouldGenerate = false` + warning nel log
 - Altrimenti → salva l'eventuale `existingDocId` nel contesto per possibile sovrascrittura
@@ -91,6 +94,7 @@ DocumentoPipeline (10 step):
 **Tabella scritta:** `LOG_FOLD`
 
 **Logica:**
+
 1. Risolve il `PATH_OUT` (cartella principale) tramite `WorkspaceTemplateEngine` (L2): `"Verbali/{{focus.classe.anagrafica.anno}}"` → `"Verbali/5"`
 2. Se `SCHEMA_SOTTOCARTELLE != UNICO PER SCUOLA`, risolve anche `PATH_OUT_SOTTOCARTELLE` (es. per `UNO PER DOCENTE`: `"{{destinatario.anagrafica.nomeCompleto}}"`) e lo appende come ulteriore livello sotto `PATH_OUT`, coerente con la granularità usata da `CheckDuplicatesStep`
 3. Cerca la cartella risultante in `LOG_FOLD` con `PATH = pathResolto`
@@ -108,6 +112,7 @@ La gestione fisica delle cartelle è delegata ad `AlberoCartelle` (descritto in 
 **Colonne DB lette:** `CONF_DOC.FILE_NAME`
 
 **Logica:**
+
 1. Risolve il pattern `FILE_NAME` tramite `WorkspaceTemplateEngine`: `"Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}"` → `"Verbale_5A_15/04/2026"`
 2. Se il nome contiene `{{N}}` → conta i file nella cartella di destinazione e sostituisce `{{N}}` con il numero progressivo (`count + 1`)
 3. Scrive `nomeFile` nel contesto
@@ -121,6 +126,7 @@ La gestione fisica delle cartelle è delegata ad `AlberoCartelle` (descritto in 
 **Colonne DB lette:** `CONF_DOC.MODELLI`
 
 **Logica:**
+
 - Se `CONF_DOC.MODELLI` è null → eccezione esplicita (il campo è obbligatorio, nessun default)
 - Forma semplice `{ "templateId": "..." }` → usa direttamente
 - Forma condizionale (array) → valuta le condizioni nell'ordine tramite `GasExpressionEngineLib`; usa il `templateId` del primo match
@@ -128,6 +134,7 @@ La gestione fisica delle cartelle è delegata ad `AlberoCartelle` (descritto in 
 - Non è supportato un ID Drive diretto come stringa: è sempre richiesto il wrapper JSON (forma semplice o condizionale)
 
 **Esempio MODELLI condizionale:**
+
 ```json
 [
   { "condizione": "{{focus.classe.anagrafica.anno}} == 5", "templateId": "1abc_esame" },
@@ -142,6 +149,7 @@ La gestione fisica delle cartelle è delegata ad `AlberoCartelle` (descritto in 
 **Scopo:** Eseguire la copia fisica del template nella cartella di destinazione. È il **punto di non ritorno** della pipeline.
 
 **Logica:**
+
 1. Chiama `DriveServiceFacade.copyFile(templateId, nomeFile, destFolderId)`
 2. Scrive `newFileId` e `newFileLink` nel contesto
 3. In caso di errore → `shouldGenerate = false` + propagazione eccezione (attiva rollback)
@@ -159,6 +167,7 @@ La gestione fisica delle cartelle è delegata ad `AlberoCartelle` (descritto in 
 **Colonne DB lette:** `CONF_DOC.GENERATORE`, `CONF_DOC.PARAMETRI`
 
 **Logica:**
+
 1. Legge `config.GENERATORE` (es. `"VERBALE_CDC"`)
 2. Recupera la Strategy da `strategyRegistry`
 3. Chiama `strategy.render(fileId, cdu, config)`
@@ -169,13 +178,13 @@ La gestione fisica delle cartelle è delegata ad `AlberoCartelle` (descritto in 
 
 Il `DocumentGenerationService` mantiene un registro interno che mappa `CONF_DOC.GENERATORE` alla classe Strategy concreta. Il registro viene popolato in `Bootstrap.js`. Se il valore non è registrato, il servizio DEVE lanciare un'eccezione prima ancora di costruire il CDU.
 
-| Valore `CONF_DOC.GENERATORE` | Strategy |
-|------------------------------|----------|
-| `VERBALE_CDC` | `VerbaleGeneratorStrategy` |
-| `SHEET_CON_MATERIE` | `SheetMaterieGeneratorStrategy` |
-| `SHEET_CON_MATERIE_E_PERMESSI` | `SheetMaterieConPermessiGeneratorStrategy` |
-| `DOC_PERSONALIZZATO` | `DocPersonalizzatoGeneratorStrategy` |
-| `DOCUMENTO_GENERICO` | `DocumentoGenericoGeneratorStrategy` |
+| Valore `CONF_DOC.GENERATORE`      | Strategy                                        |
+| --------------------------------- | ----------------------------------------------- |
+| `VERBALE_CDC`                     | `VerbaleGeneratorStrategy`                      |
+| `SHEET_CON_MATERIE`               | `SheetMaterieGeneratorStrategy`                 |
+| `SHEET_CON_MATERIE_E_PERMESSI`    | `SheetMaterieConPermessiGeneratorStrategy`      |
+| `DOC_PERSONALIZZATO`              | `DocPersonalizzatoGeneratorStrategy`            |
+| `DOCUMENTO_GENERICO`              | `DocumentoGenericoGeneratorStrategy`            |
 | `DOCUMENTO_CON_TABELLE_IMPORTATE` | `DocumentoConTabelleImportateGeneratorStrategy` |
 
 ### Dettaglio Strategy
@@ -185,6 +194,7 @@ Opera su un Google Doc. Sostituisce i placeholder con dati del CDU tramite `Work
 
 **`SheetMaterieGeneratorStrategy`**  
 Opera su un Google Sheet. Dopo la copia del template:
+
 1. Legge le materie della classe dal CDU (`focus.classe.consiglioDiClasse`) e risolve l'intestazione di ciascuna (`MATERIE.SINTESI`, con fallback alla sigla)
 2. Costruisce sul context i gruppi di colonne attesi dal placeholder `{{dynamic_columns[...]}}` incorporato nel template Drive: per classi articolate, materie condivise tra i partner prima, poi — separate da una colonna etichetta di gruppo — le materie specifiche per ciascun indirizzo
 3. Invoca `WorkspaceTemplateEngine.processSheet`, che espande le colonne (posizionandole a partire dalla cella del placeholder) e sostituisce in un unico passaggio anche i placeholder non strutturali del foglio
@@ -216,6 +226,7 @@ Per documenti con centinaia di placeholder o oltre ~100 pagine, la sostituzione 
 **Colonne DB lette:** `CONF_DOC.PERMESSI`, `SUPPLENZE` (via `SupplenzaRepository`)
 
 **Logica:**
+
 1. Legge `permessiConfig` da `CONF_DOC.PERMESSI` (`{ file: [...], folder: [...], regolaSupplente: {...} }`)
 2. Per ogni `{ ruolo, permesso }` in `permessiConfig.file`:
    - `emails = risolutoreRuoliService.risolvi(ruolo, cdu)` (applica supplenze con `regolaSupplente.file`)
@@ -237,6 +248,7 @@ Catalogo completo dei ruoli in `14_SERVIZI_UTILITY.md`.
 `TIPO` è derivato da `CONF_DOC.TIPO` del record identificato da `config.ID` (campo categoriale, vedi `01_SCHEMA_DATABASE.md`). `NOTIFICATO` non è scritto in questo step: viene valorizzato in seguito da `LogDocumento.notifica()` (vedi `04_DOMINIO_ENTITA.md`).
 
 **Logica:**
+
 1. Chiama `logDocRepository.registraDocumento(fileId, config.ID, nomeFile, path, fileLink, options)`
    - `options.classe` da `cdu.focus.classe?.anagrafica.nome` (scrive in `CLASSI`, CSV)
    - `options.utente` da `cdu.focus.alunno?.anagrafica.email` (scrive in `UTENTI`, CSV; `registraDocumento()` si occupa della formattazione CSV)
@@ -254,15 +266,16 @@ Catalogo completo dei ruoli in `14_SERVIZI_UTILITY.md`.
 
 **Azioni supportate:**
 
-| Tipo | Effetto |
-|------|---------|
+| Tipo                  | Effetto                                                            |
+| --------------------- | ------------------------------------------------------------------ |
 | `INSERISCI_TIMESTAMP` | Scrive data/ora corrente in `tab.col` dove i criteri corrispondono |
-| `AGGIORNA_CAMPO` | Imposta `tab.col = val` dove i criteri corrispondono |
-| `AGGIORNA_STATO_DOC` | Cambia `LOG_DOCS.STATO` di un documento già registrato |
+| `AGGIORNA_CAMPO`      | Imposta `tab.col = val` dove i criteri corrispondono               |
+| `AGGIORNA_STATO_DOC`  | Cambia `LOG_DOCS.STATO` di un documento già registrato             |
 
 **Placeholder disponibili nei criteri:** tutti i percorsi CDU (`{{focus.classe.anagrafica.nome}}` ecc.) più le variabili di pipeline come `{{newFileId}}` (ID Drive del file appena creato), risolti tramite `WorkspaceTemplateEngine` prima dell'esecuzione.
 
 Esempio:
+
 ```json
 [
   {
@@ -293,9 +306,9 @@ Le due pipeline sono indipendenti ma frequentemente correlate. Un flusso tipico:
 
 Il campo `CONF_DOC.GESTIONE_ARTICOLAZIONE` (Enum `GestioneArticolazione`) controlla come la pipeline gestisce la generazione per le classi articolate.
 
-| Valore | Comportamento pipeline |
-|--------|----------------------|
-| `COMPLETA` | Entry point = classe parent. La pipeline genera un singolo documento aggregato che include tutti gli studenti e tutte le materie (comuni e specifiche) di entrambe le classi partner. |
-| `ARTICOLATA` | Entry point = ogni classe partner separatamente. La pipeline itera sui partner e genera documenti distinti per ciascuno. |
+| Valore       | Comportamento pipeline                                                                                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `COMPLETA`   | Entry point = classe parent. La pipeline genera un singolo documento aggregato che include tutti gli studenti e tutte le materie (comuni e specifiche) di entrambe le classi partner. |
+| `ARTICOLATA` | Entry point = ogni classe partner separatamente. La pipeline itera sui partner e genera documenti distinti per ciascuno.                                                              |
 
 **Impatto su `generateForAllClasses()`:** quando `GESTIONE_ARTICOLAZIONE = ARTICOLATA`, il servizio DEVE saltare le classi parent per evitare duplicazioni; le classi partner vengono processate individualmente. Quando `GESTIONE_ARTICOLAZIONE = COMPLETA`, il servizio DEVE saltare le classi partner e processare la classe parent come unico entry point aggregato. Vedi `12_SERVIZI_APPLICATIVI.md`.

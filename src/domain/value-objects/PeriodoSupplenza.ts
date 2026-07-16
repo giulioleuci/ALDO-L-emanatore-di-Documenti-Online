@@ -9,12 +9,18 @@ import { ValidationError } from '../errors/DomainError';
 export class PeriodoSupplenza {
   private constructor(private readonly range: DateRange) {}
 
-  get dal(): Date { return this.range.start; }
-  get al(): Date { return this.range.end; }
+  get dal(): Date {
+    return this.range.start;
+  }
+  get al(): Date {
+    return this.range.end;
+  }
 
   static of(dal: Date, al: Date | null): PeriodoSupplenza {
-    if (Number.isNaN(dal.getTime())) throw new ValidationError('PeriodoSupplenza: DAL non è una data valida');
-    if (al !== null && Number.isNaN(al.getTime())) throw new ValidationError('PeriodoSupplenza: AL non è una data valida');
+    if (Number.isNaN(dal.getTime()))
+      throw new ValidationError('PeriodoSupplenza: DAL non è una data valida');
+    if (al !== null && Number.isNaN(al.getTime()))
+      throw new ValidationError('PeriodoSupplenza: AL non è una data valida');
     try {
       return new PeriodoSupplenza(new DateRange(dal, al));
     } catch {
@@ -35,6 +41,10 @@ export class PeriodoSupplenza {
     return this.range.overlaps(other.range);
   }
 
-  isAttiva(oggi: Date): boolean { return this.contiene(oggi); }
-  isTerminata(oggi: Date): boolean { return this.al.getTime() < oggi.getTime(); }
+  isAttiva(oggi: Date): boolean {
+    return this.contiene(oggi);
+  }
+  isTerminata(oggi: Date): boolean {
+    return this.al.getTime() < oggi.getTime();
+  }
 }

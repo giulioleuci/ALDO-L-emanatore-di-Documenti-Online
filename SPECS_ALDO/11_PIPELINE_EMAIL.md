@@ -44,6 +44,7 @@ NotificaPipeline (8 step):
 **Colonne DB lette:** `CONF_MAIL.PROCESSO`
 
 **Logica:**
+
 - Determina la recipe in base a `CONF_MAIL.PROCESSO`:
   - `PER_COORDINATORE` / `PER_DOCENTE` / `PER_CDC` → `DOCENTE_COMPLETO`
   - `PER_ALUNNO` → `ALUNNO_COMPLETO`
@@ -54,14 +55,14 @@ NotificaPipeline (8 step):
 
 **Valori `CONF_MAIL.PROCESSO` e relativi comportamenti:**
 
-| Valore | Iterazione | Destinatario singolo | Gestione supplenze |
-|--------|-----------|----------------------|--------------------|
-| `PER_COORDINATORE` | Una email per Coordinatore | set Docente coordinatore | Sì — multi-classe |
-| `PER_DOCENTE` | Una email per Docente con almeno una classe attiva | Docente (singolo) | Sì |
-| `PER_CDC` | Una email per classe | Set docenti (TO multiplo) | Sì |
-| `PER_ALUNNO` | Una email per ogni alunno attivo | Alunno | No |
-| `PER_GENITORI_ALUNNO` | Una email per ogni Tutore per ogni alunno | Genitori (TO multiplo, deduplicati per famiglie con più figli) | No |
-| `PER_CARENZA` | Una email per ogni record `CARENZE` con `NOTIFICATO` null o vuoto (via `CarenzeNonNotificateSpec`) | Genitori dell'alunno con carenze | No |
+| Valore                | Iterazione                                                                                         | Destinatario singolo                                           | Gestione supplenze |
+| --------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------ |
+| `PER_COORDINATORE`    | Una email per Coordinatore                                                                         | set Docente coordinatore                                       | Sì — multi-classe  |
+| `PER_DOCENTE`         | Una email per Docente con almeno una classe attiva                                                 | Docente (singolo)                                              | Sì                 |
+| `PER_CDC`             | Una email per classe                                                                               | Set docenti (TO multiplo)                                      | Sì                 |
+| `PER_ALUNNO`          | Una email per ogni alunno attivo                                                                   | Alunno                                                         | No                 |
+| `PER_GENITORI_ALUNNO` | Una email per ogni Tutore per ogni alunno                                                          | Genitori (TO multiplo, deduplicati per famiglie con più figli) | No                 |
+| `PER_CARENZA`         | Una email per ogni record `CARENZE` con `NOTIFICATO` null o vuoto (via `CarenzeNonNotificateSpec`) | Genitori dell'alunno con carenze                               | No                 |
 
 **Nota `PER_CARENZA`:** priorità genitore su alunno — se `genitoreOggetto` è presente nel contesto, è usato come destinatario, non `alunnoOggetto`.
 
@@ -74,6 +75,7 @@ NotificaPipeline (8 step):
 **Colonne DB lette:** `CONF_MAIL.CONDIZIONE`
 
 **Logica:**
+
 - Se `CONF_MAIL.CONDIZIONE` è null o vuoto → `shouldSend = true`
 - Altrimenti → valuta l'espressione tramite `GasExpressionEngineLib` (L2) con il CDU del destinatario corrente come contesto (stesso meccanismo di `CONF_DOC.CONDIZIONE`)
 - Tutti gli step successivi verificano `shouldSend = true`
@@ -88,6 +90,7 @@ NotificaPipeline (8 step):
 **Tabelle sorgente dati dei box:** `ALUNNI`, `CLASSI`, `DOCENTI`, `CARENZE`, `LOG_DOCS`, `PIANI`
 
 **Logica:**
+
 1. Parsa `BOX_CFG` come array di `BoxConfig`
 2. Per ogni `boxConfig` (ordinati per `ORDINE`):
    - Se `boxConfig.PREREQUISITI` è definito, valuta ciascun prerequisito (stesso meccanismo di `DATI_SORGENTE`); se almeno uno non è soddisfatto, il box è skippato (`html = ""`) senza invocare il renderer
@@ -120,6 +123,7 @@ NotificaPipeline (8 step):
 ```
 
 **Saluto polimorfico:**
+
 - 0 destinatari → `"Gentile Utente"`
 - 1 destinatario → `dest.ottieniStringaSaluti()`:
   - Docente → `"Gentile Prof. Rossi"` / `"Gentile Prof.ssa Bianchi"`
@@ -128,6 +132,7 @@ NotificaPipeline (8 step):
 - N destinatari (TO multiplo) → saluto plurale se uniforme, altrimenti `"Gentili Destinatari"`
 
 **Footer noReply:**
+
 ```html
 <div>
   <p>Questa è una comunicazione automatica.</p>
@@ -150,7 +155,8 @@ NotificaPipeline (8 step):
 
 **Logica per destinatari docenti:**
 
-*Caso standard:*
+_Caso standard:_
+
 - Cerca `SupplenzaRepository.findSupplenzaSpecifica(docente, oggi, classeId)`
 - Se il supplente trovato è a sua volta titolare di un'altra supplenza attiva per lo stesso contesto, la ricerca segue la catena ricorsivamente fino al sostituto effettivo (vedi `06_REPOSITORY.md`)
 - Applica `CONF_MAIL.SUPPLENTI`:
@@ -158,15 +164,18 @@ NotificaPipeline (8 step):
   - `SOLO_SUPPLENTI` → `[supplente.email]`
   - `ENTRAMBI` → `[titolare.email, supplente.email]`
 
-*Caso coordinatore multi-classe:*
+_Caso coordinatore multi-classe:_
+
 - Per ogni classe coordinata, determina separatamente la presenza di una supplenza
 - `GestoreSupplenze.ottieniClassiNonSostituite()` e `ottieniSupplentiPerClasse()` gestiscono la distribuzione per classe
 
 **Logica per PER_CDC:**
+
 - Destinatari finali = `[{ emailsMultiple: docentiClasse.map(d => d.email) }]`
 - Non soggetto a regola SUPPLENTI
 
 **Logica per genitori/alunni:**
+
 - `PER_GENITORI_ALUNNO` / `PER_CARENZA` → `[{ emailsMultiple: [TUTOR_1, TUTOR_2] }]`
 
 ---
@@ -178,6 +187,7 @@ NotificaPipeline (8 step):
 **Colonne DB lette:** `CONF_MAIL.NOREPLY`
 
 **Logica:**
+
 - Per ogni destinatario in `destinatariFinali`:
   - `emailTo = destinatario.emailsMultiple ?? [destinatario.email]`
   - Try: `gmailFacade.sendEmail(emailTo, oggetto, '', { htmlBody, attachments, noReply, bcc: [SUPERVISORE_EMAIL] })`
@@ -192,6 +202,7 @@ NotificaPipeline (8 step):
 **Colonne DB scritte in LOG_MAIL:** `PATTERN`, `DESTINATARI`, `DATA`, `STATO`, `ALLEGATI`, `ERRORE` (LOG_MAIL non ha colonna `ID`: la chiave primaria è composita `(PATTERN, DESTINATARI, DATA)`, vedi `01_SCHEMA_DATABASE.md`)
 
 **Logica:**
+
 - `STATO = errori.length > 0 ? ERROR : SUCCESS`
 - `allegatiInfo = { docs: [...driveFileIds], folders: [] }`
 - `logMailRepository.registraInvio(patternId, destinatariFinali, stato, allegatiInfo, messaggioErrore)`
@@ -208,6 +219,7 @@ NotificaPipeline (8 step):
 **Caso d'uso principale:** marcatura delle carenze come notificate.
 
 Esempio:
+
 ```json
 [
   {
@@ -245,7 +257,9 @@ renderer(boxConfig, dati, contesto): string
 Il `FormattatoreDatiEmail` wrappa ogni stringa non vuota in un contenitore standard:
 
 ```html
-<div style="margin:20px 0; padding:15px; border-left:4px solid {coloreBordo}; background-color:#f9f9f9;">
+<div
+  style="margin:20px 0; padding:15px; border-left:4px solid {coloreBordo}; background-color:#f9f9f9;"
+>
   <h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">{TITOLO}</h3>
   {contenutoInterno}
 </div>
@@ -259,13 +273,13 @@ I box vengono ordinati per `BOX_CFG[].ORDINE` crescente prima del rendering.
 
 ### Box registrati
 
-| `TIPO_BOX` | Renderer | Visibile se |
-|------------|----------|-------------|
-| `carenze` | `renderCarenzeBox` | Almeno una materia con carenza |
-| `documenti` | `renderDocumentiBox` | Almeno un documento |
-| `cartelle` | `renderDocumentiBox` | Almeno una cartella |
-| `note` | `renderNoteBox` | Campo `NOTE` della carenza valorizzato |
-| `assenze` | `renderAssenzeBox` | Flag `ASSENZE = true` |
+| `TIPO_BOX`       | Renderer                 | Visibile se                                 |
+| ---------------- | ------------------------ | ------------------------------------------- |
+| `carenze`        | `renderCarenzeBox`       | Almeno una materia con carenza              |
+| `documenti`      | `renderDocumentiBox`     | Almeno un documento                         |
+| `cartelle`       | `renderDocumentiBox`     | Almeno una cartella                         |
+| `note`           | `renderNoteBox`          | Campo `NOTE` della carenza valorizzato      |
+| `assenze`        | `renderAssenzeBox`       | Flag `ASSENZE = true`                       |
 | `testo_dinamico` | `renderTestoDinamicoBox` | Sempre visibile (MOSTRA_SE_VUOTO implicito) |
 
 ---
@@ -277,16 +291,16 @@ Visualizza ogni materia con carenza in un **box stilizzato separato** con colore
 Colori da `MATERIE.COLORE_1` (bordo) e `MATERIE.COLORE_2` (sfondo). Simbolo da `MATERIE.SIMBOLO`.
 
 Supporta due formati input:
+
 - **Formato A** (`dettagliMaterie`): oggetti con `materia.COLORE_1`, `materia.NOME`, ecc.
 - **Formato B** (output di `CarenzeMapper`): oggetti con `sigla`, `nome`, `colore`, `colore2`, `simbolo`, `nomeSintesi`, `descrizione`
 
 Output HTML esempio (singola materia):
+
 ```html
 <div style="border-left:4px solid #c0392b; padding:12px 12px 12px 16px; margin-bottom:10px;">
   <h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">📐 Matematica</h3>
-  <div style="font-size:14px; color:#555; line-height:1.5;">
-    Voto 4 nel secondo quadrimestre.
-  </div>
+  <div style="font-size:14px; color:#555; line-height:1.5;">Voto 4 nel secondo quadrimestre.</div>
 </div>
 ```
 
@@ -351,10 +365,10 @@ resolveAllegati(cdu, pattern):
 
 ## 14. Gestione Quote Gmail e Processi Lunghi
 
-| Account | Email/giorno |
-|---------|-------------|
-| Google gratuito | 100 |
-| Google Workspace | 1.500 |
+| Account          | Email/giorno |
+| ---------------- | ------------ |
+| Google gratuito  | 100          |
+| Google Workspace | 1.500        |
 
 Per volumi > 500 email, l'`EmailNotificationService` usa `JobRunnerLib` (L3): chunking in gruppi da 100, checkpoint `yield` dopo ogni gruppo, pausa configurabile tra chunk. Dettagli in `15_UI_E_JOB_RUNNER.md`.
 

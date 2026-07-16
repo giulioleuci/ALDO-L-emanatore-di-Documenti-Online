@@ -11,8 +11,12 @@ import { COL_VARIAZIONI } from '../../config/schema';
  */
 export class VariazioniPerClasseSpec implements Specification<VariazioneCattedra> {
   constructor(private readonly classeId: ClasseId) {}
-  isSatisfiedBy(v: VariazioneCattedra): boolean { return v.applicaAClasse(this.classeId); }
-  toQueryObject(): null { return null; }
+  isSatisfiedBy(v: VariazioneCattedra): boolean {
+    return v.applicaAClasse(this.classeId);
+  }
+  toQueryObject(): null {
+    return null;
+  }
 }
 
 /**
@@ -21,13 +25,21 @@ export class VariazioniPerClasseSpec implements Specification<VariazioneCattedra
  */
 export class VariazioniPerMateriaSpec implements Specification<VariazioneCattedra> {
   constructor(private readonly materiaId: MateriaId) {}
-  isSatisfiedBy(v: VariazioneCattedra): boolean { return v.applicaAMateria(this.materiaId); }
-  toQueryObject(): null { return null; }
+  isSatisfiedBy(v: VariazioneCattedra): boolean {
+    return v.applicaAMateria(this.materiaId);
+  }
+  toQueryObject(): null {
+    return null;
+  }
 }
 
 /** Variations by new titolare — plain equality on NUOVO_TITOLARE, pushdown-eligible. */
 export class VariazioniPerNuovoTitolareSpec implements Specification<VariazioneCattedra> {
   constructor(private readonly email: Email) {}
-  isSatisfiedBy(v: VariazioneCattedra): boolean { return v.nuovoTitolare === this.email.value; }
-  toQueryObject(): Record<string, unknown> { return { [COL_VARIAZIONI.NUOVO_TITOLARE]: this.email.value }; }
+  isSatisfiedBy(v: VariazioneCattedra): boolean {
+    return v.nuovoTitolare === this.email.value;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_VARIAZIONI.NUOVO_TITOLARE]: this.email.value };
+  }
 }

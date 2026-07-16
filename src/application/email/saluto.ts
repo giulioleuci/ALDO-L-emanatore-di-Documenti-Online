@@ -26,7 +26,11 @@ export interface EmailTarget {
  * by name, plural for families and CdC groups, `Gentile Utente` when there is
  * nobody to address, `Gentili Destinatari` when a multiple is not uniform.
  */
-export function salutoPerTarget(target: EmailTarget, docente: Docente | null, alunno: Alunno | null): string {
+export function salutoPerTarget(
+  target: EmailTarget,
+  docente: Docente | null,
+  alunno: Alunno | null
+): string {
   if (target.emails.length === 0) return 'Gentile Utente';
   switch (target.tipo) {
     case 'genitori':
@@ -34,7 +38,9 @@ export function salutoPerTarget(target: EmailTarget, docente: Docente | null, al
     case 'cdc':
       return 'Gentili Docenti';
     case 'docente':
-      return docente === null ? 'Gentili Destinatari' : `Gentile ${docente.getNomeCompletoConAppellativo()}`;
+      return docente === null
+        ? 'Gentili Destinatari'
+        : `Gentile ${docente.getNomeCompletoConAppellativo()}`;
     case 'alunno':
       return alunno === null ? 'Gentili Destinatari' : `Gentile ${alunno.cognomeNome}`;
   }

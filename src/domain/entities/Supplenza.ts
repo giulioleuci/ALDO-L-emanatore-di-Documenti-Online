@@ -27,50 +27,84 @@ export class Supplenza extends AldoEntity {
 
   constructor(data: SupplenzaData = {}) {
     super(data);
-    this.titolare = typeof data[COL_SUPPLENZE.TITOLARE] === 'string' ? (data[COL_SUPPLENZE.TITOLARE] as string) : '';
-    this.supplente = typeof data[COL_SUPPLENZE.SUPPLENTE] === 'string' ? (data[COL_SUPPLENZE.SUPPLENTE] as string) : '';
-    this.dalRaw = typeof data[COL_SUPPLENZE.DAL] === 'string' ? (data[COL_SUPPLENZE.DAL] as string) : '';
-    this.alRaw = typeof data[COL_SUPPLENZE.AL] === 'string' ? (data[COL_SUPPLENZE.AL] as string) : '';
-    this.classiRaw = typeof data[COL_SUPPLENZE.CLASSI] === 'string' ? (data[COL_SUPPLENZE.CLASSI] as string) : '';
-    this.materieRaw = typeof data[COL_SUPPLENZE.MATERIE] === 'string' ? (data[COL_SUPPLENZE.MATERIE] as string) : '';
+    this.titolare =
+      typeof data[COL_SUPPLENZE.TITOLARE] === 'string'
+        ? (data[COL_SUPPLENZE.TITOLARE] as string)
+        : '';
+    this.supplente =
+      typeof data[COL_SUPPLENZE.SUPPLENTE] === 'string'
+        ? (data[COL_SUPPLENZE.SUPPLENTE] as string)
+        : '';
+    this.dalRaw =
+      typeof data[COL_SUPPLENZE.DAL] === 'string' ? (data[COL_SUPPLENZE.DAL] as string) : '';
+    this.alRaw =
+      typeof data[COL_SUPPLENZE.AL] === 'string' ? (data[COL_SUPPLENZE.AL] as string) : '';
+    this.classiRaw =
+      typeof data[COL_SUPPLENZE.CLASSI] === 'string' ? (data[COL_SUPPLENZE.CLASSI] as string) : '';
+    this.materieRaw =
+      typeof data[COL_SUPPLENZE.MATERIE] === 'string'
+        ? (data[COL_SUPPLENZE.MATERIE] as string)
+        : '';
     this.classi = CsvScope.of(this.classiRaw);
     this.materie = CsvScope.of(this.materieRaw);
-    this.id = this.titolare && this.supplente && this.dalRaw
-      ? `${this.titolare}::${this.supplente}::${this.dalRaw}::${this.classiRaw}::${this.materieRaw}`
-      : null;
+    this.id =
+      this.titolare && this.supplente && this.dalRaw
+        ? `${this.titolare}::${this.supplente}::${this.dalRaw}::${this.classiRaw}::${this.materieRaw}`
+        : null;
   }
 
-  get titolareEmail(): Email { return Email.of(this.titolare); }
-  get supplenteEmail(): Email { return Email.of(this.supplente); }
+  get titolareEmail(): Email {
+    return Email.of(this.titolare);
+  }
+  get supplenteEmail(): Email {
+    return Email.of(this.supplente);
+  }
 
   getPeriodo(): PeriodoSupplenza {
-    return PeriodoSupplenza.of(new Date(this.dalRaw), this.alRaw.trim() === '' ? null : new Date(this.alRaw));
+    return PeriodoSupplenza.of(
+      new Date(this.dalRaw),
+      this.alRaw.trim() === '' ? null : new Date(this.alRaw)
+    );
   }
 
-  isAttivaOggi(): boolean { return this.isAttivaData(new Date()); }
-  isAttivaData(data: Date): boolean { return this.getPeriodo().contiene(data); }
+  isAttivaOggi(): boolean {
+    return this.isAttivaData(new Date());
+  }
+  isAttivaData(data: Date): boolean {
+    return this.getPeriodo().contiene(data);
+  }
 
   /** True if CLASSI = "*" or its CSV contains the class (ref 04 §14). */
-  applicaAClasse(classe: ClasseId): boolean { return this.classi.applica(classe.value); }
+  applicaAClasse(classe: ClasseId): boolean {
+    return this.classi.applica(classe.value);
+  }
 
   /** True if MATERIE = "*" or its CSV contains the subject (ref 04 §14). */
-  applicaAMateria(materia: MateriaId): boolean { return this.materie.applica(materia.value); }
+  applicaAMateria(materia: MateriaId): boolean {
+    return this.materie.applica(materia.value);
+  }
 
   applicaAContesto(classe: ClasseId, materia: MateriaId): boolean {
     return this.applicaAClasse(classe) && this.applicaAMateria(materia);
   }
 
-  getClassiScope(): CsvScope { return this.classi; }
-  getMaterieScope(): CsvScope { return this.materie; }
+  getClassiScope(): CsvScope {
+    return this.classi;
+  }
+  getMaterieScope(): CsvScope {
+    return this.materie;
+  }
 
   /**
    * True when this supplenza's period and (class ∧ subject) context both overlap
    * another's — the condition the creation invariant forbids (ref 04 §14).
    */
   contestoOverlaps(other: Supplenza): boolean {
-    return this.getPeriodo().overlaps(other.getPeriodo())
-      && this.classi.overlaps(other.getClassiScope())
-      && this.materie.overlaps(other.getMaterieScope());
+    return (
+      this.getPeriodo().overlaps(other.getPeriodo()) &&
+      this.classi.overlaps(other.getClassiScope()) &&
+      this.materie.overlaps(other.getMaterieScope())
+    );
   }
 
   override toData(): EntityData {

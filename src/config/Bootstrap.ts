@@ -34,7 +34,10 @@ import { LogCartellaRepository } from '../infrastructure/repositories/LogCartell
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
-import { createCercaCartelleClasseStrategy, createCercaDocumentiStrategy } from '../application/import/CustomSourceStrategies';
+import {
+  createCercaCartelleClasseStrategy,
+  createCercaDocumentiStrategy
+} from '../application/import/CustomSourceStrategies';
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
 import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade';
 import { GmailServiceFacade } from '../infrastructure/facades/GmailServiceFacade';
@@ -99,15 +102,28 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     ]);
     if (deps.spreadsheets !== undefined) {
       const materie = new MateriaRepository(deps.db);
-      registry.set('SHEET_CON_MATERIE', new SheetMaterieGeneratorStrategy(deps.spreadsheets, materie, deps.templates));
+      registry.set(
+        'SHEET_CON_MATERIE',
+        new SheetMaterieGeneratorStrategy(deps.spreadsheets, materie, deps.templates)
+      );
       registry.set(
         'SHEET_CON_MATERIE_E_PERMESSI',
-        new SheetMaterieConPermessiGeneratorStrategy(deps.spreadsheets, materie, deps.templates, new RisolutoreRuoliService(deps.db))
+        new SheetMaterieConPermessiGeneratorStrategy(
+          deps.spreadsheets,
+          materie,
+          deps.templates,
+          new RisolutoreRuoliService(deps.db)
+        )
       );
       if (deps.documents !== undefined) {
         registry.set(
           'DOCUMENTO_CON_TABELLE_IMPORTATE',
-          new DocumentoConTabelleImportateGeneratorStrategy(deps.templates, deps.spreadsheets, new DocumentTableFacade(deps.documents), logger)
+          new DocumentoConTabelleImportateGeneratorStrategy(
+            deps.templates,
+            deps.spreadsheets,
+            new DocumentTableFacade(deps.documents),
+            logger
+          )
         );
       }
     }
@@ -134,14 +150,30 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register(
     'documentBatchService',
     (container) =>
-      new DocumentBatchService(new ClasseRepository(deps.db), container.get<DocumentGenerationService>('documentGenerationService'), deps.monitor)
+      new DocumentBatchService(
+        new ClasseRepository(deps.db),
+        container.get<DocumentGenerationService>('documentGenerationService'),
+        deps.monitor
+      )
   );
   c.register('emailNotificationService', () =>
-    EmailNotificationService.create(deps.db, deps.gmail, deps.templates, deps.now, deps.drive, logger, deps.monitor)
+    EmailNotificationService.create(
+      deps.db,
+      deps.gmail,
+      deps.templates,
+      deps.now,
+      deps.drive,
+      logger,
+      deps.monitor
+    )
   );
   c.register(
     'emailBatchService',
-    (container) => new EmailBatchService(container.get<EmailNotificationService>('emailNotificationService'), deps.monitor)
+    (container) =>
+      new EmailBatchService(
+        container.get<EmailNotificationService>('emailNotificationService'),
+        deps.monitor
+      )
   );
   c.register(
     'emailRetryService',
@@ -156,7 +188,10 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   );
   if (deps.importEngine !== undefined) {
     const engine = deps.importEngine;
-    c.register('importService', () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db)));
+    c.register(
+      'importService',
+      () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db))
+    );
   }
   c.register('reportService', () => new ReportService(deps.db));
   c.register('aggregatoreDati', () => new AggregatoreDati(deps.db));
@@ -165,13 +200,25 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
 }
 
 /** Data-driven launcher (15 §4): batch document generation for a CONF_DOC id. */
-export function avviaGenerazioneDataDriven(c: ServiceContainer, configId: string, runner: JobRunnerService): unknown {
-  return c.get<DocumentBatchService>('documentBatchService').start(runner, `gen_${configId}`, configId);
+export function avviaGenerazioneDataDriven(
+  c: ServiceContainer,
+  configId: string,
+  runner: JobRunnerService
+): unknown {
+  return c
+    .get<DocumentBatchService>('documentBatchService')
+    .start(runner, `gen_${configId}`, configId);
 }
 
 /** Data-driven launcher (15 §4): mass email for a CONF_MAIL pattern. */
-export function avviaInvioNotificheDataDriven(c: ServiceContainer, patternId: string, runner: JobRunnerService): unknown {
-  return c.get<EmailBatchService>('emailBatchService').start(runner, `mail_${patternId}`, patternId);
+export function avviaInvioNotificheDataDriven(
+  c: ServiceContainer,
+  patternId: string,
+  runner: JobRunnerService
+): unknown {
+  return c
+    .get<EmailBatchService>('emailBatchService')
+    .start(runner, `mail_${patternId}`, patternId);
 }
 
 /**
@@ -194,7 +241,11 @@ export function avviaImportazioneDataDriven(c: ServiceContainer, configId: strin
  * (`job_for_trigger_<id>` in ScriptProperties). Both batch registries are
  * re-registered — the library picks the handler by the persisted job type.
  */
-export function riprendiJobSospeso(c: ServiceContainer, runner: JobRunnerService, jobName = ''): unknown {
+export function riprendiJobSospeso(
+  c: ServiceContainer,
+  runner: JobRunnerService,
+  jobName = ''
+): unknown {
   const documenti = c.get<DocumentBatchService>('documentBatchService');
   const email = c.get<EmailBatchService>('emailBatchService');
   return runner.resume(jobName, (queue) => {
@@ -223,7 +274,9 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
 
   const masterId = properties.get(PROP_MASTER_SPREADSHEET_ID);
   if (masterId === null || masterId.trim() === '') {
-    throw new ConfigurationError(`ScriptProperties.${PROP_MASTER_SPREADSHEET_ID} mancante: impossibile localizzare il Master Sheet`);
+    throw new ConfigurationError(
+      `ScriptProperties.${PROP_MASTER_SPREADSHEET_ID} mancante: impossibile localizzare il Master Sheet`
+    );
   }
   const masterDb = new SheetDbAdapter(new DatabaseService(masterId, logger));
   const annoCorrente = new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
@@ -238,26 +291,49 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   // SheetDbAdapter.getDatabaseService() (ref REPORT_GLF.md B9) shares the same
   // DatabaseService instance `db` already opened over this spreadsheet,
   // instead of opening a second one for the importer.
-  const importEngine = new ImportEngine(logger, driveService, spreadsheetService, db.getDatabaseService());
+  const importEngine = new ImportEngine(
+    logger,
+    driveService,
+    spreadsheetService,
+    db.getDatabaseService()
+  );
   // CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI (12 §3) are ALDO-specific source
   // strategies, not part of the library's built-in vocabulary — registered
   // here at the composition root so ImportRecipeMapper's recipes resolve.
   importEngine.registerCustomSource(
     'CERCA_CARTELLE_CLASSE',
-    createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), driveService, spreadsheetService)
+    createCercaCartelleClasseStrategy(
+      new ClasseRepository(db),
+      new LogCartellaRepository(db),
+      driveService,
+      spreadsheetService
+    )
   );
-  importEngine.registerCustomSource('CERCA_DOCUMENTI', createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheetService));
+  importEngine.registerCustomSource(
+    'CERCA_DOCUMENTI',
+    createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheetService)
+  );
 
   runtime = buildAldoContainer({
     db,
-    drive: new DriveServiceFacade(ServiceFactory.getDriveService(), ServiceFactory.getPermissionService(), annoCorrente.idCartellaRoot),
+    drive: new DriveServiceFacade(
+      ServiceFactory.getDriveService(),
+      ServiceFactory.getPermissionService(),
+      annoCorrente.idCartellaRoot
+    ),
     gmail: new GmailServiceFacade(ServiceFactory.getMailService()),
     templates: new TemplateEngineFacade(),
     expressionEngine: new ExpressionEngineFacade(),
     importEngine,
     spreadsheets: spreadsheetService,
     documents: documentService,
-    monitor: new ProcessMonitorFacade(new ProcessMonitorService(logger, ServiceFactory.getCacheService(), ServiceFactory.getPropertiesService())),
+    monitor: new ProcessMonitorFacade(
+      new ProcessMonitorService(
+        logger,
+        ServiceFactory.getCacheService(),
+        ServiceFactory.getPropertiesService()
+      )
+    ),
     now,
     logger
   });
@@ -266,5 +342,9 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
 
 /** The JobRunnerLib runner bound to the container's registries. */
 export function creaJobRunner(): JobRunnerService {
-  return new JobRunnerService(ServiceFactory.getLogger(), ServiceFactory.getUtilitiesService(), new JobDefinitionRegistry(ServiceFactory.getLogger()));
+  return new JobRunnerService(
+    ServiceFactory.getLogger(),
+    ServiceFactory.getUtilitiesService(),
+    new JobDefinitionRegistry(ServiceFactory.getLogger())
+  );
 }

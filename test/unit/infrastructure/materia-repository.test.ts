@@ -1,6 +1,9 @@
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { Materia } from '../../../src/domain/entities/Materia';
-import { MaterieEsamePrimaSpec, MaterieEsameSecondaSpec } from '../../../src/domain/specifications/MaterieEsameSpec';
+import {
+  MaterieEsamePrimaSpec,
+  MaterieEsameSecondaSpec
+} from '../../../src/domain/specifications/MaterieEsameSpec';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
@@ -11,7 +14,12 @@ function repo(): MateriaRepository {
 }
 
 test('Materia hydrates and parses ESAME_CFG lazily', () => {
-  const m = Materia.fromData({ ID: 'MATE', NOME: 'Matematica', SINTESI: 'Matematica', ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}' });
+  const m = Materia.fromData({
+    ID: 'MATE',
+    NOME: 'Matematica',
+    SINTESI: 'Matematica',
+    ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}'
+  });
   expect(m.materiaId.value).toBe('MATE');
   expect(m.sintesi).toBe('Matematica');
   expect(m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).toBe(true);
@@ -24,8 +32,16 @@ test('Materia with null ESAME_CFG has no esameConfig', () => {
 });
 
 test('findEsamePrima / findEsameSeconda filter via specs', () => {
-  expect(repo().findEsamePrima(IndirizzoId.of('SCIENTIFICO')).map((m) => m.id)).toEqual(['MATE']);
-  expect(repo().findEsameSeconda(IndirizzoId.of('LSSA')).map((m) => m.id)).toEqual(['MATE']);
+  expect(
+    repo()
+      .findEsamePrima(IndirizzoId.of('SCIENTIFICO'))
+      .map((m) => m.id)
+  ).toEqual(['MATE']);
+  expect(
+    repo()
+      .findEsameSeconda(IndirizzoId.of('LSSA'))
+      .map((m) => m.id)
+  ).toEqual(['MATE']);
   expect(repo().findEsamePrima(IndirizzoId.of('LSSA'))).toEqual([]);
 });
 

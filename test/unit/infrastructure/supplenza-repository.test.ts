@@ -18,7 +18,14 @@ function repoAndDb(): { r: SupplenzaRepository; db: FakeDatabase } {
 const rossi = Docente.fromData({ EMAIL: 'rossi@school.it' });
 
 test('Supplenza: composite identity, period, context predicates (04 §14)', () => {
-  const s = Supplenza.fromData({ TITOLARE: 'rossi@school.it', SUPPLENTE: 'bianchi@school.it', DAL: '2025-11-01', AL: '2025-11-30', CLASSI: '5A,4B', MATERIE: '*' });
+  const s = Supplenza.fromData({
+    TITOLARE: 'rossi@school.it',
+    SUPPLENTE: 'bianchi@school.it',
+    DAL: '2025-11-01',
+    AL: '2025-11-30',
+    CLASSI: '5A,4B',
+    MATERIE: '*'
+  });
   expect(s.id).toBe('rossi@school.it::bianchi@school.it::2025-11-01::5A,4B::*');
   expect(s.isAttivaData(new Date('2025-11-15'))).toBe(true);
   expect(s.applicaAClasse(ClasseId.of('5A'))).toBe(true);
@@ -31,18 +38,26 @@ test('findByTitolare / findBySupplente / findAttive', () => {
   const r = repo();
   expect(r.findByTitolare(rossi).map((s) => s.supplente)).toEqual(['bianchi@school.it']);
   expect(r.findBySupplente(rossi).map((s) => s.titolare)).toEqual(['verdi@school.it']);
-  expect(r.findAttive(new Date('2025-11-15')).map((s) => s.titolare).sort())
-    .toEqual(['bianchi@school.it', 'rossi@school.it']);
+  expect(
+    r
+      .findAttive(new Date('2025-11-15'))
+      .map((s) => s.titolare)
+      .sort()
+  ).toEqual(['bianchi@school.it', 'rossi@school.it']);
 });
 
 test('findSupplenzaSpecifica follows the replacement chain to the final substitute (06 §14)', () => {
   const r = repo();
   // rossi→bianchi→verdi active on 15/11 for 5A/ITA: effective substitute is verdi.
-  expect(r.findSupplenzaSpecifica(rossi, new Date('2025-11-15'), ClasseId.of('5A'), MateriaId.of('ITA'))!.supplente)
-    .toBe('verdi@school.it');
+  expect(
+    r.findSupplenzaSpecifica(rossi, new Date('2025-11-15'), ClasseId.of('5A'), MateriaId.of('ITA'))!
+      .supplente
+  ).toBe('verdi@school.it');
   // on 25/11 the second link has ended: chain stops at bianchi.
-  expect(r.findSupplenzaSpecifica(rossi, new Date('2025-11-25'), ClasseId.of('5A'), MateriaId.of('ITA'))!.supplente)
-    .toBe('bianchi@school.it');
+  expect(
+    r.findSupplenzaSpecifica(rossi, new Date('2025-11-25'), ClasseId.of('5A'), MateriaId.of('ITA'))!
+      .supplente
+  ).toBe('bianchi@school.it');
   // no active supplenza for rossi in July.
   expect(r.findSupplenzaSpecifica(rossi, new Date('2025-07-01'))).toBeNull();
 });
@@ -71,7 +86,9 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
 
   test('findSupplenzaSpecifica returns null immediately when titolare.id is blank', () => {
     const repository = repo();
-    expect(repository.findSupplenzaSpecifica(Docente.fromData({ EMAIL: '' }), new Date())).toBeNull();
+    expect(
+      repository.findSupplenzaSpecifica(Docente.fromData({ EMAIL: '' }), new Date())
+    ).toBeNull();
   });
 
   test('creaSupplenza throws ValidationError when an overlapping supplenza exists for the same titolare+context', () => {
@@ -95,8 +112,12 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
   test('requireDocente throws EntityNotFoundError for an unknown email', () => {
     const r = repo();
     const s = Supplenza.fromData({
-      TITOLARE: 'ghost@school.it', SUPPLENTE: 'bianchi@school.it',
-      DAL: '2025-11-01', AL: '2025-11-30', CLASSI: '5A', MATERIE: '*'
+      TITOLARE: 'ghost@school.it',
+      SUPPLENTE: 'bianchi@school.it',
+      DAL: '2025-11-01',
+      AL: '2025-11-30',
+      CLASSI: '5A',
+      MATERIE: '*'
     });
     expect(() => r.getTitolare(s)).toThrow(EntityNotFoundError);
   });
@@ -107,12 +128,25 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
       SUPPLENZE: [
         ...(fixtureTables().SUPPLENZE ?? []),
         // Same arc (rossi→bianchi) as the fixture row, also active on 15/11.
-        { TITOLARE: 'rossi@school.it', SUPPLENTE: 'bianchi@school.it', DAL: '2025-11-05', AL: '2025-11-25', CLASSI: '5A', MATERIE: '*' }
+        {
+          TITOLARE: 'rossi@school.it',
+          SUPPLENTE: 'bianchi@school.it',
+          DAL: '2025-11-05',
+          AL: '2025-11-25',
+          CLASSI: '5A',
+          MATERIE: '*'
+        }
       ]
     });
     const r = new SupplenzaRepository(db);
-    expect(r.findSupplenzaSpecifica(rossi, new Date('2025-11-15'), ClasseId.of('5A'), MateriaId.of('ITA'))!.supplente)
-      .toBe('verdi@school.it');
+    expect(
+      r.findSupplenzaSpecifica(
+        rossi,
+        new Date('2025-11-15'),
+        ClasseId.of('5A'),
+        MateriaId.of('ITA')
+      )!.supplente
+    ).toBe('verdi@school.it');
   });
 
   test('creaSupplenza stores "" for titolare/supplente when the Docente has no id', () => {
@@ -139,14 +173,28 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
       ...fixtureTables(),
       SUPPLENZE: [
         ...(fixtureTables().SUPPLENZE ?? []),
-        { TITOLARE: null, SUPPLENTE: 'bianchi@school.it', DAL: '2026-02-01', AL: '2026-02-10', CLASSI: '9Z', MATERIE: 'FISI' }
+        {
+          TITOLARE: null,
+          SUPPLENTE: 'bianchi@school.it',
+          DAL: '2026-02-01',
+          AL: '2026-02-10',
+          CLASSI: '9Z',
+          MATERIE: 'FISI'
+        }
       ]
     });
     const r = new SupplenzaRepository(db);
     const ghost = Docente.fromData({}); // id null → findByTitolare matches the seeded TITOLARE:null row
     const supplente = Docente.fromData({ EMAIL: 'bianchi@school.it' });
     expect(() =>
-      r.creaSupplenza(ghost, supplente, new Date('2026-02-03'), new Date('2026-02-05'), '9Z', 'FISI')
+      r.creaSupplenza(
+        ghost,
+        supplente,
+        new Date('2026-02-03'),
+        new Date('2026-02-05'),
+        '9Z',
+        'FISI'
+      )
     ).toThrow(ValidationError);
   });
 });

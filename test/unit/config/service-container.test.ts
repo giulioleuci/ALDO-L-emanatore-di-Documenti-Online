@@ -4,7 +4,10 @@ import { DomainError } from '../../../src/domain/errors/DomainError';
 test('lazy singleton resolution (08 §2)', () => {
   const c = new ServiceContainer();
   let built = 0;
-  c.register('x', () => { built += 1; return { v: 42 }; });
+  c.register('x', () => {
+    built += 1;
+    return { v: 42 };
+  });
   expect(c.has('x')).toBe(true);
   expect(c.get<{ v: number }>('x').v).toBe(42);
   c.get('x');

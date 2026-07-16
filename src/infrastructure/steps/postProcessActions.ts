@@ -90,11 +90,16 @@ export function executePostProcess(
     const criteri = resolveCriteri(action.criteri ?? {}, cdu, templates);
     switch (action.tipo) {
       case 'INSERISCI_TIMESTAMP':
-        updated += updateMatching(db, action.tab ?? '', criteri, { [action.col ?? '']: now.toISOString() });
+        updated += updateMatching(db, action.tab ?? '', criteri, {
+          [action.col ?? '']: now.toISOString()
+        });
         break;
       case 'AGGIORNA_CAMPO':
         updated += updateMatching(db, action.tab ?? '', criteri, {
-          [action.col ?? '']: templates.processString(typeof action.valore === 'string' ? action.valore : '', cdu)
+          [action.col ?? '']: templates.processString(
+            typeof action.valore === 'string' ? action.valore : '',
+            cdu
+          )
         });
         break;
       case 'AGGIORNA_STATO_DOC':

@@ -19,20 +19,28 @@ export class Piano extends AldoEntity {
 
   constructor(data: PianoData = {}) {
     super(data);
-    this.studente = typeof data[COL_PIANI.STUDENTE] === 'string' ? (data[COL_PIANI.STUDENTE] as string) : '';
+    this.studente =
+      typeof data[COL_PIANI.STUDENTE] === 'string' ? (data[COL_PIANI.STUDENTE] as string) : '';
     this.tipo = data[COL_PIANI.TIPO] as TipoPiano;
-    this.parametriRaw = typeof data[COL_PIANI.PARAMETRI] === 'string' ? (data[COL_PIANI.PARAMETRI] as string) : null;
+    this.parametriRaw =
+      typeof data[COL_PIANI.PARAMETRI] === 'string' ? (data[COL_PIANI.PARAMETRI] as string) : null;
     // Synthetic composite id for identity-map purposes; not a persisted column.
     this.id = this.studente && this.tipo ? `${this.studente}::${this.tipo}` : null;
   }
 
-  get studenteEmail(): Email { return Email.of(this.studente); }
+  get studenteEmail(): Email {
+    return Email.of(this.studente);
+  }
 
   /** Every plan type except PFP implies a special educational need (ref 03). */
-  isBES(): boolean { return this.tipo !== TipoPiano.PFP; }
+  isBES(): boolean {
+    return this.tipo !== TipoPiano.PFP;
+  }
 
   getParametri(): Record<string, unknown> {
-    return this.parametriRaw === null ? {} : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
+    return this.parametriRaw === null
+      ? {}
+      : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
   }
 
   override toData(): EntityData {

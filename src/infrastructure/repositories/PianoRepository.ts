@@ -28,6 +28,10 @@ export class PianoRepository extends Repository<Piano> {
 
   /** Emails of students having at least one BES plan (feeds AlunniBESSpec). */
   getStudentiConBESEmails(): Set<string> {
-    return new Set(this.findAll().filter((p) => p.isBES()).map((p) => p.studente));
+    return new Set(
+      this.findAll()
+        .filter((p) => p.isBES())
+        .map((p) => p.studente)
+    );
   }
 }

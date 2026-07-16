@@ -7,8 +7,10 @@ function fakeFactory() {
   return {
     createSpreadsheet: jest.fn((name: string) => ({
       id: `SS_${name}`,
-      addSheet: (sheetName: string, headerRow: string[]) => sheets.set(sheetName, { headers: headerRow, rows: [] }),
-      appendRow: (sheetName: string, row: Record<string, unknown>) => sheets.get(sheetName)!.rows.push(row),
+      addSheet: (sheetName: string, headerRow: string[]) =>
+        sheets.set(sheetName, { headers: headerRow, rows: [] }),
+      appendRow: (sheetName: string, row: Record<string, unknown>) =>
+        sheets.get(sheetName)!.rows.push(row),
       getUrl: () => `https://docs.google.com/spreadsheets/d/SS_${name}`
     })),
     __sheets: sheets
@@ -71,7 +73,9 @@ describe('SampleDatabaseBuilder', () => {
 
     const classi = factory.__sheets.get(TABLE.CLASSI)!.rows;
     expect(classi.length).toBeGreaterThanOrEqual(2);
-    const partner = classi.find((c) => typeof c.ARTICOLAZIONE === 'string' && c.ARTICOLAZIONE.length > 0);
+    const partner = classi.find(
+      (c) => typeof c.ARTICOLAZIONE === 'string' && c.ARTICOLAZIONE.length > 0
+    );
     expect(partner).toBeDefined();
 
     const alunni = factory.__sheets.get(TABLE.ALUNNI)!.rows;
@@ -95,6 +99,11 @@ describe('SampleDatabaseBuilder', () => {
     new SampleDatabaseBuilder(factory, drive).build();
 
     const names = factory.createSpreadsheet.mock.calls.map((c: unknown[]) => c[0] as string);
-    expect(names).toEqual(['_ALDO_ONLINETEST_SAMPLE', '_ALDO_ONLINETEST_MASTER', '_ALDO_ONLINETEST_SAMPLE', '_ALDO_ONLINETEST_MASTER']);
+    expect(names).toEqual([
+      '_ALDO_ONLINETEST_SAMPLE',
+      '_ALDO_ONLINETEST_MASTER',
+      '_ALDO_ONLINETEST_SAMPLE',
+      '_ALDO_ONLINETEST_MASTER'
+    ]);
   });
 });

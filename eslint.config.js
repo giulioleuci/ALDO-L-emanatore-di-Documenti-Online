@@ -4,13 +4,37 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 const NATIVE_GAS_GLOBALS = [
-  'DriveApp', 'SpreadsheetApp', 'DocumentApp', 'MailApp', 'GmailApp',
-  'PropertiesService', 'CacheService', 'UrlFetchApp', 'Utilities',
-  'Session', 'ScriptApp', 'LockService', 'SlidesApp', 'FormApp'
-].map((name) => ({ name, message: `Native GAS global "${name}" is only allowed in src/infrastructure/facades/**` }));
+  'DriveApp',
+  'SpreadsheetApp',
+  'DocumentApp',
+  'MailApp',
+  'GmailApp',
+  'PropertiesService',
+  'CacheService',
+  'UrlFetchApp',
+  'Utilities',
+  'Session',
+  'ScriptApp',
+  'LockService',
+  'SlidesApp',
+  'FormApp'
+].map((name) => ({
+  name,
+  message: `Native GAS global "${name}" is only allowed in src/infrastructure/facades/**`
+}));
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'vendor/**', 'node_modules/**', 'coverage/**', 'types/gaslibs/**', 'GasLibraryFactory/**', '.remember/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'vendor/**',
+      'node_modules/**',
+      'coverage/**',
+      'types/gaslibs/**',
+      'GasLibraryFactory/**',
+      '.remember/**'
+    ]
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
@@ -40,7 +64,12 @@ export default tseslint.config(
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { args: 'all', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
       ]
     }
   },
@@ -51,8 +80,10 @@ export default tseslint.config(
       'no-restricted-globals': ['error', ...NATIVE_GAS_GLOBALS],
       'no-restricted-syntax': [
         'error',
-        { selector: 'ThrowStatement > NewExpression[callee.name="Error"]',
-          message: 'Do not throw raw Error; use a typed domain exception (src/domain/errors).' }
+        {
+          selector: 'ThrowStatement > NewExpression[callee.name="Error"]',
+          message: 'Do not throw raw Error; use a typed domain exception (src/domain/errors).'
+        }
       ]
     }
   },
@@ -74,14 +105,29 @@ export default tseslint.config(
   {
     files: ['src/domain/**/*.ts'],
     rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [
-          { group: ['**/application/**', '**/infrastructure/**', '**/config/ServiceContainer*', '**/config/Bootstrap*', '**/ui/**'],
-            message: 'Domain layer must not depend on outer layers (08_ARCHITETTURA_DI_PATTERN.md §1).' }
-        ]
-      }]
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/application/**',
+                '**/infrastructure/**',
+                '**/config/ServiceContainer*',
+                '**/config/Bootstrap*',
+                '**/ui/**'
+              ],
+              message:
+                'Domain layer must not depend on outer layers (08_ARCHITETTURA_DI_PATTERN.md §1).'
+            }
+          ]
+        }
+      ]
     }
   },
-  { files: ['test/**/*.ts'], rules: { 'no-restricted-syntax': 'off', '@typescript-eslint/no-explicit-any': 'off' } },
+  {
+    files: ['test/**/*.ts'],
+    rules: { 'no-restricted-syntax': 'off', '@typescript-eslint/no-explicit-any': 'off' }
+  },
   prettier
 );

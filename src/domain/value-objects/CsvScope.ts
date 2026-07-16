@@ -11,7 +11,12 @@ export class CsvScope {
     const trimmed = raw.trim();
     this.wildcard = trimmed === '*';
     this.values = new Set(
-      this.wildcard ? [] : trimmed.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
+      this.wildcard
+        ? []
+        : trimmed
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
     );
   }
 
@@ -19,10 +24,14 @@ export class CsvScope {
     return new CsvScope(typeof raw === 'string' ? raw : '');
   }
 
-  isWildcard(): boolean { return this.wildcard; }
+  isWildcard(): boolean {
+    return this.wildcard;
+  }
 
   /** True if `*` or the id is in the CSV. */
-  applica(id: string): boolean { return this.wildcard || this.values.has(id); }
+  applica(id: string): boolean {
+    return this.wildcard || this.values.has(id);
+  }
 
   /** True if the two scopes share at least one id (a wildcard overlaps anything). */
   overlaps(other: CsvScope): boolean {

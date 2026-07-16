@@ -5,11 +5,13 @@ const logger = new LoggerService();
 /** Records writes; reads never happen because tables get preloadedData. */
 function stubSpreadsheetService(): { calls: string[] } & Record<string, unknown> {
   const calls: string[] = [];
-  const record = (name: string) => (...args: unknown[]) => {
-    calls.push(name);
-    void args;
-    return [];
-  };
+  const record =
+    (name: string) =>
+    (...args: unknown[]) => {
+      calls.push(name);
+      void args;
+      return [];
+    };
   return {
     calls,
     getRanges: record('getRanges'),
@@ -36,12 +38,19 @@ function libDb(seed: Record<string, unknown[][]>) {
     tables,
     saved: 0,
     save(): void {
-      if (inTransaction) throw new Error('Cannot call save() during a transaction. Use commit() to apply changes.');
+      if (inTransaction)
+        throw new Error('Cannot call save() during a transaction. Use commit() to apply changes.');
       this.saved += 1;
     },
-    beginTransaction(): void { inTransaction = true; },
-    commit(): void { inTransaction = false; },
-    rollback(): void { inTransaction = false; }
+    beginTransaction(): void {
+      inTransaction = true;
+    },
+    commit(): void {
+      inTransaction = false;
+    },
+    rollback(): void {
+      inTransaction = false;
+    }
   };
   return { db, ss };
 }
@@ -86,12 +95,20 @@ test('composite-PK table: updateRowWhere targets the exact row via synthetic __P
   // Both a1 rows share STUDENTE — the virtual composite key disambiguates.
   adapter.tables['CARENZE']!.updateRowWhere(
     { STUDENTE: 'a1@school.it', PROGRESSIVO: 1 },
-    { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, NOTIFICATO: '2026-07-06T00:00:00.000Z', MATE: '4.5' }
+    {
+      STUDENTE: 'a1@school.it',
+      PROGRESSIVO: 1,
+      NOTIFICATO: '2026-07-06T00:00:00.000Z',
+      MATE: '4.5'
+    }
   );
   const rows = adapter.table('CARENZE').findAll();
-  expect(rows.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1)!['NOTIFICATO'])
-    .toBe('2026-07-06T00:00:00.000Z');
-  expect(rows.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 2)!['NOTIFICATO']).toBe('già');
+  expect(
+    rows.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1)!['NOTIFICATO']
+  ).toBe('2026-07-06T00:00:00.000Z');
+  expect(
+    rows.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 2)!['NOTIFICATO']
+  ).toBe('già');
 });
 
 test('updateRowWhere resolves an exact-PK match via getByPK, not a full scan (ref A3)', () => {
@@ -117,7 +134,10 @@ test('updateRowWhere falls back to a full scan for a non-PK match', () => {
   const adapter = new SheetDbAdapter(db);
 
   // MATE alone is not CARENZE's declared PK (STUDENTE, PROGRESSIVO).
-  adapter.tables['CARENZE']!.updateRowWhere({ MATE: '4.5' }, { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, NOTIFICATO: '', MATE: '9' });
+  adapter.tables['CARENZE']!.updateRowWhere(
+    { MATE: '4.5' },
+    { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, NOTIFICATO: '', MATE: '9' }
+  );
 
   expect(getAllRowsSpy).toHaveBeenCalled();
 });
@@ -172,11 +192,19 @@ test('select().from().where().execute() uses the index once built, and stays cor
   const { db } = libDb(seed());
   const adapter = new SheetDbAdapter(db);
 
-  const beforeIndex = adapter.select(['*']).from('CARENZE').where('STUDENTE', '=', 'a1@school.it').execute();
+  const beforeIndex = adapter
+    .select(['*'])
+    .from('CARENZE')
+    .where('STUDENTE', '=', 'a1@school.it')
+    .execute();
   expect(beforeIndex.map((r) => r['PROGRESSIVO']).sort()).toEqual([1, 2]);
 
   adapter.tables['CARENZE']!.createIndex('STUDENTE');
-  const afterIndex = adapter.select(['*']).from('CARENZE').where('STUDENTE', '=', 'a1@school.it').execute();
+  const afterIndex = adapter
+    .select(['*'])
+    .from('CARENZE')
+    .where('STUDENTE', '=', 'a1@school.it')
+    .execute();
   expect(afterIndex.map((r) => r['PROGRESSIVO']).sort()).toEqual([1, 2]);
 });
 
@@ -231,7 +259,9 @@ describe('SheetDbAdapter.updateRowWhere — insert-vs-update and isExactKeyMatch
       { STUDENTE: 'a2@school.it', PROGRESSIVO: 1, NOTIFICATO: '', MATE: 'X' }
     );
 
-    expect(adapter.table('CARENZE').find((r) => r['STUDENTE'] === 'a2@school.it')?.['MATE']).toBe('X');
+    expect(adapter.table('CARENZE').find((r) => r['STUDENTE'] === 'a2@school.it')?.['MATE']).toBe(
+      'X'
+    );
     expect(adapter.table('CARENZE').findAll()).toHaveLength(3);
   });
 });

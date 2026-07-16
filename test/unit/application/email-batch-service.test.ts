@@ -1,4 +1,7 @@
-import { EmailBatchService, JOB_TYPE_INVIO_EMAIL } from '../../../src/application/services/EmailBatchService';
+import {
+  EmailBatchService,
+  JOB_TYPE_INVIO_EMAIL
+} from '../../../src/application/services/EmailBatchService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
@@ -12,7 +15,13 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 function wire(monitor?: FakeProcessMonitor) {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const notification = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
+  const notification = EmailNotificationService.create(
+    db,
+    gmail,
+    new FakeTemplateEngine(),
+    NOW,
+    new FakeDriveFacade()
+  );
   const service = new EmailBatchService(notification, monitor);
   return { gmail, service };
 }
@@ -44,7 +53,8 @@ test('resume restarts from resumeState.nextIndex without resending (JobRunnerLib
   const { gmail, service } = wire();
   const { result } = drain(
     service.batchSendHandler({
-      patternId: 'CDC_OTTOBRE', chunkSize: 1,
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 1,
       resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
     })
   );
@@ -56,7 +66,11 @@ test('resume restarts from resumeState.nextIndex without resending (JobRunnerLib
 test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {
   const { service } = wire();
   const registered: string[] = [];
-  const queue = { registerJobHandler: (type: string) => { registered.push(type); } } as unknown as JobQueueLike;
+  const queue = {
+    registerJobHandler: (type: string) => {
+      registered.push(type);
+    }
+  } as unknown as JobQueueLike;
   service.registerJobHandlers(queue);
   expect(registered).toEqual([JOB_TYPE_INVIO_EMAIL]);
 });
@@ -64,7 +78,14 @@ test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {
 test('GasProcessMonitorLib progress calls (15 §9): register/start once, progress per chunk, complete at the end', () => {
   const monitor = new FakeProcessMonitor();
   const { service } = wire(monitor);
-  drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1, jobId: 'job_mail_1', resumeState: null }));
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 1,
+      jobId: 'job_mail_1',
+      resumeState: null
+    })
+  );
   expect(monitor.registered).toEqual(['job_mail_1']);
   expect(monitor.started).toEqual(['job_mail_1']);
   expect(monitor.progress).toHaveLength(2);
@@ -74,10 +95,14 @@ test('GasProcessMonitorLib progress calls (15 §9): register/start once, progres
 test('resume does not re-register/re-start the job', () => {
   const monitor = new FakeProcessMonitor();
   const { service } = wire(monitor);
-  drain(service.batchSendHandler({
-    patternId: 'CDC_OTTOBRE', chunkSize: 1, jobId: 'job_mail_1',
-    resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
-  }));
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 1,
+      jobId: 'job_mail_1',
+      resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+    })
+  );
   expect(monitor.registered).toEqual([]);
   expect(monitor.started).toEqual([]);
   expect(monitor.completed).toHaveLength(1);

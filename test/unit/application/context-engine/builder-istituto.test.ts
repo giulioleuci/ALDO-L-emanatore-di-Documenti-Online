@@ -14,19 +14,45 @@ import { fixtureTables } from '../../../fixtures/tables';
 function builder(): ContextBuilder {
   const db = new FakeDatabase(fixtureTables());
   const b = new ContextBuilder();
-  b.registerProvider('school', new SchoolProvider(new MasterSheetRepository(db), new RuoloSpecialeRepository(db), new DocenteRepository(db)));
-  b.registerProvider('statistiche', new StatisticheProvider(new ClasseRepository(db), new DocenteRepository(db), new AlunnoRepository(db)));
+  b.registerProvider(
+    'school',
+    new SchoolProvider(
+      new MasterSheetRepository(db),
+      new RuoloSpecialeRepository(db),
+      new DocenteRepository(db)
+    )
+  );
+  b.registerProvider(
+    'statistiche',
+    new StatisticheProvider(
+      new ClasseRepository(db),
+      new DocenteRepository(db),
+      new AlunnoRepository(db)
+    )
+  );
   return b;
 }
 
-const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
-const recipe: Recipe = { providers: ['school', 'statistiche'], options: makeOptions({ includiStorico: true }) };
+const params: BuildParams = {
+  target: '5A',
+  tipoTarget: 'classe',
+  now: new Date('2026-07-01T09:00:00Z')
+};
+const recipe: Recipe = {
+  providers: ['school', 'statistiche'],
+  options: makeOptions({ includiStorico: true })
+};
 
 test('meta: dates (UTC) and input params (02 §2)', () => {
   const cdu = builder().build(params, recipe);
   expect(cdu.meta.date.oggi).toEqual({
-    breve: '01/07/2026', estesa: '01 luglio 2026', iso: '2026-07-01',
-    giorno: '01', mese: '07', anno: '2026', ora: '09:00'
+    breve: '01/07/2026',
+    estesa: '01 luglio 2026',
+    iso: '2026-07-01',
+    giorno: '01',
+    mese: '07',
+    anno: '2026',
+    ora: '09:00'
   });
   expect(cdu.meta.timestamp).toBe('2026-07-01T09:00:00.000Z');
   expect(cdu.meta.parametriInput.target).toBe('5A');
@@ -37,8 +63,14 @@ test('meta: dates (UTC) and input params (02 §2)', () => {
 
 test('istituto: SchoolProvider organisation + staff from Master/RUOLI (02 §3, 09 §4)', () => {
   const cdu = builder().build(params, recipe);
-  expect(cdu.istituto?.organizzazione).toEqual({ annoScolastico: '2025-2026', dirigente: 'prof.ssa MARIA BIANCHI' });
-  expect(cdu.istituto?.staff).toEqual({ referenteBes: 'ROSSI MARIO', animatoreDigitale: 'BIANCHI LUCIA' });
+  expect(cdu.istituto?.organizzazione).toEqual({
+    annoScolastico: '2025-2026',
+    dirigente: 'prof.ssa MARIA BIANCHI'
+  });
+  expect(cdu.istituto?.staff).toEqual({
+    referenteBes: 'ROSSI MARIO',
+    animatoreDigitale: 'BIANCHI LUCIA'
+  });
 });
 
 test('istituto.statistiche: aggregate counts (09 §11)', () => {

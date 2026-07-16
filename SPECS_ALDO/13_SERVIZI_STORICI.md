@@ -19,6 +19,7 @@ I servizi storici rendono disponibili questi dati al CDU in modo selettivo: i da
 Lo `StoricoProvider` NON DEVE caricare i dati storici al momento della costruzione del CDU. DEVE invece inserire nel CDU degli oggetti `LazyRef` che incapsulano la query da eseguire.
 
 **Comportamento del `LazyRef`:**
+
 1. Alla prima lettura della proprietà: esegue la query sul database storico tramite `SheetDBLib` puntato allo spreadsheet dell'anno precedente
 2. Mette in cache il risultato in memoria
 3. Restituisce il dato
@@ -34,6 +35,7 @@ Se la recipe specifica `includiStorico: false`, il `StoricoProvider` DEVE essere
 **Responsabilità:** dato un alunno identificato da `ALUNNI.EMAIL`, recupera i suoi dati negli anni scolastici precedenti.
 
 Per ogni anno disponibile nei database storici configurati in `CONF_IMP`, il servizio recupera:
+
 - La classe frequentata dall'alunno in quell'anno
 - L'esito dell'anno scolastico (promosso, rimandato, non ammesso — da `MOV_ALUNNI` storico)
 - Le carenze rilevate nell'ultima rilevazione dell'anno (da `CARENZE` storico)
@@ -50,6 +52,7 @@ Per ogni anno disponibile nei database storici configurati in `CONF_IMP`, il ser
 La ricerca avviene su `LOG_DOCS` dei database storici, filtrando per `UTENTE = ALUNNI.EMAIL` e `ID_GEN` corrispondente al tipo configurato.
 
 Per ogni documento trovato, il servizio restituisce un riferimento con:
+
 - Nome del file
 - Link Google Drive
 - Anno scolastico di riferimento
@@ -88,11 +91,11 @@ La ricerca avviene sulle colonne docenti della tabella `CLASSI` dei database sto
 
 La recipe associata a una configurazione documento o email può specificare la profondità storica (numero intero di anni, default `1`). La profondità è definita in modo granulare per dominio di dato, tramite le tre opzioni canoniche in `cdu.meta.parametriInput.opzioni` (vedi `02_CDU_STRUTTURA.md`):
 
-| Opzione | Lazy loader governato |
-|---------|-----------------------|
-| `profonditaAnniStorico` | `StoricoAlunniService`, `StoricoClassiService`, `StoricoDocentiService` |
-| `profonditaAnniAsl` | conteggio ore ASL storiche (`focus.alunno.didattica.asl`) |
-| `profonditaAnniDocumenti` | `StoricoDocumentiService` (box `documenti` arricchito) |
+| Opzione                   | Lazy loader governato                                                   |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `profonditaAnniStorico`   | `StoricoAlunniService`, `StoricoClassiService`, `StoricoDocentiService` |
+| `profonditaAnniAsl`       | conteggio ore ASL storiche (`focus.alunno.didattica.asl`)               |
+| `profonditaAnniDocumenti` | `StoricoDocumentiService` (box `documenti` arricchito)                  |
 
 Ognuna ha default `1` se non specificata. Nel seguito, il termine generico "profondità storica" si riferisce a quella pertinente al dominio del lazy loader in questione. Esempi di comportamento (validi per ciascuna opzione):
 

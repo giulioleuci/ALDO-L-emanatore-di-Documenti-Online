@@ -17,7 +17,10 @@ import { AggregatoreDati } from '../../../src/application/services/AggregatoreDa
 import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import { JOB_TYPE_INVIO_EMAIL } from '../../../src/application/services/EmailBatchService';
-import { DocumentBatchService, JOB_TYPE_GENERAZIONE_DOCUMENTI } from '../../../src/application/services/DocumentBatchService';
+import {
+  DocumentBatchService,
+  JOB_TYPE_GENERAZIONE_DOCUMENTI
+} from '../../../src/application/services/DocumentBatchService';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
@@ -56,7 +59,12 @@ function fakeRunner() {
     return registered;
   };
   const runner = {
-    run: (jobName: string, jobType: string, params: Record<string, unknown>, cb: (q: JobQueueLike) => void) => {
+    run: (
+      jobName: string,
+      jobType: string,
+      params: Record<string, unknown>,
+      cb: (q: JobQueueLike) => void
+    ) => {
       calls.push({ jobName, jobType, params, registered: capture(cb) });
       return 'started';
     },
@@ -93,7 +101,9 @@ test('the wired email service actually sends through the container graph (smoke)
     expressionEngine: new ExpressionEngineFacade(),
     now: NOW
   });
-  const result = c.get<EmailNotificationService>('emailNotificationService').sendPattern('CDC_OTTOBRE');
+  const result = c
+    .get<EmailNotificationService>('emailNotificationService')
+    .sendPattern('CDC_OTTOBRE');
   expect(result.sent).toBe(2);
   expect(gmail.sent).toHaveLength(2);
 });
@@ -101,31 +111,56 @@ test('the wired email service actually sends through the container graph (smoke)
 test('avviaGenerazioneDataDriven starts the batch job under its registered type (15 §4/§6)', () => {
   const { runner, calls } = fakeRunner();
   avviaGenerazioneDataDriven(container(), 'CD1', runner);
-  expect(calls[0]).toMatchObject({ jobName: 'gen_CD1', jobType: JOB_TYPE_GENERAZIONE_DOCUMENTI, params: { confDocId: 'CD1' } });
+  expect(calls[0]).toMatchObject({
+    jobName: 'gen_CD1',
+    jobType: JOB_TYPE_GENERAZIONE_DOCUMENTI,
+    params: { confDocId: 'CD1' }
+  });
   expect(calls[0]!.registered).toEqual([JOB_TYPE_GENERAZIONE_DOCUMENTI]);
 });
 
 test('avviaInvioNotificheDataDriven starts the email batch job (15 §4/§6)', () => {
   const { runner, calls } = fakeRunner();
   avviaInvioNotificheDataDriven(container(), 'CDC_OTTOBRE', runner);
-  expect(calls[0]).toMatchObject({ jobName: 'mail_CDC_OTTOBRE', jobType: JOB_TYPE_INVIO_EMAIL, params: { patternId: 'CDC_OTTOBRE' } });
+  expect(calls[0]).toMatchObject({
+    jobName: 'mail_CDC_OTTOBRE',
+    jobType: JOB_TYPE_INVIO_EMAIL,
+    params: { patternId: 'CDC_OTTOBRE' }
+  });
 });
 
 test('avviaImportazioneDataDriven fails typed when no ImportEngine is configured (12 §3)', () => {
-  expect(() => avviaImportazioneDataDriven(container(), 'IMPORT_ALUNNI')).toThrow(ConfigurationError);
+  expect(() => avviaImportazioneDataDriven(container(), 'IMPORT_ALUNNI')).toThrow(
+    ConfigurationError
+  );
 });
 
 test('avviaImportazioneDataDriven runs the real ImportService when an ImportEngine is wired (12 §3)', () => {
   const engine = {
     runImport: (
       recipe: ImportRecipe,
-      options: { postTransform?: (data: Record<string, unknown>[], config: ImportConfiguration) => Record<string, unknown>[] } = {}
+      options: {
+        postTransform?: (
+          data: Record<string, unknown>[],
+          config: ImportConfiguration
+        ) => Record<string, unknown>[];
+      } = {}
     ) => {
       const extracted = [{ A: 'a1@x.it', B: 'ROSSI' }];
-      let mapped: Record<string, unknown>[] = extracted.map((r) => ({ EMAIL: r['A'], COGNOMENOME: r['B'] }));
+      let mapped: Record<string, unknown>[] = extracted.map((r) => ({
+        EMAIL: r['A'],
+        COGNOMENOME: r['B']
+      }));
       const configuration = { getLoad: () => recipe.load } as unknown as ImportConfiguration;
       if (options.postTransform) mapped = options.postTransform(mapped, configuration);
-      const loadResult = { success: true, inserted: mapped.length, updated: 0, skipped: 0, deleted: 0, total: mapped.length };
+      const loadResult = {
+        success: true,
+        inserted: mapped.length,
+        updated: 0,
+        skipped: 0,
+        deleted: 0,
+        total: mapped.length
+      };
       return {
         success: true,
         importName: recipe.name,
@@ -153,7 +188,9 @@ test('riprendiJobSospeso re-registers BOTH batch registries so the library can p
   const { runner, calls } = fakeRunner();
   riprendiJobSospeso(container(), runner);
   expect(calls[0]!.jobName).toBe('');
-  expect(calls[0]!.registered.sort()).toEqual([JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL].sort());
+  expect(calls[0]!.registered.sort()).toEqual(
+    [JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL].sort()
+  );
 });
 
 describe('buildAldoContainer — optional generator strategies', () => {
@@ -185,7 +222,11 @@ describe('buildAldoContainer — optional generator strategies', () => {
   });
 
   test('registers DOCUMENTO_CON_TABELLE_IMPORTATE when both deps.spreadsheets and deps.documents are provided', () => {
-    const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never, documents: {} as never });
+    const c = buildAldoContainer({
+      ...baseDeps(),
+      spreadsheets: {} as never,
+      documents: {} as never
+    });
     const registry = c.get<Map<string, unknown>>('strategyRegistry');
     expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(true);
   });
@@ -216,7 +257,9 @@ describe('initAldo — singleton reuse + missing master id', () => {
       commit: jest.fn(),
       rollback: jest.fn()
     };
-    (global as unknown as { DatabaseService: unknown }).DatabaseService = jest.fn().mockImplementation(() => fakeDb);
+    (global as unknown as { DatabaseService: unknown }).DatabaseService = jest
+      .fn()
+      .mockImplementation(() => fakeDb);
     return () => {
       (global as unknown as { DatabaseService: unknown }).DatabaseService = original;
     };
@@ -261,14 +304,17 @@ describe('initAldo — singleton reuse + missing master id', () => {
     }
   });
 
-  test.each([null, '', '   '])('throws ConfigurationError when the master id property is %p', (value) => {
-    resetAldo();
-    const props = { get: jest.fn().mockReturnValue(value), set: jest.fn() };
-    expect(() => initAldo(new Date(), props as never)).toThrow(ConfigurationError);
-    expect(() => initAldo(new Date(), props as never)).toThrow(
-      new RegExp(`${PROP_MASTER_SPREADSHEET_ID} mancante`)
-    );
-  });
+  test.each([null, '', '   '])(
+    'throws ConfigurationError when the master id property is %p',
+    (value) => {
+      resetAldo();
+      const props = { get: jest.fn().mockReturnValue(value), set: jest.fn() };
+      expect(() => initAldo(new Date(), props as never)).toThrow(ConfigurationError);
+      expect(() => initAldo(new Date(), props as never)).toThrow(
+        new RegExp(`${PROP_MASTER_SPREADSHEET_ID} mancante`)
+      );
+    }
+  );
 });
 
 test('deps.monitor flows through to both batch services (15 §9)', () => {

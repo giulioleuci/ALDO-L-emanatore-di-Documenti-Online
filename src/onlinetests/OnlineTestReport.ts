@@ -35,9 +35,15 @@ export class TestRunner {
     const { failed, errors } = runner.run();
     if (failed > 0) {
       const message = errors[0]?.message ?? 'Unknown error';
-      this.results.push(artifactUrl !== undefined ? { name, status: 'fail', message, artifactUrl } : { name, status: 'fail', message });
+      this.results.push(
+        artifactUrl !== undefined
+          ? { name, status: 'fail', message, artifactUrl }
+          : { name, status: 'fail', message }
+      );
     } else {
-      this.results.push(artifactUrl !== undefined ? { name, status: 'pass', artifactUrl } : { name, status: 'pass' });
+      this.results.push(
+        artifactUrl !== undefined ? { name, status: 'pass', artifactUrl } : { name, status: 'pass' }
+      );
     }
   }
 

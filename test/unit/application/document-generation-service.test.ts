@@ -33,11 +33,20 @@ class LogDocsNeverFoundDatabase extends FakeDatabase {
   }
 }
 
-function wire(tables: Record<string, Row[]> = fixtureTables(), options: { strategy?: GeneratorStrategy; registry?: Map<string, GeneratorStrategy>; db?: FakeDatabase } = {}) {
+function wire(
+  tables: Record<string, Row[]> = fixtureTables(),
+  options: {
+    strategy?: GeneratorStrategy;
+    registry?: Map<string, GeneratorStrategy>;
+    db?: FakeDatabase;
+  } = {}
+) {
   const db = options.db ?? new FakeDatabase(tables);
   const drive = new FakeDriveFacade();
   const templates = new FakeTemplateEngine();
-  const registry = options.registry ?? new Map([['VERBALE_CDC', options.strategy ?? new VerbaleGeneratorStrategy(templates)]]);
+  const registry =
+    options.registry ??
+    new Map([['VERBALE_CDC', options.strategy ?? new VerbaleGeneratorStrategy(templates)]]);
   const service = new DocumentGenerationService({
     db,
     drive,
@@ -56,12 +65,16 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
   test('throws when the CONF_DOC row does not exist', () => {
     const { service } = wire();
     expect(() => service.generateForClasse(ClasseId.of('5A'), 'MISSING_ID')).toThrow(PipelineError);
-    expect(() => service.generateForClasse(ClasseId.of('5A'), 'MISSING_ID')).toThrow('CONF_DOC MISSING_ID non trovato');
+    expect(() => service.generateForClasse(ClasseId.of('5A'), 'MISSING_ID')).toThrow(
+      'CONF_DOC MISSING_ID non trovato'
+    );
   });
 
   test('throws when the configured GENERATORE is not registered in the strategy registry', () => {
     const { service } = wire(fixtureTables(), { registry: new Map() });
-    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow('GENERATORE non registrato: VERBALE_CDC');
+    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(
+      'GENERATORE non registrato: VERBALE_CDC'
+    );
   });
 
   test('deletes the orphaned newFileId and rethrows when a critical step (RenderTemplate) fails after a file was created', () => {

@@ -19,18 +19,25 @@ export class OreASL extends AldoEntity {
 
   constructor(data: OreASLData = {}) {
     super(data);
-    this.studente = typeof data[COL_ASL.STUDENTE] === 'string' ? (data[COL_ASL.STUDENTE] as string) : '';
+    this.studente =
+      typeof data[COL_ASL.STUDENTE] === 'string' ? (data[COL_ASL.STUDENTE] as string) : '';
     this.anno = typeof data[COL_ASL.ANNO] === 'string' ? (data[COL_ASL.ANNO] as string) : '';
     this.ore = typeof data[COL_ASL.ORE] === 'number' ? (data[COL_ASL.ORE] as number) : 0;
     // Synthetic composite id for identity-map purposes; not a persisted column.
     this.id = this.studente && this.anno ? `${this.studente}::${this.anno}` : null;
   }
 
-  get studenteEmail(): Email { return Email.of(this.studente); }
-  get annoScolastico(): AnnoScolastico { return AnnoScolastico.of(this.anno); }
+  get studenteEmail(): Email {
+    return Email.of(this.studente);
+  }
+  get annoScolastico(): AnnoScolastico {
+    return AnnoScolastico.of(this.anno);
+  }
 
   /** Hours accumulated in the year (ref 04 §17). */
-  getOre(): number { return this.ore; }
+  getOre(): number {
+    return this.ore;
+  }
 
   override toData(): EntityData {
     return {

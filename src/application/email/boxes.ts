@@ -107,7 +107,10 @@ function renderCarenzeBox(data: unknown): string {
 function renderDocumentiBox(data: unknown): string {
   const items = data as DocumentoItem[];
   const righe = items
-    .map((d) => `<li><a href="${escapeHtml(safeUrl(d.link))}" target="_blank">${escapeHtml(d.nome)}</a></li>`)
+    .map(
+      (d) =>
+        `<li><a href="${escapeHtml(safeUrl(d.link))}" target="_blank">${escapeHtml(d.nome)}</a></li>`
+    )
     .join('');
   return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
 }
@@ -129,7 +132,10 @@ function renderAssenzeBox(): string {
  * their data from the serialized composition context (`boxdata.*` aggregated by
  * `renderBoxes`, full CDU for `testo_dinamico`).
  */
-export function createBoxComposer(logger: LoggerService, templates: ITemplateEngine): ContentComposer {
+export function createBoxComposer(
+  logger: LoggerService,
+  templates: ITemplateEngine
+): ContentComposer {
   const blocks = new BlockRegistry({ logger });
   const simple = (
     id: string,
@@ -140,18 +146,53 @@ export function createBoxComposer(logger: LoggerService, templates: ITemplateEng
     blocks.register({
       definition: { id, name, supportedFormats: ['html'], emptyBehavior: 'HIDE' },
       factory: (definition, config) =>
-        new SimpleContentBlock(definition, { ...config, dataExtractor, emptyChecker, templates: { html: id } })
+        new SimpleContentBlock(definition, {
+          ...config,
+          dataExtractor,
+          emptyChecker,
+          templates: { html: id }
+        })
     });
   };
 
-  simple('carenze', 'Carenze', (ctx) => ctx.get('boxdata.carenze', []), (d) => (d as unknown[]).length === 0);
-  simple('documenti', 'Documenti', (ctx) => ctx.get('boxdata.documenti', []), (d) => (d as unknown[]).length === 0);
-  simple('cartelle', 'Cartelle', (ctx) => ctx.get('boxdata.cartelle', []), (d) => (d as unknown[]).length === 0);
-  simple('note', 'Note', (ctx) => str(ctx.get('focus.carenza.note', '')), (d) => String(d).trim() === '');
-  simple('assenze', 'Assenze', (ctx) => ctx.get('focus.carenza.hasAssenze', false) === true, (d) => d !== true);
+  simple(
+    'carenze',
+    'Carenze',
+    (ctx) => ctx.get('boxdata.carenze', []),
+    (d) => (d as unknown[]).length === 0
+  );
+  simple(
+    'documenti',
+    'Documenti',
+    (ctx) => ctx.get('boxdata.documenti', []),
+    (d) => (d as unknown[]).length === 0
+  );
+  simple(
+    'cartelle',
+    'Cartelle',
+    (ctx) => ctx.get('boxdata.cartelle', []),
+    (d) => (d as unknown[]).length === 0
+  );
+  simple(
+    'note',
+    'Note',
+    (ctx) => str(ctx.get('focus.carenza.note', '')),
+    (d) => String(d).trim() === ''
+  );
+  simple(
+    'assenze',
+    'Assenze',
+    (ctx) => ctx.get('focus.carenza.hasAssenze', false) === true,
+    (d) => d !== true
+  );
   // testo_dinamico: sempre visibile (MOSTRA_SE_VUOTO implicito, 11 §11); data = whole CDU.
   blocks.register({
-    definition: { id: 'testo_dinamico', name: 'Testo dinamico', supportedFormats: ['html'], emptyBehavior: 'SHOW_EMPTY' },
+    definition: {
+      id: 'testo_dinamico',
+      name: 'Testo dinamico',
+      supportedFormats: ['html'],
+      emptyBehavior: 'SHOW_EMPTY'
+    },
     factory: (definition, config) =>
       new SimpleContentBlock(definition, {
         ...config,
@@ -199,7 +240,10 @@ function str(v: unknown): string {
  * enrichment happens here, where repositories are reachable, so the block
  * templates stay pure functions over serializable data.
  */
-function aggregaDati(cdu: Record<string, unknown>, materie: MateriaRepository): Record<string, unknown> {
+function aggregaDati(
+  cdu: Record<string, unknown>,
+  materie: MateriaRepository
+): Record<string, unknown> {
   const focus = cdu['focus'] as
     | {
         alunno?: {

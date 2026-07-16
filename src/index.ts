@@ -15,7 +15,12 @@ import {
   avviaImportazioneDataDriven,
   riprendiJobSospeso
 } from './config/Bootstrap';
-import { costruisciMenu, menuGenerazioneDocumenti, menuComunicazioniEmail, menuImportazioni } from './presentation/Menu';
+import {
+  costruisciMenu,
+  menuGenerazioneDocumenti,
+  menuComunicazioniEmail,
+  menuImportazioni
+} from './presentation/Menu';
 import { GasUiFacade } from './infrastructure/facades/UiFacade';
 
 export function aldoPing(): string {
@@ -27,7 +32,9 @@ export function onOpen(): void {
 }
 
 export function menu_avvioImportazioni(): void {
-  menuImportazioni(new GasUiFacade(), (configId) => avviaImportazioneDataDriven(initAldo(), configId));
+  menuImportazioni(new GasUiFacade(), (configId) =>
+    avviaImportazioneDataDriven(initAldo(), configId)
+  );
 }
 
 /** JobRunnerLib resume trigger target (15 §5): the job name is resolved from the trigger context. */

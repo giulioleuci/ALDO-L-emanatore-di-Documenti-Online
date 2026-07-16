@@ -7,7 +7,12 @@ export interface LogDocumentoData {
 }
 
 function csv(cell: unknown): string[] {
-  return typeof cell === 'string' ? cell.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : [];
+  return typeof cell === 'string'
+    ? cell
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    : [];
 }
 
 /**
@@ -28,22 +33,50 @@ export class LogDocumento extends AldoEntity {
     super(data);
     this.raw = { ...data };
     this.id = typeof data[COL_LOG_DOCS.ID] === 'string' ? (data[COL_LOG_DOCS.ID] as string) : null;
-    this.idGen = typeof data[COL_LOG_DOCS.ID_GEN] === 'string' ? (data[COL_LOG_DOCS.ID_GEN] as string) : '';
-    this.tipo = typeof data[COL_LOG_DOCS.TIPO] === 'string' ? (data[COL_LOG_DOCS.TIPO] as string) : '';
-    this.nome = typeof data[COL_LOG_DOCS.NOME] === 'string' ? (data[COL_LOG_DOCS.NOME] as string) : '';
+    this.idGen =
+      typeof data[COL_LOG_DOCS.ID_GEN] === 'string' ? (data[COL_LOG_DOCS.ID_GEN] as string) : '';
+    this.tipo =
+      typeof data[COL_LOG_DOCS.TIPO] === 'string' ? (data[COL_LOG_DOCS.TIPO] as string) : '';
+    this.nome =
+      typeof data[COL_LOG_DOCS.NOME] === 'string' ? (data[COL_LOG_DOCS.NOME] as string) : '';
     this.stato = (data[COL_LOG_DOCS.STATO] as StatoDocumento) ?? StatoDocumento.GENERATO;
-    this.notificato = typeof data[COL_LOG_DOCS.NOTIFICATO] === 'string' ? (data[COL_LOG_DOCS.NOTIFICATO] as string) : '';
+    this.notificato =
+      typeof data[COL_LOG_DOCS.NOTIFICATO] === 'string'
+        ? (data[COL_LOG_DOCS.NOTIFICATO] as string)
+        : '';
   }
 
-  getStato(): StatoDocumento { return this.stato; }
-  getLink(): string { return typeof this.raw[COL_LOG_DOCS.LINK] === 'string' ? (this.raw[COL_LOG_DOCS.LINK] as string) : ''; }
-  getDataCreazione(): string { return typeof this.raw[COL_LOG_DOCS.DATA_CREAZ] === 'string' ? (this.raw[COL_LOG_DOCS.DATA_CREAZ] as string) : ''; }
-  getSottotipo(): string { return typeof this.raw[COL_LOG_DOCS.SOTTOTIPO] === 'string' ? (this.raw[COL_LOG_DOCS.SOTTOTIPO] as string) : ''; }
-  isNotificato(): boolean { return this.notificato.trim().length > 0; }
+  getStato(): StatoDocumento {
+    return this.stato;
+  }
+  getLink(): string {
+    return typeof this.raw[COL_LOG_DOCS.LINK] === 'string'
+      ? (this.raw[COL_LOG_DOCS.LINK] as string)
+      : '';
+  }
+  getDataCreazione(): string {
+    return typeof this.raw[COL_LOG_DOCS.DATA_CREAZ] === 'string'
+      ? (this.raw[COL_LOG_DOCS.DATA_CREAZ] as string)
+      : '';
+  }
+  getSottotipo(): string {
+    return typeof this.raw[COL_LOG_DOCS.SOTTOTIPO] === 'string'
+      ? (this.raw[COL_LOG_DOCS.SOTTOTIPO] as string)
+      : '';
+  }
+  isNotificato(): boolean {
+    return this.notificato.trim().length > 0;
+  }
 
-  containsClasse(classeId: string): boolean { return csv(this.raw[COL_LOG_DOCS.CLASSI]).includes(classeId); }
-  containsUtente(email: string): boolean { return csv(this.raw[COL_LOG_DOCS.UTENTI]).includes(email); }
-  getClassi(): string[] { return csv(this.raw[COL_LOG_DOCS.CLASSI]); }
+  containsClasse(classeId: string): boolean {
+    return csv(this.raw[COL_LOG_DOCS.CLASSI]).includes(classeId);
+  }
+  containsUtente(email: string): boolean {
+    return csv(this.raw[COL_LOG_DOCS.UTENTI]).includes(email);
+  }
+  getClassi(): string[] {
+    return csv(this.raw[COL_LOG_DOCS.CLASSI]);
+  }
 
   /** Updates STATO (transition validation is the service's job, ref 04 §18). Marks dirty. */
   cambiaStato(nuovoStato: StatoDocumento): void {
@@ -60,7 +93,11 @@ export class LogDocumento extends AldoEntity {
   }
 
   override toData(): EntityData {
-    return { ...this.raw, [COL_LOG_DOCS.STATO]: this.stato, [COL_LOG_DOCS.NOTIFICATO]: this.notificato };
+    return {
+      ...this.raw,
+      [COL_LOG_DOCS.STATO]: this.stato,
+      [COL_LOG_DOCS.NOTIFICATO]: this.notificato
+    };
   }
 
   static fromData(data: LogDocumentoData): LogDocumento {

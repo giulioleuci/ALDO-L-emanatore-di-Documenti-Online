@@ -29,7 +29,8 @@ export class Docente extends AldoEntity {
     this.cognome = data[COL_DOCENTI.COGNOME] ?? '';
     this.nome = data[COL_DOCENTI.NOME] ?? '';
     this.genere = (data[COL_DOCENTI.GENERE] as Genere) ?? Genere.F;
-    this.dipart = typeof data[COL_DOCENTI.DIPART] === 'string' ? (data[COL_DOCENTI.DIPART] as string) : '';
+    this.dipart =
+      typeof data[COL_DOCENTI.DIPART] === 'string' ? (data[COL_DOCENTI.DIPART] as string) : '';
     this.itp = data[COL_DOCENTI.ITP] === true;
   }
 
@@ -38,25 +39,39 @@ export class Docente extends AldoEntity {
   }
 
   /** DipartimentoId of the teacher's department (ref 04 §2). */
-  get dipartimentoId(): DipartimentoId { return DipartimentoId.of(this.dipart); }
+  get dipartimentoId(): DipartimentoId {
+    return DipartimentoId.of(this.dipart);
+  }
 
   /** "Prof." for M, "Prof.ssa" for F (ref 04 §2). */
-  getAppellativo(): string { return appellativo(this.genere); }
+  getAppellativo(): string {
+    return appellativo(this.genere);
+  }
 
   /** "${COGNOME} ${NOME}" (ref 04 §2). */
-  getNomeCompleto(): string { return `${this.cognome} ${this.nome}`; }
+  getNomeCompleto(): string {
+    return `${this.cognome} ${this.nome}`;
+  }
 
   /** "${appellativo} ${nomeCompleto}" (ref 04 §2). */
-  getNomeCompletoConAppellativo(): string { return `${this.getAppellativo()} ${this.getNomeCompleto()}`; }
+  getNomeCompletoConAppellativo(): string {
+    return `${this.getAppellativo()} ${this.getNomeCompleto()}`;
+  }
 
   /** True for Insegnante Tecnico Pratico (laboratory) (ref 04 §2). */
-  isITP(): boolean { return this.itp; }
+  isITP(): boolean {
+    return this.itp;
+  }
 
   /** @deprecated use getNomeCompleto(); kept for the vertical slice. */
-  cognomeNome(): string { return this.getNomeCompleto(); }
+  cognomeNome(): string {
+    return this.getNomeCompleto();
+  }
 
   /** @deprecated use getNomeCompletoConAppellativo(); kept for the vertical slice. */
-  nomeConAppellativo(): string { return this.getNomeCompletoConAppellativo(); }
+  nomeConAppellativo(): string {
+    return this.getNomeCompletoConAppellativo();
+  }
 
   override toData(): EntityData {
     return {

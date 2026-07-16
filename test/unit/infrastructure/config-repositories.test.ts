@@ -5,7 +5,9 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { ProcessoInvio } from '../../../src/domain/value-objects/enums';
 
-function db() { return new FakeDatabase(fixtureTables()); }
+function db() {
+  return new FakeDatabase(fixtureTables());
+}
 
 test('CONF_DOC: findByTipo + simple-form template id + condition/overwrite (06 §8)', () => {
   const r = new ConfigurazioneDocumentoRepository(db());
@@ -35,7 +37,10 @@ test('CONF_MAIL: findByProcesso + boxes + header default + noreply (06 §9)', ()
 test('CONF_IMP: findAttivi + findByTarget + config parse (06 §10)', () => {
   const r = new ConfigurazioneImportRepository(db());
   expect(r.findAttivi().map((c) => c.id)).toEqual(['IMPORT_ALUNNI']);
-  expect(r.findByTarget('ALUNNI')[0]!.getConfig()).toMatchObject({ searchStrategy: 'FILE_SINGOLO', fileId: 'sheet_alunni' });
+  expect(r.findByTarget('ALUNNI')[0]!.getConfig()).toMatchObject({
+    searchStrategy: 'FILE_SINGOLO',
+    fileId: 'sheet_alunni'
+  });
   expect(r.findByTarget('DOCENTI')[0]!.getConfig()).toEqual({});
 });
 

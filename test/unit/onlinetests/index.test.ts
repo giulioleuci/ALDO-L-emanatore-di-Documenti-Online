@@ -1,8 +1,18 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
 import { executeOnlineTests } from '../../../src/onlinetests/index';
 import {
-  CLASSE_BASE, CLASSE_PARTNER, DOCENTE_1, DOCENTE_2, DOCENTE_3, MATERIA_1, INDIRIZZO_1, DIPART_1,
-  alunnoEmail, ALUNNO_PARTNER_EMAIL, CONF_DOC_ID, CONF_MAIL_ID
+  CLASSE_BASE,
+  CLASSE_PARTNER,
+  DOCENTE_1,
+  DOCENTE_2,
+  DOCENTE_3,
+  MATERIA_1,
+  INDIRIZZO_1,
+  DIPART_1,
+  alunnoEmail,
+  ALUNNO_PARTNER_EMAIL,
+  CONF_DOC_ID,
+  CONF_MAIL_ID
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
@@ -24,53 +34,155 @@ function sampleSeedTables(): Record<string, Row[]> {
     ...fixtureTables(),
     CLASSI: [
       {
-        ID: CLASSE_BASE, ANNO: 4, INDIRIZZO: INDIRIZZO_1,
+        ID: CLASSE_BASE,
+        ANNO: 4,
+        INDIRIZZO: INDIRIZZO_1,
         ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_PARTNER, partners: null }),
-        RUOLI: '', ATTIVA: true, COORD: DOCENTE_1, IRC: '', ALT: '', SEZ: 'A', TERMINALE: false, STORICO: false,
+        RUOLI: '',
+        ATTIVA: true,
+        COORD: DOCENTE_1,
+        IRC: '',
+        ALT: '',
+        SEZ: 'A',
+        TERMINALE: false,
+        STORICO: false,
         [MATERIA_1]: DOCENTE_1
       },
       {
-        ID: CLASSE_PARTNER, ANNO: 4, INDIRIZZO: INDIRIZZO_1,
+        ID: CLASSE_PARTNER,
+        ANNO: 4,
+        INDIRIZZO: INDIRIZZO_1,
         ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_BASE, partners: null }),
-        RUOLI: '', ATTIVA: true, COORD: DOCENTE_2, IRC: '', ALT: '', SEZ: 'A', TERMINALE: false, STORICO: false
+        RUOLI: '',
+        ATTIVA: true,
+        COORD: DOCENTE_2,
+        IRC: '',
+        ALT: '',
+        SEZ: 'A',
+        TERMINALE: false,
+        STORICO: false
       }
     ],
     DOCENTI: [
-      { EMAIL: DOCENTE_1, COGNOME: 'Rossi', NOME: 'Mario', GENERE: 'M', DIPART: DIPART_1, ITP: false },
-      { EMAIL: DOCENTE_2, COGNOME: 'Bianchi', NOME: 'Laura', GENERE: 'F', DIPART: DIPART_1, ITP: false },
-      { EMAIL: DOCENTE_3, COGNOME: 'Verdi', NOME: 'Paolo', GENERE: 'M', DIPART: DIPART_1, ITP: false }
-    ],
-    MATERIE: [
-      { ID: MATERIA_1, NOME: 'Matematica', SINTESI: 'MAT', COLORE_1: '#1565C0', COLORE_2: '#90CAF9', SIMBOLO: 'M', ESAME_CFG: null }
-    ],
-    INDIRIZZI: [{ ID: INDIRIZZO_1, NOME: 'Informatica e Telecomunicazioni', NOME_SINTETICO: 'INF', TIPO: 'Tecnico' }],
-    ALUNNI: [
-      ...[1, 2, 3, 4].map((i) => ({
-        EMAIL: alunnoEmail(i), COGNOMENOME: `Alunno${i} Test`, CLASSE: CLASSE_BASE, RELIGIONE: 'SI', ATTIVO: true,
-        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null
-      })),
       {
-        EMAIL: ALUNNO_PARTNER_EMAIL, COGNOMENOME: 'Alunno5 Test', CLASSE: CLASSE_PARTNER, RELIGIONE: 'SI', ATTIVO: true,
-        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null
+        EMAIL: DOCENTE_1,
+        COGNOME: 'Rossi',
+        NOME: 'Mario',
+        GENERE: 'M',
+        DIPART: DIPART_1,
+        ITP: false
+      },
+      {
+        EMAIL: DOCENTE_2,
+        COGNOME: 'Bianchi',
+        NOME: 'Laura',
+        GENERE: 'F',
+        DIPART: DIPART_1,
+        ITP: false
+      },
+      {
+        EMAIL: DOCENTE_3,
+        COGNOME: 'Verdi',
+        NOME: 'Paolo',
+        GENERE: 'M',
+        DIPART: DIPART_1,
+        ITP: false
       }
     ],
-    SUPPLENZE: [{ TITOLARE: DOCENTE_1, SUPPLENTE: DOCENTE_2, DAL: '2026-07-01', AL: '2026-07-10', CLASSI: CLASSE_BASE, MATERIE: MATERIA_1 }],
+    MATERIE: [
+      {
+        ID: MATERIA_1,
+        NOME: 'Matematica',
+        SINTESI: 'MAT',
+        COLORE_1: '#1565C0',
+        COLORE_2: '#90CAF9',
+        SIMBOLO: 'M',
+        ESAME_CFG: null
+      }
+    ],
+    INDIRIZZI: [
+      {
+        ID: INDIRIZZO_1,
+        NOME: 'Informatica e Telecomunicazioni',
+        NOME_SINTETICO: 'INF',
+        TIPO: 'Tecnico'
+      }
+    ],
+    ALUNNI: [
+      ...[1, 2, 3, 4].map((i) => ({
+        EMAIL: alunnoEmail(i),
+        COGNOMENOME: `Alunno${i} Test`,
+        CLASSE: CLASSE_BASE,
+        RELIGIONE: 'SI',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: '',
+        TUTOR_2: '',
+        CURRICULUM: null
+      })),
+      {
+        EMAIL: ALUNNO_PARTNER_EMAIL,
+        COGNOMENOME: 'Alunno5 Test',
+        CLASSE: CLASSE_PARTNER,
+        RELIGIONE: 'SI',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: '',
+        TUTOR_2: '',
+        CURRICULUM: null
+      }
+    ],
+    SUPPLENZE: [
+      {
+        TITOLARE: DOCENTE_1,
+        SUPPLENTE: DOCENTE_2,
+        DAL: '2026-07-01',
+        AL: '2026-07-10',
+        CLASSI: CLASSE_BASE,
+        MATERIE: MATERIA_1
+      }
+    ],
     VARIAZIONI_CATTEDRA: [
-      { CLASSE_ID: CLASSE_BASE, MATERIA_ID: MATERIA_1, VECCHIO_TITOLARE: DOCENTE_1, NUOVO_TITOLARE: DOCENTE_3, DATA_DECORRENZA: '2026-07-05' }
+      {
+        CLASSE_ID: CLASSE_BASE,
+        MATERIA_ID: MATERIA_1,
+        VECCHIO_TITOLARE: DOCENTE_1,
+        NUOVO_TITOLARE: DOCENTE_3,
+        DATA_DECORRENZA: '2026-07-05'
+      }
     ],
     CONF_DOC: [
       {
-        ID: CONF_DOC_ID, TIPO: 'ONLINETEST', GENERATORE: 'DOCUMENTO_GENERICO', CONDIZIONE: '',
-        MODELLI: '{"templateId":"TEMPLATE_ONLINETEST"}', FILE_NAME: 'ONLINETEST_{{focus.classe.anagrafica.nome}}',
-        PATH_OUT: '_ALDO_ONLINETEST_OUTPUT', PATH_OUT_SOTTOCARTELLE: '', SCHEMA_SOTTOCARTELLE: '', PERMESSI: '',
-        POST_PROCESSO: null, PARAMETRI: '', GESTIONE_ARTICOLAZIONE: '', FORMATO: 'PDF'
+        ID: CONF_DOC_ID,
+        TIPO: 'ONLINETEST',
+        GENERATORE: 'DOCUMENTO_GENERICO',
+        CONDIZIONE: '',
+        MODELLI: '{"templateId":"TEMPLATE_ONLINETEST"}',
+        FILE_NAME: 'ONLINETEST_{{focus.classe.anagrafica.nome}}',
+        PATH_OUT: '_ALDO_ONLINETEST_OUTPUT',
+        PATH_OUT_SOTTOCARTELLE: '',
+        SCHEMA_SOTTOCARTELLE: '',
+        PERMESSI: '',
+        POST_PROCESSO: null,
+        PARAMETRI: '',
+        GESTIONE_ARTICOLAZIONE: '',
+        FORMATO: 'PDF'
       }
     ],
     CONF_MAIL: [
       {
-        ID: CONF_MAIL_ID, OGGETTO: '[ALDO ONLINE TEST] Notifica di prova', PROCESSO: 'PER_ALUNNO', BOX_CFG: '[]',
-        TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.', SUPPLENTI: false,
-        NOREPLY: false, COLORE_HEADER: '#1565C0', CONDIZIONE: '', POST_PROCESSO: null
+        ID: CONF_MAIL_ID,
+        OGGETTO: '[ALDO ONLINE TEST] Notifica di prova',
+        PROCESSO: 'PER_ALUNNO',
+        BOX_CFG: '[]',
+        TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.',
+        SUPPLENTI: false,
+        NOREPLY: false,
+        COLORE_HEADER: '#1565C0',
+        CONDIZIONE: '',
+        POST_PROCESSO: null
       }
     ]
   };
@@ -92,8 +204,10 @@ function fakeSpreadsheetFactory() {
   return {
     createSpreadsheet: jest.fn((name: string) => ({
       id: `SS_${name}`,
-      addSheet: (sheetName: string, headerRow: string[]) => sheets.set(sheetName, { headers: headerRow, rows: [] }),
-      appendRow: (sheetName: string, row: Record<string, unknown>) => sheets.get(sheetName)!.rows.push(row),
+      addSheet: (sheetName: string, headerRow: string[]) =>
+        sheets.set(sheetName, { headers: headerRow, rows: [] }),
+      appendRow: (sheetName: string, row: Record<string, unknown>) =>
+        sheets.get(sheetName)!.rows.push(row),
       getUrl: () => `https://docs.google.com/spreadsheets/d/SS_${name}`
     }))
   };

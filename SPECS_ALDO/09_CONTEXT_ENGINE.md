@@ -67,14 +67,14 @@ Recipe:
 
 ### Recipe predefinite
 
-| Nome | Provider attivati | Uso tipico |
-|------|-------------------|------------|
-| `CLASSE_COMPLETA` | school, class, students, tutor, consiglio, rappresentanti, statistiche | Verbali, notifiche CDC, email coordinatori |
-| `ALUNNO_DETTAGLIATO` | school, class, student, carenze, piani, documenti, storico | PDP/PEI, pagellini, email famiglie |
-| `DOCENTE_COMPLETO` | school, class, consiglio | Pipeline email PER_COORDINATORE / PER_DOCENTE / PER_CDC |
-| `ALUNNO_COMPLETO` | school, class, student, carenze, piani | Pipeline email PER_ALUNNO |
-| `FAMIGLIA_COMPLETO` | school, class, student, carenze, piani, documenti | Pipeline email PER_GENITORI_ALUNNO |
-| `CARENZA_COMPLETO` | school, class, student, carenze, piani, carenzaFocus | Pipeline email PER_CARENZA |
+| Nome                 | Provider attivati                                                      | Uso tipico                                              |
+| -------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| `CLASSE_COMPLETA`    | school, class, students, tutor, consiglio, rappresentanti, statistiche | Verbali, notifiche CDC, email coordinatori              |
+| `ALUNNO_DETTAGLIATO` | school, class, student, carenze, piani, documenti, storico             | PDP/PEI, pagellini, email famiglie                      |
+| `DOCENTE_COMPLETO`   | school, class, consiglio                                               | Pipeline email PER_COORDINATORE / PER_DOCENTE / PER_CDC |
+| `ALUNNO_COMPLETO`    | school, class, student, carenze, piani                                 | Pipeline email PER_ALUNNO                               |
+| `FAMIGLIA_COMPLETO`  | school, class, student, carenze, piani, documenti                      | Pipeline email PER_GENITORI_ALUNNO                      |
+| `CARENZA_COMPLETO`   | school, class, student, carenze, piani, carenzaFocus                   | Pipeline email PER_CARENZA                              |
 
 `DOCENTE_COMPLETO` è la recipe base per le pipeline email PER_COORDINATORE, PER_DOCENTE e PER_CDC (vedi `11_PIPELINE_EMAIL.md`, Step 1).
 
@@ -88,21 +88,21 @@ Recipe:
 
 Ogni provider è responsabile di popolare una specifica sezione del CDU.
 
-| Nome Provider | Sezione CDU popolata | Sorgente dati principale |
-|---------------|----------------------|--------------------------|
-| `SchoolProvider` | `cdu.istituto` | **Master Sheet** (via `MasterSheetRepository`) |
-| `ClasseProvider` | `cdu.focus.classe.anagrafica`, `flags`, `articolazione`, `risorse` | `CLASSI`, `INDIRIZZI`, `LOG_FOLD` |
-| `StudentiProvider` | `cdu.focus.classe.studenti` | `ALUNNI`, `CARENZE`, `ASL`, `PIANI` |
-| `ConsiglioClasseProvider` | `cdu.focus.classe.consiglioDiClasse`, `staff` | `CLASSI` (colonne dinamiche), `DOCENTI`, `SUPPLENZE` |
-| `AlunnoProvider` | `cdu.focus.alunno` (anagrafica, classe, status, curriculum, consiglioDiClasseFiltrato, didattica) | `ALUNNI` (include `focus.alunno.status`: religione, isRipetente, isRappresentante; `isBes` inizializzato a `false` come placeholder — vedi nota sotto; include `ALUNNI.CURRICULUM`, esposto come `focus.alunno.curriculum` e usato da `CDCFilterAlunnoStrategy` per filtrare `consiglioDiClasseFiltrato` per specificità, vedi `14_SERVIZI_UTILITY.md` §1.3) |
-| `CarenzeProvider` | `cdu.focus.alunno.didattica.carenze` | `CARENZE`, `MATERIE` (via `CarenzeMapper`) |
-| `PianiProvider` | `cdu.focus.alunno.didattica.piani` | `PIANI` |
-| `DocumentiProvider` | `cdu.focus.alunno.didattica.documenti` | `LOG_DOCS` (via `LogDocumentoRepository.findByUtente()`); carica i documenti associati all'alunno, con filtri opzionali per `TIPO`/`STATO`; attivo nelle recipe `ALUNNO_DETTAGLIATO` e `FAMIGLIA_COMPLETO` |
-| `CarenzaFocusProvider` | `cdu.focus.carenza` | `CARENZE` (il record specifico che ha avviato la pipeline `PER_CARENZA`); attivo solo nella recipe `CARENZA_COMPLETO` |
-| `RappresentantiProvider` | `cdu.focus.classe.rappresentanti` | `ALUNNI.RAPPR_STUD`, `ALUNNI.RAPPR_GEN` |
-| `TutorProvider` | `cdu.focus.classe.tutor` | `CLASSI.RUOLI` (chiavi TUTOR_ASL, TUTOR_ORIENT) |
-| `StatisticheProvider` | `cdu.istituto.statistiche`, `cdu.focus.classe.statistiche` | `ALUNNI`, `PIANI`, `CARENZE`, `ASL` (aggregati calcolati) |
-| `StoricoProvider` | Lazy loader per dati anni precedenti | Database storici via `SheetDBLib`; dettagli in `13_SERVIZI_STORICI.md` |
+| Nome Provider             | Sezione CDU popolata                                                                              | Sorgente dati principale                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SchoolProvider`          | `cdu.istituto`                                                                                    | **Master Sheet** (via `MasterSheetRepository`)                                                                                                                                                                                                                                                                                                               |
+| `ClasseProvider`          | `cdu.focus.classe.anagrafica`, `flags`, `articolazione`, `risorse`                                | `CLASSI`, `INDIRIZZI`, `LOG_FOLD`                                                                                                                                                                                                                                                                                                                            |
+| `StudentiProvider`        | `cdu.focus.classe.studenti`                                                                       | `ALUNNI`, `CARENZE`, `ASL`, `PIANI`                                                                                                                                                                                                                                                                                                                          |
+| `ConsiglioClasseProvider` | `cdu.focus.classe.consiglioDiClasse`, `staff`                                                     | `CLASSI` (colonne dinamiche), `DOCENTI`, `SUPPLENZE`                                                                                                                                                                                                                                                                                                         |
+| `AlunnoProvider`          | `cdu.focus.alunno` (anagrafica, classe, status, curriculum, consiglioDiClasseFiltrato, didattica) | `ALUNNI` (include `focus.alunno.status`: religione, isRipetente, isRappresentante; `isBes` inizializzato a `false` come placeholder — vedi nota sotto; include `ALUNNI.CURRICULUM`, esposto come `focus.alunno.curriculum` e usato da `CDCFilterAlunnoStrategy` per filtrare `consiglioDiClasseFiltrato` per specificità, vedi `14_SERVIZI_UTILITY.md` §1.3) |
+| `CarenzeProvider`         | `cdu.focus.alunno.didattica.carenze`                                                              | `CARENZE`, `MATERIE` (via `CarenzeMapper`)                                                                                                                                                                                                                                                                                                                   |
+| `PianiProvider`           | `cdu.focus.alunno.didattica.piani`                                                                | `PIANI`                                                                                                                                                                                                                                                                                                                                                      |
+| `DocumentiProvider`       | `cdu.focus.alunno.didattica.documenti`                                                            | `LOG_DOCS` (via `LogDocumentoRepository.findByUtente()`); carica i documenti associati all'alunno, con filtri opzionali per `TIPO`/`STATO`; attivo nelle recipe `ALUNNO_DETTAGLIATO` e `FAMIGLIA_COMPLETO`                                                                                                                                                   |
+| `CarenzaFocusProvider`    | `cdu.focus.carenza`                                                                               | `CARENZE` (il record specifico che ha avviato la pipeline `PER_CARENZA`); attivo solo nella recipe `CARENZA_COMPLETO`                                                                                                                                                                                                                                        |
+| `RappresentantiProvider`  | `cdu.focus.classe.rappresentanti`                                                                 | `ALUNNI.RAPPR_STUD`, `ALUNNI.RAPPR_GEN`                                                                                                                                                                                                                                                                                                                      |
+| `TutorProvider`           | `cdu.focus.classe.tutor`                                                                          | `CLASSI.RUOLI` (chiavi TUTOR_ASL, TUTOR_ORIENT)                                                                                                                                                                                                                                                                                                              |
+| `StatisticheProvider`     | `cdu.istituto.statistiche`, `cdu.focus.classe.statistiche`                                        | `ALUNNI`, `PIANI`, `CARENZE`, `ASL` (aggregati calcolati)                                                                                                                                                                                                                                                                                                    |
+| `StoricoProvider`         | Lazy loader per dati anni precedenti                                                              | Database storici via `SheetDBLib`; dettagli in `13_SERVIZI_STORICI.md`                                                                                                                                                                                                                                                                                       |
 
 **Nota su `focus.alunno.status.isBes`:** il campo richiede di leggere `PIANI` (competenza di `PianiProvider`), non `ALUNNI`. `AlunnoProvider` imposta `isBes = false` come valore iniziale; `PianiProvider`, eseguito successivamente nell'ordine della recipe, aggiorna `isBes` a `true` se l'alunno ha almeno un piano con `isBES() = true`. Questo crea una dipendenza d'ordine implicita: in ogni recipe che include entrambi, `student` (AlunnoProvider) deve precedere `piani` (PianiProvider) — coerente con l'ordine già usato in `ALUNNO_DETTAGLIATO`, `ALUNNO_COMPLETO`, `FAMIGLIA_COMPLETO`, `CARENZA_COMPLETO`.
 
@@ -110,21 +110,21 @@ Ogni provider è responsabile di popolare una specifica sezione del CDU.
 
 I nomi elencati in `Recipe.providers` (sezione 3) sono token brevi, mappati 1:1 alle classi Provider di questa sezione. Il `ContextBuilder` risolve ogni token tramite questa tabella; un token non presente produce un errore di configurazione della recipe.
 
-| Token in `Recipe.providers` | Provider |
-|-----------------------------|----------|
-| `school` | `SchoolProvider` |
-| `class` | `ClasseProvider` |
-| `students` | `StudentiProvider` |
-| `student` | `AlunnoProvider` |
-| `tutor` | `TutorProvider` |
-| `consiglio` | `ConsiglioClasseProvider` |
-| `carenze` | `CarenzeProvider` |
-| `piani` | `PianiProvider` |
-| `documenti` | `DocumentiProvider` |
-| `carenzaFocus` | `CarenzaFocusProvider` |
-| `rappresentanti` | `RappresentantiProvider` |
-| `statistiche` | `StatisticheProvider` |
-| `storico` | `StoricoProvider` |
+| Token in `Recipe.providers` | Provider                  |
+| --------------------------- | ------------------------- |
+| `school`                    | `SchoolProvider`          |
+| `class`                     | `ClasseProvider`          |
+| `students`                  | `StudentiProvider`        |
+| `student`                   | `AlunnoProvider`          |
+| `tutor`                     | `TutorProvider`           |
+| `consiglio`                 | `ConsiglioClasseProvider` |
+| `carenze`                   | `CarenzeProvider`         |
+| `piani`                     | `PianiProvider`           |
+| `documenti`                 | `DocumentiProvider`       |
+| `carenzaFocus`              | `CarenzaFocusProvider`    |
+| `rappresentanti`            | `RappresentantiProvider`  |
+| `statistiche`               | `StatisticheProvider`     |
+| `storico`                   | `StoricoProvider`         |
 
 ---
 
@@ -176,6 +176,7 @@ Le entità di dominio nel CDU (oggetti `Alunno`, `Docente`, `Classe`, ecc.) cont
 **Il processo di appiattimento:** prima che i dati del CDU vengano passati a questi motori, un `ViewModelMapper` specifico per il contesto converte le entità di dominio in plain objects (oggetti JavaScript senza metodi, con sole proprietà scalari o array di scalari).
 
 **Responsabilità del mapper:**
+
 - Tutte le proprietà accessibili nei template `{{percorso.nel.cdu}}` DEVONO essere valori primitivi serializzabili
 - Nessun riferimento circolare o metodo DEVE MAI essere esposto al motore di template
 - La struttura gerarchica attesa DEVE essere preservata (coerente con `02_CDU_STRUTTURA.md`)
@@ -189,6 +190,7 @@ Ogni recipe PUÒ specificare quale `ViewModelMapper` utilizzare. Il blocco `tech
 Quando una recipe include `StoricoProvider` e `includiStorico: true`, il provider NON DEVE caricare i dati degli anni precedenti immediatamente. DEVE invece inserire nel CDU degli oggetti `LazyRef` che incapsulano la query da eseguire sul database storico.
 
 Quando il template o il box renderer accede alla proprietà di un `LazyRef`, questo:
+
 1. Esegue la query sul database storico appropriato (tramite `SheetDBLib` puntato allo spreadsheet dell'anno precedente)
 2. Mette in cache il risultato in memoria
 3. Restituisce il dato
@@ -206,11 +208,13 @@ Dettagli completi sui servizi storici in `13_SERVIZI_STORICI.md`.
 Il `ClasseProvider` aggiunge al CDU due sezioni specifiche per le classi articolate:
 
 **`focus.classe.flags`** (integrazione):
+
 ```
 isArticolata: boolean
 ```
 
 **`focus.classe.articolazione`** (presente solo se `isArticolata = true`):
+
 ```
 partner:                      ClasseId | null
                               — per una classe partner: il ClasseId dell'altro partner
@@ -265,11 +269,13 @@ focus.classe.studenti:
 Il `StatisticheProvider` calcola aggregati non provenienti da una singola tabella:
 
 **`cdu.istituto.statistiche`:**
+
 - `totaleClassi` — count CLASSI con ATTIVA = true
 - `totaleDocenti` — count DOCENTI
 - `totaleAlunni` — count ALUNNI con ATTIVO = true
 
 **`cdu.focus.classe.statistiche`:**
+
 - `totale` — numero alunni attivi nella classe
 - `conPianiDidattici` — alunni con almeno un piano attivo
 - `conBes` — alunni con almeno un Piano attivo con isBES() = true (vedi 04_DOMINIO_ENTITA.md, entità Piano)

@@ -16,7 +16,12 @@ export interface IDocumentTableFacade {
    * where the `{{TABELLA:...}}` tag sat rather than at the document's end. Does not remove the
    * marker text itself — call `removeText` afterward.
    */
-  insertTableAtMarker(fileId: string, marker: string, data: string[][], options?: { headerRow?: boolean }): void;
+  insertTableAtMarker(
+    fileId: string,
+    marker: string,
+    data: string[][],
+    options?: { headerRow?: boolean }
+  ): void;
 }
 
 const TABELLA_PATTERN = /\{\{TABELLA:([^}]+)\}\}/g;
@@ -40,16 +45,23 @@ export class DocumentTableFacade implements IDocumentTableFacade {
 
   removeText(fileId: string, marker: string): void {
     const result = this.documents.document(fileId).replaceText(marker, '').execute();
-    if (!result.success) throw new Error(`DocumentTableFacade.removeText(${fileId}): ${String(result.error)}`);
+    if (!result.success)
+      throw new Error(`DocumentTableFacade.removeText(${fileId}): ${String(result.error)}`);
   }
 
   appendTable(fileId: string, data: string[][], options: { headerRow?: boolean } = {}): void {
     if (data.length === 0) return;
     const result = this.documents.document(fileId).createTable(data, options).execute();
-    if (!result.success) throw new Error(`DocumentTableFacade.appendTable(${fileId}): ${String(result.error)}`);
+    if (!result.success)
+      throw new Error(`DocumentTableFacade.appendTable(${fileId}): ${String(result.error)}`);
   }
 
-  insertTableAtMarker(fileId: string, marker: string, data: string[][], options: { headerRow?: boolean } = {}): void {
+  insertTableAtMarker(
+    fileId: string,
+    marker: string,
+    data: string[][],
+    options: { headerRow?: boolean } = {}
+  ): void {
     if (data.length === 0) return;
     this.documents.insertTableAtMarker(fileId, marker, data, options);
   }

@@ -20,8 +20,13 @@ export class DocPersonalizzatoGeneratorStrategy implements GeneratorStrategy {
   render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
     const tipoPiano = config.getParametri().tipoPiano;
     const items = cdu.focus.alunno?.didattica.piani.items ?? [];
-    const piano = (typeof tipoPiano === 'string' ? items.find((i) => i.tipo === tipoPiano) : undefined) ?? items[0];
-    const context = { ...(cdu as unknown as Record<string, unknown>), piano: piano?.parametriGenerazione ?? {} };
+    const piano =
+      (typeof tipoPiano === 'string' ? items.find((i) => i.tipo === tipoPiano) : undefined) ??
+      items[0];
+    const context = {
+      ...(cdu as unknown as Record<string, unknown>),
+      piano: piano?.parametriGenerazione ?? {}
+    };
     this.templates.processDocument(fileId, context);
   }
 }

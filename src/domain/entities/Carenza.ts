@@ -28,22 +28,39 @@ export class Carenza extends AldoEntity {
   constructor(data: CarenzaData = {}) {
     super(data);
     this.raw = { ...data };
-    this.studente = typeof data[COL_CARENZE.STUDENTE] === 'string' ? (data[COL_CARENZE.STUDENTE] as string) : '';
-    this.progressivo = typeof data[COL_CARENZE.PROGRESSIVO] === 'number' ? (data[COL_CARENZE.PROGRESSIVO] as number) : 0;
-    this.classe = typeof data[COL_CARENZE.CLASSE] === 'string' ? (data[COL_CARENZE.CLASSE] as string) : '';
-    this.data = typeof data[COL_CARENZE.DATA] === 'string' ? (data[COL_CARENZE.DATA] as string) : '';
-    this.notificato = typeof data[COL_CARENZE.NOTIFICATO] === 'string' ? (data[COL_CARENZE.NOTIFICATO] as string) : '';
+    this.studente =
+      typeof data[COL_CARENZE.STUDENTE] === 'string' ? (data[COL_CARENZE.STUDENTE] as string) : '';
+    this.progressivo =
+      typeof data[COL_CARENZE.PROGRESSIVO] === 'number'
+        ? (data[COL_CARENZE.PROGRESSIVO] as number)
+        : 0;
+    this.classe =
+      typeof data[COL_CARENZE.CLASSE] === 'string' ? (data[COL_CARENZE.CLASSE] as string) : '';
+    this.data =
+      typeof data[COL_CARENZE.DATA] === 'string' ? (data[COL_CARENZE.DATA] as string) : '';
+    this.notificato =
+      typeof data[COL_CARENZE.NOTIFICATO] === 'string'
+        ? (data[COL_CARENZE.NOTIFICATO] as string)
+        : '';
     this.assenze = data[COL_CARENZE.ASSENZE] === true;
     this.id = this.studente && this.progressivo ? `${this.studente}::${this.progressivo}` : null;
   }
 
-  get studenteEmail(): Email { return Email.of(this.studente); }
-  get classeId(): ClasseId { return ClasseId.of(this.classe); }
+  get studenteEmail(): Email {
+    return Email.of(this.studente);
+  }
+  get classeId(): ClasseId {
+    return ClasseId.of(this.classe);
+  }
 
   /** Raw value of a (possibly dynamic) column — used by the repository for matrix cells. */
-  getCella(colonna: string): unknown { return this.raw[colonna]; }
+  getCella(colonna: string): unknown {
+    return this.raw[colonna];
+  }
 
-  isNotificato(): boolean { return this.notificato.trim().length > 0; }
+  isNotificato(): boolean {
+    return this.notificato.trim().length > 0;
+  }
 
   getNotificato(): Date | null {
     if (!this.isNotificato()) return null;
@@ -51,10 +68,16 @@ export class Carenza extends AldoEntity {
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
-  hasAssenzeElevate(): boolean { return this.assenze; }
+  hasAssenzeElevate(): boolean {
+    return this.assenze;
+  }
 
   /** Free-text NOTE cell (ref 01, 02 §4.3); '' when absent. */
-  getNote(): string { return typeof this.raw[COL_CARENZE.NOTE] === 'string' ? (this.raw[COL_CARENZE.NOTE] as string) : ''; }
+  getNote(): string {
+    return typeof this.raw[COL_CARENZE.NOTE] === 'string'
+      ? (this.raw[COL_CARENZE.NOTE] as string)
+      : '';
+  }
 
   /** Number of subjects with a shortfall in the map supplied by the repository (ref 04 §11). */
   getNumeroCarenze(carenzePerMateria: Map<MateriaId, ValoreCarenza>): number {

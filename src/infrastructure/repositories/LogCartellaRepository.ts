@@ -34,7 +34,14 @@ export class LogCartellaRepository extends Repository<LogCartella> {
   }
 
   /** Appends a folder audit record (ref 06 §18). */
-  registraCartella(driveFolderId: string, tipo: string, nome: string, path: string, link: string, options: RegistraOptions = {}): LogCartella {
+  registraCartella(
+    driveFolderId: string,
+    tipo: string,
+    nome: string,
+    path: string,
+    link: string,
+    options: RegistraOptions = {}
+  ): LogCartella {
     const log = LogCartella.fromData({
       [COL_LOG_FOLD.ID]: driveFolderId,
       [COL_LOG_FOLD.TIPO]: tipo,

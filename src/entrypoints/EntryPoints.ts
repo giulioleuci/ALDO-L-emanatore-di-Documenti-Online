@@ -21,8 +21,16 @@ import type { ServiceContainer } from '../config/ServiceContainer';
 declare global {
   function initAldo(now?: Date, props?: unknown): ServiceContainer;
   function creaJobRunner(): JobRunnerService;
-  function avviaGenerazioneDataDriven(c: ServiceContainer, configId: string, runner: JobRunnerService): unknown;
-  function avviaInvioNotificheDataDriven(c: ServiceContainer, patternId: string, runner: JobRunnerService): unknown;
+  function avviaGenerazioneDataDriven(
+    c: ServiceContainer,
+    configId: string,
+    runner: JobRunnerService
+  ): unknown;
+  function avviaInvioNotificheDataDriven(
+    c: ServiceContainer,
+    patternId: string,
+    runner: JobRunnerService
+  ): unknown;
   function menuGenerazioneDocumenti(ui: IUiFacade, avvia: (configId: string) => void): void;
   function menuComunicazioniEmail(ui: IUiFacade, avvia: (patternId: string) => void): void;
   const GasUiFacade: new () => IUiFacade;

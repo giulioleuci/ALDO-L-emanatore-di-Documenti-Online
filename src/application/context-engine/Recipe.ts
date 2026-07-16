@@ -97,7 +97,15 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * structural check.
  */
 export const RECIPES: Record<string, string[]> = {
-  CLASSE_COMPLETA: ['school', 'class', 'students', 'tutor', 'consiglio', 'rappresentanti', 'statistiche'],
+  CLASSE_COMPLETA: [
+    'school',
+    'class',
+    'students',
+    'tutor',
+    'consiglio',
+    'rappresentanti',
+    'statistiche'
+  ],
   ALUNNO_DETTAGLIATO: ['school', 'class', 'student', 'carenze', 'piani', 'documenti', 'storico'],
   DOCENTE_COMPLETO: ['school', 'class', 'consiglio'],
   ALUNNO_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani'],

@@ -25,24 +25,48 @@ export class VariazioneCattedra extends AldoEntity {
 
   constructor(data: VariazioneCattedraData = {}) {
     super(data);
-    this.classeIdRaw = typeof data[COL_VARIAZIONI.CLASSE_ID] === 'string' ? (data[COL_VARIAZIONI.CLASSE_ID] as string) : '';
-    this.materiaIdRaw = typeof data[COL_VARIAZIONI.MATERIA_ID] === 'string' ? (data[COL_VARIAZIONI.MATERIA_ID] as string) : '';
-    this.vecchioTitolare = typeof data[COL_VARIAZIONI.VECCHIO_TITOLARE] === 'string' ? (data[COL_VARIAZIONI.VECCHIO_TITOLARE] as string) : '';
-    this.nuovoTitolare = typeof data[COL_VARIAZIONI.NUOVO_TITOLARE] === 'string' ? (data[COL_VARIAZIONI.NUOVO_TITOLARE] as string) : '';
-    this.dataDecorrenza = typeof data[COL_VARIAZIONI.DATA_DECORRENZA] === 'string' ? (data[COL_VARIAZIONI.DATA_DECORRENZA] as string) : '';
+    this.classeIdRaw =
+      typeof data[COL_VARIAZIONI.CLASSE_ID] === 'string'
+        ? (data[COL_VARIAZIONI.CLASSE_ID] as string)
+        : '';
+    this.materiaIdRaw =
+      typeof data[COL_VARIAZIONI.MATERIA_ID] === 'string'
+        ? (data[COL_VARIAZIONI.MATERIA_ID] as string)
+        : '';
+    this.vecchioTitolare =
+      typeof data[COL_VARIAZIONI.VECCHIO_TITOLARE] === 'string'
+        ? (data[COL_VARIAZIONI.VECCHIO_TITOLARE] as string)
+        : '';
+    this.nuovoTitolare =
+      typeof data[COL_VARIAZIONI.NUOVO_TITOLARE] === 'string'
+        ? (data[COL_VARIAZIONI.NUOVO_TITOLARE] as string)
+        : '';
+    this.dataDecorrenza =
+      typeof data[COL_VARIAZIONI.DATA_DECORRENZA] === 'string'
+        ? (data[COL_VARIAZIONI.DATA_DECORRENZA] as string)
+        : '';
     this.classi = CsvScope.of(this.classeIdRaw);
     this.materie = CsvScope.of(this.materiaIdRaw);
-    this.id = this.classeIdRaw && this.materiaIdRaw ? `${this.classeIdRaw}::${this.materiaIdRaw}` : null;
+    this.id =
+      this.classeIdRaw && this.materiaIdRaw ? `${this.classeIdRaw}::${this.materiaIdRaw}` : null;
   }
 
-  get nuovoTitolareEmail(): Email { return Email.of(this.nuovoTitolare); }
-  get vecchioTitolareEmail(): Email { return Email.of(this.vecchioTitolare); }
+  get nuovoTitolareEmail(): Email {
+    return Email.of(this.nuovoTitolare);
+  }
+  get vecchioTitolareEmail(): Email {
+    return Email.of(this.vecchioTitolare);
+  }
 
   /** CLASSE_ID CSV contains the class (ref 06 §20, containment). */
-  applicaAClasse(classe: ClasseId): boolean { return this.classi.applica(classe.value); }
+  applicaAClasse(classe: ClasseId): boolean {
+    return this.classi.applica(classe.value);
+  }
 
   /** MATERIA_ID CSV contains the subject (ref 06 §20, containment). */
-  applicaAMateria(materia: MateriaId): boolean { return this.materie.applica(materia.value); }
+  applicaAMateria(materia: MateriaId): boolean {
+    return this.materie.applica(materia.value);
+  }
 
   applicaAContesto(classe: ClasseId, materia: MateriaId): boolean {
     return this.applicaAClasse(classe) && this.applicaAMateria(materia);

@@ -47,7 +47,12 @@ module.exports = (env) => {
         })
       ]
     },
-    plugins: [new GasPlugin({ autoGlobalExportsFiles: [path.resolve(__dirname, 'src/index.ts')], comment: false })]
+    plugins: [
+      new GasPlugin({
+        autoGlobalExportsFiles: [path.resolve(__dirname, 'src/index.ts')],
+        comment: false
+      })
+    ]
   };
 
   // Document-generation/email-sending entry points (docs/superpowers/specs/

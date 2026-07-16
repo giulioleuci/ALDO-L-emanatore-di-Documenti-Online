@@ -85,7 +85,8 @@ export class RisolutoreRuoliService {
       cdu,
       classe: getClasseEntity(cdu),
       data: new Date(cdu.meta.date.oggi.iso),
-      materiaCorrente: materiaRaw !== null && materiaRaw.trim() !== '' ? MateriaId.of(materiaRaw) : null
+      materiaCorrente:
+        materiaRaw !== null && materiaRaw.trim() !== '' ? MateriaId.of(materiaRaw) : null
     };
   }
 
@@ -112,7 +113,10 @@ export class RisolutoreRuoliService {
       ['ALUNNO', (c) => ({ kind: 'emails', emails: this.alunnoEmail(c) })],
       ['FAMIGLIA', (c) => ({ kind: 'emails', emails: this.famiglia(c) })],
       ['GENITORI_CLASSE', (c) => ({ kind: 'emails', emails: this.genitoriClasse(c) })],
-      ['RAPPRESENTANTI_STUDENTI', (c) => ({ kind: 'emails', emails: this.rappresentantiStudenti(c) })]
+      [
+        'RAPPRESENTANTI_STUDENTI',
+        (c) => ({ kind: 'emails', emails: this.rappresentantiStudenti(c) })
+      ]
     ]);
   }
 
@@ -167,7 +171,10 @@ export class RisolutoreRuoliService {
     for (const materia of this.materie.findAllCached()) {
       const cfg = materia.esameConfig;
       if (cfg === null) continue;
-      const matches = prova === 'prima' ? cfg.isPrimaProvaPerIndirizzo(indirizzo) : cfg.isSecondaProvaPerIndirizzo(indirizzo);
+      const matches =
+        prova === 'prima'
+          ? cfg.isPrimaProvaPerIndirizzo(indirizzo)
+          : cfg.isSecondaProvaPerIndirizzo(indirizzo);
       if (matches) out.push(...this.classi.getDocentiPerMateria(ctx.classe, materia.materiaId));
     }
     return out;
@@ -239,7 +246,11 @@ export class RisolutoreRuoliService {
    * `RoleResolutionLib.RoutingResolver` instead of a hand-rolled switch (ref
    * REPORT_GLF.md B4).
    */
-  private applicaSupplenze(docenti: Docente[], ctx: RoleContext, regola: GestioneSupplenti): Email[] {
+  private applicaSupplenze(
+    docenti: Docente[],
+    ctx: RoleContext,
+    regola: GestioneSupplenti
+  ): Email[] {
     const policy = RisolutoreRuoliService.ROUTING_POLICY[regola];
     const out: Email[] = [];
     for (const titolare of docenti) {
@@ -254,9 +265,10 @@ export class RisolutoreRuoliService {
       const supplenteEmail = supplenza?.supplente ?? null;
 
       const principal = new Actor(titolareEmail, ActorType.PERSON, titolareEmail, titolareEmail);
-      const effective = supplenteEmail === null
-        ? null
-        : new Actor(supplenteEmail, ActorType.PERSON, supplenteEmail, supplenteEmail);
+      const effective =
+        supplenteEmail === null
+          ? null
+          : new Actor(supplenteEmail, ActorType.PERSON, supplenteEmail, supplenteEmail);
 
       const result = this.routing.resolve({
         principalActor: principal,
@@ -270,9 +282,10 @@ export class RisolutoreRuoliService {
       });
 
       // BOTH_EQUAL orders [effective, principal]; SGSA keeps titolare first.
-      const ordered = policy === RoutingPolicy.BOTH_EQUAL
-        ? [...result.primary].sort((a) => (a.id === titolareEmail ? -1 : 1))
-        : result.primary;
+      const ordered =
+        policy === RoutingPolicy.BOTH_EQUAL
+          ? [...result.primary].sort((a) => (a.id === titolareEmail ? -1 : 1))
+          : result.primary;
       for (const actor of ordered) out.push(Email.of(actor.identifier));
     }
     return out;

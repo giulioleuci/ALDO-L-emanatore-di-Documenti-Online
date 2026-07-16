@@ -1,4 +1,9 @@
-import { StatoDocumento, Genere, appellativo, SchemaSottocartelle } from '../../../src/domain/value-objects/enums';
+import {
+  StatoDocumento,
+  Genere,
+  appellativo,
+  SchemaSottocartelle
+} from '../../../src/domain/value-objects/enums';
 
 test('StatoDocumento values match 03', () => {
   expect(StatoDocumento.GENERATO).toBe('GENERATO');

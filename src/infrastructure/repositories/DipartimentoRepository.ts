@@ -43,6 +43,8 @@ export class DipartimentoRepository extends Repository<Dipartimento> {
 
   /** The department whose MATERIE list contains `materiaId`, or null (ref 06 §6, 14 §1 CAPO_DIPARTIMENTO). */
   findByMateria(materiaId: MateriaId): Dipartimento | null {
-    return this.all().find((d) => d.getMaterieIds().some((m) => m.value === materiaId.value)) ?? null;
+    return (
+      this.all().find((d) => d.getMaterieIds().some((m) => m.value === materiaId.value)) ?? null
+    );
   }
 }

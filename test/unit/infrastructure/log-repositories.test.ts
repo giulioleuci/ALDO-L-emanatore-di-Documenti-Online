@@ -12,15 +12,37 @@ const classe5A = Classe.fromData({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI' });
 function docsDb() {
   return new FakeDatabase({
     LOG_DOCS: [
-      { ID: 'f1', ID_GEN: 'CD1', NOME: 'V 5A', STATO: 'GENERATO', NOTIFICATO: '', CLASSI: '5A', UTENTI: '', LINK: 'http://d/f1' },
-      { ID: 'f2', ID_GEN: 'CD1', NOME: 'V 3B', STATO: 'NOTIFICATO', NOTIFICATO: '2026-02-01T00:00:00.000Z', CLASSI: '3B,5A', UTENTI: 'a1@school.it' }
+      {
+        ID: 'f1',
+        ID_GEN: 'CD1',
+        NOME: 'V 5A',
+        STATO: 'GENERATO',
+        NOTIFICATO: '',
+        CLASSI: '5A',
+        UTENTI: '',
+        LINK: 'http://d/f1'
+      },
+      {
+        ID: 'f2',
+        ID_GEN: 'CD1',
+        NOME: 'V 3B',
+        STATO: 'NOTIFICATO',
+        NOTIFICATO: '2026-02-01T00:00:00.000Z',
+        CLASSI: '3B,5A',
+        UTENTI: 'a1@school.it'
+      }
     ]
   });
 }
 
 test('LOG_DOCS: CONTAINS queries + stato + non-notificati (06 §17)', () => {
   const r = new LogDocumentoRepository(docsDb());
-  expect(r.findByClasse(classe5A).map((l) => l.id).sort()).toEqual(['f1', 'f2']); // both contain 5A
+  expect(
+    r
+      .findByClasse(classe5A)
+      .map((l) => l.id)
+      .sort()
+  ).toEqual(['f1', 'f2']); // both contain 5A
   expect(r.findByUtente(Email.of('a1@school.it')).map((l) => l.id)).toEqual(['f2']);
   expect(r.findByStato(StatoDocumento.GENERATO).map((l) => l.id)).toEqual(['f1']);
   expect(r.findNonNotificati().map((l) => l.id)).toEqual(['f1']);
@@ -40,7 +62,9 @@ test('LogDocumento.cambiaStato / notifica mark dirty; getLink', () => {
 test('registraDocumento appends a GENERATO row (06 §17)', () => {
   const db = new FakeDatabase({ LOG_DOCS: [] });
   const r = new LogDocumentoRepository(db);
-  const log = r.registraDocumento('drive_99', 'CD1', 'Nuovo', 'Verbali/5', 'http://d/99', { classe: ClasseId.of('5A') });
+  const log = r.registraDocumento('drive_99', 'CD1', 'Nuovo', 'Verbali/5', 'http://d/99', {
+    classe: ClasseId.of('5A')
+  });
   expect(log.getStato()).toBe(StatoDocumento.GENERATO);
   const row = db.table('LOG_DOCS').find((x) => x.ID === 'drive_99');
   expect(row?.CLASSI).toBe('5A');
@@ -48,7 +72,9 @@ test('registraDocumento appends a GENERATO row (06 §17)', () => {
 });
 
 test('LOG_FOLD: findByClasse / findByTipo + registraCartella (06 §18)', () => {
-  const db = new FakeDatabase({ LOG_FOLD: [{ ID: 'd1', TIPO: 'CD1', NOME: 'Verbali', CLASSI: '5A' }] });
+  const db = new FakeDatabase({
+    LOG_FOLD: [{ ID: 'd1', TIPO: 'CD1', NOME: 'Verbali', CLASSI: '5A' }]
+  });
   const r = new LogCartellaRepository(db);
   expect(r.findByClasse(classe5A).map((l) => l.id)).toEqual(['d1']);
   expect(r.findByTipo('CD1').map((l) => l.id)).toEqual(['d1']);
@@ -59,15 +85,33 @@ test('LOG_FOLD: findByClasse / findByTipo + registraCartella (06 §18)', () => {
 test('LOG_MAIL: composite id, findByPattern / findFailed + registraInvio (06 §19)', () => {
   const db = new FakeDatabase({
     LOG_MAIL: [
-      { PATTERN: 'CDC_OTTOBRE', DESTINATARI: 'rossi@school.it,bianchi@school.it', DATA: '2025-10-05T10:00:00.000Z', STATO: 'SUCCESS' },
-      { PATTERN: 'CARENZE_FAM', DESTINATARI: 'g1@x.it', DATA: '2026-02-10T09:00:00.000Z', STATO: 'ERROR', ERRORE: 'quota' }
+      {
+        PATTERN: 'CDC_OTTOBRE',
+        DESTINATARI: 'rossi@school.it,bianchi@school.it',
+        DATA: '2025-10-05T10:00:00.000Z',
+        STATO: 'SUCCESS'
+      },
+      {
+        PATTERN: 'CARENZE_FAM',
+        DESTINATARI: 'g1@x.it',
+        DATA: '2026-02-10T09:00:00.000Z',
+        STATO: 'ERROR',
+        ERRORE: 'quota'
+      }
     ]
   });
   const r = new LogEmailRepository(db);
-  expect(r.findByPattern('CDC_OTTOBRE')[0]!.getDestinatari()).toEqual(['rossi@school.it', 'bianchi@school.it']);
-  expect(r.findByPattern('CDC_OTTOBRE')[0]!.id).toBe('CDC_OTTOBRE::rossi@school.it,bianchi@school.it::2025-10-05T10:00:00.000Z');
+  expect(r.findByPattern('CDC_OTTOBRE')[0]!.getDestinatari()).toEqual([
+    'rossi@school.it',
+    'bianchi@school.it'
+  ]);
+  expect(r.findByPattern('CDC_OTTOBRE')[0]!.id).toBe(
+    'CDC_OTTOBRE::rossi@school.it,bianchi@school.it::2025-10-05T10:00:00.000Z'
+  );
   expect(r.findFailed().map((l) => l.pattern)).toEqual(['CARENZE_FAM']);
-  const sent = r.registraInvio('CDC_OTTOBRE', [Email.of('x@y.it')], StatoEmail.SUCCESS, { docs: ['a'] });
+  const sent = r.registraInvio('CDC_OTTOBRE', [Email.of('x@y.it')], StatoEmail.SUCCESS, {
+    docs: ['a']
+  });
   expect(sent.getAllegati()).toEqual({ docs: ['a'] });
   expect(db.table('LOG_MAIL').findAll()).toHaveLength(3);
 });

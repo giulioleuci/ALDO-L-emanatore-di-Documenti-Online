@@ -18,15 +18,23 @@ test('OreASL: composite identity + getOre', () => {
 });
 
 test('findByAlunno sorts by ANNO DESC; getTotaleOre sums all years', () => {
-  expect(repo().findByAlunno(a1).map((o) => o.anno)).toEqual(['2025-2026', '2024-2025']);
+  expect(
+    repo()
+      .findByAlunno(a1)
+      .map((o) => o.anno)
+  ).toEqual(['2025-2026', '2024-2025']);
   expect(repo().getTotaleOre(a1)).toBe(100);
 });
 
 test('findByAnno returns all students for the year', () => {
   const spec = new OreASLPerAnnoSpec(AnnoScolastico.of('2025-2026'));
   expect(spec.toQueryObject()).toEqual({ ANNO: '2025-2026' });
-  expect(repo().findByAnno(AnnoScolastico.of('2025-2026')).map((o) => o.studente).sort())
-    .toEqual(['a1@school.it', 'a2@school.it']);
+  expect(
+    repo()
+      .findByAnno(AnnoScolastico.of('2025-2026'))
+      .map((o) => o.studente)
+      .sort()
+  ).toEqual(['a1@school.it', 'a2@school.it']);
 });
 
 test('getOrCreate returns existing, else a fresh zero-hours record', () => {

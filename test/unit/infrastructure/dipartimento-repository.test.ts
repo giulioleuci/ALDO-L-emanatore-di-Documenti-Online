@@ -11,21 +11,31 @@ function repo(): DipartimentoRepository {
 }
 
 test('Dipartimento parses CAPO email and MATERIE CSV', () => {
-  const d = Dipartimento.fromData({ ID: 'SCIENTIFICO_DIP', NOME: 'Dip. scientifico', CAPO: 'rossi@school.it', MATERIE: 'MATE,FISI' });
+  const d = Dipartimento.fromData({
+    ID: 'SCIENTIFICO_DIP',
+    NOME: 'Dip. scientifico',
+    CAPO: 'rossi@school.it',
+    MATERIE: 'MATE,FISI'
+  });
   expect(d.dipartimentoId.value).toBe('SCIENTIFICO_DIP');
   expect(d.getCapoEmail()?.value).toBe('rossi@school.it');
   expect(d.getMaterieIds().map((m) => m.value)).toEqual(['MATE', 'FISI']);
 });
 
 test('empty CAPO yields null email', () => {
-  expect(Dipartimento.fromData({ ID: 'LETTERE', CAPO: '', MATERIE: 'ITA' }).getCapoEmail()).toBeNull();
+  expect(
+    Dipartimento.fromData({ ID: 'LETTERE', CAPO: '', MATERIE: 'ITA' }).getCapoEmail()
+  ).toBeNull();
 });
 
 test('repository getCapoEmail / getMaterieIds via cache', () => {
   const r = repo();
   expect(r.getCapoEmail(DipartimentoId.of('SCIENTIFICO_DIP'))?.value).toBe('rossi@school.it');
   expect(r.getCapoEmail(DipartimentoId.of('LETTERE'))).toBeNull();
-  expect(r.getMaterieIds(DipartimentoId.of('SCIENTIFICO_DIP')).map((m) => m.value)).toEqual(['MATE', 'FISI']);
+  expect(r.getMaterieIds(DipartimentoId.of('SCIENTIFICO_DIP')).map((m) => m.value)).toEqual([
+    'MATE',
+    'FISI'
+  ]);
 });
 
 test('MateriePerDipartimentoSpec filters materie of a department (07 §4)', () => {

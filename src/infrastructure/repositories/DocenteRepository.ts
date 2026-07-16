@@ -1,6 +1,9 @@
 import { Docente } from '../../domain/entities/Docente';
 import { DipartimentoRepository } from './DipartimentoRepository';
-import { DocentiPerDipartimentoSpec, DocentiITPSpec } from '../../domain/specifications/DocenteSpecs';
+import {
+  DocentiPerDipartimentoSpec,
+  DocentiITPSpec
+} from '../../domain/specifications/DocenteSpecs';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
 import type { Dipartimento } from '../../domain/entities/Dipartimento';
 import type { DipartimentoId } from '../../domain/value-objects/DipartimentoId';
@@ -41,7 +44,10 @@ export class DocenteRepository extends Repository<Docente> {
     for (const row of this.database.tables[TABLE.CLASSI]!.getAllRows()) {
       const coord = row[COL_CLASSI.COORD];
       if (typeof coord !== 'string') continue;
-      for (const e of coord.split(',').map((s) => s.trim()).filter((s) => s.length > 0)) {
+      for (const e of coord
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)) {
         emails.add(e);
       }
     }
@@ -57,7 +63,9 @@ export class DocenteRepository extends Repository<Docente> {
   getDipartimento(docente: Docente): Dipartimento {
     const dip = this.dipartimenti.findByIdCached(docente.dipartimentoId);
     if (dip === null) {
-      throw new EntityNotFoundError(`Dipartimento non trovato per docente ${docente.id ?? '?'}: "${docente.dipart}"`);
+      throw new EntityNotFoundError(
+        `Dipartimento non trovato per docente ${docente.id ?? '?'}: "${docente.dipart}"`
+      );
     }
     return dip;
   }

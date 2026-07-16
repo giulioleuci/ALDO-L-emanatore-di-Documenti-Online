@@ -10,7 +10,11 @@ function repo(): RuoloSpecialeRepository {
 }
 
 test('RuoloSpeciale parses the CSV DOCENTE column into emails', () => {
-  const r = RuoloSpeciale.fromData({ ID: 'REF_BES', NOME: 'Referente BES', DOCENTE: 'rossi@school.it, bianchi@school.it' });
+  const r = RuoloSpeciale.fromData({
+    ID: 'REF_BES',
+    NOME: 'Referente BES',
+    DOCENTE: 'rossi@school.it, bianchi@school.it'
+  });
   expect(r.getEmails().map((e) => e.value)).toEqual(['rossi@school.it', 'bianchi@school.it']);
   expect(r.hasDocente(Email.of('bianchi@school.it'))).toBe(true);
   expect(r.hasDocente(Email.of('nobody@school.it'))).toBe(false);
@@ -21,13 +25,23 @@ test('empty DOCENTE yields no emails', () => {
 });
 
 test('findByDocente matches by CSV containment (07 §14)', () => {
-  expect(repo().findByDocente(Email.of('rossi@school.it')).map((r) => r.id)).toEqual(['REF_BES']);
-  expect(repo().findByDocente(Email.of('bianchi@school.it')).map((r) => r.id)).toEqual(['REF_BES', 'AN_DIG']);
+  expect(
+    repo()
+      .findByDocente(Email.of('rossi@school.it'))
+      .map((r) => r.id)
+  ).toEqual(['REF_BES']);
+  expect(
+    repo()
+      .findByDocente(Email.of('bianchi@school.it'))
+      .map((r) => r.id)
+  ).toEqual(['REF_BES', 'AN_DIG']);
   expect(repo().findByDocente(Email.of('nobody@school.it'))).toEqual([]);
 });
 
 test('RuoliPerDocenteSpec toQueryObject is a DOCENTE hint', () => {
-  expect(new RuoliPerDocenteSpec(Email.of('rossi@school.it')).toQueryObject()).toEqual({ DOCENTE: 'rossi@school.it' });
+  expect(new RuoliPerDocenteSpec(Email.of('rossi@school.it')).toQueryObject()).toEqual({
+    DOCENTE: 'rossi@school.it'
+  });
 });
 
 test('findById (base) returns a hydrated role; lookup is cached', () => {

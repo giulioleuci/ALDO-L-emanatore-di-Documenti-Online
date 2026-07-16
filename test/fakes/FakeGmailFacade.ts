@@ -1,4 +1,8 @@
-import type { IGmailFacade, EmailSendOptions, EmailSendResult } from '../../src/infrastructure/facades/GmailServiceFacade';
+import type {
+  IGmailFacade,
+  EmailSendOptions,
+  EmailSendResult
+} from '../../src/infrastructure/facades/GmailServiceFacade';
 
 /** In-memory Gmail double: records sends; any `to` in `failFor` simulates a send failure. */
 export class FakeGmailFacade implements IGmailFacade {

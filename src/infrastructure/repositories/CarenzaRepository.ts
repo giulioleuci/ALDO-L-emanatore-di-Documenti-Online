@@ -1,6 +1,8 @@
 import { Carenza } from '../../domain/entities/Carenza';
 import {
-  CarenzePerAlunnoSpec, CarenzePerClasseSpec, CarenzeNonNotificateSpec
+  CarenzePerAlunnoSpec,
+  CarenzePerClasseSpec,
+  CarenzeNonNotificateSpec
 } from '../../domain/specifications/CarenzaSpecs';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ValoreCarenza } from '../../domain/value-objects/ValoreCarenza';
@@ -11,7 +13,10 @@ import { MateriaNotFoundError } from '../../domain/errors/DomainError';
 import { TABLE, COL_MATERIE, COL_CARENZE } from '../../config/schema';
 
 /** Dynamic per-subject column names in the CARENZE matrix (ref 06 §Colonne dinamiche). */
-interface MateriaColumns { main: string; itp: string }
+interface MateriaColumns {
+  main: string;
+  itp: string;
+}
 
 /**
  * CARENZE repository on the DomainRepositoryLib Repository base. Composite PK
@@ -88,7 +93,8 @@ export class CarenzaRepository extends Repository<Carenza> {
    */
   setCarenzaMateria(carenza: Carenza, materia: MateriaId, valore: ValoreCarenza | null): void {
     const cols = this.materieColumns.get(materia.value);
-    if (cols === undefined) throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
+    if (cols === undefined)
+      throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
     const row = { ...carenza.toData(), [cols.main]: valore === null ? '' : valore.toString() };
     this.database.tables[TABLE.CARENZE]!.updateRowWhere(
       { [COL_CARENZE.STUDENTE]: carenza.studente, [COL_CARENZE.PROGRESSIVO]: carenza.progressivo },
@@ -101,8 +107,8 @@ export class CarenzaRepository extends Repository<Carenza> {
     const d = new Date(c.data);
     if (Number.isNaN(d.getTime())) return false;
     const inizio = anno.getAnnoInizio();
-    const start = new Date(Date.UTC(inizio, 8, 1));       // 1 Sep <inizio>
-    const end = new Date(Date.UTC(inizio + 1, 7, 31));    // 31 Aug <inizio+1>
+    const start = new Date(Date.UTC(inizio, 8, 1)); // 1 Sep <inizio>
+    const end = new Date(Date.UTC(inizio + 1, 7, 31)); // 31 Aug <inizio+1>
     return d.getTime() >= start.getTime() && d.getTime() <= end.getTime();
   }
 }

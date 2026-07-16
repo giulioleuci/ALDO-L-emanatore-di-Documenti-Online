@@ -35,7 +35,11 @@ export interface AlunnoContestoVM {
   status: { isBes: boolean; isRipetente: boolean; isRappresentante: boolean; religione: string };
   curriculum: Record<string, { specifiche: string[] }>;
   didattica: {
-    carenze: { hasCarenze: boolean; numero: number; dettaglio: Array<{ materia: string; voto: string }> };
+    carenze: {
+      hasCarenze: boolean;
+      numero: number;
+      dettaglio: Array<{ materia: string; voto: string }>;
+    };
     piani: { hasPiani: boolean; hasBes: boolean; items: Array<{ tipo: string; isBes: boolean }> };
     pcto: { oreCumulate: number };
   };
@@ -145,7 +149,11 @@ export interface CduAlunno {
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
   consiglioDiClasseFiltrato?: DocenteCdcVM[];
   didattica: {
-    carenze: { dettaglio: Array<{ materia: string; voto: string }>; numero: number; hasCarenze: boolean };
+    carenze: {
+      dettaglio: Array<{ materia: string; voto: string }>;
+      numero: number;
+      hasCarenze: boolean;
+    };
     asl: { oreCumulate: number; oreAnnoCorrente: number };
     piani: {
       items: Array<{ tipo: string; isBes: boolean; link: string; parametriGenerazione: unknown }>;
@@ -153,7 +161,13 @@ export interface CduAlunno {
       hasBes: boolean;
     };
     documenti?: {
-      items: Array<{ nome: string; link: string; tipo: string; stato: string; dataCreazione: string }>;
+      items: Array<{
+        nome: string;
+        link: string;
+        tipo: string;
+        stato: string;
+        dataCreazione: string;
+      }>;
       hasDocumenti: boolean;
     };
     /** Lazy prior-years history (13 §2/§3), populated only when `includiStorico` is true. */
@@ -171,7 +185,14 @@ export interface CduCarenzaFocus {
 }
 
 export interface CduDestinatario {
-  anagrafica: { nome: string; cognome: string; nomeCompleto: string; email: string; appellativo: string; genere: string };
+  anagrafica: {
+    nome: string;
+    cognome: string;
+    nomeCompleto: string;
+    email: string;
+    appellativo: string;
+    genere: string;
+  };
   ruoliAttivi: string[];
   flags: {
     isCoordinatore: boolean;
@@ -210,7 +231,10 @@ export interface Cdu {
   };
   destinatario?: CduDestinatario;
   render?: {
-    boxes: Record<string, { id: string; titolo: string; html: string; isEmpty: boolean; visibile: boolean }>;
+    boxes: Record<
+      string,
+      { id: string; titolo: string; html: string; isEmpty: boolean; visibile: boolean }
+    >;
     body: { htmlCompleto: string; htmlSoloContenuto: string };
   };
   tech: CduTech;

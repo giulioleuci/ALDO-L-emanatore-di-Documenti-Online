@@ -16,10 +16,16 @@ function readSheetRows(
   logger: LoggerService,
   sheets: SpreadsheetService,
   sheetId: string,
-  options: { tabName?: string | undefined; range?: string | undefined; hasHeaders?: boolean | undefined } = {}
+  options: {
+    tabName?: string | undefined;
+    range?: string | undefined;
+    hasHeaders?: boolean | undefined;
+  } = {}
 ): Record<string, unknown>[] {
   const strategy = new SheetByIdStrategy(logger, sheets);
-  const config: { sheetId: string; tabName?: string; range?: string; hasHeaders?: boolean } = { sheetId };
+  const config: { sheetId: string; tabName?: string; range?: string; hasHeaders?: boolean } = {
+    sheetId
+  };
   if (options.tabName !== undefined) config.tabName = options.tabName;
   if (options.range !== undefined) config.range = options.range;
   if (options.hasHeaders !== undefined) config.hasHeaders = options.hasHeaders;
@@ -53,7 +59,9 @@ export function createCercaCartelleClasseStrategy(
       for (const classe of classi.findAttive()) {
         const cartelle = logFold.findByClasse(classe).filter((f) => f.tipo === folderTipo);
         for (const cartella of cartelle) {
-          const files = drive.searchFiles(`'${cartella.id}' in parents and mimeType='${SPREADSHEET_MIME}' and trashed=false`);
+          const files = drive.searchFiles(
+            `'${cartella.id}' in parents and mimeType='${SPREADSHEET_MIME}' and trashed=false`
+          );
           for (const file of files) {
             for (const row of readSheetRows(this.logger, sheets, file.id, readOptions)) {
               out.push({ ...row, _CLASSE: classe.nome });
@@ -89,7 +97,12 @@ export function createCercaDocumentiStrategy(
       };
       const documenti = logDocs
         .findAll()
-        .filter((d) => d.idGen === idGen && (tipo === undefined || d.tipo === tipo) && (stato === undefined || String(d.getStato()) === stato));
+        .filter(
+          (d) =>
+            d.idGen === idGen &&
+            (tipo === undefined || d.tipo === tipo) &&
+            (stato === undefined || String(d.getStato()) === stato)
+        );
       const out: Record<string, unknown>[] = [];
       for (const doc of documenti) {
         const classe = doc.getClassi()[0] ?? '';
@@ -104,5 +117,7 @@ export function createCercaDocumentiStrategy(
 
 /** Thrown when a CONF_IMP job references a custom source that was never registered. */
 export function requireRegistered(searchStrategy: string): never {
-  throw new ConfigurationError(`Source strategy "${searchStrategy}" richiede registrazione tramite registerCustomSource (12 §3)`);
+  throw new ConfigurationError(
+    `Source strategy "${searchStrategy}" richiede registrazione tramite registerCustomSource (12 §3)`
+  );
 }

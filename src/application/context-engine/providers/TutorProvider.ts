@@ -19,8 +19,12 @@ export class TutorProvider implements ContextProvider {
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
     focusClasse.tutor = {
-      asl: this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' })),
-      orientamento: this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' }))
+      asl: this.classi
+        .getDocentiRuolo(classe, RUOLO_TUTOR_ASL)
+        .map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' })),
+      orientamento: this.classi
+        .getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT)
+        .map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' }))
     };
   }
 }

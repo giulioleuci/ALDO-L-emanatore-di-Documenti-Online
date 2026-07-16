@@ -55,7 +55,9 @@ export class EmailRetryService {
         result.permanent += 1;
         continue;
       }
-      const run = this.emailService.sendPattern(first.pattern, { onlyRecipients: first.getDestinatari() });
+      const run = this.emailService.sendPattern(first.pattern, {
+        onlyRecipients: first.getDestinatari()
+      });
       if (run.sent > 0 && run.errors.length === 0) {
         for (const record of group) this.logMail.marcaSuccesso(record);
         result.retried += 1;

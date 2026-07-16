@@ -46,18 +46,25 @@ export class ContextEngineFactory {
 
     return new ContextBuilder()
       .registerInterceptor(
-        new SwapAndEnrichInterceptor(new LoggerService(), createSupplentiSubstitutionLookup(docenti, supplenze), {
-          // 09 §5: SwapAndEnrichInterceptor runs after `consiglio`/`student` (the two
-          // providers that (re)write cdu.focus.classe.consiglioDiClasse /
-          // cdu.focus.alunno.consiglioDiClasseFiltrato). `targetPaths` puts the
-          // library's generalized per-item `_forEachAt` walk to use instead of its
-          // single-atomic-payload swap; the 3-way GestioneSupplenti decision lives
-          // entirely in the substitutionLookup callback (see
-          // SupplentiSubstitutionLookup.ts), so the library's own boolean
-          // optionFlag gate is intentionally not relied on here.
-          targetProviders: ['consiglio', 'student'],
-          targetPaths: ['focus.classe.consiglioDiClasse', 'focus.alunno.consiglioDiClasseFiltrato']
-        })
+        new SwapAndEnrichInterceptor(
+          new LoggerService(),
+          createSupplentiSubstitutionLookup(docenti, supplenze),
+          {
+            // 09 §5: SwapAndEnrichInterceptor runs after `consiglio`/`student` (the two
+            // providers that (re)write cdu.focus.classe.consiglioDiClasse /
+            // cdu.focus.alunno.consiglioDiClasseFiltrato). `targetPaths` puts the
+            // library's generalized per-item `_forEachAt` walk to use instead of its
+            // single-atomic-payload swap; the 3-way GestioneSupplenti decision lives
+            // entirely in the substitutionLookup callback (see
+            // SupplentiSubstitutionLookup.ts), so the library's own boolean
+            // optionFlag gate is intentionally not relied on here.
+            targetProviders: ['consiglio', 'student'],
+            targetPaths: [
+              'focus.classe.consiglioDiClasse',
+              'focus.alunno.consiglioDiClasseFiltrato'
+            ]
+          }
+        )
       )
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
       .registerProvider('class', new ClasseProvider(classi, alunni))
@@ -71,6 +78,9 @@ export class ContextEngineFactory {
       .registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni))
       .registerProvider('rappresentanti', new RappresentantiProvider(classi))
       .registerProvider('statistiche', new StatisticheProvider(classi, docenti, alunni))
-      .registerProvider('storico', new StoricoProvider(new MasterStoricoDatabaseProvider(master, new LoggerService())));
+      .registerProvider(
+        'storico',
+        new StoricoProvider(new MasterStoricoDatabaseProvider(master, new LoggerService()))
+      );
   }
 }

@@ -7,13 +7,19 @@ const repoRoot = path.join(__dirname, '..');
 const monorepo = path.join(repoRoot, 'GasLibraryFactory');
 const vendorDir = path.join(repoRoot, 'vendor');
 
-if (!fs.existsSync(monorepo)) { console.error(`GasLibraryFactory not found at ${monorepo}`); process.exit(1); }
+if (!fs.existsSync(monorepo)) {
+  console.error(`GasLibraryFactory not found at ${monorepo}`);
+  process.exit(1);
+}
 
 console.log('Building GasLibraryFactory (testing mode)...');
 execSync('npm run build:testing -- --online-tests=false', { cwd: monorepo, stdio: 'inherit' });
 
 const built = path.join(monorepo, 'dist', 'Code.js');
-if (!fs.existsSync(built)) { console.error('GasLibraryFactory dist/Code.js not produced'); process.exit(1); }
+if (!fs.existsSync(built)) {
+  console.error('GasLibraryFactory dist/Code.js not produced');
+  process.exit(1);
+}
 
 fs.mkdirSync(vendorDir, { recursive: true });
 const dest = path.join(vendorDir, 'gaslibs.Code.js');

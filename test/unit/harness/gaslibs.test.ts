@@ -90,7 +90,9 @@ test('ComposableContentLib composes a function-template block end-to-end', () =>
       })
   });
   const renderers = new RendererRegistry({ registerDefaults: false });
-  renderers.register(new HtmlRenderer({ templates: { probe: (data: unknown) => `<b>${String(data)}</b>` } }));
+  renderers.register(
+    new HtmlRenderer({ templates: { probe: (data: unknown) => `<b>${String(data)}</b>` } })
+  );
   const composer = new ContentComposer({ blockRegistry: blocks, rendererRegistry: renderers });
   const result = composer.compose(
     { id: 'r', name: 'r', blocks: [{ instanceId: 'p1', blockType: 'probe' }] },
@@ -152,7 +154,12 @@ test('vendored SpreadsheetService exposes the real bound API surface (Sheet-writ
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
   const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
-  const sheets = new SpreadsheetService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const sheets = new SpreadsheetService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
   expect(typeof sheets.getSheetInfo).toBe('function');
   expect(typeof sheets.getRanges).toBe('function');
   expect(typeof sheets.updateRanges).toBe('function');
@@ -166,7 +173,12 @@ test('vendored DocumentService exposes document()/scanDocumentStructure (DOCUMEN
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
   const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
-  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const documents = new DocumentService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
   expect(typeof documents.document).toBe('function');
   expect(typeof documents.scanDocumentStructure).toBe('function');
   const builder = documents.document('doc1');
@@ -180,9 +192,17 @@ test('vendored ProcessMonitorService exposes the real job-progress API', () => {
   // Stateful fake cache so hasJob (which reads state back) can be exercised.
   // cacheService is a FACTORY exposing getScriptCache() (mirrors CacheService), not the cache itself.
   const store = new Map<string, string>();
-  const scriptCache = { get: (k: string) => store.get(k) ?? null, put: (k: string, v: string) => store.set(k, v), remove: (k: string) => store.delete(k) };
+  const scriptCache = {
+    get: (k: string) => store.get(k) ?? null,
+    put: (k: string, v: string) => store.set(k, v),
+    remove: (k: string) => store.delete(k)
+  };
   const fakeCacheService = { getScriptCache: () => scriptCache };
-  const fakeProps = { getProperty: () => null, setProperty: () => undefined, deleteProperty: () => undefined };
+  const fakeProps = {
+    getProperty: () => null,
+    setProperty: () => undefined,
+    deleteProperty: () => undefined
+  };
   const monitor = new ProcessMonitorService(logger, fakeCacheService, fakeProps);
   expect(typeof monitor.registerJob).toBe('function');
   expect(typeof monitor.startJob).toBe('function');
@@ -201,8 +221,16 @@ test('custom SourceStrategy registered via ImportEngine.registerCustomSource wor
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
   const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
   const drive = new DriveService(logger, fakeCache, new UtilsService(), fakeExceptionService);
-  const sheets = new SpreadsheetService(logger, fakeCache, new UtilsService(), fakeExceptionService);
-  const db = { tables: { DEST: { getAllRows: () => [], insertRows: () => undefined } }, save: () => undefined };
+  const sheets = new SpreadsheetService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
+  const db = {
+    tables: { DEST: { getAllRows: () => [], insertRows: () => undefined } },
+    save: () => undefined
+  };
 
   class ProbeSourceStrategy extends SourceStrategy {
     protected _extractData(config: Record<string, unknown>): Record<string, unknown>[] {
@@ -221,7 +249,13 @@ test('custom SourceStrategy registered via ImportEngine.registerCustomSource wor
       transform: { mapping: { EMAIL: 'EMAIL' } },
       load: { targetTable: 'DEST', conflictResolution: 'INSERT_ONLY' }
     },
-    { dryRun: true, postTransform: (data) => { extracted = data; return data; } }
+    {
+      dryRun: true,
+      postTransform: (data) => {
+        extracted = data;
+        return data;
+      }
+    }
   );
   expect(extracted).toEqual([{ EMAIL: 'probe@x' }]);
 });

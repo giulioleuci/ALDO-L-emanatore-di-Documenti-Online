@@ -38,7 +38,9 @@ describe('GasUiFacade', () => {
   it('falls back to ServiceFactory.getUiService()/getLogger() when nothing is injected', () => {
     const ui = fakeUi();
     const uiSpy = jest.spyOn(ServiceFactory, 'getUiService').mockReturnValue(ui as never);
-    const logSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ info: jest.fn() } as never);
+    const logSpy = jest
+      .spyOn(ServiceFactory, 'getLogger')
+      .mockReturnValue({ info: jest.fn() } as never);
 
     new GasUiFacade().mostraMessaggio('T', 'M');
     expect(uiSpy).toHaveBeenCalled();

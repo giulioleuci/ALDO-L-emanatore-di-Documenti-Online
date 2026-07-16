@@ -20,23 +20,42 @@ export class LogEmail extends AldoEntity {
 
   constructor(data: LogEmailData = {}) {
     super(data);
-    this.pattern = typeof data[COL_LOG_MAIL.PATTERN] === 'string' ? (data[COL_LOG_MAIL.PATTERN] as string) : '';
-    this.destinatariRaw = typeof data[COL_LOG_MAIL.DESTINATARI] === 'string' ? (data[COL_LOG_MAIL.DESTINATARI] as string) : '';
-    this.data = typeof data[COL_LOG_MAIL.DATA] === 'string' ? (data[COL_LOG_MAIL.DATA] as string) : '';
+    this.pattern =
+      typeof data[COL_LOG_MAIL.PATTERN] === 'string' ? (data[COL_LOG_MAIL.PATTERN] as string) : '';
+    this.destinatariRaw =
+      typeof data[COL_LOG_MAIL.DESTINATARI] === 'string'
+        ? (data[COL_LOG_MAIL.DESTINATARI] as string)
+        : '';
+    this.data =
+      typeof data[COL_LOG_MAIL.DATA] === 'string' ? (data[COL_LOG_MAIL.DATA] as string) : '';
     this.stato = (data[COL_LOG_MAIL.STATO] as StatoEmail) ?? StatoEmail.PENDING;
-    this.allegatiRaw = typeof data[COL_LOG_MAIL.ALLEGATI] === 'string' ? (data[COL_LOG_MAIL.ALLEGATI] as string) : null;
-    this.errore = typeof data[COL_LOG_MAIL.ERRORE] === 'string' ? (data[COL_LOG_MAIL.ERRORE] as string) : '';
-    this.id = this.pattern && this.destinatariRaw && this.data ? `${this.pattern}::${this.destinatariRaw}::${this.data}` : null;
+    this.allegatiRaw =
+      typeof data[COL_LOG_MAIL.ALLEGATI] === 'string'
+        ? (data[COL_LOG_MAIL.ALLEGATI] as string)
+        : null;
+    this.errore =
+      typeof data[COL_LOG_MAIL.ERRORE] === 'string' ? (data[COL_LOG_MAIL.ERRORE] as string) : '';
+    this.id =
+      this.pattern && this.destinatariRaw && this.data
+        ? `${this.pattern}::${this.destinatariRaw}::${this.data}`
+        : null;
   }
 
   getDestinatari(): string[] {
-    return this.destinatariRaw.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+    return this.destinatariRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   }
 
-  isFailed(): boolean { return this.stato === StatoEmail.ERROR; }
+  isFailed(): boolean {
+    return this.stato === StatoEmail.ERROR;
+  }
 
   getAllegati(): Record<string, unknown> {
-    return this.allegatiRaw === null ? {} : (JSON.parse(this.allegatiRaw) as Record<string, unknown>);
+    return this.allegatiRaw === null
+      ? {}
+      : (JSON.parse(this.allegatiRaw) as Record<string, unknown>);
   }
 
   override toData(): EntityData {

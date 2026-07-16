@@ -1,4 +1,7 @@
-import { executePostProcess, type PostProcessDb } from '../../../src/infrastructure/steps/postProcessActions';
+import {
+  executePostProcess,
+  type PostProcessDb
+} from '../../../src/infrastructure/steps/postProcessActions';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
@@ -66,7 +69,12 @@ test('no matching rows ⇒ 0 updates and no phantom insert', () => {
   const db = new FakeDatabase(fixtureTables());
   const before = db.tables['CARENZE']!.getAllRows().length;
   const actions = JSON.stringify([
-    { tipo: 'INSERISCI_TIMESTAMP', tab: 'CARENZE', col: 'NOTIFICATO', criteri: { STUDENTE: 'nessuno@x.it' } }
+    {
+      tipo: 'INSERISCI_TIMESTAMP',
+      tab: 'CARENZE',
+      col: 'NOTIFICATO',
+      criteri: { STUDENTE: 'nessuno@x.it' }
+    }
   ]);
   expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(0);
   expect(db.tables['CARENZE']!.getAllRows()).toHaveLength(before);
@@ -120,7 +128,12 @@ test('unknown action type is skipped with a warning, others still run', () => {
   const db = new FakeDatabase(fixtureTables());
   const actions = JSON.stringify([
     { tipo: 'BOOM', tab: 'CARENZE', criteri: {} },
-    { tipo: 'INSERISCI_TIMESTAMP', tab: 'CARENZE', col: 'NOTIFICATO', criteri: { STUDENTE: 'a2@school.it' } }
+    {
+      tipo: 'INSERISCI_TIMESTAMP',
+      tab: 'CARENZE',
+      col: 'NOTIFICATO',
+      criteri: { STUDENTE: 'a2@school.it' }
+    }
   ]);
   expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(1);
 });
@@ -134,7 +147,12 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
     // `undefined` and the `table === undefined` guard is exercised for real.
     const db: PostProcessDb = { tables: {} };
     const actions = JSON.stringify([
-      { tipo: 'INSERISCI_TIMESTAMP', tab: 'TABELLA_INESISTENTE', col: 'NOTIFICATO', criteri: { ID: 'x' } }
+      {
+        tipo: 'INSERISCI_TIMESTAMP',
+        tab: 'TABELLA_INESISTENTE',
+        col: 'NOTIFICATO',
+        criteri: { ID: 'x' }
+      }
     ]);
     const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
     expect(n).toBe(0);
@@ -155,8 +173,13 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
     const table: RepositoryTable = {
       getByPK: (id) => rows.find((r) => r['ID'] === id) ?? null,
       getAllRows: getAllRowsSpy,
-      insertRow: (row) => { rows.push(row); return row; },
-      updateRowById: () => { /* unused */ },
+      insertRow: (row) => {
+        rows.push(row);
+        return row;
+      },
+      updateRowById: () => {
+        /* unused */
+      },
       updateRowWhere: updateRowWhereSpy,
       createIndex: createIndexSpy,
       indexedLookup: indexedLookupSpy
@@ -169,7 +192,10 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
     expect(n).toBe(1);
     expect(createIndexSpy).toHaveBeenCalledWith('ID');
     expect(getAllRowsSpy).toHaveBeenCalled();
-    expect(updateRowWhereSpy).toHaveBeenCalledWith({ ID: 'r1', STAMP: '' }, { ID: 'r1', STAMP: NOW.toISOString() });
+    expect(updateRowWhereSpy).toHaveBeenCalledWith(
+      { ID: 'r1', STAMP: '' },
+      { ID: 'r1', STAMP: NOW.toISOString() }
+    );
   });
 
   test('applies AGGIORNA_CAMPO, rendering action.valore as a template against the CDU', () => {

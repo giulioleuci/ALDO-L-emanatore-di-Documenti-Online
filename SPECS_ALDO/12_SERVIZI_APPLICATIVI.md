@@ -3,6 +3,7 @@
 I servizi applicativi sono il punto di ingresso per le operazioni di business di SGSA. Ricevono input dall'esterno (ID di configurazione, parametri), orchestrano il Context Engine, le pipeline e i repository, e restituiscono risultati strutturati.
 
 Ogni servizio applicativo:
+
 - NON DEVE contenere logica di dominio (delegata alle entità e ai repository)
 - NON DEVE accedere direttamente a Google Sheets o Drive (delegato alle Facade e ai repository)
 - NON DEVE costruire il CDU da solo (delegato al `ContextBuilder`)
@@ -21,6 +22,7 @@ Ogni servizio applicativo:
 Genera un singolo documento per il punto di ingresso specificato.
 
 Flusso:
+
 1. Carica `ConfigurazioneDocumento` da `ConfigurazioneDocumentoRepository`
 2. Determina la recipe in base al tipo di configurazione
 3. Costruisce il CDU tramite `ContextBuilder`
@@ -37,6 +39,7 @@ Genera documenti per ogni entry point nell'array. Per ogni elemento: try/catch i
 Carica tutte le classi attive (`ClassiAttiveSpec`), poi chiama `generateBatch`.
 
 **Gestione articolazione:** prima di passare l'array a `generateBatch`, il metodo DEVE verificare `CONF_DOC.GESTIONE_ARTICOLAZIONE` (se null, DEVE applicare il default `COMPLETA` previsto dall'enum `GestioneArticolazione`, vedi `03_VALUE_OBJECTS_ED_ENUM.md`):
+
 - `COMPLETA` (o non specificato) → le classi partner vengono saltate; la classe parent è processata come unico entry point aggregato
 - `ARTICOLATA` → le classi parent vengono saltate; le classi partner sono processate individualmente
 
@@ -62,14 +65,14 @@ Invia una singola email. Carica il pattern e delega l'intero flusso alla `Notifi
 
 Risolve i destinatari in base a `CONF_MAIL.PROCESSO`:
 
-| Valore PROCESSO | Logica di risoluzione |
-|-----------------|----------------------|
-| `PER_COORDINATORE` | Coordinatori di ogni classe attiva |
-| `PER_DOCENTE` | Docenti con almeno una classe attiva assegnata |
-| `PER_CDC` | Una email per classe, TO multiplo a tutti i docenti |
-| `PER_ALUNNO` | Tutti gli alunni attivi |
+| Valore PROCESSO       | Logica di risoluzione                                                       |
+| --------------------- | --------------------------------------------------------------------------- |
+| `PER_COORDINATORE`    | Coordinatori di ogni classe attiva                                          |
+| `PER_DOCENTE`         | Docenti con almeno una classe attiva assegnata                              |
+| `PER_CDC`             | Una email per classe, TO multiplo a tutti i docenti                         |
+| `PER_ALUNNO`          | Tutti gli alunni attivi                                                     |
 | `PER_GENITORI_ALUNNO` | `TUTOR_1` e `TUTOR_2` di ogni alunno, deduplicati per famiglie multi-figlio |
-| `PER_CARENZA` | Record `CARENZE` con `NOTIFICATO` null (via `CarenzeNonNotificateSpec`) |
+| `PER_CARENZA`         | Record `CARENZE` con `NOTIFICATO` null (via `CarenzeNonNotificateSpec`)     |
 
 Applica le regole supplenti configurate in `CONF_MAIL.SUPPLENTI`. Chiama `sendBatch` internamente.
 
@@ -96,6 +99,7 @@ Abilita la modalità test: tutte le email vengono indirizzate all'email di test 
 Esegue un job di importazione completo.
 
 Flusso:
+
 1. Carica `ConfigurazioneImport` da `ConfigurazioneImportRepository`
 2. Se `!attivo` → skip immediato
 3. Trova il file sorgente in base alla strategia configurata:
@@ -133,6 +137,7 @@ Carica tutte le `ConfigurazioneImport` con `ATTIVO = true` e le esegue in sequen
 #### `getStatisticheClasse(classeId: ClasseId): StatisticheClasse`
 
 Restituisce:
+
 - Numero alunni totali, attivi, con BES, con DSA, ripetenti
 - Distribuzione carenze per severità (GRAVE/MEDIA/LIEVE)
 - Ore ASL maturate dalla classe

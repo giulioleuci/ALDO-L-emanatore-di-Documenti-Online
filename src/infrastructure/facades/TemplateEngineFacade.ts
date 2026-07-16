@@ -19,7 +19,11 @@ export interface ITemplateEngine {
    * landed in — e.g. to apply an ACL the directive's own static `acl=` expression
    * can't express (role-resolution/supplenza-chain logic).
    */
-  processSheet(sheetId: string, context: Record<string, unknown>, sheetName?: string): SheetColumnLayout[];
+  processSheet(
+    sheetId: string,
+    context: Record<string, unknown>,
+    sheetName?: string
+  ): SheetColumnLayout[];
 }
 
 export class TemplateEngineFacade implements ITemplateEngine {
@@ -40,12 +44,22 @@ export class TemplateEngineFacade implements ITemplateEngine {
 
   processDocument(fileId: string, context: Record<string, unknown>): void {
     const success = this.service.processDocument(fileId, context);
-    if (!success) throw new Error(`TemplateEngineFacade.processDocument(${fileId}): PlaceholderService.processDocument returned false`);
+    if (!success)
+      throw new Error(
+        `TemplateEngineFacade.processDocument(${fileId}): PlaceholderService.processDocument returned false`
+      );
   }
 
-  processSheet(sheetId: string, context: Record<string, unknown>, sheetName?: string): SheetColumnLayout[] {
+  processSheet(
+    sheetId: string,
+    context: Record<string, unknown>,
+    sheetName?: string
+  ): SheetColumnLayout[] {
     const result = this.service.processSheet(sheetId, context, sheetName ?? undefined);
-    if (!result.success) throw new Error(`TemplateEngineFacade.processSheet(${sheetId}): PlaceholderService.processSheet returned success:false`);
+    if (!result.success)
+      throw new Error(
+        `TemplateEngineFacade.processSheet(${sheetId}): PlaceholderService.processSheet returned success:false`
+      );
     return result.layouts.flatMap((l) => l.columns);
   }
 }

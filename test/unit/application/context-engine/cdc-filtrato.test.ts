@@ -14,20 +14,32 @@ function tablesWithIrc(): Record<string, Row[]> {
 }
 
 function filtrato(target: string): DocenteCdcVM[] {
-  const cdu = ContextEngineFactory.create(new FakeDatabase(tablesWithIrc()))
-    .build({ target, tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') }, recipe('ALUNNO_COMPLETO'));
+  const cdu = ContextEngineFactory.create(new FakeDatabase(tablesWithIrc())).build(
+    { target, tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') },
+    recipe('ALUNNO_COMPLETO')
+  );
   return cdu.focus.alunno!.consiglioDiClasseFiltrato!;
 }
 
 test('CDCFilterAlunno: religione SI includes the IRC teacher (14 §1.3)', () => {
-  expect(filtrato('a1@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
+  expect(filtrato('a1@school.it').map((d) => d.anagrafica.email)).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it',
+    'verdi@school.it'
+  ]);
 });
 
 test('CDCFilterAlunno: religione NO excludes the IRC teacher (14 §1.3)', () => {
   // a2 chose NO → the IRC-only teacher (verdi) is dropped; subject teachers remain.
-  expect(filtrato('a2@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  expect(filtrato('a2@school.it').map((d) => d.anagrafica.email)).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it'
+  ]);
 });
 
 test('CDCFilterAlunno: religione ALT excludes IRC (no ALT teacher configured)', () => {
-  expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it'
+  ]);
 });

@@ -1,4 +1,9 @@
-import { costruisciMenu, menuGenerazioneDocumenti, menuComunicazioniEmail, MENU_TITOLO } from '../../../src/presentation/Menu';
+import {
+  costruisciMenu,
+  menuGenerazioneDocumenti,
+  menuComunicazioniEmail,
+  MENU_TITOLO
+} from '../../../src/presentation/Menu';
 import { FakeUiFacade } from '../../../test/fakes/FakeUiFacade';
 
 test('costruisciMenu builds AVVIA PROCESSI with the three launchers (15 §3)', () => {
@@ -19,7 +24,9 @@ test('wrapper: input → sidebar → delegate (15 §4)', () => {
   const avviati: string[] = [];
   menuGenerazioneDocumenti(ui, (id) => avviati.push(id));
   expect(avviati).toEqual(['CD1']);
-  expect(ui.sidebars).toEqual([{ jobId: 'gen_CD1', titolo: 'Monitoraggio — GENERAZIONE DOCUMENTI' }]);
+  expect(ui.sidebars).toEqual([
+    { jobId: 'gen_CD1', titolo: 'Monitoraggio — GENERAZIONE DOCUMENTI' }
+  ]);
   expect(ui.messaggi).toHaveLength(0);
 });
 

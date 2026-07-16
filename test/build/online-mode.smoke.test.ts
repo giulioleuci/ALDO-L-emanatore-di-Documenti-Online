@@ -4,7 +4,10 @@ import { resolve } from 'path';
 
 describe('online build mode', () => {
   it('produces a distinct, unminified, comment-free Code.js and OnlineTests.js plus a valid gas-source-map.json', () => {
-    execSync('node scripts/build-and-prepare.cjs --mode=online', { cwd: resolve(__dirname, '../..'), stdio: 'pipe' });
+    execSync('node scripts/build-and-prepare.cjs --mode=online', {
+      cwd: resolve(__dirname, '../..'),
+      stdio: 'pipe'
+    });
 
     const distDir = resolve(__dirname, '../../dist');
     const codeJs = readFileSync(resolve(distDir, 'Code.js'), 'utf8');

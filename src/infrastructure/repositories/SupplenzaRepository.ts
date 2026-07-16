@@ -8,7 +8,9 @@ import { TABLE, COL_SUPPLENZE } from '../../config/schema';
 
 const utils = new UtilsService();
 /** ISO day via CoreUtilsLib (UTC — deterministic across host timezones). */
-function isoDate(d: Date): string { return utils.formatDate(d, 'YYYY-MM-DD', { utc: true }) ?? ''; }
+function isoDate(d: Date): string {
+  return utils.formatDate(d, 'YYYY-MM-DD', { utc: true }) ?? '';
+}
 
 /** Role token used when crawling the supply-delegation graph (RoleResolutionLib). */
 const RUOLO_TITOLARE_CATTEDRA = 'TITOLARE_CATTEDRA';
@@ -36,13 +38,19 @@ export class SupplenzaRepository extends Repository<Supplenza> {
   }
 
   findByTitolare(docente: Docente): Supplenza[] {
-    const hits = this.database.tables[TABLE.SUPPLENZE]!.indexedLookup(COL_SUPPLENZE.TITOLARE, docente.id);
+    const hits = this.database.tables[TABLE.SUPPLENZE]!.indexedLookup(
+      COL_SUPPLENZE.TITOLARE,
+      docente.id
+    );
     if (hits !== null) return hits.map((row) => Supplenza.fromData(row));
     return this.findAll().filter((s) => s.titolare === docente.id);
   }
 
   findBySupplente(docente: Docente): Supplenza[] {
-    const hits = this.database.tables[TABLE.SUPPLENZE]!.indexedLookup(COL_SUPPLENZE.SUPPLENTE, docente.id);
+    const hits = this.database.tables[TABLE.SUPPLENZE]!.indexedLookup(
+      COL_SUPPLENZE.SUPPLENTE,
+      docente.id
+    );
     if (hits !== null) return hits.map((row) => Supplenza.fromData(row));
     return this.findAll().filter((s) => s.supplente === docente.id);
   }
@@ -61,17 +69,23 @@ export class SupplenzaRepository extends Repository<Supplenza> {
    * value objects and `InMemoryDelegationSource.getDelegationChain` walks
    * titolare → supplente → supplente-del-supplente to the end of the chain.
    */
-  findSupplenzaSpecifica(titolare: Docente, data: Date, classe?: ClasseId, materia?: MateriaId): Supplenza | null {
+  findSupplenzaSpecifica(
+    titolare: Docente,
+    data: Date,
+    classe?: ClasseId,
+    materia?: MateriaId
+  ): Supplenza | null {
     const email = titolare.id ?? '';
     if (email === '') return null;
 
-    const applicabili = this.findAll().filter((s) =>
-      s.isAttivaData(data) &&
-      (classe === undefined || s.applicaAClasse(classe)) &&
-      (materia === undefined || s.applicaAMateria(materia)) &&
-      // A self-substitution row is domain-invalid (and rejected by the library);
-      // skipping it leaves the titolare in charge, as resolution semantics require.
-      s.titolare !== s.supplente
+    const applicabili = this.findAll().filter(
+      (s) =>
+        s.isAttivaData(data) &&
+        (classe === undefined || s.applicaAClasse(classe)) &&
+        (materia === undefined || s.applicaAMateria(materia)) &&
+        // A self-substitution row is domain-invalid (and rejected by the library);
+        // skipping it leaves the titolare in charge, as resolution semantics require.
+        s.titolare !== s.supplente
     );
     if (applicabili.length === 0) return null;
 
@@ -79,14 +93,16 @@ export class SupplenzaRepository extends Repository<Supplenza> {
     const byArc = new Map<string, Supplenza>();
     applicabili.forEach((s, i) => {
       const periodo = s.getPeriodo();
-      source.addDelegation(new Delegation({
-        id: `${s.id ?? 'SUPPLENZA'}#${i}`,
-        principalId: s.titolare,
-        delegateId: s.supplente,
-        roleIds: '*',
-        validFrom: periodo.dal,
-        validTo: periodo.al
-      }));
+      source.addDelegation(
+        new Delegation({
+          id: `${s.id ?? 'SUPPLENZA'}#${i}`,
+          principalId: s.titolare,
+          delegateId: s.supplente,
+          roleIds: '*',
+          validFrom: periodo.dal,
+          validTo: periodo.al
+        })
+      );
       const arc = `${s.titolare}→${s.supplente}`;
       if (!byArc.has(arc)) byArc.set(arc, s);
     });
@@ -103,7 +119,14 @@ export class SupplenzaRepository extends Repository<Supplenza> {
    * (ref 04 §14, 06 §14). Appends through the library table seam; throws (without
    * creating) on violation.
    */
-  creaSupplenza(titolare: Docente, supplente: Docente, dal: Date, al: Date | null, classi: string, materie: string): Supplenza {
+  creaSupplenza(
+    titolare: Docente,
+    supplente: Docente,
+    dal: Date,
+    al: Date | null,
+    classi: string,
+    materie: string
+  ): Supplenza {
     const nuova = Supplenza.fromData({
       [COL_SUPPLENZE.TITOLARE]: titolare.id ?? '',
       [COL_SUPPLENZE.SUPPLENTE]: supplente.id ?? '',
@@ -114,7 +137,9 @@ export class SupplenzaRepository extends Repository<Supplenza> {
     });
     const conflitto = this.findByTitolare(titolare).find((s) => nuova.contestoOverlaps(s));
     if (conflitto !== undefined) {
-      throw new ValidationError(`Supplenza sovrapposta per ${titolare.id ?? '?'} nello stesso contesto classe+materia`);
+      throw new ValidationError(
+        `Supplenza sovrapposta per ${titolare.id ?? '?'} nello stesso contesto classe+materia`
+      );
     }
     this.database.tables[TABLE.SUPPLENZE]!.insertRow(nuova.toData());
     this.database.save();

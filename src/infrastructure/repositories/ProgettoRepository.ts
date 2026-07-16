@@ -1,5 +1,8 @@
 import { Progetto } from '../../domain/entities/Progetto';
-import { ProgettiPerClasseSpec, ProgettiPerTipoSpec } from '../../domain/specifications/ProgettoSpecs';
+import {
+  ProgettiPerClasseSpec,
+  ProgettiPerTipoSpec
+} from '../../domain/specifications/ProgettoSpecs';
 import type { Classe } from '../../domain/entities/Classe';
 import type { TipoProgetto } from '../../domain/value-objects/enums';
 import { TABLE, COL_PROGETTI } from '../../config/schema';

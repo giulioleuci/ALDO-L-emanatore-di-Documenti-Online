@@ -19,7 +19,12 @@ class FakeDocumentBuilder {
 class FakeDocumentService {
   builders: Record<string, FakeDocumentBuilder> = {};
   scanResult: DocumentScanResult = { tables: [], textMatches: [] };
-  insertTableAtMarkerCalls: Array<{ documentId: string; markerText: string; data: string[][]; options?: Record<string, unknown> }> = [];
+  insertTableAtMarkerCalls: Array<{
+    documentId: string;
+    markerText: string;
+    data: string[][];
+    options?: Record<string, unknown>;
+  }> = [];
   document(documentId: string): FakeDocumentBuilder {
     const b = this.builders[documentId] ?? new FakeDocumentBuilder();
     this.builders[documentId] = b;
@@ -28,7 +33,12 @@ class FakeDocumentService {
   scanDocumentStructure(): DocumentScanResult {
     return this.scanResult;
   }
-  insertTableAtMarker(documentId: string, markerText: string, data: string[][], options?: Record<string, unknown>): void {
+  insertTableAtMarker(
+    documentId: string,
+    markerText: string,
+    data: string[][],
+    options?: Record<string, unknown>
+  ): void {
     this.insertTableAtMarkerCalls.push({ documentId, markerText, data, options });
   }
 }
@@ -40,7 +50,11 @@ describe('DocumentTableFacade (10 §9)', () => {
       tables: [],
       textMatches: [
         { elementIndex: 1, text: 'Griglia: {{TABELLA:sheet_1}}', type: 'TEXT' },
-        { elementIndex: 2, text: 'Due tabelle {{TABELLA:sheet_2}} e {{TABELLA:sheet_3}}', type: 'TEXT' }
+        {
+          elementIndex: 2,
+          text: 'Due tabelle {{TABELLA:sheet_2}} e {{TABELLA:sheet_3}}',
+          type: 'TEXT'
+        }
       ]
     };
     const facade = new DocumentTableFacade(documents);
@@ -60,7 +74,9 @@ describe('DocumentTableFacade (10 §9)', () => {
 
     facade.removeText('doc1', '{{TABELLA:sheet_1}}');
 
-    expect(documents.builders['doc1']?.ops).toEqual([{ type: 'replaceText', args: ['{{TABELLA:sheet_1}}', ''] }]);
+    expect(documents.builders['doc1']?.ops).toEqual([
+      { type: 'replaceText', args: ['{{TABELLA:sheet_1}}', ''] }
+    ]);
   });
 
   test('appendTable creates a table and skips the call entirely for empty data', () => {
@@ -70,7 +86,9 @@ describe('DocumentTableFacade (10 §9)', () => {
     facade.appendTable('doc1', [['a', 'b']], { headerRow: true });
     facade.appendTable('doc1', []);
 
-    expect(documents.builders['doc1']?.ops).toEqual([{ type: 'createTable', args: [[['a', 'b']], { headerRow: true }] }]);
+    expect(documents.builders['doc1']?.ops).toEqual([
+      { type: 'createTable', args: [[['a', 'b']], { headerRow: true }] }
+    ]);
   });
 
   test('insertTableAtMarker delegates directly to DocumentService.insertTableAtMarker (imperative call, bypasses the op-queue)', () => {
@@ -80,7 +98,12 @@ describe('DocumentTableFacade (10 §9)', () => {
     facade.insertTableAtMarker('doc1', '{{TABELLA:sheet_1}}', [['a', 'b']], { headerRow: true });
 
     expect(documents.insertTableAtMarkerCalls).toEqual([
-      { documentId: 'doc1', markerText: '{{TABELLA:sheet_1}}', data: [['a', 'b']], options: { headerRow: true } }
+      {
+        documentId: 'doc1',
+        markerText: '{{TABELLA:sheet_1}}',
+        data: [['a', 'b']],
+        options: { headerRow: true }
+      }
     ]);
     // Positional insertion does not go through the fluent DocumentBuilder op-queue.
     expect(documents.builders['doc1']).toBeUndefined();

@@ -18,8 +18,11 @@ test('exposes materie and unique docenti', () => {
 });
 
 test('rejects duplicate (materia, docente) pair (invariant 05)', () => {
-  expect(() => new ConsiglioDiClasse([
-    { materia: MateriaId.of('MATE'), docente: rossi },
-    { materia: MateriaId.of('MATE'), docente: rossi }
-  ])).toThrow(ValidationError);
+  expect(
+    () =>
+      new ConsiglioDiClasse([
+        { materia: MateriaId.of('MATE'), docente: rossi },
+        { materia: MateriaId.of('MATE'), docente: rossi }
+      ])
+  ).toThrow(ValidationError);
 });

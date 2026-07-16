@@ -34,7 +34,11 @@ export class StatisticheProvider implements ContextProvider {
     const studenti = cdu.focus.classe?.studenti;
     if (studenti === undefined) return;
     const attivi = studentiDellaClasse(this.classi, getClasseEntity(cdu), true);
-    let conPianiDidattici = 0, conBes = 0, conDsa = 0, ripetenti = 0, rappresentanti = 0;
+    let conPianiDidattici = 0,
+      conBes = 0,
+      conDsa = 0,
+      ripetenti = 0,
+      rappresentanti = 0;
     for (const a of attivi) {
       const piani = this.alunni.getPiani(a);
       if (piani.length > 0) conPianiDidattici++;
@@ -43,6 +47,13 @@ export class StatisticheProvider implements ContextProvider {
       if (a.isRipetente()) ripetenti++;
       if (a.isRappresentante()) rappresentanti++;
     }
-    studenti.statistiche = { totale: attivi.length, conPianiDidattici, conBes, conDsa, ripetenti, rappresentanti };
+    studenti.statistiche = {
+      totale: attivi.length,
+      conPianiDidattici,
+      conBes,
+      conDsa,
+      ripetenti,
+      rappresentanti
+    };
   }
 }

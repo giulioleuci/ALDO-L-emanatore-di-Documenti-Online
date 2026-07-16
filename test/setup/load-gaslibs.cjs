@@ -18,5 +18,11 @@ new Function(code).call(global);
 // that log (e.g. Repository.save) run under Jest. Test-harness shim only — real
 // logging is exercised in the GAS online smoke tests, never here.
 if (typeof global.Logger === 'undefined') {
-  global.Logger = { log() {}, clear() {}, getLog() { return ''; } };
+  global.Logger = {
+    log() {},
+    clear() {},
+    getLog() {
+      return '';
+    }
+  };
 }

@@ -3,74 +3,247 @@ import type { Row } from '../../src/infrastructure/db/Database';
 export function fixtureTables(): Record<string, Row[]> {
   return {
     CLASSI: [
-      { ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO', ARTICOLAZIONE: null, RUOLI: '{"SEGRETARIO":"rossi@school.it","TUTOR_ASL":"rossi@school.it,bianchi@school.it"}',
-        ATTIVA: true, COORD: 'rossi@school.it', IRC: 'bianchi@school.it', STORICO: '4A,3A',
-        MATE: 'rossi@school.it', FISI: 'bianchi@school.it' },
-      { ID: '3B', ANNO: 3, INDIRIZZO: 'ITI', ARTICOLAZIONE: null, RUOLI: null, ATTIVA: false,
-        COORD: '', MATE: 'bianchi@school.it' },
-      { ID: '1F', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ATTIVA: true, COORD: 'rossi@school.it',
-        ARTICOLAZIONE: '{"parent":null,"partner":null,"partners":"1F-LSO,1F-LSS"}', MATE: 'rossi@school.it' },
-      { ID: '1F-LSO', ANNO: 1, INDIRIZZO: 'SCIENTIFICO', ATTIVA: true, COORD: 'rossi@school.it',
-        ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSS","partners":null}', MATE: 'rossi@school.it', FISI: 'bianchi@school.it' },
-      { ID: '1F-LSS', ANNO: 1, INDIRIZZO: 'LSSA', ATTIVA: true, COORD: 'rossi@school.it',
-        ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSO","partners":null}', MATE: 'rossi@school.it', FISI: 'verdi@school.it' }
+      {
+        ID: '5A',
+        ANNO: 5,
+        INDIRIZZO: 'SCIENTIFICO',
+        ARTICOLAZIONE: null,
+        RUOLI: '{"SEGRETARIO":"rossi@school.it","TUTOR_ASL":"rossi@school.it,bianchi@school.it"}',
+        ATTIVA: true,
+        COORD: 'rossi@school.it',
+        IRC: 'bianchi@school.it',
+        STORICO: '4A,3A',
+        MATE: 'rossi@school.it',
+        FISI: 'bianchi@school.it'
+      },
+      {
+        ID: '3B',
+        ANNO: 3,
+        INDIRIZZO: 'ITI',
+        ARTICOLAZIONE: null,
+        RUOLI: null,
+        ATTIVA: false,
+        COORD: '',
+        MATE: 'bianchi@school.it'
+      },
+      {
+        ID: '1F',
+        ANNO: 1,
+        INDIRIZZO: 'SCIENTIFICO',
+        ATTIVA: true,
+        COORD: 'rossi@school.it',
+        ARTICOLAZIONE: '{"parent":null,"partner":null,"partners":"1F-LSO,1F-LSS"}',
+        MATE: 'rossi@school.it'
+      },
+      {
+        ID: '1F-LSO',
+        ANNO: 1,
+        INDIRIZZO: 'SCIENTIFICO',
+        ATTIVA: true,
+        COORD: 'rossi@school.it',
+        ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSS","partners":null}',
+        MATE: 'rossi@school.it',
+        FISI: 'bianchi@school.it'
+      },
+      {
+        ID: '1F-LSS',
+        ANNO: 1,
+        INDIRIZZO: 'LSSA',
+        ATTIVA: true,
+        COORD: 'rossi@school.it',
+        ARTICOLAZIONE: '{"parent":"1F","partner":"1F-LSO","partners":null}',
+        MATE: 'rossi@school.it',
+        FISI: 'verdi@school.it'
+      }
     ],
     DOCENTI: [
-      { EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: 'M', DIPART: 'SCIENTIFICO_DIP', ITP: false },
-      { EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI', NOME: 'LUCIA', GENERE: 'F', DIPART: 'SCIENTIFICO_DIP', ITP: false },
-      { EMAIL: 'verdi@school.it', COGNOME: 'VERDI', NOME: 'GIO', GENERE: 'M', DIPART: 'LETTERE', ITP: true }
+      {
+        EMAIL: 'rossi@school.it',
+        COGNOME: 'ROSSI',
+        NOME: 'MARIO',
+        GENERE: 'M',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: false
+      },
+      {
+        EMAIL: 'bianchi@school.it',
+        COGNOME: 'BIANCHI',
+        NOME: 'LUCIA',
+        GENERE: 'F',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: false
+      },
+      {
+        EMAIL: 'verdi@school.it',
+        COGNOME: 'VERDI',
+        NOME: 'GIO',
+        GENERE: 'M',
+        DIPART: 'LETTERE',
+        ITP: true
+      }
     ],
     MATERIE: [
-      { ID: 'MATE', NOME: 'Matematica', SINTESI: 'Matematica', COLORE_1: '#c0392b', COLORE_2: '#fdecea',
-        SIMBOLO: '📐', ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}' },
-      { ID: 'FISI', NOME: 'Fisica', SINTESI: 'Fisica', COLORE_1: '#2980b9', COLORE_2: '#eaf2fd',
-        SIMBOLO: '🔭', ESAME_CFG: null }
+      {
+        ID: 'MATE',
+        NOME: 'Matematica',
+        SINTESI: 'Matematica',
+        COLORE_1: '#c0392b',
+        COLORE_2: '#fdecea',
+        SIMBOLO: '📐',
+        ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}'
+      },
+      {
+        ID: 'FISI',
+        NOME: 'Fisica',
+        SINTESI: 'Fisica',
+        COLORE_1: '#2980b9',
+        COLORE_2: '#eaf2fd',
+        SIMBOLO: '🔭',
+        ESAME_CFG: null
+      }
     ],
     ALUNNI: [
-      { EMAIL: 'a1@school.it', COGNOMENOME: 'VERDI ANNA', CLASSE: '5A', RELIGIONE: 'SI', ATTIVO: true,
-        RIPETENTE: false, RAPPR_STUD: true, TUTOR_1: 'genitore1@x.it', TUTOR_2: '',
-        CURRICULUM: '{"INTERP":["CHITARRA","PIANO"]}' },
-      { EMAIL: 'a2@school.it', COGNOMENOME: 'NERI PAOLO', CLASSE: '5A', RELIGIONE: 'NO', ATTIVO: false,
-        RIPETENTE: true, RAPPR_STUD: false, TUTOR_1: 'genitore2@x.it', TUTOR_2: 'genitore3@x.it', CURRICULUM: null },
-      { EMAIL: 'a3@school.it', COGNOMENOME: 'BLU CARLA', CLASSE: '5A', RELIGIONE: 'ALT', ATTIVO: false,
-        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null }
+      {
+        EMAIL: 'a1@school.it',
+        COGNOMENOME: 'VERDI ANNA',
+        CLASSE: '5A',
+        RELIGIONE: 'SI',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: true,
+        TUTOR_1: 'genitore1@x.it',
+        TUTOR_2: '',
+        CURRICULUM: '{"INTERP":["CHITARRA","PIANO"]}'
+      },
+      {
+        EMAIL: 'a2@school.it',
+        COGNOMENOME: 'NERI PAOLO',
+        CLASSE: '5A',
+        RELIGIONE: 'NO',
+        ATTIVO: false,
+        RIPETENTE: true,
+        RAPPR_STUD: false,
+        TUTOR_1: 'genitore2@x.it',
+        TUTOR_2: 'genitore3@x.it',
+        CURRICULUM: null
+      },
+      {
+        EMAIL: 'a3@school.it',
+        COGNOMENOME: 'BLU CARLA',
+        CLASSE: '5A',
+        RELIGIONE: 'ALT',
+        ATTIVO: false,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: '',
+        TUTOR_2: '',
+        CURRICULUM: null
+      }
     ],
     CONF_DOC: [
-      { ID: 'CD1', TIPO: 'VERBALE', GENERATORE: 'VERBALE_CDC', CONDIZIONE: null,
-        MODELLI: '{"templateId":"tmpl_verbale"}', FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
-        PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}', PATH_OUT_SOTTOCARTELLE: null,
-        SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE', PERMESSI: null, POST_PROCESSO: null,
-        PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' },
-      { ID: 'CD_ESAME', TIPO: 'VERBALE', GENERATORE: 'VERBALE_CDC',
+      {
+        ID: 'CD1',
+        TIPO: 'VERBALE',
+        GENERATORE: 'VERBALE_CDC',
+        CONDIZIONE: null,
+        MODELLI: '{"templateId":"tmpl_verbale"}',
+        FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
+        PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}',
+        PATH_OUT_SOTTOCARTELLE: null,
+        SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
+        PERMESSI: null,
+        POST_PROCESSO: null,
+        PARAMETRI: null,
+        GESTIONE_ARTICOLAZIONE: 'COMPLETA',
+        FORMATO: 'GDOC'
+      },
+      {
+        ID: 'CD_ESAME',
+        TIPO: 'VERBALE',
+        GENERATORE: 'VERBALE_CDC',
         CONDIZIONE: '{{focus.classe.anagrafica.anno}} == 5',
-        MODELLI: '[{"condizione":"{{focus.classe.anagrafica.anno}} == 5","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
-        FILE_NAME: null, PATH_OUT: null, PATH_OUT_SOTTOCARTELLE: null, SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
-        PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC' }
+        MODELLI:
+          '[{"condizione":"{{focus.classe.anagrafica.anno}} == 5","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
+        FILE_NAME: null,
+        PATH_OUT: null,
+        PATH_OUT_SOTTOCARTELLE: null,
+        SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
+        PERMESSI: null,
+        POST_PROCESSO: null,
+        PARAMETRI: null,
+        GESTIONE_ARTICOLAZIONE: 'COMPLETA',
+        FORMATO: 'GDOC'
+      }
     ],
     CONF_MAIL: [
-      { ID: 'CDC_OTTOBRE', OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}', PROCESSO: 'PER_CDC',
-        BOX_CFG: '[{"TIPO_BOX":"carenze"}]', TESTO: '<p>Gentili colleghi</p>', SUPPLENTI: 'ENTRAMBI', NOREPLY: true,
-        COLORE_HEADER: '', CONDIZIONE: null, POST_PROCESSO: null },
-      { ID: 'CARENZE_FAM', OGGETTO: 'Comunicazione carenze', PROCESSO: 'PER_GENITORI_ALUNNO',
-        BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: false, COLORE_HEADER: '#ff0000',
-        CONDIZIONE: 'carenze > 0', POST_PROCESSO: null },
-      { ID: 'CARENZE_NOTIFICA', OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}', PROCESSO: 'PER_CARENZA',
-        BOX_CFG: '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
-        TESTO: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
-        SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: true, COLORE_HEADER: '',
+      {
+        ID: 'CDC_OTTOBRE',
+        OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}',
+        PROCESSO: 'PER_CDC',
+        BOX_CFG: '[{"TIPO_BOX":"carenze"}]',
+        TESTO: '<p>Gentili colleghi</p>',
+        SUPPLENTI: 'ENTRAMBI',
+        NOREPLY: true,
+        COLORE_HEADER: '',
         CONDIZIONE: null,
-        POST_PROCESSO: '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]' }
+        POST_PROCESSO: null
+      },
+      {
+        ID: 'CARENZE_FAM',
+        OGGETTO: 'Comunicazione carenze',
+        PROCESSO: 'PER_GENITORI_ALUNNO',
+        BOX_CFG: null,
+        TESTO: '',
+        SUPPLENTI: 'SOLO_TITOLARI',
+        NOREPLY: false,
+        COLORE_HEADER: '#ff0000',
+        CONDIZIONE: 'carenze > 0',
+        POST_PROCESSO: null
+      },
+      {
+        ID: 'CARENZE_NOTIFICA',
+        OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}',
+        PROCESSO: 'PER_CARENZA',
+        BOX_CFG:
+          '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
+        TESTO: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
+        SUPPLENTI: 'SOLO_TITOLARI',
+        NOREPLY: true,
+        COLORE_HEADER: '',
+        CONDIZIONE: null,
+        POST_PROCESSO:
+          '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]'
+      }
     ],
     CONF_IMP: [
-      { ID: 'IMPORT_ALUNNI', TARGET: 'ALUNNI',
-        CONFIG: '{"searchStrategy":"FILE_SINGOLO","fileId":"sheet_alunni","map":{"A":"EMAIL","B":"COGNOMENOME"},"key":"EMAIL","conflictResolution":"IGNORE"}',
-        ATTIVO: true },
+      {
+        ID: 'IMPORT_ALUNNI',
+        TARGET: 'ALUNNI',
+        CONFIG:
+          '{"searchStrategy":"FILE_SINGOLO","fileId":"sheet_alunni","map":{"A":"EMAIL","B":"COGNOMENOME"},"key":"EMAIL","conflictResolution":"IGNORE"}',
+        ATTIVO: true
+      },
       { ID: 'IMPORT_DOCENTI', TARGET: 'DOCENTI', CONFIG: null, ATTIVO: false }
     ],
     INDIRIZZI: [
-      { ID: 'SCIENTIFICO', NOME: 'Liceo scientifico', NOME_SINTETICO: 'Scientifico', TIPO: 'LICEO' },
-      { ID: 'LSSA', NOME: 'Liceo scientifico scienze applicate', NOME_SINTETICO: 'Scienze applicate', TIPO: 'LICEO' },
-      { ID: 'ITI', NOME: 'Istituto tecnico industriale', NOME_SINTETICO: 'Tecnico industriale', TIPO: 'TECNICO' }
+      {
+        ID: 'SCIENTIFICO',
+        NOME: 'Liceo scientifico',
+        NOME_SINTETICO: 'Scientifico',
+        TIPO: 'LICEO'
+      },
+      {
+        ID: 'LSSA',
+        NOME: 'Liceo scientifico scienze applicate',
+        NOME_SINTETICO: 'Scienze applicate',
+        TIPO: 'LICEO'
+      },
+      {
+        ID: 'ITI',
+        NOME: 'Istituto tecnico industriale',
+        NOME_SINTETICO: 'Tecnico industriale',
+        TIPO: 'TECNICO'
+      }
     ],
     PIANI: [
       { STUDENTE: 'a1@school.it', TIPO: 'PEI', PARAMETRI: '{"gravita":"media"}' },
@@ -78,7 +251,12 @@ export function fixtureTables(): Record<string, Row[]> {
       { STUDENTE: 'a3@school.it', TIPO: 'PFP', PARAMETRI: null }
     ],
     DIPART: [
-      { ID: 'SCIENTIFICO_DIP', NOME: 'Dipartimento scientifico', CAPO: 'rossi@school.it', MATERIE: 'MATE,FISI' },
+      {
+        ID: 'SCIENTIFICO_DIP',
+        NOME: 'Dipartimento scientifico',
+        CAPO: 'rossi@school.it',
+        MATERIE: 'MATE,FISI'
+      },
       { ID: 'LETTERE', NOME: 'Dipartimento di lettere', CAPO: '', MATERIE: 'ITA' }
     ],
     RUOLI: [
@@ -86,16 +264,52 @@ export function fixtureTables(): Record<string, Row[]> {
       { ID: 'AN_DIG', NOME: 'Animatore digitale', DOCENTE: 'bianchi@school.it' }
     ],
     CARENZE: [
-      { STUDENTE: 'a1@school.it', PROGRESSIVO: 1, CLASSE: '5A', DATA: '2026-02-15', NOTIFICATO: '',
-        ASSENZE: true, MATE: '4.5', FISI: 'Studio scarso' },
-      { STUDENTE: 'a1@school.it', PROGRESSIVO: 2, CLASSE: '5A', DATA: '2026-05-20',
-        NOTIFICATO: '2026-05-21T10:00:00.000Z', ASSENZE: false, MATE: '5' },
-      { STUDENTE: 'a2@school.it', PROGRESSIVO: 1, CLASSE: '5A', DATA: '2025-12-01', NOTIFICATO: '',
-        ASSENZE: false, FISI: '3' }
+      {
+        STUDENTE: 'a1@school.it',
+        PROGRESSIVO: 1,
+        CLASSE: '5A',
+        DATA: '2026-02-15',
+        NOTIFICATO: '',
+        ASSENZE: true,
+        MATE: '4.5',
+        FISI: 'Studio scarso'
+      },
+      {
+        STUDENTE: 'a1@school.it',
+        PROGRESSIVO: 2,
+        CLASSE: '5A',
+        DATA: '2026-05-20',
+        NOTIFICATO: '2026-05-21T10:00:00.000Z',
+        ASSENZE: false,
+        MATE: '5'
+      },
+      {
+        STUDENTE: 'a2@school.it',
+        PROGRESSIVO: 1,
+        CLASSE: '5A',
+        DATA: '2025-12-01',
+        NOTIFICATO: '',
+        ASSENZE: false,
+        FISI: '3'
+      }
     ],
     PROGETTI: [
-      { CLASSE: '5A', TIPO: 'ASL', NOME: 'Stage aziendale', REFERENTE: 'rossi@school.it', ORE: 80, ORE_ASL: 70 },
-      { CLASSE: '5A', TIPO: 'ORIENTAMENTO', NOME: 'Open day', REFERENTE: 'bianchi@school.it', ORE: 10, ORE_ASL: 0 }
+      {
+        CLASSE: '5A',
+        TIPO: 'ASL',
+        NOME: 'Stage aziendale',
+        REFERENTE: 'rossi@school.it',
+        ORE: 80,
+        ORE_ASL: 70
+      },
+      {
+        CLASSE: '5A',
+        TIPO: 'ORIENTAMENTO',
+        NOME: 'Open day',
+        REFERENTE: 'bianchi@school.it',
+        ORE: 10,
+        ORE_ASL: 0
+      }
     ],
     MOV_ALUNNI: [
       { STUDENTE: 'a2@school.it', TIPO: 'IN', DATA: '2025-09-15', DA: 'ALTRO ISTITUTO', A: '5A' },
@@ -109,23 +323,71 @@ export function fixtureTables(): Record<string, Row[]> {
     ],
     SUPPLENZE: [
       // Chain: rossi replaced by bianchi (5A/ITA); bianchi in turn replaced by verdi (same context).
-      { TITOLARE: 'rossi@school.it', SUPPLENTE: 'bianchi@school.it', DAL: '2025-11-01', AL: '2025-11-30', CLASSI: '5A,4B', MATERIE: '*' },
-      { TITOLARE: 'bianchi@school.it', SUPPLENTE: 'verdi@school.it', DAL: '2025-11-10', AL: '2025-11-20', CLASSI: '5A', MATERIE: 'ITA' },
+      {
+        TITOLARE: 'rossi@school.it',
+        SUPPLENTE: 'bianchi@school.it',
+        DAL: '2025-11-01',
+        AL: '2025-11-30',
+        CLASSI: '5A,4B',
+        MATERIE: '*'
+      },
+      {
+        TITOLARE: 'bianchi@school.it',
+        SUPPLENTE: 'verdi@school.it',
+        DAL: '2025-11-10',
+        AL: '2025-11-20',
+        CLASSI: '5A',
+        MATERIE: 'ITA'
+      },
       // Unrelated, expired.
-      { TITOLARE: 'verdi@school.it', SUPPLENTE: 'rossi@school.it', DAL: '2025-09-01', AL: '2025-09-05', CLASSI: '*', MATERIE: '*' }
+      {
+        TITOLARE: 'verdi@school.it',
+        SUPPLENTE: 'rossi@school.it',
+        DAL: '2025-09-01',
+        AL: '2025-09-05',
+        CLASSI: '*',
+        MATERIE: '*'
+      }
     ],
     VARIAZIONI_CATTEDRA: [
-      { CLASSE_ID: '5A,3B', MATERIA_ID: 'MATE', VECCHIO_TITOLARE: 'rossi@school.it', NUOVO_TITOLARE: 'bianchi@school.it', DATA_DECORRENZA: '2025-10-01' },
-      { CLASSE_ID: '1F', MATERIA_ID: 'FISI', VECCHIO_TITOLARE: 'bianchi@school.it', NUOVO_TITOLARE: 'verdi@school.it', DATA_DECORRENZA: '2025-10-15' }
+      {
+        CLASSE_ID: '5A,3B',
+        MATERIA_ID: 'MATE',
+        VECCHIO_TITOLARE: 'rossi@school.it',
+        NUOVO_TITOLARE: 'bianchi@school.it',
+        DATA_DECORRENZA: '2025-10-01'
+      },
+      {
+        CLASSE_ID: '1F',
+        MATERIA_ID: 'FISI',
+        VECCHIO_TITOLARE: 'bianchi@school.it',
+        NUOVO_TITOLARE: 'verdi@school.it',
+        DATA_DECORRENZA: '2025-10-15'
+      }
     ],
     MASTER: [
       // Always kept in descending ANNO_SCOLASTICO order: first row = current year.
-      { ANNO_SCOLASTICO: '2025-2026', ID_SPREADSHEET: 'ss_2526', ID_CARTELLA_GOOGLE: 'fold_2526',
-        DIRIGENTE_SCOLASTICO: 'prof.ssa MARIA BIANCHI', SUPERVISORE_EMAIL: 'super@school.it' },
-      { ANNO_SCOLASTICO: '2024-2025', ID_SPREADSHEET: 'ss_2425', ID_CARTELLA_GOOGLE: 'fold_2425',
-        DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI', SUPERVISORE_EMAIL: '' },
-      { ANNO_SCOLASTICO: '2023-2024', ID_SPREADSHEET: 'ss_2324', ID_CARTELLA_GOOGLE: 'fold_2324',
-        DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI', SUPERVISORE_EMAIL: '' }
+      {
+        ANNO_SCOLASTICO: '2025-2026',
+        ID_SPREADSHEET: 'ss_2526',
+        ID_CARTELLA_GOOGLE: 'fold_2526',
+        DIRIGENTE_SCOLASTICO: 'prof.ssa MARIA BIANCHI',
+        SUPERVISORE_EMAIL: 'super@school.it'
+      },
+      {
+        ANNO_SCOLASTICO: '2024-2025',
+        ID_SPREADSHEET: 'ss_2425',
+        ID_CARTELLA_GOOGLE: 'fold_2425',
+        DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI',
+        SUPERVISORE_EMAIL: ''
+      },
+      {
+        ANNO_SCOLASTICO: '2023-2024',
+        ID_SPREADSHEET: 'ss_2324',
+        ID_CARTELLA_GOOGLE: 'fold_2324',
+        DIRIGENTE_SCOLASTICO: 'prof. LUIGI ROSSI',
+        SUPERVISORE_EMAIL: ''
+      }
     ],
     LOG_DOCS: [],
     LOG_FOLD: [],

@@ -20,19 +20,46 @@ test('getCarenzePerAlunno returns the student rows most-recent first (14 §2)', 
 test('getDocumentiPerAlunno filters by UTENTI contains + tipo/stato (14 §2)', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [
-    { ID: 'd1', ID_GEN: 'CD1', TIPO: 'PDP', STATO: 'GENERATO', UTENTI: 'a1@school.it', CLASSI: '5A' },
-    { ID: 'd2', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'ARCHIVIATO', UTENTI: 'a1@school.it', CLASSI: '5A' },
-    { ID: 'd3', ID_GEN: 'CD1', TIPO: 'PDP', STATO: 'GENERATO', UTENTI: 'a2@school.it', CLASSI: '5A' }
+    {
+      ID: 'd1',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      STATO: 'GENERATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A'
+    },
+    {
+      ID: 'd2',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'ARCHIVIATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A'
+    },
+    {
+      ID: 'd3',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      STATO: 'GENERATO',
+      UTENTI: 'a2@school.it',
+      CLASSI: '5A'
+    }
   ];
   const agg = aggregatore(tables);
   expect(agg.getDocumentiPerAlunno('a1@school.it').map((d) => d.id)).toEqual(['d1', 'd2']);
-  expect(agg.getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP' }).map((d) => d.id)).toEqual(['d1']);
-  expect(agg.getDocumentiPerAlunno('a1@school.it', { stato: StatoDocumento.ARCHIVIATO }).map((d) => d.id)).toEqual(['d2']);
+  expect(agg.getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP' }).map((d) => d.id)).toEqual([
+    'd1'
+  ]);
+  expect(
+    agg.getDocumentiPerAlunno('a1@school.it', { stato: StatoDocumento.ARCHIVIATO }).map((d) => d.id)
+  ).toEqual(['d2']);
 });
 
 test('getDocumentiPerClasse and getCartellePerClasse filter by CSV contains (14 §2)', () => {
   const tables = fixtureTables();
-  tables.LOG_DOCS = [{ ID: 'd1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A,3B', UTENTI: '' }];
+  tables.LOG_DOCS = [
+    { ID: 'd1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A,3B', UTENTI: '' }
+  ];
   tables.LOG_FOLD = [
     { ID: 'f1', PATH: 'Verbali/5', LINK: '', CLASSI: '5A', UTENTI: '' },
     { ID: 'f2', PATH: 'Verbali/3', LINK: '', CLASSI: '3B', UTENTI: '' }
@@ -43,13 +70,19 @@ test('getDocumentiPerClasse and getCartellePerClasse filter by CSV contains (14 
 });
 
 test('getEmailCoordinatori reads CLASSI.COORD (14 §2)', () => {
-  expect(aggregatore().getEmailCoordinatori('5A').map((e) => e.value)).toEqual(['rossi@school.it']);
+  expect(
+    aggregatore()
+      .getEmailCoordinatori('5A')
+      .map((e) => e.value)
+  ).toEqual(['rossi@school.it']);
   expect(aggregatore().getEmailCoordinatori('9Z')).toEqual([]);
 });
 
 test('perMetodo routes DATI_SORGENTE.metodo; unknown method warns and returns null (14 §2, 11 §5)', () => {
   const agg = aggregatore();
-  expect(agg.perMetodo('carenzePerAlunno', { alunnoEmail: 'a1@school.it' }, logger)).toHaveLength(2);
+  expect(agg.perMetodo('carenzePerAlunno', { alunnoEmail: 'a1@school.it' }, logger)).toHaveLength(
+    2
+  );
   expect(agg.perMetodo('emailCoordinatori', { classeId: '5A' }, logger)).toHaveLength(1);
   expect(agg.perMetodo('inesistente', {}, logger)).toBeNull();
 });
@@ -59,21 +92,37 @@ test('the full-table load is memoized: later inserts are not observed (N+1 preve
   const agg = new AggregatoreDati(db);
   const before = agg.getCarenzePerAlunno('a1@school.it').length;
   // Insert a new CARENZE row AFTER the first query populated the cache.
-  db.table('CARENZE').insert({ STUDENTE: 'a1@school.it', PROGRESSIVO: 9, CLASSE: '5A', DATA: '2026-06-01', MATE: '3' });
+  db.table('CARENZE').insert({
+    STUDENTE: 'a1@school.it',
+    PROGRESSIVO: 9,
+    CLASSE: '5A',
+    DATA: '2026-06-01',
+    MATE: '3'
+  });
   const after = agg.getCarenzePerAlunno('a1@school.it').length;
   expect(after).toBe(before); // served from the memoized snapshot, not re-read
 });
 
 test('perMetodo routes documentiPerClasse and cartellePerClasse to their accessors (14 §2)', () => {
   const tables = fixtureTables();
-  tables.LOG_DOCS = [{ ID: 'd1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A,3B', UTENTI: '' }];
+  tables.LOG_DOCS = [
+    { ID: 'd1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A,3B', UTENTI: '' }
+  ];
   tables.LOG_FOLD = [
     { ID: 'f1', PATH: 'Verbali/5', LINK: '', CLASSI: '5A', UTENTI: '' },
     { ID: 'f2', PATH: 'Verbali/3', LINK: '', CLASSI: '3B', UTENTI: '' }
   ];
   const agg = aggregatore(tables);
-  expect((agg.perMetodo('documentiPerClasse', { classeId: '5A' }, logger) as { id: string }[]).map((d) => d.id)).toEqual(['d1']);
-  expect((agg.perMetodo('cartellePerClasse', { classeId: '5A' }, logger) as { id: string | undefined }[]).map((f) => f.id ?? '')).toEqual(['f1']);
+  expect(
+    (agg.perMetodo('documentiPerClasse', { classeId: '5A' }, logger) as { id: string }[]).map(
+      (d) => d.id
+    )
+  ).toEqual(['d1']);
+  expect(
+    (
+      agg.perMetodo('cartellePerClasse', { classeId: '5A' }, logger) as { id: string | undefined }[]
+    ).map((f) => f.id ?? '')
+  ).toEqual(['f1']);
 });
 
 test('perMetodo logs a warning with the unknown metodo name and returns null (11 §5)', () => {
@@ -81,20 +130,44 @@ test('perMetodo logs a warning with the unknown metodo name and returns null (11
   const warnSpy = jest.spyOn(logger, 'warn');
   const result = agg.perMetodo('boh', {}, logger);
   expect(result).toBeNull();
-  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('metodo DATI_SORGENTE sconosciuto "boh"'));
+  expect(warnSpy).toHaveBeenCalledWith(
+    expect.stringContaining('metodo DATI_SORGENTE sconosciuto "boh"')
+  );
   warnSpy.mockRestore();
 });
 
 test('getDocumentiPerAlunno filters by sottotipo too, and only matches when ALL provided filtri match (14 §2)', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [
-    { ID: 'd1', ID_GEN: 'CD1', TIPO: 'PDP', SOTTOTIPO: 'ANNUALE', STATO: 'GENERATO', UTENTI: 'a1@school.it', CLASSI: '5A' },
-    { ID: 'd2', ID_GEN: 'CD1', TIPO: 'PDP', SOTTOTIPO: 'INTERMEDIO', STATO: 'GENERATO', UTENTI: 'a1@school.it', CLASSI: '5A' }
+    {
+      ID: 'd1',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      SOTTOTIPO: 'ANNUALE',
+      STATO: 'GENERATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A'
+    },
+    {
+      ID: 'd2',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      SOTTOTIPO: 'INTERMEDIO',
+      STATO: 'GENERATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A'
+    }
   ];
   const agg = aggregatore(tables);
-  expect(agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'ANNUALE' }).map((d) => d.id)).toEqual(['d1']);
+  expect(
+    agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'ANNUALE' }).map((d) => d.id)
+  ).toEqual(['d1']);
   expect(agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'INESISTENTE' })).toEqual([]);
-  expect(agg.getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP', sottotipo: 'ANNUALE' }).map((d) => d.id)).toEqual(['d1']);
+  expect(
+    agg
+      .getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP', sottotipo: 'ANNUALE' })
+      .map((d) => d.id)
+  ).toEqual(['d1']);
 });
 
 test('allCartelle() memoizes LOG_FOLD: cartellePerClasse called twice reads the table only once (N+1 prevention)', () => {

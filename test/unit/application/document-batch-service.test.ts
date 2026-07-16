@@ -1,4 +1,7 @@
-import { DocumentBatchService, JOB_TYPE_GENERAZIONE_DOCUMENTI } from '../../../src/application/services/DocumentBatchService';
+import {
+  DocumentBatchService,
+  JOB_TYPE_GENERAZIONE_DOCUMENTI
+} from '../../../src/application/services/DocumentBatchService';
 import type { BatchCheckpoint } from '../../../src/application/services/DocumentBatchService';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
@@ -41,7 +44,12 @@ test('handler yields one resumable checkpoint per active class and returns the t
   expect(checkpoints).toHaveLength(4);
   expect(checkpoints[0]!.nextIndex).toBe(1);
   expect(checkpoints[3]!.percentage).toBe(100);
-  expect(result).toEqual({ success: true, totale: 4, processed: ['5A', '1F', '1F-LSO', '1F-LSS'], errori: [] });
+  expect(result).toEqual({
+    success: true,
+    totale: 4,
+    processed: ['5A', '1F', '1F-LSO', '1F-LSS'],
+    errori: []
+  });
 });
 
 test('handler resumes from params.resumeState without reprocessing completed classes (JobRunnerLib resume cycle)', () => {
@@ -99,7 +107,8 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   const monitor = new FakeProcessMonitor();
   const { service } = wire({ monitor });
   const gen = service.batchGenerateHandler({
-    confDocId: 'CD1', jobId: 'job_1',
+    confDocId: 'CD1',
+    jobId: 'job_1',
     resumeState: { nextIndex: 2, processed: ['5A', '1F'], errori: [] }
   });
   let step = gen.next();
@@ -118,6 +127,8 @@ test('registerJobHandlers registers the generator under the job type (JobRunnerL
     }
   });
   expect(registered.has(JOB_TYPE_GENERAZIONE_DOCUMENTI)).toBe(true);
-  const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (p: { confDocId: string }) => Generator<unknown>;
+  const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (p: {
+    confDocId: string;
+  }) => Generator<unknown>;
   expect(typeof handler({ confDocId: 'CD1' }).next).toBe('function'); // returns a live generator
 });

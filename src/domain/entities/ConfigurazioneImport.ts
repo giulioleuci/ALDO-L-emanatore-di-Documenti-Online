@@ -16,12 +16,16 @@ export class ConfigurazioneImport extends AldoEntity {
   constructor(data: ConfigurazioneImportData = {}) {
     super(data);
     this.id = typeof data[COL_CONF_IMP.ID] === 'string' ? (data[COL_CONF_IMP.ID] as string) : null;
-    this.target = typeof data[COL_CONF_IMP.TARGET] === 'string' ? (data[COL_CONF_IMP.TARGET] as string) : '';
+    this.target =
+      typeof data[COL_CONF_IMP.TARGET] === 'string' ? (data[COL_CONF_IMP.TARGET] as string) : '';
     this.attivo = data[COL_CONF_IMP.ATTIVO] === true;
-    this.configRaw = typeof data[COL_CONF_IMP.CONFIG] === 'string' ? (data[COL_CONF_IMP.CONFIG] as string) : null;
+    this.configRaw =
+      typeof data[COL_CONF_IMP.CONFIG] === 'string' ? (data[COL_CONF_IMP.CONFIG] as string) : null;
   }
 
-  isAttivo(): boolean { return this.attivo; }
+  isAttivo(): boolean {
+    return this.attivo;
+  }
 
   getConfig(): Record<string, unknown> {
     return this.configRaw === null ? {} : (JSON.parse(this.configRaw) as Record<string, unknown>);

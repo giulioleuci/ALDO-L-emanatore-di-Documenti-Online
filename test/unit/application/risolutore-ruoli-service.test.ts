@@ -13,15 +13,26 @@ import type { Row } from '../../../src/infrastructure/db/Database';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
-function build(params: Partial<BuildParams>, recipeName = 'CLASSE_COMPLETA'): { cdu: Cdu; service: RisolutoreRuoliService } {
+function build(
+  params: Partial<BuildParams>,
+  recipeName = 'CLASSE_COMPLETA'
+): { cdu: Cdu; service: RisolutoreRuoliService } {
   const db = new FakeDatabase(fixtureTables());
   const buildParams: BuildParams = { target: '5A', tipoTarget: 'classe', now: NOW, ...params };
   const cdu = ContextEngineFactory.create(db).build(buildParams, recipe(recipeName));
   return { cdu, service: new RisolutoreRuoliService(db) };
 }
 
-function emails(service: RisolutoreRuoliService, ruolo: string, cdu: Cdu, opts?: { regolaSupplente?: GestioneSupplenti }): string[] {
-  return service.risolvi(ruolo, cdu, opts).map((e) => e.value).sort();
+function emails(
+  service: RisolutoreRuoliService,
+  ruolo: string,
+  cdu: Cdu,
+  opts?: { regolaSupplente?: GestioneSupplenti }
+): string[] {
+  return service
+    .risolvi(ruolo, cdu, opts)
+    .map((e) => e.value)
+    .sort();
 }
 
 describe('RisolutoreRuoliService — class roles (14 §1.1)', () => {
@@ -39,7 +50,10 @@ describe('RisolutoreRuoliService — class roles (14 §1.1)', () => {
     const { cdu, service } = build({});
     // 5A: IRC = bianchi (also FISI holder). Removing IRC drops bianchi's IRC role,
     // but bianchi remains via FISI. Verify rossi present, and no duplication.
-    expect(emails(service, 'DOCENTI_NO_RELIGIONE', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    expect(emails(service, 'DOCENTI_NO_RELIGIONE', cdu)).toEqual([
+      'bianchi@school.it',
+      'rossi@school.it'
+    ]);
   });
 
   test('DOCENTI_IRC_ALT merges CLASSI.IRC + CLASSI.ALT, deduped (MAT_NON_STANDARD §2.C)', () => {
@@ -96,7 +110,10 @@ describe('RisolutoreRuoliService — student/family roles (14 §1.1)', () => {
   });
 
   test('ALUNNO and FAMIGLIA resolve from focus.alunno', () => {
-    const { cdu, service } = build({ target: 'a1@school.it', tipoTarget: 'alunno' }, 'ALUNNO_COMPLETO');
+    const { cdu, service } = build(
+      { target: 'a1@school.it', tipoTarget: 'alunno' },
+      'ALUNNO_COMPLETO'
+    );
     expect(emails(service, 'ALUNNO', cdu)).toEqual(['a1@school.it']);
     expect(emails(service, 'FAMIGLIA', cdu)).toEqual(['genitore1@x.it']);
   });
@@ -121,14 +138,16 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
 
   test('SOLO_SUPPLENTI routes a coordinator to the chain-resolved substitute', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
-    expect(emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI }))
-      .toEqual(['verdi@school.it']);
+    expect(
+      emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
+    ).toEqual(['verdi@school.it']);
   });
 
   test('ENTRAMBI keeps both titolare and substitute', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
-    expect(emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI }))
-      .toEqual(['rossi@school.it', 'verdi@school.it']);
+    expect(
+      emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+    ).toEqual(['rossi@school.it', 'verdi@school.it']);
   });
 
   // REPORT_GLF.md B4: with no active supplenza, RoutingResolver's
@@ -138,14 +157,16 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
   // not DELEGATE_ONLY).
   test('SOLO_SUPPLENTI falls back to the titolare when no supplenza is active', () => {
     const { cdu, service } = build({});
-    expect(emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI }))
-      .toEqual(['rossi@school.it']);
+    expect(
+      emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
+    ).toEqual(['rossi@school.it']);
   });
 
   test('ENTRAMBI yields only the titolare when no supplenza is active (no duplicate)', () => {
     const { cdu, service } = build({});
-    expect(emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI }))
-      .toEqual(['rossi@school.it']);
+    expect(
+      emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+    ).toEqual(['rossi@school.it']);
   });
 
   test('applicaSupplenze routes through RoleResolutionLib.RoutingResolver, not a hand-rolled switch', () => {
@@ -162,8 +183,9 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
 
   test('student/family roles are never subject to supplenza routing', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
-    expect(emails(service, 'GENITORI_CLASSE', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI }))
-      .toEqual(['genitore1@x.it']);
+    expect(
+      emails(service, 'GENITORI_CLASSE', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
+    ).toEqual(['genitore1@x.it']);
   });
 });
 
@@ -175,12 +197,18 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
   });
 
   test('CDC_FILTER_ALUNNO resolves the filtered council for a real alunno target', () => {
-    const { cdu, service } = build({ target: 'a1@school.it', tipoTarget: 'alunno' }, 'ALUNNO_COMPLETO');
+    const { cdu, service } = build(
+      { target: 'a1@school.it', tipoTarget: 'alunno' },
+      'ALUNNO_COMPLETO'
+    );
     // a1: RELIGIONE SI -> IRC teacher (bianchi) included alongside subject teacher (rossi).
-    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual([
+      'bianchi@school.it',
+      'rossi@school.it'
+    ]);
   });
 
-  test('cdcFiltrato skips council members whose email has no matching record in the service\'s own DocenteRepository', () => {
+  test("cdcFiltrato skips council members whose email has no matching record in the service's own DocenteRepository", () => {
     // The CDU is built (and its consiglioDiClasseFiltrato VM populated) over a
     // full DOCENTI table, but the service is constructed over a second database
     // that is missing bianchi — cdcFiltrato re-looks-up each VM email through
@@ -193,7 +221,9 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     );
 
     const tablesMissingBianchi = fixtureTables();
-    tablesMissingBianchi.DOCENTI = (tablesMissingBianchi.DOCENTI as Row[]).filter((r) => r['EMAIL'] !== 'bianchi@school.it');
+    tablesMissingBianchi.DOCENTI = (tablesMissingBianchi.DOCENTI as Row[]).filter(
+      (r) => r['EMAIL'] !== 'bianchi@school.it'
+    );
     const dbMissingBianchi = new FakeDatabase(tablesMissingBianchi);
     const service = new RisolutoreRuoliService(dbMissingBianchi);
 
@@ -220,7 +250,12 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
   test('capoDipartimento returns [] when the capo email does not match any Docente', () => {
     const tables = fixtureTables();
     tables.DIPART = [
-      { ID: 'SCIENTIFICO_DIP', NOME: 'Dipartimento scientifico', CAPO: 'ghost@school.it', MATERIE: 'MATE,FISI' },
+      {
+        ID: 'SCIENTIFICO_DIP',
+        NOME: 'Dipartimento scientifico',
+        CAPO: 'ghost@school.it',
+        MATERIE: 'MATE,FISI'
+      },
       { ID: 'LETTERE', NOME: 'Dipartimento di lettere', CAPO: '', MATERIE: 'ITA' }
     ];
     const db = new FakeDatabase(tables);
@@ -266,7 +301,9 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     );
 
     const tablesMissingA1 = fixtureTables();
-    tablesMissingA1.ALUNNI = (tablesMissingA1.ALUNNI as Row[]).filter((r) => r['EMAIL'] !== 'a1@school.it');
+    tablesMissingA1.ALUNNI = (tablesMissingA1.ALUNNI as Row[]).filter(
+      (r) => r['EMAIL'] !== 'a1@school.it'
+    );
     const service = new RisolutoreRuoliService(new FakeDatabase(tablesMissingA1));
 
     expect(emails(service, 'FAMIGLIA', cdu)).toEqual([]);
@@ -284,10 +321,14 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     // No EMAIL key at all -> Docente.id is null -> titolareEmail resolves to '' in applicaSupplenze.
     const ghost = new Docente({ COGNOME: 'GHOST', NOME: 'X', GENERE: 'M' });
 
-    const spy = jest.spyOn(ClasseRepository.prototype, 'getCoordinatori').mockReturnValue([ghost, rossi]);
+    const spy = jest
+      .spyOn(ClasseRepository.prototype, 'getCoordinatori')
+      .mockReturnValue([ghost, rossi]);
     try {
       // ENTRAMBI + INSIDE_WINDOW: rossi has an active chain-resolved substitute (verdi).
-      const result = service.risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI });
+      const result = service.risolvi('COORDINATORI', cdu, {
+        regolaSupplente: GestioneSupplenti.ENTRAMBI
+      });
       // Ghost (blank id) contributes nothing; rossi's BOTH_EQUAL pair keeps titolare first.
       expect(result.map((e) => e.value)).toEqual(['rossi@school.it', 'verdi@school.it']);
     } finally {

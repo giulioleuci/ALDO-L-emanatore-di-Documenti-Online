@@ -41,7 +41,13 @@ export class ImportService {
     const conf = this.configs.findById(configId);
     if (conf === null) throw new PipelineError(`CONF_IMP ${configId} non trovato`);
     if (!conf.isAttivo()) {
-      return { inseriti: 0, aggiornati: 0, saltati: 0, ghost: 0, errori: ['skipped: ATTIVO=false'] };
+      return {
+        inseriti: 0,
+        aggiornati: 0,
+        saltati: 0,
+        ghost: 0,
+        errori: ['skipped: ATTIVO=false']
+      };
     }
 
     const recipe = toLibraryRecipe(conf);
@@ -51,9 +57,10 @@ export class ImportService {
       postTransform: (mapped, configuration) => {
         const load = configuration.getLoad();
         const keyColumns = load.conflictKey === undefined ? [] : [load.conflictKey];
-        const metaColumns = load.updateIfNewer?.timestampColumn !== undefined
-          ? [...META_COLUMNS, load.updateIfNewer.timestampColumn]
-          : META_COLUMNS;
+        const metaColumns =
+          load.updateIfNewer?.timestampColumn !== undefined
+            ? [...META_COLUMNS, load.updateIfNewer.timestampColumn]
+            : META_COLUMNS;
         const toLoad = mapped.filter((row) => !isGhostRecord(row, keyColumns, metaColumns));
         ghostCount = mapped.length - toLoad.length;
         return toLoad;
@@ -78,7 +85,10 @@ export class ImportService {
         results.push({ configId, result: this.executeImport(configId) });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        results.push({ configId, result: { inseriti: 0, aggiornati: 0, saltati: 0, ghost: 0, errori: [msg] } });
+        results.push({
+          configId,
+          result: { inseriti: 0, aggiornati: 0, saltati: 0, ghost: 0, errori: [msg] }
+        });
       }
     }
     return results;

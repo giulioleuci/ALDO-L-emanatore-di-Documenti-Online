@@ -33,10 +33,17 @@ class FakeSpreadsheetService {
   createSheets(): unknown {
     throw new Error('not used by these strategies');
   }
-  protectRanges(_id: string, requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]): SpreadsheetProtectResult {
+  protectRanges(
+    _id: string,
+    requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]
+  ): SpreadsheetProtectResult {
     const arr = Array.isArray(requests) ? requests : [requests];
     this.protectCalls.push(...arr);
-    return { spreadsheetId: 'sheet1', protectedCount: arr.length, protectedRangeIds: arr.map((_, i) => i) };
+    return {
+      spreadsheetId: 'sheet1',
+      protectedCount: arr.length,
+      protectedRangeIds: arr.map((_, i) => i)
+    };
   }
 }
 
@@ -44,13 +51,25 @@ function sheetInfo(name = 'Sheet1', rowCount = 20, columnCount = 10): Spreadshee
   return [{ name, sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount, columnCount } }];
 }
 
-function confDoc(generatore: string, parametri: Record<string, unknown> | null = null): ConfigurazioneDocumento {
+function confDoc(
+  generatore: string,
+  parametri: Record<string, unknown> | null = null
+): ConfigurazioneDocumento {
   return ConfigurazioneDocumento.fromData({
-    ID: 'CD_MAT', TIPO: 'GRIGLIA', GENERATORE: generatore, CONDIZIONE: null,
-    MODELLI: '{"templateId":"tmpl"}', FILE_NAME: 'x', PATH_OUT: 'x',
-    PATH_OUT_SOTTOCARTELLE: null, SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE', PERMESSI: null,
-    POST_PROCESSO: null, PARAMETRI: parametri === null ? null : JSON.stringify(parametri),
-    GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
+    ID: 'CD_MAT',
+    TIPO: 'GRIGLIA',
+    GENERATORE: generatore,
+    CONDIZIONE: null,
+    MODELLI: '{"templateId":"tmpl"}',
+    FILE_NAME: 'x',
+    PATH_OUT: 'x',
+    PATH_OUT_SOTTOCARTELLE: null,
+    SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
+    PERMESSI: null,
+    POST_PROCESSO: null,
+    PARAMETRI: parametri === null ? null : JSON.stringify(parametri),
+    GESTIONE_ARTICOLAZIONE: 'COMPLETA',
+    FORMATO: 'GSHEET'
   });
 }
 
@@ -64,18 +83,51 @@ function buildCdu(db: FakeDatabase, classeId: string): Cdu {
   const isArticolata = classi.isArticolata(classe);
   return {
     meta: {
-      timestamp: '', idConfigurazione: 'CD_MAT', tipoOperazione: 'GENERAZIONE_DOCUMENTO', idEsecuzione: 'e1',
-      date: { oggi: { breve: '09/07/2026', estesa: '', iso: '2026-07-09', giorno: '9', mese: '7', anno: '2026', ora: '10:00' } },
-      parametriInput: { target: classeId, tipoTarget: 'classe', materiaCorrente: null, opzioni: {} as never }
+      timestamp: '',
+      idConfigurazione: 'CD_MAT',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO',
+      idEsecuzione: 'e1',
+      date: {
+        oggi: {
+          breve: '09/07/2026',
+          estesa: '',
+          iso: '2026-07-09',
+          giorno: '9',
+          mese: '7',
+          anno: '2026',
+          ora: '10:00'
+        }
+      },
+      parametriInput: {
+        target: classeId,
+        tipoTarget: 'classe',
+        materiaCorrente: null,
+        opzioni: {} as never
+      }
     },
     focus: {
       classe: {
-        anagrafica: { nome: classeId, anno: classe.anno.value, sezione: '', indirizzo: { nome: '', nomeSintetico: '', sigla: '', tipo: '' } },
-        flags: { isClassePrima: false, isTriennio: true, isPrimoBiennio: false, isTerminale: true, isArticolata },
+        anagrafica: {
+          nome: classeId,
+          anno: classe.anno.value,
+          sezione: '',
+          indirizzo: { nome: '', nomeSintetico: '', sigla: '', tipo: '' }
+        },
+        flags: {
+          isClassePrima: false,
+          isTriennio: true,
+          isPrimoBiennio: false,
+          isTerminale: true,
+          isArticolata
+        },
         consiglioDiClasse
       }
     },
-    tech: { entita: { classe }, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } }
+    tech: {
+      entita: { classe },
+      servizi: [],
+      pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
+    }
   } as unknown as Cdu;
 }
 
@@ -85,7 +137,11 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const templates = new FakeTemplateEngine();
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
+    const strategy = new SheetMaterieGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates
+    );
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
@@ -104,7 +160,11 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo('Voti'));
     const templates = new FakeTemplateEngine();
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
+    const strategy = new SheetMaterieGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates
+    );
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE', { sheetName: 'Voti' }));
 
@@ -118,7 +178,11 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const templates = new FakeTemplateEngine();
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
+    const strategy = new SheetMaterieGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates
+    );
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
@@ -130,19 +194,39 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
   test('throws a ConfigurationError when the CDU has no focus.classe', () => {
     const db = new FakeDatabase(fixtureTables());
     const sheets = new FakeSpreadsheetService(sheetInfo());
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
-    const cdu = { meta: {}, focus: {}, tech: { entita: {}, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } } } as unknown as Cdu;
+    const strategy = new SheetMaterieGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine()
+    );
+    const cdu = {
+      meta: {},
+      focus: {},
+      tech: {
+        entita: {},
+        servizi: [],
+        pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
+      }
+    } as unknown as Cdu;
 
-    expect(() => strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'))).toThrow(ConfigurationError);
+    expect(() => strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'))).toThrow(
+      ConfigurationError
+    );
   });
 
   test('throws a ConfigurationError when the configured sheet name does not exist', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1'));
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), new FakeTemplateEngine());
+    const strategy = new SheetMaterieGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine()
+    );
 
-    expect(() => strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE', { sheetName: 'Assente' }))).toThrow(ConfigurationError);
+    expect(() =>
+      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE', { sheetName: 'Assente' }))
+    ).toThrow(ConfigurationError);
   });
 
   test('articulated class: shared subjects first, then each partner group with its own label (10 §9)', () => {
@@ -158,7 +242,11 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
     };
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const templates = new FakeTemplateEngine();
-    const strategy = new SheetMaterieGeneratorStrategy(sheets, new MateriaRepository(db), templates);
+    const strategy = new SheetMaterieGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates
+    );
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
@@ -232,6 +320,10 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     // column layout order: A=MATE (group1), B=label(1F-LSO, no ACL), C=FISI (group2), D=label(1F-LSS, no ACL), E=FISI (group3)
-    expect(sheets.protectCalls.map((r) => r.range).sort()).toEqual(['Sheet1!A:A', 'Sheet1!C:C', 'Sheet1!E:E']);
+    expect(sheets.protectCalls.map((r) => r.range).sort()).toEqual([
+      'Sheet1!A:A',
+      'Sheet1!C:C',
+      'Sheet1!E:E'
+    ]);
   });
 });

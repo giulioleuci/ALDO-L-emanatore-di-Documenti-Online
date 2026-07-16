@@ -39,12 +39,18 @@ import { GestioneSupplenti } from '../../../domain/value-objects/enums';
 export function createSupplentiSubstitutionLookup(
   docenti: DocenteRepository,
   supplenze: SupplenzaRepository
-): (item: unknown, context: unknown, options: unknown) => null | { action: 'annotate'; meta: Partial<DocenteCdcVM> } {
+): (
+  item: unknown,
+  context: unknown,
+  options: unknown
+) => null | { action: 'annotate'; meta: Partial<DocenteCdcVM> } {
   return (item, context, options) => {
     const vm = item as DocenteCdcVM;
     const cdu = context as Cdu;
-    const rule = (options as RecipeOptions | undefined)?.['gestioneSupplenti'] as GestioneSupplenti | undefined;
-    if (rule !== GestioneSupplenti.SOLO_SUPPLENTI && rule !== GestioneSupplenti.ENTRAMBI) return null;
+    const rule = (options as RecipeOptions | undefined)?.['gestioneSupplenti'] as
+      GestioneSupplenti | undefined;
+    if (rule !== GestioneSupplenti.SOLO_SUPPLENTI && rule !== GestioneSupplenti.ENTRAMBI)
+      return null;
 
     const classe = cdu.tech.entita.classe as Classe | undefined;
     if (classe === undefined) return null;
@@ -61,7 +67,10 @@ export function createSupplentiSubstitutionLookup(
       return {
         action: 'annotate',
         meta: {
-          stato: { isSupplente: true, sostituisce: { nome: titolare.getNomeCompleto(), email: titolare.id ?? '' } },
+          stato: {
+            isSupplente: true,
+            sostituisce: { nome: titolare.getNomeCompleto(), email: titolare.id ?? '' }
+          },
           anagrafica: {
             nome: supplenteDoc.nome,
             cognome: supplenteDoc.cognome,
@@ -77,7 +86,10 @@ export function createSupplentiSubstitutionLookup(
     return {
       action: 'annotate',
       meta: {
-        stato: { isSupplente: false, sostituisce: { nome: supplenteDoc.getNomeCompleto(), email: supplenteDoc.id ?? '' } }
+        stato: {
+          isSupplente: false,
+          sostituisce: { nome: supplenteDoc.getNomeCompleto(), email: supplenteDoc.id ?? '' }
+        }
       }
     };
   };
@@ -92,7 +104,12 @@ function effettivoSupplente(
   supplenze: SupplenzaRepository
 ): string | null {
   for (const m of vm.materie) {
-    const supp = supplenze.findSupplenzaSpecifica(titolare, date, classe.classeId, MateriaId.of(m.sigla));
+    const supp = supplenze.findSupplenzaSpecifica(
+      titolare,
+      date,
+      classe.classeId,
+      MateriaId.of(m.sigla)
+    );
     if (supp !== null) return supp.supplente;
   }
   return null;

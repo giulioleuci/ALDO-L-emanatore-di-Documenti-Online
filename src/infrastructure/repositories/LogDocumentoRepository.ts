@@ -49,7 +49,14 @@ export class LogDocumentoRepository extends Repository<LogDocumento> {
   }
 
   /** Appends a GENERATO record with DATA_CREAZ = now (ref 06 §17). */
-  registraDocumento(driveFileId: string, configId: string, nome: string, path: string, link: string, options: RegistraOptions = {}): LogDocumento {
+  registraDocumento(
+    driveFileId: string,
+    configId: string,
+    nome: string,
+    path: string,
+    link: string,
+    options: RegistraOptions = {}
+  ): LogDocumento {
     const log = LogDocumento.fromData({
       [COL_LOG_DOCS.ID]: driveFileId,
       [COL_LOG_DOCS.ID_GEN]: configId,

@@ -7,7 +7,11 @@ import type { Alunno } from '../../domain/entities/Alunno';
  * students live under the partner classes, so they are aggregated across both
  * partners; for a partner or a standard class it is the plain roster.
  */
-export function studentiDellaClasse(classi: ClasseRepository, classe: Classe, soloAttivi: boolean): Alunno[] {
+export function studentiDellaClasse(
+  classi: ClasseRepository,
+  classe: Classe,
+  soloAttivi: boolean
+): Alunno[] {
   const config = classi.getArticolazione(classe);
   if (config?.isParent() === true) {
     return classi.getClassiPartner(classe).flatMap((p) => classi.getStudenti(p, soloAttivi));

@@ -4,7 +4,9 @@ import type { BuildParams } from '../../../../src/application/context-engine/Rec
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
-function factory() { return ContextEngineFactory.create(new FakeDatabase(fixtureTables())); }
+function factory() {
+  return ContextEngineFactory.create(new FakeDatabase(fixtureTables()));
+}
 const now = new Date('2026-07-01T09:00:00Z');
 
 test('CLASSE_COMPLETA on 5A assembles every class section (09 §3)', () => {
@@ -16,10 +18,15 @@ test('CLASSE_COMPLETA on 5A assembles every class section (09 §3)', () => {
   const c = cdu.focus.classe!;
   expect(c.anagrafica.nome).toBe('5A');
   expect(c.tutor?.asl.map((t) => t.email)).toEqual(['rossi@school.it', 'bianchi@school.it']);
-  expect(c.consiglioDiClasse?.map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  expect(c.consiglioDiClasse?.map((d) => d.anagrafica.email)).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it'
+  ]);
   expect(c.studenti?.listaCompleta).toHaveLength(3);
   expect(c.studenti?.statistiche?.totale).toBe(1);
-  expect(c.rappresentanti?.studenti).toEqual([{ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }]);
+  expect(c.rappresentanti?.studenti).toEqual([
+    { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+  ]);
   expect(c.coordinatori?.[0]?.email).toBe('rossi@school.it');
   // focus.alunno is not part of a class recipe
   expect(cdu.focus.alunno).toBeUndefined();
@@ -37,7 +44,9 @@ test('ALUNNO_DETTAGLIATO on a1 assembles the full student focus; storico is skip
   expect(a.status.isBes).toBe(true);
   expect(a.didattica.asl).toEqual({ oreCumulate: 100, oreAnnoCorrente: 60 });
   expect(a.didattica.carenze.numero).toBe(3);
-  expect(a.didattica.piani.items).toEqual([{ tipo: 'PEI', isBes: true, link: '', parametriGenerazione: { gravita: 'media' } }]);
+  expect(a.didattica.piani.items).toEqual([
+    { tipo: 'PEI', isBes: true, link: '', parametriGenerazione: { gravita: 'media' } }
+  ]);
   expect(a.didattica.documenti).toEqual({ hasDocumenti: false, items: [] });
   // includiStorico defaults to false → StoricoProvider is a no-op, no LazyRef.
   expect(cdu.focus.classe?.anagrafica.nome).toBe('5A');

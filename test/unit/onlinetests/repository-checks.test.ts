@@ -3,8 +3,16 @@ import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
 import { registerRepositoryChecks } from '../../../src/onlinetests/checks/repositoryChecks';
 import type { SampleDatabase } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
-  CLASSE_BASE, CLASSE_PARTNER, DOCENTE_1, DOCENTE_2, DOCENTE_3, MATERIA_1, INDIRIZZO_1, DIPART_1,
-  alunnoEmail, ALUNNO_PARTNER_EMAIL
+  CLASSE_BASE,
+  CLASSE_PARTNER,
+  DOCENTE_1,
+  DOCENTE_2,
+  DOCENTE_3,
+  MATERIA_1,
+  INDIRIZZO_1,
+  DIPART_1,
+  alunnoEmail,
+  ALUNNO_PARTNER_EMAIL
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
@@ -24,15 +32,33 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
   const classi: Row[] = includeClasse
     ? [
         {
-          ID: CLASSE_BASE, ANNO: 4, INDIRIZZO: INDIRIZZO_1,
+          ID: CLASSE_BASE,
+          ANNO: 4,
+          INDIRIZZO: INDIRIZZO_1,
           ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_PARTNER, partners: null }),
-          RUOLI: '', ATTIVA: true, COORD: DOCENTE_1, IRC: '', ALT: '', SEZ: 'A', TERMINALE: false, STORICO: false,
+          RUOLI: '',
+          ATTIVA: true,
+          COORD: DOCENTE_1,
+          IRC: '',
+          ALT: '',
+          SEZ: 'A',
+          TERMINALE: false,
+          STORICO: false,
           [MATERIA_1]: DOCENTE_1
         },
         {
-          ID: CLASSE_PARTNER, ANNO: 4, INDIRIZZO: INDIRIZZO_1,
+          ID: CLASSE_PARTNER,
+          ANNO: 4,
+          INDIRIZZO: INDIRIZZO_1,
           ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_BASE, partners: null }),
-          RUOLI: '', ATTIVA: true, COORD: DOCENTE_2, IRC: '', ALT: '', SEZ: 'A', TERMINALE: false, STORICO: false
+          RUOLI: '',
+          ATTIVA: true,
+          COORD: DOCENTE_2,
+          IRC: '',
+          ALT: '',
+          SEZ: 'A',
+          TERMINALE: false,
+          STORICO: false
         }
       ]
     : [];
@@ -40,28 +66,90 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
     ...fixtureTables(),
     CLASSI: classi,
     DOCENTI: [
-      { EMAIL: DOCENTE_1, COGNOME: 'Rossi', NOME: 'Mario', GENERE: 'M', DIPART: DIPART_1, ITP: false },
-      { EMAIL: DOCENTE_2, COGNOME: 'Bianchi', NOME: 'Laura', GENERE: 'F', DIPART: DIPART_1, ITP: false },
-      { EMAIL: DOCENTE_3, COGNOME: 'Verdi', NOME: 'Paolo', GENERE: 'M', DIPART: DIPART_1, ITP: false }
+      {
+        EMAIL: DOCENTE_1,
+        COGNOME: 'Rossi',
+        NOME: 'Mario',
+        GENERE: 'M',
+        DIPART: DIPART_1,
+        ITP: false
+      },
+      {
+        EMAIL: DOCENTE_2,
+        COGNOME: 'Bianchi',
+        NOME: 'Laura',
+        GENERE: 'F',
+        DIPART: DIPART_1,
+        ITP: false
+      },
+      {
+        EMAIL: DOCENTE_3,
+        COGNOME: 'Verdi',
+        NOME: 'Paolo',
+        GENERE: 'M',
+        DIPART: DIPART_1,
+        ITP: false
+      }
     ],
     MATERIE: [
-      { ID: MATERIA_1, NOME: 'Matematica', SINTESI: 'MAT', COLORE_1: '#1565C0', COLORE_2: '#90CAF9', SIMBOLO: 'M', ESAME_CFG: null }
+      {
+        ID: MATERIA_1,
+        NOME: 'Matematica',
+        SINTESI: 'MAT',
+        COLORE_1: '#1565C0',
+        COLORE_2: '#90CAF9',
+        SIMBOLO: 'M',
+        ESAME_CFG: null
+      }
     ],
     ALUNNI: [
       ...[1, 2, 3, 4].map((i) => ({
-        EMAIL: alunnoEmail(i), COGNOMENOME: `Alunno${i} Test`, CLASSE: CLASSE_BASE, RELIGIONE: 'SI', ATTIVO: true,
-        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null
+        EMAIL: alunnoEmail(i),
+        COGNOMENOME: `Alunno${i} Test`,
+        CLASSE: CLASSE_BASE,
+        RELIGIONE: 'SI',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: '',
+        TUTOR_2: '',
+        CURRICULUM: null
       })),
       {
-        EMAIL: ALUNNO_PARTNER_EMAIL, COGNOMENOME: 'Alunno5 Test', CLASSE: CLASSE_PARTNER, RELIGIONE: 'SI', ATTIVO: true,
-        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null
+        EMAIL: ALUNNO_PARTNER_EMAIL,
+        COGNOMENOME: 'Alunno5 Test',
+        CLASSE: CLASSE_PARTNER,
+        RELIGIONE: 'SI',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: '',
+        TUTOR_2: '',
+        CURRICULUM: null
       }
     ],
     SUPPLENZE: includeClasse
-      ? [{ TITOLARE: DOCENTE_1, SUPPLENTE: DOCENTE_2, DAL: '2026-07-01', AL: '2026-07-10', CLASSI: CLASSE_BASE, MATERIE: MATERIA_1 }]
+      ? [
+          {
+            TITOLARE: DOCENTE_1,
+            SUPPLENTE: DOCENTE_2,
+            DAL: '2026-07-01',
+            AL: '2026-07-10',
+            CLASSI: CLASSE_BASE,
+            MATERIE: MATERIA_1
+          }
+        ]
       : [],
     VARIAZIONI_CATTEDRA: includeClasse
-      ? [{ CLASSE_ID: CLASSE_BASE, MATERIA_ID: MATERIA_1, VECCHIO_TITOLARE: DOCENTE_1, NUOVO_TITOLARE: DOCENTE_3, DATA_DECORRENZA: '2026-07-05' }]
+      ? [
+          {
+            CLASSE_ID: CLASSE_BASE,
+            MATERIA_ID: MATERIA_1,
+            VECCHIO_TITOLARE: DOCENTE_1,
+            NUOVO_TITOLARE: DOCENTE_3,
+            DATA_DECORRENZA: '2026-07-05'
+          }
+        ]
       : []
   };
 }
@@ -128,6 +216,7 @@ describe('registerRepositoryChecks', () => {
     const runner = new TestRunner();
     const sample = sampleFixture();
     registerRepositoryChecks(runner, buildFakeContainer(), sample);
-    for (const r of runner.report().results) expect(r.artifactUrl).toBe(sample.sampleSpreadsheetUrl);
+    for (const r of runner.report().results)
+      expect(r.artifactUrl).toBe(sample.sampleSpreadsheetUrl);
   });
 });

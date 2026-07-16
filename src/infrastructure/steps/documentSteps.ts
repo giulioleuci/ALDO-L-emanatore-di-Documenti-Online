@@ -8,7 +8,11 @@ import type { ConfigurazioneDocumento } from '../../domain/entities/Configurazio
 import type { ConfigurazioneDocumentoRepository } from '../repositories/ConfigurazioneDocumentoRepository';
 import type { Email } from '../../domain/value-objects/Email';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
-import { StatoDocumento, SchemaSottocartelle, GestioneSupplenti } from '../../domain/value-objects/enums';
+import {
+  StatoDocumento,
+  SchemaSottocartelle,
+  GestioneSupplenti
+} from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { AlberoCartelle } from '../services/AlberoCartelle';
@@ -94,7 +98,11 @@ export class AnalyzeContextStep extends Step {
     super('AnalyzeContext', logger, { requiredKeys: ['config', 'confDoc', 'cdu'] });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    this.setResult(ctx, 'shouldGenerate', this.configs.shouldGenerate(confDoc(ctx), cduRecord(ctx), this.engine));
+    this.setResult(
+      ctx,
+      'shouldGenerate',
+      this.configs.shouldGenerate(confDoc(ctx), cduRecord(ctx), this.engine)
+    );
   }
 }
 
@@ -112,7 +120,11 @@ export class CheckDuplicatesStep extends Step {
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
     const classe = classeNome(ctx);
     const existing = this.db.table(TABLE.LOG_DOCS).find(
-      (r) => r[COL_LOG_DOCS.ID_GEN] === idGen && String(r[COL_LOG_DOCS.CLASSI] ?? '').split(',').includes(classe)
+      (r) =>
+        r[COL_LOG_DOCS.ID_GEN] === idGen &&
+        String(r[COL_LOG_DOCS.CLASSI] ?? '')
+          .split(',')
+          .includes(classe)
     );
     if (existing) {
       this.setResult(ctx, 'shouldGenerate', false);
@@ -132,7 +144,10 @@ export class PrepareInfrastructureStep extends Step {
     super('PrepareInfrastructure', logger, { shouldExecuteCondition: generateGate });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    const path = this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]), cduRecord(ctx));
+    const path = this.templates.processString(
+      String(cfg(ctx)[COL_CONF_DOC.PATH_OUT]),
+      cduRecord(ctx)
+    );
     // findOrCreate over LOG_FOLD + Drive (14 §4); the LOG_FOLD insert is committed
     // by the service transaction (SheetDBLib forbids save() while one is open).
     const classe = classeNome(ctx);
@@ -152,7 +167,11 @@ export class GenerateNameStep extends Step {
     super('GenerateName', logger, { shouldExecuteCondition: generateGate });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    this.setResult(ctx, 'nomeFile', this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME]), cduRecord(ctx)));
+    this.setResult(
+      ctx,
+      'nomeFile',
+      this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME]), cduRecord(ctx))
+    );
   }
 }
 
@@ -166,7 +185,11 @@ export class SelectTemplateStep extends Step {
     super('SelectTemplate', logger, { shouldExecuteCondition: generateGate });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    this.setResult(ctx, 'templateId', this.configs.resolveTemplateId(confDoc(ctx), cduRecord(ctx), this.engine));
+    this.setResult(
+      ctx,
+      'templateId',
+      this.configs.resolveTemplateId(confDoc(ctx), cduRecord(ctx), this.engine)
+    );
   }
 }
 
@@ -182,7 +205,11 @@ export class CloneTemplateStep extends Step {
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    const fileId = this.drive.copyFile(ctx.get<string>('templateId')!, ctx.get<string>('nomeFile')!, ctx.get<string>('destFolderId')!);
+    const fileId = this.drive.copyFile(
+      ctx.get<string>('templateId')!,
+      ctx.get<string>('nomeFile')!,
+      ctx.get<string>('destFolderId')!
+    );
     this.setResult(ctx, 'newFileId', fileId);
     this.setResult(ctx, 'newFileLink', `https://drive.google.com/file/d/${fileId}/view`);
   }
@@ -194,7 +221,10 @@ export class RenderTemplateStep extends Step {
     logger: LoggerService,
     private readonly registry: Map<string, GeneratorStrategy>
   ) {
-    super('RenderTemplate', logger, { shouldExecuteCondition: generateGate, requiredKeys: ['newFileId'] });
+    super('RenderTemplate', logger, {
+      shouldExecuteCondition: generateGate,
+      requiredKeys: ['newFileId']
+    });
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const generatore = String(cfg(ctx)[COL_CONF_DOC.GENERATORE]);
@@ -225,7 +255,12 @@ export class ApplyPermissionsStep extends Step {
     }
     const folderId = ctx.get<string>('destFolderId');
     if (folderId !== null) {
-      this.applica(perms.folder ?? [], folderId, cduObj, parseRegola(perms.regolaSupplente?.folder));
+      this.applica(
+        perms.folder ?? [],
+        folderId,
+        cduObj,
+        parseRegola(perms.regolaSupplente?.folder)
+      );
     }
   }
 
@@ -275,7 +310,8 @@ export class PostProcessStep extends Step {
     private readonly now: Date
   ) {
     super('PostProcess', logger, {
-      shouldExecuteCondition: (ctx) => generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.POST_PROCESSO] != null
+      shouldExecuteCondition: (ctx) =>
+        generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.POST_PROCESSO] != null
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {

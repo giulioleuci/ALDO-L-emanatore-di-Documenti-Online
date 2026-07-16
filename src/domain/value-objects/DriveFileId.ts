@@ -8,7 +8,9 @@ export class DriveFileId {
     }
     return new DriveFileId(raw.trim());
   }
-  getUrl(): string { return `https://drive.google.com/file/d/${this.value}/view`; }
+  getUrl(): string {
+    return `https://drive.google.com/file/d/${this.value}/view`;
+  }
 }
 
 export class DriveFolderId {
@@ -19,5 +21,7 @@ export class DriveFolderId {
     }
     return new DriveFolderId(raw.trim());
   }
-  getUrl(): string { return `https://drive.google.com/drive/folders/${this.value}`; }
+  getUrl(): string {
+    return `https://drive.google.com/drive/folders/${this.value}`;
+  }
 }

@@ -15,30 +15,55 @@ function build(target: string) {
   b.registerProvider('class', new ClasseProvider(classi));
   b.registerProvider('tutor', new TutorProvider(classi));
   b.registerProvider('rappresentanti', new RappresentantiProvider(classi));
-  const params: BuildParams = { target, tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
-  const recipe: Recipe = { providers: ['class', 'tutor', 'rappresentanti'], options: makeOptions() };
+  const params: BuildParams = {
+    target,
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
+  const recipe: Recipe = {
+    providers: ['class', 'tutor', 'rappresentanti'],
+    options: makeOptions()
+  };
   return b.build(params, recipe);
 }
 
 test('ClasseProvider: anagrafica + flags for a standard terminal class (02 §4.1)', () => {
   const c = build('5A').focus.classe!;
   expect(c.anagrafica).toEqual({
-    nome: '5A', anno: 5, sezione: 'A',
-    indirizzo: { nome: 'Liceo scientifico', nomeSintetico: 'Scientifico', sigla: 'SCIENTIFICO', tipo: 'LICEO' }
+    nome: '5A',
+    anno: 5,
+    sezione: 'A',
+    indirizzo: {
+      nome: 'Liceo scientifico',
+      nomeSintetico: 'Scientifico',
+      sigla: 'SCIENTIFICO',
+      tipo: 'LICEO'
+    }
   });
-  expect(c.flags).toEqual({ isClassePrima: false, isTriennio: true, isPrimoBiennio: false, isTerminale: true, isArticolata: false });
+  expect(c.flags).toEqual({
+    isClassePrima: false,
+    isTriennio: true,
+    isPrimoBiennio: false,
+    isTerminale: true,
+    isArticolata: false
+  });
   expect(c.articolazione).toBeUndefined();
 });
 
 test('ClasseProvider: coordinatori with resolved subject + appellativo', () => {
   const c = build('5A').focus.classe!;
-  expect(c.coordinatori).toEqual([{ nome: 'ROSSI MARIO', email: 'rossi@school.it', materia: 'MATE', appellativo: 'Prof.' }]);
+  expect(c.coordinatori).toEqual([
+    { nome: 'ROSSI MARIO', email: 'rossi@school.it', materia: 'MATE', appellativo: 'Prof.' }
+  ]);
 });
 
 test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI (02 §4.1)', () => {
   const c = build('5A').focus.classe!;
   expect(c.tutor).toEqual({
-    asl: [{ nome: 'ROSSI MARIO', email: 'rossi@school.it' }, { nome: 'BIANCHI LUCIA', email: 'bianchi@school.it' }],
+    asl: [
+      { nome: 'ROSSI MARIO', email: 'rossi@school.it' },
+      { nome: 'BIANCHI LUCIA', email: 'bianchi@school.it' }
+    ],
     orientamento: []
   });
 });

@@ -23,9 +23,18 @@ const COMPOSITE_PK: Record<string, string[]> = {
 
 /** Single-column PKs per 01 (tables not listed keep the library default). */
 const SINGLE_PK: Record<string, string> = {
-  [TABLE.CLASSI]: 'ID', [TABLE.DOCENTI]: 'EMAIL', [TABLE.ALUNNI]: 'EMAIL', [TABLE.MATERIE]: 'ID',
-  [TABLE.INDIRIZZI]: 'ID', [TABLE.DIPART]: 'ID', [TABLE.RUOLI]: 'ID', [TABLE.CONF_DOC]: 'ID',
-  [TABLE.CONF_MAIL]: 'ID', [TABLE.CONF_IMP]: 'ID', [TABLE.LOG_DOCS]: 'ID', [TABLE.LOG_FOLD]: 'ID',
+  [TABLE.CLASSI]: 'ID',
+  [TABLE.DOCENTI]: 'EMAIL',
+  [TABLE.ALUNNI]: 'EMAIL',
+  [TABLE.MATERIE]: 'ID',
+  [TABLE.INDIRIZZI]: 'ID',
+  [TABLE.DIPART]: 'ID',
+  [TABLE.RUOLI]: 'ID',
+  [TABLE.CONF_DOC]: 'ID',
+  [TABLE.CONF_MAIL]: 'ID',
+  [TABLE.CONF_IMP]: 'ID',
+  [TABLE.LOG_DOCS]: 'ID',
+  [TABLE.LOG_FOLD]: 'ID',
   [TABLE.MASTER]: 'ANNO_SCOLASTICO'
 };
 
@@ -100,13 +109,14 @@ class SheetTableAdapter implements IReadableTable {
   updateRowWhere(match: Row, row: Row): void {
     const keys = Object.keys(match);
     const hit = this.isExactKeyMatch(keys)
-      ? this.table.getByPK(this.keyOf(match)) ?? undefined
+      ? (this.table.getByPK(this.keyOf(match)) ?? undefined)
       : this.table.getAllRows().find((r) => keys.every((k) => String(r[k]) === String(match[k])));
     if (hit === undefined) {
       this.table.insertRow(row);
       return;
     }
-    const key = this.composite !== undefined ? cell(hit[VIRTUAL_PK]) : this.keyOf(stripVirtual(hit));
+    const key =
+      this.composite !== undefined ? cell(hit[VIRTUAL_PK]) : this.keyOf(stripVirtual(hit));
     this.table.updateRowById(key, row);
   }
 
@@ -135,9 +145,12 @@ export class SheetDbAdapter implements IDatabase {
   private readonly cache = new Map<string, SheetTableAdapter>();
 
   constructor(private readonly service: DatabaseService) {
-    this.tables = new Proxy<Record<string, SheetTableAdapter>>({}, {
-      get: (_target, name: string): SheetTableAdapter => this.adapterFor(name)
-    });
+    this.tables = new Proxy<Record<string, SheetTableAdapter>>(
+      {},
+      {
+        get: (_target, name: string): SheetTableAdapter => this.adapterFor(name)
+      }
+    );
   }
 
   /**
@@ -172,8 +185,10 @@ export class SheetDbAdapter implements IDatabase {
    * full scan for single-equality-clause queries.
    */
   select(columns: string[]): { from(tableName: string): EqualityQueryBuilder } {
-    const indexedLookupFor = (tableName: string): IndexedLookup =>
-      (column, value) => this.adapterFor(tableName).indexedLookup(column, value);
+    const indexedLookupFor =
+      (tableName: string): IndexedLookup =>
+      (column, value) =>
+        this.adapterFor(tableName).indexedLookup(column, value);
     return createSelect(
       (tableName) => this.adapterFor(tableName).getAllRows(),
       indexedLookupFor

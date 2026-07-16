@@ -6,12 +6,20 @@ import { COL_DOCENTI } from '../../config/schema';
 /** Teachers of a department (ref 06 §2). */
 export class DocentiPerDipartimentoSpec implements Specification<Docente> {
   constructor(private readonly dipartId: DipartimentoId) {}
-  isSatisfiedBy(d: Docente): boolean { return d.dipart === this.dipartId.value; }
-  toQueryObject(): Record<string, unknown> { return { [COL_DOCENTI.DIPART]: this.dipartId.value }; }
+  isSatisfiedBy(d: Docente): boolean {
+    return d.dipart === this.dipartId.value;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_DOCENTI.DIPART]: this.dipartId.value };
+  }
 }
 
 /** ITP (laboratory) teachers (ref 06 §2). */
 export class DocentiITPSpec implements Specification<Docente> {
-  isSatisfiedBy(d: Docente): boolean { return d.isITP(); }
-  toQueryObject(): Record<string, unknown> { return { [COL_DOCENTI.ITP]: true }; }
+  isSatisfiedBy(d: Docente): boolean {
+    return d.isITP();
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_DOCENTI.ITP]: true };
+  }
 }

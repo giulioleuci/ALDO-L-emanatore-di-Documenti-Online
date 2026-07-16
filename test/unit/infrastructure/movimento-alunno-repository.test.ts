@@ -14,14 +14,24 @@ test('MovimentoAlunno: composite identity + type predicates', () => {
   expect(m.id).toBe('a2@school.it::IN::2025-09-15');
   expect(m.isIngresso()).toBe(true);
   expect(m.isUscita()).toBe(false);
-  expect(MovimentoAlunno.fromData({ STUDENTE: 'x', TIPO: 'CAMBIO', DATA: 'd' }).isCambioClasse()).toBe(true);
+  expect(
+    MovimentoAlunno.fromData({ STUDENTE: 'x', TIPO: 'CAMBIO', DATA: 'd' }).isCambioClasse()
+  ).toBe(true);
 });
 
 test('findByAlunno sorts by DATA DESC', () => {
   const a2 = Alunno.fromData({ EMAIL: 'a2@school.it' });
-  expect(repo().findByAlunno(a2).map((m) => m.tipo)).toEqual(['CAMBIO', 'IN']);
+  expect(
+    repo()
+      .findByAlunno(a2)
+      .map((m) => m.tipo)
+  ).toEqual(['CAMBIO', 'IN']);
 });
 
 test('findByTipo filters by movement type', () => {
-  expect(repo().findByTipo(TipoMovimento.OUT).map((m) => m.studente)).toEqual(['a3@school.it']);
+  expect(
+    repo()
+      .findByTipo(TipoMovimento.OUT)
+      .map((m) => m.studente)
+  ).toEqual(['a3@school.it']);
 });

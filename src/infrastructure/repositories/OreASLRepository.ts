@@ -50,7 +50,10 @@ export class OreASLRepository extends Repository<OreASL> {
     const esistente = this.findByAlunno(alunno).find((o) => o.anno === anno.value);
     if (esistente !== undefined) {
       const row = { ...esistente.toData(), [COL_ASL.ORE]: esistente.getOre() + ore };
-      table.updateRowWhere({ [COL_ASL.STUDENTE]: alunno.email.value, [COL_ASL.ANNO]: anno.value }, row);
+      table.updateRowWhere(
+        { [COL_ASL.STUDENTE]: alunno.email.value, [COL_ASL.ANNO]: anno.value },
+        row
+      );
     } else {
       const nuovo = OreASL.create(alunno.email, anno);
       table.insertRow({ ...nuovo.toData(), [COL_ASL.ORE]: ore });

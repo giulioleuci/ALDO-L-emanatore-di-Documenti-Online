@@ -11,7 +11,11 @@ function repo(): VariazioneCattedraRepository {
 }
 
 test('VariazioneCattedra: composite identity + CSV containment (04 §15)', () => {
-  const v = VariazioneCattedra.fromData({ CLASSE_ID: '5A,3B', MATERIA_ID: 'MATE', NUOVO_TITOLARE: 'bianchi@school.it' });
+  const v = VariazioneCattedra.fromData({
+    CLASSE_ID: '5A,3B',
+    MATERIA_ID: 'MATE',
+    NUOVO_TITOLARE: 'bianchi@school.it'
+  });
   expect(v.id).toBe('5A,3B::MATE');
   expect(v.applicaAClasse(ClasseId.of('3B'))).toBe(true);
   expect(v.applicaAClasse(ClasseId.of('4B'))).toBe(false);
@@ -20,17 +24,27 @@ test('VariazioneCattedra: composite identity + CSV containment (04 §15)', () =>
 
 test('findByClasse / findByMateria search by containment', () => {
   const r = repo();
-  expect(r.findByClasse(ClasseId.of('5A')).map((v) => v.nuovoTitolare)).toEqual(['bianchi@school.it']);
-  expect(r.findByClasse(ClasseId.of('1F')).map((v) => v.nuovoTitolare)).toEqual(['verdi@school.it']);
+  expect(r.findByClasse(ClasseId.of('5A')).map((v) => v.nuovoTitolare)).toEqual([
+    'bianchi@school.it'
+  ]);
+  expect(r.findByClasse(ClasseId.of('1F')).map((v) => v.nuovoTitolare)).toEqual([
+    'verdi@school.it'
+  ]);
   expect(r.findByMateria(MateriaId.of('MATE')).length).toBe(1);
 });
 
 test('findVariazioneAttiva returns the covering variation, else null (Priority 2)', () => {
   const r = repo();
-  expect(r.findVariazioneAttiva(ClasseId.of('5A'), MateriaId.of('MATE'))!.nuovoTitolare).toBe('bianchi@school.it');
+  expect(r.findVariazioneAttiva(ClasseId.of('5A'), MateriaId.of('MATE'))!.nuovoTitolare).toBe(
+    'bianchi@school.it'
+  );
   expect(r.findVariazioneAttiva(ClasseId.of('5A'), MateriaId.of('FISI'))).toBeNull();
 });
 
 test('findByNuovoTitolare', () => {
-  expect(repo().findByNuovoTitolare(Email.of('verdi@school.it')).map((v) => v.id)).toEqual(['1F::FISI']);
+  expect(
+    repo()
+      .findByNuovoTitolare(Email.of('verdi@school.it'))
+      .map((v) => v.id)
+  ).toEqual(['1F::FISI']);
 });

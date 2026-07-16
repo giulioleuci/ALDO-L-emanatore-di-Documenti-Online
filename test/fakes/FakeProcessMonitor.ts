@@ -6,7 +6,12 @@ export class FakeProcessMonitor implements IProcessMonitor {
   public progress: Array<{ jobId: string; percentage: number; message?: string }> = [];
   public completed: Array<{ jobId: string; message?: string }> = [];
   public errors: Array<{ jobId: string; error: unknown }> = [];
-  public steps: Array<{ jobId: string; stepName: string; event: 'start' | 'complete' | 'skipped'; success?: boolean }> = [];
+  public steps: Array<{
+    jobId: string;
+    stepName: string;
+    event: 'start' | 'complete' | 'skipped';
+    success?: boolean;
+  }> = [];
 
   registerJob(jobId: string): void {
     this.registered.push(jobId);
@@ -15,7 +20,9 @@ export class FakeProcessMonitor implements IProcessMonitor {
     this.started.push(jobId);
   }
   updateProgress(jobId: string, percentage: number, message?: string): void {
-    this.progress.push(message === undefined ? { jobId, percentage } : { jobId, percentage, message });
+    this.progress.push(
+      message === undefined ? { jobId, percentage } : { jobId, percentage, message }
+    );
   }
   logStepStart(jobId: string, stepName: string): void {
     this.steps.push({ jobId, stepName, event: 'start' });

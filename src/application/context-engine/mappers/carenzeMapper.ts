@@ -8,12 +8,16 @@ import type { Alunno } from '../../../domain/entities/Alunno';
  * The rich renderer form (colours/symbols) is the box-renderer's CarenzeMapper
  * (09 §6, 11) — not needed for the CDU access paths.
  */
-export function carenzeDettaglioSemplice(carenze: Carenza[], sigle: string[]): Array<{ materia: string; voto: string }> {
+export function carenzeDettaglioSemplice(
+  carenze: Carenza[],
+  sigle: string[]
+): Array<{ materia: string; voto: string }> {
   const out: Array<{ materia: string; voto: string }> = [];
   for (const carenza of carenze) {
     for (const sigla of sigle) {
       const cella = carenza.getCella(sigla);
-      if (typeof cella !== 'string' && typeof cella !== 'number' && typeof cella !== 'boolean') continue;
+      if (typeof cella !== 'string' && typeof cella !== 'number' && typeof cella !== 'boolean')
+        continue;
       const voto = String(cella).trim();
       if (voto === '') continue;
       out.push({ materia: sigla, voto });

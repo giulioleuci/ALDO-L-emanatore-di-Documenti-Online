@@ -21,19 +21,35 @@ export class MovimentoAlunno extends AldoEntity {
 
   constructor(data: MovimentoAlunnoData = {}) {
     super(data);
-    this.studente = typeof data[COL_MOV_ALUNNI.STUDENTE] === 'string' ? (data[COL_MOV_ALUNNI.STUDENTE] as string) : '';
+    this.studente =
+      typeof data[COL_MOV_ALUNNI.STUDENTE] === 'string'
+        ? (data[COL_MOV_ALUNNI.STUDENTE] as string)
+        : '';
     this.tipo = data[COL_MOV_ALUNNI.TIPO] as TipoMovimento;
-    this.data = typeof data[COL_MOV_ALUNNI.DATA] === 'string' ? (data[COL_MOV_ALUNNI.DATA] as string) : '';
-    this.da = typeof data[COL_MOV_ALUNNI.DA] === 'string' ? (data[COL_MOV_ALUNNI.DA] as string) : '';
+    this.data =
+      typeof data[COL_MOV_ALUNNI.DATA] === 'string' ? (data[COL_MOV_ALUNNI.DATA] as string) : '';
+    this.da =
+      typeof data[COL_MOV_ALUNNI.DA] === 'string' ? (data[COL_MOV_ALUNNI.DA] as string) : '';
     this.a = typeof data[COL_MOV_ALUNNI.A] === 'string' ? (data[COL_MOV_ALUNNI.A] as string) : '';
-    this.id = this.studente && this.tipo && this.data ? `${this.studente}::${this.tipo}::${this.data}` : null;
+    this.id =
+      this.studente && this.tipo && this.data
+        ? `${this.studente}::${this.tipo}::${this.data}`
+        : null;
   }
 
-  get studenteEmail(): Email { return Email.of(this.studente); }
+  get studenteEmail(): Email {
+    return Email.of(this.studente);
+  }
 
-  isIngresso(): boolean { return this.tipo === TipoMovimento.IN; }
-  isUscita(): boolean { return this.tipo === TipoMovimento.OUT; }
-  isCambioClasse(): boolean { return this.tipo === TipoMovimento.CAMBIO; }
+  isIngresso(): boolean {
+    return this.tipo === TipoMovimento.IN;
+  }
+  isUscita(): boolean {
+    return this.tipo === TipoMovimento.OUT;
+  }
+  isCambioClasse(): boolean {
+    return this.tipo === TipoMovimento.CAMBIO;
+  }
 
   override toData(): EntityData {
     return {

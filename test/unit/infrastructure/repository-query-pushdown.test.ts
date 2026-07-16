@@ -59,8 +59,22 @@ test('CarenzaRepository builds a STUDENTE index at construction time', () => {
 test('SupplenzaRepository.findByTitolare/findBySupplente use the indexed lookup seam directly', () => {
   const db = new FakeDatabase({
     SUPPLENZE: [
-      { TITOLARE: 'rossi@school.it', SUPPLENTE: 'bianchi@school.it', DAL: '2026-01-01', AL: '', CLASSI: '5A', MATERIE: 'MATE' },
-      { TITOLARE: 'verdi@school.it', SUPPLENTE: 'rossi@school.it', DAL: '2026-01-01', AL: '', CLASSI: '3B', MATERIE: 'FISI' }
+      {
+        TITOLARE: 'rossi@school.it',
+        SUPPLENTE: 'bianchi@school.it',
+        DAL: '2026-01-01',
+        AL: '',
+        CLASSI: '5A',
+        MATERIE: 'MATE'
+      },
+      {
+        TITOLARE: 'verdi@school.it',
+        SUPPLENTE: 'rossi@school.it',
+        DAL: '2026-01-01',
+        AL: '',
+        CLASSI: '3B',
+        MATERIE: 'FISI'
+      }
     ],
     DOCENTI: []
   });
@@ -80,8 +94,22 @@ test('SupplenzaRepository.findByTitolare/findBySupplente use the indexed lookup 
 test('LogEmailRepository.findByPattern uses the indexed lookup seam directly', () => {
   const db = new FakeDatabase({
     LOG_MAIL: [
-      { PATTERN: 'P1', DESTINATARI: 'a@x.it', DATA: '2026-01-01', STATO: StatoEmail.SUCCESS, ALLEGATI: null, ERRORE: '' },
-      { PATTERN: 'P2', DESTINATARI: 'b@x.it', DATA: '2026-01-01', STATO: StatoEmail.SUCCESS, ALLEGATI: null, ERRORE: '' }
+      {
+        PATTERN: 'P1',
+        DESTINATARI: 'a@x.it',
+        DATA: '2026-01-01',
+        STATO: StatoEmail.SUCCESS,
+        ALLEGATI: null,
+        ERRORE: ''
+      },
+      {
+        PATTERN: 'P2',
+        DESTINATARI: 'b@x.it',
+        DATA: '2026-01-01',
+        STATO: StatoEmail.SUCCESS,
+        ALLEGATI: null,
+        ERRORE: ''
+      }
     ]
   });
   const indexedLookupSpy = jest.spyOn(db.tables.LOG_MAIL, 'indexedLookup');

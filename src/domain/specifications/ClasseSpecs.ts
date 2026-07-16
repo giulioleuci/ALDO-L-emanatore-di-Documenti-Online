@@ -5,8 +5,12 @@ import { COL_CLASSI } from '../../config/schema';
 
 /** Active classes (ref 06 §3). */
 export class ClassiAttiveSpec implements Specification<Classe> {
-  isSatisfiedBy(c: Classe): boolean { return c.getDynamicColumns()[COL_CLASSI.ATTIVA] === true; }
-  toQueryObject(): Record<string, unknown> { return { [COL_CLASSI.ATTIVA]: true }; }
+  isSatisfiedBy(c: Classe): boolean {
+    return c.getDynamicColumns()[COL_CLASSI.ATTIVA] === true;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_CLASSI.ATTIVA]: true };
+  }
 }
 
 /**
@@ -16,15 +20,23 @@ export class ClassiAttiveSpec implements Specification<Classe> {
  */
 export class ClassiPerAnnoSpec implements Specification<Classe> {
   constructor(private readonly anno: number) {}
-  isSatisfiedBy(c: Classe): boolean { return c.anno.value === this.anno; }
-  toQueryObject(): null { return null; }
+  isSatisfiedBy(c: Classe): boolean {
+    return c.anno.value === this.anno;
+  }
+  toQueryObject(): null {
+    return null;
+  }
 }
 
 /** Classes in a given indirizzo (ref 06 §3). */
 export class ClassiPerIndirizzoSpec implements Specification<Classe> {
   constructor(private readonly indirizzoId: IndirizzoId) {}
-  isSatisfiedBy(c: Classe): boolean { return c.indirizzo === this.indirizzoId.value; }
-  toQueryObject(): Record<string, unknown> { return { [COL_CLASSI.INDIRIZZO]: this.indirizzoId.value }; }
+  isSatisfiedBy(c: Classe): boolean {
+    return c.indirizzo === this.indirizzoId.value;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_CLASSI.INDIRIZZO]: this.indirizzoId.value };
+  }
 }
 
 /** Classes belonging to an articolazione group (non-empty ARTICOLAZIONE JSON). Non-equality predicate: not pushdown-eligible. */
@@ -33,5 +45,7 @@ export class ClassiArticolateSpec implements Specification<Classe> {
     const a = c.getDynamicColumns()[COL_CLASSI.ARTICOLAZIONE];
     return typeof a === 'string' && a.trim().length > 0;
   }
-  toQueryObject(): null { return null; }
+  toQueryObject(): null {
+    return null;
+  }
 }

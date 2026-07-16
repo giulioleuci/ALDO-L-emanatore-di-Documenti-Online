@@ -79,12 +79,12 @@ SGSA non implementa alcun meccanismo proprio di gestione del timeout: si affida 
 
 `JobRunnerLib` usa un Registry Pattern: i job sono identificati da un nome stringa e associati a una generator function. SGSA registra i propri job handler in `Bootstrap.js`.
 
-| Nome job | Logica di iterazione | Operazione per elemento |
-|----------|---------------------|-------------------------|
-| `generaDocumentiPerClasse` | Itera su tutte le classi attive | `DocumentGenerationService.generateDocument(configId, classeId)` |
-| `generaDocumentiPerAlunno` | Itera su tutti gli alunni attivi di una classe o dell'istituto | `DocumentGenerationService.generateDocument(configId, alunnoId)` |
-| `inviaEmailPerProcesso` | Itera sui destinatari risolti da `CONF_MAIL.PROCESSO` | `EmailNotificationService.sendEmail(patternId, entryPoint, destinatario)` |
-| `eseguiImportazione` | Esecuzione singola (non iterativa) | `ImportService.executeImport(configId)` |
+| Nome job                   | Logica di iterazione                                           | Operazione per elemento                                                   |
+| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `generaDocumentiPerClasse` | Itera su tutte le classi attive                                | `DocumentGenerationService.generateDocument(configId, classeId)`          |
+| `generaDocumentiPerAlunno` | Itera su tutti gli alunni attivi di una classe o dell'istituto | `DocumentGenerationService.generateDocument(configId, alunnoId)`          |
+| `inviaEmailPerProcesso`    | Itera sui destinatari risolti da `CONF_MAIL.PROCESSO`          | `EmailNotificationService.sendEmail(patternId, entryPoint, destinatario)` |
+| `eseguiImportazione`       | Esecuzione singola (non iterativa)                             | `ImportService.executeImport(configId)`                                   |
 
 Il job `eseguiImportazione` è avvolto nel Job Runner non per l'iterazione (gestita internamente da `ImportService`) ma per uniformità di monitoraggio tramite `GasProcessMonitorLib`.
 
@@ -97,6 +97,7 @@ La struttura a livelli per i documenti personalizzati degli alunni (iterazione c
 Tra un'esecuzione e la successiva, lo stato del job viene salvato in `ScriptProperties`. Questo impone vincoli precisi.
 
 **Può essere serializzato:**
+
 - L'indice corrente dell'iterazione (intero)
 - Il `configId` o `patternId` della configurazione attiva
 - Array di ID già processati (es. `classiProcessate`, `emailInviate`)
@@ -104,6 +105,7 @@ Tra un'esecuzione e la successiva, lo stato del job viene salvato in `ScriptProp
 - Parametri scalari passati all'avvio
 
 **Non può essere serializzato:**
+
 - Istanze di oggetti con metodi (entità, repository, servizi)
 - Riferimenti a servizi del container DI
 - Oggetti con proprietà circolari
@@ -122,11 +124,13 @@ La generator function di ogni job DEVE essere progettata come **stateless** risp
 Ogni elemento processato all'interno del job (ogni classe, alunno, email) è avvolto in un blocco di gestione errori individuale. Un errore su un singolo elemento non interrompe l'elaborazione degli elementi successivi.
 
 **Errore non critico (singolo elemento):**
+
 - Loggato tramite `LoggerService` con il contesto dell'elemento (es. `classeId`, `alunnoEmail`)
 - Registrato nei metadati del job, contribuendo al contatore errori visibile in `GasProcessMonitorLib`
 - Il job prosegue con l'elemento successivo
 
 **Errori critici** che interrompono il job con stato `FAILED`:
+
 - Impossibilità di accedere al database (`SPREADSHEET_ID` non più valido)
 - Errori di inizializzazione del container DI
 - `CONF_DOC.GENERATORE` non registrato nel `strategyRegistry`
@@ -145,11 +149,13 @@ Il report finale del job distingue elementi processati con successo da quelli co
 La sidebar di monitoraggio viene aperta automaticamente dalla funzione wrapper `menu_*` prima dell'avvio del job.
 
 **Durante l'esecuzione**, la generator function aggiorna `GasProcessMonitorLib` ad ogni `yield` con:
+
 - **Percentuale di completamento:** `completati / totale * 100`
 - **Messaggio stato elemento corrente:** es. `"Generazione verbale classe 5ALC"` o `"Errore: template non trovato per 3BLS"`
 - **Stima tempo rimanente:** calcolata in base alla velocità media degli elementi già processati
 
 **Al termine del job**, la sidebar mostra il riepilogo finale:
+
 - Numero totale di elementi processati
 - Numero di successi
 - Numero di errori non critici (con lista degli elementi falliti e descrizione dell'errore)
@@ -159,11 +165,11 @@ La sidebar di monitoraggio viene aperta automaticamente dalla funzione wrapper `
 
 ## 10. Gestione Quote Google
 
-| Risorsa | Limite account Google gratuito | Limite Google Workspace |
-|---------|-------------------------------|------------------------|
-| Email/giorno | 100 | 1.500 |
-| Esecuzione GAS (singola invocazione) | 6 minuti | 30 minuti |
-| `ScriptProperties` | 500KB totale | 500KB totale |
-| Trigger temporizzati | 20 attivi contemporaneamente | 20 attivi contemporaneamente |
+| Risorsa                              | Limite account Google gratuito | Limite Google Workspace      |
+| ------------------------------------ | ------------------------------ | ---------------------------- |
+| Email/giorno                         | 100                            | 1.500                        |
+| Esecuzione GAS (singola invocazione) | 6 minuti                       | 30 minuti                    |
+| `ScriptProperties`                   | 500KB totale                   | 500KB totale                 |
+| Trigger temporizzati                 | 20 attivi contemporaneamente   | 20 attivi contemporaneamente |
 
 Per operazioni massive che superano questi limiti, SGSA usa `JobRunnerLib` con chunking configurabile per email (100 per sessione) e checkpoint per classe o alunno per i documenti.

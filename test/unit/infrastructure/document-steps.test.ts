@@ -1,7 +1,15 @@
 import {
-  AnalyzeContextStep, CheckDuplicatesStep, PrepareInfrastructureStep, GenerateNameStep,
-  SelectTemplateStep, CloneTemplateStep, RenderTemplateStep, RegisterDocumentStep, PostProcessStep,
-  ApplyPermissionsStep, CRITICAL_STEPS
+  AnalyzeContextStep,
+  CheckDuplicatesStep,
+  PrepareInfrastructureStep,
+  GenerateNameStep,
+  SelectTemplateStep,
+  CloneTemplateStep,
+  RenderTemplateStep,
+  RegisterDocumentStep,
+  PostProcessStep,
+  ApplyPermissionsStep,
+  CRITICAL_STEPS
 } from '../../../src/infrastructure/steps/documentSteps';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
 import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
@@ -124,7 +132,9 @@ test('RenderTemplateStep delegates to strategy → WorkspaceTemplateEngine with 
   const templates = new FakeTemplateEngine();
   const registry = new Map([['VERBALE_CDC', new VerbaleGeneratorStrategy(templates)]]);
   new RenderTemplateStep(logger, registry).execute(ctx);
-  const rendered = templates.contextFor('file_1') as { focus: { classe: { anagrafica: { nome: string } } } };
+  const rendered = templates.contextFor('file_1') as {
+    focus: { classe: { anagrafica: { nome: string } } };
+  };
   expect(rendered.focus.classe.anagrafica.nome).toBe('5A');
 });
 
@@ -142,7 +152,12 @@ test('RegisterDocumentStep writes LOG_DOCS row with STATO GENERATO (persisted at
 });
 
 test('critical steps are exactly the rollback points of 10 §8', () => {
-  expect([...CRITICAL_STEPS].sort()).toEqual(['CloneTemplate', 'RegisterDocument', 'RenderTemplate', 'SelectTemplate']);
+  expect([...CRITICAL_STEPS].sort()).toEqual([
+    'CloneTemplate',
+    'RegisterDocument',
+    'RenderTemplate',
+    'SelectTemplate'
+  ]);
 });
 
 test('PostProcessStep runs shared POST_PROCESSO actions (10 §12)', () => {
@@ -152,10 +167,17 @@ test('PostProcessStep runs shared POST_PROCESSO actions (10 §12)', () => {
   const ctx = baseCtx(db);
   const row = {
     ...fixtureTables().CONF_DOC[0]!,
-    POST_PROCESSO: JSON.stringify([{ tipo: 'AGGIORNA_STATO_DOC', stato: 'ARCHIVIATO', criteri: { ID: 'file_9' } }])
+    POST_PROCESSO: JSON.stringify([
+      { tipo: 'AGGIORNA_STATO_DOC', stato: 'ARCHIVIATO', criteri: { ID: 'file_9' } }
+    ])
   };
   ctx.set('config', row);
-  new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date('2026-07-05T10:00:00Z')).execute(ctx);
+  new PostProcessStep(
+    logger,
+    db,
+    new FakeTemplateEngine(),
+    new Date('2026-07-05T10:00:00Z')
+  ).execute(ctx);
   expect(db.tables['LOG_DOCS']!.getByPK('file_9')!['STATO']).toBe('ARCHIVIATO');
   expect(ctx.get('postProcessUpdated')).toBe(1);
 });
@@ -183,7 +205,10 @@ test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §1
 
   const fileAcls = drive.permissions.filter((p) => p.fileId === 'file_1');
   expect(fileAcls).toEqual([{ fileId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }]);
-  const folderAcls = drive.permissions.filter((p) => p.fileId === 'folder_1').map((p) => p.email).sort();
+  const folderAcls = drive.permissions
+    .filter((p) => p.fileId === 'folder_1')
+    .map((p) => p.email)
+    .sort();
   expect(folderAcls).toEqual(['bianchi@school.it', 'rossi@school.it']);
 });
 
@@ -202,7 +227,10 @@ describe('CheckDuplicatesStep — SCHEMA_SOTTOCARTELLE MULTIPLO_PER_CLASSE skip 
     tables.LOG_DOCS = [{ ID: 'old', ID_GEN: 'CD1', CLASSI: '5A', STATO: 'GENERATO' }];
     const db = new FakeDatabase(tables);
     const ctx = baseCtx(db);
-    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, SCHEMA_SOTTOCARTELLE: SchemaSottocartelle.MULTIPLO_PER_CLASSE });
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      SCHEMA_SOTTOCARTELLE: SchemaSottocartelle.MULTIPLO_PER_CLASSE
+    });
     new CheckDuplicatesStep(logger, db).execute(ctx);
     // Gate untouched: still true (as baseCtx set it), no skipReason recorded.
     expect(ctx.get('shouldGenerate')).toBe(true);
@@ -214,8 +242,15 @@ describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty optio
   test('passes { classe } when classeNome(ctx) is non-empty', () => {
     const db = new FakeDatabase(fixtureTables());
     const ctx = baseCtx(db); // buildCdu targets classe '5A' -> focus.classe.anagrafica.nome === '5A'
-    const findOrCreateSpy = jest.spyOn(AlberoCartelle.prototype, 'findOrCreate').mockReturnValue({ folderId: 'f1', created: true });
-    new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);
+    const findOrCreateSpy = jest
+      .spyOn(AlberoCartelle.prototype, 'findOrCreate')
+      .mockReturnValue({ folderId: 'f1', created: true });
+    new PrepareInfrastructureStep(
+      logger,
+      new FakeDriveFacade(),
+      db,
+      new FakeTemplateEngine()
+    ).execute(ctx);
     expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/5', { classe: '5A' });
     findOrCreateSpy.mockRestore();
   });
@@ -230,8 +265,15 @@ describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty optio
     const minimalCdu: Cdu = { focus: {} };
     ctx.set('cdu', minimalCdu);
     ctx.set('shouldGenerate', true);
-    const findOrCreateSpy = jest.spyOn(AlberoCartelle.prototype, 'findOrCreate').mockReturnValue({ folderId: 'f2', created: true });
-    new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);
+    const findOrCreateSpy = jest
+      .spyOn(AlberoCartelle.prototype, 'findOrCreate')
+      .mockReturnValue({ folderId: 'f2', created: true });
+    new PrepareInfrastructureStep(
+      logger,
+      new FakeDriveFacade(),
+      db,
+      new FakeTemplateEngine()
+    ).execute(ctx);
     expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/Fisso', {});
     findOrCreateSpy.mockRestore();
   });
@@ -241,7 +283,10 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
   const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z'); // rossi -> bianchi -> verdi chain active for 5A
 
   function buildCduAt(db: FakeDatabase, now: Date): Cdu {
-    return ContextEngineFactory.create(db).build({ target: '5A', tipoTarget: 'classe', now }, recipe('CLASSE_COMPLETA'));
+    return ContextEngineFactory.create(db).build(
+      { target: '5A', tipoTarget: 'classe', now },
+      recipe('CLASSE_COMPLETA')
+    );
   }
 
   test('does not call applica for file when ctx.get("newFileId") is null (no file ACLs applied)', () => {
@@ -249,7 +294,10 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     const ctx = baseCtx(db);
     ctx.set('config', {
       ...fixtureTables().CONF_DOC[0]!,
-      PERMESSI: JSON.stringify({ file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }], folder: [] })
+      PERMESSI: JSON.stringify({
+        file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }],
+        folder: []
+      })
     });
     ctx.set('destFolderId', 'folder_1'); // newFileId intentionally left unset (null)
     const drive = new FakeDriveFacade();
@@ -262,7 +310,10 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     const ctx = baseCtx(db);
     ctx.set('config', {
       ...fixtureTables().CONF_DOC[0]!,
-      PERMESSI: JSON.stringify({ file: [], folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }] })
+      PERMESSI: JSON.stringify({
+        file: [],
+        folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }]
+      })
     });
     ctx.set('newFileId', 'file_1'); // destFolderId intentionally left unset (null)
     const drive = new FakeDriveFacade();
@@ -275,22 +326,31 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     ['ENTRAMBI', ['rossi@school.it', 'verdi@school.it']],
     [undefined, ['rossi@school.it']],
     ['QUALCOSA_DI_IGNOTO', ['rossi@school.it']]
-  ])('regolaSupplente.file=%p maps to the GestioneSupplenti routing that resolves to %p', (regolaFile, expected) => {
-    const db = new FakeDatabase(fixtureTables());
-    const cdu = buildCduAt(db, INSIDE_WINDOW);
-    const ctx = new PipelineContext();
-    const perms: Record<string, unknown> = { file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }], folder: [] };
-    if (regolaFile !== undefined) perms['regolaSupplente'] = { file: regolaFile };
-    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: JSON.stringify(perms) });
-    ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
-    ctx.set('cdu', cdu);
-    ctx.set('shouldGenerate', true);
-    ctx.set('newFileId', 'file_1');
-    const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
-    const fileEmails = drive.permissions.filter((p) => p.fileId === 'file_1').map((p) => p.email).sort();
-    expect(fileEmails).toEqual(expected);
-  });
+  ])(
+    'regolaSupplente.file=%p maps to the GestioneSupplenti routing that resolves to %p',
+    (regolaFile, expected) => {
+      const db = new FakeDatabase(fixtureTables());
+      const cdu = buildCduAt(db, INSIDE_WINDOW);
+      const ctx = new PipelineContext();
+      const perms: Record<string, unknown> = {
+        file: [{ ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }],
+        folder: []
+      };
+      if (regolaFile !== undefined) perms['regolaSupplente'] = { file: regolaFile };
+      ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: JSON.stringify(perms) });
+      ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
+      ctx.set('cdu', cdu);
+      ctx.set('shouldGenerate', true);
+      ctx.set('newFileId', 'file_1');
+      const drive = new FakeDriveFacade();
+      new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+      const fileEmails = drive.permissions
+        .filter((p) => p.fileId === 'file_1')
+        .map((p) => p.email)
+        .sort();
+      expect(fileEmails).toEqual(expected);
+    }
+  );
 
   test('calls applica for both file and folder when both ids are present, using their respective regolaSupplente', () => {
     const db = new FakeDatabase(fixtureTables());
@@ -310,8 +370,14 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     const drive = new FakeDriveFacade();
     new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
 
-    const fileEmails = drive.permissions.filter((p) => p.fileId === 'file_1').map((p) => p.email).sort();
-    const folderEmails = drive.permissions.filter((p) => p.fileId === 'folder_1').map((p) => p.email).sort();
+    const fileEmails = drive.permissions
+      .filter((p) => p.fileId === 'file_1')
+      .map((p) => p.email)
+      .sort();
+    const folderEmails = drive.permissions
+      .filter((p) => p.fileId === 'folder_1')
+      .map((p) => p.email)
+      .sort();
     expect(fileEmails).toEqual(['verdi@school.it']); // SOLO_SUPPLENTI -> chain-resolved delegate only
     expect(folderEmails).toEqual(['rossi@school.it', 'verdi@school.it']); // ENTRAMBI -> both
   });

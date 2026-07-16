@@ -10,8 +10,14 @@ import type { EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { Classe } from '../../domain/entities/Classe';
 import {
-  BuildCDUStep, ValutaCondizioniInvioStep, RenderBoxesStep, ComposeEmailStep,
-  ResolveRecipientsStep, SendEmailStep, LogEmailStep, PostProcessEmailStep
+  BuildCDUStep,
+  ValutaCondizioniInvioStep,
+  RenderBoxesStep,
+  ComposeEmailStep,
+  ResolveRecipientsStep,
+  SendEmailStep,
+  LogEmailStep,
+  PostProcessEmailStep
 } from '../../infrastructure/steps/emailSteps';
 import { ExpressionEngineFacade } from '../../infrastructure/facades/ExpressionEngineFacade';
 import { ContextEngineFactory } from '../context-engine/ContextEngineFactory';
@@ -89,7 +95,15 @@ export class EmailNotificationService {
   }
 
   /** Convenience wiring over one database (composition-root shortcut and tests). */
-  static create(db: EmailDb, gmail: IGmailFacade, templates: ITemplateEngine, now: Date, drive: IDriveFacade, logger?: LoggerService, monitor?: IProcessMonitor): EmailNotificationService {
+  static create(
+    db: EmailDb,
+    gmail: IGmailFacade,
+    templates: ITemplateEngine,
+    now: Date,
+    drive: IDriveFacade,
+    logger?: LoggerService,
+    monitor?: IProcessMonitor
+  ): EmailNotificationService {
     const base: EmailNotificationDeps = {
       db,
       gmail,
@@ -159,7 +173,11 @@ export class EmailNotificationService {
    * Runs the pipeline for one already-enumerated target (batch seam, 11 §14).
    * Returns the per-target outcome; skipped = the CONDIZIONE gated the send.
    */
-  sendToTarget(patternId: string, target: EmailTarget, jobId?: string): { sent: number; errors: string[]; skipped: boolean } {
+  sendToTarget(
+    patternId: string,
+    target: EmailTarget,
+    jobId?: string
+  ): { sent: number; errors: string[]; skipped: boolean } {
     const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);
     if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     const conf = this.deps.confMail.findById(patternId);
@@ -172,7 +190,11 @@ export class EmailNotificationService {
       testEmail: this.testEmail
     });
     if (ctx.get('shouldSend') === false) return { sent: 0, errors: [], skipped: true };
-    return { sent: ctx.get<number>('sentCount') ?? 0, errors: ctx.get<string[]>('sendErrors') ?? [], skipped: false };
+    return {
+      sent: ctx.get<number>('sentCount') ?? 0,
+      errors: ctx.get<string[]>('sendErrors') ?? [],
+      skipped: false
+    };
   }
 
   /** The pattern's configuration entity (batch seam). */
@@ -185,7 +207,10 @@ export class EmailNotificationService {
   /** The 8 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */
   private buildPipeline(jobId?: string): Pipeline {
     const d = this.deps;
-    const pipeline = new Pipeline(this.logger, null, { name: 'NotificaPipeline', stopOnError: false })
+    const pipeline = new Pipeline(this.logger, null, {
+      name: 'NotificaPipeline',
+      stopOnError: false
+    })
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates))
@@ -200,7 +225,9 @@ export class EmailNotificationService {
     if (this.monitor !== undefined && jobId !== undefined) {
       const monitor = this.monitor;
       pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
-      pipeline.afterStep((step, _ctx, result) => monitor.logStepComplete(jobId, step.getName(), result.success));
+      pipeline.afterStep((step, _ctx, result) =>
+        monitor.logStepComplete(jobId, step.getName(), result.success)
+      );
     }
 
     return pipeline;

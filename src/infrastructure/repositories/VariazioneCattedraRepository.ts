@@ -2,7 +2,11 @@ import { VariazioneCattedra } from '../../domain/entities/VariazioneCattedra';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import type { Email } from '../../domain/value-objects/Email';
-import { VariazioniPerClasseSpec, VariazioniPerMateriaSpec, VariazioniPerNuovoTitolareSpec } from '../../domain/specifications/VariazioneCattedraSpecs';
+import {
+  VariazioniPerClasseSpec,
+  VariazioniPerMateriaSpec,
+  VariazioniPerNuovoTitolareSpec
+} from '../../domain/specifications/VariazioneCattedraSpecs';
 import { TABLE, COL_VARIAZIONI } from '../../config/schema';
 
 /**

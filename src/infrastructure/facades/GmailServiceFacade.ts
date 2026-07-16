@@ -27,11 +27,18 @@ export class GmailServiceFacade implements IGmailFacade {
   constructor(private readonly mail: MailService) {}
 
   sendEmail(opts: EmailSendOptions): EmailSendResult {
-    const mailOpts: MailSendOptions = { to: opts.to, subject: opts.subject, body: '', htmlBody: opts.htmlBody };
+    const mailOpts: MailSendOptions = {
+      to: opts.to,
+      subject: opts.subject,
+      body: '',
+      htmlBody: opts.htmlBody
+    };
     if (opts.bcc !== undefined) mailOpts.bcc = opts.bcc;
     if (opts.noReply !== undefined) mailOpts.noReply = opts.noReply;
     if (opts.attachments !== undefined) mailOpts.attachments = opts.attachments;
     const result = this.mail.send(mailOpts);
-    return result.error === undefined ? { success: result.success } : { success: result.success, error: result.error };
+    return result.error === undefined
+      ? { success: result.success }
+      : { success: result.success, error: result.error };
   }
 }

@@ -12,7 +12,11 @@ function repo(): PianoRepository {
 }
 
 test('Piano: composite identity, isBES (PFP excluded), parametri', () => {
-  const pei = Piano.fromData({ STUDENTE: 'a1@school.it', TIPO: 'PEI', PARAMETRI: '{"gravita":"media"}' });
+  const pei = Piano.fromData({
+    STUDENTE: 'a1@school.it',
+    TIPO: 'PEI',
+    PARAMETRI: '{"gravita":"media"}'
+  });
   expect(pei.id).toBe('a1@school.it::PEI');
   expect(pei.isBES()).toBe(true);
   expect(pei.getParametri()).toEqual({ gravita: 'media' });
@@ -20,8 +24,16 @@ test('Piano: composite identity, isBES (PFP excluded), parametri', () => {
 });
 
 test('findByAlunno / findByTipo filter the composite-PK table', () => {
-  expect(repo().findByAlunno(Email.of('a1@school.it')).map((p) => p.tipo)).toEqual(['PEI']);
-  expect(repo().findByTipo(TipoPiano.PDP_DSA).map((p) => p.studente)).toEqual(['a2@school.it']);
+  expect(
+    repo()
+      .findByAlunno(Email.of('a1@school.it'))
+      .map((p) => p.tipo)
+  ).toEqual(['PEI']);
+  expect(
+    repo()
+      .findByTipo(TipoPiano.PDP_DSA)
+      .map((p) => p.studente)
+  ).toEqual(['a2@school.it']);
 });
 
 test('getStudentiConBESEmails excludes PFP-only students', () => {

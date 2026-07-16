@@ -3,7 +3,13 @@ import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
 import { registerPipelineChecks } from '../../../src/onlinetests/checks/pipelineChecks';
 import type { SampleDatabase } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
-  CLASSE_BASE, INDIRIZZO_1, DOCENTE_1, ALUNNO_PARTNER_EMAIL, CLASSE_PARTNER, CONF_DOC_ID, CONF_MAIL_ID
+  CLASSE_BASE,
+  INDIRIZZO_1,
+  DOCENTE_1,
+  ALUNNO_PARTNER_EMAIL,
+  CLASSE_PARTNER,
+  CONF_DOC_ID,
+  CONF_MAIL_ID
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
@@ -16,7 +22,9 @@ import type { Row } from '../../../src/infrastructure/db/Database';
 const NOW = new Date('2026-07-12T09:00:00Z');
 const RECIPIENT_EMAIL = 'attivo@onlinetest.aldo.local';
 
-function sampleSeedTables(options: { includeConfDoc?: boolean; includeConfMail?: boolean; oggetto?: string } = {}): Record<string, Row[]> {
+function sampleSeedTables(
+  options: { includeConfDoc?: boolean; includeConfMail?: boolean; oggetto?: string } = {}
+): Record<string, Row[]> {
   const includeConfDoc = options.includeConfDoc ?? true;
   const includeConfMail = options.includeConfMail ?? true;
   const oggetto = options.oggetto ?? '[ALDO ONLINE TEST] Notifica di prova';
@@ -24,39 +32,89 @@ function sampleSeedTables(options: { includeConfDoc?: boolean; includeConfMail?:
     ...fixtureTables(),
     CLASSI: [
       {
-        ID: CLASSE_BASE, ANNO: 4, INDIRIZZO: INDIRIZZO_1,
+        ID: CLASSE_BASE,
+        ANNO: 4,
+        INDIRIZZO: INDIRIZZO_1,
         ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_PARTNER, partners: null }),
-        RUOLI: '', ATTIVA: true, COORD: DOCENTE_1, IRC: '', ALT: '', SEZ: 'A', TERMINALE: false, STORICO: false
+        RUOLI: '',
+        ATTIVA: true,
+        COORD: DOCENTE_1,
+        IRC: '',
+        ALT: '',
+        SEZ: 'A',
+        TERMINALE: false,
+        STORICO: false
       },
       {
-        ID: CLASSE_PARTNER, ANNO: 4, INDIRIZZO: INDIRIZZO_1,
+        ID: CLASSE_PARTNER,
+        ANNO: 4,
+        INDIRIZZO: INDIRIZZO_1,
         ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_BASE, partners: null }),
-        RUOLI: '', ATTIVA: true, COORD: DOCENTE_1, IRC: '', ALT: '', SEZ: 'A', TERMINALE: false, STORICO: false
+        RUOLI: '',
+        ATTIVA: true,
+        COORD: DOCENTE_1,
+        IRC: '',
+        ALT: '',
+        SEZ: 'A',
+        TERMINALE: false,
+        STORICO: false
       }
     ],
-    INDIRIZZI: [{ ID: INDIRIZZO_1, NOME: 'Informatica e Telecomunicazioni', NOME_SINTETICO: 'INF', TIPO: 'Tecnico' }],
+    INDIRIZZI: [
+      {
+        ID: INDIRIZZO_1,
+        NOME: 'Informatica e Telecomunicazioni',
+        NOME_SINTETICO: 'INF',
+        TIPO: 'Tecnico'
+      }
+    ],
     ALUNNI: [
       {
-        EMAIL: ALUNNO_PARTNER_EMAIL, COGNOMENOME: 'Alunno5 Test', CLASSE: CLASSE_PARTNER, RELIGIONE: 'SI', ATTIVO: true,
-        RIPETENTE: false, RAPPR_STUD: false, TUTOR_1: '', TUTOR_2: '', CURRICULUM: null
+        EMAIL: ALUNNO_PARTNER_EMAIL,
+        COGNOMENOME: 'Alunno5 Test',
+        CLASSE: CLASSE_PARTNER,
+        RELIGIONE: 'SI',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: '',
+        TUTOR_2: '',
+        CURRICULUM: null
       }
     ],
     CONF_DOC: includeConfDoc
       ? [
           {
-            ID: CONF_DOC_ID, TIPO: 'ONLINETEST', GENERATORE: 'DOCUMENTO_GENERICO', CONDIZIONE: '',
-            MODELLI: '{"templateId":"TEMPLATE_ONLINETEST"}', FILE_NAME: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
-            PATH_OUT: '_ALDO_ONLINETEST_OUTPUT', PATH_OUT_SOTTOCARTELLE: '', SCHEMA_SOTTOCARTELLE: '', PERMESSI: '',
-            POST_PROCESSO: null, PARAMETRI: '', GESTIONE_ARTICOLAZIONE: '', FORMATO: 'PDF'
+            ID: CONF_DOC_ID,
+            TIPO: 'ONLINETEST',
+            GENERATORE: 'DOCUMENTO_GENERICO',
+            CONDIZIONE: '',
+            MODELLI: '{"templateId":"TEMPLATE_ONLINETEST"}',
+            FILE_NAME: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
+            PATH_OUT: '_ALDO_ONLINETEST_OUTPUT',
+            PATH_OUT_SOTTOCARTELLE: '',
+            SCHEMA_SOTTOCARTELLE: '',
+            PERMESSI: '',
+            POST_PROCESSO: null,
+            PARAMETRI: '',
+            GESTIONE_ARTICOLAZIONE: '',
+            FORMATO: 'PDF'
           }
         ]
       : [],
     CONF_MAIL: includeConfMail
       ? [
           {
-            ID: CONF_MAIL_ID, OGGETTO: oggetto, PROCESSO: 'PER_ALUNNO', BOX_CFG: '[]',
-            TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.', SUPPLENTI: false,
-            NOREPLY: false, COLORE_HEADER: '#1565C0', CONDIZIONE: '', POST_PROCESSO: null
+            ID: CONF_MAIL_ID,
+            OGGETTO: oggetto,
+            PROCESSO: 'PER_ALUNNO',
+            BOX_CFG: '[]',
+            TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.',
+            SUPPLENTI: false,
+            NOREPLY: false,
+            COLORE_HEADER: '#1565C0',
+            CONDIZIONE: '',
+            POST_PROCESSO: null
           }
         ]
       : []
@@ -87,15 +145,24 @@ describe('registerPipelineChecks', () => {
   it('registers a passing document-generation check that produces a file for the seeded CONF_DOC', () => {
     const runner = new TestRunner();
     registerPipelineChecks(runner, buildFakeContainer(), sampleFixture(), RECIPIENT_EMAIL);
-    const result = runner.report().results.find((r) => r.name.includes('DocumentGenerationService'));
+    const result = runner
+      .report()
+      .results.find((r) => r.name.includes('DocumentGenerationService'));
     expect(result?.status).toBe('pass');
     expect(result?.artifactUrl).toBe('https://drive.google.com/drive/folders/FOLDER_ID');
   });
 
   it('registers a failing document-generation check with a descriptive message when CONF_DOC is missing', () => {
     const runner = new TestRunner();
-    registerPipelineChecks(runner, buildFakeContainer({ includeConfDoc: false }), sampleFixture(), RECIPIENT_EMAIL);
-    const result = runner.report().results.find((r) => r.name.includes('DocumentGenerationService'));
+    registerPipelineChecks(
+      runner,
+      buildFakeContainer({ includeConfDoc: false }),
+      sampleFixture(),
+      RECIPIENT_EMAIL
+    );
+    const result = runner
+      .report()
+      .results.find((r) => r.name.includes('DocumentGenerationService'));
     expect(result?.status).toBe('fail');
     expect(result?.message).toBeDefined();
   });
@@ -121,7 +188,12 @@ describe('registerPipelineChecks', () => {
 
   it('registers a failing email check with a descriptive message when CONF_MAIL is missing', () => {
     const runner = new TestRunner();
-    registerPipelineChecks(runner, buildFakeContainer({ includeConfMail: false }), sampleFixture(), RECIPIENT_EMAIL);
+    registerPipelineChecks(
+      runner,
+      buildFakeContainer({ includeConfMail: false }),
+      sampleFixture(),
+      RECIPIENT_EMAIL
+    );
     const result = runner.report().results.find((r) => r.name.includes('EmailNotificationService'));
     expect(result?.status).toBe('fail');
     expect(result?.message).toBeDefined();
@@ -129,7 +201,12 @@ describe('registerPipelineChecks', () => {
 
   it('registers a failing email check with a descriptive message when CONF_MAIL.OGGETTO lacks the [ALDO ONLINE TEST] prefix', () => {
     const runner = new TestRunner();
-    registerPipelineChecks(runner, buildFakeContainer({ oggetto: 'Notifica senza prefisso' }), sampleFixture(), RECIPIENT_EMAIL);
+    registerPipelineChecks(
+      runner,
+      buildFakeContainer({ oggetto: 'Notifica senza prefisso' }),
+      sampleFixture(),
+      RECIPIENT_EMAIL
+    );
     const result = runner.report().results.find((r) => r.name.includes('EmailNotificationService'));
     expect(result?.status).toBe('fail');
     expect(result?.message).toContain('[ALDO ONLINE TEST]');

@@ -24,25 +24,46 @@ export class ConfigurazioneDocumento extends AldoEntity {
   constructor(data: ConfigurazioneDocumentoData = {}) {
     super(data);
     this.id = typeof data[COL_CONF_DOC.ID] === 'string' ? (data[COL_CONF_DOC.ID] as string) : null;
-    this.tipo = typeof data[COL_CONF_DOC.TIPO] === 'string' ? (data[COL_CONF_DOC.TIPO] as string) : '';
-    this.generatore = typeof data[COL_CONF_DOC.GENERATORE] === 'string' ? (data[COL_CONF_DOC.GENERATORE] as string) : '';
+    this.tipo =
+      typeof data[COL_CONF_DOC.TIPO] === 'string' ? (data[COL_CONF_DOC.TIPO] as string) : '';
+    this.generatore =
+      typeof data[COL_CONF_DOC.GENERATORE] === 'string'
+        ? (data[COL_CONF_DOC.GENERATORE] as string)
+        : '';
     this.formato = (data[COL_CONF_DOC.FORMATO] as FormatoOutput) ?? FormatoOutput.GDOC;
-    this.modelliRaw = typeof data[COL_CONF_DOC.MODELLI] === 'string' ? (data[COL_CONF_DOC.MODELLI] as string) : null;
-    this.condizioneRaw = typeof data[COL_CONF_DOC.CONDIZIONE] === 'string' ? (data[COL_CONF_DOC.CONDIZIONE] as string) : '';
-    this.parametriRaw = typeof data[COL_CONF_DOC.PARAMETRI] === 'string' ? (data[COL_CONF_DOC.PARAMETRI] as string) : null;
+    this.modelliRaw =
+      typeof data[COL_CONF_DOC.MODELLI] === 'string'
+        ? (data[COL_CONF_DOC.MODELLI] as string)
+        : null;
+    this.condizioneRaw =
+      typeof data[COL_CONF_DOC.CONDIZIONE] === 'string'
+        ? (data[COL_CONF_DOC.CONDIZIONE] as string)
+        : '';
+    this.parametriRaw =
+      typeof data[COL_CONF_DOC.PARAMETRI] === 'string'
+        ? (data[COL_CONF_DOC.PARAMETRI] as string)
+        : null;
   }
 
-  getCondizione(): string | null { return this.condizioneRaw.trim() === '' ? null : this.condizioneRaw; }
+  getCondizione(): string | null {
+    return this.condizioneRaw.trim() === '' ? null : this.condizioneRaw;
+  }
 
   /** True when no condition is set — the unconditional case (ref 06 §8). */
-  hasNoCondizione(): boolean { return this.getCondizione() === null; }
+  hasNoCondizione(): boolean {
+    return this.getCondizione() === null;
+  }
 
   getParametri(): Record<string, unknown> {
-    return this.parametriRaw === null ? {} : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
+    return this.parametriRaw === null
+      ? {}
+      : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
   }
 
   /** Reserved PARAMETRI.overwrite flag — skips the duplicate check (ref 01, 10 Step 2). */
-  isOverwrite(): boolean { return this.getParametri().overwrite === true; }
+  isOverwrite(): boolean {
+    return this.getParametri().overwrite === true;
+  }
 
   getModelli(): Record<string, unknown> {
     return this.modelliRaw === null ? {} : (JSON.parse(this.modelliRaw) as Record<string, unknown>);

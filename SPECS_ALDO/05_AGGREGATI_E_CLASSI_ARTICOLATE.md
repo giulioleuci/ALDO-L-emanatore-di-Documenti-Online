@@ -12,6 +12,7 @@ Questo documento descrive gli invarianti degli aggregati del dominio SGSA e la g
 **Membri:** `Carenza[]`, `Piano[]`, `MovimentoAlunno[]`, `OreASL[]`
 
 **Invarianti:**
+
 - Un alunno NON PUÒ MAI avere più di un piano attivo per ogni valore specifico di `TipoPiano` (`PDP_DSA`, `PDP_BES`, `PDP_STRANIERI`, `PEI`, `PFP`): NON può cioè avere due record attivi con lo stesso `TIPO`. Ciò significa che DEVE esistere AL PIÙ un record attivo in `PIANI` per ogni combinazione `(STUDENTE, TIPO)`. È invece consentito avere contemporaneamente, ad esempio, `PDP_DSA` e `PDP_BES` per lo stesso alunno: sono valori distinti dell'enum.
 - Le carenze DEVONO essere associate alla classe corrente dell'alunno al momento della rilevazione: il campo `CARENZE.CLASSE` DEVE corrispondere ad `ALUNNI.CLASSE` nel momento in cui la riga è creata.
 
@@ -25,6 +26,7 @@ Questo documento descrive gli invarianti degli aggregati del dominio SGSA e la g
 **Membri:** `Progetto[]`, docenti CDC (via colonne dinamiche), studenti (via FK in `ALUNNI`)
 
 **Invarianti:**
+
 - Una classe DEVE avere almeno un coordinatore definito in `CLASSI.COORD`.
 - Ogni coordinatore DEVE essere presente nel CDC della classe: la sua email DEVE apparire in almeno una colonna materia della riga corrispondente in `CLASSI`.
 - Una classe articolata DEVE avere parent/partner valido nel database: i campi `parent` e `partner` DEVONO corrispondere a `CLASSI.ID` esistenti.
@@ -39,6 +41,7 @@ Questo documento descrive gli invarianti degli aggregati del dominio SGSA e la g
 `Supplenza` e `RuoloSpeciale` sono essi stessi Aggregate Root (vedi `04_DOMINIO_ENTITA.md`), non membri dell'aggregato `Docente`. La relazione è una correlazione tramite chiave esterna logica: `SUPPLENZE.TITOLARE → DOCENTI.EMAIL` e `RUOLI.DOCENTE` (CSV) `→ DOCENTI.EMAIL`.
 
 **Invarianti:**
+
 - Un docente NON PUÒ MAI avere due supplenze con periodi sovrapposti per lo stesso contesto (stessa classe e stessa materia). Questo invariante DEVE essere verificato prima della creazione di ogni nuova supplenza tramite `SupplenzaRepository.findSupplenzaSpecifica()`.
 
 ---
@@ -80,13 +83,14 @@ Due classi anagrafiche distinte che condividono alcuni docenti per materie comun
 
 ```json
 {
-  "parent":   "ClasseId | null",
-  "partner":  "ClasseId | null",
+  "parent": "ClasseId | null",
+  "partner": "ClasseId | null",
   "partners": "csv | null"
 }
 ```
 
 **Nota semantica:**
+
 - Per la **classe parent** (es. `1F`): `parent = null`, `partner = null`, `partners = "1F-LSO,1F-LSS"` (CSV dei due partner)
 - Per una **classe partner** (es. `1F-LSO`): `parent = "1F"`, `partner = "1F-LSS"` (l'altro partner), `partners = null`
 - Per le **classi standard**: tutti i campi sono `null`
@@ -94,6 +98,7 @@ Due classi anagrafiche distinte che condividono alcuni docenti per materie comun
 **Ordine PRIMO/SECONDO gruppo:** L'ordine dei ClasseId nel CSV `partners` della classe parent determina il gruppo: il primo elemento È il PRIMO gruppo (`materieSeparatePrimoGruppo`, `SEPARATO_PRIMO`), il secondo È il SECONDO gruppo (`materieSeparateSecondoGruppo`, `SEPARATO_SECONDO`). L'ordine è stabilito al momento dell'inserimento del dato e NON DEVE MAI essere riordinato automaticamente dal sistema.
 
 **Invarianti di configurazione:**
+
 - Il CSV `partners` della classe parent DEVE contenere ESATTAMENTE due `ClasseId`; un'articolazione con un numero diverso di classi partner NON è supportata.
 - Le materie e i docenti comuni o separati DEVONO essere calcolati dal codice. Un docente È in comune SE E SOLO SE le due classi partner hanno lo stesso docente per la stessa materia; altrimenti È separato.
 - Le classi articolate possono avere anche materie differenti (esempio `greco` al classico, ma non allo scientifico)
@@ -118,6 +123,7 @@ Due classi anagrafiche distinte che condividono alcuni docenti per materie comun
 **`ClasseProvider`** aggiunge al CDU il flag `focus.classe.flags.isArticolata` (boolean) e, se true, il blocco `focus.classe.articolazione` con `partner`, `parent`, `materieCondivise`, `materieSeparatePrimoGruppo`, `materieSeparateSecondoGruppo`.
 
 **`ConsiglioClasseProvider`** per classi articolate produce un array piatto di oggetti docente-nel-CDC (stessa struttura delle classi standard). Per le classi articolate, ogni oggetto ha il campo aggiuntivo:
+
 ```
 tipoArticolazione: "COMUNE" | "SEPARATO_PRIMO" | "SEPARATO_SECONDO" | null
 ```
@@ -153,9 +159,9 @@ Esempio: classe articolata `5A` (con partner `5A-LC` e `5A-LS`), studente in `5A
 
 Prima di usare una classe articolata, il sistema verifica:
 
-| Controllo | Errore se… |
-|-----------|-----------|
-| Numero partner | `articolazione.partners` non contiene esattamente due `ClasseId` |
-| Partner esiste | `articolazione.partner` non trovato in `CLASSI` |
-| Configurazione reciproca | La classe partner non punta correttamente alla classe corrente |
+| Controllo                                                       | Errore se…                                                                           |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Numero partner                                                  | `articolazione.partners` non contiene esattamente due `ClasseId`                     |
+| Partner esiste                                                  | `articolazione.partner` non trovato in `CLASSI`                                      |
+| Configurazione reciproca                                        | La classe partner non punta correttamente alla classe corrente                       |
 | **Materie duplicate (in condivise e separate simultaneamente)** | `materieCondivise ∩ (materieSeparatePrimoGruppo ∪ materieSeparateSecondoGruppo) ≠ ∅` |

@@ -80,7 +80,9 @@ export class ReportService {
     const tutti = this.classi.getStudenti(classe, false);
     const attivi = tutti.filter((a) => a.isAttivo());
 
-    let conBes = 0, conDsa = 0, ripetenti = 0;
+    let conBes = 0,
+      conDsa = 0,
+      ripetenti = 0;
     for (const a of tutti) {
       const piani = this.alunni.getPiani(a);
       if (piani.some((p) => p.isBES())) conBes++;
@@ -133,7 +135,12 @@ export class ReportService {
       if (options.soloNonNotificate === true && c.isNotificato()) continue;
       for (const [materia, valore] of this.carenze.getCarenzePerMateria(c)) {
         if (options.materia !== undefined && materia.value !== options.materia) continue;
-        righe.push({ studente: c.studente, materia: materia.value, valore: valore.toString(), severita: this.severita(valore) });
+        righe.push({
+          studente: c.studente,
+          materia: materia.value,
+          valore: valore.toString(),
+          severita: this.severita(valore)
+        });
       }
     }
     const perSeverita = { grave: 0, media: 0, lieve: 0 };

@@ -103,7 +103,9 @@ export class AggregatoreDati {
       case 'emailCoordinatori':
         return this.getEmailCoordinatori(params.classeId ?? '');
       default:
-        (logger ?? new LoggerService()).warn(`AggregatoreDati: metodo DATI_SORGENTE sconosciuto "${metodo}" — box saltato`);
+        (logger ?? new LoggerService()).warn(
+          `AggregatoreDati: metodo DATI_SORGENTE sconosciuto "${metodo}" — box saltato`
+        );
         return null;
     }
   }

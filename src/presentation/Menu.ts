@@ -49,13 +49,31 @@ export function avvioPersonalizzato(
 }
 
 export function menuGenerazioneDocumenti(ui: IUiFacade, avvia: (configId: string) => void): void {
-  avvioPersonalizzato(ui, 'GENERAZIONE DOCUMENTI', "Inserisci l'ID di configurazione (CONF_DOC.ID):", 'gen_', avvia);
+  avvioPersonalizzato(
+    ui,
+    'GENERAZIONE DOCUMENTI',
+    "Inserisci l'ID di configurazione (CONF_DOC.ID):",
+    'gen_',
+    avvia
+  );
 }
 
 export function menuComunicazioniEmail(ui: IUiFacade, avvia: (patternId: string) => void): void {
-  avvioPersonalizzato(ui, 'COMUNICAZIONI EMAIL', "Inserisci l'ID del pattern (CONF_MAIL.ID):", 'mail_', avvia);
+  avvioPersonalizzato(
+    ui,
+    'COMUNICAZIONI EMAIL',
+    "Inserisci l'ID del pattern (CONF_MAIL.ID):",
+    'mail_',
+    avvia
+  );
 }
 
 export function menuImportazioni(ui: IUiFacade, avvia: (configId: string) => void): void {
-  avvioPersonalizzato(ui, 'IMPORTAZIONI', "Inserisci l'ID di configurazione (CONF_IMP.ID):", 'imp_', avvia);
+  avvioPersonalizzato(
+    ui,
+    'IMPORTAZIONI',
+    "Inserisci l'ID di configurazione (CONF_IMP.ID):",
+    'imp_',
+    avvia
+  );
 }

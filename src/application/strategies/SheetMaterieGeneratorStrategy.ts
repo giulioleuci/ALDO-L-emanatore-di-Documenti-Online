@@ -116,17 +116,24 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
   ): { sheetName: string; layout: SheetColumnLayout[] } {
     const classe = cdu.focus.classe;
     if (classe === undefined) {
-      throw new ConfigurationError(`CONF_DOC ${config.id ?? '?'}: SHEET_CON_MATERIE richiede focus.classe nel CDU`);
+      throw new ConfigurationError(
+        `CONF_DOC ${config.id ?? '?'}: SHEET_CON_MATERIE richiede focus.classe nel CDU`
+      );
     }
     const params = readParams(config);
     const sheetInfo = this.sheets.getSheetInfo(fileId);
     if (params.sheetName !== undefined && !sheetInfo.some((s) => s.name === params.sheetName)) {
-      throw new ConfigurationError(`CONF_DOC ${config.id ?? '?'}: foglio "${params.sheetName}" non trovato in ${fileId}`);
+      throw new ConfigurationError(
+        `CONF_DOC ${config.id ?? '?'}: foglio "${params.sheetName}" non trovato in ${fileId}`
+      );
     }
     const resolvedSheetName = params.sheetName ?? sheetInfo[0]?.name ?? '';
 
     const groups = this.buildGroups(classe);
-    const context: Record<string, unknown> = { ...(cdu as unknown as Record<string, unknown>), materieColonne: groups };
+    const context: Record<string, unknown> = {
+      ...(cdu as unknown as Record<string, unknown>),
+      materieColonne: groups
+    };
     const layout = this.templates.processSheet(fileId, context, params.sheetName);
     return { sheetName: resolvedSheetName, layout };
   }

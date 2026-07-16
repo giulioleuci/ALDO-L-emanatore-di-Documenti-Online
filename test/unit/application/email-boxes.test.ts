@@ -28,18 +28,44 @@ function cduRecord(): Record<string, unknown> {
         anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
         didattica: {
           carenze: { dettaglio: [{ materia: 'MATE', voto: '4' }], numero: 1, hasCarenze: true },
-          documenti: { items: [{ nome: 'PDP Anna', link: 'https://drive/x', tipo: 'PDP', stato: 'GENERATO', dataCreazione: '01/06/2026' }], hasDocumenti: true }
+          documenti: {
+            items: [
+              {
+                nome: 'PDP Anna',
+                link: 'https://drive/x',
+                tipo: 'PDP',
+                stato: 'GENERATO',
+                dataCreazione: '01/06/2026'
+              }
+            ],
+            hasDocumenti: true
+          }
         }
       },
-      carenza: { studente: 'a1@school.it', progressivo: 1, data: '2026-02-15', classe: '5A', hasAssenze: true, note: 'Studio discontinuo' }
+      carenza: {
+        studente: 'a1@school.it',
+        progressivo: 1,
+        data: '2026-02-15',
+        classe: '5A',
+        hasAssenze: true,
+        note: 'Studio discontinuo'
+      }
     }
   };
 }
 
 function confMail(boxCfg: unknown): ConfigurazioneEmail {
   return ConfigurazioneEmail.fromData({
-    ID: 'P1', OGGETTO: 'Oggetto', PROCESSO: 'PER_GENITORI_ALUNNO', BOX_CFG: JSON.stringify(boxCfg),
-    TESTO: '', SUPPLENTI: 'SOLO_TITOLARI', NOREPLY: false, COLORE_HEADER: '', CONDIZIONE: null, POST_PROCESSO: null
+    ID: 'P1',
+    OGGETTO: 'Oggetto',
+    PROCESSO: 'PER_GENITORI_ALUNNO',
+    BOX_CFG: JSON.stringify(boxCfg),
+    TESTO: '',
+    SUPPLENTI: 'SOLO_TITOLARI',
+    NOREPLY: false,
+    COLORE_HEADER: '',
+    CONDIZIONE: null,
+    POST_PROCESSO: null
   });
 }
 
@@ -50,8 +76,20 @@ function render(boxCfg: unknown) {
 }
 
 test('mapCarenzeFormatoB enriches with MATERIE colours/symbol, default #ddd for unknown', () => {
-  const rows = mapCarenzeFormatoB([{ materia: 'MATE', voto: '4' }, { materia: 'XXX', voto: '5' }], materie());
-  expect(rows[0]).toMatchObject({ sigla: 'MATE', colore: '#c0392b', colore2: '#fdecea', simbolo: '📐', nomeSintesi: 'Matematica' });
+  const rows = mapCarenzeFormatoB(
+    [
+      { materia: 'MATE', voto: '4' },
+      { materia: 'XXX', voto: '5' }
+    ],
+    materie()
+  );
+  expect(rows[0]).toMatchObject({
+    sigla: 'MATE',
+    colore: '#c0392b',
+    colore2: '#fdecea',
+    simbolo: '📐',
+    nomeSintesi: 'Matematica'
+  });
   expect(rows[0]!.descrizione).toBe('Voto 4');
   expect(rows[1]).toMatchObject({ sigla: 'XXX', colore: '#ddd', nomeSintesi: 'XXX' });
 });
@@ -85,7 +123,9 @@ test('note + assenze boxes read focus.carenza (11 §11)', () => {
 });
 
 test('testo_dinamico always visible, resolves CONTENUTO placeholders', () => {
-  const out = render([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Classe {{focus.classe.anagrafica.nome}}</p>' }]);
+  const out = render([
+    { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Classe {{focus.classe.anagrafica.nome}}</p>' }
+  ]);
   const box = out.boxes['testo_dinamico']!;
   expect(box.visibile).toBe(true);
   expect(box.html).toContain('Classe 5A');
@@ -95,7 +135,12 @@ test('boxes ordered by ORDINE; MOSTRA_SE_VUOTO falls back to TESTO_VUOTO', () =>
   const out = render([
     { TIPO_BOX: 'note', ORDINE: 2 },
     { TIPO_BOX: 'carenze', ORDINE: 1 },
-    { TIPO_BOX: 'cartelle', ORDINE: 3, MOSTRA_SE_VUOTO: true, TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.anagrafica.nome}}' }
+    {
+      TIPO_BOX: 'cartelle',
+      ORDINE: 3,
+      MOSTRA_SE_VUOTO: true,
+      TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.anagrafica.nome}}'
+    }
   ]);
   expect(out.ordered).toHaveLength(3);
   expect(out.ordered[0]).toContain('Voto 4'); // carenze first
@@ -150,9 +195,18 @@ test('documenti box neutralises javascript: links and hostile colours', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
-  const didattica = (cdu['focus'] as { alunno: { didattica: { documenti: { items: unknown[] } } } }).alunno.didattica;
-  didattica.documenti.items = [{ nome: 'Doc', link: 'javascript:alert(1)', tipo: 'PDP', stato: 'GENERATO', dataCreazione: '' }];
-  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'documenti' }]), cdu, materie(), templates);
+  const didattica = (cdu['focus'] as { alunno: { didattica: { documenti: { items: unknown[] } } } })
+    .alunno.didattica;
+  didattica.documenti.items = [
+    { nome: 'Doc', link: 'javascript:alert(1)', tipo: 'PDP', stato: 'GENERATO', dataCreazione: '' }
+  ];
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'documenti' }]),
+    cdu,
+    materie(),
+    templates
+  );
   expect(out.boxes['documenti']!.html).toContain('href="#"');
   expect(out.boxes['documenti']!.html).not.toContain('javascript:');
 });

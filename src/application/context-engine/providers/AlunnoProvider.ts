@@ -32,17 +32,32 @@ export class AlunnoProvider implements ContextProvider {
     setAlunnoEntity(cdu, alunno);
 
     const classe = this.classi.findById(alunno.classe);
-    if (classe === null) throw new EntityNotFoundError(`Classe ${alunno.classe} dell'alunno ${params.target} non trovata`);
+    if (classe === null)
+      throw new EntityNotFoundError(
+        `Classe ${alunno.classe} dell'alunno ${params.target} non trovata`
+      );
     const indirizzo = this.classi.getIndirizzo(classe);
 
     const focusAlunno: CduAlunno = {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
-      status: { religione: alunno.religione, isBes: false, isRipetente: alunno.isRipetente(), isRappresentante: alunno.isRappresentante() },
+      status: {
+        religione: alunno.religione,
+        isBes: false,
+        isRipetente: alunno.isRipetente(),
+        isRappresentante: alunno.isRappresentante()
+      },
       curriculum: curriculumRecord(alunno),
-      classe: { nome: classe.nome, indirizzoSigla: classe.indirizzo, indirizzoNome: indirizzo.nome },
+      classe: {
+        nome: classe.nome,
+        indirizzoSigla: classe.indirizzo,
+        indirizzoNome: indirizzo.nome
+      },
       didattica: {
         carenze: { dettaglio: [], numero: 0, hasCarenze: false },
-        asl: { oreCumulate: this.oreAsl.getTotaleOre(alunno), oreAnnoCorrente: this.oreAnnoCorrente(cdu, alunno) },
+        asl: {
+          oreCumulate: this.oreAsl.getTotaleOre(alunno),
+          oreAnnoCorrente: this.oreAnnoCorrente(cdu, alunno)
+        },
         piani: { items: [], hasPiani: false, hasBes: false }
       }
     };

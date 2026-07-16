@@ -1,4 +1,7 @@
-import { SheetMaterieGeneratorStrategy, columnIndexToLetters } from './SheetMaterieGeneratorStrategy';
+import {
+  SheetMaterieGeneratorStrategy,
+  columnIndexToLetters
+} from './SheetMaterieGeneratorStrategy';
 import type { MateriaColumn } from './SheetMaterieGeneratorStrategy';
 import type { Cdu } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
@@ -61,7 +64,12 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
    * previous parallel `siglaOrder` array this class had to reconstruct by
    * hand from the same group-building logic `renderColumns` used.
    */
-  private protectColumns(fileId: string, cdu: Cdu, sheetName: string, layout: SheetColumnLayout[]): void {
+  private protectColumns(
+    fileId: string,
+    cdu: Cdu,
+    sheetName: string,
+    layout: SheetColumnLayout[]
+  ): void {
     const hasDataColumn = layout.some((c) => !c.isLabel);
     if (!hasDataColumn) return;
     const coordinatori = this.roles.risolvi('COORDINATORI', cdu).map((e) => e.value);
@@ -84,7 +92,12 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
 
   /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */
   private resolveDocentiMateria(cdu: Cdu, sigla: string): string[] {
-    const variant: Cdu = { ...cdu, meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: sigla } } };
-    return this.roles.risolvi('DOCENTE_MATERIA', variant, { regolaSupplente: GestioneSupplenti.ENTRAMBI }).map((e) => e.value);
+    const variant: Cdu = {
+      ...cdu,
+      meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: sigla } }
+    };
+    return this.roles
+      .risolvi('DOCENTE_MATERIA', variant, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+      .map((e) => e.value);
   }
 }

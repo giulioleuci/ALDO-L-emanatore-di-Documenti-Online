@@ -1,4 +1,7 @@
-import { createCercaCartelleClasseStrategy, createCercaDocumentiStrategy } from '../../../src/application/import/CustomSourceStrategies';
+import {
+  createCercaCartelleClasseStrategy,
+  createCercaDocumentiStrategy
+} from '../../../src/application/import/CustomSourceStrategies';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { LogCartellaRepository } from '../../../src/infrastructure/repositories/LogCartellaRepository';
 import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
@@ -9,11 +12,22 @@ import type { Row } from '../../../src/infrastructure/db/Database';
 const logger = new LoggerService();
 
 /** A SpreadsheetService double returning fixed rows per sheetId, matching the real getSheetInfo/getRanges contract. */
-function fakeSpreadsheets(bySheetId: Record<string, unknown[][]>, columnCount = 5): SpreadsheetService {
+function fakeSpreadsheets(
+  bySheetId: Record<string, unknown[][]>,
+  columnCount = 5
+): SpreadsheetService {
   return {
     getSheetInfo: (sheetId: string) =>
       bySheetId[sheetId] !== undefined
-        ? [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 10, columnCount } }]
+        ? [
+            {
+              name: 'Sheet1',
+              sheetId: 0,
+              index: 0,
+              hidden: false,
+              gridProperties: { rowCount: 10, columnCount }
+            }
+          ]
         : [],
     getRanges: (sheetId: string) => bySheetId[sheetId] ?? []
   };
@@ -25,7 +39,10 @@ function fakeDrive(byFolderId: Record<string, Array<{ id: string; name: string }
     searchFiles: (query: string) => {
       const match = /'([^']*)' in parents/.exec(query);
       const folderId = match?.[1] ?? '';
-      return (byFolderId[folderId] ?? []).map((f) => ({ ...f, mimeType: 'application/vnd.google-apps.spreadsheet' }));
+      return (byFolderId[folderId] ?? []).map((f) => ({
+        ...f,
+        mimeType: 'application/vnd.google-apps.spreadsheet'
+      }));
     }
   } as unknown as DriveService;
 }
@@ -33,8 +50,24 @@ function fakeDrive(byFolderId: Record<string, Array<{ id: string; name: string }
 function tablesWithFolders(): Record<string, Row[]> {
   const tables = fixtureTables();
   tables.LOG_FOLD = [
-    { ID: 'fold_5a', TIPO: 'GRIGLIE_VOTI', PATH: 'Griglie/5A', LINK: '', CLASSI: '5A', UTENTI: '', MATERIA: '' },
-    { ID: 'fold_3b', TIPO: 'GRIGLIE_VOTI', PATH: 'Griglie/3B', LINK: '', CLASSI: '3B', UTENTI: '', MATERIA: '' },
+    {
+      ID: 'fold_5a',
+      TIPO: 'GRIGLIE_VOTI',
+      PATH: 'Griglie/5A',
+      LINK: '',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIA: ''
+    },
+    {
+      ID: 'fold_3b',
+      TIPO: 'GRIGLIE_VOTI',
+      PATH: 'Griglie/3B',
+      LINK: '',
+      CLASSI: '3B',
+      UTENTI: '',
+      MATERIA: ''
+    },
     { ID: 'fold_other', TIPO: 'ALTRO', PATH: 'X', LINK: '', CLASSI: '5A', UTENTI: '', MATERIA: '' }
   ];
   return tables;
@@ -48,10 +81,21 @@ describe('CERCA_CARTELLE_CLASSE custom SourceStrategy (12 §3)', () => {
       fold_3b: [{ id: 'sheet_3b', name: 'Griglia 3B' }]
     });
     const spreadsheets = fakeSpreadsheets({
-      sheet_5a: [['NOME', 'VOTO'], ['Rossi', '8']],
-      sheet_3b: [['NOME', 'VOTO'], ['Bianchi', '7']]
+      sheet_5a: [
+        ['NOME', 'VOTO'],
+        ['Rossi', '8']
+      ],
+      sheet_3b: [
+        ['NOME', 'VOTO'],
+        ['Bianchi', '7']
+      ]
     });
-    const Strategy = createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), drive, spreadsheets);
+    const Strategy = createCercaCartelleClasseStrategy(
+      new ClasseRepository(db),
+      new LogCartellaRepository(db),
+      drive,
+      spreadsheets
+    );
     const strategy = new Strategy(logger);
     const rows = strategy.extract({ folderTipo: 'GRIGLIE_VOTI' });
     // 3B is ATTIVA: false in the fixture, so findAttive() excludes it — only 5A contributes.
@@ -60,18 +104,38 @@ describe('CERCA_CARTELLE_CLASSE custom SourceStrategy (12 §3)', () => {
 
   test('an active class with no matching folder contributes no rows (not an error)', () => {
     const tables = tablesWithFolders();
-    tables.LOG_FOLD = [{ ID: 'fold_5a', TIPO: 'GRIGLIE_VOTI', PATH: 'Griglie/5A', LINK: '', CLASSI: '5A', UTENTI: '', MATERIA: '' }];
+    tables.LOG_FOLD = [
+      {
+        ID: 'fold_5a',
+        TIPO: 'GRIGLIE_VOTI',
+        PATH: 'Griglie/5A',
+        LINK: '',
+        CLASSI: '5A',
+        UTENTI: '',
+        MATERIA: ''
+      }
+    ];
     const db = new FakeDatabase(tables);
     const drive = fakeDrive({ fold_5a: [{ id: 'sheet_5a', name: 'Griglia 5A' }] });
     const spreadsheets = fakeSpreadsheets({ sheet_5a: [['NOME'], ['Rossi']] });
-    const Strategy = createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), drive, spreadsheets);
+    const Strategy = createCercaCartelleClasseStrategy(
+      new ClasseRepository(db),
+      new LogCartellaRepository(db),
+      drive,
+      spreadsheets
+    );
     const rows = new Strategy(logger).extract({ folderTipo: 'GRIGLIE_VOTI' });
     expect(rows).toEqual([{ NOME: 'Rossi', _CLASSE: '5A' }]); // only 5A contributed; 1F/1F-LSO/1F-LSS have none
   });
 
   test('missing folderTipo throws (config validation)', () => {
     const db = new FakeDatabase(tablesWithFolders());
-    const Strategy = createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), fakeDrive({}), fakeSpreadsheets({}));
+    const Strategy = createCercaCartelleClasseStrategy(
+      new ClasseRepository(db),
+      new LogCartellaRepository(db),
+      fakeDrive({}),
+      fakeSpreadsheets({})
+    );
     expect(() => new Strategy(logger).extract({})).toThrow();
   });
 
@@ -81,7 +145,12 @@ describe('CERCA_CARTELLE_CLASSE custom SourceStrategy (12 §3)', () => {
     // 30 columns -> last column letter is 'AD', beyond the old hardcoded 'Z' cap.
     const spreadsheets = fakeSpreadsheets({ sheet_5a: [['NOME'], ['Rossi']] }, 30);
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
-    const Strategy = createCercaCartelleClasseStrategy(new ClasseRepository(db), new LogCartellaRepository(db), drive, spreadsheets);
+    const Strategy = createCercaCartelleClasseStrategy(
+      new ClasseRepository(db),
+      new LogCartellaRepository(db),
+      drive,
+      spreadsheets
+    );
     new Strategy(logger).extract({ folderTipo: 'GRIGLIE_VOTI' });
     expect(getRangesSpy).toHaveBeenCalledWith('sheet_5a', 'Sheet1!A1:AD10');
   });
@@ -91,9 +160,30 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
   function tablesWithDocs(): Record<string, Row[]> {
     const tables = fixtureTables();
     tables.LOG_DOCS = [
-      { ID: 'sheet_doc1', ID_GEN: 'CD_GRIGLIE', TIPO: 'GRIGLIA', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' },
-      { ID: 'sheet_doc2', ID_GEN: 'CD_GRIGLIE', TIPO: 'GRIGLIA', STATO: 'ARCHIVIATO', CLASSI: '3B', UTENTI: '' },
-      { ID: 'other_doc', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' }
+      {
+        ID: 'sheet_doc1',
+        ID_GEN: 'CD_GRIGLIE',
+        TIPO: 'GRIGLIA',
+        STATO: 'GENERATO',
+        CLASSI: '5A',
+        UTENTI: ''
+      },
+      {
+        ID: 'sheet_doc2',
+        ID_GEN: 'CD_GRIGLIE',
+        TIPO: 'GRIGLIA',
+        STATO: 'ARCHIVIATO',
+        CLASSI: '3B',
+        UTENTI: ''
+      },
+      {
+        ID: 'other_doc',
+        ID_GEN: 'CD1',
+        TIPO: 'VERBALE',
+        STATO: 'GENERATO',
+        CLASSI: '5A',
+        UTENTI: ''
+      }
     ];
     return tables;
   }
@@ -122,7 +212,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
 
   test('missing idGen throws (config validation)', () => {
     const db = new FakeDatabase(tablesWithDocs());
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), fakeSpreadsheets({}));
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db),
+      fakeSpreadsheets({})
+    );
     expect(() => new Strategy(logger).extract({})).toThrow();
   });
 
@@ -140,13 +233,26 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
     // sheet_doc2 shares idGen/tipo with sheet_doc1 but has STATO ARCHIVIATO, not GENERATO.
-    const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO' });
+    const rows = new Strategy(logger).extract({
+      idGen: 'CD_GRIGLIE',
+      tipo: 'GRIGLIA',
+      stato: 'GENERATO'
+    });
     expect(rows).toEqual([{ NOME: 'Verdi', _CLASSE: '5A' }]);
   });
 
   test("defaults _CLASSE to '' when the matching LOG_DOCS row's CLASSI is blank (getClassi()[0] is undefined)", () => {
     const tables = tablesWithDocs();
-    tables.LOG_DOCS = [{ ID: 'sheet_doc3', ID_GEN: 'CD_NOCLASSE', TIPO: 'GRIGLIA', STATO: 'GENERATO', CLASSI: '', UTENTI: '' }];
+    tables.LOG_DOCS = [
+      {
+        ID: 'sheet_doc3',
+        ID_GEN: 'CD_NOCLASSE',
+        TIPO: 'GRIGLIA',
+        STATO: 'GENERATO',
+        CLASSI: '',
+        UTENTI: ''
+      }
+    ];
     const db = new FakeDatabase(tables);
     const spreadsheets = fakeSpreadsheets({ sheet_doc3: [['NOME'], ['Blu']] });
     const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
@@ -166,7 +272,16 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
 
   test('readSheetRows options: an explicit tabName/range in config is passed through to the read', () => {
     const tables = tablesWithDocs();
-    tables.LOG_DOCS = [{ ID: 'sheet_doc4', ID_GEN: 'CD_RANGE', TIPO: 'GRIGLIA', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' }];
+    tables.LOG_DOCS = [
+      {
+        ID: 'sheet_doc4',
+        ID_GEN: 'CD_RANGE',
+        TIPO: 'GRIGLIA',
+        STATO: 'GENERATO',
+        CLASSI: '5A',
+        UTENTI: ''
+      }
+    ];
     const db = new FakeDatabase(tables);
     const spreadsheets = fakeSpreadsheets({ sheet_doc4: [['NOME'], ['Rosa']] });
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');

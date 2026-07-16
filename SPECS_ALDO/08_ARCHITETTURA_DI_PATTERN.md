@@ -123,11 +123,11 @@ DocumentGeneratorStrategy (interfaccia):
 
 Tutte le Google API DEVONO essere incapsulate in Facade dedicate che centralizzano logging, error handling e mocking; nessun altro componente DEVE invocare direttamente `DriveApp`, `GmailApp` o `DocumentApp`:
 
-| Facade | Operazioni principali |
-|--------|-----------------------|
-| `DriveServiceFacade` | `createFolder()`, `copyFile()`, `setPermissions()`, `deleteFile()`, `countFilesInFolder()` |
-| `GmailServiceFacade` | `sendEmail()`, `createDraft()` |
-| `DocumentServiceFacade` | `replaceText()`, `appendTable()`, `protectRange()` |
+| Facade                  | Operazioni principali                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------ |
+| `DriveServiceFacade`    | `createFolder()`, `copyFile()`, `setPermissions()`, `deleteFile()`, `countFilesInFolder()` |
+| `GmailServiceFacade`    | `sendEmail()`, `createDraft()`                                                             |
+| `DocumentServiceFacade` | `replaceText()`, `appendTable()`, `protectRange()`                                         |
 
 Le Facade usano `GoogleApiWrapper` (L1) e `GasResilienceLib` (L0) internamente per il retry con exponential backoff sui rate limit delle API.
 
@@ -209,15 +209,15 @@ Dettagli in `15_UI_E_JOB_RUNNER.md`.
 
 ## 5. Strategie di Performance
 
-| Ambito | Strategia |
-|--------|-----------|
-| Letture DB | Batch: carica intere tabelle, poi filtra in memoria |
-| Scritture DB | Accumula dirty, poi `database.save()` unico batch |
-| Lookup table | Cache completa in memoria (MATERIE, INDIRIZZI, DIPART, RUOLI) per la sessione |
-| Supplenze attive | Cache 1 ora, invalidata a ogni modifica |
-| Template Drive | Cache in memoria per la sessione corrente |
-| Permessi Drive | Applicati in batch via `GoogleApiWrapper` |
-| Batch lunghi | Job Runner con generator + PropertiesService (vedi `15_UI_E_JOB_RUNNER.md`) |
+| Ambito           | Strategia                                                                     |
+| ---------------- | ----------------------------------------------------------------------------- |
+| Letture DB       | Batch: carica intere tabelle, poi filtra in memoria                           |
+| Scritture DB     | Accumula dirty, poi `database.save()` unico batch                             |
+| Lookup table     | Cache completa in memoria (MATERIE, INDIRIZZI, DIPART, RUOLI) per la sessione |
+| Supplenze attive | Cache 1 ora, invalidata a ogni modifica                                       |
+| Template Drive   | Cache in memoria per la sessione corrente                                     |
+| Permessi Drive   | Applicati in batch via `GoogleApiWrapper`                                     |
+| Batch lunghi     | Job Runner con generator + PropertiesService (vedi `15_UI_E_JOB_RUNNER.md`)   |
 
 ---
 
@@ -243,10 +243,10 @@ In production, i log vengono scritti sia su `Logger.log()` GAS (visibile nel log
 
 ## 8. Principi SOLID applicati
 
-| Principio | Applicazione |
-|-----------|-------------|
-| **S** — Single Responsibility | Ogni repository gestisce una sola tabella; ogni step della pipeline ha una sola responsabilità |
-| **O** — Open/Closed | Nuovi tipi di documento = nuova Strategy, zero modifiche al core; nuovi ruoli = record in `RUOLI`, zero modifiche al codice |
-| **L** — Liskov Substitution | Le Strategy implementano la stessa interfaccia `DocumentGeneratorStrategy`; sono intercambiabili |
-| **I** — Interface Segregation | I repository espongono solo i metodi pertinenti alla loro entità |
-| **D** — Dependency Inversion | Il Domain Layer dipende da astrazioni (interfacce repository); l'Infrastructure Layer fornisce le implementazioni concrete |
+| Principio                     | Applicazione                                                                                                                |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **S** — Single Responsibility | Ogni repository gestisce una sola tabella; ogni step della pipeline ha una sola responsabilità                              |
+| **O** — Open/Closed           | Nuovi tipi di documento = nuova Strategy, zero modifiche al core; nuovi ruoli = record in `RUOLI`, zero modifiche al codice |
+| **L** — Liskov Substitution   | Le Strategy implementano la stessa interfaccia `DocumentGeneratorStrategy`; sono intercambiabili                            |
+| **I** — Interface Segregation | I repository espongono solo i metodi pertinenti alla loro entità                                                            |
+| **D** — Dependency Inversion  | Il Domain Layer dipende da astrazioni (interfacce repository); l'Infrastructure Layer fornisce le implementazioni concrete  |

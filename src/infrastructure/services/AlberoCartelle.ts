@@ -52,12 +52,20 @@ export class AlberoCartelle {
   /** A LOG_FOLD row matches when PATH is equal and any given classe/utente is contained (CSV, 14 §4). */
   private matches(row: Row, path: string, options: FindOrCreateOptions): boolean {
     if (String(row[COL_LOG_FOLD.PATH]) !== path) return false;
-    if (options.classe !== undefined && !csvContains(row[COL_LOG_FOLD.CLASSI], options.classe)) return false;
-    if (options.utente !== undefined && !csvContains(row[COL_LOG_FOLD.UTENTI], options.utente)) return false;
+    if (options.classe !== undefined && !csvContains(row[COL_LOG_FOLD.CLASSI], options.classe))
+      return false;
+    if (options.utente !== undefined && !csvContains(row[COL_LOG_FOLD.UTENTI], options.utente))
+      return false;
     return true;
   }
 }
 
 function csvContains(raw: unknown, value: string): boolean {
-  return typeof raw === 'string' && raw.split(',').map((s) => s.trim()).includes(value);
+  return (
+    typeof raw === 'string' &&
+    raw
+      .split(',')
+      .map((s) => s.trim())
+      .includes(value)
+  );
 }

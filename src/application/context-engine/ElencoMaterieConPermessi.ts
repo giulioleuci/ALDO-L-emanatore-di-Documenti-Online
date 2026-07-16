@@ -22,12 +22,16 @@ const SPECIAL_COLORE = '#E0E0E0';
  * `hasAlt` (whether the class has an ALT column value) decides the special
  * column's label/roles — degrades to "REL"/["IRC"] when there is no ALT.
  */
-export function buildElencoMaterieConPermessi(consiglioDiClasse: DocenteCdcVM[], hasAlt: boolean): ElencoMateriaConPermessiVM[] {
+export function buildElencoMaterieConPermessi(
+  consiglioDiClasse: DocenteCdcVM[],
+  hasAlt: boolean
+): ElencoMateriaConPermessiVM[] {
   const bySigla = new Map<string, { sigla: string; nome: string; colore: string }>();
   for (const docente of consiglioDiClasse) {
     for (const m of docente.materie) {
       if (m.sigla === 'IRC' || m.sigla === 'ALT') continue;
-      if (!bySigla.has(m.sigla)) bySigla.set(m.sigla, { sigla: m.sigla, nome: m.nome, colore: m.colore });
+      if (!bySigla.has(m.sigla))
+        bySigla.set(m.sigla, { sigla: m.sigla, nome: m.nome, colore: m.colore });
     }
   }
   const materie: ElencoMateriaConPermessiVM[] = [...bySigla.values()]

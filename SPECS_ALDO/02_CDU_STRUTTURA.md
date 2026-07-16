@@ -10,14 +10,14 @@ Il **CDU (Contesto Dati Unificato)** è l'oggetto centrale attorno al quale ruot
 
 Il CDU è diviso in sei sezioni di primo livello:
 
-| Sezione | Scopo |
-|---------|-------|
-| `meta` | Dati tecnici: timestamp, ID esecuzione, date formattate, parametri input |
-| `istituto` | Dati globali dell'istituzione scolastica |
-| `focus` | Il cuore dei dati di business (classe e/o alunno) |
-| `destinatario` | Dati specifici del destinatario dell'operazione corrente |
-| `render` | HTML pre-renderizzato dei box email (solo pipeline email) |
-| `tech` | Oggetti vivi (istanze di entità e servizi, non serializzabili) |
+| Sezione        | Scopo                                                                    |
+| -------------- | ------------------------------------------------------------------------ |
+| `meta`         | Dati tecnici: timestamp, ID esecuzione, date formattate, parametri input |
+| `istituto`     | Dati globali dell'istituzione scolastica                                 |
+| `focus`        | Il cuore dei dati di business (classe e/o alunno)                        |
+| `destinatario` | Dati specifici del destinatario dell'operazione corrente                 |
+| `render`       | HTML pre-renderizzato dei box email (solo pipeline email)                |
+| `tech`         | Oggetti vivi (istanze di entità e servizi, non serializzabili)           |
 
 ---
 

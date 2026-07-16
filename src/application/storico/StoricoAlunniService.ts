@@ -52,14 +52,20 @@ export class StoricoAlunniService {
       const materie = new MateriaRepository(db);
 
       const alunno = alunni.findById(alunnoEmail);
-      const classe = alunno !== null && alunno.classe !== '' ? classi.findById(ClasseId.of(alunno.classe)) : null;
+      const classe =
+        alunno !== null && alunno.classe !== ''
+          ? classi.findById(ClasseId.of(alunno.classe))
+          : null;
       const annoCorso = classe?.anno.value ?? null;
 
       const carenzeStoriche: CarenzaStorica[] = [];
       if (alunno !== null) {
         for (const c of carenze.findByAlunno(alunno)) {
           for (const [materiaId, valore] of carenze.getCarenzePerMateria(c)) {
-            const sigla = annoCorso !== null ? reconcileSigla(materiaId.value, annoCorso, materie.findAllCached()) : materiaId.value;
+            const sigla =
+              annoCorso !== null
+                ? reconcileSigla(materiaId.value, annoCorso, materie.findAllCached())
+                : materiaId.value;
             carenzeStoriche.push({ materiaSigla: sigla, valore: valore.toString() });
           }
         }
@@ -70,13 +76,19 @@ export class StoricoAlunniService {
         classe: alunno?.classe ?? null,
         esito: alunno === null ? 'SCONOSCIUTO' : this.esito(movimenti, alunno),
         carenze: carenzeStoriche,
-        piani: alunno !== null ? piani.findByAlunno(Email.of(alunno.id ?? alunnoEmail)).map((p) => p.tipo) : []
+        piani:
+          alunno !== null
+            ? piani.findByAlunno(Email.of(alunno.id ?? alunnoEmail)).map((p) => p.tipo)
+            : []
       });
     }
     return out;
   }
 
-  private esito(movimenti: MovimentoAlunnoRepository, alunno: Parameters<MovimentoAlunnoRepository['findByAlunno']>[0]): Esito {
+  private esito(
+    movimenti: MovimentoAlunnoRepository,
+    alunno: Parameters<MovimentoAlunnoRepository['findByAlunno']>[0]
+  ): Esito {
     const storia = movimenti.findByAlunno(alunno);
     if (storia.some((m) => m.tipo === TipoMovimento.OUT)) return 'RITIRATO';
     const cambio = storia.find((m) => m.tipo === TipoMovimento.CAMBIO);

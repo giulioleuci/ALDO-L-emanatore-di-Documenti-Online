@@ -1,4 +1,7 @@
-import { EmailNotificationService, type EmailNotificationDeps } from '../../../src/application/services/EmailNotificationService';
+import {
+  EmailNotificationService,
+  type EmailNotificationDeps
+} from '../../../src/application/services/EmailNotificationService';
 import { ConfigurazioneEmail } from '../../../src/domain/entities/ConfigurazioneEmail';
 import { Classe } from '../../../src/domain/entities/Classe';
 import { Docente } from '../../../src/domain/entities/Docente';
@@ -33,19 +36,38 @@ function wire(extraConfMail: Row[] = []) {
   tables['CONF_MAIL'] = [...tables['CONF_MAIL']!, ...extraConfMail];
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
+  const service = EmailNotificationService.create(
+    db,
+    gmail,
+    new FakeTemplateEngine(),
+    NOW,
+    new FakeDriveFacade()
+  );
   return { db, gmail, service };
 }
 
 function conf(processo: string, overrides: Record<string, unknown> = {}): ConfigurazioneEmail {
   return ConfigurazioneEmail.fromData({
-    ID: 'X', OGGETTO: 'S', PROCESSO: processo, BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI',
-    NOREPLY: false, COLORE_HEADER: '', CONDIZIONE: null, POST_PROCESSO: null, ...overrides
+    ID: 'X',
+    OGGETTO: 'S',
+    PROCESSO: processo,
+    BOX_CFG: null,
+    TESTO: '',
+    SUPPLENTI: 'SOLO_TITOLARI',
+    NOREPLY: false,
+    COLORE_HEADER: '',
+    CONDIZIONE: null,
+    POST_PROCESSO: null,
+    ...overrides
   });
 }
 
 /** Full EmailNotificationDeps wiring over a real db, with per-test overrides (deps-injection seam for A17). */
-function fullDeps(db: FakeDatabase, gmail: FakeGmailFacade, overrides: Partial<EmailNotificationDeps> = {}): EmailNotificationDeps {
+function fullDeps(
+  db: FakeDatabase,
+  gmail: FakeGmailFacade,
+  overrides: Partial<EmailNotificationDeps> = {}
+): EmailNotificationDeps {
   return {
     db,
     gmail,
@@ -101,14 +123,23 @@ test('PER_ALUNNO: one target per active student', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_ALUNNO'));
   expect(targets).toHaveLength(1);
-  expect(targets[0]!).toMatchObject({ tipo: 'alunno', tipoTarget: 'alunno', target: 'a1@school.it', emails: ['a1@school.it'] });
+  expect(targets[0]!).toMatchObject({
+    tipo: 'alunno',
+    tipoTarget: 'alunno',
+    target: 'a1@school.it',
+    emails: ['a1@school.it']
+  });
 });
 
 test('PER_GENITORI_ALUNNO: one target per family (tutors multi-TO)', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_GENITORI_ALUNNO'));
   expect(targets).toHaveLength(1);
-  expect(targets[0]!).toMatchObject({ tipo: 'genitori', target: 'a1@school.it', emails: ['genitore1@x.it'] });
+  expect(targets[0]!).toMatchObject({
+    tipo: 'genitori',
+    target: 'a1@school.it',
+    emails: ['genitore1@x.it']
+  });
 });
 
 test('PER_CARENZA: one target per non-notified CARENZE row; tutors first, alunno fallback (11 §3)', () => {
@@ -140,7 +171,9 @@ test('sendPattern PER_CARENZA stamps NOTIFICATO so a second run sends nothing (1
   const first = service.sendPattern('CARENZE_NOTIFICA');
   expect(first.targets).toBe(2);
   expect(first.sent).toBe(2);
-  const nonNotificate = db.tables['CARENZE']!.getAllRows().filter((r) => String(r['NOTIFICATO'] ?? '') === '');
+  const nonNotificate = db.tables['CARENZE']!.getAllRows().filter(
+    (r) => String(r['NOTIFICATO'] ?? '') === ''
+  );
   expect(nonNotificate).toHaveLength(0);
   const second = service.sendPattern('CARENZE_NOTIFICA');
   expect(second.targets).toBe(0);
@@ -172,10 +205,14 @@ test('send failures are aggregated and logged as ERROR without stopping the batc
   expect(result.targets).toBe(2);
   expect(result.sent).toBe(1);
   expect(result.errors).toHaveLength(1);
-  const states = db.tables['LOG_MAIL']!.getAllRows().map((r) => r['STATO']).sort();
+  const states = db.tables['LOG_MAIL']!.getAllRows()
+    .map((r) => r['STATO'])
+    .sort();
   expect(states).toEqual(['ERROR', 'SUCCESS']);
   // The failed carenza stays non-notified (post-process gated on success).
-  const a1 = db.tables['CARENZE']!.getAllRows().find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1)!;
+  const a1 = db.tables['CARENZE']!.getAllRows().find(
+    (r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1
+  )!;
   expect(a1['NOTIFICATO']).toBe('');
 });
 
@@ -191,15 +228,27 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
   test('sendPattern throws via the confMail defensive re-check when findById cannot resolve an existing row', () => {
     const { db, gmail } = wire();
     const service = new EmailNotificationService(
-      fullDeps(db, gmail, { confMail: { findById: () => null } as unknown as ConfigurazioneEmailRepository })
+      fullDeps(db, gmail, {
+        confMail: { findById: () => null } as unknown as ConfigurazioneEmailRepository
+      })
     );
     expect(() => service.sendPattern('CDC_OTTOBRE')).toThrow(PipelineError);
   });
 
   test('sendPattern skips (does not send) when CONDIZIONE evaluates false', () => {
     const { service, gmail } = wire([
-      { ID: 'CDC_NEVER', OGGETTO: 'X', PROCESSO: 'PER_CDC', BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI',
-        NOREPLY: false, COLORE_HEADER: '', CONDIZIONE: 'false', POST_PROCESSO: null }
+      {
+        ID: 'CDC_NEVER',
+        OGGETTO: 'X',
+        PROCESSO: 'PER_CDC',
+        BOX_CFG: null,
+        TESTO: '',
+        SUPPLENTI: 'SOLO_TITOLARI',
+        NOREPLY: false,
+        COLORE_HEADER: '',
+        CONDIZIONE: 'false',
+        POST_PROCESSO: null
+      }
     ]);
     const result = service.sendPattern('CDC_NEVER');
     expect(result.targets).toBe(2);
@@ -212,7 +261,11 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const { db, gmail } = wire();
     const service = new EmailNotificationService(
       fullDeps(db, gmail, {
-        contextBuilder: { build: () => { throw new Error('boom'); } } as unknown as ContextBuilder
+        contextBuilder: {
+          build: () => {
+            throw new Error('boom');
+          }
+        } as unknown as ContextBuilder
       })
     );
     const result = service.sendPattern('CDC_OTTOBRE');
@@ -224,32 +277,68 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
   test('sendToTarget throws when the CONF_MAIL row does not exist', () => {
     const { service } = wire();
     expect(() =>
-      service.sendToTarget('NOPE', { tipo: 'cdc', tipoTarget: 'classe', target: '5A', emails: ['x@y.it'], classiCompetenza: ['5A'] })
+      service.sendToTarget('NOPE', {
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '5A',
+        emails: ['x@y.it'],
+        classiCompetenza: ['5A']
+      })
     ).toThrow(PipelineError);
   });
 
   test('sendToTarget throws via the confMail defensive re-check when findById cannot resolve an existing row', () => {
     const { db, gmail } = wire();
     const service = new EmailNotificationService(
-      fullDeps(db, gmail, { confMail: { findById: () => null } as unknown as ConfigurazioneEmailRepository })
+      fullDeps(db, gmail, {
+        confMail: { findById: () => null } as unknown as ConfigurazioneEmailRepository
+      })
     );
     expect(() =>
-      service.sendToTarget('CDC_OTTOBRE', { tipo: 'cdc', tipoTarget: 'classe', target: '5A', emails: ['rossi@school.it'], classiCompetenza: ['5A'] })
+      service.sendToTarget('CDC_OTTOBRE', {
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '5A',
+        emails: ['rossi@school.it'],
+        classiCompetenza: ['5A']
+      })
     ).toThrow(PipelineError);
   });
 
   test('sendToTarget returns skipped:true and no sent/errors when CONDIZIONE gates the send', () => {
     const { service } = wire([
-      { ID: 'CDC_NEVER', OGGETTO: 'X', PROCESSO: 'PER_CDC', BOX_CFG: null, TESTO: '', SUPPLENTI: 'SOLO_TITOLARI',
-        NOREPLY: false, COLORE_HEADER: '', CONDIZIONE: 'false', POST_PROCESSO: null }
+      {
+        ID: 'CDC_NEVER',
+        OGGETTO: 'X',
+        PROCESSO: 'PER_CDC',
+        BOX_CFG: null,
+        TESTO: '',
+        SUPPLENTI: 'SOLO_TITOLARI',
+        NOREPLY: false,
+        COLORE_HEADER: '',
+        CONDIZIONE: 'false',
+        POST_PROCESSO: null
+      }
     ]);
-    const result = service.sendToTarget('CDC_NEVER', { tipo: 'cdc', tipoTarget: 'classe', target: '5A', emails: ['rossi@school.it'], classiCompetenza: ['5A'] });
+    const result = service.sendToTarget('CDC_NEVER', {
+      tipo: 'cdc',
+      tipoTarget: 'classe',
+      target: '5A',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['5A']
+    });
     expect(result).toEqual({ sent: 0, errors: [], skipped: true });
   });
 
   test('sendToTarget sends and returns sent/errors/skipped:false on a successful run', () => {
     const { service, gmail } = wire();
-    const result = service.sendToTarget('CDC_OTTOBRE', { tipo: 'cdc', tipoTarget: 'classe', target: '5A', emails: ['rossi@school.it'], classiCompetenza: ['5A'] });
+    const result = service.sendToTarget('CDC_OTTOBRE', {
+      tipo: 'cdc',
+      tipoTarget: 'classe',
+      target: '5A',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['5A']
+    });
     expect(result.skipped).toBe(false);
     expect(result.sent).toBe(1);
     expect(result.errors).toEqual([]);
@@ -259,7 +348,9 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
   test('getConfigurazione throws via the confMail defensive re-check', () => {
     const { db, gmail } = wire();
     const service = new EmailNotificationService(
-      fullDeps(db, gmail, { confMail: { findById: () => null } as unknown as ConfigurazioneEmailRepository })
+      fullDeps(db, gmail, {
+        confMail: { findById: () => null } as unknown as ConfigurazioneEmailRepository
+      })
     );
     expect(() => service.getConfigurazione('CDC_OTTOBRE')).toThrow(PipelineError);
   });
@@ -269,23 +360,43 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const db = new FakeDatabase(tables);
     const gmail = new FakeGmailFacade();
     const monitor = new FakeProcessMonitor();
-    const service = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade(), undefined, monitor);
+    const service = EmailNotificationService.create(
+      db,
+      gmail,
+      new FakeTemplateEngine(),
+      NOW,
+      new FakeDriveFacade(),
+      undefined,
+      monitor
+    );
     service.sendToTarget(
       'CDC_OTTOBRE',
-      { tipo: 'cdc', tipoTarget: 'classe', target: '5A', emails: ['rossi@school.it'], classiCompetenza: ['5A'] },
+      {
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '5A',
+        emails: ['rossi@school.it'],
+        classiCompetenza: ['5A']
+      },
       'job-1'
     );
     expect(monitor.steps.length).toBeGreaterThan(0);
     expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'start')).toBe(true);
-    expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'complete')).toBe(true);
+    expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'complete')).toBe(
+      true
+    );
   });
 
   test('PER_ALUNNO falls back to "" target/email when the alunno has no id', () => {
     const { db, gmail } = wire();
-    const alunniStub = { findAttivi: () => [Alunno.fromData({ ATTIVO: true })] } as unknown as AlunnoRepository;
+    const alunniStub = {
+      findAttivi: () => [Alunno.fromData({ ATTIVO: true })]
+    } as unknown as AlunnoRepository;
     const service = new EmailNotificationService(fullDeps(db, gmail, { alunni: alunniStub }));
     const targets = service.enumerateTargets(conf('PER_ALUNNO'));
-    expect(targets).toEqual([{ tipo: 'alunno', tipoTarget: 'alunno', target: '', emails: [''], classiCompetenza: [] }]);
+    expect(targets).toEqual([
+      { tipo: 'alunno', tipoTarget: 'alunno', target: '', emails: [''], classiCompetenza: [] }
+    ]);
   });
 
   test('targetsPerCoordinatore skips a coordinatore with no id and falls back to "" for a classe with no id', () => {
@@ -295,7 +406,10 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
       isArticolata: () => false,
-      getCoordinatori: () => [Docente.fromData({}), Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })]
+      getCoordinatori: () => [
+        Docente.fromData({}),
+        Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })
+      ]
     } as unknown as ClasseRepository;
     const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
     const targets = service.enumerateTargets(conf('PER_COORDINATORE'));
@@ -311,7 +425,10 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
       isArticolata: () => false,
-      getAllDocentiCDC: () => [Docente.fromData({}), Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })]
+      getAllDocentiCDC: () => [
+        Docente.fromData({}),
+        Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })
+      ]
     } as unknown as ClasseRepository;
     const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
     const targets = service.enumerateTargets(conf('PER_DOCENTE'));
@@ -331,7 +448,15 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     } as unknown as ClasseRepository;
     const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
     const targets = service.enumerateTargets(conf('PER_CDC'));
-    expect(targets).toEqual([{ tipo: 'cdc', tipoTarget: 'classe', target: '', emails: ['rossi@school.it'], classiCompetenza: [''] }]);
+    expect(targets).toEqual([
+      {
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '',
+        emails: ['rossi@school.it'],
+        classiCompetenza: ['']
+      }
+    ]);
   });
 
   test('targetsPerGenitori skips alunni without tutors, dedups repeated tutor sets, and falls back to "" when the alunno has no id', () => {
@@ -363,12 +488,16 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const alunniStub = {
       findById: (id: string) => {
         if (id === 'noid@x.it') return Alunno.fromData({ ATTIVO: true });
-        if (id === 'withtutor@x.it') return Alunno.fromData({ EMAIL: 'withtutor@x.it', ATTIVO: true, TUTOR_1: 't@x.it' });
-        if (id === 'withid-notutor@x.it') return Alunno.fromData({ EMAIL: 'withid-notutor@x.it', ATTIVO: true });
+        if (id === 'withtutor@x.it')
+          return Alunno.fromData({ EMAIL: 'withtutor@x.it', ATTIVO: true, TUTOR_1: 't@x.it' });
+        if (id === 'withid-notutor@x.it')
+          return Alunno.fromData({ EMAIL: 'withid-notutor@x.it', ATTIVO: true });
         return null;
       }
     } as unknown as AlunnoRepository;
-    const service = new EmailNotificationService(fullDeps(db, gmail, { carenze: carenzeStub, alunni: alunniStub }));
+    const service = new EmailNotificationService(
+      fullDeps(db, gmail, { carenze: carenzeStub, alunni: alunniStub })
+    );
     const targets = service.enumerateTargets(conf('PER_CARENZA'));
     expect(targets).toHaveLength(3);
     const noId = targets.find((t) => t.target === 'noid@x.it')!;
@@ -383,10 +512,20 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const { db, gmail } = wire();
     const service = new EmailNotificationService(
       fullDeps(db, gmail, {
-        contextBuilder: { build: () => { throw new Error('boom'); } } as unknown as ContextBuilder
+        contextBuilder: {
+          build: () => {
+            throw new Error('boom');
+          }
+        } as unknown as ContextBuilder
       })
     );
-    const result = service.sendToTarget('CDC_OTTOBRE', { tipo: 'cdc', tipoTarget: 'classe', target: '5A', emails: ['rossi@school.it'], classiCompetenza: ['5A'] });
+    const result = service.sendToTarget('CDC_OTTOBRE', {
+      tipo: 'cdc',
+      tipoTarget: 'classe',
+      target: '5A',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['5A']
+    });
     expect(result.skipped).toBe(false);
     expect(result.sent).toBe(0);
     expect(result.errors).toEqual([]);

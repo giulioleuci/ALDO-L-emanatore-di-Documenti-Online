@@ -23,40 +23,66 @@ export interface AldoImportConfig {
   timestampColumn?: string;
 }
 
-const CONFLICT_MAP: Record<AldoImportConfig['conflictResolution'], ImportLoadConfig['conflictResolution']> = {
+const CONFLICT_MAP: Record<
+  AldoImportConfig['conflictResolution'],
+  ImportLoadConfig['conflictResolution']
+> = {
   IGNORE: 'INSERT_ONLY',
   OVERWRITE: 'OVERWRITE',
   TIMESTAMP: 'UPSERT'
 };
 
-function buildSource(conf: ConfigurazioneImport, cfg: Partial<AldoImportConfig>): { type: string; config: Record<string, unknown> } {
+function buildSource(
+  conf: ConfigurazioneImport,
+  cfg: Partial<AldoImportConfig>
+): { type: string; config: Record<string, unknown> } {
   switch (cfg.searchStrategy) {
     case 'FILE_SINGOLO': {
       if (cfg.fileId === undefined || cfg.fileId.trim() === '') {
-        throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.fileId obbligatorio per FILE_SINGOLO`);
+        throw new ConfigurationError(
+          `CONF_IMP ${conf.id ?? '?'}: CONFIG.fileId obbligatorio per FILE_SINGOLO`
+        );
       }
       return { type: 'SheetById', config: { sheetId: cfg.fileId } };
     }
     case 'CERCA_CARTELLE_CLASSE': {
       if (cfg.folderTipo === undefined || cfg.folderTipo.trim() === '') {
-        throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.folderTipo obbligatorio per CERCA_CARTELLE_CLASSE`);
+        throw new ConfigurationError(
+          `CONF_IMP ${conf.id ?? '?'}: CONFIG.folderTipo obbligatorio per CERCA_CARTELLE_CLASSE`
+        );
       }
       return {
         type: 'CERCA_CARTELLE_CLASSE',
-        config: { folderTipo: cfg.folderTipo, tabName: cfg.tabName, range: cfg.range, hasHeaders: cfg.hasHeaders }
+        config: {
+          folderTipo: cfg.folderTipo,
+          tabName: cfg.tabName,
+          range: cfg.range,
+          hasHeaders: cfg.hasHeaders
+        }
       };
     }
     case 'CERCA_DOCUMENTI': {
       if (cfg.idGen === undefined || cfg.idGen.trim() === '') {
-        throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.idGen obbligatorio per CERCA_DOCUMENTI`);
+        throw new ConfigurationError(
+          `CONF_IMP ${conf.id ?? '?'}: CONFIG.idGen obbligatorio per CERCA_DOCUMENTI`
+        );
       }
       return {
         type: 'CERCA_DOCUMENTI',
-        config: { idGen: cfg.idGen, tipo: cfg.tipo, stato: cfg.stato, tabName: cfg.tabName, range: cfg.range, hasHeaders: cfg.hasHeaders }
+        config: {
+          idGen: cfg.idGen,
+          tipo: cfg.tipo,
+          stato: cfg.stato,
+          tabName: cfg.tabName,
+          range: cfg.range,
+          hasHeaders: cfg.hasHeaders
+        }
       };
     }
     default:
-      throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: strategia sorgente "${String(cfg.searchStrategy)}" sconosciuta (12 §3)`);
+      throw new ConfigurationError(
+        `CONF_IMP ${conf.id ?? '?'}: strategia sorgente "${String(cfg.searchStrategy)}" sconosciuta (12 §3)`
+      );
   }
 }
 
@@ -75,7 +101,9 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
   }
   const conflictResolution = cfg.conflictResolution;
   if (conflictResolution === undefined) {
-    throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.conflictResolution obbligatorio`);
+    throw new ConfigurationError(
+      `CONF_IMP ${conf.id ?? '?'}: CONFIG.conflictResolution obbligatorio`
+    );
   }
 
   const load: ImportLoadConfig = {
@@ -85,7 +113,9 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
   };
   if (conflictResolution === 'TIMESTAMP') {
     if (cfg.timestampColumn === undefined || cfg.timestampColumn.trim() === '') {
-      throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.timestampColumn obbligatorio per conflictResolution TIMESTAMP`);
+      throw new ConfigurationError(
+        `CONF_IMP ${conf.id ?? '?'}: CONFIG.timestampColumn obbligatorio per conflictResolution TIMESTAMP`
+      );
     }
     load.updateIfNewer = { enabled: true, timestampColumn: cfg.timestampColumn };
   }
@@ -105,7 +135,11 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
  * than the conflict-key columns and the declared meta/timestamp columns is
  * null or an empty string. Applied after mapping, before conflict handling.
  */
-export function isGhostRecord(row: Record<string, unknown>, keyColumns: string[], metaColumns: string[]): boolean {
+export function isGhostRecord(
+  row: Record<string, unknown>,
+  keyColumns: string[],
+  metaColumns: string[]
+): boolean {
   const excluded = new Set([...keyColumns, ...metaColumns]);
   return Object.entries(row)
     .filter(([col]) => !excluded.has(col))

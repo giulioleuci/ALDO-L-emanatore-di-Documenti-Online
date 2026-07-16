@@ -14,7 +14,9 @@ test('PeriodoSupplenza: contiene / durata / attiva / terminata (03)', () => {
 test('PeriodoSupplenza: open-ended AL is always active after DAL; DAL>AL throws', () => {
   const open = PeriodoSupplenza.of(new Date('2025-11-01'), null);
   expect(open.contiene(new Date('2030-01-01'))).toBe(true);
-  expect(() => PeriodoSupplenza.of(new Date('2025-11-30'), new Date('2025-11-01'))).toThrow(ValidationError);
+  expect(() => PeriodoSupplenza.of(new Date('2025-11-30'), new Date('2025-11-01'))).toThrow(
+    ValidationError
+  );
 });
 
 test('CsvScope: wildcard and order-insensitive containment (04 §14)', () => {

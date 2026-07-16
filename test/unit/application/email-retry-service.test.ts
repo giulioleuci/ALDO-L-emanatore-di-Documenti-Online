@@ -13,8 +13,12 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 
 function failedRow(data: string, destinatari = 'genitore1@x.it'): Row {
   return {
-    PATTERN: 'CARENZE_NOTIFICA', DESTINATARI: destinatari, DATA: data,
-    STATO: 'ERROR', ALLEGATI: null, ERRORE: 'quota'
+    PATTERN: 'CARENZE_NOTIFICA',
+    DESTINATARI: destinatari,
+    DATA: data,
+    STATO: 'ERROR',
+    ALLEGATI: null,
+    ERRORE: 'quota'
   };
 }
 
@@ -23,9 +27,18 @@ function wire(logMailRows: Row[]) {
   tables['LOG_MAIL'] = logMailRows;
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const emailService = EmailNotificationService.create(db, gmail, new FakeTemplateEngine(), NOW, new FakeDriveFacade());
+  const emailService = EmailNotificationService.create(
+    db,
+    gmail,
+    new FakeTemplateEngine(),
+    NOW,
+    new FakeDriveFacade()
+  );
   const retry = new EmailRetryService(
-    new LogEmailRepository(db), emailService, gmail, new MasterSheetRepository(db)
+    new LogEmailRepository(db),
+    emailService,
+    gmail,
+    new MasterSheetRepository(db)
   );
   return { db, gmail, retry };
 }
@@ -38,7 +51,9 @@ test('retries a failed send below maxTentativi and marks the original record SUC
   // The resend went to the family of the carenza matching genitore1.
   expect(gmail.sent.some((s) => s.to.includes('genitore1@x.it'))).toBe(true);
   // Original ERROR record updated to SUCCESS.
-  const original = db.tables['LOG_MAIL']!.getAllRows().find((r) => r['DATA'] === '2026-06-30T10:00:00.000Z')!;
+  const original = db.tables['LOG_MAIL']!.getAllRows().find(
+    (r) => r['DATA'] === '2026-06-30T10:00:00.000Z'
+  )!;
   expect(original['STATO']).toBe('SUCCESS');
 });
 
@@ -62,7 +77,14 @@ test('after maxTentativi failures the error is permanent and the admin is notifi
 
 test('successful records are ignored', () => {
   const { gmail, retry } = wire([
-    { PATTERN: 'CARENZE_NOTIFICA', DESTINATARI: 'x@x.it', DATA: '2026-06-30T10:00:00.000Z', STATO: 'SUCCESS', ALLEGATI: null, ERRORE: '' }
+    {
+      PATTERN: 'CARENZE_NOTIFICA',
+      DESTINATARI: 'x@x.it',
+      DATA: '2026-06-30T10:00:00.000Z',
+      STATO: 'SUCCESS',
+      ALLEGATI: null,
+      ERRORE: ''
+    }
   ]);
   const result = retry.retryFailed();
   expect(result).toEqual({ retried: 0, permanent: 0 });

@@ -26,7 +26,9 @@ export class Classe extends AldoEntity {
     this.id = data[COL_CLASSI.ID] ?? null;
     const indirizzo = data[COL_CLASSI.INDIRIZZO];
     if (typeof indirizzo !== 'string' || indirizzo.trim() === '') {
-      throw new ValidationError(`Classe ${this.id ?? '?'}: colonna INDIRIZZO mancante o non valida`);
+      throw new ValidationError(
+        `Classe ${this.id ?? '?'}: colonna INDIRIZZO mancante o non valida`
+      );
     }
     this.indirizzo = indirizzo;
     this.nome = this.id ?? '';

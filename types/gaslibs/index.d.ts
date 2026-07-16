@@ -48,7 +48,9 @@ declare global {
   // ContextInterceptor middleware (SwapAndEnrichInterceptor, generalized with
   // `targetPaths` for per-item nested-array swaps — see below), and the
   // shared ExpressionEngine for conditions.
-  interface LibContextProvider { provide(...args: unknown[]): unknown }
+  interface LibContextProvider {
+    provide(...args: unknown[]): unknown;
+  }
   interface LibContextInterceptor {
     intercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
   }
@@ -73,8 +75,18 @@ declare global {
     intercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
     // Template-method hooks overridden by subclasses (public `intercept` wraps them
     // with validation, timing and logging).
-    protected _shouldIntercept(name: string, data: unknown, context: unknown, options?: unknown): boolean;
-    protected _performIntercept(name: string, data: unknown, context: unknown, options?: unknown): unknown;
+    protected _shouldIntercept(
+      name: string,
+      data: unknown,
+      context: unknown,
+      options?: unknown
+    ): boolean;
+    protected _performIntercept(
+      name: string,
+      data: unknown,
+      context: unknown,
+      options?: unknown
+    ): unknown;
     /**
      * Walks the array resolved at `path` (dot-path, e.g.
      * 'focus.classe.consiglioDiClasse') on `data` and calls
@@ -87,7 +99,11 @@ declare global {
     protected _forEachAt(
       data: unknown,
       path: string,
-      itemFn: (item: unknown, index: number, array: unknown[]) => void | null | {
+      itemFn: (
+        item: unknown,
+        index: number,
+        array: unknown[]
+      ) => void | null | {
         action: 'replace' | 'annotate' | 'skip';
         value?: unknown;
         meta?: Record<string, unknown>;
@@ -120,8 +136,16 @@ declare global {
       interceptorRegistry?: InterceptorRegistry | null,
       options?: { maxRetries?: number }
     );
-    assemble(recipe: ContextAssemblerRecipe, initialParams?: Record<string, unknown>, options?: Record<string, unknown>): Record<string, unknown>;
-    assembleAsync(recipe: ContextAssemblerRecipe, initialParams?: Record<string, unknown>, options?: Record<string, unknown>): Record<string, unknown>;
+    assemble(
+      recipe: ContextAssemblerRecipe,
+      initialParams?: Record<string, unknown>,
+      options?: Record<string, unknown>
+    ): Record<string, unknown>;
+    assembleAsync(
+      recipe: ContextAssemblerRecipe,
+      initialParams?: Record<string, unknown>,
+      options?: Record<string, unknown>
+    ): Record<string, unknown>;
     /** Mutation mode — see class doc. Returns `sharedTarget` (mutated in place) for convenience. */
     assembleInto<T extends object>(
       sharedTarget: T,
@@ -168,7 +192,10 @@ declare global {
     updateRowById(id: string, data: Record<string, unknown>): void;
     patchRow(id: string, partialData: Record<string, unknown>): void;
     deleteRowById(id: string): void;
-    defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): unknown;
+    defineVirtualColumn(
+      columnName: string,
+      compute: (row: Record<string, unknown>) => unknown
+    ): unknown;
     setPrimaryKey(columnName: string): unknown;
     // O(1) exact-match lookup seam (ref REPORT_GLF.md A2): createIndex builds a
     // Map-based memory index; _indexedLookup returns matching rows or null when
@@ -203,7 +230,10 @@ declare global {
     patchRow(id: string, partialData: Record<string, unknown>): Record<string, unknown>;
     deleteRowById(id: string): void;
     /** Computed column added to reads; excluded from physical writes. */
-    defineVirtualColumn(columnName: string, compute: (row: Record<string, unknown>) => unknown): TableService;
+    defineVirtualColumn(
+      columnName: string,
+      compute: (row: Record<string, unknown>) => unknown
+    ): TableService;
     setPrimaryKey(columnName: string): TableService;
     flush(options?: Record<string, unknown>): number;
     createIndex(columnName: string): TableService;
@@ -228,7 +258,10 @@ declare global {
   }
   class DriveService {
     // DriveFileManager
-    deleteFiles(fileIds: string | string[], options?: { permanently?: boolean }): DriveBatchOutcome<null>;
+    deleteFiles(
+      fileIds: string | string[],
+      options?: { permanently?: boolean }
+    ): DriveBatchOutcome<null>;
     copyFiles(
       requests: Array<{ fileId: string; name?: string; destinationFolder?: string }>,
       options?: Record<string, unknown>
@@ -236,10 +269,20 @@ declare global {
     /** Native DriveApp File/Folder object (e.g. for `.getBlob()`). */
     getFileByIdStandard(fileId: string): { getBlob(): unknown };
     // DriveFolderManager
-    createFolder(folderName: string, parentFolderId?: string | null, options?: Record<string, unknown>): unknown;
+    createFolder(
+      folderName: string,
+      parentFolderId?: string | null,
+      options?: Record<string, unknown>
+    ): unknown;
     // DriveMetadataService
-    getFiles(fileIds: string | string[], options?: { fields?: string }): DriveFileMetadata | Record<string, DriveFileMetadata | null>;
-    searchFiles(query: string, options?: { maxResults?: number; orderBy?: string }): DriveFileMetadata[];
+    getFiles(
+      fileIds: string | string[],
+      options?: { fields?: string }
+    ): DriveFileMetadata | Record<string, DriveFileMetadata | null>;
+    searchFiles(
+      query: string,
+      options?: { maxResults?: number; orderBy?: string }
+    ): DriveFileMetadata[];
   }
   class PermissionService {
     /** `role` is a Drive API v3 role: 'writer' | 'reader' | 'commenter'. */
@@ -248,7 +291,10 @@ declare global {
       permissions: Array<{ type?: string; role: string; email: string; sendEmail?: boolean }>,
       options?: { sendNotificationEmail?: boolean }
     ): DriveBatchOutcome<unknown>;
-    removeAccess(fileIds: string | string[], emailsOrPermissionIds: string | string[]): DriveBatchOutcome<unknown>;
+    removeAccess(
+      fileIds: string | string[],
+      emailsOrPermissionIds: string | string[]
+    ): DriveBatchOutcome<unknown>;
   }
 
   // --- WorkspaceTemplateEngine (L2): Mustache engine + PlaceholderService facade ---
@@ -300,7 +346,11 @@ declare global {
      * column positions — needed by callers (e.g. ACL logic) that can't be expressed by
      * the directive's own static `acl=` expression. `success` is `false` (layouts
      * empty) on any processing error, matching the pre-existing swallow-and-log behavior. */
-    processSheet(sheetId: string, context?: Record<string, unknown>, sheetName?: string): SheetProcessResult;
+    processSheet(
+      sheetId: string,
+      context?: Record<string, unknown>,
+      sheetName?: string
+    ): SheetProcessResult;
   }
 
   // --- PipelineFramework (L3): Pipeline / Step / PipelineContext ---
@@ -355,7 +405,11 @@ declare global {
     shouldExecute(context: PipelineContext): boolean;
     protected verifyContext(context: PipelineContext, requiredKeys?: string[]): void;
     protected setResult(context: PipelineContext, key: string, value: unknown): this;
-    protected getContextValue<T = unknown>(context: PipelineContext, key: string, defaultValue?: T | null): T | null;
+    protected getContextValue<T = unknown>(
+      context: PipelineContext,
+      key: string,
+      defaultValue?: T | null
+    ): T | null;
     protected abstract _executeLogic(context: PipelineContext): void;
     execute(context: PipelineContext): StepExecutionResult;
   }
@@ -376,10 +430,15 @@ declare global {
     getSteps(): Step[];
     addStep(step: Step): this;
     beforeStep(callback: (step: Step, context: PipelineContext) => void): this;
-    afterStep(callback: (step: Step, context: PipelineContext, result: StepExecutionResult) => void): this;
+    afterStep(
+      callback: (step: Step, context: PipelineContext, result: StepExecutionResult) => void
+    ): this;
     onError(callback: (step: Step, context: PipelineContext, error: Error) => void): this;
     onComplete(callback: (context: PipelineContext, success: boolean) => void): this;
-    execute(initialData?: Record<string, unknown> | null, options?: { dryRun?: boolean }): PipelineContext;
+    execute(
+      initialData?: Record<string, unknown> | null,
+      options?: { dryRun?: boolean }
+    ): PipelineContext;
     clearSteps(): this;
   }
   class StepExecutionError extends Error {}
@@ -425,7 +484,12 @@ declare global {
     addDelegation(delegation: Delegation): void;
     getActiveDelegationsForPrincipal(principalId: string, asOfDate?: Date): Delegation[];
     getActiveDelegationsForDelegate(delegateId: string, asOfDate?: Date): Delegation[];
-    getDelegationChain(actorId: string, roleId: string, scope: unknown, asOfDate?: Date): Delegation[];
+    getDelegationChain(
+      actorId: string,
+      roleId: string,
+      scope: unknown,
+      asOfDate?: Date
+    ): Delegation[];
     getAllDelegations(): Delegation[];
     clear(): void;
   }
@@ -453,7 +517,13 @@ declare global {
   >;
   const ActorType: Record<'PERSON' | 'SYSTEM' | 'GROUP', string>;
   class Actor {
-    constructor(id: string, type: string, identifier: string, displayName: string, metadata?: Record<string, unknown>);
+    constructor(
+      id: string,
+      type: string,
+      identifier: string,
+      displayName: string,
+      metadata?: Record<string, unknown>
+    );
     readonly id: string;
     readonly type: string;
     readonly identifier: string;
@@ -532,7 +602,10 @@ declare global {
       registryCallback: (queue: JobQueueLike, services?: unknown) => void,
       forceRestart?: boolean
     ): unknown;
-    resume(jobName: string, registryCallback: (queue: JobQueueLike, services?: unknown) => void): unknown;
+    resume(
+      jobName: string,
+      registryCallback: (queue: JobQueueLike, services?: unknown) => void
+    ): unknown;
     getStatus(jobName: string): { state: string; percentage?: number };
     cancelJob(jobName: string): void;
   }
@@ -744,17 +817,38 @@ declare global {
     index?: number;
   }
   class SpreadsheetService {
-    getSheetInfo(spreadsheetId: string, options?: { includeHidden?: boolean }): SpreadsheetSheetInfo[];
+    getSheetInfo(
+      spreadsheetId: string,
+      options?: { includeHidden?: boolean }
+    ): SpreadsheetSheetInfo[];
     /** Single range -> values grid. Array of ranges -> Record<range, values grid> (not used by ALDO yet). */
     getRanges(spreadsheetId: string, ranges: string): unknown[][];
-    updateRanges(spreadsheetId: string, updates: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[], options?: { valueInputOption?: string }): SpreadsheetUpdateResult;
-    appendRows(spreadsheetId: string, appends: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[], options?: Record<string, unknown>): unknown;
-    formatRanges(spreadsheetId: string, requests: SpreadsheetFormatRequest | SpreadsheetFormatRequest[], options?: Record<string, unknown>): unknown;
-    createSheets(spreadsheetId: string, requests: SpreadsheetCreateSheetRequest | SpreadsheetCreateSheetRequest[], options?: Record<string, unknown>): unknown;
+    updateRanges(
+      spreadsheetId: string,
+      updates: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[],
+      options?: { valueInputOption?: string }
+    ): SpreadsheetUpdateResult;
+    appendRows(
+      spreadsheetId: string,
+      appends: SpreadsheetRangeUpdate | SpreadsheetRangeUpdate[],
+      options?: Record<string, unknown>
+    ): unknown;
+    formatRanges(
+      spreadsheetId: string,
+      requests: SpreadsheetFormatRequest | SpreadsheetFormatRequest[],
+      options?: Record<string, unknown>
+    ): unknown;
+    createSheets(
+      spreadsheetId: string,
+      requests: SpreadsheetCreateSheetRequest | SpreadsheetCreateSheetRequest[],
+      options?: Record<string, unknown>
+    ): unknown;
     protectRanges(
       spreadsheetId: string,
       requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[],
-      options?: { globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean } }
+      options?: {
+        globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean };
+      }
     ): SpreadsheetProtectResult;
   }
   interface DocumentStructureElement {
@@ -804,7 +898,12 @@ declare global {
      * Throws if `markerText` is not found. Does NOT remove the marker text itself — the
      * caller is expected to remove it separately (e.g. via a `replaceText`/`removeText` call).
      */
-    insertTableAtMarker(documentId: string, markerText: string, data: string[][], options?: DocumentCreateTableOptions): DocumentInsertTableAtMarkerResult;
+    insertTableAtMarker(
+      documentId: string,
+      markerText: string,
+      data: string[][],
+      options?: DocumentCreateTableOptions
+    ): DocumentInsertTableAtMarkerResult;
   }
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
@@ -911,11 +1010,20 @@ declare global {
         jobId?: string;
         maxRetries?: number;
         /** Hook invoked after Transform and before Load with `(transformedData, config) => filteredData`, letting the caller filter/mutate the batch (e.g. Ghost Record Detection) without reaching into private pipeline-phase methods. */
-        postTransform?: (data: Record<string, unknown>[], config: ImportConfiguration) => Record<string, unknown>[];
+        postTransform?: (
+          data: Record<string, unknown>[],
+          config: ImportConfiguration
+        ) => Record<string, unknown>[];
       }
     ): ImportRunResult;
     /** Registers a custom SourceStrategy subclass under `name` (source.type) and whitelists the type. */
-    registerCustomSource(name: string, strategyClass: new (logger: LoggerService, dependencies: Record<string, unknown>) => SourceStrategy): void;
+    registerCustomSource(
+      name: string,
+      strategyClass: new (
+        logger: LoggerService,
+        dependencies: Record<string, unknown>
+      ) => SourceStrategy
+    ): void;
   }
   class ImportError extends Error {
     code: string;
@@ -942,7 +1050,12 @@ declare global {
      * @param config.range A1 notation range; when omitted, resolves the full sheet from gridProperties (no 26-column cap).
      * @param config.hasHeaders If true (default), treats the first row as property keys.
      */
-    extract(config: { sheetId: string; tabName?: string; range?: string; hasHeaders?: boolean }): Record<string, unknown>[];
+    extract(config: {
+      sheetId: string;
+      tabName?: string;
+      range?: string;
+      hasHeaders?: boolean;
+    }): Record<string, unknown>[];
     /**
      * Same sheet/tab/range resolution as `extract()`, but returns the raw grid
      * (`string[][]`-shaped, header row included) instead of header-mapped row
@@ -974,7 +1087,8 @@ declare global {
     getAll(): Record<string, unknown>;
   }
   /** Template values are either `{{path}}` strings or functions `(data, options) => string`. */
-  type BlockTemplate = string | ((data: unknown, options: { config: Record<string, unknown> }) => string);
+  type BlockTemplate =
+    string | ((data: unknown, options: { config: Record<string, unknown> }) => string);
   class HtmlRenderer {
     constructor(options?: { logger?: unknown; templates?: Record<string, BlockTemplate> });
     getFormat(): string;

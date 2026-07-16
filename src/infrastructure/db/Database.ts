@@ -53,7 +53,8 @@ export class EqualityQueryBuilder {
       if (indexed !== null) return indexed;
     }
     return this.getRows().filter((row) =>
-      this.wheres.every(([column, value]) => row[column] === value));
+      this.wheres.every(([column, value]) => row[column] === value)
+    );
   }
 }
 
@@ -63,9 +64,10 @@ export function createSelect(
   getIndexedLookupForTable?: (tableName: string) => IndexedLookup
 ): (columns: string[]) => { from(tableName: string): EqualityQueryBuilder } {
   return () => ({
-    from: (tableName: string) => new EqualityQueryBuilder(
-      () => getRowsForTable(tableName),
-      getIndexedLookupForTable?.(tableName)
-    )
+    from: (tableName: string) =>
+      new EqualityQueryBuilder(
+        () => getRowsForTable(tableName),
+        getIndexedLookupForTable?.(tableName)
+      )
   });
 }

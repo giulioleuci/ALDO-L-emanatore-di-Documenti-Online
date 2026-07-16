@@ -21,7 +21,10 @@ export class GasSampleSpreadsheetFactory implements ISampleSpreadsheetFactory {
   constructor(private readonly rootFolder: unknown = null) {}
 
   createSpreadsheet(name: string): ISampleSpreadsheet {
-    const spreadsheet = testContext.getOrCreateNamedSpreadsheet(name, this.rootFolder) as GoogleAppsScript.Spreadsheet.Spreadsheet;
+    const spreadsheet = testContext.getOrCreateNamedSpreadsheet(
+      name,
+      this.rootFolder
+    ) as GoogleAppsScript.Spreadsheet.Spreadsheet;
     testContext.resetSpreadsheet(spreadsheet);
     return new GasSampleSpreadsheet(spreadsheet);
   }
@@ -54,7 +57,9 @@ class GasSampleSpreadsheet implements ISampleSpreadsheet {
   appendRow(sheetName: string, row: Record<string, unknown>): void {
     const sheet = this.spreadsheet.getSheetByName(sheetName);
     if (sheet === null) {
-      throw new Error(`Sheet "${sheetName}" non trovato nello spreadsheet "${this.spreadsheet.getName()}".`);
+      throw new Error(
+        `Sheet "${sheetName}" non trovato nello spreadsheet "${this.spreadsheet.getName()}".`
+      );
     }
     const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0] ?? [];
     const values = headerRow.map((header) => row[String(header)] ?? '');

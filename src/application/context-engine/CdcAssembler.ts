@@ -1,5 +1,5 @@
 import type { DocenteCdcVM } from './Cdu';
-import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
@@ -17,7 +17,7 @@ const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
  */
 export class CdcAssembler {
   constructor(
-    private readonly classi: ClasseRepository,
+    private readonly classi: IClasseRepository,
     private readonly materie: IMateriaRepository
   ) {}
 

@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
-import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import { TipoPiano } from '../../../domain/value-objects/enums';
@@ -14,7 +14,7 @@ import { studentiDellaClasse } from '../studenti';
  */
 export class StatisticheProvider implements ContextProvider {
   constructor(
-    private readonly classi: ClasseRepository,
+    private readonly classi: IClasseRepository,
     private readonly docenti: IDocenteRepository,
     private readonly alunni: IAlunnoRepository
   ) {}

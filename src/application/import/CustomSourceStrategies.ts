@@ -1,4 +1,4 @@
-import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ILogCartellaRepository } from '../../domain/repositories/ILogCartellaRepository';
 import { ConfigurationError } from '../../domain/errors/DomainError';
@@ -41,7 +41,7 @@ function readSheetRows(
  * not every class necessarily has this document type yet).
  */
 export function createCercaCartelleClasseStrategy(
-  classi: ClasseRepository,
+  classi: IClasseRepository,
   logFold: ILogCartellaRepository,
   drive: DriveService,
   sheets: SpreadsheetService

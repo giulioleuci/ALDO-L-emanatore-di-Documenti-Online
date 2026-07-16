@@ -1,4 +1,4 @@
-import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Alunno } from '../../domain/entities/Alunno';
 
@@ -8,7 +8,7 @@ import type { Alunno } from '../../domain/entities/Alunno';
  * partners; for a partner or a standard class it is the plain roster.
  */
 export function studentiDellaClasse(
-  classi: ClasseRepository,
+  classi: IClasseRepository,
   classe: Classe,
   soloAttivi: boolean
 ): Alunno[] {

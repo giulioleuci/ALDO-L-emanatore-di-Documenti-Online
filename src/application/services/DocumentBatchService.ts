@@ -1,4 +1,4 @@
-import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { DocumentGenerationService } from './DocumentGenerationService';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 
@@ -38,7 +38,7 @@ export interface BatchResult {
  */
 export class DocumentBatchService {
   constructor(
-    private readonly classi: ClasseRepository,
+    private readonly classi: IClasseRepository,
     private readonly documenti: DocumentGenerationService,
     private readonly monitor?: IProcessMonitor
   ) {}

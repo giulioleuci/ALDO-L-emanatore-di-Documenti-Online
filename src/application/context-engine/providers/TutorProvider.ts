@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
-import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import { getClasseEntity } from '../techEntities';
 
 /** RUOLI keys for the two tutor roles (02 §4.1). */
@@ -12,7 +12,7 @@ const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
  * consiglio provider, which reads the tutor flags it exposes (09 §3 note).
  */
 export class TutorProvider implements ContextProvider {
-  constructor(private readonly classi: ClasseRepository) {}
+  constructor(private readonly classi: IClasseRepository) {}
 
   provide(cdu: Cdu): void {
     const classe = getClasseEntity(cdu);

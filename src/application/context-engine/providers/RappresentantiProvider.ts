@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
-import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import { getClasseEntity } from '../techEntities';
 
 /**
@@ -9,7 +9,7 @@ import { getClasseEntity } from '../techEntities';
  * email is available for that role, nor is one foreseen; 02 §4.1).
  */
 export class RappresentantiProvider implements ContextProvider {
-  constructor(private readonly classi: ClasseRepository) {}
+  constructor(private readonly classi: IClasseRepository) {}
 
   provide(cdu: Cdu): void {
     const classe = getClasseEntity(cdu);

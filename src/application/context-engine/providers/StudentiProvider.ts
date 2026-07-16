@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, AlunnoContestoVM } from '../Cdu';
-import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
+import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
@@ -18,7 +18,7 @@ export class StudentiProvider implements ContextProvider {
   private sigleCache: string[] | null = null;
 
   constructor(
-    private readonly classi: ClasseRepository,
+    private readonly classi: IClasseRepository,
     private readonly alunni: IAlunnoRepository,
     private readonly materie: IMateriaRepository
   ) {}

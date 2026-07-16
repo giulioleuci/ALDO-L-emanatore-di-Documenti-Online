@@ -1251,6 +1251,15 @@ declare global {
     resetSpreadsheet(ss?: unknown): void;
     resetDocument(): void;
     resetAll(): void;
+    /** Gets-or-creates + resets a named spreadsheet, wrapped for add-sheet/append-row sample-data construction. */
+    buildSampleSpreadsheet(name: string, parentFolder?: unknown | null): SampleSpreadsheetBuilder;
   }
   const testContext: TestContext;
+  /** Generic sample-spreadsheet construction helper (ref GasOnlineTestFramework/src/SampleSpreadsheetBuilder.js). */
+  class SampleSpreadsheetBuilder {
+    readonly id: string;
+    addSheet(name: string, headerRow: string[]): void;
+    appendRow(sheetName: string, row: Record<string, unknown>): void;
+    getUrl(): string;
+  }
 }

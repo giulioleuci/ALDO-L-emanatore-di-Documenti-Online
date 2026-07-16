@@ -1392,6 +1392,7 @@ var GasOnlineTestFramework_namespaceObject = {};
 __webpack_require__.r(GasOnlineTestFramework_namespaceObject);
 __webpack_require__.d(GasOnlineTestFramework_namespaceObject, {
   EnhancedTestRunner: () => (EnhancedTestRunner),
+  SampleSpreadsheetBuilder: () => (SampleSpreadsheetBuilder),
   SmartAssert: () => (SmartAssert),
   TestContext: () => (TestContext),
   runner: () => (runner),
@@ -66498,6 +66499,78 @@ class SmartAssert {
 
 
 
+
+
+
+
+
+
+
+
+
+class SampleSpreadsheetBuilder {
+  
+
+
+  constructor(spreadsheet) {
+    this.spreadsheet = spreadsheet;
+    this.id = spreadsheet.getId();
+    this.defaultSheet = spreadsheet.getSheets()[0] || null;
+    
+    this._headersBySheet = new Map();
+  }
+
+  
+
+
+
+
+
+  addSheet(name, headerRow) {
+    const sheet = this.spreadsheet.insertSheet(name);
+    if (headerRow.length > 0) {
+      sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]);
+    }
+    this._headersBySheet.set(name, headerRow);
+    if (this.defaultSheet !== null) {
+      this.spreadsheet.deleteSheet(this.defaultSheet);
+      this.defaultSheet = null;
+    }
+  }
+
+  
+
+
+
+
+
+
+
+  appendRow(sheetName, row) {
+    const sheet = this.spreadsheet.getSheetByName(sheetName);
+    if (sheet === null) {
+      throw new Error(`Sheet "${sheetName}" not found in spreadsheet "${this.spreadsheet.getName()}".`);
+    }
+    const headerRow = this._headersBySheet.get(sheetName) || [];
+    const values = headerRow.map(header => row[String(header)] !== undefined ? row[String(header)] : '');
+    sheet.appendRow(values);
+  }
+
+  
+
+
+
+  getUrl() {
+    return this.spreadsheet.getUrl();
+  }
+}
+;
+
+
+
+
+
+
 class TestContext {
   constructor() {
     this.TEST_ROOT_NAME = 'GAS_TEST_ROOT_PERSISTENT';
@@ -66668,6 +66741,20 @@ class TestContext {
   
 
 
+
+
+
+
+
+  buildSampleSpreadsheet(name, parentFolder = null) {
+    const spreadsheet = this.getOrCreateNamedSpreadsheet(name, parentFolder);
+    this.resetSpreadsheet(spreadsheet);
+    return new SampleSpreadsheetBuilder(spreadsheet);
+  }
+
+  
+
+
   resetDocument() {
     const doc = this.getDocument();
     this._trackApiCall();
@@ -66708,6 +66795,7 @@ class TestContext {
 
 const testContext = new TestContext();
 ;
+
 
 
 

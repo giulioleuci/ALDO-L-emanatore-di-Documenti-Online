@@ -1,4 +1,5 @@
 import { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
+import type { IConfigurazioneEmailRepository } from '../../domain/repositories/IConfigurazioneEmailRepository';
 import type { ProcessoInvio } from '../../domain/value-objects/enums';
 import { TABLE } from '../../config/schema';
 
@@ -6,7 +7,10 @@ import { TABLE } from '../../config/schema';
  * CONF_MAIL repository on the DomainRepositoryLib Repository base (PK = ID,
  * ref 06 §9). Small, stable config table, cached for the session.
  */
-export class ConfigurazioneEmailRepository extends Repository<ConfigurazioneEmail> {
+export class ConfigurazioneEmailRepository
+  extends Repository<ConfigurazioneEmail>
+  implements IConfigurazioneEmailRepository
+{
   // Named listCache (not `cache`): DomainRepositoryLib's base Repository
   // already owns a `this.cache` field (a CacheService slot used by findById);
   // reusing that name silently breaks findById after this local cache populates.

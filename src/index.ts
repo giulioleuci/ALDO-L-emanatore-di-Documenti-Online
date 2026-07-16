@@ -37,9 +37,20 @@ export function menu_avvioImportazioni(): void {
   );
 }
 
-/** JobRunnerLib resume trigger target (15 §5): the job name is resolved from the trigger context. */
+/**
+ * JobRunnerLib resume trigger target (15 §5): the job name is resolved from the trigger
+ * context. Runs unattended (no UI, no operator watching) — unlike the interactive launchers
+ * in Menu.ts, a thrown ConfigurationError here must be logged rather than vanish into the
+ * trigger's execution log, mirroring Menu.ts's avvioPersonalizzato error-surfacing (ref
+ * analysis_3_structural_errors.md Finding 2).
+ */
 export function resumeJob(): void {
-  riprendiJobSospeso(initAldo(), creaJobRunner());
+  try {
+    riprendiJobSospeso(initAldo(), creaJobRunner());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`resumeJob: ripresa job fallita — ${message}`);
+  }
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

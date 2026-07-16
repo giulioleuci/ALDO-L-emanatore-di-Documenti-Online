@@ -4,6 +4,7 @@ import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDoc
 import { LogCartellaRepository } from '../../infrastructure/repositories/LogCartellaRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
+import type { ILogCartellaRepository } from '../../domain/repositories/ILogCartellaRepository';
 import type { Carenza } from '../../domain/entities/Carenza';
 import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import type { LogCartella } from '../../domain/entities/LogCartella';
@@ -29,7 +30,7 @@ export class AggregatoreDati {
   private readonly classi: ClasseRepository;
   private readonly carenze: ICarenzaRepository;
   private readonly logDocs: ILogDocumentoRepository;
-  private readonly logFold: LogCartellaRepository;
+  private readonly logFold: ILogCartellaRepository;
 
   private carenzeCache: Carenza[] | null = null;
   private documentiCache: LogDocumento[] | null = null;

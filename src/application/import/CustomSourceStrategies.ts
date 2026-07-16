@@ -1,6 +1,6 @@
 import type { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
-import type { LogCartellaRepository } from '../../infrastructure/repositories/LogCartellaRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
+import type { ILogCartellaRepository } from '../../domain/repositories/ILogCartellaRepository';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 
 const SPREADSHEET_MIME = 'application/vnd.google-apps.spreadsheet';
@@ -42,7 +42,7 @@ function readSheetRows(
  */
 export function createCercaCartelleClasseStrategy(
   classi: ClasseRepository,
-  logFold: LogCartellaRepository,
+  logFold: ILogCartellaRepository,
   drive: DriveService,
   sheets: SpreadsheetService
 ): new (logger?: LoggerService) => SourceStrategy {

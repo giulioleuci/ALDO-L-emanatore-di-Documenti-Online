@@ -1,4 +1,5 @@
 import { LogCartella } from '../../domain/entities/LogCartella';
+import type { ILogCartellaRepository } from '../../domain/repositories/ILogCartellaRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
@@ -15,7 +16,10 @@ interface RegistraOptions {
  * LOG_FOLD repository on the DomainRepositoryLib Repository base (PK = Drive
  * Folder ID, ref 06 §18). Append-only audit trail; CLASSI query is CONTAINS.
  */
-export class LogCartellaRepository extends Repository<LogCartella> {
+export class LogCartellaRepository
+  extends Repository<LogCartella>
+  implements ILogCartellaRepository
+{
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.LOG_FOLD, LogCartella);
     // O(1) hot-lookup index for findByTipo (ref ALDO_GLF_AUDIT_RESULTS.md D-3), matching

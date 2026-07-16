@@ -3,7 +3,7 @@ import type { Cdu, CduAlunno } from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import type { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
 import type { ClasseRepository } from '../../../infrastructure/repositories/ClasseRepository';
-import type { OreASLRepository } from '../../../infrastructure/repositories/OreASLRepository';
+import type { IOreASLRepository } from '../../../domain/repositories/IOreASLRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
 import type { CdcAssembler } from '../CdcAssembler';
 import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
@@ -22,7 +22,7 @@ export class AlunnoProvider implements ContextProvider {
   constructor(
     private readonly alunni: AlunnoRepository,
     private readonly classi: ClasseRepository,
-    private readonly oreAsl: OreASLRepository,
+    private readonly oreAsl: IOreASLRepository,
     private readonly cdc?: CdcAssembler
   ) {}
 

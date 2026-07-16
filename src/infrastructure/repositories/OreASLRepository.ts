@@ -1,5 +1,6 @@
 import { OreASL } from '../../domain/entities/OreASL';
 import { OreASLPerAlunnoSpec, OreASLPerAnnoSpec } from '../../domain/specifications/OreASLSpecs';
+import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
 import type { Alunno } from '../../domain/entities/Alunno';
 import type { AnnoScolastico } from '../../domain/value-objects/AnnoScolastico';
 import { TABLE, COL_ASL } from '../../config/schema';
@@ -10,7 +11,7 @@ import { TABLE, COL_ASL } from '../../config/schema';
  * queries load rows and filter in memory. Write-through methods (aggiungiOre)
  * land with the persistence-seam increment.
  */
-export class OreASLRepository extends Repository<OreASL> {
+export class OreASLRepository extends Repository<OreASL> implements IOreASLRepository {
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.ASL, OreASL);
     // O(1) hot-lookup index for findByAlunno (ref REPORT_GLF.md A2).

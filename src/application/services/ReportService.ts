@@ -6,6 +6,7 @@ import { OreASLRepository } from '../../infrastructure/repositories/OreASLReposi
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
+import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { ValoreCarenza } from '../../domain/value-objects/ValoreCarenza';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -65,7 +66,7 @@ export class ReportService {
   private readonly docenti: IDocenteRepository;
   private readonly alunni: AlunnoRepository;
   private readonly carenze: ICarenzaRepository;
-  private readonly asl: OreASLRepository;
+  private readonly asl: IOreASLRepository;
   private readonly logDocs: LogDocumentoRepository;
 
   constructor(database: RepositoryDatabase) {

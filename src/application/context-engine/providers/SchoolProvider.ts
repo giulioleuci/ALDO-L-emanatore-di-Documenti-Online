@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
-import type { MasterSheetRepository } from '../../../infrastructure/repositories/MasterSheetRepository';
+import type { IMasterSheetRepository } from '../../../domain/repositories/IMasterSheetRepository';
 import type { IRuoloSpecialeRepository } from '../../../domain/repositories/IRuoloSpecialeRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 
@@ -15,7 +15,7 @@ const RUOLO_ANIMATORE_DIGITALE = 'AN_DIG';
  */
 export class SchoolProvider implements ContextProvider {
   constructor(
-    private readonly master: MasterSheetRepository,
+    private readonly master: IMasterSheetRepository,
     private readonly ruoli: IRuoloSpecialeRepository,
     private readonly docenti: IDocenteRepository
   ) {}

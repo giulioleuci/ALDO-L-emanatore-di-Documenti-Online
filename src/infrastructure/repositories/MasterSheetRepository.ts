@@ -1,4 +1,5 @@
 import { MasterConfig } from '../../domain/entities/MasterConfig';
+import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
 import { TABLE } from '../../config/schema';
 
@@ -9,7 +10,10 @@ import { TABLE } from '../../config/schema';
  * sheet is ALWAYS kept in descending ANNO_SCOLASTICO order, so the first row is
  * always the current year — no computation, no global "current year" flag.
  */
-export class MasterSheetRepository extends Repository<MasterConfig> {
+export class MasterSheetRepository
+  extends Repository<MasterConfig>
+  implements IMasterSheetRepository
+{
   // Named listCache (not `cache`): DomainRepositoryLib's base Repository
   // already owns a `this.cache` field (a CacheService slot used by findById);
   // reusing that name silently breaks findById after this local cache populates.

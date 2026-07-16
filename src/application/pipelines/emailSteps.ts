@@ -10,7 +10,7 @@ import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepos
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
-import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
+import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
@@ -359,7 +359,7 @@ export class SendEmailStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly gmail: IGmailFacade,
-    private readonly master: MasterSheetRepository
+    private readonly master: IMasterSheetRepository
   ) {
     super('SendEmail', logger, {
       shouldExecuteCondition: sendGate,

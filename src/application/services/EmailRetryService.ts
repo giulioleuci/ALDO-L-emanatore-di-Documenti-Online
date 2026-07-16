@@ -1,5 +1,5 @@
 import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
-import type { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
+import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
 import type { LogEmail } from '../../domain/entities/LogEmail';
 import type { EmailNotificationService } from './EmailNotificationService';
@@ -31,7 +31,7 @@ export class EmailRetryService {
     private readonly logMail: ILogEmailRepository,
     private readonly emailService: EmailNotificationService,
     private readonly gmail: IGmailFacade,
-    private readonly master: MasterSheetRepository,
+    private readonly master: IMasterSheetRepository,
     options: EmailRetryOptions = {}
   ) {
     this.maxTentativi = options.maxTentativi ?? 3;

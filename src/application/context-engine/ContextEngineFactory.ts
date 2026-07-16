@@ -18,6 +18,7 @@ import { CdcAssembler } from './CdcAssembler';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
+import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import type { IRuoloSpecialeRepository } from '../../domain/repositories/IRuoloSpecialeRepository';
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
@@ -40,7 +41,7 @@ import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocu
  */
 export class ContextEngineFactory {
   static create(database: RepositoryDatabase): ContextBuilder {
-    const master = new MasterSheetRepository(database);
+    const master: IMasterSheetRepository = new MasterSheetRepository(database);
     const ruoli: IRuoloSpecialeRepository = new RuoloSpecialeRepository(database);
     const docenti: IDocenteRepository = new DocenteRepository(database);
     const classi = new ClasseRepository(database);

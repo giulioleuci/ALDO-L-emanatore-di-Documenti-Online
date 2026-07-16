@@ -1,4 +1,4 @@
-import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
+import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { SheetDbAdapter } from '../../infrastructure/db/SheetDbAdapter';
 
 /** A prior school year and its (lazily opened) database. */
@@ -25,7 +25,7 @@ export interface StoricoDatabaseProvider {
  */
 export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
   constructor(
-    private readonly master: MasterSheetRepository,
+    private readonly master: IMasterSheetRepository,
     private readonly logger: LoggerService
   ) {}
 

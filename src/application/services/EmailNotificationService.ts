@@ -37,6 +37,7 @@ import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRep
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
+import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
@@ -61,7 +62,7 @@ export interface EmailNotificationDeps {
   confMail: IConfigurazioneEmailRepository;
   logMail: ILogEmailRepository;
   logDocs: ILogDocumentoRepository;
-  master: MasterSheetRepository;
+  master: IMasterSheetRepository;
   supplenze: ISupplenzaRepository;
   materie: IMateriaRepository;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */

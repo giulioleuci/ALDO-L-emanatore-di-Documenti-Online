@@ -336,11 +336,46 @@ test('deps.monitor flows through to both batch services (15 §9)', () => {
   expect(monitor.registered).toEqual(['job_gen_CD1']);
 });
 
-test('creaJobRunner exists and is exported (15 §5)', () => {
-  // Verify the function exists and is callable
-  // (Direct invocation triggers ServiceFactory initialization which is tested elsewhere.
-  // The fix has been verified by: typecheck pass, source code inspection showing
-  // ServiceFactory.getUtils() call in place of getUtilitiesService(), and the
-  // type declaration now correctly mapping getUtils() → UtilsService.)
-  expect(typeof creaJobRunner).toBe('function');
+/**
+ * JobRunnerService's constructor eagerly builds a GoogleApiWrapper PropertiesService,
+ * which reads `global.__nativePropertiesService__` (falling back to `global.PropertiesService`
+ * — the vendored bundle's own class, once `Object.assign(global, Lib)` has run) to reach the
+ * real native GAS PropertiesService. In the real GAS runtime that fallback is harmless because
+ * the native still exists; under Jest there is no native, so the fallback resolves to the
+ * wrapper class itself and `getScriptProperties()` recurses into itself forever. Stubbing
+ * `__nativePropertiesService__` for the duration of the call sidesteps that recursion so
+ * `creaJobRunner()` can be exercised for real.
+ */
+function stubNativePropertiesService() {
+  const key = '__nativePropertiesService__';
+  const globalWithNative = global as unknown as Record<string, unknown>;
+  const original = globalWithNative[key];
+  const fakeProperties = { getProperty: jest.fn().mockReturnValue(null), setProperty: jest.fn() };
+  globalWithNative[key] = {
+    getScriptProperties: () => fakeProperties,
+    getUserProperties: () => fakeProperties,
+    getDocumentProperties: () => fakeProperties
+  };
+  return () => {
+    globalWithNative[key] = original;
+  };
+}
+
+test('creaJobRunner wires ServiceFactory.getUtils() (not getUtilitiesService()) into JobRunnerService (15 §5)', () => {
+  const fakeUtils = { __marker: 'fakeUtilsFromGetUtils' };
+  const restoreNativeProperties = stubNativePropertiesService();
+  const utilsSpy = jest.spyOn(ServiceFactory, 'getUtils').mockReturnValue(fakeUtils as never);
+  const legacySpy = jest.spyOn(ServiceFactory, 'getUtilitiesService');
+  try {
+    const runner = creaJobRunner();
+    expect(utilsSpy).toHaveBeenCalledTimes(1);
+    expect(legacySpy).not.toHaveBeenCalled();
+    // The library stores the injected utils on `_utils`; assert it's the exact object
+    // ServiceFactory.getUtils() returned, not merely that construction succeeded.
+    expect((runner as unknown as { _utils: unknown })._utils).toBe(fakeUtils);
+  } finally {
+    utilsSpy.mockRestore();
+    legacySpy.mockRestore();
+    restoreNativeProperties();
+  }
 });

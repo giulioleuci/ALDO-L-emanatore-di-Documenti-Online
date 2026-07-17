@@ -13,7 +13,10 @@ import { TABLE, COL_MOV_ALUNNI } from '../../config/schema';
  * (STUDENTE, TIPO, DATA) — base single-key findById does not apply (ref 06 §15);
  * queries load rows and filter in memory. Append-only table.
  */
-export class MovimentoAlunnoRepository extends Repository<MovimentoAlunno> implements IMovimentoAlunnoRepository {
+export class MovimentoAlunnoRepository
+  extends Repository<MovimentoAlunno>
+  implements IMovimentoAlunnoRepository
+{
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.MOV_ALUNNI, MovimentoAlunno);
     // O(1) hot-lookup index for findByAlunno (ref REPORT_GLF.md A2).

@@ -35,7 +35,9 @@ test('EsameConfig treats a malformed raw entry as a non-match instead of throwin
     ESAME_CFG: '{"prima_prova":["","SCIENTIFICO"],"seconda_prova":[""]}'
   });
   // Malformed entry ('' is rejected by IndirizzoId.of) doesn't throw...
-  expect(() => m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).not.toThrow();
+  expect(() =>
+    m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))
+  ).not.toThrow();
   // ...a genuinely matching valid entry alongside it still matches...
   expect(m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).toBe(true);
   // ...and an indirizzo that only the malformed entry could have matched correctly reports false.

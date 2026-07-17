@@ -235,7 +235,6 @@ describe('buildAldoContainer — optional generator strategies', () => {
 });
 
 describe('initAldo — singleton reuse + missing master id', () => {
-
   function fakeTable() {
     return {
       getAllRows: jest.fn().mockReturnValue([]),

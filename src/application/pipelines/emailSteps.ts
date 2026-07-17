@@ -4,7 +4,10 @@ import type { BuildParams } from '../context-engine/Recipe';
 import type { EmailTarget } from '../email/saluto';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
-import type { IGmailFacade, EmailSendOptions } from '../../infrastructure/facades/GmailServiceFacade';
+import type {
+  IGmailFacade,
+  EmailSendOptions
+} from '../../infrastructure/facades/GmailServiceFacade';
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
@@ -18,12 +21,7 @@ import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEm
 import { getClasseEntity } from '../context-engine/techEntities';
 import { recipe } from '../context-engine/Recipe';
 import { salutoPerTarget } from '../email/saluto';
-import {
-  createBoxComposer,
-  renderBoxes,
-  escapeHtml,
-  safeColor
-} from '../email/boxes';
+import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../email/boxes';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, GestioneSupplenti } from '../../domain/value-objects/enums';

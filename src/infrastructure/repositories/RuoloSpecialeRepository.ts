@@ -35,5 +35,4 @@ export class RuoloSpecialeRepository
     const spec = new RuoliPerDocenteSpec(email);
     return this.all().filter((r) => spec.isSatisfiedBy(r));
   }
-
 }

@@ -188,26 +188,22 @@ test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () 
 
 test('ComposeEmailStep resolves class-attached documents as blobs (11 §13)', () => {
   const w = wire();
-  w.db
-    .table('LOG_DOCS')
-    .insert({
-      ID: 'doc1',
-      ID_GEN: 'CD1',
-      TIPO: 'VERBALE',
-      STATO: 'GENERATO',
-      CLASSI: '5A',
-      UTENTI: ''
-    });
-  w.db
-    .table('LOG_DOCS')
-    .insert({
-      ID: 'doc2',
-      ID_GEN: 'CD1',
-      TIPO: 'PDP',
-      STATO: 'GENERATO',
-      CLASSI: '5A',
-      UTENTI: ''
-    });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc1',
+    ID_GEN: 'CD1',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc2',
+    ID_GEN: 'CD1',
+    TIPO: 'PDP',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
   runThroughCompose(w);
   expect(w.ctx.get('allegati')).toEqual(['blob:doc1', 'blob:doc2']);
 });
@@ -222,26 +218,22 @@ test('ComposeEmailStep filters attachments by the documentiPerClasse BOX_CFG ent
       }
     ])
   });
-  w.db
-    .table('LOG_DOCS')
-    .insert({
-      ID: 'doc1',
-      ID_GEN: 'CD1',
-      TIPO: 'VERBALE',
-      STATO: 'GENERATO',
-      CLASSI: '5A',
-      UTENTI: ''
-    });
-  w.db
-    .table('LOG_DOCS')
-    .insert({
-      ID: 'doc2',
-      ID_GEN: 'CD1',
-      TIPO: 'PDP',
-      STATO: 'GENERATO',
-      CLASSI: '5A',
-      UTENTI: ''
-    });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc1',
+    ID_GEN: 'CD1',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc2',
+    ID_GEN: 'CD1',
+    TIPO: 'PDP',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
   runThroughCompose(w);
   expect(w.ctx.get('allegati')).toEqual(['blob:doc2']);
 });
@@ -390,26 +382,22 @@ test('LogEmailStep records SUCCESS in LOG_MAIL (11 §9)', () => {
 
 test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 §9)', () => {
   const w = wire();
-  w.db
-    .table('LOG_DOCS')
-    .insert({
-      ID: 'doc1',
-      ID_GEN: 'CD1',
-      TIPO: 'VERBALE',
-      STATO: 'GENERATO',
-      CLASSI: '5A',
-      UTENTI: ''
-    });
-  w.db
-    .table('LOG_DOCS')
-    .insert({
-      ID: 'doc2',
-      ID_GEN: 'CD1',
-      TIPO: 'PDP',
-      STATO: 'GENERATO',
-      CLASSI: '5A',
-      UTENTI: ''
-    });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc1',
+    ID_GEN: 'CD1',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc2',
+    ID_GEN: 'CD1',
+    TIPO: 'PDP',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
   runThroughCompose(w);
   w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
   send(w, new FakeGmailFacade());
@@ -624,26 +612,22 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
         }
       ])
     });
-    w.db
-      .table('LOG_DOCS')
-      .insert({
-        ID: 'doc1',
-        ID_GEN: 'CD1',
-        TIPO: 'VERBALE',
-        STATO: 'GENERATO',
-        CLASSI: '5A',
-        UTENTI: ''
-      });
-    w.db
-      .table('LOG_DOCS')
-      .insert({
-        ID: 'doc2',
-        ID_GEN: 'CD1',
-        TIPO: 'PDP',
-        STATO: 'NOTIFICATO',
-        CLASSI: '5A',
-        UTENTI: ''
-      });
+    w.db.table('LOG_DOCS').insert({
+      ID: 'doc1',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    });
+    w.db.table('LOG_DOCS').insert({
+      ID: 'doc2',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      STATO: 'NOTIFICATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    });
     runThroughCompose(w);
     expect(w.ctx.get('allegati')).toEqual(['blob:doc2']);
   });

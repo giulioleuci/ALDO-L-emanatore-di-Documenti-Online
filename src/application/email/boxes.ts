@@ -107,12 +107,21 @@ function renderCarenzeBox(data: unknown): string {
     .join('');
 }
 
-function renderRigaStandard(items: DocumentoItem[]): string {
+function renderRigaStandard(items: DocumentoItem[], displayMode: string): string {
   const righe = items
-    .map(
-      (d) =>
-        `<li><a href="${escapeHtml(safeUrl(d.link))}" target="_blank">${escapeHtml(d.nome)}</a></li>`
-    )
+    .map((d) => {
+      const href = escapeHtml(safeUrl(d.link));
+      switch (displayMode) {
+        case 'link':
+          return `<li><a href="${href}" target="_blank">${href}</a></li>`;
+        case 'nome+link':
+          return `<li>${escapeHtml(d.nome)} — <a href="${href}" target="_blank">${href}</a></li>`;
+        case 'sololink':
+          return `<li><a href="${href}" target="_blank">Apri</a></li>`;
+        default:
+          return `<li><a href="${href}" target="_blank">${escapeHtml(d.nome)}</a></li>`;
+      }
+    })
     .join('');
   return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
 }
@@ -145,7 +154,8 @@ function renderDocumentiBox(
     | undefined;
   const templateRiga = arricchisci ? str(configArricchimento?.['templateRiga']) : '';
 
-  if (templateRiga === '' || storicoRef === undefined) return renderRigaStandard(items);
+  if (templateRiga === '' || storicoRef === undefined)
+    return renderRigaStandard(items, str(options.config['displayMode']));
 
   // arricchisciConStorico (11 §11, 13 §4): storico entries are matched to the
   // current item by ID_GEN, not the display TIPO — StoricoDocumentiService

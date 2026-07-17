@@ -306,3 +306,31 @@ test('documenti box arricchisciConStorico templateRiga escapes hostile storico n
   expect(out.boxes['documenti']!.html).toContain('&lt;script&gt;');
   expect(out.boxes['documenti']!.html).not.toContain('<script>alert(1)</script>');
 });
+
+test('documenti box displayMode "link" shows the URL as link text', () => {
+  const out = render([{ TIPO_BOX: 'documenti', displayMode: 'link' }]);
+  const html = out.boxes['documenti']!.html;
+  expect(html).toContain('<a href="https://drive/x" target="_blank">https://drive/x</a>');
+  expect(html).not.toContain('PDP Anna');
+});
+
+test('documenti box displayMode "nome+link" shows both nome and the link', () => {
+  const out = render([{ TIPO_BOX: 'documenti', displayMode: 'nome+link' }]);
+  const html = out.boxes['documenti']!.html;
+  expect(html).toContain('PDP Anna');
+  expect(html).toContain('<a href="https://drive/x" target="_blank">https://drive/x</a>');
+});
+
+test('documenti box displayMode "sololink" shows a generic "Apri" label', () => {
+  const out = render([{ TIPO_BOX: 'documenti', displayMode: 'sololink' }]);
+  const html = out.boxes['documenti']!.html;
+  expect(html).toContain('<a href="https://drive/x" target="_blank">Apri</a>');
+  expect(html).not.toContain('PDP Anna');
+});
+
+test('documenti box with no displayMode keeps the current default markup ("nome")', () => {
+  const out = render([{ TIPO_BOX: 'documenti' }]);
+  expect(out.boxes['documenti']!.html).toContain(
+    '<a href="https://drive/x" target="_blank">PDP Anna</a>'
+  );
+});

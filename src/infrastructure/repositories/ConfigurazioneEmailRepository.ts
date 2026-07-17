@@ -25,10 +25,6 @@ export class ConfigurazioneEmailRepository
     return this.listCache;
   }
 
-  findAllCached(): ConfigurazioneEmail[] {
-    return this.all().slice();
-  }
-
   /** Patterns of a given recipient-iteration process (ref 06 §9). */
   findByProcesso(processo: ProcessoInvio): ConfigurazioneEmail[] {
     return this.all().filter((c) => c.processo === processo);

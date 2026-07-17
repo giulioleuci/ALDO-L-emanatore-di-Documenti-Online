@@ -36,7 +36,4 @@ export class RuoloSpecialeRepository
     return this.all().filter((r) => spec.isSatisfiedBy(r));
   }
 
-  getEmails(ruolo: RuoloSpeciale): Email[] {
-    return ruolo.getEmails();
-  }
 }

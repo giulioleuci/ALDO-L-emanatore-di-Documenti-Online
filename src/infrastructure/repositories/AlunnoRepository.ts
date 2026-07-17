@@ -9,8 +9,6 @@ import type { Carenza } from '../../domain/entities/Carenza';
 import type { Piano } from '../../domain/entities/Piano';
 import type { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
-import type { Email } from '../../domain/value-objects/Email';
-import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import type { AnnoScolastico } from '../../domain/value-objects/AnnoScolastico';
 import { TABLE } from '../../config/schema';
 
@@ -58,14 +56,6 @@ export class AlunnoRepository extends Repository<Alunno> implements IAlunnoRepos
     return this.findAll()
       .filter((a) => besEmails.has(a.email.value))
       .sort((x, y) => this.byCognomeNome(x, y));
-  }
-
-  getTutors(alunno: Alunno): Email[] {
-    return alunno.getTutors();
-  }
-
-  getCurriculum(alunno: Alunno): Map<MateriaId, string[]> {
-    return alunno.getCurriculum();
   }
 
   // --- Aggregate navigation (ref 06 §1) ---

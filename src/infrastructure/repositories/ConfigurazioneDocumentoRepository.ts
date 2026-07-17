@@ -33,10 +33,6 @@ export class ConfigurazioneDocumentoRepository
     return this.listCache;
   }
 
-  findAllCached(): ConfigurazioneDocumento[] {
-    return this.all().slice();
-  }
-
   /** Configs of a document macro-category (ref 06 §8). */
   findByTipo(tipo: string): ConfigurazioneDocumento[] {
     return this.all().filter((c) => c.tipo === tipo);

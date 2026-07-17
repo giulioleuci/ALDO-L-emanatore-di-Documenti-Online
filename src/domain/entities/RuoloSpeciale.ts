@@ -35,7 +35,7 @@ export class RuoloSpeciale extends AldoEntity {
   }
 
   hasDocente(email: Email): boolean {
-    return this.getEmails().some((e) => e.value === email.value);
+    return this.getEmails().some((e) => e.equals(email));
   }
 
   override toData(): EntityData {

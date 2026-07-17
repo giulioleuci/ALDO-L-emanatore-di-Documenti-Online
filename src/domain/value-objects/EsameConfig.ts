@@ -1,4 +1,4 @@
-import type { IndirizzoId } from './IndirizzoId';
+import { IndirizzoId } from './IndirizzoId';
 
 interface EsameConfigJson {
   prima_prova?: string[];
@@ -22,10 +22,10 @@ export class EsameConfig {
   }
 
   isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean {
-    return this.primaProva.includes(ind.value);
+    return this.primaProva.some((raw) => IndirizzoId.of(raw).equals(ind));
   }
 
   isSecondaProvaPerIndirizzo(ind: IndirizzoId): boolean {
-    return this.secondaProva.includes(ind.value);
+    return this.secondaProva.some((raw) => IndirizzoId.of(raw).equals(ind));
   }
 }

@@ -113,9 +113,4 @@ export class EmailBatchService {
       forceRestart
     );
   }
-
-  /** Resumes a suspended batch (invoked by the JobRunnerLib trigger handler). */
-  resume(runner: JobRunnerService, jobName: string): unknown {
-    return runner.resume(jobName, (queue) => this.registerJobHandlers(queue));
-  }
 }

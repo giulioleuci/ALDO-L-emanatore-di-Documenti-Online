@@ -250,8 +250,10 @@ focus.alunno:
       hasBes:   boolean
 
     documenti:               — popolato da `DocumentiProvider`, attivo in `ALUNNO_DETTAGLIATO` e `FAMIGLIA_COMPLETO`
-      items: array di { nome, link, tipo, stato, dataCreazione }
+      items: array di { nome, link, tipo, idGen, stato, dataCreazione }
       hasDocumenti: boolean
+      storico:                — LazyRef, popolato da `DocumentiStoricoProvider` solo se includiStorico=true (13 §4)
+        array di { anno, nome, link, tipo }  — `tipo` qui è l'ID_GEN del generatore, per il match con `idGen` corrente
 ```
 
 ### 4.3 `focus.carenza`

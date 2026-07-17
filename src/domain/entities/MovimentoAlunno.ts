@@ -1,4 +1,3 @@
-import { Email } from '../value-objects/Email';
 import { TipoMovimento } from '../value-objects/enums';
 import { COL_MOV_ALUNNI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
@@ -35,10 +34,6 @@ export class MovimentoAlunno extends AldoEntity {
       this.studente && this.tipo && this.data
         ? `${this.studente}::${this.tipo}::${this.data}`
         : null;
-  }
-
-  get studenteEmail(): Email {
-    return Email.of(this.studente);
   }
 
   isIngresso(): boolean {

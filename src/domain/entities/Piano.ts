@@ -1,4 +1,3 @@
-import { Email } from '../value-objects/Email';
 import { TipoPiano } from '../value-objects/enums';
 import { COL_PIANI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
@@ -26,10 +25,6 @@ export class Piano extends AldoEntity {
       typeof data[COL_PIANI.PARAMETRI] === 'string' ? (data[COL_PIANI.PARAMETRI] as string) : null;
     // Synthetic composite id for identity-map purposes; not a persisted column.
     this.id = this.studente && this.tipo ? `${this.studente}::${this.tipo}` : null;
-  }
-
-  get studenteEmail(): Email {
-    return Email.of(this.studente);
   }
 
   /** Every plan type except PFP implies a special educational need (ref 03). */

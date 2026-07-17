@@ -1,4 +1,3 @@
-import { ClasseId } from '../value-objects/ClasseId';
 import { TipoProgetto } from '../value-objects/enums';
 import { COL_PROGETTI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
@@ -36,10 +35,6 @@ export class Progetto extends AldoEntity {
       typeof data[COL_PROGETTI.ORE_ASL] === 'number' ? (data[COL_PROGETTI.ORE_ASL] as number) : 0;
     this.id =
       this.classe && this.tipo && this.nome ? `${this.classe}::${this.tipo}::${this.nome}` : null;
-  }
-
-  get classeId(): ClasseId {
-    return ClasseId.of(this.classe);
   }
 
   /** True for PCTO/ASL projects (ref 04 §13). */

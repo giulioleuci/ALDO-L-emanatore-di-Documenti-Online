@@ -27,13 +27,6 @@ export class OreASL extends AldoEntity {
     this.id = this.studente && this.anno ? `${this.studente}::${this.anno}` : null;
   }
 
-  get studenteEmail(): Email {
-    return Email.of(this.studente);
-  }
-  get annoScolastico(): AnnoScolastico {
-    return AnnoScolastico.of(this.anno);
-  }
-
   /** Hours accumulated in the year (ref 04 §17). */
   getOre(): number {
     return this.ore;

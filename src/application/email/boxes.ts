@@ -107,6 +107,10 @@ function renderCarenzeBox(data: unknown): string {
     .join('');
 }
 
+function wrapUl(righe: string): string {
+  return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
+}
+
 function renderRigaStandard(items: DocumentoItem[], displayMode: string): string {
   const righe = items
     .map((d) => {
@@ -123,7 +127,7 @@ function renderRigaStandard(items: DocumentoItem[], displayMode: string): string
       }
     })
     .join('');
-  return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
+  return wrapUl(righe);
 }
 
 /**
@@ -131,9 +135,12 @@ function renderRigaStandard(items: DocumentoItem[], displayMode: string): string
  * (`_escapedValue` in the vendored `Mustache.js` is a plain `String(value)` —
  * its own `_escapeHtml` helper is dead code, unused, because the same engine
  * also renders Docs/Sheets output where HTML entities must NOT appear as
- * literal text). So `templateRiga` interpolation gets no escaping for free;
- * nome/link must be pre-escaped here, same as `renderRigaStandard`, or a
- * hostile document name from `nome`/`link` becomes stored XSS in the email.
+ * literal text). So `templateRiga` interpolation gets no escaping for free.
+ * Only `nome`/`link` are treated as untrusted free text here (the same fields
+ * `renderRigaStandard` escapes) — `tipo`/`stato`/`dataCreazione`/`idGen`/`anno`
+ * are generator-assigned codes and dates, not user-authored text, so they are
+ * passed through unescaped, same as `renderRigaStandard` does for its own
+ * non-nome/link fields.
  */
 function escapeNomeLink<T extends { nome: string; link: string }>(d: T): T {
   return { ...d, nome: escapeHtml(d.nome), link: escapeHtml(safeUrl(d.link)) };
@@ -172,7 +179,7 @@ function renderDocumentiBox(
       });
     })
     .join('');
-  return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
+  return wrapUl(righe);
 }
 
 function renderNoteBox(data: unknown): string {

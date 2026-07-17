@@ -31,7 +31,7 @@ export class AlunnoProvider implements ContextProvider {
     if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
     setAlunnoEntity(cdu, alunno);
 
-    const classe = this.classi.findById(alunno.classe);
+    const classe = this.classi.findById(alunno.classeId);
     if (classe === null)
       throw new EntityNotFoundError(
         `Classe ${alunno.classe} dell'alunno ${params.target} non trovata`

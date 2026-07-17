@@ -4,6 +4,7 @@ import type { BuildParams } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { Classe } from '../../../domain/entities/Classe';
+import { ClasseId } from '../../../domain/value-objects/ClasseId';
 import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
 
@@ -67,14 +68,14 @@ export class ClasseProvider implements ContextProvider {
         throw new ValidationError('ClasseProvider: un target alunno richiede AlunnoRepository');
       const alunno = this.alunni.findById(params.target);
       if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
-      const classe = this.classi.findById(alunno.classe);
+      const classe = this.classi.findById(alunno.classeId);
       if (classe === null)
         throw new EntityNotFoundError(
           `Classe ${alunno.classe} dell'alunno ${params.target} non trovata`
         );
       return classe;
     }
-    const classe = this.classi.findById(params.target);
+    const classe = this.classi.findById(ClasseId.of(params.target));
     if (classe === null) throw new EntityNotFoundError(`Classe ${params.target} non trovata`);
     return classe;
   }

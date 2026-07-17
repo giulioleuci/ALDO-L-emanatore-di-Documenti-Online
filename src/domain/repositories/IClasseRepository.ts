@@ -10,10 +10,7 @@ import type { ArticolazioneConfig } from '../value-objects/ArticolazioneConfig';
 export type RepoRow = Record<string, string | number | boolean | null>;
 
 export interface IClasseRepository {
-  // findById accepts a raw PK string too (base Repository.findById(id: string)),
-  // matching ClasseRepository's own override — several consumers resolve a
-  // Classe from an already-plain-string id (e.g. Alunno.classe, BuildParams.target).
-  findById(id: string | ClasseId): Classe | null;
+  findById(id: ClasseId): Classe | null;
   findAll(): Classe[];
   findAttive(): Classe[];
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse;

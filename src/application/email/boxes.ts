@@ -1,6 +1,8 @@
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
+import type { LazyRef } from '../storico/LazyRef';
+import type { DocumentoStoricoConTipo } from '../storico/StoricoDocumentiService';
 
 /**
  * Box Rendering System (11 §5/§11) on ComposableContentLib (L4): every
@@ -27,6 +29,7 @@ interface DocumentoItem {
   nome: string;
   link: string;
   tipo: string;
+  idGen: string;
   stato: string;
   dataCreazione: string;
 }
@@ -104,13 +107,60 @@ function renderCarenzeBox(data: unknown): string {
     .join('');
 }
 
-function renderDocumentiBox(data: unknown): string {
-  const items = data as DocumentoItem[];
+function renderRigaStandard(items: DocumentoItem[]): string {
   const righe = items
     .map(
       (d) =>
         `<li><a href="${escapeHtml(safeUrl(d.link))}" target="_blank">${escapeHtml(d.nome)}</a></li>`
     )
+    .join('');
+  return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
+}
+
+/**
+ * WorkspaceTemplateEngine's `{{var}}` deliberately does NOT HTML-escape
+ * (`_escapedValue` in the vendored `Mustache.js` is a plain `String(value)` —
+ * its own `_escapeHtml` helper is dead code, unused, because the same engine
+ * also renders Docs/Sheets output where HTML entities must NOT appear as
+ * literal text). So `templateRiga` interpolation gets no escaping for free;
+ * nome/link must be pre-escaped here, same as `renderRigaStandard`, or a
+ * hostile document name from `nome`/`link` becomes stored XSS in the email.
+ */
+function escapeNomeLink<T extends { nome: string; link: string }>(d: T): T {
+  return { ...d, nome: escapeHtml(d.nome), link: escapeHtml(safeUrl(d.link)) };
+}
+
+function renderDocumentiBox(
+  data: unknown,
+  options: { config: Record<string, unknown> },
+  templates: ITemplateEngine
+): string {
+  const { items, storicoRef } = data as {
+    items: DocumentoItem[];
+    storicoRef?: LazyRef<DocumentoStoricoConTipo[]>;
+  };
+  const arricchisci = options.config['arricchisciConStorico'] === true;
+  const configArricchimento = options.config['configArricchimento'] as
+    | Record<string, unknown>
+    | undefined;
+  const templateRiga = arricchisci ? str(configArricchimento?.['templateRiga']) : '';
+
+  if (templateRiga === '' || storicoRef === undefined) return renderRigaStandard(items);
+
+  // arricchisciConStorico (11 §11, 13 §4): storico entries are matched to the
+  // current item by ID_GEN, not the display TIPO — StoricoDocumentiService
+  // groups by CONF_DOC.TIPO/LOG_DOCS.ID_GEN, which the CDU item carries as `idGen`.
+  const storico = storicoRef.get();
+  const righe = items
+    .map((corrente) => {
+      const storicoCorrente = storico
+        .filter((s) => s.tipo === corrente.idGen)
+        .map(escapeNomeLink);
+      return templates.processString(templateRiga, {
+        corrente: escapeNomeLink(corrente),
+        storico: storicoCorrente
+      });
+    })
     .join('');
   return `<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">${righe}</ul>`;
 }
@@ -164,14 +214,14 @@ export function createBoxComposer(
   simple(
     'documenti',
     'Documenti',
-    (ctx) => ctx.get('boxdata.documenti', []),
-    (d) => (d as unknown[]).length === 0
+    (ctx) => ctx.get('boxdata.documenti', { items: [], storicoRef: undefined }),
+    (d) => (d as { items: unknown[] }).items.length === 0
   );
   simple(
     'cartelle',
     'Cartelle',
-    (ctx) => ctx.get('boxdata.cartelle', []),
-    (d) => (d as unknown[]).length === 0
+    (ctx) => ctx.get('boxdata.cartelle', { items: [], storicoRef: undefined }),
+    (d) => (d as { items: unknown[] }).items.length === 0
   );
   simple(
     'note',
@@ -208,8 +258,8 @@ export function createBoxComposer(
       logger,
       templates: {
         carenze: (data) => renderCarenzeBox(data),
-        documenti: (data) => renderDocumentiBox(data),
-        cartelle: (data) => renderDocumentiBox(data),
+        documenti: (data, options) => renderDocumentiBox(data, options, templates),
+        cartelle: (data, options) => renderDocumentiBox(data, options, templates),
         note: (data) => renderNoteBox(data),
         assenze: () => renderAssenzeBox(),
         testo_dinamico: (data, options) =>
@@ -249,17 +299,21 @@ function aggregaDati(
         alunno?: {
           didattica?: {
             carenze?: { dettaglio?: Array<{ materia: string; voto: string }> };
-            documenti?: { items?: DocumentoItem[] };
+            documenti?: {
+              items?: DocumentoItem[];
+              storico?: LazyRef<DocumentoStoricoConTipo[]>;
+            };
           };
         };
       }
     | undefined;
   const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
   const items = focus?.alunno?.didattica?.documenti?.items ?? [];
+  const storicoRef = focus?.alunno?.didattica?.documenti?.storico;
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
-    documenti: items.filter((i) => i.tipo !== 'CARTELLA'),
-    cartelle: items.filter((i) => i.tipo === 'CARTELLA')
+    documenti: { items: items.filter((i) => i.tipo !== 'CARTELLA'), storicoRef },
+    cartelle: { items: items.filter((i) => i.tipo === 'CARTELLA'), storicoRef: undefined }
   };
 }
 

@@ -210,3 +210,99 @@ test('documenti box neutralises javascript: links and hostile colours', () => {
   expect(out.boxes['documenti']!.html).toContain('href="#"');
   expect(out.boxes['documenti']!.html).not.toContain('javascript:');
 });
+
+function cduWithStorico(storico: Array<{ anno: string; nome: string; link: string; tipo: string }>) {
+  const cdu = cduRecord();
+  const didattica = (
+    cdu['focus'] as {
+      alunno: { didattica: { documenti: { items: Array<Record<string, unknown>>; storico?: unknown } } };
+    }
+  ).alunno.didattica;
+  didattica.documenti.items[0]!['idGen'] = 'CD_PDP';
+  didattica.documenti.storico = { get: () => storico, isResolved: () => true };
+  return cdu;
+}
+
+test('documenti box in arricchisciConStorico mode renders templateRiga, matching storico by idGen (11 §11)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduWithStorico([
+    { anno: '2025-2026', nome: 'PDP Anna (vecchio)', link: 'https://drive/old', tipo: 'CD_PDP' },
+    { anno: '2025-2026', nome: 'Altro doc', link: 'https://drive/altro', tipo: 'ALTRO_TIPO' }
+  ]);
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'documenti',
+        arricchisciConStorico: true,
+        configArricchimento: {
+          templateRiga: '<li>{{corrente.nome}} — storico: {{#storico}}{{nome}} ({{anno}}){{/storico}}</li>'
+        }
+      }
+    ]),
+    cdu,
+    materie(),
+    templates
+  );
+  const html = out.boxes['documenti']!.html;
+  expect(html).toContain('PDP Anna — storico: PDP Anna (vecchio) (2025-2026)');
+  expect(html).not.toContain('Altro doc'); // different idGen, must not match
+});
+
+test('documenti box falls back to standard rendering when templateRiga is empty (safety net)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduWithStorico([{ anno: '2025-2026', nome: 'x', link: 'https://drive/x', tipo: 'CD_PDP' }]);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'documenti', arricchisciConStorico: true }]),
+    cdu,
+    materie(),
+    templates
+  );
+  expect(out.boxes['documenti']!.html).toContain('<a href="https://drive/x"');
+  expect(out.boxes['documenti']!.html).toContain('PDP Anna'); // current item's plain markup, unchanged
+});
+
+test('documenti box falls back to standard rendering when includiStorico was false (no LazyRef attached)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'documenti',
+        arricchisciConStorico: true,
+        configArricchimento: { templateRiga: '<li>{{corrente.nome}}</li>' }
+      }
+    ]),
+    cduRecord(), // no .storico attached
+    materie(),
+    templates
+  );
+  expect(out.boxes['documenti']!.html).toContain('<a href="https://drive/x"');
+});
+
+test('documenti box arricchisciConStorico templateRiga escapes hostile storico nome (security parity with standard mode)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduWithStorico([
+    { anno: '2025-2026', nome: '<script>alert(1)</script>', link: 'https://drive/old', tipo: 'CD_PDP' }
+  ]);
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'documenti',
+        arricchisciConStorico: true,
+        configArricchimento: { templateRiga: '<li>{{#storico}}{{nome}}{{/storico}}</li>' }
+      }
+    ]),
+    cdu,
+    materie(),
+    templates
+  );
+  expect(out.boxes['documenti']!.html).toContain('&lt;script&gt;');
+  expect(out.boxes['documenti']!.html).not.toContain('<script>alert(1)</script>');
+});

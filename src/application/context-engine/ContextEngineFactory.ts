@@ -12,6 +12,7 @@ import { CarenzaFocusProvider } from './providers/CarenzaFocusProvider';
 import { RappresentantiProvider } from './providers/RappresentantiProvider';
 import { StatisticheProvider } from './providers/StatisticheProvider';
 import { StoricoProvider } from './providers/StoricoProvider';
+import { DocumentiStoricoProvider } from './providers/DocumentiStoricoProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { createSupplentiSubstitutionLookup } from './interceptors/SupplentiSubstitutionLookup';
 import { CdcAssembler } from './CdcAssembler';
@@ -52,6 +53,7 @@ export class ContextEngineFactory {
     const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(database);
     const supplenze: ISupplenzaRepository = new SupplenzaRepository(database);
     const cdc = new CdcAssembler(classi, materie);
+    const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
     return new ContextBuilder()
       .registerInterceptor(
@@ -87,9 +89,7 @@ export class ContextEngineFactory {
       .registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni))
       .registerProvider('rappresentanti', new RappresentantiProvider(classi))
       .registerProvider('statistiche', new StatisticheProvider(classi, docenti, alunni))
-      .registerProvider(
-        'storico',
-        new StoricoProvider(new MasterStoricoDatabaseProvider(master, new LoggerService()))
-      );
+      .registerProvider('storico', new StoricoProvider(storicoDb))
+      .registerProvider('documentiStorico', new DocumentiStoricoProvider(storicoDb));
   }
 }

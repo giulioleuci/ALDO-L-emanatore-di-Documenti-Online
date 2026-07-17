@@ -82,6 +82,7 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * | carenze       | focus.alunno.didattica.carenze                        | tech.entita.alunno (student)                      |
  * | piani         | focus.alunno.didattica.piani, flips focus.alunno.status.isBes | tech.entita.alunno (student); overwrites the `isBes=false` placeholder AlunnoProvider set — MUST run after student |
  * | documenti     | focus.alunno.didattica.documenti                      | tech.entita.alunno (student)                      |
+ * | documentiStorico | focus.alunno.didattica.documenti.storico (LazyRef, only if options.includiStorico) | focus.alunno.didattica.documenti (documenti) — must run after it |
  * | storico       | focus.alunno.didattica.storico (LazyRef, only if options.includiStorico) | tech.entita.alunno (student) via focus.alunno guard |
  * | carenzaFocus  | focus.carenza                                         | tech.entita.alunno (student)                      |
  *
@@ -106,10 +107,27 @@ export const RECIPES: Record<string, string[]> = {
     'rappresentanti',
     'statistiche'
   ],
-  ALUNNO_DETTAGLIATO: ['school', 'class', 'student', 'carenze', 'piani', 'documenti', 'storico'],
+  ALUNNO_DETTAGLIATO: [
+    'school',
+    'class',
+    'student',
+    'carenze',
+    'piani',
+    'documenti',
+    'documentiStorico',
+    'storico'
+  ],
   DOCENTE_COMPLETO: ['school', 'class', 'consiglio'],
   ALUNNO_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani'],
-  FAMIGLIA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'documenti'],
+  FAMIGLIA_COMPLETO: [
+    'school',
+    'class',
+    'student',
+    'carenze',
+    'piani',
+    'documenti',
+    'documentiStorico'
+  ],
   CARENZA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'carenzaFocus']
 };
 

@@ -61,6 +61,17 @@ test('includiStorico:true attaches a LazyRef without opening any historical data
   expect(storico.isResolved()).toBe(false); // nothing queried yet — lazy by construction
 });
 
+test('ALUNNO_DETTAGLIATO with includiStorico:true also attaches documenti.storico as an unresolved LazyRef (11 §11)', () => {
+  const params: BuildParams = { target: 'a1@school.it', tipoTarget: 'alunno', now };
+  const cdu = factory().build(
+    params,
+    recipe('ALUNNO_DETTAGLIATO', { includiStorico: true, profonditaAnniDocumenti: 1 })
+  );
+  const storico = cdu.focus.alunno!.didattica.documenti!.storico;
+  expect(storico).toBeDefined();
+  expect(storico!.isResolved()).toBe(false);
+});
+
 test('recipe() rejects an unknown recipe name (09 §3)', () => {
   expect(() => recipe('NOPE')).toThrow();
 });

@@ -165,10 +165,15 @@ export interface CduAlunno {
         nome: string;
         link: string;
         tipo: string;
+        idGen: string;
         stato: string;
         dataCreazione: string;
       }>;
       hasDocumenti: boolean;
+      /** Lazy prior-year documents grouped by ID_GEN at render time (11 §11 arricchisciConStorico, 13 §4). */
+      storico?: import('../storico/LazyRef').LazyRef<
+        import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
+      >;
     };
     /** Lazy prior-years history (13 §2/§3), populated only when `includiStorico` is true. */
     storico?: LazyRef<AnnoAlunnoStorico[]>;

@@ -18,6 +18,7 @@ export class DocumentiProvider implements ContextProvider {
       nome: l.nome,
       link: l.getLink(),
       tipo: l.tipo,
+      idGen: l.idGen,
       stato: l.getStato(),
       dataCreazione: l.getDataCreazione()
     }));

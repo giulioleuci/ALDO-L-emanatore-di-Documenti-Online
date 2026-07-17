@@ -265,9 +265,7 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
    * it is separate, listed under each group that teaches it. Ordered by the
    * parent's `partners` [primo, secondo]. Returns null for a non-articulated class.
    */
-  getMaterieArticolazione(
-    classe: Classe
-  ): {
+  getMaterieArticolazione(classe: Classe): {
     condivise: string[];
     separatePrimoGruppo: string[];
     separateSecondoGruppo: string[];

@@ -15,9 +15,9 @@ signature, and live call sites that actually depend on the mismatched member.
 
 ## Summary
 
-| # | File:line | Symbol | Issue | Severity |
-|---|---|---|---|---|
-| 1 | `src/config/Bootstrap.ts:347` (declaration: `types/gaslibs/index.d.ts:912`) | `ServiceFactory.getUtilitiesService()` | Declared return type is wrong (`UtilsService` instead of the real `UtilitiesService`); the real `getUtils()` factory method (which actually returns `UtilsService`) is missing from the `.d.ts` entirely. `Bootstrap.ts` calls the wrong factory method for what `JobRunnerService` needs. | **High — confirmed live call site** |
+| #   | File:line                                                                   | Symbol                                 | Issue                                                                                                                                                                                                                                                                                      | Severity                            |
+| --- | --------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| 1   | `src/config/Bootstrap.ts:347` (declaration: `types/gaslibs/index.d.ts:912`) | `ServiceFactory.getUtilitiesService()` | Declared return type is wrong (`UtilsService` instead of the real `UtilitiesService`); the real `getUtils()` factory method (which actually returns `UtilsService`) is missing from the `.d.ts` entirely. `Bootstrap.ts` calls the wrong factory method for what `JobRunnerService` needs. | **High — confirmed live call site** |
 
 Only one genuine broken linkage was found. Everything else spot-checked (see "Verified in sync"
 below) matches the real library.
@@ -25,12 +25,13 @@ below) matches the real library.
 ## Finding 1 — `ServiceFactory.getUtilitiesService()` misdeclared, wrong method wired into `JobRunnerService`
 
 **Declaration** (`types/gaslibs/index.d.ts:908-922`):
+
 ```ts
 class ServiceFactory {
   static configure(config?: Record<string, unknown>): void;
   static reset(resetConfig?: boolean): void;
   static getLogger(): LoggerService;
-  static getUtilitiesService(): UtilsService;   // <-- wrong return type
+  static getUtilitiesService(): UtilsService; // <-- wrong return type
   static getDriveService(): DriveService;
   static getDocumentService(): DocumentService;
   static getMailService(options?: Record<string, unknown>): MailService;
@@ -41,9 +42,11 @@ class ServiceFactory {
   static getCacheService(): { getScriptCache(): unknown };
 }
 ```
+
 No `getUtils()` entry exists in the declaration at all.
 
 **Real implementation** (`GasLibraryFactory/GoogleApiWrapper/src/internal/core/ServiceFactory.js`):
+
 ```js
 // lines 103-109
 static getUtilitiesService() {
@@ -65,24 +68,27 @@ static getUtils() {
 ```
 
 These are two distinct real classes:
+
 - `UtilitiesService` (`GoogleApiWrapper/src/services/UtilitiesService.js`, ctor `(logger=console, exceptionService=null)`) — has `sleep(ms)`, `formatDate(date, timeZone, format)` (3 required args, timezone-based). No `formatISODate`, no `isValidEmail`.
 - `MyUtilsService` / `UtilsService` (`CoreUtilsLib/src/UtilsService.js`, ctor `(sleepFn=null)`, binds methods sourced from `IdGenerator`/`DateUtils`/`StringUtils`/`SystemEnvironmentUtils`) — has `formatDate(date, format='YYYY-MM-DD', options={utc})` (token-based, from `DateUtils.formatDate`), `formatISODate(date)` (`DateUtils.formatISODate`), `isValidEmail(email)` (`SystemEnvironmentUtils.isValidEmail`).
 
-The `.d.ts`'s standalone `UtilsService` interface (lines 565-572) is itself an accurate description of `MyUtilsService` — the bug is narrowly that `getUtilitiesService()`'s *return type* is misdeclared as that same `UtilsService`, when the method actually returns `UtilitiesService`.
+The `.d.ts`'s standalone `UtilsService` interface (lines 565-572) is itself an accurate description of `MyUtilsService` — the bug is narrowly that `getUtilitiesService()`'s _return type_ is misdeclared as that same `UtilsService`, when the method actually returns `UtilitiesService`.
 
 **Live call site** — `src/config/Bootstrap.ts:344-350`:
+
 ```ts
 export function creaJobRunner(): JobRunnerService {
   return new JobRunnerService(
     ServiceFactory.getLogger(),
-    ServiceFactory.getUtilitiesService(),   // runtime value: GoogleApiWrapper.UtilitiesService instance
+    ServiceFactory.getUtilitiesService(), // runtime value: GoogleApiWrapper.UtilitiesService instance
     new JobDefinitionRegistry(ServiceFactory.getLogger())
   );
 }
 ```
+
 `JobRunnerService`'s real constructor (`GasLibraryFactory/JobRunnerLib/src/JobRunnerService.js`) takes
 `(logger, utils, jobDefinitionRegistry)` and expects `utils` to be a `UtilsService` (CoreUtilsLib)
-instance. TypeScript accepts this call site because `getUtilitiesService()` is *declared* to return
+instance. TypeScript accepts this call site because `getUtilitiesService()` is _declared_ to return
 `UtilsService` — but at runtime it actually returns `UtilitiesService`, a different class from a
 different library.
 
@@ -94,6 +100,7 @@ two classes — or `isValidEmail`) will either silently produce wrong output (`f
 with the wrong semantics) or throw `TypeError: utils.isValidEmail is not a function` at runtime.
 
 **Fix:**
+
 1. `src/config/Bootstrap.ts:347` — change `ServiceFactory.getUtilitiesService()` to `ServiceFactory.getUtils()`.
 2. `types/gaslibs/index.d.ts:912` — correct to `static getUtilitiesService(): UtilitiesService;` and add the missing `static getUtils(): UtilsService;` (both real, currently-undeclared factory methods).
 

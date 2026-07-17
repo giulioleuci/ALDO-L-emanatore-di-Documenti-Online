@@ -33,26 +33,31 @@
 ### Task 1: Fix `ServiceFactory.getUtilitiesService()`/`getUtils()` misdeclaration and the wrong call in `Bootstrap.ts`
 
 **Files:**
+
 - Modify: `src/config/Bootstrap.ts:347`
 - Modify: `types/gaslibs/index.d.ts:908-922`
 - Test: `test/unit/config/bootstrap.test.ts` (create if it doesn't already cover `creaJobRunner`)
 
 **Interfaces:**
+
 - Consumes: ambient global `ServiceFactory` (declared in `types/gaslibs/index.d.ts`, backed at runtime by `GasLibraryFactory/GoogleApiWrapper/src/internal/core/ServiceFactory.js`, already exports both `getUtilitiesService()` → `UtilitiesService` and `getUtils()` → `UtilsService` — this is an ALDO-only type-declaration fix, no GasLibraryFactory change needed).
 - Produces: `creaJobRunner(): JobRunnerService` now passes a real `UtilsService` (CoreUtilsLib) to `JobRunnerService`'s constructor, matching what it actually expects.
 
 - [ ] **Step 1: Confirm the current live callers of `creaJobRunner` and `ServiceFactory.getUtilitiesService()` haven't changed**
 
 Run:
+
 ```bash
 cd "/home/giulio/Desktop/ALDO implementing"
 grep -rn "ServiceFactory.getUtilitiesService()\|ServiceFactory.getUtils()" src/
 ```
+
 Use `mcp__codebase-memory-mcp__search_graph` with `name_pattern: "creaJobRunner"` on project `home-giulio-Desktop-ALDO-implementing` and confirm `Bootstrap.ts:347` is still the only call site of `getUtilitiesService()`, matching `analysis_1_linkage_errors.md` Finding 1. If a second call site now exists, audit it the same way before proceeding.
 
 - [ ] **Step 2: Fix the type declaration in `types/gaslibs/index.d.ts`**
 
 Change (lines 908-922):
+
 ```ts
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
@@ -61,7 +66,9 @@ Change (lines 908-922):
     static getUtilitiesService(): UtilsService;
     static getDriveService(): DriveService;
 ```
+
 to:
+
 ```ts
   class ServiceFactory {
     static configure(config?: Record<string, unknown>): void;
@@ -73,21 +80,25 @@ to:
     static getUtils(): UtilsService;
     static getDriveService(): DriveService;
 ```
+
 `UtilitiesService` is not yet declared as an ambient global in this file — add it directly above the `ServiceFactory` class declaration (still inside the same `declare global { ... }` block, `types/gaslibs/index.d.ts`):
+
 ```ts
-  /** GoogleApiWrapper's native Utilities API wrapper (ref GoogleApiWrapper/src/services/UtilitiesService.js). */
-  class UtilitiesService {
-    constructor(logger?: LoggerService, exceptionService?: unknown);
-    sleep(milliseconds: number): void;
-    getUuid(): string;
-    formatDate(date: Date, timeZone: string, format: string): string;
-  }
+/** GoogleApiWrapper's native Utilities API wrapper (ref GoogleApiWrapper/src/services/UtilitiesService.js). */
+class UtilitiesService {
+  constructor(logger?: LoggerService, exceptionService?: unknown);
+  sleep(milliseconds: number): void;
+  getUuid(): string;
+  formatDate(date: Date, timeZone: string, format: string): string;
+}
 ```
+
 (Only the members ALDO could plausibly reach through `ServiceFactory.getUtilitiesService()` need declaring here — the ambient `.d.ts` is a consumer-facing contract, not a full mirror of the library.)
 
 - [ ] **Step 3: Fix the call site in `src/config/Bootstrap.ts:347`**
 
 Change:
+
 ```ts
 export function creaJobRunner(): JobRunnerService {
   return new JobRunnerService(
@@ -97,7 +108,9 @@ export function creaJobRunner(): JobRunnerService {
   );
 }
 ```
+
 to:
+
 ```ts
 export function creaJobRunner(): JobRunnerService {
   return new JobRunnerService(
@@ -111,11 +124,13 @@ export function creaJobRunner(): JobRunnerService {
 - [ ] **Step 4: Typecheck and run the affected test suite**
 
 Run:
+
 ```bash
 npm run typecheck
 npx jest --config jest.config.cjs -t "creaJobRunner"
 npm test
 ```
+
 Expected: PASS, 0 typecheck errors. If no existing test exercises `creaJobRunner`, add one asserting the constructed `JobRunnerService` was built with the object `ServiceFactory.getUtils()` returns (spy on `ServiceFactory.getUtils`/`getUtilitiesService` and assert only `getUtils` was called for this wiring).
 
 - [ ] **Step 5: Commit**
@@ -140,6 +155,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 2: Declare `PiiRedactor` as an ambient global and wrap the 4 raw-email log call sites
 
 **Files:**
+
 - Modify: `types/gaslibs/index.d.ts` (add `PiiRedactor` — currently undeclared, even though the class is already flattened onto `global` at runtime by `GasLibraryFactory/src/index.js`)
 - Modify: `src/application/services/EmailRetryService.ts:65-67, 74-78`
 - Modify: `src/infrastructure/steps/emailSteps.ts:394` (path will change to `src/application/pipelines/emailSteps.ts` if Phase 6 runs first — apply this fix wherever the file currently lives at execution time)
@@ -147,6 +163,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 - Test: `test/unit/application/email-retry-service.test.ts`, `test/unit/infrastructure/email-steps.test.ts` (or its relocated path), `test/unit/application/email-notification-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: ambient global `PiiRedactor.redact(message: string): string` (backed by `GasLibraryFactory/CoreUtilsLib/src/internal/PiiRedactor.js`, exported from `CoreUtilsLib/index.js`, flattened onto `global` — no import needed, same pattern as `LoggerService`/`UtilsService`).
 
 - [ ] **Step 1: Confirm the 4 call sites are still current**
@@ -157,37 +174,44 @@ grep -n "nuovo tentativo fallito\|Invio email permanentemente fallito\|SendEmail
   src/infrastructure/steps/emailSteps.ts \
   src/application/services/EmailNotificationService.ts
 ```
+
 If `src/infrastructure/steps/emailSteps.ts` doesn't exist (Phase 6 already ran), re-run the grep against `src/application/pipelines/emailSteps.ts`.
 
 - [ ] **Step 2: Declare `PiiRedactor` in `types/gaslibs/index.d.ts`**
 
 Add inside the existing `declare global { ... }` block, near `HtmlSanitizer` (both are CoreUtilsLib static string-processing utilities):
+
 ```ts
-  /** CoreUtilsLib PII-safe logging helper (ref CoreUtilsLib/src/internal/PiiRedactor.js). */
-  class PiiRedactor {
-    static redact(message: string): string;
-    static redactEmails(message: string, label?: string): string;
-    static containsPii(message: string): boolean;
-  }
+/** CoreUtilsLib PII-safe logging helper (ref CoreUtilsLib/src/internal/PiiRedactor.js). */
+class PiiRedactor {
+  static redact(message: string): string;
+  static redactEmails(message: string, label?: string): string;
+  static containsPii(message: string): boolean;
+}
 ```
 
 - [ ] **Step 3: Wrap `EmailRetryService.ts`'s two call sites**
 
 Change (lines 65-67):
+
 ```ts
-        this.logger.warn(
-          `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
-        );
+this.logger.warn(
+  `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
+);
 ```
+
 to:
+
 ```ts
-        this.logger.warn(
-          PiiRedactor.redact(
-            `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
-          )
-        );
+this.logger.warn(
+  PiiRedactor.redact(
+    `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
+  )
+);
 ```
+
 Change (lines 74-78, `registraPermanente`):
+
 ```ts
   private registraPermanente(record: LogEmail, tentativi: number): void {
     const msg =
@@ -195,7 +219,9 @@ Change (lines 74-78, `registraPermanente`):
       `pattern ${record.pattern}, destinatari ${record.destinatariRaw} (${record.errore})`;
     this.logger.error(`EmailRetry: ${msg}`);
 ```
+
 to:
+
 ```ts
   private registraPermanente(record: LogEmail, tentativi: number): void {
     const msg =
@@ -203,33 +229,43 @@ to:
       `pattern ${record.pattern}, destinatari ${record.destinatariRaw} (${record.errore})`;
     this.logger.error(`EmailRetry: ${PiiRedactor.redact(msg)}`);
 ```
-(The `htmlBody: `<p>${escapeHtml(msg)}</p>`` line just below stays unredacted deliberately — it's the admin notification email body, whose entire purpose is to show the supervisore the failing recipients; only the *log* call is redacted.)
+
+(The `htmlBody: `<p>${escapeHtml(msg)}</p>`` line just below stays unredacted deliberately — it's the admin notification email body, whose entire purpose is to show the supervisore the failing recipients; only the _log_ call is redacted.)
 
 - [ ] **Step 4: Wrap `emailSteps.ts`'s call site**
 
 Change (`SendEmailStep`):
+
 ```ts
-        this.logger.error(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`);
+this.logger.error(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`);
 ```
+
 to:
+
 ```ts
-        this.logger.error(PiiRedactor.redact(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`));
+this.logger.error(PiiRedactor.redact(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`));
 ```
 
 - [ ] **Step 5: Wrap `EmailNotificationService.ts`'s call site**
 
 Change (`targetsPerCarenza`):
+
 ```ts
-        this.logger.warn(`PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`);
+this.logger.warn(`PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`);
 ```
+
 to:
+
 ```ts
-        this.logger.warn(PiiRedactor.redact(`PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`));
+this.logger.warn(
+  PiiRedactor.redact(`PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`)
+);
 ```
 
 - [ ] **Step 6: Add/extend unit tests asserting redaction**
 
 For each of the 3 modified files, add a test that triggers the failure path with an email-bearing message and asserts the mock logger was called with a string containing `[EMAIL_REDACTED]` and not the raw address. Example for `EmailRetryService.ts` (append to `test/unit/application/email-retry-service.test.ts`):
+
 ```ts
 test('retryFailed redacts the recipient email in the warn log on a failed re-send', () => {
   const logger = { warn: jest.fn(), error: jest.fn() } as unknown as LoggerService;
@@ -240,6 +276,7 @@ test('retryFailed redacts the recipient email in the warn log on a failed re-sen
   expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining('@'));
 });
 ```
+
 Mirror this shape (mock/spy the injected `LoggerService`, assert on the redacted marker and the absence of `@`) in the `emailSteps`/`EmailNotificationService` test files for their respective call sites.
 
 - [ ] **Step 7: Run tests and lint**
@@ -249,6 +286,7 @@ npm run typecheck
 npx jest --config jest.config.cjs email-retry-service email-steps email-notification-service
 npm run lint
 ```
+
 Expected: PASS.
 
 - [ ] **Step 8: Commit**
@@ -272,6 +310,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 3: Add `UserService` to GoogleApiWrapper (GasLibraryFactory repo)
 
 **Files (GasLibraryFactory repo):**
+
 - Create: `GasLibraryFactory/GoogleApiWrapper/src/services/UserService.js`
 - Create: `GasLibraryFactory/GoogleApiWrapper/src/services/__tests__/UserService.test.js`
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/internal/core/ServiceFactory.js`
@@ -279,6 +318,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 - Modify: `GasLibraryFactory/GoogleApiWrapper/index.js`
 
 **Interfaces:**
+
 - Produces: `UserService.getActiveUserEmail(): string` and `ServiceFactory.getUserService(): UserService`, exported from the `GoogleApiWrapper` package public surface.
 
 - [ ] **Step 1: Verify no existing `UserService`/session wrapper was added since the audit**
@@ -287,11 +327,13 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 grep -rn "class UserService\|getActiveUserEmail\|Session.getActiveUser" GoogleApiWrapper/ --include=*.js | grep -v __tests__
 ```
+
 Use `mcp__codebase-memory-mcp__search_graph` (`name_pattern: "UserService"`, project `home-giulio-Desktop-ALDO-implementing-GasLibraryFactory`) to confirm no such class exists yet.
 
 - [ ] **Step 2: Write the failing test**
 
 Create `GasLibraryFactory/GoogleApiWrapper/src/services/__tests__/UserService.test.js`:
+
 ```js
 import { UserService } from '../UserService';
 
@@ -329,11 +371,13 @@ describe('UserService', () => {
 ```bash
 npx jest GoogleApiWrapper/src/services/__tests__/UserService.test.js
 ```
+
 Expected: FAIL — `Cannot find module '../UserService'`.
 
 - [ ] **Step 4: Implement `UserService`**
 
 Create `GasLibraryFactory/GoogleApiWrapper/src/services/UserService.js`:
+
 ```js
 /**
  * @file GoogleApiWrapper/src/services/UserService.js
@@ -378,16 +422,20 @@ export class UserService {
 ```bash
 npx jest GoogleApiWrapper/src/services/__tests__/UserService.test.js
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Wire `UserService` into `ServiceFactory`**
 
 In `GasLibraryFactory/GoogleApiWrapper/src/internal/core/ServiceFactory.js`, add the import alongside the other service imports:
+
 ```js
 import { UiService } from '../../services/UiService.js';
 import { UserService } from '../../services/UserService.js';
 ```
+
 Add the factory method after `getUiService()`:
+
 ```js
   /**
    * @static
@@ -402,22 +450,26 @@ Add the factory method after `getUiService()`:
 - [ ] **Step 7: Extend `ServiceFactory.test.js` and confirm it passes**
 
 Add a test to `GasLibraryFactory/GoogleApiWrapper/src/internal/core/__tests__/ServiceFactory.test.js` following the file's existing per-`getXService` test pattern:
+
 ```js
 test('getUserService returns a UserService wired with the shared logger', () => {
   const service = ServiceFactory.getUserService();
   expect(service).toBeInstanceOf(UserService);
 });
 ```
+
 (Add `import { UserService } from '../../../services/UserService';` at the top alongside the file's other service imports — check the existing import block first for the exact relative path convention already used for sibling services in that file.)
 
 ```bash
 npx jest GoogleApiWrapper/src/internal/core/__tests__/ServiceFactory.test.js
 ```
+
 Expected: PASS.
 
 - [ ] **Step 8: Export `UserService` from the package public surface**
 
 In `GasLibraryFactory/GoogleApiWrapper/index.js`, add next to the other service exports (near `export { UiService } from './src/services/UiService';`):
+
 ```js
 export { UserService } from './src/services/UserService';
 ```
@@ -429,6 +481,7 @@ cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 npm test
 npx eslint . --quiet
 ```
+
 Expected: all 4,306+ tests PASS, lint exits 0 (confirms `global.Session` access stays inside `GoogleApiWrapper`, the sanctioned L2 boundary).
 
 - [ ] **Step 10: Commit (GasLibraryFactory repo)**
@@ -448,6 +501,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 4: Consume the new `UserService` from ALDO's `ActiveUserFacade`
 
 **Files (ALDO repo):**
+
 - Modify: `vendor/gaslibs.Code.js` (regenerated, not hand-edited)
 - Modify: `types/gaslibs/index.d.ts`
 - Modify: `src/infrastructure/facades/ActiveUserFacade.ts`
@@ -460,19 +514,23 @@ cd "/home/giulio/Desktop/ALDO implementing"
 npm run refresh:vendor
 npm run verify:vendor
 ```
+
 Expected: PASS, `vendor/gaslibs.Code.js` now contains the new `UserService` class and `ServiceFactory.getUserService`.
 
 - [ ] **Step 2: Declare `UserService` and `ServiceFactory.getUserService()` in `types/gaslibs/index.d.ts`**
 
 Add near the `UtilitiesService` declaration added in Phase 1 (both are simple GoogleApiWrapper service wrappers):
+
 ```ts
-  /** GoogleApiWrapper facade over the native Session global (ref GoogleApiWrapper/src/services/UserService.js). */
-  class UserService {
-    constructor(logger?: LoggerService);
-    getActiveUserEmail(): string;
-  }
+/** GoogleApiWrapper facade over the native Session global (ref GoogleApiWrapper/src/services/UserService.js). */
+class UserService {
+  constructor(logger?: LoggerService);
+  getActiveUserEmail(): string;
+}
 ```
+
 Add the factory method to the `ServiceFactory` class declaration (edited in Phase 1):
+
 ```ts
     static getPermissionService(): PermissionService;
     static getUserService(): UserService;
@@ -481,6 +539,7 @@ Add the factory method to the `ServiceFactory` class declaration (edited in Phas
 - [ ] **Step 3: Write the failing test**
 
 Create `test/unit/infrastructure/active-user-facade.test.ts`:
+
 ```ts
 import { SessionActiveUserFacade } from '../../../src/infrastructure/facades/ActiveUserFacade';
 
@@ -502,11 +561,13 @@ describe('SessionActiveUserFacade', () => {
 ```bash
 npx jest --config jest.config.cjs active-user-facade
 ```
+
 Expected: FAIL (facade still calls `Session.getActiveUser()` directly, and the test's fake `ServiceFactory` global is never touched).
 
 - [ ] **Step 5: Update `ActiveUserFacade.ts`**
 
 Change:
+
 ```ts
 /**
  * Running-user identity port (11 §15, `src/onlinetests/checks/pipelineChecks.ts` doc comment).
@@ -524,7 +585,9 @@ export class SessionActiveUserFacade implements IActiveUserFacade {
   }
 }
 ```
+
 to:
+
 ```ts
 /** Running-user identity port (11 §15, `src/onlinetests/checks/pipelineChecks.ts` doc comment). */
 export interface IActiveUserFacade {
@@ -546,6 +609,7 @@ npx jest --config jest.config.cjs active-user-facade
 npm test
 npm run lint
 ```
+
 Expected: PASS. `npm run lint` confirms `Session` no longer appears as a raw global reference anywhere in `src/`.
 
 - [ ] **Step 7: Commit (ALDO repo)**
@@ -568,6 +632,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 5: Add a generic `SampleSpreadsheetBuilder` to GasOnlineTestFramework (GasLibraryFactory repo)
 
 **Files (GasLibraryFactory repo):**
+
 - Create: `GasLibraryFactory/GasOnlineTestFramework/src/SampleSpreadsheetBuilder.js`
 - Create: `GasLibraryFactory/GasOnlineTestFramework/__tests__/SampleSpreadsheetBuilder.test.js`
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/src/TestContext.js`
@@ -575,6 +640,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/index.js`
 
 **Interfaces:**
+
 - Produces: `SampleSpreadsheetBuilder` (`{ id: string, addSheet(name, headerRow), appendRow(sheetName, row), getUrl() }`) and `TestContext.buildSampleSpreadsheet(name, parentFolder?): SampleSpreadsheetBuilder`.
 
 - [ ] **Step 1: Verify current state**
@@ -583,11 +649,13 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 grep -n "buildSampleSpreadsheet\|class SampleSpreadsheetBuilder" GasOnlineTestFramework/src/*.js
 ```
+
 Expected: no hits (confirms this hasn't already been added).
 
 - [ ] **Step 2: Write the failing test**
 
 Create `GasLibraryFactory/GasOnlineTestFramework/__tests__/SampleSpreadsheetBuilder.test.js`:
+
 ```js
 import { SampleSpreadsheetBuilder } from '../src/SampleSpreadsheetBuilder.js';
 
@@ -657,11 +725,13 @@ test('getUrl delegates to the underlying spreadsheet', () => {
 ```bash
 npx jest GasOnlineTestFramework/__tests__/SampleSpreadsheetBuilder.test.js
 ```
+
 Expected: FAIL — module not found.
 
 - [ ] **Step 4: Implement `SampleSpreadsheetBuilder`**
 
 Create `GasLibraryFactory/GasOnlineTestFramework/src/SampleSpreadsheetBuilder.js`:
+
 ```js
 /**
  * @file GasOnlineTestFramework/src/SampleSpreadsheetBuilder.js
@@ -712,10 +782,14 @@ export class SampleSpreadsheetBuilder {
   appendRow(sheetName, row) {
     const sheet = this.spreadsheet.getSheetByName(sheetName);
     if (sheet === null) {
-      throw new Error(`Sheet "${sheetName}" not found in spreadsheet "${this.spreadsheet.getName()}".`);
+      throw new Error(
+        `Sheet "${sheetName}" not found in spreadsheet "${this.spreadsheet.getName()}".`
+      );
     }
     const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0] || [];
-    const values = headerRow.map((header) => (row[String(header)] !== undefined ? row[String(header)] : ''));
+    const values = headerRow.map((header) =>
+      row[String(header)] !== undefined ? row[String(header)] : ''
+    );
     sheet.appendRow(values);
   }
 
@@ -734,15 +808,19 @@ export class SampleSpreadsheetBuilder {
 ```bash
 npx jest GasOnlineTestFramework/__tests__/SampleSpreadsheetBuilder.test.js
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Add `TestContext.buildSampleSpreadsheet`**
 
 In `GasLibraryFactory/GasOnlineTestFramework/src/TestContext.js`, add the import at the top:
+
 ```js
 import { SampleSpreadsheetBuilder } from './SampleSpreadsheetBuilder.js';
 ```
+
 Add the method after `resetSpreadsheet`:
+
 ```js
   /**
    * @description Gets-or-creates a named spreadsheet, resets it to a clean single-sheet
@@ -762,6 +840,7 @@ Add the method after `resetSpreadsheet`:
 - [ ] **Step 7: Add a `TestContext.test.js` case and confirm it passes**
 
 Add to `GasLibraryFactory/GasOnlineTestFramework/__tests__/TestContext.test.js`, in a new `describe('TestContext.buildSampleSpreadsheet', ...)` block following the file's existing `global.DriveApp`/`global.SpreadsheetApp` mocking style:
+
 ```js
 test('returns a SampleSpreadsheetBuilder wrapping the reused-or-created spreadsheet', () => {
   const ctx = new TestContext();
@@ -785,11 +864,13 @@ test('returns a SampleSpreadsheetBuilder wrapping the reused-or-created spreadsh
 ```bash
 npx jest GasOnlineTestFramework/__tests__/TestContext.test.js
 ```
+
 Expected: PASS.
 
 - [ ] **Step 8: Export `SampleSpreadsheetBuilder` from the package public surface**
 
 In `GasLibraryFactory/GasOnlineTestFramework/index.js`, add:
+
 ```js
 export { SampleSpreadsheetBuilder } from './src/SampleSpreadsheetBuilder.js';
 ```
@@ -801,6 +882,7 @@ cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 npm test
 npx eslint . --quiet
 ```
+
 Expected: PASS, 0 lint errors (confirms `SpreadsheetApp`-adjacent calls stay confined to the sanctioned `GasOnlineTestFramework/**` exception).
 
 - [ ] **Step 10: Commit (GasLibraryFactory repo)**
@@ -820,6 +902,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 6: Rewrite ALDO's `GasSampleSpreadsheetFactory` to delegate to the library helper
 
 **Files (ALDO repo):**
+
 - Modify: `vendor/gaslibs.Code.js` (regenerated)
 - Modify: `types/gaslibs/index.d.ts`
 - Modify: `src/onlinetests/GasSampleSpreadsheetFactory.ts`
@@ -836,6 +919,7 @@ npm run verify:vendor
 - [ ] **Step 2: Declare `SampleSpreadsheetBuilder` and `TestContext.buildSampleSpreadsheet` in `types/gaslibs/index.d.ts`**
 
 Extend the existing `TestContext` declaration (added originally for `getOrCreateNamedSpreadsheet`/`resetSpreadsheet`):
+
 ```ts
   class TestContext {
     readonly TEST_ROOT_NAME: string;
@@ -864,11 +948,13 @@ Extend the existing `TestContext` declaration (added originally for `getOrCreate
   }
 }
 ```
+
 (Note the closing `}` of `declare global { ... }` moves to after the new `SampleSpreadsheetBuilder` class — verify the file's current final brace position before editing so the block stays balanced.)
 
 - [ ] **Step 3: Rewrite `GasSampleSpreadsheetFactory.ts`**
 
 Change:
+
 ```ts
 export class GasSampleSpreadsheetFactory implements ISampleSpreadsheetFactory {
   constructor(private readonly rootFolder: unknown = null) {}
@@ -924,7 +1010,9 @@ class GasSampleSpreadsheet implements ISampleSpreadsheet {
   }
 }
 ```
+
 to:
+
 ```ts
 import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 
@@ -943,6 +1031,7 @@ export class GasSampleSpreadsheetFactory implements ISampleSpreadsheetFactory {
   }
 }
 ```
+
 (`SampleSpreadsheetBuilder`'s shape — `id`, `addSheet`, `appendRow`, `getUrl` — is structurally identical to `ISampleSpreadsheet`, so no cast is needed once the ambient declaration from Step 2 is in place.)
 
 - [ ] **Step 4: Typecheck and run the online-mode build check**
@@ -952,6 +1041,7 @@ npm run typecheck
 npm run build:online
 npm run test:build
 ```
+
 Expected: PASS. `build:online` is what compiles `src/onlinetests/**`, so this is the actual verification surface for this file (it isn't covered by `npm test`).
 
 - [ ] **Step 5: Commit (ALDO repo)**
@@ -978,10 +1068,12 @@ Run `mcp__codebase-memory-mcp__index_repository` with `{"project_name": "home-gi
 ### Task 7: Wrap `resumeJob`'s `initAldo()`/`riprendiJobSospeso` call in a try/catch with logging
 
 **Files:**
+
 - Modify: `src/index.ts:40-43`
 - Test: `test/unit/index.test.ts` (create if it doesn't exist)
 
 **Interfaces:**
+
 - Consumes: `initAldo(): ServiceContainer` and `riprendiJobSospeso(c, runner, jobName?): unknown` (both already exported from `src/config/Bootstrap.ts`, unchanged).
 
 - [ ] **Step 1: Confirm current state**
@@ -989,11 +1081,13 @@ Run `mcp__codebase-memory-mcp__index_repository` with `{"project_name": "home-gi
 ```bash
 grep -n "resumeJob" -A5 src/index.ts
 ```
+
 Confirm it still matches the `analysis_3_structural_errors.md` Finding 2 description (no try/catch).
 
 - [ ] **Step 2: Write the failing test**
 
 Create `test/unit/index.test.ts` (mock `Bootstrap` before importing `index.ts`, since `index.ts` assigns entrypoints onto `globalThis` as an import side effect):
+
 ```ts
 jest.mock('../src/config/Bootstrap', () => ({
   initAldo: jest.fn(),
@@ -1039,18 +1133,22 @@ describe('resumeJob', () => {
 ```bash
 npx jest --config jest.config.cjs index.test.ts
 ```
+
 Expected: FAIL on the first test — `initAldo()` throwing currently propagates out of `resumeJob` uncaught, so `expect(() => resumeJob()).not.toThrow()` fails.
 
 - [ ] **Step 4: Wrap `resumeJob`**
 
 Change (`src/index.ts`):
+
 ```ts
 /** JobRunnerLib resume trigger target (15 §5): the job name is resolved from the trigger context. */
 export function resumeJob(): void {
   riprendiJobSospeso(initAldo(), creaJobRunner());
 }
 ```
+
 to:
+
 ```ts
 /**
  * JobRunnerLib resume trigger target (15 §5): the job name is resolved from the trigger
@@ -1068,6 +1166,7 @@ export function resumeJob(): void {
   }
 }
 ```
+
 (`console.error` is used deliberately here, not `LoggerService`: `initAldo()` itself is what just failed, so a `LoggerService` instance resolved through the same failed composition root cannot be trusted as the reporting channel. `console.error` is GAS's own unconditional execution-log sink and needs no DI.)
 
 - [ ] **Step 5: Run the tests to verify they pass**
@@ -1077,6 +1176,7 @@ npx jest --config jest.config.cjs index.test.ts
 npm run typecheck
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -1100,6 +1200,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 8: Move the three `Step` files from `infrastructure/steps/` to `application/pipelines/`
 
 **Files:**
+
 - Move: `src/infrastructure/steps/documentSteps.ts` → `src/application/pipelines/documentSteps.ts`
 - Move: `src/infrastructure/steps/emailSteps.ts` → `src/application/pipelines/emailSteps.ts`
 - Move: `src/infrastructure/steps/postProcessActions.ts` → `src/application/pipelines/postProcessActions.ts`
@@ -1112,6 +1213,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 This is a pure relocation — no behavior change. It fixes the inverted `infrastructure → application` import direction (§6): the three files' own imports of `application/context-engine/*`, `application/email/*`, and their consumers' imports of `infrastructure/facades/*`/`infrastructure/repositories/*` are relative-path fixups only.
 
 **Interfaces:**
+
 - No signature changes. Only import paths move.
 
 - [ ] **Step 1: Confirm the current consumer set hasn't changed**
@@ -1120,6 +1222,7 @@ This is a pure relocation — no behavior change. It fixes the inverted `infrast
 cd "/home/giulio/Desktop/ALDO implementing"
 grep -rln "infrastructure/steps" src/ test/ --include=*.ts
 ```
+
 Expected (per current audit): exactly `src/application/services/DocumentGenerationService.ts`, `src/application/services/EmailNotificationService.ts`, `test/unit/infrastructure/document-steps.test.ts`, `test/unit/infrastructure/email-steps.test.ts`, `test/unit/infrastructure/post-process-actions.test.ts`. Also confirm via `mcp__codebase-memory-mcp__search_graph` (`qn_pattern: "infrastructure.steps"`, project `home-giulio-Desktop-ALDO-implementing`) that no other file imports from this path. If the set differs, update every additional consumer found the same way in Step 4.
 
 - [ ] **Step 2: Create the target directory and move the three source files with git**
@@ -1134,13 +1237,15 @@ git mv test/unit/infrastructure/email-steps.test.ts test/unit/application/pipeli
 git mv test/unit/infrastructure/post-process-actions.test.ts test/unit/application/pipelines/post-process-actions.test.ts
 rmdir src/infrastructure/steps 2>/dev/null; rmdir test/unit/infrastructure 2>/dev/null || true
 ```
+
 (`rmdir` on `test/unit/infrastructure` only succeeds if it's now empty — if other non-`steps` test files still live there, it will simply no-op with an error that's safe to ignore, per the `|| true`.)
 
 - [ ] **Step 3: Fix relative import paths inside the three moved files**
 
-The files moved from `src/infrastructure/steps/` (two levels under `src/`) to `src/application/pipelines/` (also two levels under `src/`) — the directory depth from `src/` is unchanged, but the *sideways* relative paths shift. Update each moved file's imports:
+The files moved from `src/infrastructure/steps/` (two levels under `src/`) to `src/application/pipelines/` (also two levels under `src/`) — the directory depth from `src/` is unchanged, but the _sideways_ relative paths shift. Update each moved file's imports:
 
 In `documentSteps.ts`, change every `'../facades/...'`, `'../db/...'`, `'../repositories/...'` (previously relative to `infrastructure/`) to `'../../infrastructure/facades/...'`, `'../../infrastructure/db/...'`, `'../../infrastructure/repositories/...'`; change `'../../application/...'` and `'../../domain/...'` (previously two levels up from `infrastructure/steps/`) to `'../context-engine/...'`/`'../email/...'` (one level up to `application/`, sideways) and `'../../domain/...'` (now one level up from `application/pipelines/` to `application/`, then up to `domain/` — i.e. `'../../domain/...'` stays the same depth). Concretely for `documentSteps.ts`:
+
 ```ts
 import type { Cdu } from '../../application/context-engine/Cdu';
 import type { IDriveFacade } from '../facades/DriveServiceFacade';
@@ -1161,7 +1266,9 @@ import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { AlberoCartelle } from '../services/AlberoCartelle';
 ```
+
 becomes:
+
 ```ts
 import type { Cdu } from '../context-engine/Cdu';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
@@ -1182,27 +1289,35 @@ import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, type PostProcessDb } from './postProcessActions';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 ```
+
 (`./postProcessActions` stays unchanged — it's moving to the same directory as `documentSteps.ts`.) Apply the equivalent mechanical fixup to `emailSteps.ts` and `postProcessActions.ts`: any import that pointed at `../facades/*`, `../db/*`, `../repositories/*`, `../services/*` (infrastructure siblings) becomes `../../infrastructure/facades/*` etc.; any import that pointed at `../../application/*` becomes `../*` (now a same-directory-tree sibling one level up); imports of `../../domain/*` and `../../config/*` are unchanged (same relative depth from `src/`).
 
 - [ ] **Step 4: Fix the two application-layer consumers**
 
 In `src/application/services/DocumentGenerationService.ts`, change:
+
 ```ts
 } from '../../infrastructure/steps/documentSteps';
 import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
 ```
+
 to:
+
 ```ts
 } from '../pipelines/documentSteps';
 import type { PostProcessDb } from '../pipelines/postProcessActions';
 ```
+
 In `src/application/services/EmailNotificationService.ts`, change:
+
 ```ts
 import type { PostProcessDb } from '../../infrastructure/steps/postProcessActions';
 ...
 } from '../../infrastructure/steps/emailSteps';
 ```
+
 to:
+
 ```ts
 import type { PostProcessDb } from '../pipelines/postProcessActions';
 ...
@@ -1218,6 +1333,7 @@ In `test/unit/application/pipelines/document-steps.test.ts`, change the import t
 ```bash
 grep -rn "infrastructure/steps" src/ test/ --include=*.ts
 ```
+
 Expected: no output. Then re-run `mcp__codebase-memory-mcp__index_repository` for `home-giulio-Desktop-ALDO-implementing` and confirm via `search_graph` (`qn_pattern: "infrastructure.steps"`) that the graph agrees.
 
 - [ ] **Step 7: Typecheck, lint, run the full test suite**
@@ -1229,6 +1345,7 @@ npm test
 npm run test:integration
 npm run test:build
 ```
+
 Expected: PASS. `test:build` matters here — it validates the webpack entry still resolves every module after the path changes.
 
 - [ ] **Step 8: Record the placement decision as an ADR**
@@ -1258,11 +1375,13 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 9: Worked example — extract `ICarenzaRepository` and switch its application-layer consumers
 
 **Files:**
+
 - Create: `src/domain/repositories/ICarenzaRepository.ts`
 - Modify: `src/application/services/ReportService.ts` (and any other consumer discovered in Step 1)
 - No change to `src/infrastructure/repositories/CarenzaRepository.ts` itself (it implicitly satisfies the new interface structurally — TS structural typing needs no `implements` clause for this to typecheck at call sites using `import type`, but add `implements ICarenzaRepository` explicitly for a compile-time contract check).
 
 **Interfaces:**
+
 - Produces: `ICarenzaRepository` with the same 5 public methods `CarenzaRepository` currently exposes (`findByAlunno`, `findByClasse`, `findNonNotificate`, `getCarenzePerMateria`, `setCarenzaMateria`), mirroring `IClasseRepository.ts`'s shape (a plain interface in `src/domain/repositories/`, no base-class dependency).
 
 - [ ] **Step 1: Discover every current consumer of the concrete `CarenzaRepository` type**
@@ -1271,6 +1390,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 cd "/home/giulio/Desktop/ALDO implementing"
 grep -rln "CarenzaRepository" src/application/ src/presentation/ src/config/
 ```
+
 Use `mcp__codebase-memory-mcp__search_graph` (`name_pattern: "CarenzaRepository"`, project `home-giulio-Desktop-ALDO-implementing`) to cross-check. Expect `src/application/services/ReportService.ts` and `src/config/Bootstrap.ts` (the composition root — leave Bootstrap.ts importing the **concrete** class; only application-layer files switch to the interface).
 
 - [ ] **Step 2: Create `ICarenzaRepository.ts`**
@@ -1295,6 +1415,7 @@ export interface ICarenzaRepository {
 - [ ] **Step 3: Add an explicit `implements` on the concrete class**
 
 In `src/infrastructure/repositories/CarenzaRepository.ts`, add the import and clause:
+
 ```ts
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 ...
@@ -1304,13 +1425,17 @@ export class CarenzaRepository extends Repository<Carenza> implements ICarenzaRe
 - [ ] **Step 4: Switch `ReportService.ts`'s import to `import type`**
 
 Change:
+
 ```ts
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 ```
+
 to:
+
 ```ts
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 ```
+
 Then update every constructor parameter / field type in `ReportService.ts` that was typed `CarenzaRepository` to `ICarenzaRepository` (the concrete instance is still resolved via `ServiceContainer.get<ICarenzaRepository>('carenzaRepository')` in `Bootstrap.ts`'s registration of `ReportService`, unchanged — `ServiceContainer.get<T>` is already a string-keyed generic lookup, so no wiring change is needed there, only the type parameter at the call site).
 
 - [ ] **Step 5: Typecheck and run the affected tests**
@@ -1320,6 +1445,7 @@ npm run typecheck
 npx jest --config jest.config.cjs report-service carenza-repository
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -1348,11 +1474,13 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 cd "/home/giulio/Desktop/ALDO implementing"
 grep -rlEn "^import \{ [A-Za-z]+Repository \} from '\.\./\.\./infrastructure/repositories/" src/application/ | sort -u
 ```
+
 Cross-check with `mcp__codebase-memory-mcp__search_code` (pattern: `"Repository'" `, project `home-giulio-Desktop-ALDO-implementing`, scoped to `src/application/`) for anything the grep's exact-import-shape assumption might miss (e.g. multi-named imports on one line). Build a table of `{repository class} → {consuming file(s)}` from the real output — this replaces the "14 files total" / "13 repositories" approximation in `analysis_3_structural_errors.md` §1 with the current, exact set.
 
 - [ ] **Step 2: For each repository in the table, repeat Task 9's Steps 2-6 exactly**
 
 For each `{RepoName}`:
+
 1. `get_code_snippet` (or `Read`) the repository's full source to enumerate its current public methods precisely (do not assume the analysis's method list is still current).
 2. Create `src/domain/repositories/I{RepoName}.ts` with exactly those public methods, following `ICarenzaRepository.ts`'s shape (plain interface, `import type` for every entity/VO parameter/return type).
 3. Add `implements I{RepoName}` to the concrete class in `src/infrastructure/repositories/{RepoName}.ts`.
@@ -1368,14 +1496,17 @@ npm run lint
 npm test
 npm run test:integration
 ```
+
 Expected: PASS.
 
 - [ ] **Step 4: Graph-verify the inversion is actually closed**
 
 Re-run `mcp__codebase-memory-mcp__index_repository` for `home-giulio-Desktop-ALDO-implementing`, then run:
+
 ```bash
 grep -rlEn "^import \{ [A-Za-z]+Repository \} from '\.\./\.\./infrastructure/repositories/" src/application/
 ```
+
 Expected: no output (every remaining repository import under `src/application/` is now `import type { I...Repository }`). Use `mcp__codebase-memory-mcp__query_graph` to confirm no `Module-[:IMPORTS]->Module` edge exists from an `application/` module to an `infrastructure/repositories/` module for a value (non-type) import — cross-check against the grep since this file style previously didn't resolve cleanly per `analysis_5_code_review.md`'s methodology note.
 
 - [ ] **Step 5: Final commit for this phase (if any cleanup remains outside the per-repository commits)**
@@ -1397,11 +1528,13 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 11: `MyMustache` — add a nesting-depth cap and a partial-cycle guard (GasLibraryFactory repo)
 
 **Files (GasLibraryFactory repo):**
+
 - Modify: `GasLibraryFactory/WorkspaceTemplateEngine/src/facades/Mustache.js`
 - Modify: `GasLibraryFactory/WorkspaceTemplateEngine/index.js`
 - Test: `GasLibraryFactory/WorkspaceTemplateEngine/src/__tests__/Mustache.test.js`
 
 **Interfaces:**
+
 - Produces: `MustacheRenderError extends BaseError` (new, exported), `MyMustache.MAX_RENDER_DEPTH` (new static constant, default `100`). `render()`'s public signature (`render(template, data, additionalPartials)`) is unchanged; the new `state` parameter threaded through `_renderTokens`/`_renderSection`/`_renderInverted`/`_renderPartial` is private/internal.
 
 - [ ] **Step 1: Verify current state**
@@ -1410,11 +1543,13 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 grep -n "MAX_RENDER_DEPTH\|MustacheRenderError\|partialStack" WorkspaceTemplateEngine/src/facades/Mustache.js
 ```
+
 Expected: no hits.
 
 - [ ] **Step 2: Write the failing tests**
 
 Add to `GasLibraryFactory/WorkspaceTemplateEngine/src/__tests__/Mustache.test.js` (a new `describe` block, following the file's existing `new MyMustache({...})`/`.render(...)` test style — inspect the top of the file first for its exact import/instantiation pattern before adding):
+
 ```js
 describe('MyMustache render-depth and partial-cycle guards', () => {
   test('throws MustacheRenderError instead of overflowing the call stack on a self-referencing partial', () => {
@@ -1453,11 +1588,13 @@ describe('MyMustache render-depth and partial-cycle guards', () => {
 ```bash
 npx jest WorkspaceTemplateEngine/src/__tests__/Mustache.test.js
 ```
+
 Expected: the first two tests FAIL (`RangeError: Maximum call stack size exceeded` instead of a caught `[RENDER ERROR: ...]` string, or a Jest timeout); the two regression tests currently PASS.
 
 - [ ] **Step 4: Add `MustacheRenderError` and `MAX_RENDER_DEPTH`**
 
 At the top of `GasLibraryFactory/WorkspaceTemplateEngine/src/facades/Mustache.js`, add the import and error class:
+
 ```js
 import { FilterRegistry, FilterStrategy } from '../FilterStrategy.js';
 import { createBuiltInFilters } from '../internal/filters/BuiltInFilters.js';
@@ -1474,7 +1611,9 @@ import { BaseError } from '@CoreUtilsLib';
  */
 class MustacheRenderError extends BaseError {}
 ```
+
 In the `MyMustache` class, add the depth-cap constant next to the other static getters (after `TAG_TEXT`):
+
 ```js
   /** @description Maximum combined section/partial nesting depth before render() throws MustacheRenderError. @static */
   static get MAX_RENDER_DEPTH() {
@@ -1485,6 +1624,7 @@ In the `MyMustache` class, add the depth-cap constant next to the other static g
 - [ ] **Step 5: Thread `state` through `render()` and the four recursive methods**
 
 In `render()`:
+
 ```js
     try {
       const tokens = this._parse(template);
@@ -1494,7 +1634,9 @@ In `render()`:
       return this._renderTokens(tokens, context, partials, template, state);
     } catch (e) {
 ```
+
 In `_renderTokens`:
+
 ```js
   _renderTokens(tokens, context, partials, originalTemplate, state) {
     // WTE-H007: Use array and join for efficient string concatenation
@@ -1523,7 +1665,9 @@ In `_renderTokens`:
     return parts.join('');
   }
 ```
+
 In `_renderSection`:
+
 ```js
   _renderSection(token, context, partials, originalTemplate, state) {
     if (state.depth >= MyMustache.MAX_RENDER_DEPTH) {
@@ -1571,7 +1715,9 @@ In `_renderSection`:
     return parts.join('');
   }
 ```
+
 In `_renderInverted`:
+
 ```js
   _renderInverted(token, context, partials, originalTemplate, state) {
     if (state.depth >= MyMustache.MAX_RENDER_DEPTH) {
@@ -1588,7 +1734,9 @@ In `_renderInverted`:
     }
   }
 ```
+
 In `_renderPartial`:
+
 ```js
   _renderPartial(token, context, partials, state) {
     if (!partials) {
@@ -1624,18 +1772,25 @@ In `_renderPartial`:
 - [ ] **Step 6: Export `MustacheRenderError`**
 
 At the bottom of `Mustache.js`, change:
+
 ```js
 export { MyMustache as Mustache, _MustacheContext as MustacheContext };
 ```
+
 to:
+
 ```js
 export { MyMustache as Mustache, _MustacheContext as MustacheContext, MustacheRenderError };
 ```
+
 In `GasLibraryFactory/WorkspaceTemplateEngine/index.js`, change:
+
 ```js
 export { Mustache } from './src/facades/Mustache';
 ```
+
 to:
+
 ```js
 export { Mustache, MustacheRenderError } from './src/facades/Mustache';
 ```
@@ -1645,7 +1800,8 @@ export { Mustache, MustacheRenderError } from './src/facades/Mustache';
 ```bash
 npx jest WorkspaceTemplateEngine/src/__tests__/Mustache.test.js
 ```
-Expected: all 4 tests PASS. Note: `render()`'s existing outer `try/catch` already catches the thrown `MustacheRenderError` and converts it to the `[RENDER ERROR: ...]` diagnostic string — this is why the tests assert on the returned string, not a thrown exception; the fix's value is that the *logged* error (`this.logger.error(...)` inside that same catch block) now carries a clear `MustacheRenderError` name and message instead of a raw V8 stack-overflow trace.
+
+Expected: all 4 tests PASS. Note: `render()`'s existing outer `try/catch` already catches the thrown `MustacheRenderError` and converts it to the `[RENDER ERROR: ...]` diagnostic string — this is why the tests assert on the returned string, not a thrown exception; the fix's value is that the _logged_ error (`this.logger.error(...)` inside that same catch block) now carries a clear `MustacheRenderError` name and message instead of a raw V8 stack-overflow trace.
 
 - [ ] **Step 8: Full suite + lint**
 
@@ -1654,6 +1810,7 @@ cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 npm test
 npx eslint . --quiet
 ```
+
 Expected: PASS.
 
 - [ ] **Step 9: Commit (GasLibraryFactory repo)**
@@ -1675,10 +1832,12 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 12: `DocumentContentExtractor.scanDocumentStructure` — add the missing Phase 1 iteration cap (GasLibraryFactory repo)
 
 **Files (GasLibraryFactory repo):**
+
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/internal/services-managers/DocumentContentExtractor.js:189-284`
 - Test: existing `DocumentContentExtractor` test file (`find GoogleApiWrapper -iname "DocumentContentExtractor.test.js"`)
 
 **Interfaces:**
+
 - No signature change to `scanDocumentStructure(documentId, textPatterns)`. Internal-only: Phase 1's table-extraction loop gains the same `MAX_ITERATIONS` cap Phase 2 (text scan) already has.
 
 - [ ] **Step 1: Verify current state**
@@ -1688,11 +1847,13 @@ cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 sed -n '185,230p' GoogleApiWrapper/src/internal/services-managers/DocumentContentExtractor.js
 find GoogleApiWrapper -iname "DocumentContentExtractor.test.js"
 ```
+
 Confirm Phase 1's `for (const element of structure.body.content)` loop still has no iteration cap while Phase 2's does.
 
 - [ ] **Step 2: Write the failing test**
 
 Add to the located `DocumentContentExtractor.test.js` (match its existing mocking style for `this.facade.getRawDocumentStructure`/`Docs.Documents.get` — inspect the file's `beforeEach`/fixture setup first):
+
 ```js
 test('scanDocumentStructure caps Phase 1 table extraction at MAX_ITERATIONS and logs a warning', () => {
   const hugeContent = Array.from({ length: 10005 }, (_, i) => ({
@@ -1708,6 +1869,7 @@ test('scanDocumentStructure caps Phase 1 table extraction at MAX_ITERATIONS and 
   );
 });
 ```
+
 (Adapt `extractor`/mock-construction to however the existing test file in this location instantiates `DocumentContentExtractor` and its `_logger`/`facade` collaborators — match the file's established fixture pattern rather than introducing a new one.)
 
 - [ ] **Step 3: Run the test to verify it fails**
@@ -1715,17 +1877,21 @@ test('scanDocumentStructure caps Phase 1 table extraction at MAX_ITERATIONS and 
 ```bash
 npx jest GoogleApiWrapper --testPathPattern DocumentContentExtractor
 ```
+
 Expected: FAIL — `result.tables.length` is currently `10005` (no cap) and no warning was logged.
 
 - [ ] **Step 4: Add the Phase 1 guard**
 
 Change:
+
 ```js
       // PHASE 1: Extract tables from POJO structure
       for (const element of structure.body.content) {
         if (element.type === 'TABLE') {
 ```
+
 to:
+
 ```js
       // PHASE 1: Extract tables from POJO structure
       let phase1IterationCount = 0;
@@ -1737,6 +1903,7 @@ to:
         }
         if (element.type === 'TABLE') {
 ```
+
 (No other lines in the Phase 1 block change — the closing braces of the existing `for`/`if` structure already match.)
 
 - [ ] **Step 5: Run the test to verify it passes, then the full suite**
@@ -1747,6 +1914,7 @@ cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 npm test
 npx eslint . --quiet
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Commit (GasLibraryFactory repo)**
@@ -1763,11 +1931,13 @@ the identical guard. Fixes analysis_3_structural_errors.md Finding 4.
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ```
+
 (Adjust the `git add` test file path to wherever Step 1's `find` located it, if different from the guessed `__tests__/` convention.)
 
 ### Task 13: Pull the two GasLibraryFactory fixes into ALDO
 
 **Files (ALDO repo):**
+
 - Modify: `vendor/gaslibs.Code.js` (regenerated)
 
 - [ ] **Step 1: Refresh vendor and verify**
@@ -1786,6 +1956,7 @@ npm run test:integration
 npm run typecheck
 npm run lint
 ```
+
 Expected: PASS.
 
 - [ ] **Step 3: Commit**
@@ -1811,6 +1982,7 @@ Every task in this phase starts with a live re-verification step, since `analysi
 ### Task 14: Delete `Supplenza`'s 3 dead members (`isAttivaOggi`, `supplenteEmail`, `titolareEmail`)
 
 **Files:**
+
 - Modify: `src/domain/entities/Supplenza.ts`
 
 - [ ] **Step 1: Re-verify zero callers**
@@ -1819,11 +1991,13 @@ Every task in this phase starts with a live re-verification step, since `analysi
 cd "/home/giulio/Desktop/ALDO implementing"
 grep -rn "\.isAttivaOggi(\|\.supplenteEmail\b\|\.titolareEmail\b" src/ test/ --include=*.ts | grep -v "Supplenza.ts"
 ```
+
 Use `mcp__codebase-memory-mcp__search_graph` (`name_pattern: "isAttivaOggi|supplenteEmail|titolareEmail"`, project `home-giulio-Desktop-ALDO-implementing`) to cross-check for any caller the grep missed (e.g. via a base-class duck-typed dispatch — not expected here since these are plain getters/methods, not `AldoEntity`-hooked). Expected: no output beyond comment references (e.g. `test/unit/application/risolutore-ruoli-service.test.ts:321`'s comment mentioning `titolareEmail` in prose, not a call — confirm it's still just a comment).
 
 - [ ] **Step 2: Delete the three members**
 
 In `src/domain/entities/Supplenza.ts`, remove:
+
 ```ts
   get titolareEmail(): Email {
     return Email.of(this.titolare);
@@ -1832,13 +2006,17 @@ In `src/domain/entities/Supplenza.ts`, remove:
     return Email.of(this.supplente);
   }
 ```
+
 (immediately before `getPeriodo()`) and:
+
 ```ts
   isAttivaOggi(): boolean {
     return this.isAttivaData(new Date());
   }
 ```
+
 (immediately before `isAttivaData`, which stays). If the `Email` import becomes unused after this deletion, remove `import { Email } from '../value-objects/Email';` too — check with:
+
 ```bash
 grep -n "Email" src/domain/entities/Supplenza.ts
 ```
@@ -1850,6 +2028,7 @@ npm run typecheck
 npx jest --config jest.config.cjs supplenza
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 4: Commit**
@@ -1869,6 +2048,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 15: Delete `LogEmail.isFailed` and `LogCartella.getLink`
 
 **Files:**
+
 - Modify: `src/domain/entities/LogEmail.ts`
 - Modify: `src/domain/entities/LogCartella.ts`
 
@@ -1879,21 +2059,25 @@ cd "/home/giulio/Desktop/ALDO implementing"
 grep -rn "\.isFailed(" src/ test/ --include=*.ts
 grep -rn "\.getLink(" src/ test/ --include=*.ts
 ```
+
 For `getLink`, confirm every hit resolves to `LogDocumento.getLink()` (which stays — used by `DocumentiProvider`/`StoricoDocumentiService`, confirmed live in `analysis_4_dead_code.md`), not `LogCartella.getLink()`. `test/unit/infrastructure/log-repositories.test.ts:54`'s `f1.getLink()` is on a `LogDocumentoRepository`-sourced entity, confirmed by that file's imports — re-confirm this hasn't changed before deleting.
 
 - [ ] **Step 2: Delete `LogEmail.isFailed`**
 
 In `src/domain/entities/LogEmail.ts`, remove:
+
 ```ts
   isFailed(): boolean {
     return this.stato === StatoEmail.ERROR;
   }
 ```
+
 (between `getDestinatari()` and `getAllegati()`). `StatoEmail` stays imported (used elsewhere in the same file for `this.stato`'s type and `StatoEmail.PENDING` default).
 
 - [ ] **Step 3: Delete `LogCartella.getLink`**
 
 In `src/domain/entities/LogCartella.ts`, remove:
+
 ```ts
   getLink(): string {
     return typeof this.raw[COL_LOG_FOLD.LINK] === 'string'
@@ -1901,6 +2085,7 @@ In `src/domain/entities/LogCartella.ts`, remove:
       : '';
   }
 ```
+
 (the method immediately before `containsClasse`).
 
 - [ ] **Step 4: Typecheck and test**
@@ -1910,6 +2095,7 @@ npm run typecheck
 npx jest --config jest.config.cjs log-email log-cartella log-repositories
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1930,6 +2116,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 16: Delete `VariazioneCattedra`'s 2 dead getters and `Carenza`'s 2 dead getters
 
 **Files:**
+
 - Modify: `src/domain/entities/VariazioneCattedra.ts`
 - Modify: `src/domain/entities/Carenza.ts`
 
@@ -1940,11 +2127,13 @@ cd "/home/giulio/Desktop/ALDO implementing"
 grep -rn "\.nuovoTitolareEmail\b\|\.vecchioTitolareEmail\b" src/ test/ --include=*.ts | grep -v VariazioneCattedra.ts
 grep -rn "\.classeId\b\|\.studenteEmail\b" src/ test/ --include=*.ts | grep -v -e "Carenza.ts" -e "ClasseId" -e "classeId:" -e "classeIdRaw"
 ```
+
 For the `Carenza` grep, manually confirm every remaining hit is a different `.classeId`/`.studenteEmail` (e.g. `Progetto.classeId`, other entities — those are handled in Task 17) and not a genuine new caller of `Carenza.classeId`/`Carenza.studenteEmail`.
 
 - [ ] **Step 2: Delete `VariazioneCattedra`'s two getters**
 
 In `src/domain/entities/VariazioneCattedra.ts`, remove:
+
 ```ts
   get nuovoTitolareEmail(): Email {
     return Email.of(this.nuovoTitolare);
@@ -1953,11 +2142,13 @@ In `src/domain/entities/VariazioneCattedra.ts`, remove:
     return Email.of(this.vecchioTitolare);
   }
 ```
+
 (before `applicaAClasse`). If `Email` becomes unused, drop `import { Email } from '../value-objects/Email';`.
 
 - [ ] **Step 3: Delete `Carenza`'s two getters**
 
 In `src/domain/entities/Carenza.ts`, remove:
+
 ```ts
   get studenteEmail(): Email {
     return Email.of(this.studente);
@@ -1966,6 +2157,7 @@ In `src/domain/entities/Carenza.ts`, remove:
     return ClasseId.of(this.classe);
   }
 ```
+
 (before `getCella`). `ClasseId` and `Email` are both imported at the top of this file (`import { Email } from '../value-objects/Email'; import { ClasseId } from '../value-objects/ClasseId';`) — check whether either becomes unused (`ClasseId` is a value import, not `import type`, used nowhere else in this file per the current source, so it will need removing; `Email` likewise).
 
 - [ ] **Step 4: Typecheck and test**
@@ -1975,6 +2167,7 @@ npm run typecheck
 npx jest --config jest.config.cjs variazione-cattedra carenza
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1993,6 +2186,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 17: Delete the remaining property-duplication getters (`Progetto`, `MovimentoAlunno`, `OreASL`, `Piano`)
 
 **Files:**
+
 - Modify: `src/domain/entities/Progetto.ts`
 - Modify: `src/domain/entities/MovimentoAlunno.ts`
 - Modify: `src/domain/entities/OreASL.ts`
@@ -2006,31 +2200,37 @@ grep -rn "\.classeId\b" src/ test/ --include=*.ts | grep Progetto
 grep -rn "\.studenteEmail\b" src/ test/ --include=*.ts | grep -e MovimentoAlunno -e OreASL -e Piano
 grep -rn "\.annoScolastico\b" src/ test/ --include=*.ts | grep OreASL
 ```
+
 (These greps are advisory — the string patterns `.classeId`/`.studenteEmail`/`.annoScolastico` match across multiple classes; manually confirm each hit's receiver type from surrounding context, same caution as Task 16 Step 1.)
 
 - [ ] **Step 2: Delete `Progetto.classeId`**
 
 In `src/domain/entities/Progetto.ts`, remove:
+
 ```ts
   get classeId(): ClasseId {
     return ClasseId.of(this.classe);
   }
 ```
+
 (before `isASL`). `ClasseId` is imported as a value (`import { ClasseId } from '../value-objects/ClasseId';`) — check it isn't used elsewhere in the file before removing the import; it currently isn't, so remove the import line too.
 
 - [ ] **Step 3: Delete `MovimentoAlunno.studenteEmail`**
 
 In `src/domain/entities/MovimentoAlunno.ts`, remove:
+
 ```ts
   get studenteEmail(): Email {
     return Email.of(this.studente);
   }
 ```
+
 (before `isIngresso`). Remove `import { Email } from '../value-objects/Email';` (unused after this deletion — check first).
 
 - [ ] **Step 4: Delete `OreASL.studenteEmail` and `OreASL.annoScolastico`**
 
 In `src/domain/entities/OreASL.ts`, remove:
+
 ```ts
   get studenteEmail(): Email {
     return Email.of(this.studente);
@@ -2039,16 +2239,19 @@ In `src/domain/entities/OreASL.ts`, remove:
     return AnnoScolastico.of(this.anno);
   }
 ```
+
 (before `getOre`). **Keep both `Email` and `AnnoScolastico` imports** — `Email` is still used by the static `create(studente: Email, anno: AnnoScolastico)` factory method's parameter types later in the same file, and `AnnoScolastico` likewise.
 
 - [ ] **Step 5: Delete `Piano.studenteEmail`**
 
 In `src/domain/entities/Piano.ts`, remove:
+
 ```ts
   get studenteEmail(): Email {
     return Email.of(this.studente);
   }
 ```
+
 (before `isBES`). Remove `import { Email } from '../value-objects/Email';` (unused after this deletion — check first).
 
 - [ ] **Step 6: Typecheck and test**
@@ -2058,6 +2261,7 @@ npm run typecheck
 npx jest --config jest.config.cjs progetto movimento-alunno ore-asl piano
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
@@ -2076,6 +2280,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 18: Delete the dead repository pass-through methods
 
 **Files:**
+
 - Modify: `src/infrastructure/repositories/ConfigurazioneDocumentoRepository.ts`
 - Modify: `src/infrastructure/repositories/ConfigurazioneEmailRepository.ts`
 - Modify: `src/infrastructure/repositories/AlunnoRepository.ts`
@@ -2089,27 +2294,33 @@ grep -rn "confDocRepo\.findAllCached(\|confMailRepo\.findAllCached(" src/ test/ 
 grep -rn "alunnoRepo\.getCurriculum(\|alunnoRepo\.getTutors(\|\.repo\.getTutors(\|\.repo\.getCurriculum(" src/ test/ --include=*.ts
 grep -rn "ruoliRepo\.getEmails(\|ruoloRepo\.getEmails(" src/ test/ --include=*.ts
 ```
+
 These grep patterns are illustrative, not exhaustive (the analysis itself found these via full type-checked cross-reference, not grep alone) — the reliable check is: open each repository file, find the method, and confirm no file passes an `Alunno`/`RuoloSpeciale` instance into `AlunnoRepository.getCurriculum(alunno)`/`.getTutors(alunno)`/`RuoloSpecialeRepository.getEmails(ruolo)` (as opposed to calling `alunno.getCurriculum()`/`.getTutors()`/`ruolo.getEmails()` directly on the entity, which is the live path and stays). Confirmed during plan research: `test/unit/infrastructure/alunno-repository.test.ts:24-37` calls `.getTutors()`/`.getCurriculum()` on the **entity** (`a = repo().findById(...)`, then `a.getTutors()`), not on the repository — safe. `test/unit/infrastructure/ruolo-speciale-repository.test.ts:18,24` calls `.getEmails()` on `RuoloSpeciale.fromData(...)` (the **entity**), not the repository — safe. Re-confirm this is still true before deleting.
 
 - [ ] **Step 2: Delete `ConfigurazioneDocumentoRepository.findAllCached` and `ConfigurazioneEmailRepository.findAllCached`**
 
 In `src/infrastructure/repositories/ConfigurazioneDocumentoRepository.ts`, remove:
+
 ```ts
   findAllCached(): ConfigurazioneDocumento[] {
     return this.all().slice();
   }
 ```
+
 (before `findByTipo`; `private all()` stays — still used by `findByTipo`). In `src/infrastructure/repositories/ConfigurazioneEmailRepository.ts`, remove:
+
 ```ts
   findAllCached(): ConfigurazioneEmail[] {
     return this.all().slice();
   }
 ```
+
 (before `findByProcesso`; `private all()` stays — still used by `findByProcesso`).
 
 - [ ] **Step 3: Delete `AlunnoRepository.getCurriculum`/`.getTutors`**
 
 In `src/infrastructure/repositories/AlunnoRepository.ts`, remove:
+
 ```ts
   getTutors(alunno: Alunno): Email[] {
     return alunno.getTutors();
@@ -2119,7 +2330,9 @@ In `src/infrastructure/repositories/AlunnoRepository.ts`, remove:
     return alunno.getCurriculum();
   }
 ```
+
 (between `findConBES` and the `// --- Aggregate navigation ---` comment). Check whether `Email` and `MateriaId` (both `import type`) become unused elsewhere in the file before removing their imports:
+
 ```bash
 grep -n "Email\b\|MateriaId\b" src/infrastructure/repositories/AlunnoRepository.ts
 ```
@@ -2127,11 +2340,13 @@ grep -n "Email\b\|MateriaId\b" src/infrastructure/repositories/AlunnoRepository.
 - [ ] **Step 4: Delete `RuoloSpecialeRepository.getEmails`**
 
 In `src/infrastructure/repositories/RuoloSpecialeRepository.ts`, remove:
+
 ```ts
   getEmails(ruolo: RuoloSpeciale): Email[] {
     return ruolo.getEmails();
   }
 ```
+
 (the last method in the class, after `findByDocente`). Check whether `Email` (`import type`) is still used elsewhere in the file (it is, as `findByDocente(email: Email)`'s parameter type) — keep the import.
 
 - [ ] **Step 5: Typecheck and test**
@@ -2141,6 +2356,7 @@ npm run typecheck
 npx jest --config jest.config.cjs configurazione-documento configurazione-email alunno-repository ruolo-speciale-repository
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -2163,6 +2379,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 19: Delete `DocumentBatchService.resume` and `EmailBatchService.resume`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts`
 - Modify: `src/application/services/EmailBatchService.ts`
 
@@ -2172,21 +2389,25 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 cd "/home/giulio/Desktop/ALDO implementing"
 grep -rn "documenti\.resume(\|email\.resume(\|documentBatchService\.resume(\|emailBatchService\.resume(" src/ test/ --include=*.ts
 ```
+
 Confirm `src/config/Bootstrap.ts`'s `riprendiJobSospeso` still calls `runner.resume(jobName, (queue) => { documenti.registerJobHandlers(queue); email.registerJobHandlers(queue); })` directly — i.e. bypassing both services' own `resume()` methods, per `analysis_4_dead_code.md`'s finding that this bypass is structural (one shared resume trigger registers both job types' handlers together).
 
 - [ ] **Step 2: Delete `DocumentBatchService.resume`**
 
 In `src/application/services/DocumentBatchService.ts`, remove:
+
 ```ts
   resume(runner: JobRunnerService, jobName: string): unknown {
     return runner.resume(jobName, (queue) => this.registerJobHandlers(queue));
   }
 ```
+
 `registerJobHandlers` itself stays (still called from `Bootstrap.riprendiJobSospeso`, and from this same class's `start()`).
 
 - [ ] **Step 3: Delete `EmailBatchService.resume`**
 
 In `src/application/services/EmailBatchService.ts`, remove the identically-shaped:
+
 ```ts
   resume(runner: JobRunnerService, jobName: string): unknown {
     return runner.resume(jobName, (queue) => this.registerJobHandlers(queue));
@@ -2200,6 +2421,7 @@ npm run typecheck
 npx jest --config jest.config.cjs document-batch-service email-batch-service bootstrap
 npm test
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -2220,6 +2442,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 ### Task 20: Standardize on `.equals()` — refactor the 3 inline VO comparisons
 
 **Files:**
+
 - Modify: `src/domain/specifications/DocenteSpecs.ts:9-10`
 - Modify: `src/domain/entities/RuoloSpeciale.ts:38`
 - Modify: `src/domain/value-objects/EsameConfig.ts:24-29`
@@ -2239,13 +2462,16 @@ grep -rn "DipartimentoId\.of([^)]*)\.equals(\|dipartId\.equals(\|\.equals(this\.
 - [ ] **Step 2: `DocentiPerDipartimentoSpec.isSatisfiedBy` → `DipartimentoId.equals`**
 
 In `src/domain/specifications/DocenteSpecs.ts`, add the import:
+
 ```ts
 import type { Specification } from './Specification';
 import type { Docente } from '../entities/Docente';
 import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { COL_DOCENTI } from '../../config/schema';
 ```
+
 (note: `DipartimentoId` moves from `import type` to a plain `import`, since it's now called as a value via `DipartimentoId.of(...)`.) Change:
+
 ```ts
 export class DocentiPerDipartimentoSpec implements Specification<Docente> {
   constructor(private readonly dipartId: DipartimentoId) {}
@@ -2253,7 +2479,9 @@ export class DocentiPerDipartimentoSpec implements Specification<Docente> {
     return d.dipart === this.dipartId.value;
   }
 ```
+
 to:
+
 ```ts
 export class DocentiPerDipartimentoSpec implements Specification<Docente> {
   constructor(private readonly dipartId: DipartimentoId) {}
@@ -2265,26 +2493,33 @@ export class DocentiPerDipartimentoSpec implements Specification<Docente> {
 - [ ] **Step 3: `RuoloSpeciale.hasDocente` → `Email.equals`**
 
 In `src/domain/entities/RuoloSpeciale.ts`, change:
+
 ```ts
   hasDocente(email: Email): boolean {
     return this.getEmails().some((e) => e.value === email.value);
   }
 ```
+
 to:
+
 ```ts
   hasDocente(email: Email): boolean {
     return this.getEmails().some((e) => e.equals(email));
   }
 ```
+
 (`Email` is already imported as a value in this file — no import change needed.)
 
 - [ ] **Step 4: `EsameConfig.isPrimaProvaPerIndirizzo`/`isSecondaProvaPerIndirizzo` → `IndirizzoId.equals`**
 
 In `src/domain/value-objects/EsameConfig.ts`, add the value import:
+
 ```ts
 import { IndirizzoId } from './IndirizzoId';
 ```
+
 (replacing the current `import type { IndirizzoId } from './IndirizzoId';`, since `IndirizzoId.of` is now called as a value). Change:
+
 ```ts
   isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean {
     return this.primaProva.includes(ind.value);
@@ -2294,7 +2529,9 @@ import { IndirizzoId } from './IndirizzoId';
     return this.secondaProva.includes(ind.value);
   }
 ```
+
 to:
+
 ```ts
   isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean {
     return this.primaProva.some((raw) => IndirizzoId.of(raw).equals(ind));
@@ -2304,6 +2541,7 @@ to:
     return this.secondaProva.some((raw) => IndirizzoId.of(raw).equals(ind));
   }
 ```
+
 (`this.primaProva`/`this.secondaProva` are `string[]` of raw indirizzo ids parsed from JSON — `.includes(ind.value)` becomes `.some((raw) => IndirizzoId.of(raw).equals(ind))` to route the comparison through `.equals()` rather than comparing `ind.value` against a raw unvalidated string directly.)
 
 - [ ] **Step 5: Typecheck and test**
@@ -2313,6 +2551,7 @@ npm run typecheck
 npx jest --config jest.config.cjs docente-specs ruolo-speciale esame-config
 npm test
 ```
+
 Expected: PASS. (`DipartimentoId.equals`/`Email.equals`/`IndirizzoId.equals` now show a real caller each — confirm with `mcp__codebase-memory-mcp__search_graph` post-commit if useful, though this is optional since the tests already prove behavior.)
 
 - [ ] **Step 6: Commit**
@@ -2341,6 +2580,7 @@ Claude-Session: https://claude.ai/code/session_01XsipfWZ5MdGjUugChgMLeh"
 - [ ] **Step 1: Re-index both graphs from a clean HEAD**
 
 Run `mcp__codebase-memory-mcp__index_repository`:
+
 - `{"project_name": "home-giulio-Desktop-ALDO-implementing-GasLibraryFactory", "root_path": "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"}`
 - `{"project_name": "home-giulio-Desktop-ALDO-implementing", "root_path": "/home/giulio/Desktop/ALDO implementing"}`
 
@@ -2351,6 +2591,7 @@ cd "/home/giulio/Desktop/ALDO implementing"
 grep -rn "SpreadsheetApp\.\|DriveApp\.\|MailApp\.\|GmailApp\.\|DocumentApp\.\|PropertiesService\.\|CacheService\.\|UrlFetchApp\.\|ScriptApp\.\|LockService\.\|Session\." src/ --include=*.ts | grep -v "//"
 npx eslint src --quiet
 ```
+
 Expected: only the `src/onlinetests/**` sanctioned exception (now routed through `GasOnlineTestFramework.SampleSpreadsheetBuilder`/`testContext`, per Phase 4 — confirm no raw `SpreadsheetApp`/`Sheet` call remains even there), zero raw `Session.` hits anywhere (closed in Phase 3), `eslint` exits 0.
 
 - [ ] **Step 3: Confirm the DIP fix closed (re-check, now against the post-Phase-9 tree)**
@@ -2358,6 +2599,7 @@ Expected: only the `src/onlinetests/**` sanctioned exception (now routed through
 ```bash
 grep -rlEn "^import \{ [A-Za-z]+Repository \} from '\.\./\.\./infrastructure/repositories/" src/application/
 ```
+
 Expected: no output.
 
 - [ ] **Step 4: Confirm no `infrastructure → application` import remains**
@@ -2365,6 +2607,7 @@ Expected: no output.
 ```bash
 grep -rln "from '\.\./\.\./application/" src/infrastructure/ 2>/dev/null
 ```
+
 Expected: no output (the only prior offenders, `documentSteps.ts`/`emailSteps.ts`, moved to `application/pipelines/` in Phase 6).
 
 - [ ] **Step 5: Full test/lint/typecheck sweep, both repos**
@@ -2380,6 +2623,7 @@ cd "/home/giulio/Desktop/ALDO implementing/GasLibraryFactory"
 npm test
 npx eslint . --quiet
 ```
+
 Expected: all PASS.
 
 - [ ] **Step 6: Confirm zero dead-code regressions were introduced**
@@ -2391,6 +2635,7 @@ Re-run the same class of zero-caller query `analysis_4_dead_code.md` used origin
 ```bash
 grep -rn "requireRegistered\|cellToString" src/ --include=*.ts
 ```
+
 Manually confirm `CustomSourceStrategies.requireRegistered` and `DocumentoConTabelleImportateGeneratorStrategy.cellToString` are each still reached (likely via `.map()`/array-callback, which the graph indexer under-attributes as a `CALLS` edge) before any future cleanup pass treats them as dead — no code change expected here, this is a verification-only note, not a fix.
 
 - [ ] **Step 8: No commit for this task** — it is a read-only verification gate. If any step fails, return to the relevant phase, fix, and re-run this task from Step 5.

@@ -52,7 +52,7 @@ directly from `src/infrastructure/repositories/`, rather than depending on domai
 repository interfaces. Only one interface exists to depend on instead —
 `src/domain/repositories/IClasseRepository.ts` — so for the other 13 concrete
 repositories there is currently no interface to switch to. Notably, the same
-files *do* correctly depend on facade interfaces via `import type` (`IDriveFacade`,
+files _do_ correctly depend on facade interfaces via `import type` (`IDriveFacade`,
 `IGmailFacade`, `ITemplateEngine`, etc.) — the inversion discipline exists and is
 followed for facades but not for repositories.
 
@@ -61,6 +61,7 @@ Application to depend on Domain abstractions, not Infrastructure concretions —
 Infrastructure implements Domain interfaces, not the other way around. As written,
 Application is compile-time coupled to Infrastructure's concrete repository
 implementations, which:
+
 - Makes swapping the persistence layer (e.g. a future non-Sheets-backed repo) a
   ripple across 14 application files instead of a wiring change in
   `Bootstrap.ts`/`ServiceContainer`.

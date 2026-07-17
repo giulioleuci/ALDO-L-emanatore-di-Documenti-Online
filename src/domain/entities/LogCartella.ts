@@ -33,11 +33,6 @@ export class LogCartella extends AldoEntity {
       typeof data[COL_LOG_FOLD.NOME] === 'string' ? (data[COL_LOG_FOLD.NOME] as string) : '';
   }
 
-  getLink(): string {
-    return typeof this.raw[COL_LOG_FOLD.LINK] === 'string'
-      ? (this.raw[COL_LOG_FOLD.LINK] as string)
-      : '';
-  }
   containsClasse(classeId: string): boolean {
     return csv(this.raw[COL_LOG_FOLD.CLASSI]).includes(classeId);
   }

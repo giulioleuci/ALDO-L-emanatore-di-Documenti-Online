@@ -48,10 +48,6 @@ export class LogEmail extends AldoEntity {
       .filter((s) => s.length > 0);
   }
 
-  isFailed(): boolean {
-    return this.stato === StatoEmail.ERROR;
-  }
-
   getAllegati(): Record<string, unknown> {
     return this.allegatiRaw === null
       ? {}

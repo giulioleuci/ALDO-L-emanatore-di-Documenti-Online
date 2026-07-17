@@ -27,6 +27,21 @@ test('Materia hydrates and parses ESAME_CFG lazily', () => {
   expect(m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('LSSA'))).toBe(false);
 });
 
+test('EsameConfig treats a malformed raw entry as a non-match instead of throwing (defensive parse)', () => {
+  const m = Materia.fromData({
+    ID: 'FISI2',
+    NOME: 'Fisica',
+    SINTESI: 'Fisica',
+    ESAME_CFG: '{"prima_prova":["","SCIENTIFICO"],"seconda_prova":[""]}'
+  });
+  // Malformed entry ('' is rejected by IndirizzoId.of) doesn't throw...
+  expect(() => m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).not.toThrow();
+  // ...a genuinely matching valid entry alongside it still matches...
+  expect(m.esameConfig?.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).toBe(true);
+  // ...and an indirizzo that only the malformed entry could have matched correctly reports false.
+  expect(m.esameConfig?.isSecondaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).toBe(false);
+});
+
 test('Materia with null ESAME_CFG has no esameConfig', () => {
   expect(Materia.fromData({ ID: 'FISI', ESAME_CFG: null }).esameConfig).toBeNull();
 });

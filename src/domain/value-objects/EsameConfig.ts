@@ -22,10 +22,23 @@ export class EsameConfig {
   }
 
   isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean {
-    return this.primaProva.some((raw) => IndirizzoId.of(raw).equals(ind));
+    return this.primaProva.some((raw) => EsameConfig.matches(raw, ind));
   }
 
   isSecondaProvaPerIndirizzo(ind: IndirizzoId): boolean {
-    return this.secondaProva.some((raw) => IndirizzoId.of(raw).equals(ind));
+    return this.secondaProva.some((raw) => EsameConfig.matches(raw, ind));
+  }
+
+  /**
+   * ESAME_CFG is a human-editable JSON cell with no schema-level validation
+   * (ref 01 — no Vincoli entry, unlike DIPART). A malformed entry must not
+   * abort the whole match: treat it as a non-match instead of throwing.
+   */
+  private static matches(raw: string, ind: IndirizzoId): boolean {
+    try {
+      return IndirizzoId.of(raw).equals(ind);
+    } catch {
+      return false;
+    }
   }
 }

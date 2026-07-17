@@ -268,6 +268,7 @@ __webpack_require__.d(WorkspaceTemplateEngine_namespaceObject, {
   DocumentProcessor: () => (_DocumentProcessor),
   FilterStrategy: () => (FilterStrategy),
   Mustache: () => (MyMustache),
+  MustacheRenderError: () => (MustacheRenderError),
   PlaceholderService: () => (MyPlaceholderService),
   SheetProcessor: () => (_SheetProcessor)
 });
@@ -16731,7 +16732,13 @@ class DocumentContentExtractor {
       const seenTextIndices = new Set();
 
       
+      let phase1IterationCount = 0;
+      const PHASE1_MAX_ITERATIONS = 10000;
       for (const element of structure.body.content) {
+        if (++phase1IterationCount > PHASE1_MAX_ITERATIONS) {
+          this._logger.warn(`Reached maximum iteration limit (${PHASE1_MAX_ITERATIONS}) while extracting tables`);
+          break;
+        }
         if (element.type === 'TABLE') {
           const tableData = {
             index: result.tables.length,
@@ -22497,6 +22504,17 @@ function createAdvancedFilters() {
 
 
 
+
+
+
+
+class MustacheRenderError extends BaseError {}
+
+
+
+
+
+
 class _MustacheScanner {
   constructor(string) {
     this.string = string;
@@ -22795,6 +22813,11 @@ class MyMustache {
   }
 
   
+  static get MAX_RENDER_DEPTH() {
+    return 100;
+  }
+
+  
 
 
 
@@ -22966,7 +22989,11 @@ class MyMustache {
         ...this.partials,
         ...additionalPartials
       };
-      return this._renderTokens(tokens, context, partials, template);
+      const state = {
+        depth: 0,
+        partialStack: []
+      };
+      return this._renderTokens(tokens, context, partials, template, state);
     } catch (e) {
       this.logger.error(`MyMustache render error: ${e.message}\n${e.stack}`);
       return `[RENDER ERROR: ${e.message}]`;
@@ -23050,7 +23077,8 @@ class MyMustache {
 
 
 
-  _renderTokens(tokens, context, partials, originalTemplate) {
+
+  _renderTokens(tokens, context, partials, originalTemplate, state) {
     
     const parts = [];
     for (const token of tokens) {
@@ -23058,11 +23086,11 @@ class MyMustache {
       const symbol = token[MyMustache.TOKEN_TYPE];
       let value;
       if (symbol === '#') {
-        value = this._renderSection(token, context, partials, originalTemplate);
+        value = this._renderSection(token, context, partials, originalTemplate, state);
       } else if (symbol === '^') {
-        value = this._renderInverted(token, context, partials, originalTemplate);
+        value = this._renderInverted(token, context, partials, originalTemplate, state);
       } else if (symbol === '>') {
-        value = this._renderPartial(token, context, partials);
+        value = this._renderPartial(token, context, partials, state);
       } else if (symbol === '&') {
         value = this._unescapedValue(token, context);
       } else if (symbol === 'name') {
@@ -23261,7 +23289,15 @@ class MyMustache {
 
 
 
-  _renderSection(token, context, partials, originalTemplate) {
+
+  _renderSection(token, context, partials, originalTemplate, state) {
+    if (state.depth >= MyMustache.MAX_RENDER_DEPTH) {
+      throw new MustacheRenderError(`Superata la profondità massima di annidamento (${MyMustache.MAX_RENDER_DEPTH}) nella sezione "${token[1]}"`);
+    }
+    const childState = {
+      depth: state.depth + 1,
+      partialStack: state.partialStack
+    };
     
     const parts = [];
     const self = this;
@@ -23279,13 +23315,13 @@ class MyMustache {
         const item = value[i];
         
         const decoratedItem = this._createLoopContext(item, i, total);
-        parts.push(this._renderTokens(token[4], context.push(decoratedItem), partials, originalTemplate));
+        parts.push(this._renderTokens(token[4], context.push(decoratedItem), partials, originalTemplate, childState));
       }
     } else if (typeof value === 'object') {
       
       
       
-      parts.push(this._renderTokens(token[4], context.push(value), partials, originalTemplate));
+      parts.push(this._renderTokens(token[4], context.push(value), partials, originalTemplate, childState));
     } else if (typeof value === 'function') {
       const text = originalTemplate.slice(token[3], token[5]);
       const result = value.call(context.view, text, subRender);
@@ -23293,7 +23329,7 @@ class MyMustache {
         parts.push(result);
       }
     } else {
-      parts.push(this._renderTokens(token[4], context, partials, originalTemplate));
+      parts.push(this._renderTokens(token[4], context, partials, originalTemplate, childState));
     }
     return parts.join('');
   }
@@ -23307,10 +23343,17 @@ class MyMustache {
 
 
 
-  _renderInverted(token, context, partials, originalTemplate) {
+
+  _renderInverted(token, context, partials, originalTemplate, state) {
+    if (state.depth >= MyMustache.MAX_RENDER_DEPTH) {
+      throw new MustacheRenderError(`Superata la profondità massima di annidamento (${MyMustache.MAX_RENDER_DEPTH}) nella sezione invertita "${token[1]}"`);
+    }
     const value = this._lookupValue(token, context);
     if (!value || Array.isArray(value) && value.length === 0) {
-      return this._renderTokens(token[4], context, partials, originalTemplate);
+      return this._renderTokens(token[4], context, partials, originalTemplate, {
+        depth: state.depth + 1,
+        partialStack: state.partialStack
+      });
     }
   }
 
@@ -23322,15 +23365,30 @@ class MyMustache {
 
 
 
-  _renderPartial(token, context, partials) {
+
+  _renderPartial(token, context, partials, state) {
     if (!partials) {
       return;
     }
     const partialName = token[1];
+    if (state.depth >= MyMustache.MAX_RENDER_DEPTH) {
+      throw new MustacheRenderError(`Superata la profondità massima di annidamento (${MyMustache.MAX_RENDER_DEPTH}) nel partial "${partialName}"`);
+    }
+    if (state.partialStack.includes(partialName)) {
+      throw new MustacheRenderError(`Riferimento ciclico nel partial "${partialName}" (catena: ${state.partialStack.join(' > ')} > ${partialName})`);
+    }
     const value = typeof partials === 'function' ? partials(partialName) : partials[partialName];
     if (value != null) {
       const tokens = this._parse(String(value));
-      return this._renderTokens(tokens, context, partials, String(value));
+      state.partialStack.push(partialName);
+      try {
+        return this._renderTokens(tokens, context, partials, String(value), {
+          depth: state.depth + 1,
+          partialStack: state.partialStack
+        });
+      } finally {
+        state.partialStack.pop();
+      }
     }
   }
 

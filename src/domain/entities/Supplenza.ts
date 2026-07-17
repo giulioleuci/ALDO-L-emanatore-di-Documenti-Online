@@ -1,4 +1,3 @@
-import { Email } from '../value-objects/Email';
 import { PeriodoSupplenza } from '../value-objects/PeriodoSupplenza';
 import { CsvScope } from '../value-objects/CsvScope';
 import type { ClasseId } from '../value-objects/ClasseId';
@@ -53,13 +52,6 @@ export class Supplenza extends AldoEntity {
         : null;
   }
 
-  get titolareEmail(): Email {
-    return Email.of(this.titolare);
-  }
-  get supplenteEmail(): Email {
-    return Email.of(this.supplente);
-  }
-
   getPeriodo(): PeriodoSupplenza {
     return PeriodoSupplenza.of(
       new Date(this.dalRaw),
@@ -67,9 +59,6 @@ export class Supplenza extends AldoEntity {
     );
   }
 
-  isAttivaOggi(): boolean {
-    return this.isAttivaData(new Date());
-  }
   isAttivaData(data: Date): boolean {
     return this.getPeriodo().contiene(data);
   }

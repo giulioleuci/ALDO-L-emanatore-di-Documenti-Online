@@ -1,4 +1,3 @@
-import { Email } from '../value-objects/Email';
 import { CsvScope } from '../value-objects/CsvScope';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
@@ -49,13 +48,6 @@ export class VariazioneCattedra extends AldoEntity {
     this.materie = CsvScope.of(this.materiaIdRaw);
     this.id =
       this.classeIdRaw && this.materiaIdRaw ? `${this.classeIdRaw}::${this.materiaIdRaw}` : null;
-  }
-
-  get nuovoTitolareEmail(): Email {
-    return Email.of(this.nuovoTitolare);
-  }
-  get vecchioTitolareEmail(): Email {
-    return Email.of(this.vecchioTitolare);
   }
 
   /** CLASSE_ID CSV contains the class (ref 06 §20, containment). */

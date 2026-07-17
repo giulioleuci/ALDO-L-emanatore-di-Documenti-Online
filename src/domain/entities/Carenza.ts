@@ -1,5 +1,3 @@
-import { Email } from '../value-objects/Email';
-import { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
 import type { ValoreCarenza } from '../value-objects/ValoreCarenza';
 import { COL_CARENZE } from '../../config/schema';
@@ -44,13 +42,6 @@ export class Carenza extends AldoEntity {
         : '';
     this.assenze = data[COL_CARENZE.ASSENZE] === true;
     this.id = this.studente && this.progressivo ? `${this.studente}::${this.progressivo}` : null;
-  }
-
-  get studenteEmail(): Email {
-    return Email.of(this.studente);
-  }
-  get classeId(): ClasseId {
-    return ClasseId.of(this.classe);
   }
 
   /** Raw value of a (possibly dynamic) column — used by the repository for matrix cells. */

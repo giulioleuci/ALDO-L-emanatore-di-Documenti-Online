@@ -6,7 +6,7 @@ import { getAlunnoEntity } from '../techEntities';
 
 /**
  * Populates `focus.carenza` — the specific CARENZE record that started a
- * PER_CARENZA pipeline (09 §4, 02 §4.3). Active only in CARENZA_COMPLETO. The
+ * PER_CARENZA_GENITORI* pipeline (09 §4, 02 §4.3). Active only in CARENZA_COMPLETO. The
  * target record is selected by `params.carenzaProgressivo`; absent that, the most
  * recent shortfall of the student is used. Does nothing if the student has none.
  */

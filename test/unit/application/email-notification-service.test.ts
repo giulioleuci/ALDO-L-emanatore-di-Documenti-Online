@@ -142,9 +142,9 @@ test('PER_GENITORI_ALUNNO: one target per family (tutors multi-TO)', () => {
   });
 });
 
-test('PER_CARENZA: one target per non-notified CARENZE row; tutors first, alunno fallback (11 §3)', () => {
+test('PER_CARENZA_GENITORI: one target per non-notified CARENZE row; tutors first, alunno fallback (11 §3)', () => {
   const { service } = wire();
-  const targets = service.enumerateTargets(conf('PER_CARENZA'));
+  const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI'));
   expect(targets).toHaveLength(2); // a1 prog 1 + a2 prog 1 (prog 2 already notified)
   const a1 = targets.find((t) => t.target === 'a1@school.it')!;
   expect(a1.carenzaProgressivo).toBe(1);
@@ -166,7 +166,7 @@ test('sendPattern PER_CDC sends one email per class with supervisore BCC (11 §2
   expect(db.tables['LOG_MAIL']!.getAllRows()).toHaveLength(2);
 });
 
-test('sendPattern PER_CARENZA stamps NOTIFICATO so a second run sends nothing (11 §10)', () => {
+test('sendPattern PER_CARENZA_GENITORI stamps NOTIFICATO so a second run sends nothing (11 §10)', () => {
   const { service, gmail, db } = wire();
   const first = service.sendPattern('CARENZE_NOTIFICA');
   expect(first.targets).toBe(2);
@@ -498,7 +498,7 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const service = new EmailNotificationService(
       fullDeps(db, gmail, { carenze: carenzeStub, alunni: alunniStub })
     );
-    const targets = service.enumerateTargets(conf('PER_CARENZA'));
+    const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI'));
     expect(targets).toHaveLength(3);
     const noId = targets.find((t) => t.target === 'noid@x.it')!;
     expect(noId.emails).toEqual(['']);
@@ -521,7 +521,7 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const service = new EmailNotificationService(
       fullDeps(db, gmail, { carenze: carenzeStub, alunni: alunniStub, logger })
     );
-    service.enumerateTargets(conf('PER_CARENZA'));
+    service.enumerateTargets(conf('PER_CARENZA_GENITORI'));
     expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
     const warnCalls = warnMock.mock.calls.map((args: unknown[]) => args[0] as string);
     expect(warnCalls.some((msg) => msg.includes('@'))).toBe(false);

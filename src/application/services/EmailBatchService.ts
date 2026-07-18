@@ -32,7 +32,7 @@ export interface EmailBatchResult {
  * checkpoint, schedules the resume trigger and re-enters with
  * `params.resumeState`. Targets are re-enumerated on resume and consumed from
  * `nextIndex`, so the PROCESSO enumeration must be stable across runs
- * (self-marking patterns like PER_CARENZA shrink naturally via POST_PROCESSO).
+ * (self-marking patterns like PER_CARENZA_GENITORI* shrink naturally via POST_PROCESSO).
  *
  * Per-target error isolation (15 §8) already lives inside the pipeline itself:
  * `SendEmailStep` never throws, it collects failures as strings — so no

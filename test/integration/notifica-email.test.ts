@@ -20,7 +20,7 @@ function wire() {
   return { db, gmail, service };
 }
 
-test('PER_CARENZA end-to-end: boxes, genitori TO, BCC, LOG_MAIL, NOTIFICATO stamp, dedup on rerun (ref 11)', () => {
+test('PER_CARENZA_GENITORI end-to-end: boxes, genitori TO, BCC, LOG_MAIL, NOTIFICATO stamp, dedup on rerun (ref 11)', () => {
   const { db, gmail, service } = wire();
 
   const first = service.sendPattern('CARENZE_NOTIFICA');

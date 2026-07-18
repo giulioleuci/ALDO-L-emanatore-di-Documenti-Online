@@ -52,7 +52,9 @@ export const RECIPE_PER_PROCESSO: Record<ProcessoInvio, string> = {
   [ProcessoInvio.PER_CDC]: 'DOCENTE_COMPLETO',
   [ProcessoInvio.PER_ALUNNO]: 'ALUNNO_COMPLETO',
   [ProcessoInvio.PER_GENITORI_ALUNNO]: 'FAMIGLIA_COMPLETO',
-  [ProcessoInvio.PER_CARENZA]: 'CARENZA_COMPLETO'
+  [ProcessoInvio.PER_CARENZA_GENITORI]: 'CARENZA_COMPLETO',
+  [ProcessoInvio.PER_CARENZA_GENITORI_E_ALUNNO]: 'CARENZA_COMPLETO',
+  [ProcessoInvio.PER_CARENZA_GENITORI_E_COORD]: 'CARENZA_COMPLETO'
 };
 
 const sendGate = (ctx: PipelineContext): boolean => ctx.get('shouldSend') === true;

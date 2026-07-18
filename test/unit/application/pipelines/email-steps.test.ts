@@ -137,8 +137,8 @@ test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafi
   expect(d.comunicazione.salutoIniziale).toBe('Gentile Prof. ROSSI MARIO');
 });
 
-test('BuildCDUStep PER_CARENZA uses CARENZA_COMPLETO and sets carenza focus (11 §3, 02 §4.3)', () => {
-  const w = wire({ PROCESSO: 'PER_CARENZA' });
+test('BuildCDUStep PER_CARENZA_GENITORI uses CARENZA_COMPLETO and sets carenza focus (11 §3, 02 §4.3)', () => {
+  const w = wire({ PROCESSO: 'PER_CARENZA_GENITORI' });
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   expect(cdu.focus.carenza?.progressivo).toBe(1);
@@ -432,7 +432,7 @@ test('PostProcessEmailStep stamps CARENZE.NOTIFICATO only after a successful sen
       }
     }
   ]);
-  const w = wire({ PROCESSO: 'PER_CARENZA', POST_PROCESSO: post });
+  const w = wire({ PROCESSO: 'PER_CARENZA_GENITORI', POST_PROCESSO: post });
   runThroughCompose(w);
   w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
   send(w, new FakeGmailFacade());
@@ -454,7 +454,7 @@ test('PostProcessEmailStep is skipped when nothing was sent (11 §10)', () => {
       criteri: { STUDENTE: '{{focus.carenza.studente}}' }
     }
   ]);
-  const w = wire({ PROCESSO: 'PER_CARENZA', POST_PROCESSO: post });
+  const w = wire({ PROCESSO: 'PER_CARENZA_GENITORI', POST_PROCESSO: post });
   runThroughCompose(w);
   w.ctx.set('destinatariFinali', [{ emails: ['broken@x.it'] }]);
   const gmail = new FakeGmailFacade();
@@ -808,7 +808,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
         criteri: { STUDENTE: '{{focus.carenza.studente}}' }
       }
     ]);
-    const w = wire({ PROCESSO: 'PER_CARENZA', POST_PROCESSO: post });
+    const w = wire({ PROCESSO: 'PER_CARENZA_GENITORI', POST_PROCESSO: post });
     runThroughCompose(w);
     w.ctx.set('shouldSend', true); // SendEmailStep deliberately never run: sentCount stays unset
     const savedBefore = w.db.saved;

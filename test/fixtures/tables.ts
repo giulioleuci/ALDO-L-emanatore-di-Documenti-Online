@@ -203,7 +203,7 @@ export function fixtureTables(): Record<string, Row[]> {
       {
         ID: 'CARENZE_NOTIFICA',
         OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}',
-        PROCESSO: 'PER_CARENZA',
+        PROCESSO: 'PER_CARENZA_GENITORI',
         BOX_CFG:
           '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
         TESTO: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',

@@ -17,7 +17,7 @@ export interface EmailTarget {
   emails: string[];
   /** For coordinatore multi-classe: every coordinated class id (11 §12). */
   classiCompetenza: string[];
-  /** For the PER_CARENZA pipeline: the CARENZE progressivo in focus (02 §4.3). */
+  /** For the PER_CARENZA_GENITORI* pipelines: the CARENZE progressivo in focus (02 §4.3). */
   carenzaProgressivo?: number;
 }
 

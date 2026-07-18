@@ -258,7 +258,7 @@ focus.alunno:
 
 ### 4.3 `focus.carenza`
 
-Presente solo nella pipeline `PER_CARENZA`. Popolata dal `CarenzaFocusProvider` (vedi `09_CONTEXT_ENGINE.md`), attivo solo nella recipe `CARENZA_COMPLETO`.
+Presente solo nella pipeline `PER_CARENZA_GENITORI`/`PER_CARENZA_GENITORI_E_ALUNNO`/`PER_CARENZA_GENITORI_E_COORD`. Popolata dal `CarenzaFocusProvider` (vedi `09_CONTEXT_ENGINE.md`), attivo solo nella recipe `CARENZA_COMPLETO`.
 
 ```
 focus.carenza:

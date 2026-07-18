@@ -262,7 +262,9 @@ export class EmailNotificationService {
         }));
       case ProcessoInvio.PER_GENITORI_ALUNNO:
         return this.targetsPerGenitori();
-      case ProcessoInvio.PER_CARENZA:
+      case ProcessoInvio.PER_CARENZA_GENITORI:
+      case ProcessoInvio.PER_CARENZA_GENITORI_E_ALUNNO:
+      case ProcessoInvio.PER_CARENZA_GENITORI_E_COORD:
         return this.targetsPerCarenza();
     }
   }
@@ -363,7 +365,7 @@ export class EmailNotificationService {
       if (alunno === null) {
         this.logger.warn(
           PiiRedactor.redact(
-            `PER_CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`
+            `CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`
           )
         );
         continue;

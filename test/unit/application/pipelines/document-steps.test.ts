@@ -36,6 +36,13 @@ function buildCdu(db: FakeDatabase): Cdu {
   );
 }
 
+function buildAlunnoCdu(db: FakeDatabase): Cdu {
+  return ContextEngineFactory.create(db).build(
+    { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') },
+    recipe('ALUNNO_DETTAGLIATO')
+  );
+}
+
 function baseCtx(db: FakeDatabase, confIndex = 0): PipelineContext {
   const ctx = new PipelineContext();
   const row = fixtureTables().CONF_DOC[confIndex]!;
@@ -149,6 +156,31 @@ test('RegisterDocumentStep writes LOG_DOCS row with STATO GENERATO (persisted at
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
   expect(row?.STATO).toBe('GENERATO');
   expect(row?.CLASSI).toBe('5A');
+});
+
+test('RegisterDocumentStep writes LOG_DOCS.UTENTI with the alunno email when generation is alunno-scoped', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  ctx.set('cdu', buildAlunnoCdu(db));
+  ctx.set('newFileId', 'file_pdp_1');
+  ctx.set('newFileLink', 'https://drive/file_pdp_1');
+  ctx.set('nomeFile', 'PDP_a1');
+  ctx.set('destFolderPath', 'Alunni BES/5A');
+  new RegisterDocumentStep(logger, db).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_pdp_1');
+  expect(row?.UTENTI).toBe('a1@school.it');
+});
+
+test('RegisterDocumentStep leaves LOG_DOCS.UTENTI empty for classe-scoped generation', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db); // classe-scoped CDU (5A), per the existing baseCtx/buildCdu helper
+  ctx.set('newFileId', 'file_1');
+  ctx.set('newFileLink', 'https://drive/file_1');
+  ctx.set('nomeFile', 'Verbale_5A');
+  ctx.set('destFolderPath', 'Verbali/5');
+  new RegisterDocumentStep(logger, db).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
+  expect(row?.UTENTI).toBe('');
 });
 
 test('critical steps are exactly the rollback points of 10 §8', () => {

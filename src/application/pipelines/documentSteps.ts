@@ -294,6 +294,7 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',
       [COL_LOG_DOCS.LINK]: ctx.get<string>('newFileLink') ?? '',
       [COL_LOG_DOCS.CLASSI]: classeNome(ctx),
+      [COL_LOG_DOCS.UTENTI]: cdu(ctx).focus.alunno?.anagrafica.email ?? '',
       [COL_LOG_DOCS.DATA_CREAZ]: cdu(ctx).meta.date.oggi.breve
     };
     // Persisted by the service's transaction commit (10 §11).

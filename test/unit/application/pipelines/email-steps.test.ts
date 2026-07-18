@@ -139,6 +139,19 @@ test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafi
   expect(d.comunicazione.salutoIniziale).toBe('Gentile Prof. ROSSI MARIO');
 });
 
+test('BuildCDUStep forwards CONF_MAIL.SUPPLENTI as gestioneSupplenti (regression: was silently dropped when includiStorico wiring was added)', () => {
+  const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_SUPPLENTI' }, docenteTarget());
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const rossiSlot = cdu.focus.classe!.consiglioDiClasse!.find((d) =>
+    d.materie.some((m) => m.sigla === 'MATE')
+  )!;
+  // NOW (2025-11-15) is inside the rossi->bianchi->verdi supplenza chain window (see swap-supplenti.test.ts).
+  // SOLO_SUPPLENTI must swap the titolare VM for the chain-resolved supplente.
+  expect(rossiSlot.anagrafica.email).toBe('bianchi@school.it');
+  expect(rossiSlot.stato.isSupplente).toBe(true);
+});
+
 test('BuildCDUStep PER_CARENZA_GENITORI uses CARENZA_COMPLETO and sets carenza focus (11 §3, 02 §4.3)', () => {
   const w = wire({ PROCESSO: 'PER_CARENZA_GENITORI' });
   buildStep(w).execute(w.ctx);

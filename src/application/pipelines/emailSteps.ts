@@ -125,7 +125,10 @@ export class BuildCDUStep extends Step {
 
     const built = this.contextBuilder.build(
       params,
-      recipe(RECIPE_PER_PROCESSO[conf.processo], storicoOptionsFor(conf))
+      recipe(RECIPE_PER_PROCESSO[conf.processo], {
+        gestioneSupplenti: conf.supplenti,
+        ...storicoOptionsFor(conf)
+      })
     );
     built.destinatario = this.buildDestinatario(conf, t);
     this.setResult(ctx, 'cdu', built);

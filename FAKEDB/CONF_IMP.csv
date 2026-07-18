@@ -1,0 +1,4 @@
+ID,TARGET,CONFIG,ATTIVO
+IMPORT_ALUNNI,ALUNNI,"{""fileId"":""1IMPORT_SOURCE_ALUNNI_000000000000000"",""searchStrategy"":""FILE_SINGOLO"",""searchPattern"":"""",""map"":{""Email"":""EMAIL"",""Cognome e nome"":""COGNOMENOME"",""Classe"":""CLASSE""},""key"":[""EMAIL""],""conflictResolution"":""OVERWRITE"",""timestampField"":""DATA_MODIFICA""}",TRUE
+IMPORT_CARENZE,CARENZE,"{""fileId"":null,""searchStrategy"":""CERCA_CARTELLE_CLASSE"",""searchPattern"":""Pagellino_*"",""map"":{""Studente"":""STUDENTE"",""Materia"":""MAT""},""key"":[""STUDENTE"",""PROGRESSIVO""],""conflictResolution"":""TIMESTAMP"",""timestampField"":""DATA_MODIFICA""}",TRUE
+IMPORT_DOCENTI,DOCENTI,"{""fileId"":""1IMPORT_SOURCE_DOCENTI_00000000000000"",""searchStrategy"":""FILE_SINGOLO"",""searchPattern"":"""",""map"":{""Email"":""EMAIL"",""Cognome"":""COGNOME"",""Nome"":""NOME""},""key"":[""EMAIL""],""conflictResolution"":""IGNORE"",""timestampField"":""""}",FALSE

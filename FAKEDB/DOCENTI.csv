@@ -1,0 +1,23 @@
+EMAIL,COGNOME,NOME,GENERE,DIPART,ITP
+maria.bianchi@istituto.edu.it,Bianchi,Maria,F,LETTERE,FALSE
+giuseppe.russo@istituto.edu.it,Russo,Giuseppe,M,LETTERE,FALSE
+anna.ferrari@istituto.edu.it,Ferrari,Anna,F,LETTERE,FALSE
+paolo.romano@istituto.edu.it,Romano,Paolo,M,LETTERE,FALSE
+laura.colombo@istituto.edu.it,Colombo,Laura,F,LETTERE,FALSE
+marco.esposito@istituto.edu.it,Esposito,Marco,M,MATEMATICA,FALSE
+chiara.ricci@istituto.edu.it,Ricci,Chiara,F,MATEMATICA,FALSE
+giulia.rinaldi@istituto.edu.it,Rinaldi,Giulia,F,MATEMATICA,FALSE
+davide.marino@istituto.edu.it,Marino,Davide,M,SCIENZE,FALSE
+roberta.moretti@istituto.edu.it,Moretti,Roberta,F,SCIENZE,TRUE
+federica.greco@istituto.edu.it,Greco,Federica,F,LINGUE,FALSE
+andrea.leone@istituto.edu.it,Leone,Andrea,M,LINGUE,FALSE
+luca.bruno@istituto.edu.it,Bruno,Luca,M,MOTORIA,FALSE
+sara.gallo@istituto.edu.it,Gallo,Sara,F,MOTORIA,FALSE
+elena.longo@istituto.edu.it,Longo,Elena,F,MOTORIA,FALSE
+antonio.conti@istituto.edu.it,Conti,Antonio,M,RELIGIONE,FALSE
+valentina.deluca@istituto.edu.it,De Luca,Valentina,F,RELIGIONE,FALSE
+francesco.serra@istituto.edu.it,Serra,Francesco,M,RELIGIONE,FALSE
+silvia.pellegrini@istituto.edu.it,Pellegrini,Silvia,F,LETTERE,FALSE
+stefano.fontana@istituto.edu.it,Fontana,Stefano,M,SCIENZE,FALSE
+paola.villa@istituto.edu.it,Villa,Paola,F,LETTERE,FALSE
+matteo.fabbri@istituto.edu.it,Fabbri,Matteo,M,MATEMATICA,FALSE

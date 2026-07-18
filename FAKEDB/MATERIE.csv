@@ -1,0 +1,11 @@
+ID,NOME,SINTESI,COLORE_1,COLORE_2,SIMBOLO,ESAME_CFG,EVOLUZIONE
+ITA,Lingua e letteratura italiana,Italiano,#8B0000,#F5D0D0,📖,"{""prima_prova"":[""LC"",""LS""],""seconda_prova"":[]}",{}
+LAT,Lingua e cultura latina,Latino,#5C4033,#E9DCC9,🏛️,"{""prima_prova"":[],""seconda_prova"":[""LC""]}",{}
+GRE,Lingua e cultura greca,Greco,#003366,#CFE0F0,🏺,"{""prima_prova"":[],""seconda_prova"":[""LC""]}",{}
+MAT,Matematica,Matematica,#00695C,#D0F0EC,📐,"{""prima_prova"":[],""seconda_prova"":[""LS""]}",{}
+FIS,Fisica,Fisica,#4A148C,#E3D0F0,⚛️,{},{}
+SCI,Scienze naturali,Scienze,#2E7D32,#DCEFDC,🔬,{},{}
+STO,Storia,Storia,#BF360C,#F5DED0,📜,{},{}
+FIL,Filosofia,Filosofia,#4527A0,#E0D6F5,🦉,{},{}
+ING,Lingua e cultura straniera - Inglese,Inglese,#01579B,#D0EAF5,🇬🇧,{},{}
+EDF,Scienze motorie e sportive,Ed. Fisica,#E65100,#FCE0C8,⚽,{},{}

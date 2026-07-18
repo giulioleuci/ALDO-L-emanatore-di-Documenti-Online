@@ -1,0 +1,6 @@
+STUDENTE,TIPO,PARAMETRI
+giovanni.negri@studenti.istituto.edu.it,PDP_DSA,"{""diagnosi"":""Dislessia"",""strumentiCompensativi"":[""sintesi vocale"",""mappe concettuali""],""misureDispensative"":[""lettura ad alta voce""]}"
+francesco.desantis@studenti.istituto.edu.it,PDP_STRANIERI,"{""annoArrivoInItalia"":2024,""madrelingua"":""Rumeno""}"
+nicolo.rizzo@studenti.istituto.edu.it,PEI,"{""diagnosi"":""Disabilita motoria"",""obiettiviMinimi"":false,""docenteSostegno"":""roberta.moretti@istituto.edu.it""}"
+anna.battaglia@studenti.istituto.edu.it,PFP,"{""disciplinaSportiva"":""Nuoto agonistico"",""federazione"":""FIN""}"
+alessandro.ferri@studenti.istituto.edu.it,PDP_BES,"{""motivazione"":""Svantaggio socio-economico segnalato dal C.d.C.""}"

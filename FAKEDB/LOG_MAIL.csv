@@ -1,0 +1,3 @@
+PATTERN,DESTINATARI,DATA,STATO,ALLEGATI,ERRORE
+CDC_OTTOBRE,"maria.bianchi@istituto.edu.it,giuseppe.russo@istituto.edu.it",2025-10-10T08:00:00Z,SUCCESS,"{""docs"":[],""folders"":[]}",
+CONVOCAZIONE_COORDINATORI,"anna.ferrari@istituto.edu.it,chiara.ricci@istituto.edu.it",2025-11-02T08:00:00Z,ERROR,"{""docs"":[],""folders"":[]}",Indirizzo destinatario non valido

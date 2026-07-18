@@ -1,0 +1,10 @@
+CLASSE,TIPO,NOME,REFERENTE,ORE,ORE_ASL
+3BLS,ASL,PCTO - Laboratorio universitario di Fisica,davide.marino@istituto.edu.it,40,40
+4BLS,ASL,PCTO - Stage aziendale settore biomedicale,chiara.ricci@istituto.edu.it,60,60
+5ALC,ASL,PCTO - Tirocinio presso biblioteca civica,anna.ferrari@istituto.edu.it,30,30
+5B-LC,ASL,PCTO - Redazione giornale scolastico,silvia.pellegrini@istituto.edu.it,25,25
+5B-LS,ASL,PCTO - Tirocinio in laboratorio chimico,davide.marino@istituto.edu.it,35,35
+5ALC,ORIENTAMENTO,Open Day Universita - Facolta umanistiche,andrea.leone@istituto.edu.it,8,0
+5B-LC,ORIENTAMENTO,Salone dello studente,andrea.leone@istituto.edu.it,6,0
+5B-LS,ORIENTAMENTO,Open Day Politecnico,andrea.leone@istituto.edu.it,8,0
+2ALC,ALTRO,Progetto teatro scolastico,Compagnia Teatrale Esterna APS,15,0

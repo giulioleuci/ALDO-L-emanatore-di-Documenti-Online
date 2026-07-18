@@ -96,7 +96,7 @@ Anche `PER_ALUNNO` (→ `ALUNNO_COMPLETO`) **non include `documenti`**: solo
 
 ## 3. `TIPO_BOX` disponibili
 
-`DEFAULT_TITLES` elenca i sei tipi registrati (`src/application/email/boxes.ts:292-299`).
+`DEFAULT_TITLES` elenca gli otto tipi registrati (`src/application/email/boxes.ts:380-389`).
 Per ciascuno: percorso CDU letto, quando è non-vuoto, esempio minimo.
 
 ### `carenze`
@@ -209,7 +209,7 @@ Ogni elemento dell'array `BOX_CFG` è un oggetto JSON con queste chiavi:
 
 | Chiave | Tipo | Obbligatoria | Effetto | Riga |
 |---|---|---|---|---|
-| `TIPO_BOX` | string | sì | uno dei sei tipi di §3; elementi con `TIPO_BOX` sconosciuto/vuoto vengono scartati silenziosamente | `boxes.ts:351-355` |
+| `TIPO_BOX` | string | sì | uno degli otto tipi di §3; elementi con `TIPO_BOX` sconosciuto/vuoto vengono scartati silenziosamente | `boxes.ts:351-355` |
 | `TITOLO` | string | no | titolo mostrato nel contenitore standard; se assente/vuoto usa `DEFAULT_TITLES[tipo]` (per `testo_dinamico` il default è `''`, quindi niente `<h3>`, vedi `wrapBox`) | `boxes.ts:395,397` |
 | `ORDINE` | number | no | ordine di rendering; senza `ORDINE` si usa l'indice nell'array `BOX_CFG` | `boxes.ts:368,380-384` |
 | `PREREQUISITI` | string | no | condizione di visibilità passata al `VisibilityEvaluator` di `ComposableContentLib`; stringa vuota ⇒ `'always'` (sempre visibile) | `boxes.ts:363,367` — **la sintassi concreta dell'espressione è definita dalla libreria e non è documentata con un esempio in `GasLibraryFactory/DOCS_LIBS/ComposableContentLib_docs.md` (solo descritta a parole: "regole di visibilità basate su espressioni")**. Non inventare qui una sintassi: se serve `PREREQUISITI`, verificarla contro il codice sorgente di `ComposableContentLib` (L4) prima di scriverla in produzione. |

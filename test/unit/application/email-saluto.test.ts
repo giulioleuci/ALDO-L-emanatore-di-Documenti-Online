@@ -53,3 +53,23 @@ test('zero recipients falls back to Gentile Utente (11 §6)', () => {
 test('missing entity falls back to Gentili Destinatari for non-uniform multiples', () => {
   expect(salutoPerTarget(target('docente', ['x@x.it']), null, null)).toBe('Gentili Destinatari');
 });
+
+test('salutoPerTarget: genitori_alunno greets both parents and the student by name', () => {
+  const a = Alunno.fromData({
+    EMAIL: 'a1@school.it',
+    COGNOMENOME: 'VERDI ANNA',
+    CLASSE: '5A',
+    ATTIVO: true
+  });
+  const saluto = salutoPerTarget(
+    target('genitori_alunno', ['g@x.it', 'a1@school.it']),
+    null,
+    a
+  );
+  expect(saluto).toBe('Gentili Genitori e VERDI ANNA');
+});
+
+test('salutoPerTarget: genitori_alunno falls back to "Gentili Destinatari" when alunno is null', () => {
+  const saluto = salutoPerTarget(target('genitori_alunno', ['g@x.it']), null, null);
+  expect(saluto).toBe('Gentili Destinatari');
+});

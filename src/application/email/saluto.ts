@@ -7,7 +7,7 @@ import type { Alunno } from '../../domain/entities/Alunno';
  * the candidate addresses before supplente resolution (11 §7).
  */
 export interface EmailTarget {
-  tipo: 'docente' | 'cdc' | 'alunno' | 'genitori';
+  tipo: 'docente' | 'cdc' | 'alunno' | 'genitori' | 'genitori_alunno';
   tipoTarget: 'classe' | 'alunno';
   /** ClasseId value or alunno email — the CDU build entry point. */
   target: string;
@@ -37,6 +37,8 @@ export function salutoPerTarget(
   switch (target.tipo) {
     case 'genitori':
       return 'Gentili Genitori';
+    case 'genitori_alunno':
+      return alunno === null ? 'Gentili Destinatari' : `Gentili Genitori e ${alunno.cognomeNome}`;
     case 'cdc':
       return 'Gentili Docenti';
     case 'docente':

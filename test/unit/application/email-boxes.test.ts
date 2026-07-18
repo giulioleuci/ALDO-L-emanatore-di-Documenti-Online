@@ -383,6 +383,33 @@ test('piani_pers_da_inviare: lists only non-notificato items, default historical
   expect(out.boxes['piani_pers_da_inviare']!.html).toContain('http://d/old');
 });
 
+test('piani_pers_da_inviare: escapes hostile sottotipo/studente.nomeCompleto in the default-template (historical) path', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord(
+    [
+      {
+        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: '<script>alert(1)</script>',
+        idGen: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        studente: { nomeCompleto: '<img src=x onerror=alert(1)>', email: 'a1@school.it' }
+      }
+    ],
+    new LazyRef(() => [])
+  );
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'piani_pers_da_inviare' }]),
+    cdu,
+    materie(),
+    templates
+  );
+  const html = out.boxes['piani_pers_da_inviare']!.html;
+  expect(html).not.toContain('<script>alert(1)</script>');
+  expect(html).not.toContain('<img src=x onerror=alert(1)>');
+  expect(html).toContain('&lt;script&gt;');
+  expect(html).toContain('&lt;img');
+});
+
 test('piani_pers_inviati: lists only notificato items, no historical block by default', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);

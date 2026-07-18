@@ -240,7 +240,15 @@ function renderPianiPersBox(
     .map((corrente) => {
       const storicoCorrente = storico.filter((s) => s.tipo === corrente.idGen).map(escapeNomeLink);
       return templates.processString(templateRiga, {
-        corrente: { ...corrente, nome: escapeHtml(corrente.nome), link: escapeHtml(safeUrl(corrente.link)) },
+        corrente: {
+          ...corrente,
+          nome: escapeHtml(corrente.nome),
+          link: escapeHtml(safeUrl(corrente.link)),
+          sottotipo: escapeHtml(corrente.sottotipo),
+          ...(corrente.studente !== undefined
+            ? { studente: { ...corrente.studente, nomeCompleto: escapeHtml(corrente.studente.nomeCompleto) } }
+            : {})
+        },
         storico: storicoCorrente
       });
     })

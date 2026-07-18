@@ -153,6 +153,26 @@ test('PER_CARENZA_GENITORI: one target per non-notified CARENZE row; tutors firs
   expect(a2.emails.sort()).toEqual(['genitore2@x.it', 'genitore3@x.it']);
 });
 
+test('PER_CARENZA_GENITORI_E_ALUNNO: one shared target per non-notified CARENZE row, tutors + alunno', () => {
+  const { service } = wire();
+  const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI_E_ALUNNO'));
+  expect(targets).toHaveLength(2);
+  const a1 = targets.find((t) => t.target === 'a1@school.it')!;
+  expect(a1.tipo).toBe('genitori_alunno');
+  expect(a1.emails.sort()).toEqual(['a1@school.it', 'genitore1@x.it']);
+  expect(a1.carenzaProgressivo).toBe(1);
+});
+
+test('PER_CARENZA_GENITORI_E_COORD: parents in To, class coordinatore in Cc', () => {
+  const { service } = wire();
+  const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI_E_COORD'));
+  expect(targets).toHaveLength(2);
+  const a1 = targets.find((t) => t.target === 'a1@school.it')!;
+  expect(a1.tipo).toBe('genitori');
+  expect(a1.emails).toEqual(['genitore1@x.it']);
+  expect(a1.cc).toEqual(['rossi@school.it']); // 5A coordinatore (fixture)
+});
+
 // --- sendPattern end-to-end orchestration ---
 
 test('sendPattern PER_CDC sends one email per class with supervisore BCC (11 §2)', () => {

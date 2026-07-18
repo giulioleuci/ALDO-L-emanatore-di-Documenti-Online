@@ -9,6 +9,7 @@ import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { Classe } from '../../domain/entities/Classe';
+import type { Alunno } from '../../domain/entities/Alunno';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
@@ -263,10 +264,37 @@ export class EmailNotificationService {
       case ProcessoInvio.PER_GENITORI_ALUNNO:
         return this.targetsPerGenitori();
       case ProcessoInvio.PER_CARENZA_GENITORI:
+        return this.targetsPerCarenza((alunno) => ({
+          tipo: 'genitori' as const,
+          emails: this.tutorEmailsOrFallback(alunno)
+        }));
       case ProcessoInvio.PER_CARENZA_GENITORI_E_ALUNNO:
+        return this.targetsPerCarenza((alunno) => ({
+          tipo: 'genitori_alunno' as const,
+          emails: [...alunno.getTutors().map((t) => t.value), alunno.id ?? '']
+        }));
       case ProcessoInvio.PER_CARENZA_GENITORI_E_COORD:
-        return this.targetsPerCarenza();
+        return this.targetsPerCarenza((alunno) => {
+          const classe = this.deps.classi.findById(alunno.classeId);
+          const cc =
+            classe !== null
+              ? this.deps.classi
+                  .getCoordinatori(classe)
+                  .map((d) => d.id ?? '')
+                  .filter((e) => e !== '')
+              : [];
+          return {
+            tipo: 'genitori' as const,
+            emails: this.tutorEmailsOrFallback(alunno),
+            ...(cc.length > 0 ? { cc } : {})
+          };
+        });
     }
+  }
+
+  private tutorEmailsOrFallback(alunno: Alunno): string[] {
+    const tutors = alunno.getTutors().map((t) => t.value);
+    return tutors.length > 0 ? tutors : [alunno.id ?? ''];
   }
 
   /**
@@ -357,27 +385,32 @@ export class EmailNotificationService {
     return [...perFamiglia.values()];
   }
 
-  /** One email per non-notified CARENZE row; genitore priority, alunno fallback (11 §3). */
-  private targetsPerCarenza(): EmailTarget[] {
+  /**
+   * One shared-shape email per non-notified CARENZE row (11 §3): shared across
+   * all three PER_CARENZA_GENITORI* processes, which differ only in recipient
+   * composition (`buildRecipients`, e.g. tipo/emails/cc).
+   */
+  private targetsPerCarenza(
+    buildRecipients: (alunno: Alunno) => { tipo: EmailTarget['tipo']; emails: string[]; cc?: string[] }
+  ): EmailTarget[] {
     const targets: EmailTarget[] = [];
     for (const carenza of this.deps.carenze.findNonNotificate()) {
       const alunno = this.deps.alunni.findById(carenza.studente);
       if (alunno === null) {
         this.logger.warn(
-          PiiRedactor.redact(
-            `CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`
-          )
+          PiiRedactor.redact(`CARENZA: alunno ${carenza.studente} non trovato — carenza saltata`)
         );
         continue;
       }
-      const tutors = alunno.getTutors().map((t) => t.value);
+      const { tipo, emails, cc } = buildRecipients(alunno);
       targets.push({
-        tipo: 'genitori',
+        tipo,
         tipoTarget: 'alunno',
         target: carenza.studente,
-        emails: tutors.length > 0 ? tutors : [alunno.id ?? ''],
+        emails,
         classiCompetenza: [],
-        carenzaProgressivo: carenza.progressivo
+        carenzaProgressivo: carenza.progressivo,
+        ...(cc !== undefined ? { cc } : {})
       });
     }
     return targets;

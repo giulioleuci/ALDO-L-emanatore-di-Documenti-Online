@@ -248,9 +248,9 @@ test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and omits noReply block w
 
 // --- Step 5: ResolveRecipientsStep ---
 
-function resolve(w: Wiring): Array<{ emails: string[] }> {
+function resolve(w: Wiring): Array<{ emails: string[]; cc?: string[] }> {
   new ResolveRecipientsStep(logger, w.docenti, new SupplenzaRepository(w.db)).execute(w.ctx);
-  return w.ctx.get<Array<{ emails: string[] }>>('destinatariFinali')!;
+  return w.ctx.get<Array<{ emails: string[]; cc?: string[] }>>('destinatariFinali')!;
 }
 
 test('SOLO_TITOLARI keeps the titolare (11 §7)', () => {
@@ -282,6 +282,20 @@ test('genitori/cdc targets are single multi-TO destinations not subject to SUPPL
   expect(resolve(w)).toEqual([{ emails: ['genitore1@x.it'] }]);
 });
 
+test('ResolveRecipientsStep passes EmailTarget.cc through for non-docente targets', () => {
+  const w = wire({}, {
+    tipo: 'genitori',
+    tipoTarget: 'alunno',
+    target: 'a1@school.it',
+    emails: ['genitore1@x.it'],
+    cc: ['coord@x.it'],
+    classiCompetenza: []
+  });
+  buildStep(w).execute(w.ctx);
+  w.ctx.set('shouldSend', true);
+  expect(resolve(w)).toEqual([{ emails: ['genitore1@x.it'], cc: ['coord@x.it'] }]);
+});
+
 // --- Step 6: SendEmailStep ---
 
 function send(w: Wiring, gmail: FakeGmailFacade): void {
@@ -300,6 +314,15 @@ test('SendEmailStep sends with supervisore BCC and noReply (11 §6/§8)', () => 
   expect(gmail.sent[0]!.noReply).toBe(true);
   expect(w.ctx.get('sentCount')).toBe(1);
   expect(w.ctx.get('sendErrors')).toEqual([]);
+});
+
+test('SendEmailStep forwards Destinazione.cc to the Gmail facade', () => {
+  const w = wire();
+  runThroughCompose(w);
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'], cc: ['coord@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.cc).toEqual(['coord@x.it']);
 });
 
 test('missing SUPERVISORE_EMAIL ⇒ WARN, send proceeds without BCC (11 §6 nota)', () => {

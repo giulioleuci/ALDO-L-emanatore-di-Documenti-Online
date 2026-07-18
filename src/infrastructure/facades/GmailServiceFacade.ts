@@ -9,6 +9,7 @@ export interface EmailSendOptions {
   to: string[];
   subject: string;
   htmlBody: string;
+  cc?: string[];
   bcc?: string[];
   noReply?: boolean;
   attachments?: unknown[];
@@ -33,6 +34,7 @@ export class GmailServiceFacade implements IGmailFacade {
       body: '',
       htmlBody: opts.htmlBody
     };
+    if (opts.cc !== undefined) mailOpts.cc = opts.cc;
     if (opts.bcc !== undefined) mailOpts.bcc = opts.bcc;
     if (opts.noReply !== undefined) mailOpts.noReply = opts.noReply;
     if (opts.attachments !== undefined) mailOpts.attachments = opts.attachments;

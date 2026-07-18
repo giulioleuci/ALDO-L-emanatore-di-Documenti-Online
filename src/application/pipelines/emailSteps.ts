@@ -43,6 +43,7 @@ import { Email } from '../../domain/value-objects/Email';
 /** One physical send: the TO list of a single message (11 §7/§8). */
 export interface Destinazione {
   emails: string[];
+  cc?: string[];
 }
 
 /** CONF_MAIL.PROCESSO → ContextEngine recipe (11 §3). */
@@ -316,7 +317,8 @@ export class ResolveRecipientsStep extends Step {
     const t = target(ctx);
     if (t.tipo !== 'docente') {
       // PER_CDC / genitori / alunno: one multi-TO message, not subject to SUPPLENTI (11 §7/§12).
-      this.setResult(ctx, 'destinatariFinali', [{ emails: t.emails }] satisfies Destinazione[]);
+      const dest: Destinazione = t.cc !== undefined ? { emails: t.emails, cc: t.cc } : { emails: t.emails };
+      this.setResult(ctx, 'destinatariFinali', [dest] satisfies Destinazione[]);
       return;
     }
     const titolare = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
@@ -385,6 +387,7 @@ export class SendEmailStep extends Step {
         attachments: ctx.get<unknown[]>('allegati') ?? []
       };
       if (supervisore !== null) opts.bcc = [supervisore];
+      if (dest.cc !== undefined) opts.cc = dest.cc;
       const result = this.gmail.sendEmail(opts);
       if (result.success) {
         sent += 1;

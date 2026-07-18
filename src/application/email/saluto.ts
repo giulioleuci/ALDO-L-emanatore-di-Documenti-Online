@@ -19,6 +19,8 @@ export interface EmailTarget {
   classiCompetenza: string[];
   /** For the PER_CARENZA_GENITORI* pipelines: the CARENZE progressivo in focus (02 §4.3). */
   carenzaProgressivo?: number;
+  /** Cc-only addresses for the PER_CARENZA_GENITORI_E_COORD pattern (coordinatore, not part of the greeting). */
+  cc?: string[];
 }
 
 /**

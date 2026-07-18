@@ -15,6 +15,8 @@ import { StoricoProvider } from './providers/StoricoProvider';
 import { DocumentiStoricoProvider } from './providers/DocumentiStoricoProvider';
 import { PianiPersAlunnoProvider } from './providers/PianiPersAlunnoProvider';
 import { PianiPersAlunnoStoricoProvider } from './providers/PianiPersAlunnoStoricoProvider';
+import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
+import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { createSupplentiSubstitutionLookup } from './interceptors/SupplentiSubstitutionLookup';
 import { CdcAssembler } from './CdcAssembler';
@@ -94,6 +96,8 @@ export class ContextEngineFactory {
       .registerProvider('storico', new StoricoProvider(storicoDb))
       .registerProvider('documentiStorico', new DocumentiStoricoProvider(storicoDb))
       .registerProvider('pianiPersAlunno', new PianiPersAlunnoProvider(logDocs))
-      .registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(storicoDb));
+      .registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(storicoDb))
+      .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni))
+      .registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(storicoDb));
   }
 }

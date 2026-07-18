@@ -411,7 +411,8 @@ export class SendEmailStep extends Step {
         attachments: ctx.get<unknown[]>('allegati') ?? []
       };
       if (supervisore !== null) opts.bcc = [supervisore];
-      if (dest.cc !== undefined) opts.cc = dest.cc;
+      // Test-send mode redirects `to` to the tester; a real cc recipient must not leak alongside it (11 §15).
+      if (dest.cc !== undefined && testEmail === null) opts.cc = dest.cc;
       const result = this.gmail.sendEmail(opts);
       if (result.success) {
         sent += 1;

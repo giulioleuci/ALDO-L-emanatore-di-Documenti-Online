@@ -436,6 +436,17 @@ test('test mode redirects every send to the test address (11 §15)', () => {
   expect(gmail.sent.map((s) => s.to)).toEqual([['tester@x.it'], ['tester@x.it']]);
 });
 
+test('test mode suppresses cc so a real coordinatore is never leaked during a preview send (11 §15)', () => {
+  const w = wire();
+  runThroughCompose(w);
+  w.ctx.set('testEmail', 'tester@x.it');
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'], cc: ['coord@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.to).toEqual(['tester@x.it']);
+  expect(gmail.sent[0]!.cc).toBeUndefined();
+});
+
 test('send failure is collected, does not break the pipeline (11 §8)', () => {
   const w = wire();
   runThroughCompose(w);

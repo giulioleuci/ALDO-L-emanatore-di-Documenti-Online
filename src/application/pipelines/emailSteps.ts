@@ -1,6 +1,6 @@
 import type { Cdu, CduDestinatario } from '../context-engine/Cdu';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
-import type { BuildParams } from '../context-engine/Recipe';
+import type { BuildParams, RecipeOptions } from '../context-engine/Recipe';
 import type { EmailTarget } from '../email/saluto';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
@@ -58,6 +58,26 @@ export const RECIPE_PER_PROCESSO: Record<ProcessoInvio, string> = {
   [ProcessoInvio.PER_CARENZA_GENITORI_E_COORD]: 'CARENZA_COMPLETO'
 };
 
+const HISTORICAL_BOX_TYPES: ReadonlySet<string> = new Set([
+  'documenti',
+  'cartelle',
+  'piani_pers_da_inviare'
+]);
+/** piani_pers_da_inviare wants historical enrichment by default (11 §11 new); the others only when explicitly configured. */
+const DEFAULT_ON_BOX_TYPES: ReadonlySet<string> = new Set(['piani_pers_da_inviare']);
+
+/** Derives includiStorico/profonditaAnniDocumenti from BOX_CFG (fixes the gap where these recipe options were never wired through the email pipeline). */
+function storicoOptionsFor(conf: ConfigurazioneEmail): Partial<RecipeOptions> {
+  const wants = conf.getBoxes().some((b) => {
+    const tipo = typeof b['TIPO_BOX'] === 'string' ? b['TIPO_BOX'] : '';
+    if (!HISTORICAL_BOX_TYPES.has(tipo)) return false;
+    const explicit = b['arricchisciConStorico'];
+    if (typeof explicit === 'boolean') return explicit;
+    return DEFAULT_ON_BOX_TYPES.has(tipo);
+  });
+  return wants ? { includiStorico: true, profonditaAnniDocumenti: 1 } : {};
+}
+
 const sendGate = (ctx: PipelineContext): boolean => ctx.get('shouldSend') === true;
 
 function cfg(ctx: PipelineContext): Row {
@@ -105,7 +125,7 @@ export class BuildCDUStep extends Step {
 
     const built = this.contextBuilder.build(
       params,
-      recipe(RECIPE_PER_PROCESSO[conf.processo], { gestioneSupplenti: conf.supplenti })
+      recipe(RECIPE_PER_PROCESSO[conf.processo], storicoOptionsFor(conf))
     );
     built.destinatario = this.buildDestinatario(conf, t);
     this.setResult(ctx, 'cdu', built);

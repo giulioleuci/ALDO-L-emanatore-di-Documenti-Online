@@ -171,6 +171,48 @@ test('BuildCDUStep copies EmailTarget.classiCompetenza into BuildParams', () => 
   expect(capturedParams?.classiCompetenza).toEqual(['5A', '1F']);
 });
 
+test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {
+  const w = wire({
+    BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', arricchisciConStorico: true }])
+  }); // default PROCESSO PER_GENITORI_ALUNNO, default target genitoriTarget()
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
+});
+
+test('BuildCDUStep enables includiStorico by default for piani_pers_da_inviare even with no explicit key', () => {
+  const w = wire(
+    { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }]) },
+    docenteTarget()
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
+});
+
+test('BuildCDUStep leaves includiStorico false when no box wants historical data', () => {
+  const w = wire(
+    { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>hi</p>' }]) },
+    docenteTarget()
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(false);
+});
+
+test('BuildCDUStep respects an explicit arricchisciConStorico:false override on piani_pers_da_inviare', () => {
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', arricchisciConStorico: false }])
+    },
+    docenteTarget()
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(false);
+});
+
 // --- Step 2: ValutaCondizioniInvioStep ---
 
 test('empty CONDIZIONE ⇒ shouldSend true (11 §4)', () => {

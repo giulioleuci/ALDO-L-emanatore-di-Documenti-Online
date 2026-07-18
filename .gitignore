@@ -6,3 +6,8 @@ coverage/
 .remember/
 
 .superpowers/
+
+scripts/email-examples/
+
+GasLibraryFactory/
+.antigravitycli/

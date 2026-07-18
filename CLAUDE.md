@@ -8,7 +8,7 @@ This is an **implementation workspace**, not a single codebase. The task is to b
 
 Two top-level directories:
 
-- **`SPECS_ALDO/`** — The authoritative design spec for SGSA (17 Markdown files, **written in Italian**). This describes the domain, database, and services to be _implemented_. As of now the application itself is largely unimplemented; these documents are the blueprint.
+- **`SPECS_ALDO/`** — The authoritative design spec for SGSA (Markdown files, **written in Italian**).
 - **`GasLibraryFactory/`** — A mature, self-contained monorepo of 16 Google Apps Script libraries (its own git repo, build, and tests). SGSA _references and extends_ these libraries; it must not reimplement functionality they already provide. This directory has **its own `CLAUDE.md`** with deep detail on the build pipeline, GAS V8 compatibility patches, source maps, and library-debugging workflow — read it before touching library source. You MUST **ONLY** use the docs in `GasLibraryFactory/DOCS_LIBS` and not read the library code if not extremely necessary.
 
 `src/` (this repo's actual application code), `test/`, and the build tooling below are the implementation of SGSA itself, layered on top of those two reference directories.

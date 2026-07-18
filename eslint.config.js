@@ -53,8 +53,11 @@ export default tseslint.config(
   },
   // Root JS/CJS tooling files are not part of the tsconfig project graph;
   // lint them without type-aware rules so `eslint .` doesn't choke on parserOptions.project resolution.
+  // scripts/email-examples/**/*.ts is the same situation for a gitignored, non-shipped
+  // dev tool (regenerates HTML_EXAMPLE/*.html) that intentionally isn't part of
+  // tsconfig.eslint.json's src/**+test/** scope.
   {
-    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs', 'test/**/*.cjs'],
+    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs', 'test/**/*.cjs', 'scripts/email-examples/**/*.ts'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: { globals: { ...globals.node } }
   },

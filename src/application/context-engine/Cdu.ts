@@ -45,6 +45,20 @@ export interface AlunnoContestoVM {
   };
 }
 
+/** One row of `focus.alunno.didattica.pianiPersonalizzati.items` / `focus.classe.didattica.pianiPersonalizzati.items` (11 §11 new). */
+export interface PianoPersonalizzatoItem {
+  nome: string;
+  link: string;
+  tipo: string;
+  sottotipo: string;
+  idGen: string;
+  stato: string;
+  dataCreazione: string;
+  notificato: boolean;
+  /** Only set by the classe-scoped provider — multiple students appear in one class-wide list. */
+  studente?: { nomeCompleto: string; email: string };
+}
+
 export interface CduMeta {
   timestamp: string;
   idConfigurazione: string;
@@ -140,6 +154,14 @@ export interface CduClasse {
     indirizziPresenti?: string[];
     perSpecificita?: Record<string, Record<string, AlunnoContestoVM[]>>;
   };
+  didattica?: {
+    pianiPersonalizzati: {
+      items: PianoPersonalizzatoItem[];
+      storico?: import('../storico/LazyRef').LazyRef<
+        import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
+      >;
+    };
+  };
 }
 
 export interface CduAlunno {
@@ -171,6 +193,12 @@ export interface CduAlunno {
       }>;
       hasDocumenti: boolean;
       /** Lazy prior-year documents grouped by ID_GEN at render time (11 §11 arricchisciConStorico, 13 §4). */
+      storico?: import('../storico/LazyRef').LazyRef<
+        import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
+      >;
+    };
+    pianiPersonalizzati?: {
+      items: PianoPersonalizzatoItem[];
       storico?: import('../storico/LazyRef').LazyRef<
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;

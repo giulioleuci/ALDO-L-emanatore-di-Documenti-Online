@@ -37,7 +37,7 @@ All three `PER_CARENZA*` values map to `CARENZA_COMPLETO` in `RECIPE_PER_PROCESS
 
 - `targetsPerCarenzaGenitori()` — unchanged logic (parents only, alunno-email fallback if no tutors)
 - `targetsPerCarenzaGenitoriEAlunno()` — same base, `emails = [...tutors, alunno.id]`, `tipo: 'genitori_alunno'`
-- `targetsPerCarenzaGenitoriECoord()` — same base, `emails = tutors` (or alunno fallback), plus `cc = [coordinatore emails for alunno's classe]` resolved via `this.deps.classi.getCoordinatori(classe)` (same call `targetsPerCoordinatore` already uses)
+- `targetsPerCarenzaGenitoriECoord()` — same base, `emails = tutors`, plus `cc = [coordinatore emails for alunno's classe]` resolved via `this.deps.classi.getCoordinatori(classe)` (same call `targetsPerCoordinatore` already uses)
 
 ### 2.3 CC plumbing (new capability, backed by an existing library feature)
 
@@ -50,7 +50,7 @@ All three `PER_CARENZA*` values map to `CARENZA_COMPLETO` in `RECIPE_PER_PROCESS
 
 ### 2.4 Greeting
 
-`salutoPerTarget` (`saluto.ts:29-47`) gains a `tipo: 'genitori_alunno'` case (e.g. `'Gentili Genitori e Studente'`). `EmailTarget.tipo` union extends to include it. The `PER_CARENZA_GENITORI_E_COORD` target keeps `tipo: 'genitori'` (only the To list; the coordinator is Cc-only, not part of the greeting).
+`salutoPerTarget` (`saluto.ts:29-47`) gains a `tipo: 'genitori_alunno'` case (e.g. `'Gentili Genitori e {{placeholder:NOME_ALUNNO}}'`). `EmailTarget.tipo` union extends to include it. The `PER_CARENZA_GENITORI_E_COORD` target keeps `tipo: 'genitori'` (only the To list; the coordinator is Cc-only, not part of the greeting).
 
 ### 2.5 Rename fallout
 
@@ -66,7 +66,7 @@ All three `PER_CARENZA*` values map to `CARENZA_COMPLETO` in `RECIPE_PER_PROCESS
 
 ### 3.2 Identifying personalized-plan documents
 
-`LOG_DOCS.TIPO === 'PIANO_PERS'` — the categorical convention `CONF_DOC.TIPO` already uses for `PDP_BES`/`PEI_DOC` (fixture-verified), mirroring how the existing `documenti`/`cartelle` boxes already split on `TIPO === 'CARTELLA'` (`boxes.ts:332-333`).
+`LOG_DOCS.TIPO === 'PIANO_PERS'` — the categorical convention `CONF_DOC.TIPO`, mirroring how the existing `documenti`/`cartelle` boxes already split on `TIPO === 'CARTELLA'` (`boxes.ts:332-333`).
 
 ### 3.3 New CDU fields (`src/application/context-engine/Cdu.ts`)
 

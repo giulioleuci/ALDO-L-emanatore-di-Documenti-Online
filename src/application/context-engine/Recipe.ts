@@ -120,7 +120,15 @@ export const RECIPES: Record<string, string[]> = {
     'storico'
   ],
   DOCENTE_COMPLETO: ['school', 'class', 'consiglio'],
-  ALUNNO_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani'],
+  ALUNNO_COMPLETO: [
+    'school',
+    'class',
+    'student',
+    'carenze',
+    'piani',
+    'pianiPersAlunno',
+    'pianiPersAlunnoStorico'
+  ],
   FAMIGLIA_COMPLETO: [
     'school',
     'class',
@@ -128,7 +136,9 @@ export const RECIPES: Record<string, string[]> = {
     'carenze',
     'piani',
     'documenti',
-    'documentiStorico'
+    'documentiStorico',
+    'pianiPersAlunno',
+    'pianiPersAlunnoStorico'
   ],
   CARENZA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'carenzaFocus']
 };

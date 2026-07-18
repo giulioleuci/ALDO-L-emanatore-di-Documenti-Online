@@ -36,6 +36,8 @@ export interface BuildParams {
   materiaCorrente?: string | null;
   /** For the PER_CARENZA_GENITORI* pipelines: which CARENZE progressivo of the student is in focus (02 §4.3). */
   carenzaProgressivo?: number;
+  /** Every class the email target is responsible for (11 §12) — feeds classe-wide providers like PianiPersClasseProvider. */
+  classiCompetenza?: string[];
 }
 
 export const DEFAULT_OPTIONS: RecipeOptions = {

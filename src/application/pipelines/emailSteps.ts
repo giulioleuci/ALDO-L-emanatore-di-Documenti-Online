@@ -101,6 +101,7 @@ export class BuildCDUStep extends Step {
     };
     if (conf.id !== null) params.idConfigurazione = conf.id;
     if (t.carenzaProgressivo !== undefined) params.carenzaProgressivo = t.carenzaProgressivo;
+    if (t.classiCompetenza.length > 0) params.classiCompetenza = t.classiCompetenza;
 
     const built = this.contextBuilder.build(
       params,

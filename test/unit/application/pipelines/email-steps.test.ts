@@ -14,6 +14,8 @@ import { Alunno } from '../../../../src/domain/entities/Alunno';
 import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
 import type { EmailTarget } from '../../../../src/application/email/saluto';
+import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
+import type { ContextBuilder } from '../../../../src/application/context-engine/ContextBuilder';
 import { ExpressionEngineFacade } from '../../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { DocenteRepository } from '../../../../src/infrastructure/repositories/DocenteRepository';
 
@@ -143,6 +145,30 @@ test('BuildCDUStep PER_CARENZA_GENITORI uses CARENZA_COMPLETO and sets carenza f
   const cdu = w.ctx.get<Cdu>('cdu')!;
   expect(cdu.focus.carenza?.progressivo).toBe(1);
   expect(cdu.focus.carenza?.hasAssenze).toBe(true);
+});
+
+test('BuildCDUStep copies EmailTarget.classiCompetenza into BuildParams', () => {
+  const w = wire(
+    { PROCESSO: 'PER_COORDINATORE' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '5A',
+      docenteEmail: 'rossi@school.it',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['5A', '1F']
+    }
+  );
+  const real = ContextEngineFactory.create(w.db);
+  let capturedParams: BuildParams | undefined;
+  const spyBuilder = {
+    build: (params: BuildParams, r: Recipe) => {
+      capturedParams = params;
+      return real.build(params, r);
+    }
+  } as ContextBuilder;
+  new BuildCDUStep(logger, spyBuilder, w.docenti, w.alunni).execute(w.ctx);
+  expect(capturedParams?.classiCompetenza).toEqual(['5A', '1F']);
 });
 
 // --- Step 2: ValutaCondizioniInvioStep ---

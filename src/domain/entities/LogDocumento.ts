@@ -77,6 +77,9 @@ export class LogDocumento extends AldoEntity {
   getClassi(): string[] {
     return csv(this.raw[COL_LOG_DOCS.CLASSI]);
   }
+  getUtenti(): string[] {
+    return csv(this.raw[COL_LOG_DOCS.UTENTI]);
+  }
 
   /** Updates STATO (transition validation is the service's job, ref 04 §18). Marks dirty. */
   cambiaStato(nuovoStato: StatoDocumento): void {

@@ -41,7 +41,8 @@ Entità: `src/domain/entities/ConfigurazioneEmail.ts:15-93`. Colonne: `COL_CONF_
 | `POST_PROCESSO` | string (JSON) \| null | Azioni post-invio (es. timbratura `NOTIFICATO`), eseguite solo dopo almeno un invio riuscito | `emailSteps.ts:440-466` (fuori scope di questa guida, che copre solo `BOX_CFG`) |
 
 `PROCESSO` (enum `ProcessoInvio`, `enums.ts:63-70`): `PER_COORDINATORE`, `PER_DOCENTE`,
-`PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA`.
+`PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`,
+`PER_CARENZA_GENITORI_E_COORD`.
 
 `SUPPLENTI` (enum `GestioneSupplenti`, `enums.ts:71-75`): `SOLO_TITOLARI`, `SOLO_SUPPLENTI`,
 `ENTRAMBI`.
@@ -60,9 +61,13 @@ export const RECIPE_PER_PROCESSO: Record<ProcessoInvio, string> = {
   [ProcessoInvio.PER_CDC]: 'DOCENTE_COMPLETO',
   [ProcessoInvio.PER_ALUNNO]: 'ALUNNO_COMPLETO',
   [ProcessoInvio.PER_GENITORI_ALUNNO]: 'FAMIGLIA_COMPLETO',
-  [ProcessoInvio.PER_CARENZA]: 'CARENZA_COMPLETO'
+  [ProcessoInvio.PER_CARENZA_GENITORI]: 'CARENZA_COMPLETO',
+  [ProcessoInvio.PER_CARENZA_GENITORI_E_ALUNNO]: 'CARENZA_COMPLETO',
+  [ProcessoInvio.PER_CARENZA_GENITORI_E_COORD]: 'CARENZA_COMPLETO'
 };
 ```
+
+The three `PER_CARENZA_GENITORI*` processes differ only in recipient composition (`EmailNotificationService.targetsPerCarenza`, 12 §3) — `_GENITORI` is parents only, `_E_ALUNNO` adds the student To, `_E_COORD` adds the class coordinatore Cc. All three only ever use `carenze`/`note`/`assenze` boxes.
 
 Le recipe stesse (`src/application/context-engine/Recipe.ts:100-132`):
 
@@ -138,10 +143,10 @@ Per ciascuno: percorso CDU letto, quando è non-vuoto, esempio minimo.
 ### `note`
 
 - Legge: `focus.carenza.note` (stringa) — popolato **solo** da `CarenzaFocusProvider`,
-  attivo solo in `CARENZA_COMPLETO` (`PER_CARENZA`) (`boxes.ts:246`,
+  attivo solo in `CARENZA_COMPLETO` (`PER_CARENZA_GENITORI*`) (`boxes.ts:246`,
   `src/application/context-engine/providers/CarenzaFocusProvider.ts:23-31`).
 - Vuoto quando: la stringa è vuota dopo `trim()` (`boxes.ts:247`) — quindi sempre vuoto
-  fuori da `PER_CARENZA` (compreso `PER_GENITORI_ALUNNO`, che non ha `carenzaFocus` nella
+  fuori da `PER_CARENZA_GENITORI*` (compreso `PER_GENITORI_ALUNNO`, che non ha `carenzaFocus` nella
   sua recipe `FAMIGLIA_COMPLETO`).
 - Testo grezzo, escapato con `escapeHtml` (`boxes.ts:187`).
 
@@ -172,6 +177,28 @@ Per ciascuno: percorso CDU letto, quando è non-vuoto, esempio minimo.
 
 ```json
 { "TIPO_BOX": "testo_dinamico", "CONTENUTO": "<p>Classe {{focus.classe.anagrafica.nome}}</p>" }
+```
+
+### `piani_pers_da_inviare` / `piani_pers_inviati`
+
+- Legge: `focus.classe.didattica.pianiPersonalizzati.items` when the recipe is `DOCENTE_COMPLETO`
+  (class-wide, each row tagged with its student), else `focus.alunno.didattica.pianiPersonalizzati.items`
+  (single student) — populated by `PianiPersClasseProvider`/`PianiPersAlunnoProvider`
+  (`src/application/context-engine/providers/`), filtered to `LOG_DOCS.TIPO === 'PIANO_PERS'`.
+- `piani_pers_da_inviare` shows items where `LOG_DOCS.NOTIFICATO` is empty; `piani_pers_inviati` shows
+  the rest.
+- Usable in `PER_COORDINATORE`/`PER_DOCENTE`/`PER_CDC` (primary; class-wide across every class in
+  `EmailTarget.classiCompetenza`) and `PER_ALUNNO`/`PER_GENITORI_ALUNNO` (optional; single student).
+  Not usable in `PER_CARENZA_GENITORI*` (those only use `carenze`/`note`/`assenze`).
+- Vuoto quando: the underlying `items` list is empty after the notificato/not-notificato filter.
+- `piani_pers_da_inviare` includes a **default** historical row ("Si invia anche il link al piano
+  dell'anno precedente...") with no BOX_CFG configuration needed — override via
+  `configArricchimento.templateRiga` (same mechanism as `documenti`) or disable with
+  `"arricchisciConStorico": false`. `piani_pers_inviati` has no historical block by default; enable
+  with `"arricchisciConStorico": true`.
+
+```json
+{ "TIPO_BOX": "piani_pers_da_inviare", "ORDINE": 1 }
 ```
 
 ---
@@ -223,6 +250,11 @@ semplice, rispettando `displayMode`) quando **almeno una** di queste è vera:
   (default: `DEFAULT_OPTIONS.includiStorico = false`, `Recipe.ts:42`) — in quel caso
   `DocumentiStoricoProvider` esce subito senza scrivere nulla
   (`src/application/context-engine/providers/DocumentiStoricoProvider.ts:20`).
+
+As of `BuildCDUStep`'s `storicoOptionsFor` fix (12 §3.6), `includiStorico` is now derived from
+`BOX_CFG` itself — a pattern with a `documenti`/`cartelle`/`piani_pers_da_inviare` box wanting
+historical enrichment gets `includiStorico: true` automatically; this was previously always
+`false` for every email sent through the real pipeline, a latent bug fixed alongside this feature.
 
 ```json
 {

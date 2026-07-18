@@ -90,7 +90,21 @@ L'unicità è imposta da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`,
 
 ### `ProcessoInvio`
 
-**Utilizzo:** `CONF_MAIL.PROCESSO`, vedi file `11_PIPELINE_EMAIL.md`
+**Utilizzo:** `CONF_MAIL.PROCESSO`
+
+| Valore                          | Destinatari                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| `PER_COORDINATORE`               | Un'email per coordinatore, aggregando tutte le sue classi                    |
+| `PER_DOCENTE`                    | Un'email per docente del CdC, aggregando tutte le sue classi                 |
+| `PER_CDC`                        | Un'email multi-TO per classe, a tutti i docenti del CdC                      |
+| `PER_ALUNNO`                     | Un'email per alunno attivo                                                   |
+| `PER_GENITORI_ALUNNO`            | Un'email per famiglia (deduplicata per set di tutori)                        |
+| `PER_CARENZA_GENITORI`           | Un'email per riga CARENZE non notificata, ai soli genitori/tutori            |
+| `PER_CARENZA_GENITORI_E_ALUNNO`  | Come sopra, TO genitori + alunno (un'unica email condivisa)                  |
+| `PER_CARENZA_GENITORI_E_COORD`   | Come `PER_CARENZA_GENITORI`, con il coordinatore di classe in CC             |
+
+Le tre varianti `PER_CARENZA_GENITORI*` condividono la stessa iterazione su `CARENZE` non notificate
+e possono usare solo i box `carenze`/`note`/`assenze`.
 
 ---
 
@@ -533,18 +547,23 @@ La chiave `regolaSupplente` controlla come le supplenze influenzano l'assegnazio
 
 ### `BoxConfig` (elemento dell'array `CONF_MAIL.BOX_CFG`)
 
-**Nota:** i valori ammessi per `DATI_SORGENTE.metodo` e `PREREQUISITI[].metodo` corrispondono ai metodi pubblici di `AggregatoreDati`; vedi la tabella di mapping in `14_SERVIZI_UTILITY.md`, sezione 2.
-
 ```json
 {
-  "TIPO_BOX": "carenze | documenti | cartelle | note | assenze | testo_dinamico",
-  "TITOLO": "string (supporta placeholder)",
+  "TIPO_BOX": "carenze | documenti | cartelle | note | assenze | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
+  "TITOLO": "string (opzionale; se assente usa il titolo di default del tipo)",
   "ORDINE": 1,
-  "DATI_SORGENTE": { "metodo": "string", "filtri": {} },
-  "PREREQUISITI": [{ "metodo": "string", "filtri": {} }],
-  "arricchisciConStorico": { "metodoArricchimento": "string", "templateRiga": "string" },
+  "PREREQUISITI": "string (espressione di visibilità per ComposableContentLib; '' = sempre visibile)",
   "MOSTRA_SE_VUOTO": false,
-  "TESTO_VUOTO": "string",
-  "CONTENUTO": "string (HTML, per testo_dinamico)"
+  "TESTO_VUOTO": "string (Mustache, valutato sull'intera CDU)",
+  "COLORE": "string hex (bordo sinistro del contenitore; default #ddd)",
+  "displayMode": "nome | link | nome+link | sololink (solo per documenti/cartelle, fallback a lista semplice)",
+  "arricchisciConStorico": true,
+  "configArricchimento": { "templateRiga": "string Mustache, contesto { corrente, storico }" },
+  "CONTENUTO": "string HTML Mustache (solo per testo_dinamico, valutato sull'intera CDU)"
 }
 ```
+
+Nota: questo schema riflette il codice effettivo (`src/application/email/boxes.ts`), non lo schema
+`DATI_SORGENTE`/`PREREQUISITI`-array più ricco descritto in `AGGIORNAMENTI_DA_FARE.md`/
+`FAKEDB/CONF_MAIL.csv` — vedi `BOX_CONF_GUIDE.md`, nota finale "Perché non `DATI_SORGENTE`", per il
+dettaglio di questa discrepanza intenzionale.

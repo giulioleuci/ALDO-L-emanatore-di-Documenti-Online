@@ -34,6 +34,21 @@ interface DocumentoItem {
   dataCreazione: string;
 }
 
+interface PianoPersonalizzatoRow {
+  nome: string;
+  link: string;
+  sottotipo: string;
+  idGen: string;
+  notificato: boolean;
+  studente?: { nomeCompleto: string; email: string };
+}
+
+const DEFAULT_PIANI_PERS_TEMPLATE =
+  '<li>{{corrente.sottotipo}}{{#corrente.studente.nomeCompleto}} — {{corrente.studente.nomeCompleto}}{{/corrente.studente.nomeCompleto}}: ' +
+  '<a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>' +
+  '{{#storico}} — Si invia anche il link al piano dell\'anno precedente: ' +
+  '<a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}}){{/storico}}</li>';
+
 /** One rendered box as exposed at `cdu.render.boxes[TIPO_BOX]` (02, 11 §5). */
 export interface RenderedBox {
   id: string;
@@ -182,6 +197,57 @@ function renderDocumentiBox(
   return wrapUl(righe);
 }
 
+/**
+ * Shared renderer for `piani_pers_da_inviare`/`piani_pers_inviati` (11 §11
+ * new): filters the shared pianiPersonalizzati item list by `notificato`,
+ * then renders each row via a Mustache template — a built-in default for
+ * `piani_pers_da_inviare` (so the historical "sent last year too" line works
+ * with zero BOX_CFG configuration), falling back to plain rows otherwise,
+ * both overridable via the existing configArricchimento.templateRiga key.
+ */
+function renderPianiPersBox(
+  data: unknown,
+  options: { config: Record<string, unknown> },
+  templates: ITemplateEngine
+): string {
+  const { items, storicoRef, defaultTemplate } = data as {
+    items: PianoPersonalizzatoRow[];
+    storicoRef?: LazyRef<DocumentoStoricoConTipo[]>;
+    defaultTemplate: string;
+  };
+  const arricchisci = options.config['arricchisciConStorico'];
+  const configArricchimento = options.config['configArricchimento'] as
+    | Record<string, unknown>
+    | undefined;
+  const explicitTemplate = str(configArricchimento?.['templateRiga']);
+  const wantsHistorical = typeof arricchisci === 'boolean' ? arricchisci : defaultTemplate !== '';
+  const templateRiga = wantsHistorical ? (explicitTemplate !== '' ? explicitTemplate : defaultTemplate) : '';
+
+  if (templateRiga === '') {
+    const righe = items
+      .map((d) => {
+        const nome = escapeHtml(d.nome);
+        const href = escapeHtml(safeUrl(d.link));
+        const chi = d.studente !== undefined ? ` — ${escapeHtml(d.studente.nomeCompleto)}` : '';
+        return `<li>${escapeHtml(d.sottotipo)}${chi}: <a href="${href}" target="_blank">${nome}</a></li>`;
+      })
+      .join('');
+    return wrapUl(righe);
+  }
+
+  const storico = storicoRef?.get() ?? [];
+  const righe = items
+    .map((corrente) => {
+      const storicoCorrente = storico.filter((s) => s.tipo === corrente.idGen).map(escapeNomeLink);
+      return templates.processString(templateRiga, {
+        corrente: { ...corrente, nome: escapeHtml(corrente.nome), link: escapeHtml(safeUrl(corrente.link)) },
+        storico: storicoCorrente
+      });
+    })
+    .join('');
+  return wrapUl(righe);
+}
+
 function renderNoteBox(data: unknown): string {
   // CARENZE.NOTE is free text (11 §11) — escaped before interpolation.
   return `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(String(data))}</div>`;
@@ -241,6 +307,18 @@ export function createBoxComposer(
     (d) => (d as { items: unknown[] }).items.length === 0
   );
   simple(
+    'piani_pers_da_inviare',
+    'Piani personalizzati da notificare',
+    (ctx) => ctx.get('boxdata.pianiPersDaInviare', { items: [], storicoRef: undefined, defaultTemplate: '' }),
+    (d) => (d as { items: unknown[] }).items.length === 0
+  );
+  simple(
+    'piani_pers_inviati',
+    'Piani personalizzati notificati',
+    (ctx) => ctx.get('boxdata.pianiPersInviati', { items: [], storicoRef: undefined, defaultTemplate: '' }),
+    (d) => (d as { items: unknown[] }).items.length === 0
+  );
+  simple(
     'note',
     'Note',
     (ctx) => str(ctx.get('focus.carenza.note', '')),
@@ -277,6 +355,8 @@ export function createBoxComposer(
         carenze: (data) => renderCarenzeBox(data),
         documenti: (data, options) => renderDocumentiBox(data, options, templates),
         cartelle: (data, options) => renderDocumentiBox(data, options, templates),
+        piani_pers_da_inviare: (data, options) => renderPianiPersBox(data, options, templates),
+        piani_pers_inviati: (data, options) => renderPianiPersBox(data, options, templates),
         note: (data) => renderNoteBox(data),
         assenze: () => renderAssenzeBox(),
         testo_dinamico: (data, options) =>
@@ -295,7 +375,9 @@ const DEFAULT_TITLES: Record<string, string> = {
   cartelle: 'Cartelle',
   note: 'Note',
   assenze: 'Assenze',
-  testo_dinamico: ''
+  testo_dinamico: '',
+  piani_pers_da_inviare: 'Piani personalizzati da notificare',
+  piani_pers_inviati: 'Piani personalizzati notificati'
 };
 
 function str(v: unknown): string {
@@ -320,6 +402,18 @@ function aggregaDati(
               items?: DocumentoItem[];
               storico?: LazyRef<DocumentoStoricoConTipo[]>;
             };
+            pianiPersonalizzati?: {
+              items?: PianoPersonalizzatoRow[];
+              storico?: LazyRef<DocumentoStoricoConTipo[]>;
+            };
+          };
+        };
+        classe?: {
+          didattica?: {
+            pianiPersonalizzati?: {
+              items?: PianoPersonalizzatoRow[];
+              storico?: LazyRef<DocumentoStoricoConTipo[]>;
+            };
           };
         };
       }
@@ -327,10 +421,23 @@ function aggregaDati(
   const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
   const items = focus?.alunno?.didattica?.documenti?.items ?? [];
   const storicoRef = focus?.alunno?.didattica?.documenti?.storico;
+  const pianiPers = focus?.classe?.didattica?.pianiPersonalizzati ?? focus?.alunno?.didattica?.pianiPersonalizzati;
+  const pianiItems = pianiPers?.items ?? [];
+  const pianiStoricoRef = pianiPers?.storico;
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
     documenti: { items: items.filter((i) => i.tipo !== 'CARTELLA'), storicoRef },
-    cartelle: { items: items.filter((i) => i.tipo === 'CARTELLA'), storicoRef: undefined }
+    cartelle: { items: items.filter((i) => i.tipo === 'CARTELLA'), storicoRef: undefined },
+    pianiPersDaInviare: {
+      items: pianiItems.filter((i) => !i.notificato),
+      storicoRef: pianiStoricoRef,
+      defaultTemplate: DEFAULT_PIANI_PERS_TEMPLATE
+    },
+    pianiPersInviati: {
+      items: pianiItems.filter((i) => i.notificato),
+      storicoRef: pianiStoricoRef,
+      defaultTemplate: ''
+    }
   };
 }
 

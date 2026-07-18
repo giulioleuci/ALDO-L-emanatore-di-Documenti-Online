@@ -12,6 +12,7 @@ import { MateriaRepository } from '../../../src/infrastructure/repositories/Mate
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
+import { LazyRef } from '../../../src/application/storico/LazyRef';
 
 const logger = new LoggerService();
 
@@ -333,4 +334,93 @@ test('documenti box with no displayMode keeps the current default markup ("nome"
   expect(out.boxes['documenti']!.html).toContain(
     '<a href="https://drive/x" target="_blank">PDP Anna</a>'
   );
+});
+
+function pianiPersCduRecord(items: unknown[], storico?: unknown): Record<string, unknown> {
+  return {
+    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    focus: {
+      classe: {
+        anagrafica: { nome: '5A' },
+        didattica: {
+          pianiPersonalizzati: storico !== undefined ? { items, storico } : { items }
+        }
+      }
+    }
+  };
+}
+
+test('piani_pers_da_inviare: lists only non-notificato items, default historical link included', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord(
+    [
+      {
+        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_DSA',
+        idGen: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+      },
+      {
+        nome: 'PEI a2', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PEI',
+        idGen: 'PEI_DOC', stato: 'GENERATO', dataCreazione: '2026-03-02', notificato: true,
+        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
+      }
+    ],
+    new LazyRef(() => [
+      { anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'PDP_BES' }
+    ])
+  );
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'piani_pers_da_inviare' }]),
+    cdu,
+    materie(),
+    templates
+  );
+  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP a1');
+  expect(out.boxes['piani_pers_da_inviare']!.html).not.toContain('PEI a2'); // notificato, excluded
+  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('Si invia anche il link al piano dell\'anno precedente');
+  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('http://d/old');
+});
+
+test('piani_pers_inviati: lists only notificato items, no historical block by default', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord([
+    {
+      nome: 'PEI a2', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PEI',
+      idGen: 'PEI_DOC', stato: 'GENERATO', dataCreazione: '2026-03-02', notificato: true,
+      studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
+    }
+  ]);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'piani_pers_inviati' }]),
+    cdu,
+    materie(),
+    templates
+  );
+  expect(out.boxes['piani_pers_inviati']!.html).toContain('PEI a2');
+  expect(out.boxes['piani_pers_inviati']!.html).not.toContain('Si invia anche');
+});
+
+test('piani_pers_da_inviare: empty when items list is empty', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord([]);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'piani_pers_da_inviare' }]),
+    cdu,
+    materie(),
+    templates
+  );
+  // Deviation from the task-11 brief's verbatim assertion (toBeUndefined()):
+  // a *known* TIPO_BOX with an empty dataset is NOT dropped from `boxes` —
+  // it gets a `visibile:false, html:''` entry, exactly like the pre-existing
+  // 'documenti box lists links; cartelle box empty ⇒ hidden' test above
+  // demonstrates for `cartelle`. Only genuinely *unknown* TIPO_BOX values
+  // (see 'unknown TIPO_BOX is skipped...' test) are absent from `boxes`.
+  expect(out.boxes['piani_pers_da_inviare']!.visibile).toBe(false);
+  expect(out.boxes['piani_pers_da_inviare']!.html).toBe('');
 });

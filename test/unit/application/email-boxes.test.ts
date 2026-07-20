@@ -132,6 +132,29 @@ test('testo_dinamico always visible, resolves CONTENUTO placeholders', () => {
   expect(box.html).toContain('Classe 5A');
 });
 
+test('testo_dinamico HTML-escapes raw CDU string values (REVIEW_ALDO.md #2)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  (cdu['focus'] as { alunno: { anagrafica: { nomeCompleto: string } } }).alunno.anagrafica.nomeCompleto =
+    '<script>alert(1)</script>';
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'testo_dinamico',
+        CONTENUTO: '<p>Ciao {{focus.alunno.anagrafica.nomeCompleto}}</p>'
+      }
+    ]),
+    cdu,
+    materie(),
+    templates
+  );
+  const html = out.boxes['testo_dinamico']!.html;
+  expect(html).not.toContain('<script>');
+  expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
 test('boxes ordered by ORDINE; MOSTRA_SE_VUOTO falls back to TESTO_VUOTO', () => {
   const out = render([
     { TIPO_BOX: 'note', ORDINE: 2 },
@@ -150,6 +173,30 @@ test('boxes ordered by ORDINE; MOSTRA_SE_VUOTO falls back to TESTO_VUOTO', () =>
   const cartelle = out.boxes['cartelle']!;
   expect(cartelle.isEmpty).toBe(true); // renderer output was empty
   expect(cartelle.visibile).toBe(true); // but fallback made it visible
+});
+
+test('TESTO_VUOTO fallback HTML-escapes raw CDU string values (REVIEW_ALDO.md #2)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  (cdu['focus'] as { classe: { anagrafica: { nome: string } } }).classe.anagrafica.nome =
+    '<b>5A</b>';
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'cartelle',
+        MOSTRA_SE_VUOTO: true,
+        TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.anagrafica.nome}}'
+      }
+    ]),
+    cdu,
+    materie(),
+    templates
+  );
+  const html = out.boxes['cartelle']!.html;
+  expect(html).not.toContain('<b>5A</b>');
+  expect(html).toContain('&lt;b&gt;5A&lt;/b&gt;');
 });
 
 test('unknown TIPO_BOX is skipped with empty html (11 §5)', () => {

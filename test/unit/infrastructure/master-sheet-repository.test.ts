@@ -28,8 +28,6 @@ test('findConfigAnnoCorrente returns the first (top) row (06 §0)', () => {
   const corrente = r.findConfigAnnoCorrente();
   expect(corrente.annoScolasticoRaw).toBe('2025-2026');
   expect(r.getSpreadsheetId(corrente)).toBe('ss_2526');
-  expect(r.getCartellaRoot(corrente)).toBe('fold_2526');
-  expect(r.getDirigente(corrente)).toBe('prof.ssa MARIA BIANCHI');
 });
 
 test('findConfigPerAnno + findAnniStorici', () => {

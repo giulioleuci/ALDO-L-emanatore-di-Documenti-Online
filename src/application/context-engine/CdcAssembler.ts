@@ -57,7 +57,7 @@ export class CdcAssembler {
     const tutorOrient = new Set(
       this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((d) => d.id ?? '')
     );
-    const partners = this.orderedPartners(classe);
+    const partners = this.classi.orderedPartners(classe);
     return docenti.map((d, i) =>
       this.buildVM(
         d,
@@ -154,13 +154,5 @@ export class CdcAssembler {
     if (isTutorOrientamento) out.push('Tutor Orientamento');
     out.push('Docente');
     return out;
-  }
-
-  private orderedPartners(classe: Classe): Classe[] {
-    const config = this.classi.getArticolazione(classe);
-    if (config === null) return [];
-    const parent = config.isParent() ? classe : this.classi.getClasseParent(classe);
-    if (parent === null) return [];
-    return this.classi.getClassiPartner(parent);
   }
 }

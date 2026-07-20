@@ -49,6 +49,10 @@ export class PianiPersClasseProvider implements ContextProvider {
           };
         });
     });
-    cdu.focus.classe.didattica = { pianiPersonalizzati: { items } };
+    if (cdu.focus.classe.didattica === undefined) {
+      cdu.focus.classe.didattica = { pianiPersonalizzati: { items } };
+    } else {
+      cdu.focus.classe.didattica.pianiPersonalizzati = { items };
+    }
   }
 }

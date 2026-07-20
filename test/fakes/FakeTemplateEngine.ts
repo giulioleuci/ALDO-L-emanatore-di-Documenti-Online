@@ -35,6 +35,10 @@ export class FakeTemplateEngine implements ITemplateEngine {
     return this.real.processString(template, context);
   }
 
+  processStringEscaped(template: string, context: Record<string, unknown>): string {
+    return this.real.processStringEscaped(template, context);
+  }
+
   processDocument(fileId: string, context: Record<string, unknown>): void {
     this.rendered.push({ fileId, context });
   }

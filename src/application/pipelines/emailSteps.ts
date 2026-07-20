@@ -292,7 +292,7 @@ export class ComposeEmailStep extends Step {
     const conf = confMail(ctx);
     const built = cdu(ctx);
     const saluto = built.destinatario?.comunicazione.salutoIniziale ?? 'Gentile Utente';
-    const testo = this.templates.processString(conf.getTesto(), cduRecord(ctx));
+    const testo = this.templates.processStringEscaped(conf.getTesto(), cduRecord(ctx));
     const boxes = ctx.get<string[]>('boxHtmlOrdered') ?? [];
     const noReplyBlock = conf.isNoreply()
       ? '<p><strong>⚠️ La risposta a questa email non sarà monitorata.</strong></p>'
@@ -410,8 +410,8 @@ export class SendEmailStep extends Step {
         noReply: confMail(ctx).isNoreply(),
         attachments: ctx.get<unknown[]>('allegati') ?? []
       };
-      if (supervisore !== null) opts.bcc = [supervisore];
-      // Test-send mode redirects `to` to the tester; a real cc recipient must not leak alongside it (11 §15).
+      // Test-send mode redirects `to` to the tester; real cc/bcc recipients must not leak alongside it (11 §15).
+      if (supervisore !== null && testEmail === null) opts.bcc = [supervisore];
       if (dest.cc !== undefined && testEmail === null) opts.cc = dest.cc;
       const result = this.gmail.sendEmail(opts);
       if (result.success) {

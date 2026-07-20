@@ -21,10 +21,17 @@ export class PeriodoSupplenza {
       throw new ValidationError('PeriodoSupplenza: DAL non è una data valida');
     if (al !== null && Number.isNaN(al.getTime()))
       throw new ValidationError('PeriodoSupplenza: AL non è una data valida');
+    // Ordering is validated explicitly here (rather than by catching whatever
+    // DateRange throws) because DOCS_LIBS/CoreUtilsLib_docs.md does not document
+    // DateRange's error type/shape for invalid construction — matching on a
+    // caught error would be fragile and could mislabel unrelated failures.
+    if (al !== null && dal.getTime() > al.getTime())
+      throw new ValidationError('PeriodoSupplenza: deve valere DAL ≤ AL');
     try {
       return new PeriodoSupplenza(new DateRange(dal, al));
-    } catch {
-      throw new ValidationError('PeriodoSupplenza: deve valere DAL ≤ AL');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new ValidationError(`PeriodoSupplenza: costruzione DateRange fallita — ${message}`);
     }
   }
 

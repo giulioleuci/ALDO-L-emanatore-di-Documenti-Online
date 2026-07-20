@@ -40,6 +40,8 @@ export interface IClasseRepository {
     separatePrimoGruppo: string[];
     separateSecondoGruppo: string[];
   } | null;
+  /** The parent's two partners in canonical [primo, secondo] order, from any class in the group. */
+  orderedPartners(classe: Classe): Classe[];
 
   // --- Per-docente subject lookups (ref 09 §4) ---
   getMaterieDelDocente(

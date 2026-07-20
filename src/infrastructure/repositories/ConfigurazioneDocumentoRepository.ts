@@ -38,11 +38,6 @@ export class ConfigurazioneDocumentoRepository
     return this.all().filter((c) => c.tipo === tipo);
   }
 
-  /** Simple-form Drive template id, or null (ref 06 §8). */
-  getTemplateId(config: ConfigurazioneDocumento): string | null {
-    return config.getTemplateIdSemplice();
-  }
-
   /**
    * Whether the document must be generated for the given CDU context (ref 06 §8,
    * 10 Step 1): no CONDIZIONE → true; otherwise the expression is evaluated by

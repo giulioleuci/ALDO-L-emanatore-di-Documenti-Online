@@ -291,7 +291,7 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   }
 
   /** The parent's two partners in canonical [primo, secondo] order, from any class in the group. */
-  private orderedPartners(classe: Classe): Classe[] {
+  orderedPartners(classe: Classe): Classe[] {
     const config = this.getArticolazione(classe);
     if (config === null) return [];
     const parent = config.isParent() ? classe : this.getClasseParent(classe);

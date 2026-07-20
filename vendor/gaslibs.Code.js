@@ -96,10 +96,12 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   BoundedMap: () => (BoundedMap),
   CacheInterface: () => (CacheInterface),
   CacheUtils: () => (CacheUtils),
+  CellValueCoercion: () => (CellValueCoercion),
   ConfigurationBuilder: () => (ConfigurationBuilder),
   ConfigurationError: () => (ConfigurationError),
   DataProviderInterface: () => (DataProviderInterface),
   DateRange: () => (DateRange),
+  Delegation: () => (Delegation),
   ExceptionServiceInterface: () => (ExceptionServiceInterface),
   ExpressionEngineInterface: () => (ExpressionEngineInterface),
   HashUtils: () => (HashUtils),
@@ -1410,7 +1412,7 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   Assignment: () => (Assignment),
   AssignmentSource: () => (AssignmentSource),
   CircularDelegationError: () => (CircularDelegationError),
-  Delegation: () => (Delegation),
+  Delegation: () => (Delegation_Delegation),
   DelegationChain: () => (DelegationChain),
   DelegationDepthExceededError: () => (DelegationDepthExceededError),
   DelegationSource: () => (DelegationSource),
@@ -8102,8 +8104,10 @@ class HtmlSanitizer {
 
 
 
+
+
   static escapeHtml(value) {
-    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   
@@ -8126,6 +8130,95 @@ class HtmlSanitizer {
 
   static safeUrl(value) {
     return /^https?:\/\//i.test(value.trim()) ? value.trim() : '#';
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  static escapeContextDeep(value) {
+    if (typeof value === 'string') {
+      return HtmlSanitizer.escapeHtml(value);
+    }
+    if (Array.isArray(value)) {
+      return value.map(item => HtmlSanitizer.escapeContextDeep(item));
+    }
+    if (value !== null && typeof value === 'object') {
+      const proto = Object.getPrototypeOf(value);
+      const isPlainObject = proto === Object.prototype || proto === null;
+      if (!isPlainObject) {
+        return value;
+      }
+      const result = {};
+      for (const key of Object.keys(value)) {
+        result[key] = HtmlSanitizer.escapeContextDeep(value[key]);
+      }
+      return result;
+    }
+    return value;
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class CellValueCoercion {
+  
+
+
+
+
+
+  static coerceValue(value) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    if (typeof value !== 'string') {
+      return value;
+    }
+    if (value.trim() === '') {
+      return value;
+    }
+    const num = Number(value);
+    if (!isNaN(num) && isFinite(num)) {
+      return num;
+    }
+    const lower = value.toLowerCase();
+    if (lower === 'true') {
+      return true;
+    }
+    if (lower === 'false') {
+      return false;
+    }
+    return value;
   }
 }
 ;
@@ -8180,6 +8273,56 @@ class DateRange {
   
   overlaps(other) {
     return this.start.getTime() <= other.end.getTime() && other.start.getTime() <= this.end.getTime();
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Delegation {
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  static delegateMethods(target, delegations) {
+    delegations.forEach(({
+      manager,
+      methods
+    }) => {
+      methods.forEach(method => {
+        if (typeof manager[method] === 'function') {
+          target[method] = manager[method].bind(manager);
+        }
+      });
+    });
+    return target;
   }
 }
 ;
@@ -10815,35 +10958,18 @@ class ConfigurationBuilder {
     };
     return builder;
   }
-
-  
-  
-  
-
-  
-
-
-  static _coerceType(value, type, key, context) {
-    return validator.coerceType(value, type, key, context);
-  }
-
-  
-
-
-  static _validateField(key, value, rule, context) {
-    return validator.validateField(key, value, rule, context);
-  }
-
-  
-
-
-  static _checkType(value, type) {
-    return validator.checkType(value, type);
-  }
 }
 ;
 const testing = {};
 ;
+
+
+
+
+
+
+
+
 
 
 
@@ -11424,7 +11550,7 @@ class ErrorReporter {
     this._sanitizer = new ErrorReporterSanitizer(this);
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._recorder,
       methods: ['reset', 'record']
     }, {
@@ -11434,18 +11560,6 @@ class ErrorReporter {
       manager: this._sanitizer,
       methods: ['_parseStackTrace']
     }]);
-  }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
   }
 }
 
@@ -15074,15 +15188,6 @@ class DriveService extends GoogleService {
   getStandardApp() {
     return DriveApp;
   }
-
-  
-
-
-
-
-  _verifyAdvancedDrive() {
-    return this._verifyAdvancedService('Drive');
-  }
 }
 ;
 
@@ -17905,6 +18010,7 @@ class SpreadsheetHybridManager {
 
 
 
+
 class SpreadsheetService extends GoogleService {
   constructor(logger, cache, utils, exceptionService, options = {}) {
     super(logger, cache, utils, exceptionService);
@@ -17919,7 +18025,7 @@ class SpreadsheetService extends GoogleService {
     this._hybridManager = new SpreadsheetHybridManager(this);
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._metadataCache,
       methods: ['getSpreadsheetMetadata', 'getSheetInfo', '_getCachedSheetMetadata', '_clearSheetMetadataCache', '_parseRangeToGridRange', '_parseA1', '_parseCell', '_columnToIndex']
     }, {
@@ -17936,18 +18042,6 @@ class SpreadsheetService extends GoogleService {
       this._logger.info('[DRY-RUN] SpreadsheetService initialized in dry-run mode.');
     }
   }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
-  }
 
   
 
@@ -17963,6 +18057,8 @@ class SpreadsheetService extends GoogleService {
   }
 }
 ;
+
+
 
 
 
@@ -18170,9 +18266,9 @@ class MailService {
   sendNotification(emails, title, message) {
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-        <h2 style="color: #333;">${this._escapeHtml(title)}</h2>
+        <h2 style="color: #333;">${HtmlSanitizer.escapeHtml(title)}</h2>
         <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
-          ${this._escapeHtml(message).replace(/\n/g, '<br>')}
+          ${HtmlSanitizer.escapeHtml(message).replace(/\n/g, '<br>')}
         </div>
         <p style="color: #666; font-size: 12px;">Automated notification, do not reply.</p>
       </div>
@@ -18182,23 +18278,6 @@ class MailService {
       subject: title,
       htmlBody
     });
-  }
-
-  
-
-
-
-
-
-  _escapeHtml(text) {
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, m => map[m]);
   }
 }
 ;
@@ -19026,19 +19105,6 @@ class PermissionService extends GoogleService {
       }
     });
     return isSingleId ? links[fileIds] : links;
-  }
-
-  
-  
-  
-
-  
-
-
-
-
-  _verifyAdvancedDrive() {
-    return this._verifyAdvancedService('Drive');
   }
 }
 
@@ -23112,21 +23178,6 @@ class MyMustache {
 
 
 
-  _applyFilter(value, filterName) {
-    if (!filterName) {
-      return value;
-    }
-    const filter = this.filterRegistry.get(filterName);
-    return filter ? filter.execute(value) : value;
-  }
-
-  
-
-
-
-
-
-
   _lookupValue(token, context) {
     const parts = token[1].split('|').map(s => s.trim());
     const key = parts.shift();
@@ -24193,6 +24244,7 @@ class DocumentProcessorInjector {
 
 
 
+
 class _DocumentProcessor {
   constructor(placeholderService, options = {}) {
     this.mustache = placeholderService.mustache;
@@ -24223,7 +24275,7 @@ class _DocumentProcessor {
     this._injector = new DocumentProcessorInjector(this);
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._tagScanner,
       methods: ['_analyzeColumnLoops', '_analyzeRowLoops', '_analyzeListLoops', '_analyzeTextSubstitutions', '_analyzeTableInsertions', '_parseTableParams', '_parseExpression', '_parseFilterArgs', '_parseArgValue']
     }, {
@@ -24233,18 +24285,6 @@ class _DocumentProcessor {
       manager: this._injector,
       methods: ['_executeRowLoopOperation', '_executeColumnLoopOperation', '_convertOperationToRequests', '_createTextSubstitutionRequests', '_createDeleteRowRequests', '_createListLoopRequests', '_executeTableInsertOperation', '_flushDocumentChanges']
     }]);
-  }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
   }
   process(documentId, context) {
     this.logger.info(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
@@ -26669,13 +26709,6 @@ class ExpressionParserService {
   
 
 
-  _preprocess(expressionString) {
-    return this._tokenScanner.preprocess(expressionString);
-  }
-
-  
-
-
   _convertNumericPathSegments(expression) {
     return this._tokenScanner._convertNumericPathSegments(expression);
   }
@@ -27090,6 +27123,509 @@ class OperatorHandler {
 
 
 
+function createStringFunctions() {
+  return {
+    
+
+
+
+
+
+
+
+
+
+
+    len: str => {
+      if (str == null) {
+        return 0;
+      }
+      return String(str).length;
+    },
+    
+
+
+
+
+
+
+
+
+
+
+    upper: str => {
+      if (str == null) {
+        return '';
+      }
+      return String(str).toUpperCase();
+    },
+    
+
+
+
+
+
+
+
+
+
+
+    lower: str => {
+      if (str == null) {
+        return '';
+      }
+      return String(str).toLowerCase();
+    },
+    
+
+
+
+
+
+
+
+
+
+
+    trim: str => {
+      if (str == null) {
+        return '';
+      }
+      return String(str).trim();
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    substring: (str, start, end) => {
+      if (str == null) {
+        return '';
+      }
+      str = String(str);
+      if (end === undefined) {
+        return str.substring(start);
+      }
+      return str.substring(start, end);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    replace: (str, search, replacement) => {
+      if (str == null) {
+        return '';
+      }
+      if (search == null) {
+        return String(str);
+      }
+      return String(str).replace(new RegExp(String(search), 'g'), String(replacement || ''));
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+    split: (str, delimiter) => {
+      if (str == null) {
+        return [];
+      }
+      return String(str).split(String(delimiter || ''));
+    }
+  };
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+function createNumericFunctions() {
+  return {
+    
+
+
+
+
+
+
+
+
+
+
+
+    abs: num => {
+      if (typeof num !== 'number' || isNaN(num)) {
+        throw new Error('abs() requires a number');
+      }
+      return Math.abs(num);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    round: (num, decimals) => {
+      if (typeof num !== 'number' || isNaN(num)) {
+        throw new Error('round() requires a number');
+      }
+      if (decimals === undefined) {
+        return Math.round(num);
+      }
+      const factor = Math.pow(10, decimals);
+      return Math.round(num * factor) / factor;
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+    ceil: num => {
+      if (typeof num !== 'number' || isNaN(num)) {
+        throw new Error('ceil() requires a number');
+      }
+      return Math.ceil(num);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+    floor: num => {
+      if (typeof num !== 'number' || isNaN(num)) {
+        throw new Error('floor() requires a number');
+      }
+      return Math.floor(num);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    min: (...numbers) => {
+      if (numbers.length === 0) {
+        return null;
+      }
+      const nums = numbers.filter(n => typeof n === 'number' && !isNaN(n));
+      if (nums.length === 0) {
+        throw new Error('min() requires at least one number');
+      }
+      return Math.min(...nums);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    max: (...numbers) => {
+      if (numbers.length === 0) {
+        return null;
+      }
+      const nums = numbers.filter(n => typeof n === 'number' && !isNaN(n));
+      if (nums.length === 0) {
+        throw new Error('max() requires at least one number');
+      }
+      return Math.max(...nums);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+    sqrt: num => {
+      if (typeof num !== 'number' || isNaN(num)) {
+        throw new Error('sqrt() requires a number');
+      }
+      if (num < 0) {
+        throw new Error('sqrt() requires a non-negative number');
+      }
+      return Math.sqrt(num);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    pow: (base, exponent) => {
+      if (typeof base !== 'number' || isNaN(base) || typeof exponent !== 'number' || isNaN(exponent)) {
+        throw new Error('pow() requires two numbers');
+      }
+      return Math.pow(base, exponent);
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    between: (value, min, max) => {
+      if (typeof value !== 'number' || isNaN(value) || typeof min !== 'number' || isNaN(min) || typeof max !== 'number' || isNaN(max)) {
+        throw new Error('between() requires three numeric values. Received: ' + `${typeof value}, ${typeof min}, ${typeof max}`);
+      }
+      return value >= min && value <= max;
+    }
+  };
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function createArrayFunctions(evaluator) {
+  return {
+    
+
+
+
+
+
+
+
+
+
+
+    length: arr => {
+      if (arr == null) {
+        return 0;
+      }
+      if (Array.isArray(arr)) {
+        return arr.length;
+      }
+      
+      return String(arr).length;
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+    contains: (arr, value) => {
+      if (!Array.isArray(arr)) {
+        return false;
+      }
+      return arr.some(elem => evaluator._equals(elem, value));
+    },
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    indexOf: (arr, value) => {
+      if (!Array.isArray(arr)) {
+        return -1;
+      }
+      for (let i = 0; i < arr.length; i++) {
+        if (evaluator._equals(arr[i], value)) {
+          return i;
+        }
+      }
+      return -1;
+    },
+    
+
+
+
+
+
+
+
+
+
+
+    first: arr => {
+      if (!Array.isArray(arr) || arr.length === 0) {
+        return null;
+      }
+      return arr[0];
+    },
+    
+
+
+
+
+
+
+
+
+
+
+    last: arr => {
+      if (!Array.isArray(arr) || arr.length === 0) {
+        return null;
+      }
+      return arr[arr.length - 1];
+    }
+  };
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function createBuiltInFunctions(evaluator) {
+  return {
+    ...createStringFunctions(),
+    ...createNumericFunctions(),
+    ...createArrayFunctions(evaluator)
+  };
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -27243,433 +27779,14 @@ class ExpressionEvaluatorService {
   
   
 
+  
+
+
+
+
+
   get _builtInFunctions() {
-    return {
-      
-
-      
-
-
-
-
-
-
-
-
-
-
-      len: str => {
-        if (str == null) {
-          return 0;
-        }
-        return String(str).length;
-      },
-      
-
-
-
-
-
-
-
-
-
-
-      upper: str => {
-        if (str == null) {
-          return '';
-        }
-        return String(str).toUpperCase();
-      },
-      
-
-
-
-
-
-
-
-
-
-
-      lower: str => {
-        if (str == null) {
-          return '';
-        }
-        return String(str).toLowerCase();
-      },
-      
-
-
-
-
-
-
-
-
-
-
-      trim: str => {
-        if (str == null) {
-          return '';
-        }
-        return String(str).trim();
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-      substring: (str, start, end) => {
-        if (str == null) {
-          return '';
-        }
-        str = String(str);
-        if (end === undefined) {
-          return str.substring(start);
-        }
-        return str.substring(start, end);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      replace: (str, search, replacement) => {
-        if (str == null) {
-          return '';
-        }
-        if (search == null) {
-          return String(str);
-        }
-        return String(str).replace(new RegExp(String(search), 'g'), String(replacement || ''));
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-      split: (str, delimiter) => {
-        if (str == null) {
-          return [];
-        }
-        return String(str).split(String(delimiter || ''));
-      },
-      
-
-      
-
-
-
-
-
-
-
-
-
-
-
-      abs: num => {
-        if (typeof num !== 'number' || isNaN(num)) {
-          throw new Error('abs() requires a number');
-        }
-        return Math.abs(num);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-      round: (num, decimals) => {
-        if (typeof num !== 'number' || isNaN(num)) {
-          throw new Error('round() requires a number');
-        }
-        if (decimals === undefined) {
-          return Math.round(num);
-        }
-        const factor = Math.pow(10, decimals);
-        return Math.round(num * factor) / factor;
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-      ceil: num => {
-        if (typeof num !== 'number' || isNaN(num)) {
-          throw new Error('ceil() requires a number');
-        }
-        return Math.ceil(num);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-      floor: num => {
-        if (typeof num !== 'number' || isNaN(num)) {
-          throw new Error('floor() requires a number');
-        }
-        return Math.floor(num);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-      min: (...numbers) => {
-        if (numbers.length === 0) {
-          return null;
-        }
-        const nums = numbers.filter(n => typeof n === 'number' && !isNaN(n));
-        if (nums.length === 0) {
-          throw new Error('min() requires at least one number');
-        }
-        return Math.min(...nums);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-      max: (...numbers) => {
-        if (numbers.length === 0) {
-          return null;
-        }
-        const nums = numbers.filter(n => typeof n === 'number' && !isNaN(n));
-        if (nums.length === 0) {
-          throw new Error('max() requires at least one number');
-        }
-        return Math.max(...nums);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-      sqrt: num => {
-        if (typeof num !== 'number' || isNaN(num)) {
-          throw new Error('sqrt() requires a number');
-        }
-        if (num < 0) {
-          throw new Error('sqrt() requires a non-negative number');
-        }
-        return Math.sqrt(num);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-      pow: (base, exponent) => {
-        if (typeof base !== 'number' || isNaN(base) || typeof exponent !== 'number' || isNaN(exponent)) {
-          throw new Error('pow() requires two numbers');
-        }
-        return Math.pow(base, exponent);
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      between: (value, min, max) => {
-        if (typeof value !== 'number' || isNaN(value) || typeof min !== 'number' || isNaN(min) || typeof max !== 'number' || isNaN(max)) {
-          throw new Error('between() requires three numeric values. Received: ' + `${typeof value}, ${typeof min}, ${typeof max}`);
-        }
-        return value >= min && value <= max;
-      },
-      
-
-      
-
-
-
-
-
-
-
-
-
-
-      length: arr => {
-        if (arr == null) {
-          return 0;
-        }
-        if (Array.isArray(arr)) {
-          return arr.length;
-        }
-        
-        return String(arr).length;
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-      contains: (arr, value) => {
-        if (!Array.isArray(arr)) {
-          return false;
-        }
-        return arr.some(elem => this._equals(elem, value));
-      },
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-      indexOf: (arr, value) => {
-        if (!Array.isArray(arr)) {
-          return -1;
-        }
-        for (let i = 0; i < arr.length; i++) {
-          if (this._equals(arr[i], value)) {
-            return i;
-          }
-        }
-        return -1;
-      },
-      
-
-
-
-
-
-
-
-
-
-
-      first: arr => {
-        if (!Array.isArray(arr) || arr.length === 0) {
-          return null;
-        }
-        return arr[0];
-      },
-      
-
-
-
-
-
-
-
-
-
-
-      last: arr => {
-        if (!Array.isArray(arr) || arr.length === 0) {
-          return null;
-        }
-        return arr[arr.length - 1];
-      }
-    };
+    return createBuiltInFunctions(this);
   }
 
   
@@ -44225,11 +44342,6 @@ class TableService {
   }
 
   
-  _invalidateIndex(...args) {
-    return this.searchEngine.invalidateIndex(...args);
-  }
-
-  
 
   
 
@@ -44568,18 +44680,10 @@ class TableService {
 
 
 
+
+
   _coerceValue(value) {
-    if (value === null || value === undefined) return value;
-    if (typeof value !== 'string') return value;
-    if (value.trim() === '') return value;
-    const num = Number(value);
-    if (!isNaN(num) && isFinite(num)) {
-      return num;
-    }
-    const lower = value.toLowerCase();
-    if (lower === 'true') return true;
-    if (lower === 'false') return false;
-    return value;
+    return CellValueCoercion.coerceValue(value);
   }
 
   
@@ -44622,17 +44726,6 @@ class TableService {
       });
       return rowWithVirtuals[this._keyField] == id;
     });
-  }
-
-  
-
-
-
-
-
-  _getNextEmptyRow() {
-    this._ensureDataLoaded();
-    return this._rowsCache.length + 2; 
   }
 
   
@@ -45593,6 +45686,7 @@ class AdvancedQueryPagination {
 
 
 
+
 class AdvancedQueryBuilder {
   constructor(dbService, columns = ['*']) {
     this.dbService = dbService;
@@ -45615,25 +45709,13 @@ class AdvancedQueryBuilder {
     this._cache = dbService._cache ? new QueryCache(dbService._cache) : null;
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._compiler,
       methods: ['_extractFieldValue', '_performJoin', '_tryIndexOptimization', '_getRemainingConditions', '_getFieldValue', '_applyConditionsFiltered', '_applyConditions', '_applyGroupBy']
     }, {
       manager: this._pagination,
       methods: ['_partialSort', '_createComparator', '_quickSelect', '_medianOfThree', '_partition']
     }]);
-  }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
   }
   select(columns) {
     if (Array.isArray(columns)) {
@@ -46153,6 +46235,7 @@ class DatabaseMetaDataHandler {
 
 
 
+
 class MyDatabaseService {
   constructor(spreadsheetId, logger, utils, cache, exceptionService = null, options = {}) {
     this._spreadsheetId = spreadsheetId;
@@ -46179,7 +46262,7 @@ class MyDatabaseService {
     this._metaDataHandler = new DatabaseMetaDataHandler(this);
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._connectionManager,
       methods: ['save', 'beginTransaction', 'commit', 'rollback', '_performRollback', 'inTransaction']
     }, {
@@ -46196,18 +46279,6 @@ class MyDatabaseService {
       this._logger.info('[DRY-RUN] DatabaseService initialized in dry-run mode.');
     }
     this._initialize();
-  }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
   }
   select(fields = ['*']) {
     return new AdvancedQueryBuilder(this, fields);
@@ -47143,6 +47214,29 @@ class SchemaResolver {
 
 
 
+
+function getFamilyOrThrow(familyMap, familyId) {
+  const family = familyMap.get(familyId);
+  if (!family) {
+    throw new Error(`Column family not found: ${familyId}`);
+  }
+  return family;
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class DynamicColumnAccessor {
   
 
@@ -47387,11 +47481,7 @@ class DynamicColumnAccessor {
 
 
   _getFamily(familyId) {
-    const family = this._familyMap.get(familyId);
-    if (!family) {
-      throw new Error(`Column family not found: ${familyId}`);
-    }
-    return family;
+    return getFamilyOrThrow(this._familyMap, familyId);
   }
 
   
@@ -47426,6 +47516,7 @@ class DynamicColumnAccessor {
   }
 }
 ;
+
 
 
 
@@ -47779,11 +47870,7 @@ class FamilyAggregator {
 
 
   _getFamily(familyId) {
-    const family = this._familyMap.get(familyId);
-    if (!family) {
-      throw new Error(`Column family not found: ${familyId}`);
-    }
-    return family;
+    return getFamilyOrThrow(this._familyMap, familyId);
   }
 
   
@@ -51757,6 +51844,7 @@ class JobRunnerExecutionController {
 
 
 
+
 class JobRunnerLogCapturer {
   constructor(facade) {
     this.facade = facade;
@@ -51803,9 +51891,9 @@ class JobRunnerLogCapturer {
       .footer { padding: 10px; text-align: center; border-top: 1px solid #ccc; background: #f5f5f5; }
       .footer button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
       .footer button:hover { background: #0056b3; }</style>
-      <div class="header"><h2>Job Execution Log</h2><div>Job: <strong>${this._escapeHtml(jobName)}</strong></div>
+      <div class="header"><h2>Job Execution Log</h2><div>Job: <strong>${HtmlSanitizer.escapeHtml(jobName)}</strong></div>
       <div class="status">Status: ${statusText}</div>
-      ${error ? `<div style="margin-top: 5px; font-size: 12px;">Error: ${this._escapeHtml(error.message)}</div>` : ''}</div>
+      ${error ? `<div style="margin-top: 5px; font-size: 12px;">Error: ${HtmlSanitizer.escapeHtml(error.message)}</div>` : ''}</div>
       <div class="logs-container">${logsHtml}</div><div class="footer"><button onclick="google.script.host.close()">Close</button></div>`;
     uiService.createSidebar().setTitle(`Job Log: ${jobName}`).setContent(html).setWidth(500).show();
     this._logger.info(`MyJobRunnerService: Job logs displayed in sidebar (${capturingLogger.getLogCount()} entries)`);
@@ -51837,18 +51925,9 @@ class JobRunnerLogCapturer {
       throw driveError;
     }
   }
-  _escapeHtml(text) {
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, m => map[m]);
-  }
 }
 ;
+
 
 
 
@@ -51906,7 +51985,7 @@ class MyJobRunnerService {
     this._logCapturer = new JobRunnerLogCapturer(this);
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._triggerManager,
       methods: ['_getCurrentTriggerId']
     }, {
@@ -51917,21 +51996,9 @@ class MyJobRunnerService {
       methods: ['run', 'resume']
     }, {
       manager: this._logCapturer,
-      methods: ['_validateLoggingConfig', '_displayLogs', '_displayLogsInSidebar', '_displayLogsInDriveFile', '_escapeHtml']
+      methods: ['_validateLoggingConfig', '_displayLogs', '_displayLogsInSidebar', '_displayLogsInDriveFile']
     }]);
     this._logger.debug('MyJobRunnerService: Instance created');
-  }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
   }
 
   
@@ -52823,7 +52890,9 @@ class Pipeline {
       if (this._monitor && this._jobId && typeof this._monitor.logStepStart === 'function') {
         try {
           this._monitor.logStepStart(this._jobId, stepName);
-        } catch (_e) {}
+        } catch (_e) {
+          this._logger.debug(`[${this._name}] monitor.logStepStart failed: ${_e.message}`);
+        }
       }
       let result;
       try {
@@ -52837,7 +52906,9 @@ class Pipeline {
         if (this._monitor && this._jobId && typeof this._monitor.logStepComplete === 'function') {
           try {
             this._monitor.logStepComplete(this._jobId, stepName, false);
-          } catch (_e) {}
+          } catch (_e) {
+            this._logger.debug(`[${this._name}] monitor.logStepComplete failed: ${_e.message}`);
+          }
         }
         if (this._stopOnError) {
           break;
@@ -52855,7 +52926,9 @@ class Pipeline {
           } else if (typeof this._monitor.logStepComplete === 'function') {
             this._monitor.logStepComplete(this._jobId, stepName, status === 'completed');
           }
-        } catch (_e) {}
+        } catch (_e) {
+          this._logger.debug(`[${this._name}] monitor.logStepSkipped/Complete failed: ${_e.message}`);
+        }
       }
       if (status === 'failed') {
         pipelineSuccess = false;
@@ -53920,34 +53993,6 @@ class PostProcessorChain {
   clear() {
     this._entries = [];
     return this;
-  }
-
-  
-  
-  
-
-  
-
-
-
-
-
-
-
-  _shouldExecute(config, context) {
-    return this._chainExecutor.shouldExecute(config, context);
-  }
-
-  
-
-
-
-
-
-
-
-  _evaluateCustomCondition(condition, context) {
-    return this._chainExecutor.evaluateCustomCondition(condition, context);
   }
 
   
@@ -60256,6 +60301,7 @@ class SourceError extends ImportError {
 
 
 
+
 class SourceStrategy {
   
 
@@ -60348,18 +60394,27 @@ class SourceStrategy {
 
 
 
+
+
   _coerceValue(value) {
-    if (value === null || value === undefined) return value;
-    if (typeof value !== 'string') return value;
-    if (value.trim() === '') return value;
-    const num = Number(value);
-    if (!isNaN(num) && isFinite(num)) {
-      return num;
+    return CellValueCoercion.coerceValue(value);
+  }
+
+  
+
+
+
+
+
+
+  _columnToLetter(column) {
+    let letter = '';
+    while (column > 0) {
+      const remainder = (column - 1) % 26;
+      letter = String.fromCharCode(65 + remainder) + letter;
+      column = Math.floor((column - 1) / 26);
     }
-    const lower = value.toLowerCase();
-    if (lower === 'true') return true;
-    if (lower === 'false') return false;
-    return value;
+    return letter;
   }
 
   
@@ -60514,22 +60569,6 @@ class SheetByIdStrategy extends SourceStrategy {
         originalError: error.message
       });
     }
-  }
-
-  
-
-
-
-
-
-  _columnToLetter(column) {
-    let letter = '';
-    while (column > 0) {
-      const remainder = (column - 1) % 26;
-      letter = String.fromCharCode(65 + remainder) + letter;
-      column = Math.floor((column - 1) / 26);
-    }
-    return letter;
   }
 }
 
@@ -60721,22 +60760,6 @@ class FolderStrategy extends SourceStrategy {
       });
     }
     return data;
-  }
-
-  
-
-
-
-
-
-  _columnToLetter(column) {
-    let letter = '';
-    while (column > 0) {
-      const remainder = (column - 1) % 26;
-      letter = String.fromCharCode(65 + remainder) + letter;
-      column = Math.floor((column - 1) / 26);
-    }
-    return letter;
   }
 }
 
@@ -61223,7 +61246,7 @@ class Transformer {
     this._validationGuard = new TransformerValidationGuard(this);
 
     
-    this._delegate([{
+    Delegation.delegateMethods(this, [{
       manager: this._mappingEngine,
       methods: ['_applyMapping', '_applyCalculated', '_buildDependencyGraph', '_extractPlaceholders', '_topologicalSort', '_evaluateExpression', '_simpleTemplateSubstitution']
     }, {
@@ -61236,18 +61259,6 @@ class Transformer {
       manager: this._validationGuard,
       methods: ['_applyValidation', 'validateConfig']
     }]);
-  }
-  _delegate(delegations) {
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
   }
 
   
@@ -61707,19 +61718,6 @@ class Loader {
         originalError: error.message
       });
     }
-  }
-
-  
-
-
-
-
-
-
-
-  _findByKey(table, key, value) {
-    const rows = table.getAllRows();
-    return rows.find(row => row[key] === value) || null;
   }
 
   
@@ -63001,18 +62999,6 @@ class ValueObject {
 
   getValue() {
     throw new Error(`${this.constructor.name} must implement getValue() method`);
-  }
-
-  
-
-
-
-
-
-  _ensureImmutable(obj) {
-    if (!Object.isFrozen(obj)) {
-      throw new Error(`${this.constructor.name} must be immutable`);
-    }
   }
 }
 ;
@@ -67620,6 +67606,39 @@ class Role {
 
 
 
+
+
+
+
+
+function parseDate(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return new Date(value.getTime());
+  }
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Assignment {
   
 
@@ -67696,18 +67715,10 @@ class Assignment {
 
 
 
+
+
   _parseDate(value) {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    if (value instanceof Date) {
-      return new Date(value.getTime());
-    }
-    if (typeof value === 'string') {
-      const parsed = new Date(value);
-      return isNaN(parsed.getTime()) ? null : parsed;
-    }
-    return null;
+    return parseDate(value);
   }
 
   
@@ -68179,6 +68190,7 @@ function getRoutingPolicyDescription(policy) {
 
 
 
+
 class DelegationState {
   constructor(definition) {
     if (!definition || typeof definition !== 'object') {
@@ -68234,17 +68246,7 @@ class DelegationState {
     this.metadata = cloneDeep_cloneDeep(metadata);
   }
   _parseDate(value) {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    if (value instanceof Date) {
-      return new Date(value.getTime());
-    }
-    if (typeof value === 'string') {
-      const parsed = new Date(value);
-      return isNaN(parsed.getTime()) ? null : parsed;
-    }
-    return null;
+    return parseDate(value);
   }
   getMetadata(key, defaultValue = null) {
     return this.metadata.hasOwnProperty(key) ? this.metadata[key] : defaultValue;
@@ -68336,7 +68338,7 @@ class DelegationRules {
 
 
 
-class Delegation {
+class Delegation_Delegation {
   
 
 
@@ -68378,7 +68380,7 @@ class Delegation {
 
 
   equals(other) {
-    if (!(other instanceof Delegation)) {
+    if (!(other instanceof Delegation_Delegation)) {
       return false;
     }
     return this.id === other.id;
@@ -68395,7 +68397,7 @@ class Delegation {
     if (!obj || typeof obj !== 'object') {
       throw new Error('Invalid delegation object');
     }
-    return new Delegation(obj);
+    return new Delegation_Delegation(obj);
   }
 
   
@@ -68436,7 +68438,7 @@ class DelegationChain {
 
     
     for (let i = 0; i < delegations.length; i++) {
-      if (!(delegations[i] instanceof Delegation)) {
+      if (!(delegations[i] instanceof Delegation_Delegation)) {
         throw new Error(`Element at index ${i} is not a Delegation`);
       }
 
@@ -68587,7 +68589,7 @@ class DelegationChain {
 
 
   extend(delegation) {
-    if (!(delegation instanceof Delegation)) {
+    if (!(delegation instanceof Delegation_Delegation)) {
       throw new Error('Must provide a Delegation instance');
     }
 
@@ -68658,7 +68660,7 @@ class DelegationChain {
     if (!obj || typeof obj !== 'object') {
       throw new Error('Invalid chain object');
     }
-    const delegations = (obj.delegations || []).map(d => Delegation.fromJSON(d));
+    const delegations = (obj.delegations || []).map(d => Delegation_Delegation.fromJSON(d));
     return new DelegationChain(delegations);
   }
 
@@ -68715,7 +68717,7 @@ class DelegationValidator {
     const warnings = [];
 
     
-    if (!(delegation instanceof Delegation)) {
+    if (!(delegation instanceof Delegation_Delegation)) {
       errors.push('Input is not a Delegation instance');
       return {
         isValid: false,

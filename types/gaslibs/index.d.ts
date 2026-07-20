@@ -16,6 +16,12 @@ declare global {
     static escapeHtml(value: string): string;
     static safeColor(value: string, fallback: string): string;
     static safeUrl(value: string): string;
+    /**
+     * Recursively HTML-escapes every string leaf of an object/array (numbers/
+     * booleans/null/undefined pass through; non-plain objects, e.g. Date,
+     * pass through unrecursed). Returns a new structure — no mutation.
+     */
+    static escapeContextDeep<T>(value: T): T;
   }
 
   /** CoreUtilsLib PII-safe logging helper (ref CoreUtilsLib/src/internal/PiiRedactor.js). */

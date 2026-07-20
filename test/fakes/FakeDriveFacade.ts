@@ -26,9 +26,6 @@ export class FakeDriveFacade implements IDriveFacade {
   deleteFile(fileId: string): void {
     this.deleted.push(fileId);
   }
-  countFilesInFolder(folderId: string): number {
-    return this.copies.filter((c) => c.folderId === folderId).length;
-  }
   getFileBlob(fileId: string): unknown {
     return `blob:${fileId}`;
   }

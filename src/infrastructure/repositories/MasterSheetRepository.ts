@@ -49,10 +49,4 @@ export class MasterSheetRepository
   getSpreadsheetId(config: MasterConfig): string {
     return config.idSpreadsheet;
   }
-  getCartellaRoot(config: MasterConfig): string {
-    return config.idCartellaRoot;
-  }
-  getDirigente(config: MasterConfig): string {
-    return config.dirigente;
-  }
 }

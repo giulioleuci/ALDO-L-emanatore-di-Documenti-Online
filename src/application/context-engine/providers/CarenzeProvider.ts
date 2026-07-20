@@ -10,8 +10,6 @@ import { carenzeDettaglioSemplice } from '../mappers/carenzeMapper';
  * 02 §4.2), flattened to the `{ materia, voto }` dettaglio form.
  */
 export class CarenzeProvider implements ContextProvider {
-  private sigleCache: string[] | null = null;
-
   constructor(
     private readonly alunni: IAlunnoRepository,
     private readonly materie: IMateriaRepository
@@ -22,22 +20,12 @@ export class CarenzeProvider implements ContextProvider {
     if (focusAlunno === undefined) return;
     const dettaglio = carenzeDettaglioSemplice(
       this.alunni.getCarenze(getAlunnoEntity(cdu)),
-      this.sigle()
+      this.materie.findAllSigle()
     );
     focusAlunno.didattica.carenze = {
       dettaglio,
       numero: dettaglio.length,
       hasCarenze: dettaglio.length > 0
     };
-  }
-
-  private sigle(): string[] {
-    if (this.sigleCache === null) {
-      this.sigleCache = this.materie
-        .findAllCached()
-        .map((m) => m.id ?? '')
-        .filter((s) => s !== '');
-    }
-    return this.sigleCache;
   }
 }

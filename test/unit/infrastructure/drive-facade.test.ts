@@ -161,16 +161,6 @@ test('deleteFile trashes (not permanent delete) via deleteFiles', () => {
   expect(drive.deleteFiles).toHaveBeenCalledWith(['file_1'], { permanently: false });
 });
 
-test('countFilesInFolder counts non-trashed children via searchFiles', () => {
-  const { drive, perms } = fakeDrive();
-  drive.searchFiles.mockReturnValueOnce([
-    { id: 'a', name: 'a', mimeType: 'x' },
-    { id: 'b', name: 'b', mimeType: 'x' }
-  ]);
-  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
-  expect(facade.countFilesInFolder('folder_1')).toBe(2);
-});
-
 test('getFileBlob returns the native Blob via getFileByIdStandard (11 §13)', () => {
   const { drive, perms } = fakeDrive();
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);

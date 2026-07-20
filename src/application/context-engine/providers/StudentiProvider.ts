@@ -15,8 +15,6 @@ import { carenzeDettaglioSemplice, curriculumRecord } from '../mappers/carenzeMa
  * grouped by indirizzo (`perIndirizzo` / `indirizziPresenti`).
  */
 export class StudentiProvider implements ContextProvider {
-  private sigleCache: string[] | null = null;
-
   constructor(
     private readonly classi: IClasseRepository,
     private readonly alunni: IAlunnoRepository,
@@ -52,7 +50,10 @@ export class StudentiProvider implements ContextProvider {
   }
 
   private buildVM(alunno: Alunno): AlunnoContestoVM {
-    const dettaglio = carenzeDettaglioSemplice(this.alunni.getCarenze(alunno), this.sigle());
+    const dettaglio = carenzeDettaglioSemplice(
+      this.alunni.getCarenze(alunno),
+      this.materie.findAllSigle()
+    );
     const pianiItems = this.alunni
       .getPiani(alunno)
       .map((p) => ({ tipo: p.tipo, isBes: p.isBES() }));
@@ -72,15 +73,5 @@ export class StudentiProvider implements ContextProvider {
         pcto: { oreCumulate: this.alunni.getOreASLTotali(alunno) }
       }
     };
-  }
-
-  private sigle(): string[] {
-    if (this.sigleCache === null) {
-      this.sigleCache = this.materie
-        .findAllCached()
-        .map((m) => m.id ?? '')
-        .filter((s) => s !== '');
-    }
-    return this.sigleCache;
   }
 }

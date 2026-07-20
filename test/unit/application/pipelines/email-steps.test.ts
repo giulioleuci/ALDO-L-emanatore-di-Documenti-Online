@@ -267,6 +267,24 @@ test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () 
   expect(w.ctx.get('allegati')).toEqual([]);
 });
 
+test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO (REVIEW_ALDO.md #2)', () => {
+  const w = wire({ TESTO: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
+  new ComposeEmailStep(
+    logger,
+    w.templates,
+    new LogDocumentoRepository(w.db),
+    new FakeDriveFacade()
+  ).execute(w.ctx);
+  const html = w.ctx.get<string>('corpoHtml')!;
+  expect(html).not.toContain('<script>alert(1)</script>');
+  expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
 test('ComposeEmailStep resolves class-attached documents as blobs (11 §13)', () => {
   const w = wire();
   w.db.table('LOG_DOCS').insert({
@@ -445,6 +463,27 @@ test('test mode suppresses cc so a real coordinatore is never leaked during a pr
   send(w, gmail);
   expect(gmail.sent[0]!.to).toEqual(['tester@x.it']);
   expect(gmail.sent[0]!.cc).toBeUndefined();
+});
+
+test('test mode suppresses supervisore BCC too, matching the cc treatment (11 §15)', () => {
+  const w = wire();
+  runThroughCompose(w);
+  w.ctx.set('testEmail', 'tester@x.it');
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.to).toEqual(['tester@x.it']);
+  expect(gmail.sent[0]!.bcc).toBeUndefined();
+});
+
+test('normal mode still attaches both supervisore BCC and cc together (11 §6/§15)', () => {
+  const w = wire();
+  runThroughCompose(w);
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'], cc: ['coord@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.bcc).toEqual(['super@school.it']);
+  expect(gmail.sent[0]!.cc).toEqual(['coord@x.it']);
 });
 
 test('send failure is collected, does not break the pipeline (11 §8)', () => {

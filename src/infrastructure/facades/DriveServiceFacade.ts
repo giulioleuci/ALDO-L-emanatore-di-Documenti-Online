@@ -4,7 +4,6 @@ export interface IDriveFacade {
   copyFile(templateId: string, name: string, folderId: string): string;
   setPermission(fileId: string, email: string, permesso: string): void;
   deleteFile(fileId: string): void;
-  countFilesInFolder(folderId: string): number;
   /** Native Drive Blob for the file, e.g. for email attachments (11 §13). */
   getFileBlob(fileId: string): unknown;
 }
@@ -80,10 +79,6 @@ export class DriveServiceFacade implements IDriveFacade {
 
   deleteFile(fileId: string): void {
     this.drive.deleteFiles([fileId], { permanently: false });
-  }
-
-  countFilesInFolder(folderId: string): number {
-    return this.drive.searchFiles(`'${folderId}' in parents and trashed=false`).length;
   }
 
   getFileBlob(fileId: string): unknown {

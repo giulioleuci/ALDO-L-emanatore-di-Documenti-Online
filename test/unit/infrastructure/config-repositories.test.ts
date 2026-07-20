@@ -14,7 +14,6 @@ test('CONF_DOC: findByTipo + simple-form template id + condition/overwrite (06 Â
   const verbali = r.findByTipo('VERBALE');
   expect(verbali.map((c) => c.id)).toEqual(['CD1', 'CD_ESAME']);
   const cd1 = verbali.find((c) => c.id === 'CD1')!;
-  expect(r.getTemplateId(cd1)).toBe('tmpl_verbale');
   expect(cd1.hasNoCondizione()).toBe(true);
   expect(cd1.isOverwrite()).toBe(false);
   expect(r.findByTipo('NOPE')).toEqual([]);

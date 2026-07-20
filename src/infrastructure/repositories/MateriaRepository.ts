@@ -17,6 +17,7 @@ export class MateriaRepository extends Repository<Materia> implements IMateriaRe
   // already owns a `this.cache` field (a CacheService slot used by findById);
   // reusing that name silently breaks findById after this local cache populates.
   private listCache: Materia[] | null = null;
+  private sigleCache: string[] | null = null;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.MATERIE, Materia);
@@ -29,6 +30,16 @@ export class MateriaRepository extends Repository<Materia> implements IMateriaRe
 
   findAllCached(): Materia[] {
     return this.all().slice();
+  }
+
+  /** Cached list of MATERIE ids (sigle), non-empty only (ref 06 §4/§Caching). */
+  findAllSigle(): string[] {
+    if (this.sigleCache === null) {
+      this.sigleCache = this.all()
+        .map((m) => m.id ?? '')
+        .filter((s) => s !== '');
+    }
+    return this.sigleCache;
   }
 
   findByIdCached(id: MateriaId): Materia | null {

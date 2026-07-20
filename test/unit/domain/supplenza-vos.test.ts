@@ -19,6 +19,35 @@ test('PeriodoSupplenza: open-ended AL is always active after DAL; DAL>AL throws'
   );
 });
 
+test('PeriodoSupplenza: DAL>AL throws the specific ordering message', () => {
+  expect(() =>
+    PeriodoSupplenza.of(new Date('2025-11-30'), new Date('2025-11-01'))
+  ).toThrow('PeriodoSupplenza: deve valere DAL ≤ AL');
+});
+
+test('PeriodoSupplenza: a non-ordering DateRange construction failure surfaces its own message, not the ordering one', () => {
+  // DAL === AL, so the explicit ordering pre-check passes; force the underlying
+  // DateRange constructor itself to fail for an unrelated reason.
+  const dal = new Date('2025-11-01');
+  const al = new Date('2025-11-01');
+  const globalWithDateRange = globalThis as unknown as { DateRange: typeof DateRange };
+  const RealDateRange = globalWithDateRange.DateRange;
+  class FailingDateRange {
+    constructor() {
+      throw new Error('boom: unrelated construction failure');
+    }
+  }
+  globalWithDateRange.DateRange = FailingDateRange as unknown as typeof DateRange;
+  try {
+    expect(() => PeriodoSupplenza.of(dal, al)).toThrow(
+      'PeriodoSupplenza: costruzione DateRange fallita — boom: unrelated construction failure'
+    );
+    expect(() => PeriodoSupplenza.of(dal, al)).not.toThrow('deve valere DAL ≤ AL');
+  } finally {
+    globalWithDateRange.DateRange = RealDateRange;
+  }
+});
+
 test('CsvScope: wildcard and order-insensitive containment (04 §14)', () => {
   expect(CsvScope.of('*').applica('5A')).toBe(true);
   const scope = CsvScope.of('5A, 4B');

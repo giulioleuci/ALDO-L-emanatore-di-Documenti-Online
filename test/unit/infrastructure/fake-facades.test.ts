@@ -20,3 +20,11 @@ test('FakeTemplateEngine renders strings via the real vendored engine and record
   templates.processDocument('file_1', cdu);
   expect(templates.contextFor('file_1')).toBe(cdu);
 });
+
+test('FakeTemplateEngine.processStringEscaped matches the real engine (escapes; plain processString does not)', () => {
+  const templates = new FakeTemplateEngine();
+  const cdu = { focus: { classe: { anagrafica: { nome: '<b>5A</b>' } } } };
+  const template = 'Classe {{focus.classe.anagrafica.nome}}';
+  expect(templates.processStringEscaped(template, cdu)).toBe('Classe &lt;b&gt;5A&lt;/b&gt;');
+  expect(templates.processString(template, cdu)).toBe('Classe <b>5A</b>');
+});

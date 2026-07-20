@@ -246,7 +246,13 @@ function renderPianiPersBox(
           link: escapeHtml(safeUrl(corrente.link)),
           sottotipo: escapeHtml(corrente.sottotipo),
           ...(corrente.studente !== undefined
-            ? { studente: { ...corrente.studente, nomeCompleto: escapeHtml(corrente.studente.nomeCompleto) } }
+            ? {
+                studente: {
+                  ...corrente.studente,
+                  nomeCompleto: escapeHtml(corrente.studente.nomeCompleto),
+                  email: escapeHtml(corrente.studente.email)
+                }
+              }
             : {})
         },
         storico: storicoCorrente
@@ -368,7 +374,7 @@ export function createBoxComposer(
         note: (data) => renderNoteBox(data),
         assenze: () => renderAssenzeBox(),
         testo_dinamico: (data, options) =>
-          templates.processString(str(options.config['CONTENUTO']), data as Record<string, unknown>)
+          templates.processStringEscaped(str(options.config['CONTENUTO']), data as Record<string, unknown>)
       }
     })
   );
@@ -505,7 +511,7 @@ export function renderBoxes(
     const isEmpty = block.isEmpty || !block.isVisible || block.content === '';
     let inner = block.isVisible ? block.content : '';
     if (inner === '' && cfg['MOSTRA_SE_VUOTO'] === true) {
-      inner = templates.processString(str(cfg['TESTO_VUOTO']), cdu); // fallback (11 §5)
+      inner = templates.processStringEscaped(str(cfg['TESTO_VUOTO']), cdu); // fallback (11 §5)
     }
     const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
     const coloreBordo = str(cfg['COLORE']) !== '' ? str(cfg['COLORE']) : DEFAULT_BORDER;

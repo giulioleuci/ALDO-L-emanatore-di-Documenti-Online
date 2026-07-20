@@ -9,6 +9,13 @@
 export interface ITemplateEngine {
   /** Renders a `{{path | filter}}` string template against the CDU context. */
   processString(template: string, context: Record<string, unknown>): string;
+  /**
+   * Same as `processString`, but HTML-escapes every string leaf of `context`
+   * first (CoreUtilsLib `HtmlSanitizer.escapeContextDeep`) before rendering —
+   * use for any template whose output lands in an email HTML body, where raw
+   * CDU values (names, free text) must not be interpolated unescaped.
+   */
+  processStringEscaped(template: string, context: Record<string, unknown>): string;
   /** In-place structural rendering of a Google Doc (loops, tables, placeholders). Throws on render failure. */
   processDocument(fileId: string, context: Record<string, unknown>): void;
   /**
@@ -40,6 +47,10 @@ export class TemplateEngineFacade implements ITemplateEngine {
 
   processString(template: string, context: Record<string, unknown>): string {
     return this.service.processString(template, context);
+  }
+
+  processStringEscaped(template: string, context: Record<string, unknown>): string {
+    return this.service.processString(template, HtmlSanitizer.escapeContextDeep(context));
   }
 
   processDocument(fileId: string, context: Record<string, unknown>): void {

@@ -30,7 +30,7 @@ export class FakeDriveFacade implements IDriveFacade {
   getFileBlob(fileId: string): unknown {
     return `blob:${fileId}`;
   }
-  getFileOwnerEmail(_fileId: string): string | null {
+  getFileOwnerEmail(): string | null {
     return this.ownerEmail;
   }
 }

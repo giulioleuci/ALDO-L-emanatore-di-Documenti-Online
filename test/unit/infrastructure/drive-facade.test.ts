@@ -68,6 +68,7 @@ function fakeDrive() {
     })),
     getFileByIdStandard: jest.fn(() => ({ getBlob: () => 'BLOB' })),
     getFiles: jest.fn(),
+    getFileOwnerEmail: jest.fn(),
     folders // test-only escape hatch
   };
   const perms = {
@@ -166,6 +167,21 @@ test('getFileBlob returns the native Blob via getFileByIdStandard (11 §13)', ()
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
   expect(facade.getFileBlob('file_1')).toBe('BLOB');
   expect(drive.getFileByIdStandard).toHaveBeenCalledWith('file_1');
+});
+
+test('getFileOwnerEmail delegates directly to DriveService.getFileOwnerEmail', () => {
+  const { drive, perms } = fakeDrive();
+  drive.getFileOwnerEmail.mockReturnValue('owner@school.it');
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  expect(facade.getFileOwnerEmail('file_1')).toBe('owner@school.it');
+  expect(drive.getFileOwnerEmail).toHaveBeenCalledWith('file_1');
+});
+
+test('getFileOwnerEmail passes through null when the file has no owner', () => {
+  const { drive, perms } = fakeDrive();
+  drive.getFileOwnerEmail.mockReturnValue(null);
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  expect(facade.getFileOwnerEmail('file_1')).toBeNull();
 });
 
 describe('DriveServiceFacade — copyFile failure', () => {

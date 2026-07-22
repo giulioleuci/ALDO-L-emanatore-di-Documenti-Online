@@ -5,6 +5,7 @@ export class FakeDriveFacade implements IDriveFacade {
   public copies: Array<{ templateId: string; name: string; folderId: string; fileId: string }> = [];
   public permissions: Array<{ fileId: string; email: string; permesso: string }> = [];
   public deleted: string[] = [];
+  public ownerEmail: string | null = 'owner@school.it';
   private seq = 0;
 
   findFolderByPath(path: string): string | null {
@@ -28,5 +29,8 @@ export class FakeDriveFacade implements IDriveFacade {
   }
   getFileBlob(fileId: string): unknown {
     return `blob:${fileId}`;
+  }
+  getFileOwnerEmail(_fileId: string): string | null {
+    return this.ownerEmail;
   }
 }

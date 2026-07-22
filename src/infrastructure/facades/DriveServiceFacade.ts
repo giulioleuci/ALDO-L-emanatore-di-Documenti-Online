@@ -6,6 +6,8 @@ export interface IDriveFacade {
   deleteFile(fileId: string): void;
   /** Native Drive Blob for the file, e.g. for email attachments (11 §13). */
   getFileBlob(fileId: string): unknown;
+  /** Email of the Drive file's owner, or null if none is present (e.g. a Shared Drive file). */
+  getFileOwnerEmail(fileId: string): string | null;
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -83,6 +85,10 @@ export class DriveServiceFacade implements IDriveFacade {
 
   getFileBlob(fileId: string): unknown {
     return this.drive.getFileByIdStandard(fileId).getBlob();
+  }
+
+  getFileOwnerEmail(fileId: string): string | null {
+    return this.drive.getFileOwnerEmail(fileId);
   }
 }
 

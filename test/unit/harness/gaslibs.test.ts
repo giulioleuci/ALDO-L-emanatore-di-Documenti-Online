@@ -203,6 +203,18 @@ test('vendored DocumentService exposes document()/scanDocumentStructure (DOCUMEN
   expect(typeof builder.execute).toBe('function');
 });
 
+test('vendored DocumentBuilder exposes appendParagraph/setText (blank-doc content authoring, e2e templates)', () => {
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const builder = documents.document('doc1');
+  expect(typeof builder.appendParagraph).toBe('function');
+  expect(typeof builder.setText).toBe('function');
+  // Chainable, like every other DocumentBuilder op (ref DocumentTableFacade usage).
+  expect(builder.appendParagraph('x')).toBe(builder);
+});
+
 test('vendored ProcessMonitorService exposes the real job-progress API', () => {
   const logger = new LoggerService();
   // Stateful fake cache so hasJob (which reads state back) can be exercised.

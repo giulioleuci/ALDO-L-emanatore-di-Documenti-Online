@@ -1,4 +1,5 @@
-import type { IArtifactFactory } from './E2eTemplateProvisioner';
+import type { IArtifactFactory, SheetValueUpdate } from './E2eTemplateProvisioner';
+import { DomainError } from '../domain/errors/DomainError';
 
 /**
  * Real `DocumentService.createDocument`/`SpreadsheetService.createSpreadsheet`-backed
@@ -13,11 +14,31 @@ export class GasArtifactFactory implements IArtifactFactory {
     private readonly spreadsheets: SpreadsheetService
   ) {}
 
-  createDocument(name: string, folderId: string): string {
-    return this.documents.createDocument(name, { destinationFolder: folderId }).documentId;
+  createDocument(name: string, folderId: string, paragraphs: string[] = []): string {
+    const { documentId, builder } = this.documents.createDocument(name, {
+      destinationFolder: folderId
+    });
+    if (paragraphs.length === 0) return documentId;
+    paragraphs.forEach((paragraph) => builder.appendParagraph(paragraph));
+    const result = builder.execute();
+    if (!result.success) {
+      throw new DomainError(`GasArtifactFactory.createDocument(${name}): ${String(result.error)}`);
+    }
+    return documentId;
   }
 
-  createSheet(name: string, folderId: string): string {
-    return this.spreadsheets.createSpreadsheet(name, { destinationFolder: folderId }).spreadsheetId;
+  createSheet(name: string, folderId: string, updates: SheetValueUpdate[] = []): string {
+    const spreadsheet = this.spreadsheets.createSpreadsheet(name, { destinationFolder: folderId });
+    if (updates.length === 0) return spreadsheet.spreadsheetId;
+    // `sheets[0]` is the create call's own auto-generated default tab (real API response —
+    // ref types/gaslibs/index.d.ts `createSpreadsheet` doc — not a second, racy schema read).
+    const defaultSheetName = spreadsheet.sheets?.[0]?.properties.title ?? 'Sheet1';
+    const escapedSheetName = defaultSheetName.replace(/'/g, "''");
+    const qualified = updates.map((update) => ({
+      range: `'${escapedSheetName}'!${update.range}`,
+      values: update.values
+    }));
+    this.spreadsheets.updateRanges(spreadsheet.spreadsheetId, qualified);
+    return spreadsheet.spreadsheetId;
   }
 }

@@ -843,11 +843,22 @@ declare global {
       spreadsheetId: string,
       options?: { includeHidden?: boolean }
     ): SpreadsheetSheetInfo[];
-    /** Creates a brand-new, empty spreadsheet (no template to clone) via the Advanced Sheets API. */
+    /**
+     * Creates a brand-new, empty spreadsheet (no template to clone) via the Advanced Sheets API.
+     * Returns the raw `Sheets.Spreadsheets.create` response (delegated straight through by
+     * `SpreadsheetHybridManager` — no field trimming), so `sheets[0].properties.title` (the
+     * locale-dependent default-tab name, e.g. "Foglio1" vs "Sheet1") is available immediately
+     * from THIS response — no follow-up `getSheetInfo` read needed (and none of that read's
+     * Advanced-Sheets-API propagation lag, ref `DatabaseSchemaExplorer`'s `verifyTables`).
+     */
     createSpreadsheet(
       title: string,
       options?: { destinationFolder?: string; locale?: string; timeZone?: string }
-    ): { spreadsheetId: string; spreadsheetUrl?: string };
+    ): {
+      spreadsheetId: string;
+      spreadsheetUrl?: string;
+      sheets?: Array<{ properties: { sheetId: number; title: string; index: number } }>;
+    };
     /** The spreadsheet this script is bound to (only meaningful for a container-bound script, e.g. run from the Apps Script editor's Run dropdown on the MASTER sheet). */
     getActiveStandard(): { getId(): string };
     /** Single range -> values grid. Array of ranges -> Record<range, values grid> (not used by ALDO yet). */
@@ -905,9 +916,17 @@ declare global {
     success: boolean;
     error?: unknown;
   }
+  interface DocumentParagraphOptions {
+    heading?: 1 | 2 | 3 | 4 | 5 | 6;
+    alignment?: 'center' | 'right' | 'justify' | 'left';
+  }
   class DocumentBuilder {
     replaceText(searchPattern: string, replacement: string): DocumentBuilder;
     createTable(data: string[][], options?: DocumentCreateTableOptions): DocumentBuilder;
+    /** Queues a paragraph append (real op type verified against GoogleApiWrapper/src/services/DocumentBuilder.js). */
+    appendParagraph(text: string, options?: DocumentParagraphOptions): DocumentBuilder;
+    /** Queues a full body content override (deletes existing body text first). */
+    setText(text: string): DocumentBuilder;
     execute(): DocumentBuilderExecuteResult;
   }
   interface DocumentInsertTableAtMarkerResult {

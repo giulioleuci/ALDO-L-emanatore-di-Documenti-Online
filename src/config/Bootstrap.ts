@@ -18,6 +18,7 @@ import { AggregatoreDati } from '../application/services/AggregatoreDati';
 import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
 import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
 import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/DocumentoGenericoGeneratorStrategy';
+import { FoglioGenericoGeneratorStrategy } from '../application/strategies/FoglioGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
@@ -98,6 +99,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     const registry = new Map<string, GeneratorStrategy>([
       ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
       ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
+      ['FOGLIO_GENERICO', new FoglioGenericoGeneratorStrategy(deps.templates)],
       ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
     ]);
     if (deps.spreadsheets !== undefined) {

@@ -92,6 +92,8 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.get('reportService')).toBeInstanceOf(ReportService);
   expect(c.get('aggregatoreDati')).toBeInstanceOf(AggregatoreDati);
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
+  const registry = c.get<Map<string, unknown>>('strategyRegistry');
+  expect(registry.has('FOGLIO_GENERICO')).toBe(true);
 });
 
 test('the wired email service actually sends through the container graph (smoke)', () => {

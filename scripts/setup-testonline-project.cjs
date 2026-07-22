@@ -57,7 +57,9 @@ function createProject() {
     process.exit(1);
   }
 
-  const urlMatch = output.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  const urlMatch = output.match(
+    /https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)|https:\/\/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/
+  );
   if (urlMatch === null) {
     console.error(
       'clasp create succeeded but its output did not contain a recognizable spreadsheet URL. ' +
@@ -65,7 +67,7 @@ function createProject() {
     );
     process.exit(1);
   }
-  const masterSpreadsheetId = urlMatch[1];
+  const masterSpreadsheetId = urlMatch[1] || urlMatch[2];
 
   fs.writeFileSync(claspJsonPath, JSON.stringify({ scriptId: scratchClasp.scriptId, rootDir: './dist' }, null, 2) + '\n');
   fs.writeFileSync(

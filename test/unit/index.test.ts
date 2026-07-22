@@ -4,7 +4,8 @@ jest.mock('../../src/config/Bootstrap', () => ({
   avviaGenerazioneDataDriven: jest.fn(),
   avviaInvioNotificheDataDriven: jest.fn(),
   avviaImportazioneDataDriven: jest.fn(),
-  riprendiJobSospeso: jest.fn()
+  riprendiJobSospeso: jest.fn(),
+  PROP_MASTER_SPREADSHEET_ID: 'MASTER_SPREADSHEET_ID'
 }));
 jest.mock('../../src/presentation/Menu', () => ({
   costruisciMenu: jest.fn(),
@@ -13,9 +14,15 @@ jest.mock('../../src/presentation/Menu', () => ({
   menuImportazioni: jest.fn()
 }));
 jest.mock('../../src/infrastructure/facades/UiFacade', () => ({ GasUiFacade: jest.fn() }));
+jest.mock('../../src/infrastructure/facades/PropertiesFacade', () => ({
+  ScriptPropertiesFacade: jest.fn().mockImplementation(() => ({
+    set: jest.fn()
+  }))
+}));
 
-import { aldoPing, resumeJob } from '../../src/index';
+import { aldoPing, resumeJob, impostaMasterSpreadsheetId } from '../../src/index';
 import { initAldo, riprendiJobSospeso } from '../../src/config/Bootstrap';
+import { ScriptPropertiesFacade } from '../../src/infrastructure/facades/PropertiesFacade';
 
 test('aldoPing returns readiness string', () => {
   expect(aldoPing()).toBe('ALDO OK');
@@ -37,5 +44,23 @@ describe('resumeJob', () => {
     (initAldo as jest.Mock).mockReturnValue(container);
     resumeJob();
     expect(riprendiJobSospeso).toHaveBeenCalledWith(container, expect.anything());
+  });
+});
+
+describe('impostaMasterSpreadsheetId', () => {
+  test('reads the bound spreadsheet id via SpreadsheetService.getActiveStandard and writes it to ScriptProperties', () => {
+    const getActiveStandard = jest.fn().mockReturnValue({ getId: () => 'BOUND_SHEET_ID' });
+    const spreadsheetServiceSpy = jest
+      .spyOn(ServiceFactory, 'getSpreadsheetService')
+      .mockReturnValue({ getActiveStandard } as never);
+    const mockFacadeInstance = { set: jest.fn() };
+    (ScriptPropertiesFacade as jest.Mock).mockReturnValue(mockFacadeInstance);
+
+    impostaMasterSpreadsheetId();
+
+    expect(getActiveStandard).toHaveBeenCalled();
+    expect(mockFacadeInstance.set).toHaveBeenCalledWith('MASTER_SPREADSHEET_ID', 'BOUND_SHEET_ID');
+
+    spreadsheetServiceSpy.mockRestore();
   });
 });

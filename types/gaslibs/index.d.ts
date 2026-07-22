@@ -841,6 +841,8 @@ declare global {
       title: string,
       options?: { destinationFolder?: string; locale?: string; timeZone?: string }
     ): { spreadsheetId: string; spreadsheetUrl?: string };
+    /** The spreadsheet this script is bound to (only meaningful for a container-bound script, e.g. run from the Apps Script editor's Run dropdown on the MASTER sheet). */
+    getActiveStandard(): { getId(): string };
     /** Single range -> values grid. Array of ranges -> Record<range, values grid> (not used by ALDO yet). */
     getRanges(spreadsheetId: string, ranges: string): unknown[][];
     updateRanges(

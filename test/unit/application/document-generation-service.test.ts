@@ -1,6 +1,7 @@
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
 import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
+import { DocPersonalizzatoGeneratorStrategy } from '../../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
@@ -115,5 +116,43 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
     expect(result.fileId).not.toBeNull();
     expect(result.status).toBe('UNKNOWN');
+  });
+});
+
+describe('DocumentGenerationService.generateForAlunno', () => {
+  test('builds the CDU with tipoTarget alunno and renders the matching piano', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_PIANO',
+      TIPO: 'PIANO',
+      GENERATORE: 'DOC_PERSONALIZZATO',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_piano"}',
+      FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+      PATH_OUT: 'Piani',
+      PATH_OUT_SOTTOCARTELLE: null,
+      SCHEMA_SOTTOCARTELLE: 'UNO PER PIANO PERSONALIZZATO',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: '{"tipoPiano":"PEI"}',
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC'
+    });
+    const templates = new FakeTemplateEngine();
+    const { service } = wire(tables, {
+      registry: new Map([['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(templates)]])
+    });
+
+    const result = service.generateForAlunno('a1@school.it', 'CD_PIANO');
+
+    expect(result.fileId).not.toBeNull();
+    expect(result.status).not.toBe('SKIPPED');
+    const ctx = templates.contextFor(result.fileId!) as { piano: Record<string, unknown> };
+    expect(ctx.piano).toEqual({ gravita: 'media' }); // a1@school.it's fixtured PEI piano (tables.ts:249)
+  });
+
+  test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
+    const { service } = wire();
+    expect(() => service.generateForAlunno('a1@school.it', 'MISSING_ID')).toThrow(PipelineError);
   });
 });

@@ -139,6 +139,58 @@ export class DocumentGenerationService {
     return { fileId, status };
   }
 
+  /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
+  generateForAlunno(
+    target: string,
+    confDocId: string,
+    jobId?: string
+  ): { fileId: string | null; status: string } {
+    const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
+    if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
+    const config = ConfigurazioneDocumento.fromData(row);
+    if (!this.strategyRegistry.has(config.generatore)) {
+      throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
+    }
+
+    const cdu = this.contextBuilder.build(
+      {
+        target,
+        tipoTarget: 'alunno',
+        now: this.now,
+        idConfigurazione: confDocId,
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+      },
+      recipe('ALUNNO_COMPLETO')
+    );
+
+    this.db.beginTransaction();
+    let ctx: PipelineContext;
+    try {
+      ctx = this.buildPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+    } catch (e) {
+      this.db.rollback();
+      throw e;
+    }
+
+    const critical = ctx.getFlag<string>('criticalError');
+    if (critical !== null) {
+      this.db.rollback();
+      throw new PipelineError(critical);
+    }
+    this.db.commit();
+
+    const fileId = ctx.get<string>('newFileId');
+    const status =
+      fileId !== null
+        ? String(
+            this.db.table(TABLE.LOG_DOCS).find((r) => r[COL_LOG_DOCS.ID] === fileId)?.[
+              COL_LOG_DOCS.STATO
+            ] ?? 'UNKNOWN'
+          )
+        : 'SKIPPED';
+    return { fileId, status };
+  }
+
   /**
    * The document pipeline (10 §1-§12) on the library orchestrator. stopOnError
    * is false so non-critical failures are recorded in the execution history and

@@ -6,6 +6,10 @@ export interface IDriveFacade {
   deleteFile(fileId: string): void;
   /** Native Drive Blob for the file, e.g. for email attachments (11 §13). */
   getFileBlob(fileId: string): unknown;
+  /** Email of the Drive file's owner, or null if none is present (e.g. a Shared Drive file). */
+  getFileOwnerEmail(fileId: string): string | null;
+  /** Finds a non-trashed file by exact name directly under `folderId`, or null if none matches. */
+  findFileByName(folderId: string, name: string): string | null;
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -43,6 +47,12 @@ export class DriveServiceFacade implements IDriveFacade {
       parent = found.id;
     }
     return parent === this.rootFolderId ? null : parent;
+  }
+
+  findFileByName(folderId: string, name: string): string | null {
+    const query = `'${folderId}' in parents and name = '${escapeQuery(name)}' and trashed=false`;
+    const found = this.drive.searchFiles(query, { maxResults: 1 })[0];
+    return found === undefined ? null : found.id;
   }
 
   /** Idempotent path creation: each segment is find-or-create (14 §4 — prevents duplicate folders). */
@@ -83,6 +93,10 @@ export class DriveServiceFacade implements IDriveFacade {
 
   getFileBlob(fileId: string): unknown {
     return this.drive.getFileByIdStandard(fileId).getBlob();
+  }
+
+  getFileOwnerEmail(fileId: string): string | null {
+    return this.drive.getFileOwnerEmail(fileId);
   }
 }
 

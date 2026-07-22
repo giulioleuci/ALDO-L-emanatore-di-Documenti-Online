@@ -1,4 +1,5 @@
 import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
+import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
@@ -57,6 +58,13 @@ test('DocumentoGenericoGeneratorStrategy renders the whole CDU with no extra str
   const cdu = cduConPiani([]);
   new DocumentoGenericoGeneratorStrategy(templates).render('file_1', cdu);
   expect(templates.contextFor('file_1')).toEqual(cdu);
+});
+
+test('FoglioGenericoGeneratorStrategy renders the whole CDU into a Sheet with no extra structure', () => {
+  const templates = new FakeTemplateEngine();
+  const cdu = cduConPiani([]);
+  new FoglioGenericoGeneratorStrategy(templates).render('sheet_1', cdu);
+  expect(templates.sheetContextFor('sheet_1')).toEqual(cdu);
 });
 
 describe('DocPersonalizzatoGeneratorStrategy (10 §9)', () => {

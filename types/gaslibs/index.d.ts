@@ -296,6 +296,8 @@ declare global {
       query: string,
       options?: { maxResults?: number; orderBy?: string }
     ): DriveFileMetadata[];
+    /** Owner email of the Drive file, or null when none is present (e.g. a Shared Drive file). */
+    getFileOwnerEmail(fileId: string): string | null;
   }
   class PermissionService {
     /** `role` is a Drive API v3 role: 'writer' | 'reader' | 'commenter'. */
@@ -834,6 +836,13 @@ declare global {
       spreadsheetId: string,
       options?: { includeHidden?: boolean }
     ): SpreadsheetSheetInfo[];
+    /** Creates a brand-new, empty spreadsheet (no template to clone) via the Advanced Sheets API. */
+    createSpreadsheet(
+      title: string,
+      options?: { destinationFolder?: string; locale?: string; timeZone?: string }
+    ): { spreadsheetId: string; spreadsheetUrl?: string };
+    /** The spreadsheet this script is bound to (only meaningful for a container-bound script, e.g. run from the Apps Script editor's Run dropdown on the MASTER sheet). */
+    getActiveStandard(): { getId(): string };
     /** Single range -> values grid. Array of ranges -> Record<range, values grid> (not used by ALDO yet). */
     getRanges(spreadsheetId: string, ranges: string): unknown[][];
     updateRanges(
@@ -903,6 +912,11 @@ declare global {
   class DocumentService {
     /** Returns a fluent op-batching builder; nothing executes until `.execute()` (10 §9 table import). */
     document(documentId: string): DocumentBuilder;
+    /** Creates a brand-new, empty document (no template to clone) via the Advanced Docs API. */
+    createDocument(
+      name: string,
+      options?: { destinationFolder?: string }
+    ): { documentId: string; builder: DocumentBuilder };
     /** Docs-structure scan filtered to paragraphs/table cells containing any of `textPatterns` (default `['{{']`). */
     scanDocumentStructure(documentId: string, textPatterns?: string[]): DocumentScanResult;
     /**

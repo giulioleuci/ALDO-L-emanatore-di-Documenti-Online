@@ -30,6 +30,7 @@ import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
+import { DriveServiceFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -91,6 +92,8 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.get('reportService')).toBeInstanceOf(ReportService);
   expect(c.get('aggregatoreDati')).toBeInstanceOf(AggregatoreDati);
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
+  const registry = c.get<Map<string, unknown>>('strategyRegistry');
+  expect(registry.has('FOGLIO_GENERICO')).toBe(true);
 });
 
 test('the wired email service actually sends through the container graph (smoke)', () => {
@@ -315,6 +318,86 @@ describe('initAldo — singleton reuse + missing master id', () => {
       );
     }
   );
+
+  test('enables EmailNotificationService test mode with the MASTER file owner email when annoCorrente.testMode is true', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const restoreFactory = mockServiceFactory();
+    const fakeMaster = {
+      idSpreadsheet: 'ss1',
+      idCartellaRoot: 'root1',
+      testMode: true
+    } as never;
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue(fakeMaster);
+    const ownerSpy = jest
+      .spyOn(DriveServiceFacade.prototype, 'getFileOwnerEmail')
+      .mockReturnValue('owner@school.it');
+    const enableSpy = jest.spyOn(EmailNotificationService.prototype, 'enableTestMode');
+    try {
+      const props = { get: jest.fn().mockReturnValue('MASTER_ID_1'), set: jest.fn() };
+      initAldo(new Date('2026-01-01'), props);
+      expect(ownerSpy).toHaveBeenCalledWith('MASTER_ID_1');
+      expect(enableSpy).toHaveBeenCalledWith('owner@school.it');
+    } finally {
+      enableSpy.mockRestore();
+      ownerSpy.mockRestore();
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
+  });
+
+  test('does not enable test mode when annoCorrente.testMode is false', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const restoreFactory = mockServiceFactory();
+    const fakeMaster = { idSpreadsheet: 'ss1', idCartellaRoot: 'root1', testMode: false } as never;
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue(fakeMaster);
+    const ownerSpy = jest.spyOn(DriveServiceFacade.prototype, 'getFileOwnerEmail');
+    const enableSpy = jest.spyOn(EmailNotificationService.prototype, 'enableTestMode');
+    try {
+      const props = { get: jest.fn().mockReturnValue('MASTER_ID_1'), set: jest.fn() };
+      initAldo(new Date('2026-01-01'), props);
+      expect(ownerSpy).not.toHaveBeenCalled();
+      expect(enableSpy).not.toHaveBeenCalled();
+    } finally {
+      enableSpy.mockRestore();
+      ownerSpy.mockRestore();
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
+  });
+
+  test('throws ConfigurationError (without caching a broken container) when testMode is true and the owner cannot be resolved', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const restoreFactory = mockServiceFactory();
+    const fakeMaster = { idSpreadsheet: 'ss1', idCartellaRoot: 'root1', testMode: true } as never;
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue(fakeMaster);
+    const ownerSpy = jest
+      .spyOn(DriveServiceFacade.prototype, 'getFileOwnerEmail')
+      .mockReturnValue(null);
+    try {
+      const props = { get: jest.fn().mockReturnValue('MASTER_ID_1'), set: jest.fn() };
+      expect(() => initAldo(new Date('2026-01-01'), props)).toThrow(ConfigurationError);
+      // Not cached: a retry with a working owner must succeed, not return a stale broken instance.
+      ownerSpy.mockReturnValue('owner@school.it');
+      const enableSpy = jest.spyOn(EmailNotificationService.prototype, 'enableTestMode');
+      const c = initAldo(new Date('2026-01-01'), props);
+      expect(enableSpy).toHaveBeenCalledWith('owner@school.it');
+      expect(c).toBeDefined();
+      enableSpy.mockRestore();
+    } finally {
+      ownerSpy.mockRestore();
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
+  });
 });
 
 test('deps.monitor flows through to both batch services (15 §9)', () => {

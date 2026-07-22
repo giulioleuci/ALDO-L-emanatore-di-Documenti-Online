@@ -18,6 +18,7 @@ import { AggregatoreDati } from '../application/services/AggregatoreDati';
 import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
 import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
 import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/DocumentoGenericoGeneratorStrategy';
+import { FoglioGenericoGeneratorStrategy } from '../application/strategies/FoglioGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
@@ -98,6 +99,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     const registry = new Map<string, GeneratorStrategy>([
       ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
       ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
+      ['FOGLIO_GENERICO', new FoglioGenericoGeneratorStrategy(deps.templates)],
       ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
     ]);
     if (deps.spreadsheets !== undefined) {
@@ -314,13 +316,15 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheetService)
   );
 
-  runtime = buildAldoContainer({
+  const driveFacade = new DriveServiceFacade(
+    ServiceFactory.getDriveService(),
+    ServiceFactory.getPermissionService(),
+    annoCorrente.idCartellaRoot
+  );
+
+  const container = buildAldoContainer({
     db,
-    drive: new DriveServiceFacade(
-      ServiceFactory.getDriveService(),
-      ServiceFactory.getPermissionService(),
-      annoCorrente.idCartellaRoot
-    ),
+    drive: driveFacade,
     gmail: new GmailServiceFacade(ServiceFactory.getMailService()),
     templates: new TemplateEngineFacade(),
     expressionEngine: new ExpressionEngineFacade(),
@@ -337,6 +341,27 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     now,
     logger
   });
+
+  if (annoCorrente.testMode) {
+    let ownerEmail: string | null;
+    try {
+      ownerEmail = driveFacade.getFileOwnerEmail(masterId);
+    } catch (err) {
+      throw new ConfigurationError(
+        `TEST_MODE attivo ma impossibile risolvere il proprietario del Master Sheet ${masterId}: ${(err as Error).message}`
+      );
+    }
+    if (ownerEmail === null) {
+      throw new ConfigurationError(
+        `TEST_MODE attivo ma il Master Sheet ${masterId} non ha un proprietario Drive risolvibile`
+      );
+    }
+    container
+      .get<EmailNotificationService>('emailNotificationService')
+      .enableTestMode(ownerEmail);
+  }
+
+  runtime = container;
   return runtime;
 }
 

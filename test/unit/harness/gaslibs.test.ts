@@ -143,6 +143,7 @@ test('vendored DriveService/PermissionService instances expose the real bound AP
   expect(typeof drive.createFolder).toBe('function');
   expect(typeof drive.getFiles).toBe('function');
   expect(typeof drive.searchFiles).toBe('function');
+  expect(typeof drive.getFileOwnerEmail).toBe('function');
   const perms = new PermissionService(logger, fakeCache, new UtilsService(), fakeExceptionService);
   expect(typeof perms.shareWithUsers).toBe('function');
 });
@@ -167,6 +168,21 @@ test('vendored SpreadsheetService exposes the real bound API surface (Sheet-writ
   expect(typeof sheets.formatRanges).toBe('function');
   expect(typeof sheets.createSheets).toBe('function');
   expect(typeof sheets.protectRanges).toBe('function');
+});
+
+test('vendored DocumentService/SpreadsheetService expose createDocument/createSpreadsheet (blank-artifact creation, no template to clone)', () => {
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const sheets = new SpreadsheetService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
+  expect(typeof documents.createDocument).toBe('function');
+  expect(typeof sheets.createSpreadsheet).toBe('function');
 });
 
 test('vendored DocumentService exposes document()/scanDocumentStructure (DOCUMENTO_CON_TABELLE_IMPORTATE, 10 §9)', () => {

@@ -15,6 +15,7 @@ Lo script orchestratore SGSA è associato a un unico foglio di calcolo **Master 
 | `ID_CARTELLA_GOOGLE`   | Drive Folder ID; OBBLIGATORIO                             | ID della cartella Drive radice in cui SEMPRE salvare tutti i documenti generati per l'anno                                                            |
 | `DIRIGENTE_SCOLASTICO` | Testo, formato `"prof.ssa MARIA BIANCHI"`; OBBLIGATORIO   | Nome del dirigente scolastico                                                                                                                         |
 | `SUPERVISORE_EMAIL`    | Email valida oppure vuota                                 | Indirizzo a cui inviare in BCC tutte le email del sistema; PUÒ essere vuoto — in tal caso NESSUN BCC è aggiunto (vedi `11_PIPELINE_EMAIL.md`, Step 4) |
+| `TEST_MODE`             | `VERO`/`FALSO` (booleano) oppure vuoto; default `FALSO`    | Se `VERO`, ogni email inviata dal sistema viene reindirizzata (solo campo A, CC/BCC soppressi) all'indirizzo del proprietario Drive del Master Sheet, invece dei destinatari reali                                                    |
 
 **Ordinamento e anno corrente:** le righe del Master Sheet DEVONO SEMPRE essere mantenute in ordine cronologico decrescente per `ANNO_SCOLASTICO`. La prima riga È quindi SEMPRE l'anno scolastico corrente; la profondità storica si ottiene scorrendo le righe successive, senza alcun calcolo. NON esiste — e NON DEVE esistere — un parametro di configurazione separato per indicare l'anno corrente.
 

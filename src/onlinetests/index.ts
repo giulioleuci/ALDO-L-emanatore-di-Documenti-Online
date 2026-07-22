@@ -11,6 +11,10 @@ import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
 import { registerRepositoryChecks } from './checks/repositoryChecks';
 import { registerContextEngineChecks } from './checks/contextEngineChecks';
 import { registerPipelineChecks } from './checks/pipelineChecks';
+import { E2eSampleDatabaseBuilder, type E2eTemplateIds } from './E2eSampleDatabaseBuilder';
+import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
+import { GasArtifactFactory } from './GasArtifactFactory';
+import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
 
 /**
  * Every seam {@link executeOnlineTests} needs that ultimately touches something outside plain
@@ -113,4 +117,79 @@ export function runOnlineTests(): void {
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).runOnlineTests = runOnlineTests;
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+
+export interface E2eTestDeps {
+  spreadsheetFactory: ISampleSpreadsheetFactory;
+  artifactFactory: IArtifactFactory;
+  drive: IDriveFacade;
+  clock: () => Date;
+  properties: IPropertiesFacade;
+  initAldo: (now?: Date, props?: IPropertiesFacade) => ServiceContainer;
+  log: (message: string) => void;
+}
+
+const E2E_ROOT_FOLDER_NAME = '_ALDO_E2E_ROOT';
+
+function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
+  return testContext.getOrCreateNamedFolder(E2E_ROOT_FOLDER_NAME) as GoogleAppsScript.Drive.Folder;
+}
+
+/**
+ * Orchestration entry point for the 7 e2e scenarios (design spec
+ * `2026-07-21-testonline-mock-db-e2e-design.md`): provisions the 7 real Drive templates,
+ * builds the larger persistent mock database against them, points
+ * `PROP_MASTER_SPREADSHEET_ID` at its MASTER sheet (previous value logged, never discarded),
+ * boots a real ALDO container (which — via `initAldo`'s TEST_MODE wiring — auto-enables
+ * `EmailNotificationService` test mode from the mock MASTER's `TEST_MODE=true`), and runs
+ * `registerE2eScenarioChecks`. Deliberately a SEPARATE top-level entry point from
+ * `executeOnlineTests` — different master pointer, unrelated failure semantics, either can
+ * run alone (design spec "New checks").
+ */
+export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  const clock = overrides.clock ?? ((): Date => new Date());
+  const rootFolder = overrides.drive === undefined ? mintE2eRootFolder() : null;
+  const drive =
+    overrides.drive ??
+    new DriveServiceFacade(
+      ServiceFactory.getDriveService(),
+      ServiceFactory.getPermissionService(),
+      (rootFolder as NonNullable<typeof rootFolder>).getId()
+    );
+  const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
+  const artifactFactory =
+    overrides.artifactFactory ??
+    new GasArtifactFactory(ServiceFactory.getDocumentService(), ServiceFactory.getSpreadsheetService());
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const log = overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
+
+  const templateFolderId = drive.createFolder('_ALDO_E2E_TEMPLATES');
+  const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
+    templateFolderId
+  );
+  const sample = new E2eSampleDatabaseBuilder(spreadsheetFactory, drive).build(templateIds);
+
+  const previousMasterId = properties.get(PROP_MASTER_SPREADSHEET_ID);
+  if (previousMasterId !== null && previousMasterId.trim() !== '') {
+    log(`Previous MASTER_SPREADSHEET_ID before e2e-scenario override: ${previousMasterId}`);
+  }
+  properties.set(PROP_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
+
+  const container = initAldoFn(clock(), properties);
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, { ...sample, testMode: sample.masterTestMode });
+
+  return runner.report();
+}
+
+/** GAS Run-dropdown entry point: no arguments, so it runs with no setup. */
+export function runE2eScenarios(): void {
+  const report = executeE2eScenarios();
+  Logger.log(JSON.stringify(report));
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+(globalThis as any).runE2eScenarios = runE2eScenarios;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

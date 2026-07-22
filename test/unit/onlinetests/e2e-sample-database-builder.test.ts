@@ -110,12 +110,14 @@ test('seeds exactly 2 CARENZE rows, for the two designated students only', () =>
   expect(typeof row2[MATERIE_E2E[0]]).toBe('number');
 });
 
-test('MASTER row has TEST_MODE = true', () => {
+test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const master = sheets.get('_ALDO_E2E_MASTER')!;
   expect(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]).toBe(true);
+  expect(result.masterTestMode).toBe(true);
+  expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
 });
 
 test('seeds 7 CONF_DOC rows (1 verbale + 1 condotta + 5 piani) each pointing at its provisioned template', () => {

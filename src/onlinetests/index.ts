@@ -179,7 +179,7 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   const container = initAldoFn(clock(), properties);
 
   const runner = new TestRunner();
-  registerE2eScenarioChecks(runner, container, { ...sample, testMode: true });
+  registerE2eScenarioChecks(runner, container, { ...sample, testMode: sample.masterTestMode });
 
   return runner.report();
 }

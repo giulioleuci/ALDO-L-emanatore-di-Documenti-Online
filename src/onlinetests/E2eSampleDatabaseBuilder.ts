@@ -66,6 +66,7 @@ export interface E2eSampleDatabase {
   sampleSpreadsheetId: string;
   sampleSpreadsheetUrl: string;
   sampleFolderUrl: string;
+  masterTestMode: boolean;
 }
 
 const HEADERS: Record<string, string[]> = {
@@ -138,13 +139,15 @@ export class E2eSampleDatabaseBuilder {
     this.seedPiani(sample);
     this.seedConfDoc(sample, templateIds);
     this.seedConfMail(sample);
-    this.seedMaster(master, sample.id, folderId);
+    const masterTestMode = true;
+    this.seedMaster(master, sample.id, folderId, masterTestMode);
 
     return {
       masterSpreadsheetId: master.id,
       sampleSpreadsheetId: sample.id,
       sampleSpreadsheetUrl: sample.getUrl(),
-      sampleFolderUrl
+      sampleFolderUrl,
+      masterTestMode
     };
   }
 
@@ -192,7 +195,7 @@ export class E2eSampleDatabaseBuilder {
       ING: 'Inglese',
       STO: 'Storia'
     };
-    MATERIE_E2E.forEach((sigla, i) => {
+    MATERIE_E2E.forEach((sigla) => {
       sample.appendRow(TABLE.MATERIE, {
         [COL_MATERIE.ID]: sigla,
         [COL_MATERIE.NOME]: nomi[sigla],
@@ -203,7 +206,6 @@ export class E2eSampleDatabaseBuilder {
         [COL_MATERIE.ESAME_CFG]: '',
         [COL_MATERIE.EVOLUZIONE]: ''
       });
-      void i;
     });
   }
 
@@ -443,14 +445,19 @@ export class E2eSampleDatabaseBuilder {
     });
   }
 
-  private seedMaster(master: ISampleSpreadsheet, sampleSpreadsheetId: string, folderId: string): void {
+  private seedMaster(
+    master: ISampleSpreadsheet,
+    sampleSpreadsheetId: string,
+    folderId: string,
+    testMode: boolean
+  ): void {
     master.appendRow(TABLE.MASTER, {
       [COL_MASTER.ANNO_SCOLASTICO]: '2026/2027',
       [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
       [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
       [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente E2E',
       [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local',
-      [COL_MASTER.TEST_MODE]: true
+      [COL_MASTER.TEST_MODE]: testMode
     });
   }
 }

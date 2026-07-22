@@ -11,6 +11,7 @@ test('refuses to register any check and reports a single failure when the sample
     sampleSpreadsheetId: 's',
     sampleSpreadsheetUrl: 'https://example.test/s',
     sampleFolderUrl: 'https://example.test/f',
+    masterTestMode: false,
     testMode: false
   };
 

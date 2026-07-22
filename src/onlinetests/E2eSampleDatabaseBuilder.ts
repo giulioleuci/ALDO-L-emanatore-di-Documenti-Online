@@ -77,7 +77,7 @@ const HEADERS: Record<string, string[]> = {
   [TABLE.DIPART]: Object.values(COL_DIPART),
   [TABLE.RUOLI]: Object.values(COL_RUOLI),
   [TABLE.PIANI]: Object.values(COL_PIANI),
-  [TABLE.CARENZE]: Object.values(COL_CARENZE),
+  [TABLE.CARENZE]: [...Object.values(COL_CARENZE), ...MATERIE_E2E],
   [TABLE.PROGETTI]: Object.values(COL_PROGETTI),
   [TABLE.MOV_ALUNNI]: Object.values(COL_MOV_ALUNNI),
   [TABLE.ASL]: Object.values(COL_ASL),
@@ -277,18 +277,31 @@ export class E2eSampleDatabaseBuilder {
     }
   }
 
-  /** Exactly 2 CARENZE rows (scenario 6, design spec confirmed this count with the user). */
+  /**
+   * Exactly 2 CARENZE rows (scenario 6, design spec confirmed this count with the user).
+   * CLASSE holds the student's class id (not a materia sigla) — CARENZA_ALUNNO_1 is in
+   * CLASSE_A, CARENZA_ALUNNO_2 is in CLASSE_B (see `seedAlunni`/`classLayouts`). Each row
+   * also carries a numeric shortfall value on the MATERIE_E2E[0] ('MAT') column, matching
+   * CARENZE's per-subject matrix shape (see CARENZE header above) — otherwise
+   * `getCarenzePerMateria` would resolve zero deficient subjects for every row.
+   */
   private seedCarenze(sample: ISampleSpreadsheet): void {
-    for (const studente of [CARENZA_ALUNNO_1, CARENZA_ALUNNO_2]) {
+    const materiaCarenza = MATERIE_E2E[0]!;
+    const rows = [
+      { studente: CARENZA_ALUNNO_1, classe: CLASSE_A },
+      { studente: CARENZA_ALUNNO_2, classe: CLASSE_B }
+    ];
+    for (const { studente, classe } of rows) {
       sample.appendRow(TABLE.CARENZE, {
         [COL_CARENZE.STUDENTE]: studente,
         [COL_CARENZE.PROGRESSIVO]: 1,
-        [COL_CARENZE.CLASSE]: MATERIE_E2E[0],
+        [COL_CARENZE.CLASSE]: classe,
         [COL_CARENZE.DATA]: '2026-07-01',
         [COL_CARENZE.NOTIFICATO]: false,
         [COL_CARENZE.ASSENZE]: false,
         [COL_CARENZE.NOTE]: 'Carenza E2E di prova',
-        [COL_CARENZE.DATA_MODIFICA]: '2026-07-01'
+        [COL_CARENZE.DATA_MODIFICA]: '2026-07-01',
+        [materiaCarenza]: 4
       });
     }
   }

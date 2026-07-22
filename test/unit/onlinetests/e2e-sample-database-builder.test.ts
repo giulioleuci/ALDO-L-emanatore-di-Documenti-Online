@@ -4,6 +4,7 @@ import {
   CLASSE_B,
   CLASSE_C,
   CLASSE_C_PARTNER,
+  MATERIE_E2E,
   e2eAlunnoEmail,
   e2eDocenteEmail,
   CARENZA_ALUNNO_1,
@@ -98,6 +99,15 @@ test('seeds exactly 2 CARENZE rows, for the two designated students only', () =>
   );
   expect(CARENZA_ALUNNO_1).toBe(e2eAlunnoEmail(1));
   expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(21));
+
+  const row1 = carenze.find((c) => c[COL_CARENZE.STUDENTE] === CARENZA_ALUNNO_1)!;
+  const row2 = carenze.find((c) => c[COL_CARENZE.STUDENTE] === CARENZA_ALUNNO_2)!;
+  expect(row1[COL_CARENZE.CLASSE]).toBe(CLASSE_A);
+  expect(row2[COL_CARENZE.CLASSE]).toBe(CLASSE_B);
+  expect(row1[MATERIE_E2E[0]]).toBeTruthy();
+  expect(row2[MATERIE_E2E[0]]).toBeTruthy();
+  expect(typeof row1[MATERIE_E2E[0]]).toBe('number');
+  expect(typeof row2[MATERIE_E2E[0]]).toBe('number');
 });
 
 test('MASTER row has TEST_MODE = true', () => {

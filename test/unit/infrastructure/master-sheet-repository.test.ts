@@ -21,6 +21,13 @@ test('MasterConfig: PK, anno VO, supervisore flag (01 §0)', () => {
   expect(
     MasterConfig.fromData({ ANNO_SCOLASTICO: '2024-2025', SUPERVISORE_EMAIL: '' }).hasSupervisore()
   ).toBe(false);
+  expect(m.testMode).toBe(false);
+  expect(
+    MasterConfig.fromData({
+      ANNO_SCOLASTICO: '2025-2026',
+      TEST_MODE: true
+    }).testMode
+  ).toBe(true);
 });
 
 test('findConfigAnnoCorrente returns the first (top) row (06 §0)', () => {

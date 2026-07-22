@@ -18,6 +18,7 @@ export class MasterConfig extends AldoEntity {
   public readonly idCartellaRoot: string;
   public readonly dirigente: string;
   public readonly supervisoreEmail: string;
+  public readonly testMode: boolean;
 
   constructor(data: MasterConfigData = {}) {
     super(data);
@@ -41,6 +42,7 @@ export class MasterConfig extends AldoEntity {
       typeof data[COL_MASTER.SUPERVISORE_EMAIL] === 'string'
         ? (data[COL_MASTER.SUPERVISORE_EMAIL] as string)
         : '';
+    this.testMode = data[COL_MASTER.TEST_MODE] === true;
     this.id = this.annoScolasticoRaw || null;
   }
 
@@ -59,7 +61,8 @@ export class MasterConfig extends AldoEntity {
       [COL_MASTER.ID_SPREADSHEET]: this.idSpreadsheet,
       [COL_MASTER.ID_CARTELLA_GOOGLE]: this.idCartellaRoot,
       [COL_MASTER.DIRIGENTE_SCOLASTICO]: this.dirigente,
-      [COL_MASTER.SUPERVISORE_EMAIL]: this.supervisoreEmail
+      [COL_MASTER.SUPERVISORE_EMAIL]: this.supervisoreEmail,
+      [COL_MASTER.TEST_MODE]: this.testMode
     };
   }
 

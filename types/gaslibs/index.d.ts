@@ -836,6 +836,11 @@ declare global {
       spreadsheetId: string,
       options?: { includeHidden?: boolean }
     ): SpreadsheetSheetInfo[];
+    /** Creates a brand-new, empty spreadsheet (no template to clone) via the Advanced Sheets API. */
+    createSpreadsheet(
+      title: string,
+      options?: { destinationFolder?: string; locale?: string; timeZone?: string }
+    ): { spreadsheetId: string; spreadsheetUrl?: string };
     /** Single range -> values grid. Array of ranges -> Record<range, values grid> (not used by ALDO yet). */
     getRanges(spreadsheetId: string, ranges: string): unknown[][];
     updateRanges(
@@ -905,6 +910,11 @@ declare global {
   class DocumentService {
     /** Returns a fluent op-batching builder; nothing executes until `.execute()` (10 §9 table import). */
     document(documentId: string): DocumentBuilder;
+    /** Creates a brand-new, empty document (no template to clone) via the Advanced Docs API. */
+    createDocument(
+      name: string,
+      options?: { destinationFolder?: string }
+    ): { documentId: string; builder: DocumentBuilder };
     /** Docs-structure scan filtered to paragraphs/table cells containing any of `textPatterns` (default `['{{']`). */
     scanDocumentStructure(documentId: string, textPatterns?: string[]): DocumentScanResult;
     /**

@@ -170,6 +170,21 @@ test('vendored SpreadsheetService exposes the real bound API surface (Sheet-writ
   expect(typeof sheets.protectRanges).toBe('function');
 });
 
+test('vendored DocumentService/SpreadsheetService expose createDocument/createSpreadsheet (blank-artifact creation, no template to clone)', () => {
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const sheets = new SpreadsheetService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
+  expect(typeof documents.createDocument).toBe('function');
+  expect(typeof sheets.createSpreadsheet).toBe('function');
+});
+
 test('vendored DocumentService exposes document()/scanDocumentStructure (DOCUMENTO_CON_TABELLE_IMPORTATE, 10 §9)', () => {
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };

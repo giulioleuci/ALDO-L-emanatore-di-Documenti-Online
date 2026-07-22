@@ -2,6 +2,7 @@ import type { IDriveFacade } from '../../src/infrastructure/facades/DriveService
 
 export class FakeDriveFacade implements IDriveFacade {
   public folders = new Map<string, string>();
+  public files = new Map<string, string>(); // "folderId::name" -> fileId
   public copies: Array<{ templateId: string; name: string; folderId: string; fileId: string }> = [];
   public permissions: Array<{ fileId: string; email: string; permesso: string }> = [];
   public deleted: string[] = [];
@@ -15,6 +16,9 @@ export class FakeDriveFacade implements IDriveFacade {
     const id = `folder_${++this.seq}`;
     this.folders.set(path, id);
     return id;
+  }
+  findFileByName(folderId: string, name: string): string | null {
+    return this.files.get(`${folderId}::${name}`) ?? null;
   }
   copyFile(templateId: string, name: string, folderId: string): string {
     const fileId = `file_${++this.seq}`;

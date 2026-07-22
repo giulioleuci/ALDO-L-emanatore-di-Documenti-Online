@@ -121,6 +121,23 @@ test('findFolderByPath walks segments via searchFiles and returns null on the fi
   expect(facade.findFolderByPath('Assente')).toBeNull();
 });
 
+test('findFileByName searches by name+parent, excluding folders and trashed files', () => {
+  const { drive, perms } = fakeDrive();
+  drive.searchFiles.mockImplementation((query: string) => {
+    if (query.includes("'FOLDER_1' in parents") && query.includes("name = 'Verbale template'")) {
+      return [{ id: 'tmpl_file_1', name: 'Verbale template', mimeType: 'application/vnd.google-apps.document' }];
+    }
+    return [];
+  });
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  expect(facade.findFileByName('FOLDER_1', 'Verbale template')).toBe('tmpl_file_1');
+  expect(facade.findFileByName('FOLDER_1', 'Does not exist')).toBeNull();
+  expect(drive.searchFiles).toHaveBeenCalledWith(
+    "'FOLDER_1' in parents and name = 'Verbale template' and trashed=false",
+    { maxResults: 1 }
+  );
+});
+
 test('copyFile delegates to copyFiles and returns the new file id', () => {
   const { drive, perms } = fakeDrive();
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);

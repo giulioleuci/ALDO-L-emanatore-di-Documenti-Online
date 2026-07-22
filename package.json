@@ -14,6 +14,7 @@
     "test:build": "jest --config jest.build.config.cjs",
     "refresh:vendor": "node scripts/refresh-vendor.cjs",
     "verify:vendor": "node scripts/verify-vendor.cjs",
+    "setup:testonline": "node scripts/setup-testonline-project.cjs",
     "build:testing": "node scripts/build-and-prepare.cjs --mode=testing",
     "build:testoffline": "node scripts/build-and-prepare.cjs --mode=testoffline",
     "build:production": "node scripts/build-and-prepare.cjs --mode=production",

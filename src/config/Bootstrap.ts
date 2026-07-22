@@ -35,6 +35,7 @@ import { LogCartellaRepository } from '../infrastructure/repositories/LogCartell
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
+import { TABLE } from './schema';
 import {
   createCercaCartelleClasseStrategy,
   createCercaDocumentiStrategy
@@ -280,9 +281,13 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
       `ScriptProperties.${PROP_MASTER_SPREADSHEET_ID} mancante: impossibile localizzare il Master Sheet`
     );
   }
-  const masterDb = new SheetDbAdapter(new DatabaseService(masterId, logger));
+  const utils = ServiceFactory.getUtils();
+  const cache = ServiceFactory.getCacheService().getScriptCache();
+  const masterDb = new SheetDbAdapter(
+    new DatabaseService(masterId, logger, utils, cache, null, { verifyTables: [TABLE.MASTER] })
+  );
   const annoCorrente = new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
-  const db = new SheetDbAdapter(new DatabaseService(annoCorrente.idSpreadsheet, logger));
+  const db = new SheetDbAdapter(new DatabaseService(annoCorrente.idSpreadsheet, logger, utils, cache));
 
   const driveService = ServiceFactory.getDriveService();
   const spreadsheetService = ServiceFactory.getSpreadsheetService();

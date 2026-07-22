@@ -33,7 +33,14 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
     if (profondita <= 0) return [];
     return this.master.findAnniStorici(profondita).map((config) => ({
       anno: config.annoScolasticoRaw,
-      db: new SheetDbAdapter(new DatabaseService(config.idSpreadsheet, this.logger))
+      db: new SheetDbAdapter(
+        new DatabaseService(
+          config.idSpreadsheet,
+          this.logger,
+          ServiceFactory.getUtils(),
+          ServiceFactory.getCacheService().getScriptCache()
+        )
+      )
     }));
   }
 }

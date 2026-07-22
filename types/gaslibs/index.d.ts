@@ -217,7 +217,14 @@ declare global {
     _indexedLookup(columnName: string, value: unknown): Record<string, unknown>[] | null;
   }
   class DatabaseService {
-    constructor(spreadsheetId: string, logger: LoggerService, utils?: unknown, cache?: unknown);
+    constructor(
+      spreadsheetId: string,
+      logger: LoggerService,
+      utils: unknown,
+      cache: unknown,
+      exceptionService?: unknown,
+      options?: { dryRun?: boolean; schemaValidator?: unknown; verifyTables?: string[] }
+    );
     readonly tables: Record<string, SheetTableService>;
     save(): void;
     beginTransaction(): void;

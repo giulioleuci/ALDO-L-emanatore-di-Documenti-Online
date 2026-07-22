@@ -143,6 +143,7 @@ test('vendored DriveService/PermissionService instances expose the real bound AP
   expect(typeof drive.createFolder).toBe('function');
   expect(typeof drive.getFiles).toBe('function');
   expect(typeof drive.searchFiles).toBe('function');
+  expect(typeof drive.getFileOwnerEmail).toBe('function');
   const perms = new PermissionService(logger, fakeCache, new UtilsService(), fakeExceptionService);
   expect(typeof perms.shareWithUsers).toBe('function');
 });

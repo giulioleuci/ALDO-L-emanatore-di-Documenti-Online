@@ -296,6 +296,8 @@ declare global {
       query: string,
       options?: { maxResults?: number; orderBy?: string }
     ): DriveFileMetadata[];
+    /** Owner email of the Drive file, or null when none is present (e.g. a Shared Drive file). */
+    getFileOwnerEmail(fileId: string): string | null;
   }
   class PermissionService {
     /** `role` is a Drive API v3 role: 'writer' | 'reader' | 'commenter'. */

@@ -48412,11 +48412,48 @@ class DatabaseSchemaExplorer {
     this._spreadsheetId = facade._spreadsheetId;
     this._utils = facade._utils;
   }
-  _initialize() {
-    try {
-      const sheets = this._spreadsheetService.getSheetInfo(this._spreadsheetId, {
+
+  
+
+
+
+
+
+
+
+
+  _readVerifiedSheetInfo() {
+    const expected = this.facade._verifyTables;
+    let sheets = this._spreadsheetService.getSheetInfo(this._spreadsheetId, {
+      includeHidden: false
+    });
+    if (!expected || expected.length === 0) {
+      return sheets;
+    }
+    const maxAttempts = 3;
+    const delayMs = 300;
+    let attempt = 1;
+    while (attempt < maxAttempts && !this._allTablesVisible(sheets, expected)) {
+      this._logger.debug(`Expected table(s) [${expected.join(', ')}] not yet visible via Advanced Sheets API for ${this._spreadsheetId} (attempt ${attempt}/${maxAttempts}); retrying in ${delayMs}ms.`);
+      this._utils.sleep(delayMs);
+      sheets = this._spreadsheetService.getSheetInfo(this._spreadsheetId, {
         includeHidden: false
       });
+      attempt++;
+    }
+    if (!this._allTablesVisible(sheets, expected)) {
+      const missing = expected.filter(name => !sheets.some(sheet => sheet.name === name));
+      this._logger.warn(`Expected table(s) [${missing.join(', ')}] still not visible via Advanced Sheets API for ${this._spreadsheetId} after ${maxAttempts} attempts; proceeding with what was returned.`);
+    }
+    return sheets;
+  }
+  _allTablesVisible(sheets, expectedNames) {
+    const present = new Set(sheets.map(sheet => sheet.name));
+    return expectedNames.every(name => present.has(name));
+  }
+  _initialize() {
+    try {
+      const sheets = this._readVerifiedSheetInfo();
       if (sheets.length === 0) {
         this._logger.warn(`No visible sheets (tables) found in database ID ${this._spreadsheetId}.`);
         this.facade._loaded = true;
@@ -48530,6 +48567,7 @@ class MyDatabaseService {
     this._inTransaction = false;
     this._dryRun = options.dryRun || false;
     this._schemaValidator = options.schemaValidator || null;
+    this._verifyTables = options.verifyTables || null;
 
     
     this._connectionManager = new DatabaseConnectionManager(this);
@@ -68878,6 +68916,10 @@ class SampleSpreadsheetBuilder {
 
 
 
+
+
+
+
   addSheet(name, headerRow) {
     const sheet = this.spreadsheet.insertSheet(name);
     if (headerRow.length > 0) {
@@ -68888,9 +68930,12 @@ class SampleSpreadsheetBuilder {
       this.spreadsheet.deleteSheet(this.defaultSheet);
       this.defaultSheet = null;
     }
+    SpreadsheetApp.flush();
   }
 
   
+
+
 
 
 
@@ -68906,6 +68951,7 @@ class SampleSpreadsheetBuilder {
     const headerRow = this._headersBySheet.get(sheetName) || [];
     const values = headerRow.map(header => row[String(header)] !== undefined ? row[String(header)] : '');
     sheet.appendRow(values);
+    SpreadsheetApp.flush();
   }
 
   

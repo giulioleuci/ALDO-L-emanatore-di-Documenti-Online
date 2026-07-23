@@ -16400,9 +16400,6 @@ class DocumentBuilder {
       let batchResult = null;
       if (requests.length > 0) {
         batchResult = this.service._executeBatchUpdate(this.documentId, requests);
-
-        
-        
       }
       const standardResults = [];
       for (const op of standardApiOps) {
@@ -16418,6 +16415,20 @@ class DocumentBuilder {
           operation: op.type,
           result: result
         });
+      }
+      if (standardApiOps.length > 0) {
+        
+        
+        
+        
+        
+        
+        
+        
+        const doc = this.service.openStandard(this.documentId);
+        if (doc && typeof doc.saveAndClose === 'function') {
+          doc.saveAndClose();
+        }
       }
       const nonBatchResults = [];
       for (const op of nonBatchOps) {

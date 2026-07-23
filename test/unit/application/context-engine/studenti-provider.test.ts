@@ -47,12 +47,24 @@ test('StudentiProvider: listaCompleta sorted by surname (02 §4.1)', () => {
   expect(s.perIndirizzo).toBeUndefined();
 });
 
+test('StudentiProvider: parent emails are exposed in the class CDU', () => {
+  const cdu = build('5A');
+  const alunnoConGenitore = cdu.focus.classe!.studenti!.listaCompleta.find(
+    (alunno) => alunno.anagrafica.email === 'a1@school.it'
+  );
+
+  expect(alunnoConGenitore!.genitori).toEqual([
+    { email: 'genitore1@x.it' }
+  ]);
+});
+
 test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)', () => {
   const a1 = build('5A').focus.classe!.studenti!.listaCompleta.find(
     (a) => a.anagrafica.email === 'a1@school.it'
   )!;
   expect(a1).toEqual({
     anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+    genitori: [{ email: 'genitore1@x.it' }],
     status: { isBes: true, isRipetente: false, isRappresentante: true, religione: 'SI' },
     curriculum: { INTERP: { specifiche: ['CHITARRA', 'PIANO'] } },
     didattica: {

@@ -60,6 +60,7 @@ export class StudentiProvider implements ContextProvider {
     const hasBes = pianiItems.some((p) => p.isBes);
     return {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
+      genitori: alunno.getTutors().map((email) => ({ email: email.value })),
       status: {
         isBes: hasBes,
         isRipetente: alunno.isRipetente(),

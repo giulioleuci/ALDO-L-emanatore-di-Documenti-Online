@@ -32,6 +32,7 @@ export interface DocenteCdcVM {
 /** Alunno-in-context view model inside `focus.classe.studenti.listaCompleta` (02 §4.1). */
 export interface AlunnoContestoVM {
   anagrafica: { nomeCompleto: string; email: string };
+  genitori: Array<{ email: string }>;
   status: { isBes: boolean; isRipetente: boolean; isRappresentante: boolean; religione: string };
   curriculum: Record<string, { specifiche: string[] }>;
   didattica: {

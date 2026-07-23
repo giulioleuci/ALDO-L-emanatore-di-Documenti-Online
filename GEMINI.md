@@ -1,14 +1,10 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## What this workspace is
 
 This is an **implementation workspace**, not a single codebase. The task is to build **SGSA (Sistema di Gestione Scolastica Automatizzata)** — a modular school-management ERP for Google Workspace, internal codename **ALDO** — by following the specifications in `SPECS_ALDO/` and building on the reusable libraries in `GasLibraryFactory/`.
 
 Two top-level directories:
 
-- **`SPECS_ALDO/`** — The authoritative design spec for SGSA (17 Markdown files, **written in Italian**). This describes the domain, database, and services to be _implemented_. As of now the application itself is largely unimplemented; these documents are the blueprint.
+- **`SPECS_ALDO/`** — The authoritative design spec for SGSA (Markdown files, **written in Italian**).
 - **`GasLibraryFactory/`** — A mature, self-contained monorepo of 16 Google Apps Script libraries (its own git repo, build, and tests). SGSA _references and extends_ these libraries; it must not reimplement functionality they already provide. This directory has **its own `CLAUDE.md`** with deep detail on the build pipeline, GAS V8 compatibility patches, source maps, and library-debugging workflow — read it before touching library source. You MUST **ONLY** use the docs in `GasLibraryFactory/DOCS_LIBS` and not read the library code if not extremely necessary.
 
 `src/` (this repo's actual application code), `test/`, and the build tooling below are the implementation of SGSA itself, layered on top of those two reference directories.
@@ -30,14 +26,15 @@ When in doubt about whether something belongs in the library or in ALDO, ask —
 
 You have access to the `codebase-memory-mcp` tool, which maintains a compiled Knowledge Graph of this entire ecosystem (powered by tree-sitter and SQLite). **You MUST use this MCP to navigate, query, trace, and review the code** rather than reading raw text files or relying on simple text searches. This prevents context-window bloat, hallucinations, and missed dependencies.
 
-There are two indexed project graphs you can query:
+There are these indexed project graphs you can query:
 
-- `"GasLibraryFactory-Only"`: Contains only the library code. Use this to discover reusable functions and extension points.
-- `"ALDO-Combined"`: Contains both ALDO and GasLibraryFactory. Use this to map how ALDO consumes the library.
+- `"home-giulio-Desktop-ALDO-implementing-GasLibraryFactory"`: Contains only the library code. Use this to discover reusable functions and extension points.
+- `"home-giulio-Desktop-ALDO-implementing"`: Contains both ALDO and GasLibraryFactory. Use this to map how ALDO consumes the library.
+- `"aldo-onlinetests-debug"`: Contains both ALDO and GasLibraryFactory, and test online for ALDO.
 
 **When working on this codebase, strictly use the MCP tools for the following tasks:**
 
-1. **Bypass Detection:** Use `query_graph` on `ALDO-Combined` to ensure no ALDO module directly calls native Google Apps Script globals (e.g., `SpreadsheetApp`, `DriveApp`, `MailApp` and the advanced API). All such calls MUST route through `GasLibraryFactory`.
+1. **Bypass Detection:** Use `query_graph` on `home-giulio-Desktop-ALDO-implementing` to ensure no ALDO module directly calls native Google Apps Script globals (e.g., `SpreadsheetApp`, `DriveApp`, `MailApp` and the advanced API). All such calls MUST route through `GasLibraryFactory`.
 2. **Dead Code Analysis:** Use the MCP's built-in tools (or graph queries) to find functions/methods within ALDO that have 0 incoming `[:CALLS]` edges and are not standard GAS triggers (like `doGet`, `onOpen`).
 3. **Linkage & Error Checking:** Use `search_graph` and `trace_path` to verify that ALDO's calls to `GasLibraryFactory` match existing functions and exact parameter signatures.
 4. **Architecture Review:** Use `get_architecture` to detect circular dependencies between ALDO modules, evaluate module cohesion, and trace long execution chains.

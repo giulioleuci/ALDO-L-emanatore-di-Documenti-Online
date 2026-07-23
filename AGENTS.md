@@ -26,10 +26,11 @@ When in doubt about whether something belongs in the library or in ALDO, ask —
 
 You have access to the `codebase-memory-mcp` tool, which maintains a compiled Knowledge Graph of this entire ecosystem (powered by tree-sitter and SQLite). **You MUST use this MCP to navigate, query, trace, and review the code** rather than reading raw text files or relying on simple text searches. This prevents context-window bloat, hallucinations, and missed dependencies.
 
-There are two indexed project graphs you can query:
+There are these indexed project graphs you can query:
 
 - `"home-giulio-Desktop-ALDO-implementing-GasLibraryFactory"`: Contains only the library code. Use this to discover reusable functions and extension points.
 - `"home-giulio-Desktop-ALDO-implementing"`: Contains both ALDO and GasLibraryFactory. Use this to map how ALDO consumes the library.
+- `"aldo-onlinetests-debug"`: Contains both ALDO and GasLibraryFactory, and test online for ALDO.
 
 **When working on this codebase, strictly use the MCP tools for the following tasks:**
 

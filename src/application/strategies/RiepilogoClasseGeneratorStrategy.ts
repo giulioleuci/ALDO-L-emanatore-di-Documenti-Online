@@ -6,8 +6,11 @@ import { ReligioneScelta } from '../../domain/value-objects/enums';
 
 const MARKER_TABELLA_ALUNNI = '{{TABELLA_ALUNNI}}';
 
+// CDU view-model fields stay loosely typed as `string` (domain-neutral per
+// SPECS_ALDO/02_CDU_STRUTTURA.md); cast at this presentation-layer boundary,
+// matching Alunno.ts's `(data[...] as ReligioneScelta)` conversion pattern.
 function religioneLabel(scelta: string): string {
-  switch (scelta) {
+  switch (scelta as ReligioneScelta) {
     case ReligioneScelta.NO:
       return 'No';
     case ReligioneScelta.ALT:

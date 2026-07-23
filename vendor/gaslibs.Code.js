@@ -17951,6 +17951,10 @@ class DocumentContentExtractor {
       for (const pattern of textPatterns) {
         let iterationCount = 0;
         const MAX_ITERATIONS = 10000;
+        
+        
+        
+        let tableOrdinal = -1;
         for (const element of structure.body.content) {
           if (++iterationCount > MAX_ITERATIONS) {
             this._logger.warn(`Reached maximum iteration limit (${MAX_ITERATIONS}) for pattern: ${pattern}`);
@@ -17969,6 +17973,7 @@ class DocumentContentExtractor {
               seenTextIndices.add(elementIndex);
             }
           } else if (element.type === 'TABLE') {
+            tableOrdinal++;
             for (const tableRow of element.tableRows || []) {
               for (const cell of tableRow.cells) {
                 if (cell.text && cell.text.includes(pattern)) {
@@ -17978,7 +17983,8 @@ class DocumentContentExtractor {
                     result.textMatches.push({
                       elementIndex: elementIndex,
                       text: textContent,
-                      type: 'TABLE_TEXT'
+                      type: 'TABLE_TEXT',
+                      tableIndex: tableOrdinal
                     });
                     seenTextIndices.add(elementIndex);
                   }
@@ -25348,6 +25354,18 @@ class _DocumentProcessor {
       structuralOps.push(...this._analyzeRowLoops(table, context));
     }
     const executedStandardOps = structuralOps.filter(op => op.type === 'rowLoop' || op.type === 'columnLoop');
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    const processedTableIndices = new Set(executedStandardOps.map(op => op.tableIndex));
     if (executedStandardOps.length > 0) {
       executedStandardOps.sort((a, b) => b.index - a.index);
       for (const op of executedStandardOps) {
@@ -25382,8 +25400,9 @@ class _DocumentProcessor {
         }
       }
     }
-    batchOps.push(...this._analyzeListLoops(structure.textMatches, context));
-    batchOps.push(...this._analyzeTextSubstitutions(structure.textMatches, context));
+    const remainingTextMatches = structure.textMatches.filter(tm => tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex));
+    batchOps.push(...this._analyzeListLoops(remainingTextMatches, context));
+    batchOps.push(...this._analyzeTextSubstitutions(remainingTextMatches, context));
     batchOps.sort((a, b) => b.index - a.index);
     const batchRequests = [];
     for (const op of batchOps) {

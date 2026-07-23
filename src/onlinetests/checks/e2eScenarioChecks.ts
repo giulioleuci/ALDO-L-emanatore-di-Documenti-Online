@@ -9,6 +9,7 @@ import {
   TIPI_PIANO,
   CONF_DOC_VERBALE,
   CONF_DOC_CONDOTTA,
+  CONF_DOC_RIEPILOGO,
   confDocPiano,
   CONF_MAIL_VERBALE,
   CONF_MAIL_CONDOTTA,
@@ -61,6 +62,17 @@ export function registerE2eScenarioChecks(
       if (fileId === null) {
         throw new ValidationError(
           `Generazione foglio condotta per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+    }
+  });
+
+  runner.add('E2E scenario 8: genera riepilogo classe (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_RIEPILOGO);
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione riepilogo per ${classe} non ha prodotto un fileId (status=${status})`
         );
       }
     }

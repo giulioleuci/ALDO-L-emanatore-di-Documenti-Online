@@ -65,6 +65,7 @@ function factory(): { spreadsheets: ISampleSpreadsheetFactory; sheets: Map<strin
 const TEMPLATE_IDS = {
   verbale: 'tmpl_verbale',
   condotta: 'tmpl_condotta',
+  riepilogo: 'tmpl_riepilogo',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -145,17 +146,20 @@ test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', ()
   expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
 });
 
-test('seeds 7 CONF_DOC rows (1 verbale + 1 condotta + 5 piani) each pointing at its provisioned template', () => {
+test('seeds 8 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 5 piani) each pointing at its provisioned template', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(7);
+  expect(confDoc).toHaveLength(8);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_verbale' });
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
   expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_condotta' });
+  const riepilogo = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO')!;
+  expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('RIEPILOGO_CLASSE');
+  expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_riepilogo' });
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
   expect(piani).toHaveLength(5);
 });

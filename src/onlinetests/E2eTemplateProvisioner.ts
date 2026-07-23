@@ -20,6 +20,7 @@ export interface IArtifactFactory {
 
 const NAME_VERBALE = 'E2E Verbale Template';
 const NAME_CONDOTTA = 'E2E Condotta Template';
+const NAME_RIEPILOGO = 'E2E Riepilogo Template';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }
@@ -52,6 +53,21 @@ function pianoParagraphs(tipo: string): string[] {
     'Note: {{piano.note}}'
   ];
 }
+
+const RIEPILOGO_PARAGRAPHS = [
+  'Riepilogo Classe {{focus.classe.anagrafica.nome}}',
+  'Materie e docenti:',
+  '{{#bullet_list:riepilogoMaterieDocenti}}{{nomeMateria}} — {{nomeDocente}}{{/bullet_list}}',
+  'Elenco studenti:',
+  '{{TABELLA_ALUNNI}}',
+  'Numero totale studenti: {{focus.classe.studenti.statistiche.totale}}',
+  'Docenti senza tutoraggio ASL:',
+  '{{#bullet_list:riepilogoDocentiSenzaTutoraggio}}{{nomeDocente}}{{/bullet_list}}',
+  'Rappresentanti degli studenti:',
+  '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
+  'Rappresentanti dei genitori:',
+  '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}'
+];
 
 /** Roster rows generous enough for the ~20-student classes `E2eSampleDatabaseBuilder` seeds. */
 const CONDOTTA_ROSTER_ROWS = 30;
@@ -95,11 +111,12 @@ export class E2eTemplateProvisioner {
   provision(folderId: string): E2eTemplateIds {
     const verbale = this.findOrCreateDoc(folderId, NAME_VERBALE, VERBALE_PARAGRAPHS);
     const condotta = this.findOrCreateSheet(folderId, NAME_CONDOTTA, condottaUpdates());
+    const riepilogo = this.findOrCreateDoc(folderId, NAME_RIEPILOGO, RIEPILOGO_PARAGRAPHS);
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
-    return { verbale, condotta, piani };
+    return { verbale, condotta, riepilogo, piani };
   }
 
   private findOrCreateDoc(folderId: string, name: string, paragraphs: string[]): string {

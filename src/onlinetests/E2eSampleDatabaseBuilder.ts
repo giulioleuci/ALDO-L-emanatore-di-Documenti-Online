@@ -71,6 +71,7 @@ export const TIPI_PIANO = ['PDP_DSA', 'PDP_BES', 'PDP_STRANIERI', 'PEI', 'PFP'] 
 
 export const CONF_DOC_VERBALE = 'E2E_VERBALE';
 export const CONF_DOC_CONDOTTA = 'E2E_CONDOTTA';
+export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export function confDocPiano(tipo: string): string {
   return `E2E_PIANO_${tipo}`;
 }
@@ -118,6 +119,7 @@ export const PIANO_STUDENTE: Record<(typeof TIPI_PIANO)[number], string[]> = {
 export interface E2eTemplateIds {
   verbale: string;
   condotta: string;
+  riepilogo: string;
   piani: Record<(typeof TIPI_PIANO)[number], string>;
 }
 
@@ -622,6 +624,22 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
+      [COL_CONF_DOC.TIPO]: 'RIEPILOGO_CLASSE',
+      [COL_CONF_DOC.GENERATORE]: 'RIEPILOGO_CLASSE',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
+      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GDOC'
     });
     for (const tipo of TIPI_PIANO) {
       sample.appendRow(TABLE.CONF_DOC, {

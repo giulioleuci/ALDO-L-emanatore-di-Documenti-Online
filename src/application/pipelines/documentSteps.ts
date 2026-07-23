@@ -11,7 +11,8 @@ import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import {
   StatoDocumento,
   SchemaSottocartelle,
-  GestioneSupplenti
+  GestioneSupplenti,
+  FormatoOutput
 } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
@@ -86,6 +87,23 @@ function cduRecord(ctx: PipelineContext): Record<string, unknown> {
 }
 function classeNome(ctx: PipelineContext): string {
   return cdu(ctx).focus.classe?.anagrafica.nome ?? '';
+}
+
+/**
+ * Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1): the cloned
+ * artifact is still a live Drive file at this point in the pipeline regardless
+ * of its eventual export format, so PDF/TEXT (or any future FORMATO value)
+ * keeps the generic Drive file link.
+ */
+function buildFileLink(fileId: string, formato: FormatoOutput): string {
+  switch (formato) {
+    case FormatoOutput.GSHEET:
+      return `https://docs.google.com/spreadsheets/d/${fileId}/edit?gid=0#gid=0`;
+    case FormatoOutput.GDOC:
+      return `https://docs.google.com/document/d/${fileId}/edit`;
+    default:
+      return `https://drive.google.com/file/d/${fileId}/edit`;
+  }
 }
 
 /** Step 1 (10 §1): CONDIZIONE evaluated by GasExpressionEngineLib over the CDU. */
@@ -212,7 +230,7 @@ export class CloneTemplateStep extends Step {
     );
     this.setResult(ctx, 'newFileId', fileId);
     // /edit (not /view): generated files must open ready to edit, not in preview (10 §8).
-    this.setResult(ctx, 'newFileLink', `https://drive.google.com/file/d/${fileId}/edit`);
+    this.setResult(ctx, 'newFileLink', buildFileLink(fileId, confDoc(ctx).formato));
   }
 }
 

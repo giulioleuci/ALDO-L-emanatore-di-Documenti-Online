@@ -132,6 +132,52 @@ test('CloneTemplateStep copies via Drive facade and sets newFileId', () => {
   expect(drive.copies[0]!.templateId).toBe('tmpl_verbale');
 });
 
+test('CloneTemplateStep sets newFileLink to a Docs edit URL for FORMATO=GDOC (item 1)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db); // fixture CONF_DOC[0] (CD1) has FORMATO: 'GDOC'
+  ctx.set('destFolderId', 'folder_1');
+  ctx.set('nomeFile', 'Verbale_5A_01/07/2026');
+  ctx.set('templateId', 'tmpl_verbale');
+  const drive = new FakeDriveFacade();
+  new CloneTemplateStep(logger, drive).execute(ctx);
+  const fileId = ctx.get<string>('newFileId')!;
+  expect(ctx.get('newFileLink')).toBe(`https://docs.google.com/document/d/${fileId}/edit`);
+});
+
+test('CloneTemplateStep sets newFileLink to a Sheets edit URL for FORMATO=GSHEET (item 1)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  ctx.set(
+    'confDoc',
+    ConfigurazioneDocumento.fromData({ ...fixtureTables().CONF_DOC[0]!, FORMATO: 'GSHEET' })
+  );
+  ctx.set('destFolderId', 'folder_1');
+  ctx.set('nomeFile', 'Condotta_5A');
+  ctx.set('templateId', 'tmpl_condotta');
+  const drive = new FakeDriveFacade();
+  new CloneTemplateStep(logger, drive).execute(ctx);
+  const fileId = ctx.get<string>('newFileId')!;
+  expect(ctx.get('newFileLink')).toBe(
+    `https://docs.google.com/spreadsheets/d/${fileId}/edit?gid=0#gid=0`
+  );
+});
+
+test('CloneTemplateStep falls back to the generic Drive file link for FORMATO=PDF/TEXT (item 1)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  ctx.set(
+    'confDoc',
+    ConfigurazioneDocumento.fromData({ ...fixtureTables().CONF_DOC[0]!, FORMATO: 'PDF' })
+  );
+  ctx.set('destFolderId', 'folder_1');
+  ctx.set('nomeFile', 'X');
+  ctx.set('templateId', 'tmpl_verbale');
+  const drive = new FakeDriveFacade();
+  new CloneTemplateStep(logger, drive).execute(ctx);
+  const fileId = ctx.get<string>('newFileId')!;
+  expect(ctx.get('newFileLink')).toBe(`https://drive.google.com/file/d/${fileId}/edit`);
+});
+
 test('RenderTemplateStep delegates to strategy → WorkspaceTemplateEngine with the CDU as context', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);

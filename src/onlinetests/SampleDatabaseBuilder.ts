@@ -23,6 +23,7 @@ import {
   COL_LOG_MAIL,
   COL_MASTER
 } from '../config/schema';
+import { ReligioneScelta } from '../domain/value-objects/enums';
 
 /** Minimal shape of a throwaway spreadsheet handle returned by {@link ISampleSpreadsheetFactory.createSpreadsheet}. */
 export interface ISampleSpreadsheet {
@@ -262,12 +263,12 @@ export class SampleDatabaseBuilder {
         [COL_ALUNNI.EMAIL]: alunnoEmail(i),
         [COL_ALUNNI.COGNOMENOME]: `Alunno${i} Test`,
         [COL_ALUNNI.CLASSE]: CLASSE_BASE,
-        [COL_ALUNNI.RELIGIONE]: true,
+        [COL_ALUNNI.RELIGIONE]: ReligioneScelta.SI,
         [COL_ALUNNI.CURRICULUM]: '',
         [COL_ALUNNI.ATTIVO]: true,
         [COL_ALUNNI.RIPETENTE]: false,
         [COL_ALUNNI.RAPPR_STUD]: false,
-        [COL_ALUNNI.RAPPR_GEN]: false,
+        [COL_ALUNNI.RAPPR_GEN]: '',
         [COL_ALUNNI.TUTOR_1]: '',
         [COL_ALUNNI.TUTOR_2]: '',
         [COL_ALUNNI.NOTE]: ''

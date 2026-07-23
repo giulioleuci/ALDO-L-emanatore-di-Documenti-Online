@@ -1,6 +1,6 @@
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
 import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
-import { StatoDocumento } from '../domain/value-objects/enums';
+import { StatoDocumento, ReligioneScelta } from '../domain/value-objects/enums';
 import {
   TABLE,
   COL_ALUNNI,
@@ -58,6 +58,14 @@ const DOCENTE_COGNOMI = [
 ];
 const DOCENTE_NOMI_M = ['Marco', 'Paolo', 'Alessandro', 'Luca', 'Davide'];
 const DOCENTE_NOMI_F = ['Laura', 'Anna', 'Chiara', 'Elena', 'Francesca'];
+
+/** Parent-rep free-text name (item 3): offset from the pools used for the student's own
+ * name (+3/+4) so a parent's name never echoes the row's own student name. */
+function parentRepName(counter: number): string {
+  const cognome = ALUNNO_COGNOMI[(counter - 1 + 3) % ALUNNO_COGNOMI.length]!;
+  const nome = ALUNNO_NOMI[(counter - 1 + 4) % ALUNNO_NOMI.length]!;
+  return `${cognome} ${nome}`;
+}
 
 export const TIPI_PIANO = ['PDP_DSA', 'PDP_BES', 'PDP_STRANIERI', 'PEI', 'PFP'] as const;
 
@@ -165,6 +173,12 @@ interface ClasseLayout {
   count: number;
   coordIndex: number;
   articolazione: string;
+  /** First N students (0-indexed within the class) get RAPPR_STUD=true (item 3). */
+  studentRepCount: number;
+  /** Last N students (0-indexed within the class) get a free-text RAPPR_GEN name (item 3). */
+  parentRepCount: number;
+  /** 0-indexed-within-class overrides of the ReligioneScelta.SI default (item 3). */
+  religionExceptions: Array<{ index: number; scelta: ReligioneScelta }>;
 }
 
 /**
@@ -235,19 +249,47 @@ export class E2eSampleDatabaseBuilder {
 
   private classLayouts(): ClasseLayout[] {
     return [
-      { id: CLASSE_A, count: 20, coordIndex: 1, articolazione: '' },
-      { id: CLASSE_B, count: 20, coordIndex: 1, articolazione: '' },
+      {
+        id: CLASSE_A,
+        count: 20,
+        coordIndex: 1,
+        articolazione: '',
+        studentRepCount: 0,
+        parentRepCount: 0,
+        religionExceptions: [
+          { index: 0, scelta: ReligioneScelta.NO },
+          { index: 3, scelta: ReligioneScelta.ALT }
+        ]
+      },
+      {
+        id: CLASSE_B,
+        count: 20,
+        coordIndex: 1,
+        articolazione: '',
+        studentRepCount: 1,
+        parentRepCount: 1,
+        religionExceptions: [{ index: 0, scelta: ReligioneScelta.NO }]
+      },
       {
         id: CLASSE_C,
         count: 8,
         coordIndex: 3,
-        articolazione: JSON.stringify({ parent: null, partner: CLASSE_C_PARTNER, partners: null })
+        articolazione: JSON.stringify({ parent: null, partner: CLASSE_C_PARTNER, partners: null }),
+        studentRepCount: 2,
+        parentRepCount: 1,
+        religionExceptions: [{ index: 2, scelta: ReligioneScelta.ALT }]
       },
       {
         id: CLASSE_C_PARTNER,
         count: 12,
         coordIndex: 4,
-        articolazione: JSON.stringify({ parent: null, partner: CLASSE_C, partners: null })
+        articolazione: JSON.stringify({ parent: null, partner: CLASSE_C, partners: null }),
+        studentRepCount: 1,
+        parentRepCount: 2,
+        religionExceptions: [
+          { index: 0, scelta: ReligioneScelta.NO },
+          { index: 1, scelta: ReligioneScelta.ALT }
+        ]
       }
     ];
   }
@@ -349,18 +391,21 @@ export class E2eSampleDatabaseBuilder {
         const email = e2eAlunnoEmail(counter);
         const cognome = ALUNNO_COGNOMI[(counter - 1) % ALUNNO_COGNOMI.length]!;
         const nome = ALUNNO_NOMI[(counter - 1) % ALUNNO_NOMI.length]!;
+        const eccezione = layout.religionExceptions.find((e) => e.index === n);
+        const isRapprStud = n < layout.studentRepCount;
+        const isRapprGen = n >= layout.count - layout.parentRepCount;
         sample.appendRow(TABLE.ALUNNI, {
           [COL_ALUNNI.EMAIL]: email,
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: layout.id,
-          [COL_ALUNNI.RELIGIONE]: true,
+          [COL_ALUNNI.RELIGIONE]: eccezione?.scelta ?? ReligioneScelta.SI,
           [COL_ALUNNI.CURRICULUM]: '',
           [COL_ALUNNI.ATTIVO]: true,
           // Repeaters (item "repeaters"): redoing this same class, see
           // `seedClassiAnnoPrecedente`/`seedAlunniAnnoPrecedente`.
           [COL_ALUNNI.RIPETENTE]: email === RIPETENTE_1A || email === RIPETENTE_3C,
-          [COL_ALUNNI.RAPPR_STUD]: false,
-          [COL_ALUNNI.RAPPR_GEN]: false,
+          [COL_ALUNNI.RAPPR_STUD]: isRapprStud,
+          [COL_ALUNNI.RAPPR_GEN]: isRapprGen ? parentRepName(counter) : '',
           [COL_ALUNNI.TUTOR_1]: `tutor${counter}@onlinetest.aldo.local`,
           [COL_ALUNNI.TUTOR_2]: '',
           [COL_ALUNNI.NOTE]: ''
@@ -436,13 +481,13 @@ export class E2eSampleDatabaseBuilder {
           [COL_ALUNNI.EMAIL]: email,
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: isRipetente ? layout.id : classePrecedente(layout.id),
-          [COL_ALUNNI.RELIGIONE]: true,
+          [COL_ALUNNI.RELIGIONE]: ReligioneScelta.SI,
           [COL_ALUNNI.CURRICULUM]: '',
           [COL_ALUNNI.ATTIVO]: true,
           // Not yet repeating in 2025-2026 — the repetition is what makes them one THIS year.
           [COL_ALUNNI.RIPETENTE]: false,
           [COL_ALUNNI.RAPPR_STUD]: false,
-          [COL_ALUNNI.RAPPR_GEN]: false,
+          [COL_ALUNNI.RAPPR_GEN]: '',
           [COL_ALUNNI.TUTOR_1]: `tutor${counter}@onlinetest.aldo.local`,
           [COL_ALUNNI.TUTOR_2]: '',
           [COL_ALUNNI.NOTE]: ''

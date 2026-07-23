@@ -222,6 +222,64 @@ test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', ()
   expect(ripetenti.sort()).toEqual([RIPETENTE_1A, RIPETENTE_3C].sort());
 });
 
+test('RELIGIONE is always a valid ReligioneScelta value (SI/NO/ALT), never a boolean (item 3)', () => {
+  const { spreadsheets, sheets } = factory();
+  const drive = new FakeDriveFacade();
+  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
+  for (const a of alunni) {
+    expect(['SI', 'NO', 'ALT']).toContain(a[COL_ALUNNI.RELIGIONE]);
+  }
+});
+
+test('each class gets a distinct 0/1/2 spread of student and parent representatives (item 3)', () => {
+  const { spreadsheets, sheets } = factory();
+  const drive = new FakeDriveFacade();
+  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
+  const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
+  const studentReps = (id: string) =>
+    byClasse(id).filter((a) => a[COL_ALUNNI.RAPPR_STUD] === true).length;
+  const parentReps = (id: string) =>
+    byClasse(id).filter(
+      (a) => ((a[COL_ALUNNI.RAPPR_GEN] as string | undefined) ?? '').trim() !== ''
+    ).length;
+
+  expect(studentReps(CLASSE_A)).toBe(0);
+  expect(parentReps(CLASSE_A)).toBe(0);
+  expect(studentReps(CLASSE_B)).toBe(1);
+  expect(parentReps(CLASSE_B)).toBe(1);
+  expect(studentReps(CLASSE_C)).toBe(2);
+  expect(parentReps(CLASSE_C)).toBe(1);
+  expect(studentReps(CLASSE_C_PARTNER)).toBe(1);
+  expect(parentReps(CLASSE_C_PARTNER)).toBe(2);
+
+  // 0/1/2 is covered somewhere across the 4 classes for each dimension.
+  const studentCounts = new Set([CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map(studentReps));
+  const parentCounts = new Set([CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map(parentReps));
+  expect(studentCounts).toEqual(new Set([0, 1, 2]));
+  expect(parentCounts).toEqual(new Set([0, 1, 2]));
+});
+
+test('each class has at least one NO and/or ALT religion exception alongside the SI majority (item 3)', () => {
+  const { spreadsheets, sheets } = factory();
+  const drive = new FakeDriveFacade();
+  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
+  const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
+  for (const id of [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER]) {
+    const rows = byClasse(id);
+    const exceptions = rows.filter((a) => a[COL_ALUNNI.RELIGIONE] !== 'SI');
+    expect(exceptions.length).toBeGreaterThan(0);
+    expect(rows.filter((a) => a[COL_ALUNNI.RELIGIONE] === 'SI').length).toBe(
+      rows.length - exceptions.length
+    );
+  }
+  const all = alunni.map((a) => a[COL_ALUNNI.RELIGIONE]);
+  expect(all).toContain('NO');
+  expect(all).toContain('ALT');
+});
+
 test('PDP_BES targets 2 students (5 CONF_DOC piano rows stay one per tipo; PIANI gets one row per (tipo, studente))', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();

@@ -240,6 +240,7 @@ export class RenderBoxesStep extends Step {
     if (built.destinatario !== undefined)
       built.destinatario.comunicazione.oggettoCalcolato = oggetto;
     this.setResult(ctx, 'boxHtmlOrdered', result.ordered);
+    this.setResult(ctx, 'shouldSend', ctx.get('shouldSend') === true && result.ordered.length > 0);
     this.setResult(ctx, 'oggettoRisolto', oggetto);
   }
 }

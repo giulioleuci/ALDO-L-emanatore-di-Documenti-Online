@@ -253,6 +253,21 @@ test('RenderBoxesStep writes cdu.render.boxes and resolves OGGETTO (11 §5)', ()
   expect(cdu.render?.boxes['carenze']?.html).toContain('Voto 4.5');
 });
 
+test('empty rendered boxes suppress delivery despite an empty condition', () => {
+  const w = wire(
+    { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }]) },
+    docenteTarget()
+  );
+  runThroughCompose(w);
+  expect(w.ctx.get('shouldSend')).toBe(false);
+});
+
+test('one rendered box keeps delivery eligible', () => {
+  const w = wire();
+  runThroughCompose(w);
+  expect(w.ctx.get('shouldSend')).toBe(true);
+});
+
 test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () => {
   const w = wire();
   runThroughCompose(w);
@@ -312,7 +327,7 @@ test('ComposeEmailStep resolves class-attached documents as blobs once a box opt
     BOX_CFG: JSON.stringify([
       {
         TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '',
+        CONTENUTO: '<p>Allegati disponibili.</p>',
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       }
     ])
@@ -342,7 +357,7 @@ test('ComposeEmailStep filters attachments by the documentiPerClasse BOX_CFG ent
     BOX_CFG: JSON.stringify([
       {
         TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '',
+        CONTENUTO: '<p>Allegati disponibili.</p>',
         DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PDP' } }
       }
     ])
@@ -580,7 +595,11 @@ test('LogEmailStep records LOG_MAIL.TESTO as HTML-stripped plain text of the com
 test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 §9)', () => {
   const w = wire({
     BOX_CFG: JSON.stringify([
-      { TIPO_BOX: 'testo_dinamico', CONTENUTO: '', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }
+      {
+        TIPO_BOX: 'testo_dinamico',
+        CONTENUTO: '<p>Allegati disponibili.</p>',
+        DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+      }
     ])
   });
   w.db.table('LOG_DOCS').insert({
@@ -797,7 +816,11 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
   test('ComposeEmailStep falls back to "" for a document id and still requests its blob (11 §13)', () => {
     const w = wire({
       BOX_CFG: JSON.stringify([
-        { TIPO_BOX: 'testo_dinamico', CONTENUTO: '', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }
+        {
+          TIPO_BOX: 'testo_dinamico',
+          CONTENUTO: '<p>Allegati disponibili.</p>',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        }
       ])
     });
     w.db
@@ -812,7 +835,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
       BOX_CFG: JSON.stringify([
         {
           TIPO_BOX: 'testo_dinamico',
-          CONTENUTO: '',
+          CONTENUTO: '<p>Allegati disponibili.</p>',
           DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { stato: 'NOTIFICATO' } }
         }
       ])

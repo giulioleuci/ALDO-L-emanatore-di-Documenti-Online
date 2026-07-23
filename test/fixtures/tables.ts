@@ -182,7 +182,8 @@ export function fixtureTables(): Record<string, Row[]> {
         ID: 'CDC_OTTOBRE',
         OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}',
         PROCESSO: 'PER_CDC',
-        BOX_CFG: '[{"TIPO_BOX":"carenze"}]',
+        BOX_CFG:
+          '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Comunicazione del consiglio di classe.</p>"},{"TIPO_BOX":"carenze"}]',
         TESTO: '<p>Gentili colleghi</p>',
         SUPPLENTI: 'ENTRAMBI',
         NOREPLY: true,

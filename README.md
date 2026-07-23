@@ -1,6 +1,6 @@
 # ALDO — SGSA (Sistema di Gestione Scolastica Automatizzata)
 
-**ALDO** è il nome interno dell'implementazione di **SGSA**, un ERP scolastico modulare costruito interamente sull'ecosistema Google Workspace tramite Google Apps Script (GAS). Automatizza i processi amministrativi e didattici di un istituto scolastico: gestione anagrafica, generazione massiva di documenti, invio di notifiche email personalizzate, importazione dati da fonti esterne e archiviazione strutturata su Google Drive.
+**ALDO** è l'acronimo di **Aldo, L'emanatore di Documenti Online** — il nome interno dell'implementazione di **SGSA**, un ERP scolastico modulare costruito interamente sull'ecosistema Google Workspace tramite Google Apps Script (GAS). Automatizza i processi amministrativi e didattici di un istituto scolastico: gestione anagrafica, generazione massiva di documenti, invio di notifiche email personalizzate, importazione dati da fonti esterne e archiviazione strutturata su Google Drive.
 
 SGSA non è uno script lineare ma un framework applicativo basato su pattern architetturali consolidati (Dependency Injection, Repository, Strategy, Facade, Pipeline, Specification), progettato per operare entro i limiti tecnici dell'ambiente GAS (esecuzione sincrona, timeout di 6/30 minuti, un unico namespace globale per script file).
 

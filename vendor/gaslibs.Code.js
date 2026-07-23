@@ -9061,7 +9061,6 @@ class ValidationUtils {
 
 var he = __webpack_require__(67);
 ;
- var HtmlEntityCodec_he;
 
 
 
@@ -9087,7 +9086,7 @@ function escapeHtmlText(value) {
 
 
 function decodeHtmlEntities(value) {
-  return HtmlEntityCodec_he.decode(String(value ?? ''));
+  return he.decode(String(value ?? ''));
 }
 ;
 
@@ -9181,6 +9180,39 @@ class HtmlSanitizer {
       return result;
     }
     return value;
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  static stripToPlainText(value, options = {}) {
+    const {
+      maxLength = 2000,
+      truncationMode = 'marker'
+    } = options;
+    const html = String(value ?? '');
+    const withBreaks = html.replace(/<br\s*\/?>|<\/(p|div|li|tr)>/gi, '\n');
+    const stripped = withBreaks.replace(/<[^>]*>/g, '');
+    const decoded = decodeHtmlEntities(stripped);
+    const collapsed = decoded.split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n').trim();
+    if (truncationMode === 'none' || collapsed.length <= maxLength) {
+      return collapsed;
+    }
+    if (truncationMode === 'cut') {
+      return collapsed.slice(0, maxLength);
+    }
+    return collapsed.slice(0, Math.max(0, maxLength - 1)) + '…';
   }
 }
 ;

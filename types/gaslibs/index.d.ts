@@ -22,6 +22,14 @@ declare global {
      * pass through unrecursed). Returns a new structure — no mutation.
      */
     static escapeContextDeep<T>(value: T): T;
+    /**
+     * Strips HTML markup to plain text (block boundaries become line breaks,
+     * entities decoded, blank lines collapsed, trimmed); optionally truncated.
+     */
+    static stripToPlainText(
+      value: string,
+      options?: { maxLength?: number; truncationMode?: 'marker' | 'cut' | 'none' }
+    ): string;
   }
 
   /** CoreUtilsLib PII-safe logging helper (ref CoreUtilsLib/src/internal/PiiRedactor.js). */

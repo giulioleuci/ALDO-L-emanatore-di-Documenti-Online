@@ -16375,13 +16375,25 @@ class DocumentBuilder {
       const requests = [];
       const nonBatchOps = [];
       const standardApiOps = [];
+
+      
+      
+      
+      
+      
+      
+      
+      const hasAppendParagraph = this.operations.some(op => op.type === 'appendParagraph');
+      const cursor = hasAppendParagraph ? {
+        index: this._getBodyEndIndex()
+      } : null;
       for (const op of this.operations) {
         if (op.type === 'exportPDF') {
           nonBatchOps.push(op);
         } else if (op.type === 'createTable' && op.data && Array.isArray(op.data) && op.data.length > 0 || op.type === 'addHeader' && op.text || op.type === 'addFooter' && op.text) {
           standardApiOps.push(op);
         } else {
-          const docRequests = this._convertOperationToDocsRequests(op);
+          const docRequests = this._convertOperationToDocsRequests(op, cursor);
           requests.push(...docRequests);
         }
       }
@@ -16440,10 +16452,10 @@ class DocumentBuilder {
 
 
 
-  _convertOperationToDocsRequests(op) {
+  _convertOperationToDocsRequests(op, cursor) {
     switch (op.type) {
       case 'appendParagraph':
-        return this._createAppendParagraphRequests(op);
+        return this._createAppendParagraphRequests(op, cursor);
       case 'setText':
         return this._createSetTextRequests(op);
       case 'createTable':
@@ -16459,17 +16471,19 @@ class DocumentBuilder {
         return [];
     }
   }
-  _createAppendParagraphRequests(op) {
+  _createAppendParagraphRequests(op, cursor) {
     const requests = [];
     const text = (op.text || '') + '\n';
+    const startIndex = cursor.index;
     requests.push({
       insertText: {
         location: {
-          index: 1
+          index: startIndex
         },
         text: text
       }
     });
+    cursor.index += text.length;
     if (op.options.heading || op.options.alignment) {
       const paragraphStyle = {};
       if (op.options.heading) {
@@ -16495,8 +16509,8 @@ class DocumentBuilder {
       requests.push({
         updateParagraphStyle: {
           range: {
-            startIndex: 1,
-            endIndex: 1 + text.length
+            startIndex: startIndex,
+            endIndex: startIndex + text.length
           },
           paragraphStyle: paragraphStyle,
           fields: Object.keys(paragraphStyle).join(',')
@@ -16505,13 +16519,22 @@ class DocumentBuilder {
     }
     return requests;
   }
+
+  
+
+
+
+
+
+
+  _getBodyEndIndex() {
+    const doc = Docs.Documents.get(this.documentId);
+    return doc.body.content[doc.body.content.length - 1].endIndex - 1;
+  }
   _createSetTextRequests(op) {
     const requests = [];
     const text = op.text || '';
-
-    
-    const doc = Docs.Documents.get(this.documentId);
-    const bodyEndIndex = doc.body.content[doc.body.content.length - 1].endIndex - 1;
+    const bodyEndIndex = this._getBodyEndIndex();
     if (bodyEndIndex > 1) {
       requests.push({
         deleteContentRange: {

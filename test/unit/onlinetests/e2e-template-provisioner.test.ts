@@ -1,5 +1,6 @@
 import {
   E2eTemplateProvisioner,
+  type E2eDocumentTable,
   type IArtifactFactory,
   type SheetValueUpdate
 } from '../../../src/onlinetests/E2eTemplateProvisioner';
@@ -10,21 +11,30 @@ function fakeArtifacts(): {
   artifacts: IArtifactFactory;
   created: string[];
   docContent: Record<string, string[]>;
+  docTables: Record<string, E2eDocumentTable[]>;
   sheetContent: Record<string, SheetValueUpdate[]>;
 } {
   const created: string[] = [];
   const docContent: Record<string, string[]> = {};
+  const docTables: Record<string, E2eDocumentTable[]> = {};
   const sheetContent: Record<string, SheetValueUpdate[]> = {};
   let seq = 0;
   return {
     created,
     docContent,
+    docTables,
     sheetContent,
     artifacts: {
-      createDocument: (name: string, _folderId: string, paragraphs: string[] = []) => {
+      createDocument: (
+        name: string,
+        _folderId: string,
+        paragraphs: string[] = [],
+        tables: E2eDocumentTable[] = []
+      ) => {
         created.push(`doc:${name}`);
         const id = `doc_${++seq}`;
         docContent[id] = paragraphs;
+        docTables[id] = tables;
         return id;
       },
       createSheet: (name: string, _folderId: string, updates: SheetValueUpdate[] = []) => {
@@ -48,6 +58,7 @@ test('creates all 8 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilog
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
+  expect(created).toContain('doc:E2E Riepilogo Template v2');
   for (const tipo of TIPI_PIANO) {
     expect(ids.piani[tipo]).toMatch(/^doc_/);
   }
@@ -66,7 +77,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 });
 
 test('authors real CDU-path placeholder content into newly-created templates, not blank artifacts', () => {
-  const { artifacts, docContent, sheetContent } = fakeArtifacts();
+  const { artifacts, docContent, docTables, sheetContent } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
@@ -84,9 +95,21 @@ test('authors real CDU-path placeholder content into newly-created templates, no
   const riepilogoParagraphs = docContent[ids.riepilogo] ?? [];
   expect(riepilogoParagraphs.length).toBeGreaterThan(0);
   const riepilogoText = riepilogoParagraphs.join('\n');
-  expect(riepilogoText).toContain('{{TABELLA_ALUNNI}}');
-  expect(riepilogoText).toContain('{{#bullet_list:riepilogoMaterieDocenti}}');
-  expect(riepilogoText).toContain('{{#bullet_list:riepilogoDocentiSenzaTutoraggio}}');
+  expect(riepilogoText).not.toContain('{{TABELLA_ALUNNI}}');
+  expect(docTables[ids.riepilogo]).toEqual([
+    {
+      data: [
+        ['Alunno', 'Religione', 'Email', 'Piani'],
+        [
+          '{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}',
+          '{{status.religione}}',
+          '{{anagrafica.email}}',
+          '{{didattica.piani.hasPiani}}'
+        ]
+      ],
+      options: { headerRow: true, alternatingRows: true }
+    }
+  ]);
   expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti}}');
   expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori}}');
   expect(riepilogoText).toContain('{{focus.classe.studenti.statistiche.totale}}');

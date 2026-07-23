@@ -24,7 +24,6 @@ import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/Do
 import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import { DocumentoConTabelleImportateGeneratorStrategy } from '../application/strategies/DocumentoConTabelleImportateGeneratorStrategy';
-import { RiepilogoClasseGeneratorStrategy } from '../application/strategies/RiepilogoClasseGeneratorStrategy';
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
 import { DocumentTableFacade } from '../infrastructure/facades/DocumentTableFacade';
 import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
@@ -138,12 +137,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
           )
         );
       }
-    }
-    if (deps.documents !== undefined) {
-      registry.set(
-        'RIEPILOGO_CLASSE',
-        new RiepilogoClasseGeneratorStrategy(deps.templates, new DocumentTableFacade(deps.documents))
-      );
     }
     return registry;
   });

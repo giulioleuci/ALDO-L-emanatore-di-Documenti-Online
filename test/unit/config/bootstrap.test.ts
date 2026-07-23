@@ -244,16 +244,15 @@ describe('buildAldoContainer — optional generator strategies', () => {
     expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(true);
   });
 
-  test('does not register RIEPILOGO_CLASSE when deps.documents is undefined, even with deps.spreadsheets', () => {
-    const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
+  test('keeps DOCUMENTO_GENERICO registered and never registers the obsolete RIEPILOGO_CLASSE strategy', () => {
+    const c = buildAldoContainer({
+      ...baseDeps(),
+      spreadsheets: {} as never,
+      documents: {} as never
+    });
     const registry = c.get<Map<string, unknown>>('strategyRegistry');
+    expect(registry.has('DOCUMENTO_GENERICO')).toBe(true);
     expect(registry.has('RIEPILOGO_CLASSE')).toBe(false);
-  });
-
-  test('registers RIEPILOGO_CLASSE when deps.documents is provided, even without deps.spreadsheets', () => {
-    const c = buildAldoContainer({ ...baseDeps(), documents: {} as never });
-    const registry = c.get<Map<string, unknown>>('strategyRegistry');
-    expect(registry.has('RIEPILOGO_CLASSE')).toBe(true);
   });
 });
 

@@ -30,7 +30,7 @@ export interface IArtifactFactory {
 
 const NAME_VERBALE = 'E2E Verbale Template';
 const NAME_CONDOTTA = 'E2E Condotta Template';
-const NAME_RIEPILOGO = 'E2E Riepilogo Template';
+const NAME_RIEPILOGO = 'E2E Riepilogo Template v2';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }
@@ -66,17 +66,27 @@ function pianoParagraphs(tipo: string): string[] {
 
 const RIEPILOGO_PARAGRAPHS = [
   'Riepilogo Classe {{focus.classe.anagrafica.nome}}',
-  'Materie e docenti:',
-  '{{#bullet_list:riepilogoMaterieDocenti}}{{nomeMateria}} — {{nomeDocente}}{{/bullet_list}}',
   'Elenco studenti:',
-  '{{TABELLA_ALUNNI}}',
   'Numero totale studenti: {{focus.classe.studenti.statistiche.totale}}',
-  'Docenti senza tutoraggio ASL:',
-  '{{#bullet_list:riepilogoDocentiSenzaTutoraggio}}{{nomeDocente}}{{/bullet_list}}',
   'Rappresentanti degli studenti:',
   '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
   'Rappresentanti dei genitori:',
   '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}'
+];
+
+const RIEPILOGO_TABLES: E2eDocumentTable[] = [
+  {
+    data: [
+      ['Alunno', 'Religione', 'Email', 'Piani'],
+      [
+        '{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}',
+        '{{status.religione}}',
+        '{{anagrafica.email}}',
+        '{{didattica.piani.hasPiani}}'
+      ]
+    ],
+    options: { headerRow: true, alternatingRows: true }
+  }
 ];
 
 /** Roster rows generous enough for the ~20-student classes `E2eSampleDatabaseBuilder` seeds. */
@@ -121,7 +131,12 @@ export class E2eTemplateProvisioner {
   provision(folderId: string): E2eTemplateIds {
     const verbale = this.findOrCreateDoc(folderId, NAME_VERBALE, VERBALE_PARAGRAPHS);
     const condotta = this.findOrCreateSheet(folderId, NAME_CONDOTTA, condottaUpdates());
-    const riepilogo = this.findOrCreateDoc(folderId, NAME_RIEPILOGO, RIEPILOGO_PARAGRAPHS);
+    const riepilogo = this.findOrCreateDoc(
+      folderId,
+      NAME_RIEPILOGO,
+      RIEPILOGO_PARAGRAPHS,
+      RIEPILOGO_TABLES
+    );
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
@@ -129,10 +144,15 @@ export class E2eTemplateProvisioner {
     return { verbale, condotta, riepilogo, piani };
   }
 
-  private findOrCreateDoc(folderId: string, name: string, paragraphs: string[]): string {
+  private findOrCreateDoc(
+    folderId: string,
+    name: string,
+    paragraphs: string[],
+    tables?: E2eDocumentTable[]
+  ): string {
     return (
       this.drive.findFileByName(folderId, name) ??
-      this.artifacts.createDocument(name, folderId, paragraphs)
+      this.artifacts.createDocument(name, folderId, paragraphs, tables)
     );
   }
 

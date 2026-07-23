@@ -630,7 +630,7 @@ export class E2eSampleDatabaseBuilder {
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
       [COL_CONF_DOC.TIPO]: 'RIEPILOGO_CLASSE',
-      [COL_CONF_DOC.GENERATORE]: 'RIEPILOGO_CLASSE',
+      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',

@@ -164,7 +164,8 @@ test('seeds 8 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 5 piani) eac
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
   expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_condotta' });
   const riepilogo = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO')!;
-  expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('RIEPILOGO_CLASSE');
+  expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(riepilogo[COL_CONF_DOC.TIPO]).toBe('RIEPILOGO_CLASSE');
   expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_riepilogo' });
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
   expect(piani).toHaveLength(5);

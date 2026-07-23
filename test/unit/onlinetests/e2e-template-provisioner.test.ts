@@ -58,7 +58,7 @@ test('creates all 8 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilog
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
-  expect(created).toContain('doc:E2E Riepilogo Template v2');
+  expect(created).toContain('doc:E2E Riepilogo Template v3');
   for (const tipo of TIPI_PIANO) {
     expect(ids.piani[tipo]).toMatch(/^doc_/);
   }

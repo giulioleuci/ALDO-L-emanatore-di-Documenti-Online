@@ -30,7 +30,7 @@ export interface IArtifactFactory {
 
 const NAME_VERBALE = 'E2E Verbale Template';
 const NAME_CONDOTTA = 'E2E Condotta Template';
-const NAME_RIEPILOGO = 'E2E Riepilogo Template v2';
+const NAME_RIEPILOGO = 'E2E Riepilogo Template v3';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }

@@ -464,6 +464,7 @@ export class LogEmailStep extends Step {
       String(cfg(ctx)[COL_CONF_MAIL.ID]),
       destinatari,
       stato,
+      ctx.get<string>('corpoHtml') ?? '',
       allegatiInfo,
       errors.length > 0 ? errors.join('; ') : undefined
     );

@@ -232,5 +232,6 @@ export const COL_LOG_MAIL = {
   DATA: 'DATA',
   STATO: 'STATO',
   ALLEGATI: 'ALLEGATI',
-  ERRORE: 'ERRORE'
+  ERRORE: 'ERRORE',
+  TESTO: 'TESTO'
 } as const;

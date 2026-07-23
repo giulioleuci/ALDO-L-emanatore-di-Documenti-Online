@@ -68,7 +68,8 @@ describe('LogEmail.toData / fromData', () => {
       [COL_LOG_MAIL.DATA]: '2026-01-15T10:00:00.000Z',
       [COL_LOG_MAIL.STATO]: StatoEmail.SUCCESS,
       [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ x: 1 }),
-      [COL_LOG_MAIL.ERRORE]: ''
+      [COL_LOG_MAIL.ERRORE]: '',
+      [COL_LOG_MAIL.TESTO]: ''
     });
   });
 

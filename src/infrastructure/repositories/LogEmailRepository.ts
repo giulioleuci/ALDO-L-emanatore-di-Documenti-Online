@@ -48,11 +48,13 @@ export class LogEmailRepository extends Repository<LogEmail> implements ILogEmai
     this.database.save();
   }
 
-  /** Appends a send record with DESTINATARI as CSV and DATA = now (ref 06 §19). */
+  /** Appends a send record with DESTINATARI as CSV and DATA = now (ref 06 §19). TESTO is
+   * HtmlSanitizer.stripToPlainText(corpoHtml) — plain text, ≤2000 chars, single-cell-safe (item 5). */
   registraInvio(
     patternId: string,
     destinatari: Email[],
     stato: StatoEmail,
+    corpoHtml: string,
     allegati?: Record<string, unknown>,
     errore?: string
   ): LogEmail {
@@ -62,7 +64,8 @@ export class LogEmailRepository extends Repository<LogEmail> implements ILogEmai
       [COL_LOG_MAIL.DATA]: new Date().toISOString(),
       [COL_LOG_MAIL.STATO]: stato,
       [COL_LOG_MAIL.ALLEGATI]: allegati === undefined ? null : JSON.stringify(allegati),
-      [COL_LOG_MAIL.ERRORE]: errore ?? ''
+      [COL_LOG_MAIL.ERRORE]: errore ?? '',
+      [COL_LOG_MAIL.TESTO]: HtmlSanitizer.stripToPlainText(corpoHtml)
     });
     this.database.tables[TABLE.LOG_MAIL]!.insertRow(log.toData());
     this.database.save();

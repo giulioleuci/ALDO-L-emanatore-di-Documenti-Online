@@ -109,9 +109,14 @@ test('LOG_MAIL: composite id, findByPattern / findFailed + registraInvio (06 §1
     'CDC_OTTOBRE::rossi@school.it,bianchi@school.it::2025-10-05T10:00:00.000Z'
   );
   expect(r.findFailed().map((l) => l.pattern)).toEqual(['CARENZE_FAM']);
-  const sent = r.registraInvio('CDC_OTTOBRE', [Email.of('x@y.it')], StatoEmail.SUCCESS, {
-    docs: ['a']
-  });
+  const sent = r.registraInvio(
+    'CDC_OTTOBRE',
+    [Email.of('x@y.it')],
+    StatoEmail.SUCCESS,
+    '<p>Ciao <b>Mario</b>!</p>',
+    { docs: ['a'] }
+  );
   expect(sent.getAllegati()).toEqual({ docs: ['a'] });
+  expect(sent.testo).toBe('Ciao Mario!');
   expect(db.table('LOG_MAIL').findAll()).toHaveLength(3);
 });

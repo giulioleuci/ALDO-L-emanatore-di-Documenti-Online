@@ -564,6 +564,19 @@ test('LogEmailStep records SUCCESS in LOG_MAIL (11 §9)', () => {
   expect(rows[0]!['STATO']).toBe('SUCCESS');
 });
 
+test('LogEmailStep records LOG_MAIL.TESTO as HTML-stripped plain text of the composed body (item 5)', () => {
+  const w = wire();
+  runThroughCompose(w);
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+  send(w, new FakeGmailFacade());
+  new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
+  const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
+  const testo = String(row['TESTO']);
+  expect(testo).toContain('Si comunica quanto segue per la classe');
+  expect(testo).not.toContain('<');
+  expect(testo).not.toContain('>');
+});
+
 test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 §9)', () => {
   const w = wire({
     BOX_CFG: JSON.stringify([

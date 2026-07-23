@@ -11,6 +11,7 @@ export interface ILogEmailRepository {
     patternId: string,
     destinatari: Email[],
     stato: StatoEmail,
+    corpoHtml: string,
     allegati?: Record<string, unknown>,
     errore?: string
   ): LogEmail;

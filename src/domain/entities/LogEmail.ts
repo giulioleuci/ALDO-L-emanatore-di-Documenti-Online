@@ -17,6 +17,7 @@ export class LogEmail extends AldoEntity {
   public readonly stato: StatoEmail;
   private readonly allegatiRaw: string | null;
   public readonly errore: string;
+  public readonly testo: string;
 
   constructor(data: LogEmailData = {}) {
     super(data);
@@ -35,6 +36,8 @@ export class LogEmail extends AldoEntity {
         : null;
     this.errore =
       typeof data[COL_LOG_MAIL.ERRORE] === 'string' ? (data[COL_LOG_MAIL.ERRORE] as string) : '';
+    this.testo =
+      typeof data[COL_LOG_MAIL.TESTO] === 'string' ? (data[COL_LOG_MAIL.TESTO] as string) : '';
     this.id =
       this.pattern && this.destinatariRaw && this.data
         ? `${this.pattern}::${this.destinatariRaw}::${this.data}`
@@ -61,7 +64,8 @@ export class LogEmail extends AldoEntity {
       [COL_LOG_MAIL.DATA]: this.data,
       [COL_LOG_MAIL.STATO]: this.stato,
       [COL_LOG_MAIL.ALLEGATI]: this.allegatiRaw,
-      [COL_LOG_MAIL.ERRORE]: this.errore
+      [COL_LOG_MAIL.ERRORE]: this.errore,
+      [COL_LOG_MAIL.TESTO]: this.testo
     };
   }
 

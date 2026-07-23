@@ -19,9 +19,16 @@ import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { fixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import { COL_CONF_DOC, COL_CONF_MAIL } from '../../../src/config/schema';
 
 const NOW = new Date('2026-07-12T09:00:00Z');
 const RECIPIENT_EMAIL = 'attivo@onlinetest.aldo.local';
+
+function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
+  for (const row of rows) {
+    expect(Object.keys(row).sort()).toEqual(Object.values(columns).sort());
+  }
+}
 
 function sampleSeedTables(
   options: { includeConfDoc?: boolean; includeConfMail?: boolean; oggetto?: string } = {}
@@ -99,7 +106,8 @@ function sampleSeedTables(
             POST_PROCESSO: null,
             PARAMETRI: '',
             GESTIONE_ARTICOLAZIONE: '',
-            FORMATO: 'PDF'
+            FORMATO: 'PDF',
+            REGISTRA_UTENTI: ''
           }
         ]
       : [],
@@ -109,7 +117,7 @@ function sampleSeedTables(
             ID: CONF_MAIL_ID,
             OGGETTO: oggetto,
             PROCESSO: 'PER_ALUNNO',
-            BOX_CFG: '[]',
+            BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
             TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.',
             SUPPLENTI: false,
             NOREPLY: false,
@@ -145,6 +153,16 @@ function sampleFixture(): SampleDatabase {
 }
 
 describe('registerPipelineChecks', () => {
+  it('keeps every fixture and pipeline seed CONF_DOC/CONF_MAIL row schema-complete', () => {
+    const fixture = fixtureTables();
+    const pipeline = sampleSeedTables();
+
+    expectCompleteRows(fixture.CONF_DOC!, COL_CONF_DOC);
+    expectCompleteRows(fixture.CONF_MAIL!, COL_CONF_MAIL);
+    expectCompleteRows(pipeline.CONF_DOC!, COL_CONF_DOC);
+    expectCompleteRows(pipeline.CONF_MAIL!, COL_CONF_MAIL);
+  });
+
   it('registers a passing document-generation check that produces a file for the seeded CONF_DOC', () => {
     const runner = new TestRunner();
     registerPipelineChecks(runner, buildFakeContainer(), sampleFixture(), RECIPIENT_EMAIL);

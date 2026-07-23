@@ -155,7 +155,8 @@ export function fixtureTables(): Record<string, Row[]> {
         POST_PROCESSO: null,
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
-        FORMATO: 'GDOC'
+        FORMATO: 'GDOC',
+        REGISTRA_UTENTI: ''
       },
       {
         ID: 'CD_ESAME',
@@ -172,7 +173,8 @@ export function fixtureTables(): Record<string, Row[]> {
         POST_PROCESSO: null,
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
-        FORMATO: 'GDOC'
+        FORMATO: 'GDOC',
+        REGISTRA_UTENTI: ''
       }
     ],
     CONF_MAIL: [

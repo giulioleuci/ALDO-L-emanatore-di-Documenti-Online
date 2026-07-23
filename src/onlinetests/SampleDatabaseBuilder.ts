@@ -338,7 +338,8 @@ export class SampleDatabaseBuilder {
       [COL_CONF_DOC.POST_PROCESSO]: null, // PostProcessStep gates on `!= null`, not truthiness
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'PDF'
+      [COL_CONF_DOC.FORMATO]: 'PDF',
+      [COL_CONF_DOC.REGISTRA_UTENTI]: ''
     });
   }
 

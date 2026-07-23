@@ -4,6 +4,8 @@ import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { EmailNotificationService } from '../../application/services/EmailNotificationService';
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
+import type { EmailDb } from '../../application/services/EmailNotificationService';
+import { TABLE, COL_LOG_DOCS } from '../../config/schema';
 import {
   ALL_CLASSI_E2E,
   TIPI_PIANO,
@@ -42,6 +44,20 @@ export function registerE2eScenarioChecks(
 
   const documents = container.get<DocumentGenerationService>('documentGenerationService');
   const email = container.get<EmailNotificationService>('emailNotificationService');
+  const db = container.get<EmailDb>('db');
+
+  const assertPersistedLinks = (configId: string, label: string): void => {
+    const rows = db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter((row) => row[COL_LOG_DOCS.ID_GEN] === configId);
+    for (const classe of ALL_CLASSI_E2E) {
+      const row = rows.find((candidate) => candidate[COL_LOG_DOCS.CLASSI] === classe);
+      if (row === undefined || String(row[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
+        throw new ValidationError(`${label} per ${classe} non ha un LOG_DOCS.LINK persistito`);
+      }
+    }
+  };
 
   // Every entry-point class needs both doc types (ALL_CLASSI_E2E doc comment):
   // each of the 3 coordinatori and each of the 4 CdC gets its own email
@@ -55,6 +71,7 @@ export function registerE2eScenarioChecks(
         );
       }
     }
+    assertPersistedLinks(CONF_DOC_VERBALE, 'Verbale');
   });
 
   runner.add('E2E scenario 2: genera foglio valutazione condotta (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
@@ -66,6 +83,7 @@ export function registerE2eScenarioChecks(
         );
       }
     }
+    assertPersistedLinks(CONF_DOC_CONDOTTA, 'Condotta');
   });
 
   runner.add('E2E scenario 8: genera riepilogo classe (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
@@ -77,6 +95,16 @@ export function registerE2eScenarioChecks(
         );
       }
     }
+    const rows = db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO);
+    if (rows.length !== ALL_CLASSI_E2E.length) {
+      throw new ValidationError(
+        `Riepilogo: attese ${ALL_CLASSI_E2E.length} righe LOG_DOCS, ricevute ${rows.length}`
+      );
+    }
+    assertPersistedLinks(CONF_DOC_RIEPILOGO, 'Riepilogo');
   });
 
   runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {

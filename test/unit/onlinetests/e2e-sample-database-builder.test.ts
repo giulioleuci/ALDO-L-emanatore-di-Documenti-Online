@@ -75,6 +75,12 @@ const TEMPLATE_IDS = {
   }
 };
 
+function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
+  for (const row of rows) {
+    expect(Object.keys(row).sort()).toEqual(Object.values(columns).sort());
+  }
+}
+
 test('seeds 4 CLASSI rows (2 plain, 1 articolata pair) and exactly 60 ALUNNI split 20/20/8/12', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
@@ -162,6 +168,7 @@ test('seeds 8 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 5 piani) eac
   expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_riepilogo' });
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
   expect(piani).toHaveLength(5);
+  expectCompleteRows(confDoc, COL_CONF_DOC);
 });
 
 test('1A and 2B share the same coordinatore, so coordinatore-aggregated emails cover both classes (not one email per class)', () => {
@@ -187,6 +194,23 @@ test('seeds 4 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genito
   expect(confMail.map((c) => c[COL_CONF_MAIL.PROCESSO]).sort()).toEqual(
     ['PER_CARENZA_GENITORI', 'PER_CDC', 'PER_COORDINATORE', 'PER_COORDINATORE'].sort()
   );
+  expectCompleteRows(confMail, COL_CONF_MAIL);
+});
+
+test('uses class-wide and student-scoped REGISTRA_UTENTI selector examples in CONF_DOC rows', () => {
+  const { spreadsheets, sheets } = factory();
+  const drive = new FakeDriveFacade();
+  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const confDoc = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.CONF_DOC]!;
+
+  expect(confDoc.find((row) => row[COL_CONF_DOC.ID] === 'E2E_VERBALE')![COL_CONF_DOC.REGISTRA_UTENTI]).toBe(
+    'COORDINATORI,CDC'
+  );
+  expect(
+    confDoc.find((row) => row[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO')![
+      COL_CONF_DOC.REGISTRA_UTENTI
+    ]
+  ).toBe('ALUNNI,GENITORI');
 });
 
 test('VERBALE and CONDOTTA emails configure documenti/cartelle boxes (so generated documents actually show up as links)', () => {

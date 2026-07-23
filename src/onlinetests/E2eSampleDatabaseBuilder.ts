@@ -607,7 +607,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC'
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,CDC'
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_CONDOTTA,
@@ -623,7 +624,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GSHEET'
+      [COL_CONF_DOC.FORMATO]: 'GSHEET',
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'CDC'
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
@@ -639,7 +641,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC'
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,DOCENTI'
     });
     for (const tipo of TIPI_PIANO) {
       sample.appendRow(TABLE.CONF_DOC, {
@@ -658,7 +661,8 @@ export class E2eSampleDatabaseBuilder {
         [COL_CONF_DOC.POST_PROCESSO]: null,
         [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tipoPiano: tipo }),
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-        [COL_CONF_DOC.FORMATO]: 'GDOC'
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_UTENTI]: 'ALUNNI,GENITORI'
       });
     }
   }

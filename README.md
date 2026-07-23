@@ -219,6 +219,44 @@ Eseguire un singolo file di test: `npx jest --config jest.config.cjs path/al/Fil
 
 ---
 
+### Provisioning del master bound (primo avvio)
+
+I lanciatori `scripts/provision-master.sh` (macOS/Linux) e
+`scripts/provision-master.ps1` (Windows) aggiornano GasLibraryFactory, ne
+rigenerano il bundle vendorizzato, compilano ALDO in produzione e creano un
+nuovo Google Sheet con progetto Apps Script **bound**. Il codice pushato è
+quindi associato direttamente al nuovo Sheet.
+
+Prima dell'esecuzione servono Git, Node.js/npm nelle versioni indicate in
+`package.json`, le dipendenze installate con `npm install` e un browser per
+completare `clasp login` quando richiesto. Modificare all'inizio del launcher
+usato le variabili `GLF_REPOSITORY_URL`, `GLF_BRANCH`, `MASTER_TITLE` e
+`MASTER_FOLDER_PATH`.
+
+Su macOS/Linux eseguire:
+
+```bash
+bash scripts/provision-master.sh
+```
+
+Su Windows PowerShell eseguire:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\provision-master.ps1
+```
+
+Al primo avvio, o quando il token è scaduto, il launcher apre il flusso
+interattivo di autorizzazione di clasp: il consenso Google va confermato nel
+browser. Al termine, `REPO_FOR_GLF.txt` riporta URL, ramo e commit effettivo di
+GasLibraryFactory usato per la build.
+
+Per mantenere i lanciatori privi di client Drive API, il nuovo Sheet viene
+creato nella **Drive root**. Spostarlo manualmente nel percorso indicato da
+`MASTER_FOLDER_PATH`; lo spostamento non rompe il legame tra il Sheet e il suo
+progetto Apps Script bound.
+
+---
+
 ## Vincoli critici
 
 - **Target GAS V8**, non Node: solo codice sincrono, niente API specifiche di Node o del browser non supportate. I sorgenti usano TypeScript moderno ma vengono transpilati (Babel → Chrome 80) e patchati per GAS da `scripts/build-and-prepare.cjs`.

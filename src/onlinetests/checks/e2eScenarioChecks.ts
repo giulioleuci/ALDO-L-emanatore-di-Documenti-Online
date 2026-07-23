@@ -20,7 +20,8 @@ import {
 } from '../E2eSampleDatabaseBuilder';
 
 /**
- * Registers the 7 e2e scenario checks (design spec `2026-07-21-testonline-mock-db-e2e-design.md`).
+ * Registers the 8 e2e scenario checks (design spec `2026-07-21-testonline-mock-db-e2e-design.md`,
+ * scenario 8 added by `2026-07-23-email-links-boxes-riepilogo-logmail-design.md`).
  * Refuses to register any real check — and reports a single explicit failure instead — if the
  * sample's MASTER row isn't TEST_MODE, so a misconfigured fixture can never risk a real send
  * (design spec "Error handling").

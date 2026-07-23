@@ -416,6 +416,7 @@ Audit trail di ogni email inviata dal sistema.
 | `STATO`       | String       | —          | —            | Enum                                             |
 | `ALLEGATI`    | JSON         | —          | —            | Riferimenti allegati: `{"docs":[],"folders":[]}` |
 | `ERRORE`      | String       | —          | —            | Dettaglio dell'errore (se STATO = ERROR)         |
+| `TESTO`       | String       | —          | —            | Corpo email in chiaro (HTML→testo, troncato)     |
 
 ---
 

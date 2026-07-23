@@ -3,22 +3,31 @@ import { GasArtifactFactory } from '../../../src/onlinetests/GasArtifactFactory'
 function fakeDocumentService(): {
   documents: DocumentService;
   appended: string[];
+  calls: unknown[][];
   executed: boolean;
 } {
   const appended: string[] = [];
+  const calls: unknown[][] = [];
   let executed = false;
   const builder = {
     appendParagraph: (text: string) => {
       appended.push(text);
+      calls.push(['appendParagraph', text]);
+      return builder;
+    },
+    createTable: (data: string[][], options?: DocumentCreateTableOptions) => {
+      calls.push(['createTable', data, options]);
       return builder;
     },
     execute: () => {
       executed = true;
+      calls.push(['execute']);
       return { success: true };
     }
   };
   return {
     appended,
+    calls,
     get executed() {
       return executed;
     },
@@ -69,6 +78,59 @@ test('createDocument with paragraphs appends each one and executes the builder',
 
   expect(id).toBe('DOC_1');
   expect(appended).toEqual(['line 1', 'line 2']);
+});
+
+test('createDocument batches paragraphs and template tables through DocumentService', () => {
+  const { documents, calls } = fakeDocumentService();
+  const { spreadsheets } = fakeSpreadsheetService('Foglio1');
+  const factory = new GasArtifactFactory(documents, spreadsheets);
+
+  const id = factory.createDocument(
+    'Riepilogo',
+    'folder-1',
+    ['Titolo {{focus.classe.anagrafica.nome}}'],
+    [
+      {
+        data: [
+          ['Alunno', 'Religione', 'Email'],
+          [
+            '{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}',
+            '{{status.religione}}',
+            '{{anagrafica.email}}'
+          ]
+        ],
+        options: { headerRow: true }
+      }
+    ]
+  );
+
+  expect(id).toBe('DOC_1');
+  expect(calls).toEqual([
+    ['appendParagraph', 'Titolo {{focus.classe.anagrafica.nome}}'],
+    [
+      'createTable',
+      [
+        ['Alunno', 'Religione', 'Email'],
+        [
+          '{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}',
+          '{{status.religione}}',
+          '{{anagrafica.email}}'
+        ]
+      ],
+      { headerRow: true }
+    ],
+    ['execute']
+  ]);
+});
+
+test('createDocument executes table-only content once', () => {
+  const { documents, calls } = fakeDocumentService();
+  const { spreadsheets } = fakeSpreadsheetService('Foglio1');
+  const factory = new GasArtifactFactory(documents, spreadsheets);
+
+  factory.createDocument('Riepilogo', 'folder-1', [], [{ data: [['Alunno']] }]);
+
+  expect(calls).toEqual([['createTable', [['Alunno']], undefined], ['execute']]);
 });
 
 test('createDocument throws when the builder execution fails', () => {

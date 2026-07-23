@@ -8,13 +8,23 @@ export interface SheetValueUpdate {
   values: unknown[][];
 }
 
+export interface E2eDocumentTable {
+  data: string[][];
+  options?: DocumentCreateTableOptions;
+}
+
 /**
  * Port abstracting Drive-artifact creation, so the provisioner is unit-testable offline.
  * `paragraphs`/`updates` are only ever passed on first creation (never on a found-and-reused
  * artifact) — content is authored once, not re-appended on every idempotent re-run.
  */
 export interface IArtifactFactory {
-  createDocument(name: string, folderId: string, paragraphs?: string[]): string;
+  createDocument(
+    name: string,
+    folderId: string,
+    paragraphs?: string[],
+    tables?: E2eDocumentTable[]
+  ): string;
   createSheet(name: string, folderId: string, updates?: SheetValueUpdate[]): string;
 }
 

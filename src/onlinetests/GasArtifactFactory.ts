@@ -1,4 +1,8 @@
-import type { IArtifactFactory, SheetValueUpdate } from './E2eTemplateProvisioner';
+import type {
+  E2eDocumentTable,
+  IArtifactFactory,
+  SheetValueUpdate
+} from './E2eTemplateProvisioner';
 import { DomainError } from '../domain/errors/DomainError';
 
 /**
@@ -14,15 +18,25 @@ export class GasArtifactFactory implements IArtifactFactory {
     private readonly spreadsheets: SpreadsheetService
   ) {}
 
-  createDocument(name: string, folderId: string, paragraphs: string[] = []): string {
+  createDocument(
+    name: string,
+    folderId: string,
+    paragraphs: string[] = [],
+    tables: E2eDocumentTable[] = []
+  ): string {
     const { documentId, builder } = this.documents.createDocument(name, {
       destinationFolder: folderId
     });
-    if (paragraphs.length === 0) return documentId;
-    paragraphs.forEach((paragraph) => builder.appendParagraph(paragraph));
-    const result = builder.execute();
-    if (!result.success) {
-      throw new DomainError(`GasArtifactFactory.createDocument(${name}): ${String(result.error)}`);
+    for (const paragraph of paragraphs) builder.appendParagraph(paragraph);
+    for (const table of tables) builder.createTable(table.data, table.options);
+
+    if (paragraphs.length > 0 || tables.length > 0) {
+      const result = builder.execute();
+      if (!result.success) {
+        throw new DomainError(
+          `Creazione contenuto documento E2E fallita: ${String(result.error)}`
+        );
+      }
     }
     return documentId;
   }

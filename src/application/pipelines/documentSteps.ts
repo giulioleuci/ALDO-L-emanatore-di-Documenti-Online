@@ -117,6 +117,7 @@ export function resolveLogDocUsers(confDoc: ConfigurazioneDocumento, context: Cd
     }
   };
   const classe = context.focus.classe;
+  const materiaCorrente = context.meta.parametriInput.materiaCorrente;
 
   for (const selector of selectors) {
     switch (selector) {
@@ -124,6 +125,13 @@ export function resolveLogDocUsers(confDoc: ConfigurazioneDocumento, context: Cd
         for (const coordinatore of classe?.coordinatori ?? []) add(coordinatore.email);
         break;
       case 'DOCENTI':
+        if (materiaCorrente === null || materiaCorrente.trim() === '') break;
+        for (const docente of classe?.consiglioDiClasse ?? []) {
+          if (docente.materie.some((materia) => materia.sigla === materiaCorrente)) {
+            add(docente.anagrafica.email);
+          }
+        }
+        break;
       case 'CDC':
         for (const docente of classe?.consiglioDiClasse ?? []) add(docente.anagrafica.email);
         break;
@@ -132,7 +140,7 @@ export function resolveLogDocUsers(confDoc: ConfigurazioneDocumento, context: Cd
         break;
       case 'GENITORI':
         for (const alunno of classe?.studenti?.listaCompleta ?? []) {
-          for (const genitore of alunno.genitori) add(genitore.email);
+          for (const genitore of alunno.genitori ?? []) add(genitore.email);
         }
         break;
     }

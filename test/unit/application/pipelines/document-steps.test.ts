@@ -250,6 +250,62 @@ test('RegisterDocumentStep overrides the fallback with ordered unique CDU users 
   );
 });
 
+test('RegisterDocumentStep resolves DOCENTI from the active CDU subject, not the full CDC', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: 'DOCENTI' };
+  const context = ctx.get<Cdu>('cdu')!;
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', {
+    ...context,
+    meta: {
+      ...context.meta,
+      parametriInput: { ...context.meta.parametriInput, materiaCorrente: 'MATE' }
+    }
+  });
+  ctx.set('newFileId', 'file_subject_teachers');
+  ctx.set('nomeFile', 'Verbale_5A');
+
+  new RegisterDocumentStep(logger, db).execute(ctx);
+
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_subject_teachers')?.UTENTI).toBe(
+    'rossi@school.it'
+  );
+});
+
+test('RegisterDocumentStep tolerates a sparse legacy CDU without genitori', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: 'GENITORI' };
+  const context = ctx.get<Cdu>('cdu')!;
+  const classe = context.focus.classe!;
+  const studenti = classe.studenti!;
+  const sparseStudenti = studenti.listaCompleta.map((alunno) => {
+    const legacyAlunno = { ...alunno } as Partial<typeof alunno>;
+    delete legacyAlunno.genitori;
+    return legacyAlunno;
+  });
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', {
+    ...context,
+    focus: {
+      ...context.focus,
+      classe: {
+        ...classe,
+        studenti: { ...studenti, listaCompleta: sparseStudenti as typeof studenti.listaCompleta }
+      }
+    }
+  });
+  ctx.set('newFileId', 'file_sparse_parents');
+  ctx.set('nomeFile', 'Verbale_5A');
+
+  new RegisterDocumentStep(logger, db).execute(ctx);
+
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_sparse_parents')?.UTENTI).toBe('');
+});
+
 test('RegisterDocumentStep keeps the alunno fallback when REGISTRA_UTENTI is blank', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);

@@ -89,6 +89,58 @@ function classeNome(ctx: PipelineContext): string {
   return cdu(ctx).focus.classe?.anagrafica.nome ?? '';
 }
 
+const LOG_DOC_USER_SELECTORS = ['COORDINATORI', 'DOCENTI', 'CDC', 'ALUNNI', 'GENITORI'] as const;
+type LogDocUserSelector = (typeof LOG_DOC_USER_SELECTORS)[number];
+
+function isLogDocUserSelector(selector: string): selector is LogDocUserSelector {
+  return (LOG_DOC_USER_SELECTORS as readonly string[]).includes(selector);
+}
+
+/** Resolves configured LOG_DOCS users solely from the CDU, preserving first-seen order. */
+export function resolveLogDocUsers(confDoc: ConfigurazioneDocumento, context: Cdu): string {
+  const selectors = confDoc.getRegistraUtenti().map((selector) => selector.toUpperCase());
+  for (const selector of selectors) {
+    if (!isLogDocUserSelector(selector)) {
+      throw new PipelineError(
+        `CONF_DOC ${confDoc.id ?? '?'}: REGISTRA_UTENTI non valido: ${selector}`
+      );
+    }
+  }
+
+  const emails: string[] = [];
+  const seen = new Set<string>();
+  const add = (email: string): void => {
+    const normalized = email.trim();
+    if (normalized !== '' && !seen.has(normalized)) {
+      seen.add(normalized);
+      emails.push(normalized);
+    }
+  };
+  const classe = context.focus.classe;
+
+  for (const selector of selectors) {
+    switch (selector) {
+      case 'COORDINATORI':
+        for (const coordinatore of classe?.coordinatori ?? []) add(coordinatore.email);
+        break;
+      case 'DOCENTI':
+      case 'CDC':
+        for (const docente of classe?.consiglioDiClasse ?? []) add(docente.anagrafica.email);
+        break;
+      case 'ALUNNI':
+        for (const alunno of classe?.studenti?.listaCompleta ?? []) add(alunno.anagrafica.email);
+        break;
+      case 'GENITORI':
+        for (const alunno of classe?.studenti?.listaCompleta ?? []) {
+          for (const genitore of alunno.genitori) add(genitore.email);
+        }
+        break;
+    }
+  }
+
+  return emails.join(',');
+}
+
 /**
  * Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1): the cloned
  * artifact is still a live Drive file at this point in the pipeline regardless
@@ -261,7 +313,8 @@ export class ApplyPermissionsStep extends Step {
     private readonly roles: IRoleResolver
   ) {
     super('ApplyPermissions', logger, {
-      shouldExecuteCondition: (ctx) => generateGate(ctx) && hasJsonValue(cfg(ctx)[COL_CONF_DOC.PERMESSI])
+      shouldExecuteCondition: (ctx) =>
+        generateGate(ctx) && hasJsonValue(cfg(ctx)[COL_CONF_DOC.PERMESSI])
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
@@ -304,6 +357,7 @@ export class RegisterDocumentStep extends Step {
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
+    const configuredUsers = confDoc(ctx).getRegistraUtenti();
     const row: Row = {
       [COL_LOG_DOCS.ID]: ctx.get<string>('newFileId')!,
       [COL_LOG_DOCS.ID_GEN]: String(cfg(ctx)[COL_CONF_DOC.ID]),
@@ -317,7 +371,10 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',
       [COL_LOG_DOCS.LINK]: ctx.get<string>('newFileLink') ?? '',
       [COL_LOG_DOCS.CLASSI]: classeNome(ctx),
-      [COL_LOG_DOCS.UTENTI]: cdu(ctx).focus.alunno?.anagrafica.email ?? '',
+      [COL_LOG_DOCS.UTENTI]:
+        configuredUsers.length > 0
+          ? resolveLogDocUsers(confDoc(ctx), cdu(ctx))
+          : (cdu(ctx).focus.alunno?.anagrafica.email ?? ''),
       [COL_LOG_DOCS.DATA_CREAZ]: cdu(ctx).meta.date.oggi.breve
     };
     // Persisted by the service's transaction commit (10 §11).

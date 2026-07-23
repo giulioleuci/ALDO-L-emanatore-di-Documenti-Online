@@ -22,7 +22,7 @@ test('CLASSE_COMPLETA on 5A assembles every class section (09 §3)', () => {
     'bianchi@school.it',
     'rossi@school.it'
   ]);
-  expect(c.studenti?.listaCompleta).toHaveLength(3);
+  expect(c.studenti?.listaCompleta).toHaveLength(1);
   expect(c.studenti?.statistiche?.totale).toBe(1);
   expect(c.rappresentanti?.studenti).toEqual([
     { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }

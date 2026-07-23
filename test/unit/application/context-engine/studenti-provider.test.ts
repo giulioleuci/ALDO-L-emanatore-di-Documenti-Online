@@ -37,25 +37,20 @@ function build(target: string, tables = fixtureTables()): Cdu {
   return b.build(params, recipe);
 }
 
-test('StudentiProvider: listaCompleta sorted by surname (02 §4.1)', () => {
+test('StudentiProvider: listaCompleta contains only active students (02 §4.1)', () => {
   const s = build('5A').focus.classe!.studenti!;
-  expect(s.listaCompleta.map((a) => a.anagrafica.email)).toEqual([
-    'a3@school.it',
-    'a2@school.it',
-    'a1@school.it'
-  ]);
+  expect(s.listaCompleta.map((a) => a.anagrafica.email)).toEqual(['a1@school.it']);
+  expect(s.listaCompleta.some((a) => a.anagrafica.email === 'a2@school.it')).toBe(false);
+  expect(s.listaCompleta.some((a) => a.anagrafica.email === 'a3@school.it')).toBe(false);
   expect(s.perIndirizzo).toBeUndefined();
 });
 
 test('StudentiProvider: parent emails are exposed in the class CDU', () => {
   const cdu = build('5A');
-  const alunnoConGenitore = cdu.focus.classe!.studenti!.listaCompleta.find(
-    (alunno) => alunno.anagrafica.email === 'a1@school.it'
-  );
-
-  expect(alunnoConGenitore!.genitori).toEqual([
-    { email: 'genitore1@x.it' }
-  ]);
+  const studenti = cdu.focus.classe!.studenti!.listaCompleta;
+  expect(studenti).toHaveLength(1);
+  expect(studenti[0]!.anagrafica.email).toBe('a1@school.it');
+  expect(studenti[0]!.genitori).toEqual([{ email: 'genitore1@x.it' }]);
 });
 
 test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)', () => {
@@ -81,24 +76,6 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
       piani: { hasPiani: true, hasBes: true, items: [{ tipo: 'PEI', isBes: true }] },
       pcto: { oreCumulate: 100 }
     }
-  });
-});
-
-test('StudentiProvider: DSA plan sets isBes, single carenza', () => {
-  const a2 = build('5A').focus.classe!.studenti!.listaCompleta.find(
-    (a) => a.anagrafica.email === 'a2@school.it'
-  )!;
-  expect(a2.status).toEqual({
-    isBes: true,
-    isRipetente: true,
-    isRappresentante: false,
-    religione: 'NO'
-  });
-  expect(a2.didattica.piani.items).toEqual([{ tipo: 'PDP_DSA', isBes: true }]);
-  expect(a2.didattica.carenze).toEqual({
-    hasCarenze: true,
-    numero: 1,
-    dettaglio: [{ materia: 'FISI', voto: '3' }]
   });
 });
 
@@ -136,6 +113,16 @@ test('StudentiProvider: articulated parent aggregates + groups by indirizzo (09 
       RIPETENTE: false,
       RAPPR_STUD: false,
       CURRICULUM: null
+    },
+    {
+      EMAIL: 's3@school.it',
+      COGNOMENOME: 'GAMMA TRE',
+      CLASSE: '1F-LSS',
+      RELIGIONE: 'SI',
+      ATTIVO: false,
+      RIPETENTE: false,
+      RAPPR_STUD: false,
+      CURRICULUM: null
     }
   );
   const s = build('1F', tables).focus.classe!.studenti!;
@@ -144,4 +131,5 @@ test('StudentiProvider: articulated parent aggregates + groups by indirizzo (09 
   expect(Object.keys(s.perIndirizzo!)).toEqual(['SCIENTIFICO', 'LSSA']);
   expect(s.perIndirizzo!['SCIENTIFICO']!.map((a) => a.anagrafica.email)).toEqual(['s1@school.it']);
   expect(s.perIndirizzo!['LSSA']!.map((a) => a.anagrafica.email)).toEqual(['s2@school.it']);
+  expect(s.listaCompleta.some((a) => a.anagrafica.email === 's3@school.it')).toBe(false);
 });

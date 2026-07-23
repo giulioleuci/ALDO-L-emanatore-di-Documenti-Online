@@ -7,6 +7,7 @@ import {
   CloneTemplateStep,
   RenderTemplateStep,
   RegisterDocumentStep,
+  resolveLogDocUsers,
   PostProcessStep,
   ApplyPermissionsStep,
   CRITICAL_STEPS
@@ -25,6 +26,7 @@ import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
 import { SchemaSottocartelle } from '../../../../src/domain/value-objects/enums';
+import { PipelineError } from '../../../../src/domain/errors/DomainError';
 
 const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();
@@ -229,13 +231,68 @@ test('RegisterDocumentStep leaves LOG_DOCS.UTENTI empty for classe-scoped genera
   expect(row?.UTENTI).toBe('');
 });
 
+test('RegisterDocumentStep overrides the fallback with ordered unique CDU users from REGISTRA_UTENTI', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    REGISTRA_UTENTI: ' coordinatori, CDC, alunni, genitori, CDC '
+  };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('newFileId', 'file_recipients');
+  ctx.set('nomeFile', 'Verbale_5A');
+
+  new RegisterDocumentStep(logger, db).execute(ctx);
+
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_recipients')?.UTENTI).toBe(
+    'rossi@school.it,bianchi@school.it,a1@school.it,genitore1@x.it'
+  );
+});
+
+test('RegisterDocumentStep keeps the alunno fallback when REGISTRA_UTENTI is blank', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: '   ' };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildAlunnoCdu(db));
+  ctx.set('newFileId', 'file_blank_recipients');
+  ctx.set('nomeFile', 'PDP_a1');
+
+  new RegisterDocumentStep(logger, db).execute(ctx);
+
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_blank_recipients')?.UTENTI).toBe(
+    'a1@school.it'
+  );
+});
+
+test('RegisterDocumentStep rejects unknown REGISTRA_UTENTI selectors before inserting LOG_DOCS', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: 'COORDINATORI, INVALIDO' };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('newFileId', 'file_invalid_recipients');
+  ctx.set('nomeFile', 'Verbale_5A');
+
+  expect(() => resolveLogDocUsers(ctx.get('confDoc')!, ctx.get('cdu')!)).toThrow(PipelineError);
+  expect(() => new RegisterDocumentStep(logger, db).execute(ctx)).toThrow(
+    'REGISTRA_UTENTI non valido: INVALIDO'
+  );
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_invalid_recipients')).toBeNull();
+});
+
 test('RegisterDocumentStep writes LOG_DOCS.SOTTOTIPO from CONF_DOC.PARAMETRI.tipoPiano', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   const confRow = fixtureTables().CONF_DOC[0]!;
   ctx.set(
     'confDoc',
-    ConfigurazioneDocumento.fromData({ ...confRow, PARAMETRI: JSON.stringify({ tipoPiano: 'PDP_BES' }) })
+    ConfigurazioneDocumento.fromData({
+      ...confRow,
+      PARAMETRI: JSON.stringify({ tipoPiano: 'PDP_BES' })
+    })
   );
   ctx.set('newFileId', 'file_pdp_bes');
   ctx.set('newFileLink', 'https://drive/file_pdp_bes');
@@ -298,7 +355,7 @@ test('PostProcessStep skipped when POST_PROCESSO is null', () => {
   expect(ctx.get('postProcessUpdated')).toBeNull();
 });
 
-test('PostProcessStep skipped when POST_PROCESSO is an empty string (regression: blank Sheets cells round-trip as \'\', not null)', () => {
+test("PostProcessStep skipped when POST_PROCESSO is an empty string (regression: blank Sheets cells round-trip as '', not null)", () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, POST_PROCESSO: '' });
@@ -339,7 +396,7 @@ test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {
   expect(drive.permissions).toEqual([]);
 });
 
-test('ApplyPermissionsStep is skipped when PERMESSI is an empty string (regression: blank Sheets cells round-trip as \'\', not null)', () => {
+test("ApplyPermissionsStep is skipped when PERMESSI is an empty string (regression: blank Sheets cells round-trip as '', not null)", () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: '' });

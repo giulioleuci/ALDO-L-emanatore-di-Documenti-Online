@@ -20,6 +20,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
   private readonly modelliRaw: string | null;
   private readonly condizioneRaw: string;
   private readonly parametriRaw: string | null;
+  private readonly registraUtentiRaw: string | null;
 
   constructor(data: ConfigurazioneDocumentoData = {}) {
     super(data);
@@ -42,6 +43,10 @@ export class ConfigurazioneDocumento extends AldoEntity {
     this.parametriRaw =
       typeof data[COL_CONF_DOC.PARAMETRI] === 'string'
         ? (data[COL_CONF_DOC.PARAMETRI] as string)
+        : null;
+    this.registraUtentiRaw =
+      typeof data[COL_CONF_DOC.REGISTRA_UTENTI] === 'string'
+        ? (data[COL_CONF_DOC.REGISTRA_UTENTI] as string)
         : null;
   }
 
@@ -85,6 +90,14 @@ export class ConfigurazioneDocumento extends AldoEntity {
     return typeof t === 'string' && t.length > 0 ? t : null;
   }
 
+  /** Comma-separated LOG_DOCS recipient selectors, without blank tokens. */
+  getRegistraUtenti(): string[] {
+    return (this.registraUtentiRaw ?? '')
+      .split(',')
+      .map((selector) => selector.trim())
+      .filter((selector) => selector !== '');
+  }
+
   override toData(): EntityData {
     return {
       [COL_CONF_DOC.ID]: this.id,
@@ -93,7 +106,8 @@ export class ConfigurazioneDocumento extends AldoEntity {
       [COL_CONF_DOC.FORMATO]: this.formato,
       [COL_CONF_DOC.MODELLI]: this.modelliRaw,
       [COL_CONF_DOC.CONDIZIONE]: this.condizioneRaw,
-      [COL_CONF_DOC.PARAMETRI]: this.parametriRaw
+      [COL_CONF_DOC.PARAMETRI]: this.parametriRaw,
+      [COL_CONF_DOC.REGISTRA_UTENTI]: this.registraUtentiRaw
     };
   }
 

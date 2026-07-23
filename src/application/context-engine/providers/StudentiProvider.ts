@@ -32,7 +32,10 @@ export class StudentiProvider implements ContextProvider {
       const indirizziPresenti: string[] = [];
       const listaCompleta: AlunnoContestoVM[] = [];
       for (const partner of this.classi.getClassiPartner(classe)) {
-        const vms = this.classi.getStudenti(partner).map((a) => this.buildVM(a));
+        const vms = this.classi
+          .getStudenti(partner)
+          .filter((alunno) => alunno.isAttivo())
+          .map((alunno) => this.buildVM(alunno));
         const sigla = partner.indirizzo;
         if (!(sigla in perIndirizzo)) {
           perIndirizzo[sigla] = [];
@@ -44,7 +47,10 @@ export class StudentiProvider implements ContextProvider {
       focusClasse.studenti = { listaCompleta, perIndirizzo, indirizziPresenti };
     } else {
       focusClasse.studenti = {
-        listaCompleta: this.classi.getStudenti(classe).map((a) => this.buildVM(a))
+        listaCompleta: this.classi
+          .getStudenti(classe)
+          .filter((alunno) => alunno.isAttivo())
+          .map((alunno) => this.buildVM(alunno))
       };
     }
   }

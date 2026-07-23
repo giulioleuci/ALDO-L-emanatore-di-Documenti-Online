@@ -31,13 +31,17 @@ function buildRosterRows(studenti: AlunnoContestoVM[]): string[][] {
   return [header, ...rows];
 }
 
+function nomeDocente(docente: DocenteCdcVM): string {
+  return `${docente.anagrafica.nome} ${docente.anagrafica.cognome}`;
+}
+
 function buildMaterieDocenti(
   consiglio: DocenteCdcVM[]
 ): Array<{ nomeMateria: string; nomeDocente: string }> {
   return consiglio.flatMap((docente) =>
     docente.materie.map((materia) => ({
       nomeMateria: materia.nome,
-      nomeDocente: `${docente.anagrafica.nome} ${docente.anagrafica.cognome}`
+      nomeDocente: nomeDocente(docente)
     }))
   );
 }
@@ -45,7 +49,7 @@ function buildMaterieDocenti(
 function buildDocentiSenzaTutoraggio(consiglio: DocenteCdcVM[]): Array<{ nomeDocente: string }> {
   return consiglio
     .filter((docente) => !docente.ruoli.isTutorAsl)
-    .map((docente) => ({ nomeDocente: `${docente.anagrafica.nome} ${docente.anagrafica.cognome}` }));
+    .map((docente) => ({ nomeDocente: nomeDocente(docente) }));
 }
 
 /**

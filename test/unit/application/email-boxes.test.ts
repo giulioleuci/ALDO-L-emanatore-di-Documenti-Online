@@ -20,6 +20,24 @@ function materie(): MateriaRepository {
   return new MateriaRepository(new FakeDatabase(fixtureTables()));
 }
 
+function materieConNomeDistintoDaSintesi(): MateriaRepository {
+  const tables = {
+    ...fixtureTables(),
+    MATERIE: [
+      {
+        ID: 'MATE',
+        NOME: 'Matematica e Informatica',
+        SINTESI: 'MAT',
+        COLORE_1: '#c0392b',
+        COLORE_2: '#fdecea',
+        SIMBOLO: '📐',
+        ESAME_CFG: null
+      }
+    ]
+  };
+  return new MateriaRepository(new FakeDatabase(tables));
+}
+
 function cduRecord(): Record<string, unknown> {
   return {
     meta: { date: { oggi: { breve: '05/07/2026' } } },
@@ -104,6 +122,23 @@ test('carenze box renders one coloured sub-box per materia (11 §11)', () => {
   expect(box.html).toContain('📐 Matematica');
   expect(box.html).toContain('Voto 4');
   expect(box.html).toContain('Carenze rilevate'); // wrapBox container title
+});
+
+test('carenze box title uses MATERIE.NOME (full name), not SINTESI, and has no background fill (item 2)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'carenze', TITOLO: 'Carenze rilevate' }]),
+    cduRecord(),
+    materieConNomeDistintoDaSintesi(),
+    templates
+  );
+  const box = out.boxes['carenze']!;
+  expect(box.html).toContain('📐 Matematica e Informatica');
+  expect(box.html).not.toContain('📐 MAT<'); // not the short SINTESI form
+  expect(box.html).not.toContain('background-color:#fdecea');
+  expect(box.html).toContain('border-left:4px solid #c0392b');
 });
 
 test('documenti box lists links; cartelle box empty ⇒ hidden', () => {

@@ -110,11 +110,9 @@ function renderCarenzeBox(data: unknown): string {
   const rows = data as CarenzaFormatoB[];
   return rows
     .map((r) => {
-      const colore2 = safeColor(r.colore2, '');
-      const sfondo = colore2 !== '' ? ` background-color:${colore2};` : '';
-      const titolo = r.simbolo !== '' ? `${r.simbolo} ${r.nomeSintesi}` : r.nomeSintesi;
+      const titolo = r.simbolo !== '' ? `${r.simbolo} ${r.nome}` : r.nome;
       return (
-        `<div style="border-left:4px solid ${safeColor(r.colore, DEFAULT_BORDER)};${sfondo} padding:12px 12px 12px 16px; margin-bottom:10px;">` +
+        `<div style="border-left:4px solid ${safeColor(r.colore, DEFAULT_BORDER)}; padding:12px 12px 12px 16px; margin-bottom:10px;">` +
         `<h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">${escapeHtml(titolo)}</h3>` +
         `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(r.descrizione)}</div></div>`
       );

@@ -52,12 +52,12 @@ They use a temporary clasp project directory so the repository's existing
    needed.
 2. Clone or update GasLibraryFactory at the configured branch.
 3. Resolve the checked-out revision and write `REPO_FOR_GLF.txt`.
-4. Run `npm run build:production` from the ALDO root.
-5. In the temporary clasp directory, create a new Sheet-bound Apps Script
+4. Run `npm run refresh:vendor` so the checked-out library bundle is copied
+   into ALDO's vendor directory with its checksum and version metadata.
+5. Run `npm run build:production` from the ALDO root.
+6. In the temporary clasp directory, create a new Sheet-bound Apps Script
    project with the configured master title and `dist/` as its source root.
-6. Push the generated production files to that new project.
-7. Report the Sheet/project identifiers and the manual move required for
-   `MASTER_FOLDER_PATH`.
+7. Push the generated production files to that new project.
 
 `clasp push` replaces the complete remote project content. The isolated
 temporary clasp configuration is therefore mandatory.

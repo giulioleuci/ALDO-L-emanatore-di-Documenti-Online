@@ -298,7 +298,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
       jest.spyOn(ServiceFactory, 'getMailService').mockReturnValue({} as never),
       jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
         getScriptCache: () => ({ get: jest.fn(), put: jest.fn(), remove: jest.fn() })
-      } as never),
+      }),
       jest.spyOn(ServiceFactory, 'getPropertiesService').mockReturnValue({} as never)
     ];
     return () => spies.forEach((s) => s.mockRestore());

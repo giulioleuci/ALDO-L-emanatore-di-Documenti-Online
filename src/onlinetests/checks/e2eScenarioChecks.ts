@@ -2,7 +2,10 @@ import type { ServiceContainer } from '../../config/ServiceContainer';
 import type { TestRunner } from '../OnlineTestReport';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
-import type { EmailNotificationService } from '../../application/services/EmailNotificationService';
+import type {
+  EmailNotificationService,
+  SendPatternResult
+} from '../../application/services/EmailNotificationService';
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import { TABLE, COL_LOG_DOCS } from '../../config/schema';
@@ -20,6 +23,15 @@ import {
   PIANO_STUDENTE,
   type E2eSampleDatabase
 } from '../E2eSampleDatabaseBuilder';
+
+function emailDiagnostics(result: SendPatternResult): string {
+  return [
+    `targets=${result.targets}`,
+    `sent=${result.sent}`,
+    `skipped=${result.skipped}`,
+    `errors=${result.errors.length > 0 ? result.errors.join(' | ') : 'none'}`
+  ].join(', ');
+}
 
 /**
  * Registers the 8 e2e scenario checks (design spec `2026-07-21-testonline-mock-db-e2e-design.md`,
@@ -43,8 +55,14 @@ export function registerE2eScenarioChecks(
   }
 
   const documents = container.get<DocumentGenerationService>('documentGenerationService');
-  const email = container.get<EmailNotificationService>('emailNotificationService');
   const db = container.get<EmailDb>('db');
+  let emailService: EmailNotificationService | null = null;
+  const getEmailService = (): EmailNotificationService => {
+    if (emailService === null) {
+      emailService = container.get<EmailNotificationService>('emailNotificationService');
+    }
+    return emailService;
+  };
 
   const assertPersistedLinks = (configId: string, label: string): void => {
     const rows = db
@@ -121,24 +139,21 @@ export function registerE2eScenarioChecks(
   });
 
   runner.add('E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = email.sendPattern(CONF_MAIL_VERBALE);
-    if (result.sent === 0) {
-      throw new ValidationError(`Invio verbale: 0 email inviate (targets=${result.targets})`);
-    }
-    if (result.errors.length > 0) {
-      throw new ValidationError(`Invio verbale: errori ${result.errors.join('; ')}`);
+    const result = getEmailService().sendPattern(CONF_MAIL_VERBALE);
+    if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+      throw new ValidationError(`Invio verbale fallito: ${emailDiagnostics(result)}`);
     }
   });
 
   runner.add('E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = email.sendPattern(CONF_MAIL_CONDOTTA);
-    if (result.sent === 0) {
-      throw new ValidationError(`Invio condotta: 0 email inviate (targets=${result.targets})`);
+    const result = getEmailService().sendPattern(CONF_MAIL_CONDOTTA);
+    if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+      throw new ValidationError(`Invio condotta fallito: ${emailDiagnostics(result)}`);
     }
   });
 
   runner.add('E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)', sample.sampleSpreadsheetUrl, () => {
-    const result = email.sendPattern(CONF_MAIL_CARENZA);
+    const result = getEmailService().sendPattern(CONF_MAIL_CARENZA);
     if (result.targets !== 2) {
       throw new ValidationError(`Invio carenza: attesi 2 target, ricevuti ${result.targets}`);
     }
@@ -148,7 +163,7 @@ export function registerE2eScenarioChecks(
   });
 
   runner.add('E2E scenario 7: invia piani personalizzati nuovi e già notificati (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = email.sendPattern(CONF_MAIL_PIANI);
+    const result = getEmailService().sendPattern(CONF_MAIL_PIANI);
     if (result.sent === 0) {
       throw new ValidationError(`Invio piani: 0 email inviate (targets=${result.targets})`);
     }

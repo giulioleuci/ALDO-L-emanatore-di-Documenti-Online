@@ -5,8 +5,7 @@ import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { EmailNotificationService } from '../../application/services/EmailNotificationService';
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import {
-  CLASSE_A,
-  CLASSE_B,
+  ALL_CLASSI_E2E,
   TIPI_PIANO,
   CONF_DOC_VERBALE,
   CONF_DOC_CONDOTTA,
@@ -15,7 +14,7 @@ import {
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_CARENZA,
   CONF_MAIL_PIANI,
-  CARENZA_ALUNNO_1,
+  PIANO_STUDENTE,
   type E2eSampleDatabase
 } from '../E2eSampleDatabaseBuilder';
 
@@ -42,25 +41,40 @@ export function registerE2eScenarioChecks(
   const documents = container.get<DocumentGenerationService>('documentGenerationService');
   const email = container.get<EmailNotificationService>('emailNotificationService');
 
-  runner.add('E2E scenario 1: genera verbale consiglio di classe', sample.sampleSpreadsheetUrl, () => {
-    const { fileId, status } = documents.generateForClasse(ClasseId.of(CLASSE_A), CONF_DOC_VERBALE);
-    if (fileId === null) {
-      throw new ValidationError(`Generazione verbale non ha prodotto un fileId (status=${status})`);
-    }
-  });
-
-  runner.add('E2E scenario 2: genera foglio valutazione condotta', sample.sampleSpreadsheetUrl, () => {
-    const { fileId, status } = documents.generateForClasse(ClasseId.of(CLASSE_B), CONF_DOC_CONDOTTA);
-    if (fileId === null) {
-      throw new ValidationError(`Generazione foglio condotta non ha prodotto un fileId (status=${status})`);
-    }
-  });
-
-  runner.add('E2E scenario 3: genera i 5 piani personalizzati', sample.sampleSpreadsheetUrl, () => {
-    for (const tipo of TIPI_PIANO) {
-      const { fileId, status } = documents.generateForAlunno(CARENZA_ALUNNO_1, confDocPiano(tipo));
+  // Every entry-point class needs both doc types (ALL_CLASSI_E2E doc comment):
+  // each of the 3 coordinatori and each of the 4 CdC gets its own email
+  // (scenari 4/5), so a class missing a doc gets an email with an empty box.
+  runner.add('E2E scenario 1: genera verbale consiglio di classe (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_VERBALE);
       if (fileId === null) {
-        throw new ValidationError(`Generazione piano ${tipo} non ha prodotto un fileId (status=${status})`);
+        throw new ValidationError(
+          `Generazione verbale per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+    }
+  });
+
+  runner.add('E2E scenario 2: genera foglio valutazione condotta (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_CONDOTTA);
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione foglio condotta per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+    }
+  });
+
+  runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {
+    for (const tipo of TIPI_PIANO) {
+      for (const studente of PIANO_STUDENTE[tipo]) {
+        const { fileId, status } = documents.generateForAlunno(studente, confDocPiano(tipo));
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione piano ${tipo} per ${studente} non ha prodotto un fileId (status=${status})`
+          );
+        }
       }
     }
   });

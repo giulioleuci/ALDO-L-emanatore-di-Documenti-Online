@@ -405,7 +405,8 @@ function str(v: unknown): string {
  */
 function aggregaDati(
   cdu: Record<string, unknown>,
-  materie: IMateriaRepository
+  materie: IMateriaRepository,
+  documentiFiltro: { tipo?: string; stato?: string } = {}
 ): Record<string, unknown> {
   const focus = cdu['focus'] as
     | {
@@ -424,6 +425,10 @@ function aggregaDati(
         };
         classe?: {
           didattica?: {
+            documenti?: {
+              items?: DocumentoItem[];
+              storico?: LazyRef<DocumentoStoricoConTipo[]>;
+            };
             pianiPersonalizzati?: {
               items?: PianoPersonalizzatoRow[];
               storico?: LazyRef<DocumentoStoricoConTipo[]>;
@@ -433,14 +438,26 @@ function aggregaDati(
       }
     | undefined;
   const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
-  const items = focus?.alunno?.didattica?.documenti?.items ?? [];
-  const storicoRef = focus?.alunno?.didattica?.documenti?.storico;
+  const documenti = focus?.classe?.didattica?.documenti ?? focus?.alunno?.didattica?.documenti;
+  const items = documenti?.items ?? [];
+  const storicoRef = documenti?.storico;
+  // FILTRO_TIPO/FILTRO_STATO (11 §11): the 'documenti' TIPO_BOX config scopes the
+  // rendered link list to this CONF_MAIL's own document type — e.g. the VERBALE
+  // pattern's box must not also list the class's CONDOTTA/PIANO_PERS documents.
+  // Independent of attachment resolution (ComposeEmailStep.resolveAllegati's
+  // DATI_SORGENTE opt-in) so scoping the visible links never implies attaching them.
+  const nonCartelle = items.filter((i) => i.tipo !== 'CARTELLA');
+  const documentiFiltrati = nonCartelle.filter(
+    (i) =>
+      (documentiFiltro.tipo === undefined || i.tipo === documentiFiltro.tipo) &&
+      (documentiFiltro.stato === undefined || i.stato === documentiFiltro.stato)
+  );
   const pianiPers = focus?.classe?.didattica?.pianiPersonalizzati ?? focus?.alunno?.didattica?.pianiPersonalizzati;
   const pianiItems = pianiPers?.items ?? [];
   const pianiStoricoRef = pianiPers?.storico;
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
-    documenti: { items: items.filter((i) => i.tipo !== 'CARTELLA'), storicoRef },
+    documenti: { items: documentiFiltrati, storicoRef },
     cartelle: { items: items.filter((i) => i.tipo === 'CARTELLA'), storicoRef: undefined },
     pianiPersDaInviare: {
       items: pianiItems.filter((i) => !i.notificato),
@@ -475,6 +492,13 @@ export function renderBoxes(
   });
   if (known.length === 0) return { ordered: [], boxes: {} };
 
+  const documentiCfg = known.find((c) => str(c['TIPO_BOX']) === 'documenti');
+  const documentiFiltro: { tipo?: string; stato?: string } = {};
+  const filtroTipo = str(documentiCfg?.['FILTRO_TIPO']);
+  const filtroStato = str(documentiCfg?.['FILTRO_STATO']);
+  if (filtroTipo !== '') documentiFiltro.tipo = filtroTipo;
+  if (filtroStato !== '') documentiFiltro.stato = filtroStato;
+
   const recipe: CompositionRecipeInput = {
     id: confMail.id ?? 'boxes',
     name: `Boxes ${confMail.id ?? ''}`,
@@ -492,7 +516,10 @@ export function renderBoxes(
     })
   };
 
-  const context: Record<string, unknown> = { ...cdu, boxdata: aggregaDati(cdu, materie) };
+  const context: Record<string, unknown> = {
+    ...cdu,
+    boxdata: aggregaDati(cdu, materie, documentiFiltro)
+  };
   const result = composer.compose(recipe, context);
 
   const byInstance = new Map(result.blocks.map((b) => [b.instanceId, b]));

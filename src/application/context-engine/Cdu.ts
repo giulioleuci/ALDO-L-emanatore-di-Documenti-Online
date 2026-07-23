@@ -161,6 +161,18 @@ export interface CduClasse {
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;
     };
+    /** Class-wide LOG_DOCS aggregation (mirrors `CduAlunno.didattica.documenti`, 11 §11 new). */
+    documenti?: {
+      items: Array<{
+        nome: string;
+        link: string;
+        tipo: string;
+        idGen: string;
+        stato: string;
+        dataCreazione: string;
+      }>;
+      hasDocumenti: boolean;
+    };
   };
 }
 

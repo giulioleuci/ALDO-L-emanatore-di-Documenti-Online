@@ -36,8 +36,10 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 function container() {
+  const db = new FakeDatabase(fixtureTables());
   return buildAldoContainer({
-    db: new FakeDatabase(fixtureTables()),
+    db,
+    master: new MasterSheetRepository(db),
     drive: new FakeDriveFacade(),
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),
@@ -98,8 +100,10 @@ test('container resolves every application service as a lazy singleton (08 §2, 
 
 test('the wired email service actually sends through the container graph (smoke)', () => {
   const gmail = new FakeGmailFacade();
+  const db = new FakeDatabase(fixtureTables());
   const c = buildAldoContainer({
-    db: new FakeDatabase(fixtureTables()),
+    db,
+    master: new MasterSheetRepository(db),
     drive: new FakeDriveFacade(),
     gmail,
     templates: new FakeTemplateEngine(),
@@ -176,8 +180,10 @@ test('avviaImportazioneDataDriven runs the real ImportService when an ImportEngi
       };
     }
   } as unknown as ImportEngine;
+  const db = new FakeDatabase(fixtureTables());
   const c = buildAldoContainer({
-    db: new FakeDatabase(fixtureTables()),
+    db,
+    master: new MasterSheetRepository(db),
     drive: new FakeDriveFacade(),
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),
@@ -200,8 +206,10 @@ test('riprendiJobSospeso re-registers BOTH batch registries so the library can p
 
 describe('buildAldoContainer — optional generator strategies', () => {
   function baseDeps() {
+    const db = new FakeDatabase(fixtureTables());
     return {
-      db: new FakeDatabase(fixtureTables()),
+      db,
+      master: new MasterSheetRepository(db),
       drive: new FakeDriveFacade(),
       gmail: new FakeGmailFacade(),
       templates: new FakeTemplateEngine(),
@@ -404,8 +412,10 @@ describe('initAldo — singleton reuse + missing master id', () => {
 
 test('deps.monitor flows through to both batch services (15 §9)', () => {
   const monitor = new FakeProcessMonitor();
+  const db = new FakeDatabase(fixtureTables());
   const c = buildAldoContainer({
-    db: new FakeDatabase(fixtureTables()),
+    db,
+    master: new MasterSheetRepository(db),
     drive: new FakeDriveFacade(),
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),

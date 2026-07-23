@@ -119,7 +119,14 @@ export const RECIPES: Record<string, string[]> = {
     'documentiStorico',
     'storico'
   ],
-  DOCENTE_COMPLETO: ['school', 'class', 'consiglio', 'pianiPersClasse', 'pianiPersClasseStorico'],
+  DOCENTE_COMPLETO: [
+    'school',
+    'class',
+    'consiglio',
+    'pianiPersClasse',
+    'pianiPersClasseStorico',
+    'documentiClasse'
+  ],
   ALUNNO_COMPLETO: [
     'school',
     'class',

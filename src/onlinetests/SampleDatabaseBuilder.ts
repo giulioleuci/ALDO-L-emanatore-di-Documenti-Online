@@ -371,7 +371,7 @@ export class SampleDatabaseBuilder {
     folderId: string
   ): void {
     master.appendRow(TABLE.MASTER, {
-      [COL_MASTER.ANNO_SCOLASTICO]: '2026/2027',
+      [COL_MASTER.ANNO_SCOLASTICO]: '2026-2027',
       [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
       [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
       [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente OnlineTest',

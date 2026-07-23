@@ -16,9 +16,10 @@ import { MateriaRepository } from '../../../../src/infrastructure/repositories/M
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
+import type { Row } from '../../../../src/infrastructure/db/Database';
 
-function build(target: string): Cdu {
-  const db = new FakeDatabase(fixtureTables());
+function build(target: string, tables = fixtureTables()): Cdu {
+  const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
   const materie = new MateriaRepository(db);
@@ -64,6 +65,13 @@ test('AlunnoProvider: anagrafica/status/curriculum/classe + ASL hours (02 §4.2)
     indirizzoNome: 'Liceo scientifico'
   });
   expect(a.didattica.asl).toEqual({ oreCumulate: 100, oreAnnoCorrente: 60 });
+});
+
+test('AlunnoProvider: empty-string CURRICULUM cell (not null) does not crash JSON.parse (regression)', () => {
+  const tables = fixtureTables();
+  (tables['ALUNNI'] as Row[]).find((r) => r['EMAIL'] === 'a3@school.it')!['CURRICULUM'] = '';
+  const a = build('a3@school.it', tables).focus.alunno!;
+  expect(a.curriculum).toEqual({});
 });
 
 test('CarenzeProvider: dettaglio flattened from CARENZE (02 §4.2)', () => {

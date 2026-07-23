@@ -10,6 +10,7 @@ import {
   CLASSE_PARTNER
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
+import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { FakeGmailFacade } from '../../fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
@@ -85,8 +86,10 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
 }
 
 function buildFakeContainer(options: { includeClasse?: boolean } = {}) {
+  const db = new FakeDatabase(sampleSeedTables(options));
   return buildAldoContainer({
-    db: new FakeDatabase(sampleSeedTables(options)),
+    db,
+    master: new MasterSheetRepository(db),
     drive: new FakeDriveFacade(),
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),

@@ -4,6 +4,7 @@ import type { ITemplateEngine } from '../infrastructure/facades/TemplateEngineFa
 import type { IExpressionEngine } from '../infrastructure/facades/ExpressionEngineFacade';
 import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import type { IProcessMonitor } from '../infrastructure/facades/ProcessMonitorFacade';
+import type { IMasterSheetRepository } from '../domain/repositories/IMasterSheetRepository';
 import type { EmailDb } from '../application/services/EmailNotificationService';
 import { ServiceContainer } from './ServiceContainer';
 import { DocumentGenerationService } from '../application/services/DocumentGenerationService';
@@ -55,6 +56,13 @@ export const PROP_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
 export interface BootstrapDeps {
   db: EmailDb;
+  /**
+   * Repository over the Master Sheet itself (06 §0) — a DIFFERENT spreadsheet
+   * than `db` (the current school-year DB). Must never be built from `db`:
+   * the per-year spreadsheet has no MASTER sheet tab, so a repository over it
+   * throws as soon as it's queried (`setPrimaryKey` on an undefined table).
+   */
+  master: IMasterSheetRepository;
   drive: IDriveFacade;
   gmail: IGmailFacade;
   templates: ITemplateEngine;
@@ -90,7 +98,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
 
   c.register('logger', () => logger);
   c.register('db', () => deps.db);
-  c.register('contextBuilder', () => ContextEngineFactory.create(deps.db));
+  c.register('contextBuilder', () => ContextEngineFactory.create(deps.db, deps.master));
   c.register('strategyRegistry', () => {
     // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value
     // implemented. The Sheet/Doc-structural strategies need a live
@@ -167,7 +175,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       deps.now,
       deps.drive,
       logger,
-      deps.monitor
+      deps.monitor,
+      deps.master
     )
   );
   c.register(
@@ -185,7 +194,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         new LogEmailRepository(deps.db),
         container.get<EmailNotificationService>('emailNotificationService'),
         deps.gmail,
-        new MasterSheetRepository(deps.db),
+        deps.master,
         { logger }
       )
   );
@@ -286,8 +295,13 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   const masterDb = new SheetDbAdapter(
     new DatabaseService(masterId, logger, utils, cache, null, { verifyTables: [TABLE.MASTER] })
   );
-  const annoCorrente = new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
-  const db = new SheetDbAdapter(new DatabaseService(annoCorrente.idSpreadsheet, logger, utils, cache));
+  const masterRepo = new MasterSheetRepository(masterDb);
+  const annoCorrente = masterRepo.findConfigAnnoCorrente();
+  const db = new SheetDbAdapter(
+    new DatabaseService(annoCorrente.idSpreadsheet, logger, utils, cache, null, {
+      verifyTables: Object.values(TABLE).filter((t) => t !== TABLE.MASTER)
+    })
+  );
 
   const driveService = ServiceFactory.getDriveService();
   const spreadsheetService = ServiceFactory.getSpreadsheetService();
@@ -329,6 +343,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
 
   const container = buildAldoContainer({
     db,
+    master: masterRepo,
     drive: driveFacade,
     gmail: new GmailServiceFacade(ServiceFactory.getMailService()),
     templates: new TemplateEngineFacade(),

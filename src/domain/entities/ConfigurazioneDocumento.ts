@@ -55,7 +55,12 @@ export class ConfigurazioneDocumento extends AldoEntity {
   }
 
   getParametri(): Record<string, unknown> {
-    return this.parametriRaw === null
+    // A live Sheets round-trip never preserves an unset cell as `null` — it
+    // comes back as `''` — so a bare `=== null` check lets that empty string
+    // through into `JSON.parse('')`, which throws (same class of bug fixed
+    // for CURRICULUM in `Alunno.getCurriculum` and for POST_PROCESSO/PERMESSI
+    // via `hasJsonValue` in `postProcessActions.ts`).
+    return this.parametriRaw === null || this.parametriRaw.trim() === ''
       ? {}
       : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
   }

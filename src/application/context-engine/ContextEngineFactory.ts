@@ -17,6 +17,7 @@ import { PianiPersAlunnoProvider } from './providers/PianiPersAlunnoProvider';
 import { PianiPersAlunnoStoricoProvider } from './providers/PianiPersAlunnoStoricoProvider';
 import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
 import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
+import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { createSupplentiSubstitutionLookup } from './interceptors/SupplentiSubstitutionLookup';
 import { CdcAssembler } from './CdcAssembler';
@@ -46,8 +47,19 @@ import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocu
  * with a Recipe (see Recipe.ts / RECIPES) and BuildParams to assemble a CDU.
  */
 export class ContextEngineFactory {
-  static create(database: RepositoryDatabase): ContextBuilder {
-    const master: IMasterSheetRepository = new MasterSheetRepository(database);
+  /**
+   * `master` defaults to a repository built over `database` — correct for tests
+   * where MASTER lives in the same fake db as everything else, WRONG for the
+   * real composition root (`Bootstrap.ts`): MASTER lives on a separate
+   * spreadsheet, and `Repository`'s base constructor binds its table eagerly,
+   * so building it over the year db throws immediately (`setPrimaryKey` on an
+   * undefined table, ref `Bootstrap.ts` `BootstrapDeps.master` doc comment).
+   * `Bootstrap.ts` always passes its already-opened `deps.master` explicitly.
+   */
+  static create(
+    database: RepositoryDatabase,
+    master: IMasterSheetRepository = new MasterSheetRepository(database)
+  ): ContextBuilder {
     const ruoli: IRuoloSpecialeRepository = new RuoloSpecialeRepository(database);
     const docenti: IDocenteRepository = new DocenteRepository(database);
     const classi: IClasseRepository = new ClasseRepository(database);
@@ -98,6 +110,7 @@ export class ContextEngineFactory {
       .registerProvider('pianiPersAlunno', new PianiPersAlunnoProvider(logDocs))
       .registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(storicoDb))
       .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni))
-      .registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(storicoDb));
+      .registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(storicoDb))
+      .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs));
   }
 }

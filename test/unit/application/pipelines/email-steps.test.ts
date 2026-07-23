@@ -285,8 +285,38 @@ test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TE
   expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
 
-test('ComposeEmailStep resolves class-attached documents as blobs (11 §13)', () => {
+test('ComposeEmailStep resolves no attachments when no box opts in via DATI_SORGENTE (11 §13 — attachment is opt-in, never silently generates PDFs)', () => {
   const w = wire();
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc1',
+    ID_GEN: 'CD1',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc2',
+    ID_GEN: 'CD1',
+    TIPO: 'PDP',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  runThroughCompose(w);
+  expect(w.ctx.get('allegati')).toEqual([]);
+});
+
+test('ComposeEmailStep resolves class-attached documents as blobs once a box opts in via DATI_SORGENTE with no narrowing filtri (11 §13)', () => {
+  const w = wire({
+    BOX_CFG: JSON.stringify([
+      {
+        TIPO_BOX: 'testo_dinamico',
+        CONTENUTO: '',
+        DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+      }
+    ])
+  });
   w.db.table('LOG_DOCS').insert({
     ID: 'doc1',
     ID_GEN: 'CD1',
@@ -535,7 +565,11 @@ test('LogEmailStep records SUCCESS in LOG_MAIL (11 §9)', () => {
 });
 
 test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 §9)', () => {
-  const w = wire();
+  const w = wire({
+    BOX_CFG: JSON.stringify([
+      { TIPO_BOX: 'testo_dinamico', CONTENUTO: '', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }
+    ])
+  });
   w.db.table('LOG_DOCS').insert({
     ID: 'doc1',
     ID_GEN: 'CD1',
@@ -748,7 +782,11 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
   });
 
   test('ComposeEmailStep falls back to "" for a document id and still requests its blob (11 §13)', () => {
-    const w = wire();
+    const w = wire({
+      BOX_CFG: JSON.stringify([
+        { TIPO_BOX: 'testo_dinamico', CONTENUTO: '', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }
+      ])
+    });
     w.db
       .table('LOG_DOCS')
       .insert({ ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' }); // no ID
@@ -951,6 +989,16 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const savedBefore = w.db.saved;
     new PostProcessEmailStep(logger, w.db, w.templates).execute(w.ctx);
     expect(w.db.saved).toBe(savedBefore); // no explicit save — step was gated off
+  });
+
+  test('PostProcessEmailStep is skipped when POST_PROCESSO is an empty string (regression: blank Sheets cells round-trip as \'\', not null)', () => {
+    const w = wire({ POST_PROCESSO: '' });
+    runThroughCompose(w);
+    w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+    send(w, new FakeGmailFacade());
+    const savedBefore = w.db.saved;
+    expect(() => new PostProcessEmailStep(logger, w.db, w.templates).execute(w.ctx)).not.toThrow();
+    expect(w.db.saved).toBe(savedBefore);
   });
 
   test('PostProcessEmailStep condition defaults sentCount to 0 when it was never set (SendEmailStep skipped)', () => {

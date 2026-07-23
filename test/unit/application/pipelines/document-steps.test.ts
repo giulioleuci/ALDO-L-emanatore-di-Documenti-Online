@@ -183,6 +183,37 @@ test('RegisterDocumentStep leaves LOG_DOCS.UTENTI empty for classe-scoped genera
   expect(row?.UTENTI).toBe('');
 });
 
+test('RegisterDocumentStep writes LOG_DOCS.SOTTOTIPO from CONF_DOC.PARAMETRI.tipoPiano', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const confRow = fixtureTables().CONF_DOC[0]!;
+  ctx.set(
+    'confDoc',
+    ConfigurazioneDocumento.fromData({ ...confRow, PARAMETRI: JSON.stringify({ tipoPiano: 'PDP_BES' }) })
+  );
+  ctx.set('newFileId', 'file_pdp_bes');
+  ctx.set('newFileLink', 'https://drive/file_pdp_bes');
+  ctx.set('nomeFile', 'PDP_BES_a1');
+  ctx.set('destFolderPath', 'Alunni BES/5A');
+  new RegisterDocumentStep(logger, db).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_pdp_bes');
+  expect(row?.SOTTOTIPO).toBe('PDP_BES');
+});
+
+test('RegisterDocumentStep leaves LOG_DOCS.SOTTOTIPO empty when PARAMETRI has no tipoPiano (e.g. VERBALE/CONDOTTA, or an empty-string PARAMETRI cell)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const confRow = fixtureTables().CONF_DOC[0]!;
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData({ ...confRow, PARAMETRI: '' }));
+  ctx.set('newFileId', 'file_1');
+  ctx.set('newFileLink', 'https://drive/file_1');
+  ctx.set('nomeFile', 'Verbale_5A');
+  ctx.set('destFolderPath', 'Verbali/5');
+  new RegisterDocumentStep(logger, db).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
+  expect(row?.SOTTOTIPO).toBe('');
+});
+
 test('critical steps are exactly the rollback points of 10 §8', () => {
   expect([...CRITICAL_STEPS].sort()).toEqual([
     'CloneTemplate',
@@ -221,6 +252,16 @@ test('PostProcessStep skipped when POST_PROCESSO is null', () => {
   expect(ctx.get('postProcessUpdated')).toBeNull();
 });
 
+test('PostProcessStep skipped when POST_PROCESSO is an empty string (regression: blank Sheets cells round-trip as \'\', not null)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, POST_PROCESSO: '' });
+  expect(() =>
+    new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx)
+  ).not.toThrow();
+  expect(ctx.get('postProcessUpdated')).toBeNull();
+});
+
 test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §10, 14 §1)', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
@@ -249,6 +290,17 @@ test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {
   const ctx = baseCtx(db); // CD1 has PERMESSI null
   const drive = new FakeDriveFacade();
   new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+  expect(drive.permissions).toEqual([]);
+});
+
+test('ApplyPermissionsStep is skipped when PERMESSI is an empty string (regression: blank Sheets cells round-trip as \'\', not null)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: '' });
+  const drive = new FakeDriveFacade();
+  expect(() =>
+    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx)
+  ).not.toThrow();
   expect(drive.permissions).toEqual([]);
 });
 

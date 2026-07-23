@@ -22,7 +22,7 @@ import { getClasseEntity } from '../context-engine/techEntities';
 import { recipe } from '../context-engine/Recipe';
 import { salutoPerTarget } from '../email/saluto';
 import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../email/boxes';
-import { executePostProcess, type PostProcessDb } from './postProcessActions';
+import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -274,6 +274,11 @@ export class ComposeEmailStep extends Step {
       const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
       return sorgente?.metodo === 'documentiPerClasse';
     });
+    // Attachment is opt-in (11 §13): a class-scoped pattern that never declares a
+    // documentiPerClasse box must not silently attach every LOG_DOCS row for the
+    // class — GAS's DriveApp getBlob() converts native Docs/Sheets to PDF on the
+    // fly, so an un-opted-in pattern would otherwise generate PDFs nobody asked for.
+    if (boxConfig === undefined) return { ids: [], blobs: [] };
     const filtri =
       (boxConfig?.['DATI_SORGENTE'] as { filtri?: { tipo?: string; stato?: string } } | undefined)
         ?.filtri ?? {};
@@ -477,7 +482,7 @@ export class PostProcessEmailStep extends Step {
       shouldExecuteCondition: (ctx) =>
         sendGate(ctx) &&
         (ctx.get<number>('sentCount') ?? 0) > 0 &&
-        cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO] != null
+        hasJsonValue(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO])
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {

@@ -79,7 +79,7 @@ export class Alunno extends AldoEntity {
   /** CURRICULUM JSON → map of MateriaId → chosen specificità (ref 01). */
   getCurriculum(): Map<MateriaId, string[]> {
     const map = new Map<MateriaId, string[]>();
-    if (this.curriculumRaw === null) return map;
+    if (this.curriculumRaw === null || this.curriculumRaw.trim() === '') return map;
     const parsed = JSON.parse(this.curriculumRaw) as Record<string, unknown>;
     for (const [materia, specifiche] of Object.entries(parsed)) {
       map.set(MateriaId.of(materia), Array.isArray(specifiche) ? (specifiche as string[]) : []);

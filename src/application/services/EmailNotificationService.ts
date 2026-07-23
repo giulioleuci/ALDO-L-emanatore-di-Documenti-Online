@@ -105,7 +105,15 @@ export class EmailNotificationService {
     this.logger = logger ?? new LoggerService();
   }
 
-  /** Convenience wiring over one database (composition-root shortcut and tests). */
+  /**
+   * Convenience wiring over one database (composition-root shortcut and tests).
+   * `master` defaults to a repository built over `db` — correct for tests where
+   * MASTER lives in the same fake db as everything else, WRONG for the real
+   * composition root: MASTER lives on a separate spreadsheet, and `Repository`'s
+   * base constructor binds its table eagerly, so building it over the year db
+   * throws immediately (ref `ContextEngineFactory.create`'s same-shaped doc
+   * comment). `Bootstrap.ts` always passes its already-opened `deps.master`.
+   */
   static create(
     db: EmailDb,
     gmail: IGmailFacade,
@@ -113,7 +121,8 @@ export class EmailNotificationService {
     now: Date,
     drive: IDriveFacade,
     logger?: LoggerService,
-    monitor?: IProcessMonitor
+    monitor?: IProcessMonitor,
+    master: IMasterSheetRepository = new MasterSheetRepository(db)
   ): EmailNotificationService {
     const base: EmailNotificationDeps = {
       db,
@@ -121,7 +130,7 @@ export class EmailNotificationService {
       drive,
       templates,
       now,
-      contextBuilder: ContextEngineFactory.create(db),
+      contextBuilder: ContextEngineFactory.create(db, master),
       expressionEngine: new ExpressionEngineFacade(),
       docenti: new DocenteRepository(db),
       alunni: new AlunnoRepository(db),
@@ -130,7 +139,7 @@ export class EmailNotificationService {
       confMail: new ConfigurazioneEmailRepository(db),
       logMail: new LogEmailRepository(db),
       logDocs: new LogDocumentoRepository(db),
-      master: new MasterSheetRepository(db),
+      master,
       supplenze: new SupplenzaRepository(db),
       materie: new MateriaRepository(db)
     };

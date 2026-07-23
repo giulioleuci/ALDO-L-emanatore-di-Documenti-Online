@@ -138,6 +138,86 @@ test('unknown action type is skipped with a warning, others still run', () => {
   expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(1);
 });
 
+// --- CSV containment matching (multi-class POST_PROCESSO criteria, e.g. PER_COORDINATORE piani) ---
+
+describe('postProcessActions — CSV containment matching', () => {
+  test('single-valued criterion still matches by strict equality (unchanged behavior)', () => {
+    const tables = fixtureTables();
+    tables['LOG_DOCS'] = [
+      { ID: '1', TIPO: 'PIANO_PERS', CLASSI: '1A', NOTIFICATO: '' },
+      { ID: '2', TIPO: 'PIANO_PERS', CLASSI: '2B', NOTIFICATO: '' }
+    ];
+    const db = new FakeDatabase(tables);
+    const actions = JSON.stringify([
+      {
+        tipo: 'INSERISCI_TIMESTAMP',
+        tab: 'LOG_DOCS',
+        col: 'NOTIFICATO',
+        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{classe}}' }
+      }
+    ]);
+    const n = executePostProcess(actions, { classe: '1A' }, db, new FakeTemplateEngine(), NOW, logger);
+    expect(n).toBe(1);
+    expect(db.tables['LOG_DOCS']!.getByPK('1')!['NOTIFICATO']).not.toBe('');
+    expect(db.tables['LOG_DOCS']!.getByPK('2')!['NOTIFICATO']).toBe('');
+  });
+
+  test('multi-valued criterion (join-rendered classiCompetenza) matches every class it covers, not just the first', () => {
+    const tables = fixtureTables();
+    tables['LOG_DOCS'] = [
+      { ID: '1', TIPO: 'PIANO_PERS', CLASSI: '1A', NOTIFICATO: '' },
+      { ID: '2', TIPO: 'PIANO_PERS', CLASSI: '2B', NOTIFICATO: '' },
+      { ID: '3', TIPO: 'PIANO_PERS', CLASSI: '3C', NOTIFICATO: '' } // not covered — must stay untouched
+    ];
+    const db = new FakeDatabase(tables);
+    const actions = JSON.stringify([
+      {
+        tipo: 'INSERISCI_TIMESTAMP',
+        tab: 'LOG_DOCS',
+        col: 'NOTIFICATO',
+        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{destinatario.contesto.classiCompetenza | join}}' }
+      }
+    ]);
+    const n = executePostProcess(
+      actions,
+      { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
+      db,
+      new FakeTemplateEngine(), // real WorkspaceTemplateEngine string/filter processing (offline-safe)
+      NOW,
+      logger
+    );
+    expect(n).toBe(2);
+    expect(db.tables['LOG_DOCS']!.getByPK('1')!['NOTIFICATO']).not.toBe('');
+    expect(db.tables['LOG_DOCS']!.getByPK('2')!['NOTIFICATO']).not.toBe('');
+    expect(db.tables['LOG_DOCS']!.getByPK('3')!['NOTIFICATO']).toBe('');
+  });
+
+  test('a multi-valued criterion bypasses the single-column indexed fast path (it cannot answer a containment query)', () => {
+    const tables = fixtureTables();
+    tables['LOG_DOCS'] = [{ ID: '1', TIPO: 'PIANO_PERS', CLASSI: '1A', NOTIFICATO: '' }];
+    const db = new FakeDatabase(tables);
+    const logDocs = db.tables['LOG_DOCS']!;
+    const getAllRowsSpy = jest.spyOn(logDocs, 'getAllRows');
+    const actions = JSON.stringify([
+      {
+        tipo: 'INSERISCI_TIMESTAMP',
+        tab: 'LOG_DOCS',
+        col: 'NOTIFICATO',
+        criteri: { CLASSI: '{{destinatario.contesto.classiCompetenza | join}}' }
+      }
+    ]);
+    executePostProcess(
+      actions,
+      { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
+      db,
+      new FakeTemplateEngine(),
+      NOW,
+      logger
+    );
+    expect(getAllRowsSpy).toHaveBeenCalled();
+  });
+});
+
 // --- A20: action-type switch and updateMatching column-scan fallback ---
 
 describe('postProcessActions — updateMatching guard and findMatchingRows fallback (A20)', () => {

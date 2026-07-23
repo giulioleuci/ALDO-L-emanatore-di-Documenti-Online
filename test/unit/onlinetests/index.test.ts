@@ -15,6 +15,7 @@ import {
   CONF_MAIL_ID
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
+import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { FakeGmailFacade } from '../../fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
@@ -189,8 +190,10 @@ function sampleSeedTables(): Record<string, Row[]> {
 }
 
 function buildFakeContainer(): ServiceContainer {
+  const db = new FakeDatabase(sampleSeedTables());
   return buildAldoContainer({
-    db: new FakeDatabase(sampleSeedTables()),
+    db,
+    master: new MasterSheetRepository(db),
     drive: new FakeDriveFacade(),
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),

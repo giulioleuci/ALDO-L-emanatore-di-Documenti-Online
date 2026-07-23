@@ -14,7 +14,7 @@ import {
   GestioneSupplenti
 } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
-import { executePostProcess, type PostProcessDb } from './postProcessActions';
+import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 
 /**
@@ -211,7 +211,8 @@ export class CloneTemplateStep extends Step {
       ctx.get<string>('destFolderId')!
     );
     this.setResult(ctx, 'newFileId', fileId);
-    this.setResult(ctx, 'newFileLink', `https://drive.google.com/file/d/${fileId}/view`);
+    // /edit (not /view): generated files must open ready to edit, not in preview (10 §8).
+    this.setResult(ctx, 'newFileLink', `https://drive.google.com/file/d/${fileId}/edit`);
   }
 }
 
@@ -242,7 +243,7 @@ export class ApplyPermissionsStep extends Step {
     private readonly roles: IRoleResolver
   ) {
     super('ApplyPermissions', logger, {
-      shouldExecuteCondition: (ctx) => generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.PERMESSI] != null
+      shouldExecuteCondition: (ctx) => generateGate(ctx) && hasJsonValue(cfg(ctx)[COL_CONF_DOC.PERMESSI])
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
@@ -289,6 +290,10 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.ID]: ctx.get<string>('newFileId')!,
       [COL_LOG_DOCS.ID_GEN]: String(cfg(ctx)[COL_CONF_DOC.ID]),
       [COL_LOG_DOCS.TIPO]: String(cfg(ctx)[COL_CONF_DOC.TIPO]),
+      [COL_LOG_DOCS.SOTTOTIPO]: (() => {
+        const tipoPiano = confDoc(ctx).getParametri()['tipoPiano'];
+        return typeof tipoPiano === 'string' ? tipoPiano : '';
+      })(),
       [COL_LOG_DOCS.NOME]: ctx.get<string>('nomeFile')!,
       [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',
@@ -312,7 +317,7 @@ export class PostProcessStep extends Step {
   ) {
     super('PostProcess', logger, {
       shouldExecuteCondition: (ctx) =>
-        generateGate(ctx) && cfg(ctx)[COL_CONF_DOC.POST_PROCESSO] != null
+        generateGate(ctx) && hasJsonValue(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO])
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {

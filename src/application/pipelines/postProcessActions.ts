@@ -23,6 +23,19 @@ export interface PostProcessAction {
 /** The slice of the database the executor needs (satisfied by FakeDatabase and the SheetDB adapter). */
 export type PostProcessDb = Pick<RepositoryDatabase, 'tables'>;
 
+/**
+ * True when a CONF_DOC/CONF_MAIL JSON-shaped cell (POST_PROCESSO, PERMESSI) is
+ * actually configured. A live Sheets round-trip never preserves an unset cell
+ * as `null` — `CellValueCoercion` (GasLibraryFactory/CoreUtilsLib) returns
+ * blank cells as `''` regardless of what was written — so a bare `!= null`
+ * gate lets an empty string through into `JSON.parse('')`, which throws
+ * "Unexpected end of JSON input". Callers must use this instead of `!= null`.
+ */
+export function hasJsonValue(raw: unknown): boolean {
+  if (raw == null) return false;
+  return typeof raw !== 'string' || raw.trim() !== '';
+}
+
 function resolveCriteri(
   criteri: Record<string, string>,
   cdu: Record<string, unknown>,
@@ -35,19 +48,46 @@ function resolveCriteri(
   return out;
 }
 
+/** Splits a CSV cell/criterion value on commas, trimming and dropping empties (ref 01 CLASSI/UTENTI CONTAINS rule). */
+function csvValues(raw: unknown): string[] {
+  return typeof raw === 'string'
+    ? raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    : [];
+}
+
 /**
- * Resolves rows matching `match` via the indexed lookup seam for single-column
- * criteria — building the index on first use for that (table, column) pair, so
- * repeated actions in the same POST_PROCESSO array against the same column
- * benefit from O(1) lookups on the second and later hits — falling back to a
- * full scan for multi-column criteria (ref REPORT_GLF.md A3).
+ * True when `rowValue` matches `matchValue`. A single-valued `matchValue`
+ * (no comma) is strict equality, unchanged from before. A multi-valued
+ * `matchValue` (e.g. a `{{destinatario.contesto.classiCompetenza | join}}`
+ * criterion covering several classes) matches on CSV containment — any one
+ * of its values appearing in `rowValue`'s own CSV values — per 01
+ * `SCHEMA_DATABASE`'s "CLASSI/UTENTI MUST use CONTAINS, never exact-match" rule.
+ */
+function matchesCriterio(rowValue: unknown, matchValue: string): boolean {
+  const matchValues = csvValues(matchValue);
+  if (matchValues.length <= 1) return String(rowValue) === matchValue;
+  return csvValues(rowValue).some((v) => matchValues.includes(v));
+}
+
+/**
+ * Resolves rows matching `match` via the indexed lookup seam for single-column,
+ * single-valued criteria — building the index on first use for that (table,
+ * column) pair, so repeated actions in the same POST_PROCESSO array against the
+ * same column benefit from O(1) lookups on the second and later hits — falling
+ * back to a full scan for multi-column or multi-valued criteria (ref
+ * REPORT_GLF.md A3): the index is keyed on exact cell values and can't answer a
+ * CSV-containment query.
  */
 function findMatchingRows(
   table: RepositoryTable,
   keys: string[],
   match: Record<string, string>
 ): EntityData[] {
-  if (keys.length === 1) {
+  const isMultiValued = keys.some((k) => csvValues(match[k]).length > 1);
+  if (keys.length === 1 && !isMultiValued) {
     const column = keys[0]!;
     let hits = table.indexedLookup(column, match[column]);
     if (hits === null) {
@@ -56,7 +96,7 @@ function findMatchingRows(
     }
     if (hits !== null) return hits;
   }
-  return table.getAllRows().filter((r) => keys.every((k) => String(r[k]) === match[k]));
+  return table.getAllRows().filter((r) => keys.every((k) => matchesCriterio(r[k], match[k]!)));
 }
 
 function updateMatching(

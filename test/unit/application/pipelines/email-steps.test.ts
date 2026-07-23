@@ -103,10 +103,15 @@ function buildStep(w: Wiring): BuildCDUStep {
   return new BuildCDUStep(logger, ContextEngineFactory.create(w.db), w.docenti, w.alunni);
 }
 
-function runThroughCompose(w: Wiring): void {
+function runThroughRender(w: Wiring): string[] {
   buildStep(w).execute(w.ctx);
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
+  return w.ctx.get<string[]>('boxHtmlOrdered')!;
+}
+
+function runThroughCompose(w: Wiring): void {
+  runThroughRender(w);
   new ComposeEmailStep(
     logger,
     w.templates,
@@ -253,19 +258,54 @@ test('RenderBoxesStep writes cdu.render.boxes and resolves OGGETTO (11 §5)', ()
   expect(cdu.render?.boxes['carenze']?.html).toContain('Voto 4.5');
 });
 
-test('empty rendered boxes suppress delivery despite an empty condition', () => {
+test('RenderBoxesStep: one visible non-empty document box keeps delivery eligible', () => {
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', FILTRO_TIPO: 'VERBALE' }])
+    },
+    docenteTarget()
+  );
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc_verbale_5a',
+    ID_GEN: 'VERBALE_CDC',
+    TIPO: 'VERBALE',
+    NOME: 'Verbale 5A novembre',
+    STATO: 'GENERATO',
+    LINK: 'https://drive.example/verbale-5a',
+    CLASSI: '5A',
+    UTENTI: '',
+    DATA_CREAZ: '2025-11-10'
+  });
+
+  const ordered = runThroughRender(w);
+
+  expect(ordered).toHaveLength(1);
+  expect(ordered[0]).toContain('Verbale 5A novembre');
+  expect(w.ctx.get('shouldSend')).toBe(true);
+});
+
+test('RenderBoxesStep: one visible non-empty carenze text box without links keeps delivery eligible', () => {
+  const w = wire({ BOX_CFG: JSON.stringify([{ TIPO_BOX: 'carenze' }]) });
+
+  const ordered = runThroughRender(w);
+
+  expect(ordered).toHaveLength(1);
+  expect(ordered[0]).toContain('Matematica');
+  expect(ordered[0]).not.toContain('href=');
+  expect(w.ctx.get('shouldSend')).toBe(true);
+});
+
+test('RenderBoxesStep: all rendered boxes empty or invisible suppress delivery', () => {
   const w = wire(
     { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }]) },
     docenteTarget()
   );
-  runThroughCompose(w);
-  expect(w.ctx.get('shouldSend')).toBe(false);
-});
 
-test('one rendered box keeps delivery eligible', () => {
-  const w = wire();
-  runThroughCompose(w);
-  expect(w.ctx.get('shouldSend')).toBe(true);
+  const ordered = runThroughRender(w);
+
+  expect(ordered).toEqual([]);
+  expect(w.ctx.get('shouldSend')).toBe(false);
 });
 
 test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () => {

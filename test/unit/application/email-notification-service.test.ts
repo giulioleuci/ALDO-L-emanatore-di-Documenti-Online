@@ -186,6 +186,51 @@ test('sendPattern PER_CDC sends one email per class with supervisore BCC (11 §2
   expect(db.tables['LOG_MAIL']!.getAllRows()).toHaveLength(2);
 });
 
+test.each([
+  ['VERBALE', 'Verbale scrutinio 5A e 1F'],
+  ['CONDOTTA', 'Riepilogo condotta 5A e 1F']
+])(
+  'sendPattern renders real %s LOG_DOCS through DocumentiClasseProvider and sends every target',
+  (tipo, documentName) => {
+    const patternId = `DOCUMENTI_${tipo}`;
+    const { service, gmail, db } = wire([
+      {
+        ID: patternId,
+        OGGETTO: `Documenti ${tipo}`,
+        PROCESSO: 'PER_CDC',
+        BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', FILTRO_TIPO: tipo }]),
+        TESTO: '',
+        SUPPLENTI: 'SOLO_TITOLARI',
+        NOREPLY: false,
+        COLORE_HEADER: '',
+        CONDIZIONE: null,
+        POST_PROCESSO: null
+      }
+    ]);
+    db.table('LOG_DOCS').insert({
+      ID: `doc_${tipo.toLowerCase()}`,
+      ID_GEN: patternId,
+      TIPO: tipo,
+      NOME: documentName,
+      STATO: 'GENERATO',
+      LINK: `https://drive.example/${tipo.toLowerCase()}`,
+      CLASSI: '5A,1F',
+      UTENTI: '',
+      DATA_CREAZ: '2026-06-30'
+    });
+
+    const result = service.sendPattern(patternId);
+    const sentBodies = gmail.sent.map((sent) => sent.htmlBody);
+
+    expect(result.targets).toBeGreaterThan(0);
+    expect(result.sent).toBe(result.targets);
+    expect(result.skipped).toBe(0);
+    expect(result.errors).toEqual([]);
+    expect(sentBodies.every((html) => html.trim().length > 0)).toBe(true);
+    expect(sentBodies.every((html) => html.includes(documentName))).toBe(true);
+  }
+);
+
 test('sendPattern PER_CARENZA_GENITORI stamps NOTIFICATO so a second run sends nothing (11 §10)', () => {
   const { service, gmail, db } = wire();
   const first = service.sendPattern('CARENZE_NOTIFICA');

@@ -15,7 +15,7 @@ export interface E2eDocumentTable {
 
 /**
  * Port abstracting Drive-artifact creation, so the provisioner is unit-testable offline.
- * `paragraphs`/`updates` are only ever passed on first creation (never on a found-and-reused
+ * `paragraphs`/`tables`/`updates` are only ever passed on first creation (never on a found-and-reused
  * artifact) — content is authored once, not re-appended on every idempotent re-run.
  */
 export interface IArtifactFactory {

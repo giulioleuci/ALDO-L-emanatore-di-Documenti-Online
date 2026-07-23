@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make each class CDU student expose their parent/tutor emails for CDU-only `GENITORI` resolution.
+**Goal:** Make active class CDU students expose their parent/tutor emails for CDU-only `GENITORI` resolution.
 
-**Architecture:** Extend the existing `AlunnoContestoVM` emitted by `StudentiProvider`; map the existing domain `Alunno.getTutors()` value objects to email records. The document resolver consumes this new CDU data and does not reach into repositories.
+**Architecture:** Filter `StudentiProvider` output with the existing domain `Alunno.isAttivo()` API, then map its existing `Alunno.getTutors()` value objects to email records. The document resolver consumes this active-only CDU data and does not reach into repositories.
 
 **Tech Stack:** TypeScript, Jest/ts-jest, GAS V8, existing ContextEngine.
 
@@ -12,7 +12,7 @@
 
 - GAS V8; synchronous code only. No native GAS globals outside existing facades.
 - Never edit generated `dist/*` or `vendor/*`.
-- Reuse `Alunno.getTutors()`; no new persistence or repository queries.
+- Reuse `Alunno.isAttivo()` and `Alunno.getTutors()`; no new persistence or repository queries.
 - The canonical field name is `genitori: Array<{ email: string }>`.
 
 ---
@@ -25,14 +25,16 @@
 - Test: `test/unit/application/context-engine/studenti-provider.test.ts`
 
 **Interfaces:**
-- Consumes: `Alunno.getTutors(): Email[]`.
-- Produces: `AlunnoContestoVM.genitori: Array<{ email: string }>`.
+- Consumes: `Alunno.isAttivo(): boolean` and `Alunno.getTutors(): Email[]`.
+- Produces: active-only `listaCompleta`/`perIndirizzo` entries, each with `AlunnoContestoVM.genitori: Array<{ email: string }>`.
 
 - [ ] **Step 1: Write the failing test**
 
-Add a test that builds the normal class CDU from the existing fixture and asserts:
+Add a test that builds the normal class CDU from the existing fixture and asserts inactive `a2@school.it` and `a3@school.it` are absent, while active `a1@school.it` has its parent email:
 
 ```ts
+expect(cdu.focus.classe!.studenti!.listaCompleta).toHaveLength(1);
+expect(cdu.focus.classe!.studenti!.listaCompleta[0]!.anagrafica.email).toBe('a1@school.it');
 expect(cdu.focus.classe!.studenti!.listaCompleta[0]!.genitori)
   .toEqual([{ email: 'genitore1@x.it' }]);
 ```
@@ -41,7 +43,7 @@ expect(cdu.focus.classe!.studenti!.listaCompleta[0]!.genitori)
 
 Run: `npx jest --config jest.config.cjs test/unit/application/context-engine/studenti-provider.test.ts -t "parent emails"`
 
-Expected: FAIL because `genitori` is absent from `AlunnoContestoVM`.
+Expected: FAIL because inactive students are still included and `genitori` is absent from `AlunnoContestoVM`.
 
 - [ ] **Step 3: Implement the minimal mapping**
 
@@ -51,7 +53,13 @@ Add this property to `AlunnoContestoVM`:
 genitori: Array<{ email: string }>;
 ```
 
-In `StudentiProvider.buildVM`, map the existing domain emails without querying any repository:
+In both the standard and articulated class branches, filter domain students before `buildVM`:
+
+```ts
+this.classi.getStudenti(classe).filter((alunno) => alunno.isAttivo()).map((alunno) => this.buildVM(alunno))
+```
+
+Map the existing domain emails in `StudentiProvider.buildVM` without querying any repository:
 
 ```ts
 genitori: alunno.getTutors().map((email) => ({ email: email.value })),
@@ -77,7 +85,7 @@ git commit -m "feat: expose parent emails in class CDU"
 - Test: `test/unit/application/pipelines/document-steps.test.ts`
 
 **Interfaces:**
-- Consumes: `focus.classe.studenti.listaCompleta[].genitori[].email`.
+- Consumes: active-only `focus.classe.studenti.listaCompleta[].genitori[].email`.
 - Produces: the first-seen, comma-separated `LOG_DOCS.UTENTI` value for selector `GENITORI`.
 
 - [ ] **Step 1: Write the failing test**

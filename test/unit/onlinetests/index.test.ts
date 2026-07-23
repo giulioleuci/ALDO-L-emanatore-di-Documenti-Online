@@ -24,9 +24,16 @@ import { fixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
+import { COL_CONF_DOC, COL_CONF_MAIL } from '../../../src/config/schema';
 
 const NOW = new Date('2026-07-12T09:00:00Z');
 const RECIPIENT_EMAIL = 'attivo@onlinetest.aldo.local';
+
+function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
+  for (const row of rows) {
+    expect(Object.keys(row).sort()).toEqual(Object.values(columns).sort());
+  }
+}
 
 /** Fixture tables covering everything all three check groups (repository, context-engine,
  * pipeline) touch, mirroring SampleDatabaseBuilder's real seed shape. */
@@ -169,7 +176,8 @@ function sampleSeedTables(): Record<string, Row[]> {
         POST_PROCESSO: null,
         PARAMETRI: '',
         GESTIONE_ARTICOLAZIONE: '',
-        FORMATO: 'PDF'
+        FORMATO: 'PDF',
+        REGISTRA_UTENTI: ''
       }
     ],
     CONF_MAIL: [
@@ -177,7 +185,7 @@ function sampleSeedTables(): Record<string, Row[]> {
         ID: CONF_MAIL_ID,
         OGGETTO: '[ALDO ONLINE TEST] Notifica di prova',
         PROCESSO: 'PER_ALUNNO',
-        BOX_CFG: '[]',
+        BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
         TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.',
         SUPPLENTI: false,
         NOREPLY: false,
@@ -227,6 +235,13 @@ function fakeProperties(initial: string | null = null): IPropertiesFacade {
 }
 
 describe('executeOnlineTests', () => {
+  it('keeps its CONF_DOC and CONF_MAIL pipeline seeds schema-complete', () => {
+    const seed = sampleSeedTables();
+
+    expectCompleteRows(seed.CONF_DOC!, COL_CONF_DOC);
+    expectCompleteRows(seed.CONF_MAIL!, COL_CONF_MAIL);
+  });
+
   it('builds a sample database, initializes ALDO against it, and returns a report combining every check group', () => {
     const container = buildFakeContainer();
     const report = executeOnlineTests({

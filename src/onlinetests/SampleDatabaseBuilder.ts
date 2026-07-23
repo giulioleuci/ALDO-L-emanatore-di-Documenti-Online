@@ -351,13 +351,11 @@ export class SampleDatabaseBuilder {
       // switches on this value and has no default — 'ONLINETEST' is not a member,
       // which silently falls through to `undefined` instead of an EmailTarget[].
       [COL_CONF_MAIL.PROCESSO]: 'PER_ALUNNO',
-      // ConfigurazioneEmail.getBoxes() JSON.parse()s any non-null BOX_CFG raw
-      // value unconditionally (ConfigurazioneEmail.ts) — an empty string throws
-      // "Unexpected end of JSON input" instead of being treated as "no boxes"
-      // the way CONDIZIONE's blank-string handling is. A valid empty-array
-      // literal sidesteps that regardless of how the real Sheet round-trips a
-      // blank cell (empty string vs null).
-      [COL_CONF_MAIL.BOX_CFG]: '[]',
+      // The online pipeline assertion must exercise recipient routing, not the
+      // empty-content delivery gate: a static testo_dinamico box makes this
+      // test email visibly renderable without depending on CDU data.
+      [COL_CONF_MAIL.BOX_CFG]:
+        '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
       [COL_CONF_MAIL.TESTO]: 'Messaggio di prova generato dalla suite di test online ALDO.',
       [COL_CONF_MAIL.SUPPLENTI]: false,
       [COL_CONF_MAIL.NOREPLY]: false,

@@ -791,6 +791,7 @@ __webpack_require__.d(GoogleApiWrapper_namespaceObject_0, {
   ServiceUnavailableError: () => (ServiceUnavailableError),
   SidebarBuilder: () => (SidebarBuilder),
   SpreadsheetService: () => (SpreadsheetService),
+  TextStyleMapper: () => (TextStyleMapper),
   TriggerService: () => (TriggerService),
   UiService: () => (UiService),
   UserService: () => (UserService),
@@ -826,6 +827,7 @@ __webpack_require__.d(GoogleApiWrapper_namespaceObject, {
   ServiceUnavailableError: () => (ServiceUnavailableError),
   SidebarBuilder: () => (SidebarBuilder),
   SpreadsheetService: () => (SpreadsheetService),
+  TextStyleMapper: () => (TextStyleMapper),
   TriggerService: () => (TriggerService),
   UiService: () => (UiService),
   UserService: () => (UserService),
@@ -14460,6 +14462,61 @@ class DialogBuilder {
 
 
 
+class TextStyleMapper {
+  
+
+
+
+  static toNativeAttributes(textStyle) {
+    if (!textStyle || typeof textStyle !== 'object') {
+      return {};
+    }
+    const attrs = {};
+    if (typeof textStyle.bold === 'boolean') {
+      attrs[DocumentApp.Attribute.BOLD] = textStyle.bold;
+    }
+    if (typeof textStyle.italic === 'boolean') {
+      attrs[DocumentApp.Attribute.ITALIC] = textStyle.italic;
+    }
+    if (typeof textStyle.underline === 'boolean') {
+      attrs[DocumentApp.Attribute.UNDERLINE] = textStyle.underline;
+    }
+    if (typeof textStyle.strikethrough === 'boolean') {
+      attrs[DocumentApp.Attribute.STRIKETHROUGH] = textStyle.strikethrough;
+    }
+    if (textStyle.fontSize && typeof textStyle.fontSize.magnitude === 'number') {
+      attrs[DocumentApp.Attribute.FONT_SIZE] = textStyle.fontSize.magnitude;
+    }
+    if (textStyle.weightedFontFamily && textStyle.weightedFontFamily.fontFamily) {
+      attrs[DocumentApp.Attribute.FONT_FAMILY] = textStyle.weightedFontFamily.fontFamily;
+    }
+    if (textStyle.foregroundColor && textStyle.foregroundColor.color && textStyle.foregroundColor.color.rgbColor) {
+      attrs[DocumentApp.Attribute.FOREGROUND_COLOR] = TextStyleMapper._rgbColorToHex(textStyle.foregroundColor.color.rgbColor);
+    }
+    return attrs;
+  }
+
+  
+
+
+
+
+  static _rgbColorToHex(rgbColor) {
+    const toHex = component => {
+      const value = Math.round((component || 0) * 255);
+      return value.toString(16).padStart(2, '0');
+    };
+    return `#${toHex(rgbColor.red)}${toHex(rgbColor.green)}${toHex(rgbColor.blue)}`;
+  }
+}
+;
+
+
+
+
+
+
+
 
 
 
@@ -16609,6 +16666,7 @@ class DocumentBuilder {
 
 
 
+
 class DocumentTableManager {
   
 
@@ -17001,6 +17059,124 @@ class DocumentTableManager {
       };
     } catch (error) {
       this._logger.error(`Failed to copy table row: ${error.message}`);
+      throw error;
+    }
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  copyTableColumn(documentId, tableIndex, sourceColumnIndex, targetColumnIndex) {
+    try {
+      const doc = this.facade.openStandard(documentId);
+      const body = doc.getBody();
+      const tables = body.getTables();
+      if (tableIndex >= tables.length) {
+        throw new Error(`Table index ${tableIndex} out of bounds`);
+      }
+      const table = tables[tableIndex];
+      const numRows = table.getNumRows();
+      if (numRows === 0) {
+        throw new Error('Table has no rows');
+      }
+      const firstRow = table.getRow(0);
+      const numCells = firstRow.getNumCells();
+      if (sourceColumnIndex >= numCells) {
+        throw new Error(`Source column index ${sourceColumnIndex} out of bounds`);
+      }
+      if (targetColumnIndex > numCells) {
+        throw new Error(`Target column index ${targetColumnIndex} out of bounds (max: ${numCells})`);
+      }
+      for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+        const row = table.getRow(rowIndex);
+        const copiedCell = row.getCell(sourceColumnIndex).copy();
+        row.insertTableCell(targetColumnIndex, copiedCell);
+      }
+      this._logger.debug(`Copied column ${sourceColumnIndex} to position ${targetColumnIndex} in table ${tableIndex}`);
+      return {
+        success: true,
+        tableIndex,
+        sourceColumnIndex,
+        insertedColumnIndex: targetColumnIndex,
+        numRows
+      };
+    } catch (error) {
+      this._logger.error(`Failed to copy table column: ${error.message}`);
+      throw error;
+    }
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  setCellRunStyles(documentId, tableIndex, rowIndex, columnIndex, segments) {
+    try {
+      const doc = this.facade.openStandard(documentId);
+      const body = doc.getBody();
+      const tables = body.getTables();
+      if (tableIndex >= tables.length) {
+        throw new Error(`Table index ${tableIndex} out of bounds`);
+      }
+      const table = tables[tableIndex];
+      if (rowIndex >= table.getNumRows()) {
+        throw new Error(`Row index ${rowIndex} out of bounds`);
+      }
+      const row = table.getRow(rowIndex);
+      if (columnIndex >= row.getNumCells()) {
+        throw new Error(`Column index ${columnIndex} out of bounds`);
+      }
+      const cell = row.getCell(columnIndex);
+      cell.clear();
+      const textElement = cell.editAsText();
+      let offset = 0;
+      for (const segment of segments) {
+        const rendered = segment.rendered || '';
+        if (rendered.length === 0) {
+          continue;
+        }
+        textElement.appendText(rendered);
+        const attrs = TextStyleMapper.toNativeAttributes(segment.style);
+        if (Object.keys(attrs).length > 0) {
+          textElement.setAttributes(offset, offset + rendered.length - 1, attrs);
+        }
+        offset += rendered.length;
+      }
+      this._logger.debug(`Applied ${segments.length} styled run(s) to cell [${rowIndex}, ${columnIndex}] in table ${tableIndex}`);
+      return {
+        success: true,
+        tableIndex,
+        rowIndex,
+        columnIndex,
+        runsApplied: segments.length
+      };
+    } catch (error) {
+      this._logger.error(`Failed to set cell run styles: ${error.message}`);
       throw error;
     }
   }
@@ -17809,6 +17985,7 @@ class DocumentContentExtractor {
       if (element.paragraph) {
         pojo.type = 'PARAGRAPH';
         pojo.text = this._extractParagraphText(element.paragraph);
+        pojo.runs = this._extractParagraphRuns(element.paragraph);
         pojo.style = element.paragraph.paragraphStyle || {};
       } else if (element.table) {
         pojo.type = 'TABLE';
@@ -17848,6 +18025,35 @@ class DocumentContentExtractor {
 
 
 
+
+
+  _extractParagraphRuns(paragraph) {
+    if (!paragraph || !paragraph.elements) {
+      return [];
+    }
+    const runs = [];
+    let offset = 0;
+    for (const elem of paragraph.elements) {
+      if (elem.textRun && elem.textRun.content) {
+        const text = elem.textRun.content;
+        runs.push({
+          text,
+          start: offset,
+          end: offset + text.length,
+          style: elem.textRun.textStyle || {}
+        });
+        offset += text.length;
+      }
+    }
+    return runs;
+  }
+
+  
+
+
+
+
+
   _extractTableData(table) {
     if (!table || !table.tableRows) {
       return [];
@@ -17858,6 +18064,7 @@ class DocumentContentExtractor {
           rowIndex: rowIndex,
           columnIndex: cellIndex,
           text: this._extractCellText(cell),
+          runs: this._extractCellRuns(cell),
           content: cell.content ? this._convertContentToPOJO(cell.content) : []
         };
       });
@@ -17884,6 +18091,37 @@ class DocumentContentExtractor {
       }
       return '';
     }).join('');
+  }
+
+  
+
+
+
+
+
+
+
+  _extractCellRuns(cell) {
+    if (!cell || !cell.content) {
+      return [];
+    }
+    const runs = [];
+    let offset = 0;
+    for (const element of cell.content) {
+      if (element.paragraph) {
+        const paraRuns = this._extractParagraphRuns(element.paragraph);
+        for (const r of paraRuns) {
+          runs.push({
+            text: r.text,
+            start: offset + r.start,
+            end: offset + r.end,
+            style: r.style
+          });
+        }
+        offset += this._extractParagraphText(element.paragraph).length;
+      }
+    }
+    return runs;
   }
 
   
@@ -17949,7 +18187,8 @@ class DocumentContentExtractor {
             for (const cell of tableRow.cells) {
               rowData.cells.push({
                 index: cell.rowIndex * 1000 + cell.columnIndex,
-                text: cell.text
+                text: cell.text,
+                runs: cell.runs || []
               });
             }
             tableData.rows.push(rowData);
@@ -17979,7 +18218,8 @@ class DocumentContentExtractor {
               result.textMatches.push({
                 elementIndex: elementIndex,
                 text: textContent,
-                type: 'TEXT'
+                type: 'TEXT',
+                runs: element.runs || []
               });
               seenTextIndices.add(elementIndex);
             }
@@ -17995,7 +18235,8 @@ class DocumentContentExtractor {
                       elementIndex: elementIndex,
                       text: textContent,
                       type: 'TABLE_TEXT',
-                      tableIndex: tableOrdinal
+                      tableIndex: tableOrdinal,
+                      runs: cell.runs || []
                     });
                     seenTextIndices.add(elementIndex);
                   }
@@ -18356,7 +18597,7 @@ class DocumentService extends GoogleService {
     
     Delegation.delegateMethods(this, [{
       manager: this._tableManager,
-      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
+      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'copyTableColumn', 'setCellRunStyles', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
     }, {
       manager: this._contentExtractor,
       methods: ['getRawDocumentStructure', 'getDocumentBody', 'scanDocumentStructure']
@@ -22753,6 +22994,9 @@ class MockLock {
 
 
 
+
+
+
 ;
 
 
@@ -24171,6 +24415,115 @@ class MyMustache {
 
 
 
+
+
+
+
+
+
+
+
+
+  renderSegments(template, data = {}, additionalPartials = {}) {
+    if (typeof template !== 'string') {
+      throw new TypeError('template must be a string');
+    }
+    if (template === '') {
+      return [];
+    }
+    try {
+      const tokens = this._parse(template);
+      const context = new _MustacheContext(data);
+      const partials = {
+        ...this.partials,
+        ...additionalPartials
+      };
+      const state = {
+        depth: 0,
+        partialStack: []
+      };
+      const segments = [];
+      for (const token of tokens) {
+        const symbol = token[MyMustache.TOKEN_TYPE];
+        const rawStart = token[MyMustache.TOKEN_START];
+        if (symbol === MyMustache.TAG_TEXT) {
+          const raw = token[MyMustache.TOKEN_VALUE];
+          const rawEnd = token[MyMustache.TOKEN_END];
+          segments.push({
+            type: 'text',
+            raw,
+            rendered: raw,
+            rawStart,
+            rawEnd
+          });
+          continue;
+        }
+        if (symbol === MyMustache.TAG_VARIABLE || symbol === MyMustache.TAG_UNESCAPED) {
+          const rawEnd = token[MyMustache.TOKEN_END];
+          const raw = template.slice(rawStart, rawEnd);
+          const rendered = symbol === MyMustache.TAG_UNESCAPED ? this._unescapedValue(token, context) : this._escapedValue(token, context);
+          segments.push({
+            type: 'value',
+            raw,
+            rendered: rendered !== undefined ? rendered : '',
+            rawStart,
+            rawEnd
+          });
+          continue;
+        }
+        if (symbol === MyMustache.TAG_SECTION || symbol === MyMustache.TAG_INVERTED || symbol === MyMustache.TAG_PARTIAL) {
+          let rawEnd = token[MyMustache.TOKEN_END];
+          if (symbol === MyMustache.TAG_SECTION || symbol === MyMustache.TAG_INVERTED) {
+            
+            
+            
+            
+            const closeStart = token[MyMustache.TOKEN_INDEX];
+            if (typeof closeStart === 'number') {
+              const closeDelimIndex = template.indexOf(this.tags[1], closeStart);
+              rawEnd = closeDelimIndex === -1 ? closeStart : closeDelimIndex + this.tags[1].length;
+            }
+          }
+          const raw = template.slice(rawStart, rawEnd);
+          let rendered = '';
+          if (symbol === MyMustache.TAG_SECTION) {
+            rendered = this._renderSection(token, context, partials, template, state) || '';
+          } else if (symbol === MyMustache.TAG_INVERTED) {
+            rendered = this._renderInverted(token, context, partials, template, state) || '';
+          } else {
+            rendered = this._renderPartial(token, context, partials, state) || '';
+          }
+          segments.push({
+            type: 'value',
+            raw,
+            rendered,
+            rawStart,
+            rawEnd
+          });
+          continue;
+        }
+
+        
+      }
+      return segments;
+    } catch (e) {
+      this.logger.error(`MyMustache renderSegments error: ${e.message}\n${e.stack}`);
+      return [{
+        type: 'value',
+        raw: template,
+        rendered: `[RENDER ERROR: ${e.message}]`,
+        rawStart: 0,
+        rawEnd: template.length
+      }];
+    }
+  }
+
+  
+
+
+
+
+
   _escapeRegExp(string) {
     return string.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
   }
@@ -24709,7 +25062,7 @@ class DocumentProcessorTagScanner {
       const cellText = cell.text;
       const match = cellText.match(/^{{#tablecol_loop:([^}]+)}}(.*)/s);
       if (match) {
-        const [, fullExpression, templateContent] = match;
+        const [fullMatchText, fullExpression, templateContent] = match;
         const {
           path,
           filters
@@ -24722,13 +25075,31 @@ class DocumentProcessorTagScanner {
           continue;
         }
         dataArray = this.facade._applyFilters(dataArray, filters);
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        const markerPrefixLength = fullMatchText.length - templateContent.length;
+        const rawSourceRuns = cell.runs || [];
+        const sourceRuns = markerPrefixLength > 0 ? rawSourceRuns.filter(r => r.end > markerPrefixLength).map(r => ({
+          text: r.text,
+          start: Math.max(r.start, markerPrefixLength) - markerPrefixLength,
+          end: r.end - markerPrefixLength,
+          style: r.style
+        })) : rawSourceRuns;
         operations.push({
           type: 'columnLoop',
           index: cell.index,
           tableIndex: table.index,
           cellIndex: cellIndex,
           dataArray: dataArray,
-          templateContent: templateContent
+          templateContent: templateContent,
+          sourceRuns: sourceRuns
         });
       }
     }
@@ -24773,7 +25144,8 @@ class DocumentProcessorTagScanner {
           tableIndex: table.index,
           rowIndex: rowIndex,
           dataArray: dataArray,
-          controlText: match[0]
+          controlText: match[0],
+          sourceRuns: row.cells.map(c => c.runs || [])
         });
       }
     }
@@ -24803,6 +25175,23 @@ class DocumentProcessorTagScanner {
         const listType = command.startsWith('bullet') ? 'bullet' : 'number';
         const dataArray = this.facade.mustache.getValue(dataSource, context);
         if (Array.isArray(dataArray)) {
+          
+          
+          
+          
+          
+          
+          
+          
+          const itemTemplateOffsetInMatch = fullMatch.indexOf(itemTemplate.trim());
+          const itemTemplateStart = match.index + itemTemplateOffsetInMatch;
+          const itemTemplateEnd = itemTemplateStart + itemTemplate.trim().length;
+          const sourceRuns = (textMatch.runs || []).filter(r => r.end > itemTemplateStart && r.start < itemTemplateEnd).map(r => ({
+            text: r.text,
+            start: Math.max(r.start, itemTemplateStart) - itemTemplateStart,
+            end: Math.min(r.end, itemTemplateEnd) - itemTemplateStart,
+            style: r.style
+          }));
           operations.push({
             type: 'listLoop',
             index: textMatch.elementIndex,
@@ -24810,7 +25199,8 @@ class DocumentProcessorTagScanner {
             listType: listType,
             dataArray: dataArray,
             itemTemplate: itemTemplate.trim(),
-            fullMatch: fullMatch
+            fullMatch: fullMatch,
+            sourceRuns: sourceRuns
           });
         }
       }
@@ -24833,11 +25223,14 @@ class DocumentProcessorTagScanner {
         if (originalText.includes('{{')) {
           const newText = this.facade.mustache.render(originalText, context);
           if (originalText !== newText) {
+            const segments = this.facade.mustache.renderSegments(originalText, context);
             operations.push({
               type: 'textSubstitution',
               index: textMatch.elementIndex,
               originalText: originalText,
-              newText: newText === '' ? '\u200B' : newText
+              newText: newText === '' ? '\u200B' : newText,
+              segments: segments,
+              sourceRuns: textMatch.runs || []
             });
           }
         }
@@ -25081,9 +25474,78 @@ class DocumentProcessorValueResolver {
 
 
 
+
 class DocumentProcessorInjector {
   constructor(facade) {
     this.facade = facade;
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _buildStyledSegments(template, data, sourceRuns = []) {
+    if (!template || !template.includes('{{')) {
+      return [{
+        rendered: template || '',
+        style: this._styleAt(0, sourceRuns)
+      }];
+    }
+    const segments = this.facade.mustache.renderSegments(template, data);
+    return segments.map(seg => ({
+      rendered: seg.rendered != null ? String(seg.rendered) : '',
+      style: this._styleAt(seg.rawStart, sourceRuns)
+    }));
+  }
+
+  
+
+
+
+
+
+
+
+  _styleAt(offset, sourceRuns) {
+    const run = sourceRuns.find(r => offset >= r.start && offset < r.end);
+    return run ? run.style : {};
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _rebaseSourceRuns(runs, shift) {
+    if (!shift || shift <= 0) {
+      return runs || [];
+    }
+    return (runs || []).filter(r => r.end > shift).map(r => ({
+      text: r.text,
+      start: Math.max(r.start, shift) - shift,
+      end: r.end - shift,
+      style: r.style
+    }));
   }
   _executeRowLoopOperation(documentId, op) {
     try {
@@ -25093,22 +25555,31 @@ class DocumentProcessorInjector {
         this.facade.logger.warn(`Could not get template row data for table ${op.tableIndex}, row ${op.rowIndex}`);
         return;
       }
+      let firstCellMarkerLength = 0;
       const cellTemplates = templateRow.cells.map((cellText, index) => {
         if (index === 0) {
           const markerMatch = cellText.match(/^{{#tablerow_loop:[^}]+}}/);
-          return markerMatch ? cellText.substring(markerMatch[0].length) : cellText;
+          if (markerMatch) {
+            firstCellMarkerLength = markerMatch[0].length;
+            return cellText.substring(markerMatch[0].length);
+          }
+          return cellText;
         }
         return cellText;
       });
+      
+      
+      
+      
+      const sourceRuns = (op.sourceRuns || []).map((runs, index) => index === 0 ? this._rebaseSourceRuns(runs, firstCellMarkerLength) : runs);
       for (let i = op.dataArray.length - 1; i >= 0; i--) {
         const dataItem = op.dataArray[i];
-        const renderedCells = cellTemplates.map(template => {
-          if (template && template.includes('{{')) {
-            return this.facade.mustache.render(template, dataItem);
-          }
-          return template || '';
+        const targetRowIndex = op.rowIndex + 1;
+        this.facade.documentService.copyTableRow(documentId, op.tableIndex, op.rowIndex, targetRowIndex);
+        cellTemplates.forEach((template, cellIndex) => {
+          const segments = this._buildStyledSegments(template, dataItem, sourceRuns[cellIndex] || []);
+          this.facade.documentService.setCellRunStyles(documentId, op.tableIndex, targetRowIndex, cellIndex, segments);
         });
-        this.facade.documentService.insertTableRow(documentId, op.tableIndex, op.rowIndex + 1, renderedCells);
       }
       this.facade.documentService.deleteTableRow(documentId, op.tableIndex, op.rowIndex);
       this.facade.logger.debug(`Row loop completed: inserted ${op.dataArray.length} rows`);
@@ -25128,6 +25599,16 @@ class DocumentProcessorInjector {
       const trimmedContent = (op.templateContent || '').replace(/\s+$/, '');
       const templateMatch = trimmedContent.match(/^(.*?){{\/tablecol_loop}}$/s);
       const template = templateMatch ? templateMatch[1].trim() : trimmedContent;
+      
+      
+      
+      
+      
+      
+      
+      const templateBase = templateMatch ? templateMatch[1] : trimmedContent;
+      const trimShift = templateMatch ? templateBase.length - templateBase.trimStart().length : 0;
+      const headerSourceRuns = this._rebaseSourceRuns(op.sourceRuns, trimShift);
       if (op.dataArray.length === 0) {
         this.facade.documentService.updateTableCell(documentId, op.tableIndex, 0, op.cellIndex, '');
         return;
@@ -25137,25 +25618,35 @@ class DocumentProcessorInjector {
       
       
       const cellTemplates = [];
+      const cellSourceRuns = [];
       for (let rowIdx = 0; rowIdx < tableData.numRows; rowIdx++) {
         if (rowIdx === 0) {
           cellTemplates.push(template);
+          cellSourceRuns.push(headerSourceRuns);
         } else {
           const rowData = tableData.data[rowIdx] || [];
           const cellText = rowData[op.cellIndex];
           cellTemplates.push(cellText == null ? '' : cellText);
+          cellSourceRuns.push([]);
         }
       }
-      const renderCell = (tpl, item) => tpl && tpl.includes('{{') ? this.facade.mustache.render(tpl, item) : tpl || '';
+      const buildSegments = (tpl, item, sourceRuns) => this._buildStyledSegments(tpl, item, sourceRuns);
 
       
       for (let rowIdx = 0; rowIdx < tableData.numRows; rowIdx++) {
-        this.facade.documentService.updateTableCell(documentId, op.tableIndex, rowIdx, op.cellIndex, renderCell(cellTemplates[rowIdx], op.dataArray[0]));
+        const segments = buildSegments(cellTemplates[rowIdx], op.dataArray[0], cellSourceRuns[rowIdx]);
+        this.facade.documentService.setCellRunStyles(documentId, op.tableIndex, rowIdx, op.cellIndex, segments);
       }
       if (op.dataArray.length > 1) {
+        const originalWidth = this.facade.documentService.getColumnWidth(documentId, op.tableIndex, op.cellIndex).widthPoints;
         for (let i = 1; i < op.dataArray.length; i++) {
-          const cellValues = cellTemplates.map(tpl => renderCell(tpl, op.dataArray[i]));
-          this.facade.documentService.insertTableColumn(documentId, op.tableIndex, op.cellIndex + i, cellValues);
+          const targetColumnIndex = op.cellIndex + i;
+          this.facade.documentService.copyTableColumn(documentId, op.tableIndex, op.cellIndex, targetColumnIndex);
+          for (let rowIdx = 0; rowIdx < tableData.numRows; rowIdx++) {
+            const segments = buildSegments(cellTemplates[rowIdx], op.dataArray[i], cellSourceRuns[rowIdx]);
+            this.facade.documentService.setCellRunStyles(documentId, op.tableIndex, rowIdx, targetColumnIndex, segments);
+          }
+          this.facade.documentService.setColumnWidth(documentId, op.tableIndex, targetColumnIndex, originalWidth);
         }
         this.facade.logger.debug(`Inserted ${op.dataArray.length - 1} additional columns`);
       }
@@ -25175,7 +25666,8 @@ class DocumentProcessorInjector {
       case 'deleteRow':
         return this.facade._createDeleteRowRequests(op);
       case 'listLoop':
-        return this.facade._createListLoopRequests(op);
+        return [];
+      
       case 'columnLoop':
         return [];
       
@@ -25196,7 +25688,7 @@ class DocumentProcessorInjector {
     if (newText === '') {
       newText = '\u200B';
     }
-    return [{
+    const requests = [{
       deleteContentRange: {
         range: {
           startIndex: op.index,
@@ -25211,6 +25703,51 @@ class DocumentProcessorInjector {
         text: newText
       }
     }];
+    if (op.segments && op.segments.length > 0 && newText !== '\u200B') {
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      const insertedLength = newText.length;
+      let cursor = op.index;
+      let consumed = 0;
+      for (const segment of op.segments) {
+        if (consumed >= insertedLength) {
+          break;
+        }
+        let rendered = segment.rendered != null ? String(segment.rendered) : '';
+        const remaining = insertedLength - consumed;
+        if (rendered.length > remaining) {
+          rendered = rendered.slice(0, remaining);
+        }
+        if (rendered.length > 0) {
+          const style = this._styleAt(segment.rawStart, op.sourceRuns || []);
+          const fields = Object.keys(style);
+          if (fields.length > 0) {
+            requests.push({
+              updateTextStyle: {
+                range: {
+                  startIndex: cursor,
+                  endIndex: cursor + rendered.length
+                },
+                textStyle: style,
+                fields: fields.join(',')
+              }
+            });
+          }
+        }
+        cursor += rendered.length;
+        consumed += rendered.length;
+      }
+    }
+    return requests;
   }
   _createDeleteRowRequests(op) {
     return [{
@@ -25225,41 +25762,96 @@ class DocumentProcessorInjector {
       }
     }];
   }
-  _createListLoopRequests(op) {
-    const requests = [];
-    requests.push({
-      deleteContentRange: {
-        range: {
-          startIndex: op.index,
-          endIndex: op.index + op.fullMatch.length
-        }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  _executeListLoopOperation(documentId, op) {
+    try {
+      this.facade.logger.info(`Executing list loop: ${op.dataArray.length} items at paragraph ${op.paragraphIndex}`);
+      const doc = this.facade.documentService.openStandard(documentId);
+      const body = doc.getBody();
+      const rangeElement = body.findText(this._escapeForFindText(op.fullMatch));
+      if (!rangeElement) {
+        this.facade.logger.warn(`Could not find template paragraph for list loop marker`);
+        return;
       }
-    });
-    for (let i = op.dataArray.length - 1; i >= 0; i--) {
-      const item = op.dataArray[i];
-      const itemText = this.facade.mustache.render(op.itemTemplate, item);
-      const isLastItem = i === op.dataArray.length - 1;
-      requests.push({
-        insertText: {
-          location: {
-            index: op.index
-          },
-          text: isLastItem ? itemText : itemText + '\n'
-        }
-      });
-      if (op.listType === 'bullet') {
-        requests.push({
-          createParagraphBullets: {
-            range: {
-              startIndex: op.index,
-              endIndex: op.index + itemText.length + 1
-            },
-            bulletPreset: 'BULLET_DISC_CIRCLE_SQUARE'
-          }
-        });
+      let templateParagraph = rangeElement.getElement();
+      while (typeof templateParagraph.getParent === 'function' && templateParagraph.getParent() !== body) {
+        templateParagraph = templateParagraph.getParent();
       }
+      const templateChildIndex = body.getChildIndex(templateParagraph);
+      const sourceRuns = op.sourceRuns || [];
+      for (let i = op.dataArray.length - 1; i >= 0; i--) {
+        const dataItem = op.dataArray[i];
+        const copiedParagraph = templateParagraph.copy();
+        body.insertParagraph(templateChildIndex + 1, copiedParagraph);
+        const insertedParagraph = body.getChild(templateChildIndex + 1);
+        const segments = this._buildStyledSegments(op.itemTemplate, dataItem, sourceRuns);
+        this._retextParagraph(insertedParagraph, segments);
+      }
+      body.removeChild(templateParagraph);
+      this.facade.logger.debug(`List loop completed: inserted ${op.dataArray.length} items`);
+    } catch (error) {
+      this.facade.logger.error(`Failed to execute list loop: ${error.message}`);
+      throw error;
     }
-    return requests;
+  }
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _escapeForFindText(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  
+
+
+
+
+
+
+
+
+
+  _retextParagraph(paragraph, segments) {
+    paragraph.clear();
+    const textElement = paragraph.editAsText();
+    let offset = 0;
+    for (const segment of segments) {
+      const rendered = segment.rendered || '';
+      if (rendered.length === 0) {
+        continue;
+      }
+      textElement.appendText(rendered);
+      const attrs = TextStyleMapper.toNativeAttributes(segment.style);
+      if (Object.keys(attrs).length > 0) {
+        textElement.setAttributes(offset, offset + rendered.length, attrs);
+      }
+      offset += rendered.length;
+    }
   }
 
   
@@ -25353,7 +25945,7 @@ class _DocumentProcessor {
       methods: ['_applyFilters', '_sortByProperty', '_getNestedProperty']
     }, {
       manager: this._injector,
-      methods: ['_executeRowLoopOperation', '_executeColumnLoopOperation', '_convertOperationToRequests', '_createTextSubstitutionRequests', '_createDeleteRowRequests', '_createListLoopRequests', '_executeTableInsertOperation', '_flushDocumentChanges']
+      methods: ['_executeRowLoopOperation', '_executeColumnLoopOperation', '_executeListLoopOperation', '_retextParagraph', '_convertOperationToRequests', '_createTextSubstitutionRequests', '_createDeleteRowRequests', '_executeTableInsertOperation', '_flushDocumentChanges']
     }]);
   }
   process(documentId, context) {
@@ -25402,6 +25994,42 @@ class _DocumentProcessor {
       }
       structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     }
+    const remainingTextMatches = structure.textMatches.filter(tm => tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex));
+    const listLoopOps = this._analyzeListLoops(remainingTextMatches, context);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    const renderedElementIndices = new Set();
+    if (listLoopOps.length > 0) {
+      listLoopOps.sort((a, b) => b.index - a.index);
+      for (const op of listLoopOps) {
+        this._executeListLoopOperation(documentId, op);
+        renderedElementIndices.add(op.paragraphIndex);
+      }
+      if (this._flushDocumentChanges(documentId)) {
+        structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
+      }
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     const batchOps = [];
     for (const table of structure.tables) {
       const rowOps = this._analyzeRowLoops(table, context);
@@ -25411,9 +26039,8 @@ class _DocumentProcessor {
         }
       }
     }
-    const remainingTextMatches = structure.textMatches.filter(tm => tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex));
-    batchOps.push(...this._analyzeListLoops(remainingTextMatches, context));
-    batchOps.push(...this._analyzeTextSubstitutions(remainingTextMatches, context));
+    const finalTextMatches = structure.textMatches.filter(tm => (tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex)) && !renderedElementIndices.has(tm.elementIndex));
+    batchOps.push(...this._analyzeTextSubstitutions(finalTextMatches, context));
     batchOps.sort((a, b) => b.index - a.index);
     const batchRequests = [];
     for (const op of batchOps) {

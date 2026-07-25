@@ -54,9 +54,10 @@ describe('RisolutoreRuoliService — class roles (14 §1.1)', () => {
     expect(emails(service, 'DOCENTI_NO_RELIGIONE', cdu)).toEqual(['bianchi@school.it']);
   });
 
-  test('DOCENTI_IRC_ALT merges CLASSI.IRC + CLASSI.ALT, deduped (MAT_NON_STANDARD §2.C)', () => {
+  test('DOCENTI_IRC_ALT resolves the effective IRC/ALT holder via CattedraResolver, deduped', () => {
     const { cdu, service } = build({});
-    // 5A: IRC = bianchi, no ALT column set — merge degrades to just IRC.
+    // 5A: IRC's effective holder is bianchi (no variazione on IRC in this fixture,
+    // nominal CLASSI.IRC holds); no ALT column set for 5A — merge degrades to just IRC.
     expect(emails(service, 'DOCENTI_IRC_ALT', cdu)).toEqual(['bianchi@school.it']);
   });
 });
@@ -355,20 +356,15 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     expect(emails(service, 'DOCENTE_MATERIA', afterDecorrenza.cdu)).toEqual(['bianchi@school.it']);
   });
 
-  test('DOCENTI_IRC_ALT is never subject to supplenza routing, regardless of the caller option', () => {
-    const { cdu, service } = build({});
-    expect(
-      emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
-    ).toEqual(['bianchi@school.it']); // unchanged: IRC teacher, no supply routing applied
-  });
-
-  test('DOCENTI_IRC_ALT stays on the titolare even inside an active SUPPLENZE window that would otherwise reroute it', () => {
+  test('DOCENTI_IRC_ALT now honors supplenza routing like any other role (fix — was forced SOLO_TITOLARI before)', () => {
     // SUPPLENZE has TITOLARE bianchi -> SUPPLENTE verdi, 5A/ITA, 2025-11-10..20.
-    // docentiIrcAlt never sets ctx.materiaCorrente, so applicaSupplenze would
-    // pass materia=undefined to findSupplenzaSpecifica, which bypasses the
-    // MATERIE filter on undefined -- the bianchi/ITA row would match on CLASSI
-    // alone and reroute to verdi under SOLO_SUPPLENTI if risolvi() didn't force
-    // SOLO_TITOLARI for this role. Anchored at 2025-11-15, inside the window.
+    // docentiIrcAlt (like docentiPermanenti/cdcCompleto) never sets ctx.materiaCorrente,
+    // so applicaSupplenze passes materia=undefined to findSupplenzaSpecifica, which
+    // bypasses the MATERIE filter on undefined -- the bianchi/ITA row matches on
+    // CLASSI alone. This is the SAME coarse, materia-agnostic routing CDC/
+    // DOCENTI_NO_RELIGIONE already have (documented, accepted limitation of the
+    // role-level routing layer, unrelated to this fix) -- IRC/ALT now share it too,
+    // instead of being artificially exempted. Anchored at 2025-11-15, inside the window.
     const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z');
     const db = new FakeDatabase(fixtureTables());
     const cdu = ContextEngineFactory.create(db).build(
@@ -378,6 +374,6 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     const service = new RisolutoreRuoliService(db);
     expect(
       emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
-    ).toEqual(['bianchi@school.it']); // forced SOLO_TITOLARI: NOT verdi
+    ).toEqual(['verdi@school.it']); // was ['bianchi@school.it'] before this fix
   });
 });

@@ -85,13 +85,7 @@ export class RisolutoreRuoliService {
       throw new ValidationError(`Ruolo non registrato: ${ruolo}`);
     }
     if (result.kind === 'emails') return dedupe(result.emails);
-    // DOCENTI_IRC_ALT: schema limitation (VARIAZIONI_CATTEDRA/SUPPLENZE are
-    // MATERIA_ID-scoped, FK to MATERIE.ID; IRC/ALT are CLASSI columns, not
-    // MATERIE rows) -- never supply-routed, regardless of the caller's option.
-    const regola =
-      ruolo === 'DOCENTI_IRC_ALT'
-        ? GestioneSupplenti.SOLO_TITOLARI
-        : (options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI);
+    const regola = options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI;
     return dedupe(this.applicaSupplenze(result.docenti, ctx, regola));
   }
 
@@ -114,9 +108,8 @@ export class RisolutoreRuoliService {
       ['CDC', (c) => docenti(this.cdcCompleto(c.classe, c.data))],
       ['CDC_FILTER_ALUNNO', (c) => docenti(this.cdcFiltrato(c))],
       ['DOCENTI_NO_RELIGIONE', (c) => docenti(this.docentiPermanenti(c.classe, c.data))],
-      // --- DOCENTI_IRC_ALT: forced SOLO_TITOLARI below in risolvi(), never supply-routed ---
       // REL/ALT merged column protection (MAT_NON_STANDARD §2.C) — IRC + ALT deduped by email.
-      ['DOCENTI_IRC_ALT', (c) => docenti(this.docentiIrcAlt(c.classe))],
+      ['DOCENTI_IRC_ALT', (c) => docenti(this.docentiIrcAlt(c.classe, c.data))],
       // --- Single-teacher roles from CLASSI.RUOLI JSON ---
       ['SEGRETARIO_CDC', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'SEGRETARIO'))],
       ['TUTOR_ASL', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ASL'))],
@@ -139,27 +132,35 @@ export class RisolutoreRuoliService {
 
   /** Full council: effective permanent subject teachers + IRC + ALT (14 §1.1 CDC). */
   private cdcCompleto(classe: Classe, data: Date): Docente[] {
-    return [
-      ...this.docentiPermanenti(classe, data),
-      ...this.classi.getDocentiIRC(classe),
-      ...this.classi.getDocentiALT(classe)
-    ];
+    return this.docentiEffettivi(classe, data, { includeReligioneAlt: true });
   }
 
   /** Effective permanent holders across every subject in the cattedra matrix, deduped. */
   private docentiPermanenti(classe: Classe, data: Date): Docente[] {
+    return this.docentiEffettivi(classe, data, {});
+  }
+
+  private docentiEffettivi(
+    classe: Classe,
+    data: Date,
+    options: { includeReligioneAlt?: boolean }
+  ): Docente[] {
     const byEmail = new Map<string, Docente>();
-    for (const a of this.cattedraResolver.resolveConsiglio(classe, data)) {
+    for (const a of this.cattedraResolver.resolveConsiglio(classe, data, options)) {
       if (a.titolare.id !== null) byEmail.set(a.titolare.id, a.titolare);
     }
     return [...byEmail.values()];
   }
 
-  /** IRC + ALT teachers, deduped by email (MAT_NON_STANDARD §2.C — NOT resolved via DOCENTE_MATERIA: IRC/ALT are CLASSI columns, not MATERIE rows). */
-  private docentiIrcAlt(classe: Classe): Docente[] {
+  /** IRC + ALT effective holders, deduped by email — now resolved via CattedraResolver like any subject. */
+  private docentiIrcAlt(classe: Classe, data: Date): Docente[] {
     const byEmail = new Map<string, Docente>();
-    for (const d of [...this.classi.getDocentiIRC(classe), ...this.classi.getDocentiALT(classe)]) {
-      if (d.id !== null) byEmail.set(d.id, d);
+    for (const a of this.cattedraResolver.resolveConsiglio(classe, data, {
+      includeReligioneAlt: true
+    })) {
+      if ((a.materia.value === 'IRC' || a.materia.value === 'ALT') && a.titolare.id !== null) {
+        byEmail.set(a.titolare.id, a.titolare);
+      }
     }
     return [...byEmail.values()];
   }

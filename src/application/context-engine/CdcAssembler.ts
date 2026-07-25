@@ -30,13 +30,11 @@ export class CdcAssembler {
     gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
   ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
-    if (isArticolata) {
-      // Task 7 replaces this branch with an articulated-aware assignment merge.
-      const docenti = this.classi.getAllDocentiCDCArticolata(classe);
-      return this.toVMsNominal(docenti, classe, isArticolata);
-    }
-    const assignments = this.cattedraResolver.resolveConsiglio(classe, date);
-    return this.toVMsFromAssignments(assignments, classe, isArticolata, gestioneSupplenti);
+    const partners = this.classi.orderedPartners(classe);
+    const assignments = isArticolata
+      ? this.assignmentsArticolata(classe, date)
+      : this.cattedraResolver.resolveConsiglio(classe, date);
+    return this.toVMsFromAssignments(assignments, classe, isArticolata, partners, gestioneSupplenti);
   }
 
   /**
@@ -63,6 +61,7 @@ export class CdcAssembler {
     assignments: CattedraAssignment[],
     classe: Classe,
     isArticolata: boolean,
+    partners: Classe[],
     gestioneSupplenti: GestioneSupplenti
   ): DocenteCdcVM[] {
     interface RowGroup {
@@ -98,7 +97,16 @@ export class CdcAssembler {
       a.rowDocente.cognome.localeCompare(b.rowDocente.cognome)
     );
     return groups.map((g, i) =>
-      this.buildVMFromGroup(g, classe, isArticolata, coord, tutorAsl, tutorOrient, i < groups.length - 1)
+      this.buildVMFromGroup(
+        g,
+        classe,
+        isArticolata,
+        partners,
+        coord,
+        tutorAsl,
+        tutorOrient,
+        i < groups.length - 1
+      )
     );
   }
 
@@ -110,7 +118,8 @@ export class CdcAssembler {
       materieRaw: Array<{ sigla: string; isItp: boolean }>;
     },
     _classe: Classe,
-    _isArticolata: boolean,
+    isArticolata: boolean,
+    partners: Classe[],
     coord: Set<string>,
     tutorAsl: Set<string>,
     tutorOrient: Set<string>,
@@ -147,94 +156,49 @@ export class CdcAssembler {
             ? { nome: g.sostituisce.getNomeCompleto(), email: g.sostituisce.id ?? '' }
             : null
       },
-      tipoArticolazione: null, // Task 7 fills this in for articulated classes
+      tipoArticolazione: this.tipoArticolazioneDi(isArticolata, partners, email),
       isITP: g.materieRaw.some((m) => m.isItp),
       flags: { isNotLast }
     };
   }
 
-  /** Nominal-only fallback used temporarily for articulated classes until Task 7. */
-  private toVMsNominal(docenti: Docente[], classe: Classe, isArticolata: boolean): DocenteCdcVM[] {
-    const coord = new Set(this.classi.getCoordinatori(classe).map((d) => d.id ?? ''));
-    const tutorAsl = new Set(
-      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((d) => d.id ?? '')
-    );
-    const tutorOrient = new Set(
-      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((d) => d.id ?? '')
-    );
+  /**
+   * Merges resolveConsiglio across the articulated group (this class + parent's
+   * partners, or partner's counterpart — matches getAllDocentiCDCArticolata's
+   * scope), deduping a subject shared identically by both partners into one
+   * assignment (tipoArticolazione COMUNE) and keeping it separate otherwise
+   * (SEPARATO_PRIMO/SEPARATO_SECONDO by canonical partner order).
+   */
+  private assignmentsArticolata(classe: Classe, date: Date): CattedraAssignment[] {
     const partners = this.classi.orderedPartners(classe);
-    return docenti.map((d, i) =>
-      this.buildVMNominal(
-        d,
-        classe,
-        isArticolata,
-        partners,
-        coord,
-        tutorAsl,
-        tutorOrient,
-        i < docenti.length - 1
-      )
-    );
-  }
-
-  private buildVMNominal(
-    d: Docente,
-    classe: Classe,
-    isArticolata: boolean,
-    partners: Classe[],
-    coord: Set<string>,
-    tutorAsl: Set<string>,
-    tutorOrient: Set<string>,
-    isNotLast: boolean
-  ): DocenteCdcVM {
-    const email = d.id ?? '';
-    const materieRaw = this.materieRawOf(classe, email, isArticolata);
-    const isCoordinatore = coord.has(email);
-    const isTutorAsl = tutorAsl.has(email);
-    const isTutorOrientamento = tutorOrient.has(email);
-    return {
-      anagrafica: {
-        nome: d.nome,
-        cognome: d.cognome,
-        email,
-        genere: d.genere,
-        appellativo: d.getAppellativo()
-      },
-      materie: materieRaw.map((m) => ({
-        sigla: m.sigla,
-        nome: this.materie.findByIdCached(MateriaId.of(m.sigla))?.nome ?? m.sigla,
-        colore: '',
-        specificita: null
-      })),
-      ruoli: {
-        isCoordinatore,
-        isTutorAsl,
-        isTutorOrientamento,
-        descrizione: this.descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
-      },
-      stato: { isSupplente: false, sostituisce: null },
-      tipoArticolazione: this.tipoArticolazione(isArticolata, partners, email),
-      isITP: materieRaw.some((m) => m.isItp),
-      flags: { isNotLast }
-    };
-  }
-
-  private materieRawOf(
-    classe: Classe,
-    email: string,
-    isArticolata: boolean
-  ): Array<{ sigla: string; isItp: boolean }> {
-    if (!isArticolata) return this.classi.getMaterieDelDocente(classe, email);
-    const byMateria = new Map<string, boolean>();
-    for (const g of this.classi.getGruppoArticolazione(classe)) {
-      for (const m of this.classi.getMaterieDelDocente(g, email)) {
-        byMateria.set(m.sigla, (byMateria.get(m.sigla) ?? false) || m.isItp);
-      }
+    if (partners.length < 2) {
+      return this.cattedraResolver.resolveConsiglio(classe, date);
     }
-    return [...byMateria].map(([sigla, isItp]) => ({ sigla, isItp }));
+    const [primo, secondo] = partners as [Classe, Classe];
+    const inPrimo = this.cattedraResolver.resolveConsiglio(primo, date);
+    const inSecondo = primo.id === secondo.id ? [] : this.cattedraResolver.resolveConsiglio(secondo, date);
+
+    const byKey = new Map<string, { assignment: CattedraAssignment; inPrimo: boolean; inSecondo: boolean }>();
+    const keyOf = (a: CattedraAssignment): string =>
+      `${a.materia.value}::${a.titolare.id ?? ''}::${a.supplente?.id ?? ''}::${a.isItp}`;
+    for (const a of inPrimo) byKey.set(keyOf(a), { assignment: a, inPrimo: true, inSecondo: false });
+    for (const a of inSecondo) {
+      const k = keyOf(a);
+      const existing = byKey.get(k);
+      if (existing !== undefined) existing.inSecondo = true;
+      else byKey.set(k, { assignment: a, inPrimo: false, inSecondo: true });
+    }
+    return [...byKey.values()].map((v) => v.assignment);
   }
 
-  private tipoArticolazione(
+  /**
+   * Structural articulation tag for a resolved row's email: which partner
+   * class(es) nominally list this teacher against some subject. This is
+   * unrelated to whether a VARIAZIONI_CATTEDRA later changed who the
+   * effective titolare is — it classifies group membership, not cattedra
+   * resolution.
+   */
+  private tipoArticolazioneDi(
     isArticolata: boolean,
     partners: Classe[],
     email: string

@@ -3,6 +3,7 @@ import { CattedraResolver } from '../../../../src/application/services/CattedraR
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
+import { fixtureTables } from '../../../fixtures/tables';
 import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
 import { GestioneSupplenti } from '../../../../src/domain/value-objects/enums';
 
@@ -101,4 +102,21 @@ test('a permanent chair change (VARIAZIONI_CATTEDRA) is reflected under SOLO_TIT
   const vms = a.assembleForClasse(classe, new Date('2026-01-15'));
   const matRow = vms.find((v) => v.materie.some((m) => m.sigla === 'MAT'))!;
   expect(matRow.anagrafica.email).toBe('bianchi@s.it');
+});
+
+test('articulated class: shared subject appears once (COMUNE), separate subjects tagged per group', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const materie = new MateriaRepository(db);
+  const a = new CdcAssembler(classi, materie, new CattedraResolver(db));
+  const classe = classi.findById(ClasseId.of('1F'))!;
+
+  const vms = a.assembleForClasse(classe, new Date('2026-01-15'));
+
+  const rossiRow = vms.find((v) => v.anagrafica.email === 'rossi@school.it')!;
+  expect(rossiRow.tipoArticolazione).toBe('COMUNE');
+  const bianchiRow = vms.find((v) => v.anagrafica.email === 'bianchi@school.it')!;
+  expect(bianchiRow.tipoArticolazione).toBe('SEPARATO_PRIMO');
+  const verdiRow = vms.find((v) => v.anagrafica.email === 'verdi@school.it')!;
+  expect(verdiRow.tipoArticolazione).toBe('SEPARATO_SECONDO');
 });

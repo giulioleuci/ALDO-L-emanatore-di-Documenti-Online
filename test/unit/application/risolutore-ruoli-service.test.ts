@@ -361,4 +361,23 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
       emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
     ).toEqual(['bianchi@school.it']); // unchanged: IRC teacher, no supply routing applied
   });
+
+  test('DOCENTI_IRC_ALT stays on the titolare even inside an active SUPPLENZE window that would otherwise reroute it', () => {
+    // SUPPLENZE has TITOLARE bianchi -> SUPPLENTE verdi, 5A/ITA, 2025-11-10..20.
+    // docentiIrcAlt never sets ctx.materiaCorrente, so applicaSupplenze would
+    // pass materia=undefined to findSupplenzaSpecifica, which bypasses the
+    // MATERIE filter on undefined -- the bianchi/ITA row would match on CLASSI
+    // alone and reroute to verdi under SOLO_SUPPLENTI if risolvi() didn't force
+    // SOLO_TITOLARI for this role. Anchored at 2025-11-15, inside the window.
+    const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z');
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = ContextEngineFactory.create(db).build(
+      { target: '5A', tipoTarget: 'classe', now: INSIDE_WINDOW },
+      recipe('CLASSE_COMPLETA')
+    );
+    const service = new RisolutoreRuoliService(db);
+    expect(
+      emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
+    ).toEqual(['bianchi@school.it']); // forced SOLO_TITOLARI: NOT verdi
+  });
 });

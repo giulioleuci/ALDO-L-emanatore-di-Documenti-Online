@@ -11,6 +11,7 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
+import type { ClasseId } from '../../domain/value-objects/ClasseId';
 import {
   AmbiguousVariazioneCattedraError,
   VariazioneCattedraInconsistenteError,
@@ -23,6 +24,16 @@ export interface CattedraAssignment {
   titolare: Docente;
   isItp: boolean;
   supplente: Docente | null;
+  /**
+   * The classe this assignment was actually resolved against — the queried
+   * classe for a non-articulated class, or the specific partner for a split
+   * subject on an articulated parent (the parent itself is never the value
+   * here: it has no nominal column of its own for a split subject). Callers
+   * that apply their own supplenza routing on top of an already-extracted
+   * titolare (ref RisolutoreRuoliService.applicaSupplenze) need this to check
+   * SUPPLENZE against the correct classe, not always the originally-queried one.
+   */
+  classeId: ClasseId;
 }
 
 /**
@@ -73,14 +84,25 @@ export class CattedraResolver {
     return this.resolveTitolari(classe, materia, data)[0] ?? null;
   }
 
-  /** Permanent holder(s) only — SOLO_TITOLARI semantics, ignores any active supplenza. */
-  resolvePermanenti(classe: Classe, materia: MateriaId, data: Date): Docente[] {
+  /**
+   * Permanent holder(s) only — SOLO_TITOLARI semantics, ignores any active
+   * supplenza. Carries the classe each holder was actually resolved against
+   * (the partner class for a split subject on an articulated parent) — needed
+   * by callers (RisolutoreRuoliService.docenteMateria/docentiProva) that apply
+   * their own supplenza routing afterward, so that routing checks SUPPLENZE
+   * against the correct classe instead of the originally-queried one.
+   */
+  resolvePermanenti(
+    classe: Classe,
+    materia: MateriaId,
+    data: Date
+  ): { titolare: Docente; classeId: ClasseId }[] {
     const seen = new Set<string>();
-    const out: Docente[] = [];
+    const out: { titolare: Docente; classeId: ClasseId }[] = [];
     for (const a of this.resolveCattedra(classe, materia, data)) {
       if (a.titolare.id != null && !seen.has(a.titolare.id)) {
         seen.add(a.titolare.id);
-        out.push(a.titolare);
+        out.push({ titolare: a.titolare, classeId: a.classeId });
       }
     }
     return out;
@@ -114,7 +136,8 @@ export class CattedraResolver {
         materia,
         isItp: false,
         titolare: titolareNominale,
-        supplente: this.trovaSupplente(titolareNominale, classe, materia, data)
+        supplente: this.trovaSupplente(titolareNominale, classe, materia, data),
+        classeId: classe.classeId
       });
     }
     for (const titolareNominale of this.risolviSlot(classe, materia, data, itpNominali, mainNominali)) {
@@ -122,7 +145,8 @@ export class CattedraResolver {
         materia,
         isItp: true,
         titolare: titolareNominale,
-        supplente: this.trovaSupplente(titolareNominale, classe, materia, data)
+        supplente: this.trovaSupplente(titolareNominale, classe, materia, data),
+        classeId: classe.classeId
       });
     }
     return out;

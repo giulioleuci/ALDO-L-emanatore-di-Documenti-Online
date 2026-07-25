@@ -397,4 +397,56 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     );
     expect(emails(service, 'DOCENTE_PRIMA_PROVA', cduMate)).toEqual(['rossi@school.it']);
   });
+
+  test('applicaSupplenze now checks the classe a titolare was ACTUALLY resolved against, not always ctx.classe — articulated parent, split subject (fix)', () => {
+    const tables = fixtureTables();
+    // A 4th teacher, distinct from every existing titolare/supplente in this
+    // fixture, so the substitute's appearance in the output is unambiguous.
+    tables.DOCENTI.push({
+      EMAIL: 'neri@school.it',
+      COGNOME: 'NERI',
+      NOME: 'ANNA',
+      GENERE: 'F',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    });
+    // Scoped to the PARTNER '1F-LSO' (where bianchi actually, nominally holds
+    // FISI) -- not the parent '1F'. Before this fix, applicaSupplenze always
+    // checked ctx.classe.classeId ('1F' for a '1F'-targeted CDU), which this
+    // row never matches (CLASSI='1F-LSO' only), so this substitute was silently
+    // dropped for every role backed by CattedraResolver on an articulated
+    // parent -- even though Task 6 already made the TITOLARE resolve correctly.
+    tables.SUPPLENZE.push({
+      TITOLARE: 'bianchi@school.it',
+      SUPPLENTE: 'neri@school.it',
+      DAL: '2026-01-01',
+      AL: '2026-01-31',
+      CLASSI: '1F-LSO',
+      MATERIE: 'FISI'
+    });
+    const db = new FakeDatabase(tables);
+    const INSIDE_WINDOW = new Date('2026-01-15T09:00:00Z');
+    const service = new RisolutoreRuoliService(db);
+
+    // DOCENTE_MATERIA, ENTRAMBI: bianchi (1F-LSO) now correctly has neri as an
+    // active substitute; verdi (1F-LSS/FISI) is untouched (no supplenza scoped
+    // to it in this window).
+    const cduMateria = ContextEngineFactory.create(db).build(
+      { target: '1F', tipoTarget: 'classe', now: INSIDE_WINDOW, materiaCorrente: 'FISI' },
+      recipe('CLASSE_COMPLETA')
+    );
+    expect(
+      emails(service, 'DOCENTE_MATERIA', cduMateria, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+    ).toEqual(['bianchi@school.it', 'neri@school.it', 'verdi@school.it']);
+
+    // CDC, ENTRAMBI: the same fix reaches the group role too (rossi/MATE
+    // untouched, bianchi/FISI gets neri, verdi/FISI untouched).
+    const cduCdc = ContextEngineFactory.create(db).build(
+      { target: '1F', tipoTarget: 'classe', now: INSIDE_WINDOW },
+      recipe('CLASSE_COMPLETA')
+    );
+    expect(
+      emails(service, 'CDC', cduCdc, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+    ).toEqual(['bianchi@school.it', 'neri@school.it', 'rossi@school.it', 'verdi@school.it']);
+  });
 });

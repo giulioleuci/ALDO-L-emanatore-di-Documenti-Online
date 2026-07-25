@@ -231,7 +231,7 @@ test('resolvePermanenti ignores an active supplenza (SOLO_TITOLARI semantics)', 
   const resolver = new CattedraResolver(db);
   // 2025-11-15: bianchi (variazione) has an active supplente verdi.
   expect(
-    resolver.resolvePermanenti(classe, MAT, new Date('2025-11-15')).map((d) => d.id)
+    resolver.resolvePermanenti(classe, MAT, new Date('2025-11-15')).map((r) => r.titolare.id)
   ).toEqual(['bianchi@s.it']);
 });
 
@@ -297,4 +297,22 @@ test('resolveCattedra falls back to direct resolution for a non-articulated clas
   expect(
     resolver.resolveCattedra(classe, MateriaId.of('MATE'), new Date('2026-01-15')).map((a) => a.titolare.id)
   ).toEqual(['bianchi@school.it']);
+});
+
+test('resolveCattedra tags each assignment with the classe it was actually resolved against', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const resolver = new CattedraResolver(db);
+
+  // Non-articulated: classeId is simply the queried classe.
+  const classe5A = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const direct = resolver.resolveCattedra(classe5A, MateriaId.of('MATE'), new Date('2026-01-15'));
+  expect(direct.every((a) => a.classeId.equals(ClasseId.of('5A')))).toBe(true);
+
+  // Articulated parent, split subject: each assignment tags its OWN partner,
+  // never the parent '1F' (which has no nominal FISI column of its own).
+  const classe1F = new ClasseRepository(db).findById(ClasseId.of('1F'))!;
+  const fisi = resolver.resolveCattedra(classe1F, MateriaId.of('FISI'), new Date('2026-01-15'));
+  const byTitolare = new Map(fisi.map((a) => [a.titolare.id, a.classeId.value]));
+  expect(byTitolare.get('bianchi@school.it')).toBe('1F-LSO');
+  expect(byTitolare.get('verdi@school.it')).toBe('1F-LSS');
 });

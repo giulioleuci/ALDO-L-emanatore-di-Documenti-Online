@@ -15,6 +15,8 @@ import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepos
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
+import type { ClasseId } from '../../domain/value-objects/ClasseId';
+import type { Supplenza } from '../../domain/entities/Supplenza';
 import { Email } from '../../domain/value-objects/Email';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
@@ -28,9 +30,21 @@ export interface RisolviOptions {
   regolaSupplente?: GestioneSupplenti;
 }
 
+/** A resolved role holder plus the classe(s) their SUPPLENZE scope should be
+ * checked against — a single-element array holding ctx.classe.classeId for
+ * roles that don't route through CattedraResolver, or the specific partner
+ * classe(s) a CattedraResolver-derived holder was actually resolved against
+ * (possibly more than one if the same titolare surfaces via more than one
+ * subject/partner in a single role's fan-out). */
+interface DocenteConScope {
+  docente: Docente;
+  classeIds: ClasseId[];
+}
+
 /** A role's resolved holders, before supplenza routing. */
 type RoleResult =
-  | { kind: 'docenti'; docenti: Docente[] } // subject to supplenza routing (14 §1.2)
+  | { kind: 'docenti'; docenti: Docente[] } // subject to supplenza routing (14 §1.2), scoped to ctx.classe
+  | { kind: 'docentiConScope'; entries: DocenteConScope[] } // subject to supplenza routing, each entry scoped to its own classe(s) — CattedraResolver-derived roles, correct on an articulated parent
   | { kind: 'emails'; emails: Email[] }; // student/family roles, never routed
 
 /** The slice of CDU state a role strategy reads. */
@@ -86,7 +100,11 @@ export class RisolutoreRuoliService {
     }
     if (result.kind === 'emails') return dedupe(result.emails);
     const regola = options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI;
-    return dedupe(this.applicaSupplenze(result.docenti, ctx, regola));
+    const entries: DocenteConScope[] =
+      result.kind === 'docentiConScope'
+        ? result.entries
+        : result.docenti.map((docente) => ({ docente, classeIds: [ctx.classe.classeId] }));
+    return dedupe(this.applicaSupplenze(entries, ctx, regola));
   }
 
   private contextFrom(cdu: Cdu): RoleContext {
@@ -102,23 +120,27 @@ export class RisolutoreRuoliService {
 
   private buildRegistro(): Map<string, RoleStrategy> {
     const docenti = (list: Docente[]): RoleResult => ({ kind: 'docenti', docenti: list });
+    const docentiConScope = (entries: DocenteConScope[]): RoleResult => ({
+      kind: 'docentiConScope',
+      entries
+    });
     return new Map<string, RoleStrategy>([
       // --- Class roles ---
       ['COORDINATORI', (c) => docenti(this.classi.getCoordinatori(c.classe))],
-      ['CDC', (c) => docenti(this.cdcCompleto(c.classe, c.data))],
+      ['CDC', (c) => docentiConScope(this.cdcCompleto(c.classe, c.data))],
       ['CDC_FILTER_ALUNNO', (c) => docenti(this.cdcFiltrato(c))],
-      ['DOCENTI_NO_RELIGIONE', (c) => docenti(this.docentiPermanenti(c.classe, c.data))],
+      ['DOCENTI_NO_RELIGIONE', (c) => docentiConScope(this.docentiPermanenti(c.classe, c.data))],
       // REL/ALT merged column protection (MAT_NON_STANDARD §2.C) — IRC + ALT deduped by email.
-      ['DOCENTI_IRC_ALT', (c) => docenti(this.docentiIrcAlt(c.classe, c.data))],
+      ['DOCENTI_IRC_ALT', (c) => docentiConScope(this.docentiIrcAlt(c.classe, c.data))],
       // --- Single-teacher roles from CLASSI.RUOLI JSON ---
       ['SEGRETARIO_CDC', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'SEGRETARIO'))],
       ['TUTOR_ASL', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ASL'))],
       ['TUTOR_ORIENT', (c) => docenti(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ORIENT'))],
       // --- Subject-scoped roles (need meta.parametriInput.materiaCorrente) ---
-      ['DOCENTE_MATERIA', (c) => docenti(this.docenteMateria(c))],
+      ['DOCENTE_MATERIA', (c) => docentiConScope(this.docenteMateria(c))],
       ['CAPO_DIPARTIMENTO', (c) => docenti(this.capoDipartimento(c))],
-      ['DOCENTE_PRIMA_PROVA', (c) => docenti(this.docentiProva(c, 'prima'))],
-      ['DOCENTE_SECONDA_PROVA', (c) => docenti(this.docentiProva(c, 'seconda'))],
+      ['DOCENTE_PRIMA_PROVA', (c) => docentiConScope(this.docentiProva(c, 'prima'))],
+      ['DOCENTE_SECONDA_PROVA', (c) => docentiConScope(this.docentiProva(c, 'seconda'))],
       // --- Student / family roles (emails, no supplenza routing) ---
       ['ALUNNO', (c) => ({ kind: 'emails', emails: this.alunnoEmail(c) })],
       ['FAMIGLIA', (c) => ({ kind: 'emails', emails: this.famiglia(c) })],
@@ -131,35 +153,54 @@ export class RisolutoreRuoliService {
   }
 
   /** Full council: effective permanent subject teachers + IRC + ALT (14 §1.1 CDC). */
-  private cdcCompleto(classe: Classe, data: Date): Docente[] {
+  private cdcCompleto(classe: Classe, data: Date): DocenteConScope[] {
     return this.docentiEffettivi(classe, data, { includeReligioneAlt: true });
   }
 
   /** Effective permanent holders across every subject in the cattedra matrix, deduped. */
-  private docentiPermanenti(classe: Classe, data: Date): Docente[] {
+  private docentiPermanenti(classe: Classe, data: Date): DocenteConScope[] {
     return this.docentiEffettivi(classe, data, {});
   }
 
+  /**
+   * Dedupes CattedraResolver's per-subject assignments by titolare email,
+   * while accumulating every distinct classe the titolare was actually
+   * resolved against (the partner class(es) for a split subject on an
+   * articulated parent) — needed so applicaSupplenze checks supplenza against
+   * the classe(s) where this titolare genuinely holds a subject, not always
+   * ctx.classe (wrong for an articulated parent, which has no nominal column
+   * of its own for a split subject).
+   */
   private docentiEffettivi(
     classe: Classe,
     data: Date,
     options: { includeReligioneAlt?: boolean }
-  ): Docente[] {
-    const byEmail = new Map<string, Docente>();
+  ): DocenteConScope[] {
+    const byEmail = new Map<string, DocenteConScope>();
     for (const a of this.cattedraResolver.resolveConsiglio(classe, data, options)) {
-      if (a.titolare.id !== null) byEmail.set(a.titolare.id, a.titolare);
+      if (a.titolare.id === null) continue;
+      const existing = byEmail.get(a.titolare.id);
+      if (existing === undefined) {
+        byEmail.set(a.titolare.id, { docente: a.titolare, classeIds: [a.classeId] });
+      } else if (!existing.classeIds.some((c) => c.equals(a.classeId))) {
+        existing.classeIds.push(a.classeId);
+      }
     }
     return [...byEmail.values()];
   }
 
   /** IRC + ALT effective holders, deduped by email — now resolved via CattedraResolver like any subject. */
-  private docentiIrcAlt(classe: Classe, data: Date): Docente[] {
-    const byEmail = new Map<string, Docente>();
+  private docentiIrcAlt(classe: Classe, data: Date): DocenteConScope[] {
+    const byEmail = new Map<string, DocenteConScope>();
     for (const a of this.cattedraResolver.resolveConsiglio(classe, data, {
       includeReligioneAlt: true
     })) {
-      if ((a.materia.value === 'IRC' || a.materia.value === 'ALT') && a.titolare.id !== null) {
-        byEmail.set(a.titolare.id, a.titolare);
+      if ((a.materia.value !== 'IRC' && a.materia.value !== 'ALT') || a.titolare.id === null) continue;
+      const existing = byEmail.get(a.titolare.id);
+      if (existing === undefined) {
+        byEmail.set(a.titolare.id, { docente: a.titolare, classeIds: [a.classeId] });
+      } else if (!existing.classeIds.some((c) => c.equals(a.classeId))) {
+        existing.classeIds.push(a.classeId);
       }
     }
     return [...byEmail.values()];
@@ -176,9 +217,11 @@ export class RisolutoreRuoliService {
     return out;
   }
 
-  private docenteMateria(ctx: RoleContext): Docente[] {
+  private docenteMateria(ctx: RoleContext): DocenteConScope[] {
     if (ctx.materiaCorrente === null) return [];
-    return this.cattedraResolver.resolvePermanenti(ctx.classe, ctx.materiaCorrente, ctx.data);
+    return this.cattedraResolver
+      .resolvePermanenti(ctx.classe, ctx.materiaCorrente, ctx.data)
+      .map(({ titolare, classeId }) => ({ docente: titolare, classeIds: [classeId] }));
   }
 
   private capoDipartimento(ctx: RoleContext): Docente[] {
@@ -192,9 +235,9 @@ export class RisolutoreRuoliService {
   }
 
   /** Teachers of the exam subject(s) for the class's indirizzo (14 §1.1 DOCENTE_*_PROVA). */
-  private docentiProva(ctx: RoleContext, prova: 'prima' | 'seconda'): Docente[] {
+  private docentiProva(ctx: RoleContext, prova: 'prima' | 'seconda'): DocenteConScope[] {
     const indirizzo = IndirizzoId.of(ctx.classe.indirizzo);
-    const out: Docente[] = [];
+    const byEmail = new Map<string, DocenteConScope>();
     for (const materia of this.materie.findAllCached()) {
       const cfg = materia.esameConfig;
       if (cfg === null) continue;
@@ -202,10 +245,22 @@ export class RisolutoreRuoliService {
         prova === 'prima'
           ? cfg.isPrimaProvaPerIndirizzo(indirizzo)
           : cfg.isSecondaProvaPerIndirizzo(indirizzo);
-      if (matches)
-        out.push(...this.cattedraResolver.resolvePermanenti(ctx.classe, materia.materiaId, ctx.data));
+      if (!matches) continue;
+      for (const { titolare, classeId } of this.cattedraResolver.resolvePermanenti(
+        ctx.classe,
+        materia.materiaId,
+        ctx.data
+      )) {
+        if (titolare.id === null) continue;
+        const existing = byEmail.get(titolare.id);
+        if (existing === undefined) {
+          byEmail.set(titolare.id, { docente: titolare, classeIds: [classeId] });
+        } else if (!existing.classeIds.some((c) => c.equals(classeId))) {
+          existing.classeIds.push(classeId);
+        }
+      }
     }
-    return out;
+    return [...byEmail.values()];
   }
 
   private alunnoEmail(ctx: RoleContext): Email[] {
@@ -273,23 +328,36 @@ export class RisolutoreRuoliService {
    * SOLO_SUPPLENTI/ENTRAMBI/SOLO_TITOLARI decision is delegated to
    * `RoleResolutionLib.RoutingResolver` instead of a hand-rolled switch (ref
    * REPORT_GLF.md B4).
+   *
+   * Each entry carries its own classeId(s) to check supplenza against (ref
+   * cattedra-resolution-limitations-fix Task 11): the originally-queried
+   * classe for roles not backed by CattedraResolver, or the specific
+   * partner(s) a CattedraResolver-derived titolare was actually resolved
+   * against — trying each candidate classeId in order and taking the first
+   * that has an active supplenza. `materia` stays `ctx.materiaCorrente ??
+   * undefined` exactly as before (subject-agnostic for the group roles that
+   * never set it — a pre-existing, documented, unrelated routing coarseness).
    */
   private applicaSupplenze(
-    docenti: Docente[],
+    entries: DocenteConScope[],
     ctx: RoleContext,
     regola: GestioneSupplenti
   ): Email[] {
     const policy = RisolutoreRuoliService.ROUTING_POLICY[regola];
     const out: Email[] = [];
-    for (const titolare of docenti) {
+    for (const { docente: titolare, classeIds } of entries) {
       const titolareEmail = titolare.id ?? '';
       if (titolareEmail === '') continue;
-      const supplenza = this.supplenze.findSupplenzaSpecifica(
-        titolare,
-        ctx.data,
-        ctx.classe.classeId,
-        ctx.materiaCorrente ?? undefined
-      );
+      let supplenza: Supplenza | null = null;
+      for (const classeId of classeIds) {
+        supplenza = this.supplenze.findSupplenzaSpecifica(
+          titolare,
+          ctx.data,
+          classeId,
+          ctx.materiaCorrente ?? undefined
+        );
+        if (supplenza !== null) break;
+      }
       const supplenteEmail = supplenza?.supplente ?? null;
 
       const principal = new Actor(titolareEmail, ActorType.PERSON, titolareEmail, titolareEmail);
@@ -301,15 +369,10 @@ export class RisolutoreRuoliService {
       const result = this.routing.resolve({
         principalActor: principal,
         effectiveActor: effective,
-        // No active substitute -> RoutingResolver short-circuits to the
-        // principal alone regardless of policy, matching every regola's
-        // "no supplenza" behavior (fallback for SOLO_SUPPLENTI, single entry
-        // for ENTRAMBI, unaffected for SOLO_TITOLARI).
         delegationChain: { isEmpty: () => effective === null },
         routingPolicy: policy
       });
 
-      // BOTH_EQUAL orders [effective, principal]; SGSA keeps titolare first.
       const ordered =
         policy === RoutingPolicy.BOTH_EQUAL
           ? [...result.primary].sort((a) => (a.id === titolareEmail ? -1 : 1))

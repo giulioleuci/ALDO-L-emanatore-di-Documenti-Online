@@ -3,6 +3,11 @@ import { ClasseRepository } from '../../../src/infrastructure/repositories/Class
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
+import {
+  VariazioneCattedraTitolareNonTrovatoError,
+  AmbiguousVariazioneCattedraError,
+  VariazioneCattedraInconsistenteError
+} from '../../../src/domain/errors/DomainError';
 
 function seed() {
   return {
@@ -70,10 +75,7 @@ test('Priority 1 via wildcard materie applies to a different subject', () => {
   expect(resolver.resolveTitolare(classe, FIS, new Date('2025-10-15'))!.id).toBe('bianchi@s.it');
 });
 
-// REPORT_GLF.md B3: PriorityChainResolver must treat "a variazione applies but
-// resolves to nobody" as a match that stops the chain, not a defer that falls
-// through to the CLASSI nominal holder — an empty-array hit is not a miss.
-test('a variazione pointing at a non-existent docente yields no holder, not the CLASSI fallback', () => {
+test('a variazione pointing at a non-existent docente throws, never falls back to CLASSI', () => {
   const db = new FakeDatabase({
     MATERIE: [{ ID: 'MAT' }],
     DOCENTI: [{ EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' }],
@@ -91,5 +93,103 @@ test('a variazione pointing at a non-existent docente yields no holder, not the 
   const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
   const resolver = new CattedraResolver(db);
 
-  expect(resolver.resolveTitolari(classe, MAT, new Date('2025-10-15'))).toEqual([]);
+  expect(() => resolver.resolveTitolari(classe, MAT, new Date('2025-10-15'))).toThrow(
+    VariazioneCattedraTitolareNonTrovatoError
+  );
+});
+
+test('two variazioni tied on the same latest DATA_DECORRENZA throw ambiguous', () => {
+  const db = new FakeDatabase({
+    MATERIE: [{ ID: 'MAT' }],
+    DOCENTI: [
+      { EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' },
+      { EMAIL: 'bianchi@s.it', COGNOME: 'BIANCHI', NOME: 'L', GENERE: 'F' },
+      { EMAIL: 'verdi@s.it', COGNOME: 'VERDI', NOME: 'G', GENERE: 'M' }
+    ],
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it' }],
+    VARIAZIONI_CATTEDRA: [
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'bianchi@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      },
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'verdi@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      }
+    ]
+  });
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+
+  expect(() => resolver.resolveTitolare(classe, MAT, new Date('2025-11-01'))).toThrow(
+    AmbiguousVariazioneCattedraError
+  );
+});
+
+test('two variazioni with different DATA_DECORRENZA: the latest wins', () => {
+  const db = new FakeDatabase({
+    MATERIE: [{ ID: 'MAT' }],
+    DOCENTI: [
+      { EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' },
+      { EMAIL: 'bianchi@s.it', COGNOME: 'BIANCHI', NOME: 'L', GENERE: 'F' },
+      { EMAIL: 'verdi@s.it', COGNOME: 'VERDI', NOME: 'G', GENERE: 'M' }
+    ],
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it' }],
+    VARIAZIONI_CATTEDRA: [
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'bianchi@s.it',
+        DATA_DECORRENZA: '2025-09-01'
+      },
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'verdi@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      }
+    ]
+  });
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+
+  // Both rows are decorsa and scope-matching, but both claim VECCHIO_TITOLARE
+  // rossi@s.it -- only one can be "the" transition FROM the nominal holder;
+  // the later DATA_DECORRENZA (verdi) is the current state of the world.
+  expect(resolver.resolveTitolare(classe, MAT, new Date('2025-11-01'))!.id).toBe('verdi@s.it');
+});
+
+test('a variazione whose VECCHIO_TITOLARE matches nobody in this class+subject throws inconsistente', () => {
+  const db = new FakeDatabase({
+    MATERIE: [{ ID: 'MAT' }],
+    DOCENTI: [
+      { EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' },
+      { EMAIL: 'bianchi@s.it', COGNOME: 'BIANCHI', NOME: 'L', GENERE: 'F' }
+    ],
+    // Nominal MAT holder is bianchi, not rossi.
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'bianchi@s.it' }],
+    VARIAZIONI_CATTEDRA: [
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'bianchi@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      }
+    ]
+  });
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+
+  expect(() => resolver.resolveTitolare(classe, MAT, new Date('2025-11-01'))).toThrow(
+    VariazioneCattedraInconsistenteError
+  );
 });

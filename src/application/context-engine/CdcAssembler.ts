@@ -39,22 +39,19 @@ export class CdcAssembler {
   ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
     const partners = this.classi.orderedPartners(classe);
-    const assignments = isArticolata
-      ? this.assignmentsArticolata(classe, date)
-      : this.cattedraResolver.resolveConsiglio(classe, date);
+    const assignments = this.cattedraResolver.resolveConsiglio(classe, date);
     return this.toVMsFromAssignments(assignments, classe, isArticolata, partners, gestioneSupplenti);
   }
 
   /**
    * Council filtered for a specific student (14 §1.3): the effective subject
-   * teachers (same resolution as `assembleForClasse`), plus the IRC teacher
-   * when the student chose religion (SI) or the ALT teacher when ALT (neither
-   * for NO) — now resolved through CattedraResolver like any other materia
-   * (IRC/ALT are flagged MATERIE rows, ref design doc Phase A), so they honor
-   * VARIAZIONI_CATTEDRA/SUPPLENZE too, and split-row group the same way
-   * ordinary subjects do. Specificity filtering by `focus.alunno.curriculum`
-   * applies only where specificity columns exist in the cattedra matrix — that
-   * matrix has none yet, so specificity filtering is deferred (14 §1.3).
+   * teachers, plus the IRC teacher when the student chose religion (SI) or the
+   * ALT teacher when ALT (neither for NO) — IRC/ALT are flagged MATERIE rows
+   * (ref design doc Phase A), resolved through CattedraResolver like any other
+   * materia, split-row capable. Specificity filtering by
+   * `focus.alunno.curriculum` applies only where specificity columns exist in
+   * the cattedra matrix — that matrix has none yet, so specificity filtering
+   * is deferred (14 §1.3).
    */
   assembleFiltrato(
     classe: Classe,
@@ -64,9 +61,7 @@ export class CdcAssembler {
   ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
     const partners = this.classi.orderedPartners(classe);
-    const full = isArticolata
-      ? this.assignmentsArticolata(classe, date, true)
-      : this.cattedraResolver.resolveConsiglio(classe, date, { includeReligioneAlt: true });
+    const full = this.cattedraResolver.resolveConsiglio(classe, date, { includeReligioneAlt: true });
     const filtered = full.filter((a) => {
       if (a.materia.value === 'IRC') return religione === ReligioneScelta.SI;
       if (a.materia.value === 'ALT') return religione === ReligioneScelta.ALT;
@@ -168,42 +163,6 @@ export class CdcAssembler {
       isITP: g.materieRaw.some((m) => m.isItp),
       flags: { isNotLast }
     };
-  }
-
-  /**
-   * Merges resolveConsiglio across the articulated group (this class + parent's
-   * partners, or partner's counterpart — matches getAllDocentiCDCArticolata's
-   * scope), deduping a subject shared identically by both partners into one
-   * assignment (tipoArticolazione COMUNE) and keeping it separate otherwise
-   * (SEPARATO_PRIMO/SEPARATO_SECONDO by canonical partner order).
-   */
-  private assignmentsArticolata(
-    classe: Classe,
-    date: Date,
-    includeReligioneAlt = false
-  ): CattedraAssignment[] {
-    const partners = this.classi.orderedPartners(classe);
-    if (partners.length < 2) {
-      return this.cattedraResolver.resolveConsiglio(classe, date, { includeReligioneAlt });
-    }
-    const [primo, secondo] = partners as [Classe, Classe];
-    const inPrimo = this.cattedraResolver.resolveConsiglio(primo, date, { includeReligioneAlt });
-    const inSecondo =
-      primo.id === secondo.id
-        ? []
-        : this.cattedraResolver.resolveConsiglio(secondo, date, { includeReligioneAlt });
-
-    const byKey = new Map<string, { assignment: CattedraAssignment; inPrimo: boolean; inSecondo: boolean }>();
-    const keyOf = (a: CattedraAssignment): string =>
-      `${a.materia.value}::${a.titolare.id ?? ''}::${a.supplente?.id ?? ''}::${a.isItp}`;
-    for (const a of inPrimo) byKey.set(keyOf(a), { assignment: a, inPrimo: true, inSecondo: false });
-    for (const a of inSecondo) {
-      const k = keyOf(a);
-      const existing = byKey.get(k);
-      if (existing !== undefined) existing.inSecondo = true;
-      else byKey.set(k, { assignment: a, inPrimo: false, inSecondo: true });
-    }
-    return [...byKey.values()].map((v) => v.assignment);
   }
 
   /**

@@ -36,11 +36,6 @@ export class VariazioneCattedraRepository
     return this.find(new VariazioniPerMateriaSpec(materiaId));
   }
 
-  /** First variation covering the (class, subject) pair; null if none (ref 06 §20). */
-  findVariazioneAttiva(classeId: ClasseId, materiaId: MateriaId): VariazioneCattedra | null {
-    return this.findAll().find((v) => v.applicaAContesto(classeId, materiaId)) ?? null;
-  }
-
   findByNuovoTitolare(email: Email): VariazioneCattedra[] {
     return this.find(new VariazioniPerNuovoTitolareSpec(email));
   }

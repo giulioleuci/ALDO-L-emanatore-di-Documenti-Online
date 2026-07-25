@@ -354,7 +354,7 @@ export function fixtureTables(): Record<string, Row[]> {
     ],
     VARIAZIONI_CATTEDRA: [
       {
-        CLASSE_ID: '5A,3B',
+        CLASSE_ID: '5A',
         MATERIA_ID: 'MATE',
         VECCHIO_TITOLARE: 'rossi@school.it',
         NUOVO_TITOLARE: 'bianchi@school.it',

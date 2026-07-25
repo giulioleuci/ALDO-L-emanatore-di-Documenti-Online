@@ -33,14 +33,6 @@ test('findByClasse / findByMateria search by containment', () => {
   expect(r.findByMateria(MateriaId.of('MATE')).length).toBe(1);
 });
 
-test('findVariazioneAttiva returns the covering variation, else null (Priority 2)', () => {
-  const r = repo();
-  expect(r.findVariazioneAttiva(ClasseId.of('5A'), MateriaId.of('MATE'))!.nuovoTitolare).toBe(
-    'bianchi@school.it'
-  );
-  expect(r.findVariazioneAttiva(ClasseId.of('5A'), MateriaId.of('FISI'))).toBeNull();
-});
-
 test('findByNuovoTitolare', () => {
   expect(
     repo()

@@ -124,6 +124,17 @@ test('PER_CDC: one multi-TO target per entry class (parent aggregates the articu
   expect(t1f.emails.sort()).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
 });
 
+test('PER_CDC: cdcEmails is deterministically sorted by cognome (BIANCHI < ROSSI < VERDI), so emails[0] is stable regardless of resolveConsiglio materia/class iteration order (11 §14 fix)', () => {
+  const { service } = wire();
+  const targets = service.enumerateTargets(conf('PER_CDC'));
+  const t1f = targets.find((t) => t.target === '1F')!;
+  // Unsorted read: emails[0] must be the alphabetically-first cognome (BIANCHI),
+  // matching the pre-CattedraResolver getAllDocentiCDCArticolata behaviour --
+  // NOT resolveConsiglio's raw materia/class iteration order (which yields rossi first).
+  expect(t1f.emails).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
+  expect(t1f.emails[0]).toBe('bianchi@school.it');
+});
+
 test('PER_ALUNNO: one target per active student', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_ALUNNO'));

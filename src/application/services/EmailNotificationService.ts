@@ -321,20 +321,29 @@ export class EmailNotificationService {
     });
   }
 
+  /**
+   * Deduped by email, then sorted alphabetically by cognome — same convention as
+   * `CdcAssembler.toVMsFromAssignments`/`buildRepertorio`
+   * (`a.rowDocente.cognome.localeCompare(b.rowDocente.cognome)`) and the old
+   * `ClasseRepository.getAllDocentiCDC(Articolata)` this replaced (11 §14 fix
+   * report): callers key off `emails[0]` as a fallback recipient, so the order
+   * must be deterministic and match pre-CattedraResolver behaviour, not
+   * `resolveConsiglio`'s materia/class iteration order.
+   */
   private cdcEmails(classe: Classe): string[] {
     const classi = this.gruppoResolutivo(classe);
-    const byEmail = new Map<string, true>();
-    const emails: string[] = [];
+    const byEmail = new Map<string, string>(); // email -> cognome
     for (const c of classi) {
       for (const a of this.deps.cattedraResolver.resolveConsiglio(c, this.deps.now)) {
         const email = a.titolare.id ?? '';
         if (email !== '' && !byEmail.has(email)) {
-          byEmail.set(email, true);
-          emails.push(email);
+          byEmail.set(email, a.titolare.cognome);
         }
       }
     }
-    return emails;
+    return [...byEmail.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([email]) => email);
   }
 
   /**

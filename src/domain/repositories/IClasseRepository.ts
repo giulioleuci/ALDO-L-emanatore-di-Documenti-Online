@@ -18,6 +18,7 @@ export interface IClasseRepository {
 
   // --- Cattedra matrix / roles (ref 06 §3) ---
   getDocentiPerMateria(classe: Classe, materia: MateriaId): Docente[];
+  getITPPerMateria(classe: Classe, materia: MateriaId): Docente[];
   getAllDocentiCDC(classe: Classe): Docente[];
   getDocentiIRC(classe: Classe): Docente[];
   getDocentiALT(classe: Classe): Docente[];

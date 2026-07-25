@@ -3,12 +3,13 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { VariazioneCattedraRepository } from '../../infrastructure/repositories/VariazioneCattedraRepository';
+import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { IVariazioneCattedraRepository } from '../../domain/repositories/IVariazioneCattedraRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
-import type { VariazioneCattedra } from '../../domain/entities/VariazioneCattedra';
 import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import {
   AmbiguousVariazioneCattedraError,
@@ -16,8 +17,9 @@ import {
   VariazioneCattedraTitolareNonTrovatoError
 } from '../../domain/errors/DomainError';
 
-/** One resolved cattedra slot: the effective permanent holder plus any active substitute (Task 4 adds `materia`/`isItp` fan-out via resolveConsiglio). */
+/** One resolved cattedra slot (main or itp): the effective permanent holder plus any active substitute. */
 export interface CattedraAssignment {
+  materia: MateriaId;
   titolare: Docente;
   isItp: boolean;
   supplente: Docente | null;
@@ -34,32 +36,33 @@ export interface CattedraAssignment {
  *   Priority 3 — CLASSI (fallback):  the teacher in the subject column
  *
  * The first priority that produces a match wins; lower priorities are not
- * consulted for that holder.
+ * consulted for that holder. Each (class, subject) has two independent slots
+ * — main and itp (Insegnante Tecnico Pratico) — resolved separately.
  */
 export class CattedraResolver {
   private readonly classi: IClasseRepository;
   private readonly docenti: IDocenteRepository;
   private readonly supplenze: ISupplenzaRepository;
   private readonly variazioni: IVariazioneCattedraRepository;
+  private readonly materie: IMateriaRepository;
 
   constructor(database: RepositoryDatabase) {
     this.classi = new ClasseRepository(database);
     this.docenti = new DocenteRepository(database);
     this.supplenze = new SupplenzaRepository(database);
     this.variazioni = new VariazioneCattedraRepository(database);
+    this.materie = new MateriaRepository(database);
   }
 
-  /** Effective teachers for the class/subject at `data` (main column only until Task 4). */
+  /** Effective teachers for the class/subject at `data`, across both main and itp slots. */
   resolveTitolari(classe: Classe, materia: MateriaId, data: Date): Docente[] {
-    const nominali = this.classi.getDocentiPerMateria(classe, materia);
-    const titolari = this.risolviSlot(classe, materia, data, nominali);
     const effettivi: Docente[] = [];
     const seen = new Set<string>();
-    for (const titolare of titolari) {
-      const risolto = this.applicaSupplenza(titolare, classe, materia, data);
-      if (risolto.id != null && !seen.has(risolto.id)) {
-        seen.add(risolto.id);
-        effettivi.push(risolto);
+    for (const a of this.resolveCattedra(classe, materia, data)) {
+      const d = a.supplente ?? a.titolare;
+      if (d.id != null && !seen.has(d.id)) {
+        seen.add(d.id);
+        effettivi.push(d);
       }
     }
     return effettivi;
@@ -70,17 +73,76 @@ export class CattedraResolver {
     return this.resolveTitolari(classe, materia, data)[0] ?? null;
   }
 
+  /** Permanent holder(s) only — SOLO_TITOLARI semantics, ignores any active supplenza. */
+  resolvePermanenti(classe: Classe, materia: MateriaId, data: Date): Docente[] {
+    const seen = new Set<string>();
+    const out: Docente[] = [];
+    for (const a of this.resolveCattedra(classe, materia, data)) {
+      if (a.titolare.id != null && !seen.has(a.titolare.id)) {
+        seen.add(a.titolare.id);
+        out.push(a.titolare);
+      }
+    }
+    return out;
+  }
+
+  /** One assignment per populated slot (main + itp) for (classe, materia, date). */
+  resolveCattedra(classe: Classe, materia: MateriaId, data: Date): CattedraAssignment[] {
+    const out: CattedraAssignment[] = [];
+    const mainNominali = this.classi.getDocentiPerMateria(classe, materia);
+    const itpNominali = this.classi.getITPPerMateria(classe, materia);
+    for (const titolareNominale of this.risolviSlot(classe, materia, data, mainNominali, itpNominali)) {
+      out.push({
+        materia,
+        isItp: false,
+        titolare: titolareNominale,
+        supplente: this.trovaSupplente(titolareNominale, classe, materia, data)
+      });
+    }
+    for (const titolareNominale of this.risolviSlot(classe, materia, data, itpNominali, mainNominali)) {
+      out.push({
+        materia,
+        isItp: true,
+        titolare: titolareNominale,
+        supplente: this.trovaSupplente(titolareNominale, classe, materia, data)
+      });
+    }
+    return out;
+  }
+
+  /** Class-wide fan-out over every MATERIE column (used by CDU/email enumeration). */
+  resolveConsiglio(classe: Classe, data: Date): CattedraAssignment[] {
+    const out: CattedraAssignment[] = [];
+    for (const materia of this.materie.findAllCached()) {
+      out.push(...this.resolveCattedra(classe, materia.materiaId, data));
+    }
+    return out;
+  }
+
+  private trovaSupplente(
+    titolare: Docente,
+    classe: Classe,
+    materia: MateriaId,
+    data: Date
+  ): Docente | null {
+    const risolto = this.applicaSupplenza(titolare, classe, materia, data);
+    return risolto.id === titolare.id ? null : risolto;
+  }
+
   /**
-   * Priority 2-over-3 for one nominal slot: `nominali` is the Priority-3 holder
-   * set for the slot being resolved (main column here; Task 4 adds the itp
-   * column as a second slot). Throws rather than silently falling back on any
-   * data inconsistency (confirmed product decision).
+   * Priority 2-over-3 for one nominal slot: `nominali` is the Priority-3
+   * holder set for the slot being resolved; `nominaliAltroSlot` is the other
+   * slot's set, consulted only to distinguish "this variazione belongs to the
+   * other slot" from "this variazione is inconsistent data". Throws rather
+   * than silently falling back on any data inconsistency (confirmed product
+   * decision) — applies independently per slot.
    */
   private risolviSlot(
     classe: Classe,
     materia: MateriaId,
     data: Date,
-    nominali: Docente[]
+    nominali: Docente[],
+    nominaliAltroSlot: Docente[]
   ): Docente[] {
     const decorse = this.variazioni
       .findByClasse(classe.classeId)
@@ -88,16 +150,18 @@ export class CattedraResolver {
     if (decorse.length === 0) return nominali;
 
     const nominaliIds = new Set(nominali.map((d) => d.id));
+    const altroSlotIds = new Set(nominaliAltroSlot.map((d) => d.id));
     const perQuestoSlot = decorse.filter((v) => nominaliIds.has(v.vecchioTitolare));
     if (perQuestoSlot.length === 0) {
-      if (this.matchesNoSlotAtAll(decorse, classe, materia)) {
+      const perAltroSlot = decorse.some((v) => altroSlotIds.has(v.vecchioTitolare));
+      if (!perAltroSlot) {
         const v = decorse[0]!;
         throw new VariazioneCattedraInconsistenteError(
           `VARIAZIONI_CATTEDRA ${v.id ?? '?'} (VECCHIO_TITOLARE=${v.vecchioTitolare}) non corrisponde ` +
             `al titolare nominale attuale di ${classe.id ?? '?'}/${materia.value}`
         );
       }
-      return nominali; // relevant to another slot only (e.g. itp) — this slot defers to CLASSI
+      return nominali; // relevant to the other slot only — this slot defers to CLASSI
     }
 
     const maxDecorrenza = Math.max(
@@ -120,17 +184,6 @@ export class CattedraResolver {
       );
     }
     return [nuovo];
-  }
-
-  /** True when every decorsa/scope-matching row also fails to match a hypothetical itp slot — i.e. it's a straight-up bad row, not just "for the other slot" (Task 4 gives this a real itp nominal list to check against; until then any non-main match is treated as inconsistent). */
-  private matchesNoSlotAtAll(
-    decorse: VariazioneCattedra[],
-    classe: Classe,
-    materia: MateriaId
-  ): boolean {
-    void classe;
-    void materia;
-    return decorse.length > 0;
   }
 
   // Priority 1: redirect a holder to the chain-resolved active substitute.

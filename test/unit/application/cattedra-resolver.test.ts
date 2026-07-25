@@ -193,3 +193,57 @@ test('a variazione whose VECCHIO_TITOLARE matches nobody in this class+subject t
     VariazioneCattedraInconsistenteError
   );
 });
+
+test('resolveConsiglio includes both main and itp holders, tagged, main-slot variazione does not affect the itp slot', () => {
+  const db = new FakeDatabase({
+    MATERIE: [{ ID: 'MAT' }],
+    DOCENTI: [
+      { EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' },
+      { EMAIL: 'bianchi@s.it', COGNOME: 'BIANCHI', NOME: 'L', GENERE: 'F' },
+      { EMAIL: 'verdi@s.it', COGNOME: 'VERDI', NOME: 'G', GENERE: 'M', ITP: true }
+    ],
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it', 'MAT.itp': 'verdi@s.it' }],
+    VARIAZIONI_CATTEDRA: [
+      {
+        CLASSE_ID: '5A',
+        MATERIA_ID: 'MAT',
+        VECCHIO_TITOLARE: 'rossi@s.it',
+        NUOVO_TITOLARE: 'bianchi@s.it',
+        DATA_DECORRENZA: '2025-10-01'
+      }
+    ]
+  });
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+
+  const result = resolver.resolveConsiglio(classe, new Date('2025-11-01'));
+  expect(result).toHaveLength(2);
+  const main = result.find((a) => !a.isItp)!;
+  const itp = result.find((a) => a.isItp)!;
+  expect(main.titolare.id).toBe('bianchi@s.it'); // main-slot variazione applied
+  expect(itp.titolare.id).toBe('verdi@s.it'); // itp slot untouched, variazione was for the main slot
+});
+
+test('resolvePermanenti ignores an active supplenza (SOLO_TITOLARI semantics)', () => {
+  const db = new FakeDatabase(seed());
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+  // 2025-11-15: bianchi (variazione) has an active supplente verdi.
+  expect(
+    resolver.resolvePermanenti(classe, MAT, new Date('2025-11-15')).map((d) => d.id)
+  ).toEqual(['bianchi@s.it']);
+});
+
+test('resolveCattedra pairs the permanent holder with the active supplente, or null', () => {
+  const db = new FakeDatabase(seed());
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+  const withSupplente = resolver.resolveCattedra(classe, MAT, new Date('2025-11-15'));
+  expect(withSupplente).toHaveLength(1);
+  expect(withSupplente[0]!.titolare.id).toBe('bianchi@s.it');
+  expect(withSupplente[0]!.supplente!.id).toBe('verdi@s.it');
+
+  const withoutSupplente = resolver.resolveCattedra(classe, MAT, new Date('2025-10-15'));
+  expect(withoutSupplente[0]!.titolare.id).toBe('bianchi@s.it');
+  expect(withoutSupplente[0]!.supplente).toBeNull();
+});

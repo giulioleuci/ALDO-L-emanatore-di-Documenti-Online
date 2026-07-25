@@ -38,22 +38,59 @@ export class CdcAssembler {
   }
 
   /**
-   * Council filtered for a specific student (14 §1.3): the subject teachers, plus
-   * the IRC teacher when the student chose religion (SI) or the ALT teacher when
-   * ALT (neither for NO). Specificity filtering by `focus.alunno.curriculum`
-   * applies only where specificity columns exist in the cattedra matrix — that
-   * matrix has none yet, so specificity filtering is deferred (14 §1.3).
+   * Council filtered for a specific student (14 §1.3): the effective subject
+   * teachers (same resolution as `assembleForClasse`), plus the IRC teacher
+   * when the student chose religion (SI) or the ALT teacher when ALT (neither
+   * for NO). Specificity filtering by `focus.alunno.curriculum` applies only
+   * where specificity columns exist in the cattedra matrix — that matrix has
+   * none yet, so specificity filtering is deferred (14 §1.3).
    */
-  assembleFiltrato(classe: Classe, religione: ReligioneScelta): DocenteCdcVM[] {
-    const byEmail = new Map<string, Docente>();
-    const add = (docenti: Docente[]): void => {
-      for (const d of docenti) if (d.id !== null) byEmail.set(d.id, d);
-    };
-    add(this.classi.getAllDocentiCDC(classe));
-    if (religione === ReligioneScelta.SI) add(this.classi.getDocentiIRC(classe));
-    else if (religione === ReligioneScelta.ALT) add(this.classi.getDocentiALT(classe));
-    const docenti = [...byEmail.values()].sort((a, b) => a.cognome.localeCompare(b.cognome));
-    return this.toVMsNominal(docenti, classe, this.classi.isArticolata(classe));
+  assembleFiltrato(
+    classe: Classe,
+    religione: ReligioneScelta,
+    date: Date,
+    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
+  ): DocenteCdcVM[] {
+    const isArticolata = this.classi.isArticolata(classe);
+    const partners = this.classi.orderedPartners(classe);
+    const assignments = isArticolata
+      ? this.assignmentsArticolata(classe, date)
+      : this.cattedraResolver.resolveConsiglio(classe, date);
+    const vms = this.toVMsFromAssignments(assignments, classe, isArticolata, partners, gestioneSupplenti);
+
+    // IRC/ALT stay nominal-only (schema limitation, ref design doc): they are
+    // CLASSI.IRC/CLASSI.ALT columns, not MATERIE rows, so VARIAZIONI_CATTEDRA/
+    // SUPPLENZE (both MATERIA_ID-scoped, FK to MATERIE.ID) cannot apply to them.
+    const extra: Docente[] =
+      religione === ReligioneScelta.SI
+        ? this.classi.getDocentiIRC(classe)
+        : religione === ReligioneScelta.ALT
+          ? this.classi.getDocentiALT(classe)
+          : [];
+    const existingEmails = new Set(vms.map((v) => v.anagrafica.email));
+    const coord = new Set(this.classi.getCoordinatori(classe).map((c) => c.id ?? ''));
+    const tutorAsl = new Set(
+      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((c) => c.id ?? '')
+    );
+    const tutorOrient = new Set(
+      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((c) => c.id ?? '')
+    );
+    const extraVms = extra
+      .filter((d) => !existingEmails.has(d.id ?? ''))
+      .map((d) =>
+        this.buildVMFromGroup(
+          { rowDocente: d, isSupplenteRow: false, sostituisce: null, materieRaw: [] },
+          classe,
+          isArticolata,
+          partners,
+          coord,
+          tutorAsl,
+          tutorOrient,
+          true
+        )
+      );
+    const all = [...vms, ...extraVms].sort((a, b) => a.anagrafica.cognome.localeCompare(b.anagrafica.cognome));
+    return all.map((v, i) => ({ ...v, flags: { isNotLast: i < all.length - 1 } }));
   }
 
   /** Groups CattedraAssignments into VM rows, splitting by (row identity, sostituisce) — confirmed split-row design. */

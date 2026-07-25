@@ -5,7 +5,7 @@ import { MateriaRepository } from '../../../../src/infrastructure/repositories/M
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
-import { GestioneSupplenti } from '../../../../src/domain/value-objects/enums';
+import { GestioneSupplenti, ReligioneScelta } from '../../../../src/domain/value-objects/enums';
 
 function seed() {
   return {
@@ -119,4 +119,14 @@ test('articulated class: shared subject appears once (COMUNE), separate subjects
   expect(bianchiRow.tipoArticolazione).toBe('SEPARATO_PRIMO');
   const verdiRow = vms.find((v) => v.anagrafica.email === 'verdi@school.it')!;
   expect(verdiRow.tipoArticolazione).toBe('SEPARATO_SECONDO');
+});
+
+test('assembleFiltrato adds the IRC teacher for religione SI, on top of effective subject teachers', () => {
+  const tables = seed();
+  tables.CLASSI[0]!.IRC = 'verdi@s.it';
+  const db = new FakeDatabase(tables);
+  const { assembler: a, classi } = assembler(db);
+  const classe = classi.findById(ClasseId.of('5A'))!;
+  const vms = a.assembleFiltrato(classe, ReligioneScelta.SI, new Date('2025-09-15'));
+  expect(vms.map((v) => v.anagrafica.email).sort()).toEqual(['rossi@s.it', 'verdi@s.it']);
 });

@@ -90,7 +90,19 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     if (requests.length > 0) this.sheets.protectRanges(fileId, requests);
   }
 
-  /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */
+  /**
+   * DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given.
+   *
+   * KNOWN LIMITATION (not fixed, out of scope): this resolves against
+   * `cdu.focus.classe` directly, with no partner-routing for articulated
+   * classes (`RisolutoreRuoliService.docenteMateria` -> `CattedraResolver.resolvePermanenti`).
+   * For a split subject on an articulated PARENT class this returns an
+   * empty nominal-holder list (the parent has no value for that column),
+   * silently under-protecting that column's ACL -- only the coordinator
+   * ends up as an editor, not the actual teacher. `CdcAssembler.assignmentsArticolata`
+   * handles this correctly for the CDU path via `orderedPartners`; this
+   * strategy should eventually do the same.
+   */
   private resolveDocentiMateria(cdu: Cdu, sigla: string): string[] {
     const variant: Cdu = {
       ...cdu,

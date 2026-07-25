@@ -10,6 +10,14 @@ import type { CattedraResolver, CattedraAssignment } from '../services/CattedraR
 const RUOLO_TUTOR_ASL = 'TUTOR_ASL';
 const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
 
+/** One grouped VM row before view-model shaping — shared by `toVMsFromAssignments` and `buildVMFromGroup`. */
+interface RowGroup {
+  rowDocente: Docente;
+  isSupplenteRow: boolean;
+  sostituisce: Docente | null;
+  materieRaw: Array<{ sigla: string; isItp: boolean }>;
+}
+
 /**
  * Builds docente-in-CDC view models (02 §4.1/§4.2), shared by
  * ConsiglioClasseProvider (full class council) and AlunnoProvider (the per-alunno
@@ -101,12 +109,6 @@ export class CdcAssembler {
     partners: Classe[],
     gestioneSupplenti: GestioneSupplenti
   ): DocenteCdcVM[] {
-    interface RowGroup {
-      rowDocente: Docente;
-      isSupplenteRow: boolean;
-      sostituisce: Docente | null;
-      materieRaw: Array<{ sigla: string; isItp: boolean }>;
-    }
     const byKey = new Map<string, RowGroup>();
     for (const a of assignments) {
       const hasSupplente = a.supplente !== null;
@@ -148,12 +150,7 @@ export class CdcAssembler {
   }
 
   private buildVMFromGroup(
-    g: {
-      rowDocente: Docente;
-      isSupplenteRow: boolean;
-      sostituisce: Docente | null;
-      materieRaw: Array<{ sigla: string; isItp: boolean }>;
-    },
+    g: RowGroup,
     _classe: Classe,
     isArticolata: boolean,
     partners: Classe[],

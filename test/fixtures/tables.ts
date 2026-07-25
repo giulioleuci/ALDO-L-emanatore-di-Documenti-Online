@@ -331,6 +331,8 @@ export function fixtureTables(): Record<string, Row[]> {
         SUPPLENTE: 'bianchi@school.it',
         DAL: '2025-11-01',
         AL: '2025-11-30',
+        // '4B' is intentionally not in this file's base CLASSI array -- it's added
+        // locally by the specific test files that need it (e.g. swap-supplenti.test.ts).
         CLASSI: '5A,4B',
         MATERIE: '*'
       },

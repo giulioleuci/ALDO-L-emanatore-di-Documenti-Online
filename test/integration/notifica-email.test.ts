@@ -62,7 +62,14 @@ test('PER_CDC end-to-end: one multi-TO email per entry class, articulated parent
   expect(result).toMatchObject({ targets: 2, sent: 2, errors: [] });
 
   const per5A = gmail.sent.find((s) => s.subject.includes('5A'))!;
-  expect(per5A.to.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  // 5A/MATE permanently transferred rossi -> bianchi as of 2025-10-01 (VARIAZIONI_CATTEDRA);
+  // NOW=2025-11-15 is past decorrenza, so the CDC role's titolare is already effective
+  // bianchi (14 §1, cattedra-resolution plan) -- SUPPLENZE's rossi->bianchi row (DAL
+  // 2025-11-01, MATERIE=*) is keyed to the now-superseded nominal rossi and no longer
+  // matches (findSupplenzaSpecifica keys off the current effective titolare, not the
+  // stale nominal one). The bianchi->verdi row is MATERIE=ITA-scoped and doesn't apply
+  // to the materia-less CDC lookup, so no substitute is found and only bianchi remains.
+  expect(per5A.to.sort()).toEqual(['bianchi@school.it']);
   expect(per5A.htmlBody).toContain('Gentili Docenti');
   expect(per5A.htmlBody).toContain('Gentili colleghi'); // TESTO
   const per1F = gmail.sent.find((s) => s.subject.includes('1F'))!;

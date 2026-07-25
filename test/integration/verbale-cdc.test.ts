@@ -128,6 +128,11 @@ test('applies CONF_DOC.PERMESSI ACLs end-to-end via role resolution (10 §10, 14
     .filter((p) => p.fileId === folderId)
     .map((p) => p.email)
     .sort();
-  expect(folderAcls).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  // 5A's CDC roster is effective-holder-based (14 §1, cattedra-resolution plan): MATE
+  // permanently transferred rossi -> bianchi as of 2025-10-01 (VARIAZIONI_CATTEDRA), and
+  // this document is generated at 2026-07-01 (well past decorrenza). FISI's nominal
+  // holder is already bianchi, so the deduped effective council for 5A is bianchi alone
+  // -- rossi is no longer a current teacher of this class for CDC purposes.
+  expect(folderAcls).toEqual(['bianchi@school.it']);
   expect(db.table('LOG_DOCS').findAll()).toHaveLength(1);
 });

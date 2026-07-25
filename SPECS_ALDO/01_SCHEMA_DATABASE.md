@@ -113,7 +113,7 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 | `IRC`                     | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonna speciale: docente di Religione Cattolica                                                                                                                                                                                                  |
 | `ALT`                     | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonna speciale: docente attività alternativa all'IRC                                                                                                                                                                                            |
 
-**Nota IRC/ALT:** Le colonne `IRC` e `ALT` DEVONO essere trattate dal `ClasseRepository` come colonne dinamiche speciali, distinte dalle materie standard. NON corrispondono — e NON DEVONO corrispondere — ad alcun `ID` della tabella `MATERIE`.
+**Nota IRC/ALT:** Le colonne `IRC` e `ALT` in `CLASSI` corrispondono a righe `MATERIE` con `IS_RELIGIONE_ALT = true` (`ID = 'IRC'`, `ID = 'ALT'`) — questo permette a `VARIAZIONI_CATTEDRA`/`SUPPLENZE` di applicarsi anche a IRC/ALT come a qualsiasi altra materia. Il flag `IS_RELIGIONE_ALT` esiste per preservare la distinzione di ruolo esistente (es. `CDC` le include sempre, `DOCENTI_NO_RELIGIONE` le esclude sempre) — senza di esso, ogni consumatore del fan-out generico vedrebbe IRC/ALT mescolate a risultati che prima non le includevano mai.
 
 **Invariante ITP:** Ogni docente presente in una colonna `*[MATERIA.itp]*` DEVE avere `DOCENTI.ITP = true`.
 
@@ -133,6 +133,7 @@ Catalogo delle discipline. I codici univoci (`ID`) sono usati come nomi di colon
 | `SIMBOLO`    | String | —   | —                         | Icona/Emoji rappresentativa                                                                                                                                                                                                                          |
 | `ESAME_CFG`  | JSON   | —   | —                         | Prima/seconda prova per indirizzo: `{"prima_prova":["LC"],"seconda_prova":["LS"]}`                                                                                                                                                                   |
 | `EVOLUZIONE` | JSON   | —   | —                         | Evoluzione delle relazioni tra materie negli anni, ad esempio per accorpamento o sdoppiamenti o cambi di nome negli anni di corso. Es. `GST - Storia e Geografia` (1°-2° anno) diventa `STO - Storia` (3°-4°-5° anno): `{"GST":[1,2],"STO":[3,4,5]}` |
+| `IS_RELIGIONE_ALT` | Boolean | —   | —                         | `true` per le righe IRC/ALT: esclude questa materia dal fan-out generico di `CattedraResolver.resolveConsiglio` salvo richiesta esplicita (evita che appaia in ogni enumerazione di cattedra dove prima non compariva) |
 
 ---
 

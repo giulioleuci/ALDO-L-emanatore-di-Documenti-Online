@@ -12,6 +12,7 @@ export interface MateriaData {
   [COL_MATERIE.SIMBOLO]?: string;
   [COL_MATERIE.ESAME_CFG]?: string | null;
   [COL_MATERIE.EVOLUZIONE]?: string | null;
+  [COL_MATERIE.IS_RELIGIONE_ALT]?: boolean;
   [key: string]: unknown;
 }
 
@@ -25,6 +26,7 @@ export class Materia extends AldoEntity {
   public readonly colore1: string;
   public readonly colore2: string;
   public readonly simbolo: string;
+  public readonly isReligioneAlt: boolean;
   private readonly esameCfgRaw: string | null;
   private readonly evoluzioneRaw: string | null;
 
@@ -39,6 +41,7 @@ export class Materia extends AldoEntity {
     this.colore2 = typeof c2 === 'string' ? c2 : '';
     const sym = data[COL_MATERIE.SIMBOLO];
     this.simbolo = typeof sym === 'string' ? sym : '';
+    this.isReligioneAlt = data[COL_MATERIE.IS_RELIGIONE_ALT] === true;
     const raw = data[COL_MATERIE.ESAME_CFG];
     this.esameCfgRaw = typeof raw === 'string' ? raw : null;
     const evo = data[COL_MATERIE.EVOLUZIONE];
@@ -77,7 +80,8 @@ export class Materia extends AldoEntity {
       [COL_MATERIE.COLORE_2]: this.colore2,
       [COL_MATERIE.SIMBOLO]: this.simbolo,
       [COL_MATERIE.ESAME_CFG]: this.esameCfgRaw,
-      [COL_MATERIE.EVOLUZIONE]: this.evoluzioneRaw
+      [COL_MATERIE.EVOLUZIONE]: this.evoluzioneRaw,
+      [COL_MATERIE.IS_RELIGIONE_ALT]: this.isReligioneAlt
     };
   }
 

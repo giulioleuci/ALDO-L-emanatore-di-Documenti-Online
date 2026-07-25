@@ -24,9 +24,14 @@ test('findById maps CLASSI row to Classe entity', () => {
 });
 
 test('getConsiglioDiClasse derives cattedre from teacher columns (05/06)', () => {
+  // IRC is now a MATERIE row (IS_RELIGIONE_ALT flag, ref 01_SCHEMA_DATABASE.md
+  // Nota IRC/ALT) and 5A.IRC is populated in the fixture, so this raw
+  // per-column enumeration (which doesn't filter on IS_RELIGIONE_ALT -- that
+  // filtering lives one layer up, in CattedraResolver.resolveConsiglio) now
+  // legitimately reports it alongside the ordinary subjects.
   const cdc = repo().getConsiglioDiClasse(ClasseId.of('5A'));
   const pairs = cdc.cattedre.map((k) => `${k.materia.value}:${k.docente.email.value}`).sort();
-  expect(pairs).toEqual(['FISI:bianchi@school.it', 'MATE:rossi@school.it']);
+  expect(pairs).toEqual(['FISI:bianchi@school.it', 'IRC:bianchi@school.it', 'MATE:rossi@school.it']);
 });
 
 test('getAlunniAttivi applies AlunniAttiviSpec', () => {

@@ -48,6 +48,11 @@ test('Materia with null ESAME_CFG has no esameConfig', () => {
   expect(Materia.fromData({ ID: 'FISI', ESAME_CFG: null }).esameConfig).toBeNull();
 });
 
+test('Materia parses IS_RELIGIONE_ALT, defaulting to false when absent', () => {
+  expect(Materia.fromData({ ID: 'MATE' }).isReligioneAlt).toBe(false);
+  expect(Materia.fromData({ ID: 'IRC', IS_RELIGIONE_ALT: true }).isReligioneAlt).toBe(true);
+});
+
 test('findEsamePrima / findEsameSeconda filter via specs', () => {
   expect(
     repo()
@@ -71,7 +76,7 @@ test('findByIdCached + caching (06 §Caching)', () => {
   const db = new FakeDatabase(fixtureTables());
   const r = new MateriaRepository(db);
   expect(r.findByIdCached(MateriaId.of('MATE'))?.sintesi).toBe('Matematica');
-  expect(r.findAllCached()).toHaveLength(2);
+  expect(r.findAllCached()).toHaveLength(4); // MATE, FISI, IRC, ALT
   db.table('MATERIE').insert({ ID: 'STOR', NOME: 'Storia', SINTESI: 'Storia', ESAME_CFG: null });
-  expect(r.findAllCached()).toHaveLength(2); // cache held
+  expect(r.findAllCached()).toHaveLength(4); // cache held
 });

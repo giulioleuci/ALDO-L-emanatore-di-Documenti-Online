@@ -100,6 +100,20 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_2: '#eaf2fd',
         SIMBOLO: '🔭',
         ESAME_CFG: null
+      },
+      {
+        ID: 'IRC',
+        NOME: 'Religione Cattolica',
+        SINTESI: 'Religione',
+        ESAME_CFG: null,
+        IS_RELIGIONE_ALT: true
+      },
+      {
+        ID: 'ALT',
+        NOME: 'Attività alternativa',
+        SINTESI: 'Alternativa',
+        ESAME_CFG: null,
+        IS_RELIGIONE_ALT: true
       }
     ],
     ALUNNI: [

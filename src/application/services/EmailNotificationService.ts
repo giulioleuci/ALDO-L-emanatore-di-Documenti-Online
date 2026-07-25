@@ -45,6 +45,7 @@ import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepo
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
+import { CattedraResolver } from './CattedraResolver';
 
 /** Everything the email subsystem needs from persistence: ALDO port + repository seam. */
 export type EmailDb = IDatabase & PostProcessDb & RepositoryDatabase;
@@ -67,6 +68,8 @@ export interface EmailNotificationDeps {
   master: IMasterSheetRepository;
   supplenze: ISupplenzaRepository;
   materie: IMateriaRepository;
+  /** Effective-teacher resolution (SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI, ref CLAUDE.md). */
+  cattedraResolver: CattedraResolver;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
   now: Date;
   /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
@@ -141,7 +144,8 @@ export class EmailNotificationService {
       logDocs: new LogDocumentoRepository(db),
       master,
       supplenze: new SupplenzaRepository(db),
-      materie: new MateriaRepository(db)
+      materie: new MateriaRepository(db),
+      cattedraResolver: new CattedraResolver(db)
     };
     if (logger !== undefined) base.logger = logger;
     if (monitor !== undefined) base.monitor = monitor;
@@ -318,10 +322,35 @@ export class EmailNotificationService {
   }
 
   private cdcEmails(classe: Classe): string[] {
-    const docenti = this.deps.classi.isArticolata(classe)
-      ? this.deps.classi.getAllDocentiCDCArticolata(classe)
-      : this.deps.classi.getAllDocentiCDC(classe);
-    return docenti.map((d) => d.id ?? '').filter((e) => e !== '');
+    const classi = this.gruppoResolutivo(classe);
+    const byEmail = new Map<string, true>();
+    const emails: string[] = [];
+    for (const c of classi) {
+      for (const a of this.deps.cattedraResolver.resolveConsiglio(c, this.deps.now)) {
+        const email = a.titolare.id ?? '';
+        if (email !== '' && !byEmail.has(email)) {
+          byEmail.set(email, true);
+          emails.push(email);
+        }
+      }
+    }
+    return emails;
+  }
+
+  /**
+   * Classes to fan `resolveConsiglio` out over for an entry-point classe
+   * (11 §12, 05 §5). A non-articulated classe resolves on itself. An
+   * articulated parent has no per-subject cattedra columns of its own (only
+   * its partners do — 06 §3), so resolving directly on it can hit a
+   * VARIAZIONI_CATTEDRA row scoped to the parent's CLASSE_ID with no nominal
+   * holder to match; `orderedPartners` (the two partner classes) is the
+   * correct fan-out, matching CdcAssembler.assignmentsArticolata's same-scope
+   * merge over primo/secondo instead of the parent + partners.
+   */
+  private gruppoResolutivo(classe: Classe): Classe[] {
+    if (!this.deps.classi.isArticolata(classe)) return [classe];
+    const partners = this.deps.classi.orderedPartners(classe);
+    return partners.length >= 2 ? partners : [classe];
   }
 
   private targetsPerCoordinatore(): EmailTarget[] {

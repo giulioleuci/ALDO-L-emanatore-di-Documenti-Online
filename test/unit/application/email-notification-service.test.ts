@@ -28,6 +28,8 @@ import { MasterSheetRepository } from '../../../src/infrastructure/repositories/
 import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
+import { CattedraResolver } from '../../../src/application/services/CattedraResolver';
+import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -86,6 +88,7 @@ function fullDeps(
     master: new MasterSheetRepository(db),
     supplenze: new SupplenzaRepository(db),
     materie: new MateriaRepository(db),
+    cattedraResolver: new CattedraResolver(db),
     ...overrides
   };
 }
@@ -114,7 +117,9 @@ test('PER_CDC: one multi-TO target per entry class (parent aggregates the articu
   expect(targets.map((t) => t.target).sort()).toEqual(['1F', '5A']);
   const t5a = targets.find((t) => t.target === '5A')!;
   expect(t5a.tipo).toBe('cdc');
-  expect(t5a.emails.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  // 5A: MATE effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since 2025-10-01);
+  // FISI nominal holder is also bianchi -> one distinct effective teacher.
+  expect(t5a.emails.sort()).toEqual(['bianchi@school.it']);
   const t1f = targets.find((t) => t.target === '1F')!;
   expect(t1f.emails.sort()).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
 });
@@ -489,17 +494,31 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const classiStub = {
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
-      isArticolata: () => false,
-      getAllDocentiCDC: () => [
-        Docente.fromData({}),
-        Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })
-      ]
+      isArticolata: () => false
     } as unknown as ClasseRepository;
     const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
-    const targets = service.enumerateTargets(conf('PER_DOCENTE'));
-    expect(targets).toHaveLength(1);
-    expect(targets[0]!.docenteEmail).toBe('rossi@school.it');
-    expect(targets[0]!.classiCompetenza).toEqual(['']);
+    const spy = jest.spyOn(CattedraResolver.prototype, 'resolveConsiglio').mockReturnValue([
+      {
+        materia: MateriaId.of('MATE'),
+        isItp: false,
+        titolare: Docente.fromData({}),
+        supplente: null
+      },
+      {
+        materia: MateriaId.of('MATE'),
+        isItp: false,
+        titolare: Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }),
+        supplente: null
+      }
+    ]);
+    try {
+      const targets = service.enumerateTargets(conf('PER_DOCENTE'));
+      expect(targets).toHaveLength(1);
+      expect(targets[0]!.docenteEmail).toBe('rossi@school.it');
+      expect(targets[0]!.classiCompetenza).toEqual(['']);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   test('targetsPerCdc falls back to "" for target and classiCompetenza when the classe has no id', () => {
@@ -508,20 +527,31 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const classiStub = {
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
-      isArticolata: () => false,
-      getAllDocentiCDC: () => [Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })]
+      isArticolata: () => false
     } as unknown as ClasseRepository;
     const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
-    const targets = service.enumerateTargets(conf('PER_CDC'));
-    expect(targets).toEqual([
+    const spy = jest.spyOn(CattedraResolver.prototype, 'resolveConsiglio').mockReturnValue([
       {
-        tipo: 'cdc',
-        tipoTarget: 'classe',
-        target: '',
-        emails: ['rossi@school.it'],
-        classiCompetenza: ['']
+        materia: MateriaId.of('MATE'),
+        isItp: false,
+        titolare: Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }),
+        supplente: null
       }
     ]);
+    try {
+      const targets = service.enumerateTargets(conf('PER_CDC'));
+      expect(targets).toEqual([
+        {
+          tipo: 'cdc',
+          tipoTarget: 'classe',
+          target: '',
+          emails: ['rossi@school.it'],
+          classiCompetenza: ['']
+        }
+      ]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   test('targetsPerGenitori skips alunni without tutors, dedups repeated tutor sets, and falls back to "" when the alunno has no id', () => {

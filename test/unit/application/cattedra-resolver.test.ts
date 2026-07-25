@@ -247,3 +247,27 @@ test('resolveCattedra pairs the permanent holder with the active supplente, or n
   expect(withoutSupplente[0]!.titolare.id).toBe('bianchi@s.it');
   expect(withoutSupplente[0]!.supplente).toBeNull();
 });
+
+test('resolveConsiglio excludes IS_RELIGIONE_ALT materie by default, includes them when asked', () => {
+  const db = new FakeDatabase({
+    MATERIE: [
+      { ID: 'MAT' },
+      { ID: 'IRC', IS_RELIGIONE_ALT: true }
+    ],
+    DOCENTI: [
+      { EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' },
+      { EMAIL: 'bianchi@s.it', COGNOME: 'BIANCHI', NOME: 'L', GENERE: 'F' }
+    ],
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI', MAT: 'rossi@s.it', IRC: 'bianchi@s.it' }]
+  });
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+
+  const defaultResult = resolver.resolveConsiglio(classe, new Date('2025-09-15'));
+  expect(defaultResult.map((a) => a.materia.value)).toEqual(['MAT']);
+
+  const withReligione = resolver.resolveConsiglio(classe, new Date('2025-09-15'), {
+    includeReligioneAlt: true
+  });
+  expect(withReligione.map((a) => a.materia.value).sort()).toEqual(['IRC', 'MAT']);
+});

@@ -110,10 +110,22 @@ export class CattedraResolver {
     return out;
   }
 
-  /** Class-wide fan-out over every MATERIE column (used by CDU/email enumeration). */
-  resolveConsiglio(classe: Classe, data: Date): CattedraAssignment[] {
+  /**
+   * Class-wide fan-out over every MATERIE column (used by CDU/email enumeration).
+   * `IS_RELIGIONE_ALT` materie (IRC/ALT) are excluded unless `includeReligioneAlt`
+   * is set — preserves the existing distinction between roles that enumerate the
+   * whole council including IRC/ALT (e.g. CDC) and roles that don't (e.g.
+   * DOCENTI_NO_RELIGIONE), now that IRC/ALT are ordinary (flagged) MATERIE rows.
+   */
+  resolveConsiglio(
+    classe: Classe,
+    data: Date,
+    options: { includeReligioneAlt?: boolean } = {}
+  ): CattedraAssignment[] {
+    const includeReligioneAlt = options.includeReligioneAlt ?? false;
     const out: CattedraAssignment[] = [];
     for (const materia of this.materie.findAllCached()) {
+      if (materia.isReligioneAlt && !includeReligioneAlt) continue;
       out.push(...this.resolveCattedra(classe, materia.materiaId, data));
     }
     return out;

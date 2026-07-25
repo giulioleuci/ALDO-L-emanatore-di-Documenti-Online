@@ -19,10 +19,8 @@ import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
 import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
-import { createSupplentiSubstitutionLookup } from './interceptors/SupplentiSubstitutionLookup';
 import { CdcAssembler } from './CdcAssembler';
-import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
-import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
+import { CattedraResolver } from '../services/CattedraResolver';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
@@ -67,38 +65,20 @@ export class ContextEngineFactory {
     const materie: IMateriaRepository = new MateriaRepository(database);
     const oreAsl: IOreASLRepository = new OreASLRepository(database);
     const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(database);
-    const supplenze: ISupplenzaRepository = new SupplenzaRepository(database);
-    const cdc = new CdcAssembler(classi, materie);
+    const cattedraResolver = new CattedraResolver(database);
+    const cdc = new CdcAssembler(classi, materie, cattedraResolver);
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
     return new ContextBuilder()
-      .registerInterceptor(
-        new SwapAndEnrichInterceptor(
-          new LoggerService(),
-          createSupplentiSubstitutionLookup(docenti, supplenze),
-          {
-            // 09 §5: SwapAndEnrichInterceptor runs after `consiglio`/`student` (the two
-            // providers that (re)write cdu.focus.classe.consiglioDiClasse /
-            // cdu.focus.alunno.consiglioDiClasseFiltrato). `targetPaths` puts the
-            // library's generalized per-item `_forEachAt` walk to use instead of its
-            // single-atomic-payload swap; the 3-way GestioneSupplenti decision lives
-            // entirely in the substitutionLookup callback (see
-            // SupplentiSubstitutionLookup.ts), so the library's own boolean
-            // optionFlag gate is intentionally not relied on here.
-            targetProviders: ['consiglio', 'student'],
-            targetPaths: [
-              'focus.classe.consiglioDiClasse',
-              'focus.alunno.consiglioDiClasseFiltrato'
-            ]
-          }
-        )
-      )
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
       .registerProvider('class', new ClasseProvider(classi, alunni))
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))
       .registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, cdc))
       .registerProvider('tutor', new TutorProvider(classi))
-      .registerProvider('consiglio', new ConsiglioClasseProvider(classi, materie))
+      .registerProvider(
+        'consiglio',
+        new ConsiglioClasseProvider(classi, materie, cattedraResolver)
+      )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))
       .registerProvider('documenti', new DocumentiProvider(logDocs))

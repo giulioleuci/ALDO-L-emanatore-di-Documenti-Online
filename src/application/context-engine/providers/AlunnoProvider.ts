@@ -1,6 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, CduAlunno } from '../Cdu';
-import type { BuildParams } from '../Recipe';
+import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IOreASLRepository } from '../../../domain/repositories/IOreASLRepository';
@@ -26,7 +26,7 @@ export class AlunnoProvider implements ContextProvider {
     private readonly cdc?: CdcAssembler
   ) {}
 
-  provide(cdu: Cdu, params: BuildParams): void {
+  provide(cdu: Cdu, params: BuildParams, options: RecipeOptions): void {
     const alunno = this.alunni.findById(params.target);
     if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
     setAlunnoEntity(cdu, alunno);
@@ -64,7 +64,12 @@ export class AlunnoProvider implements ContextProvider {
     // Per-alunno filtered council (14 §1.3): built here because alunno recipes
     // don't run the consiglio provider. Only when a CdcAssembler is wired in.
     if (this.cdc !== undefined) {
-      focusAlunno.consiglioDiClasseFiltrato = this.cdc.assembleFiltrato(classe, alunno.religione);
+      focusAlunno.consiglioDiClasseFiltrato = this.cdc.assembleFiltrato(
+        classe,
+        alunno.religione,
+        params.now,
+        options.gestioneSupplenti
+      );
     }
 
     cdu.focus.alunno = focusAlunno;

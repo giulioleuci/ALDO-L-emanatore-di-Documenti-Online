@@ -6,6 +6,7 @@ import type { BuildParams, Recipe } from '../../../../src/application/context-en
 import type { DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
+import { CattedraResolver } from '../../../../src/application/services/CattedraResolver';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
@@ -14,7 +15,10 @@ function cdc(target: string): DocenteCdcVM[] {
   const classi = new ClasseRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi));
-  b.registerProvider('consiglio', new ConsiglioClasseProvider(classi, new MateriaRepository(db)));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), new CattedraResolver(db))
+  );
   const params: BuildParams = {
     target,
     tipoTarget: 'classe',

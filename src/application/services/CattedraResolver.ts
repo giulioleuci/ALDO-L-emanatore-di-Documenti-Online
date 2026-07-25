@@ -86,8 +86,26 @@ export class CattedraResolver {
     return out;
   }
 
-  /** One assignment per populated slot (main + itp) for (classe, materia, date). */
+  /**
+   * One assignment per populated slot (main + itp) for (classe, materia, date).
+   * For an articulated class, partner-routes internally (never resolves
+   * against the parent — the parent legitimately has no nominal value for a
+   * subject split per-partner) and merges the two partners' assignments,
+   * deduping an identically-held subject (COMUNE) into one entry. This is the
+   * single source of truth for articulated-class resolution — CdcAssembler
+   * and RisolutoreRuoliService both consume it without reimplementing routing.
+   */
   resolveCattedra(classe: Classe, materia: MateriaId, data: Date): CattedraAssignment[] {
+    if (this.classi.isArticolata(classe)) {
+      const partners = this.classi.orderedPartners(classe);
+      if (partners.length >= 2) {
+        return this.resolveCattedraArticolata(partners[0]!, partners[1]!, materia, data);
+      }
+    }
+    return this.resolveCattedraDiretta(classe, materia, data);
+  }
+
+  private resolveCattedraDiretta(classe: Classe, materia: MateriaId, data: Date): CattedraAssignment[] {
     const out: CattedraAssignment[] = [];
     const mainNominali = this.classi.getDocentiPerMateria(classe, materia);
     const itpNominali = this.classi.getITPPerMateria(classe, materia);
@@ -108,6 +126,25 @@ export class CattedraResolver {
       });
     }
     return out;
+  }
+
+  private resolveCattedraArticolata(
+    primo: Classe,
+    secondo: Classe,
+    materia: MateriaId,
+    data: Date
+  ): CattedraAssignment[] {
+    const inPrimo = this.resolveCattedraDiretta(primo, materia, data);
+    const inSecondo = primo.id === secondo.id ? [] : this.resolveCattedraDiretta(secondo, materia, data);
+    const byKey = new Map<string, CattedraAssignment>();
+    const keyOf = (a: CattedraAssignment): string =>
+      `${a.titolare.id ?? ''}::${a.supplente?.id ?? ''}::${a.isItp}`;
+    for (const a of inPrimo) byKey.set(keyOf(a), a);
+    for (const a of inSecondo) {
+      const k = keyOf(a);
+      if (!byKey.has(k)) byKey.set(k, a);
+    }
+    return [...byKey.values()];
   }
 
   /**

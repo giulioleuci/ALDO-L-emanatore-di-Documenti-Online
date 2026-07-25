@@ -8,6 +8,7 @@ import {
   AmbiguousVariazioneCattedraError,
   VariazioneCattedraInconsistenteError
 } from '../../../src/domain/errors/DomainError';
+import { fixtureTables } from '../../fixtures/tables';
 
 function seed() {
   return {
@@ -270,4 +271,30 @@ test('resolveConsiglio excludes IS_RELIGIONE_ALT materie by default, includes th
     includeReligioneAlt: true
   });
   expect(withReligione.map((a) => a.materia.value).sort()).toEqual(['IRC', 'MAT']);
+});
+
+test('resolveCattedra partner-routes an articulated PARENT class for a split subject, never resolving against the parent itself', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classe = new ClasseRepository(db).findById(ClasseId.of('1F'))!; // the articulated parent
+  const resolver = new CattedraResolver(db);
+
+  // FISI is split: 1F-LSO=bianchi, 1F-LSS=verdi. The parent '1F' itself has no
+  // FISI column at all. Before this fix, resolving directly against the parent
+  // returned []; now it merges both partners' holders.
+  const fisi = resolver.resolveCattedra(classe, MateriaId.of('FISI'), new Date('2026-01-15'));
+  expect(fisi.map((a) => a.titolare.id).sort()).toEqual(['bianchi@school.it', 'verdi@school.it']);
+
+  // MATE is shared (COMUNE): both partners nominally hold rossi -> one merged entry, not two.
+  const mate = resolver.resolveCattedra(classe, MateriaId.of('MATE'), new Date('2026-01-15'));
+  expect(mate.map((a) => a.titolare.id)).toEqual(['rossi@school.it']);
+});
+
+test('resolveCattedra falls back to direct resolution for a non-articulated class', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classe = new ClasseRepository(db).findById(ClasseId.of('5A'))!;
+  const resolver = new CattedraResolver(db);
+  // 5A is not articulated -- unchanged behavior, same as before this task.
+  expect(
+    resolver.resolveCattedra(classe, MateriaId.of('MATE'), new Date('2026-01-15')).map((a) => a.titolare.id)
+  ).toEqual(['bianchi@school.it']);
 });

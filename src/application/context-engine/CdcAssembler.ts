@@ -4,7 +4,8 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
-import { ReligioneScelta } from '../../domain/value-objects/enums';
+import { GestioneSupplenti, ReligioneScelta } from '../../domain/value-objects/enums';
+import type { CattedraResolver, CattedraAssignment } from '../services/CattedraResolver';
 
 const RUOLO_TUTOR_ASL = 'TUTOR_ASL';
 const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
@@ -18,16 +19,24 @@ const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
 export class CdcAssembler {
   constructor(
     private readonly classi: IClasseRepository,
-    private readonly materie: IMateriaRepository
+    private readonly materie: IMateriaRepository,
+    private readonly cattedraResolver: CattedraResolver
   ) {}
 
-  /** Full council of the class (09 §4): articulated councils span the whole group. */
-  assembleForClasse(classe: Classe): DocenteCdcVM[] {
+  /** Full council of the class (09 §4) at `date`, per the confirmed split-row design. */
+  assembleForClasse(
+    classe: Classe,
+    date: Date,
+    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
+  ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
-    const docenti = isArticolata
-      ? this.classi.getAllDocentiCDCArticolata(classe)
-      : this.classi.getAllDocentiCDC(classe);
-    return this.toVMs(docenti, classe, isArticolata);
+    if (isArticolata) {
+      // Task 7 replaces this branch with an articulated-aware assignment merge.
+      const docenti = this.classi.getAllDocentiCDCArticolata(classe);
+      return this.toVMsNominal(docenti, classe, isArticolata);
+    }
+    const assignments = this.cattedraResolver.resolveConsiglio(classe, date);
+    return this.toVMsFromAssignments(assignments, classe, isArticolata, gestioneSupplenti);
   }
 
   /**
@@ -46,10 +55,106 @@ export class CdcAssembler {
     if (religione === ReligioneScelta.SI) add(this.classi.getDocentiIRC(classe));
     else if (religione === ReligioneScelta.ALT) add(this.classi.getDocentiALT(classe));
     const docenti = [...byEmail.values()].sort((a, b) => a.cognome.localeCompare(b.cognome));
-    return this.toVMs(docenti, classe, this.classi.isArticolata(classe));
+    return this.toVMsNominal(docenti, classe, this.classi.isArticolata(classe));
   }
 
-  private toVMs(docenti: Docente[], classe: Classe, isArticolata: boolean): DocenteCdcVM[] {
+  /** Groups CattedraAssignments into VM rows, splitting by (row identity, sostituisce) — confirmed split-row design. */
+  private toVMsFromAssignments(
+    assignments: CattedraAssignment[],
+    classe: Classe,
+    isArticolata: boolean,
+    gestioneSupplenti: GestioneSupplenti
+  ): DocenteCdcVM[] {
+    interface RowGroup {
+      rowDocente: Docente;
+      isSupplenteRow: boolean;
+      sostituisce: Docente | null;
+      materieRaw: Array<{ sigla: string; isItp: boolean }>;
+    }
+    const byKey = new Map<string, RowGroup>();
+    for (const a of assignments) {
+      const hasSupplente = a.supplente !== null;
+      const applySupplente = gestioneSupplenti !== GestioneSupplenti.SOLO_TITOLARI && hasSupplente;
+      const isSupplenteRow = applySupplente && gestioneSupplenti === GestioneSupplenti.SOLO_SUPPLENTI;
+      const rowDocente = isSupplenteRow ? a.supplente! : a.titolare;
+      const sostituisce = applySupplente ? (isSupplenteRow ? a.titolare : a.supplente) : null;
+      const key = `${rowDocente.id ?? ''}::${sostituisce?.id ?? ''}`;
+      let group = byKey.get(key);
+      if (group === undefined) {
+        group = { rowDocente, isSupplenteRow, sostituisce, materieRaw: [] };
+        byKey.set(key, group);
+      }
+      group.materieRaw.push({ sigla: a.materia.value, isItp: a.isItp });
+    }
+
+    const coord = new Set(this.classi.getCoordinatori(classe).map((d) => d.id ?? ''));
+    const tutorAsl = new Set(
+      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((d) => d.id ?? '')
+    );
+    const tutorOrient = new Set(
+      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((d) => d.id ?? '')
+    );
+    const groups = [...byKey.values()].sort((a, b) =>
+      a.rowDocente.cognome.localeCompare(b.rowDocente.cognome)
+    );
+    return groups.map((g, i) =>
+      this.buildVMFromGroup(g, classe, isArticolata, coord, tutorAsl, tutorOrient, i < groups.length - 1)
+    );
+  }
+
+  private buildVMFromGroup(
+    g: {
+      rowDocente: Docente;
+      isSupplenteRow: boolean;
+      sostituisce: Docente | null;
+      materieRaw: Array<{ sigla: string; isItp: boolean }>;
+    },
+    _classe: Classe,
+    _isArticolata: boolean,
+    coord: Set<string>,
+    tutorAsl: Set<string>,
+    tutorOrient: Set<string>,
+    isNotLast: boolean
+  ): DocenteCdcVM {
+    const email = g.rowDocente.id ?? '';
+    const isCoordinatore = coord.has(email);
+    const isTutorAsl = tutorAsl.has(email);
+    const isTutorOrientamento = tutorOrient.has(email);
+    return {
+      anagrafica: {
+        nome: g.rowDocente.nome,
+        cognome: g.rowDocente.cognome,
+        email,
+        genere: g.rowDocente.genere,
+        appellativo: g.rowDocente.getAppellativo()
+      },
+      materie: g.materieRaw.map((m) => ({
+        sigla: m.sigla,
+        nome: this.materie.findByIdCached(MateriaId.of(m.sigla))?.nome ?? m.sigla,
+        colore: '',
+        specificita: null
+      })),
+      ruoli: {
+        isCoordinatore,
+        isTutorAsl,
+        isTutorOrientamento,
+        descrizione: this.descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
+      },
+      stato: {
+        isSupplente: g.isSupplenteRow,
+        sostituisce:
+          g.sostituisce !== null
+            ? { nome: g.sostituisce.getNomeCompleto(), email: g.sostituisce.id ?? '' }
+            : null
+      },
+      tipoArticolazione: null, // Task 7 fills this in for articulated classes
+      isITP: g.materieRaw.some((m) => m.isItp),
+      flags: { isNotLast }
+    };
+  }
+
+  /** Nominal-only fallback used temporarily for articulated classes until Task 7. */
+  private toVMsNominal(docenti: Docente[], classe: Classe, isArticolata: boolean): DocenteCdcVM[] {
     const coord = new Set(this.classi.getCoordinatori(classe).map((d) => d.id ?? ''));
     const tutorAsl = new Set(
       this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((d) => d.id ?? '')
@@ -59,7 +164,7 @@ export class CdcAssembler {
     );
     const partners = this.classi.orderedPartners(classe);
     return docenti.map((d, i) =>
-      this.buildVM(
+      this.buildVMNominal(
         d,
         classe,
         isArticolata,
@@ -72,7 +177,7 @@ export class CdcAssembler {
     );
   }
 
-  private buildVM(
+  private buildVMNominal(
     d: Docente,
     classe: Classe,
     isArticolata: boolean,

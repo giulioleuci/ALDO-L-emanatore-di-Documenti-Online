@@ -9,7 +9,12 @@ import { GestioneSupplenti, ReligioneScelta } from '../../../../src/domain/value
 
 function seed() {
   return {
-    MATERIE: [{ ID: 'MAT', NOME: 'Matematica' }, { ID: 'FIS', NOME: 'Fisica' }],
+    MATERIE: [
+      { ID: 'MAT', NOME: 'Matematica' },
+      { ID: 'FIS', NOME: 'Fisica' },
+      { ID: 'IRC', NOME: 'Religione', IS_RELIGIONE_ALT: true },
+      { ID: 'ALT', NOME: 'Alternativa', IS_RELIGIONE_ALT: true }
+    ],
     DOCENTI: [
       { EMAIL: 'rossi@s.it', COGNOME: 'ROSSI', NOME: 'M', GENERE: 'M' },
       { EMAIL: 'bianchi@s.it', COGNOME: 'BIANCHI', NOME: 'L', GENERE: 'F' },
@@ -129,4 +134,6 @@ test('assembleFiltrato adds the IRC teacher for religione SI, on top of effectiv
   const classe = classi.findById(ClasseId.of('5A'))!;
   const vms = a.assembleFiltrato(classe, ReligioneScelta.SI, new Date('2025-09-15'));
   expect(vms.map((v) => v.anagrafica.email).sort()).toEqual(['rossi@s.it', 'verdi@s.it']);
+  const verdiRow = vms.find((v) => v.anagrafica.email === 'verdi@s.it')!;
+  expect(verdiRow.materie.map((m) => m.sigla)).toEqual(['IRC']);
 });

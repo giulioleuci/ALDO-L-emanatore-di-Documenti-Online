@@ -49,9 +49,12 @@ export class CdcAssembler {
    * Council filtered for a specific student (14 §1.3): the effective subject
    * teachers (same resolution as `assembleForClasse`), plus the IRC teacher
    * when the student chose religion (SI) or the ALT teacher when ALT (neither
-   * for NO). Specificity filtering by `focus.alunno.curriculum` applies only
-   * where specificity columns exist in the cattedra matrix — that matrix has
-   * none yet, so specificity filtering is deferred (14 §1.3).
+   * for NO) — now resolved through CattedraResolver like any other materia
+   * (IRC/ALT are flagged MATERIE rows, ref design doc Phase A), so they honor
+   * VARIAZIONI_CATTEDRA/SUPPLENZE too, and split-row group the same way
+   * ordinary subjects do. Specificity filtering by `focus.alunno.curriculum`
+   * applies only where specificity columns exist in the cattedra matrix — that
+   * matrix has none yet, so specificity filtering is deferred (14 §1.3).
    */
   assembleFiltrato(
     classe: Classe,
@@ -61,44 +64,15 @@ export class CdcAssembler {
   ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
     const partners = this.classi.orderedPartners(classe);
-    const assignments = isArticolata
-      ? this.assignmentsArticolata(classe, date)
-      : this.cattedraResolver.resolveConsiglio(classe, date);
-    const vms = this.toVMsFromAssignments(assignments, classe, isArticolata, partners, gestioneSupplenti);
-
-    // IRC/ALT stay nominal-only (schema limitation, ref design doc): they are
-    // CLASSI.IRC/CLASSI.ALT columns, not MATERIE rows, so VARIAZIONI_CATTEDRA/
-    // SUPPLENZE (both MATERIA_ID-scoped, FK to MATERIE.ID) cannot apply to them.
-    const extra: Docente[] =
-      religione === ReligioneScelta.SI
-        ? this.classi.getDocentiIRC(classe)
-        : religione === ReligioneScelta.ALT
-          ? this.classi.getDocentiALT(classe)
-          : [];
-    const existingEmails = new Set(vms.map((v) => v.anagrafica.email));
-    const coord = new Set(this.classi.getCoordinatori(classe).map((c) => c.id ?? ''));
-    const tutorAsl = new Set(
-      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL).map((c) => c.id ?? '')
-    );
-    const tutorOrient = new Set(
-      this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT).map((c) => c.id ?? '')
-    );
-    const extraVms = extra
-      .filter((d) => !existingEmails.has(d.id ?? ''))
-      .map((d) =>
-        this.buildVMFromGroup(
-          { rowDocente: d, isSupplenteRow: false, sostituisce: null, materieRaw: [] },
-          classe,
-          isArticolata,
-          partners,
-          coord,
-          tutorAsl,
-          tutorOrient,
-          true
-        )
-      );
-    const all = [...vms, ...extraVms].sort((a, b) => a.anagrafica.cognome.localeCompare(b.anagrafica.cognome));
-    return all.map((v, i) => ({ ...v, flags: { isNotLast: i < all.length - 1 } }));
+    const full = isArticolata
+      ? this.assignmentsArticolata(classe, date, true)
+      : this.cattedraResolver.resolveConsiglio(classe, date, { includeReligioneAlt: true });
+    const filtered = full.filter((a) => {
+      if (a.materia.value === 'IRC') return religione === ReligioneScelta.SI;
+      if (a.materia.value === 'ALT') return religione === ReligioneScelta.ALT;
+      return true;
+    });
+    return this.toVMsFromAssignments(filtered, classe, isArticolata, partners, gestioneSupplenti);
   }
 
   /** Groups CattedraAssignments into VM rows, splitting by (row identity, sostituisce) — confirmed split-row design. */
@@ -203,14 +177,21 @@ export class CdcAssembler {
    * assignment (tipoArticolazione COMUNE) and keeping it separate otherwise
    * (SEPARATO_PRIMO/SEPARATO_SECONDO by canonical partner order).
    */
-  private assignmentsArticolata(classe: Classe, date: Date): CattedraAssignment[] {
+  private assignmentsArticolata(
+    classe: Classe,
+    date: Date,
+    includeReligioneAlt = false
+  ): CattedraAssignment[] {
     const partners = this.classi.orderedPartners(classe);
     if (partners.length < 2) {
-      return this.cattedraResolver.resolveConsiglio(classe, date);
+      return this.cattedraResolver.resolveConsiglio(classe, date, { includeReligioneAlt });
     }
     const [primo, secondo] = partners as [Classe, Classe];
-    const inPrimo = this.cattedraResolver.resolveConsiglio(primo, date);
-    const inSecondo = primo.id === secondo.id ? [] : this.cattedraResolver.resolveConsiglio(secondo, date);
+    const inPrimo = this.cattedraResolver.resolveConsiglio(primo, date, { includeReligioneAlt });
+    const inSecondo =
+      primo.id === secondo.id
+        ? []
+        : this.cattedraResolver.resolveConsiglio(secondo, date, { includeReligioneAlt });
 
     const byKey = new Map<string, { assignment: CattedraAssignment; inPrimo: boolean; inSecondo: boolean }>();
     const keyOf = (a: CattedraAssignment): string =>

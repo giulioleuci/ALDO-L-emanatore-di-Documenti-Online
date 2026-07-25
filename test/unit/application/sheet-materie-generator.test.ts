@@ -4,6 +4,7 @@ import { RisolutoreRuoliService } from '../../../src/application/services/Risolu
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { CdcAssembler } from '../../../src/application/context-engine/CdcAssembler';
+import { CattedraResolver } from '../../../src/application/services/CattedraResolver';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
@@ -79,7 +80,11 @@ function buildCdu(db: FakeDatabase, classeId: string): Cdu {
   const materie = new MateriaRepository(db);
   const classe = classi.findById(classeId);
   if (classe === null) throw new Error(`fixture classe ${classeId} not found`);
-  const consiglioDiClasse = new CdcAssembler(classi, materie).assembleForClasse(classe);
+  const date = new Date('2026-07-09'); // matches the hardcoded meta.date.oggi.iso below
+  const consiglioDiClasse = new CdcAssembler(classi, materie, new CattedraResolver(db)).assembleForClasse(
+    classe,
+    date
+  );
   const isArticolata = classi.isArticolata(classe);
   return {
     meta: {
@@ -273,11 +278,11 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
-    // Columns are alphabetical: A=Fisica (bianchi), B=Matematica (rossi); COORD=rossi on both.
+    // Columns are alphabetical: A=Fisica (bianchi), B=Matematica (bianchi, post-variazione); COORD=rossi on both.
     const colA = sheets.protectCalls.find((r) => r.range === 'Sheet1!A:A');
     const colB = sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B');
     expect(colA?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
-    expect(colB?.editors?.users?.sort()).toEqual(['rossi@school.it']);
+    expect(colB?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
   });
 
   test('a class with no CDC subjects protects nothing (no protectRanges call)', () => {

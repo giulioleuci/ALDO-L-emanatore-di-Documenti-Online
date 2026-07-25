@@ -98,6 +98,7 @@ export interface RecipeOptionsView {
   includiSupplenti: boolean;
   includiSpecificita: boolean;
   notificaSoloCoordinatori: boolean;
+  gestioneSupplenti: string;
   [key: string]: unknown;
 }
 

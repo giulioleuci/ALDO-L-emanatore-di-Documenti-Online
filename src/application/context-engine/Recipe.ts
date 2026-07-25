@@ -1,11 +1,12 @@
 import type { RecipeOptionsView } from './Cdu';
 import { ValidationError } from '../../domain/errors/DomainError';
+import { GestioneSupplenti } from '../../domain/value-objects/enums';
 
 /**
  * A Recipe declares which providers to activate (ordered tokens, see 09 §3/§4)
  * and the loading options copied into `cdu.meta.parametriInput.opzioni`.
  */
-export interface RecipeOptions extends RecipeOptionsView {
+export interface RecipeOptions extends Omit<RecipeOptionsView, 'gestioneSupplenti'> {
   includiStorico: boolean;
   profonditaAnniStorico: number;
   profonditaAnniAsl: number;
@@ -13,6 +14,7 @@ export interface RecipeOptions extends RecipeOptionsView {
   includiSupplenti: boolean;
   includiSpecificita: boolean;
   notificaSoloCoordinatori: boolean;
+  gestioneSupplenti: GestioneSupplenti;
   [key: string]: unknown;
 }
 
@@ -47,7 +49,8 @@ export const DEFAULT_OPTIONS: RecipeOptions = {
   profonditaAnniDocumenti: 0,
   includiSupplenti: false,
   includiSpecificita: false,
-  notificaSoloCoordinatori: false
+  notificaSoloCoordinatori: false,
+  gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI
 };
 
 /** Merge caller overrides onto the defaults (09 §3). */

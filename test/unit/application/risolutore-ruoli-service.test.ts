@@ -376,4 +376,25 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
       emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
     ).toEqual(['verdi@school.it']); // was ['bianchi@school.it'] before this fix
   });
+
+  test('DOCENTE_MATERIA and DOCENTE_PRIMA_PROVA now partner-route an articulated PARENT class (fix — used to silently return [])', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = ContextEngineFactory.create(db).build(
+      { target: '1F', tipoTarget: 'classe', now: NOW, materiaCorrente: 'FISI' },
+      recipe('CLASSE_COMPLETA')
+    );
+    const service = new RisolutoreRuoliService(db);
+    // FISI is split per-partner (1F-LSO=bianchi, 1F-LSS=verdi); '1F' itself (the
+    // parent) has no FISI column. Before this fix, resolvePermanenti('1F', FISI, ...)
+    // resolved directly against the parent and returned [].
+    expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual(['bianchi@school.it', 'verdi@school.it']);
+
+    // MATE is shared (COMUNE, rossi on both partners) -- prima_prova matches SCIENTIFICO
+    // (1F's own indirizzo), and the merge must not duplicate rossi.
+    const cduMate = ContextEngineFactory.create(db).build(
+      { target: '1F', tipoTarget: 'classe', now: NOW, materiaCorrente: 'MATE' },
+      recipe('CLASSE_COMPLETA')
+    );
+    expect(emails(service, 'DOCENTE_PRIMA_PROVA', cduMate)).toEqual(['rossi@school.it']);
+  });
 });

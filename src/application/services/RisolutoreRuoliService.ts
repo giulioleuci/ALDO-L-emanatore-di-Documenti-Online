@@ -176,16 +176,6 @@ export class RisolutoreRuoliService {
     return out;
   }
 
-  /**
-   * KNOWN LIMITATION (not fixed, out of scope): resolves directly against
-   * `ctx.classe` with no partner-routing for articulated classes. For a
-   * split subject on an articulated PARENT class, the parent legitimately
-   * has no value for that column, so this silently returns an empty
-   * nominal-holder list instead of the actual teacher (who is only
-   * resolvable via the partner class). `CdcAssembler.assignmentsArticolata`
-   * handles this correctly for the CDU path by partner-routing via
-   * `orderedPartners`; this method should eventually do the same.
-   */
   private docenteMateria(ctx: RoleContext): Docente[] {
     if (ctx.materiaCorrente === null) return [];
     return this.cattedraResolver.resolvePermanenti(ctx.classe, ctx.materiaCorrente, ctx.data);

@@ -27,16 +27,17 @@ test('findByClasse / findByMateria search by containment', () => {
   expect(r.findByClasse(ClasseId.of('5A')).map((v) => v.nuovoTitolare)).toEqual([
     'bianchi@school.it'
   ]);
-  expect(r.findByClasse(ClasseId.of('1F')).map((v) => v.nuovoTitolare)).toEqual([
-    'verdi@school.it'
-  ]);
+  // '1F' is not a CSV token of any VARIAZIONI_CATTEDRA row (the fixture's only
+  // row targets '5A') — containment correctly yields no match, not a prefix
+  // false-positive against e.g. a hypothetical '1F-LSO' row.
+  expect(r.findByClasse(ClasseId.of('1F')).map((v) => v.nuovoTitolare)).toEqual([]);
   expect(r.findByMateria(MateriaId.of('MATE')).length).toBe(1);
 });
 
 test('findByNuovoTitolare', () => {
   expect(
     repo()
-      .findByNuovoTitolare(Email.of('verdi@school.it'))
+      .findByNuovoTitolare(Email.of('bianchi@school.it'))
       .map((v) => v.id)
-  ).toEqual(['1F::FISI']);
+  ).toEqual(['5A::MATE']);
 });

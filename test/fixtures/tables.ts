@@ -33,8 +33,7 @@ export function fixtureTables(): Record<string, Row[]> {
         ATTIVA: true,
         COORD: 'rossi@school.it',
         ARTICOLAZIONE: '{"parent":null,"partner":null,"partners":"1F-LSO,1F-LSS"}',
-        MATE: 'rossi@school.it',
-        FISI: 'bianchi@school.it'
+        MATE: 'rossi@school.it'
       },
       {
         ID: '1F-LSO',
@@ -360,14 +359,21 @@ export function fixtureTables(): Record<string, Row[]> {
         VECCHIO_TITOLARE: 'rossi@school.it',
         NUOVO_TITOLARE: 'bianchi@school.it',
         DATA_DECORRENZA: '2025-10-01'
-      },
-      {
-        CLASSE_ID: '1F',
-        MATERIA_ID: 'FISI',
-        VECCHIO_TITOLARE: 'bianchi@school.it',
-        NUOVO_TITOLARE: 'verdi@school.it',
-        DATA_DECORRENZA: '2025-10-15'
       }
+      // A '1F'/FISI row was here (feat(R2d) 03421d8), but CLASSE_ID='1F' — the
+      // articulated parent — never legitimately, nominally holds FISI: it's split
+      // per-partner (1F-LSO=bianchi, 1F-LSS=verdi; see classe-articolazione.test.ts).
+      // VECCHIO_TITOLARE='bianchi@school.it' does match 1F-LSO's nominal FISI holder,
+      // so retargeting CLASSE_ID to '1F-LSO' would be internally consistent — but the
+      // articulated-fixture invariant (bianchi=1F-LSO/FISI, rossi=COMUNE/MATE,
+      // verdi=1F-LSS/FISI, all three present with distinct COMUNE/SEPARATO_PRIMO/
+      // SEPARATO_SECONDO tags) is relied on verbatim by consiglio-provider.test.ts,
+      // cdc-assembler.test.ts, email-notification-service.test.ts and
+      // notifica-email.test.ts. Applying the variazione there would collapse bianchi
+      // out of the council entirely (replaced by verdi), breaking that invariant
+      // across every one of those unrelated suites. Since nothing in the plan
+      // depends on this row being active (unlike 5A/MATE, see 64d9db7), it's dropped
+      // rather than relocated — it never legitimately applied anywhere in this fixture.
     ],
     MASTER: [
       // Always kept in descending ANNO_SCOLASTICO order: first row = current year.

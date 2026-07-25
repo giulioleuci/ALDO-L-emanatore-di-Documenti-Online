@@ -10,7 +10,7 @@ import { CattedraResolver } from '../../../../src/application/services/CattedraR
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
-function cdc(target: string): DocenteCdcVM[] {
+function cdc(target: string, now: Date = new Date('2026-07-01T09:00:00Z')): DocenteCdcVM[] {
   const db = new FakeDatabase(fixtureTables());
   const classi = new ClasseRepository(db);
   const b = new ContextBuilder();
@@ -22,7 +22,7 @@ function cdc(target: string): DocenteCdcVM[] {
   const params: BuildParams = {
     target,
     tipoTarget: 'classe',
-    now: new Date('2026-07-01T09:00:00Z')
+    now
   };
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   return b.build(params, recipe).focus.classe!.consiglioDiClasse!;
@@ -32,13 +32,18 @@ const byEmail = (list: DocenteCdcVM[], email: string) =>
 
 test('CDC of a standard class: one VM per subject teacher, sorted by surname (02 §4.1)', () => {
   const list = cdc('5A');
-  expect(list.map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it', 'rossi@school.it']);
-  expect(list[list.length - 1]!.flags.isNotLast).toBe(false);
-  expect(list[0]!.flags.isNotLast).toBe(true);
+  // 5A: MATE's effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since
+  // 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
+  // bianchi -> rossi holds no subject in 5A and drops out of the council.
+  expect(list.map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
+  expect(list[0]!.flags.isNotLast).toBe(false);
 });
 
 test('CDC coordinatore VM: materie, roles and descrizione', () => {
-  const rossi = byEmail(cdc('5A'), 'rossi@school.it');
+  // Anchored before the 5A/MATE VARIAZIONI_CATTEDRA's 2025-10-01 decorrenza so
+  // rossi (COORD/TUTOR_ASL of 5A) still holds MATE nominally — the point of this
+  // test is the role-tagging on the VM, not the cattedra-resolution outcome.
+  const rossi = byEmail(cdc('5A', new Date('2025-06-01T09:00:00Z')), 'rossi@school.it');
   expect(rossi.anagrafica).toEqual({
     nome: 'MARIO',
     cognome: 'ROSSI',

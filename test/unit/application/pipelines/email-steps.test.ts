@@ -70,6 +70,38 @@ function docenteTarget(): EmailTarget {
   };
 }
 
+// 5A/MATE's effective titolare is bianchi (VARIAZIONI_CATTEDRA, decorsa since
+// 2025-10-01, well before NOW), so the rossi->bianchi SUPPLENZE row (keyed to
+// TITOLARE=rossi) can no longer reach 5A/MATE (see swap-supplenti.test.ts). The
+// same SUPPLENZE row also covers class 4B, untouched by any VARIAZIONI_CATTEDRA
+// — a local '4B' class (added only here) keeps rossi as MATE's nominal holder
+// so the supplenza chain is still reachable.
+function tablesWith4B(): Record<string, Row[]> {
+  const t = fixtureTables();
+  (t['CLASSI'] as Row[]).push({
+    ID: '4B',
+    ANNO: 4,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    MATE: 'rossi@school.it'
+  });
+  return t;
+}
+
+function docente4BTarget(): EmailTarget {
+  return {
+    tipo: 'docente',
+    tipoTarget: 'classe',
+    target: '4B',
+    docenteEmail: 'rossi@school.it',
+    emails: ['rossi@school.it'],
+    classiCompetenza: []
+  };
+}
+
 interface Wiring {
   db: FakeDatabase;
   ctx: PipelineContext;
@@ -80,9 +112,10 @@ interface Wiring {
 
 function wire(
   patternOverrides: Partial<Record<string, unknown>> = {},
-  target: EmailTarget = genitoriTarget()
+  target: EmailTarget = genitoriTarget(),
+  tables: Record<string, Row[]> = fixtureTables()
 ): Wiring {
-  const db = new FakeDatabase(fixtureTables());
+  const db = new FakeDatabase(tables);
   const row = { ...PATTERN_ROW, ...patternOverrides } as Row;
   const ctx = new PipelineContext();
   ctx.set('config', row);
@@ -145,7 +178,11 @@ test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafi
 });
 
 test('BuildCDUStep forwards CONF_MAIL.SUPPLENTI as gestioneSupplenti (regression: was silently dropped when includiStorico wiring was added)', () => {
-  const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_SUPPLENTI' }, docenteTarget());
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_SUPPLENTI' },
+    docente4BTarget(),
+    tablesWith4B()
+  );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   const rossiSlot = cdu.focus.classe!.consiglioDiClasse!.find((d) =>

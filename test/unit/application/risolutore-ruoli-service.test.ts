@@ -197,8 +197,11 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
   });
 
   test('CDC_FILTER_ALUNNO resolves the filtered council for a real alunno target', () => {
+    // Anchored before the 5A/MATE VARIAZIONI_CATTEDRA's 2025-10-01 decorrenza so
+    // rossi still holds MATE nominally alongside bianchi (FISI) — the point of
+    // this test is CDC_FILTER_ALUNNO's IRC-merge behaviour, not cattedra resolution.
     const { cdu, service } = build(
-      { target: 'a1@school.it', tipoTarget: 'alunno' },
+      { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2025-06-01T09:00:00Z') },
       'ALUNNO_COMPLETO'
     );
     // a1: RELIGIONE SI -> IRC teacher (bianchi) included alongside subject teacher (rossi).
@@ -213,10 +216,13 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     // full DOCENTI table, but the service is constructed over a second database
     // that is missing bianchi — cdcFiltrato re-looks-up each VM email through
     // its own DocenteRepository, so bianchi must be silently dropped there.
+    // Anchored before the 5A/MATE VARIAZIONI_CATTEDRA's 2025-10-01 decorrenza
+    // (rossi still holds MATE nominally) so the filtered council keeps a
+    // second, still-resolvable member (rossi) to prove the drop is selective.
     const fullTables = fixtureTables();
     const dbFull = new FakeDatabase(fullTables);
     const cdu = ContextEngineFactory.create(dbFull).build(
-      { target: 'a1@school.it', tipoTarget: 'alunno', now: NOW },
+      { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2025-06-01T09:00:00Z') },
       recipe('ALUNNO_COMPLETO')
     );
 

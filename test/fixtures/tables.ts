@@ -358,12 +358,7 @@ export function fixtureTables(): Record<string, Row[]> {
         MATERIA_ID: 'MATE',
         VECCHIO_TITOLARE: 'rossi@school.it',
         NUOVO_TITOLARE: 'bianchi@school.it',
-        // Kept not-yet-decorsa for every CDU-level/date-bearing test that shares
-        // this fixture (max `now` in use is 2026-07-01, the SUPPLENZE chain fixture
-        // below is keyed to TITOLARE=rossi in Nov 2025): repository-level tests
-        // (variazione-cattedra-repository.test.ts) only assert containment/lookup,
-        // never DATA_DECORRENZA, so this date is free to sit in the future.
-        DATA_DECORRENZA: '2099-01-01'
+        DATA_DECORRENZA: '2025-10-01'
       },
       {
         CLASSE_ID: '1F',

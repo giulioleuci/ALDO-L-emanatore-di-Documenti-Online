@@ -18,10 +18,10 @@ test('CLASSE_COMPLETA on 5A assembles every class section (09 §3)', () => {
   const c = cdu.focus.classe!;
   expect(c.anagrafica.nome).toBe('5A');
   expect(c.tutor?.asl.map((t) => t.email)).toEqual(['rossi@school.it', 'bianchi@school.it']);
-  expect(c.consiglioDiClasse?.map((d) => d.anagrafica.email)).toEqual([
-    'bianchi@school.it',
-    'rossi@school.it'
-  ]);
+  // 5A: MATE's effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since
+  // 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
+  // bianchi -> one distinct effective teacher, rossi drops out of the council.
+  expect(c.consiglioDiClasse?.map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
   expect(c.studenti?.listaCompleta).toHaveLength(1);
   expect(c.studenti?.statistiche?.totale).toBe(1);
   expect(c.rappresentanti?.studenti).toEqual([

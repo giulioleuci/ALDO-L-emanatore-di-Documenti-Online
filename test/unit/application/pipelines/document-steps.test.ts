@@ -269,8 +269,12 @@ test('RegisterDocumentStep resolves DOCENTI from the active CDU subject, not the
 
   new RegisterDocumentStep(logger, db).execute(ctx);
 
+  // baseCtx's CDU is built at now=2026-07-01 (see buildCdu above), after the 5A/MATE
+  // VARIAZIONI_CATTEDRA's 2025-10-01 decorrenza, so MATE's consiglioDiClasse VM
+  // (read via resolveLogDocUsers off the already CattedraResolver-resolved CDU)
+  // is bianchi, not the CLASSI-nominal rossi.
   expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_subject_teachers')?.UTENTI).toBe(
-    'rossi@school.it'
+    'bianchi@school.it'
   );
 });
 

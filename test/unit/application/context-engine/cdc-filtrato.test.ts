@@ -21,25 +21,22 @@ function filtrato(target: string): DocenteCdcVM[] {
   return cdu.focus.alunno!.consiglioDiClasseFiltrato!;
 }
 
+// 5A: MATE's effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since
+// 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
+// bianchi -> rossi holds no subject in 5A and drops out of every filtered list below.
 test('CDCFilterAlunno: religione SI includes the IRC teacher (14 §1.3)', () => {
   expect(filtrato('a1@school.it').map((d) => d.anagrafica.email)).toEqual([
     'bianchi@school.it',
-    'rossi@school.it',
     'verdi@school.it'
   ]);
 });
 
 test('CDCFilterAlunno: religione NO excludes the IRC teacher (14 §1.3)', () => {
-  // a2 chose NO → the IRC-only teacher (verdi) is dropped; subject teachers remain.
-  expect(filtrato('a2@school.it').map((d) => d.anagrafica.email)).toEqual([
-    'bianchi@school.it',
-    'rossi@school.it'
-  ]);
+  // a2 chose NO → the IRC-only teacher (verdi) is dropped; the effective subject
+  // teacher (bianchi) remains.
+  expect(filtrato('a2@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
 });
 
 test('CDCFilterAlunno: religione ALT excludes IRC (no ALT teacher configured)', () => {
-  expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual([
-    'bianchi@school.it',
-    'rossi@school.it'
-  ]);
+  expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
 });

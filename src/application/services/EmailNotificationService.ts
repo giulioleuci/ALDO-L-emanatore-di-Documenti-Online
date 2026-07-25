@@ -322,44 +322,23 @@ export class EmailNotificationService {
   }
 
   /**
-   * Deduped by email, then sorted alphabetically by cognome — same convention as
-   * `CdcAssembler.toVMsFromAssignments`/`buildRepertorio`
-   * (`a.rowDocente.cognome.localeCompare(b.rowDocente.cognome)`) and the old
-   * `ClasseRepository.getAllDocentiCDC(Articolata)` this replaced (11 §14 fix
-   * report): callers key off `emails[0]` as a fallback recipient, so the order
-   * must be deterministic and match pre-CattedraResolver behaviour, not
-   * `resolveConsiglio`'s materia/class iteration order.
+   * Effective council emails for an entry-point classe, deduped and sorted by
+   * cognome (deterministic emails[0], ref 11 §14). CattedraResolver
+   * partner-routes articulated classes internally (ref cattedra-resolution
+   * design doc Phase B) — a single resolveConsiglio call is correct whether
+   * `classe` is articulated or not.
    */
   private cdcEmails(classe: Classe): string[] {
-    const classi = this.gruppoResolutivo(classe);
     const byEmail = new Map<string, string>(); // email -> cognome
-    for (const c of classi) {
-      for (const a of this.deps.cattedraResolver.resolveConsiglio(c, this.deps.now)) {
-        const email = a.titolare.id ?? '';
-        if (email !== '' && !byEmail.has(email)) {
-          byEmail.set(email, a.titolare.cognome);
-        }
+    for (const a of this.deps.cattedraResolver.resolveConsiglio(classe, this.deps.now)) {
+      const email = a.titolare.id ?? '';
+      if (email !== '' && !byEmail.has(email)) {
+        byEmail.set(email, a.titolare.cognome);
       }
     }
     return [...byEmail.entries()]
       .sort((a, b) => a[1].localeCompare(b[1]))
       .map(([email]) => email);
-  }
-
-  /**
-   * Classes to fan `resolveConsiglio` out over for an entry-point classe
-   * (11 §12, 05 §5). A non-articulated classe resolves on itself. An
-   * articulated parent has no per-subject cattedra columns of its own (only
-   * its partners do — 06 §3), so resolving directly on it can hit a
-   * VARIAZIONI_CATTEDRA row scoped to the parent's CLASSE_ID with no nominal
-   * holder to match; `orderedPartners` (the two partner classes) is the
-   * correct fan-out, matching CdcAssembler.assignmentsArticolata's same-scope
-   * merge over primo/secondo instead of the parent + partners.
-   */
-  private gruppoResolutivo(classe: Classe): Classe[] {
-    if (!this.deps.classi.isArticolata(classe)) return [classe];
-    const partners = this.deps.classi.orderedPartners(classe);
-    return partners.length >= 2 ? partners : [classe];
   }
 
   private targetsPerCoordinatore(): EmailTarget[] {

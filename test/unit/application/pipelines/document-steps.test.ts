@@ -445,7 +445,10 @@ test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §1
     .filter((p) => p.fileId === 'folder_1')
     .map((p) => p.email)
     .sort();
-  expect(folderAcls).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  // 5A: MATE effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since 2025-10-01,
+  // and NOW=2026-07-01 is well after); FISI nominal holder is also bianchi -> CDC
+  // (routed through CattedraResolver, 10 §14) has one distinct effective teacher.
+  expect(folderAcls).toEqual(['bianchi@school.it']);
 });
 
 test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {

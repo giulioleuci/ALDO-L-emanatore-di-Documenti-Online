@@ -43,17 +43,15 @@ describe('RisolutoreRuoliService — class roles (14 §1.1)', () => {
 
   test('CDC returns the whole consiglio di classe', () => {
     const { cdu, service } = build({});
-    expect(emails(service, 'CDC', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    // 5A: MATE effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since 2025-10-01);
+    // FISI nominal holder is also bianchi -> one distinct effective teacher.
+    expect(emails(service, 'CDC', cdu)).toEqual(['bianchi@school.it']);
   });
 
   test('DOCENTI_NO_RELIGIONE removes the IRC teacher', () => {
     const { cdu, service } = build({});
-    // 5A: IRC = bianchi (also FISI holder). Removing IRC drops bianchi's IRC role,
-    // but bianchi remains via FISI. Verify rossi present, and no duplication.
-    expect(emails(service, 'DOCENTI_NO_RELIGIONE', cdu)).toEqual([
-      'bianchi@school.it',
-      'rossi@school.it'
-    ]);
+    // Both MATE (effective, post-variazione) and FISI resolve to bianchi at NOW.
+    expect(emails(service, 'DOCENTI_NO_RELIGIONE', cdu)).toEqual(['bianchi@school.it']);
   });
 
   test('DOCENTI_IRC_ALT merges CLASSI.IRC + CLASSI.ALT, deduped (MAT_NON_STANDARD §2.C)', () => {
@@ -74,9 +72,9 @@ describe('RisolutoreRuoliService — single-teacher roles (14 §1.1)', () => {
     expect(emails(service, 'TUTOR_ASL', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
   });
 
-  test('DOCENTE_MATERIA resolves the class column for meta.parametriInput.materiaCorrente', () => {
+  test('DOCENTE_MATERIA resolves the effective holder for meta.parametriInput.materiaCorrente', () => {
     const { cdu, service } = build({ materiaCorrente: 'MATE' });
-    expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual(['rossi@school.it']);
+    expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual(['bianchi@school.it']);
   });
 
   test('CAPO_DIPARTIMENTO resolves the department of materiaCorrente', () => {
@@ -281,9 +279,9 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
   });
 
   test('exam-commission resolver (DOCENTE_PRIMA_PROVA) resolves the matching prova teacher when the indirizzo matches', () => {
-    // 5A is indirizzo SCIENTIFICO: MATE's prima_prova matches -> rossi (MATE teacher).
+    // 5A is indirizzo SCIENTIFICO: MATE's prima_prova matches -> bianchi (effective MATE teacher post-variazione).
     const { cdu, service } = build({});
-    expect(emails(service, 'DOCENTE_PRIMA_PROVA', cdu)).toEqual(['rossi@school.it']);
+    expect(emails(service, 'DOCENTE_PRIMA_PROVA', cdu)).toEqual(['bianchi@school.it']);
   });
 
   test('alunnoEmail (ALUNNO) returns [] when the focus alunno is undefined (classe-scoped target)', () => {
@@ -340,5 +338,27 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regression)', () => {
+  test('DOCENTE_MATERIA follows the permanent chair change, not the CLASSI nominal holder', () => {
+    const afterDecorrenza = build({ materiaCorrente: 'MATE' }, 'CLASSE_COMPLETA');
+    // Rebuild at a date before the 2025-10-01 decorrenza: nominal holder (rossi) still applies.
+    const db = new FakeDatabase(fixtureTables());
+    const cduBefore = ContextEngineFactory.create(db).build(
+      { target: '5A', tipoTarget: 'classe', now: new Date('2025-09-01'), materiaCorrente: 'MATE' },
+      recipe('CLASSE_COMPLETA')
+    );
+    const service = new RisolutoreRuoliService(db);
+    expect(emails(service, 'DOCENTE_MATERIA', cduBefore)).toEqual(['rossi@school.it']);
+    expect(emails(service, 'DOCENTE_MATERIA', afterDecorrenza.cdu)).toEqual(['bianchi@school.it']);
+  });
+
+  test('DOCENTI_IRC_ALT is never subject to supplenza routing, regardless of the caller option', () => {
+    const { cdu, service } = build({});
+    expect(
+      emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
+    ).toEqual(['bianchi@school.it']); // unchanged: IRC teacher, no supply routing applied
   });
 });

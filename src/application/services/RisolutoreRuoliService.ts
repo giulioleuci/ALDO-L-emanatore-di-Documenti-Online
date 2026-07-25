@@ -21,6 +21,7 @@ import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { getClasseEntity } from '../context-engine/techEntities';
 import { ValidationError } from '../../domain/errors/DomainError';
+import { CattedraResolver } from './CattedraResolver';
 
 export interface RisolviOptions {
   /** Supplenza routing for docente roles (14 §1.2); default SOLO_TITOLARI (supplenti ignored). */
@@ -60,6 +61,7 @@ export class RisolutoreRuoliService {
   private readonly materie: IMateriaRepository;
   private readonly ruoli: IRuoloSpecialeRepository;
   private readonly supplenze: ISupplenzaRepository;
+  private readonly cattedraResolver: CattedraResolver;
   private readonly registro: Map<string, RoleStrategy>;
 
   constructor(database: RepositoryDatabase) {
@@ -70,6 +72,7 @@ export class RisolutoreRuoliService {
     this.materie = new MateriaRepository(database);
     this.ruoli = new RuoloSpecialeRepository(database);
     this.supplenze = new SupplenzaRepository(database);
+    this.cattedraResolver = new CattedraResolver(database);
     this.registro = this.buildRegistro();
   }
 
@@ -82,7 +85,13 @@ export class RisolutoreRuoliService {
       throw new ValidationError(`Ruolo non registrato: ${ruolo}`);
     }
     if (result.kind === 'emails') return dedupe(result.emails);
-    const regola = options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI;
+    // DOCENTI_IRC_ALT: schema limitation (VARIAZIONI_CATTEDRA/SUPPLENZE are
+    // MATERIA_ID-scoped, FK to MATERIE.ID; IRC/ALT are CLASSI columns, not
+    // MATERIE rows) -- never supply-routed, regardless of the caller's option.
+    const regola =
+      ruolo === 'DOCENTI_IRC_ALT'
+        ? GestioneSupplenti.SOLO_TITOLARI
+        : (options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI);
     return dedupe(this.applicaSupplenze(result.docenti, ctx, regola));
   }
 
@@ -102,9 +111,10 @@ export class RisolutoreRuoliService {
     return new Map<string, RoleStrategy>([
       // --- Class roles ---
       ['COORDINATORI', (c) => docenti(this.classi.getCoordinatori(c.classe))],
-      ['CDC', (c) => docenti(this.cdcCompleto(c.classe))],
+      ['CDC', (c) => docenti(this.cdcCompleto(c.classe, c.data))],
       ['CDC_FILTER_ALUNNO', (c) => docenti(this.cdcFiltrato(c))],
-      ['DOCENTI_NO_RELIGIONE', (c) => docenti(this.classi.getAllDocentiCDC(c.classe))],
+      ['DOCENTI_NO_RELIGIONE', (c) => docenti(this.docentiPermanenti(c.classe, c.data))],
+      // --- DOCENTI_IRC_ALT: forced SOLO_TITOLARI below in risolvi(), never supply-routed ---
       // REL/ALT merged column protection (MAT_NON_STANDARD §2.C) — IRC + ALT deduped by email.
       ['DOCENTI_IRC_ALT', (c) => docenti(this.docentiIrcAlt(c.classe))],
       // --- Single-teacher roles from CLASSI.RUOLI JSON ---
@@ -127,13 +137,22 @@ export class RisolutoreRuoliService {
     ]);
   }
 
-  /** Full council: subject teachers + IRC + ALT (14 §1.1 CDC). */
-  private cdcCompleto(classe: Classe): Docente[] {
+  /** Full council: effective permanent subject teachers + IRC + ALT (14 §1.1 CDC). */
+  private cdcCompleto(classe: Classe, data: Date): Docente[] {
     return [
-      ...this.classi.getAllDocentiCDC(classe),
+      ...this.docentiPermanenti(classe, data),
       ...this.classi.getDocentiIRC(classe),
       ...this.classi.getDocentiALT(classe)
     ];
+  }
+
+  /** Effective permanent holders across every subject in the cattedra matrix, deduped. */
+  private docentiPermanenti(classe: Classe, data: Date): Docente[] {
+    const byEmail = new Map<string, Docente>();
+    for (const a of this.cattedraResolver.resolveConsiglio(classe, data)) {
+      if (a.titolare.id !== null) byEmail.set(a.titolare.id, a.titolare);
+    }
+    return [...byEmail.values()];
   }
 
   /** IRC + ALT teachers, deduped by email (MAT_NON_STANDARD §2.C — NOT resolved via DOCENTE_MATERIA: IRC/ALT are CLASSI columns, not MATERIE rows). */
@@ -158,7 +177,7 @@ export class RisolutoreRuoliService {
 
   private docenteMateria(ctx: RoleContext): Docente[] {
     if (ctx.materiaCorrente === null) return [];
-    return this.classi.getDocentiPerMateria(ctx.classe, ctx.materiaCorrente);
+    return this.cattedraResolver.resolvePermanenti(ctx.classe, ctx.materiaCorrente, ctx.data);
   }
 
   private capoDipartimento(ctx: RoleContext): Docente[] {
@@ -182,7 +201,8 @@ export class RisolutoreRuoliService {
         prova === 'prima'
           ? cfg.isPrimaProvaPerIndirizzo(indirizzo)
           : cfg.isSecondaProvaPerIndirizzo(indirizzo);
-      if (matches) out.push(...this.classi.getDocentiPerMateria(ctx.classe, materia.materiaId));
+      if (matches)
+        out.push(...this.cattedraResolver.resolvePermanenti(ctx.classe, materia.materiaId, ctx.data));
     }
     return out;
   }

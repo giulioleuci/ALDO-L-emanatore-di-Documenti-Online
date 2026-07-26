@@ -69,6 +69,7 @@ const TEMPLATE_IDS = {
   riepilogo: 'tmpl_riepilogo',
   aslImportSheet: 'tmpl_asl_import',
   docComplesso: 'tmpl_doc_complesso',
+  sheetPermessi: 'tmpl_sheet_permessi',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -155,13 +156,13 @@ test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', ()
   expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
 });
 
-test('seeds 9 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc complesso + 5 piani) each pointing at its provisioned template', () => {
+test('seeds 10 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc complesso + 1 sheet permessi + 5 piani) each pointing at its provisioned template', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(9);
+  expect(confDoc).toHaveLength(10);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_verbale' });
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
@@ -174,6 +175,11 @@ test('seeds 9 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc comple
   expect(complesso[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(complesso[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_doc_complesso'
+  });
+  const sheetPermessi = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_SHEET_PERMESSI')!;
+  expect(sheetPermessi[COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
+  expect(JSON.parse(sheetPermessi[COL_CONF_DOC.MODELLI] as string)).toEqual({
+    templateId: 'tmpl_sheet_permessi'
   });
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
   expect(piani).toHaveLength(5);
@@ -401,6 +407,17 @@ test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENER
   expect(JSON.parse(String(row![COL_CONF_DOC.MODELLI]))).toEqual({
     templateId: TEMPLATE_IDS.docComplesso
   });
+});
+
+test('seeds a CONF_DOC row using the SHEET_CON_MATERIE_E_PERMESSI generator', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_SHEET_PERMESSI');
+  expect(row).toBeDefined();
+  expect(row![COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
+  expect(row![COL_CONF_DOC.FORMATO]).toBe('GSHEET');
 });
 
 test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {

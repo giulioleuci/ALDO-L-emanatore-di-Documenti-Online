@@ -73,6 +73,7 @@ export const CONF_DOC_VERBALE = 'E2E_VERBALE';
 export const CONF_DOC_CONDOTTA = 'E2E_CONDOTTA';
 export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export const CONF_DOC_COMPLESSO = 'E2E_DOC_COMPLESSO';
+export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export function confDocPiano(tipo: string): string {
   return `E2E_PIANO_${tipo}`;
 }
@@ -124,6 +125,7 @@ export interface E2eTemplateIds {
   riepilogo: string;
   aslImportSheet: string;
   docComplesso: string;
+  sheetPermessi: string;
   piani: Record<(typeof TIPI_PIANO)[number], string>;
 }
 
@@ -664,6 +666,23 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_SHEET_PERMESSI,
+      [COL_CONF_DOC.TIPO]: 'SHEET_PERMESSI',
+      [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
+      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GSHEET',
       [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
     });
     for (const tipo of TIPI_PIANO) {

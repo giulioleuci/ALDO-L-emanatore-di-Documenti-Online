@@ -47,13 +47,13 @@ function fakeArtifacts(): {
   };
 }
 
-test('creates all 10 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 1 doc complesso + 5 doc piani) when none exist yet', () => {
+test('creates all 11 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 1 doc complesso + 1 sheet permessi + 5 doc piani) when none exist yet', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(10);
-  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(2);
+  expect(created).toHaveLength(11);
+  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(3);
   expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(8);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
@@ -73,7 +73,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(9); // condotta + riepilogo + asl import + doc complesso + 5 piani still created
+  expect(created).toHaveLength(10); // condotta + riepilogo + asl import + doc complesso + sheet permessi + 5 piani still created
 });
 
 test('authors real CDU-path placeholder content into newly-created templates, not blank artifacts', () => {
@@ -153,6 +153,18 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   const tableText = JSON.stringify(tables);
   expect(tableText).toContain("tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'");
   expect(tableText).toContain('tablecol_loop:focus.classe.consiglioDiClasse');
+});
+
+test('authors the sheet-with-permessi template with the multi-group dynamic_columns placeholder', () => {
+  const { artifacts, sheetContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  const text = JSON.stringify(sheetContent[ids.sheetPermessi] ?? []);
+  expect(text).toContain('dynamic_columns[');
+  expect(text).toContain('source=materieColonne.group1,value=header');
+  expect(text).toContain('source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label');
+  expect(text).toContain('source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label');
 });
 
 test('does not re-author content for a reused (found, not created) template', () => {

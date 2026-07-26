@@ -33,6 +33,7 @@ const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v3';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template';
+const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }
@@ -173,6 +174,30 @@ const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
 ];
 
 /**
+ * Single header cell carrying the whole multi-group `{{dynamic_columns[...]}}` placeholder
+ * (`WorkspaceTemplateEngine_docs.md` "Sintassi multi-gruppo"): 3 sequential column groups,
+ * groups 2/3 each preceded by a structural label column (`label2`/`label3`), resolved against
+ * a `materieColonne.group1/2/3` (+ `group2Label`/`group3Label`) context shape — the
+ * SHEET_CON_MATERIE_E_PERMESSI generator's per-subject column layout for scenario C.
+ */
+function sheetPermessiUpdates(): SheetValueUpdate[] {
+  return [
+    {
+      range: 'A1',
+      values: [
+        [
+          '{{dynamic_columns[' +
+            'source=materieColonne.group1,value=header,' +
+            'source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label,' +
+            'source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label' +
+            ']}}'
+        ]
+      ]
+    }
+  ];
+}
+
+/**
  * Idempotently finds-or-creates the 7 real Drive templates the e2e scenarios generate
  * against (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
  * provisioning"): a fixed name per template, looked up via `IDriveFacade.findFileByName`
@@ -201,11 +226,12 @@ export class E2eTemplateProvisioner {
       DOC_COMPLESSO_PARAGRAPHS,
       DOC_COMPLESSO_TABLES
     );
+    const sheetPermessi = this.findOrCreateSheet(folderId, NAME_SHEET_PERMESSI, sheetPermessiUpdates());
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
-    return { verbale, condotta, riepilogo, aslImportSheet, docComplesso, piani };
+    return { verbale, condotta, riepilogo, aslImportSheet, docComplesso, sheetPermessi, piani };
   }
 
   private findOrCreateDoc(

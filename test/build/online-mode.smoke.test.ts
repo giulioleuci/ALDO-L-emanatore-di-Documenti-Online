@@ -16,6 +16,8 @@ describe('online build mode', () => {
     expect(codeJs).not.toContain('/**');
     expect(onlineTestsJs).not.toContain('/**');
     expect(codeJs).not.toEqual(onlineTestsJs);
+    expect(onlineTestsJs).toContain('__coverage__');
+    expect(codeJs).not.toContain('__coverage__');
 
     const avgLineLen = (s: string) => s.length / (s.split('\n').length || 1);
     expect(avgLineLen(codeJs)).toBeLessThan(200);

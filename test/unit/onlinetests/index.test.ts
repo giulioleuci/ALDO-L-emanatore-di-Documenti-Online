@@ -1,5 +1,5 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
-import { executeOnlineTests } from '../../../src/onlinetests/index';
+import { executeOnlineTests, dumpOnlineCoverage } from '../../../src/onlinetests/index';
 import {
   CLASSE_BASE,
   CLASSE_PARTNER,
@@ -314,5 +314,30 @@ describe('executeOnlineTests', () => {
     });
 
     expect(activeUserEmail).toHaveBeenCalled();
+  });
+});
+
+describe('dumpOnlineCoverage', () => {
+  afterEach(() => {
+    delete (globalThis as { __coverage__?: unknown }).__coverage__;
+  });
+
+  it('logs the istanbul coverage map when instrumentation populated globalThis.__coverage__', () => {
+    const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
+    (globalThis as { __coverage__?: unknown }).__coverage__ = { 'src/foo.ts': { s: { '0': 1 } } };
+
+    dumpOnlineCoverage();
+
+    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ 'src/foo.ts': { s: { '0': 1 } } }));
+    logSpy.mockRestore();
+  });
+
+  it('logs an empty object when the bundle was not built with instrumentation', () => {
+    const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
+
+    dumpOnlineCoverage();
+
+    expect(logSpy).toHaveBeenCalledWith('{}');
+    logSpy.mockRestore();
   });
 });

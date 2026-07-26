@@ -2,22 +2,35 @@ const path = require('path');
 const GasPlugin = require('gas-webpack-plugin');
 const TerserPlugin = require('minimizer-webpack-plugin');
 
-const babelRule = {
-  test: /\.ts$/,
-  exclude: [/node_modules/, /\.test\.ts$/],
-  use: {
-    loader: 'babel-loader',
-    options: {
-      presets: [
-        ['@babel/preset-env', { targets: { chrome: '80' }, modules: false }],
-        ['@babel/preset-typescript', {}]
-      ],
-      // GAS V8's sandboxed parser rejects native class-field syntax even though
-      // Chrome 80 supports it natively, so force the transform regardless of target.
-      plugins: [['@babel/plugin-transform-class-properties', { loose: false }]]
+// `instrument: true` is used ONLY for the onlinetests webpack entry (see onlinetestsConfig
+// below) — the online-coverage spike (docs/superpowers/specs/2026-07-26-test-completion-
+// coverage-index-design.md §3.5) needs istanbul counters inside dist/OnlineTests.js so a live
+// GAS run can report real coverage. coreConfig/entrypointsConfig (production Code.js/
+// EntryPoints.js) must never be instrumented.
+function makeBabelRule(instrument) {
+  return {
+    test: /\.ts$/,
+    exclude: [/node_modules/, /\.test\.ts$/],
+    use: {
+      loader: 'babel-loader',
+      options: {
+        presets: [
+          ['@babel/preset-env', { targets: { chrome: '80' }, modules: false }],
+          ['@babel/preset-typescript', {}]
+        ],
+        // GAS V8's sandboxed parser rejects native class-field syntax even though
+        // Chrome 80 supports it natively, so force the transform regardless of target.
+        plugins: [
+          ['@babel/plugin-transform-class-properties', { loose: false }],
+          ...(instrument ? [['istanbul', { extension: ['.ts'] }]] : [])
+        ]
+      }
     }
-  }
-};
+  };
+}
+
+const babelRule = makeBabelRule(false);
+const instrumentedBabelRule = makeBabelRule(true);
 
 module.exports = (env) => {
   const readable = !!(env && env.readable);
@@ -93,7 +106,7 @@ module.exports = (env) => {
       iife: false
     },
     resolve: { extensions: ['.ts', '.js', '.json'] },
-    module: { rules: [babelRule] },
+    module: { rules: [instrumentedBabelRule] },
     optimization: { minimize: false }
   };
 

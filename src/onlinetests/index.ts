@@ -119,6 +119,22 @@ export function runOnlineTests(): void {
 (globalThis as any).runOnlineTests = runOnlineTests;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
+/**
+ * GAS Run-dropdown entry point for the online-coverage spike (docs/superpowers/specs/
+ * 2026-07-26-test-completion-coverage-index-design.md §3.5): logs whatever istanbul coverage map
+ * `babel-plugin-istanbul` attached to `globalThis.__coverage__` while this bundle ran. Empty
+ * object when the bundle wasn't built with instrumentation enabled (i.e. any mode other than
+ * `--mode=online` after the webpack.config.cjs instrumentation change).
+ */
+export function dumpOnlineCoverage(): void {
+  const coverage = (globalThis as { __coverage__?: unknown }).__coverage__ ?? {};
+  Logger.log(JSON.stringify(coverage));
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+(globalThis as any).dumpOnlineCoverage = dumpOnlineCoverage;
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+
 export interface E2eTestDeps {
   spreadsheetFactory: ISampleSpreadsheetFactory;
   artifactFactory: IArtifactFactory;

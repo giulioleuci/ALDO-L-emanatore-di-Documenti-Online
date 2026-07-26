@@ -8,7 +8,8 @@ import type {
 } from '../../application/services/EmailNotificationService';
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
-import { TABLE, COL_LOG_DOCS } from '../../config/schema';
+import type { ImportService } from '../../application/services/ImportService';
+import { TABLE, COL_LOG_DOCS, COL_ASL } from '../../config/schema';
 import {
   ALL_CLASSI_E2E,
   TIPI_PIANO,
@@ -16,6 +17,7 @@ import {
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
   confDocPiano,
+  CONF_IMP_ASL,
   CONF_MAIL_VERBALE,
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_CARENZA,
@@ -123,6 +125,35 @@ export function registerE2eScenarioChecks(
       );
     }
     assertPersistedLinks(CONF_DOC_RIEPILOGO, 'Riepilogo');
+  });
+
+  runner.add('E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)', sample.sampleSpreadsheetUrl, () => {
+    const importService = container.get<ImportService>('importService');
+    const result = importService.executeImport(CONF_IMP_ASL);
+    if (result.errori.length > 0) {
+      throw new ValidationError(`Import ASL fallito: ${result.errori.join('; ')}`);
+    }
+    if (result.inseriti + result.aggiornati === 0) {
+      throw new ValidationError('Import ASL: nessuna riga inserita o aggiornata');
+    }
+    const expected: Record<string, number> = {
+      'e2ealunno43@onlinetest.aldo.local': 40,
+      'e2ealunno44@onlinetest.aldo.local': 55,
+      'e2ealunno51@onlinetest.aldo.local': 60,
+      'e2ealunno52@onlinetest.aldo.local': 35
+    };
+    const rows = db.table(TABLE.ASL).findAll();
+    for (const [studente, ore] of Object.entries(expected)) {
+      const row = rows.find((r) => r[COL_ASL.STUDENTE] === studente);
+      if (row === undefined) {
+        throw new ValidationError(`Import ASL: riga mancante per ${studente}`);
+      }
+      if (Number(row[COL_ASL.ORE]) !== ore) {
+        throw new ValidationError(
+          `Import ASL: ${studente} atteso ORE=${ore}, ricevuto ${String(row[COL_ASL.ORE])}`
+        );
+      }
+    }
   });
 
   runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {

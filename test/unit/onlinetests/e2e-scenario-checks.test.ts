@@ -3,6 +3,7 @@ import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { E2eSampleDatabase } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import {
+  CONF_IMP_ASL,
   CONF_MAIL_CARENZA,
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_PIANI,
@@ -14,6 +15,7 @@ import type {
   EmailNotificationService,
   SendPatternResult
 } from '../../../src/application/services/EmailNotificationService';
+import type { ImportService, ImportResult } from '../../../src/application/services/ImportService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { COL_LOG_DOCS } from '../../../src/config/schema';
 
@@ -64,13 +66,28 @@ function recordingHarness(
       return resultForPattern(patternId);
     }
   } as EmailNotificationService;
+  const aslRows: Array<Record<string, unknown>> = [
+    { STUDENTE: 'e2ealunno43@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 40 },
+    { STUDENTE: 'e2ealunno44@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 55 },
+    { STUDENTE: 'e2ealunno51@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 60 },
+    { STUDENTE: 'e2ealunno52@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 35 }
+  ];
+  const importService = {
+    executeImport(configId: string) {
+      if (configId === CONF_IMP_ASL) {
+        return { inseriti: 4, aggiornati: 0, saltati: 0, ghost: 0, errori: [] };
+      }
+      throw new Error(`Unexpected configId: ${configId}`);
+    }
+  } as ImportService;
   const db = {
-    table: () => ({ findAll: () => rows })
+    table: (name: string) => ({ findAll: () => (name === 'ASL' ? aslRows : rows) })
   } as unknown as EmailDb;
   const container = {
     get<T>(key: string): T {
       if (key === 'documentGenerationService') return documents as T;
       if (key === 'db') return db as T;
+      if (key === 'importService') return importService as T;
       if (key === 'emailNotificationService') {
         emailResolutions += 1;
         events.push('resolve-email');
@@ -81,6 +98,64 @@ function recordingHarness(
   } as ServiceContainer;
   return { container, events, emailPatterns, emailResolutions: () => emailResolutions };
 }
+
+function harnessWithImport(
+  importResult: ImportResult,
+  aslRows: Array<Record<string, unknown>>
+): { container: ServiceContainer } {
+  const base = recordingHarness();
+  const importService = {
+    executeImport(configId: string) {
+      expect(configId).toBe(CONF_IMP_ASL);
+      return importResult;
+    }
+  } as ImportService;
+  const db = {
+    table: (name: string) =>
+      name === 'ASL' ? { findAll: () => aslRows } : { findAll: () => [] }
+  } as unknown as EmailDb;
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'importService') return importService as T;
+      if (key === 'db') return db as T;
+      return base.container.get<T>(key);
+    }
+  } as ServiceContainer;
+  return { container };
+}
+
+test('scenario 9: imports ASL rows and verifies them in the ASL table', () => {
+  const { container } = harnessWithImport(
+    { inseriti: 4, aggiornati: 0, saltati: 0, ghost: 0, errori: [] },
+    [
+      { STUDENTE: 'e2ealunno43@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 40 },
+      { STUDENTE: 'e2ealunno44@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 55 },
+      { STUDENTE: 'e2ealunno51@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 60 },
+      { STUDENTE: 'e2ealunno52@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 35 }
+    ]
+  );
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario9 = runner.report().results.find((r) => r.name.includes('scenario 9'));
+  expect(scenario9).toMatchObject({ status: 'pass' });
+});
+
+test('scenario 9: fails when an expected ASL row is missing', () => {
+  const { container } = harnessWithImport(
+    { inseriti: 3, aggiornati: 0, saltati: 0, ghost: 1, errori: [] },
+    [
+      { STUDENTE: 'e2ealunno43@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 40 },
+      { STUDENTE: 'e2ealunno44@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 55 },
+      { STUDENTE: 'e2ealunno51@onlinetest.aldo.local', ANNO: '2026-2027', ORE: 60 }
+    ]
+  );
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario9 = runner.report().results.find((r) => r.name.includes('scenario 9'));
+  expect(scenario9?.status).toBe('fail');
+});
 
 test('refuses to register any check and reports a single failure when the sample is not TEST_MODE', () => {
   const runner = new TestRunner();

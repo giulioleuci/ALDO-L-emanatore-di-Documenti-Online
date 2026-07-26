@@ -37,4 +37,7 @@ export class FakeDriveFacade implements IDriveFacade {
   getFileOwnerEmail(): string | null {
     return this.ownerEmail;
   }
+  getFileText(fileId: string): string {
+    return `text:${fileId}`;
+  }
 }

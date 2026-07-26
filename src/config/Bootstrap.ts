@@ -98,6 +98,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
 
   c.register('logger', () => logger);
   c.register('db', () => deps.db);
+  c.register('drive', () => deps.drive);
   c.register('contextBuilder', () => ContextEngineFactory.create(deps.db, deps.master));
   if (deps.spreadsheets !== undefined) {
     c.register('spreadsheets', () => deps.spreadsheets!);
@@ -341,7 +342,8 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   const driveFacade = new DriveServiceFacade(
     ServiceFactory.getDriveService(),
     ServiceFactory.getPermissionService(),
-    annoCorrente.idCartellaRoot
+    annoCorrente.idCartellaRoot,
+    documentService
   );
 
   const container = buildAldoContainer({

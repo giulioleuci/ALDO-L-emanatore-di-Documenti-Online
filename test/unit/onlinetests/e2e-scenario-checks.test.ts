@@ -17,6 +17,7 @@ import type {
 } from '../../../src/application/services/EmailNotificationService';
 import type { ImportService, ImportResult } from '../../../src/application/services/ImportService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
+import type { IDriveFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
 import { COL_LOG_DOCS } from '../../../src/config/schema';
 
 const sample: E2eSampleDatabase & { testMode: boolean } = {
@@ -83,11 +84,15 @@ function recordingHarness(
   const db = {
     table: (name: string) => ({ findAll: () => (name === 'ASL' ? aslRows : rows) })
   } as unknown as EmailDb;
+  const drive = {
+    getFileText: () => 'Report Complesso — nessun placeholder residuo'
+  } as unknown as IDriveFacade;
   const container = {
     get<T>(key: string): T {
       if (key === 'documentGenerationService') return documents as T;
       if (key === 'db') return db as T;
       if (key === 'importService') return importService as T;
+      if (key === 'drive') return drive as unknown as T;
       if (key === 'emailNotificationService') {
         emailResolutions += 1;
         events.push('resolve-email');
@@ -212,4 +217,48 @@ test('reports strict actionable diagnostics for verbale and condotta email failu
     status: 'fail',
     message: 'Invio condotta fallito: targets=4, sent=4, skipped=1, errors=condotta error'
   });
+});
+
+test('scenario 10: generates the complex doc for every class and checks for leftover placeholders', () => {
+  const harness = recordingHarness();
+  const driveTexts: Record<string, string> = {};
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'drive') {
+        const drive = {
+          getFileText: (fileId: string) =>
+            driveTexts[fileId] ?? 'Report Complesso — 1A, no placeholders left'
+        } as unknown as IDriveFacade;
+        return drive as unknown as T;
+      }
+      return harness.container.get<T>(key);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario10 = runner.report().results.find((r) => r.name.includes('scenario 10'));
+  expect(scenario10).toMatchObject({ status: 'pass' });
+});
+
+test('scenario 10: fails when the generated doc still has an unresolved {{...}} placeholder', () => {
+  const harness = recordingHarness();
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'drive') {
+        const drive = {
+          getFileText: () => 'Report Complesso — {{focus.classe.anagrafica.nome}}'
+        } as unknown as IDriveFacade;
+        return drive as unknown as T;
+      }
+      return harness.container.get<T>(key);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario10 = runner.report().results.find((r) => r.name.includes('scenario 10'));
+  expect(scenario10?.status).toBe('fail');
 });

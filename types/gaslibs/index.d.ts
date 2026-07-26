@@ -965,6 +965,8 @@ declare global {
       data: string[][],
       options?: DocumentCreateTableOptions
     ): DocumentInsertTableAtMarkerResult;
+    /** Native DocumentApp Document object (e.g. for `.getBody().getText()`, DriveServiceFacade.getFileText). */
+    openStandard(documentId: string): { getBody(): { getText(): string } };
   }
   /** GoogleApiWrapper's native Utilities API wrapper (ref GoogleApiWrapper/src/services/UtilitiesService.js). */
   class UtilitiesService {

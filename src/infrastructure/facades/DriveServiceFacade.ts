@@ -10,6 +10,8 @@ export interface IDriveFacade {
   getFileOwnerEmail(fileId: string): string | null;
   /** Finds a non-trashed file by exact name directly under `folderId`, or null if none matches. */
   findFileByName(folderId: string, name: string): string | null;
+  /** Full plain text of a Google Doc's body (e.g. no-leftover-placeholder checks, E2E scenario 10). */
+  getFileText(fileId: string): string;
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -35,7 +37,9 @@ export class DriveServiceFacade implements IDriveFacade {
   constructor(
     private readonly drive: DriveService,
     private readonly permissions: PermissionService,
-    private readonly rootFolderId: string
+    private readonly rootFolderId: string,
+    /** Only needed for `getFileText` (10 §9 escape hatch) — undefined for callers that never read Doc text back. */
+    private readonly documents?: DocumentService
   ) {}
 
   findFolderByPath(path: string): string | null {
@@ -97,6 +101,22 @@ export class DriveServiceFacade implements IDriveFacade {
 
   getFileOwnerEmail(fileId: string): string | null {
     return this.drive.getFileOwnerEmail(fileId);
+  }
+
+  /**
+   * Full plain text of a Google Doc's body. `DriveService` has no text-extraction capability
+   * (it only moves/copies/shares opaque files); this goes through `DocumentService.openStandard`
+   * (GoogleApiWrapper_docs.md "escape hatch" pattern), the same kind of native-object handoff
+   * `getFileBlob` already uses via `getFileByIdStandard(...).getBlob()`, then reads the body text
+   * off the returned native `DocumentApp.Document` with the standard GAS API.
+   */
+  getFileText(fileId: string): string {
+    if (this.documents === undefined) {
+      throw new Error(
+        `DriveServiceFacade.getFileText(${fileId}): nessun DocumentService configurato per questa istanza`
+      );
+    }
+    return this.documents.openStandard(fileId).getBody().getText();
   }
 }
 

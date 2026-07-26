@@ -201,6 +201,22 @@ test('getFileOwnerEmail passes through null when the file has no owner', () => {
   expect(facade.getFileOwnerEmail('file_1')).toBeNull();
 });
 
+test('getFileText reads the body text via DocumentService.openStandard (E2E scenario 10)', () => {
+  const { drive, perms } = fakeDrive();
+  const getText = jest.fn(() => 'Report Complesso — nessun placeholder');
+  const documents = { openStandard: jest.fn(() => ({ getBody: () => ({ getText }) })) };
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT, documents as never);
+  expect(facade.getFileText('doc_1')).toBe('Report Complesso — nessun placeholder');
+  expect(documents.openStandard).toHaveBeenCalledWith('doc_1');
+  expect(getText).toHaveBeenCalled();
+});
+
+test('getFileText throws a clear error when no DocumentService was configured', () => {
+  const { drive, perms } = fakeDrive();
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  expect(() => facade.getFileText('doc_1')).toThrow(/nessun DocumentService configurato/);
+});
+
 describe('DriveServiceFacade — copyFile failure', () => {
   test('throws with the underlying error message when the copy fails', () => {
     const { perms } = fakeDrive();

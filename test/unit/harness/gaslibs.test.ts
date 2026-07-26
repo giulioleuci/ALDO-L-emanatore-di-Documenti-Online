@@ -203,6 +203,18 @@ test('vendored DocumentService exposes document()/scanDocumentStructure (DOCUMEN
   expect(typeof builder.execute).toBe('function');
 });
 
+test('vendored DocumentService exposes openStandard (DriveServiceFacade.getFileText escape hatch, E2E scenario 10)', () => {
+  // Confirms the real method name backing DriveServiceFacade.getFileText BEFORE trusting it
+  // (GoogleApiWrapper_docs.md only documents the table-insertion helpers, not this native
+  // escape hatch) — same "construct the real class" methodology that found the
+  // DriveServiceFacade/SpreadsheetService bugs referenced above.
+  const logger = new LoggerService();
+  const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
+  const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
+  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  expect(typeof documents.openStandard).toBe('function');
+});
+
 test('vendored DocumentBuilder exposes appendParagraph/setText (blank-doc content authoring, e2e templates)', () => {
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };

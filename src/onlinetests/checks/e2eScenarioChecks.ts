@@ -9,6 +9,7 @@ import type {
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import type { ImportService } from '../../application/services/ImportService';
+import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { TABLE, COL_LOG_DOCS, COL_ASL } from '../../config/schema';
 import {
   ALL_CLASSI_E2E,
@@ -16,6 +17,7 @@ import {
   CONF_DOC_VERBALE,
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
+  CONF_DOC_COMPLESSO,
   confDocPiano,
   CONF_IMP_ASL,
   CONF_MAIL_VERBALE,
@@ -154,6 +156,25 @@ export function registerE2eScenarioChecks(
         );
       }
     }
+  });
+
+  runner.add('E2E scenario 10: genera documento complesso (placeholder loops/filtri, tutte le classi)', sample.sampleSpreadsheetUrl, () => {
+    const drive = container.get<IDriveFacade>('drive');
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_COMPLESSO);
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione documento complesso per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+      const text = drive.getFileText(fileId);
+      if (/\{\{[^}]*\}\}/.test(text)) {
+        throw new ValidationError(
+          `Documento complesso per ${classe}: placeholder non risolto trovato nel testo generato`
+        );
+      }
+    }
+    assertPersistedLinks(CONF_DOC_COMPLESSO, 'Documento complesso');
   });
 
   runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {

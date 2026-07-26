@@ -86,6 +86,8 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   const docs = c.get<DocumentGenerationService>('documentGenerationService');
   expect(docs).toBeInstanceOf(DocumentGenerationService);
   expect(c.get('documentGenerationService')).toBe(docs); // singleton
+  expect(c.has('drive')).toBe(true);
+  expect(c.get('drive')).toBeInstanceOf(FakeDriveFacade);
   expect(c.get('emailNotificationService')).toBeInstanceOf(EmailNotificationService);
   expect(c.get('emailRetryService')).toBeInstanceOf(EmailRetryService);
   expect(c.has('documentBatchService')).toBe(true);

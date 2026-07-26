@@ -3,6 +3,8 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { LazyRef } from '../storico/LazyRef';
 import type { DocumentoStoricoConTipo } from '../storico/StoricoDocumentiService';
+import type { AggregatoreDati } from '../services/AggregatoreDati';
+import type { LogCartella } from '../../domain/entities/LogCartella';
 
 /**
  * Box Rendering System (11 §5/§11) on ComposableContentLib (L4): every
@@ -404,7 +406,8 @@ function str(v: unknown): string {
 function aggregaDati(
   cdu: Record<string, unknown>,
   materie: IMateriaRepository,
-  documentiFiltro: { tipo?: string; stato?: string } = {}
+  documentiFiltro: { tipo?: string; stato?: string } = {},
+  realCartelle: LogCartella[] | null = null
 ): Record<string, unknown> {
   const focus = cdu['focus'] as
     | {
@@ -456,7 +459,20 @@ function aggregaDati(
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
     documenti: { items: documentiFiltrati, storicoRef },
-    cartelle: { items: items.filter((i) => i.tipo === 'CARTELLA'), storicoRef: undefined },
+    cartelle: {
+      items:
+        realCartelle !== null
+          ? realCartelle.map((f) => ({
+              nome: f.nome,
+              link: f.getLink(),
+              tipo: 'CARTELLA',
+              idGen: '',
+              stato: '',
+              dataCreazione: ''
+            }))
+          : items.filter((i) => i.tipo === 'CARTELLA'),
+      storicoRef: undefined
+    },
     pianiPersDaInviare: {
       items: pianiItems.filter((i) => !i.notificato),
       storicoRef: pianiStoricoRef,
@@ -481,14 +497,16 @@ export function renderBoxes(
   confMail: ConfigurazioneEmail,
   cdu: Record<string, unknown>,
   materie: IMateriaRepository,
-  templates: ITemplateEngine
-): { ordered: string[]; boxes: Record<string, RenderedBox> } {
+  templates: ITemplateEngine,
+  aggregatoreDati?: AggregatoreDati,
+  classeId?: string
+): { ordered: string[]; boxes: Record<string, RenderedBox>; folderIds: string[] } {
   const cfgs = confMail.getBoxes();
   const known = cfgs.filter((c) => {
     const tipo = str(c['TIPO_BOX']);
     return tipo !== '' && tipo in DEFAULT_TITLES;
   });
-  if (known.length === 0) return { ordered: [], boxes: {} };
+  if (known.length === 0) return { ordered: [], boxes: {}, folderIds: [] };
 
   const documentiCfg = known.find((c) => str(c['TIPO_BOX']) === 'documenti');
   const documentiFiltro: { tipo?: string; stato?: string } = {};
@@ -496,6 +514,18 @@ export function renderBoxes(
   const filtroStato = str(documentiCfg?.['FILTRO_STATO']);
   if (filtroTipo !== '') documentiFiltro.tipo = filtroTipo;
   if (filtroStato !== '') documentiFiltro.stato = filtroStato;
+
+  const cartelleCfg = known.find((c) => str(c['TIPO_BOX']) === 'cartelle');
+  const cartelleMetodo = str(
+    (cartelleCfg?.['DATI_SORGENTE'] as { metodo?: string } | undefined)?.metodo
+  );
+  const realCartelle: LogCartella[] | null =
+    cartelleMetodo === 'cartellePerClasse' && aggregatoreDati !== undefined && classeId !== undefined
+      ? ((aggregatoreDati.perMetodo('cartellePerClasse', { classeId }) as LogCartella[] | null) ?? [])
+      : null;
+  const folderIds = (realCartelle ?? [])
+    .map((f) => f.id)
+    .filter((id): id is string => id !== null);
 
   const recipe: CompositionRecipeInput = {
     id: confMail.id ?? 'boxes',
@@ -516,7 +546,7 @@ export function renderBoxes(
 
   const context: Record<string, unknown> = {
     ...cdu,
-    boxdata: aggregaDati(cdu, materie, documentiFiltro)
+    boxdata: aggregaDati(cdu, materie, documentiFiltro, realCartelle)
   };
   const result = composer.compose(recipe, context);
 
@@ -544,5 +574,5 @@ export function renderBoxes(
     boxes[tipo] = { id: `${tipo}_${i}`, titolo, html, isEmpty, visibile: html !== '' };
     if (html !== '') ordered.push(html);
   }
-  return { ordered, boxes };
+  return { ordered, boxes, folderIds };
 }

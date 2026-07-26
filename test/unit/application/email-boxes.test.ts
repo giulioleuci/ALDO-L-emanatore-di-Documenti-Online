@@ -13,6 +13,7 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { LazyRef } from '../../../src/application/storico/LazyRef';
+import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
 
 const logger = new LoggerService();
 
@@ -565,4 +566,43 @@ test('piani_pers_da_inviare: empty when items list is empty', () => {
   // (see 'unknown TIPO_BOX is skipped...' test) are absent from `boxes`.
   expect(out.boxes['piani_pers_da_inviare']!.visibile).toBe(false);
   expect(out.boxes['piani_pers_da_inviare']!.html).toBe('');
+});
+
+test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_FOLD folders, not CDU-embedded items', () => {
+  const tables = fixtureTables();
+  (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
+    {
+      ID: 'folder1',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5A',
+      PATH: '_ALDO_E2E_OUTPUT/5A',
+      LINK: 'https://drive.google.com/drive/folders/folder1',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIA: ''
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const aggregatoreDati = new AggregatoreDati(db);
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }]),
+    cduRecord(),
+    materie(),
+    templates,
+    aggregatoreDati,
+    '5A'
+  );
+
+  expect(out.boxes['cartelle']!.html).toContain('https://drive.google.com/drive/folders/folder1');
+  expect(out.boxes['cartelle']!.html).toContain('Verbali 5A');
+  expect(out.folderIds).toEqual(['folder1']);
+});
+
+test('cartelle box without DATI_SORGENTE falls back to CDU-embedded items and reports empty folderIds', () => {
+  const out = render([{ TIPO_BOX: 'cartelle' }]);
+  expect(out.folderIds).toEqual([]);
 });

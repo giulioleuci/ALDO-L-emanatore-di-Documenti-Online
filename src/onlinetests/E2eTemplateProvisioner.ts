@@ -32,6 +32,7 @@ const NAME_VERBALE = 'E2E Verbale Template';
 const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v3';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
+const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }
@@ -136,6 +137,42 @@ function aslImportUpdates(): SheetValueUpdate[] {
 }
 
 /**
+ * Exercises bullet/number lists, tablerow/tablecol loops, and pipe filters (sortBy/where/
+ * uppercase) against real CDU paths (`SPECS_ALDO/02_CDU_STRUTTURA.md` §4.1) already confirmed
+ * elsewhere in this file: `focus.classe.coordinatori` (VERBALE_PARAGRAPHS), `focus.classe.
+ * rappresentanti.studenti` (RIEPILOGO_PARAGRAPHS), `focus.classe.studenti.listaCompleta`
+ * (RIEPILOGO_TABLES), and `focus.classe.consiglioDiClasse` (VERBALE_PARAGRAPHS, also in
+ * production via `SheetMaterieGeneratorStrategy.buildGroups`). `sortBy`/`where` are piped
+ * directly onto each loop directive's own source expression (`{{#loop:path | filter:args}}`);
+ * whether that composition actually renders is only provable by a live online run — this test
+ * only asserts the authored template string, matching every other test in this file.
+ */
+const DOC_COMPLESSO_PARAGRAPHS = [
+  'Report Complesso — {{focus.classe.anagrafica.nome}}',
+  'Coordinatori, ordinati per nome (elenco puntato, con filtro sortBy sul source del loop):',
+  "{{#bullet_list:focus.classe.coordinatori | sortBy:'nome'}}{{nome | uppercase}} — {{materia}}{{/bullet_list}}",
+  'Rappresentanti degli studenti (elenco numerato, con filtro where sul source del loop):',
+  "{{#number_list:focus.classe.rappresentanti.studenti | where:'nomeCompleto'}}{{nomeCompleto}}{{/number_list}}"
+];
+
+const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
+  {
+    data: [
+      ['Alunno', 'Email'],
+      [
+        "{{#tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'}}{{anagrafica.nomeCompleto}}",
+        '{{anagrafica.email}}'
+      ]
+    ],
+    options: { headerRow: true, alternatingRows: true }
+  },
+  {
+    data: [['{{#tablecol_loop:focus.classe.consiglioDiClasse}}{{materie.0.sigla | uppercase}}']],
+    options: { headerRow: true }
+  }
+];
+
+/**
  * Idempotently finds-or-creates the 7 real Drive templates the e2e scenarios generate
  * against (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
  * provisioning"): a fixed name per template, looked up via `IDriveFacade.findFileByName`
@@ -158,11 +195,17 @@ export class E2eTemplateProvisioner {
       RIEPILOGO_TABLES
     );
     const aslImportSheet = this.findOrCreateSheet(folderId, NAME_ASL_IMPORT, aslImportUpdates());
+    const docComplesso = this.findOrCreateDoc(
+      folderId,
+      NAME_DOC_COMPLESSO,
+      DOC_COMPLESSO_PARAGRAPHS,
+      DOC_COMPLESSO_TABLES
+    );
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
-    return { verbale, condotta, riepilogo, aslImportSheet, piani };
+    return { verbale, condotta, riepilogo, aslImportSheet, docComplesso, piani };
   }
 
   private findOrCreateDoc(

@@ -68,6 +68,7 @@ const TEMPLATE_IDS = {
   condotta: 'tmpl_condotta',
   riepilogo: 'tmpl_riepilogo',
   aslImportSheet: 'tmpl_asl_import',
+  docComplesso: 'tmpl_doc_complesso',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -154,13 +155,13 @@ test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', ()
   expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
 });
 
-test('seeds 8 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 5 piani) each pointing at its provisioned template', () => {
+test('seeds 9 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc complesso + 5 piani) each pointing at its provisioned template', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(8);
+  expect(confDoc).toHaveLength(9);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_verbale' });
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
@@ -169,6 +170,11 @@ test('seeds 8 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 5 piani) eac
   expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(riepilogo[COL_CONF_DOC.TIPO]).toBe('RIEPILOGO_CLASSE');
   expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_riepilogo' });
+  const complesso = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO')!;
+  expect(complesso[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(JSON.parse(complesso[COL_CONF_DOC.MODELLI] as string)).toEqual({
+    templateId: 'tmpl_doc_complesso'
+  });
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
   expect(piani).toHaveLength(5);
   expectCompleteRows(confDoc, COL_CONF_DOC);
@@ -382,6 +388,19 @@ test('prior-year LOG_DOCS carries the PEI and new-3C-PDP_BES plans, ID_GEN match
   expect(bes[COL_LOG_DOCS.ID_GEN]).toBe(confDocPiano('PDP_BES'));
   expect(bes[COL_LOG_DOCS.SOTTOTIPO]).toBe('PDP_BES');
   expect(bes[COL_LOG_DOCS.CLASSI]).toBe('2C');
+});
+
+test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENERICO generator)', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO');
+  expect(row).toBeDefined();
+  expect(row![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(JSON.parse(String(row![COL_CONF_DOC.MODELLI]))).toEqual({
+    templateId: TEMPLATE_IDS.docComplesso
+  });
 });
 
 test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {

@@ -18,6 +18,7 @@ import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRep
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
+import type { AggregatoreDati } from '../services/AggregatoreDati';
 import { getClasseEntity } from '../context-engine/techEntities';
 import { recipe } from '../context-engine/Recipe';
 import { salutoPerTarget } from '../email/saluto';
@@ -218,7 +219,8 @@ export class RenderBoxesStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly materie: IMateriaRepository,
-    private readonly templates: ITemplateEngine
+    private readonly templates: ITemplateEngine,
+    private readonly aggregatoreDati?: AggregatoreDati
   ) {
     super('RenderBoxes', logger, {
       shouldExecuteCondition: sendGate,
@@ -228,18 +230,23 @@ export class RenderBoxesStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const built = cdu(ctx);
+    const classeId =
+      built.focus.classe !== undefined ? (getClasseEntity(built).id ?? undefined) : undefined;
     const result = renderBoxes(
       this.composer,
       confMail(ctx),
       cduRecord(ctx),
       this.materie,
-      this.templates
+      this.templates,
+      this.aggregatoreDati,
+      classeId
     );
     built.render = { boxes: result.boxes, body: { htmlCompleto: '', htmlSoloContenuto: '' } };
     const oggetto = this.templates.processString(confMail(ctx).oggetto, cduRecord(ctx));
     if (built.destinatario !== undefined)
       built.destinatario.comunicazione.oggettoCalcolato = oggetto;
     this.setResult(ctx, 'boxHtmlOrdered', result.ordered);
+    this.setResult(ctx, 'cartelleFolderIds', result.folderIds);
     this.setResult(ctx, 'shouldSend', ctx.get('shouldSend') === true && result.ordered.length > 0);
     this.setResult(ctx, 'oggettoRisolto', oggetto);
   }

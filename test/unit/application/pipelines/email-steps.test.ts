@@ -31,6 +31,7 @@ import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../../src/infrastructure/db/Database';
+import { AggregatoreDati } from '../../../../src/application/services/AggregatoreDati';
 
 const logger = new LoggerService();
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window
@@ -343,6 +344,49 @@ test('RenderBoxesStep: all rendered boxes empty or invisible suppress delivery',
 
   expect(ordered).toEqual([]);
   expect(w.ctx.get('shouldSend')).toBe(false);
+});
+
+test('RenderBoxesStep resolves real LOG_FOLD folders and sets cartelleFolderIds when BOX_CFG opts in (docente/classe target)', () => {
+  const tables = fixtureTables();
+  (tables['LOG_FOLD'] as Row[]) = [
+    {
+      ID: 'folder1',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5A',
+      PATH: '_ALDO_E2E_OUTPUT/5A',
+      LINK: 'https://drive.google.com/drive/folders/folder1',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIA: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: '[{"TIPO_BOX":"cartelle","DATI_SORGENTE":{"metodo":"cartellePerClasse"}}]'
+    },
+    docenteTarget(),
+    tables
+  );
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(
+    logger,
+    new MateriaRepository(w.db),
+    w.templates,
+    new AggregatoreDati(w.db)
+  ).execute(w.ctx);
+
+  expect(w.ctx.get<string[]>('cartelleFolderIds')).toEqual(['folder1']);
+});
+
+test('RenderBoxesStep sets cartelleFolderIds to [] when no cartellePerClasse opt-in is configured', () => {
+  const w = wire();
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
+
+  expect(w.ctx.get<string[]>('cartelleFolderIds')).toEqual([]);
 });
 
 test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () => {

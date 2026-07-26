@@ -46,6 +46,7 @@ import { TABLE, COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { CattedraResolver } from './CattedraResolver';
+import { AggregatoreDati } from './AggregatoreDati';
 
 /** Everything the email subsystem needs from persistence: ALDO port + repository seam. */
 export type EmailDb = IDatabase & PostProcessDb & RepositoryDatabase;
@@ -68,6 +69,7 @@ export interface EmailNotificationDeps {
   master: IMasterSheetRepository;
   supplenze: ISupplenzaRepository;
   materie: IMateriaRepository;
+  aggregatoreDati: AggregatoreDati;
   /** Effective-teacher resolution (SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI, ref CLAUDE.md). */
   cattedraResolver: CattedraResolver;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
@@ -145,6 +147,7 @@ export class EmailNotificationService {
       master,
       supplenze: new SupplenzaRepository(db),
       materie: new MateriaRepository(db),
+      aggregatoreDati: new AggregatoreDati(db),
       cattedraResolver: new CattedraResolver(db)
     };
     if (logger !== undefined) base.logger = logger;
@@ -237,7 +240,7 @@ export class EmailNotificationService {
     })
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
-      .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates))
+      .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
       .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
       .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.supplenze))
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))

@@ -35,6 +35,7 @@ There are these indexed project graphs you can query:
 - `"home-giulio-Desktop-ALDO-implementing-GasLibraryFactory"`: Contains only the library code. Use this to discover reusable functions and extension points.
 - `"home-giulio-Desktop-ALDO-implementing"`: Contains both ALDO and GasLibraryFactory. Use this to map how ALDO consumes the library.
 - `"aldo-onlinetests-debug"`: Contains both ALDO and GasLibraryFactory, and test online for ALDO.
+- `"aldo-full-coverage"`: Contains ALDO application code and all test tiers (unit, integration, build, online) in one graph. GasLibraryFactory is not part of this graph (nested-repo auto-exclusion) — query the separate `"home-giulio-Desktop-ALDO-implementing-GasLibraryFactory"` index alongside it for library-side lookups. Use this for cross-cutting coverage and dead-code analysis spanning ALDO's whole test surface.
 
 **When working on this codebase, strictly use the MCP tools for the following tasks:**
 

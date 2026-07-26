@@ -748,6 +748,22 @@ test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 
   expect(allegati.docs).toEqual(['doc1', 'doc2']);
 });
 
+test('LogEmailStep records cartelleFolderIds in LOG_MAIL.ALLEGATI.folders (11 §9)', () => {
+  const w = wire();
+  buildStep(w).execute(w.ctx);
+  w.ctx.set('shouldSend', true);
+  w.ctx.set('sentTo', ['genitore1@x.it']);
+  w.ctx.set('sendErrors', []);
+  w.ctx.set('corpoHtml', '<p>x</p>');
+  w.ctx.set('cartelleFolderIds', ['folder1', 'folder2']);
+  const logMail = new LogEmailRepository(w.db);
+  new LogEmailStep(logger, logMail).execute(w.ctx);
+
+  const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
+  const allegati = JSON.parse(String(row['ALLEGATI']));
+  expect(allegati.folders).toEqual(['folder1', 'folder2']);
+});
+
 test('LogEmailStep records ERROR with message when a send failed (11 §9)', () => {
   const w = wire();
   runThroughCompose(w);

@@ -467,7 +467,10 @@ export class LogEmailStep extends Step {
     const errors = ctx.get<string[]>('sendErrors') ?? [];
     const stato = errors.length > 0 ? StatoEmail.ERROR : StatoEmail.SUCCESS;
     const destinatari = (ctx.get<string[]>('sentTo') ?? []).map((e) => Email.of(e));
-    const allegatiInfo = { docs: ctx.get<string[]>('allegatiIds') ?? [], folders: [] };
+    const allegatiInfo = {
+      docs: ctx.get<string[]>('allegatiIds') ?? [],
+      folders: ctx.get<string[]>('cartelleFolderIds') ?? []
+    };
     this.logMail.registraInvio(
       String(cfg(ctx)[COL_CONF_MAIL.ID]),
       destinatari,

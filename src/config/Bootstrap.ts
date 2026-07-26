@@ -112,6 +112,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
     ]);
     if (deps.spreadsheets !== undefined) {
+      c.register('spreadsheets', () => deps.spreadsheets!);
       const materie = new MateriaRepository(deps.db);
       registry.set(
         'SHEET_CON_MATERIE',

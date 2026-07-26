@@ -254,6 +254,12 @@ describe('buildAldoContainer — optional generator strategies', () => {
     expect(registry.has('DOCUMENTO_GENERICO')).toBe(true);
     expect(registry.has('RIEPILOGO_CLASSE')).toBe(false);
   });
+
+  test("registers 'spreadsheets' in the container when deps.spreadsheets is provided", () => {
+    const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
+    c.get('strategyRegistry');
+    expect(c.get('spreadsheets')).toBeDefined();
+  });
 });
 
 describe('initAldo — singleton reuse + missing master id', () => {

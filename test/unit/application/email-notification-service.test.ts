@@ -30,6 +30,7 @@ import { MateriaRepository } from '../../../src/infrastructure/repositories/Mate
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 import { CattedraResolver } from '../../../src/application/services/CattedraResolver';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
+import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -89,6 +90,7 @@ function fullDeps(
     supplenze: new SupplenzaRepository(db),
     materie: new MateriaRepository(db),
     cattedraResolver: new CattedraResolver(db),
+    aggregatoreDati: new AggregatoreDati(db),
     ...overrides
   };
 }

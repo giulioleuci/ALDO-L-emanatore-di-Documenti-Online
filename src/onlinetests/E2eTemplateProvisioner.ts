@@ -1,5 +1,5 @@
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
-import { TIPI_PIANO, type E2eTemplateIds } from './E2eSampleDatabaseBuilder';
+import { TIPI_PIANO, type E2eTemplateIds, e2eAlunnoEmail } from './E2eSampleDatabaseBuilder';
 
 /** A single Sheets range write, relative to the artifact's own default tab (sheet-name-agnostic — the
  * factory resolves the actual, possibly locale-dependent, tab name at creation time). */
@@ -31,6 +31,7 @@ export interface IArtifactFactory {
 const NAME_VERBALE = 'E2E Verbale Template';
 const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v3';
+const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }
@@ -115,6 +116,25 @@ function condottaUpdates(): SheetValueUpdate[] {
   return updates;
 }
 
+/** School year matching E2eSampleDatabaseBuilder's seedMaster ANNO_SCOLASTICO (3rd-year students only, design spec "fixture-only scoping"). */
+const ASL_IMPORT_ANNO = '2026-2027';
+const ASL_IMPORT_ROWS: Array<[string, number]> = [
+  [e2eAlunnoEmail(43), 40],
+  [e2eAlunnoEmail(44), 55],
+  [e2eAlunnoEmail(51), 60],
+  [e2eAlunnoEmail(52), 35]
+];
+
+function aslImportUpdates(): SheetValueUpdate[] {
+  const updates: SheetValueUpdate[] = [
+    { range: 'A1:C1', values: [['STUDENTE', 'ANNO', 'ORE']] }
+  ];
+  ASL_IMPORT_ROWS.forEach(([email, ore], i) => {
+    updates.push({ range: `A${2 + i}:C${2 + i}`, values: [[email, ASL_IMPORT_ANNO, ore]] });
+  });
+  return updates;
+}
+
 /**
  * Idempotently finds-or-creates the 7 real Drive templates the e2e scenarios generate
  * against (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
@@ -137,11 +157,12 @@ export class E2eTemplateProvisioner {
       RIEPILOGO_PARAGRAPHS,
       RIEPILOGO_TABLES
     );
+    const aslImportSheet = this.findOrCreateSheet(folderId, NAME_ASL_IMPORT, aslImportUpdates());
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
-    return { verbale, condotta, riepilogo, piani };
+    return { verbale, condotta, riepilogo, aslImportSheet, piani };
   }
 
   private findOrCreateDoc(

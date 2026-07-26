@@ -28,7 +28,8 @@ import {
   COL_CONF_DOC,
   COL_CONF_MAIL,
   COL_LOG_DOCS,
-  COL_PIANI
+  COL_PIANI,
+  COL_CONF_IMP
 } from '../../../src/config/schema';
 
 class RecordingSpreadsheet implements ISampleSpreadsheet {
@@ -66,6 +67,7 @@ const TEMPLATE_IDS = {
   verbale: 'tmpl_verbale',
   condotta: 'tmpl_condotta',
   riepilogo: 'tmpl_riepilogo',
+  aslImportSheet: 'tmpl_asl_import',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -380,4 +382,24 @@ test('prior-year LOG_DOCS carries the PEI and new-3C-PDP_BES plans, ID_GEN match
   expect(bes[COL_LOG_DOCS.ID_GEN]).toBe(confDocPiano('PDP_BES'));
   expect(bes[COL_LOG_DOCS.SOTTOTIPO]).toBe('PDP_BES');
   expect(bes[COL_LOG_DOCS.CLASSI]).toBe('2C');
+});
+
+test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const rows = sample.rows[TABLE.CONF_IMP]!;
+  expect(rows).toHaveLength(1);
+  const row = rows[0]!;
+  expect(row[COL_CONF_IMP.TARGET]).toBe(TABLE.ASL);
+  expect(row[COL_CONF_IMP.ATTIVO]).toBe(true);
+  const config = JSON.parse(String(row[COL_CONF_IMP.CONFIG])) as Record<string, unknown>;
+  expect(config).toMatchObject({
+    searchStrategy: 'FILE_SINGOLO',
+    fileId: TEMPLATE_IDS.aslImportSheet,
+    map: { A: 'STUDENTE', B: 'ANNO', C: 'ORE' },
+    key: 'STUDENTE',
+    conflictResolution: 'OVERWRITE'
+  });
 });

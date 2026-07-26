@@ -79,6 +79,7 @@ export const CONF_MAIL_VERBALE = 'E2E_MAIL_VERBALE';
 export const CONF_MAIL_CONDOTTA = 'E2E_MAIL_CONDOTTA';
 export const CONF_MAIL_CARENZA = 'E2E_MAIL_CARENZA';
 export const CONF_MAIL_PIANI = 'E2E_MAIL_PIANI';
+export const CONF_IMP_ASL = 'E2E_IMPORT_ASL';
 
 export function e2eDocenteEmail(i: number): string {
   return `e2edocente${i}@onlinetest.aldo.local`;
@@ -120,6 +121,7 @@ export interface E2eTemplateIds {
   verbale: string;
   condotta: string;
   riepilogo: string;
+  aslImportSheet: string;
   piani: Record<(typeof TIPI_PIANO)[number], string>;
 }
 
@@ -222,6 +224,7 @@ export class E2eSampleDatabaseBuilder {
     this.seedPiani(sample);
     this.seedConfDoc(sample, templateIds);
     this.seedConfMail(sample);
+    this.seedConfImp(sample, templateIds);
 
     // Previous school year (2025-2026): CLASSI/ALUNNI/LOG_DOCS only — the only
     // tables StoricoClassiService/StoricoDocumentiService ever read from a
@@ -757,6 +760,21 @@ export class E2eSampleDatabaseBuilder {
           }
         }
       ])
+    });
+  }
+
+  private seedConfImp(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
+    sample.appendRow(TABLE.CONF_IMP, {
+      [COL_CONF_IMP.ID]: CONF_IMP_ASL,
+      [COL_CONF_IMP.TARGET]: TABLE.ASL,
+      [COL_CONF_IMP.CONFIG]: JSON.stringify({
+        searchStrategy: 'FILE_SINGOLO',
+        fileId: templateIds.aslImportSheet,
+        map: { A: 'STUDENTE', B: 'ANNO', C: 'ORE' },
+        key: 'STUDENTE',
+        conflictResolution: 'OVERWRITE'
+      }),
+      [COL_CONF_IMP.ATTIVO]: true
     });
   }
 

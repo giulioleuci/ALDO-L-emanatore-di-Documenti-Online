@@ -47,13 +47,13 @@ function fakeArtifacts(): {
   };
 }
 
-test('creates all 8 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 5 doc piani) when none exist yet', () => {
+test('creates all 9 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 5 doc piani) when none exist yet', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(8);
-  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(1);
+  expect(created).toHaveLength(9);
+  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(2);
   expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(7);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
@@ -73,7 +73,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(7); // condotta + riepilogo + 5 piani still created
+  expect(created).toHaveLength(8); // condotta + riepilogo + asl import + 5 piani still created
 });
 
 test('authors real CDU-path placeholder content into newly-created templates, not blank artifacts', () => {
@@ -122,6 +122,22 @@ test('authors real CDU-path placeholder content into newly-created templates, no
     expect(pianoText).toContain('{{piano.note}}');
     expect(pianoText).toContain(tipo);
   }
+});
+
+test('provisions the ASL import source sheet with 3 mapped columns and only 3rd-year students', () => {
+  const { artifacts, sheetContent, created } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  expect(ids.aslImportSheet).toMatch(/^sheet_/);
+  expect(created).toContain('sheet:E2E ASL Import Source');
+  const updates = sheetContent[ids.aslImportSheet] ?? [];
+  const text = JSON.stringify(updates);
+  expect(text).toContain('STUDENTE');
+  expect(text).toContain('ANNO');
+  expect(text).toContain('ORE');
+  expect(text).toContain('e2ealunno43@onlinetest.aldo.local');
+  expect(text).toContain('2026-2027');
 });
 
 test('does not re-author content for a reused (found, not created) template', () => {

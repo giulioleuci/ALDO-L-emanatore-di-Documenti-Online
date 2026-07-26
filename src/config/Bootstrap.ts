@@ -99,6 +99,9 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('logger', () => logger);
   c.register('db', () => deps.db);
   c.register('contextBuilder', () => ContextEngineFactory.create(deps.db, deps.master));
+  if (deps.spreadsheets !== undefined) {
+    c.register('spreadsheets', () => deps.spreadsheets!);
+  }
   c.register('strategyRegistry', () => {
     // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value
     // implemented. The Sheet/Doc-structural strategies need a live
@@ -112,7 +115,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
     ]);
     if (deps.spreadsheets !== undefined) {
-      c.register('spreadsheets', () => deps.spreadsheets!);
       const materie = new MateriaRepository(deps.db);
       registry.set(
         'SHEET_CON_MATERIE',

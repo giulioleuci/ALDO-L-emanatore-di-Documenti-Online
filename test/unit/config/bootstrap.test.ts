@@ -257,7 +257,6 @@ describe('buildAldoContainer — optional generator strategies', () => {
 
   test("registers 'spreadsheets' in the container when deps.spreadsheets is provided", () => {
     const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
-    c.get('strategyRegistry');
     expect(c.get('spreadsheets')).toBeDefined();
   });
 });

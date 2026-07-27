@@ -7,7 +7,9 @@ import {
   CONF_MAIL_CARENZA,
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_PIANI,
-  CONF_MAIL_VERBALE
+  CONF_MAIL_VERBALE,
+  CONF_DOC_PIANO_LAVORO,
+  CONF_MAIL_LAVORO
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type {
@@ -18,7 +20,7 @@ import type {
 import type { ImportService, ImportResult } from '../../../src/application/services/ImportService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import type { IDriveFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
-import { COL_LOG_DOCS } from '../../../src/config/schema';
+import { COL_LOG_DOCS, COL_LOG_MAIL } from '../../../src/config/schema';
 
 const sample: E2eSampleDatabase & { testMode: boolean } = {
   masterSpreadsheetId: 'm',
@@ -61,9 +63,15 @@ function recordingHarness(
       return { fileId: studente, status: 'CREATED' };
     }
   } as unknown as DocumentGenerationService;
+  const logMailRows: Array<Record<string, unknown>> = [];
   const email = {
     sendPattern(patternId: string) {
       emailPatterns.push(patternId);
+      if (patternId === CONF_MAIL_LAVORO) {
+        logMailRows.push({
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: ['folder1'] })
+        });
+      }
       return resultForPattern(patternId);
     }
   } as EmailNotificationService;
@@ -82,7 +90,9 @@ function recordingHarness(
     }
   } as ImportService;
   const db = {
-    table: (name: string) => ({ findAll: () => (name === 'ASL' ? aslRows : rows) })
+    table: (name: string) => ({
+      findAll: () => (name === 'ASL' ? aslRows : name === 'LOG_MAIL' ? logMailRows : rows)
+    })
   } as unknown as EmailDb;
   const drive = {
     getFileText: () => 'Report Complesso — nessun placeholder residuo'
@@ -187,17 +197,15 @@ test('refuses to register any check and reports a single failure when the sample
   expect(report.results[0]!.message).toMatch(/TEST_MODE/);
 });
 
-test('resolves the email service once after document generation and reuses it for scenarios 4-7', () => {
+test('resolves the (memoized) email service exactly once and reuses it across scenarios 12 and 4-7', () => {
   const harness = recordingHarness();
 
   const runner = new TestRunner();
   registerE2eScenarioChecks(runner, harness.container, sample);
 
-  expect(harness.events.indexOf('resolve-email')).toBeGreaterThan(
-    harness.events.lastIndexOf('generate-document')
-  );
   expect(harness.emailResolutions()).toBe(1);
   expect(harness.emailPatterns).toEqual([
+    CONF_MAIL_LAVORO,
     CONF_MAIL_VERBALE,
     CONF_MAIL_CONDOTTA,
     CONF_MAIL_CARENZA,
@@ -315,4 +323,78 @@ test('scenario 11: fails when a generated sheet has no protected ranges', () => 
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
   expect(scenario11?.status).toBe('fail');
+});
+
+test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.ALLEGATI', () => {
+  const rows: Array<Record<string, unknown>> = [];
+  const documents = {
+    generateForClasse(classe: ClasseId, configId: string) {
+      return { fileId: `${configId}-${classe.value}`, status: 'CREATED' };
+    },
+    generateForAlunno() {
+      return { fileId: 'x', status: 'CREATED' };
+    }
+  } as unknown as DocumentGenerationService;
+  const email = {
+    sendPattern(patternId: string): SendPatternResult {
+      if (patternId === CONF_MAIL_LAVORO) {
+        rows.push({
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: ['folder1'] })
+        });
+      }
+      return { targets: 1, sent: 1, skipped: 0, errors: [] };
+    }
+  } as EmailNotificationService;
+  const db = { table: () => ({ findAll: () => rows }) } as unknown as EmailDb;
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentGenerationService') return documents as T;
+      if (key === 'db') return db as T;
+      if (key === 'emailNotificationService') return email as T;
+      throw new Error(`Unexpected service: ${key}`);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario12 = runner.report().results.find((r) => r.name.includes('scenario 12'));
+  expect(scenario12).toMatchObject({ status: 'pass' });
+});
+
+test('scenario 12: fails when LOG_MAIL.ALLEGATI.folders is empty', () => {
+  const rows: Array<Record<string, unknown>> = [];
+  const documents = {
+    generateForClasse(classe: ClasseId, configId: string) {
+      return { fileId: `${configId}-${classe.value}`, status: 'CREATED' };
+    },
+    generateForAlunno() {
+      return { fileId: 'x', status: 'CREATED' };
+    }
+  } as unknown as DocumentGenerationService;
+  const email = {
+    sendPattern(patternId: string): SendPatternResult {
+      if (patternId === CONF_MAIL_LAVORO) {
+        rows.push({
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: [] })
+        });
+      }
+      return { targets: 1, sent: 1, skipped: 0, errors: [] };
+    }
+  } as EmailNotificationService;
+  const db = { table: () => ({ findAll: () => rows }) } as unknown as EmailDb;
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentGenerationService') return documents as T;
+      if (key === 'db') return db as T;
+      if (key === 'emailNotificationService') return email as T;
+      throw new Error(`Unexpected service: ${key}`);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario12 = runner.report().results.find((r) => r.name.includes('scenario 12'));
+  expect(scenario12?.status).toBe('fail');
 });

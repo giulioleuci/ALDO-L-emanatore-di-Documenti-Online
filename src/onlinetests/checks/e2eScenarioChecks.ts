@@ -10,7 +10,7 @@ import type { DocumentGenerationService } from '../../application/services/Docum
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
-import { TABLE, COL_LOG_DOCS, COL_ASL } from '../../config/schema';
+import { TABLE, COL_LOG_DOCS, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
 import {
   ALL_CLASSI_E2E,
   TIPI_PIANO,
@@ -19,12 +19,14 @@ import {
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
   CONF_DOC_SHEET_PERMESSI,
+  CONF_DOC_PIANO_LAVORO,
   confDocPiano,
   CONF_IMP_ASL,
   CONF_MAIL_VERBALE,
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_CARENZA,
   CONF_MAIL_PIANI,
+  CONF_MAIL_LAVORO,
   PIANO_STUDENTE,
   type E2eSampleDatabase
 } from '../E2eSampleDatabaseBuilder';
@@ -197,6 +199,45 @@ export function registerE2eScenarioChecks(
             `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
           );
         }
+      }
+    }
+  });
+
+  runner.add('E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_PIANO_LAVORO);
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione piano di lavoro per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+    }
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_VERBALE);
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione verbale (per la cartella verbali) per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+    }
+    const result = getEmailService().sendPattern(CONF_MAIL_LAVORO);
+    if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+      throw new ValidationError(`Invio piano di lavoro fallito: ${emailDiagnostics(result)}`);
+    }
+    const logRows = db.table(TABLE.LOG_MAIL).findAll();
+    if (logRows.length === 0) {
+      throw new ValidationError('Invio piano di lavoro: nessuna riga LOG_MAIL registrata');
+    }
+    for (const row of logRows) {
+      const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
+        docs?: string[];
+        folders?: string[];
+      };
+      if ((allegati.docs ?? []).length === 0) {
+        throw new ValidationError('LOG_MAIL.ALLEGATI.docs è vuoto: il piano di lavoro non è stato allegato');
+      }
+      if ((allegati.folders ?? []).length === 0) {
+        throw new ValidationError('LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata');
       }
     }
   });

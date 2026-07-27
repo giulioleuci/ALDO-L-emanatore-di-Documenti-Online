@@ -8,7 +8,6 @@ import {
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_PIANI,
   CONF_MAIL_VERBALE,
-  CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_LAVORO
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';

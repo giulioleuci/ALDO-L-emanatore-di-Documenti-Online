@@ -15,6 +15,8 @@ import { E2eSampleDatabaseBuilder, type E2eTemplateIds } from './E2eSampleDataba
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { GasArtifactFactory } from './GasArtifactFactory';
 import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
+import { e2eActiveRepresentativesInterceptor } from './E2eActiveRepresentativesInterceptor';
+import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 
 /**
  * Every seam {@link executeOnlineTests} needs that ultimately touches something outside plain
@@ -193,6 +195,9 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   properties.set(PROP_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
 
   const container = initAldoFn(clock(), properties);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
 
   const runner = new TestRunner();
   registerE2eScenarioChecks(runner, container, { ...sample, testMode: sample.masterTestMode });

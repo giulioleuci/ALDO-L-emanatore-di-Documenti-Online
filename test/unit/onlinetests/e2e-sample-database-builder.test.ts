@@ -467,8 +467,8 @@ test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUD
   expect(config).toMatchObject({
     searchStrategy: 'FILE_SINGOLO',
     fileId: TEMPLATE_IDS.aslImportSheet,
-    map: { A: 'STUDENTE', B: 'ANNO', C: 'ORE' },
     key: 'STUDENTE',
     conflictResolution: 'OVERWRITE'
   });
+  expect(config).not.toHaveProperty('map');
 });

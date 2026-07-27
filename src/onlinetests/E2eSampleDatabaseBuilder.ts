@@ -848,7 +848,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_IMP.CONFIG]: JSON.stringify({
         searchStrategy: 'FILE_SINGOLO',
         fileId: templateIds.aslImportSheet,
-        map: { A: 'STUDENTE', B: 'ANNO', C: 'ORE' },
         key: 'STUDENTE',
         conflictResolution: 'OVERWRITE'
       }),

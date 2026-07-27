@@ -842,6 +842,15 @@ declare global {
     protectedCount: number;
     protectedRangeIds: number[];
   }
+  interface SpreadsheetProtectedRange {
+    id: number;
+    range: unknown;
+    description: string;
+    editors: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean };
+    sheetId: number;
+    sheetName: string;
+    warningOnly: boolean;
+  }
   interface SpreadsheetCreateSheetRequest {
     title: string;
     index?: number;
@@ -898,6 +907,8 @@ declare global {
         globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean };
       }
     ): SpreadsheetProtectResult;
+    /** Real read-back of protected ranges (Advanced Sheets API `spreadsheets.get`, fields-scoped). Optional `sheetName` filters to a single tab. */
+    getProtectedRanges(spreadsheetId: string, sheetName?: string | null): SpreadsheetProtectedRange[];
   }
   interface DocumentStructureElement {
     index: number;

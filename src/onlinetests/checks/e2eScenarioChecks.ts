@@ -18,6 +18,7 @@ import {
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
+  CONF_DOC_SHEET_PERMESSI,
   confDocPiano,
   CONF_IMP_ASL,
   CONF_MAIL_VERBALE,
@@ -175,6 +176,29 @@ export function registerE2eScenarioChecks(
       }
     }
     assertPersistedLinks(CONF_DOC_COMPLESSO, 'Documento complesso');
+  });
+
+  runner.add('E2E scenario 11: verifica protezione colonne materie (SHEET_CON_MATERIE_E_PERMESSI)', sample.sampleSpreadsheetUrl, () => {
+    const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
+    for (const classe of ALL_CLASSI_E2E) {
+      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_SHEET_PERMESSI);
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
+        );
+      }
+      const protections = spreadsheets.getProtectedRanges(fileId);
+      if (protections.length === 0) {
+        throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
+      }
+      for (const p of protections) {
+        if ((p.editors.users ?? []).length === 0) {
+          throw new ValidationError(
+            `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
+          );
+        }
+      }
+    }
   });
 
   runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {

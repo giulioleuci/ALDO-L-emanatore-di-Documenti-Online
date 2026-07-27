@@ -87,12 +87,26 @@ function recordingHarness(
   const drive = {
     getFileText: () => 'Report Complesso — nessun placeholder residuo'
   } as unknown as IDriveFacade;
+  const spreadsheets = {
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: {},
+        description: '',
+        editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
   const container = {
     get<T>(key: string): T {
       if (key === 'documentGenerationService') return documents as T;
       if (key === 'db') return db as T;
       if (key === 'importService') return importService as T;
       if (key === 'drive') return drive as unknown as T;
+      if (key === 'spreadsheets') return spreadsheets as unknown as T;
       if (key === 'emailNotificationService') {
         emailResolutions += 1;
         events.push('resolve-email');
@@ -261,4 +275,44 @@ test('scenario 10: fails when the generated doc still has an unresolved {{...}} 
 
   const scenario10 = runner.report().results.find((r) => r.name.includes('scenario 10'));
   expect(scenario10?.status).toBe('fail');
+});
+
+test('scenario 11: passes when every generated sheet has protected ranges with non-empty editors', () => {
+  const harness = recordingHarness();
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'spreadsheets') {
+        return {
+          getProtectedRanges: () => [
+            { id: 'p1', range: {}, description: '', editors: { users: ['e2edocente1@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false }
+          ]
+        } as unknown as T;
+      }
+      return harness.container.get<T>(key);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
+  expect(scenario11).toMatchObject({ status: 'pass' });
+});
+
+test('scenario 11: fails when a generated sheet has no protected ranges', () => {
+  const harness = recordingHarness();
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'spreadsheets') {
+        return { getProtectedRanges: () => [] } as unknown as T;
+      }
+      return harness.container.get<T>(key);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
+  expect(scenario11?.status).toBe('fail');
 });

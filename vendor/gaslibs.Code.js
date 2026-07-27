@@ -18,31 +18,31 @@ function exampleUsage() {
 var __WEBPACK_AMD_DEFINE_RESULT__;
 ;(function(root) {
 
-	
+
 	var freeExports =  true && exports;
 
-	
+
 	var freeModule =  true && module &&
 		module.exports == freeExports && module;
 
-	
-	
+
+
 	var freeGlobal = typeof __webpack_require__.g == 'object' && __webpack_require__.g;
 	if (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal) {
 		root = freeGlobal;
 	}
 
-	
 
-	
+
+
 	var regexAstralSymbols = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
-	
-	
-	
+
+
+
 	var regexAsciiWhitelist = /[\x01-\x7F]/g;
-	
-	
-	
+
+
+
 	var regexBmpWhitelist = /[\x01-\t\x0B\f\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D\xA0-\uFFFF]/g;
 
 	var regexEncodeNonAscii = /<\u20D2|=\u20E5|>\u20D2|\u205F\u200A|\u219D\u0338|\u2202\u0338|\u2220\u20D2|\u2229\uFE00|\u222A\uFE00|\u223C\u20D2|\u223D\u0331|\u223E\u0333|\u2242\u0338|\u224B\u0338|\u224D\u20D2|\u224E\u0338|\u224F\u0338|\u2250\u0338|\u2261\u20E5|\u2264\u20D2|\u2265\u20D2|\u2266\u0338|\u2267\u0338|\u2268\uFE00|\u2269\uFE00|\u226A\u0338|\u226A\u20D2|\u226B\u0338|\u226B\u20D2|\u227F\u0338|\u2282\u20D2|\u2283\u20D2|\u228A\uFE00|\u228B\uFE00|\u228F\u0338|\u2290\u0338|\u2293\uFE00|\u2294\uFE00|\u22B4\u20D2|\u22B5\u20D2|\u22D8\u0338|\u22D9\u0338|\u22DA\uFE00|\u22DB\uFE00|\u22F5\u0338|\u22F9\u0338|\u2933\u0338|\u29CF\u0338|\u29D0\u0338|\u2A6D\u0338|\u2A70\u0338|\u2A7D\u0338|\u2A7E\u0338|\u2AA1\u0338|\u2AA2\u0338|\u2AAC\uFE00|\u2AAD\uFE00|\u2AAF\u0338|\u2AB0\u0338|\u2AC5\u0338|\u2AC6\u0338|\u2ACB\uFE00|\u2ACC\uFE00|\u2AFD\u20E5|[\xA0-\u0113\u0116-\u0122\u0124-\u012B\u012E-\u014D\u0150-\u017E\u0192\u01B5\u01F5\u0237\u02C6\u02C7\u02D8-\u02DD\u0311\u0391-\u03A1\u03A3-\u03A9\u03B1-\u03C9\u03D1\u03D2\u03D5\u03D6\u03DC\u03DD\u03F0\u03F1\u03F5\u03F6\u0401-\u040C\u040E-\u044F\u0451-\u045C\u045E\u045F\u2002-\u2005\u2007-\u2010\u2013-\u2016\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2025\u2026\u2030-\u2035\u2039\u203A\u203E\u2041\u2043\u2044\u204F\u2057\u205F-\u2063\u20AC\u20DB\u20DC\u2102\u2105\u210A-\u2113\u2115-\u211E\u2122\u2124\u2127-\u2129\u212C\u212D\u212F-\u2131\u2133-\u2138\u2145-\u2148\u2153-\u215E\u2190-\u219B\u219D-\u21A7\u21A9-\u21AE\u21B0-\u21B3\u21B5-\u21B7\u21BA-\u21DB\u21DD\u21E4\u21E5\u21F5\u21FD-\u2205\u2207-\u2209\u220B\u220C\u220F-\u2214\u2216-\u2218\u221A\u221D-\u2238\u223A-\u2257\u2259\u225A\u225C\u225F-\u2262\u2264-\u228B\u228D-\u229B\u229D-\u22A5\u22A7-\u22B0\u22B2-\u22BB\u22BD-\u22DB\u22DE-\u22E3\u22E6-\u22F7\u22F9-\u22FE\u2305\u2306\u2308-\u2310\u2312\u2313\u2315\u2316\u231C-\u231F\u2322\u2323\u232D\u232E\u2336\u233D\u233F\u237C\u23B0\u23B1\u23B4-\u23B6\u23DC-\u23DF\u23E2\u23E7\u2423\u24C8\u2500\u2502\u250C\u2510\u2514\u2518\u251C\u2524\u252C\u2534\u253C\u2550-\u256C\u2580\u2584\u2588\u2591-\u2593\u25A1\u25AA\u25AB\u25AD\u25AE\u25B1\u25B3-\u25B5\u25B8\u25B9\u25BD-\u25BF\u25C2\u25C3\u25CA\u25CB\u25EC\u25EF\u25F8-\u25FC\u2605\u2606\u260E\u2640\u2642\u2660\u2663\u2665\u2666\u266A\u266D-\u266F\u2713\u2717\u2720\u2736\u2758\u2772\u2773\u27C8\u27C9\u27E6-\u27ED\u27F5-\u27FA\u27FC\u27FF\u2902-\u2905\u290C-\u2913\u2916\u2919-\u2920\u2923-\u292A\u2933\u2935-\u2939\u293C\u293D\u2945\u2948-\u294B\u294E-\u2976\u2978\u2979\u297B-\u297F\u2985\u2986\u298B-\u2996\u299A\u299C\u299D\u29A4-\u29B7\u29B9\u29BB\u29BC\u29BE-\u29C5\u29C9\u29CD-\u29D0\u29DC-\u29DE\u29E3-\u29E5\u29EB\u29F4\u29F6\u2A00-\u2A02\u2A04\u2A06\u2A0C\u2A0D\u2A10-\u2A17\u2A22-\u2A27\u2A29\u2A2A\u2A2D-\u2A31\u2A33-\u2A3C\u2A3F\u2A40\u2A42-\u2A4D\u2A50\u2A53-\u2A58\u2A5A-\u2A5D\u2A5F\u2A66\u2A6A\u2A6D-\u2A75\u2A77-\u2A9A\u2A9D-\u2AA2\u2AA4-\u2AB0\u2AB3-\u2AC8\u2ACB\u2ACC\u2ACF-\u2ADB\u2AE4\u2AE6-\u2AE9\u2AEB-\u2AF3\u2AFD\uFB00-\uFB04]|\uD835[\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDCCF\uDD04\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDD6B]/g;
@@ -54,15 +54,15 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 		'&': '&amp;',
 		'\'': '&#x27;',
 		'<': '&lt;',
-		
-		
-		
-		
+
+
+
+
 		'>': '&gt;',
-		
-		
-		
-		
+
+
+
+
 		'`': '&#x60;'
 	};
 
@@ -74,7 +74,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 	var decodeMapNumeric = {'0':'\uFFFD','128':'\u20AC','130':'\u201A','131':'\u0192','132':'\u201E','133':'\u2026','134':'\u2020','135':'\u2021','136':'\u02C6','137':'\u2030','138':'\u0160','139':'\u2039','140':'\u0152','142':'\u017D','145':'\u2018','146':'\u2019','147':'\u201C','148':'\u201D','149':'\u2022','150':'\u2013','151':'\u2014','152':'\u02DC','153':'\u2122','154':'\u0161','155':'\u203A','156':'\u0153','158':'\u017E','159':'\u0178'};
 	var invalidReferenceCodePoints = [1,2,3,4,5,6,7,8,11,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,64976,64977,64978,64979,64980,64981,64982,64983,64984,64985,64986,64987,64988,64989,64990,64991,64992,64993,64994,64995,64996,64997,64998,64999,65000,65001,65002,65003,65004,65005,65006,65007,65534,65535,131070,131071,196606,196607,262142,262143,327678,327679,393214,393215,458750,458751,524286,524287,589822,589823,655358,655359,720894,720895,786430,786431,851966,851967,917502,917503,983038,983039,1048574,1048575,1114110,1114111];
 
-	
+
 
 	var stringFromCharCode = String.fromCharCode;
 
@@ -102,21 +102,21 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 		var result = {};
 		var key;
 		for (key in defaults) {
-			
-			
+
+
 			result[key] = has(options, key) ? options[key] : defaults[key];
 		}
 		return result;
 	};
 
-	
+
 	var codePointToSymbol = function(codePoint, strict) {
 		var output = '';
 		if ((codePoint >= 0xD800 && codePoint <= 0xDFFF) || codePoint > 0x10FFFF) {
-			
-			
-			
-			
+
+
+
+
 			if (strict) {
 				parseError('character reference outside the permissible Unicode range');
 			}
@@ -152,7 +152,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 		throw Error('Parse error: ' + message);
 	};
 
-	
+
 
 	var encode = function(string, options) {
 		options = merge(options, encode.options);
@@ -170,68 +170,68 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 		};
 
 		if (encodeEverything) {
-			
+
 			string = string.replace(regexAsciiWhitelist, function(symbol) {
-				
+
 				if (useNamedReferences && has(encodeMap, symbol)) {
 					return '&' + encodeMap[symbol] + ';';
 				}
 				return escapeBmpSymbol(symbol);
 			});
-			
-			
+
+
 			if (useNamedReferences) {
 				string = string
 					.replace(/&gt;\u20D2/g, '&nvgt;')
 					.replace(/&lt;\u20D2/g, '&nvlt;')
 					.replace(/&#x66;&#x6A;/g, '&fjlig;');
 			}
-			
+
 			if (useNamedReferences) {
-				
+
 				string = string.replace(regexEncodeNonAscii, function(string) {
-					
+
 					return '&' + encodeMap[string] + ';';
 				});
 			}
-			
+
 		} else if (useNamedReferences) {
-			
-			
+
+
 			if (!allowUnsafeSymbols) {
 				string = string.replace(regexEscape, function(string) {
 					return '&' + encodeMap[string] + ';'; 
 				});
 			}
-			
-			
+
+
 			string = string
 				.replace(/&gt;\u20D2/g, '&nvgt;')
 				.replace(/&lt;\u20D2/g, '&nvlt;');
-			
+
 			string = string.replace(regexEncodeNonAscii, function(string) {
-				
+
 				return '&' + encodeMap[string] + ';';
 			});
 		} else if (!allowUnsafeSymbols) {
-			
-			
+
+
 			string = string.replace(regexEscape, escapeBmpSymbol);
 		}
 		return string
-			
+
 			.replace(regexAstralSymbols, function($0) {
-				
+
 				var high = $0.charCodeAt(0);
 				var low = $0.charCodeAt(1);
 				var codePoint = (high - 0xD800) * 0x400 + low - 0xDC00 + 0x10000;
 				return escapeCodePoint(codePoint);
 			})
-			
-			
+
+
 			.replace(regexBmpWhitelist, escapeBmpSymbol);
 	};
-	
+
 	encode.options = {
 		'allowUnsafeSymbols': false,
 		'encodeEverything': false,
@@ -256,14 +256,14 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
 			if ($1) {
 				reference = $1;
-				
+
 				return decodeMap[reference];
 			}
 
 			if ($2) {
-				
-				
-				
+
+
+
 				reference = $2;
 				next = $3;
 				if (next && options.isAttributeValue) {
@@ -277,13 +277,13 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 							'named character reference was not terminated by a semicolon'
 						);
 					}
-					
+
 					return decodeMapLegacy[reference] + (next || '');
 				}
 			}
 
 			if ($4) {
-				
+
 				decDigits = $4;
 				semicolon = $5;
 				if (strict && !semicolon) {
@@ -294,7 +294,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 			}
 
 			if ($6) {
-				
+
 				hexDigits = $6;
 				semicolon = $7;
 				if (strict && !semicolon) {
@@ -304,8 +304,8 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 				return codePointToSymbol(codePoint, strict);
 			}
 
-			
-			
+
+
 			if (strict) {
 				parseError(
 					'named character reference was not terminated by a semicolon'
@@ -314,7 +314,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 			return $0;
 		});
 	};
-	
+
 	decode.options = {
 		'isAttributeValue': false,
 		'strict': false
@@ -322,12 +322,12 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
 	var escape = function(string) {
 		return string.replace(regexEscape, function($0) {
-			
+
 			return escapeMap[$0];
 		});
 	};
 
-	
+
 
 	var he = {
 		'version': '1.2.0',
@@ -337,8 +337,8 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 		'unescape': decode
 	};
 
-	
-	
+
+
 	if (
 		true
 	) {
@@ -356,37 +356,37 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
  	});
 
- 	
+
  	const __webpack_module_cache__ = {};
- 	
- 	
+
+
  	function __webpack_require__(moduleId) {
- 		
+
  		const cachedModule = __webpack_module_cache__[moduleId];
  		if (cachedModule !== undefined) {
  			return cachedModule.exports;
  		}
- 		
+
  		const module = __webpack_module_cache__[moduleId] = {
  			id: moduleId,
  			loaded: false,
  			exports: {}
  		};
- 	
- 		
+
+
  		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
- 	
- 		
+
+
  		module.loaded = true;
- 	
- 		
+
+
  		return module.exports;
  	}
- 	
 
- 	
+
+
  	(() => {
- 		
+
  		__webpack_require__.d = (exports, definition) => {
  			if(Array.isArray(definition)) {
  				var i = 0;
@@ -410,8 +410,8 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
  			}
  		};
  	})();
- 	
- 	
+
+
  	(() => {
  		__webpack_require__.g = (function() {
  			if (typeof globalThis === 'object') return globalThis;
@@ -422,15 +422,15 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
  			}
  		})();
  	})();
- 	
- 	
+
+
  	(() => {
  		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
  	})();
- 	
- 	
+
+
  	(() => {
- 		
+
  		__webpack_require__.r = (exports) => {
  			if(Symbol.toStringTag) {
  				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
@@ -438,8 +438,8 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
  			Object.defineProperty(exports, '__esModule', { value: true });
  		};
  	})();
- 	
- 	
+
+
  	(() => {
  		__webpack_require__.nmd = (module) => {
  			module.paths = [];
@@ -447,7 +447,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
  			return module;
  		};
  	})();
- 	
+
 
 let __webpack_exports__ = {};
 
@@ -2469,20 +2469,20 @@ __webpack_require__.d(GasProcessMonitorLib_namespaceObject, {
 
 
 class LoggerService {
-  
+
 
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
 
     this._level = options.level || 'INFO';
 
-    
+
 
 
 
@@ -2497,7 +2497,7 @@ class LoggerService {
     };
   }
 
-  
+
 
 
 
@@ -2509,7 +2509,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2517,7 +2517,7 @@ class LoggerService {
     return this._level;
   }
 
-  
+
 
 
 
@@ -2527,7 +2527,7 @@ class LoggerService {
     return this._logLevels[level] <= this._logLevels[this._level];
   }
 
-  
+
 
 
 
@@ -2538,23 +2538,23 @@ class LoggerService {
   _safeStringify(obj, maxDepth = 5, maxLength = 5000) {
     const seen = new WeakSet();
     const replacer = (key, value, depth = 0) => {
-      
+
       if (depth > maxDepth) {
         return '[Max depth reached]';
       }
 
-      
+
       if (value === null || typeof value !== 'object') {
         return value;
       }
 
-      
+
       if (seen.has(value)) {
         return '[Circular reference]';
       }
       seen.add(value);
 
-      
+
       if (Array.isArray(value)) {
         if (value.length > 100) {
           return `[Array(${value.length}) - showing first 100]`;
@@ -2562,7 +2562,7 @@ class LoggerService {
         return value.map(item => replacer(null, item, depth + 1));
       }
 
-      
+
       const keys = Object.keys(value);
       if (keys.length > 50) {
         return `[Object with ${keys.length} keys - truncated]`;
@@ -2580,7 +2580,7 @@ class LoggerService {
     try {
       let result = JSON.stringify(replacer(null, obj, 0), null, 2);
 
-      
+
       if (result.length > maxLength) {
         result = result.substring(0, maxLength) + '... [truncated]';
       }
@@ -2590,7 +2590,7 @@ class LoggerService {
     }
   }
 
-  
+
 
 
 
@@ -2603,7 +2603,7 @@ class LoggerService {
     return messageOrCallback;
   }
 
-  
+
 
 
 
@@ -2619,14 +2619,14 @@ class LoggerService {
       formattedMessage += ' ' + message;
     }
 
-    
+
     if (context && typeof context === 'object') {
       formattedMessage += ' ' + this._safeStringify(context);
     }
     return formattedMessage;
   }
 
-  
+
 
 
 
@@ -2642,7 +2642,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2658,7 +2658,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2674,7 +2674,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2690,7 +2690,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2698,7 +2698,7 @@ class LoggerService {
     return Logger.getLog().split('\n');
   }
 
-  
+
 
 
 
@@ -2707,7 +2707,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2723,7 +2723,7 @@ class LoggerService {
     return this;
   }
 
-  
+
 
 
 
@@ -2772,23 +2772,23 @@ class LoggerService {
 
 
 class IdGenerator {
-  
+
 
 
 
 
   generateUuid() {
-    
+
     if (typeof Utilities !== 'undefined' && Utilities.getUuid) {
       return Utilities.getUuid();
     }
 
-    
+
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
     }
 
-    
+
     const bytes = IdGenerator._getSecureRandomBytes(16);
     bytes[6] = bytes[6] & 0x0f | 0x40; 
     bytes[8] = bytes[8] & 0x3f | 0x80; 
@@ -2797,7 +2797,7 @@ class IdGenerator {
     return [hex.substring(0, 8), hex.substring(8, 12), hex.substring(12, 16), hex.substring(16, 20), hex.substring(20, 32)].join('-');
   }
 
-  
+
 
 
 
@@ -2809,7 +2809,7 @@ class IdGenerator {
     return IdGenerator._getSecureRandomBytes(size);
   }
 
-  
+
 
 
 
@@ -2817,7 +2817,7 @@ class IdGenerator {
     return IdGenerator.generateCustomId(8, 'abcdefghijklmnopqrstuvwxyz0123456789');
   }
 
-  
+
 
 
 
@@ -2827,7 +2827,7 @@ class IdGenerator {
     return IdGenerator.generateCustomId(size, alphabet);
   }
 
-  
+
 
 
 
@@ -2838,7 +2838,7 @@ class IdGenerator {
     return IdGenerator.generateCustomId(length, alphabet);
   }
 
-  
+
 
 
 
@@ -2860,7 +2860,7 @@ class IdGenerator {
     }
   }
 
-  
+
 
 
 
@@ -2868,13 +2868,13 @@ class IdGenerator {
 
 
   static _getSecureRandomBytes(size) {
-    
+
     if (typeof Utilities !== 'undefined' && Utilities.getUuid && Utilities.computeDigest) {
       const bytes = [];
       while (bytes.length < size) {
         const uuid = Utilities.getUuid();
         const hash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, uuid);
-        
+
         for (let i = 0; i < hash.length && bytes.length < size; i++) {
           const unsigned = hash[i] < 0 ? hash[i] + 256 : hash[i];
           bytes.push(unsigned);
@@ -2883,13 +2883,13 @@ class IdGenerator {
       return bytes;
     }
 
-    
+
     if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
       return crypto.getRandomValues(new Uint8Array(size));
     }
 
-    
-    
+
+
     if (typeof console !== 'undefined' && console.warn) {
       console.warn('[Security Warning] Cryptographically secure random source not found. Falling back to Math.random().');
     }
@@ -2912,7 +2912,7 @@ class IdGenerator {
 
 const _FORMAT_REGEXES = Object.fromEntries(['YYYY', 'yyyy', 'YY', 'yy', 'MM', 'DD', 'dd', 'HH', 'mm', 'ss', 'SSS'].map(t => [t, new RegExp(t, 'g')]));
 class DateUtils {
-  
+
 
 
 
@@ -2922,7 +2922,7 @@ class DateUtils {
     return 24 * 60 * 60 * 1000;
   }
 
-  
+
 
 
 
@@ -2932,7 +2932,7 @@ class DateUtils {
     return 60 * 60 * 1000;
   }
 
-  
+
 
 
 
@@ -2942,7 +2942,7 @@ class DateUtils {
     return 60 * 1000;
   }
 
-  
+
 
 
 
@@ -2952,7 +2952,7 @@ class DateUtils {
     return 1000;
   }
 
-  
+
 
 
 
@@ -2962,43 +2962,43 @@ class DateUtils {
       return null;
     }
 
-    
+
     if (input instanceof Date) {
       return isNaN(input.getTime()) ? null : input;
     }
 
-    
+
     if (typeof input === 'string') {
       const date = new Date(input);
       return isNaN(date.getTime()) ? null : date;
     }
 
-    
+
     if (typeof input === 'number') {
-      
+
       if (input > 0 && input < 100000) {
         return this.parseGoogleSheetsDate(input);
       }
-      
+
       const date = new Date(input);
       return isNaN(date.getTime()) ? null : date;
     }
     return null;
   }
 
-  
+
 
 
 
 
   parseGoogleSheetsDate(serialNumber) {
-    
+
     const epoch = new Date(1899, 11, 30);
     const millisPerDay = DateUtils.MILLIS_PER_DAY;
     return new Date(epoch.getTime() + serialNumber * millisPerDay);
   }
 
-  
+
 
 
 
@@ -3011,7 +3011,7 @@ class DateUtils {
     return isNaN(date.getTime()) ? null : date;
   }
 
-  
+
 
 
 
@@ -3042,14 +3042,14 @@ class DateUtils {
       }
       [year, month, day] = parts;
     } else {
-      
+
       return this.parseDate(dateString);
     }
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return isNaN(date.getTime()) ? null : date;
   }
 
-  
+
 
 
 
@@ -3061,7 +3061,7 @@ class DateUtils {
     return date.toISOString();
   }
 
-  
+
 
 
 
@@ -3081,14 +3081,14 @@ class DateUtils {
     const replacements = {
       YYYY: year,
       yyyy: year,
-      
+
       YY: String(year).slice(-2),
       yy: String(year).slice(-2),
-      
+
       MM: pad((utc ? date.getUTCMonth() : date.getMonth()) + 1),
       DD: pad(utc ? date.getUTCDate() : date.getDate()),
       dd: pad(utc ? date.getUTCDate() : date.getDate()),
-      
+
       HH: pad(utc ? date.getUTCHours() : date.getHours()),
       mm: pad(utc ? date.getUTCMinutes() : date.getMinutes()),
       ss: pad(utc ? date.getUTCSeconds() : date.getSeconds()),
@@ -3101,7 +3101,7 @@ class DateUtils {
     return result;
   }
 
-  
+
 
 
 
@@ -3115,18 +3115,18 @@ class DateUtils {
     return (date.getTime() - epoch.getTime()) / millisPerDay;
   }
 
-  
 
 
 
 
 
-  
+
+
   _cloneDate(date) {
     return new Date(date.getTime());
   }
 
-  
+
 
 
   _diffMs(date1, date2) {
@@ -3147,7 +3147,7 @@ class DateUtils {
     return result;
   }
 
-  
+
 
 
 
@@ -3160,7 +3160,7 @@ class DateUtils {
     return new Date(date.getTime() + hours * DateUtils.MILLIS_PER_HOUR);
   }
 
-  
+
 
 
 
@@ -3173,7 +3173,7 @@ class DateUtils {
     return new Date(date.getTime() + minutes * DateUtils.MILLIS_PER_MINUTE);
   }
 
-  
+
 
 
 
@@ -3188,7 +3188,7 @@ class DateUtils {
     return result;
   }
 
-  
+
 
 
 
@@ -3203,7 +3203,7 @@ class DateUtils {
     return result;
   }
 
-  
+
 
 
 
@@ -3214,7 +3214,7 @@ class DateUtils {
     return diff === null ? null : Math.trunc(diff / DateUtils.MILLIS_PER_DAY);
   }
 
-  
+
 
 
 
@@ -3225,7 +3225,7 @@ class DateUtils {
     return diff === null ? null : Math.trunc(diff / DateUtils.MILLIS_PER_HOUR);
   }
 
-  
+
 
 
 
@@ -3236,7 +3236,7 @@ class DateUtils {
     return diff === null ? null : Math.trunc(diff / DateUtils.MILLIS_PER_MINUTE);
   }
 
-  
+
 
 
 
@@ -3252,7 +3252,7 @@ class DateUtils {
     return date1.getTime() < date2.getTime();
   }
 
-  
+
 
 
 
@@ -3268,7 +3268,7 @@ class DateUtils {
     return date1.getTime() > date2.getTime();
   }
 
-  
+
 
 
 
@@ -3284,7 +3284,7 @@ class DateUtils {
     return date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth() && date1.getDate() === date2.getDate();
   }
 
-  
+
 
 
 
@@ -3298,7 +3298,7 @@ class DateUtils {
     return result;
   }
 
-  
+
 
 
 
@@ -3312,7 +3312,7 @@ class DateUtils {
     return result;
   }
 
-  
+
 
 
 
@@ -3322,7 +3322,7 @@ class DateUtils {
     return date !== null;
   }
 
-  
+
 
 
 
@@ -3337,7 +3337,7 @@ class DateUtils {
       showMs = false
     } = options;
 
-    
+
     if (ms < 1000) {
       return `${Math.floor(ms)}ms`;
     }
@@ -3363,14 +3363,14 @@ class DateUtils {
       parts.push(`${seconds}s`);
     }
 
-    
+
     if (short) {
       while (parts.length > 1 && parts[parts.length - 1].match(/^0[smhd]$/)) {
         parts.pop();
       }
     }
 
-    
+
     if (showMs) {
       const milliseconds = Math.floor(ms % 1000);
       if (milliseconds > 0) {
@@ -6578,7 +6578,7 @@ function stringToArray(str) {
     return [];
   }
 
-  
+
   return kebabCase_kebabCase(str).split('-').filter(word => word.length > 0);
 }
 
@@ -6592,7 +6592,7 @@ function pascalCase(str) {
     return '';
   }
 
-  
+
   const words = stringToArray(str);
   return words.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('');
 }
@@ -6644,17 +6644,17 @@ function humanisePath(path, separator = ' > ') {
     return '';
   }
 
-  
+
   const segments = path.split(/[/\\.]+/).filter(segment => segment.length > 0);
 
-  
+
   const humanizedSegments = segments.map(segment => {
-    
+
     const words = stringToArray(segment);
 
-    
+
     return words.map(word => {
-      
+
       if (/^\d+$/.test(word)) {
         return word;
       }
@@ -6731,7 +6731,7 @@ function LodashFacade_truncate(str, maxLength, suffix = '...') {
 
 
 const LodashFacade = {
-  
+
   chunk: chunk_chunk,
   compact,
   difference: difference_difference,
@@ -6744,7 +6744,7 @@ const LodashFacade = {
   orderBy: orderBy,
   uniq: LodashFacade_uniq,
   uniqBy: uniqBy_uniqBy,
-  
+
   cloneDeep: cloneDeep_cloneDeep,
   get: get,
   has: has,
@@ -6754,7 +6754,7 @@ const LodashFacade = {
   omit: omit,
   pick: pick,
   set: set,
-  
+
   every: every,
   filter: filter,
   find: find,
@@ -6763,7 +6763,7 @@ const LodashFacade = {
   reduce: reduce,
   size: size,
   some: some,
-  
+
   camelCase: camelCase_camelCase,
   capitalize: capitalize_capitalize,
   kebabCase: kebabCase_kebabCase,
@@ -6776,18 +6776,18 @@ const LodashFacade = {
   pathCase,
   stringToArray,
   humanisePath,
-  
+
   isEmpty,
   isEqual: isEqual,
   isNil: LodashFacade_isNil,
   isNumber,
   isString,
-  
+
   maxBy: maxBy_maxBy,
   meanBy: meanBy_meanBy,
   minBy: minBy_minBy,
   sumBy: sumBy_sumBy,
-  
+
   debounce: debounce_debounce,
   once: once_once,
   noop: noop_noop
@@ -6804,7 +6804,7 @@ const LodashFacade = {
 
 
 class StringUtils {
-  
+
 
 
 
@@ -6813,7 +6813,7 @@ class StringUtils {
     return !str || typeof str === 'string' && str.trim().length === 0;
   }
 
-  
+
 
 
 
@@ -6827,7 +6827,7 @@ class StringUtils {
     return str.substring(0, maxLength - suffix.length) + suffix;
   }
 
-  
+
 
 
 
@@ -6839,7 +6839,7 @@ class StringUtils {
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
-  
+
 
 
 
@@ -6851,7 +6851,7 @@ class StringUtils {
     return str.replace(/[-_\s](.)/g, (_, char) => char.toUpperCase());
   }
 
-  
+
 
 
 
@@ -6863,7 +6863,7 @@ class StringUtils {
     return str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
   }
 
-  
+
 
 
 
@@ -6875,7 +6875,7 @@ class StringUtils {
     return camelCase_camelCase(str);
   }
 
-  
+
 
 
 
@@ -6887,7 +6887,7 @@ class StringUtils {
     return kebabCase_kebabCase(str);
   }
 
-  
+
 
 
 
@@ -6899,7 +6899,7 @@ class StringUtils {
     return snakeCase_snakeCase(str);
   }
 
-  
+
 
 
 
@@ -6911,7 +6911,7 @@ class StringUtils {
     return startCase(str);
   }
 
-  
+
 
 
 
@@ -6923,7 +6923,7 @@ class StringUtils {
     return pascalCase(str);
   }
 
-  
+
 
 
 
@@ -6935,7 +6935,7 @@ class StringUtils {
     return constantCase(str);
   }
 
-  
+
 
 
 
@@ -6947,7 +6947,7 @@ class StringUtils {
     return dotCase(str);
   }
 
-  
+
 
 
 
@@ -6959,7 +6959,7 @@ class StringUtils {
     return pathCase(str);
   }
 
-  
+
 
 
 
@@ -6971,7 +6971,7 @@ class StringUtils {
     return stringToArray(str);
   }
 
-  
+
 
 
 
@@ -6996,7 +6996,7 @@ class SystemEnvironmentUtils {
     this._sleepFn = sleepFn;
   }
 
-  
+
 
 
 
@@ -7008,7 +7008,7 @@ class SystemEnvironmentUtils {
     this._sleepFn(milliseconds);
   }
 
-  
+
 
 
 
@@ -7019,7 +7019,7 @@ class SystemEnvironmentUtils {
     return fn();
   }
 
-  
+
 
 
 
@@ -7032,7 +7032,7 @@ class SystemEnvironmentUtils {
     return emailRegex.test(email);
   }
 
-  
+
 
 
 
@@ -7044,7 +7044,7 @@ class SystemEnvironmentUtils {
     return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s]+$/.test(url);
   }
 
-  
+
 
 
 
@@ -7054,7 +7054,7 @@ class SystemEnvironmentUtils {
     return isEqual(value, other);
   }
 
-  
+
 
 
 
@@ -7063,7 +7063,7 @@ class SystemEnvironmentUtils {
     return LodashFacade_isNil(value);
   }
 
-  
+
 
 
 
@@ -7072,7 +7072,7 @@ class SystemEnvironmentUtils {
     return isNumber(value);
   }
 
-  
+
 
 
 
@@ -7081,7 +7081,7 @@ class SystemEnvironmentUtils {
     return isString(value);
   }
 
-  
+
 
 
 
@@ -7090,7 +7090,7 @@ class SystemEnvironmentUtils {
     return isEmpty(value);
   }
 
-  
+
 
 
 
@@ -7101,7 +7101,7 @@ class SystemEnvironmentUtils {
     return debounce_debounce(func, wait, options);
   }
 
-  
+
 
 
 
@@ -7110,7 +7110,7 @@ class SystemEnvironmentUtils {
     return once_once(func);
   }
 
-  
+
 
 
   noop() {
@@ -7125,7 +7125,7 @@ class SystemEnvironmentUtils {
 
 
 class SystemQuotaManager {
-  
+
 
 
 
@@ -7138,7 +7138,7 @@ class SystemQuotaManager {
     return chunk_chunk(array, size);
   }
 
-  
+
 
 
 
@@ -7150,7 +7150,7 @@ class SystemQuotaManager {
     return [...new Set(array)];
   }
 
-  
+
 
 
 
@@ -7170,7 +7170,7 @@ class SystemQuotaManager {
     return result;
   }
 
-  
+
 
 
 
@@ -7182,7 +7182,7 @@ class SystemQuotaManager {
     return LodashFacade_flatten(array);
   }
 
-  
+
 
 
 
@@ -7194,7 +7194,7 @@ class SystemQuotaManager {
     return flattenDeep(array);
   }
 
-  
+
 
 
 
@@ -7206,7 +7206,7 @@ class SystemQuotaManager {
     return compact(array);
   }
 
-  
+
 
 
 
@@ -7219,7 +7219,7 @@ class SystemQuotaManager {
     return difference_difference(array, ...values);
   }
 
-  
+
 
 
 
@@ -7233,7 +7233,7 @@ class SystemQuotaManager {
     return differenceBy_differenceBy(array, values, iteratee);
   }
 
-  
+
 
 
 
@@ -7246,7 +7246,7 @@ class SystemQuotaManager {
     return groupBy_groupBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7255,7 +7255,7 @@ class SystemQuotaManager {
     return intersection_intersection(...arrays);
   }
 
-  
+
 
 
 
@@ -7268,7 +7268,7 @@ class SystemQuotaManager {
     return keyBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7282,7 +7282,7 @@ class SystemQuotaManager {
     return orderBy(array, iteratees, orders);
   }
 
-  
+
 
 
 
@@ -7294,7 +7294,7 @@ class SystemQuotaManager {
     return LodashFacade_uniq(array);
   }
 
-  
+
 
 
 
@@ -7307,7 +7307,7 @@ class SystemQuotaManager {
     return uniqBy_uniqBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7317,7 +7317,7 @@ class SystemQuotaManager {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  
+
 
 
 
@@ -7328,7 +7328,7 @@ class SystemQuotaManager {
     return Math.round(number * multiplier) / multiplier;
   }
 
-  
+
 
 
 
@@ -7339,7 +7339,7 @@ class SystemQuotaManager {
     return Math.min(Math.max(number, min), max);
   }
 
-  
+
 
 
 
@@ -7352,7 +7352,7 @@ class SystemQuotaManager {
     return maxBy_maxBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7365,7 +7365,7 @@ class SystemQuotaManager {
     return minBy_minBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7378,7 +7378,7 @@ class SystemQuotaManager {
     return sumBy_sumBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7391,7 +7391,7 @@ class SystemQuotaManager {
     return meanBy_meanBy(array, iteratee);
   }
 
-  
+
 
 
 
@@ -7401,7 +7401,7 @@ class SystemQuotaManager {
     return every(collection, predicate);
   }
 
-  
+
 
 
 
@@ -7411,7 +7411,7 @@ class SystemQuotaManager {
     return filter(collection, predicate);
   }
 
-  
+
 
 
 
@@ -7422,7 +7422,7 @@ class SystemQuotaManager {
     return find(collection, predicate, fromIndex);
   }
 
-  
+
 
 
 
@@ -7432,7 +7432,7 @@ class SystemQuotaManager {
     return forEach(collection, iteratee);
   }
 
-  
+
 
 
 
@@ -7442,7 +7442,7 @@ class SystemQuotaManager {
     return map(collection, iteratee);
   }
 
-  
+
 
 
 
@@ -7453,7 +7453,7 @@ class SystemQuotaManager {
     return reduce(collection, iteratee, accumulator);
   }
 
-  
+
 
 
 
@@ -7462,7 +7462,7 @@ class SystemQuotaManager {
     return size(collection);
   }
 
-  
+
 
 
 
@@ -7480,7 +7480,7 @@ class SystemQuotaManager {
 
 
 class SystemScriptSettings {
-  
+
 
 
 
@@ -7489,7 +7489,7 @@ class SystemScriptSettings {
     return cloneDeep_cloneDeep(obj);
   }
 
-  
+
 
 
 
@@ -7498,7 +7498,7 @@ class SystemScriptSettings {
     return merge({}, ...objects);
   }
 
-  
+
 
 
 
@@ -7509,7 +7509,7 @@ class SystemScriptSettings {
     return get(obj, path, defaultValue);
   }
 
-  
+
 
 
 
@@ -7520,7 +7520,7 @@ class SystemScriptSettings {
     return set(obj, path, value);
   }
 
-  
+
 
 
 
@@ -7533,7 +7533,7 @@ class SystemScriptSettings {
     return has(obj, path);
   }
 
-  
+
 
 
 
@@ -7546,7 +7546,7 @@ class SystemScriptSettings {
     return pick(obj, paths);
   }
 
-  
+
 
 
 
@@ -7559,7 +7559,7 @@ class SystemScriptSettings {
     return omit(obj, paths);
   }
 
-  
+
 
 
 
@@ -7572,7 +7572,7 @@ class SystemScriptSettings {
     return mapKeys_mapKeys(obj, iteratee);
   }
 
-  
+
 
 
 
@@ -7601,7 +7601,7 @@ class SystemUtils {
     this._quotaManager = new SystemQuotaManager();
     this._scriptSettings = new SystemScriptSettings();
 
-    
+
     const delegations = [{
       manager: this._environmentUtils,
       methods: ['sleep', 'delay', 'isValidEmail', 'isValidUrl', 'isEqual', 'isNil', 'isNumber', 'isString', 'isEmptyValue', 'debounce', 'once', 'noop']
@@ -7656,10 +7656,10 @@ class MyUtilsService {
     this._systemUtils = new SystemUtils(sleepFn);
     const managers = [this._idGenerator, this._dateUtils, this._stringUtils, this._systemUtils];
     managers.forEach(manager => {
-      
+
       const protoMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(manager)).filter(name => name !== 'constructor' && typeof manager[name] === 'function');
 
-      
+
       const ownMethods = Object.getOwnPropertyNames(manager).filter(name => typeof manager[name] === 'function');
       const allMethods = [...new Set([...protoMethods, ...ownMethods])];
       allMethods.forEach(name => {
@@ -7682,37 +7682,37 @@ class MyUtilsService {
 
 
 class HashUtils {
-  
+
 
 
 
 
   static generateHash(str) {
-    
+
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str, Utilities.Charset.UTF_8);
 
-    
+
     return digest.map(byte => {
-      
+
       const unsigned = byte < 0 ? byte + 256 : byte;
-      
+
       return ('0' + unsigned.toString(16)).slice(-2);
     }).join('');
   }
 
-  
+
 
 
 
 
 
   static hashObject(obj) {
-    
+
     const jsonString = JSON.stringify(obj);
     return HashUtils.generateHash(jsonString);
   }
 
-  
+
 
 
 
@@ -7721,7 +7721,7 @@ class HashUtils {
     if (typeof str !== 'string') {
       return false;
     }
-    
+
     return /^[0-9a-f]+$/i.test(str);
   }
 }
@@ -7738,39 +7738,39 @@ class HashUtils {
 
 
 class RegexUtils {
-  
+
 
 
 
 
   static escape(str) {
-    
+
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  
+
 
 
 
 
 
   static validateSafety(pattern, logger = null) {
-    
+
     const MAX_REGEX_LENGTH = 500;
     if (pattern.length > MAX_REGEX_LENGTH) {
       throw new Error(`Regex pattern too long (max ${MAX_REGEX_LENGTH} characters): ${pattern.length} characters`);
     }
 
-    
-    
-    
+
+
+
     const nestedQuantifiers = /(\([^)]*[*+?]\)[*+?{])|(\[[^\]]*[*+?]\][*+?{])/;
     if (nestedQuantifiers.test(pattern)) {
       throw new Error('Regex pattern contains nested quantifiers which can cause ReDoS attacks');
     }
 
-    
-    
+
+
     const excessiveRepetition = /\{(\d+),?\d*\}/g;
     let match;
     while ((match = excessiveRepetition.exec(pattern)) !== null) {
@@ -7780,8 +7780,8 @@ class RegexUtils {
       }
     }
 
-    
-    
+
+
     const dangerousAlternation = /\([^)]*\|[^)]*\)[*+]/;
     if (dangerousAlternation.test(pattern)) {
       if (logger && typeof logger.warn === 'function') {
@@ -7790,7 +7790,7 @@ class RegexUtils {
     }
   }
 
-  
+
 
 
 
@@ -7799,10 +7799,10 @@ class RegexUtils {
 
 
   static createSafeRegex(pattern, flags = '', logger = null) {
-    
+
     RegexUtils.validateSafety(pattern, logger);
 
-    
+
     try {
       return new RegExp(pattern, flags);
     } catch (err) {
@@ -7810,7 +7810,7 @@ class RegexUtils {
     }
   }
 
-  
+
 
 
 
@@ -7824,7 +7824,7 @@ class RegexUtils {
     return regex.test(str);
   }
 
-  
+
 
 
 
@@ -7838,7 +7838,7 @@ class RegexUtils {
     return str.match(regex);
   }
 
-  
+
 
 
 
@@ -7847,21 +7847,21 @@ class RegexUtils {
     const warnings = [];
     let safe = true;
 
-    
+
     const MAX_REGEX_LENGTH = 500;
     if (pattern.length > MAX_REGEX_LENGTH) {
       warnings.push(`Pattern too long: ${pattern.length} characters (max ${MAX_REGEX_LENGTH})`);
       safe = false;
     }
 
-    
+
     const nestedQuantifiers = /(\([^)]*[*+?]\)[*+?{])|(\[[^\]]*[*+?]\][*+?{])/;
     if (nestedQuantifiers.test(pattern)) {
       warnings.push('Nested quantifiers detected (can cause ReDoS)');
       safe = false;
     }
 
-    
+
     const excessiveRepetition = /\{(\d+),?\d*\}/g;
     let match;
     while ((match = excessiveRepetition.exec(pattern)) !== null) {
@@ -7872,11 +7872,11 @@ class RegexUtils {
       }
     }
 
-    
+
     const dangerousAlternation = /\([^)]*\|[^)]*\)[*+]/;
     if (dangerousAlternation.test(pattern)) {
       warnings.push('Alternation with quantifiers (may cause performance issues)');
-      
+
     }
     return {
       safe,
@@ -8021,7 +8021,7 @@ const LoggerInterface = {
   description: 'Interface for logger services with level-based logging',
   requiredMethods: ['debug', 'info', 'warn', 'error'],
   optionalMethods: ['getLevel', 'setLevel', 'createChild'],
-  
+
 
 
 
@@ -8098,7 +8098,7 @@ const CacheInterface = {
   description: 'Interface for cache services with TTL support',
   requiredMethods: ['get', 'put', 'remove'],
   optionalMethods: ['removeByPrefix', 'getAll', 'putAll', 'removeAll'],
-  
+
 
 
 
@@ -8149,7 +8149,7 @@ const CacheInterface = {
 
 
 
- 
+
 
 
 
@@ -8164,7 +8164,7 @@ const UtilsServiceInterface = {
   description: 'Interface for utility services (minimum: sleep method)',
   requiredMethods: ['sleep'],
   optionalMethods: ['deepClone', 'deepMerge', 'generateUuid', 'formatDate', 'parseDate', 'isEmpty', 'isEqual', 'chunk', 'groupBy', 'keyBy'],
-  
+
 
 
 
@@ -8234,7 +8234,7 @@ const ExceptionServiceInterface = {
   description: 'Interface for exception handling with retry capabilities',
   requiredMethods: ['executeWithRetry'],
   optionalMethods: ['executeWithBypass', 'executeWithAdvancedHandling', 'getErrorSummary'],
-  
+
 
 
 
@@ -8303,7 +8303,7 @@ const MonitorInterface = {
   description: 'Interface for process monitoring (optional visualization)',
   requiredMethods: ['logJobStart', 'logJobComplete', 'logStepStart', 'logStepComplete'],
   optionalMethods: ['logStepSkipped', 'updateProgress', 'logError'],
-  
+
 
 
 
@@ -8366,7 +8366,7 @@ const DataProviderInterface = {
   description: 'Interface for data providers in ContextEngine',
   requiredMethods: ['provide'],
   optionalMethods: ['initialize', 'dispose'],
-  
+
 
 
 
@@ -8438,7 +8438,7 @@ const StepInterface = {
   description: 'Interface for pipeline steps',
   requiredMethods: ['getName', 'execute'],
   optionalMethods: ['getDescription', 'shouldExecute', 'onError'],
-  
+
 
 
 
@@ -8454,7 +8454,7 @@ const StepInterface = {
     error: 'Error (optional, present when success=false)',
     data: 'any (optional, step output data)'
   },
-  
+
 
 
 
@@ -8518,7 +8518,7 @@ const ExpressionEngineInterface = {
   description: 'Interface for expression evaluation engines',
   requiredMethods: ['evaluate'],
   optionalMethods: ['parseExpression', 'validateExpression'],
-  
+
 
 
 
@@ -8581,7 +8581,7 @@ const ProviderRegistryInterface = {
   description: 'Interface for provider registries',
   requiredMethods: ['get', 'getRegisteredTypes'],
   optionalMethods: ['register', 'registerSingleton', 'registerFactory', 'has'],
-  
+
 
 
 
@@ -8628,7 +8628,7 @@ const SpreadsheetServiceInterface = {
   description: 'Interface for spreadsheet operations',
   requiredMethods: ['getSheetData'],
   optionalMethods: ['appendRow', 'updateRange', 'clearSheet', 'getSheetNames', 'createSheet'],
-  
+
 
 
 
@@ -8716,7 +8716,7 @@ function implementsInterface(obj, interfaceName) {
 
 
 class ValidationUtils {
-  
+
 
 
 
@@ -8725,7 +8725,7 @@ class ValidationUtils {
     return ['debug', 'info', 'warn', 'error'];
   }
 
-  
+
 
 
 
@@ -8763,7 +8763,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8790,7 +8790,7 @@ class ValidationUtils {
 
 
   static validateDependency(dependency, name, context = 'ValidationUtils', requiredMethods = [], required = true) {
-    
+
     if (!required && (dependency === null || dependency === undefined)) {
       return true;
     }
@@ -8805,7 +8805,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8824,7 +8824,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8843,7 +8843,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8862,7 +8862,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8881,7 +8881,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8904,7 +8904,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8923,7 +8923,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8944,7 +8944,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -8975,7 +8975,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -9009,7 +9009,7 @@ class ValidationUtils {
 
 
   static validateInterface(obj, interfaceName, context = 'ValidationUtils', required = true) {
-    
+
     if (!required && (obj === null || obj === undefined)) {
       return true;
     }
@@ -9027,7 +9027,7 @@ class ValidationUtils {
     return true;
   }
 
-  
+
 
 
 
@@ -9047,7 +9047,7 @@ class ValidationUtils {
     }
   }
 
-  
+
 
 
 
@@ -9107,7 +9107,7 @@ function decodeHtmlEntities(value) {
 
 
 class HtmlSanitizer {
-  
+
 
 
 
@@ -9119,7 +9119,7 @@ class HtmlSanitizer {
     return escapeHtmlText(value);
   }
 
-  
+
 
 
 
@@ -9130,7 +9130,7 @@ class HtmlSanitizer {
     return /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/.test(value) ? value : fallback;
   }
 
-  
+
 
 
 
@@ -9141,7 +9141,7 @@ class HtmlSanitizer {
     return /^https?:\/\//i.test(value.trim()) ? value.trim() : '#';
   }
 
-  
+
 
 
 
@@ -9184,7 +9184,7 @@ class HtmlSanitizer {
     return value;
   }
 
-  
+
 
 
 
@@ -9233,7 +9233,7 @@ class HtmlSanitizer {
 
 
 class CellValueCoercion {
-  
+
 
 
 
@@ -9277,7 +9277,7 @@ class CellValueCoercion {
 
 const OPEN_ENDED_SENTINEL_MS = 8640000000000000;
 class DateRange {
-  
+
 
 
 
@@ -9297,22 +9297,22 @@ class DateRange {
     this.end = resolvedEnd;
   }
 
-  
+
   isOpenEnded() {
     return this.end.getTime() === OPEN_ENDED_SENTINEL_MS;
   }
 
-  
+
   contains(date) {
     return date.getTime() >= this.start.getTime() && date.getTime() <= this.end.getTime();
   }
 
-  
+
   durationInDays() {
     return DateUtils.MILLIS_PER_DAY === 0 ? 0 : Math.trunc((this.end.getTime() - this.start.getTime()) / DateUtils.MILLIS_PER_DAY);
   }
 
-  
+
   overlaps(other) {
     return this.start.getTime() <= other.end.getTime() && other.start.getTime() <= this.end.getTime();
   }
@@ -9333,7 +9333,7 @@ class DateRange {
 
 
 class Delegation {
-  
+
 
 
 
@@ -9385,7 +9385,7 @@ class Delegation {
 
 
 class BaseError extends Error {
-  
+
 
 
 
@@ -9394,37 +9394,37 @@ class BaseError extends Error {
   constructor(message, context = {}, originalError = null) {
     super(message);
 
-    
+
 
 
 
     this.name = this.constructor.name;
 
-    
+
 
 
 
     this.context = context;
 
-    
+
 
 
 
     this.timestamp = new Date().toISOString();
 
-    
+
 
 
 
     this.originalError = originalError;
 
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
   }
 
-  
+
 
 
 
@@ -9433,7 +9433,7 @@ class BaseError extends Error {
     return this.originalError ? this.originalError.message : null;
   }
 
-  
+
 
 
 
@@ -9442,7 +9442,7 @@ class BaseError extends Error {
     return this.originalError !== null;
   }
 
-  
+
 
 
 
@@ -9461,7 +9461,7 @@ class BaseError extends Error {
     };
   }
 
-  
+
 
 
 
@@ -9476,7 +9476,7 @@ class BaseError extends Error {
     return result;
   }
 
-  
+
 
 
 
@@ -9491,7 +9491,7 @@ class BaseError extends Error {
     return newError;
   }
 
-  
+
 
 
 
@@ -9514,7 +9514,7 @@ class BaseError extends Error {
       return Object.keys(context).length > 0 ? error.withContext(context) : error;
     }
 
-    
+
     if (!(error instanceof Error)) {
       return new BaseError(String(error), context);
     }
@@ -9528,7 +9528,7 @@ class BaseError extends Error {
 
 
 class ValidationError extends BaseError {
-  
+
 
 
 
@@ -9552,7 +9552,7 @@ class ValidationError extends BaseError {
 
 
 class ConfigurationError extends BaseError {
-  
+
 
 
 
@@ -9573,7 +9573,7 @@ class ConfigurationError extends BaseError {
 
 
 class OperationError extends BaseError {
-  
+
 
 
 
@@ -9612,7 +9612,7 @@ class OperationError extends BaseError {
 
 
 class Result {
-  
+
 
 
 
@@ -9621,34 +9621,34 @@ class Result {
     value = null,
     error = null
   } = {}) {
-    
+
 
 
 
     this.value = value;
 
-    
+
 
 
 
     this.error = error;
   }
 
-  
+
 
 
   isSuccess() {
     return this.error === null;
   }
 
-  
+
 
 
   isError() {
     return this.error !== null;
   }
 
-  
+
 
 
   toJSON() {
@@ -9659,14 +9659,14 @@ class Result {
     };
   }
 
-  
+
 
 
   toString() {
     return `Result[${this.isError() ? 'ERROR' : 'OK'}]`;
   }
 
-  
+
 
 
 
@@ -9678,7 +9678,7 @@ class Result {
     });
   }
 
-  
+
 
 
 
@@ -9690,7 +9690,7 @@ class Result {
     });
   }
 
-  
+
 
 
 
@@ -9721,7 +9721,7 @@ class Result {
 
 
 class Registry {
-  
+
 
 
 
@@ -9739,7 +9739,7 @@ class Registry {
     this._validateValue = validateValue;
   }
 
-  
+
 
 
 
@@ -9769,7 +9769,7 @@ class Registry {
     return existed;
   }
 
-  
+
 
 
 
@@ -9781,7 +9781,7 @@ class Registry {
     return existed;
   }
 
-  
+
 
 
 
@@ -9789,7 +9789,7 @@ class Registry {
     return this._store.get(key);
   }
 
-  
+
 
 
 
@@ -9797,7 +9797,7 @@ class Registry {
     return this._store.has(key);
   }
 
-  
+
 
 
 
@@ -9806,7 +9806,7 @@ class Registry {
     return this._store.delete(key);
   }
 
-  
+
 
 
 
@@ -9814,28 +9814,28 @@ class Registry {
     this._store.clear();
   }
 
-  
+
 
 
   keys() {
     return Array.from(this._store.keys());
   }
 
-  
+
 
 
   values() {
     return Array.from(this._store.values());
   }
 
-  
+
 
 
   entries() {
     return Array.from(this._store.entries());
   }
 
-  
+
 
 
   get size() {
@@ -9867,7 +9867,7 @@ class Registry {
 
 
 class LazyServiceContainer {
-  
+
 
 
 
@@ -9886,7 +9886,7 @@ class LazyServiceContainer {
     });
   }
 
-  
+
 
 
 
@@ -9897,7 +9897,7 @@ class LazyServiceContainer {
     this._singletons.unregister(name);
   }
 
-  
+
 
 
 
@@ -9905,7 +9905,7 @@ class LazyServiceContainer {
     return this._factories.has(name);
   }
 
-  
+
 
 
 
@@ -9926,7 +9926,7 @@ class LazyServiceContainer {
     return instance;
   }
 
-  
+
 
 
 
@@ -9934,7 +9934,7 @@ class LazyServiceContainer {
     this._singletons.clear();
   }
 
-  
+
 
 
   clear() {
@@ -9955,11 +9955,11 @@ class LazyServiceContainer {
 
 
 class TypeGuards {
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -9974,7 +9974,7 @@ class TypeGuards {
     return typeof value === 'string';
   }
 
-  
+
 
 
 
@@ -9990,11 +9990,11 @@ class TypeGuards {
     return typeof value === 'string' && value.trim().length > 0;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10010,7 +10010,7 @@ class TypeGuards {
     return typeof value === 'number' && !Number.isNaN(value);
   }
 
-  
+
 
 
 
@@ -10025,7 +10025,7 @@ class TypeGuards {
     return typeof value === 'number' && Number.isFinite(value);
   }
 
-  
+
 
 
 
@@ -10040,7 +10040,7 @@ class TypeGuards {
     return Number.isInteger(value);
   }
 
-  
+
 
 
 
@@ -10055,7 +10055,7 @@ class TypeGuards {
     return Number.isInteger(value) && value > 0;
   }
 
-  
+
 
 
 
@@ -10070,11 +10070,11 @@ class TypeGuards {
     return Number.isInteger(value) && value >= 0;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10090,11 +10090,11 @@ class TypeGuards {
     return typeof value === 'boolean';
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10115,7 +10115,7 @@ class TypeGuards {
     return proto === Object.prototype || proto === null;
   }
 
-  
+
 
 
 
@@ -10130,7 +10130,7 @@ class TypeGuards {
     return value !== null && typeof value === 'object';
   }
 
-  
+
 
 
 
@@ -10145,7 +10145,7 @@ class TypeGuards {
     return value !== null && typeof value === 'object';
   }
 
-  
+
 
 
 
@@ -10160,11 +10160,11 @@ class TypeGuards {
     return TypeGuards.isPlainObject(value) && Object.keys(value).length > 0;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10179,7 +10179,7 @@ class TypeGuards {
     return Array.isArray(value);
   }
 
-  
+
 
 
 
@@ -10194,7 +10194,7 @@ class TypeGuards {
     return Array.isArray(value) && value.length > 0;
   }
 
-  
+
 
 
 
@@ -10211,11 +10211,11 @@ class TypeGuards {
     return Array.isArray(value) && value.every(typeCheck);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10231,11 +10231,11 @@ class TypeGuards {
     return typeof value === 'function';
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10251,7 +10251,7 @@ class TypeGuards {
     return value === null || value === undefined;
   }
 
-  
+
 
 
 
@@ -10261,7 +10261,7 @@ class TypeGuards {
     return value === null;
   }
 
-  
+
 
 
 
@@ -10271,7 +10271,7 @@ class TypeGuards {
     return value === undefined;
   }
 
-  
+
 
 
 
@@ -10287,11 +10287,11 @@ class TypeGuards {
     return value !== null && value !== undefined;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10306,7 +10306,7 @@ class TypeGuards {
     return value instanceof Date && !Number.isNaN(value.getTime());
   }
 
-  
+
 
 
 
@@ -10316,7 +10316,7 @@ class TypeGuards {
     return value instanceof RegExp;
   }
 
-  
+
 
 
 
@@ -10331,7 +10331,7 @@ class TypeGuards {
     return value !== null && typeof value === 'object' && typeof value.then === 'function';
   }
 
-  
+
 
 
 
@@ -10346,11 +10346,11 @@ class TypeGuards {
     return value instanceof Error;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -10380,7 +10380,7 @@ class TypeGuards {
     return false;
   }
 
-  
+
 
 
 
@@ -10390,7 +10390,7 @@ class TypeGuards {
     return Boolean(value);
   }
 
-  
+
 
 
 
@@ -10444,7 +10444,7 @@ const isFalsy = TypeGuards.isFalsy;
 
 
 class CacheUtils {
-  
+
 
 
 
@@ -10453,7 +10453,7 @@ class CacheUtils {
     return '_';
   }
 
-  
+
 
 
 
@@ -10462,7 +10462,7 @@ class CacheUtils {
     return 21600; 
   }
 
-  
+
 
 
 
@@ -10473,7 +10473,7 @@ class CacheUtils {
     return allParts.join(CacheUtils.KEY_SEPARATOR);
   }
 
-  
+
 
 
 
@@ -10484,7 +10484,7 @@ class CacheUtils {
     return `${prefix}${CacheUtils.KEY_SEPARATOR}${hash}`;
   }
 
-  
+
 
 
 
@@ -10495,7 +10495,7 @@ class CacheUtils {
     return CacheUtils.generateKey(prefix, version, ...parts);
   }
 
-  
+
 
 
 
@@ -10505,7 +10505,7 @@ class CacheUtils {
     return key.startsWith(prefix + CacheUtils.KEY_SEPARATOR);
   }
 
-  
+
 
 
 
@@ -10515,7 +10515,7 @@ class CacheUtils {
     return separatorIndex > -1 ? key.substring(0, separatorIndex) : key;
   }
 
-  
+
 
 
 
@@ -10524,7 +10524,7 @@ class CacheUtils {
     return Math.min(requestedTtl, CacheUtils.MAX_TTL_SECONDS);
   }
 
-  
+
 
 
 
@@ -10533,7 +10533,7 @@ class CacheUtils {
     return Math.floor(milliseconds / 1000);
   }
 
-  
+
 
 
 
@@ -10542,7 +10542,7 @@ class CacheUtils {
     return seconds * 1000;
   }
 
-  
+
 
 
 
@@ -10551,7 +10551,7 @@ class CacheUtils {
     return key.split(CacheUtils.KEY_SEPARATOR);
   }
 
-  
+
 
 
 
@@ -10561,14 +10561,14 @@ class CacheUtils {
     return CacheUtils.generateKey(prefix, ...parts);
   }
 
-  
+
 
 
 
 
 
   static matchesPattern(key, pattern) {
-    
+
     const regexPattern = pattern.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
     return new RegExp(`^${regexPattern}$`).test(key);
   }
@@ -10587,7 +10587,7 @@ class CacheUtils {
 
 
 class BoundedMap extends Map {
-  
+
 
 
 
@@ -10596,7 +10596,7 @@ class BoundedMap extends Map {
     return 1000;
   }
 
-  
+
 
 
 
@@ -10610,21 +10610,21 @@ class BoundedMap extends Map {
       throw new Error('BoundedMap: onEvict must be a function or null');
     }
 
-    
+
 
 
 
 
     this._maxSize = maxSize;
 
-    
+
 
 
 
 
     this._onEvict = onEvict;
 
-    
+
 
 
 
@@ -10632,7 +10632,7 @@ class BoundedMap extends Map {
     this._evictionCount = 0;
   }
 
-  
+
 
 
 
@@ -10641,7 +10641,7 @@ class BoundedMap extends Map {
     return this._maxSize;
   }
 
-  
+
 
 
 
@@ -10650,7 +10650,7 @@ class BoundedMap extends Map {
     return this._evictionCount;
   }
 
-  
+
 
 
 
@@ -10659,7 +10659,7 @@ class BoundedMap extends Map {
     return this.size >= this._maxSize;
   }
 
-  
+
 
 
 
@@ -10668,20 +10668,20 @@ class BoundedMap extends Map {
     return Math.max(0, this._maxSize - this.size);
   }
 
-  
+
 
 
 
 
 
   set(key, value) {
-    
+
     if (this.has(key)) {
       super.set(key, value);
       return this;
     }
 
-    
+
     if (this.size >= this._maxSize) {
       this._evictOldest();
     }
@@ -10689,7 +10689,7 @@ class BoundedMap extends Map {
     return this;
   }
 
-  
+
 
 
 
@@ -10703,13 +10703,13 @@ class BoundedMap extends Map {
         try {
           this._onEvict(firstKey, value);
         } catch {
-          
+
         }
       }
     }
   }
 
-  
+
 
 
 
@@ -10721,7 +10721,7 @@ class BoundedMap extends Map {
     return this;
   }
 
-  
+
 
 
 
@@ -10739,7 +10739,7 @@ class BoundedMap extends Map {
     return undefined;
   }
 
-  
+
 
 
   clear() {
@@ -10747,14 +10747,14 @@ class BoundedMap extends Map {
     this._evictionCount = 0;
   }
 
-  
+
 
 
   resetEvictionCount() {
     this._evictionCount = 0;
   }
 
-  
+
 
 
 
@@ -10769,7 +10769,7 @@ class BoundedMap extends Map {
     };
   }
 
-  
+
 
 
 
@@ -10777,7 +10777,7 @@ class BoundedMap extends Map {
     return new BoundedMap(this._maxSize, this._onEvict);
   }
 
-  
+
 
 
 
@@ -10789,7 +10789,7 @@ class BoundedMap extends Map {
     return copy;
   }
 
-  
+
 
 
 
@@ -10800,7 +10800,7 @@ class BoundedMap extends Map {
     }
     const evictedCount = Math.max(0, this.size - newMaxSize);
 
-    
+
     while (this.size > newMaxSize) {
       this._evictOldest();
     }
@@ -10808,7 +10808,7 @@ class BoundedMap extends Map {
     return evictedCount;
   }
 
-  
+
 
 
 
@@ -10820,7 +10820,7 @@ class BoundedMap extends Map {
     };
   }
 
-  
+
 
 
 
@@ -10847,7 +10847,7 @@ class BoundedMap extends Map {
 
 
 class PiiRedactor {
-  
+
 
 
 
@@ -10865,7 +10865,7 @@ class PiiRedactor {
     };
   }
 
-  
+
 
 
 
@@ -10883,7 +10883,7 @@ class PiiRedactor {
     };
   }
 
-  
+
 
 
 
@@ -10896,7 +10896,7 @@ class PiiRedactor {
     const labels = PiiRedactor.REDACTION_LABELS;
     const patterns = PiiRedactor.PATTERNS;
 
-    
+
     sanitized = sanitized.replace(patterns.EMAIL, labels.EMAIL);
     sanitized = sanitized.replace(patterns.TOKEN, '$1 ' + labels.TOKEN);
     sanitized = sanitized.replace(patterns.API_KEY, '$1=' + labels.API_KEY);
@@ -10908,7 +10908,7 @@ class PiiRedactor {
     return sanitized;
   }
 
-  
+
 
 
 
@@ -10921,7 +10921,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.EMAIL, label);
   }
 
-  
+
 
 
 
@@ -10934,7 +10934,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.TOKEN, '$1 ' + label);
   }
 
-  
+
 
 
 
@@ -10947,7 +10947,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.API_KEY, '$1=' + label);
   }
 
-  
+
 
 
 
@@ -10960,7 +10960,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.URL_PARAMS, '$1?' + label);
   }
 
-  
+
 
 
 
@@ -10973,7 +10973,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.JWT, label);
   }
 
-  
+
 
 
 
@@ -10986,7 +10986,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.CREDIT_CARD, label);
   }
 
-  
+
 
 
 
@@ -10999,7 +10999,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.PHONE, label);
   }
 
-  
+
 
 
 
@@ -11012,7 +11012,7 @@ class PiiRedactor {
     return message.replace(PiiRedactor.PATTERNS.SESSION_ID, label);
   }
 
-  
+
 
 
 
@@ -11025,7 +11025,7 @@ class PiiRedactor {
     return patterns.EMAIL.test(message) || patterns.TOKEN.test(message) || patterns.API_KEY.test(message) || patterns.JWT.test(message) || patterns.CREDIT_CARD.test(message) || patterns.PHONE.test(message) || patterns.SESSION_ID.test(message);
   }
 
-  
+
 
 
 
@@ -11037,7 +11037,7 @@ class PiiRedactor {
     const detected = [];
     const patterns = PiiRedactor.PATTERNS;
 
-    
+
     Object.keys(patterns).forEach(key => {
       patterns[key].lastIndex = 0;
     });
@@ -11085,7 +11085,7 @@ class PiiRedactor {
 
 
 class PlaceholderUtils {
-  
+
 
 
 
@@ -11094,7 +11094,7 @@ class PlaceholderUtils {
     return /\{\{([^}]+)\}\}/g;
   }
 
-  
+
 
 
 
@@ -11103,7 +11103,7 @@ class PlaceholderUtils {
     return /@(\w+)/g;
   }
 
-  
+
 
 
 
@@ -11112,7 +11112,7 @@ class PlaceholderUtils {
     return /\$(\w+)(?:\.(\w+(?:\.\w+)*))?/g;
   }
 
-  
+
 
 
 
@@ -11130,7 +11130,7 @@ class PlaceholderUtils {
     return matches;
   }
 
-  
+
 
 
 
@@ -11138,13 +11138,13 @@ class PlaceholderUtils {
   static extractPlaceholderNames(template) {
     const placeholders = PlaceholderUtils.extractPlaceholders(template);
     return placeholders.map(p => {
-      
+
       const pipeIndex = p.indexOf('|');
       return (pipeIndex >= 0 ? p.substring(0, pipeIndex) : p).trim();
     });
   }
 
-  
+
 
 
 
@@ -11154,7 +11154,7 @@ class PlaceholderUtils {
     return [...new Set(names)];
   }
 
-  
+
 
 
 
@@ -11166,7 +11166,7 @@ class PlaceholderUtils {
     return PlaceholderUtils.PLACEHOLDER_PATTERN.test(str);
   }
 
-  
+
 
 
 
@@ -11175,7 +11175,7 @@ class PlaceholderUtils {
     return PlaceholderUtils.extractPlaceholders(str).length;
   }
 
-  
+
 
 
 
@@ -11196,7 +11196,7 @@ class PlaceholderUtils {
     return refs;
   }
 
-  
+
 
 
 
@@ -11220,7 +11220,7 @@ class PlaceholderUtils {
     return refs;
   }
 
-  
+
 
 
 
@@ -11229,7 +11229,7 @@ class PlaceholderUtils {
     return PlaceholderUtils.extractParamReferences(value).length > 0;
   }
 
-  
+
 
 
 
@@ -11238,7 +11238,7 @@ class PlaceholderUtils {
     return PlaceholderUtils.extractProviderReferences(value).length > 0;
   }
 
-  
+
 
 
 
@@ -11263,7 +11263,7 @@ class PlaceholderUtils {
     });
   }
 
-  
+
 
 
 
@@ -11285,7 +11285,7 @@ class PlaceholderUtils {
     return current;
   }
 
-  
+
 
 
 
@@ -11306,7 +11306,7 @@ class PlaceholderUtils {
     };
   }
 
-  
+
 
 
 
@@ -11318,7 +11318,7 @@ class PlaceholderUtils {
     return str.replace(/\{\{/g, '\\{\\{').replace(/\}\}/g, '\\}\\}');
   }
 
-  
+
 
 
 
@@ -11345,7 +11345,7 @@ class PlaceholderUtils {
 
 
 class ServiceValidator {
-  
+
 
 
 
@@ -11354,7 +11354,7 @@ class ServiceValidator {
     return ['sleep'];
   }
 
-  
+
 
 
 
@@ -11363,7 +11363,7 @@ class ServiceValidator {
     return ['get', 'put', 'remove'];
   }
 
-  
+
 
 
 
@@ -11372,7 +11372,7 @@ class ServiceValidator {
     return ['executeWithRetry', 'classifyException'];
   }
 
-  
+
 
 
 
@@ -11381,7 +11381,7 @@ class ServiceValidator {
     return ['getSpreadsheet', 'getSheet', 'getRange'];
   }
 
-  
+
 
 
 
@@ -11398,7 +11398,7 @@ class ServiceValidator {
     return ValidationUtils.validateLogger(logger, context);
   }
 
-  
+
 
 
 
@@ -11423,7 +11423,7 @@ class ServiceValidator {
     return ValidationUtils.validateDependency(utils, 'utils', context, methods, required);
   }
 
-  
+
 
 
 
@@ -11444,7 +11444,7 @@ class ServiceValidator {
     return ValidationUtils.validateDependency(cache, 'cache', context, ServiceValidator.CACHE_METHODS, required);
   }
 
-  
+
 
 
 
@@ -11460,7 +11460,7 @@ class ServiceValidator {
     return ValidationUtils.validateDependency(exceptionService, 'exceptionService', context, ServiceValidator.EXCEPTION_SERVICE_METHODS, required);
   }
 
-  
+
 
 
 
@@ -11476,7 +11476,7 @@ class ServiceValidator {
     return ValidationUtils.validateDependency(spreadsheetService, 'spreadsheetService', context, ServiceValidator.SPREADSHEET_METHODS, required);
   }
 
-  
+
 
 
 
@@ -11520,7 +11520,7 @@ class ServiceValidator {
     return true;
   }
 
-  
+
 
 
 
@@ -11543,7 +11543,7 @@ class ServiceValidator {
     return ValidationUtils.validateDependency(service, name, context, requiredMethods, required);
   }
 
-  
+
 
 
 
@@ -11568,7 +11568,7 @@ class ServiceValidator {
     };
   }
 
-  
+
 
 
 
@@ -11611,7 +11611,7 @@ class ServiceValidator {
 
 
 class ConfigMergeStrategy {
-  
+
 
 
 
@@ -11624,7 +11624,7 @@ class ConfigMergeStrategy {
     return merge(cloneDeep_cloneDeep(defaults), cloneDeep_cloneDeep(provided));
   }
 
-  
+
 
 
 
@@ -11638,12 +11638,12 @@ class ConfigMergeStrategy {
     for (const [key, spec] of Object.entries(schema)) {
       let value = key in providedOptions ? providedOptions[key] : spec.default;
 
-      
+
       if (value !== undefined && value !== null && spec.type) {
         value = validator.coerceType(value, spec.type, key, context);
       }
 
-      
+
       if (spec.transform && typeof spec.transform === 'function') {
         value = spec.transform(value);
       }
@@ -11660,7 +11660,7 @@ class ConfigMergeStrategy {
 
 
 class ConfigValidator {
-  
+
 
 
 
@@ -11680,7 +11680,7 @@ class ConfigValidator {
     };
   }
 
-  
+
 
 
 
@@ -11694,7 +11694,7 @@ class ConfigValidator {
     }
   }
 
-  
+
 
 
 
@@ -11758,7 +11758,7 @@ class ConfigValidator {
     }
   }
 
-  
+
 
 
 
@@ -11769,18 +11769,18 @@ class ConfigValidator {
   validateField(key, value, rule, _context) {
     const errors = [];
 
-    
+
     if (rule.required && (value === undefined || value === null)) {
       errors.push(`${key} is required`);
       return errors; 
     }
 
-    
+
     if (value === undefined || value === null) {
       return errors;
     }
 
-    
+
     if (rule.type) {
       const typeValid = this.checkType(value, rule.type);
       if (!typeValid) {
@@ -11788,13 +11788,13 @@ class ConfigValidator {
       }
     }
 
-    
+
     if (rule.enum && !rule.enum.includes(value)) {
       const allowed = rule.enum.map(v => `'${v}'`).join(', ');
       errors.push(`${key} must be one of: ${allowed}`);
     }
 
-    
+
     if (rule.type === 'number' || rule.type === 'integer') {
       if (rule.min !== undefined && value < rule.min) {
         errors.push(`${key} must be >= ${rule.min}`);
@@ -11804,7 +11804,7 @@ class ConfigValidator {
       }
     }
 
-    
+
     if (rule.type === 'string' && typeof value === 'string') {
       if (rule.minLength !== undefined && value.length < rule.minLength) {
         errors.push(`${key} must have at least ${rule.minLength} characters`);
@@ -11814,7 +11814,7 @@ class ConfigValidator {
       }
     }
 
-    
+
     if (rule.pattern && typeof value === 'string') {
       const regex = rule.pattern instanceof RegExp ? rule.pattern : new RegExp(rule.pattern);
       if (!regex.test(value)) {
@@ -11822,7 +11822,7 @@ class ConfigValidator {
       }
     }
 
-    
+
     if (rule.validator && typeof rule.validator === 'function') {
       const customError = rule.validator(value, key);
       if (customError) {
@@ -11832,7 +11832,7 @@ class ConfigValidator {
     return errors;
   }
 
-  
+
 
 
 
@@ -11882,7 +11882,7 @@ const validator = new ConfigValidator();
 
 
 class ConfigurationBuilder {
-  
+
 
 
 
@@ -11892,7 +11892,7 @@ class ConfigurationBuilder {
     return mergeStrategy.mergeWithDefaults(provided, defaults);
   }
 
-  
+
 
 
 
@@ -11903,7 +11903,7 @@ class ConfigurationBuilder {
     return mergeStrategy.normalizeOptions(options, schema, context, validator);
   }
 
-  
+
 
 
 
@@ -11914,7 +11914,7 @@ class ConfigurationBuilder {
     return validator.validateConfiguration(config, rules, context);
   }
 
-  
+
 
 
 
@@ -11925,7 +11925,7 @@ class ConfigurationBuilder {
     validator.assertValid(config, rules, context);
   }
 
-  
+
 
 
 
@@ -11933,7 +11933,7 @@ class ConfigurationBuilder {
   static create(defaults = {}) {
     let config = cloneDeep_cloneDeep(defaults);
     const builder = {
-      
+
 
 
 
@@ -11943,7 +11943,7 @@ class ConfigurationBuilder {
         config[key] = value;
         return builder;
       },
-      
+
 
 
 
@@ -11955,7 +11955,7 @@ class ConfigurationBuilder {
         }
         return builder;
       },
-      
+
 
 
 
@@ -11967,7 +11967,7 @@ class ConfigurationBuilder {
         }
         return builder;
       },
-      
+
 
 
 
@@ -11976,7 +11976,7 @@ class ConfigurationBuilder {
         config = merge(config, cloneDeep_cloneDeep(additional));
         return builder;
       },
-      
+
 
 
 
@@ -11987,14 +11987,14 @@ class ConfigurationBuilder {
         ConfigurationBuilder.assertValid(config, rules, context);
         return builder;
       },
-      
+
 
 
 
       build() {
         return cloneDeep_cloneDeep(config);
       },
-      
+
 
 
 
@@ -12245,13 +12245,13 @@ const testing = {};
 
 
 const TimeConstants = {
-  
+
   MILLIS_PER_SECOND: 1000,
-  
+
   MILLIS_PER_MINUTE: 60 * 1000,
-  
+
   MILLIS_PER_HOUR: 60 * 60 * 1000,
-  
+
   MILLIS_PER_DAY: 24 * 60 * 60 * 1000
 };
 ;
@@ -12267,30 +12267,30 @@ const TimeConstants = {
 
 
 class ErrorClassifier {
-  
+
 
 
 
 
   constructor(config) {
-    
+
     if (config !== undefined && config !== null && typeof config !== 'object') {
       throw new Error('ErrorClassifier: config must be an object or null');
     }
 
-    
 
 
 
 
-    
+
+
     if (config && typeof config.getErrorPatterns === 'function') {
       this._classifiers = config.getErrorPatterns();
     } else {
-      
-      
+
+
       this._classifiers = {
-        
+
         AUTH_REQUIRED: {
           pattern: /authorization is required|access_token/i,
           category: 'FATAL',
@@ -12301,9 +12301,9 @@ class ErrorClassifier {
           category: 'FATAL',
           recoverable: false
         },
-        
-        
-        
+
+
+
         TIMEOUT: {
           pattern: /timeout|time.*limit|execution.*time.*exceeded|exceeded.*time/i,
           category: 'TIMEOUT',
@@ -12337,35 +12337,35 @@ class ErrorClassifier {
       };
     }
 
-    
+
     this._classificationCache = new Map();
     this._cacheMaxSize = 100; 
   }
 
-  
+
 
 
 
 
 
   classify(error) {
-    
+
     if (!error || typeof error !== 'object') {
       throw new Error('ErrorClassifier.classify: error must be an object');
     }
 
-    
+
     const message = error.message !== undefined ? String(error.message) : '';
     const stack = error.stack !== undefined ? String(error.stack) : '';
     const fullText = `${message} ${stack}`;
 
-    
-    
-    
+
+
+
     const cacheKey = HashUtils.generateHash(fullText);
     if (this._classificationCache.has(cacheKey)) {
       const cachedResult = this._classificationCache.get(cacheKey);
-      
+
       return {
         type: cachedResult.type,
         category: cachedResult.category,
@@ -12386,8 +12386,8 @@ class ErrorClassifier {
       }
     }
 
-    
-    
+
+
     if (!classification) {
       classification = {
         type: 'UNKNOWN',
@@ -12397,9 +12397,9 @@ class ErrorClassifier {
       };
     }
 
-    
+
     if (this._classificationCache.size >= this._cacheMaxSize) {
-      
+
       const firstKey = this._classificationCache.keys().next().value;
       this._classificationCache.delete(firstKey);
     }
@@ -12411,14 +12411,14 @@ class ErrorClassifier {
     return classification;
   }
 
-  
+
 
 
   clearCache() {
     this._classificationCache.clear();
   }
 
-  
+
 
 
 
@@ -12527,7 +12527,7 @@ class ErrorReporterSanitizer {
     this.facade = facade;
   }
 
-  
+
 
 
 
@@ -12537,14 +12537,14 @@ class ErrorReporterSanitizer {
     return PiiRedactor.redact(message);
   }
 
-  
+
 
 
 
 
 
   _parseStackTrace(stack) {
-    
+
     return stack;
   }
 }
@@ -12563,7 +12563,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 
 class ErrorReporter {
-  
+
 
 
   static _sanitizeMessage(message) {
@@ -12581,7 +12581,7 @@ class ErrorReporter {
     }
     this._logger = logger;
 
-    
+
     this._sessionErrors = [];
     this._counters = {
       total: 0,
@@ -12590,12 +12590,12 @@ class ErrorReporter {
       byType: {}
     };
 
-    
+
     this._recorder = new ErrorReporterRecorder(this);
     this._statistics = new ErrorReporterStatistics(this);
     this._sanitizer = new ErrorReporterSanitizer(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._recorder,
       methods: ['reset', 'record']
@@ -12623,7 +12623,7 @@ _defineProperty(ErrorReporter, "MAX_SESSION_ERRORS", 1000);
 
 
 class RecoveryManager {
-  
+
   static get MAX_JITTER_MS() {
     return 1000;
   } 
@@ -12631,7 +12631,7 @@ class RecoveryManager {
     return 300000;
   } 
 
-  
+
 
 
 
@@ -12639,7 +12639,7 @@ class RecoveryManager {
 
 
   constructor(utils, config) {
-    
+
     if (!utils || typeof utils !== 'object') {
       throw new Error('RecoveryManager: utils is required and must be an object');
     }
@@ -12647,23 +12647,23 @@ class RecoveryManager {
       throw new Error('RecoveryManager: utils.sleep must be a function');
     }
 
-    
+
     if (config !== undefined && config !== null && typeof config !== 'object') {
       throw new Error('RecoveryManager: config must be an object or null');
     }
     this._utils = utils;
 
-    
 
 
 
 
-    
+
+
     if (config && typeof config.getRecoveryStrategies === 'function') {
       this._strategies = config.getRecoveryStrategies();
       this._config = config;
     } else {
-      
+
       this._strategies = {
         DEFAULT: {
           action: 'RETRY_BACKOFF',
@@ -12698,7 +12698,7 @@ class RecoveryManager {
     }
   }
 
-  
+
 
 
 
@@ -12708,7 +12708,7 @@ class RecoveryManager {
 
 
   applyStrategy(classification, attempt, mode, customMaxAttempts) {
-    
+
     if (!classification || typeof classification !== 'object') {
       throw new Error('RecoveryManager.applyStrategy: classification must be an object');
     }
@@ -12727,50 +12727,50 @@ class RecoveryManager {
       }
     }
 
-    
+
     if (mode === 'STRICT') {
       return false;
     }
     const strategy = this._strategies[classification.category] || this._strategies.DEFAULT;
 
-    
+
     const maxAttempts = customMaxAttempts !== undefined ? customMaxAttempts : strategy.maxAttempts;
 
-    
+
     if (attempt >= maxAttempts) {
       return false;
     }
 
-    
-    
+
+
     if (mode !== 'LENIENT' && !classification.recoverable) {
       return false;
     }
 
-    
-    
-    
+
+
+
     const effectiveStrategy = mode === 'LENIENT' && !strategy.action.startsWith('RETRY') ? this._strategies.DEFAULT : strategy;
     if (effectiveStrategy.action.startsWith('RETRY')) {
       if (effectiveStrategy.interval > 0) {
-        
-        
+
+
         const maxJitter = this._config ? this._config.getLimit('MAX_JITTER_MS') : RecoveryManager.MAX_JITTER_MS;
         const maxWaitTime = this._config ? this._config.getLimit('MAX_WAIT_TIME_MS') : RecoveryManager.MAX_WAIT_TIME_MS;
         const exponentialBackoff = effectiveStrategy.interval * Math.pow(2, attempt - 1);
         const jitter = Math.random() * maxJitter;
         const waitTime = exponentialBackoff + jitter;
 
-        
+
         const cappedWaitTime = Math.min(waitTime, maxWaitTime);
 
-        
+
         this._utils.sleep(cappedWaitTime);
       }
       return true;
     }
 
-    
+
     return false;
   }
 }
@@ -12787,7 +12787,7 @@ class RecoveryManager {
 
 
 class CircuitBreaker {
-  
+
 
 
 
@@ -12795,12 +12795,12 @@ class CircuitBreaker {
 
 
   constructor(config = {}, logger = null, cache = null) {
-    
+
     if (typeof config !== 'object' || config === null) {
       throw new Error('CircuitBreaker: config must be an object');
     }
 
-    
+
     this._failureThreshold = config.failureThreshold || 5;
     this._successThreshold = config.successThreshold || 2;
     this._resetTimeout = config.resetTimeout || 60000; 
@@ -12808,7 +12808,7 @@ class CircuitBreaker {
     this._logger = logger;
     this._cache = cache; 
 
-    
+
     if (this._failureThreshold < 1) {
       throw new Error('CircuitBreaker: failureThreshold must be at least 1');
     }
@@ -12822,11 +12822,11 @@ class CircuitBreaker {
       throw new Error('CircuitBreaker: monitoringPeriod must be at least 1000ms');
     }
 
-    
+
     this._cacheTTL = 21600; 
   }
 
-  
+
 
 
 
@@ -12836,14 +12836,14 @@ class CircuitBreaker {
     return `CircuitBreaker_${operationName}`;
   }
 
-  
+
 
 
 
 
 
   _loadState(operationName) {
-    
+
     if (!this._cache) {
       return {
         state: CircuitBreaker.STATE.CLOSED,
@@ -12858,14 +12858,14 @@ class CircuitBreaker {
       const cached = this._cache.get(cacheKey);
       if (cached) {
         const state = JSON.parse(cached);
-        
+
         return state;
       }
     } catch (error) {
       this._log(`Failed to load circuit state from cache: ${error.message}`);
     }
 
-    
+
     return {
       state: CircuitBreaker.STATE.CLOSED,
       failures: [],
@@ -12875,14 +12875,14 @@ class CircuitBreaker {
     };
   }
 
-  
+
 
 
 
 
 
   _saveState(operationName, state) {
-    
+
     if (!this._cache) {
       return;
     }
@@ -12895,7 +12895,7 @@ class CircuitBreaker {
     }
   }
 
-  
+
 
 
 
@@ -12906,7 +12906,7 @@ class CircuitBreaker {
     circuit.failures = circuit.failures.filter(timestamp => timestamp > cutoff);
   }
 
-  
+
 
 
 
@@ -12920,10 +12920,10 @@ class CircuitBreaker {
     const now = Date.now();
     switch (circuit.state) {
       case CircuitBreaker.STATE.CLOSED:
-        
+
         return true;
       case CircuitBreaker.STATE.OPEN:
-        
+
         if (circuit.nextAttemptTime && now >= circuit.nextAttemptTime) {
           this._log(`Circuit breaker for '${operationName}' entering HALF_OPEN state`);
           circuit.state = CircuitBreaker.STATE.HALF_OPEN;
@@ -12931,17 +12931,17 @@ class CircuitBreaker {
           this._saveState(operationName, circuit);
           return true;
         }
-        
+
         return false;
       case CircuitBreaker.STATE.HALF_OPEN:
-        
+
         return true;
       default:
         return true;
     }
   }
 
-  
+
 
 
 
@@ -12964,8 +12964,8 @@ class CircuitBreaker {
         circuit.nextAttemptTime = null;
       }
     } else if (circuit.state === CircuitBreaker.STATE.CLOSED) {
-      
-      
+
+
       this._cleanOldFailures(circuit);
       stateChanged = true;
     }
@@ -12974,7 +12974,7 @@ class CircuitBreaker {
     }
   }
 
-  
+
 
 
 
@@ -12989,13 +12989,13 @@ class CircuitBreaker {
     circuit.failures.push(now);
     this._cleanOldFailures(circuit);
     if (circuit.state === CircuitBreaker.STATE.HALF_OPEN) {
-      
+
       this._log(`Circuit breaker for '${operationName}' reopening after failure in HALF_OPEN state`);
       circuit.state = CircuitBreaker.STATE.OPEN;
       circuit.nextAttemptTime = now + this._resetTimeout;
       circuit.consecutiveSuccesses = 0;
     } else if (circuit.state === CircuitBreaker.STATE.CLOSED) {
-      
+
       if (circuit.failures.length >= this._failureThreshold) {
         this._log(`Circuit breaker for '${operationName}' opening after ${circuit.failures.length} failures`);
         circuit.state = CircuitBreaker.STATE.OPEN;
@@ -13006,7 +13006,7 @@ class CircuitBreaker {
     this._saveState(operationName, circuit);
   }
 
-  
+
 
 
 
@@ -13027,7 +13027,7 @@ class CircuitBreaker {
     };
   }
 
-  
+
 
 
 
@@ -13047,18 +13047,18 @@ class CircuitBreaker {
     this._log(`Circuit breaker for '${operationName}' manually reset to CLOSED`);
   }
 
-  
+
 
 
 
   getStatistics() {
-    
-    
+
+
     this._log('getStatistics() returns empty object with cache-based persistence. Use getState(operationName) instead.');
     return {};
   }
 
-  
+
 
 
 
@@ -13083,12 +13083,12 @@ class ResilienceExecutionHandler {
     this.facade = facade;
   }
   _generateCorrelationId() {
-    
+
     const utils = new MyUtilsService();
     return utils.generateCompactId(21);
   }
   executeWithAdvancedHandling(func, parameters = {}, options = {}) {
-    
+
     if (typeof func !== 'function') {
       throw new Error('ExceptionService.executeWithAdvancedHandling: func must be a function');
     }
@@ -13115,7 +13115,7 @@ class ResilienceExecutionHandler {
     let lastError = null;
     let classification = null;
 
-    
+
     if (useCircuitBreaker && this.facade._circuitBreaker && !this.facade._circuitBreaker.allowRequest(operationName)) {
       this.facade._logger.warn(`[CircuitBreaker] Request blocked for '${operationName}' - circuit is OPEN`);
       return {
@@ -13133,20 +13133,20 @@ class ResilienceExecutionHandler {
       };
     }
 
-    
+
     const absoluteMaxAttempts = this.facade._config ? this.facade._config.getLimit('ABSOLUTE_MAX_ATTEMPTS') : this.facade.constructor.ABSOLUTE_MAX_ATTEMPTS;
     while (attempt < absoluteMaxAttempts) {
       attempt++;
       try {
-        
+
         const result = func(parameters);
 
-        
+
         if (useCircuitBreaker && this.facade._circuitBreaker) {
           this.facade._circuitBreaker.recordSuccess(operationName);
         }
 
-        
+
         const recovered = attempt > 1;
         if (recovered) {
           this.facade._reporter.record({
@@ -13165,11 +13165,11 @@ class ResilienceExecutionHandler {
           attempts: attempt,
           recovered,
           correlationId,
-          
+
           error: null
         };
       } catch (e) {
-        
+
         if (!(e instanceof Error)) {
           lastError = new Error(String(e));
           lastError.originalValue = e;
@@ -13178,22 +13178,22 @@ class ResilienceExecutionHandler {
         }
         classification = this.facade._classifier.classify(lastError);
 
-        
+
         if (!this.facade._recoveryManager.applyStrategy(classification, attempt, mode, maxAttempts)) {
           break; 
         }
-        
-        
+
+
         this.facade._logger.warn(`[${operationName}] Retry attempt ${attempt} after error: ${lastError.message}`);
       }
     }
 
-    
+
     if (useCircuitBreaker && this.facade._circuitBreaker) {
       this.facade._circuitBreaker.recordFailure(operationName);
     }
 
-    
+
     this.facade._reporter.record({
       type: 'FAILURE',
       operation: operationName,
@@ -13201,14 +13201,14 @@ class ResilienceExecutionHandler {
       correlationId 
     });
 
-    
+
     this.facade._logger.error(`[${operationName}] Operation failed after ${attempt} attempt(s): ${lastError.message}`);
     return {
       success: false,
       result: null,
       attempts: attempt,
       correlationId,
-      
+
       error: {
         message: lastError.message,
         ...classification
@@ -13216,7 +13216,7 @@ class ResilienceExecutionHandler {
     };
   }
   executeWithRetry(func, parameters = {}, maxAttempts = 3) {
-    
+
     if (typeof func !== 'function') {
       throw new Error('ExceptionService.executeWithRetry: func must be a function');
     }
@@ -13227,8 +13227,8 @@ class ResilienceExecutionHandler {
       throw new Error('ExceptionService.executeWithRetry: maxAttempts must be a positive integer');
     }
 
-    
-    
+
+
     const result = this.facade.executeWithAdvancedHandling(func, parameters, {
       mode: 'RECOVERY',
       maxAttempts
@@ -13239,7 +13239,7 @@ class ResilienceExecutionHandler {
     throw new Error(result.error.message);
   }
   executeWithBypass(func, parameters, defaultValue) {
-    
+
     if (parameters === undefined) {
       parameters = {};
     }
@@ -13247,7 +13247,7 @@ class ResilienceExecutionHandler {
       defaultValue = null;
     }
 
-    
+
     if (typeof func !== 'function') {
       throw new Error('ExceptionService.executeWithBypass: func must be a function');
     }
@@ -13271,12 +13271,12 @@ class ResilienceStatsTracker {
     this.facade = facade;
   }
   classifyError(error) {
-    
+
     if (error === null || error === undefined) {
       throw new Error('ExceptionService.classifyError: error is required');
     }
 
-    
+
     const errorToClassify = error instanceof Error ? error : new Error(String(error));
     return this.facade._classifier.classify(errorToClassify);
   }
@@ -13342,7 +13342,7 @@ class ResilienceStatsTracker {
 
 
 class ExceptionService {
-  
+
   static get ABSOLUTE_MAX_ATTEMPTS() {
     return 100;
   } 
@@ -13353,7 +13353,7 @@ class ExceptionService {
     return 300000;
   } 
 
-  
+
 
 
 
@@ -13366,7 +13366,7 @@ class ExceptionService {
 
 
   constructor(logger, utils, dependencies = {}) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('ExceptionService: logger is required and must be an object');
     }
@@ -13377,27 +13377,27 @@ class ExceptionService {
       throw new Error('ExceptionService: logger.warn must be a function');
     }
 
-    
+
     if (!utils || typeof utils !== 'object') {
       throw new Error('ExceptionService: utils is required and must be an object. Pass UtilitiesService from @GoogleApiWrapper, not native Utilities.');
     }
     if (typeof utils.sleep !== 'function') {
       throw new Error('ExceptionService: utils.sleep must be a function. Ensure you are passing UtilitiesService from @GoogleApiWrapper.');
     }
-    
-    
-    
-    
+
+
+
+
     if (utils === __webpack_require__.g.Utilities || typeof Utilities !== 'undefined' && utils === Utilities) {
       throw new Error('ExceptionService: Do not pass native Utilities directly. Use UtilitiesService from @GoogleApiWrapper instead.');
     }
 
-    
+
     if (dependencies !== null && typeof dependencies !== 'object') {
       throw new Error('ExceptionService: dependencies must be an object or null');
     }
 
-    
+
     this._logger = {
       error: logger.error.bind(logger),
       warn: logger.warn.bind(logger),
@@ -13406,17 +13406,17 @@ class ExceptionService {
     this._utils = utils;
     this._cache = dependencies.cache || null; 
 
-    
+
     const config = dependencies.config || null;
     this._config = config;
 
-    
-    
+
+
     this._classifier = dependencies.classifier || new ErrorClassifier(config);
     this._recoveryManager = dependencies.recoveryManager || new RecoveryManager(utils, config);
     this._reporter = dependencies.reporter || new ErrorReporter(logger);
 
-    
+
     if (dependencies.circuitBreaker) {
       this._circuitBreaker = dependencies.circuitBreaker;
     } else if (dependencies.circuitBreakerConfig) {
@@ -13425,7 +13425,7 @@ class ExceptionService {
       this._circuitBreaker = null; 
     }
 
-    
+
     this._executionHandler = new ResilienceExecutionHandler(this);
     this._statsTracker = new ResilienceStatsTracker(this);
     const executionMethods = ['executeWithAdvancedHandling', 'executeWithRetry', 'executeWithBypass', '_generateCorrelationId'];
@@ -13438,7 +13438,7 @@ class ExceptionService {
     });
   }
 
-  
+
 
 
 
@@ -13447,7 +13447,7 @@ class ExceptionService {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -13456,7 +13456,7 @@ class ExceptionService {
     return this._utils;
   }
 
-  
+
 
 
 
@@ -13465,7 +13465,7 @@ class ExceptionService {
     return this._classifier;
   }
 
-  
+
 
 
 
@@ -13474,7 +13474,7 @@ class ExceptionService {
     return this._reporter;
   }
 
-  
+
 
 
 
@@ -13483,7 +13483,7 @@ class ExceptionService {
     return this._recoveryManager;
   }
 
-  
+
 
 
 
@@ -13503,14 +13503,14 @@ class ExceptionService {
 
 
 class TimeoutException extends Error {
-  
+
 
 
 
   constructor(message = 'Timeout exceeded') {
     super(message);
 
-    
+
 
 
 
@@ -13529,7 +13529,7 @@ class TimeoutException extends Error {
 
 
 class RateLimitExceededException extends Error {
-  
+
 
 
 
@@ -13539,21 +13539,21 @@ class RateLimitExceededException extends Error {
     const defaultMessage = `Rate limit exceeded for operation '${operationName}'. Required wait time: ${requiredWaitMs}ms`;
     super(message || defaultMessage);
 
-    
+
 
 
 
 
     this.name = 'RateLimitExceededException';
 
-    
+
 
 
 
 
     this.operationName = operationName;
 
-    
+
 
 
 
@@ -13571,7 +13571,7 @@ class RateLimitExceededException extends Error {
 
 
 class ResilienceConfiguration {
-  
+
 
 
 
@@ -13580,15 +13580,15 @@ class ResilienceConfiguration {
 
 
   constructor(overrides = {}) {
-    
+
     if (overrides !== null && typeof overrides !== 'object') {
       throw new Error('ResilienceConfiguration: overrides must be an object or null');
     }
 
-    
-    
+
+
     this.errorPatterns = Object.assign({
-      
+
       AUTH_REQUIRED: {
         pattern: /authorization is required|access_token/i,
         category: 'FATAL',
@@ -13599,7 +13599,7 @@ class ResilienceConfiguration {
         category: 'FATAL',
         recoverable: false
       },
-      
+
       QUOTA_EXCEEDED: {
         pattern: /quota|limit.*exceeded|too many requests|too many times|service invoked too many/i,
         category: 'QUOTA',
@@ -13632,7 +13632,7 @@ class ResilienceConfiguration {
       }
     }, overrides && overrides.errorPatterns || {});
 
-    
+
     this.recoveryStrategies = Object.assign({
       DEFAULT: {
         action: 'RETRY_BACKOFF',
@@ -13664,19 +13664,19 @@ class ResilienceConfiguration {
       }
     }, overrides && overrides.recoveryStrategies || {});
 
-    
+
     this.limits = Object.assign({
       ABSOLUTE_MAX_ATTEMPTS: 100,
-      
+
       MAX_JITTER_MS: 1000,
-      
+
       MAX_WAIT_TIME_MS: 300000,
-      
+
       MAX_SESSION_ERRORS: 1000 
     }, overrides && overrides.limits || {});
   }
 
-  
+
 
 
 
@@ -13684,7 +13684,7 @@ class ResilienceConfiguration {
     return this.errorPatterns;
   }
 
-  
+
 
 
 
@@ -13692,7 +13692,7 @@ class ResilienceConfiguration {
     return this.recoveryStrategies;
   }
 
-  
+
 
 
 
@@ -13700,7 +13700,7 @@ class ResilienceConfiguration {
     return this.limits;
   }
 
-  
+
 
 
 
@@ -13709,7 +13709,7 @@ class ResilienceConfiguration {
     return this.errorPatterns[type];
   }
 
-  
+
 
 
 
@@ -13718,7 +13718,7 @@ class ResilienceConfiguration {
     return this.recoveryStrategies[category] || this.recoveryStrategies.DEFAULT;
   }
 
-  
+
 
 
 
@@ -13727,7 +13727,7 @@ class ResilienceConfiguration {
     return this.limits[limitName];
   }
 
-  
+
 
 
 
@@ -14098,7 +14098,7 @@ class RateLimiter {
 
 
 class MenuBuilder {
-  
+
 
 
 
@@ -14116,28 +14116,28 @@ class MenuBuilder {
       throw new Error('MenuBuilder: logger is required');
     }
 
-    
+
 
 
 
 
     this._ui = ui;
 
-    
+
 
 
 
 
     this._menu = ui.createMenu(caption);
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
@@ -14146,7 +14146,7 @@ class MenuBuilder {
     this._logger.debug(`MenuBuilder: Created menu "${caption}"`);
   }
 
-  
+
 
 
 
@@ -14165,7 +14165,7 @@ class MenuBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14175,7 +14175,7 @@ class MenuBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14190,7 +14190,7 @@ class MenuBuilder {
     return this;
   }
 
-  
+
 
 
   addToUi() {
@@ -14198,7 +14198,7 @@ class MenuBuilder {
     this._logger.debug(`MenuBuilder: Added menu "${this._caption}" to UI`);
   }
 
-  
+
 
 
 
@@ -14292,7 +14292,7 @@ class SidebarBuilder {
 
 
 class DialogBuilder {
-  
+
 
 
 
@@ -14306,42 +14306,42 @@ class DialogBuilder {
       throw new Error('DialogBuilder: logger is required');
     }
 
-    
+
 
 
 
 
     this._ui = ui;
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._htmlOutput = null;
 
-    
+
 
 
 
 
     this._title = 'Dialog';
 
-    
+
 
 
 
 
     this._width = null;
 
-    
+
 
 
 
@@ -14350,7 +14350,7 @@ class DialogBuilder {
     this._logger.debug('DialogBuilder: Instance created');
   }
 
-  
+
 
 
 
@@ -14365,7 +14365,7 @@ class DialogBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14380,7 +14380,7 @@ class DialogBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14395,7 +14395,7 @@ class DialogBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14409,7 +14409,7 @@ class DialogBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14423,7 +14423,7 @@ class DialogBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -14432,7 +14432,7 @@ class DialogBuilder {
       throw new Error('DialogBuilder.show: Must set content before showing dialog');
     }
 
-    
+
     this._htmlOutput.setTitle(this._title);
     if (this._width !== null) {
       this._htmlOutput.setWidth(this._width);
@@ -14441,12 +14441,12 @@ class DialogBuilder {
       this._htmlOutput.setHeight(this._height);
     }
 
-    
+
     this._ui.showModalDialog(this._htmlOutput, this._title);
     this._logger.debug(`DialogBuilder: Showed dialog "${this._title}" (${this._width}x${this._height}px)`);
   }
 
-  
+
 
 
 
@@ -14463,7 +14463,7 @@ class DialogBuilder {
 
 
 class TextStyleMapper {
-  
+
 
 
 
@@ -14496,7 +14496,7 @@ class TextStyleMapper {
     return attrs;
   }
 
-  
+
 
 
 
@@ -14530,7 +14530,7 @@ class TextStyleMapper {
 
 
 class GoogleService {
-  
+
 
 
 
@@ -14543,7 +14543,7 @@ class GoogleService {
 
 
   constructor(logger, cache, utils, exceptionService) {
-    
+
     if (logger == null) {
       throw new Error('GoogleService: logger is required and cannot be null or undefined');
     }
@@ -14582,41 +14582,41 @@ class GoogleService {
       throw new Error('GoogleService: exceptionService must have method: executeWithRetry');
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._cache = cache;
 
-    
+
 
 
 
 
     this._utils = utils;
 
-    
+
 
 
 
 
     this._exceptionService = exceptionService;
 
-    
+
     if (this.constructor === GoogleService) {
       throw new Error('Abstract class GoogleService cannot be instantiated directly.');
     }
   }
 
-  
+
 
 
 
@@ -14624,14 +14624,14 @@ class GoogleService {
 
   _verifyAdvancedService(serviceName) {
     try {
-      
+
       return typeof globalThis[serviceName] !== 'undefined';
     } catch (_e) {
       return false;
     }
   }
 
-  
+
 
 
 
@@ -14643,7 +14643,7 @@ class GoogleService {
     return `${prefix}_${id}_${method}`;
   }
 
-  
+
 
 
 
@@ -14669,7 +14669,7 @@ class GoogleService {
     return result;
   }
 
-  
+
 
 
 
@@ -14679,13 +14679,13 @@ class GoogleService {
     this._logger.debug(`Invalidated cache for key: ${key}`);
   }
 
-  
+
 
 
 
 
   _invalidateCacheByPrefix(prefix) {
-    
+
     if (typeof this._cache.removeByPrefix === 'function') {
       this._cache.removeByPrefix(prefix);
       this._logger.debug(`Invalidated cache with prefix: ${prefix}`);
@@ -14694,7 +14694,7 @@ class GoogleService {
     }
   }
 
-  
+
 
 
 
@@ -14707,7 +14707,7 @@ class GoogleService {
     if (this._exceptionService && typeof this._exceptionService.executeWithRetry === 'function') {
       return this._exceptionService.executeWithRetry(func, context, maxAttempts);
     } else {
-      
+
       return func();
     }
   }
@@ -14735,7 +14735,7 @@ function _getNativeCacheService() {
 
 
 class CacheService {
-  
+
 
 
 
@@ -14745,7 +14745,7 @@ class CacheService {
     this._exceptionService = exceptionService;
   }
 
-  
+
 
 
 
@@ -14761,7 +14761,7 @@ class CacheService {
     }
   }
 
-  
+
 
 
 
@@ -14777,7 +14777,7 @@ class CacheService {
     }
   }
 
-  
+
 
 
 
@@ -14793,7 +14793,7 @@ class CacheService {
     }
   }
 
-  
+
 
 
 
@@ -14802,7 +14802,7 @@ class CacheService {
     return _getNativeCacheService().getScriptCache();
   }
 
-  
+
 
 
 
@@ -14811,7 +14811,7 @@ class CacheService {
     return _getNativeCacheService().getUserCache();
   }
 
-  
+
 
 
 
@@ -14832,7 +14832,7 @@ class CacheService {
 
 
 class Cache {
-  
+
 
 
 
@@ -14842,14 +14842,14 @@ class Cache {
     this._cache = gasCache;
     this._logger = logger;
     this._type = type;
-    
+
 
 
 
 
 
     this._trackedKeys = new Set();
-    
+
 
 
 
@@ -14857,7 +14857,7 @@ class Cache {
     this._autoTrackKeys = false;
   }
 
-  
+
 
 
 
@@ -14877,7 +14877,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -14893,7 +14893,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -14902,14 +14902,14 @@ class Cache {
 
   put(key, value, expirationInSeconds = 600) {
     try {
-      
+
       const stringValue = typeof value === 'string' ? value : String(value);
 
-      
+
       const cappedExpiration = Math.min(expirationInSeconds, 21600);
       this._cache.put(key, stringValue, cappedExpiration);
 
-      
+
       if (this._autoTrackKeys) {
         this._trackedKeys.add(key);
       }
@@ -14920,7 +14920,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -14928,17 +14928,17 @@ class Cache {
 
   putAll(values, expirationInSeconds = 600) {
     try {
-      
+
       const stringValues = {};
       for (const [key, value] of Object.entries(values)) {
         stringValues[key] = typeof value === 'string' ? value : String(value);
       }
 
-      
+
       const cappedExpiration = Math.min(expirationInSeconds, 21600);
       this._cache.putAll(stringValues, cappedExpiration);
 
-      
+
       if (this._autoTrackKeys) {
         Object.keys(values).forEach(key => this._trackedKeys.add(key));
       }
@@ -14949,7 +14949,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -14957,7 +14957,7 @@ class Cache {
   remove(key) {
     try {
       this._cache.remove(key);
-      
+
       this._trackedKeys.delete(key);
       this._logger.debug(`Removed from ${this._type} cache: ${key}`);
     } catch (error) {
@@ -14966,7 +14966,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -14975,11 +14975,11 @@ class Cache {
     try {
       if (keys && keys.length > 0) {
         this._cache.removeAll(keys);
-        
+
         keys.forEach(key => this._trackedKeys.delete(key));
         this._logger.debug(`Removed ${keys.length} keys from ${this._type} cache`);
       } else {
-        
+
         this._logger.warn('removeAll called with no keys - no action taken');
       }
     } catch (error) {
@@ -14988,7 +14988,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -15001,7 +15001,7 @@ class Cache {
         return 0;
       }
 
-      
+
       const keysToRemove = [];
       for (const key of this._trackedKeys) {
         if (key.startsWith(prefix)) {
@@ -15013,10 +15013,10 @@ class Cache {
         return 0;
       }
 
-      
+
       this._cache.removeAll(keysToRemove);
 
-      
+
       keysToRemove.forEach(key => this._trackedKeys.delete(key));
       this._logger.debug(`Removed ${keysToRemove.length} keys with prefix '${prefix}' from ${this._type} cache`);
       return keysToRemove.length;
@@ -15026,7 +15026,7 @@ class Cache {
     }
   }
 
-  
+
 
 
 
@@ -15036,7 +15036,7 @@ class Cache {
     return this;
   }
 
-  
+
 
 
 
@@ -15046,7 +15046,7 @@ class Cache {
     return this;
   }
 
-  
+
 
 
 
@@ -15056,7 +15056,7 @@ class Cache {
     return this;
   }
 
-  
+
 
 
 
@@ -15064,7 +15064,7 @@ class Cache {
     return this._trackedKeys.size;
   }
 
-  
+
 
 
 
@@ -15074,7 +15074,7 @@ class Cache {
     return this;
   }
 
-  
+
 
 
 
@@ -15097,7 +15097,7 @@ class Cache {
 
 
 class UtilitiesService {
-  
+
 
 
 
@@ -15107,7 +15107,7 @@ class UtilitiesService {
     this._exceptionService = exceptionService;
   }
 
-  
+
 
 
 
@@ -15121,7 +15121,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15136,7 +15136,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15148,7 +15148,7 @@ class UtilitiesService {
       if (typeof data === 'string') {
         encoded = charset ? __webpack_require__.g.Utilities.base64Encode(data, charset) : __webpack_require__.g.Utilities.base64Encode(data, __webpack_require__.g.Utilities.Charset.UTF_8);
       } else {
-        
+
         encoded = __webpack_require__.g.Utilities.base64Encode(data);
       }
       this._logger.debug('Encoded data to Base64');
@@ -15159,7 +15159,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15175,7 +15175,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15187,7 +15187,7 @@ class UtilitiesService {
       if (typeof data === 'string') {
         encoded = charset ? __webpack_require__.g.Utilities.base64EncodeWebSafe(data, charset) : __webpack_require__.g.Utilities.base64EncodeWebSafe(data, __webpack_require__.g.Utilities.Charset.UTF_8);
       } else {
-        
+
         encoded = __webpack_require__.g.Utilities.base64EncodeWebSafe(data);
       }
       this._logger.debug('Encoded data to web-safe Base64');
@@ -15198,7 +15198,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15214,7 +15214,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15231,7 +15231,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15249,7 +15249,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15266,7 +15266,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15284,7 +15284,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15300,7 +15300,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15316,7 +15316,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15333,7 +15333,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15349,7 +15349,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15358,7 +15358,7 @@ class UtilitiesService {
 
   computeDigest(algorithm, value, charset = 'UTF_8') {
     try {
-      
+
       const algorithmEnum = __webpack_require__.g.Utilities.DigestAlgorithm[algorithm];
       const charsetEnum = __webpack_require__.g.Utilities.Charset[charset];
       const digest = __webpack_require__.g.Utilities.computeDigest(algorithmEnum, value, charsetEnum);
@@ -15370,7 +15370,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15380,7 +15380,7 @@ class UtilitiesService {
 
   computeHmacSignature(algorithm, value, key, charset = 'UTF_8') {
     try {
-      
+
       const algorithmEnum = __webpack_require__.g.Utilities.MacAlgorithm[algorithm];
       const charsetEnum = __webpack_require__.g.Utilities.Charset[charset];
       const signature = __webpack_require__.g.Utilities.computeHmacSignature(algorithmEnum, value, key, charsetEnum);
@@ -15392,7 +15392,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15412,7 +15412,7 @@ class UtilitiesService {
     }
   }
 
-  
+
 
 
 
@@ -15444,13 +15444,13 @@ class DriveFileManager {
     this._cachePrefix = facade._cachePrefix;
     this._cacheExpirationTime = facade._cacheExpirationTime;
 
-    
+
     this._isDryRun = facade._isDryRun.bind(facade);
     this._generateDryRunId = facade._generateDryRunId.bind(facade);
     this._generateCacheKey = facade._generateCacheKey.bind(facade);
   }
 
-  
+
 
 
 
@@ -15463,11 +15463,11 @@ class DriveFileManager {
     const idsArray = Array.isArray(fileIds) ? fileIds : [fileIds];
     const permanently = options.permanently || false;
 
-    
+
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would delete ${idsArray.length} file(s): ${idsArray.join(', ')}${permanently ? ' (permanently)' : ' (to trash)'}`);
 
-      
+
       return {
         successful: idsArray.map(id => ({
           id,
@@ -15494,7 +15494,7 @@ class DriveFileManager {
           data: null
         });
 
-        
+
         const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'get');
         this._cache.remove(cacheKey);
       } catch (error) {
@@ -15509,7 +15509,7 @@ class DriveFileManager {
     return results;
   }
 
-  
+
 
 
 
@@ -15518,7 +15518,7 @@ class DriveFileManager {
   restoreFiles(fileIds, options = {}) {
     const idsArray = Array.isArray(fileIds) ? fileIds : [fileIds];
 
-    
+
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would restore ${idsArray.length} file(s) from trash`);
       return {
@@ -15547,7 +15547,7 @@ class DriveFileManager {
           data: null
         });
 
-        
+
         const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'get');
         this._cache.remove(cacheKey);
       } catch (error) {
@@ -15562,7 +15562,7 @@ class DriveFileManager {
     return results;
   }
 
-  
+
 
 
 
@@ -15573,14 +15573,14 @@ class DriveFileManager {
   copyFiles(copyRequests, options = {}) {
     const reqsArray = Array.isArray(copyRequests) ? copyRequests : [copyRequests];
 
-    
+
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would copy ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
         this._logger.info(`[DRY-RUN]   - Copy ${req.fileId} as "${req.name || 'Copy'}"${req.destinationFolder ? ` to folder ${req.destinationFolder}` : ''}`);
       });
 
-      
+
       return {
         successful: reqsArray.map(req => ({
           id: req.fileId,
@@ -15626,7 +15626,7 @@ class DriveFileManager {
     return results;
   }
 
-  
+
 
 
 
@@ -15637,14 +15637,14 @@ class DriveFileManager {
   moveFiles(moveRequests, options = {}) {
     const reqsArray = Array.isArray(moveRequests) ? moveRequests : [moveRequests];
 
-    
+
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would move ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
         this._logger.info(`[DRY-RUN]   - Move ${req.fileId} to ${req.newParent}${req.removeFromOtherParents ? ' (removing from other parents)' : ''}`);
       });
 
-      
+
       return {
         successful: reqsArray.map(req => ({
           id: req.fileId,
@@ -15660,7 +15660,7 @@ class DriveFileManager {
       };
     }
 
-    
+
     const filesNeedingParentInfo = reqsArray.filter(req => req.removeFromOtherParents);
     const parentInfoMap = {};
     if (filesNeedingParentInfo.length > 0) {
@@ -15682,7 +15682,7 @@ class DriveFileManager {
       });
     }
 
-    
+
     const results = {
       successful: [],
       failed: []
@@ -15705,7 +15705,7 @@ class DriveFileManager {
           data: updatedFile
         });
 
-        
+
         const cacheKey = this._generateCacheKey(this._cachePrefix, req.fileId, 'get');
         this._cache.remove(cacheKey);
       } catch (error) {
@@ -15720,7 +15720,7 @@ class DriveFileManager {
     return results;
   }
 
-  
+
 
 
 
@@ -15731,14 +15731,14 @@ class DriveFileManager {
   renameFiles(renameRequests, options = {}) {
     const reqsArray = Array.isArray(renameRequests) ? renameRequests : [renameRequests];
 
-    
+
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would rename ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
         this._logger.info(`[DRY-RUN]   - Rename ${req.fileId} to "${req.newName}"`);
       });
 
-      
+
       return {
         successful: reqsArray.map(req => ({
           id: req.fileId,
@@ -15768,7 +15768,7 @@ class DriveFileManager {
           data: updatedFile
         });
 
-        
+
         const cacheKey = this._generateCacheKey(this._cachePrefix, req.fileId, 'get');
         this._cache.remove(cacheKey);
       } catch (error) {
@@ -15783,7 +15783,7 @@ class DriveFileManager {
     return results;
   }
 
-  
+
 
 
 
@@ -15792,16 +15792,16 @@ class DriveFileManager {
 
   getFileByIdStandard(fileId) {
     try {
-      
+
       return DriveApp.getFileById(fileId);
     } catch (error) {
-      
+
       try {
         return DriveApp.getFolderById(fileId);
       } catch (_folderError) {
         this._logger.error(`Failed to get file/folder with DriveApp: ${error.message}`);
 
-        
+
         if (this._exceptionService) {
           return this._exceptionService.executeWithRetry(() => {
             try {
@@ -15830,15 +15830,15 @@ class DriveFolderManager {
     this._logger = facade._logger;
     this._exceptionService = facade._exceptionService;
 
-    
+
     this._isDryRun = facade._isDryRun.bind(facade);
     this._generateDryRunId = facade._generateDryRunId.bind(facade);
 
-    
+
     this.searchFiles = (...args) => this.facade.searchFiles(...args);
   }
 
-  
+
 
 
 
@@ -15851,7 +15851,7 @@ class DriveFolderManager {
 
 
   createFolder(folderName, parentFolderId = null, options = {}) {
-    
+
     if (options.returnExistingIfFound) {
       const query = parentFolderId ? `name='${folderName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false` : `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
       const existing = this.searchFiles(query, {
@@ -15862,7 +15862,7 @@ class DriveFolderManager {
       }
     }
 
-    
+
     if (this._isDryRun(options)) {
       const dryRunId = this._generateDryRunId();
       this._logger.info(`[DRY-RUN] Would create folder "${folderName}"${parentFolderId ? ` in parent ${parentFolderId}` : ' in My Drive root'} (simulated ID: ${dryRunId})`);
@@ -15876,7 +15876,7 @@ class DriveFolderManager {
       };
     }
 
-    
+
     const folderMetadata = {
       name: folderName,
       mimeType: 'application/vnd.google-apps.folder'
@@ -15889,7 +15889,7 @@ class DriveFolderManager {
     }), {}, 3);
   }
 
-  
+
 
 
 
@@ -15902,7 +15902,7 @@ class DriveFolderManager {
     } catch (error) {
       this._logger.error(`Failed to get folder with DriveApp: ${error.message}`);
 
-      
+
       if (this._exceptionService) {
         return this._exceptionService.executeWithRetry(() => DriveApp.getFolderById(folderId), {
           folderId
@@ -15924,15 +15924,15 @@ class DriveShortcutHandler {
     this._logger = facade._logger;
     this._exceptionService = facade._exceptionService;
 
-    
+
     this._isDryRun = facade._isDryRun.bind(facade);
     this._generateDryRunId = facade._generateDryRunId.bind(facade);
 
-    
+
     this.getFiles = (...args) => this.facade.getFiles(...args);
   }
 
-  
+
 
 
 
@@ -15940,7 +15940,7 @@ class DriveShortcutHandler {
 
 
   createShortcut(targetId, name, parentId = null) {
-    
+
     if (this._isDryRun()) {
       const dryRunId = this._generateDryRunId();
       this._logger.info(`[DRY-RUN] Would create shortcut "${name}" to target ${targetId}${parentId ? ` in folder ${parentId}` : ''} (simulated ID: ${dryRunId})`);
@@ -15968,7 +15968,7 @@ class DriveShortcutHandler {
     return this._exceptionService.executeWithRetry(() => Drive.Files.create(body), {}, 3);
   }
 
-  
+
 
 
 
@@ -15983,7 +15983,7 @@ class DriveShortcutHandler {
     return null;
   }
 
-  
+
 
 
 
@@ -16010,12 +16010,12 @@ class DriveMetadataService {
     this._cachePrefix = facade._cachePrefix;
     this._cacheExpirationTime = facade._cacheExpirationTime;
 
-    
+
     this._isDryRun = facade._isDryRun.bind(facade);
     this._generateCacheKey = facade._generateCacheKey.bind(facade);
   }
 
-  
+
 
 
 
@@ -16026,7 +16026,7 @@ class DriveMetadataService {
   updateMetadata(updateRequests, options = {}) {
     const reqsArray = Array.isArray(updateRequests) ? updateRequests : [updateRequests];
 
-    
+
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would update metadata for ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
@@ -16034,7 +16034,7 @@ class DriveMetadataService {
         this._logger.info(`[DRY-RUN]   - Update ${req.fileId} metadata: ${metadataFields}`);
       });
 
-      
+
       return {
         successful: reqsArray.map(req => ({
           id: req.fileId,
@@ -16062,7 +16062,7 @@ class DriveMetadataService {
           data: updatedFile
         });
 
-        
+
         const cacheKey = this._generateCacheKey(this._cachePrefix, req.fileId, 'get');
         this._cache.remove(cacheKey);
       } catch (error) {
@@ -16077,7 +16077,7 @@ class DriveMetadataService {
     return results;
   }
 
-  
+
 
 
 
@@ -16090,7 +16090,7 @@ class DriveMetadataService {
     const idsArray = isSingleId ? [fileIds] : fileIds;
     const fields = options.fields || 'id,name,mimeType,parents,modifiedTime,createdTime,webViewLink,size,owners';
 
-    
+
     const cacheResults = {};
     const uncachedIds = [];
     idsArray.forEach(fileId => {
@@ -16107,12 +16107,12 @@ class DriveMetadataService {
       }
     });
 
-    
+
     if (uncachedIds.length === 0) {
       return isSingleId ? cacheResults[fileIds] : cacheResults;
     }
 
-    
+
     uncachedIds.forEach(fileId => {
       try {
         const fileMetadata = this._exceptionService.executeWithRetry(() => Drive.Files.get(fileId, {
@@ -16129,7 +16129,7 @@ class DriveMetadataService {
     return isSingleId ? cacheResults[fileIds] : cacheResults;
   }
 
-  
+
 
 
 
@@ -16142,7 +16142,7 @@ class DriveMetadataService {
     return owners && owners.length > 0 ? owners[0].emailAddress : null;
   }
 
-  
+
 
 
 
@@ -16175,7 +16175,7 @@ class DriveMetadataService {
       }
       pageToken = results.nextPageToken;
 
-      
+
       if (allFiles.length >= maxResults) {
         break;
       }
@@ -16219,7 +16219,7 @@ class DriveMetadataService {
 
 
 class DriveService extends GoogleService {
-  
+
 
 
 
@@ -16231,7 +16231,7 @@ class DriveService extends GoogleService {
     this._cachePrefix = 'drive';
     this._cacheExpirationTime = 300;
 
-    
+
 
 
 
@@ -16242,38 +16242,38 @@ class DriveService extends GoogleService {
       this._logger.info('[DRY-RUN] DriveService initialized in dry-run mode. No mutations will be performed.');
     }
 
-    
+
     this.fileManager = new DriveFileManager(this);
     this.folderManager = new DriveFolderManager(this);
     this.shortcutHandler = new DriveShortcutHandler(this);
     this.metadataService = new DriveMetadataService(this);
 
-    
+
     const fileMethods = ['deleteFiles', 'restoreFiles', 'copyFiles', 'moveFiles', 'renameFiles', 'getFileByIdStandard'];
     fileMethods.forEach(m => {
       this[m] = this.fileManager[m].bind(this.fileManager);
     });
 
-    
+
     const folderMethods = ['createFolder', 'getFolderByIdStandard'];
     folderMethods.forEach(m => {
       this[m] = this.folderManager[m].bind(this.folderManager);
     });
 
-    
+
     const shortcutMethods = ['createShortcut', 'getTargetId', 'isShortcut'];
     shortcutMethods.forEach(m => {
       this[m] = this.shortcutHandler[m].bind(this.shortcutHandler);
     });
 
-    
+
     const metadataMethods = ['updateMetadata', 'getFiles', 'searchFiles', 'getFileOwnerEmail'];
     metadataMethods.forEach(m => {
       this[m] = this.metadataService[m].bind(this.metadataService);
     });
   }
 
-  
+
 
 
 
@@ -16286,7 +16286,7 @@ class DriveService extends GoogleService {
     return this._dryRun;
   }
 
-  
+
 
 
 
@@ -16295,7 +16295,7 @@ class DriveService extends GoogleService {
     return `${DriveService.DRY_RUN_ID_PREFIX}${this._utils.generateUuid()}`;
   }
 
-  
+
 
 
 
@@ -16324,7 +16324,7 @@ class DocumentBuilder {
     this.operations = [];
   }
 
-  
+
 
 
 
@@ -16339,7 +16339,29 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
+
+
+
+
+
+  appendListItem(text, options = {}) {
+    const listType = options.listType || 'bullet';
+    if (listType !== 'bullet' && listType !== 'number') {
+      throw new Error(`Unsupported list type: ${listType}`);
+    }
+    this.operations.push({
+      type: 'appendListItem',
+      text,
+      options: {
+        ...options,
+        listType
+      }
+    });
+    return this;
+  }
+
+
 
 
 
@@ -16352,7 +16374,7 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -16367,7 +16389,7 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -16380,7 +16402,7 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -16393,7 +16415,7 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -16408,7 +16430,7 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -16423,7 +16445,7 @@ class DocumentBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -16433,15 +16455,15 @@ class DocumentBuilder {
       const nonBatchOps = [];
       const standardApiOps = [];
 
-      
-      
-      
-      
-      
-      
-      
-      const hasAppendParagraph = this.operations.some(op => op.type === 'appendParagraph');
-      const cursor = hasAppendParagraph ? {
+
+
+
+
+
+
+
+      const hasAppendContent = this.operations.some(op => op.type === 'appendParagraph' || op.type === 'appendListItem');
+      const cursor = hasAppendContent ? {
         index: this._getBodyEndIndex()
       } : null;
       for (const op of this.operations) {
@@ -16474,14 +16496,14 @@ class DocumentBuilder {
         });
       }
       if (standardApiOps.length > 0) {
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
         const doc = this.service.openStandard(this.documentId);
         if (doc && typeof doc.saveAndClose === 'function') {
           doc.saveAndClose();
@@ -16514,7 +16536,7 @@ class DocumentBuilder {
     }
   }
 
-  
+
 
 
 
@@ -16524,6 +16546,8 @@ class DocumentBuilder {
     switch (op.type) {
       case 'appendParagraph':
         return this._createAppendParagraphRequests(op, cursor);
+      case 'appendListItem':
+        return this._createAppendListItemRequests(op, cursor);
       case 'setText':
         return this._createSetTextRequests(op);
       case 'createTable':
@@ -16587,8 +16611,23 @@ class DocumentBuilder {
     }
     return requests;
   }
+  _createAppendListItemRequests(op, cursor) {
+    const startIndex = cursor.index;
+    const requests = this._createAppendParagraphRequests(op, cursor);
+    const bulletPreset = op.options.listType === 'number' ? 'NUMBERED_DECIMAL_ALPHA_ROMAN' : 'BULLET_DISC_CIRCLE_SQUARE';
+    requests.push({
+      createParagraphBullets: {
+        range: {
+          startIndex,
+          endIndex: cursor.index
+        },
+        bulletPreset
+      }
+    });
+    return requests;
+  }
 
-  
+
 
 
 
@@ -16630,7 +16669,7 @@ class DocumentBuilder {
       return [];
     }
 
-    
+
     return [];
   }
   _createHeaderRequests(_op) {
@@ -16668,7 +16707,7 @@ class DocumentBuilder {
 
 
 class DocumentTableManager {
-  
+
 
 
 
@@ -16680,7 +16719,7 @@ class DocumentTableManager {
     this._exceptionService = facade._exceptionService;
   }
 
-  
+
 
 
 
@@ -16693,7 +16732,7 @@ class DocumentTableManager {
       const tables = [];
       let tableIndex = 0;
 
-      
+
       if (doc.body && doc.body.content) {
         doc.body.content.forEach(element => {
           if (element.table) {
@@ -16715,7 +16754,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -16732,7 +16771,7 @@ class DocumentTableManager {
         documentId
       }, 3);
 
-      
+
       let currentTableIndex = 0;
       for (const element of doc.body.content) {
         if (element.table && currentTableIndex === tableIndex) {
@@ -16762,7 +16801,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -17063,7 +17102,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -17116,7 +17155,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -17800,7 +17839,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -17840,7 +17879,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -17867,7 +17906,7 @@ class DocumentTableManager {
     }
   }
 
-  
+
 
 
 
@@ -17894,13 +17933,23 @@ class DocumentTableManager {
         throw new Error(`Marker text "${markerText}" not found in document ${documentId}`);
       }
 
-      
-      
-      
-      
+
+
+
+
+
+
+
+
+
+
       let element = rangeElement.getElement();
-      while (typeof element.getParent === 'function' && element.getParent() !== body) {
-        element = element.getParent();
+      while (typeof element.getParent === 'function') {
+        const parent = element.getParent();
+        if (!parent || parent.getType().toString() === 'BODY_SECTION') {
+          break;
+        }
+        element = parent;
       }
       const childIndex = body.getChildIndex(element);
       const table = body.insertTable(childIndex + 1, data);
@@ -17926,7 +17975,7 @@ class DocumentTableManager {
 
 
 class DocumentContentExtractor {
-  
+
 
 
 
@@ -17938,20 +17987,20 @@ class DocumentContentExtractor {
     this._exceptionService = facade._exceptionService;
   }
 
-  
+
 
 
 
 
   getRawDocumentStructure(documentId) {
     return this.facade._executeWithRetry(() => {
-      
+
       const doc = Docs.Documents.get(documentId);
       if (!doc || !doc.body || !doc.body.content) {
         throw new Error(`Invalid document structure for ${documentId}`);
       }
 
-      
+
       const structure = {
         documentId: doc.documentId,
         title: doc.title,
@@ -17964,7 +18013,7 @@ class DocumentContentExtractor {
     });
   }
 
-  
+
 
 
 
@@ -17981,7 +18030,7 @@ class DocumentContentExtractor {
         endIndex: element.endIndex
       };
 
-      
+
       if (element.paragraph) {
         pojo.type = 'PARAGRAPH';
         pojo.text = this._extractParagraphText(element.paragraph);
@@ -18001,7 +18050,7 @@ class DocumentContentExtractor {
     });
   }
 
-  
+
 
 
 
@@ -18019,7 +18068,7 @@ class DocumentContentExtractor {
     }).join('');
   }
 
-  
+
 
 
 
@@ -18048,7 +18097,7 @@ class DocumentContentExtractor {
     return runs;
   }
 
-  
+
 
 
 
@@ -18075,7 +18124,7 @@ class DocumentContentExtractor {
     });
   }
 
-  
+
 
 
 
@@ -18093,7 +18142,7 @@ class DocumentContentExtractor {
     }).join('');
   }
 
-  
+
 
 
 
@@ -18124,7 +18173,7 @@ class DocumentContentExtractor {
     return runs;
   }
 
-  
+
 
 
 
@@ -18149,7 +18198,7 @@ class DocumentContentExtractor {
     }
   }
 
-  
+
 
 
 
@@ -18157,7 +18206,7 @@ class DocumentContentExtractor {
 
   scanDocumentStructure(documentId, textPatterns = ['{{']) {
     try {
-      
+
       const structure = this.facade.getRawDocumentStructure(documentId);
       const result = {
         tables: [],
@@ -18165,7 +18214,7 @@ class DocumentContentExtractor {
       };
       const seenTextIndices = new Set();
 
-      
+
       let phase1IterationCount = 0;
       const PHASE1_MAX_ITERATIONS = 10000;
       for (const element of structure.body.content) {
@@ -18197,13 +18246,13 @@ class DocumentContentExtractor {
         }
       }
 
-      
+
       for (const pattern of textPatterns) {
         let iterationCount = 0;
         const MAX_ITERATIONS = 10000;
-        
-        
-        
+
+
+
         let tableOrdinal = -1;
         for (const element of structure.body.content) {
           if (++iterationCount > MAX_ITERATIONS) {
@@ -18262,7 +18311,7 @@ class DocumentContentExtractor {
 
 
 class DocumentBatchUpdateHandler {
-  
+
 
 
 
@@ -18274,7 +18323,7 @@ class DocumentBatchUpdateHandler {
     this._exceptionService = facade._exceptionService;
   }
 
-  
+
 
 
 
@@ -18286,7 +18335,7 @@ class DocumentBatchUpdateHandler {
     return header;
   }
 
-  
+
 
 
 
@@ -18298,7 +18347,7 @@ class DocumentBatchUpdateHandler {
     return footer;
   }
 
-  
+
 
 
 
@@ -18311,7 +18360,7 @@ class DocumentBatchUpdateHandler {
     return this.facade; 
   }
 
-  
+
 
 
 
@@ -18340,7 +18389,7 @@ class DocumentBatchUpdateHandler {
     }
   }
 
-  
+
 
 
 
@@ -18369,7 +18418,7 @@ class DocumentBatchUpdateHandler {
     }
   }
 
-  
+
 
 
 
@@ -18398,7 +18447,7 @@ class DocumentBatchUpdateHandler {
     }
   }
 
-  
+
 
 
 
@@ -18424,7 +18473,7 @@ class DocumentBatchUpdateHandler {
     }
   }
 
-  
+
 
 
 
@@ -18464,7 +18513,7 @@ class DocumentBatchUpdateHandler {
     };
   }
 
-  
+
 
 
 
@@ -18503,7 +18552,7 @@ class DocumentBatchUpdateHandler {
     };
   }
 
-  
+
 
 
 
@@ -18528,7 +18577,7 @@ class DocumentBatchUpdateHandler {
     }
   }
 
-  
+
 
 
 
@@ -18579,7 +18628,7 @@ class DocumentBatchUpdateHandler {
 
 
 class DocumentService extends GoogleService {
-  
+
 
 
 
@@ -18589,12 +18638,12 @@ class DocumentService extends GoogleService {
   constructor(logger, cache, utils, exceptionService = null) {
     super(logger, cache, utils, exceptionService);
 
-    
+
     this._tableManager = new DocumentTableManager(this);
     this._contentExtractor = new DocumentContentExtractor(this);
     this._batchUpdateHandler = new DocumentBatchUpdateHandler(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._tableManager,
       methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'copyTableColumn', 'setCellRunStyles', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
@@ -18607,11 +18656,11 @@ class DocumentService extends GoogleService {
     }], this._logger);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -18624,11 +18673,11 @@ class DocumentService extends GoogleService {
     return new DocumentBuilder(documentId, this);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -18639,7 +18688,7 @@ class DocumentService extends GoogleService {
     }, 3);
   }
 
-  
+
 
 
 
@@ -19278,7 +19327,7 @@ class SpreadsheetHybridManager {
     this._logger = facade._logger;
   }
 
-  
+
 
 
 
@@ -19358,13 +19407,13 @@ class SpreadsheetService extends GoogleService {
     this._cacheExpirationTime = 300;
     this._dryRun = options.dryRun || false;
 
-    
+
     this._metadataCache = new SpreadsheetMetadataCache(this);
     this._rangeManager = new SpreadsheetRangeManager(this);
     this._gridManager = new SpreadsheetGridManager(this);
     this._hybridManager = new SpreadsheetHybridManager(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._metadataCache,
       methods: ['getSpreadsheetMetadata', 'getSheetInfo', '_getCachedSheetMetadata', '_clearSheetMetadataCache', '_parseRangeToGridRange', '_parseA1', '_parseCell', '_columnToIndex']
@@ -19383,7 +19432,7 @@ class SpreadsheetService extends GoogleService {
     }
   }
 
-  
+
 
 
 
@@ -19415,7 +19464,7 @@ class SpreadsheetService extends GoogleService {
 
 
 class MailService {
-  
+
 
 
 
@@ -19434,7 +19483,7 @@ class MailService {
     this._rateLimitMs = options.rateLimitMs || 100;
   }
 
-  
+
 
 
 
@@ -19442,7 +19491,7 @@ class MailService {
     return MailApp.getRemainingDailyQuota();
   }
 
-  
+
 
 
 
@@ -19495,7 +19544,7 @@ class MailService {
     }
   }
 
-  
+
 
 
 
@@ -19520,7 +19569,7 @@ class MailService {
     return results;
   }
 
-  
+
 
 
 
@@ -19556,7 +19605,7 @@ class MailService {
     }
   }
 
-  
+
 
 
 
@@ -19596,7 +19645,7 @@ class MailService {
     return results;
   }
 
-  
+
 
 
 
@@ -19646,7 +19695,7 @@ class MailService {
 
 
 class PermissionService extends GoogleService {
-  
+
 
 
 
@@ -19659,11 +19708,11 @@ class PermissionService extends GoogleService {
     this._cacheExpirationTime = 300;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -19673,7 +19722,7 @@ class PermissionService extends GoogleService {
 
 
   shareWithUsers(fileIds, permissions, options = {}) {
-    
+
     const fileIdsArray = Array.isArray(fileIds) ? fileIds : [fileIds];
     const permsArray = Array.isArray(permissions) ? permissions : [permissions];
     const globalSendEmail = options.sendNotificationEmail || false;
@@ -19708,14 +19757,14 @@ class PermissionService extends GoogleService {
         }
       });
 
-      
+
       const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
       this._cache.remove(cacheKey);
     });
     return results;
   }
 
-  
+
 
 
 
@@ -19726,7 +19775,7 @@ class PermissionService extends GoogleService {
     return this.shareWithUsers(fileIds, userPermissions, options);
   }
 
-  
+
 
 
 
@@ -19736,11 +19785,11 @@ class PermissionService extends GoogleService {
     const fileIdsArray = Array.isArray(fileIds) ? fileIds : [fileIds];
     const idsArray = Array.isArray(emailsOrPermissionIds) ? emailsOrPermissionIds : [emailsOrPermissionIds];
 
-    
+
     const permissionIdMap = new Map();
     fileIdsArray.forEach(fileId => {
       idsArray.forEach(id => {
-        
+
         if (id.includes('@')) {
           const perms = this.getPermissions(fileId);
           const perm = perms.find(p => p.emailAddress === id);
@@ -19750,7 +19799,7 @@ class PermissionService extends GoogleService {
             this._logger.warn(`Permission not found for ${id} on ${fileId}`);
           }
         } else {
-          
+
           permissionIdMap.set(`${fileId}:${id}`, id);
         }
       });
@@ -19783,7 +19832,7 @@ class PermissionService extends GoogleService {
       return results;
     }
 
-    
+
     fileIdsArray.forEach(fileId => {
       const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
       this._cache.remove(cacheKey);
@@ -19791,7 +19840,7 @@ class PermissionService extends GoogleService {
     return results;
   }
 
-  
+
 
 
 
@@ -19942,7 +19991,7 @@ class PermissionService extends GoogleService {
         }
       });
 
-      
+
       const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
       this._cache.remove(cacheKey);
     });
@@ -19953,7 +20002,7 @@ class PermissionService extends GoogleService {
     return results;
   }
 
-  
+
 
 
 
@@ -20115,18 +20164,18 @@ class PermissionService extends GoogleService {
         }
       });
 
-      
+
       const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
       this._cache.remove(cacheKey);
     });
     return results;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -20240,7 +20289,7 @@ class PermissionService extends GoogleService {
     const isSingleId = !Array.isArray(fileIds);
     const fileIdsArray = isSingleId ? [fileIds] : fileIds;
 
-    
+
     const cacheResults = {};
     const uncachedIds = [];
     fileIdsArray.forEach(fileId => {
@@ -20257,7 +20306,7 @@ class PermissionService extends GoogleService {
       }
     });
 
-    
+
     if (uncachedIds.length === 0) {
       return isSingleId ? cacheResults[fileIds] : cacheResults;
     }
@@ -20269,7 +20318,7 @@ class PermissionService extends GoogleService {
         if (response && response.permissions) {
           cacheResults[fileId] = response.permissions;
 
-          
+
           const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
           this._cache.put(cacheKey, JSON.stringify(response.permissions), this._cacheExpirationTime);
         } else {
@@ -20283,7 +20332,7 @@ class PermissionService extends GoogleService {
     return isSingleId ? cacheResults[fileIds] : cacheResults;
   }
 
-  
+
 
 
 
@@ -20413,23 +20462,23 @@ class PermissionService extends GoogleService {
       const anyonePerm = perms.find(p => p.type === 'anyone');
       try {
         if (anyonePerm && anyonePerm.role !== role) {
-          
+
           this._exceptionService.executeWithRetry(() => Drive.Permissions.update({
             role
           }, fileId, anyonePerm.id), {}, 3);
         } else if (!anyonePerm) {
-          
+
           this._exceptionService.executeWithRetry(() => Drive.Permissions.create({
             type: 'anyone',
             role
           }, fileId), {}, 3);
         }
 
-        
+
         const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
         this._cache.remove(cacheKey);
 
-        
+
         const fileMetadata = this._exceptionService.executeWithRetry(() => Drive.Files.get(fileId, {
           fields: 'webViewLink'
         }), {}, 3);
@@ -20473,33 +20522,33 @@ function _getNativePropertiesService() {
 
 
 class PropertiesService {
-  
+
 
 
 
   constructor(logger) {
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._properties = _getNativePropertiesService().getScriptProperties();
 
-    
+
 
 
 
 
     this._userProperties = _getNativePropertiesService().getUserProperties();
 
-    
+
 
 
 
@@ -20507,7 +20556,7 @@ class PropertiesService {
     this._documentProperties = _getNativePropertiesService().getDocumentProperties();
   }
 
-  
+
 
 
 
@@ -20543,7 +20592,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20588,7 +20637,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20615,14 +20664,14 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
 
   setProperties(properties) {
     try {
-      
+
       const stringProperties = {};
       for (const [key, value] of Object.entries(properties)) {
         stringProperties[key] = String(value);
@@ -20635,7 +20684,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20650,7 +20699,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20667,7 +20716,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20682,7 +20731,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20697,7 +20746,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20831,7 +20880,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -20947,7 +20996,7 @@ class PropertiesService {
         return null;
       }
 
-      
+
       const object = JSON.parse(json, this._dateReviver);
       this._logger.debug(`Object loaded from property: ${key}`);
       return object;
@@ -20957,7 +21006,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -21060,11 +21109,11 @@ class PropertiesService {
 
 
   _dateReviver(key, value) {
-    
+
     const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
     if (typeof value === 'string' && isoDateRegex.test(value)) {
       const date = new Date(value);
-      
+
       if (!isNaN(date.getTime())) {
         return date;
       }
@@ -21072,7 +21121,7 @@ class PropertiesService {
     return value;
   }
 
-  
+
 
 
 
@@ -21084,7 +21133,7 @@ class PropertiesService {
     return this.getObjectProperty(key);
   }
 
-  
+
 
 
 
@@ -21099,7 +21148,7 @@ class PropertiesService {
     }
   }
 
-  
+
 
 
 
@@ -21110,7 +21159,7 @@ class PropertiesService {
     return value !== null ? value : defaultValue;
   }
 
-  
+
 
 
 
@@ -21124,7 +21173,7 @@ class PropertiesService {
     return false;
   }
 
-  
+
 
 
 
@@ -21138,7 +21187,7 @@ class PropertiesService {
     return false;
   }
 
-  
+
 
 
 
@@ -21153,7 +21202,7 @@ class PropertiesService {
     return isNaN(numValue) ? defaultValue : numValue;
   }
 
-  
+
 
 
 
@@ -21168,7 +21217,7 @@ class PropertiesService {
     return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes';
   }
 
-  
+
 
 
 
@@ -21178,7 +21227,7 @@ class PropertiesService {
     return _getNativePropertiesService().getScriptProperties();
   }
 
-  
+
 
 
 
@@ -21186,7 +21235,7 @@ class PropertiesService {
     return _getNativePropertiesService().getUserProperties();
   }
 
-  
+
 
 
 
@@ -21211,12 +21260,12 @@ class PropertiesService {
 
 
 class TriggerService {
-  
+
 
 
 
   constructor(logger) {
-    
+
 
 
 
@@ -21224,7 +21273,7 @@ class TriggerService {
     this._logger = logger;
   }
 
-  
+
 
 
 
@@ -21243,7 +21292,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21270,7 +21319,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21286,7 +21335,7 @@ class TriggerService {
     }
     const [minute, hour, day, month, weekday] = parts;
 
-    
+
     const minuteIntervalMatch = minute.match(/^\*\/(\d+)$/);
     if (minuteIntervalMatch && hour === '*' && day === '*' && month === '*' && weekday === '*') {
       const interval = parseInt(minuteIntervalMatch[1], 10);
@@ -21300,7 +21349,7 @@ class TriggerService {
       };
     }
 
-    
+
     const hourIntervalMatch = hour.match(/^\*\/(\d+)$/);
     if (minute === '0' && hourIntervalMatch && day === '*' && month === '*' && weekday === '*') {
       const interval = parseInt(hourIntervalMatch[1], 10);
@@ -21314,7 +21363,7 @@ class TriggerService {
       };
     }
 
-    
+
     if (minute === '0' && hour === '*' && day === '*' && month === '*' && weekday === '*') {
       return {
         type: 'hours',
@@ -21322,11 +21371,11 @@ class TriggerService {
       };
     }
 
-    
+
     const hourNum = parseInt(hour, 10);
     const weekdayNum = parseInt(weekday, 10);
     if (minute === '0' && !isNaN(hourNum) && hourNum >= 0 && hourNum <= 23 && day === '*' && month === '*' && !isNaN(weekdayNum) && weekdayNum >= 0 && weekdayNum <= 7) {
-      
+
       const weekDayMap = {
         0: ScriptApp.WeekDay.SUNDAY,
         1: ScriptApp.WeekDay.MONDAY,
@@ -21344,7 +21393,7 @@ class TriggerService {
       };
     }
 
-    
+
     if (minute === '0' && !isNaN(hourNum) && hourNum >= 0 && hourNum <= 23 && day === '*' && month === '*' && weekday === '*') {
       return {
         type: 'daily',
@@ -21354,7 +21403,7 @@ class TriggerService {
     throw new Error(`Unsupported cron pattern: ${cronExpression}. See method documentation for supported patterns.`);
   }
 
-  
+
 
 
 
@@ -21375,7 +21424,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21397,7 +21446,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21419,7 +21468,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21439,7 +21488,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21458,7 +21507,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21476,7 +21525,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21500,7 +21549,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21517,7 +21566,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21534,7 +21583,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21542,7 +21591,7 @@ class TriggerService {
 
   _determineTriggerType(trigger) {
     try {
-      
+
       const eventType = trigger.getEventType();
       if (eventType === ScriptApp.EventType.CLOCK) {
         return 'time_based';
@@ -21565,7 +21614,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21583,7 +21632,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21605,7 +21654,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21627,7 +21676,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21648,7 +21697,7 @@ class TriggerService {
     }
   }
 
-  
+
 
 
 
@@ -21689,7 +21738,7 @@ class TriggerService {
 
 
 class UiService extends GoogleService {
-  
+
 
 
 
@@ -21701,7 +21750,7 @@ class UiService extends GoogleService {
   constructor(logger, cache, utils, exceptionService, uiObject = null) {
     super(logger, cache, utils, exceptionService);
 
-    
+
 
 
 
@@ -21713,13 +21762,13 @@ class UiService extends GoogleService {
     this._logger.debug('UiService: Instance created with UI object');
   }
 
-  
+
 
 
 
 
   _detectUiObject() {
-    
+
     try {
       if (typeof SpreadsheetApp !== 'undefined') {
         const ui = SpreadsheetApp.getUi();
@@ -21729,10 +21778,10 @@ class UiService extends GoogleService {
         }
       }
     } catch (_e) {
-      
+
     }
 
-    
+
     try {
       if (typeof DocumentApp !== 'undefined') {
         const ui = DocumentApp.getUi();
@@ -21742,10 +21791,10 @@ class UiService extends GoogleService {
         }
       }
     } catch (_e) {
-      
+
     }
 
-    
+
     try {
       if (typeof FormApp !== 'undefined') {
         const ui = FormApp.getUi();
@@ -21755,10 +21804,10 @@ class UiService extends GoogleService {
         }
       }
     } catch (_e) {
-      
+
     }
 
-    
+
     try {
       if (typeof SlidesApp !== 'undefined') {
         const ui = SlidesApp.getUi();
@@ -21768,16 +21817,16 @@ class UiService extends GoogleService {
         }
       }
     } catch (_e) {
-      
+
     }
     return null;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -21786,11 +21835,11 @@ class UiService extends GoogleService {
     return new MenuBuilder(this._ui, caption, this._logger);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -21806,7 +21855,7 @@ class UiService extends GoogleService {
     );
   }
 
-  
+
 
 
 
@@ -21822,11 +21871,11 @@ class UiService extends GoogleService {
     );
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -21834,7 +21883,7 @@ class UiService extends GoogleService {
     return new SidebarBuilder(this._ui, this._logger);
   }
 
-  
+
 
 
 
@@ -21842,11 +21891,11 @@ class UiService extends GoogleService {
     return new DialogBuilder(this._ui, this._logger);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -21854,7 +21903,7 @@ class UiService extends GoogleService {
     return this._ui;
   }
 
-  
+
 
 
 
@@ -21862,7 +21911,7 @@ class UiService extends GoogleService {
     return this._ui.Button;
   }
 
-  
+
 
 
 
@@ -21885,14 +21934,14 @@ class UiService extends GoogleService {
 
 
 class UserService {
-  
+
 
 
   constructor(logger = console) {
     this._logger = logger || console;
   }
 
-  
+
 
 
 
@@ -21944,7 +21993,7 @@ function ServiceFactory_toPrimitive(t, r) { if ("object" != typeof t || !t) retu
 
 
 class ServiceFactory {
-  
+
 
 
 
@@ -21958,11 +22007,11 @@ class ServiceFactory {
       ...config
     };
 
-    
+
     ServiceFactory.reset(false);
   }
 
-  
+
 
 
 
@@ -21983,7 +22032,7 @@ class ServiceFactory {
     }
   }
 
-  
+
 
 
 
@@ -21997,7 +22046,7 @@ class ServiceFactory {
     return ServiceFactory._logger;
   }
 
-  
+
 
 
 
@@ -22010,7 +22059,7 @@ class ServiceFactory {
     return ServiceFactory._utilitiesService;
   }
 
-  
+
 
 
 
@@ -22018,13 +22067,13 @@ class ServiceFactory {
   static getUtils() {
     if (!ServiceFactory._utils) {
       const utilitiesService = ServiceFactory.getUtilitiesService();
-      
+
       ServiceFactory._utils = new MyUtilsService(ms => utilitiesService.sleep(ms));
     }
     return ServiceFactory._utils;
   }
 
-  
+
 
 
 
@@ -22036,7 +22085,7 @@ class ServiceFactory {
     return ServiceFactory._cache;
   }
 
-  
+
 
 
 
@@ -22050,7 +22099,7 @@ class ServiceFactory {
     return ServiceFactory._cacheService;
   }
 
-  
+
 
 
 
@@ -22064,11 +22113,11 @@ class ServiceFactory {
     return ServiceFactory._exceptionService;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -22077,7 +22126,7 @@ class ServiceFactory {
     return new DriveService(ServiceFactory.getLogger(), ServiceFactory.getCache(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22086,7 +22135,7 @@ class ServiceFactory {
     return new DocumentService(ServiceFactory.getLogger(), ServiceFactory.getCache(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22095,7 +22144,7 @@ class ServiceFactory {
     return new SpreadsheetService(ServiceFactory.getLogger(), ServiceFactory.getCache(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22108,7 +22157,7 @@ class ServiceFactory {
     return new MailService(ServiceFactory.getLogger(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService(), mailOptions);
   }
 
-  
+
 
 
 
@@ -22117,7 +22166,7 @@ class ServiceFactory {
     return new PermissionService(ServiceFactory.getLogger(), ServiceFactory.getCache(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22126,7 +22175,7 @@ class ServiceFactory {
     return new PropertiesService(ServiceFactory.getLogger(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22135,7 +22184,7 @@ class ServiceFactory {
     return new TriggerService(ServiceFactory.getLogger(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22144,7 +22193,7 @@ class ServiceFactory {
     return new UiService(ServiceFactory.getLogger(), ServiceFactory.getCache(), ServiceFactory.getUtils(), ServiceFactory.getExceptionService());
   }
 
-  
+
 
 
 
@@ -22153,11 +22202,11 @@ class ServiceFactory {
     return new UserService(ServiceFactory.getLogger());
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -22166,7 +22215,7 @@ class ServiceFactory {
     ServiceFactory._logger = logger;
   }
 
-  
+
 
 
 
@@ -22175,7 +22224,7 @@ class ServiceFactory {
     ServiceFactory._utils = utils;
   }
 
-  
+
 
 
 
@@ -22184,7 +22233,7 @@ class ServiceFactory {
     ServiceFactory._cache = cache;
   }
 
-  
+
 
 
 
@@ -22203,7 +22252,7 @@ ServiceFactory_defineProperty(ServiceFactory, "_utilitiesService", null);
 ServiceFactory_defineProperty(ServiceFactory, "_config", {
   logLevel: 'INFO',
   cacheExpiration: 300,
-  
+
   mailRateLimitMs: 100
 });
 ;
@@ -22235,7 +22284,7 @@ ServiceFactory_defineProperty(ServiceFactory, "_config", {
 
 
 class ServiceError extends BaseError {
-  
+
 
 
 
@@ -22246,13 +22295,13 @@ class ServiceError extends BaseError {
 
   constructor(message, serviceName, operation, originalError = null, context = {}) {
     super(message, context, originalError);
-    
+
     this.name = 'ServiceError';
     this.serviceName = serviceName;
     this.operation = operation;
   }
 
-  
+
 
 
 
@@ -22284,7 +22333,7 @@ class ServiceError extends BaseError {
 
 
 class QuotaExceededError extends ServiceError {
-  
+
 
 
 
@@ -22311,7 +22360,7 @@ class QuotaExceededError extends ServiceError {
 
 
 class PermissionDeniedError extends ServiceError {
-  
+
 
 
 
@@ -22337,7 +22386,7 @@ class PermissionDeniedError extends ServiceError {
 
 
 class ResourceNotFoundError extends ServiceError {
-  
+
 
 
 
@@ -22364,7 +22413,7 @@ class ResourceNotFoundError extends ServiceError {
 
 
 class ServiceUnavailableError extends ServiceError {
-  
+
 
 
 
@@ -22391,7 +22440,7 @@ class ServiceUnavailableError extends ServiceError {
 
 
 class ErrorHandler_ValidationError extends ServiceError {
-  
+
 
 
 
@@ -22420,7 +22469,7 @@ class ErrorHandler_ValidationError extends ServiceError {
 
 
 class ErrorHandler {
-  
+
 
 
 
@@ -22431,7 +22480,7 @@ class ErrorHandler {
     this.logger = logger || new LoggerService();
   }
 
-  
+
 
 
 
@@ -22443,31 +22492,31 @@ class ErrorHandler {
   classifyError(error, operation, context = {}) {
     const message = error.message || String(error);
 
-    
+
     if (/quota|limit.*exceeded|too many requests/i.test(message)) {
       return new QuotaExceededError(message, this.serviceName, operation, error, context);
     }
 
-    
+
     if (/permission.*denied|unauthorized|forbidden/i.test(message)) {
       return new PermissionDeniedError(message, this.serviceName, operation, error, context);
     }
 
-    
+
     if (/not found|does not exist|404/i.test(message)) {
       return new ResourceNotFoundError(message, this.serviceName, operation, error, context);
     }
 
-    
+
     if (/service.*unavailable|503|502|timeout/i.test(message)) {
       return new ServiceUnavailableError(message, this.serviceName, operation, error, context);
     }
 
-    
+
     return new ServiceError(message, this.serviceName, operation, error, context);
   }
 
-  
+
 
 
 
@@ -22486,13 +22535,13 @@ class ErrorHandler {
     }
   }
 
-  
 
 
 
 
 
-  
+
+
 
 
 
@@ -22517,14 +22566,14 @@ class ErrorHandler {
         const classifiedError = this.classifyError(error, operation, context);
         lastError = classifiedError;
 
-        
+
         if (!classifiedError.retryable || attempt === maxAttempts) {
           this.logger.error(`[${this.serviceName}] ${operation} failed after ${attempt} attempts:`, classifiedError.toLogObject());
           throw classifiedError;
         }
 
-        
-        
+
+
         const retryDelay = classifiedError.retryAfter || baseDelay * (1 << attempt - 1);
         this.logger.warn(`[${this.serviceName}] ${operation} failed (attempt ${attempt}/${maxAttempts}), retrying in ${retryDelay}ms...`);
         Utilities.sleep(retryDelay);
@@ -22551,31 +22600,31 @@ class ErrorHandler {
 
 
 class LockService {
-  
+
 
 
 
   constructor(logger) {
-    
+
 
 
 
 
     this._logger = logger;
 
-    
 
 
 
 
-    
-    
-    
+
+
+
+
     const candidate = typeof __webpack_require__.g !== 'undefined' && __webpack_require__.g.LockService ? __webpack_require__.g.LockService : null;
     this._nativeLockService = candidate && typeof candidate.getScriptLock === 'function' ? candidate : null;
   }
 
-  
+
 
 
 
@@ -22589,7 +22638,7 @@ class LockService {
     }
   }
 
-  
+
 
 
 
@@ -22603,7 +22652,7 @@ class LockService {
     }
   }
 
-  
+
 
 
 
@@ -22629,7 +22678,7 @@ class LockService {
 
 
 class Lock {
-  
+
 
 
 
@@ -22639,7 +22688,7 @@ class Lock {
     this._acquired = false;
   }
 
-  
+
 
 
 
@@ -22660,7 +22709,7 @@ class Lock {
     }
   }
 
-  
+
 
 
 
@@ -22676,7 +22725,7 @@ class Lock {
     }
   }
 
-  
+
 
 
 
@@ -22693,7 +22742,7 @@ class Lock {
     }
   }
 
-  
+
 
 
 
@@ -22708,7 +22757,7 @@ class Lock {
 
 
 class MockLock {
-  
+
 
 
   constructor(logger) {
@@ -22716,7 +22765,7 @@ class MockLock {
     this._acquired = false;
   }
 
-  
+
 
 
 
@@ -22727,7 +22776,7 @@ class MockLock {
     return true;
   }
 
-  
+
 
 
 
@@ -22736,7 +22785,7 @@ class MockLock {
     this._logger.debug(`Mock lock acquired via wait (timeout: ${timeoutInMillis}ms)`);
   }
 
-  
+
 
 
   releaseLock() {
@@ -22744,7 +22793,7 @@ class MockLock {
     this._logger.debug('Mock lock released');
   }
 
-  
+
 
 
 
@@ -23018,7 +23067,7 @@ class MockLock {
 
 
 class FilterStrategy {
-  
+
 
 
 
@@ -23027,7 +23076,7 @@ class FilterStrategy {
     throw new Error('FilterStrategy.getName() must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -23036,7 +23085,7 @@ class FilterStrategy {
     throw new Error('FilterStrategy.getDescription() must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -23047,15 +23096,15 @@ class FilterStrategy {
     throw new Error('FilterStrategy.execute() must be implemented by subclass');
   }
 
-  
+
 
 
 
 
 
   validate(_value, _args) {
-    
-    
+
+
   }
 }
 
@@ -23064,7 +23113,7 @@ class FilterStrategy {
 
 
 class FilterRegistry {
-  
+
 
 
 
@@ -23073,7 +23122,7 @@ class FilterRegistry {
     this._filters = new Map();
   }
 
-  
+
 
 
 
@@ -23090,7 +23139,7 @@ class FilterRegistry {
     this._logger.debug(`FilterRegistry: Registered filter '${name}'`);
   }
 
-  
+
 
 
 
@@ -23102,7 +23151,7 @@ class FilterRegistry {
     filterStrategies.forEach(filter => this.register(filter));
   }
 
-  
+
 
 
 
@@ -23111,7 +23160,7 @@ class FilterRegistry {
     return this._filters.get(name) || null;
   }
 
-  
+
 
 
 
@@ -23120,7 +23169,7 @@ class FilterRegistry {
     return this._filters.has(name);
   }
 
-  
+
 
 
 
@@ -23133,7 +23182,7 @@ class FilterRegistry {
     return existed;
   }
 
-  
+
 
 
 
@@ -23141,7 +23190,7 @@ class FilterRegistry {
     return Array.from(this._filters.keys());
   }
 
-  
+
 
 
 
@@ -23149,7 +23198,7 @@ class FilterRegistry {
     return Array.from(this._filters.values());
   }
 
-  
+
 
 
   clear() {
@@ -23157,7 +23206,7 @@ class FilterRegistry {
     this._logger.debug('FilterRegistry: Cleared all filters');
   }
 
-  
+
 
 
 
@@ -23259,14 +23308,14 @@ class DateFilter extends FilterStrategy {
         }
       }
     } catch (_e) {
-      
+
     }
-    
-    
+
+
     return DateFilter._formatDDMMYYYY(value);
   }
 
-  
+
 
 
 
@@ -23320,7 +23369,7 @@ class JoinFilter extends FilterStrategy {
     return 'Joins array elements with a separator';
   }
 
-  
+
 
 
 
@@ -23333,7 +23382,7 @@ class JoinFilter extends FilterStrategy {
     if (!Array.isArray(array)) {
       return '';
     }
-    
+
     if (this._isDangerousKey(key)) {
       return '';
     }
@@ -23384,7 +23433,7 @@ class SortByFilter extends FilterStrategy {
     if (!Array.isArray(array)) {
       return array;
     }
-    
+
     if (this._isDangerousKey(key)) {
       return array;
     }
@@ -23434,7 +23483,7 @@ class WhereFilter extends FilterStrategy {
     if (!Array.isArray(array)) {
       return [];
     }
-    
+
     if (this._isDangerousKey(key)) {
       return [];
     }
@@ -23462,7 +23511,7 @@ class ExcludeFilter extends FilterStrategy {
     if (!Array.isArray(array)) {
       return [];
     }
-    
+
     if (this._isDangerousKey(key)) {
       return [];
     }
@@ -23506,7 +23555,7 @@ class DefaultFilter extends FilterStrategy {
     return 'Returns the argument if value is null/undefined/empty';
   }
   execute(value, defaultValue = '') {
-    
+
     if (value === null || value === undefined || value === '') {
       return defaultValue;
     }
@@ -23613,7 +23662,7 @@ class ReplaceFilter extends FilterStrategy {
       return value;
     }
 
-    
+
     const str = String(value);
     return str.split(searchValue).join(replaceValue);
   }
@@ -23736,41 +23785,41 @@ class SortFilter extends FilterStrategy {
       return array;
     }
 
-    
+
     if (array.length === 0) {
       return array;
     }
 
-    
+
     let property = null;
     let isDescending = false;
 
-    
+
     if (propertyOrDirection === 'desc' || propertyOrDirection === 'asc') {
       isDescending = propertyOrDirection === 'desc';
     } else if (propertyOrDirection) {
       property = propertyOrDirection;
       isDescending = direction === 'desc';
     } else {
-      
+
       isDescending = false;
     }
 
-    
+
     const sorted = [...array];
     sorted.sort((a, b) => {
       let valA, valB;
       if (property && !this._isDangerousKey(property)) {
-        
+
         valA = a && typeof a === 'object' && Object.prototype.hasOwnProperty.call(a, property) ? a[property] : null;
         valB = b && typeof b === 'object' && Object.prototype.hasOwnProperty.call(b, property) ? b[property] : null;
       } else {
-        
+
         valA = a;
         valB = b;
       }
 
-      
+
       if (valA == null && valB != null) {
         return 1;
       }
@@ -23781,7 +23830,7 @@ class SortFilter extends FilterStrategy {
         return 0;
       }
 
-      
+
       if (typeof valA === 'string' || typeof valB === 'string') {
         const result = String(valA).localeCompare(String(valB), 'en', {
           sensitivity: 'base'
@@ -23789,7 +23838,7 @@ class SortFilter extends FilterStrategy {
         return isDescending ? -result : result;
       }
 
-      
+
       if (valA < valB) {
         return isDescending ? 1 : -1;
       }
@@ -23894,13 +23943,13 @@ class JsonFilter extends FilterStrategy {
 
 function createAdvancedFilters() {
   return [
-  
+
   new DefaultFilter(), new YesNoFilter(), new FallbackFilter(),
-  
+
   new TruncateFilter(), new SplitFilter(), new ReplaceFilter(), new UrlEncodeFilter(),
-  
+
   new MapFilter(), new LimitFilter(), new SkipFilter(), new SortFilter(), new ReverseFilter(),
-  
+
   new PlusFilter(), new MinusFilter(), new JsonFilter()];
 }
 ;
@@ -23931,7 +23980,7 @@ class _MustacheScanner {
     this.pos = 0;
   }
 
-  
+
 
 
 
@@ -23939,7 +23988,7 @@ class _MustacheScanner {
     return this.tail === '';
   }
 
-  
+
 
 
 
@@ -23955,7 +24004,7 @@ class _MustacheScanner {
     return string;
   }
 
-  
+
 
 
 
@@ -23989,8 +24038,8 @@ class _MustacheScanner {
 class _MustacheContext {
   constructor(view, parentContext) {
     this.view = view;
-    
-    
+
+
     const dotValue = view != null && typeof view === 'object' && Object.prototype.hasOwnProperty.call(view, '.') ? view['.'] : view;
     this.cache = {
       '.': dotValue
@@ -23998,7 +24047,7 @@ class _MustacheContext {
     this.parent = parentContext;
   }
 
-  
+
 
 
 
@@ -24007,7 +24056,7 @@ class _MustacheContext {
     return new _MustacheContext(view, this);
   }
 
-  
+
 
 
 
@@ -24025,27 +24074,27 @@ class _MustacheContext {
         index,
         lookupHit = false;
 
-      
+
       let parentLevels = 0;
       let remainingName = name;
 
-      
+
       while (remainingName.startsWith('../')) {
         parentLevels++;
         remainingName = remainingName.substring(3); 
       }
 
-      
+
       let targetContext = context;
       for (let i = 0; i < parentLevels && targetContext; i++) {
         targetContext = targetContext.parent;
       }
 
-      
+
       if (parentLevels > 0 && !targetContext) {
         value = undefined;
       } else {
-        
+
         context = targetContext || this;
         while (context) {
           if (remainingName.indexOf('.') > 0) {
@@ -24054,14 +24103,14 @@ class _MustacheContext {
             index = 0;
             while (intermediateValue != null && index < names.length) {
               if (index === names.length - 1) {
-                
+
                 lookupHit = intermediateValue != null && typeof intermediateValue === 'object' && Object.prototype.hasOwnProperty.call(intermediateValue, names[index]);
               }
               intermediateValue = intermediateValue[names[index++]];
             }
           } else {
             intermediateValue = context.view[remainingName];
-            
+
             lookupHit = context.view != null && typeof context.view === 'object' && Object.prototype.hasOwnProperty.call(context.view, remainingName);
           }
           if (lookupHit) {
@@ -24069,7 +24118,7 @@ class _MustacheContext {
             break;
           }
 
-          
+
           if (parentLevels > 0) {
             break;
           }
@@ -24077,7 +24126,7 @@ class _MustacheContext {
         }
       }
 
-      
+
       if (!this._isDangerousKey(name)) {
         cache[name] = value;
       }
@@ -24088,14 +24137,14 @@ class _MustacheContext {
     return value;
   }
 
-  
+
 
 
 
 
 
   _isDangerousKey(key) {
-    
+
     return key === '__proto__' || key === 'constructor' || key === 'prototype';
   }
 }
@@ -24133,7 +24182,7 @@ class _FunctionFilterStrategy extends FilterStrategy {
 
 
 class MyMustache {
-  
+
 
 
 
@@ -24149,7 +24198,7 @@ class MyMustache {
     };
   }
 
-  
+
 
 
 
@@ -24159,74 +24208,74 @@ class MyMustache {
     return value === null || value === undefined;
   }
 
-  
+
   static get TOKEN_TYPE() {
     return 0;
   }
-  
+
   static get TOKEN_VALUE() {
     return 1;
   }
-  
+
   static get TOKEN_START() {
     return 2;
   }
-  
+
   static get TOKEN_END() {
     return 3;
   }
-  
+
   static get TOKEN_CHILDREN() {
     return 4;
   }
-  
+
   static get TOKEN_INDEX() {
     return 5;
   }
 
-  
+
   static get TAG_SECTION() {
     return '#';
   }
-  
+
   static get TAG_INVERTED() {
     return '^';
   }
-  
+
   static get TAG_SECTION_END() {
     return '/';
   }
-  
+
   static get TAG_COMMENT() {
     return '!';
   }
-  
+
   static get TAG_PARTIAL() {
     return '>';
   }
-  
+
   static get TAG_UNESCAPED() {
     return '&';
   }
-  
+
   static get TAG_UNESCAPED_ALT() {
     return '{';
   }
-  
+
   static get TAG_VARIABLE() {
     return 'name';
   }
-  
+
   static get TAG_TEXT() {
     return 'text';
   }
 
-  
+
   static get MAX_RENDER_DEPTH() {
     return 100;
   }
 
-  
+
 
 
 
@@ -24241,23 +24290,23 @@ class MyMustache {
     this.tags = options.tags || ['{{', '}}'];
     this.templateCache = {};
 
-    
+
     this.filterRegistry = new FilterRegistry(this.logger);
     this._initBuiltInFilters();
   }
 
-  
+
 
 
 
 
 
   _isDangerousKey(key) {
-    
+
     return key === '__proto__' || key === 'constructor' || key === 'prototype';
   }
 
-  
+
 
 
 
@@ -24267,29 +24316,29 @@ class MyMustache {
     if (!key || !data) {
       return undefined;
     }
-    
+
     if (key.indexOf('.') === -1) {
-      
+
       if (this._isDangerousKey(key)) {
         return undefined;
       }
-      
+
       return typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, key) ? data[key] : undefined;
     }
-    
+
     const keys = key.split('.');
     let current = data;
     for (let i = 0; i < keys.length; i++) {
-      
+
       if (MyMustache.isNullOrUndefined(current)) {
         return undefined;
       }
-      
+
       const currentKey = keys[i];
       if (this._isDangerousKey(currentKey)) {
         return undefined;
       }
-      
+
       if (typeof current === 'object' && Object.prototype.hasOwnProperty.call(current, currentKey)) {
         current = current[currentKey];
       } else {
@@ -24299,30 +24348,30 @@ class MyMustache {
     return current;
   }
 
-  
+
 
 
 
   _initBuiltInFilters() {
-    
+
     const builtInFilters = createBuiltInFilters(this.utils);
 
-    
+
     const advancedFilters = createAdvancedFilters();
 
-    
+
     this.filterRegistry.registerAll(builtInFilters);
     this.filterRegistry.registerAll(advancedFilters);
   }
 
-  
+
 
 
   clearCache() {
     this.templateCache = {};
   }
 
-  
+
 
 
 
@@ -24331,7 +24380,7 @@ class MyMustache {
     this.partials[name] = template;
   }
 
-  
+
 
 
 
@@ -24339,16 +24388,16 @@ class MyMustache {
     Object.assign(this.partials, partialsObject);
   }
 
-  
+
 
 
 
 
 
   registerFilter(filterStrategyOrName, fn) {
-    
+
     if (typeof filterStrategyOrName === 'string' && typeof fn === 'function') {
-      
+
       const name = filterStrategyOrName;
       const wrappedFilter = new _FunctionFilterStrategy(name, fn);
       this.filterRegistry.register(wrappedFilter);
@@ -24360,7 +24409,7 @@ class MyMustache {
     this.filterRegistry.register(filterStrategyOrName);
   }
 
-  
+
 
 
 
@@ -24369,7 +24418,7 @@ class MyMustache {
     return data => this.render(template, data);
   }
 
-  
+
 
 
 
@@ -24378,7 +24427,7 @@ class MyMustache {
 
 
   render(template, data = {}, additionalPartials = {}) {
-    
+
     if (typeof template !== 'string') {
       throw new TypeError('template must be a string');
     }
@@ -24409,7 +24458,7 @@ class MyMustache {
     }
   }
 
-  
+
 
 
 
@@ -24474,10 +24523,10 @@ class MyMustache {
         if (symbol === MyMustache.TAG_SECTION || symbol === MyMustache.TAG_INVERTED || symbol === MyMustache.TAG_PARTIAL) {
           let rawEnd = token[MyMustache.TOKEN_END];
           if (symbol === MyMustache.TAG_SECTION || symbol === MyMustache.TAG_INVERTED) {
-            
-            
-            
-            
+
+
+
+
             const closeStart = token[MyMustache.TOKEN_INDEX];
             if (typeof closeStart === 'number') {
               const closeDelimIndex = template.indexOf(this.tags[1], closeStart);
@@ -24503,7 +24552,7 @@ class MyMustache {
           continue;
         }
 
-        
+
       }
       return segments;
     } catch (e) {
@@ -24518,7 +24567,7 @@ class MyMustache {
     }
   }
 
-  
+
 
 
 
@@ -24528,7 +24577,7 @@ class MyMustache {
     return string.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
   }
 
-  
+
 
 
 
@@ -24539,7 +24588,7 @@ class MyMustache {
     return HtmlSanitizer.escapeHtml(string);
   }
 
-  
+
 
 
 
@@ -24557,7 +24606,7 @@ class MyMustache {
     return tokens;
   }
 
-  
+
 
 
 
@@ -24568,10 +24617,10 @@ class MyMustache {
 
 
   _renderTokens(tokens, context, partials, originalTemplate, state) {
-    
+
     const parts = [];
     for (const token of tokens) {
-      
+
       const symbol = token[MyMustache.TOKEN_TYPE];
       let value;
       if (symbol === '#') {
@@ -24594,7 +24643,7 @@ class MyMustache {
     return parts.join('');
   }
 
-  
+
 
 
 
@@ -24613,7 +24662,7 @@ class MyMustache {
       }
       const [, filterName, filterArgsString] = filterMatch;
 
-      
+
       const filter = this.filterRegistry.get(filterName);
       if (!filter) {
         this.logger.warn(`Filter not found: "${filterName}"`);
@@ -24662,7 +24711,7 @@ class MyMustache {
         });
       }
       try {
-        
+
         value = filter.execute(value, ...args);
       } catch (e) {
         this.logger.error(`Error applying filter "${filterName}": ${e.message}`);
@@ -24672,7 +24721,7 @@ class MyMustache {
     return value;
   }
 
-  
+
 
 
 
@@ -24681,15 +24730,15 @@ class MyMustache {
 
   _escapedValue(token, context) {
     const value = this._lookupValue(token, context);
-    
+
     if (!MyMustache.isNullOrUndefined(value)) {
-      
-      
+
+
       return String(value);
     }
   }
 
-  
+
 
 
 
@@ -24698,13 +24747,13 @@ class MyMustache {
 
   _unescapedValue(token, context) {
     const value = this._lookupValue(token, context);
-    
+
     if (!MyMustache.isNullOrUndefined(value)) {
       return String(value);
     }
   }
 
-  
+
 
 
 
@@ -24714,17 +24763,17 @@ class MyMustache {
 
 
   _createLoopContext(item, index, total, key) {
-    
+
     const isPrimitive = item === null || item === undefined || typeof item !== 'object' && typeof item !== 'function';
 
-    
-    
+
+
     if (isPrimitive) {
       return item;
     }
     let decoratedView;
     if (Array.isArray(item)) {
-      
+
       decoratedView = [...item];
       decoratedView['@index'] = index;
       decoratedView['@number'] = index + 1;
@@ -24734,9 +24783,9 @@ class MyMustache {
       decoratedView['@even'] = index % 2 === 0;
       decoratedView['@total'] = total;
     } else {
-      
-      
-      
+
+
+
       decoratedView = {
         ...item,
         '@index': index,
@@ -24754,7 +24803,7 @@ class MyMustache {
     return decoratedView;
   }
 
-  
+
 
 
 
@@ -24772,7 +24821,7 @@ class MyMustache {
       depth: state.depth + 1,
       partialStack: state.partialStack
     };
-    
+
     const parts = [];
     const self = this;
     const value = this._lookupValue(token, context);
@@ -24783,18 +24832,18 @@ class MyMustache {
       return;
     }
     if (Array.isArray(value)) {
-      
+
       const total = value.length;
       for (let i = 0; i < total; i++) {
         const item = value[i];
-        
+
         const decoratedItem = this._createLoopContext(item, i, total);
         parts.push(this._renderTokens(token[4], context.push(decoratedItem), partials, originalTemplate, childState));
       }
     } else if (typeof value === 'object') {
-      
-      
-      
+
+
+
       parts.push(this._renderTokens(token[4], context.push(value), partials, originalTemplate, childState));
     } else if (typeof value === 'function') {
       const text = originalTemplate.slice(token[3], token[5]);
@@ -24808,7 +24857,7 @@ class MyMustache {
     return parts.join('');
   }
 
-  
+
 
 
 
@@ -24831,7 +24880,7 @@ class MyMustache {
     }
   }
 
-  
+
 
 
 
@@ -24866,7 +24915,7 @@ class MyMustache {
     }
   }
 
-  
+
 
 
 
@@ -24890,7 +24939,7 @@ class MyMustache {
     return squashedTokens;
   }
 
-  
+
 
 
 
@@ -24901,7 +24950,7 @@ class MyMustache {
     let collector = nestedTokens;
     const sections = [];
     for (const token of tokens) {
-      
+
       switch (token[MyMustache.TOKEN_TYPE]) {
         case MyMustache.TAG_SECTION:
         case MyMustache.TAG_INVERTED:
@@ -24923,7 +24972,7 @@ class MyMustache {
     return nestedTokens;
   }
 
-  
+
 
 
 
@@ -24970,7 +25019,7 @@ class MyMustache {
       start = scanner.pos;
       value = scanner.scanUntil(openingTagRe);
       if (value) {
-        
+
         for (const chr of value) {
           if (/\s/.test(chr)) {
             spaces.push(tokens.length);
@@ -25016,8 +25065,8 @@ class MyMustache {
           throw new Error('Unopened section "' + value + '" at ' + start);
         }
 
-        
-        
+
+
         const openSectionName = openSection[1].split('|')[0].trim();
         const closeSectionName = value.trim();
         if (openSectionName !== closeSectionName) {
@@ -25075,15 +25124,15 @@ class DocumentProcessorTagScanner {
           continue;
         }
         dataArray = this.facade._applyFilters(dataArray, filters);
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
+
         const markerPrefixLength = fullMatchText.length - templateContent.length;
         const rawSourceRuns = cell.runs || [];
         const sourceRuns = markerPrefixLength > 0 ? rawSourceRuns.filter(r => r.end > markerPrefixLength).map(r => ({
@@ -25173,16 +25222,26 @@ class DocumentProcessorTagScanner {
       if (match) {
         const [fullMatch, command, dataSource, itemTemplate] = match;
         const listType = command.startsWith('bullet') ? 'bullet' : 'number';
-        const dataArray = this.facade.mustache.getValue(dataSource, context);
+        const fullExpression = dataSource.trim();
+        const {
+          path,
+          filters
+        } = this.facade._parseExpression(fullExpression);
+        const dummyToken = ['name', path];
+        let dataArray = this.facade.mustache._lookupValue(dummyToken, new _MustacheContext(context));
         if (Array.isArray(dataArray)) {
-          
-          
-          
-          
-          
-          
-          
-          
+          dataArray = this.facade._applyFilters(dataArray, filters);
+          if (dataArray.length > this.facade.MAX_ITERATIONS) {
+            throw new Error(`List expansion count (${dataArray.length}) exceeds maximum allowed (${this.facade.MAX_ITERATIONS})`);
+          }
+
+
+
+
+
+
+
+
           const itemTemplateOffsetInMatch = fullMatch.indexOf(itemTemplate.trim());
           const itemTemplateStart = match.index + itemTemplateOffsetInMatch;
           const itemTemplateEnd = itemTemplateStart + itemTemplate.trim().length;
@@ -25239,7 +25298,7 @@ class DocumentProcessorTagScanner {
     return operations;
   }
 
-  
+
 
 
 
@@ -25295,7 +25354,7 @@ class DocumentProcessorTagScanner {
     return operations;
   }
 
-  
+
 
 
 
@@ -25480,7 +25539,7 @@ class DocumentProcessorInjector {
     this.facade = facade;
   }
 
-  
+
 
 
 
@@ -25508,7 +25567,7 @@ class DocumentProcessorInjector {
     }));
   }
 
-  
+
 
 
 
@@ -25521,7 +25580,7 @@ class DocumentProcessorInjector {
     return run ? run.style : {};
   }
 
-  
+
 
 
 
@@ -25567,10 +25626,10 @@ class DocumentProcessorInjector {
         }
         return cellText;
       });
-      
-      
-      
-      
+
+
+
+
       const sourceRuns = (op.sourceRuns || []).map((runs, index) => index === 0 ? this._rebaseSourceRuns(runs, firstCellMarkerLength) : runs);
       for (let i = op.dataArray.length - 1; i >= 0; i--) {
         const dataItem = op.dataArray[i];
@@ -25599,13 +25658,13 @@ class DocumentProcessorInjector {
       const trimmedContent = (op.templateContent || '').replace(/\s+$/, '');
       const templateMatch = trimmedContent.match(/^(.*?){{\/tablecol_loop}}$/s);
       const template = templateMatch ? templateMatch[1].trim() : trimmedContent;
-      
-      
-      
-      
-      
-      
-      
+
+
+
+
+
+
+
       const templateBase = templateMatch ? templateMatch[1] : trimmedContent;
       const trimShift = templateMatch ? templateBase.length - templateBase.trimStart().length : 0;
       const headerSourceRuns = this._rebaseSourceRuns(op.sourceRuns, trimShift);
@@ -25614,9 +25673,9 @@ class DocumentProcessorInjector {
         return;
       }
 
-      
-      
-      
+
+
+
       const cellTemplates = [];
       const cellSourceRuns = [];
       for (let rowIdx = 0; rowIdx < tableData.numRows; rowIdx++) {
@@ -25632,7 +25691,7 @@ class DocumentProcessorInjector {
       }
       const buildSegments = (tpl, item, sourceRuns) => this._buildStyledSegments(tpl, item, sourceRuns);
 
-      
+
       for (let rowIdx = 0; rowIdx < tableData.numRows; rowIdx++) {
         const segments = buildSegments(cellTemplates[rowIdx], op.dataArray[0], cellSourceRuns[rowIdx]);
         this.facade.documentService.setCellRunStyles(documentId, op.tableIndex, rowIdx, op.cellIndex, segments);
@@ -25662,15 +25721,15 @@ class DocumentProcessorInjector {
         return this.facade._createTextSubstitutionRequests(op);
       case 'rowLoop':
         return [];
-      
+
       case 'deleteRow':
         return this.facade._createDeleteRowRequests(op);
       case 'listLoop':
         return [];
-      
+
       case 'columnLoop':
         return [];
-      
+
       default:
         this.facade.logger.warn(`Unknown operation type: ${op.type}`);
         return [];
@@ -25704,17 +25763,17 @@ class DocumentProcessorInjector {
       }
     }];
     if (op.segments && op.segments.length > 0 && newText !== '\u200B') {
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+
+
+
+
+
+
+
+
+
+
+
       const insertedLength = newText.length;
       let cursor = op.index;
       let consumed = 0;
@@ -25763,7 +25822,7 @@ class DocumentProcessorInjector {
     }];
   }
 
-  
+
 
 
 
@@ -25787,15 +25846,38 @@ class DocumentProcessorInjector {
         return;
       }
       let templateParagraph = rangeElement.getElement();
-      while (typeof templateParagraph.getParent === 'function' && templateParagraph.getParent() !== body) {
-        templateParagraph = templateParagraph.getParent();
+      while (typeof templateParagraph.getParent === 'function') {
+        const parent = templateParagraph.getParent();
+
+
+
+
+
+
+
+
+
+        if (!parent || parent.getType().toString() === 'BODY_SECTION') {
+          break;
+        }
+        templateParagraph = parent;
       }
       const templateChildIndex = body.getChildIndex(templateParagraph);
       const sourceRuns = op.sourceRuns || [];
+
+
+
+
+
+      const isListItem = typeof templateParagraph.getType === 'function' && templateParagraph.getType().toString() === 'LIST_ITEM';
       for (let i = op.dataArray.length - 1; i >= 0; i--) {
         const dataItem = op.dataArray[i];
         const copiedParagraph = templateParagraph.copy();
-        body.insertParagraph(templateChildIndex + 1, copiedParagraph);
+        if (isListItem) {
+          body.insertListItem(templateChildIndex + 1, copiedParagraph);
+        } else {
+          body.insertParagraph(templateChildIndex + 1, copiedParagraph);
+        }
         const insertedParagraph = body.getChild(templateChildIndex + 1);
         const segments = this._buildStyledSegments(op.itemTemplate, dataItem, sourceRuns);
         this._retextParagraph(insertedParagraph, segments);
@@ -25808,7 +25890,7 @@ class DocumentProcessorInjector {
     }
   }
 
-  
+
 
 
 
@@ -25826,7 +25908,7 @@ class DocumentProcessorInjector {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  
+
 
 
 
@@ -25848,13 +25930,13 @@ class DocumentProcessorInjector {
       textElement.appendText(rendered);
       const attrs = TextStyleMapper.toNativeAttributes(segment.style);
       if (Object.keys(attrs).length > 0) {
-        textElement.setAttributes(offset, offset + rendered.length, attrs);
+        textElement.setAttributes(offset, offset + rendered.length - 1, attrs);
       }
       offset += rendered.length;
     }
   }
 
-  
+
 
 
 
@@ -25869,10 +25951,10 @@ class DocumentProcessorInjector {
     try {
       this.facade.logger.info(`Executing table insert: ${op.data.length} rows at marker "${op.placeholder}"`);
       this.facade.documentService.insertTableAtMarker(documentId, op.placeholder, op.data, op.options);
-      
-      
-      
-      
+
+
+
+
       this._flushDocumentChanges(documentId);
       this.facade.documentService.batchReplaceText(documentId, op.placeholder, '');
       this.facade.logger.debug(`Table insert completed for marker "${op.placeholder}"`);
@@ -25931,12 +26013,12 @@ class _DocumentProcessor {
     this.strictFilters = options.strictFilters || false;
     this._currentDepth = 0;
 
-    
+
     this._tagScanner = new DocumentProcessorTagScanner(this);
     this._valueResolver = new DocumentProcessorValueResolver(this);
     this._injector = new DocumentProcessorInjector(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._tagScanner,
       methods: ['_analyzeColumnLoops', '_analyzeRowLoops', '_analyzeListLoops', '_analyzeTextSubstitutions', '_analyzeTableInsertions', '_parseTableParams', '_parseExpression', '_parseFilterArgs', '_parseArgValue']
@@ -25957,17 +26039,17 @@ class _DocumentProcessor {
       structuralOps.push(...this._analyzeRowLoops(table, context));
     }
     const executedStandardOps = structuralOps.filter(op => op.type === 'rowLoop' || op.type === 'columnLoop');
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
     const processedTableIndices = new Set(executedStandardOps.map(op => op.tableIndex));
     if (executedStandardOps.length > 0) {
       executedStandardOps.sort((a, b) => b.index - a.index);
@@ -25983,10 +26065,10 @@ class _DocumentProcessor {
       }
     }
 
-    
-    
-    
-    
+
+
+
+
     const tableInsertOps = this._analyzeTableInsertions(structure.textMatches, context);
     if (tableInsertOps.length > 0) {
       for (const op of tableInsertOps) {
@@ -25996,15 +26078,15 @@ class _DocumentProcessor {
     }
     const remainingTextMatches = structure.textMatches.filter(tm => tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex));
     const listLoopOps = this._analyzeListLoops(remainingTextMatches, context);
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
     const renderedElementIndices = new Set();
     if (listLoopOps.length > 0) {
       listLoopOps.sort((a, b) => b.index - a.index);
@@ -26017,19 +26099,19 @@ class _DocumentProcessor {
       }
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
     const batchOps = [];
     for (const table of structure.tables) {
       const rowOps = this._analyzeRowLoops(table, context);
@@ -26066,7 +26148,7 @@ class _DocumentProcessor {
 
 
 class _SheetProcessor {
-  
+
 
 
 
@@ -26074,13 +26156,13 @@ class _SheetProcessor {
     this.mustache = placeholderService.mustache;
     this.logger = placeholderService.logger;
 
-    
+
     const simpleCache = {
       get: () => null,
       put: () => {},
       remove: () => {}
     };
-    
+
     const utilitiesService = new UtilitiesService(this.logger);
     const simpleUtils = {
       sleep: ms => utilitiesService.sleep(ms)
@@ -26091,7 +26173,7 @@ class _SheetProcessor {
     this.spreadsheetService = new SpreadsheetService(this.logger, simpleCache, simpleUtils, simpleExceptionService);
   }
 
-  
+
 
 
 
@@ -26100,10 +26182,10 @@ class _SheetProcessor {
 
 
   process(sheetId, context, sheetName) {
-    
+
     const sheetInfo = this.spreadsheetService.getSheetInfo(sheetId);
 
-    
+
     const sheetsToProcess = sheetName ? sheetInfo.filter(s => s.name === sheetName) : sheetInfo;
     if (sheetsToProcess.length === 0) {
       this.logger.warn(`No sheets found to process. Sheet name: ${sheetName || 'all'}`);
@@ -26117,7 +26199,7 @@ class _SheetProcessor {
     for (const sheet of sheetsToProcess) {
       this.logger.debug(`--- Analyzing sheet for batch update: ${sheet.name} ---`);
 
-      
+
       const range = `'${sheet.name}'!A:ZZ`;
       const values = this.spreadsheetService.getRanges(sheetId, range);
       if (!values || values.length === 0) {
@@ -26170,12 +26252,12 @@ class _SheetProcessor {
       }
     }
     if (batchRequests.length > 0) {
-      
+
       this._expandGridIfNeeded(sheetId, sheetsToProcess, batchRequests);
       this.logger.debug(`Sending ${batchRequests.length} updates in a single batch call.`);
       this.spreadsheetService.updateRanges(sheetId, batchRequests);
 
-      
+
       if (allProtectionRequests.length > 0) {
         this._applyProtections(sheetId, allProtectionRequests);
       }
@@ -26187,7 +26269,7 @@ class _SheetProcessor {
     };
   }
 
-  
+
 
 
 
@@ -26205,7 +26287,7 @@ class _SheetProcessor {
     return params;
   }
 
-  
+
 
 
 
@@ -26242,7 +26324,7 @@ class _SheetProcessor {
     }).filter(g => g.source !== undefined);
   }
 
-  
+
 
 
 
@@ -26286,9 +26368,9 @@ class _SheetProcessor {
         };
       }
 
-      
-      
-      
+
+
+
       const firstSourceData = this.mustache.getValue(groups[0].source, context);
       if (!Array.isArray(firstSourceData)) {
         this.logger.warn(`Data source '${groups[0].source}' for dynamic_columns is not an array.`);
@@ -26303,7 +26385,7 @@ class _SheetProcessor {
       const columns = [];
       const quotedSheetName = `'${sheetName}'`;
 
-      
+
       const rangePlaceholder = this._rangeToA1(startRow, startColumn, startRow, startColumn);
       valueRequests.push({
         range: `${quotedSheetName}!${rangePlaceholder}`,
@@ -26316,18 +26398,18 @@ class _SheetProcessor {
           this.logger.warn(`Data source '${group.source}' for dynamic_columns is not an array.`);
           return;
         }
-        
-        
-        
-        
-        
+
+
+
+
+
         if (groupIndex > 0 && sourceData.length === 0) {
           return;
         }
 
-        
-        
-        
+
+
+
         if (groupIndex > 0 && group.label) {
           const labelValue = this.mustache.getValue(group.label, context);
           const labelText = labelValue !== undefined && labelValue !== null ? labelValue : group.label;
@@ -26348,17 +26430,17 @@ class _SheetProcessor {
           const colLetter = this._columnToLetter(col);
           const cellA1 = colLetter + startRow;
 
-          
+
           const headerValue = group.value ? this.mustache.getValue(group.value, item) : '';
           const resolvedHeader = headerValue ?? '';
           valueRequests.push({
             range: `${quotedSheetName}!${cellA1}`,
             values: [[resolvedHeader]]
           });
-          
-          
-          
-          
+
+
+
+
           columns.push({
             header: resolvedHeader,
             column: col,
@@ -26366,7 +26448,7 @@ class _SheetProcessor {
             item
           });
 
-          
+
           if (group.acl) {
             const acl = this.mustache.getValue(group.acl, item);
             if (acl) {
@@ -26408,7 +26490,7 @@ class _SheetProcessor {
     }
   }
 
-  
+
 
 
 
@@ -26449,7 +26531,7 @@ class _SheetProcessor {
       const quotedSheetName = `'${sheetName}'`;
       const colLetter = this._columnToLetter(startColumn);
 
-      
+
       const rangePlaceholder = this._rangeToA1(startRow, startColumn, startRow, startColumn);
       valueRequests.push({
         range: `${quotedSheetName}!${rangePlaceholder}`,
@@ -26480,7 +26562,7 @@ class _SheetProcessor {
     }
   }
 
-  
+
 
 
 
@@ -26489,22 +26571,22 @@ class _SheetProcessor {
 
   _applyProtections(spreadsheetId, protectionRequests) {
     try {
-      
+
       const descriptionsToCleanup = [...new Set(protectionRequests.map(r => r.description))];
 
-      
+
       const existingProtections = this.spreadsheetService.getProtectedRanges(spreadsheetId);
 
-      
+
       const idsToDelete = existingProtections.filter(p => descriptionsToCleanup.includes(p.description)).map(p => p.id);
 
-      
+
       if (idsToDelete.length > 0) {
         this.logger.debug(`Cleaning up ${idsToDelete.length} existing dynamic protections.`);
         this.spreadsheetService.deleteProtectedRanges(spreadsheetId, idsToDelete);
       }
 
-      
+
       this.logger.debug(`Applying ${protectionRequests.length} new dynamic protections.`);
       this.spreadsheetService.protectRanges(spreadsheetId, protectionRequests);
     } catch (e) {
@@ -26512,7 +26594,7 @@ class _SheetProcessor {
     }
   }
 
-  
+
 
 
 
@@ -26542,21 +26624,21 @@ class _SheetProcessor {
       const requests = [];
       const quotedSheetName = `'${sheetName}'`;
 
-      
+
       const rangePlaceholder = this._rangeToA1(startRow, startColumn, startRow, startColumn);
       requests.push({
         range: `${quotedSheetName}!${rangePlaceholder}`,
         values: [['']]
       });
 
-      
+
       const rangeHeaders = this._rangeToA1(startRow, startColumn, startRow, startColumn + headers.length - 1);
       requests.push({
         range: `${quotedSheetName}!${rangeHeaders}`,
         values: [headers]
       });
 
-      
+
       if (matrix.length > 0) {
         const rangeData = this._rangeToA1(startRow + 1, startColumn, startRow + matrix.length, startColumn + matrix[0].length - 1);
         requests.push({
@@ -26576,7 +26658,7 @@ class _SheetProcessor {
     }
   }
 
-  
+
 
 
 
@@ -26585,8 +26667,8 @@ class _SheetProcessor {
 
 
   _expandGridIfNeeded(spreadsheetId, sheets, batchRequests) {
-    
-    
+
+
     const sheetMap = {};
     for (const sheet of sheets) {
       if (sheet.gridProperties && sheet.gridProperties.rowCount) {
@@ -26598,10 +26680,10 @@ class _SheetProcessor {
       }
     }
 
-    
+
     const maxNeeded = {};
     for (const req of batchRequests) {
-      
+
       const rangeMatch = req.range.match(/^'([^']+)'!([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?$/);
       if (!rangeMatch) {
         continue;
@@ -26610,7 +26692,7 @@ class _SheetProcessor {
       const endRow = endRowStr ? parseInt(endRowStr, 10) : parseInt(startRowStr, 10);
       const endCol = endColStr || rangeMatch[2];
 
-      
+
       let colNum = 0;
       for (let i = 0; i < endCol.length; i++) {
         colNum = colNum * 26 + (endCol.charCodeAt(i) - 64);
@@ -26625,7 +26707,7 @@ class _SheetProcessor {
       maxNeeded[name].maxCol = Math.max(maxNeeded[name].maxCol, colNum);
     }
 
-    
+
     for (const [name, needed] of Object.entries(maxNeeded)) {
       const info = sheetMap[name];
       if (!info) {
@@ -26640,7 +26722,7 @@ class _SheetProcessor {
     }
   }
 
-  
+
 
 
 
@@ -26657,7 +26739,7 @@ class _SheetProcessor {
     return letter;
   }
 
-  
+
 
 
 
@@ -26690,7 +26772,7 @@ class _SheetProcessor {
 
 
 class MyPlaceholderService {
-  
+
 
 
 
@@ -26707,7 +26789,7 @@ class MyPlaceholderService {
     };
   }
 
-  
+
 
 
 
@@ -26718,18 +26800,18 @@ class MyPlaceholderService {
 
 
   constructor(options = {}) {
-    
+
     this.logger = options.logger || console;
     this.mustache = options.mustache;
     this.utils = options.utils;
     this.cache = options.cache;
 
-    
+
     if (!this.mustache) {
       throw new Error('MyPlaceholderService requires a MyMustache instance');
     }
 
-    
+
     const processorOptions = {
       strictFilters: options.strictFilters || false
     };
@@ -26738,7 +26820,7 @@ class MyPlaceholderService {
     this.logger.debug('MyPlaceholderService (Facade) initialized.');
   }
 
-  
+
 
 
 
@@ -26747,7 +26829,7 @@ class MyPlaceholderService {
 
 
   processString(template, context = {}) {
-    
+
     if (typeof template !== 'string') {
       throw new TypeError('template must be a string');
     }
@@ -26765,7 +26847,7 @@ class MyPlaceholderService {
     }
   }
 
-  
+
 
 
 
@@ -26775,7 +26857,7 @@ class MyPlaceholderService {
     return this.processString(template, context);
   }
 
-  
+
 
 
 
@@ -26784,7 +26866,7 @@ class MyPlaceholderService {
 
 
   processDocument(documentId, context = {}) {
-    
+
     if (typeof documentId !== 'string' || documentId.trim() === '') {
       throw new TypeError('documentId must be a non-empty string');
     }
@@ -26805,7 +26887,7 @@ class MyPlaceholderService {
     }
   }
 
-  
+
 
 
 
@@ -26822,7 +26904,7 @@ class MyPlaceholderService {
 
 
   processSheet(sheetId, context = {}, sheetName = null) {
-    
+
     if (typeof sheetId !== 'string' || sheetId.trim() === '') {
       throw new TypeError('sheetId must be a non-empty string');
     }
@@ -27081,7 +27163,7 @@ class MyPlaceholderService {
 
 
 class ErrorHelper {
-  
+
 
 
 
@@ -27096,7 +27178,7 @@ class ErrorHelper {
     return new Error(message);
   }
 
-  
+
 
 
 
@@ -27110,7 +27192,7 @@ class ErrorHelper {
     return new Error(message);
   }
 
-  
+
 
 
 
@@ -27122,7 +27204,7 @@ class ErrorHelper {
     return new Error(message);
   }
 
-  
+
 
 
 
@@ -27135,7 +27217,7 @@ class ErrorHelper {
     return new Error(message);
   }
 
-  
+
 
 
 
@@ -27157,7 +27239,7 @@ class ErrorHelper {
 
 
 class TokenScanner {
-  
+
 
 
 
@@ -27165,18 +27247,18 @@ class TokenScanner {
   preprocess(expressionString) {
     let result = expressionString;
 
-    
+
     result = this._convertPlaceholders(result);
 
-    
+
     result = this._convertNumericPathSegments(result);
 
-    
+
     result = this._convertBetweenOperator(result);
     return result;
   }
 
-  
+
 
 
 
@@ -27186,7 +27268,7 @@ class TokenScanner {
     return expression.replace(/(?<=[a-zA-Z_\]])\.\s*(\d+)/g, '[$1]');
   }
 
-  
+
 
 
 
@@ -27198,7 +27280,7 @@ class TokenScanner {
     while (hasChanges) {
       const before = result;
 
-      
+
       result = result.replace(/\{\{([^{}]+)\}\}/g, (match, content) => {
         return content.trim();
       });
@@ -27207,7 +27289,7 @@ class TokenScanner {
     return result;
   }
 
-  
+
 
 
 
@@ -27225,13 +27307,13 @@ class TokenScanner {
 
 
 class Hooks {
-	
 
 
 
 
 
-	
+
+
 
 
 
@@ -27245,7 +27327,7 @@ class Hooks {
 
 	add(name, callback, first) {
 		if (typeof arguments[0] != 'string') {
-			
+
 			for (let name in arguments[0]) {
 				this.add(name, arguments[0][name], arguments[1]);
 			}
@@ -27261,7 +27343,7 @@ class Hooks {
 		}
 	}
 
-	
+
 
 
 
@@ -27287,12 +27369,12 @@ class Plugins {
 		this.registered = {};
 	}
 
-	
 
 
 
 
-	
+
+
 
 
 
@@ -27306,7 +27388,7 @@ class Plugins {
 				throw new Error('Invalid JSEP plugin format');
 			}
 			if (this.registered[plugin.name]) {
-				
+
 				return;
 			}
 			plugin.init(this.jsep);
@@ -27318,23 +27400,23 @@ class Plugins {
 
 
 class Jsep {
-	
+
 
 
 	static get version() {
-		
+
 		return '1.4.0';
 	}
 
-	
+
 
 
 	static toString() {
 		return 'JavaScript Expression Parser (JSEP) v' + Jsep.version;
 	};
 
-	
-	
+
+
 
 
 
@@ -27345,7 +27427,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27364,7 +27446,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27374,7 +27456,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27385,7 +27467,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27398,7 +27480,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27409,7 +27491,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27419,7 +27501,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27435,7 +27517,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27446,7 +27528,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27456,7 +27538,7 @@ class Jsep {
 		return Jsep;
 	}
 
-	
+
 
 
 
@@ -27465,17 +27547,17 @@ class Jsep {
 
 		return Jsep;
 	}
-	
 
 
-	
+
+
 
 
 	get char() {
 		return this.expr.charAt(this.index);
 	}
 
-	
+
 
 
 	get code() {
@@ -27483,18 +27565,18 @@ class Jsep {
 	};
 
 
-	
+
 
 
 
 	constructor(expr) {
-		
-		
+
+
 		this.expr = expr;
 		this.index = 0;
 	}
 
-	
+
 
 
 
@@ -27502,7 +27584,7 @@ class Jsep {
 		return (new Jsep(expr)).parse();
 	}
 
-	
+
 
 
 
@@ -27511,7 +27593,7 @@ class Jsep {
 		return Math.max(0, ...Object.keys(obj).map(k => k.length));
 	}
 
-	
+
 
 
 
@@ -27520,7 +27602,7 @@ class Jsep {
 		return (ch >= 48 && ch <= 57); 
 	}
 
-	
+
 
 
 
@@ -27529,7 +27611,7 @@ class Jsep {
 		return Jsep.binary_ops[op_val] || 0;
 	}
 
-	
+
 
 
 
@@ -27541,7 +27623,7 @@ class Jsep {
 			(Jsep.additional_identifier_chars.has(String.fromCharCode(ch))); 
 	}
 
-	
+
 
 
 
@@ -27549,7 +27631,7 @@ class Jsep {
 		return Jsep.isIdentifierStart(ch) || Jsep.isDecimalDigit(ch);
 	}
 
-	
+
 
 
 
@@ -27561,7 +27643,7 @@ class Jsep {
 		throw error;
 	}
 
-	
+
 
 
 
@@ -27576,7 +27658,7 @@ class Jsep {
 		return node;
 	}
 
-	
+
 
 
 
@@ -27592,12 +27674,12 @@ class Jsep {
 		}
 	}
 
-	
+
 
 
 	gobbleSpaces() {
 		let ch = this.code;
-		
+
 		while (ch === Jsep.SPACE_CODE
 		|| ch === Jsep.TAB_CODE
 		|| ch === Jsep.LF_CODE
@@ -27607,7 +27689,7 @@ class Jsep {
 		this.runHook('gobble-spaces');
 	}
 
-	
+
 
 
 
@@ -27615,7 +27697,7 @@ class Jsep {
 		this.runHook('before-all');
 		const nodes = this.gobbleExpressions();
 
-		
+
 		const node = nodes.length === 1
 		  ? nodes[0]
 			: {
@@ -27625,7 +27707,7 @@ class Jsep {
 		return this.runHook('after-all', node);
 	}
 
-	
+
 
 
 
@@ -27636,17 +27718,17 @@ class Jsep {
 		while (this.index < this.expr.length) {
 			ch_i = this.code;
 
-			
-			
+
+
 			if (ch_i === Jsep.SEMCOL_CODE || ch_i === Jsep.COMMA_CODE) {
 				this.index++; 
 			}
 			else {
-				
+
 				if (node = this.gobbleExpression()) {
 					nodes.push(node);
-					
-					
+
+
 				}
 				else if (this.index < this.expr.length) {
 					if (ch_i === untilICode) {
@@ -27660,7 +27742,7 @@ class Jsep {
 		return nodes;
 	}
 
-	
+
 
 
 
@@ -27671,7 +27753,7 @@ class Jsep {
 		return this.runHook('after-expression', node);
 	}
 
-	
+
 
 
 
@@ -27684,9 +27766,9 @@ class Jsep {
 		let tc_len = to_check.length;
 
 		while (tc_len > 0) {
-			
-			
-			
+
+
+
 			if (Jsep.binary_ops.hasOwnProperty(to_check) && (
 				!Jsep.isIdentifierStart(this.code) ||
 				(this.index + to_check.length < this.expr.length && !Jsep.isIdentifierPart(this.expr.charCodeAt(this.index + to_check.length)))
@@ -27699,7 +27781,7 @@ class Jsep {
 		return false;
 	}
 
-	
+
 
 
 
@@ -27707,22 +27789,22 @@ class Jsep {
 	gobbleBinaryExpression() {
 		let node, biop, prec, stack, biop_info, left, right, i, cur_biop;
 
-		
-		
-		
+
+
+
 		left = this.gobbleToken();
 		if (!left) {
 			return left;
 		}
 		biop = this.gobbleBinaryOp();
 
-		
+
 		if (!biop) {
 			return left;
 		}
 
-		
-		
+
+
 		biop_info = { value: biop, prec: Jsep.binaryPrecedence(biop), right_a: Jsep.right_associative.has(biop) };
 
 		right = this.gobbleToken();
@@ -27733,7 +27815,7 @@ class Jsep {
 
 		stack = [left, biop_info, right];
 
-		
+
 		while ((biop = this.gobbleBinaryOp())) {
 			prec = Jsep.binaryPrecedence(biop);
 
@@ -27746,7 +27828,7 @@ class Jsep {
 
 			cur_biop = biop;
 
-			
+
 			const comparePrev = prev => biop_info.right_a && prev.right_a
 				? prec > prev.prec
 				: prec <= prev.prec;
@@ -27788,7 +27870,7 @@ class Jsep {
 		return node;
 	}
 
-	
+
 
 
 
@@ -27805,12 +27887,12 @@ class Jsep {
 		ch = this.code;
 
 		if (Jsep.isDecimalDigit(ch) || ch === Jsep.PERIOD_CODE) {
-			
+
 			return this.gobbleNumericLiteral();
 		}
 
 		if (ch === Jsep.SQUOTE_CODE || ch === Jsep.DQUOTE_CODE) {
-			
+
 			node = this.gobbleStringLiteral();
 		}
 		else if (ch === Jsep.OBRACK_CODE) {
@@ -27821,9 +27903,9 @@ class Jsep {
 			tc_len = to_check.length;
 
 			while (tc_len > 0) {
-				
-				
-				
+
+
+
 				if (Jsep.unary_ops.hasOwnProperty(to_check) && (
 					!Jsep.isIdentifierStart(this.code) ||
 					(this.index + to_check.length < this.expr.length && !Jsep.isIdentifierPart(this.expr.charCodeAt(this.index + to_check.length)))
@@ -27870,7 +27952,7 @@ class Jsep {
 		return this.runHook('after-token', node);
 	}
 
-	
+
 
 
 
@@ -27913,7 +27995,7 @@ class Jsep {
 				this.index++;
 			}
 			else if (ch === Jsep.OPAREN_CODE) {
-				
+
 				node = {
 					type: Jsep.CALL_EXP,
 					'arguments': this.gobbleArguments(Jsep.CPAREN_CODE),
@@ -27944,7 +28026,7 @@ class Jsep {
 		return node;
 	}
 
-	
+
 
 
 
@@ -27985,7 +28067,7 @@ class Jsep {
 
 		chCode = this.code;
 
-		
+
 		if (Jsep.isIdentifierStart(chCode)) {
 			this.throwError('Variable names cannot start with a number (' +
 				number + this.char + ')');
@@ -28001,7 +28083,7 @@ class Jsep {
 		};
 	}
 
-	
+
 
 
 
@@ -28020,7 +28102,7 @@ class Jsep {
 				break;
 			}
 			else if (ch === '\\') {
-				
+
 				ch = this.expr.charAt(this.index++);
 
 				switch (ch) {
@@ -28049,7 +28131,7 @@ class Jsep {
 		};
 	}
 
-	
+
 
 
 
@@ -28082,7 +28164,7 @@ class Jsep {
 		};
 	}
 
-	
+
 
 
 
@@ -28126,7 +28208,7 @@ class Jsep {
 				}
 			}
 			else if (args.length !== separator_count && separator_count !== 0) {
-				
+
 				this.throwError('Expected comma');
 			}
 			else {
@@ -28147,7 +28229,7 @@ class Jsep {
 		return args;
 	}
 
-	
+
 
 
 
@@ -28179,7 +28261,7 @@ class Jsep {
 		}
 	}
 
-	
+
 
 
 
@@ -28201,10 +28283,10 @@ Object.assign(Jsep, {
 	hooks,
 	plugins: new Plugins(Jsep),
 
-	
-	
-	
-	
+
+
+
+
 	COMPOUND:        'Compound',
 	SEQUENCE_EXP:    'SequenceExpression',
 	IDENTIFIER:      'Identifier',
@@ -28233,10 +28315,10 @@ Object.assign(Jsep, {
 	COLON_CODE:  58, 
 
 
-	
-	
-	
-	
+
+
+
+
 	unary_ops: {
 		'-': 1,
 		'!': 1,
@@ -28244,9 +28326,9 @@ Object.assign(Jsep, {
 		'+': 1
 	},
 
-	
-	
-	
+
+
+
 	binary_ops: {
 		'||': 1, '??': 1,
 		'&&': 2, '|': 3, '^': 4, '&': 5,
@@ -28258,22 +28340,22 @@ Object.assign(Jsep, {
 		'**': 11,
 	},
 
-	
+
 	right_associative: new Set(['**']),
 
-	
+
 	additional_identifier_chars: new Set(['$', '_']),
 
-	
-	
-	
+
+
+
 	literals: {
 		'true': true,
 		'false': false,
 		'null': null
 	},
 
-	
+
 	this_str: 'this',
 });
 Jsep.max_unop_len = Jsep.getMaxKeyLen(Jsep.unary_ops);
@@ -28295,7 +28377,7 @@ var ternary = {
 	name: 'ternary',
 
 	init(jsep) {
-		
+
 		jsep.hooks.add('after-expression', function gobbleTernary(env) {
 			if (env.node && this.code === jsep.QUMARK_CODE) {
 				this.index++;
@@ -28322,8 +28404,8 @@ var ternary = {
 						alternate,
 					};
 
-					
-					
+
+
 					if (test.operator && jsep.binary_ops[test.operator] <= 0.9) {
 						let newTest = test;
 						while (newTest.right.operator && jsep.binary_ops[newTest.right.operator] <= 0.9) {
@@ -28358,7 +28440,7 @@ jsep.plugins.register(ternary);
 
 
 class AstBuilder {
-  
+
 
 
 
@@ -28367,20 +28449,20 @@ class AstBuilder {
     this._configureJSEP();
   }
 
-  
+
 
 
 
   _configureJSEP() {
-    
+
     jsep.addBinaryOp('in', 6);
 
-    
+
     jsep.addBinaryOp('match', 6);
     this._logger.debug('JSEP configured with custom operators: in, match');
   }
 
-  
+
 
 
 
@@ -28480,8 +28562,8 @@ function assertMemberExpression(node, policy) {
   assertMemberObject(node.object, policy);
   if (node.computed) {
     var _node$property;
-    
-    
+
+
     if (((_node$property = node.property) === null || _node$property === void 0 ? void 0 : _node$property.type) !== 'Literal' || !Number.isInteger(node.property.value)) {
       throw new Error('Computed expression members are not allowed');
     }
@@ -28531,7 +28613,7 @@ function assertCallExpression(node, policy) {
 
 
 class ExpressionParserService {
-  
+
 
 
 
@@ -28544,7 +28626,7 @@ class ExpressionParserService {
     };
   }
 
-  
+
 
 
 
@@ -28560,23 +28642,23 @@ class ExpressionParserService {
       throw new Error('ExpressionParserService: logger.error must be a function');
     }
     this.logger = logger;
-    
+
     this.MAX_INPUT_LENGTH = 10000;
 
-    
+
 
 
 
     this._tokenScanner = new TokenScanner();
 
-    
+
 
 
 
     this._astBuilder = new AstBuilder(this.logger);
   }
 
-  
+
 
 
 
@@ -28587,49 +28669,49 @@ class ExpressionParserService {
       throw new Error('Invalid expression: must be a non-empty string');
     }
 
-    
+
     if (expressionString.length > this.MAX_INPUT_LENGTH) {
       throw new Error(`Expression too long (max ${this.MAX_INPUT_LENGTH} characters): ${expressionString.length} characters`);
     }
     this.logger.debug(`Parsing expression: "${expressionString}"`);
 
-    
+
     const preprocessed = this._tokenScanner.preprocess(expressionString);
     this.logger.debug(`Preprocessed expression: "${preprocessed}"`);
 
-    
-    
+
+
     const ast = this._astBuilder.buildAst(preprocessed);
     assertAllowedExpressionAst(ast, defaultPolicy);
     return ast;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
   _configureJSEP() {
     this._astBuilder._configureJSEP();
   }
 
-  
+
 
 
   _convertNumericPathSegments(expression) {
     return this._tokenScanner._convertNumericPathSegments(expression);
   }
 
-  
+
 
 
   _convertPlaceholders(expression) {
     return this._tokenScanner._convertPlaceholders(expression);
   }
 
-  
+
 
 
   _convertBetweenOperator(expression) {
@@ -29034,7 +29116,7 @@ class OperatorHandler {
 
 function createStringFunctions() {
   return {
-    
+
 
 
 
@@ -29051,7 +29133,7 @@ function createStringFunctions() {
       }
       return String(str).length;
     },
-    
+
 
 
 
@@ -29068,7 +29150,7 @@ function createStringFunctions() {
       }
       return String(str).toUpperCase();
     },
-    
+
 
 
 
@@ -29085,7 +29167,7 @@ function createStringFunctions() {
       }
       return String(str).toLowerCase();
     },
-    
+
 
 
 
@@ -29102,7 +29184,7 @@ function createStringFunctions() {
       }
       return String(str).trim();
     },
-    
+
 
 
 
@@ -29125,7 +29207,7 @@ function createStringFunctions() {
       }
       return str.substring(start, end);
     },
-    
+
 
 
 
@@ -29149,7 +29231,7 @@ function createStringFunctions() {
       }
       return String(str).replace(new RegExp(String(search), 'g'), String(replacement || ''));
     },
-    
+
 
 
 
@@ -29183,7 +29265,7 @@ function createStringFunctions() {
 
 function createNumericFunctions() {
   return {
-    
+
 
 
 
@@ -29201,7 +29283,7 @@ function createNumericFunctions() {
       }
       return Math.abs(num);
     },
-    
+
 
 
 
@@ -29224,7 +29306,7 @@ function createNumericFunctions() {
       const factor = Math.pow(10, decimals);
       return Math.round(num * factor) / factor;
     },
-    
+
 
 
 
@@ -29242,7 +29324,7 @@ function createNumericFunctions() {
       }
       return Math.ceil(num);
     },
-    
+
 
 
 
@@ -29260,7 +29342,7 @@ function createNumericFunctions() {
       }
       return Math.floor(num);
     },
-    
+
 
 
 
@@ -29284,7 +29366,7 @@ function createNumericFunctions() {
       }
       return Math.min(...nums);
     },
-    
+
 
 
 
@@ -29308,7 +29390,7 @@ function createNumericFunctions() {
       }
       return Math.max(...nums);
     },
-    
+
 
 
 
@@ -29329,7 +29411,7 @@ function createNumericFunctions() {
       }
       return Math.sqrt(num);
     },
-    
+
 
 
 
@@ -29348,7 +29430,7 @@ function createNumericFunctions() {
       }
       return Math.pow(base, exponent);
     },
-    
+
 
 
 
@@ -29393,7 +29475,7 @@ function createNumericFunctions() {
 
 function createArrayFunctions(evaluator) {
   return {
-    
+
 
 
 
@@ -29411,10 +29493,10 @@ function createArrayFunctions(evaluator) {
       if (Array.isArray(arr)) {
         return arr.length;
       }
-      
+
       return String(arr).length;
     },
-    
+
 
 
 
@@ -29432,7 +29514,7 @@ function createArrayFunctions(evaluator) {
       }
       return arr.some(elem => evaluator._equals(elem, value));
     },
-    
+
 
 
 
@@ -29457,7 +29539,7 @@ function createArrayFunctions(evaluator) {
       }
       return -1;
     },
-    
+
 
 
 
@@ -29474,7 +29556,7 @@ function createArrayFunctions(evaluator) {
       }
       return arr[0];
     },
-    
+
 
 
 
@@ -29542,7 +29624,7 @@ function createBuiltInFunctions(evaluator) {
 
 
 class ExpressionEvaluatorService {
-  
+
 
 
 
@@ -29555,7 +29637,7 @@ class ExpressionEvaluatorService {
     };
   }
 
-  
+
 
 
 
@@ -29563,7 +29645,7 @@ class ExpressionEvaluatorService {
 
 
   constructor(logger, parserService, placeholderService) {
-    
+
     ValidationUtils.validateLogger(logger, 'ExpressionEvaluatorService');
     ValidationUtils.validateDependency(parserService, 'parserService', 'ExpressionEvaluatorService', ['parse']);
     ValidationUtils.validateDependency(placeholderService, 'placeholderService', 'ExpressionEvaluatorService', ['resolve']);
@@ -29571,124 +29653,124 @@ class ExpressionEvaluatorService {
     this.parser = parserService;
     this.placeholderService = placeholderService;
 
-    
-    
-    
+
+
+
     this._astEvaluator = new AstNodeEvaluator(this);
     this._contextHandler = new EvaluationContextHandler(this);
     this._operatorHandler = new OperatorHandler(this);
   }
 
-  
 
-  
+
+
   _evaluateNode(...args) {
     return this._astEvaluator._evaluateNode(...args);
   }
 
-  
+
   _evaluateIdentifier(...args) {
     return this._astEvaluator._evaluateIdentifier(...args);
   }
 
-  
+
   _evaluateMemberExpression(...args) {
     return this._astEvaluator._evaluateMemberExpression(...args);
   }
 
-  
+
   _buildPathFromMemberExpression(...args) {
     return this._astEvaluator._buildPathFromMemberExpression(...args);
   }
 
-  
+
   _evaluateLiteral(...args) {
     return this._astEvaluator._evaluateLiteral(...args);
   }
 
-  
+
   _evaluateArrayExpression(...args) {
     return this._astEvaluator._evaluateArrayExpression(...args);
   }
 
-  
+
   _evaluateCallExpression(...args) {
     return this._astEvaluator._evaluateCallExpression(...args);
   }
 
-  
 
-  
+
+
   _areBothNullOrUndefined(...args) {
     return this._contextHandler._areBothNullOrUndefined(...args);
   }
 
-  
+
   _hasCircularReference(...args) {
     return this._contextHandler._hasCircularReference(...args);
   }
 
-  
+
   evaluate(...args) {
     return this._contextHandler.evaluate(...args);
   }
 
-  
+
   evaluateAst(...args) {
     return this._contextHandler.evaluateAst(...args);
   }
 
-  
+
   _parseValue(...args) {
     return this._contextHandler._parseValue(...args);
   }
 
-  
 
-  
+
+
   _evaluateLogicalExpression(...args) {
     return this._operatorHandler._evaluateLogicalExpression(...args);
   }
 
-  
+
   _evaluateBinaryExpression(...args) {
     return this._operatorHandler._evaluateBinaryExpression(...args);
   }
 
-  
+
   _evaluateUnaryExpression(...args) {
     return this._operatorHandler._evaluateUnaryExpression(...args);
   }
 
-  
+
   _compare(...args) {
     return this._operatorHandler._compare(...args);
   }
 
-  
+
   _equals(...args) {
     return this._operatorHandler._equals(...args);
   }
 
-  
-  
-  
-
-  
-  
-
-  
 
 
 
 
 
 
-  
-  
-  
 
-  
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -29698,11 +29780,11 @@ class ExpressionEvaluatorService {
     return createBuiltInFunctions(this);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -29744,7 +29826,7 @@ class ExpressionEvaluatorService {
 
 
 class ExpressionEngineService {
-  
+
 
 
 
@@ -29761,7 +29843,7 @@ class ExpressionEngineService {
     };
   }
 
-  
+
 
 
 
@@ -29770,7 +29852,7 @@ class ExpressionEngineService {
 
 
   constructor(options = {}) {
-    
+
     if (!options.logger) {
       throw new Error('ExpressionEngineService requires a logger instance');
     }
@@ -29778,32 +29860,32 @@ class ExpressionEngineService {
     this.utils = options.utils;
     this.cache = options.cache;
 
-    
-    
+
+
     this._astCache = new Map();
     this._astCacheEnabled = true; 
 
-    
+
     this._initializeServices();
     this.logger.debug('ExpressionEngineService (Facade) initialized successfully.');
   }
 
-  
+
 
 
 
   _initializeServices() {
-    
+
     this.parser = new ExpressionParserService(this.logger);
     this.logger.debug('ExpressionParserService initialized.');
 
-    
+
     this.mustache = new MyMustache({
       logger: this.logger
     });
     this.logger.debug('Mustache engine initialized from WorkspaceTemplateEngine.');
 
-    
+
     this.placeholderService = new MyPlaceholderService({
       logger: this.logger,
       mustache: this.mustache,
@@ -29812,12 +29894,12 @@ class ExpressionEngineService {
     });
     this.logger.debug('PlaceholderService initialized from WorkspaceTemplateEngine.');
 
-    
+
     this.evaluator = new ExpressionEvaluatorService(this.logger, this.parser, this.placeholderService);
     this.logger.debug('ExpressionEvaluatorService initialized.');
   }
 
-  
+
 
 
 
@@ -29825,7 +29907,7 @@ class ExpressionEngineService {
 
 
   evaluate(expressionString, context = {}) {
-    
+
     if (!expressionString || typeof expressionString !== 'string') {
       throw new Error('Invalid expression: must be a non-empty string');
     }
@@ -29833,20 +29915,20 @@ class ExpressionEngineService {
       throw new Error('Invalid context: must be an object or null');
     }
     try {
-      
-      
+
+
       let ast;
       if (this._astCacheEnabled && this._astCache.has(expressionString)) {
         ast = this._astCache.get(expressionString);
         this.logger.debug(`AST cache hit for expression: ${expressionString.substring(0, 50)}...`);
       } else {
-        
+
         ast = this.parser.parse(expressionString);
         if (this._astCacheEnabled) {
           this._astCache.set(expressionString, ast);
           this.logger.debug(`AST cached for expression: ${expressionString.substring(0, 50)}...`);
 
-          
+
           if (this._astCache.size > 1000) {
             const firstKey = this._astCache.keys().next().value;
             this._astCache.delete(firstKey);
@@ -29855,7 +29937,7 @@ class ExpressionEngineService {
         }
       }
 
-      
+
       return this.evaluator.evaluateAst(ast, context);
     } catch (error) {
       this.logger.error(`ExpressionEngineService.evaluate() failed: ${error.message}`);
@@ -29863,14 +29945,14 @@ class ExpressionEngineService {
     }
   }
 
-  
+
 
 
 
 
 
   parse(expressionString) {
-    
+
     if (!expressionString || typeof expressionString !== 'string') {
       throw new Error('Invalid expression: must be a non-empty string');
     }
@@ -29882,7 +29964,7 @@ class ExpressionEngineService {
     }
   }
 
-  
+
 
 
 
@@ -29895,7 +29977,7 @@ class ExpressionEngineService {
     };
   }
 
-  
+
 
 
 
@@ -29911,7 +29993,7 @@ class ExpressionEngineService {
     };
   }
 
-  
+
 
 
   clearCache() {
@@ -29919,14 +30001,14 @@ class ExpressionEngineService {
     this.logger.debug('AST cache cleared');
   }
 
-  
+
 
 
 
 
 
   setCacheEnabled(enabled) {
-    
+
     if (typeof enabled !== 'boolean') {
       throw new Error('Invalid enabled value: must be a boolean');
     }
@@ -30236,7 +30318,7 @@ class ExpressionEngineService {
 
 
 class TableDataModifier {
-  
+
 
 
 
@@ -30244,7 +30326,7 @@ class TableDataModifier {
     this.facade = facade;
   }
 
-  
+
 
 
 
@@ -30256,7 +30338,7 @@ class TableDataModifier {
     return results.length > 0 ? results[0] : null;
   }
 
-  
+
 
 
 
@@ -30272,38 +30354,38 @@ class TableDataModifier {
     const completeRows = [];
     const physicalColumns = this.facade.columns.filter(col => !this.facade._virtualColumns[col]);
 
-    
+
     for (const rowObj of rowsArray) {
-      
+
       const validatedRow = this.facade.schemaValidator.validateRow(rowObj, false);
       const completeRow = {
         ...validatedRow
       };
 
-      
+
       if (this.facade._keyField && !completeRow[this.facade._keyField]) {
         completeRow[this.facade._keyField] = this.facade.utils.generateUuid();
       }
 
-      
+
       this.facade._applyVirtualColumns(completeRow);
       completeRows.push(completeRow);
     }
     try {
       this.facade._logger.debug(`Queuing batch insert of ${rowsArray.length} rows for '${this.facade.sheetName}'`);
 
-      
+
       this.facade._insertQueue.push(...completeRows);
       this.facade._logger.debug(`Successfully queued ${completeRows.length} rows for '${this.facade.sheetName}'`);
 
-      
+
       this.facade._rowsCache.push(...completeRows);
-      
+
       this.facade._processedRowsCache = null;
-      
+
       this.facade.searchEngine.invalidateIndex();
 
-      
+
       for (const row of completeRows) {
         this.facade._storeOriginalRowData(row);
       }
@@ -30314,7 +30396,7 @@ class TableDataModifier {
     }
   }
 
-  
+
 
 
 
@@ -30327,7 +30409,7 @@ class TableDataModifier {
     this.facade._logger.debug(`Starting update of row with ${this.facade._keyField}=${id} in '${this.facade.sheetName}'`);
     this.facade._ensureDataLoaded();
 
-    
+
     const validatedRow = this.facade.schemaValidator.validateRow(rowObj, true);
     const targetRowIndex = this.facade._findRowIndexById(id);
     if (targetRowIndex === -1) {
@@ -30346,30 +30428,30 @@ class TableDataModifier {
     this.facade._applyVirtualColumns(rowToUpdate);
     const physicalColumns = this.facade.columns.filter(col => !this.facade._virtualColumns[col]);
 
-    
+
     const newPhysicalData = {};
     for (const col of physicalColumns) {
       newPhysicalData[col] = rowToUpdate[col] ?? '';
     }
 
-    
+
     const originalData = this.facade._originalRowData.get(id);
     if (originalData && isEqual(originalData, newPhysicalData)) {
       this.facade._logger.debug(`No changes detected for row ${id}, skipping API call`);
       return rowToUpdate;
     }
 
-    
+
     try {
       this.facade._logger.debug(`Queuing update for row ${id} in '${this.facade.sheetName}'`);
       this.facade._updateQueue.set(id, rowToUpdate);
       this.facade._logger.debug(`Row update queued successfully in '${this.facade.sheetName}'`);
 
-      
+
       this.facade._rowsCache[targetRowIndex] = rowToUpdate;
-      
+
       this.facade._processedRowsCache = null;
-      
+
       this.facade.searchEngine.invalidateIndex();
       return rowToUpdate;
     } catch (e) {
@@ -30378,7 +30460,7 @@ class TableDataModifier {
     }
   }
 
-  
+
 
 
 
@@ -30390,7 +30472,7 @@ class TableDataModifier {
     this.facade._logger.debug(`Starting patch of row with ${this.facade._keyField}=${id} in '${this.facade.sheetName}'`);
     this.facade._ensureDataLoaded();
 
-    
+
     const validatedPartial = this.facade.schemaValidator.validateRow(partialObj, true);
     const targetRowIndex = this.facade._findRowIndexById(id);
     if (targetRowIndex === -1) {
@@ -30404,22 +30486,22 @@ class TableDataModifier {
     const originalRow = this.facade._rowsCache[targetRowIndex];
     const physicalColumns = this.facade.columns.filter(col => !this.facade._virtualColumns[col]);
 
-    
+
     const changedColumns = [];
     const changedValues = [];
     for (const [key, newValue] of Object.entries(validatedPartial)) {
-      
+
       if (this.facade._virtualColumns[key]) {
         continue;
       }
 
-      
+
       if (!physicalColumns.includes(key)) {
         this.facade._logger.warn(`Column '${key}' not found in table schema, skipping`);
         continue;
       }
 
-      
+
       const oldValue = originalRow[key];
       if (oldValue !== newValue) {
         changedColumns.push(key);
@@ -30427,7 +30509,7 @@ class TableDataModifier {
       }
     }
 
-    
+
     if (changedColumns.length === 0) {
       this.facade._logger.debug(`No changes detected for row ${id}, skipping update`);
       const rowToReturn = {
@@ -30436,10 +30518,10 @@ class TableDataModifier {
       return this.facade._applyVirtualColumns(rowToReturn);
     }
 
-    
+
     this.facade._logger.debug(`Patching ${changedColumns.length} columns for row ${id}: ${changedColumns.join(', ')}`);
     try {
-      
+
       const updatedRow = {
         ...originalRow,
         ...validatedPartial
@@ -30448,11 +30530,11 @@ class TableDataModifier {
       this.facade._updateQueue.set(id, updatedRow);
       this.facade._logger.debug(`Successfully queued patch row in '${this.facade.sheetName}'`);
 
-      
+
       this.facade._rowsCache[targetRowIndex] = updatedRow;
-      
+
       this.facade._processedRowsCache = null;
-      
+
       this.facade.searchEngine.invalidateIndex();
       return updatedRow;
     } catch (e) {
@@ -30461,7 +30543,7 @@ class TableDataModifier {
     }
   }
 
-  
+
 
 
 
@@ -30477,31 +30559,31 @@ class TableDataModifier {
       return null; 
     }
 
-    
+
     const deletedRow = {
       ...this.facade._rowsCache[targetRowIndex]
     };
     try {
       this.facade._logger.debug(`Queuing deletion for row in sheet '${this.facade.sheetName}'`);
 
-      
+
       this.facade._deleteQueue.add(id);
       this.facade._updateQueue.delete(id); 
-      
+
       const insertIndex = this.facade._insertQueue.findIndex(r => r[this.facade._keyField] === id);
       if (insertIndex !== -1) {
         this.facade._insertQueue.splice(insertIndex, 1);
         this.facade._deleteQueue.delete(id); 
       }
 
-      
+
       this.facade._rowsCache.splice(targetRowIndex, 1);
-      
+
       this.facade._processedRowsCache = null;
-      
+
       this.facade.searchEngine.invalidateIndex();
 
-      
+
       this.facade._originalRowData.delete(id);
       this.facade._logger.debug(`Row deletion queued successfully from '${this.facade.sheetName}'`);
       return deletedRow; 
@@ -30511,7 +30593,7 @@ class TableDataModifier {
     }
   }
 
-  
+
 
 
 
@@ -30531,7 +30613,7 @@ class TableDataModifier {
     return updatedRows;
   }
 
-  
+
 
 
 
@@ -30664,7 +30746,7 @@ function $constructor(name, initializer, params) {
         }
         inst._zod.traits.add(name);
         initializer(inst, def);
-        
+
         const proto = _.prototype;
         const keys = Object.keys(proto);
         for (let i = 0; i < keys.length; i++) {
@@ -30674,7 +30756,7 @@ function $constructor(name, initializer, params) {
             }
         }
     }
-    
+
     const Parent = params?.Parent ?? Object;
     class Definition extends Parent {
     }
@@ -30774,7 +30856,7 @@ function cleanRegex(source) {
 function floatSafeRemainder(val, step) {
     const ratio = val / step;
     const roundedRatio = Math.round(ratio);
-    
+
     const tolerance = Number.EPSILON * Math.max(Math.abs(ratio), 1);
     if (Math.abs(ratio - roundedRatio) < tolerance)
         return 0;
@@ -30786,7 +30868,7 @@ function defineLazy(object, key, getter) {
     Object.defineProperty(object, key, {
         get() {
             if (value === EVALUATING) {
-                
+
                 return undefined;
             }
             if (value === undefined) {
@@ -30798,9 +30880,9 @@ function defineLazy(object, key, getter) {
         set(v) {
             Object.defineProperty(object, key, {
                 value: v,
-                
+
             });
-            
+
         },
         configurable: true,
     });
@@ -30867,12 +30949,12 @@ function util_isObject(data) {
     return typeof data === "object" && data !== null && !Array.isArray(data);
 }
 const util_allowsEval =  cached(() => {
-    
-    
+
+
     if (globalConfig.jitless) {
         return false;
     }
-    
+
     if (typeof navigator !== "undefined" && navigator?.userAgent?.includes("Cloudflare")) {
         return false;
     }
@@ -30888,17 +30970,17 @@ const util_allowsEval =  cached(() => {
 function util_isPlainObject(o) {
     if (util_isObject(o) === false)
         return false;
-    
+
     const ctor = o.constructor;
     if (ctor === undefined)
         return true;
     if (typeof ctor !== "function")
         return true;
-    
+
     const prot = ctor.prototype;
     if (util_isObject(prot) === false)
         return false;
-    
+
     if (Object.prototype.hasOwnProperty.call(prot, "isPrototypeOf") === false) {
         return false;
     }
@@ -30960,7 +31042,7 @@ const getParsedType = (data) => {
             if (typeof Date !== "undefined" && data instanceof Date) {
                 return "date";
             }
-            
+
             if (typeof File !== "undefined" && data instanceof File) {
                 return "file";
             }
@@ -31117,8 +31199,8 @@ function extend(schema, shape) {
     const checks = schema._zod.def.checks;
     const hasChecks = checks && checks.length > 0;
     if (hasChecks) {
-        
-        
+
+
         const existingShape = schema._zod.def.shape;
         for (const key in shape) {
             if (Object.getOwnPropertyDescriptor(existingShape, key) !== undefined) {
@@ -31183,7 +31265,7 @@ function partial(Class, schema, mask) {
                     }
                     if (!mask[key])
                         continue;
-                    
+
                     shape[key] = Class
                         ? new Class({
                             type: "optional",
@@ -31194,7 +31276,7 @@ function partial(Class, schema, mask) {
             }
             else {
                 for (const key in oldShape) {
-                    
+
                     shape[key] = Class
                         ? new Class({
                             type: "optional",
@@ -31222,7 +31304,7 @@ function required(Class, schema, mask) {
                     }
                     if (!mask[key])
                         continue;
-                    
+
                     shape[key] = new Class({
                         type: "nonoptional",
                         innerType: oldShape[key],
@@ -31231,7 +31313,7 @@ function required(Class, schema, mask) {
             }
             else {
                 for (const key in oldShape) {
-                    
+
                     shape[key] = new Class({
                         type: "nonoptional",
                         innerType: oldShape[key],
@@ -31299,7 +31381,7 @@ function getSizableOrigin(input) {
         return "set";
     if (input instanceof Map)
         return "map";
-    
+
     if (input instanceof File)
         return "file";
     return "unknown";
@@ -31347,7 +31429,7 @@ function util_issue(...args) {
 function cleanEnum(obj) {
     return Object.entries(obj)
         .filter(([k, _]) => {
-        
+
         return Number.isNaN(Number.parseInt(k, 10));
     })
         .map((el) => el[1]);
@@ -31484,7 +31566,7 @@ function datetime(args) {
     const opts = ["Z"];
     if (args.local)
         opts.push("");
-    
+
     if (args.offset)
         opts.push(`([+-](?:[01]\\d|2[0-3]):[0-5]\\d)`);
     const timeRegex = `${time}(?:${opts.join("|")})`;
@@ -31653,15 +31735,15 @@ const $ZodCheckNumberFormat =  $constructor("$ZodCheckNumberFormat", (inst, def)
         const input = payload.value;
         if (isInt) {
             if (!Number.isInteger(input)) {
-                
-                
-                
-                
-                
-                
-                
-                
-                
+
+
+
+
+
+
+
+
+
                 payload.issues.push({
                     expected: origin,
                     format: def.format,
@@ -31671,18 +31753,18 @@ const $ZodCheckNumberFormat =  $constructor("$ZodCheckNumberFormat", (inst, def)
                     inst,
                 });
                 return;
-                
-                
-                
-                
-                
-                
-                
-                
+
+
+
+
+
+
+
+
             }
             if (!Number.isSafeInteger(input)) {
                 if (input > 0) {
-                    
+
                     payload.issues.push({
                         input,
                         code: "too_big",
@@ -31695,7 +31777,7 @@ const $ZodCheckNumberFormat =  $constructor("$ZodCheckNumberFormat", (inst, def)
                     });
                 }
                 else {
-                    
+
                     payload.issues.push({
                         input,
                         code: "too_small",
@@ -32147,7 +32229,7 @@ class Doc {
         const args = this?.args;
         const content = this?.content ?? [``];
         const lines = [...content.map((x) => `  ${x}`)];
-        
+
         return new F(...args, lines.join("\n"));
     }
 }
@@ -32234,7 +32316,7 @@ function treeifyError(error, mapper = (issue) => issue.message) {
         var _a, _b;
         for (const issue of error.issues) {
             if (issue.code === "invalid_union" && issue.errors.length) {
-                
+
                 issue.errors.map((issues) => processError({ issues }, [...path, ...issue.path]));
             }
             else if (issue.code === "invalid_key") {
@@ -32327,15 +32409,15 @@ function toDotPath(_path) {
 }
 function prettifyError(error) {
     const lines = [];
-    
+
     const issues = [...error.issues].sort((a, b) => (a.path ?? []).length - (b.path ?? []).length);
-    
+
     for (const issue of issues) {
         lines.push(`✖ ${issue.message}`);
         if (issue.path?.length)
             lines.push(`  → at ${toDotPath(issue.path)}`);
     }
-    
+
     return lines.join("\n");
 }
 
@@ -32456,7 +32538,7 @@ const $ZodType =  $constructor("$ZodType", (inst, def) => {
     inst._zod.bag = inst._zod.bag || {}; 
     inst._zod.version = version;
     const checks = [...(inst._zod.def.checks ?? [])];
-    
+
     if (inst._zod.traits.has("$ZodCheck")) {
         checks.unshift(inst);
     }
@@ -32466,8 +32548,8 @@ const $ZodType =  $constructor("$ZodType", (inst, def) => {
         }
     }
     if (checks.length === 0) {
-        
-        
+
+
         (_a = inst._zod).deferred ?? (_a.deferred = []);
         inst._zod.deferred?.push(() => {
             inst._zod.run = inst._zod.parse;
@@ -32519,12 +32601,12 @@ const $ZodType =  $constructor("$ZodType", (inst, def) => {
             return payload;
         };
         const handleCanaryResult = (canary, payload, ctx) => {
-            
+
             if (aborted(canary)) {
                 canary.aborted = true;
                 return canary;
             }
-            
+
             const checkResult = runChecks(payload, checks, ctx);
             if (checkResult instanceof Promise) {
                 if (ctx.async === false)
@@ -32538,8 +32620,8 @@ const $ZodType =  $constructor("$ZodType", (inst, def) => {
                 return inst._zod.parse(payload, ctx);
             }
             if (ctx.direction === "backward") {
-                
-                
+
+
                 const canary = inst._zod.parse({ value: payload.value, issues: [] }, { ...ctx, skipChecks: true });
                 if (canary instanceof Promise) {
                     return canary.then((canary) => {
@@ -32548,7 +32630,7 @@ const $ZodType =  $constructor("$ZodType", (inst, def) => {
                 }
                 return handleCanaryResult(canary, payload, ctx);
             }
-            
+
             const result = inst._zod.parse(payload, ctx);
             if (result instanceof Promise) {
                 if (ctx.async === false)
@@ -32558,7 +32640,7 @@ const $ZodType =  $constructor("$ZodType", (inst, def) => {
             return runChecks(result, checks, ctx);
         };
     }
-    
+
     defineLazy(inst, "~standard", () => ({
         validate: (value) => {
             try {
@@ -32595,7 +32677,7 @@ const $ZodString =  $constructor("$ZodString", (inst, def) => {
     };
 });
 const $ZodStringFormat =  $constructor("$ZodStringFormat", (inst, def) => {
-    
+
     $ZodCheckStringFormat.init(inst, def);
     $ZodString.init(inst, def);
 });
@@ -32632,10 +32714,10 @@ const $ZodURL =  $constructor("$ZodURL", (inst, def) => {
     $ZodStringFormat.init(inst, def);
     inst._zod.check = (payload) => {
         try {
-            
+
             const trimmed = payload.value.trim();
-            
-            
+
+
             if (!def.normalize && def.protocol?.source === httpProtocol.source) {
                 if (!/^https?:\/\//i.test(trimmed)) {
                     payload.issues.push({
@@ -32649,7 +32731,7 @@ const $ZodURL =  $constructor("$ZodURL", (inst, def) => {
                     return;
                 }
             }
-            
+
             const url = new URL(trimmed);
             if (def.hostname) {
                 def.hostname.lastIndex = 0;
@@ -32679,13 +32761,13 @@ const $ZodURL =  $constructor("$ZodURL", (inst, def) => {
                     });
                 }
             }
-            
+
             if (def.normalize) {
-                
+
                 payload.value = url.href;
             }
             else {
-                
+
                 payload.value = trimmed;
             }
             return;
@@ -32761,9 +32843,9 @@ const $ZodIPv6 =  $constructor("$ZodIPv6", (inst, def) => {
     inst._zod.bag.format = `ipv6`;
     inst._zod.check = (payload) => {
         try {
-            
+
             new URL(`http://[${payload.value}]`);
-            
+
         }
         catch {
             payload.issues.push({
@@ -32801,7 +32883,7 @@ const $ZodCIDRv6 =  $constructor("$ZodCIDRv6", (inst, def) => {
                 throw new Error();
             if (prefixNum < 0 || prefixNum > 128)
                 throw new Error();
-            
+
             new URL(`http://[${address}]`);
         }
         catch {
@@ -32819,13 +32901,13 @@ const $ZodCIDRv6 =  $constructor("$ZodCIDRv6", (inst, def) => {
 function isValidBase64(data) {
     if (data === "")
         return true;
-    
+
     if (/\s/.test(data))
         return false;
     if (data.length % 4 !== 0)
         return false;
     try {
-        
+
         atob(data);
         return true;
     }
@@ -32886,7 +32968,7 @@ function isValidJWT(token, algorithm = null) {
         const [header] = tokensParts;
         if (!header)
             return false;
-        
+
         const parsedHeader = JSON.parse(atob(header));
         if ("typ" in parsedHeader && parsedHeader?.typ !== "JWT")
             return false;
@@ -33158,7 +33240,7 @@ const $ZodArray =  $constructor("$ZodArray", (inst, def) => {
 function handlePropertyResult(result, final, key, input, isOptionalIn, isOptionalOut) {
     const isPresent = key in input;
     if (result.issues.length) {
-        
+
         if (isOptionalIn && isOptionalOut && !isPresent) {
             return;
         }
@@ -33208,8 +33290,8 @@ function handleCatchall(proms, input, payload, ctx, def, inst) {
     const isOptionalIn = _catchall.optin === "optional";
     const isOptionalOut = _catchall.optout === "optional";
     for (const key in input) {
-        
-        
+
+
         if (key === "__proto__")
             continue;
         if (keySet.has(key))
@@ -33241,9 +33323,9 @@ function handleCatchall(proms, input, payload, ctx, def, inst) {
     });
 }
 const $ZodObject =  $constructor("$ZodObject", (inst, def) => {
-    
+
     $ZodType.init(inst, def);
-    
+
     const desc = Object.getOwnPropertyDescriptor(def, "shape");
     if (!desc?.get) {
         const sh = def.shape;
@@ -33308,7 +33390,7 @@ const $ZodObject =  $constructor("$ZodObject", (inst, def) => {
     };
 });
 const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
-    
+
     $ZodObject.init(inst, def);
     const superParse = inst._zod.parse;
     const _normalized = cached(() => normalizeDef(def));
@@ -33325,7 +33407,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
         for (const key of normalized.keys) {
             ids[key] = `key_${counter++}`;
         }
-        
+
         doc.write(`const newResult = {};`);
         for (const key of normalized.keys) {
             const id = ids[key];
@@ -33335,7 +33417,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
             const isOptionalOut = schema?._zod?.optout === "optional";
             doc.write(`const ${id} = ${parseStr(key)};`);
             if (isOptionalIn && isOptionalOut) {
-                
+
                 doc.write(`
         if (${id}.issues.length) {
           if (${k} in input) {
@@ -33345,7 +33427,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
             })));
           }
         }
-        
+
         if (${id}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
@@ -33353,7 +33435,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
         } else {
           newResult[${k}] = ${id}.value;
         }
-        
+
       `);
             }
             else if (!isOptionalIn) {
@@ -33392,7 +33474,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
             path: iss.path ? [${k}, ...iss.path] : [${k}]
           })));
         }
-        
+
         if (${id}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
@@ -33400,7 +33482,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
         } else {
           newResult[${k}] = ${id}.value;
         }
-        
+
       `);
             }
         }
@@ -33429,7 +33511,7 @@ const $ZodObjectJIT =  $constructor("$ZodObjectJIT", (inst, def) => {
             return payload;
         }
         if (jit && fastEnabled && ctx?.async === false && ctx.jitless !== true) {
-            
+
             if (!fastpass)
                 fastpass = generateFastpass(def.shape);
             payload = fastpass(payload, ctx);
@@ -33513,7 +33595,7 @@ function handleExclusiveUnionResults(results, final, inst, ctx) {
         return final;
     }
     if (successes.length === 0) {
-        
+
         final.issues.push({
             code: "invalid_union",
             input: final.value,
@@ -33522,7 +33604,7 @@ function handleExclusiveUnionResults(results, final, inst, ctx) {
         });
     }
     else {
-        
+
         final.issues.push({
             code: "invalid_union",
             input: final.value,
@@ -33616,14 +33698,14 @@ $constructor("$ZodDiscriminatedUnion", (inst, def) => {
         if (opt) {
             return opt._zod.run(payload, ctx);
         }
-        
-        
-        
-        
+
+
+
+
         if (def.unionFallback || ctx.direction === "backward") {
             return _super(payload, ctx);
         }
-        
+
         payload.issues.push({
             code: "invalid_union",
             errors: [],
@@ -33653,8 +33735,8 @@ const $ZodIntersection =  $constructor("$ZodIntersection", (inst, def) => {
     };
 });
 function mergeValues(a, b) {
-    
-    
+
+
     if (a === b) {
         return { valid: true, data: a };
     }
@@ -33699,7 +33781,7 @@ function mergeValues(a, b) {
     return { valid: false, mergeErrorPath: [] };
 }
 function handleIntersectionResults(result, left, right) {
-    
+
     const unrecKeys = new Map();
     let unrecIssue;
     for (const iss of left.issues) {
@@ -33727,7 +33809,7 @@ function handleIntersectionResults(result, left, right) {
             result.issues.push(iss);
         }
     }
-    
+
     const bothKeys = [...unrecKeys].filter(([, f]) => f.l && f.r).map(([k]) => k);
     if (bothKeys.length && unrecIssue) {
         result.issues.push({ ...unrecIssue, keys: bothKeys });
@@ -33782,10 +33864,10 @@ const $ZodTuple =  $constructor("$ZodTuple", (inst, def) => {
                 });
             }
         }
-        
-        
-        
-        
+
+
+
+
         const itemResults = new Array(items.length);
         for (let i = 0; i < items.length; i++) {
             const r = items[i]._zod.run({ value: input[i], issues: [] }, ctx);
@@ -33832,9 +33914,9 @@ function handleTupleResult(result, final, index) {
     final.value[index] = result.value;
 }
 function handleTupleResults(itemResults, final, items, input, optoutStart) {
-    
-    
-    
+
+
+
     for (let i = 0; i < items.length; i++) {
         const r = itemResults[i];
         const isPresent = i < input.length;
@@ -33847,12 +33929,12 @@ function handleTupleResults(itemResults, final, items, input, optoutStart) {
         }
         final.value[i] = r.value;
     }
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     for (let i = final.value.length - 1; i >= input.length; i--) {
         if (items[i]._zod.optout === "optional" && final.value[i] === undefined) {
             final.value.length = i;
@@ -33935,7 +34017,7 @@ const $ZodRecord =  $constructor("$ZodRecord", (inst, def) => {
         }
         else {
             payload.value = {};
-            
+
             for (const key of Reflect.ownKeys(input)) {
                 if (key === "__proto__")
                     continue;
@@ -33945,8 +34027,8 @@ const $ZodRecord =  $constructor("$ZodRecord", (inst, def) => {
                 if (keyResult instanceof Promise) {
                     throw new Error("Async schemas not supported in object keys currently");
                 }
-                
-                
+
+
                 const checkNumericKey = typeof key === "string" && number.test(key) && keyResult.issues.length;
                 if (checkNumericKey) {
                     const retryResult = def.keyType._zod.run({ value: Number(key), issues: [] }, ctx);
@@ -33959,11 +34041,11 @@ const $ZodRecord =  $constructor("$ZodRecord", (inst, def) => {
                 }
                 if (keyResult.issues.length) {
                     if (def.mode === "loose") {
-                        
+
                         payload.value[key] = input[key];
                     }
                     else {
-                        
+
                         payload.issues.push({
                             code: "invalid_key",
                             origin: "record",
@@ -34147,7 +34229,7 @@ const $ZodFile =  $constructor("$ZodFile", (inst, def) => {
     $ZodType.init(inst, def);
     inst._zod.parse = (payload, _ctx) => {
         const input = payload.value;
-        
+
         if (input instanceof File)
             return payload;
         payload.issues.push({
@@ -34215,12 +34297,12 @@ const $ZodOptional =  $constructor("$ZodOptional", (inst, def) => {
     };
 });
 const $ZodExactOptional =  $constructor("$ZodExactOptional", (inst, def) => {
-    
+
     $ZodOptional.init(inst, def);
-    
+
     defineLazy(inst._zod, "values", () => def.innerType._zod.values);
     defineLazy(inst._zod, "pattern", () => def.innerType._zod.pattern);
-    
+
     inst._zod.parse = (payload, ctx) => {
         return def.innerType._zod.run(payload, ctx);
     };
@@ -34237,7 +34319,7 @@ const $ZodNullable =  $constructor("$ZodNullable", (inst, def) => {
         return def.innerType._zod.values ? new Set([...def.innerType._zod.values, null]) : undefined;
     });
     inst._zod.parse = (payload, ctx) => {
-        
+
         if (payload.value === null)
             return payload;
         return def.innerType._zod.run(payload, ctx);
@@ -34245,22 +34327,22 @@ const $ZodNullable =  $constructor("$ZodNullable", (inst, def) => {
 });
 const $ZodDefault =  $constructor("$ZodDefault", (inst, def) => {
     $ZodType.init(inst, def);
-    
+
     inst._zod.optin = "optional";
     defineLazy(inst._zod, "values", () => def.innerType._zod.values);
     inst._zod.parse = (payload, ctx) => {
         if (ctx.direction === "backward") {
             return def.innerType._zod.run(payload, ctx);
         }
-        
+
         if (payload.value === undefined) {
             payload.value = def.defaultValue;
-            
+
 
 
             return payload;
         }
-        
+
         const result = def.innerType._zod.run(payload, ctx);
         if (result instanceof Promise) {
             return result.then((result) => handleDefaultResult(result, def));
@@ -34282,7 +34364,7 @@ const $ZodPrefault =  $constructor("$ZodPrefault", (inst, def) => {
         if (ctx.direction === "backward") {
             return def.innerType._zod.run(payload, ctx);
         }
-        
+
         if (payload.value === undefined) {
             payload.value = def.defaultValue;
         }
@@ -34340,7 +34422,7 @@ const $ZodCatch =  $constructor("$ZodCatch", (inst, def) => {
         if (ctx.direction === "backward") {
             return def.innerType._zod.run(payload, ctx);
         }
-        
+
         const result = def.innerType._zod.run(payload, ctx);
         if (result instanceof Promise) {
             return result.then((result) => {
@@ -34412,7 +34494,7 @@ const $ZodPipe =  $constructor("$ZodPipe", (inst, def) => {
 });
 function handlePipeResult(left, next, ctx) {
     if (left.issues.length) {
-        
+
         left.aborted = true;
         return left;
     }
@@ -34444,7 +34526,7 @@ const $ZodCodec =  $constructor("$ZodCodec", (inst, def) => {
 });
 function handleCodecAResult(result, def, ctx) {
     if (result.issues.length) {
-        
+
         result.aborted = true;
         return result;
     }
@@ -34465,7 +34547,7 @@ function handleCodecAResult(result, def, ctx) {
     }
 }
 function handleCodecTxResult(left, value, nextSchema, ctx) {
-    
+
     if (left.issues.length) {
         left.aborted = true;
         return left;
@@ -34501,9 +34583,9 @@ const $ZodTemplateLiteral =  $constructor("$ZodTemplateLiteral", (inst, def) => 
     const regexParts = [];
     for (const part of def.parts) {
         if (typeof part === "object" && part !== null) {
-            
+
             if (!part._zod.pattern) {
-                
+
                 throw new Error(`Invalid template literal part, no pattern found: ${[...part._zod.traits].shift()}`);
             }
             const source = part._zod.pattern instanceof RegExp ? part._zod.pattern.source : part._zod.pattern;
@@ -34585,7 +34667,7 @@ const $ZodFunction =  $constructor("$ZodFunction", (inst, def) => {
             });
             return payload;
         }
-        
+
         const hasPromiseOutput = inst._def.output && inst._def.output._zod.def.type === "promise";
         if (hasPromiseOutput) {
             payload.value = inst.implementAsync(payload.value);
@@ -34632,9 +34714,9 @@ const $ZodPromise =  $constructor("$ZodPromise", (inst, def) => {
 });
 const $ZodLazy =  $constructor("$ZodLazy", (inst, def) => {
     $ZodType.init(inst, def);
-    
-    
-    
+
+
+
     defineLazy(inst._zod, "innerType", () => {
         const d = def;
         if (!d._cachedInner)
@@ -34674,7 +34756,7 @@ function handleRefineResult(result, payload, input, inst) {
             inst, 
             path: [...(inst._zod.def.path ?? [])], 
             continue: !inst._zod.def.abort,
-            
+
         };
         if (inst._zod.def.params)
             _iss.params = inst._zod.def.params;
@@ -34713,8 +34795,8 @@ class $ZodRegistry {
         return this;
     }
     get(schema) {
-        
-        
+
+
         const p = schema._zod.parent;
         if (p) {
             const pm = { ...(this.get(p) ?? {}) };
@@ -35446,9 +35528,9 @@ function _array(Class, element, params) {
     return new Class({
         type: "array",
         element,
-        
-        
-        
+
+
+
         ...normalizeParams(params),
     });
 }
@@ -35531,17 +35613,17 @@ function _set(Class, valueType, params) {
 
 function _enum(Class, values, params) {
     const entries = Array.isArray(values) ? Object.fromEntries(values.map((v) => [v, v])) : values;
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
     return new Class({
         type: "enum",
         entries,
@@ -35700,7 +35782,7 @@ function _superRefine(fn, params) {
                 payload.issues.push(util_issue(issue, payload.value, ch._zod.def));
             }
             else {
-                
+
                 const _issue = issue;
                 if (_issue.fatal)
                     _issue.continue = false;
@@ -35831,7 +35913,7 @@ function _stringFormat(Class, format, fnOrRegex, _params = {}) {
 
 
 function initializeContext(params) {
-    
+
     let target = params?.target ?? "draft-2020-12";
     if (target === "draft-4")
         target = "draft-04";
@@ -35854,21 +35936,21 @@ function initializeContext(params) {
 function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
     var _a;
     const def = schema._zod.def;
-    
+
     const seen = ctx.seen.get(schema);
     if (seen) {
         seen.count++;
-        
+
         const isCycle = _params.schemaPath.includes(schema);
         if (isCycle) {
             seen.cycle = _params.path;
         }
         return seen.schema;
     }
-    
+
     const result = { schema: {}, count: 1, cycle: undefined, path: _params.path };
     ctx.seen.set(schema, result);
-    
+
     const overrideSchema = schema._zod.toJSONSchema?.();
     if (overrideSchema) {
         result.schema = overrideSchema;
@@ -35892,38 +35974,38 @@ function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
         }
         const parent = schema._zod.parent;
         if (parent) {
-            
+
             if (!result.ref)
                 result.ref = parent;
             process(parent, ctx, params);
             ctx.seen.get(parent).isParent = true;
         }
     }
-    
+
     const meta = ctx.metadataRegistry.get(schema);
     if (meta)
         Object.assign(result.schema, meta);
     if (ctx.io === "input" && isTransforming(schema)) {
-        
+
         delete result.schema.examples;
         delete result.schema.default;
     }
-    
+
     if (ctx.io === "input" && "_prefault" in result.schema)
         (_a = result.schema).default ?? (_a.default = result.schema._prefault);
     delete result.schema._prefault;
-    
+
     const _result = ctx.seen.get(schema);
     return _result.schema;
 }
 function extractDefs(ctx, schema
 
 ) {
-    
+
     const root = ctx.seen.get(schema);
     if (!root)
         throw new Error("Unprocessed schema. This is a bug in Zod.");
-    
+
     const idToSchema = new Map();
     for (const entry of ctx.seen.entries()) {
         const id = ctx.metadataRegistry.get(entry[0])?.id;
@@ -35935,22 +36017,22 @@ function extractDefs(ctx, schema
             idToSchema.set(id, entry[0]);
         }
     }
-    
-    
+
+
     const makeURI = (entry) => {
-        
-        
-        
-        
+
+
+
+
         const defsSegment = ctx.target === "draft-2020-12" ? "$defs" : "definitions";
         if (ctx.external) {
             const externalId = ctx.external.registry.get(entry[0])?.id; 
-            
+
             const uriGenerator = ctx.external.uri ?? ((id) => id);
             if (externalId) {
                 return { ref: uriGenerator(externalId) };
             }
-            
+
             const id = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
             entry[1].defId = id; 
             return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
@@ -35958,35 +36040,35 @@ function extractDefs(ctx, schema
         if (entry[1] === root) {
             return { ref: "#" };
         }
-        
+
         const uriPrefix = `#`;
         const defUriPrefix = `${uriPrefix}/${defsSegment}/`;
         const defId = entry[1].schema.id ?? `__schema${ctx.counter++}`;
         return { defId, ref: defUriPrefix + defId };
     };
-    
-    
+
+
     const extractToDef = (entry) => {
-        
+
         if (entry[1].schema.$ref) {
             return;
         }
         const seen = entry[1];
         const { ref, defId } = makeURI(entry);
         seen.def = { ...seen.schema };
-        
-        
+
+
         if (defId)
             seen.defId = defId;
-        
+
         const schema = seen.schema;
         for (const key in schema) {
             delete schema[key];
         }
         schema.$ref = ref;
     };
-    
-    
+
+
     if (ctx.cycles === "throw") {
         for (const entry of ctx.seen.entries()) {
             const seen = entry[1];
@@ -35997,15 +36079,15 @@ function extractDefs(ctx, schema
             }
         }
     }
-    
+
     for (const entry of ctx.seen.entries()) {
         const seen = entry[1];
-        
+
         if (schema === entry[0]) {
             extractToDef(entry); 
             continue;
         }
-        
+
         if (ctx.external) {
             const ext = ctx.external.registry.get(entry[0])?.id;
             if (schema !== entry[0] && ext) {
@@ -36013,23 +36095,23 @@ function extractDefs(ctx, schema
                 continue;
             }
         }
-        
+
         const id = ctx.metadataRegistry.get(entry[0])?.id;
         if (id) {
             extractToDef(entry);
             continue;
         }
-        
+
         if (seen.cycle) {
-            
+
             extractToDef(entry);
             continue;
         }
-        
+
         if (seen.count > 1) {
             if (ctx.reused === "ref") {
                 extractToDef(entry);
-                
+
                 continue;
             }
         }
@@ -36039,10 +36121,10 @@ function finalize(ctx, schema) {
     const root = ctx.seen.get(schema);
     if (!root)
         throw new Error("Unprocessed schema. This is a bug in Zod.");
-    
+
     const flattenRef = (zodSchema) => {
         const seen = ctx.seen.get(zodSchema);
-        
+
         if (seen.ref === null)
             return;
         const schema = seen.def ?? seen.schema;
@@ -36053,19 +36135,19 @@ function finalize(ctx, schema) {
             flattenRef(ref);
             const refSeen = ctx.seen.get(ref);
             const refSchema = refSeen.schema;
-            
+
             if (refSchema.$ref && (ctx.target === "draft-07" || ctx.target === "draft-04" || ctx.target === "openapi-3.0")) {
-                
+
                 schema.allOf = schema.allOf ?? [];
                 schema.allOf.push(refSchema);
             }
             else {
                 Object.assign(schema, refSchema);
             }
-            
+
             Object.assign(schema, _cached);
             const isParentRef = zodSchema._zod.parent === ref;
-            
+
             if (isParentRef) {
                 for (const key in schema) {
                     if (key === "$ref" || key === "allOf")
@@ -36075,7 +36157,7 @@ function finalize(ctx, schema) {
                     }
                 }
             }
-            
+
             if (refSchema.$ref && refSeen.def) {
                 for (const key in schema) {
                     if (key === "$ref" || key === "allOf")
@@ -36086,17 +36168,17 @@ function finalize(ctx, schema) {
                 }
             }
         }
-        
-        
-        
+
+
+
         const parent = zodSchema._zod.parent;
         if (parent && parent !== ref) {
-            
+
             flattenRef(parent);
             const parentSeen = ctx.seen.get(parent);
             if (parentSeen?.schema.$ref) {
                 schema.$ref = parentSeen.schema.$ref;
-                
+
                 if (parentSeen.def) {
                     for (const key in schema) {
                         if (key === "$ref" || key === "allOf")
@@ -36108,7 +36190,7 @@ function finalize(ctx, schema) {
                 }
             }
         }
-        
+
         ctx.override({
             zodSchema: zodSchema,
             jsonSchema: schema,
@@ -36129,10 +36211,10 @@ function finalize(ctx, schema) {
         result.$schema = "http://json-schema.org/draft-04/schema#";
     }
     else if (ctx.target === "openapi-3.0") {
-        
+
     }
     else {
-        
+
     }
     if (ctx.external?.uri) {
         const id = ctx.external.registry.get(schema)?.id;
@@ -36141,14 +36223,14 @@ function finalize(ctx, schema) {
         result.$id = ctx.external.uri(id);
     }
     Object.assign(result, root.def ?? root.schema);
-    
-    
-    
-    
+
+
+
+
     const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
     if (rootMetaId !== undefined && result.id === rootMetaId)
         delete result.id;
-    
+
     const defs = ctx.external?.defs ?? {};
     for (const entry of ctx.seen.entries()) {
         const seen = entry[1];
@@ -36158,7 +36240,7 @@ function finalize(ctx, schema) {
             defs[seen.defId] = seen.def;
         }
     }
-    
+
     if (ctx.external) {
     }
     else {
@@ -36172,9 +36254,9 @@ function finalize(ctx, schema) {
         }
     }
     try {
-        
-        
-        
+
+
+
         const finalized = JSON.parse(JSON.stringify(result));
         Object.defineProperty(finalized, "~standard", {
             value: {
@@ -36290,13 +36372,13 @@ const stringProcessor = (schema, ctx, _json, _params) => {
         json.minLength = minimum;
     if (typeof maximum === "number")
         json.maxLength = maximum;
-    
+
     if (format) {
         json.format = formatMap[format] ?? format;
         if (json.format === "")
             delete json.format; 
-        
-        
+
+
         if (format === "time") {
             delete json.format;
         }
@@ -36326,7 +36408,7 @@ const numberProcessor = (schema, ctx, _json, _params) => {
         json.type = "integer";
     else
         json.type = "number";
-    
+
     const exMin = typeof exclusiveMinimum === "number" && exclusiveMinimum >= (minimum ?? Number.NEGATIVE_INFINITY);
     const exMax = typeof exclusiveMaximum === "number" && exclusiveMaximum <= (maximum ?? Number.POSITIVE_INFINITY);
     const legacy = ctx.target === "draft-04" || ctx.target === "openapi-3.0";
@@ -36394,10 +36476,10 @@ const neverProcessor = (_schema, _ctx, json, _params) => {
     json.not = {};
 };
 const anyProcessor = (_schema, _ctx, _json, _params) => {
-    
+
 };
 const unknownProcessor = (_schema, _ctx, _json, _params) => {
-    
+
 };
 const dateProcessor = (_schema, ctx, _json, _params) => {
     if (ctx.unrepresentable === "throw") {
@@ -36407,7 +36489,7 @@ const dateProcessor = (_schema, ctx, _json, _params) => {
 const enumProcessor = (schema, _ctx, json, _params) => {
     const def = schema._zod.def;
     const values = getEnumValues(def.entries);
-    
+
     if (values.every((v) => typeof v === "number"))
         json.type = "number";
     if (values.every((v) => typeof v === "string"))
@@ -36423,7 +36505,7 @@ const literalProcessor = (schema, ctx, json, _params) => {
                 throw new Error("Literal `undefined` cannot be represented in JSON Schema");
             }
             else {
-                
+
             }
         }
         else if (typeof val === "bigint") {
@@ -36439,7 +36521,7 @@ const literalProcessor = (schema, ctx, json, _params) => {
         }
     }
     if (vals.length === 0) {
-        
+
     }
     else if (vals.length === 1) {
         const val = vals[0];
@@ -36557,7 +36639,7 @@ const objectProcessor = (schema, ctx, _json, params) => {
             path: [...params.path, "properties", key],
         });
     }
-    
+
     const allKeys = new Set(Object.keys(shape));
     const requiredKeys = new Set([...allKeys].filter((key) => {
         const v = def.shape[key]._zod;
@@ -36571,13 +36653,13 @@ const objectProcessor = (schema, ctx, _json, params) => {
     if (requiredKeys.size > 0) {
         json.required = Array.from(requiredKeys);
     }
-    
+
     if (def.catchall?._zod.def.type === "never") {
-        
+
         json.additionalProperties = false;
     }
     else if (!def.catchall) {
-        
+
         if (ctx.io === "output")
             json.additionalProperties = false;
     }
@@ -36590,8 +36672,8 @@ const objectProcessor = (schema, ctx, _json, params) => {
 };
 const unionProcessor = (schema, ctx, json, params) => {
     const def = schema._zod.def;
-    
-    
+
+
     const isExclusive = def.inclusive === false;
     const options = def.options.map((x, i) => process(x, ctx, {
         ...params,
@@ -36661,7 +36743,7 @@ const tupleProcessor = (schema, ctx, _json, params) => {
             json.additionalItems = rest;
         }
     }
-    
+
     const { minimum, maximum } = schema._zod.bag;
     if (typeof minimum === "number")
         json.minItems = minimum;
@@ -36672,14 +36754,14 @@ const recordProcessor = (schema, ctx, _json, params) => {
     const json = _json;
     const def = schema._zod.def;
     json.type = "object";
-    
-    
-    
+
+
+
     const keyType = def.keyType;
     const keyBag = keyType._zod.bag;
     const patterns = keyBag?.patterns;
     if (def.mode === "loose" && patterns && patterns.size > 0) {
-        
+
         const valueSchema = process(def.valueType, ctx, {
             ...params,
             path: [...params.path, "patternProperties", "*"],
@@ -36690,7 +36772,7 @@ const recordProcessor = (schema, ctx, _json, params) => {
         }
     }
     else {
-        
+
         if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
             json.propertyNames = process(def.keyType, ctx, {
                 ...params,
@@ -36702,7 +36784,7 @@ const recordProcessor = (schema, ctx, _json, params) => {
             path: [...params.path, "additionalProperties"],
         });
     }
-    
+
     const keyValues = keyType._zod.values;
     if (keyValues) {
         const validKeyValues = [...keyValues].filter((v) => typeof v === "string" || typeof v === "number");
@@ -36835,11 +36917,11 @@ const allProcessors = {
 };
 function toJSONSchema(input, params) {
     if ("_idmap" in input) {
-        
+
         const registry = input;
         const ctx = initializeContext({ ...params, processors: allProcessors });
         const defs = {};
-        
+
         for (const entry of registry._idmap.entries()) {
             const [_, schema] = entry;
             process(schema, ctx);
@@ -36850,9 +36932,9 @@ function toJSONSchema(input, params) {
             uri: params?.uri,
             defs,
         };
-        
+
         ctx.external = external;
-        
+
         for (const entry of registry._idmap.entries()) {
             const [key, schema] = entry;
             extractDefs(ctx, schema);
@@ -36866,7 +36948,7 @@ function toJSONSchema(input, params) {
         }
         return { schemas };
     }
-    
+
     const ctx = initializeContext({ ...params, processors: allProcessors });
     process(input, ctx);
     extractDefs(ctx, input);
@@ -36915,38 +36997,38 @@ const errors_initializer = (inst, issues) => {
     Object.defineProperties(inst, {
         format: {
             value: (mapper) => formatError(inst, mapper),
-            
+
         },
         flatten: {
             value: (mapper) => flattenError(inst, mapper),
-            
+
         },
         addIssue: {
             value: (issue) => {
                 inst.issues.push(issue);
                 inst.message = JSON.stringify(inst.issues, jsonStringifyReplacer, 2);
             },
-            
+
         },
         addIssues: {
             value: (issues) => {
                 inst.issues.push(...issues);
                 inst.message = JSON.stringify(inst.issues, jsonStringifyReplacer, 2);
             },
-            
+
         },
         isEmpty: {
             get() {
                 return inst.issues.length === 0;
             },
-            
+
         },
     });
-    
-    
-    
-    
-    
+
+
+
+
+
 };
 const ZodError =  $constructor("ZodError", errors_initializer);
 const ZodRealError =  $constructor("ZodError", errors_initializer, {
@@ -37040,11 +37122,11 @@ const ZodType =  $constructor("ZodType", (inst, def) => {
     inst.def = def;
     inst.type = def.type;
     Object.defineProperty(inst, "_def", { value: def });
-    
-    
-    
-    
-    
+
+
+
+
+
     inst.parse = (data, params) => parse_parse(inst, data, params, { callee: inst.parse });
     inst.safeParse = (data, params) => parse_safeParse(inst, data, params);
     inst.parseAsync = async (data, params) => parse_parseAsync(inst, data, params, { callee: inst.parseAsync });
@@ -37058,12 +37140,12 @@ const ZodType =  $constructor("ZodType", (inst, def) => {
     inst.safeDecode = (data, params) => parse_safeDecode(inst, data, params);
     inst.safeEncodeAsync = async (data, params) => parse_safeEncodeAsync(inst, data, params);
     inst.safeDecodeAsync = async (data, params) => parse_safeDecodeAsync(inst, data, params);
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     _installLazyMethods(inst, "ZodType", {
         check(...chks) {
             const def = this.def;
@@ -37144,10 +37226,10 @@ const ZodType =  $constructor("ZodType", (inst, def) => {
             return cl;
         },
         meta(...args) {
-            
-            
-            
-            
+
+
+
+
             if (args.length === 0)
                 return globalRegistry.get(this);
             const cl = this.clone();
@@ -37255,7 +37337,7 @@ const ZodString =  $constructor("ZodString", (inst, def) => {
     inst.cidrv4 = (params) => inst.check(_cidrv4(ZodCIDRv4, params));
     inst.cidrv6 = (params) => inst.check(_cidrv6(ZodCIDRv6, params));
     inst.e164 = (params) => inst.check(_e164(ZodE164, params));
-    
+
     inst.datetime = (params) => inst.check(iso_datetime(params));
     inst.date = (params) => inst.check(iso_date(params));
     inst.time = (params) => inst.check(iso_time(params));
@@ -37269,7 +37351,7 @@ const ZodStringFormat =  $constructor("ZodStringFormat", (inst, def) => {
     _ZodString.init(inst, def);
 });
 const ZodEmail =  $constructor("ZodEmail", (inst, def) => {
-    
+
     $ZodEmail.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37277,7 +37359,7 @@ function schemas_email(params) {
     return _email(ZodEmail, params);
 }
 const ZodGUID =  $constructor("ZodGUID", (inst, def) => {
-    
+
     $ZodGUID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37285,7 +37367,7 @@ function schemas_guid(params) {
     return _guid(ZodGUID, params);
 }
 const ZodUUID =  $constructor("ZodUUID", (inst, def) => {
-    
+
     $ZodUUID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37304,7 +37386,7 @@ function uuidv7(params) {
     return _uuidv7(ZodUUID, params);
 }
 const ZodURL =  $constructor("ZodURL", (inst, def) => {
-    
+
     $ZodURL.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37319,7 +37401,7 @@ function httpUrl(params) {
     });
 }
 const ZodEmoji =  $constructor("ZodEmoji", (inst, def) => {
-    
+
     $ZodEmoji.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37327,7 +37409,7 @@ function schemas_emoji(params) {
     return api_emoji(ZodEmoji, params);
 }
 const ZodNanoID =  $constructor("ZodNanoID", (inst, def) => {
-    
+
     $ZodNanoID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37340,7 +37422,7 @@ function schemas_nanoid(params) {
 
 
 const ZodCUID =  $constructor("ZodCUID", (inst, def) => {
-    
+
     $ZodCUID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37355,7 +37437,7 @@ function schemas_cuid(params) {
     return _cuid(ZodCUID, params);
 }
 const ZodCUID2 =  $constructor("ZodCUID2", (inst, def) => {
-    
+
     $ZodCUID2.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37363,7 +37445,7 @@ function schemas_cuid2(params) {
     return _cuid2(ZodCUID2, params);
 }
 const ZodULID =  $constructor("ZodULID", (inst, def) => {
-    
+
     $ZodULID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37371,7 +37453,7 @@ function schemas_ulid(params) {
     return _ulid(ZodULID, params);
 }
 const ZodXID =  $constructor("ZodXID", (inst, def) => {
-    
+
     $ZodXID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37379,7 +37461,7 @@ function schemas_xid(params) {
     return _xid(ZodXID, params);
 }
 const ZodKSUID =  $constructor("ZodKSUID", (inst, def) => {
-    
+
     $ZodKSUID.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37387,7 +37469,7 @@ function schemas_ksuid(params) {
     return _ksuid(ZodKSUID, params);
 }
 const ZodIPv4 =  $constructor("ZodIPv4", (inst, def) => {
-    
+
     $ZodIPv4.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37395,7 +37477,7 @@ function schemas_ipv4(params) {
     return _ipv4(ZodIPv4, params);
 }
 const ZodMAC =  $constructor("ZodMAC", (inst, def) => {
-    
+
     $ZodMAC.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37403,7 +37485,7 @@ function schemas_mac(params) {
     return _mac(ZodMAC, params);
 }
 const ZodIPv6 =  $constructor("ZodIPv6", (inst, def) => {
-    
+
     $ZodIPv6.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37425,7 +37507,7 @@ function schemas_cidrv6(params) {
     return _cidrv6(ZodCIDRv6, params);
 }
 const ZodBase64 =  $constructor("ZodBase64", (inst, def) => {
-    
+
     $ZodBase64.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37433,7 +37515,7 @@ function schemas_base64(params) {
     return _base64(ZodBase64, params);
 }
 const ZodBase64URL =  $constructor("ZodBase64URL", (inst, def) => {
-    
+
     $ZodBase64URL.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37441,7 +37523,7 @@ function schemas_base64url(params) {
     return _base64url(ZodBase64URL, params);
 }
 const ZodE164 =  $constructor("ZodE164", (inst, def) => {
-    
+
     $ZodE164.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37449,7 +37531,7 @@ function schemas_e164(params) {
     return _e164(ZodE164, params);
 }
 const ZodJWT =  $constructor("ZodJWT", (inst, def) => {
-    
+
     $ZodJWT.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37457,7 +37539,7 @@ function jwt(params) {
     return _jwt(ZodJWT, params);
 }
 const ZodCustomStringFormat =  $constructor("ZodCustomStringFormat", (inst, def) => {
-    
+
     $ZodCustomStringFormat.init(inst, def);
     ZodStringFormat.init(inst, def);
 });
@@ -37818,7 +37900,7 @@ const ZodDiscriminatedUnion =  $constructor("ZodDiscriminatedUnion", (inst, def)
     $ZodDiscriminatedUnion.init(inst, def);
 });
 function discriminatedUnion(discriminator, options, params) {
-    
+
     return new ZodDiscriminatedUnion({
         type: "union",
         options,
@@ -37866,7 +37948,7 @@ const ZodRecord =  $constructor("ZodRecord", (inst, def) => {
     inst.valueType = def.valueType;
 });
 function record(keyType, valueType, params) {
-    
+
     if (!valueType || !valueType._zod) {
         return new ZodRecord({
             type: "record",
@@ -38045,14 +38127,14 @@ const ZodTransform =  $constructor("ZodTransform", (inst, def) => {
                 payload.issues.push(util_issue(issue, payload.value, def));
             }
             else {
-                
+
                 const _issue = issue;
                 if (_issue.fatal)
                     _issue.continue = false;
                 _issue.code ?? (_issue.code = "custom");
                 _issue.input ?? (_issue.input = payload.value);
                 _issue.inst ?? (_issue.inst = inst);
-                
+
                 payload.issues.push(util_issue(_issue));
             }
         };
@@ -38206,7 +38288,7 @@ function pipe(in_, out) {
         type: "pipe",
         in: in_,
         out: out,
-        
+
     });
 }
 const ZodCodec =  $constructor("ZodCodec", (inst, def) => {
@@ -38306,7 +38388,7 @@ const ZodCustom =  $constructor("ZodCustom", (inst, def) => {
 function check(fn) {
     const ch = new $ZodCheck({
         check: "custom",
-        
+
     });
     ch._zod.check = fn;
     return ch;
@@ -38333,7 +38415,7 @@ function _instanceof(cls, params = {}) {
         ...normalizeParams(params),
     });
     inst._zod.bag.Class = cls;
-    
+
     inst._zod.check = (payload) => {
         if (!(payload.value instanceof cls)) {
             payload.issues.push({
@@ -38372,22 +38454,22 @@ function preprocess(fn, schema) {
 ;
 
 class GasValidators {
-  
+
   static a1Notation() {
     return schemas_string().regex(/^('?[^']+?'?!)?(\$?[A-Z]{1,3}\$?\d*)(\:\$?[A-Z]{1,3}\$?\d*)?$/, 'Invalid A1 notation');
   }
 
-  
+
   static spreadsheetId() {
     return schemas_string().regex(/^[a-zA-Z0-9_-]{30,60}$/, 'Invalid Spreadsheet ID');
   }
 
-  
+
   static hexColor() {
     return schemas_string().regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/, 'Invalid HEX color');
   }
 
-  
+
   static jsonString(innerSchema = any()) {
     return schemas_string().transform(str => JSON.parse(str)).pipe(innerSchema);
   }
@@ -39491,11 +39573,11 @@ const en_error = () => {
         jwt: "JWT",
         template_literal: "input",
     };
-    
+
     const TypeDictionary = {
-        
+
         nan: "NaN",
-        
+
     };
     return (issue) => {
         switch (issue.code) {
@@ -40276,7 +40358,7 @@ const fr_CA_error = () => {
 ;
 
 const he_error = () => {
-    
+
     const TypeNames = {
         string: { label: "מחרוזת", gender: "f" },
         number: { label: "מספר", gender: "m" },
@@ -40297,7 +40379,7 @@ const he_error = () => {
         unknown: { label: "ערך לא ידוע", gender: "m" },
         value: { label: "ערך", gender: "m" },
     };
-    
+
     const Sizable = {
         string: { unit: "תווים", shortLabel: "קצר", longLabel: "ארוך" },
         file: { unit: "בייטים", shortLabel: "קטן", longLabel: "גדול" },
@@ -40305,13 +40387,13 @@ const he_error = () => {
         set: { unit: "פריטים", shortLabel: "קטן", longLabel: "גדול" },
         number: { unit: "", shortLabel: "קטן", longLabel: "גדול" }, 
     };
-    
+
     const typeEntry = (t) => (t ? TypeNames[t] : undefined);
     const typeLabel = (t) => {
         const e = typeEntry(t);
         if (e)
             return e.label;
-        
+
         return t ?? TypeNames.unknown.label;
     };
     const withDefinite = (t) => `ה${typeLabel(t)}`;
@@ -40363,10 +40445,10 @@ const he_error = () => {
     return (issue) => {
         switch (issue.code) {
             case "invalid_type": {
-                
+
                 const expectedKey = issue.expected;
                 const expected = TypeDictionary[expectedKey ?? ""] ?? typeLabel(expectedKey);
-                
+
                 const receivedType = parsedType(issue.input);
                 const received = TypeDictionary[receivedType] ?? TypeNames[receivedType]?.label ?? receivedType;
                 if (/^[A-Z]/.test(issue.expected)) {
@@ -40378,12 +40460,12 @@ const he_error = () => {
                 if (issue.values.length === 1) {
                     return `ערך לא תקין: הערך חייב להיות ${stringifyPrimitive(issue.values[0])}`;
                 }
-                
+
                 const stringified = issue.values.map((v) => stringifyPrimitive(v));
                 if (issue.values.length === 2) {
                     return `ערך לא תקין: האפשרויות המתאימות הן ${stringified[0]} או ${stringified[1]}`;
                 }
-                
+
                 const lastValue = stringified[stringified.length - 1];
                 const restValues = stringified.slice(0, -1).join(", ");
                 return `ערך לא תקין: האפשרויות המתאימות הן ${restValues} או ${lastValue}`;
@@ -40392,16 +40474,16 @@ const he_error = () => {
                 const sizing = getSizing(issue.origin);
                 const subject = withDefinite(issue.origin ?? "value");
                 if (issue.origin === "string") {
-                    
+
                     return `${sizing?.longLabel ?? "ארוך"} מדי: ${subject} צריכה להכיל ${issue.maximum.toString()} ${sizing?.unit ?? ""} ${issue.inclusive ? "או פחות" : "לכל היותר"}`.trim();
                 }
                 if (issue.origin === "number") {
-                    
+
                     const comparison = issue.inclusive ? `קטן או שווה ל-${issue.maximum}` : `קטן מ-${issue.maximum}`;
                     return `גדול מדי: ${subject} צריך להיות ${comparison}`;
                 }
                 if (issue.origin === "array" || issue.origin === "set") {
-                    
+
                     const verb = issue.origin === "set" ? "צריכה" : "צריך";
                     const comparison = issue.inclusive
                         ? `${issue.maximum} ${sizing?.unit ?? ""} או פחות`
@@ -40419,18 +40501,18 @@ const he_error = () => {
                 const sizing = getSizing(issue.origin);
                 const subject = withDefinite(issue.origin ?? "value");
                 if (issue.origin === "string") {
-                    
+
                     return `${sizing?.shortLabel ?? "קצר"} מדי: ${subject} צריכה להכיל ${issue.minimum.toString()} ${sizing?.unit ?? ""} ${issue.inclusive ? "או יותר" : "לפחות"}`.trim();
                 }
                 if (issue.origin === "number") {
-                    
+
                     const comparison = issue.inclusive ? `גדול או שווה ל-${issue.minimum}` : `גדול מ-${issue.minimum}`;
                     return `קטן מדי: ${subject} צריך להיות ${comparison}`;
                 }
                 if (issue.origin === "array" || issue.origin === "set") {
-                    
+
                     const verb = issue.origin === "set" ? "צריכה" : "צריך";
-                    
+
                     if (issue.minimum === 1 && issue.inclusive) {
                         const singularPhrase = issue.origin === "set" ? "לפחות פריט אחד" : "לפחות פריט אחד";
                         return `קטן מדי: ${subject} ${verb} להכיל ${singularPhrase}`;
@@ -40449,7 +40531,7 @@ const he_error = () => {
             }
             case "invalid_format": {
                 const _issue = issue;
-                
+
                 if (_issue.format === "starts_with")
                     return `המחרוזת חייבת להתחיל ב "${_issue.prefix}"`;
                 if (_issue.format === "ends_with")
@@ -40458,7 +40540,7 @@ const he_error = () => {
                     return `המחרוזת חייבת לכלול "${_issue.includes}"`;
                 if (_issue.format === "regex")
                     return `המחרוזת חייבת להתאים לתבנית ${_issue.pattern}`;
-                
+
                 const nounEntry = FormatDictionary[_issue.format];
                 const noun = nounEntry?.label ?? _issue.format;
                 const gender = nounEntry?.gender ?? "m";
@@ -44439,39 +44521,39 @@ const yo_error = () => {
 
 
 class JSONSchemaGenerator {
-    
+
     get metadataRegistry() {
         return this.ctx.metadataRegistry;
     }
-    
+
     get target() {
         return this.ctx.target;
     }
-    
+
     get unrepresentable() {
         return this.ctx.unrepresentable;
     }
-    
+
     get override() {
         return this.ctx.override;
     }
-    
+
     get io() {
         return this.ctx.io;
     }
-    
+
     get counter() {
         return this.ctx.counter;
     }
     set counter(value) {
         this.ctx.counter = value;
     }
-    
+
     get seen() {
         return this.ctx.seen;
     }
     constructor(params) {
-        
+
         let normalizedTarget = params?.target ?? "draft-2020-12";
         if (normalizedTarget === "draft-4")
             normalizedTarget = "draft-04";
@@ -44486,19 +44568,19 @@ class JSONSchemaGenerator {
             ...(params?.io && { io: params.io }),
         });
     }
-    
+
 
 
 
     process(schema, _params = { path: [], schemaPath: [] }) {
         return process(schema, this.ctx, _params);
     }
-    
+
 
 
 
     emit(schema, _params) {
-        
+
         if (_params) {
             if (_params.cycles)
                 this.ctx.cycles = _params.cycles;
@@ -44509,7 +44591,7 @@ class JSONSchemaGenerator {
         }
         extractDefs(this.ctx, schema);
         const result = finalize(this.ctx, schema);
-        
+
         const { "~standard": _, ...plainResult } = result;
         return plainResult;
     }
@@ -44585,12 +44667,12 @@ const z = {
 };
 
 const RECOGNIZED_KEYS =  new Set([
-    
+
     "$schema",
     "$ref",
     "$defs",
     "definitions",
-    
+
     "$id",
     "id",
     "$comment",
@@ -44598,16 +44680,16 @@ const RECOGNIZED_KEYS =  new Set([
     "$vocabulary",
     "$dynamicRef",
     "$dynamicAnchor",
-    
+
     "type",
     "enum",
     "const",
-    
+
     "anyOf",
     "oneOf",
     "allOf",
     "not",
-    
+
     "properties",
     "required",
     "additionalProperties",
@@ -44615,7 +44697,7 @@ const RECOGNIZED_KEYS =  new Set([
     "propertyNames",
     "minProperties",
     "maxProperties",
-    
+
     "items",
     "prefixItems",
     "additionalItems",
@@ -44625,25 +44707,25 @@ const RECOGNIZED_KEYS =  new Set([
     "contains",
     "minContains",
     "maxContains",
-    
+
     "minLength",
     "maxLength",
     "pattern",
     "format",
-    
+
     "minimum",
     "maximum",
     "exclusiveMinimum",
     "exclusiveMaximum",
     "multipleOf",
-    
+
     "description",
     "default",
-    
+
     "contentEncoding",
     "contentMediaType",
     "contentSchema",
-    
+
     "unevaluatedItems",
     "unevaluatedProperties",
     "if",
@@ -44651,7 +44733,7 @@ const RECOGNIZED_KEYS =  new Set([
     "else",
     "dependentSchemas",
     "dependentRequired",
-    
+
     "nullable",
     "readOnly",
 ]);
@@ -44666,7 +44748,7 @@ function detectVersion(schema, defaultTarget) {
     if ($schema === "http://json-schema.org/draft-04/schema#") {
         return "draft-4";
     }
-    
+
     return defaultTarget ?? "draft-2020-12";
 }
 function resolveRef(ref, ctx) {
@@ -44674,7 +44756,7 @@ function resolveRef(ref, ctx) {
         throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
     }
     const path = ref.slice(1).split("/").filter(Boolean);
-    
+
     if (path.length === 0) {
         return ctx.rootSchema;
     }
@@ -44689,9 +44771,9 @@ function resolveRef(ref, ctx) {
     throw new Error(`Reference not found: ${ref}`);
 }
 function convertBaseSchema(schema, ctx) {
-    
+
     if (schema.not !== undefined) {
-        
+
         if (typeof schema.not === "object" && Object.keys(schema.not).length === 0) {
             return z.never();
         }
@@ -44709,14 +44791,14 @@ function convertBaseSchema(schema, ctx) {
     if (schema.dependentSchemas !== undefined || schema.dependentRequired !== undefined) {
         throw new Error("dependentSchemas and dependentRequired are not supported");
     }
-    
+
     if (schema.$ref) {
         const refPath = schema.$ref;
         if (ctx.refs.has(refPath)) {
             return ctx.refs.get(refPath);
         }
         if (ctx.processing.has(refPath)) {
-            
+
             return z.lazy(() => {
                 if (!ctx.refs.has(refPath)) {
                     throw new Error(`Circular reference not resolved: ${refPath}`);
@@ -44731,10 +44813,10 @@ function convertBaseSchema(schema, ctx) {
         ctx.processing.delete(refPath);
         return zodSchema;
     }
-    
+
     if (schema.enum !== undefined) {
         const enumValues = schema.enum;
-        
+
         if (ctx.version === "openapi-3.0" &&
             schema.nullable === true &&
             enumValues.length === 1 &&
@@ -44747,25 +44829,25 @@ function convertBaseSchema(schema, ctx) {
         if (enumValues.length === 1) {
             return z.literal(enumValues[0]);
         }
-        
+
         if (enumValues.every((v) => typeof v === "string")) {
             return z.enum(enumValues);
         }
-        
+
         const literalSchemas = enumValues.map((v) => z.literal(v));
         if (literalSchemas.length < 2) {
             return literalSchemas[0];
         }
         return z.union([literalSchemas[0], literalSchemas[1], ...literalSchemas.slice(2)]);
     }
-    
+
     if (schema.const !== undefined) {
         return z.literal(schema.const);
     }
-    
+
     const type = schema.type;
     if (Array.isArray(type)) {
-        
+
         const typeSchemas = type.map((t) => {
             const typeSchema = { ...schema, type: t };
             return convertBaseSchema(typeSchema, ctx);
@@ -44779,17 +44861,17 @@ function convertBaseSchema(schema, ctx) {
         return z.union(typeSchemas);
     }
     if (!type) {
-        
+
         return z.any();
     }
     let zodSchema;
     switch (type) {
         case "string": {
             let stringSchema = z.string();
-            
+
             if (schema.format) {
                 const format = schema.format;
-                
+
                 if (format === "email") {
                     stringSchema = stringSchema.check(z.email());
                 }
@@ -44859,10 +44941,10 @@ function convertBaseSchema(schema, ctx) {
                 else if (format === "ksuid") {
                     stringSchema = stringSchema.check(z.ksuid());
                 }
-                
-                
+
+
             }
-            
+
             if (typeof schema.minLength === "number") {
                 stringSchema = stringSchema.min(schema.minLength);
             }
@@ -44870,7 +44952,7 @@ function convertBaseSchema(schema, ctx) {
                 stringSchema = stringSchema.max(schema.maxLength);
             }
             if (schema.pattern) {
-                
+
                 stringSchema = stringSchema.regex(new RegExp(schema.pattern));
             }
             zodSchema = stringSchema;
@@ -44879,7 +44961,7 @@ function convertBaseSchema(schema, ctx) {
         case "number":
         case "integer": {
             let numberSchema = type === "integer" ? z.number().int() : z.number();
-            
+
             if (typeof schema.minimum === "number") {
                 numberSchema = numberSchema.min(schema.minimum);
             }
@@ -44916,33 +44998,33 @@ function convertBaseSchema(schema, ctx) {
             const shape = {};
             const properties = schema.properties || {};
             const requiredSet = new Set(schema.required || []);
-            
+
             for (const [key, propSchema] of Object.entries(properties)) {
                 const propZodSchema = convertSchema(propSchema, ctx);
-                
+
                 shape[key] = requiredSet.has(key) ? propZodSchema : propZodSchema.optional();
             }
-            
+
             if (schema.propertyNames) {
                 const keySchema = convertSchema(schema.propertyNames, ctx);
                 const valueSchema = schema.additionalProperties && typeof schema.additionalProperties === "object"
                     ? convertSchema(schema.additionalProperties, ctx)
                     : z.any();
-                
+
                 if (Object.keys(shape).length === 0) {
                     zodSchema = z.record(keySchema, valueSchema);
                     break;
                 }
-                
+
                 const objectSchema = z.object(shape).passthrough();
                 const recordSchema = z.looseRecord(keySchema, valueSchema);
                 zodSchema = z.intersection(objectSchema, recordSchema);
                 break;
             }
-            
+
             if (schema.patternProperties) {
-                
-                
+
+
                 const patternProps = schema.patternProperties;
                 const patternKeys = Object.keys(patternProps);
                 const looseRecords = [];
@@ -44951,10 +45033,10 @@ function convertBaseSchema(schema, ctx) {
                     const keySchema = z.string().regex(new RegExp(pattern));
                     looseRecords.push(z.looseRecord(keySchema, patternValue));
                 }
-                
+
                 const schemasToIntersect = [];
                 if (Object.keys(shape).length > 0) {
-                    
+
                     schemasToIntersect.push(z.object(shape).passthrough());
                 }
                 schemasToIntersect.push(...looseRecords);
@@ -44965,7 +45047,7 @@ function convertBaseSchema(schema, ctx) {
                     zodSchema = schemasToIntersect[0];
                 }
                 else {
-                    
+
                     let result = z.intersection(schemasToIntersect[0], schemasToIntersect[1]);
                     for (let i = 2; i < schemasToIntersect.length; i++) {
                         result = z.intersection(result, schemasToIntersect[i]);
@@ -44974,32 +45056,32 @@ function convertBaseSchema(schema, ctx) {
                 }
                 break;
             }
-            
-            
-            
+
+
+
             const objectSchema = z.object(shape);
             if (schema.additionalProperties === false) {
-                
+
                 zodSchema = objectSchema.strict();
             }
             else if (typeof schema.additionalProperties === "object") {
-                
+
                 zodSchema = objectSchema.catchall(convertSchema(schema.additionalProperties, ctx));
             }
             else {
-                
+
                 zodSchema = objectSchema.passthrough();
             }
             break;
         }
         case "array": {
-            
-            
-            
+
+
+
             const prefixItems = schema.prefixItems;
             const items = schema.items;
             if (prefixItems && Array.isArray(prefixItems)) {
-                
+
                 const tupleItems = prefixItems.map((item) => convertSchema(item, ctx));
                 const rest = items && typeof items === "object" && !Array.isArray(items)
                     ? convertSchema(items, ctx)
@@ -45010,7 +45092,7 @@ function convertBaseSchema(schema, ctx) {
                 else {
                     zodSchema = z.tuple(tupleItems);
                 }
-                
+
                 if (typeof schema.minItems === "number") {
                     zodSchema = zodSchema.check(z.minLength(schema.minItems));
                 }
@@ -45019,7 +45101,7 @@ function convertBaseSchema(schema, ctx) {
                 }
             }
             else if (Array.isArray(items)) {
-                
+
                 const tupleItems = items.map((item) => convertSchema(item, ctx));
                 const rest = schema.additionalItems && typeof schema.additionalItems === "object"
                     ? convertSchema(schema.additionalItems, ctx)
@@ -45030,7 +45112,7 @@ function convertBaseSchema(schema, ctx) {
                 else {
                     zodSchema = z.tuple(tupleItems);
                 }
-                
+
                 if (typeof schema.minItems === "number") {
                     zodSchema = zodSchema.check(z.minLength(schema.minItems));
                 }
@@ -45039,10 +45121,10 @@ function convertBaseSchema(schema, ctx) {
                 }
             }
             else if (items !== undefined) {
-                
+
                 const element = convertSchema(items, ctx);
                 let arraySchema = z.array(element);
-                
+
                 if (typeof schema.minItems === "number") {
                     arraySchema = arraySchema.min(schema.minItems);
                 }
@@ -45052,7 +45134,7 @@ function convertBaseSchema(schema, ctx) {
                 zodSchema = arraySchema;
             }
             else {
-                
+
                 zodSchema = z.array(z.any());
             }
             break;
@@ -45066,23 +45148,23 @@ function convertSchema(schema, ctx) {
     if (typeof schema === "boolean") {
         return schema ? z.any() : z.never();
     }
-    
+
     let baseSchema = convertBaseSchema(schema, ctx);
     const hasExplicitType = schema.type || schema.enum !== undefined || schema.const !== undefined;
-    
-    
+
+
     if (schema.anyOf && Array.isArray(schema.anyOf)) {
         const options = schema.anyOf.map((s) => convertSchema(s, ctx));
         const anyOfUnion = z.union(options);
         baseSchema = hasExplicitType ? z.intersection(baseSchema, anyOfUnion) : anyOfUnion;
     }
-    
+
     if (schema.oneOf && Array.isArray(schema.oneOf)) {
         const options = schema.oneOf.map((s) => convertSchema(s, ctx));
         const oneOfUnion = z.xor(options);
         baseSchema = hasExplicitType ? z.intersection(baseSchema, oneOfUnion) : oneOfUnion;
     }
-    
+
     if (schema.allOf && Array.isArray(schema.allOf)) {
         if (schema.allOf.length === 0) {
             baseSchema = hasExplicitType ? baseSchema : z.any();
@@ -45096,23 +45178,23 @@ function convertSchema(schema, ctx) {
             baseSchema = result;
         }
     }
-    
+
     if (schema.nullable === true && ctx.version === "openapi-3.0") {
         baseSchema = z.nullable(baseSchema);
     }
-    
+
     if (schema.readOnly === true) {
         baseSchema = z.readonly(baseSchema);
     }
-    
-    
-    
+
+
+
     if (schema.default !== undefined) {
         baseSchema = baseSchema.default(schema.default);
     }
-    
-    
-    
+
+
+
     const extraMeta = {};
     const coreMetadataKeys = ["$id", "id", "$comment", "$anchor", "$vocabulary", "$dynamicRef", "$dynamicAnchor"];
     for (const key of coreMetadataKeys) {
@@ -45134,9 +45216,9 @@ function convertSchema(schema, ctx) {
     if (Object.keys(extraMeta).length > 0) {
         ctx.registry.add(baseSchema, extraMeta);
     }
-    
-    
-    
+
+
+
     if (schema.description) {
         baseSchema = baseSchema.describe(schema.description);
     }
@@ -45145,14 +45227,14 @@ function convertSchema(schema, ctx) {
 
 
 function fromJSONSchema(schema, params) {
-    
+
     if (typeof schema === "boolean") {
         return schema ? z.any() : z.never();
     }
-    
-    
-    
-    
+
+
+
+
     let normalized;
     try {
         normalized = JSON.parse(JSON.stringify(schema));
@@ -46914,7 +46996,7 @@ var entry_default = Fuse;
 
 
 class TableSearchEngine {
-  
+
 
 
 
@@ -46922,7 +47004,7 @@ class TableSearchEngine {
     this.facade = facade;
   }
 
-  
+
 
 
 
@@ -46940,20 +47022,20 @@ class TableSearchEngine {
       throw new Error('Fields must be a non-empty array of field names');
     }
 
-    
+
     if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
       throw new Error('Threshold must be a number between 0 and 1');
     }
     this.facade._ensureDataLoaded();
 
-    
+
     const rows = this.facade.getRows();
     const results = this.fuzzySearchRows(rows, query, fields, threshold, options);
     this.facade._logger.debug(`Fuzzy search for "${query}" in fields [${fields.join(', ')}] ` + `returned ${results.length} results (threshold: ${threshold})`);
     return results;
   }
 
-  
+
 
 
 
@@ -46985,7 +47067,7 @@ class TableSearchEngine {
     }).search(query);
   }
 
-  
+
 
 
 
@@ -46998,7 +47080,7 @@ class TableSearchEngine {
     }
     this.facade._ensureDataLoaded();
 
-    
+
     const index = new Map();
     this.facade._rowsCache.forEach((row, rowIndex) => {
       const value = row[columnName];
@@ -47014,7 +47096,7 @@ class TableSearchEngine {
     return this.facade;
   }
 
-  
+
 
 
 
@@ -47031,13 +47113,13 @@ class TableSearchEngine {
       return []; 
     }
 
-    
+
     return rowIndices.map(idx => this.facade._applyVirtualColumns({
       ...this.facade._rowsCache[idx]
     }));
   }
 
-  
+
 
 
 
@@ -47080,7 +47162,7 @@ class TableSearchEngine {
 
 
 class TableService {
-  
+
   static get ALPHABET_SIZE() {
     return 26;
   } 
@@ -47088,7 +47170,7 @@ class TableService {
     return 65;
   } 
 
-  
+
 
 
 
@@ -47119,9 +47201,9 @@ class TableService {
     this._updateQueue = new Map();
     this._deleteQueue = new Set();
 
-    
-    
-    
+
+
+
     this.dataModifier = new TableDataModifier(this);
     this.schemaValidator = new TableSchemaValidator(this);
     this.searchEngine = new TableSearchEngine(this);
@@ -47146,83 +47228,83 @@ class TableService {
     }
   }
 
-  
-  
-  
 
-  
+
+
+
+
   insertRow(...args) {
     return this.dataModifier.insertRow(...args);
   }
 
-  
+
   insertRows(...args) {
     return this.dataModifier.insertRows(...args);
   }
 
-  
+
   updateRowById(...args) {
     return this.dataModifier.updateRowById(...args);
   }
 
-  
+
   patchRow(...args) {
     return this.dataModifier.patchRow(...args);
   }
 
-  
+
   deleteRowById(...args) {
     return this.dataModifier.deleteRowById(...args);
   }
 
-  
+
   updateRowsByIds(...args) {
     return this.dataModifier.updateRowsByIds(...args);
   }
 
-  
+
   deleteRowsByIds(...args) {
     return this.dataModifier.deleteRowsByIds(...args);
   }
 
-  
+
   setSchema(...args) {
     return this.schemaValidator.setSchema(...args);
   }
 
-  
+
   disableSchemaValidation(...args) {
     return this.schemaValidator.disableSchemaValidation(...args);
   }
 
-  
+
   enableSchemaValidation(...args) {
     return this.schemaValidator.enableSchemaValidation(...args);
   }
 
-  
+
   fuzzySearch(...args) {
     return this.searchEngine.fuzzySearch(...args);
   }
 
-  
+
   createIndex(...args) {
     return this.searchEngine.createIndex(...args);
   }
 
-  
+
   _validateRow(...args) {
     return this.schemaValidator.validateRow(...args);
   }
 
-  
+
   _indexedLookup(...args) {
     return this.searchEngine.indexedLookup(...args);
   }
 
-  
 
-  
+
+
 
 
 
@@ -47230,21 +47312,20 @@ class TableService {
   getRows() {
     this._ensureDataLoaded();
 
-    
+
     if (this._processedRowsCache === null) {
       this._processedRowsCache = this._rowsCache.map(row => this._applyVirtualColumns({
         ...row
       }));
     }
 
-    
-    
+
+
     return this._processedRowsCache.map(row => ({
       ...row
     }));
   }
 
-  
 
 
 
@@ -47257,7 +47338,8 @@ class TableService {
 
 
 
-  
+
+
 
 
 
@@ -47268,10 +47350,10 @@ class TableService {
     let operationsPerformed = 0;
     let writeHeader = false;
 
-    
+
     if (this.columns.length === 0 && (this._deleteQueue.size > 0 || this._updateQueue.size > 0 || this._insertQueue.length > 0)) {
       if (this._insertQueue.length > 0) {
-        
+
         this._logger.debug(`Deriving columns from queued inserts for empty table "${this.sheetName}"`);
         const columnSet = new Set();
         for (const row of this._insertQueue) {
@@ -47291,25 +47373,25 @@ class TableService {
       }
     }
 
-    
+
     if (this._deleteQueue.size > 0 && !options.dryRun) {
       const deleteIds = Array.from(this._deleteQueue);
 
-      
-      
-      
-      
-      
-      
-      
-      
+
+
+
+
+
+
+
+
       const pkColLetter = this._getPkColumnLetter();
       const pkRange = `'${this.sheetName}'!${pkColLetter}:${pkColLetter}`;
       const pkColumnArray = this.spreadsheetService.getRanges(this.spreadsheetId, pkRange) || [];
       const realRowIndicesToDelete = [];
       const pkValues = pkColumnArray.map(r => r[0]);
       for (const id of deleteIds) {
-        
+
         const idx = pkValues.findIndex(val => val == id); 
         if (idx !== -1) {
           realRowIndicesToDelete.push(idx + 1); 
@@ -47322,12 +47404,12 @@ class TableService {
       this._deleteQueue.clear();
     }
 
-    
+
     if (this._updateQueue.size > 0 && !options.dryRun) {
       const updates = [];
       const physicalColumns = this.columns.filter(col => !this._virtualColumns[col]);
 
-      
+
       const pkColLetter = this._getPkColumnLetter();
       const pkRange = `'${this.sheetName}'!${pkColLetter}:${pkColLetter}`;
       const pkColumnArray = this.spreadsheetService.getRanges(this.spreadsheetId, pkRange) || [];
@@ -47341,7 +47423,7 @@ class TableService {
             newPhysicalData[col] = rowToUpdate[col] ?? '';
           }
 
-          
+
           const originalData = this._originalRowData.get(id);
           if (originalData && isEqual(originalData, newPhysicalData)) {
             continue; 
@@ -47362,27 +47444,27 @@ class TableService {
       this._updateQueue.clear();
     }
 
-    
+
     if (this._insertQueue.length > 0 && !options.dryRun) {
       const physicalColumns = this.columns.filter(col => !this._virtualColumns[col]);
       const dataMatrix = this._insertQueue.map(completeRow => {
         return physicalColumns.map(col => completeRow[col] ?? '');
       });
 
-      
+
       if (writeHeader) {
         dataMatrix.unshift(physicalColumns);
       }
 
-      
-      
+
+
       this.spreadsheetService.appendRows(this.spreadsheetId, {
         range: `'${this.sheetName}'!A1`,
         values: dataMatrix
       });
       operationsPerformed++;
 
-      
+
       for (const row of this._insertQueue) {
         this._storeOriginalRowData(row);
       }
@@ -47391,7 +47473,7 @@ class TableService {
     return operationsPerformed;
   }
 
-  
+
 
 
 
@@ -47403,7 +47485,7 @@ class TableService {
     return this;
   }
 
-  
+
 
 
 
@@ -47421,7 +47503,7 @@ class TableService {
     return this._applyVirtualColumns(row);
   }
 
-  
+
 
 
 
@@ -47437,13 +47519,13 @@ class TableService {
     if (!this.columns.includes(columnName)) {
       this.columns.push(columnName);
     }
-    
+
     this._processedRowsCache = null;
     this._virtualColumnVersion++;
     return this;
   }
 
-  
+
 
 
 
@@ -47461,7 +47543,7 @@ class TableService {
     return this._applyVirtualColumns(foundRow);
   }
 
-  
+
 
 
 
@@ -47470,9 +47552,9 @@ class TableService {
     return this.getRows();
   }
 
-  
 
-  
+
+
 
 
 
@@ -47493,7 +47575,7 @@ class TableService {
     }
   }
 
-  
+
 
 
 
@@ -47510,13 +47592,13 @@ class TableService {
     this._rowsCache = rows;
     this._dataLoaded = true;
 
-    
+
     for (const row of this._rowsCache) {
       this._storeOriginalRowData(row);
     }
   }
 
-  
+
 
 
 
@@ -47534,7 +47616,7 @@ class TableService {
     const header = data[0].filter(col => col && String(col).trim() !== '');
     const rows = [];
     for (let i = 1; i < data.length; i++) {
-      
+
       if (!data[i] || data[i].every(cell => cell === '' || cell === null || cell === undefined)) {
         continue;
       }
@@ -47552,7 +47634,7 @@ class TableService {
     };
   }
 
-  
+
 
 
 
@@ -47565,7 +47647,7 @@ class TableService {
     return CellValueCoercion.coerceValue(value);
   }
 
-  
+
 
 
 
@@ -47576,7 +47658,7 @@ class TableService {
       return; 
     }
 
-    
+
     const physicalData = {};
     for (const [key, value] of Object.entries(row)) {
       if (!this._virtualColumns[key]) {
@@ -47586,7 +47668,7 @@ class TableService {
     this._originalRowData.set(row[this._keyField], physicalData);
   }
 
-  
+
 
 
 
@@ -47594,11 +47676,11 @@ class TableService {
 
 
   _findRowIndexById(id) {
-    
+
     if (this._indices[this._keyField] && this._indices[this._keyField][id] !== undefined) {
       return this._indices[this._keyField][id];
     }
-    
+
     return this._rowsCache.findIndex(row => {
       const rowWithVirtuals = this._applyVirtualColumns({
         ...row
@@ -47607,7 +47689,7 @@ class TableService {
     });
   }
 
-  
+
 
 
 
@@ -47623,7 +47705,7 @@ class TableService {
     return headerData[0].filter(col => col && col.trim() !== '');
   }
 
-  
+
 
 
 
@@ -47643,7 +47725,7 @@ class TableService {
     return this.columns[0] || 'ID'; 
   }
 
-  
+
 
 
 
@@ -47662,7 +47744,7 @@ class TableService {
     return row;
   }
 
-  
+
 
 
 
@@ -47673,7 +47755,7 @@ class TableService {
     let column = '';
     let tempIndex = index;
     while (tempIndex > 0) {
-      
+
       const modulo = (tempIndex - 1) % TableService.ALPHABET_SIZE;
       column = String.fromCharCode(TableService.ASCII_CODE_A + modulo) + column;
       tempIndex = Math.floor((tempIndex - modulo) / TableService.ALPHABET_SIZE);
@@ -47681,7 +47763,7 @@ class TableService {
     return column;
   }
 
-  
+
 
 
 
@@ -47734,7 +47816,7 @@ function _safeParseFloat(value, defaultValue = 0) {
 
 
 function _compareValues(leftValue, operator, rightValue) {
-  
+
   if (leftValue == null && (operator === '=' || operator === '==' || operator === '!=' || operator === '<>')) {
     if (operator === '=' || operator === '==') {
       return rightValue == null;
@@ -47782,7 +47864,7 @@ function _compareValues(leftValue, operator, rightValue) {
 
 
 class QueryCondition {
-  
+
 
 
 
@@ -47796,7 +47878,7 @@ class QueryCondition {
     this.subConditions = [];
   }
 
-  
+
 
 
 
@@ -47805,7 +47887,7 @@ class QueryCondition {
     return _compareValues(rowValue, this.operator, this.value);
   }
 
-  
+
 
 
 
@@ -47815,7 +47897,7 @@ class QueryCondition {
     return this;
   }
 
-  
+
 
 
 
@@ -47862,7 +47944,7 @@ class QueryCondition {
 
 
 class QueryAggregation {
-  
+
 
 
 
@@ -47873,7 +47955,7 @@ class QueryAggregation {
     this.alias = alias || `${this.function}_${this.field}`;
   }
 
-  
+
 
 
 
@@ -47892,7 +47974,7 @@ class QueryAggregation {
     return undefined;
   }
 
-  
+
 
 
 
@@ -47928,7 +48010,7 @@ class QueryAggregation {
 
 
 class QueryGroup {
-  
+
 
 
   constructor(fields) {
@@ -47937,7 +48019,7 @@ class QueryGroup {
     this.condition = null;
   }
 
-  
+
 
 
 
@@ -47956,7 +48038,7 @@ class QueryGroup {
     return undefined;
   }
 
-  
+
 
 
 
@@ -47969,7 +48051,7 @@ class QueryGroup {
     }).join('|');
   }
 
-  
+
 
 
 
@@ -47977,7 +48059,7 @@ class QueryGroup {
     this.aggregations.push(aggregation);
   }
 
-  
+
 
 
 
@@ -47985,7 +48067,7 @@ class QueryGroup {
     this.condition = condition;
   }
 
-  
+
 
 
 
@@ -48039,7 +48121,7 @@ const AdvancedQueryParser = {
 
 
 class AdvancedQueryValidator {
-  
+
 
 
 
@@ -48051,7 +48133,7 @@ class AdvancedQueryValidator {
     }
   }
 
-  
+
 
 
 
@@ -48064,7 +48146,7 @@ class AdvancedQueryValidator {
     }
   }
 
-  
+
 
 
 
@@ -48076,7 +48158,7 @@ class AdvancedQueryValidator {
     }
   }
 
-  
+
 
 
 
@@ -48106,7 +48188,7 @@ class AdvancedQueryValidator {
     }
   }
 
-  
+
 
 
 
@@ -48138,7 +48220,7 @@ const {
 
 
 class QueryCache {
-  
+
 
 
   constructor(service) {
@@ -48147,7 +48229,7 @@ class QueryCache {
     this.expiration = 300;
   }
 
-  
+
 
 
 
@@ -48169,7 +48251,7 @@ class QueryCache {
     return this.prefix + HashUtils.generateHash(queryJSON);
   }
 
-  
+
 
 
 
@@ -48186,7 +48268,7 @@ class QueryCache {
     }
   }
 
-  
+
 
 
 
@@ -48198,7 +48280,7 @@ class QueryCache {
     return this.service.put(key, JSON.stringify(result), this.expiration);
   }
 
-  
+
 
 
 
@@ -48208,7 +48290,7 @@ class QueryCache {
     return true;
   }
 
-  
+
 
 
 
@@ -48224,14 +48306,14 @@ class QueryCache {
 
 
 class AdvancedQueryCompiler {
-  
+
 
 
   constructor(facade) {
     this.facade = facade;
   }
 
-  
+
 
 
 
@@ -48258,7 +48340,7 @@ class AdvancedQueryCompiler {
     return undefined;
   }
 
-  
+
 
 
 
@@ -48373,7 +48455,7 @@ class AdvancedQueryCompiler {
     return result;
   }
 
-  
+
 
 
 
@@ -48435,7 +48517,7 @@ class AdvancedQueryCompiler {
     return null;
   }
 
-  
+
 
 
 
@@ -48445,7 +48527,7 @@ class AdvancedQueryCompiler {
     return conditions.filter(cond => cond.field !== this.facade._optimizedField);
   }
 
-  
+
 
 
 
@@ -48462,7 +48544,7 @@ class AdvancedQueryCompiler {
     return undefined;
   }
 
-  
+
 
 
 
@@ -48483,7 +48565,7 @@ class AdvancedQueryCompiler {
     });
   }
 
-  
+
 
 
 
@@ -48513,7 +48595,7 @@ class AdvancedQueryCompiler {
     return matchesByCondition;
   }
 
-  
+
 
 
 
@@ -48523,7 +48605,7 @@ class AdvancedQueryCompiler {
     return this._applyConditionsFiltered(rows, this.facade.conditions);
   }
 
-  
+
 
 
 
@@ -48670,13 +48752,13 @@ class AdvancedQueryBuilder {
     this._optimizedField = null;
     this.joins = [];
 
-    
+
     this._validator = new AdvancedQueryValidator();
     this._compiler = new AdvancedQueryCompiler(this);
     this._pagination = new AdvancedQueryPagination(this);
     this._cache = dbService._cache ? new QueryCache(dbService._cache) : null;
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._compiler,
       methods: ['_extractFieldValue', '_performJoin', '_tryIndexOptimization', '_getRemainingConditions', '_getFieldValue', '_applyConditionsFiltered', '_applyConditions', '_applyGroupBy']
@@ -49125,7 +49207,7 @@ class DatabaseSchemaExplorer {
     this._utils = facade._utils;
   }
 
-  
+
 
 
 
@@ -49281,13 +49363,13 @@ class MyDatabaseService {
     this._schemaValidator = options.schemaValidator || null;
     this._verifyTables = options.verifyTables || null;
 
-    
+
     this._connectionManager = new DatabaseConnectionManager(this);
     this._schemaExplorer = new DatabaseSchemaExplorer(this);
     this._tableRegistry = new DatabaseTableRegistry(this);
     this._metaDataHandler = new DatabaseMetaDataHandler(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._connectionManager,
       methods: ['save', 'beginTransaction', 'commit', 'rollback', '_performRollback', 'inTransaction']
@@ -49324,15 +49406,15 @@ class MyDatabaseService {
 
 
 const ColumnType = Object.freeze({
-  
+
   STRING: 'STRING',
-  
+
   NUMBER: 'NUMBER',
-  
+
   BOOLEAN: 'BOOLEAN',
-  
+
   DATE: 'DATE',
-  
+
   JSON: 'JSON'
 });
 
@@ -49416,11 +49498,11 @@ function coerceToType(value, type) {
 
 
 const MemberSourceType = Object.freeze({
-  
+
   STATIC: 'STATIC',
-  
+
   CONFIG: 'CONFIG',
-  
+
   QUERY: 'QUERY'
 });
 
@@ -49429,7 +49511,7 @@ const MemberSourceType = Object.freeze({
 
 
 class ColumnFamily {
-  
+
 
 
 
@@ -49456,7 +49538,7 @@ class ColumnFamily {
       metadata = {}
     } = definition;
 
-    
+
     if (!id || typeof id !== 'string') {
       throw new Error('ColumnFamily requires an id');
     }
@@ -49470,35 +49552,35 @@ class ColumnFamily {
       throw new Error(`Invalid column type: ${type}`);
     }
 
-    
+
     this.id = id;
 
-    
+
     this.namePattern = namePattern;
 
-    
+
     this.type = type;
 
-    
+
     this.nullable = nullable;
 
-    
+
     this.defaultValue = cloneDeep_cloneDeep(defaultValue);
 
-    
+
     this.members = Array.isArray(members) ? [...members] : [];
 
-    
+
     this.memberSource = memberSource ? cloneDeep_cloneDeep(memberSource) : null;
 
-    
+
     this.metadata = cloneDeep_cloneDeep(metadata);
     Object.freeze(this);
     Object.freeze(this.members);
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -49508,14 +49590,14 @@ class ColumnFamily {
     return this.namePattern.replace('{{key}}', memberKey);
   }
 
-  
+
 
 
 
 
 
   parseMemberKey(columnName) {
-    
+
     const patternParts = this.namePattern.split('{{key}}');
     const prefix = patternParts[0] || '';
     const suffix = patternParts[1] || '';
@@ -49526,7 +49608,7 @@ class ColumnFamily {
     return key || null;
   }
 
-  
+
 
 
 
@@ -49536,7 +49618,7 @@ class ColumnFamily {
     return this.parseMemberKey(columnName) !== null;
   }
 
-  
+
 
 
 
@@ -49545,7 +49627,7 @@ class ColumnFamily {
     return this.members.map(key => this.generateColumnName(key));
   }
 
-  
+
 
 
 
@@ -49554,7 +49636,7 @@ class ColumnFamily {
     return this.generateAllColumnNames();
   }
 
-  
+
 
 
 
@@ -49562,7 +49644,7 @@ class ColumnFamily {
     return !this.memberSource || this.memberSource.type === MemberSourceType.STATIC;
   }
 
-  
+
 
 
 
@@ -49571,7 +49653,7 @@ class ColumnFamily {
     return ((_this$memberSource = this.memberSource) === null || _this$memberSource === void 0 ? void 0 : _this$memberSource.type) === MemberSourceType.CONFIG;
   }
 
-  
+
 
 
 
@@ -49580,7 +49662,7 @@ class ColumnFamily {
     return ((_this$memberSource2 = this.memberSource) === null || _this$memberSource2 === void 0 ? void 0 : _this$memberSource2.type) === MemberSourceType.QUERY;
   }
 
-  
+
 
 
 
@@ -49588,7 +49670,7 @@ class ColumnFamily {
     return this.members.length;
   }
 
-  
+
 
 
 
@@ -49597,7 +49679,7 @@ class ColumnFamily {
     return this.members.includes(key);
   }
 
-  
+
 
 
 
@@ -49617,7 +49699,7 @@ class ColumnFamily {
     });
   }
 
-  
+
 
 
 
@@ -49636,7 +49718,7 @@ class ColumnFamily {
     };
   }
 
-  
+
 
 
 
@@ -49650,7 +49732,7 @@ class ColumnFamily {
     return new ColumnFamily(obj);
   }
 
-  
+
 
 
 
@@ -49694,7 +49776,7 @@ function parseTemplateDefinition(definition) {
 
 
 class SchemaTemplate {
-  
+
 
 
 
@@ -49714,28 +49796,28 @@ class SchemaTemplate {
       throw new Error('SchemaTemplate tableId is required and must be a string');
     }
 
-    
+
 
 
 
 
     this.tableId = tableId;
 
-    
+
 
 
 
 
     this.fixedColumns = cloneDeep_cloneDeep(fixedColumns);
 
-    
+
 
 
 
 
     this.dynamicColumns = cloneDeep_cloneDeep(dynamicColumns);
 
-    
+
 
 
 
@@ -49747,7 +49829,7 @@ class SchemaTemplate {
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -49756,7 +49838,7 @@ class SchemaTemplate {
     return pkColumn ? pkColumn.name : null;
   }
 
-  
+
 
 
 
@@ -49764,7 +49846,7 @@ class SchemaTemplate {
     return this.fixedColumns.map(col => col.name);
   }
 
-  
+
 
 
 
@@ -49772,7 +49854,7 @@ class SchemaTemplate {
     return this.dynamicColumns.map(dc => dc.familyId);
   }
 
-  
+
 
 
 
@@ -49780,7 +49862,7 @@ class SchemaTemplate {
     return this.dynamicColumns.length > 0;
   }
 
-  
+
 
 
 
@@ -49789,7 +49871,7 @@ class SchemaTemplate {
     return this.fixedColumns.find(col => col.name === name) || null;
   }
 
-  
+
 
 
 
@@ -49797,19 +49879,19 @@ class SchemaTemplate {
   validate() {
     const errors = [];
 
-    
+
     const fixedNames = this.getFixedColumnNames();
     const uniqueNames = new Set(fixedNames);
     if (uniqueNames.size !== fixedNames.length) {
       errors.push('Duplicate fixed column names found');
     }
 
-    
+
     if (!this.getPrimaryKeyColumn()) {
       errors.push('No primary key column defined');
     }
 
-    
+
     this.dynamicColumns.forEach((dc, index) => {
       if (!dc.familyId) {
         errors.push(`Dynamic column at index ${index} is missing familyId`);
@@ -49821,7 +49903,7 @@ class SchemaTemplate {
     };
   }
 
-  
+
 
 
 
@@ -49840,7 +49922,7 @@ class SchemaTemplate {
     };
   }
 
-  
+
 
 
 
@@ -49854,7 +49936,7 @@ class SchemaTemplate {
     return new SchemaTemplate(obj);
   }
 
-  
+
 
 
 
@@ -49939,7 +50021,7 @@ function parseResolveOptions(options) {
 
 
 class SchemaResolver {
-  
+
 
 
 
@@ -49953,28 +50035,28 @@ class SchemaResolver {
       logger = console
     } = options;
 
-    
+
 
 
 
 
     this._familyRegistry = familyRegistry instanceof Map ? familyRegistry : new Map(Object.entries(familyRegistry));
 
-    
+
 
 
 
 
     this._memberLoader = memberLoader;
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
@@ -49982,7 +50064,7 @@ class SchemaResolver {
     this._schemaCache = new Map();
   }
 
-  
+
 
 
 
@@ -49997,7 +50079,7 @@ class SchemaResolver {
     return this;
   }
 
-  
+
 
 
 
@@ -50008,7 +50090,7 @@ class SchemaResolver {
     return this;
   }
 
-  
+
 
 
 
@@ -50017,7 +50099,7 @@ class SchemaResolver {
     return this._familyRegistry.get(familyId) || null;
   }
 
-  
+
 
 
 
@@ -50025,7 +50107,7 @@ class SchemaResolver {
     return Array.from(this._familyRegistry.keys());
   }
 
-  
+
 
 
 
@@ -50036,7 +50118,7 @@ class SchemaResolver {
     return this;
   }
 
-  
+
 
 
 
@@ -50056,7 +50138,7 @@ class SchemaResolver {
       throw new Error('Template must be a SchemaTemplate instance');
     }
 
-    
+
     const cacheKey = this._getCacheKey(template, context);
     if (useCache && this._schemaCache.has(cacheKey)) {
       var _this$_logger$debug, _this$_logger;
@@ -50065,14 +50147,14 @@ class SchemaResolver {
     }
     (_this$_logger$debug2 = (_this$_logger2 = this._logger).debug) === null || _this$_logger$debug2 === void 0 || _this$_logger$debug2.call(_this$_logger2, `SchemaResolver: Resolving schema for ${template.tableId}`);
 
-    
+
     const columns = template.fixedColumns.map(col => ({
       ...cloneDeep_cloneDeep(col),
       familyId: null,
       memberKey: null
     }));
 
-    
+
     for (const dynamicConfig of template.dynamicColumns) {
       const familyId = dynamicConfig.familyId;
       const family = this._familyRegistry.get(familyId);
@@ -50080,14 +50162,14 @@ class SchemaResolver {
         throw new Error(`Column family not found: ${familyId}`);
       }
 
-      
+
       const members = this._resolveMembers(family, dynamicConfig, context);
 
-      
+
       for (const memberKey of members) {
         const columnName = family.generateColumnName(memberKey);
 
-        
+
         const finalName = dynamicConfig.prefix ? `${dynamicConfig.prefix}${columnName}` : columnName;
         columns.push({
           name: finalName,
@@ -50100,7 +50182,7 @@ class SchemaResolver {
       }
     }
 
-    
+
     const columnNames = columns.map(c => c.name);
     const uniqueNames = new Set(columnNames);
     if (uniqueNames.size !== columnNames.length) {
@@ -50108,7 +50190,7 @@ class SchemaResolver {
       throw new Error(`Duplicate column names in resolved schema: ${duplicates.join(', ')}`);
     }
 
-    
+
     const resolvedSchema = {
       tableId: template.tableId,
       columns: columns,
@@ -50117,7 +50199,7 @@ class SchemaResolver {
       resolvedAt: new Date()
     };
 
-    
+
     if (useCache) {
       this._schemaCache.set(cacheKey, resolvedSchema);
     }
@@ -50125,7 +50207,7 @@ class SchemaResolver {
     return resolvedSchema;
   }
 
-  
+
 
 
 
@@ -50135,27 +50217,27 @@ class SchemaResolver {
 
   _resolveMembers(family, dynamicConfig, context) {
     var _this$_logger$warn, _this$_logger4;
-    
+
     if (family.isStatic() && family.members.length > 0) {
       return family.members;
     }
 
-    
+
     if (dynamicConfig.members && dynamicConfig.members.length > 0) {
       return dynamicConfig.members;
     }
 
-    
+
     if (family.memberSource) {
       return this._loadExternalMembers(family.memberSource, context);
     }
 
-    
+
     (_this$_logger$warn = (_this$_logger4 = this._logger).warn) === null || _this$_logger$warn === void 0 || _this$_logger$warn.call(_this$_logger4, `SchemaResolver: No members found for family ${family.id}`);
     return [];
   }
 
-  
+
 
 
 
@@ -50184,7 +50266,7 @@ class SchemaResolver {
     }
   }
 
-  
+
 
 
 
@@ -50196,7 +50278,7 @@ class SchemaResolver {
     return `${template.tableId}:${contextKey}`;
   }
 
-  
+
 
 
 
@@ -50213,7 +50295,7 @@ class SchemaResolver {
     }
   }
 
-  
+
 
 
 
@@ -50222,7 +50304,7 @@ class SchemaResolver {
     return this;
   }
 
-  
+
 
 
 
@@ -50232,7 +50314,7 @@ class SchemaResolver {
     return schema.columns.filter(col => col.familyId !== null);
   }
 
-  
+
 
 
 
@@ -50242,7 +50324,7 @@ class SchemaResolver {
     return schema.columns.filter(col => col.familyId === null);
   }
 
-  
+
 
 
 
@@ -50253,7 +50335,7 @@ class SchemaResolver {
     return schema.columns.filter(col => col.familyId === familyId);
   }
 
-  
+
 
 
 
@@ -50301,7 +50383,7 @@ function getFamilyOrThrow(familyMap, familyId) {
 
 
 class DynamicColumnAccessor {
-  
+
 
 
 
@@ -50318,20 +50400,20 @@ class DynamicColumnAccessor {
       useDefaults = true
     } = options;
 
-    
+
     this._row = row;
 
-    
+
     this._familyMap = familyMap || new Map(families.map(f => [f.id, f]));
 
-    
+
     this._coerceTypes = coerceTypes;
 
-    
+
     this._useDefaults = useDefaults;
   }
 
-  
+
 
 
 
@@ -50339,7 +50421,7 @@ class DynamicColumnAccessor {
     return this._row;
   }
 
-  
+
 
 
 
@@ -50352,7 +50434,7 @@ class DynamicColumnAccessor {
     const columnName = family.generateColumnName(memberKey);
     let value = this._row[columnName];
 
-    
+
     if (value === undefined || value === null) {
       if (this._useDefaults) {
         value = family.defaultValue;
@@ -50361,14 +50443,14 @@ class DynamicColumnAccessor {
       }
     }
 
-    
+
     if (this._coerceTypes && value !== null) {
       value = coerceToType(value, family.type);
     }
     return value;
   }
 
-  
+
 
 
 
@@ -50384,7 +50466,7 @@ class DynamicColumnAccessor {
     return result;
   }
 
-  
+
 
 
 
@@ -50397,7 +50479,7 @@ class DynamicColumnAccessor {
     }));
   }
 
-  
+
 
 
 
@@ -50411,7 +50493,7 @@ class DynamicColumnAccessor {
     return result;
   }
 
-  
+
 
 
 
@@ -50425,7 +50507,7 @@ class DynamicColumnAccessor {
     return value !== undefined && value !== null;
   }
 
-  
+
 
 
 
@@ -50435,7 +50517,7 @@ class DynamicColumnAccessor {
     return family.members.some(key => this.has(familyId, key));
   }
 
-  
+
 
 
 
@@ -50445,7 +50527,7 @@ class DynamicColumnAccessor {
     return family.members.every(key => this.has(familyId, key));
   }
 
-  
+
 
 
 
@@ -50458,7 +50540,7 @@ class DynamicColumnAccessor {
     const family = this._getFamily(familyId);
     const columnName = family.generateColumnName(memberKey);
 
-    
+
     let finalValue = value;
     if (this._coerceTypes && value !== null && value !== undefined) {
       finalValue = coerceToType(value, family.type);
@@ -50467,7 +50549,7 @@ class DynamicColumnAccessor {
     return this;
   }
 
-  
+
 
 
 
@@ -50481,7 +50563,7 @@ class DynamicColumnAccessor {
     return this;
   }
 
-  
+
 
 
 
@@ -50495,7 +50577,7 @@ class DynamicColumnAccessor {
     return this;
   }
 
-  
+
 
 
 
@@ -50509,7 +50591,7 @@ class DynamicColumnAccessor {
     return this;
   }
 
-  
+
 
 
 
@@ -50518,7 +50600,7 @@ class DynamicColumnAccessor {
     return family.members.filter(key => this.has(familyId, key)).length;
   }
 
-  
+
 
 
 
@@ -50527,7 +50609,7 @@ class DynamicColumnAccessor {
     return family.members.filter(key => this.has(familyId, key));
   }
 
-  
+
 
 
 
@@ -50536,7 +50618,7 @@ class DynamicColumnAccessor {
     return family.members.filter(key => !this.has(familyId, key));
   }
 
-  
+
 
 
 
@@ -50547,7 +50629,7 @@ class DynamicColumnAccessor {
     return getFamilyOrThrow(this._familyMap, familyId);
   }
 
-  
+
 
 
 
@@ -50562,7 +50644,7 @@ class DynamicColumnAccessor {
     });
   }
 
-  
+
 
 
 
@@ -50596,25 +50678,25 @@ class DynamicColumnAccessor {
 
 
 const AggregationType = Object.freeze({
-  
+
   SUM: 'SUM',
-  
+
   AVG: 'AVG',
-  
+
   MIN: 'MIN',
-  
+
   MAX: 'MAX',
-  
+
   COUNT: 'COUNT',
-  
+
   COUNT_DISTINCT: 'COUNT_DISTINCT',
-  
+
   FIRST: 'FIRST',
-  
+
   LAST: 'LAST',
-  
+
   CONCAT: 'CONCAT',
-  
+
   COLLECT: 'COLLECT'
 });
 
@@ -50639,7 +50721,7 @@ const AggregationType = Object.freeze({
 
 
 class FamilyAggregator {
-  
+
 
 
 
@@ -50654,21 +50736,21 @@ class FamilyAggregator {
       logger = console
     } = options;
 
-    
+
 
 
 
 
     this._familyMap = familyMap || new Map(families.map(f => [f.id, f]));
 
-    
+
 
 
 
 
     this._ignoreNulls = ignoreNulls;
 
-    
+
 
 
 
@@ -50676,7 +50758,7 @@ class FamilyAggregator {
     this._logger = logger;
   }
 
-  
+
 
 
 
@@ -50690,7 +50772,7 @@ class FamilyAggregator {
     return this;
   }
 
-  
+
 
 
 
@@ -50705,7 +50787,7 @@ class FamilyAggregator {
     const family = this._getFamily(familyId);
     const memberKeys = options.memberKeys || family.members;
 
-    
+
     const values = [];
     let nullCount = 0;
     for (const memberKey of memberKeys) {
@@ -50717,7 +50799,7 @@ class FamilyAggregator {
           values.push(null);
         }
       } else {
-        
+
         if (this._isNumericAggregation(aggregationType)) {
           value = coerceToType(value, ColumnType.NUMBER);
         }
@@ -50734,7 +50816,7 @@ class FamilyAggregator {
     };
   }
 
-  
+
 
 
 
@@ -50769,7 +50851,7 @@ class FamilyAggregator {
     return result;
   }
 
-  
+
 
 
 
@@ -50809,7 +50891,7 @@ class FamilyAggregator {
     };
   }
 
-  
+
 
 
 
@@ -50825,7 +50907,7 @@ class FamilyAggregator {
     return result;
   }
 
-  
+
 
 
 
@@ -50840,7 +50922,7 @@ class FamilyAggregator {
     const groupByColumn = family.generateColumnName(groupByMember);
     const aggregateColumn = family.generateColumnName(aggregateMember);
 
-    
+
     const groups = new Map();
     for (const row of rows) {
       const groupKey = String(row[groupByColumn] ?? 'null');
@@ -50858,7 +50940,7 @@ class FamilyAggregator {
       }
     }
 
-    
+
     const result = {};
     for (const [groupKey, values] of groups) {
       result[groupKey] = this._performAggregation(values, aggregationType);
@@ -50866,7 +50948,7 @@ class FamilyAggregator {
     return result;
   }
 
-  
+
 
 
 
@@ -50880,7 +50962,7 @@ class FamilyAggregator {
       return null;
     }
 
-    
+
     const nonNullValues = values.filter(v => v !== null && v !== undefined);
     if (nonNullValues.length === 0 && aggregationType !== AggregationType.COUNT) {
       return null;
@@ -50915,7 +50997,7 @@ class FamilyAggregator {
     }
   }
 
-  
+
 
 
 
@@ -50925,7 +51007,7 @@ class FamilyAggregator {
     return [AggregationType.SUM, AggregationType.AVG, AggregationType.MIN, AggregationType.MAX].includes(aggregationType);
   }
 
-  
+
 
 
 
@@ -50936,7 +51018,7 @@ class FamilyAggregator {
     return getFamilyOrThrow(this._familyMap, familyId);
   }
 
-  
+
 
 
 
@@ -50964,15 +51046,15 @@ class FamilyAggregator {
 
 
 const RoutingStrategy = Object.freeze({
-  
+
   EXPLICIT: 'EXPLICIT',
-  
+
   TAG_BASED: 'TAG_BASED',
-  
+
   ROUND_ROBIN: 'ROUND_ROBIN',
-  
+
   PRIORITY: 'PRIORITY',
-  
+
   CUSTOM: 'CUSTOM'
 });
 
@@ -51015,7 +51097,7 @@ function getRoutingStrategies() {
 
 
 class DatabasePartition {
-  
+
 
 
 
@@ -51042,7 +51124,7 @@ class DatabasePartition {
       priority = 0
     } = definition;
 
-    
+
     if (!id || typeof id !== 'string') {
       throw new Error('DatabasePartition id is required and must be a string');
     }
@@ -51056,56 +51138,56 @@ class DatabasePartition {
       throw new Error('DatabasePartition priority must be a valid number');
     }
 
-    
+
 
 
 
 
     this.id = id;
 
-    
+
 
 
 
 
     this.spreadsheetId = spreadsheetId;
 
-    
+
 
 
 
 
     this.label = label || id;
 
-    
+
 
 
 
 
     this.tags = Object.freeze([...tags]);
 
-    
+
 
 
 
 
     this.metadata = Object.freeze(cloneDeep_cloneDeep(metadata));
 
-    
+
 
 
 
 
     this.connectionOptions = Object.freeze(cloneDeep_cloneDeep(connectionOptions));
 
-    
+
 
 
 
 
     this.isReadOnly = Boolean(isReadOnly);
 
-    
+
 
 
 
@@ -51114,7 +51196,7 @@ class DatabasePartition {
     Object.freeze(this);
   }
 
-  
+
 
 
 
@@ -51123,7 +51205,7 @@ class DatabasePartition {
     return this.tags.includes(tag);
   }
 
-  
+
 
 
 
@@ -51132,7 +51214,7 @@ class DatabasePartition {
     return requiredTags.every(tag => this.tags.includes(tag));
   }
 
-  
+
 
 
 
@@ -51141,7 +51223,7 @@ class DatabasePartition {
     return anyTags.some(tag => this.tags.includes(tag));
   }
 
-  
+
 
 
 
@@ -51151,7 +51233,7 @@ class DatabasePartition {
     return key in this.metadata ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -51170,7 +51252,7 @@ class DatabasePartition {
     });
   }
 
-  
+
 
 
 
@@ -51188,7 +51270,7 @@ class DatabasePartition {
     });
   }
 
-  
+
 
 
 
@@ -51209,7 +51291,7 @@ class DatabasePartition {
     };
   }
 
-  
+
 
 
 
@@ -51223,7 +51305,7 @@ class DatabasePartition {
     return new DatabasePartition(obj);
   }
 
-  
+
 
 
 
@@ -51255,7 +51337,7 @@ class DatabasePartition {
 
 
 class PartitionConfiguration {
-  
+
 
 
 
@@ -51278,12 +51360,12 @@ class PartitionConfiguration {
       globalConnectionOptions = {}
     } = config;
 
-    
+
     if (!Array.isArray(partitions) || partitions.length === 0) {
       throw new Error('At least one partition must be provided');
     }
 
-    
+
 
 
 
@@ -51297,38 +51379,38 @@ class PartitionConfiguration {
       this._partitions.set(partition.id, partition);
     }
 
-    
+
     if (defaultPartition && !this._partitions.has(defaultPartition)) {
       throw new Error(`Default partition not found: ${defaultPartition}`);
     }
 
-    
+
 
 
 
 
     this.defaultPartition = defaultPartition || this._partitions.keys().next().value;
 
-    
+
     if (!isValidRoutingStrategy(routingStrategy)) {
       throw new Error(`Invalid routing strategy: ${routingStrategy}`);
     }
 
-    
+
 
 
 
 
     this.routingStrategy = routingStrategy;
 
-    
+
     for (const [alias, partitionId] of Object.entries(aliases)) {
       if (!this._partitions.has(partitionId)) {
         throw new Error(`Alias "${alias}" references unknown partition: ${partitionId}`);
       }
     }
 
-    
+
 
 
 
@@ -51337,14 +51419,14 @@ class PartitionConfiguration {
       ...aliases
     });
 
-    
+
 
 
 
 
     this.crossPartitionEnabled = Boolean(crossPartitionEnabled);
 
-    
+
 
 
 
@@ -51353,17 +51435,17 @@ class PartitionConfiguration {
     Object.freeze(this);
   }
 
-  
+
 
 
 
 
   getPartition(idOrAlias) {
-    
+
     if (this._partitions.has(idOrAlias)) {
       return this._partitions.get(idOrAlias);
     }
-    
+
     const aliasedId = this.aliases[idOrAlias];
     if (aliasedId && this._partitions.has(aliasedId)) {
       return this._partitions.get(aliasedId);
@@ -51371,7 +51453,7 @@ class PartitionConfiguration {
     return null;
   }
 
-  
+
 
 
 
@@ -51379,7 +51461,7 @@ class PartitionConfiguration {
     return this._partitions.get(this.defaultPartition);
   }
 
-  
+
 
 
 
@@ -51387,7 +51469,7 @@ class PartitionConfiguration {
     return Array.from(this._partitions.values());
   }
 
-  
+
 
 
 
@@ -51395,7 +51477,7 @@ class PartitionConfiguration {
     return Array.from(this._partitions.keys());
   }
 
-  
+
 
 
 
@@ -51404,7 +51486,7 @@ class PartitionConfiguration {
     return this.getAllPartitions().filter(p => p.hasTag(tag));
   }
 
-  
+
 
 
 
@@ -51418,7 +51500,7 @@ class PartitionConfiguration {
     return partitions.filter(p => p.hasAnyTag(tags));
   }
 
-  
+
 
 
 
@@ -51426,7 +51508,7 @@ class PartitionConfiguration {
     return this.getAllPartitions().sort((a, b) => b.priority - a.priority);
   }
 
-  
+
 
 
 
@@ -51434,7 +51516,7 @@ class PartitionConfiguration {
     return this.getAllPartitions().filter(p => p.isReadOnly);
   }
 
-  
+
 
 
 
@@ -51442,7 +51524,7 @@ class PartitionConfiguration {
     return this.getAllPartitions().filter(p => !p.isReadOnly);
   }
 
-  
+
 
 
 
@@ -51451,7 +51533,7 @@ class PartitionConfiguration {
     return this.getPartition(idOrAlias) !== null;
   }
 
-  
+
 
 
 
@@ -51460,7 +51542,7 @@ class PartitionConfiguration {
     return this.aliases[alias] || null;
   }
 
-  
+
 
 
 
@@ -51468,7 +51550,7 @@ class PartitionConfiguration {
     return this._partitions.size;
   }
 
-  
+
 
 
 
@@ -51482,7 +51564,7 @@ class PartitionConfiguration {
     return Array.from(tags).sort();
   }
 
-  
+
 
 
 
@@ -51501,7 +51583,7 @@ class PartitionConfiguration {
     };
   }
 
-  
+
 
 
 
@@ -51515,7 +51597,7 @@ class PartitionConfiguration {
     return new PartitionConfiguration(obj);
   }
 
-  
+
 
 
 
@@ -51542,7 +51624,7 @@ class PartitionConfiguration {
 
 
 class PartitionRouter {
-  
+
 
 
 
@@ -51553,28 +51635,28 @@ class PartitionRouter {
       throw new Error('PartitionConfiguration is required');
     }
 
-    
+
 
 
 
 
     this._configuration = configuration;
 
-    
+
 
 
 
 
     this._logger = options.logger || console;
 
-    
+
 
 
 
 
     this._customRouter = options.customRouter || null;
 
-    
+
 
 
 
@@ -51582,7 +51664,7 @@ class PartitionRouter {
     this._roundRobinCounter = 0;
   }
 
-  
+
 
 
 
@@ -51623,7 +51705,7 @@ class PartitionRouter {
     return partitions;
   }
 
-  
+
 
 
 
@@ -51634,7 +51716,7 @@ class PartitionRouter {
     return partitions[0];
   }
 
-  
+
 
 
 
@@ -51642,7 +51724,7 @@ class PartitionRouter {
 
   _routeExplicit(context) {
     if (!context.partitionId) {
-      
+
       const defaultPartition = this._configuration.getDefaultPartition();
       return defaultPartition ? [defaultPartition] : [];
     }
@@ -51650,7 +51732,7 @@ class PartitionRouter {
     return partition ? [partition] : [];
   }
 
-  
+
 
 
 
@@ -51665,11 +51747,11 @@ class PartitionRouter {
       return this._configuration.getPartitionsByTags(context.tags, matchMode);
     }
 
-    
+
     return this._configuration.getAllPartitions();
   }
 
-  
+
 
 
 
@@ -51678,7 +51760,7 @@ class PartitionRouter {
   _routeRoundRobin(context) {
     let candidates = this._configuration.getAllPartitions();
 
-    
+
     if (context.tag) {
       candidates = candidates.filter(p => p.hasTag(context.tag));
     } else if (context.tags && context.tags.length > 0) {
@@ -51693,7 +51775,7 @@ class PartitionRouter {
     return [candidates[index]];
   }
 
-  
+
 
 
 
@@ -51702,7 +51784,7 @@ class PartitionRouter {
   _routeByPriority(context) {
     let candidates = this._configuration.getAllPartitions();
 
-    
+
     if (context.tag) {
       candidates = candidates.filter(p => p.hasTag(context.tag));
     } else if (context.tags && context.tags.length > 0) {
@@ -51713,12 +51795,12 @@ class PartitionRouter {
       return [];
     }
 
-    
+
     candidates.sort((a, b) => b.priority - a.priority);
     return [candidates[0]];
   }
 
-  
+
 
 
 
@@ -51731,7 +51813,7 @@ class PartitionRouter {
     }
     const result = this._customRouter(context, this._configuration);
 
-    
+
     if (Array.isArray(result)) {
       return result;
     }
@@ -51741,7 +51823,7 @@ class PartitionRouter {
     return [];
   }
 
-  
+
 
 
 
@@ -51755,7 +51837,7 @@ class PartitionRouter {
     return this;
   }
 
-  
+
 
 
 
@@ -51764,7 +51846,7 @@ class PartitionRouter {
     return this;
   }
 
-  
+
 
 
 
@@ -51804,7 +51886,7 @@ class PartitionRouter {
 
 
 class CrossPartitionQuery {
-  
+
 
 
 
@@ -51817,84 +51899,84 @@ class CrossPartitionQuery {
       throw new Error('Table name is required');
     }
 
-    
+
 
 
 
 
     this._manager = manager;
 
-    
+
 
 
 
 
     this._tableName = tableName;
 
-    
+
 
 
 
 
     this._partitionIds = null;
 
-    
+
 
 
 
 
     this._tag = null;
 
-    
+
 
 
 
 
     this._tags = null;
 
-    
+
 
 
 
 
     this._tagMatchMode = 'ALL';
 
-    
+
 
 
 
 
     this._queryAll = false;
 
-    
+
 
 
 
 
     this._columns = null;
 
-    
+
 
 
 
 
     this._whereConditions = [];
 
-    
+
 
 
 
 
     this._orderBy = null;
 
-    
+
 
 
 
 
     this._limit = null;
 
-    
+
 
 
 
@@ -51902,7 +51984,7 @@ class CrossPartitionQuery {
     this._continueOnError = true;
   }
 
-  
+
 
 
 
@@ -51919,7 +52001,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -51936,7 +52018,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -51955,7 +52037,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -51967,7 +52049,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -51977,7 +52059,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -51993,7 +52075,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -52007,7 +52089,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -52017,7 +52099,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -52027,7 +52109,7 @@ class CrossPartitionQuery {
     return this;
   }
 
-  
+
 
 
 
@@ -52036,22 +52118,22 @@ class CrossPartitionQuery {
   execute() {
     const startTime = Date.now();
 
-    
+
     const partitions = this._resolvePartitions();
     if (partitions.length === 0) {
       throw new Error('No partitions selected for cross-partition query');
     }
 
-    
+
     const allRecords = [];
-    
+
     const partitionResults = new Map();
-    
+
     const errors = new Map();
-    
+
     const partitionsQueried = [];
 
-    
+
     for (const partition of partitions) {
       try {
         const db = this._manager.getPartition(partition.id);
@@ -52059,7 +52141,7 @@ class CrossPartitionQuery {
         partitionResults.set(partition.id, records);
         partitionsQueried.push(partition.id);
 
-        
+
         for (const record of records) {
           record._partitionId = partition.id;
           allRecords.push(record);
@@ -52073,7 +52155,7 @@ class CrossPartitionQuery {
       }
     }
 
-    
+
     if (this._orderBy) {
       const {
         column,
@@ -52105,16 +52187,16 @@ class CrossPartitionQuery {
     };
   }
 
-  
+
 
 
 
   executeParallel() {
-    
+
     return this.execute();
   }
 
-  
+
 
 
 
@@ -52141,11 +52223,11 @@ class CrossPartitionQuery {
       return config.getAllPartitions();
     }
 
-    
+
     return config.getAllPartitions();
   }
 
-  
+
 
 
 
@@ -52155,27 +52237,27 @@ class CrossPartitionQuery {
 
 
   _executeOnPartition(db, partitionId) {
-    
+
     let query = db.select(this._columns).from(this._tableName);
 
-    
+
     for (const condition of this._whereConditions) {
       query = query.where(condition.column, condition.operator, condition.value);
     }
 
-    
+
     if (this._orderBy) {
       query = query.orderBy(this._orderBy.column, this._orderBy.direction);
     }
 
-    
+
     if (this._limit) {
       query = query.limit(this._limit);
     }
     return query.execute();
   }
 
-  
+
 
 
 
@@ -52208,13 +52290,13 @@ class CrossPartitionQuery {
 
 
 class MultiDatabaseError extends BaseError {
-  
+
 
 
 
   constructor(message, details = {}) {
     super(message, details);
-    
+
     this.name = 'MultiDatabaseError';
     this.details = details;
   }
@@ -52226,7 +52308,7 @@ class MultiDatabaseError extends BaseError {
 
 
 class PartitionNotFoundError extends MultiDatabaseError {
-  
+
 
 
   constructor(partitionId) {
@@ -52244,7 +52326,7 @@ class PartitionNotFoundError extends MultiDatabaseError {
 
 
 class PartitionConnectionError extends MultiDatabaseError {
-  
+
 
 
 
@@ -52265,7 +52347,7 @@ class PartitionConnectionError extends MultiDatabaseError {
 
 
 class ReadOnlyPartitionError extends MultiDatabaseError {
-  
+
 
 
 
@@ -52286,7 +52368,7 @@ class ReadOnlyPartitionError extends MultiDatabaseError {
 
 
 class CrossPartitionQueryError extends MultiDatabaseError {
-  
+
 
 
 
@@ -52305,7 +52387,7 @@ class CrossPartitionQueryError extends MultiDatabaseError {
 
 
 class CrossPartitionDisabledError extends MultiDatabaseError {
-  
+
 
 
   constructor() {
@@ -52330,7 +52412,7 @@ class CrossPartitionDisabledError extends MultiDatabaseError {
 
 
 class PartitionCoordinator {
-  
+
 
 
 
@@ -52347,7 +52429,7 @@ class PartitionCoordinator {
     this._connections = new Map();
     this._statistics = new Map();
 
-    
+
     for (const partition of this._configuration.getAllPartitions()) {
       this._statistics.set(partition.id, {
         queries: 0,
@@ -52359,7 +52441,7 @@ class PartitionCoordinator {
     }
   }
 
-  
+
 
 
 
@@ -52378,7 +52460,7 @@ class PartitionCoordinator {
     return this._createConnection(partition);
   }
 
-  
+
 
 
 
@@ -52397,7 +52479,7 @@ class PartitionCoordinator {
         ...this._defaultConnectionOptions
       };
       const db = new MyDatabaseService(partition.spreadsheetId, this._logger, this._utils, this._cache, null,
-      
+
       connectionOptions);
       this._connections.set(partition.id, db);
       this.updateStatistics(partition.id, 'connect');
@@ -52408,7 +52490,7 @@ class PartitionCoordinator {
     }
   }
 
-  
+
 
 
 
@@ -52418,7 +52500,7 @@ class PartitionCoordinator {
     return partition ? this._connections.has(partition.id) : false;
   }
 
-  
+
 
 
 
@@ -52426,7 +52508,7 @@ class PartitionCoordinator {
     return Array.from(this._connections.keys());
   }
 
-  
+
 
 
 
@@ -52434,7 +52516,7 @@ class PartitionCoordinator {
     return this._connections.entries();
   }
 
-  
+
 
 
 
@@ -52451,7 +52533,7 @@ class PartitionCoordinator {
     return true;
   }
 
-  
+
 
 
 
@@ -52466,7 +52548,7 @@ class PartitionCoordinator {
     return count;
   }
 
-  
+
 
 
 
@@ -52480,7 +52562,7 @@ class PartitionCoordinator {
     return stats;
   }
 
-  
+
 
 
 
@@ -52494,7 +52576,7 @@ class PartitionCoordinator {
     } : null;
   }
 
-  
+
 
 
   resetStatistics() {
@@ -52510,7 +52592,7 @@ class PartitionCoordinator {
     }
   }
 
-  
+
 
 
 
@@ -52534,7 +52616,7 @@ class PartitionCoordinator {
     }
   }
 
-  
+
 
 
 
@@ -52551,7 +52633,7 @@ class PartitionCoordinator {
 
 
 class CrossPartitionAggregator {
-  
+
 
 
 
@@ -52560,8 +52642,8 @@ class CrossPartitionAggregator {
 
 
   static saveAll(coordinator, options = {}) {
-    
-    
+
+
     const results = {};
     const config = coordinator._configuration;
     for (const [partitionId, db] of coordinator.getConnectionsEntries()) {
@@ -52624,7 +52706,7 @@ class CrossPartitionAggregator {
 
 
 class MultiDatabaseManager {
-  
+
 
 
 
@@ -52635,15 +52717,15 @@ class MultiDatabaseManager {
 
   constructor(configuration, options = {}) {
     var _info, _ref;
-    
-    
+
+
 
 
 
 
     this._configuration = configuration instanceof PartitionConfiguration ? configuration : new PartitionConfiguration(configuration);
 
-    
+
 
 
 
@@ -52653,7 +52735,7 @@ class MultiDatabaseManager {
       customRouter: options.customRouter
     });
 
-    
+
 
 
 
@@ -52661,7 +52743,7 @@ class MultiDatabaseManager {
     this._coordinator = new PartitionCoordinator(this._configuration, options);
     (_info = (_ref = options.logger || console).info) === null || _info === void 0 || _info.call(_ref, `MultiDatabaseManager initialized with ${this._configuration.size()} partitions`);
   }
-  
+
 
 
 
@@ -52672,7 +52754,7 @@ class MultiDatabaseManager {
     return this._coordinator.getPartition(partitionIdOrAlias);
   }
 
-  
+
 
 
 
@@ -52681,7 +52763,7 @@ class MultiDatabaseManager {
     return this.getPartition(this._configuration.defaultPartition);
   }
 
-  
+
 
 
 
@@ -52691,7 +52773,7 @@ class MultiDatabaseManager {
     return partitions.map(p => this.getPartition(p.id));
   }
 
-  
+
 
 
 
@@ -52702,7 +52784,7 @@ class MultiDatabaseManager {
     return partitions.map(p => this.getPartition(p.id));
   }
 
-  
+
 
 
 
@@ -52715,7 +52797,7 @@ class MultiDatabaseManager {
     return partitions.map(p => this.getPartition(p.id));
   }
 
-  
+
 
 
 
@@ -52728,7 +52810,7 @@ class MultiDatabaseManager {
     return new CrossPartitionQuery(this, tableName);
   }
 
-  
+
 
 
 
@@ -52736,7 +52818,7 @@ class MultiDatabaseManager {
     return this._configuration;
   }
 
-  
+
 
 
 
@@ -52744,7 +52826,7 @@ class MultiDatabaseManager {
     return this._router;
   }
 
-  
+
 
 
 
@@ -52753,7 +52835,7 @@ class MultiDatabaseManager {
     return this._coordinator.isConnected(partitionIdOrAlias);
   }
 
-  
+
 
 
 
@@ -52761,7 +52843,7 @@ class MultiDatabaseManager {
     return this._coordinator.getConnectedPartitions();
   }
 
-  
+
 
 
 
@@ -52771,7 +52853,7 @@ class MultiDatabaseManager {
     return CrossPartitionAggregator.saveAll(this._coordinator, options);
   }
 
-  
+
 
 
 
@@ -52780,7 +52862,7 @@ class MultiDatabaseManager {
     return this._coordinator.closePartition(partitionIdOrAlias);
   }
 
-  
+
 
 
 
@@ -52788,7 +52870,7 @@ class MultiDatabaseManager {
     return this._coordinator.closeAll();
   }
 
-  
+
 
 
 
@@ -52796,7 +52878,7 @@ class MultiDatabaseManager {
     return this._coordinator.getStatistics();
   }
 
-  
+
 
 
 
@@ -52805,14 +52887,14 @@ class MultiDatabaseManager {
     return this._coordinator.getPartitionStatistics(partitionIdOrAlias);
   }
 
-  
+
 
 
   resetStatistics() {
     this._coordinator.resetStatistics();
   }
 
-  
+
 
 
 
@@ -53219,7 +53301,7 @@ class MultiDatabaseManager {
 
 
 class JobDefinitionRegistry {
-  
+
 
 
 
@@ -53242,7 +53324,7 @@ class JobDefinitionRegistry {
     this.logger.debug('JobDefinitionRegistry: Instance created with empty registry');
   }
 
-  
+
 
 
   register(jobNameOrDefinition, jobDefinition) {
@@ -53265,7 +53347,7 @@ class JobDefinitionRegistry {
     this.logger.debug(`JobDefinitionRegistry.register: Job '${jobName}' registered successfully`);
   }
 
-  
+
 
 
   getDefinition(jobName) {
@@ -53281,14 +53363,14 @@ class JobDefinitionRegistry {
     return this.definitions.get(jobName);
   }
 
-  
+
 
 
   get(jobName) {
     return this.getDefinition(jobName);
   }
 
-  
+
 
 
   listRegisteredJobs() {
@@ -53297,14 +53379,14 @@ class JobDefinitionRegistry {
     return jobs;
   }
 
-  
+
 
 
   listAll() {
     return this.listRegisteredJobs();
   }
 
-  
+
 
 
   jobExists(jobName) {
@@ -53314,7 +53396,7 @@ class JobDefinitionRegistry {
     return this.definitions.has(jobName);
   }
 
-  
+
 
 
   removeJob(jobName) {
@@ -53331,7 +53413,7 @@ class JobDefinitionRegistry {
     return true;
   }
 
-  
+
 
 
   getStatistics() {
@@ -53344,7 +53426,7 @@ class JobDefinitionRegistry {
     return stats;
   }
 
-  
+
 
 
   _validateJobDefinition(jobName, jobDefinition) {
@@ -53368,7 +53450,7 @@ class JobDefinitionRegistry {
     }
   }
 
-  
+
 
 
   _calculateJobsByCategory() {
@@ -53394,7 +53476,7 @@ class JobDefinitionRegistry {
     return categories;
   }
 
-  
+
 
 
   _countJobsWithParameters() {
@@ -53578,7 +53660,7 @@ class QueuePersistenceHandler {
     this._driveService = driveService;
   }
 
-  
+
 
 
 
@@ -53708,11 +53790,11 @@ class QueuePersistenceHandler {
           const file = driveApp.getFileById(stateFileId);
           file.setTrashed(true);
         } catch (_e) {
-          
+
         }
       }
     } catch (_e) {
-      
+
     }
     const keys = ['state', 'type', 'parameters', 'config', 'trigger', 'state_size', 'state_file_id'];
     keys.forEach(suffix => this._propertiesService.deleteProperty(this._key(suffix)));
@@ -53812,7 +53894,7 @@ class JobRunnerTriggerManager {
     this._triggerService = facade._triggerService;
   }
 
-  
+
 
 
 
@@ -53947,7 +54029,7 @@ function* withTimeout(generator, maxDuration, startTime) {
     yield next.value;
     next = generator.next();
   }
-  
+
   return next.value;
 }
 
@@ -53961,7 +54043,7 @@ function* withTimeout(generator, maxDuration, startTime) {
 
 
 class JobExecutor {
-  
+
 
 
 
@@ -53974,7 +54056,7 @@ class JobExecutor {
     this._calculateExactTotal = this.progressTracker._calculateExactTotal.bind(this.progressTracker);
   }
 
-  
+
 
 
 
@@ -53985,7 +54067,7 @@ class JobExecutor {
 
 
   execute(handler, parameters, startTime, maxDuration) {
-    
+
     if (this._stateManager.isCancelled()) {
       this._logger.info(`Job ${this._stateManager.jobName} was cancelled, aborting execution`);
       this._stateManager.releaseLock();
@@ -53995,23 +54077,23 @@ class JobExecutor {
       };
     }
 
-    
-    
-    
+
+
+
     if (parameters.jobDefinition && parameters.jobDefinition.iterationLevels) {
-      
+
       if (!parameters.resumeState) {
         parameters.resumeState = {};
       }
       if (!parameters.resumeState.total || parameters.resumeState.total === 0) {
         this._logger.debug(`[JOB] Calculating total number of elements...`);
 
-        
-        
+
+
         if (parameters.services) {
           const total = this._calculateExactTotal(parameters.jobDefinition.iterationLevels, parameters.services);
 
-          
+
           parameters.resumeState = {
             ...parameters.resumeState,
             total: total
@@ -54025,16 +54107,16 @@ class JobExecutor {
       throw new Error(`The handler for job ${this._stateManager.jobName} is not a valid generator`);
     }
 
-    
+
     const generatorWithTimeout = withTimeout(generator, maxDuration, startTime);
     let result = null,
       progress = null,
       _done = false;
     try {
-      
+
       let next = generatorWithTimeout.next();
       while (!next.done) {
-        
+
         if (this._stateManager.isCancelled()) {
           this._logger.info(`Job ${this._stateManager.jobName} cancelled during execution`);
           this._stateManager.releaseLock();
@@ -54053,7 +54135,7 @@ class JobExecutor {
             timestamp: new Date().getTime()
           });
 
-          
+
           const monitor = (_parameters$services = parameters.services) === null || _parameters$services === void 0 ? void 0 : _parameters$services.monitor;
           if (monitor && typeof monitor.updateProgress === 'function') {
             monitor.updateProgress(this._stateManager.jobName, progress.percentage || 0, progress.message || '');
@@ -54062,10 +54144,10 @@ class JobExecutor {
         next = generatorWithTimeout.next();
       }
 
-      
-      
+
+
       result = next.value !== undefined ? next.value : progress;
-      
+
       this._stateManager.releaseLock(); 
       this._stateManager.batchSave({
         state: JobStateManager.STATE_COMPLETED,
@@ -54082,11 +54164,11 @@ class JobExecutor {
       };
     } catch (error) {
       var _progress2;
-      
+
       if (error instanceof TimeoutException) {
         var _progress;
         this._logger.info(`Interrupting job ${this._stateManager.jobName} due to timeout. State saved.`);
-        
+
         this._stateManager.releaseLock(); 
         this._stateManager.batchSave({
           state: 'to_resume',
@@ -54103,9 +54185,9 @@ class JobExecutor {
         };
       }
 
-      
+
       this._logger.error(`Error in job ${this._stateManager.jobName}: ${error.message}`);
-      
+
       this._stateManager.releaseLock();
       this._stateManager.batchSave({
         state: 'error',
@@ -54116,7 +54198,7 @@ class JobExecutor {
           error: error.message
         }
       });
-      
+
       throw error;
     }
   }
@@ -54131,12 +54213,12 @@ class JobExecutor {
 
 
 class JobQueue {
-  
+
   static get DEFAULT_TRIGGER_DELAY_MS() {
     return 60 * 1000;
   }
 
-  
+
 
 
 
@@ -54145,7 +54227,7 @@ class JobQueue {
 
 
   constructor(logger, utils, propertiesService, triggerService, lockService) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('MyJobQueue: logger is required and must be an object');
     }
@@ -54177,14 +54259,14 @@ class JobQueue {
     this._config = {};
   }
 
-  
+
 
 
 
 
 
   setMaxDuration(durationMs) {
-    
+
     if (typeof durationMs !== 'number' || durationMs <= 0) {
       throw new Error('JobQueue.setMaxDuration: durationMs must be a positive number');
     }
@@ -54193,7 +54275,7 @@ class JobQueue {
     return this;
   }
 
-  
+
 
 
 
@@ -54208,7 +54290,7 @@ class JobQueue {
     return this;
   }
 
-  
+
 
 
 
@@ -54223,7 +54305,7 @@ class JobQueue {
     return this;
   }
 
-  
+
 
 
 
@@ -54236,7 +54318,7 @@ class JobQueue {
     return this;
   }
 
-  
+
 
 
 
@@ -54253,7 +54335,7 @@ class JobQueue {
       if (savedConfig.triggerDelayMs) {
         this._triggerDelayMs = savedConfig.triggerDelayMs;
       }
-      
+
       if (savedConfig.maxRetries !== undefined) {
         this._maxRetries = savedConfig.maxRetries;
       }
@@ -54261,7 +54343,7 @@ class JobQueue {
     return this;
   }
 
-  
+
 
 
 
@@ -54276,7 +54358,7 @@ class JobQueue {
     return this;
   }
 
-  
+
 
 
 
@@ -54295,24 +54377,24 @@ class JobQueue {
 
   execute(jobName, jobType, parameters = {}, forceRestart = false) {
     const stateManager = new JobStateManager(jobName, this._propertiesService, this._utils, this._lockService);
-    
+
     const triggerManager = new JobTriggerManager(jobName, this._propertiesService, this._triggerService, this._triggerDelayMs);
     const executor = new JobExecutor(this._logger, stateManager, triggerManager);
     try {
-      
+
       if (forceRestart) {
         this._logger.debug(`Forcing restart for ${jobName}.`);
         this.resetJobState(jobName);
         stateManager.releaseLock(); 
       }
 
-      
+
       if (!stateManager.tryAcquireRunning()) {
         this._logger.warn(`Job ${jobName} already running or lock acquisition failed.`);
         return null;
       }
 
-      
+
       const jobState = stateManager.getState();
       if (!jobState || forceRestart) {
         stateManager.saveType(jobType);
@@ -54330,41 +54412,41 @@ class JobQueue {
       }
       const executionResult = executor.execute(handler, parameters, new Date().getTime(), this._maxExecutionDuration);
 
-      
+
       if (executionResult.done) {
-        
+
         this._logger.info(`Job ${jobName} completed successfully`);
 
-        
+
         stateManager.resetRetryCount();
 
-        
+
         return executionResult.value;
       } else {
-        
+
         const retryCount = stateManager.getRetryCount();
 
-        
+
         if (this._maxRetries !== null && retryCount >= this._maxRetries) {
           this._logger.error(`Job ${jobName} exceeded max retries (${this._maxRetries}). Marking as failed.`);
 
-          
+
           stateManager.saveFailureInfo({
             reason: 'MAX_RETRIES_EXCEEDED',
             retryCount: retryCount,
             timestamp: new Date().getTime()
           });
 
-          
+
           stateManager.setState(JobStateManager.STATE_FAILED);
 
-          
+
           triggerManager.deleteExistingTriggers();
 
-          
+
           stateManager.releaseLock();
 
-          
+
           if (this._onFailureCallback) {
             try {
               this._onFailureCallback(new Error('Max retries exceeded'), {
@@ -54380,18 +54462,18 @@ class JobQueue {
           return null;
         }
 
-        
+
         const newRetryCount = stateManager.incrementRetryCount();
         this._logger.info(`Job ${jobName} timed out. Retry ${newRetryCount}${this._maxRetries !== null ? ' of ' + this._maxRetries : ''}`);
 
-        
-        
-        
+
+
+
         const baseDelay = this._triggerDelayMs || JobQueue.DEFAULT_TRIGGER_DELAY_MS;
         const exponentialDelay = Math.min(baseDelay * Math.pow(2, newRetryCount - 1), 30 * 60 * 1000);
         this._logger.debug(`Scheduling retry in ${exponentialDelay}ms (exponential backoff)`);
 
-        
+
         const triggerManagerWithBackoff = new JobTriggerManager(jobName, this._propertiesService, this._triggerService, exponentialDelay);
         triggerManagerWithBackoff.createResumeTrigger();
         return null;
@@ -54399,10 +54481,10 @@ class JobQueue {
     } catch (error) {
       this._logger.error(`Fatal error in job ${jobName}: ${error.stack}`);
 
-      
+
       const retryCount = stateManager.incrementRetryCount();
 
-      
+
       stateManager.saveFailureInfo({
         reason: 'FATAL_ERROR',
         error: error.message,
@@ -54413,7 +54495,7 @@ class JobQueue {
       stateManager.setState(JobStateManager.STATE_FAILED);
       stateManager.releaseLock(); 
 
-      
+
       if (this._maxRetries !== null && retryCount >= this._maxRetries && this._onFailureCallback) {
         try {
           this._onFailureCallback(error, {
@@ -54430,14 +54512,14 @@ class JobQueue {
     }
   }
 
-  
+
 
 
 
 
   resetJobState(jobName) {
     const stateManager = new JobStateManager(jobName, this._propertiesService, this._utils, this._lockService);
-    
+
     const triggerManager = new JobTriggerManager(jobName, this._propertiesService, this._triggerService, this._triggerDelayMs);
     triggerManager.deleteExistingTriggers();
     stateManager.reset();
@@ -54445,24 +54527,24 @@ class JobQueue {
     return true;
   }
 
-  
+
 
 
 
 
   cancelJob(jobName) {
     const stateManager = new JobStateManager(jobName, this._propertiesService, this._utils, this._lockService);
-    
+
     const triggerManager = new JobTriggerManager(jobName, this._propertiesService, this._triggerService, this._triggerDelayMs);
     const currentState = stateManager.getState();
 
-    
+
     if (!currentState || currentState === JobStateManager.STATE_COMPLETED || currentState === JobStateManager.STATE_CANCELLED) {
       this._logger.warn(`Cannot cancel job ${jobName} in state: ${currentState || 'not_started'}`);
       return false;
     }
 
-    
+
     stateManager.batchSave({
       state: JobStateManager.STATE_CANCELLED,
       progress: {
@@ -54472,16 +54554,16 @@ class JobQueue {
       }
     });
 
-    
+
     triggerManager.deleteExistingTriggers();
 
-    
+
     stateManager.releaseLock();
     this._logger.info(`Job ${jobName} has been cancelled.`);
     return true;
   }
 
-  
+
 
 
 
@@ -54522,14 +54604,14 @@ class JobQueue {
 
 
 class CapturingLogger {
-  
+
 
 
 
 
 
   constructor(realLogger, maxBufferSize = 1000) {
-    
+
     if (!realLogger) {
       throw new Error('CapturingLogger: realLogger is required');
     }
@@ -54540,26 +54622,26 @@ class CapturingLogger {
       }
     }
 
-    
+
     if (typeof maxBufferSize !== 'number' || maxBufferSize <= 0) {
       throw new Error('CapturingLogger: maxBufferSize must be a positive number');
     }
 
-    
+
 
 
 
 
     this._realLogger = realLogger;
 
-    
+
 
 
 
 
     this._maxBufferSize = maxBufferSize;
 
-    
+
 
 
 
@@ -54567,7 +54649,7 @@ class CapturingLogger {
     this._capturedLogs = [];
   }
 
-  
+
 
 
 
@@ -54575,7 +54657,7 @@ class CapturingLogger {
 
 
   _capture(level, message, context = null) {
-    
+
     const entry = {
       level: level,
       timestamp: new Date(),
@@ -54584,39 +54666,39 @@ class CapturingLogger {
     };
     this._capturedLogs.push(entry);
 
-    
+
     if (this._capturedLogs.length > this._maxBufferSize) {
       this._capturedLogs.shift(); 
     }
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
 
 
   debug(message, context = null) {
-    
+
     const evaluatedMessage = typeof message === 'function' ? message() : message;
     const evaluatedContext = context && typeof context === 'function' ? context() : context;
 
-    
+
     const messageStr = typeof evaluatedMessage === 'object' ? JSON.stringify(evaluatedMessage) : String(evaluatedMessage);
 
-    
+
     this._capture('DEBUG', messageStr, evaluatedContext);
 
-    
+
     this._realLogger.debug(message, context);
     return this;
   }
 
-  
+
 
 
 
@@ -54631,7 +54713,7 @@ class CapturingLogger {
     return this;
   }
 
-  
+
 
 
 
@@ -54646,7 +54728,7 @@ class CapturingLogger {
     return this;
   }
 
-  
+
 
 
 
@@ -54661,7 +54743,7 @@ class CapturingLogger {
     return this;
   }
 
-  
+
 
 
 
@@ -54675,20 +54757,20 @@ class CapturingLogger {
     return this;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
   getCapturedLogs() {
-    
+
     return [...this._capturedLogs];
   }
 
-  
+
 
 
 
@@ -54703,7 +54785,7 @@ class CapturingLogger {
     }).join(separator);
   }
 
-  
+
 
 
 
@@ -54730,7 +54812,7 @@ class CapturingLogger {
     return `<div style="font-family: monospace; font-size: 12px; padding: 10px; background: #f5f5f5; overflow-x: auto;">${lines}</div>`;
   }
 
-  
+
 
 
 
@@ -54740,25 +54822,25 @@ class CapturingLogger {
     return HtmlSanitizer.escapeHtml(text);
   }
 
-  
+
 
 
   clearCapturedLogs() {
     this._capturedLogs = [];
   }
 
-  
+
 
 
   getLogCount() {
     return this._capturedLogs.length;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -54770,7 +54852,7 @@ class CapturingLogger {
     return this;
   }
 
-  
+
 
 
 
@@ -54964,8 +55046,8 @@ class JobRunnerLogCapturer {
     const logsText = capturingLogger.getLogsAsText();
     const fullContent = header + logsText;
     try {
-      
-      
+
+
       const driveApp = driveService.getStandardApp();
       let fileId;
       if (folderId) {
@@ -55001,7 +55083,7 @@ class JobRunnerLogCapturer {
 
 class MyJobRunnerService {
   constructor(logger, utils, jobDefinitionRegistry) {
-    
+
     if (logger == null) {
       throw new Error('MyJobRunnerService: logger is required and cannot be null or undefined');
     }
@@ -55032,17 +55114,17 @@ class MyJobRunnerService {
     this._utils = utils;
     this._jobDefinitionRegistry = jobDefinitionRegistry;
 
-    
+
     this._propertiesService = new PropertiesService(logger);
     this._triggerService = new TriggerService(logger, utils);
 
-    
+
     this._triggerManager = new JobRunnerTriggerManager(this);
     this._stateManager = new JobRunnerStateManager(this);
     this._executionController = new JobRunnerExecutionController(this);
     this._logCapturer = new JobRunnerLogCapturer(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._triggerManager,
       methods: ['_getCurrentTriggerId']
@@ -55059,7 +55141,7 @@ class MyJobRunnerService {
     this._logger.debug('MyJobRunnerService: Instance created');
   }
 
-  
+
 
 
 
@@ -55507,7 +55589,7 @@ class MyJobRunnerService {
 
 
 class PipelineContext {
-  
+
 
 
 
@@ -55528,12 +55610,12 @@ class PipelineContext {
     };
   }
 
-  
+
   getData() {
     return this._data;
   }
 
-  
+
 
 
 
@@ -55547,7 +55629,7 @@ class PipelineContext {
     return Object.prototype.hasOwnProperty.call(this._data, key) ? this._data[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -55562,7 +55644,7 @@ class PipelineContext {
     return this;
   }
 
-  
+
 
 
 
@@ -55575,7 +55657,7 @@ class PipelineContext {
     return Object.prototype.hasOwnProperty.call(this._data, key);
   }
 
-  
+
 
 
 
@@ -55586,17 +55668,17 @@ class PipelineContext {
     return this;
   }
 
-  
+
   shouldStop() {
     return this._metadata.stopRequested;
   }
 
-  
+
   getStopReason() {
     return this._metadata.stopReason;
   }
 
-  
+
 
 
 
@@ -55616,12 +55698,12 @@ class PipelineContext {
     return this;
   }
 
-  
+
   getExecutionHistory() {
     return this._metadata.executionHistory;
   }
 
-  
+
 
 
 
@@ -55636,7 +55718,7 @@ class PipelineContext {
     return this;
   }
 
-  
+
 
 
 
@@ -55650,12 +55732,12 @@ class PipelineContext {
     return Object.prototype.hasOwnProperty.call(this._metadata.flags, name) ? this._metadata.flags[name] : defaultValue;
   }
 
-  
+
   getMetadata() {
     return this._metadata;
   }
 
-  
+
 
 
 
@@ -55665,7 +55747,7 @@ class PipelineContext {
     return this;
   }
 
-  
+
   getTotalDuration() {
     if (this._metadata.endTime === null) {
       return 0;
@@ -55673,7 +55755,7 @@ class PipelineContext {
     return this._metadata.endTime - this._metadata.startTime;
   }
 
-  
+
 
 
 
@@ -55713,7 +55795,7 @@ class PipelineContext {
 
 
 class PipelineError extends BaseError {
-  
+
 
 
 
@@ -55723,11 +55805,11 @@ class PipelineError extends BaseError {
 
   constructor(message, context = {}) {
     super(message, context);
-    
+
     this.name = 'PipelineError';
   }
 
-  
+
 
 
   toString() {
@@ -55754,7 +55836,7 @@ class PipelineError extends BaseError {
 
 
 class Pipeline {
-  
+
 
 
 
@@ -55792,7 +55874,7 @@ class Pipeline {
     };
   }
 
-  
+
 
 
 
@@ -55801,22 +55883,22 @@ class Pipeline {
     return options.dryRun !== undefined ? Boolean(options.dryRun) : Boolean(this._dryRun);
   }
 
-  
+
   getName() {
     return this._name;
   }
 
-  
+
   get logger() {
     return this._logger;
   }
 
-  
+
   getSteps() {
     return this._steps;
   }
 
-  
+
 
 
 
@@ -55835,7 +55917,7 @@ class Pipeline {
     return this;
   }
 
-  
+
 
 
 
@@ -55848,7 +55930,7 @@ class Pipeline {
     return this;
   }
 
-  
+
 
 
 
@@ -55861,7 +55943,7 @@ class Pipeline {
     return this;
   }
 
-  
+
 
 
 
@@ -55874,7 +55956,7 @@ class Pipeline {
     return this;
   }
 
-  
+
 
 
 
@@ -55887,7 +55969,7 @@ class Pipeline {
     return this;
   }
 
-  
+
 
 
 
@@ -55901,7 +55983,7 @@ class Pipeline {
     }
   }
 
-  
+
 
 
 
@@ -55915,7 +55997,7 @@ class Pipeline {
     return step.execute(context);
   }
 
-  
+
 
 
 
@@ -56003,7 +56085,7 @@ class Pipeline {
     return context;
   }
 
-  
+
 
 
   clearSteps() {
@@ -56011,7 +56093,7 @@ class Pipeline {
     return this;
   }
 
-  
+
 
 
   getConfigSummary() {
@@ -56052,7 +56134,7 @@ class Pipeline {
 
 
 class ContextValidationError extends PipelineError {
-  
+
 
 
 
@@ -56087,7 +56169,7 @@ class ContextValidationError extends PipelineError {
 
 
 class StepExecutionError extends PipelineError {
-  
+
 
 
 
@@ -56139,14 +56221,14 @@ class StepExecutionError extends PipelineError {
 
 
 class Step {
-  
+
 
 
 
 
 
   constructor(name, logger, options = {}) {
-    
+
     if (!name || typeof name !== 'string') {
       throw new Error('Step: name is required and must be a non-empty string');
     }
@@ -56160,35 +56242,35 @@ class Step {
       throw new Error('Step: options must be an object or null');
     }
 
-    
+
 
 
 
 
     this._name = name;
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._requiredKeys = options.requiredKeys || [];
 
-    
+
 
 
 
 
     this._continueOnError = options.continueOnError || false;
 
-    
+
 
 
 
@@ -56196,21 +56278,21 @@ class Step {
     this._shouldExecuteCondition = options.shouldExecuteCondition || null;
   }
 
-  
+
 
 
   getName() {
     return this._name;
   }
 
-  
+
 
 
   get logger() {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -56218,16 +56300,16 @@ class Step {
 
 
   shouldExecute(context) {
-    
+
     if (this._shouldExecuteCondition && typeof this._shouldExecuteCondition === 'function') {
       return this._shouldExecuteCondition(context);
     }
 
-    
+
     return true;
   }
 
-  
+
 
 
 
@@ -56247,7 +56329,7 @@ class Step {
     }
   }
 
-  
+
 
 
 
@@ -56266,7 +56348,7 @@ class Step {
     return this;
   }
 
-  
+
 
 
 
@@ -56279,7 +56361,7 @@ class Step {
     return context.get(key, defaultValue);
   }
 
-  
+
 
 
 
@@ -56292,7 +56374,7 @@ class Step {
     throw new Error(`Step._executeLogic must be implemented by subclass: ${this._name}`);
   }
 
-  
+
 
 
 
@@ -56302,7 +56384,7 @@ class Step {
   execute(context) {
     const startTime = Date.now();
     try {
-      
+
       if (!this.shouldExecute(context)) {
         this._logger.info(`[${this._name}] Skipped (condition not met)`);
         return {
@@ -56312,11 +56394,11 @@ class Step {
         };
       }
 
-      
+
       this.verifyContext(context);
       this._logger.debug(`[${this._name}] Executing...`);
 
-      
+
       this._executeLogic(context);
       const durationMs = Date.now() - startTime;
       this._logger.debug(`[${this._name}] Completed in ${durationMs}ms`);
@@ -56328,10 +56410,10 @@ class Step {
     } catch (error) {
       const durationMs = Date.now() - startTime;
 
-      
+
       this._logger.error(`[${this._name}] Failed after ${durationMs}ms: ${error.message}`);
 
-      
+
       if (this._continueOnError) {
         this._logger.warn(`[${this._name}] Continuing despite error (continueOnError=true)`);
         return {
@@ -56342,7 +56424,7 @@ class Step {
         };
       }
 
-      
+
       const stepError = error instanceof StepExecutionError ? error : new StepExecutionError(this._name, error, context.getData());
       throw stepError;
     }
@@ -56366,7 +56448,7 @@ class Step {
 
 
 class PostProcessorContext {
-  
+
 
 
 
@@ -56385,32 +56467,32 @@ class PostProcessorContext {
       throw new Error('PostProcessorContext: pipelineContext is required');
     }
 
-    
+
 
 
 
     this.step = options.step;
 
-    
+
 
 
 
     this.stepResult = options.stepResult;
 
-    
+
 
 
 
     this.pipelineContext = options.pipelineContext;
 
-    
+
 
 
 
     this.metadata = options.metadata || {};
   }
 
-  
+
 
 
 
@@ -56424,7 +56506,7 @@ class PostProcessorContext {
     return Object.prototype.hasOwnProperty.call(this.stepResult.output, key) ? this.stepResult.output[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -56449,42 +56531,42 @@ class PostProcessorContext {
     return current !== undefined ? current : defaultValue;
   }
 
-  
+
 
 
   wasSuccessful() {
     return this.stepResult.success === true && !this.stepResult.skipped;
   }
 
-  
+
 
 
   wasSkipped() {
     return this.stepResult.skipped === true;
   }
 
-  
+
 
 
   getError() {
     return this.stepResult.error || null;
   }
 
-  
+
 
 
   getStepName() {
     return this.step.getName ? this.step.getName() : 'unknown';
   }
 
-  
+
 
 
   getDurationMs() {
     return this.stepResult.durationMs || 0;
   }
 
-  
+
 
 
 
@@ -56493,7 +56575,7 @@ class PostProcessorContext {
     return Object.prototype.hasOwnProperty.call(this.metadata, key) ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -56543,7 +56625,7 @@ class PostProcessorContext {
 
 
 class PostProcessorResult extends Result {
-  
+
 
 
 
@@ -56553,45 +56635,45 @@ class PostProcessorResult extends Result {
 
 
   constructor(options = {}) {
-    
+
     super({
       error: options.error || null
     });
 
-    
+
 
 
 
     this.success = options.success === true;
 
-    
+
 
 
 
     this.processorId = options.processorId || 'unknown';
 
-    
+
 
 
 
     this.duration = options.duration || 0;
 
-    
+
 
 
 
     this.changes = options.changes || [];
 
-    
 
-    
+
+
 
 
 
     this.metadata = options.metadata || {};
   }
 
-  
+
 
 
 
@@ -56610,7 +56692,7 @@ class PostProcessorResult extends Result {
     });
   }
 
-  
+
 
 
 
@@ -56629,7 +56711,7 @@ class PostProcessorResult extends Result {
     });
   }
 
-  
+
 
 
 
@@ -56648,14 +56730,14 @@ class PostProcessorResult extends Result {
     });
   }
 
-  
+
 
 
   wasSkipped() {
     return this.metadata.skipped === true;
   }
 
-  
+
 
 
 
@@ -56677,7 +56759,7 @@ class PostProcessorResult extends Result {
     return this;
   }
 
-  
+
 
 
   getSummary() {
@@ -56691,7 +56773,7 @@ class PostProcessorResult extends Result {
     };
   }
 
-  
+
 
 
   toObject() {
@@ -56723,13 +56805,13 @@ class PostProcessorResult extends Result {
 
 
 const WhenCondition = Object.freeze({
-  
+
   ALWAYS: 'ALWAYS',
-  
+
   ON_SUCCESS: 'ON_SUCCESS',
-  
+
   ON_ERROR: 'ON_ERROR',
-  
+
   CUSTOM: 'CUSTOM'
 });
 
@@ -56758,7 +56840,7 @@ function isValidWhenCondition(value) {
 
 
 class ChainExecutor {
-  
+
 
 
 
@@ -56766,7 +56848,7 @@ class ChainExecutor {
     this._facade = facade;
   }
 
-  
+
 
 
 
@@ -56774,7 +56856,7 @@ class ChainExecutor {
     return this._facade._logger;
   }
 
-  
+
 
 
 
@@ -56782,7 +56864,7 @@ class ChainExecutor {
     return this._facade._expressionEngine;
   }
 
-  
+
 
 
 
@@ -56805,7 +56887,7 @@ class ChainExecutor {
     }
   }
 
-  
+
 
 
 
@@ -56831,7 +56913,7 @@ class ChainExecutor {
     }
   }
 
-  
+
 
 
 
@@ -56853,7 +56935,7 @@ class ChainExecutor {
       } = entry;
       const processorId = processor.getId();
 
-      
+
       if (chainStopped) {
         this._logger.debug(`[PostProcessorChain] Chain stopped, skipping: ${processorId}`);
         results.push(PostProcessorResult.skipped(processorId, 'Chain stopped'));
@@ -56861,7 +56943,7 @@ class ChainExecutor {
         continue;
       }
 
-      
+
       if (!this.shouldExecute(config, context)) {
         this._logger.debug(`[PostProcessorChain] Condition not met (${config.when}), skipping: ${processorId}`);
         results.push(PostProcessorResult.skipped(processorId, `Condition ${config.when} not met`));
@@ -56869,7 +56951,7 @@ class ChainExecutor {
         continue;
       }
 
-      
+
       const result = processor.execute(context);
       results.push(result);
       if (result.wasSkipped()) {
@@ -56880,7 +56962,7 @@ class ChainExecutor {
         executed++;
         failed++;
 
-        
+
         if (!config.continueOnError) {
           this._logger.error(`[PostProcessorChain] Stopping chain due to failure: ${processorId}`);
           chainStopped = true;
@@ -56940,13 +57022,13 @@ class ChainExecutor {
 
 
 class PostProcessorChain {
-  
+
 
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
@@ -56957,21 +57039,21 @@ class PostProcessorChain {
     }
     this._logger = options.logger || fallback;
 
-    
+
 
 
 
 
     this._expressionEngine = options.expressionEngine || null;
 
-    
+
 
 
 
 
     this._entries = [];
 
-    
+
 
 
 
@@ -56979,11 +57061,11 @@ class PostProcessorChain {
     this._chainExecutor = new ChainExecutor(this);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -57007,7 +57089,7 @@ class PostProcessorChain {
       }
     };
 
-    
+
     if (!isValidWhenCondition(entry.config.when)) {
       throw new Error(`PostProcessorChain.add: invalid when condition '${entry.config.when}'`);
     }
@@ -57016,7 +57098,7 @@ class PostProcessorChain {
     return this;
   }
 
-  
+
 
 
 
@@ -57028,7 +57110,7 @@ class PostProcessorChain {
     return this._entries.length < initialLength;
   }
 
-  
+
 
 
 
@@ -57037,14 +57119,14 @@ class PostProcessorChain {
     return this._entries.length;
   }
 
-  
+
 
 
   isEmpty() {
     return this._entries.length === 0;
   }
 
-  
+
 
 
 
@@ -57053,7 +57135,7 @@ class PostProcessorChain {
     return this;
   }
 
-  
+
 
 
 
@@ -57067,11 +57149,11 @@ class PostProcessorChain {
     return this._chainExecutor.executeChain(this._entries, context);
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -57089,7 +57171,7 @@ class PostProcessorChain {
     });
   }
 
-  
+
 
 
   getSummary() {
@@ -57116,7 +57198,7 @@ class PostProcessorChain {
 
 
 class PostProcessorError extends BaseError {
-  
+
 
 
 
@@ -57134,7 +57216,7 @@ class PostProcessorError extends BaseError {
 
 
 class PostProcessorError_ConfigurationError extends PostProcessorError {
-  
+
 
 
 
@@ -57153,7 +57235,7 @@ class PostProcessorError_ConfigurationError extends PostProcessorError {
 
 
 class ExecutionError extends PostProcessorError {
-  
+
 
 
 
@@ -57172,7 +57254,7 @@ class ExecutionError extends PostProcessorError {
 
 
 class RecordNotFoundError extends PostProcessorError {
-  
+
 
 
 
@@ -57197,7 +57279,7 @@ class RecordNotFoundError extends PostProcessorError {
 
 
 class ValueResolutionError extends PostProcessorError {
-  
+
 
 
 
@@ -57223,7 +57305,7 @@ class ValueResolutionError extends PostProcessorError {
 
 
 class ProcessorNotFoundError extends PostProcessorError {
-  
+
 
 
 
@@ -57260,12 +57342,12 @@ class ProcessorNotFoundError extends PostProcessorError {
 
 
 class PostProcessorRegistry {
-  
+
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
@@ -57274,7 +57356,7 @@ class PostProcessorRegistry {
       entityName: 'post-processor'
     });
 
-    
+
 
 
 
@@ -57286,7 +57368,7 @@ class PostProcessorRegistry {
     this._logger = options.logger || fallback;
   }
 
-  
+
 
 
 
@@ -57306,7 +57388,7 @@ class PostProcessorRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -57320,7 +57402,7 @@ class PostProcessorRegistry {
     return existed;
   }
 
-  
+
 
 
 
@@ -57328,7 +57410,7 @@ class PostProcessorRegistry {
     return this._processors.has(type);
   }
 
-  
+
 
 
 
@@ -57336,7 +57418,7 @@ class PostProcessorRegistry {
     return this._processors.get(type);
   }
 
-  
+
 
 
 
@@ -57368,7 +57450,7 @@ class PostProcessorRegistry {
     return new Constructor(id, processorConfig, services);
   }
 
-  
+
 
 
 
@@ -57383,14 +57465,14 @@ class PostProcessorRegistry {
     return configs.map(config => this.create(config, services));
   }
 
-  
+
 
 
   getRegisteredTypes() {
     return Array.from(this._processors.keys());
   }
 
-  
+
 
 
 
@@ -57399,7 +57481,7 @@ class PostProcessorRegistry {
     return this._processors.size;
   }
 
-  
+
 
 
 
@@ -57433,7 +57515,7 @@ class PostProcessorRegistry {
 
 
 class PostProcessableStep extends Step {
-  
+
 
 
 
@@ -57449,7 +57531,7 @@ class PostProcessableStep extends Step {
     this._lastPostProcessorResults = null;
   }
 
-  
+
 
 
 
@@ -57461,7 +57543,7 @@ class PostProcessableStep extends Step {
     return [];
   }
 
-  
+
 
 
 
@@ -57492,7 +57574,7 @@ class PostProcessableStep extends Step {
     return chain;
   }
 
-  
+
 
 
 
@@ -57504,7 +57586,7 @@ class PostProcessableStep extends Step {
     return this._processorChain;
   }
 
-  
+
 
 
 
@@ -57533,29 +57615,29 @@ class PostProcessableStep extends Step {
     return this._lastPostProcessorResults;
   }
 
-  
+
   getLastPostProcessorResults() {
     return this._lastPostProcessorResults;
   }
 
-  
+
 
 
 
 
   execute(context) {
-    
+
     const stepResult = super.execute(context);
 
-    
-    
+
+
     const postProcessorResults = this._executePostProcessors(stepResult, context);
 
-    
+
     if (postProcessorResults) {
       stepResult.postProcessors = postProcessorResults;
 
-      
+
       if (postProcessorResults.chainStopped) {
         this._logger.error(`[${this._name}] Post-processor chain was stopped due to failure`);
       }
@@ -57594,7 +57676,7 @@ class PostProcessableStep extends Step {
 
 
 class ProducerStep extends Step {
-  
+
 
 
 
@@ -57603,7 +57685,7 @@ class ProducerStep extends Step {
 
 
   constructor(name, logger, expressionEngine, options = {}) {
-    
+
     if (!expressionEngine || typeof expressionEngine !== 'object') {
       throw new Error('ProducerStep: expressionEngine is required and must be an object');
     }
@@ -57611,20 +57693,20 @@ class ProducerStep extends Step {
       throw new Error('ProducerStep: expressionEngine must have an evaluate method');
     }
 
-    
+
     if (!options.outputKey || typeof options.outputKey !== 'string') {
       throw new Error('ProducerStep: options.outputKey is required and must be a non-empty string');
     }
     super(name, logger, options);
 
-    
+
 
 
 
 
     this._expressionEngine = expressionEngine;
 
-    
+
 
 
 
@@ -57632,7 +57714,7 @@ class ProducerStep extends Step {
     this._outputKey = options.outputKey;
   }
 
-  
+
 
 
 
@@ -57640,7 +57722,7 @@ class ProducerStep extends Step {
     return this._expressionEngine;
   }
 
-  
+
 
 
 
@@ -57648,7 +57730,7 @@ class ProducerStep extends Step {
     return this._outputKey;
   }
 
-  
+
 
 
 
@@ -57661,7 +57743,7 @@ class ProducerStep extends Step {
     throw new Error(`ProducerStep.evaluateRules must be implemented by subclass: ${this._name}`);
   }
 
-  
+
 
 
 
@@ -57670,7 +57752,7 @@ class ProducerStep extends Step {
 
 
   _validateScalarResult(result) {
-    
+
     if (result === null || result === undefined) {
       throw new Error(`ProducerStep (${this._name}): evaluateRules must not return null or undefined`);
     }
@@ -57681,7 +57763,7 @@ class ProducerStep extends Step {
     return true;
   }
 
-  
+
 
 
 
@@ -57691,14 +57773,14 @@ class ProducerStep extends Step {
   _executeLogic(context) {
     this._logger.debug(`[${this._name}] Evaluating business rules...`);
 
-    
+
     const result = this.evaluateRules(context);
 
-    
+
     this._validateScalarResult(result);
     this._logger.debug(`[${this._name}] Evaluated result: ${result} (type: ${typeof result})`);
 
-    
+
     this.setResult(context, this._outputKey, result);
     this._logger.info(`[${this._name}] Decision made: ${this._outputKey} = ${result}`);
   }
@@ -57725,7 +57807,7 @@ class ProducerStep extends Step {
 
 
 class ConsumerStep extends Step {
-  
+
 
 
 
@@ -57741,30 +57823,30 @@ class ConsumerStep extends Step {
     }
     super(name, logger, options);
 
-    
+
 
 
 
     this._inputKey = options.inputKey;
 
-    
+
 
 
 
     this._outputKey = options.outputKey || null;
   }
 
-  
+
   get inputKey() {
     return this._inputKey;
   }
 
-  
+
   get outputKey() {
     return this._outputKey;
   }
 
-  
+
 
 
 
@@ -57779,7 +57861,7 @@ class ConsumerStep extends Step {
     throw new Error(`ConsumerStep.performAction must be implemented by subclass: ${this._name}`);
   }
 
-  
+
 
 
 
@@ -57790,20 +57872,20 @@ class ConsumerStep extends Step {
 
 
   _executeLogic(context) {
-    
+
     const inputValue = context.get(this._inputKey);
     this._logger.debug(`[${this._name}] Reading input from '${this._inputKey}': ${inputValue} (type: ${typeof inputValue})`);
 
-    
+
     if (inputValue === null || inputValue === undefined) {
       throw new Error(`ConsumerStep (${this._name}): Input value '${this._inputKey}' is null or undefined. ` + `Ensure a ProducerStep has written this value to the context.`);
     }
     this._logger.info(`[${this._name}] Performing action with input: ${inputValue}`);
 
-    
+
     const result = this.performAction(inputValue, context);
 
-    
+
     if (this._outputKey) {
       this.setResult(context, this._outputKey, result);
       this._logger.info(`[${this._name}] Action completed: ${this._outputKey} = ${JSON.stringify(result)}`);
@@ -57836,7 +57918,7 @@ class ConsumerStep extends Step {
 
 
 class TemplateSelectorStep extends ProducerStep {
-  
+
 
 
 
@@ -57845,14 +57927,14 @@ class TemplateSelectorStep extends ProducerStep {
 
 
   constructor(logger, expressionEngine, options = {}) {
-    
+
     const defaultOptions = {
       requiredKeys: ['grade', 'absences'],
       ...options
     };
     super('TemplateSelector', logger, expressionEngine, defaultOptions);
 
-    
+
 
 
 
@@ -57869,7 +57951,7 @@ class TemplateSelectorStep extends ProducerStep {
       value: 'TEMPLATE_TOO_MANY_ABSENCES'
     }];
 
-    
+
 
 
 
@@ -57877,7 +57959,7 @@ class TemplateSelectorStep extends ProducerStep {
     this._defaultTemplate = 'TEMPLATE_DEFAULT';
   }
 
-  
+
 
 
 
@@ -57889,7 +57971,7 @@ class TemplateSelectorStep extends ProducerStep {
     const contextData = context.getData();
     this._logger.debug(`[${this._name}] Evaluating ${this._rules.length} rules against context: ` + `grade=${contextData.grade}, absences=${contextData.absences}`);
 
-    
+
     for (const rule of this._rules) {
       try {
         const matches = this._expressionEngine.evaluate(rule.condition, contextData);
@@ -57900,11 +57982,11 @@ class TemplateSelectorStep extends ProducerStep {
         }
       } catch (error) {
         this._logger.error(`[${this._name}] Error evaluating rule "${rule.condition}": ${error.message}`);
-        
+
       }
     }
 
-    
+
     this._logger.warn(`[${this._name}] No rules matched, using default template: ${this._defaultTemplate}`);
     return this._defaultTemplate;
   }
@@ -57934,7 +58016,7 @@ class TemplateSelectorStep extends ProducerStep {
 
 
 class GenerateDocumentStep extends ConsumerStep {
-  
+
 
 
 
@@ -57947,19 +58029,19 @@ class GenerateDocumentStep extends ConsumerStep {
   constructor(logger, driveService, options = {}) {
     super('GenerateDocument', logger, options);
 
-    
+
     if (!driveService || typeof driveService !== 'object') {
       throw new Error('GenerateDocumentStep: driveService is required and must be an object');
     }
 
-    
+
 
 
 
 
     this._driveService = driveService;
 
-    
+
 
 
 
@@ -57972,7 +58054,7 @@ class GenerateDocumentStep extends ConsumerStep {
       TEMPLATE_DEFAULT: 'MOCK_TEMPLATE_DEFAULT_ID'
     };
 
-    
+
 
 
 
@@ -57980,7 +58062,7 @@ class GenerateDocumentStep extends ConsumerStep {
     this._targetFolderId = options.targetFolderId || null;
   }
 
-  
+
 
 
 
@@ -57992,26 +58074,26 @@ class GenerateDocumentStep extends ConsumerStep {
   performAction(templateId, context) {
     this._logger.info(`[${this._name}] Creating document from template: ${templateId}`);
 
-    
+
     const templateFileId = this._templateMapping[templateId];
     if (!templateFileId) {
       throw new Error(`GenerateDocumentStep: Unknown template ID '${templateId}'. ` + `Available templates: ${Object.keys(this._templateMapping).join(', ')}`);
     }
     this._logger.debug(`[${this._name}] Resolved template '${templateId}' to file ID: ${templateFileId}`);
 
-    
+
     const studentName = context.get('student_name', 'Unknown Student');
     const documentName = `${studentName} - ${templateId.replace('TEMPLATE_', '')} Report`;
 
-    
+
     this._logger.debug(`[${this._name}] Creating document: "${documentName}" from template ${templateFileId}`);
 
-    
-    
-    
-    
 
-    
+
+
+
+
+
     const documentId = `GENERATED_DOC_${Date.now()}`;
     const documentUrl = `https://docs.google.com/document/d/${documentId}`;
     this._logger.info(`[${this._name}] Document created successfully: ${documentName} (${documentId})`);
@@ -58038,15 +58120,15 @@ class GenerateDocumentStep extends ConsumerStep {
 
 
 const ValueSourceType = Object.freeze({
-  
+
   LITERAL: 'LITERAL',
-  
+
   CONTEXT: 'CONTEXT',
-  
+
   STEP_OUTPUT: 'STEP_OUTPUT',
-  
+
   EXPRESSION: 'EXPRESSION',
-  
+
   TIMESTAMP: 'TIMESTAMP'
 });
 
@@ -58071,7 +58153,7 @@ function isValidValueSourceType(value) {
 
 
 class ValueSource {
-  
+
 
 
 
@@ -58083,26 +58165,26 @@ class ValueSource {
       throw new Error(`ValueSource: Invalid type '${type}'`);
     }
 
-    
+
     this.type = type;
 
-    
+
     this.literal = config.literal;
 
-    
+
     this.contextPath = config.contextPath;
 
-    
+
     this.outputKey = config.outputKey;
 
-    
+
     this.expression = config.expression;
 
-    
+
     this.format = config.format || null;
   }
 
-  
+
 
 
 
@@ -58114,7 +58196,7 @@ class ValueSource {
     });
   }
 
-  
+
 
 
 
@@ -58130,7 +58212,7 @@ class ValueSource {
     });
   }
 
-  
+
 
 
 
@@ -58146,7 +58228,7 @@ class ValueSource {
     });
   }
 
-  
+
 
 
 
@@ -58162,7 +58244,7 @@ class ValueSource {
     });
   }
 
-  
+
 
 
 
@@ -58174,7 +58256,7 @@ class ValueSource {
     });
   }
 
-  
+
 
 
 
@@ -58192,7 +58274,7 @@ class ValueSource {
     return new ValueSource(config.type, config);
   }
 
-  
+
 
 
 
@@ -58248,7 +58330,7 @@ class ValueSource {
 
 
 class PostProcessor {
-  
+
 
 
 
@@ -58264,33 +58346,33 @@ class PostProcessor {
       throw new Error('PostProcessor: name is required and must be a non-empty string');
     }
 
-    
+
 
 
 
     this.id = id;
 
-    
+
 
 
 
     this.name = name;
 
-    
+
 
 
 
 
     this._config = config;
 
-    
+
 
 
 
 
     this._logger = services.logger || console;
 
-    
+
 
 
 
@@ -58298,28 +58380,28 @@ class PostProcessor {
     this._services = services;
   }
 
-  
+
 
 
   getId() {
     return this.id;
   }
 
-  
+
 
 
   getName() {
     return this.name;
   }
 
-  
+
 
 
   getConfig() {
     return this._config;
   }
 
-  
+
 
 
 
@@ -58329,18 +58411,18 @@ class PostProcessor {
     return true;
   }
 
-  
+
 
 
 
 
 
   _validateConfig() {
-    
-    
+
+
   }
 
-  
+
 
 
 
@@ -58353,7 +58435,7 @@ class PostProcessor {
     throw new Error(`PostProcessor._executeImpl must be implemented by subclass: ${this.name}`);
   }
 
-  
+
 
 
 
@@ -58362,20 +58444,20 @@ class PostProcessor {
   execute(context) {
     const startTime = Date.now();
     try {
-      
+
       this._validateConfig();
 
-      
+
       if (!this.shouldRun(context)) {
         this._logger.debug(`[${this.id}] Skipped (condition not met)`);
         return PostProcessorResult.skipped(this.id);
       }
       this._logger.debug(`[${this.id}] Executing...`);
 
-      
+
       const result = this._executeImpl(context);
 
-      
+
       if (result && typeof result.duration === 'number' && result.duration === 0) {
         result.duration = Date.now() - startTime;
       }
@@ -58391,7 +58473,7 @@ class PostProcessor {
     }
   }
 
-  
+
 
 
   getConfigSummary() {
@@ -58422,14 +58504,14 @@ class PostProcessor {
 
 
 class ValueResolver {
-  
+
 
 
 
 
 
   constructor(services = {}) {
-    
+
 
 
 
@@ -58440,14 +58522,14 @@ class ValueResolver {
     }
     this._logger = services.logger || fallback;
 
-    
+
 
 
 
 
     this._expressionEngine = services.expressionEngine || null;
 
-    
+
 
 
 
@@ -58455,7 +58537,7 @@ class ValueResolver {
     this._utils = services.utils || null;
   }
 
-  
+
 
 
 
@@ -58464,7 +58546,7 @@ class ValueResolver {
 
 
   resolve(source, context) {
-    
+
     const valueSource = source instanceof ValueSource ? source : ValueSource.fromConfig(source);
     switch (valueSource.type) {
       case ValueSourceType.LITERAL:
@@ -58484,7 +58566,7 @@ class ValueResolver {
     }
   }
 
-  
+
 
 
 
@@ -58499,7 +58581,7 @@ class ValueResolver {
     return result;
   }
 
-  
+
 
 
 
@@ -58508,7 +58590,7 @@ class ValueResolver {
     return source.literal;
   }
 
-  
+
 
 
 
@@ -58523,10 +58605,10 @@ class ValueResolver {
       });
     }
 
-    
+
     let resolvedPath = path;
 
-    
+
     if (path.startsWith('pipeline.')) {
       resolvedPath = path.substring('pipeline.'.length);
     }
@@ -58535,7 +58617,7 @@ class ValueResolver {
     return value;
   }
 
-  
+
 
 
 
@@ -58554,7 +58636,7 @@ class ValueResolver {
     return value;
   }
 
-  
+
 
 
 
@@ -58574,7 +58656,7 @@ class ValueResolver {
       });
     }
     try {
-      
+
       const expressionContext = context.toExpressionContext();
       const value = this._expressionEngine.evaluate(expression, expressionContext);
       this._logger.debug(`[ValueResolver] Evaluated expression '${expression}' to:`, value);
@@ -58586,7 +58668,7 @@ class ValueResolver {
     }
   }
 
-  
+
 
 
 
@@ -58594,28 +58676,28 @@ class ValueResolver {
   _resolveTimestamp(source) {
     const now = new Date();
 
-    
+
     if (!source.format) {
       return now.toISOString();
     }
 
-    
+
     if (this._utils && typeof this._utils.formatDate === 'function') {
       return this._utils.formatDate(now, source.format);
     }
 
-    
+
     return this._basicFormatDate(now, source.format);
   }
 
-  
+
 
 
 
 
 
   _basicFormatDate(date, format) {
-    
+
     const pad = n => n.toString().padStart(2, '0');
     return format.replace('yyyy', date.getFullYear()).replace('MM', pad(date.getMonth() + 1)).replace('dd', pad(date.getDate())).replace('HH', pad(date.getHours())).replace('mm', pad(date.getMinutes())).replace('ss', pad(date.getSeconds()));
   }
@@ -58637,11 +58719,11 @@ class ValueResolver {
 
 
 const RecordIdentifierStrategy = Object.freeze({
-  
+
   PRIMARY_KEY: 'PRIMARY_KEY',
-  
+
   FILTER: 'FILTER',
-  
+
   CONTEXT_REF: 'CONTEXT_REF'
 });
 
@@ -58652,7 +58734,7 @@ const RecordIdentifierStrategy = Object.freeze({
 
 
 class BaseUpdatePostProcessor extends PostProcessor {
-  
+
 
 
 
@@ -58667,10 +58749,10 @@ class BaseUpdatePostProcessor extends PostProcessor {
   constructor(id, name, config = {}, services = {}) {
     super(id, name, config, services);
 
-    
+
     this._database = services.database || null;
 
-    
+
     this._valueResolver = new ValueResolver({
       logger: this._logger,
       expressionEngine: services.expressionEngine,
@@ -58678,7 +58760,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     });
   }
 
-  
+
 
 
 
@@ -58712,11 +58794,11 @@ class BaseUpdatePostProcessor extends PostProcessor {
       });
     }
 
-    
+
     this._validateRecordIdentifier(recordIdentifier);
   }
 
-  
+
 
 
 
@@ -58755,7 +58837,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     }
   }
 
-  
+
 
 
 
@@ -58789,7 +58871,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     }
   }
 
-  
+
 
 
 
@@ -58817,7 +58899,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     return null;
   }
 
-  
+
 
 
 
@@ -58836,7 +58918,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     return results && results.length > 0 ? results[0] : null;
   }
 
-  
+
 
 
 
@@ -58848,7 +58930,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     return context.getPipelineData(identifier.contextPath);
   }
 
-  
+
 
 
 
@@ -58857,10 +58939,10 @@ class BaseUpdatePostProcessor extends PostProcessor {
 
 
   _getPrimaryKeyValue(record, tableService) {
-    
+
     const pkFields = ['id', 'ID', '_id', 'pk', 'primaryKey'];
 
-    
+
     if (tableService.getPrimaryKeyColumn) {
       const pkColumn = tableService.getPrimaryKeyColumn();
       if (pkColumn && record[pkColumn] !== undefined) {
@@ -58868,7 +58950,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
       }
     }
 
-    
+
     for (const field of pkFields) {
       if (record[field] !== undefined) {
         return record[field];
@@ -58877,7 +58959,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     return null;
   }
 
-  
+
 
 
 
@@ -58892,7 +58974,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
     throw new Error(`BaseUpdatePostProcessor._performUpdate must be implemented by subclass: ${this.name}`);
   }
 
-  
+
 
 
 
@@ -58907,13 +58989,13 @@ class BaseUpdatePostProcessor extends PostProcessor {
       table
     } = this._config;
 
-    
+
     const record = this._findRecord(context);
     if (!record) {
       throw new RecordNotFoundError(table, this._config.recordIdentifier);
     }
 
-    
+
     const tableService = (_this$_database = this._database) === null || _this$_database === void 0 || (_this$_database = _this$_database.tables) === null || _this$_database === void 0 ? void 0 : _this$_database[table];
     if (!tableService) {
       throw new PostProcessorError_ConfigurationError(`Table '${table}' not found in database`, {
@@ -58922,7 +59004,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
       });
     }
 
-    
+
     return this._performUpdate(record, tableService, context);
   }
 }
@@ -58954,7 +59036,7 @@ class BaseUpdatePostProcessor extends PostProcessor {
 
 
 class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
-  
+
 
 
 
@@ -58967,20 +59049,20 @@ class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
     super(id, 'CellUpdatePostProcessor', config, services);
   }
 
-  
+
 
 
 
 
 
   _validateConfig() {
-    
+
     super._validateConfig();
     const {
       updates
     } = this._config;
 
-    
+
     if (!Array.isArray(updates) || updates.length === 0) {
       throw new PostProcessorError_ConfigurationError('updates is required and must be a non-empty array', {
         processorId: this.id,
@@ -58988,7 +59070,7 @@ class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
       });
     }
 
-    
+
     updates.forEach((update, index) => {
       if (!update.column || typeof update.column !== 'string') {
         throw new PostProcessorError_ConfigurationError(`updates[${index}].column is required and must be a string`, {
@@ -59005,7 +59087,7 @@ class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
     });
   }
 
-  
+
 
 
 
@@ -59024,30 +59106,30 @@ class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
     const primaryKey = this._getPrimaryKeyValue(record, tableService);
     this._logger.debug(`[${this.id}] Updating ${updates.length} cells in ${table}`);
 
-    
+
     for (const update of updates) {
       const {
         column
       } = update;
       const oldValue = record[column];
 
-      
+
       const newValue = this._valueResolver.resolve(update.value, context);
 
-      
+
       record[column] = newValue;
 
-      
+
       result.addChange('CELL_UPDATE', `${table}.${column}`, newValue, oldValue);
       this._logger.debug(`[${this.id}] Updated ${table}.${column}: ${JSON.stringify(oldValue)} -> ${JSON.stringify(newValue)}`);
     }
 
-    
+
     if (tableService.updateRow && primaryKey !== null) {
       tableService.updateRow(primaryKey, record);
       this._logger.debug(`[${this.id}] Persisted changes to database`);
     } else if ((_this$_database = this._database) !== null && _this$_database !== void 0 && _this$_database.save) {
-      
+
       this._database.save();
       this._logger.debug(`[${this.id}] Saved database changes`);
     }
@@ -59085,7 +59167,7 @@ class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
 
 
 class LogAuditPostProcessor extends PostProcessor {
-  
+
 
 
 
@@ -59099,10 +59181,10 @@ class LogAuditPostProcessor extends PostProcessor {
   constructor(id, config = {}, services = {}) {
     super(id, 'LogAuditPostProcessor', config, services);
 
-    
+
     this._database = services.database || null;
 
-    
+
     this._valueResolver = new ValueResolver({
       logger: this._logger,
       expressionEngine: services.expressionEngine,
@@ -59110,7 +59192,7 @@ class LogAuditPostProcessor extends PostProcessor {
     });
   }
 
-  
+
 
 
 
@@ -59134,7 +59216,7 @@ class LogAuditPostProcessor extends PostProcessor {
       });
     }
 
-    
+
     fields.forEach((field, index) => {
       if (!field.column || typeof field.column !== 'string') {
         throw new PostProcessorError_ConfigurationError(`fields[${index}].column is required and must be a string`, {
@@ -59151,7 +59233,7 @@ class LogAuditPostProcessor extends PostProcessor {
     });
   }
 
-  
+
 
 
 
@@ -59167,7 +59249,7 @@ class LogAuditPostProcessor extends PostProcessor {
     const result = PostProcessorResult.success(this.id);
     this._logger.debug(`[${this.id}] Inserting audit record into ${table}`);
 
-    
+
     const record = {};
     for (const field of fields) {
       const {
@@ -59182,12 +59264,12 @@ class LogAuditPostProcessor extends PostProcessor {
       }
     }
 
-    
+
     if (!record.timestamp && !record.createdAt) {
       record.createdAt = new Date().toISOString();
     }
 
-    
+
     let insertedId = null;
     if ((_this$_database = this._database) !== null && _this$_database !== void 0 && (_this$_database = _this$_database.tables) !== null && _this$_database !== void 0 && _this$_database[table]) {
       const tableService = this._database.tables[table];
@@ -59196,13 +59278,13 @@ class LogAuditPostProcessor extends PostProcessor {
         insertedId = (inserted === null || inserted === void 0 ? void 0 : inserted.id) || (inserted === null || inserted === void 0 ? void 0 : inserted._id) || null;
       }
     } else if ((_this$_database2 = this._database) !== null && _this$_database2 !== void 0 && _this$_database2.insert) {
-      
+
       insertedId = this._database.insert(table, record);
     } else {
       this._logger.warn(`[${this.id}] No database service or table '${table}' not found`);
     }
 
-    
+
     result.addChange('LOG_INSERT', table, record);
     result.metadata.table = table;
     result.metadata.insertedId = insertedId;
@@ -59228,11 +59310,11 @@ class LogAuditPostProcessor extends PostProcessor {
 
 
 const CounterOperation = Object.freeze({
-  
+
   INCREMENT: 'INCREMENT',
-  
+
   DECREMENT: 'DECREMENT',
-  
+
   SET: 'SET'
 });
 
@@ -59249,7 +59331,7 @@ const CounterOperation = Object.freeze({
 
 
 class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
-  
+
 
 
 
@@ -59265,14 +59347,14 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
     super(id, 'CounterUpdatePostProcessor', config, services);
   }
 
-  
+
 
 
 
 
 
   _validateConfig() {
-    
+
     super._validateConfig();
     const {
       counter
@@ -59298,7 +59380,7 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
     }
   }
 
-  
+
 
 
 
@@ -59311,17 +59393,17 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
     } = this._config;
     const amount = counter.amount;
 
-    
+
     if (amount === undefined || amount === null) {
       return 1;
     }
 
-    
+
     if (typeof amount === 'number') {
       return amount;
     }
 
-    
+
     if (typeof amount === 'object') {
       const resolved = this._valueResolver.resolve(amount, context);
       return Number(resolved) || 0;
@@ -59329,7 +59411,7 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
     return 1;
   }
 
-  
+
 
 
 
@@ -59351,11 +59433,11 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
     const result = PostProcessorResult.success(this.id);
     const primaryKey = this._getPrimaryKeyValue(record, tableService);
 
-    
+
     const currentValue = Number(record[column]) || 0;
     const amount = this._resolveAmount(context);
 
-    
+
     let newValue;
     switch (operation) {
       case CounterOperation.INCREMENT:
@@ -59372,13 +59454,13 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
     }
     this._logger.debug(`[${this.id}] Counter ${operation}: ${column} ${currentValue} -> ${newValue} (amount: ${amount})`);
 
-    
+
     record[column] = newValue;
 
-    
+
     result.addChange(`COUNTER_${operation}`, `${table}.${column}`, newValue, currentValue);
 
-    
+
     if (tableService.updateRowById && primaryKey !== null) {
       tableService.updateRowById(primaryKey, record);
     } else if (tableService.updateRow && primaryKey !== null) {
@@ -59425,7 +59507,7 @@ class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
 
 
 class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
-  
+
 
 
 
@@ -59438,14 +59520,14 @@ class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
     super(id, 'FieldUpdatePostProcessor', config, services);
   }
 
-  
+
 
 
 
 
 
   _validateConfig() {
-    
+
     super._validateConfig();
     const {
       fields
@@ -59464,7 +59546,7 @@ class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
     }
   }
 
-  
+
 
 
 
@@ -59472,7 +59554,7 @@ class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
 
 
   _parseShorthand(value) {
-    
+
     if (value instanceof ValueSource) {
       return value;
     }
@@ -59480,56 +59562,56 @@ class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
       return ValueSource.fromConfig(value);
     }
 
-    
+
     if (typeof value !== 'string') {
       return ValueSource.literal(value);
     }
 
-    
+
     const trimmed = value.trim();
 
-    
+
     if (trimmed.startsWith('$timestamp')) {
       const parts = trimmed.split(':');
       const format = parts.length > 1 ? parts.slice(1).join(':') : null;
       return ValueSource.timestamp(format);
     }
 
-    
+
     if (trimmed.startsWith('$step.output.')) {
       const key = trimmed.substring('$step.output.'.length);
       return ValueSource.stepOutput(key);
     }
 
-    
+
     if (trimmed.startsWith('$step.')) {
       const key = trimmed.substring('$step.'.length);
       return ValueSource.stepOutput(key);
     }
 
-    
+
     if (trimmed.startsWith('$context.')) {
       const path = trimmed.substring('$context.'.length);
       return ValueSource.context(path);
     }
 
-    
+
     if (trimmed.startsWith('$pipeline.')) {
       const path = trimmed.substring('$pipeline.'.length);
       return ValueSource.context(path);
     }
 
-    
+
     if (trimmed.startsWith('$expr:')) {
       const expr = trimmed.substring('$expr:'.length);
       return ValueSource.expression(expr);
     }
 
-    
+
     return ValueSource.literal(value);
   }
 
-  
+
 
 
 
@@ -59549,23 +59631,23 @@ class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
     const fieldEntries = Object.entries(fields);
     this._logger.debug(`[${this.id}] Updating ${fieldEntries.length} fields in ${table}`);
 
-    
+
     for (const [column, rawValue] of fieldEntries) {
       const oldValue = record[column];
 
-      
+
       const valueSource = this._parseShorthand(rawValue);
       const newValue = this._valueResolver.resolve(valueSource, context);
 
-      
+
       record[column] = newValue;
 
-      
+
       result.addChange('FIELD_UPDATE', `${table}.${column}`, newValue, oldValue);
       this._logger.debug(`[${this.id}] Updated ${table}.${column}: ${JSON.stringify(oldValue)} -> ${JSON.stringify(newValue)}`);
     }
 
-    
+
     if (tableService.updateRowById && primaryKey !== null) {
       tableService.updateRowById(primaryKey, record);
     } else if (tableService.updateRow && primaryKey !== null) {
@@ -59767,7 +59849,7 @@ function createDefaultRegistry(options = {}) {
 
 
 class ContextEngineError extends BaseError {
-  
+
 
 
 
@@ -59779,11 +59861,11 @@ class ContextEngineError extends BaseError {
 
   constructor(message, context = {}) {
     super(message, context);
-    
+
     this.name = 'ContextEngineError';
   }
 
-  
+
 
 
 
@@ -59810,7 +59892,7 @@ class ContextEngineError extends BaseError {
 
 
 class DependencyResolutionError extends ContextEngineError {
-  
+
 
 
 
@@ -59843,7 +59925,7 @@ class DependencyResolutionError extends ContextEngineError {
 
 
 class DependencyResolver {
-  
+
 
 
 
@@ -59853,7 +59935,7 @@ class DependencyResolver {
     return /^@([a-zA-Z_][a-zA-Z0-9_]*)$/;
   }
 
-  
+
 
 
 
@@ -59863,13 +59945,13 @@ class DependencyResolver {
     return /^\$([a-zA-Z_][a-zA-Z0-9_]*)(\.[\w[\].]+)?$/;
   }
 
-  
+
 
 
 
 
   constructor(logger) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('DependencyResolver: logger is required and must be an object');
     }
@@ -59877,7 +59959,7 @@ class DependencyResolver {
       throw new Error('DependencyResolver: logger must have debug, info, warn, and error methods');
     }
 
-    
+
 
 
 
@@ -59885,7 +59967,7 @@ class DependencyResolver {
     this._logger = logger;
   }
 
-  
+
 
 
 
@@ -59894,7 +59976,7 @@ class DependencyResolver {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -59906,7 +59988,7 @@ class DependencyResolver {
     return DependencyResolver.PARAM_PATTERN.test(value) || DependencyResolver.PROVIDER_PATTERN.test(value);
   }
 
-  
+
 
 
 
@@ -59918,7 +60000,7 @@ class DependencyResolver {
       return obj;
     }
 
-    
+
     const parts = path.split('.');
     let current = obj;
     for (const part of parts) {
@@ -59926,7 +60008,7 @@ class DependencyResolver {
         return undefined;
       }
 
-      
+
       const arrayMatch = part.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\[(\d+)\]$/);
       if (arrayMatch) {
         const arrayName = arrayMatch[1];
@@ -59942,7 +60024,7 @@ class DependencyResolver {
     return current;
   }
 
-  
+
 
 
 
@@ -59953,7 +60035,7 @@ class DependencyResolver {
 
 
   resolve(dependency, initialParams, providerResults, providerName = '') {
-    
+
     if (typeof dependency !== 'string') {
       throw new Error('DependencyResolver.resolve: dependency must be a string');
     }
@@ -59964,7 +60046,7 @@ class DependencyResolver {
       throw new Error('DependencyResolver.resolve: providerResults is required and must be an object');
     }
 
-    
+
     const paramMatch = dependency.match(DependencyResolver.PARAM_PATTERN);
     if (paramMatch) {
       const paramName = paramMatch[1];
@@ -59979,7 +60061,7 @@ class DependencyResolver {
       return initialParams[paramName];
     }
 
-    
+
     const providerMatch = dependency.match(DependencyResolver.PROVIDER_PATTERN);
     if (providerMatch) {
       const targetProvider = providerMatch[1];
@@ -59994,13 +60076,13 @@ class DependencyResolver {
       }
       const providerData = providerResults[targetProvider];
 
-      
+
       if (!propertyPath) {
         this._logger.debug(`Resolved ${dependency} -> [provider data]`);
         return providerData;
       }
 
-      
+
       const value = this._getNestedProperty(providerData, propertyPath);
       if (value === undefined) {
         throw new DependencyResolutionError(`Property '${propertyPath}' not found in provider '${targetProvider}' result`, {
@@ -60013,14 +60095,14 @@ class DependencyResolver {
       return value;
     }
 
-    
+
     throw new DependencyResolutionError(`Invalid dependency format: '${dependency}'. Expected @paramName or $providerName.property`, {
       dependency,
       providerName
     });
   }
 
-  
+
 
 
 
@@ -60031,7 +60113,7 @@ class DependencyResolver {
 
 
   resolveAll(parameters, initialParams, providerResults, providerName = '') {
-    
+
     if (!parameters || typeof parameters !== 'object') {
       throw new Error('DependencyResolver.resolveAll: parameters is required and must be an object');
     }
@@ -60048,14 +60130,14 @@ class DependencyResolver {
       }
       const value = parameters[key];
 
-      
+
       if (this.isDependency(value)) {
         resolved[key] = this.resolve(value, initialParams, providerResults, providerName);
       } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-        
+
         resolved[key] = this.resolveAll(value, initialParams, providerResults, providerName);
       } else if (Array.isArray(value)) {
-        
+
         resolved[key] = value.map(item => {
           if (this.isDependency(item)) {
             return this.resolve(item, initialParams, providerResults, providerName);
@@ -60066,14 +60148,14 @@ class DependencyResolver {
           }
         });
       } else {
-        
+
         resolved[key] = value;
       }
     }
     return resolved;
   }
 
-  
+
 
 
 
@@ -60167,7 +60249,7 @@ class DependencyResolver {
 
 
 class RecipeValidationError extends ContextEngineError {
-  
+
 
 
 
@@ -60208,13 +60290,13 @@ class RecipeValidationError extends ContextEngineError {
 
 
 class RecipeParser {
-  
+
 
 
 
 
   constructor(logger) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('RecipeParser: logger is required and must be an object');
     }
@@ -60222,7 +60304,7 @@ class RecipeParser {
       throw new Error('RecipeParser: logger must have debug, info, warn, and error methods');
     }
 
-    
+
 
 
 
@@ -60230,7 +60312,7 @@ class RecipeParser {
     this._logger = logger;
   }
 
-  
+
 
 
 
@@ -60239,7 +60321,7 @@ class RecipeParser {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -60253,36 +60335,36 @@ class RecipeParser {
       return errors;
     }
 
-    
+
     if (!provider.name || typeof provider.name !== 'string') {
       errors.push(`Provider at index ${index}: 'name' is required and must be a string`);
     }
 
-    
+
     if (!provider.type || typeof provider.type !== 'string') {
       errors.push(`Provider at index ${index}: 'type' is required and must be a string`);
     }
 
-    
+
     if (provider.parameters !== undefined) {
       if (provider.parameters === null || typeof provider.parameters !== 'object') {
         errors.push(`Provider at index ${index}: 'parameters' must be an object if provided`);
       }
     }
 
-    
+
     if (provider.condition !== undefined) {
       if (typeof provider.condition !== 'string') {
         errors.push(`Provider at index ${index}: 'condition' must be a string if provided`);
       }
     }
 
-    
+
     if (provider.postProcess !== undefined) {
       if (!Array.isArray(provider.postProcess)) {
         errors.push(`Provider at index ${index}: 'postProcess' must be an array if provided`);
       } else {
-        
+
         provider.postProcess.forEach((pp, ppIndex) => {
           if (!pp || typeof pp !== 'object') {
             errors.push(`Provider at index ${index}, postProcess at index ${ppIndex}: must be an object`);
@@ -60295,7 +60377,7 @@ class RecipeParser {
     return errors;
   }
 
-  
+
 
 
 
@@ -60303,7 +60385,7 @@ class RecipeParser {
 
 
   parse(recipe) {
-    
+
     if (!recipe || typeof recipe !== 'object') {
       throw new RecipeValidationError('Recipe must be an object', {
         validationErrors: ['Recipe is required and must be an object']
@@ -60311,7 +60393,7 @@ class RecipeParser {
     }
     const errors = [];
 
-    
+
     if (!recipe.providers) {
       errors.push('Recipe must have a "providers" array');
     } else if (!Array.isArray(recipe.providers)) {
@@ -60319,13 +60401,13 @@ class RecipeParser {
     } else if (recipe.providers.length === 0) {
       errors.push('"providers" array must contain at least one provider');
     } else {
-      
+
       recipe.providers.forEach((provider, index) => {
         const providerErrors = this._validateProvider(provider, index);
         errors.push(...providerErrors);
       });
 
-      
+
       const names = recipe.providers.map(p => p.name).filter(n => n);
       const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
       if (duplicates.length > 0) {
@@ -60333,7 +60415,7 @@ class RecipeParser {
       }
     }
 
-    
+
     if (errors.length > 0) {
       this._logger.error(`Recipe validation failed with ${errors.length} error(s)`);
       throw new RecipeValidationError(`Recipe validation failed with ${errors.length} error(s)`, {
@@ -60343,7 +60425,7 @@ class RecipeParser {
     }
     this._logger.debug(`Recipe validated successfully with ${recipe.providers.length} provider(s)`);
 
-    
+
     return {
       providers: recipe.providers.map(provider => ({
         name: provider.name,
@@ -60355,7 +60437,7 @@ class RecipeParser {
     };
   }
 
-  
+
 
 
 
@@ -60395,14 +60477,14 @@ class RecipeParser {
 
 
 class PostProcessor_PostProcessor {
-  
+
 
 
 
 
 
   constructor(logger) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('PostProcessor: logger is required and must be an object');
     }
@@ -60410,25 +60492,25 @@ class PostProcessor_PostProcessor {
       throw new Error('PostProcessor: logger must have debug, info, warn, and error methods');
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._processors = new Map();
 
-    
+
     this._registerBuiltInProcessors();
   }
 
-  
+
 
 
 
@@ -60437,12 +60519,12 @@ class PostProcessor_PostProcessor {
     return this._logger;
   }
 
-  
+
 
 
 
   _registerBuiltInProcessors() {
-    
+
     this.register('filterFields', (data, config) => {
       if (!config.fields || !Array.isArray(config.fields)) {
         throw new Error('filterFields requires a "fields" array in config');
@@ -60469,7 +60551,7 @@ class PostProcessor_PostProcessor {
       return data;
     });
 
-    
+
     this.register('mapValues', (data, config) => {
       if (!TypeGuards_isPlainObject(config.mapping)) {
         throw new Error('mapValues requires a "mapping" object in config');
@@ -60492,7 +60574,7 @@ class PostProcessor_PostProcessor {
       return map(data);
     });
 
-    
+
     this.register('renameFields', (data, config) => {
       if (!TypeGuards_isPlainObject(config.mapping)) {
         throw new Error('renameFields requires a "mapping" object in config');
@@ -60518,7 +60600,7 @@ class PostProcessor_PostProcessor {
       return data;
     });
 
-    
+
     this.register('defaultValues', (data, config) => {
       if (!TypeGuards_isPlainObject(config.defaults)) {
         throw new Error('defaultValues requires a "defaults" object in config');
@@ -60548,7 +60630,7 @@ class PostProcessor_PostProcessor {
     });
   }
 
-  
+
 
 
 
@@ -60556,7 +60638,7 @@ class PostProcessor_PostProcessor {
 
 
   register(type, processorFunc) {
-    
+
     if (!type || typeof type !== 'string') {
       throw new Error('PostProcessor.register: type is required and must be a non-empty string');
     }
@@ -60568,7 +60650,7 @@ class PostProcessor_PostProcessor {
     return this;
   }
 
-  
+
 
 
 
@@ -60580,7 +60662,7 @@ class PostProcessor_PostProcessor {
     return this._processors.has(type);
   }
 
-  
+
 
 
 
@@ -60594,7 +60676,7 @@ class PostProcessor_PostProcessor {
 
 
   process(processorConfigs, data, providerName = '') {
-    
+
     if (!processorConfigs || !Array.isArray(processorConfigs)) {
       throw new Error('PostProcessor.process: processorConfigs is required and must be an array');
     }
@@ -60627,7 +60709,7 @@ class PostProcessor_PostProcessor {
     return result;
   }
 
-  
+
 
 
 
@@ -60650,7 +60732,7 @@ class ContextStepExecutor {
       return true;
     }
     try {
-      
+
       const expressionContext = {
         ...initialParams,
         ...providerResults
@@ -60671,30 +60753,30 @@ class ContextStepExecutor {
     const providerType = providerConfig.type;
     this.facade._logger.debug(`[${providerName}] Executing provider of type: ${providerType}`);
 
-    
+
     const provider = this.facade._providerRegistry.get(providerType);
 
-    
+
     const resolvedParameters = this.facade._dependencyResolver.resolveAll(providerConfig.parameters, initialParams, providerResults, providerName);
     this.facade._logger.debug(`[${providerName}] Resolved parameters:`, resolvedParameters);
 
-    
+
     let data;
     if (this.facade._exceptionService) {
-      
+
       data = this.facade._exceptionService.executeWithRetry(() => provider.provide(providerName, resolvedParameters), {}, this.facade._maxRetries);
     } else {
-      
+
       data = provider.provide(providerName, resolvedParameters);
     }
 
-    
+
     if (providerConfig.postProcess && providerConfig.postProcess.length > 0) {
       this.facade._logger.debug(`[${providerName}] Applying ${providerConfig.postProcess.length} post-processor(s)`);
       data = this.facade._postProcessor.process(providerConfig.postProcess, data, providerName);
     }
 
-    
+
     if (this.facade._interceptorRegistry) {
       const interceptors = this.facade._interceptorRegistry.getAll();
       if (interceptors.length > 0) {
@@ -60708,7 +60790,7 @@ class ContextStepExecutor {
     return data;
   }
   assemble(recipe, initialParams = {}, options = {}) {
-    
+
     if (!recipe || typeof recipe !== 'object') {
       throw new Error('ContextAssembler.assemble: recipe is required and must be an object');
     }
@@ -60720,20 +60802,20 @@ class ContextStepExecutor {
     }
     const startTime = Date.now();
     try {
-      
+
       this.facade._logger.info('Starting context assembly...');
       const validatedRecipe = this.facade._recipeParser.parse(recipe);
 
-      
+
       const context = {};
       let executedProviders = 0;
       let skippedProviders = 0;
 
-      
+
       for (const providerConfig of validatedRecipe.providers) {
         const providerName = providerConfig.name;
         try {
-          
+
           const shouldExecute = this._evaluateCondition(providerConfig.condition, initialParams, context);
           if (!shouldExecute) {
             this.facade._logger.info(`[${providerName}] Skipped (condition not met)`);
@@ -60741,10 +60823,10 @@ class ContextStepExecutor {
             continue;
           }
 
-          
+
           const result = this._executeProvider(providerConfig, initialParams, context, options);
 
-          
+
           context[providerName] = result;
           executedProviders++;
         } catch (error) {
@@ -60774,7 +60856,7 @@ class ContextStepExecutor {
     return this.assemble(recipe, initialParams, options);
   }
 
-  
+
 
 
 
@@ -60818,7 +60900,7 @@ class ContextStepExecutor {
     this.facade._logger.info(`[${providerName}] Provider execution completed (mutate mode)`);
   }
 
-  
+
 
 
 
@@ -60874,9 +60956,9 @@ class ContextStepExecutor {
       for (const providerConfig of validatedRecipe.providers) {
         const providerName = providerConfig.name;
         try {
-          
-          
-          
+
+
+
           const shouldExecute = this._evaluateCondition(providerConfig.condition, initialParams, sharedTarget);
           if (!shouldExecute) {
             this.facade._logger.info(`[${providerName}] Skipped (condition not met)`);
@@ -60996,7 +61078,7 @@ class ContextDependencyAnalyzer {
 
 
 class ContextAssembler {
-  
+
 
 
 
@@ -61009,7 +61091,7 @@ class ContextAssembler {
 
 
   constructor(logger, providerRegistry, expressionEngine = null, exceptionService = null, interceptorRegistry = null, options = {}) {
-    
+
     if (logger == null) {
       throw new Error('ContextAssembler: logger is required and cannot be null or undefined');
     }
@@ -61044,70 +61126,70 @@ class ContextAssembler {
       throw new Error('ContextAssembler: options must be of type object, received: ' + typeof options);
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._providerRegistry = providerRegistry;
 
-    
+
 
 
 
 
     this._expressionEngine = expressionEngine;
 
-    
+
 
 
 
 
     this._exceptionService = exceptionService;
 
-    
+
 
 
 
 
     this._interceptorRegistry = interceptorRegistry;
 
-    
+
 
 
 
 
     this._maxRetries = options.maxRetries || 3;
 
-    
+
 
 
 
 
     this._dependencyResolver = new DependencyResolver(logger);
 
-    
+
 
 
 
 
     this._recipeParser = new RecipeParser(logger);
 
-    
+
 
 
 
 
     this._postProcessor = new PostProcessor_PostProcessor(logger);
 
-    
+
     this._stepExecutor = new ContextStepExecutor(this);
     this._dependencyAnalyzer = new ContextDependencyAnalyzer(this);
     const executionMethods = ['_evaluateCondition', '_executeProvider', '_executeMutatingProvider', 'assemble', 'assembleAsync', 'assembleInto'];
@@ -61120,7 +61202,7 @@ class ContextAssembler {
     });
   }
 
-  
+
 
 
 
@@ -61129,7 +61211,7 @@ class ContextAssembler {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -61138,7 +61220,7 @@ class ContextAssembler {
     return this._providerRegistry;
   }
 
-  
+
 
 
 
@@ -61147,7 +61229,7 @@ class ContextAssembler {
     return this._dependencyResolver;
   }
 
-  
+
 
 
 
@@ -61156,7 +61238,7 @@ class ContextAssembler {
     return this._recipeParser;
   }
 
-  
+
 
 
 
@@ -61223,7 +61305,7 @@ class ContextAssembler {
 
 
 class ProviderNotFoundError extends ContextEngineError {
-  
+
 
 
 
@@ -61256,13 +61338,13 @@ class ProviderNotFoundError extends ContextEngineError {
 
 
 class ProviderRegistry {
-  
+
 
 
 
 
   constructor(logger) {
-    
+
     if (!TypeGuards.isObject(logger)) {
       throw new Error('ProviderRegistry: logger is required and must be an object');
     }
@@ -61270,21 +61352,21 @@ class ProviderRegistry {
       throw new Error('ProviderRegistry: logger must have debug, info, warn, and error methods');
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._singletons = new Map();
 
-    
+
 
 
 
@@ -61292,7 +61374,7 @@ class ProviderRegistry {
     this._factories = new Map();
   }
 
-  
+
 
 
 
@@ -61301,7 +61383,7 @@ class ProviderRegistry {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -61309,7 +61391,7 @@ class ProviderRegistry {
 
 
   registerSingleton(type, instance) {
-    
+
     if (!TypeGuards.isNonEmptyString(type)) {
       throw new Error('ProviderRegistry.registerSingleton: type is required and must be a non-empty string');
     }
@@ -61324,7 +61406,7 @@ class ProviderRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -61332,7 +61414,7 @@ class ProviderRegistry {
 
 
   registerFactory(type, factory) {
-    
+
     if (!TypeGuards.isNonEmptyString(type)) {
       throw new Error('ProviderRegistry.registerFactory: type is required and must be a non-empty string');
     }
@@ -61344,7 +61426,7 @@ class ProviderRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -61353,23 +61435,23 @@ class ProviderRegistry {
 
 
   get(type) {
-    
+
     if (!TypeGuards.isNonEmptyString(type)) {
       throw new Error('ProviderRegistry.get: type is required and must be a non-empty string');
     }
 
-    
+
     if (this._singletons.has(type)) {
       this._logger.debug(`Retrieved singleton provider: ${type}`);
       return this._singletons.get(type);
     }
 
-    
+
     if (this._factories.has(type)) {
       const factory = this._factories.get(type);
       const instance = factory();
 
-      
+
       if (!TypeGuards.isObject(instance)) {
         throw new Error(`ProviderRegistry.get: Factory for '${type}' did not return a valid object`);
       }
@@ -61380,13 +61462,13 @@ class ProviderRegistry {
       return instance;
     }
 
-    
+
     throw new ProviderNotFoundError(type, {
       registeredProviders: this.getRegisteredTypes()
     });
   }
 
-  
+
 
 
 
@@ -61398,7 +61480,7 @@ class ProviderRegistry {
     return this._singletons.has(type) || this._factories.has(type);
   }
 
-  
+
 
 
 
@@ -61416,7 +61498,7 @@ class ProviderRegistry {
     return false;
   }
 
-  
+
 
 
 
@@ -61427,7 +61509,7 @@ class ProviderRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -61437,7 +61519,7 @@ class ProviderRegistry {
     return [...singletonTypes, ...factoryTypes];
   }
 
-  
+
 
 
 
@@ -61519,7 +61601,7 @@ class ProviderRegistry {
 
 
 class ProviderExecutionError extends ContextEngineError {
-  
+
 
 
 
@@ -61552,7 +61634,7 @@ class ProviderExecutionError extends ContextEngineError {
 
 
 class DataProvider {
-  
+
 
 
 
@@ -61562,7 +61644,7 @@ class DataProvider {
 
 
   constructor(logger, options = {}) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('DataProvider: logger is required and must be an object');
     }
@@ -61573,28 +61655,28 @@ class DataProvider {
       throw new Error('DataProvider: options must be an object or null');
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._cacheable = options.cacheable || false;
 
-    
+
 
 
 
 
     this._cacheDurationMs = options.cacheDurationMs || 300000;
 
-    
+
 
 
 
@@ -61602,7 +61684,7 @@ class DataProvider {
     this._cache = new Map();
   }
 
-  
+
 
 
 
@@ -61611,7 +61693,7 @@ class DataProvider {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -61623,7 +61705,7 @@ class DataProvider {
     throw new Error('DataProvider._fetchData must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -61635,7 +61717,7 @@ class DataProvider {
     return keyParts.join('|');
   }
 
-  
+
 
 
 
@@ -61658,7 +61740,7 @@ class DataProvider {
     return cached.data;
   }
 
-  
+
 
 
 
@@ -61675,7 +61757,7 @@ class DataProvider {
     this._logger.debug(`DataProvider: Cached data for key: ${cacheKey}`);
   }
 
-  
+
 
 
 
@@ -61685,7 +61767,7 @@ class DataProvider {
     return this;
   }
 
-  
+
 
 
 
@@ -61694,7 +61776,7 @@ class DataProvider {
 
 
   provide(providerName, parameters) {
-    
+
     if (!providerName || typeof providerName !== 'string') {
       throw new Error('DataProvider.provide: providerName is required and must be a string');
     }
@@ -61704,10 +61786,10 @@ class DataProvider {
     try {
       const startTime = Date.now();
 
-      
+
       const cacheKey = this._generateCacheKey(parameters);
 
-      
+
       const cachedData = this._getFromCache(cacheKey);
       if (cachedData !== null) {
         const durationMs = Date.now() - startTime;
@@ -61715,11 +61797,11 @@ class DataProvider {
         return cachedData;
       }
 
-      
+
       this._logger.debug(`[${providerName}] Fetching data...`);
       const data = this._fetchData(parameters);
 
-      
+
       this._storeInCache(cacheKey, data);
       const durationMs = Date.now() - startTime;
       this._logger.debug(`[${providerName}] Fetched data in ${durationMs}ms`);
@@ -61730,14 +61812,14 @@ class DataProvider {
     }
   }
 
-  
+
 
 
 
 
 
   _validateParameters(_parameters) {
-    
+
   }
 }
 ;
@@ -61756,13 +61838,13 @@ class DataProvider {
 
 
 class ContextInterceptor {
-  
+
 
 
 
 
   constructor(logger) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('ContextInterceptor: logger is required and must be an object');
     }
@@ -61770,7 +61852,7 @@ class ContextInterceptor {
       throw new Error('ContextInterceptor: logger must have debug, info, warn, and error methods');
     }
 
-    
+
 
 
 
@@ -61778,7 +61860,7 @@ class ContextInterceptor {
     this._logger = logger;
   }
 
-  
+
 
 
 
@@ -61787,7 +61869,7 @@ class ContextInterceptor {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -61797,11 +61879,11 @@ class ContextInterceptor {
 
 
   _shouldIntercept(_name, _data, _context, _options) {
-    
+
     return true;
   }
 
-  
+
 
 
 
@@ -61819,7 +61901,7 @@ class ContextInterceptor {
     throw new Error('ContextInterceptor._performIntercept must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -61829,7 +61911,7 @@ class ContextInterceptor {
 
 
   intercept(name, data, context, options = {}) {
-    
+
     if (!name || typeof name !== 'string') {
       throw new Error('ContextInterceptor.intercept: name is required and must be a string');
     }
@@ -61840,14 +61922,14 @@ class ContextInterceptor {
       throw new Error('ContextInterceptor.intercept: options must be an object or null');
     }
     try {
-      
+
       const shouldIntercept = this._shouldIntercept(name, data, context, options);
       if (!shouldIntercept) {
         this._logger.debug(`[${name}] Interceptor skipped (condition not met)`);
         return data;
       }
 
-      
+
       this._logger.debug(`[${name}] Intercepting data...`);
       const startTime = Date.now();
       const modifiedData = this._performIntercept(name, data, context, options);
@@ -61860,7 +61942,7 @@ class ContextInterceptor {
     }
   }
 
-  
+
 
 
 
@@ -61893,7 +61975,7 @@ class ContextInterceptor {
     array.forEach((item, index) => {
       const outcome = itemFn(item, index, array);
       if (outcome == null) {
-        
+
         return;
       }
       switch (outcome.action) {
@@ -61922,13 +62004,13 @@ class ContextInterceptor {
 
 
 class InterceptorRegistry {
-  
+
 
 
 
 
   constructor(logger) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('InterceptorRegistry: logger is required and must be an object');
     }
@@ -61936,21 +62018,21 @@ class InterceptorRegistry {
       throw new Error('InterceptorRegistry: logger must have debug, info, warn, and error methods');
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._singletons = new Map();
 
-    
+
 
 
 
@@ -61958,7 +62040,7 @@ class InterceptorRegistry {
     this._factories = new Map();
   }
 
-  
+
 
 
 
@@ -61967,7 +62049,7 @@ class InterceptorRegistry {
     return this._logger;
   }
 
-  
+
 
 
 
@@ -61975,7 +62057,7 @@ class InterceptorRegistry {
 
 
   registerSingleton(type, instance) {
-    
+
     if (!type || typeof type !== 'string') {
       throw new Error('InterceptorRegistry.registerSingleton: type is required and must be a non-empty string');
     }
@@ -61990,7 +62072,7 @@ class InterceptorRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -61998,7 +62080,7 @@ class InterceptorRegistry {
 
 
   registerFactory(type, factory) {
-    
+
     if (!type || typeof type !== 'string') {
       throw new Error('InterceptorRegistry.registerFactory: type is required and must be a non-empty string');
     }
@@ -62010,30 +62092,30 @@ class InterceptorRegistry {
     return this;
   }
 
-  
+
 
 
 
 
 
   get(type) {
-    
+
     if (!type || typeof type !== 'string') {
       throw new Error('InterceptorRegistry.get: type is required and must be a non-empty string');
     }
 
-    
+
     if (this._singletons.has(type)) {
       this._logger.debug(`Retrieved singleton interceptor: ${type}`);
       return this._singletons.get(type);
     }
 
-    
+
     if (this._factories.has(type)) {
       const factory = this._factories.get(type);
       const instance = factory();
 
-      
+
       if (!instance || typeof instance !== 'object') {
         throw new Error(`InterceptorRegistry.get: Factory for '${type}' did not return a valid object`);
       }
@@ -62044,23 +62126,23 @@ class InterceptorRegistry {
       return instance;
     }
 
-    
+
     throw new Error(`InterceptorRegistry.get: Interceptor type '${type}' not found. ` + `Registered types: ${this.getRegisteredTypes().join(', ') || 'none'}`);
   }
 
-  
+
 
 
 
   getAll() {
     const instances = [];
 
-    
+
     for (const instance of this._singletons.values()) {
       instances.push(instance);
     }
 
-    
+
     for (const factory of this._factories.values()) {
       const instance = factory();
       if (instance && typeof instance.intercept === 'function') {
@@ -62070,7 +62152,7 @@ class InterceptorRegistry {
     return instances;
   }
 
-  
+
 
 
 
@@ -62082,7 +62164,7 @@ class InterceptorRegistry {
     return this._singletons.has(type) || this._factories.has(type);
   }
 
-  
+
 
 
 
@@ -62100,7 +62182,7 @@ class InterceptorRegistry {
     return false;
   }
 
-  
+
 
 
 
@@ -62111,7 +62193,7 @@ class InterceptorRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -62121,7 +62203,7 @@ class InterceptorRegistry {
     return [...singletonTypes, ...factoryTypes];
   }
 
-  
+
 
 
 
@@ -62150,7 +62232,7 @@ class InterceptorRegistry {
 
 
 class SwapAndEnrichInterceptor extends ContextInterceptor {
-  
+
 
 
 
@@ -62180,7 +62262,7 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
   constructor(logger, substitutionLookup, config = {}) {
     super(logger);
 
-    
+
     if (typeof substitutionLookup !== 'function') {
       throw new Error('SwapAndEnrichInterceptor: substitutionLookup is required and must be a function');
     }
@@ -62188,21 +62270,21 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
       throw new Error('SwapAndEnrichInterceptor: config must be an object or null');
     }
 
-    
+
 
 
 
 
     this._substitutionLookup = substitutionLookup;
 
-    
+
 
 
 
 
     this._originalPropertyName = config.originalPropertyName || 'original';
 
-    
+
 
 
 
@@ -62211,21 +62293,21 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
       isSubstitute: true
     };
 
-    
+
 
 
 
 
     this._targetProviders = config.targetProviders || null;
 
-    
+
 
 
 
 
     this._optionFlag = config.optionFlag || 'applyOverrides';
 
-    
+
 
 
 
@@ -62239,7 +62321,7 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
     this._targetPaths = config.targetPaths || null;
   }
 
-  
+
 
 
 
@@ -62251,16 +62333,16 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
 
 
   _shouldIntercept(name, data, context, options) {
-    
-    
-    
-    
+
+
+
+
     if (this._targetPaths === null && options[this._optionFlag] !== true) {
       this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Option flag '${this._optionFlag}' not enabled`);
       return false;
     }
 
-    
+
     if (this._targetProviders !== null && !this._targetProviders.includes(name)) {
       this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Provider not in target list: ${this._targetProviders.join(', ')}`);
       return false;
@@ -62268,7 +62350,7 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
     return true;
   }
 
-  
+
 
 
 
@@ -62292,25 +62374,25 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
       return this._performIntercept_targetPaths(name, data, context, options);
     }
     try {
-      
+
       this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Checking for substitution...`);
       const substituteData = this._substitutionLookup(data, context, options);
 
-      
+
       if (substituteData == null) {
         this._logger.debug(`[${name}] SwapAndEnrichInterceptor: No substitution found`);
         return data;
       }
 
-      
+
       this._logger.info(`[${name}] SwapAndEnrichInterceptor: Substitution found, performing swap & enrich`);
 
-      
+
       const swappedData = {
         ...substituteData,
-        
+
         ...this._metadataFlags,
-        
+
         [this._originalPropertyName]: data 
       };
       this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Swapped with original stored in '${this._originalPropertyName}'`);
@@ -62321,7 +62403,7 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
     }
   }
 
-  
+
 
 
 
@@ -62968,7 +63050,7 @@ class SwapAndEnrichInterceptor extends ContextInterceptor {
 
 
 class ImportError extends BaseError {
-  
+
 
 
 
@@ -62976,12 +63058,12 @@ class ImportError extends BaseError {
 
   constructor(message, code = 'IMPORT_ERROR', context = {}) {
     super(message, context);
-    
+
     this.name = 'ImportError';
     this.code = code;
   }
 
-  
+
 
 
 
@@ -62996,7 +63078,7 @@ class ImportError extends BaseError {
     };
   }
 
-  
+
 
 
 
@@ -63019,7 +63101,7 @@ class ImportError extends BaseError {
 
 
 class ConfigurationError_ConfigurationError extends ImportError {
-  
+
 
 
 
@@ -63047,7 +63129,7 @@ function ImportConfiguration_toPrimitive(t, r) { if ("object" != typeof t || !t)
 
 
 class ImportConfiguration {
-  
+
 
 
 
@@ -63065,14 +63147,14 @@ class ImportConfiguration {
     }
   }
 
-  
 
 
 
 
 
 
-  
+
+
 
 
 
@@ -63088,14 +63170,14 @@ class ImportConfiguration {
     this._recipe = recipe;
   }
 
-  
+
 
 
 
 
 
   _validate(recipe) {
-    
+
     if (!recipe || typeof recipe !== 'object') {
       throw new ConfigurationError_ConfigurationError('Recipe must be an object', 'INVALID_RECIPE');
     }
@@ -63103,19 +63185,19 @@ class ImportConfiguration {
       throw new ConfigurationError_ConfigurationError('Recipe must have a name (string)', 'MISSING_NAME');
     }
 
-    
+
     this._validateSource(recipe.source);
 
-    
+
     if (recipe.transform) {
       this._validateTransform(recipe.transform);
     }
 
-    
+
     this._validateLoad(recipe.load);
   }
 
-  
+
 
 
 
@@ -63134,7 +63216,7 @@ class ImportConfiguration {
       throw new ConfigurationError_ConfigurationError('Source must have a config object', 'MISSING_SOURCE_CONFIG');
     }
 
-    
+
     if (source.type === 'SheetById') {
       if (!source.config.sheetId || typeof source.config.sheetId !== 'string') {
         throw new ConfigurationError_ConfigurationError('SheetById source requires config.sheetId (string)', 'MISSING_SHEET_ID');
@@ -63146,7 +63228,7 @@ class ImportConfiguration {
     }
   }
 
-  
+
 
 
 
@@ -63157,22 +63239,22 @@ class ImportConfiguration {
       throw new ConfigurationError_ConfigurationError('Transform configuration must be an object', 'INVALID_TRANSFORM');
     }
 
-    
+
     if (transform.mapping && typeof transform.mapping !== 'object') {
       throw new ConfigurationError_ConfigurationError('Transform mapping must be an object', 'INVALID_MAPPING');
     }
 
-    
+
     if (transform.calculated && typeof transform.calculated !== 'object') {
       throw new ConfigurationError_ConfigurationError('Transform calculated must be an object', 'INVALID_CALCULATED');
     }
 
-    
+
     if (transform.normalization && typeof transform.normalization !== 'object') {
       throw new ConfigurationError_ConfigurationError('Transform normalization must be an object', 'INVALID_NORMALIZATION');
     }
 
-    
+
     if (transform.validation) {
       if (typeof transform.validation !== 'string' && !Array.isArray(transform.validation)) {
         throw new ConfigurationError_ConfigurationError('Transform validation must be a string or an array of strings', 'INVALID_VALIDATION');
@@ -63180,7 +63262,7 @@ class ImportConfiguration {
     }
   }
 
-  
+
 
 
 
@@ -63199,7 +63281,7 @@ class ImportConfiguration {
       });
     }
 
-    
+
     if (['UPDATE_ONLY', 'UPSERT', 'OVERWRITE'].includes(load.conflictResolution)) {
       if (!load.conflictKey || typeof load.conflictKey !== 'string') {
         throw new ConfigurationError_ConfigurationError(`Conflict resolution strategy "${load.conflictResolution}" requires a conflictKey`, 'MISSING_CONFLICT_KEY', {
@@ -63208,7 +63290,7 @@ class ImportConfiguration {
       }
     }
 
-    
+
     if (load.updateIfNewer) {
       if (typeof load.updateIfNewer !== 'object') {
         throw new ConfigurationError_ConfigurationError('Load updateIfNewer must be an object', 'INVALID_UPDATE_IF_NEWER');
@@ -63219,7 +63301,7 @@ class ImportConfiguration {
     }
   }
 
-  
+
 
 
 
@@ -63228,7 +63310,7 @@ class ImportConfiguration {
     return this._recipe.name;
   }
 
-  
+
 
 
 
@@ -63236,7 +63318,7 @@ class ImportConfiguration {
     return this.name;
   }
 
-  
+
 
 
 
@@ -63245,7 +63327,7 @@ class ImportConfiguration {
     return this._recipe.source;
   }
 
-  
+
 
 
 
@@ -63253,7 +63335,7 @@ class ImportConfiguration {
     return this.source;
   }
 
-  
+
 
 
 
@@ -63262,7 +63344,7 @@ class ImportConfiguration {
     return this._recipe.transform || {};
   }
 
-  
+
 
 
 
@@ -63270,7 +63352,7 @@ class ImportConfiguration {
     return this.transform;
   }
 
-  
+
 
 
 
@@ -63279,7 +63361,7 @@ class ImportConfiguration {
     return this._recipe.load;
   }
 
-  
+
 
 
 
@@ -63287,7 +63369,7 @@ class ImportConfiguration {
     return this.load;
   }
 
-  
+
 
 
 
@@ -63295,7 +63377,7 @@ class ImportConfiguration {
     return this._recipe;
   }
 
-  
+
 
 
 
@@ -63334,7 +63416,7 @@ ImportConfiguration_defineProperty(ImportConfiguration, "VALID_CONFLICT_STRATEGI
 
 
 class SourceError extends ImportError {
-  
+
 
 
 
@@ -63361,7 +63443,7 @@ class SourceError extends ImportError {
 
 
 class SourceStrategy {
-  
+
 
 
 
@@ -63373,7 +63455,7 @@ class SourceStrategy {
     this.logger = logger;
   }
 
-  
+
 
 
 
@@ -63402,7 +63484,7 @@ class SourceStrategy {
     }
   }
 
-  
+
 
 
 
@@ -63415,7 +63497,7 @@ class SourceStrategy {
     throw new Error('Subclasses must implement _extractData method');
   }
 
-  
+
 
 
 
@@ -63432,7 +63514,7 @@ class SourceStrategy {
       headers = data[0];
       dataRows = data.slice(1);
     } else {
-      
+
       headers = data[0].map((_, index) => `Col_${index}`);
       dataRows = data;
     }
@@ -63446,7 +63528,7 @@ class SourceStrategy {
     });
   }
 
-  
+
 
 
 
@@ -63458,7 +63540,7 @@ class SourceStrategy {
     return CellValueCoercion.coerceValue(value);
   }
 
-  
+
 
 
 
@@ -63475,7 +63557,7 @@ class SourceStrategy {
     return letter;
   }
 
-  
+
 
 
 
@@ -63508,7 +63590,7 @@ class SourceStrategy {
 
 
 class SheetByIdStrategy extends SourceStrategy {
-  
+
 
 
 
@@ -63518,7 +63600,7 @@ class SheetByIdStrategy extends SourceStrategy {
     this._spreadsheetService = spreadsheetService;
   }
 
-  
+
 
 
 
@@ -63537,7 +63619,7 @@ class SheetByIdStrategy extends SourceStrategy {
     return data;
   }
 
-  
+
 
 
 
@@ -63552,7 +63634,7 @@ class SheetByIdStrategy extends SourceStrategy {
     return this._resolveValues(config);
   }
 
-  
+
 
 
 
@@ -63567,7 +63649,7 @@ class SheetByIdStrategy extends SourceStrategy {
     const range = config.range || '';
     const tabName = config.tabName;
     try {
-      
+
       this.logger.info(`[SheetByIdStrategy] Getting sheet info for spreadsheet: ${sheetId}`);
       const sheets = this._spreadsheetService.getSheetInfo(sheetId);
       if (!sheets || sheets.length === 0) {
@@ -63576,7 +63658,7 @@ class SheetByIdStrategy extends SourceStrategy {
         });
       }
 
-      
+
       let targetSheet;
       if (tabName) {
         targetSheet = sheets.find(s => s.name === tabName);
@@ -63591,14 +63673,14 @@ class SheetByIdStrategy extends SourceStrategy {
       }
       this.logger.info(`[SheetByIdStrategy] Reading from sheet: ${targetSheet.name}`);
 
-      
+
       let fullRange;
       if (range) {
-        
+
         fullRange = range.includes('!') ? range : `${targetSheet.name}!${range}`;
       } else {
         var _targetSheet$gridProp, _targetSheet$gridProp2;
-        
+
         const lastRow = ((_targetSheet$gridProp = targetSheet.gridProperties) === null || _targetSheet$gridProp === void 0 ? void 0 : _targetSheet$gridProp.rowCount) ?? targetSheet.rowCount;
         const lastCol = ((_targetSheet$gridProp2 = targetSheet.gridProperties) === null || _targetSheet$gridProp2 === void 0 ? void 0 : _targetSheet$gridProp2.columnCount) ?? targetSheet.columnCount;
         if (lastRow === 0 || lastCol === 0) {
@@ -63608,7 +63690,7 @@ class SheetByIdStrategy extends SourceStrategy {
         fullRange = `${targetSheet.name}!A1:${this._columnToLetter(lastCol)}${lastRow}`;
       }
 
-      
+
       const values = this._spreadsheetService.getRanges(sheetId, fullRange);
       if (!values || values.length === 0) {
         this.logger.warn(`[SheetByIdStrategy] No data found in range ${fullRange}`);
@@ -63645,7 +63727,7 @@ class SheetByIdStrategy extends SourceStrategy {
 
 
 class FolderStrategy extends SourceStrategy {
-  
+
 
 
 
@@ -63657,7 +63739,7 @@ class FolderStrategy extends SourceStrategy {
     this._spreadsheetService = spreadsheetService;
   }
 
-  
+
 
 
 
@@ -63677,10 +63759,10 @@ class FolderStrategy extends SourceStrategy {
     const includeSourceFile = config.includeSourceFile === true;
     const fileNamePattern = config.fileNamePattern;
     try {
-      
+
       this.logger.info(`[FolderStrategy] Searching for spreadsheets in folder: ${folderId}`);
 
-      
+
       const query = `'${folderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
       const searchResults = this._driveService.searchFiles(query, {
         maxResults: 1000
@@ -63703,12 +63785,12 @@ class FolderStrategy extends SourceStrategy {
         }
       }
 
-      
+
       for (const file of searchResults) {
         const fileName = file.name;
         const fileId = file.id;
 
-        
+
         if (regex && !regex.test(fileName)) {
           this.logger.info(`[FolderStrategy] Skipping file (pattern mismatch): ${fileName}`);
           continue;
@@ -63728,7 +63810,7 @@ class FolderStrategy extends SourceStrategy {
           fileCount++;
         } catch (error) {
           this.logger.error(`[FolderStrategy] Failed to process file ${fileName}: ${error.message}`);
-          
+
         }
       }
       this.logger.info(`[FolderStrategy] Processed ${fileCount} files, extracted ${allData.length} total rows`);
@@ -63748,7 +63830,7 @@ class FolderStrategy extends SourceStrategy {
     }
   }
 
-  
+
 
 
 
@@ -63761,7 +63843,7 @@ class FolderStrategy extends SourceStrategy {
 
 
   _extractFromFile(fileId, fileName, range, tabName, hasHeaders, includeSourceFile) {
-    
+
     const sheets = this._spreadsheetService.getSheetInfo(fileId);
     if (!sheets || sheets.length === 0) {
       throw new SourceError(`No sheets found in file: ${fileName}`, 'NO_SHEETS_FOUND', {
@@ -63770,7 +63852,7 @@ class FolderStrategy extends SourceStrategy {
       });
     }
 
-    
+
     let targetSheet;
     if (tabName) {
       targetSheet = sheets.find(s => s.name === tabName);
@@ -63785,12 +63867,12 @@ class FolderStrategy extends SourceStrategy {
       targetSheet = sheets[0];
     }
 
-    
+
     let fullRange;
     if (range) {
       fullRange = range.includes('!') ? range : `${targetSheet.name}!${range}`;
     } else {
-      
+
       const lastRow = targetSheet.rowCount;
       const lastCol = targetSheet.columnCount;
       if (lastRow === 0 || lastCol === 0) {
@@ -63800,17 +63882,17 @@ class FolderStrategy extends SourceStrategy {
       fullRange = `${targetSheet.name}!A1:${this._columnToLetter(lastCol)}${lastRow}`;
     }
 
-    
+
     const values = this._spreadsheetService.getRanges(fileId, fullRange);
     if (!values || values.length === 0) {
       this.logger.warn(`[FolderStrategy] No data found in range ${fullRange} for file: ${fileName}`);
       return [];
     }
 
-    
+
     const data = this._arrayToObjects(values, hasHeaders);
 
-    
+
     if (includeSourceFile) {
       data.forEach(row => {
         row._sourceFileName = fileName;
@@ -63836,7 +63918,7 @@ class FolderStrategy extends SourceStrategy {
 
 
 class SourceStrategyFactory {
-  
+
 
 
 
@@ -63847,14 +63929,14 @@ class SourceStrategyFactory {
     this._driveService = driveService;
     this._spreadsheetService = spreadsheetService;
 
-    
+
     this._strategies = new Map();
 
-    
+
     this._registerBuiltInStrategies();
   }
 
-  
+
 
 
 
@@ -63863,7 +63945,7 @@ class SourceStrategyFactory {
     this._strategies.set('Folder', FolderStrategy);
   }
 
-  
+
 
 
 
@@ -63885,7 +63967,7 @@ class SourceStrategyFactory {
     this.logger.info(`[SourceStrategyFactory] Registered strategy: ${name}`);
   }
 
-  
+
 
 
 
@@ -63901,13 +63983,13 @@ class SourceStrategyFactory {
     }
     const StrategyClass = this._strategies.get(type);
     try {
-      
+
       if (type === 'SheetById') {
         return new StrategyClass(this.logger, this._spreadsheetService);
       } else if (type === 'Folder') {
         return new StrategyClass(this.logger, this._driveService, this._spreadsheetService);
       } else {
-        
+
         return new StrategyClass(this.logger, dependencies);
       }
     } catch (error) {
@@ -63919,7 +64001,7 @@ class SourceStrategyFactory {
     }
   }
 
-  
+
 
 
 
@@ -63928,7 +64010,7 @@ class SourceStrategyFactory {
     return this._strategies.has(type);
   }
 
-  
+
 
 
 
@@ -63951,7 +64033,7 @@ class SourceStrategyFactory {
 
 
 class TransformError extends ImportError {
-  
+
 
 
 
@@ -63977,7 +64059,7 @@ class TransformerMappingEngine {
     this._expressionEngine = facade._expressionEngine;
   }
 
-  
+
 
 
 
@@ -64007,7 +64089,7 @@ class TransformerMappingEngine {
     return mappedRow;
   }
 
-  
+
 
 
 
@@ -64120,7 +64202,7 @@ class TransformerDateStyler {
     this._utils = facade._utils;
   }
 
-  
+
 
 
 
@@ -64152,7 +64234,7 @@ class TransformerNumberSanitizer {
     this.facade = facade;
   }
 
-  
+
 
 
 
@@ -64164,7 +64246,7 @@ class TransformerNumberSanitizer {
       ...row
     };
 
-    
+
     if (normalization.trim === true) {
       for (const [key, value] of Object.entries(normalized)) {
         if (typeof value === 'string') {
@@ -64173,7 +64255,7 @@ class TransformerNumberSanitizer {
       }
     }
 
-    
+
     if (normalization.dateColumns && Array.isArray(normalization.dateColumns)) {
       const dateFormat = normalization.dateFormat || 'yyyy-MM-dd';
       for (const col of normalization.dateColumns) {
@@ -64183,7 +64265,7 @@ class TransformerNumberSanitizer {
       }
     }
 
-    
+
     if (normalization.uppercaseColumns && Array.isArray(normalization.uppercaseColumns)) {
       for (const col of normalization.uppercaseColumns) {
         if (normalized[col] && typeof normalized[col] === 'string') {
@@ -64192,7 +64274,7 @@ class TransformerNumberSanitizer {
       }
     }
 
-    
+
     if (normalization.lowercaseColumns && Array.isArray(normalization.lowercaseColumns)) {
       for (const col of normalization.lowercaseColumns) {
         if (normalized[col] && typeof normalized[col] === 'string') {
@@ -64201,7 +64283,7 @@ class TransformerNumberSanitizer {
       }
     }
 
-    
+
     return normalized;
   }
 }
@@ -64218,7 +64300,7 @@ class TransformerValidationGuard {
     this._logger = facade._logger;
   }
 
-  
+
 
 
 
@@ -64244,7 +64326,7 @@ class TransformerValidationGuard {
     return true;
   }
 
-  
+
 
 
 
@@ -64286,7 +64368,7 @@ class TransformerValidationGuard {
 
 
 class Transformer {
-  
+
 
 
 
@@ -64297,13 +64379,13 @@ class Transformer {
     this._expressionEngine = expressionEngine;
     this._utils = utils || new MyUtilsService();
 
-    
+
     this._mappingEngine = new TransformerMappingEngine(this);
     this._dateStyler = new TransformerDateStyler(this);
     this._numberSanitizer = new TransformerNumberSanitizer(this);
     this._validationGuard = new TransformerValidationGuard(this);
 
-    
+
     Delegation.delegateMethods(this, [{
       manager: this._mappingEngine,
       methods: ['_applyMapping', '_applyCalculated', '_buildDependencyGraph', '_extractPlaceholders', '_topologicalSort', '_evaluateExpression', '_simpleTemplateSubstitution']
@@ -64319,7 +64401,7 @@ class Transformer {
     }]);
   }
 
-  
+
 
 
 
@@ -64363,7 +64445,7 @@ class Transformer {
     }
   }
 
-  
+
 
 
 
@@ -64377,16 +64459,16 @@ class Transformer {
 
   _transformRow(sourceRow, rowIndex, mapping, calculated, normalization, validation) {
     try {
-      
+
       let transformedRow = this._applyMapping(sourceRow, mapping);
 
-      
+
       transformedRow = this._applyNormalization(transformedRow, normalization);
 
-      
+
       transformedRow = this._applyCalculated(transformedRow, calculated);
 
-      
+
       const isValid = this._applyValidation(transformedRow, validation, rowIndex);
       if (!isValid) {
         return null;
@@ -64420,7 +64502,7 @@ class Transformer {
 
 
 class LoadError extends ImportError {
-  
+
 
 
 
@@ -64448,7 +64530,7 @@ function Loader_toPrimitive(t, r) { if ("object" != typeof t || !t) return t; va
 
 
 class Loader {
-  
+
 
 
 
@@ -64458,7 +64540,7 @@ class Loader {
     this._db = databaseService;
   }
 
-  
+
 
 
 
@@ -64493,7 +64575,7 @@ class Loader {
     const updateIfNewer = loadConfig.updateIfNewer || {};
     this.logger.info(`[Loader] Loading ${data.length} rows into table "${targetTable}" using strategy "${conflictResolution}"`);
     try {
-      
+
       if (!this._db.tables[targetTable]) {
         throw new LoadError(`Target table "${targetTable}" not found in database`, 'TABLE_NOT_FOUND', {
           targetTable,
@@ -64502,7 +64584,7 @@ class Loader {
       }
       const table = this._db.tables[targetTable];
 
-      
+
       let result;
       switch (conflictResolution) {
         case 'INSERT_ONLY':
@@ -64523,7 +64605,7 @@ class Loader {
           });
       }
 
-      
+
       this.logger.info('[Loader] Saving changes to database...');
       this._db.save();
       this.logger.info(`[Loader] Load complete: ${JSON.stringify(result)}`);
@@ -64541,7 +64623,7 @@ class Loader {
     }
   }
 
-  
+
 
 
 
@@ -64551,11 +64633,11 @@ class Loader {
 
   _insertOnly(table, data, conflictKey) {
     try {
-      
+
       const existingRows = table.getAllRows();
       const existingKeys = new Set(existingRows.map(row => String(row[conflictKey])));
 
-      
+
       const rowsToInsert = [];
       let skipped = 0;
       for (const row of data) {
@@ -64568,7 +64650,7 @@ class Loader {
         }
       }
 
-      
+
       let inserted = 0;
       if (rowsToInsert.length > 0) {
         table.insertRows(rowsToInsert);
@@ -64591,7 +64673,7 @@ class Loader {
     }
   }
 
-  
+
 
 
 
@@ -64602,7 +64684,7 @@ class Loader {
 
   _updateOnly(table, data, conflictKey, updateIfNewer) {
     try {
-      
+
       const existingRows = table.getAllRows();
       const existingMap = new Map();
       for (const row of existingRows) {
@@ -64611,7 +64693,7 @@ class Loader {
       let updated = 0;
       let skipped = 0;
 
-      
+
       for (const row of data) {
         const keyValue = String(row[conflictKey]);
         const existing = existingMap.get(keyValue);
@@ -64619,7 +64701,7 @@ class Loader {
           skipped++;
           this.logger.debug(`[Loader] Skipping new record (UPDATE_ONLY): ${conflictKey}=${keyValue}`);
         } else {
-          
+
           if (updateIfNewer.enabled) {
             if (!this._shouldUpdate(existing, row, updateIfNewer.timestampColumn)) {
               skipped++;
@@ -64627,7 +64709,7 @@ class Loader {
             }
           }
 
-          
+
           const pkField = table._keyField || 'ID';
           table.updateRowById(existing[pkField], row);
           updated++;
@@ -64649,7 +64731,7 @@ class Loader {
     }
   }
 
-  
+
 
 
 
@@ -64660,14 +64742,14 @@ class Loader {
 
   _upsert(table, data, conflictKey, updateIfNewer) {
     try {
-      
+
       const existingRows = table.getAllRows();
       const existingMap = new Map();
       for (const row of existingRows) {
         existingMap.set(String(row[conflictKey]), row);
       }
 
-      
+
       const rowsToInsert = [];
       const rowsToUpdate = [];
       let skipped = 0;
@@ -64677,7 +64759,7 @@ class Loader {
         if (!existing) {
           rowsToInsert.push(row);
         } else {
-          
+
           if (updateIfNewer.enabled) {
             if (!this._shouldUpdate(existing, row, updateIfNewer.timestampColumn)) {
               skipped++;
@@ -64685,7 +64767,7 @@ class Loader {
             }
           }
 
-          
+
           const pkField = table._keyField || 'ID';
           rowsToUpdate.push({
             id: existing[pkField],
@@ -64694,7 +64776,7 @@ class Loader {
         }
       }
 
-      
+
       let inserted = 0;
       if (rowsToInsert.length > 0) {
         table.insertRows(rowsToInsert);
@@ -64702,7 +64784,7 @@ class Loader {
         this.logger.info(`[Loader] Bulk inserted ${inserted} new rows`);
       }
 
-      
+
       let updated = 0;
       for (const {
         id,
@@ -64730,7 +64812,7 @@ class Loader {
     }
   }
 
-  
+
 
 
 
@@ -64740,12 +64822,12 @@ class Loader {
 
   _overwrite(table, data, conflictKey) {
     try {
-      
+
       const existingRows = table.getAllRows();
       let deleted = 0;
       const pkField = table._keyField || 'ID';
 
-      
+
       for (let i = existingRows.length - 1; i >= 0; i--) {
         const row = existingRows[i];
         table.deleteRowById(row[pkField]);
@@ -64755,7 +64837,7 @@ class Loader {
         this.logger.info(`[Loader] Deleted ${deleted} existing rows`);
       }
 
-      
+
       let inserted = 0;
       if (data.length > 0) {
         table.insertRows(data);
@@ -64778,7 +64860,7 @@ class Loader {
     }
   }
 
-  
+
 
 
 
@@ -64812,7 +64894,7 @@ class Loader {
     }
   }
 
-  
+
 
 
 
@@ -64831,7 +64913,7 @@ class Loader {
       });
     }
 
-    
+
     if (['UPDATE_ONLY', 'UPSERT', 'OVERWRITE'].includes(config.conflictResolution)) {
       if (!config.conflictKey || typeof config.conflictKey !== 'string') {
         throw new LoadError(`Conflict resolution strategy "${config.conflictResolution}" requires a conflictKey`, 'MISSING_CONFLICT_KEY', {
@@ -64867,11 +64949,11 @@ class ImportPipelineExecutor {
       this.facade.logger.warn('[ImportEngine] DRY RUN mode - data will not be persisted');
     }
     try {
-      
+
       const config = new ImportConfiguration(recipe, this.facade.logger);
       this.facade.logger.info(`[ImportEngine] Configuration validated: ${JSON.stringify(config.getSummary())}`);
 
-      
+
       const executeWithRetry = this.facade._exceptionService ? () => this.facade._exceptionService.executeWithRetry(() => this._executePipeline(config, dryRun, jobId, postTransform), {}, maxRetries) : () => this._executePipeline(config, dryRun, jobId, postTransform);
       const result = executeWithRetry();
       const duration = Date.now() - startTime;
@@ -64896,21 +64978,21 @@ class ImportPipelineExecutor {
     }
   }
   _executePipeline(config, dryRun, jobId = null, postTransform = null) {
-    
+
     if (this.facade._monitor && jobId) {
       this.facade._monitor.registerJob(jobId);
       this.facade._monitor.startJob(jobId);
     }
     try {
       var _this$facade$_monitor, _this$facade$_monitor2, _this$facade$_monitor3, _this$facade$_monitor4, _this$facade$_monitor5, _this$facade$_monitor6, _this$facade$_monitor7, _this$facade$_monitor8, _this$facade$_monitor9, _this$facade$_monitor0, _this$facade$_monitor1, _this$facade$_monitor10, _this$facade$_monitor11;
-      
+
       (_this$facade$_monitor = this.facade._monitor) === null || _this$facade$_monitor === void 0 || _this$facade$_monitor.logStepStart(jobId, 'Extract');
       (_this$facade$_monitor2 = this.facade._monitor) === null || _this$facade$_monitor2 === void 0 || _this$facade$_monitor2.updateProgress(jobId, 5, 'Extracting data...');
       const extractedData = this._executeExtract(config);
       (_this$facade$_monitor3 = this.facade._monitor) === null || _this$facade$_monitor3 === void 0 || _this$facade$_monitor3.logStepComplete(jobId, 'Extract', true);
       (_this$facade$_monitor4 = this.facade._monitor) === null || _this$facade$_monitor4 === void 0 || _this$facade$_monitor4.updateProgress(jobId, 33, `Extracted ${extractedData.length} rows`);
 
-      
+
       (_this$facade$_monitor5 = this.facade._monitor) === null || _this$facade$_monitor5 === void 0 || _this$facade$_monitor5.logStepStart(jobId, 'Transform');
       (_this$facade$_monitor6 = this.facade._monitor) === null || _this$facade$_monitor6 === void 0 || _this$facade$_monitor6.updateProgress(jobId, 40, 'Transforming data...');
       let transformedData = this._executeTransform(extractedData, config);
@@ -64920,14 +65002,14 @@ class ImportPipelineExecutor {
       (_this$facade$_monitor7 = this.facade._monitor) === null || _this$facade$_monitor7 === void 0 || _this$facade$_monitor7.logStepComplete(jobId, 'Transform', true);
       (_this$facade$_monitor8 = this.facade._monitor) === null || _this$facade$_monitor8 === void 0 || _this$facade$_monitor8.updateProgress(jobId, 66, `Transformed ${transformedData.length} rows`);
 
-      
+
       (_this$facade$_monitor9 = this.facade._monitor) === null || _this$facade$_monitor9 === void 0 || _this$facade$_monitor9.logStepStart(jobId, 'Load');
       (_this$facade$_monitor0 = this.facade._monitor) === null || _this$facade$_monitor0 === void 0 || _this$facade$_monitor0.updateProgress(jobId, 70, dryRun ? 'Dry run - skipping load...' : 'Loading data...');
       const loadResult = dryRun ? this._generateDryRunLoadResult(transformedData) : this._executeLoad(transformedData, config);
       (_this$facade$_monitor1 = this.facade._monitor) === null || _this$facade$_monitor1 === void 0 || _this$facade$_monitor1.logStepComplete(jobId, 'Load', true);
       (_this$facade$_monitor10 = this.facade._monitor) === null || _this$facade$_monitor10 === void 0 || _this$facade$_monitor10.updateProgress(jobId, 100, 'Complete');
 
-      
+
       (_this$facade$_monitor11 = this.facade._monitor) === null || _this$facade$_monitor11 === void 0 || _this$facade$_monitor11.completeJob(jobId, `Imported ${loadResult.inserted || 0} rows`);
       return {
         extract: {
@@ -64946,7 +65028,7 @@ class ImportPipelineExecutor {
       };
     } catch (error) {
       var _this$facade$_monitor12;
-      
+
       (_this$facade$_monitor12 = this.facade._monitor) === null || _this$facade$_monitor12 === void 0 || _this$facade$_monitor12.setError(jobId, error);
       throw error;
     }
@@ -64995,9 +65077,9 @@ class ImportStrategyRegistry {
   registerCustomSource(name, strategyClass) {
     this.facade.logger.info(`[ImportEngine] Registering custom source strategy: ${name}`);
     this.facade._sourceFactory.registerStrategy(name, strategyClass);
-    
-    
-    
+
+
+
     ImportConfiguration.registerSourceType(name);
   }
   getAvailableSourceTypes() {
@@ -65056,7 +65138,7 @@ class ImportRecipeValidator {
 
 
 class ImportEngine {
-  
+
 
 
 
@@ -65070,20 +65152,20 @@ class ImportEngine {
     this.logger = logger;
     this._exceptionService = exceptionService;
 
-    
+
 
 
 
 
     this._monitor = monitor;
 
-    
+
     this._sourceFactory = new SourceStrategyFactory(logger, driveService, spreadsheetService);
     this._transformer = new Transformer(logger, expressionEngine);
     this._loader = new Loader(logger, databaseService);
     this.logger.info('[ImportEngine] Initialized successfully');
 
-    
+
     this._pipelineExecutor = new ImportPipelineExecutor(this);
     this._strategyRegistry = new ImportStrategyRegistry(this);
     this._recipeValidator = new ImportRecipeValidator(this);
@@ -65098,7 +65180,7 @@ class ImportEngine {
     this.validateRecipe = this._recipeValidator.validateRecipe.bind(this._recipeValidator);
   }
 
-  
+
 
 
 
@@ -65622,7 +65704,7 @@ class ImportEngine {
 
 
 class Entity {
-  
+
 
 
 
@@ -65644,7 +65726,7 @@ class Entity {
     this._dynamicColumns = {};
   }
 
-  
+
 
 
 
@@ -65653,7 +65735,7 @@ class Entity {
     return this._id;
   }
 
-  
+
 
 
 
@@ -65662,7 +65744,7 @@ class Entity {
     this._id = value;
   }
 
-  
+
 
 
 
@@ -65671,7 +65753,7 @@ class Entity {
     return this._createdAt;
   }
 
-  
+
 
 
 
@@ -65680,7 +65762,7 @@ class Entity {
     return this._updatedAt;
   }
 
-  
+
 
 
 
@@ -65691,7 +65773,7 @@ class Entity {
     return utils.parseDate(value);
   }
 
-  
+
 
 
 
@@ -65700,7 +65782,7 @@ class Entity {
     this._updatedAt = new Date();
   }
 
-  
+
 
 
 
@@ -65709,7 +65791,7 @@ class Entity {
     return this._dirtyFields.has(fieldName);
   }
 
-  
+
 
 
 
@@ -65717,7 +65799,7 @@ class Entity {
     return Array.from(this._dirtyFields);
   }
 
-  
+
 
 
 
@@ -65725,14 +65807,14 @@ class Entity {
     return this._dirtyFields.size > 0;
   }
 
-  
+
 
 
   clearDirtyFields() {
     this._dirtyFields.clear();
   }
 
-  
+
 
 
 
@@ -65748,7 +65830,7 @@ class Entity {
     return changes;
   }
 
-  
+
 
 
 
@@ -65759,7 +65841,7 @@ class Entity {
     };
   }
 
-  
+
 
 
 
@@ -65769,7 +65851,7 @@ class Entity {
     return this._originalData[fieldName];
   }
 
-  
+
 
 
 
@@ -65794,7 +65876,7 @@ class Entity {
     }
   }
 
-  
+
 
 
 
@@ -65807,7 +65889,7 @@ class Entity {
     };
   }
 
-  
+
 
 
 
@@ -65820,7 +65902,7 @@ class Entity {
     this.markDirty(column);
   }
 
-  
+
 
 
 
@@ -65829,7 +65911,7 @@ class Entity {
     this._domainEvents.push(event);
   }
 
-  
+
 
 
 
@@ -65838,14 +65920,14 @@ class Entity {
     return [...this._domainEvents];
   }
 
-  
+
 
 
   clearDomainEvents() {
     this._domainEvents = [];
   }
 
-  
+
 
 
 
@@ -65856,7 +65938,7 @@ class Entity {
     return true;
   }
 
-  
+
 
 
 
@@ -65865,7 +65947,7 @@ class Entity {
     return this.validate();
   }
 
-  
+
 
 
 
@@ -65874,7 +65956,7 @@ class Entity {
     return [...this._validationErrors];
   }
 
-  
+
 
 
 
@@ -65888,7 +65970,7 @@ class Entity {
     });
   }
 
-  
+
 
 
 
@@ -65899,7 +65981,7 @@ class Entity {
     }
   }
 
-  
+
 
 
 
@@ -65916,7 +65998,7 @@ class Entity {
     return this._id === other._id;
   }
 
-  
+
 
 
 
@@ -65927,7 +66009,7 @@ class Entity {
     throw new Error(`${this.constructor.name} must implement toData() method`);
   }
 
-  
+
 
 
 
@@ -65940,7 +66022,7 @@ class Entity {
     throw new Error(`${this.name} must implement static fromData() method`);
   }
 
-  
+
 
 
 
@@ -65956,7 +66038,7 @@ class Entity {
 
 
 class ValueObject {
-  
+
 
 
 
@@ -65966,7 +66048,7 @@ class ValueObject {
     }
   }
 
-  
+
 
 
 
@@ -65974,7 +66056,7 @@ class ValueObject {
     Object.freeze(this);
   }
 
-  
+
 
 
 
@@ -65984,11 +66066,11 @@ class ValueObject {
       return false;
     }
 
-    
+
     return this._deepEquals(this, other);
   }
 
-  
+
 
 
 
@@ -65996,22 +66078,22 @@ class ValueObject {
 
 
   _deepEquals(a, b) {
-    
+
     if (a === b) {
       return true;
     }
 
-    
+
     if (typeof a !== typeof b) {
       return false;
     }
 
-    
+
     if (typeof a !== 'object' || a === null || b === null) {
       return a === b;
     }
 
-    
+
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) {
         return false;
@@ -66019,7 +66101,7 @@ class ValueObject {
       return a.every((item, index) => this._deepEquals(item, b[index]));
     }
 
-    
+
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
     if (keysA.length !== keysB.length) {
@@ -66033,7 +66115,7 @@ class ValueObject {
     });
   }
 
-  
+
 
 
 
@@ -66049,7 +66131,7 @@ class ValueObject {
     }
   }
 
-  
+
 
 
 
@@ -66073,7 +66155,7 @@ class ValueObject {
 
 
 class DomainException extends BaseError {
-  
+
 
 
 
@@ -66081,14 +66163,14 @@ class DomainException extends BaseError {
 
   constructor(message, context, details = {}) {
     super(message);
-    
+
     this.name = 'DomainException';
-    
+
     this.context = context;
     this.details = details;
   }
 
-  
+
 
 
 
@@ -66096,7 +66178,7 @@ class DomainException extends BaseError {
     return this.details;
   }
 
-  
+
 
 
 
@@ -66119,7 +66201,7 @@ class DomainException extends BaseError {
 
 
 class EntityNotFoundException extends DomainException {
-  
+
 
 
 
@@ -66139,7 +66221,7 @@ class EntityNotFoundException extends DomainException {
     this.entityId = typeof criteria === 'string' ? criteria : undefined; 
   }
 
-  
+
 
 
 
@@ -66147,7 +66229,7 @@ class EntityNotFoundException extends DomainException {
     return this.entityType;
   }
 
-  
+
 
 
 
@@ -66161,7 +66243,7 @@ class EntityNotFoundException extends DomainException {
 
 
 class DynamicFieldMapping {
-  
+
 
 
 
@@ -66179,11 +66261,11 @@ class DynamicFieldMapping {
     this.expand = config.expand;
     this.logger = config.logger || console;
 
-    
+
     this._validate();
   }
 
-  
+
 
 
 
@@ -66206,7 +66288,7 @@ class DynamicFieldMapping {
     }
   }
 
-  
+
 
 
 
@@ -66214,19 +66296,19 @@ class DynamicFieldMapping {
   hydrate(row) {
     const resultMap = new Map();
     try {
-      
+
       const schemaKeys = this.schemaProvider();
       if (!Array.isArray(schemaKeys)) {
         this.logger.warn(`DynamicFieldMapping: schemaProvider for '${this.propertyName}' did not return an array`);
         return resultMap;
       }
 
-      
+
       for (const key of schemaKeys) {
         const columns = this.columnPattern(key);
         const aggregatedValue = this.aggregate(row, key, columns);
 
-        
+
         if (aggregatedValue !== null && aggregatedValue !== undefined) {
           resultMap.set(key, aggregatedValue);
         }
@@ -66238,7 +66320,7 @@ class DynamicFieldMapping {
     return resultMap;
   }
 
-  
+
 
 
 
@@ -66250,12 +66332,12 @@ class DynamicFieldMapping {
       return result;
     }
     try {
-      
+
       for (const [key, value] of mapValue.entries()) {
         const columns = this.columnPattern(key);
         const expandedColumns = this.expand(value, key, columns);
 
-        
+
         Object.assign(result, expandedColumns);
       }
     } catch (error) {
@@ -66265,7 +66347,7 @@ class DynamicFieldMapping {
     return result;
   }
 
-  
+
 
 
 
@@ -66275,8 +66357,8 @@ class DynamicFieldMapping {
       const columnNames = [];
       for (const key of schemaKeys) {
         const columns = this.columnPattern(key);
-        
-        
+
+
         if (typeof columns === 'object') {
           columnNames.push(...Object.values(columns));
         } else {
@@ -66298,7 +66380,7 @@ class DynamicFieldMapping {
 
 
 class JsonExpansionMapping {
-  
+
 
 
 
@@ -66310,11 +66392,11 @@ class JsonExpansionMapping {
     this.properties = config.properties;
     this.logger = config.logger || console;
 
-    
+
     this._validate();
   }
 
-  
+
 
 
 
@@ -66333,7 +66415,7 @@ class JsonExpansionMapping {
     }
   }
 
-  
+
 
 
 
@@ -66343,41 +66425,41 @@ class JsonExpansionMapping {
     try {
       const jsonValue = row[this.column];
 
-      
+
       if (!jsonValue) {
-        
+
         for (const prop of this.properties) {
           result[prop] = null;
         }
         return result;
       }
 
-      
+
       let parsedData;
       if (typeof jsonValue === 'string') {
         try {
           parsedData = JSON.parse(jsonValue);
         } catch (parseError) {
           this.logger.warn(`JsonExpansionMapping: Failed to parse JSON from column '${this.column}': ${parseError.message}`);
-          
+
           for (const prop of this.properties) {
             result[prop] = null;
           }
           return result;
         }
       } else if (typeof jsonValue === 'object') {
-        
+
         parsedData = jsonValue;
       } else {
         this.logger.warn(`JsonExpansionMapping: Unexpected type for column '${this.column}': ${typeof jsonValue}`);
-        
+
         for (const prop of this.properties) {
           result[prop] = null;
         }
         return result;
       }
 
-      
+
       for (const prop of this.properties) {
         result[prop] = parsedData[prop] !== undefined ? parsedData[prop] : null;
       }
@@ -66388,7 +66470,7 @@ class JsonExpansionMapping {
     return result;
   }
 
-  
+
 
 
 
@@ -66398,19 +66480,19 @@ class JsonExpansionMapping {
     try {
       const jsonObject = {};
 
-      
+
       for (const prop of this.properties) {
         if (prop in entityData) {
           const value = entityData[prop];
-          
+
           if (value !== null && value !== undefined) {
             jsonObject[prop] = value;
           }
         }
       }
 
-      
-      
+
+
       result[this.column] = Object.keys(jsonObject).length > 0 ? JSON.stringify(jsonObject) : JSON.stringify({});
     } catch (error) {
       this.logger.error(`JsonExpansionMapping: Error during dehydration of column '${this.column}': ${error.message}`);
@@ -66419,7 +66501,7 @@ class JsonExpansionMapping {
     return result;
   }
 
-  
+
 
 
 
@@ -66427,7 +66509,7 @@ class JsonExpansionMapping {
     return this.column;
   }
 
-  
+
 
 
 
@@ -66435,7 +66517,7 @@ class JsonExpansionMapping {
     return [...this.properties];
   }
 
-  
+
 
 
 
@@ -66454,21 +66536,21 @@ class JsonExpansionMapping {
 
 
 class MappingConfiguration {
-  
+
 
 
 
   constructor(logger = null) {
     this.logger = logger || new LoggerService();
 
-    
+
     this._dynamicFieldMappings = new Map();
 
-    
+
     this._jsonExpansionMappings = new Map();
   }
 
-  
+
 
 
 
@@ -66483,7 +66565,7 @@ class MappingConfiguration {
     return this;
   }
 
-  
+
 
 
 
@@ -66498,7 +66580,7 @@ class MappingConfiguration {
     return this;
   }
 
-  
+
 
 
 
@@ -66507,7 +66589,7 @@ class MappingConfiguration {
     return this._dynamicFieldMappings.get(propertyName) || null;
   }
 
-  
+
 
 
 
@@ -66516,7 +66598,7 @@ class MappingConfiguration {
     return this._jsonExpansionMappings.get(columnName) || null;
   }
 
-  
+
 
 
 
@@ -66524,7 +66606,7 @@ class MappingConfiguration {
     return Array.from(this._dynamicFieldMappings.values());
   }
 
-  
+
 
 
 
@@ -66532,7 +66614,7 @@ class MappingConfiguration {
     return Array.from(this._jsonExpansionMappings.values());
   }
 
-  
+
 
 
 
@@ -66540,7 +66622,7 @@ class MappingConfiguration {
     return this._dynamicFieldMappings.size > 0;
   }
 
-  
+
 
 
 
@@ -66548,7 +66630,7 @@ class MappingConfiguration {
     return this._jsonExpansionMappings.size > 0;
   }
 
-  
+
 
 
   clear() {
@@ -66557,7 +66639,7 @@ class MappingConfiguration {
     this.logger.debug('MappingConfiguration: Cleared all mappings');
   }
 
-  
+
 
 
 
@@ -66582,7 +66664,7 @@ class MappingConfiguration {
 
 
 class EntityMapper {
-  
+
 
 
 
@@ -66592,7 +66674,7 @@ class EntityMapper {
     this._mappingConfig = new MappingConfiguration(this.logger);
   }
 
-  
+
 
 
 
@@ -66605,7 +66687,7 @@ class EntityMapper {
     });
   }
 
-  
+
 
 
 
@@ -66615,7 +66697,7 @@ class EntityMapper {
     return this;
   }
 
-  
+
 
 
 
@@ -66625,7 +66707,7 @@ class EntityMapper {
     return this;
   }
 
-  
+
 
 
 
@@ -66633,7 +66715,7 @@ class EntityMapper {
     return this._mappingConfig;
   }
 
-  
+
 
 
 
@@ -66643,30 +66725,30 @@ class EntityMapper {
       return null;
     }
 
-    
+
     const data = typeof entity.toData === 'function' ? entity.toData() : this._serializeEntityFields(entity);
 
-    
+
     for (const [fieldName, transformer] of this._customTransformers) {
       if (fieldName in data) {
         data[fieldName] = transformer.toData(data[fieldName]);
       }
     }
 
-    
+
     this._applyDynamicFieldDehydration(data, entity);
 
-    
+
     this._applyJsonExpansionDehydration(data);
 
-    
-    
-    
+
+
+
     this._applyDynamicColumnPassthrough(data, entity);
     return data;
   }
 
-  
+
 
 
 
@@ -66682,7 +66764,7 @@ class EntityMapper {
     return data;
   }
 
-  
+
 
 
 
@@ -66702,7 +66784,7 @@ class EntityMapper {
     }
   }
 
-  
+
 
 
 
@@ -66713,31 +66795,31 @@ class EntityMapper {
       return value;
     }
 
-    
+
     if (value instanceof ValueObject) {
       return value.getValue();
     }
 
-    
+
     if (value instanceof Date) {
       return value.toISOString();
     }
 
-    
+
     if (Array.isArray(value)) {
       return value.map(item => this._serializeValue(item));
     }
 
-    
+
     if (value && typeof value.toData === 'function') {
       return value.toData();
     }
 
-    
+
     return value;
   }
 
-  
+
 
 
 
@@ -66752,7 +66834,7 @@ class EntityMapper {
       throw new DomainException('EntityClass is required for hydration');
     }
 
-    
+
     const transformedData = {
       ...data
     };
@@ -66762,24 +66844,24 @@ class EntityMapper {
       }
     }
 
-    
+
     this._applyJsonExpansionHydration(transformedData);
 
-    
+
     this._applyDynamicFieldHydration(transformedData);
 
-    
+
     const entity = typeof EntityClass.fromData === 'function' ? EntityClass.fromData(transformedData) : new EntityClass(transformedData);
 
-    
-    
+
+
     if (entity && typeof entity.captureDynamicColumns === 'function') {
       entity.captureDynamicColumns(transformedData);
     }
     return entity;
   }
 
-  
+
 
 
 
@@ -66792,7 +66874,7 @@ class EntityMapper {
     return dataArray.map(data => this.fromData(data, EntityClass));
   }
 
-  
+
 
 
 
@@ -66804,7 +66886,7 @@ class EntityMapper {
     return entities.map(entity => this.toData(entity));
   }
 
-  
+
 
 
 
@@ -66816,7 +66898,7 @@ class EntityMapper {
     return cloneDeep_cloneDeep(data);
   }
 
-  
+
 
 
 
@@ -66827,15 +66909,15 @@ class EntityMapper {
     }
     const mappings = this._mappingConfig.getAllJsonExpansionMappings();
     for (const mapping of mappings) {
-      
+
       const expandedProperties = mapping.hydrate(data);
 
-      
+
       Object.assign(data, expandedProperties);
     }
   }
 
-  
+
 
 
 
@@ -66846,20 +66928,20 @@ class EntityMapper {
     }
     const mappings = this._mappingConfig.getAllJsonExpansionMappings();
     for (const mapping of mappings) {
-      
+
       const jsonColumn = mapping.dehydrate(data);
 
-      
+
       Object.assign(data, jsonColumn);
 
-      
+
       for (const prop of mapping.getProperties()) {
         delete data[prop];
       }
     }
   }
 
-  
+
 
 
 
@@ -66870,15 +66952,15 @@ class EntityMapper {
     }
     const mappings = this._mappingConfig.getAllDynamicFieldMappings();
     for (const mapping of mappings) {
-      
+
       const mapValue = mapping.hydrate(data);
 
-      
+
       data[mapping.propertyName] = mapValue;
     }
   }
 
-  
+
 
 
 
@@ -66890,16 +66972,16 @@ class EntityMapper {
     }
     const mappings = this._mappingConfig.getAllDynamicFieldMappings();
     for (const mapping of mappings) {
-      
+
       const mapValue = entity[mapping.propertyName];
       if (mapValue) {
-        
+
         const expandedColumns = mapping.dehydrate(mapValue);
 
-        
+
         Object.assign(data, expandedColumns);
 
-        
+
         delete data[mapping.propertyName];
       }
     }
@@ -66914,7 +66996,7 @@ class EntityMapper {
 
 
 class HydrationService {
-  
+
 
 
 
@@ -66924,7 +67006,7 @@ class HydrationService {
     this.entityMapper = entityMapper || new EntityMapper(this.logger);
   }
 
-  
+
 
 
 
@@ -66934,7 +67016,7 @@ class HydrationService {
     return this.entityMapper.fromData(data, EntityClass);
   }
 
-  
+
 
 
 
@@ -66944,7 +67026,7 @@ class HydrationService {
     return this.entityMapper.fromDataArray(dataArray, EntityClass);
   }
 
-  
+
 
 
 
@@ -66953,7 +67035,7 @@ class HydrationService {
     return this.entityMapper.toData(entity);
   }
 
-  
+
 
 
 
@@ -66962,7 +67044,7 @@ class HydrationService {
     return this.entityMapper.toDataArray(entities);
   }
 
-  
+
 
 
 
@@ -66973,7 +67055,7 @@ class HydrationService {
     }
   }
 
-  
+
 
 
 
@@ -66983,7 +67065,7 @@ class HydrationService {
     }
   }
 
-  
+
 
 
 
@@ -66993,7 +67075,7 @@ class HydrationService {
       return;
     }
 
-    
+
     const keys = Object.keys(data);
     for (const key of keys) {
       if (key in entity) {
@@ -67001,7 +67083,7 @@ class HydrationService {
       }
     }
 
-    
+
     this.storeOriginalData(entity, data);
     this.clearDirtyFields(entity);
   }
@@ -67015,7 +67097,7 @@ class HydrationService {
 
 
 class SpecificationException extends DomainException {
-  
+
 
 
 
@@ -67027,7 +67109,7 @@ class SpecificationException extends DomainException {
     this.specificationType = specificationType;
   }
 
-  
+
 
 
 
@@ -67044,7 +67126,7 @@ class SpecificationException extends DomainException {
 
 
 class QueryTranslator {
-  
+
 
 
 
@@ -67052,7 +67134,7 @@ class QueryTranslator {
     this.logger = logger || new LoggerService();
   }
 
-  
+
 
 
 
@@ -67081,7 +67163,7 @@ class QueryTranslator {
       }
     }
 
-    
+
     if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
       throw new SpecificationException(`Specification ${specification.constructor.name} cannot be translated to a database query`, 'QueryTranslator', {
         specification: specification.toString()
@@ -67101,7 +67183,7 @@ class QueryTranslator {
     }
   }
 
-  
+
 
 
 
@@ -67113,7 +67195,7 @@ class QueryTranslator {
     return typeof specification.toQueryObject === 'function' && specification.toQueryObject() !== null && specification.toQueryObject() !== undefined;
   }
 
-  
+
 
 
 
@@ -67127,7 +67209,7 @@ class QueryTranslator {
     return queryBuilder;
   }
 
-  
+
 
 
 
@@ -67157,7 +67239,7 @@ class QueryTranslator {
     };
   }
 
-  
+
 
 
 
@@ -67194,7 +67276,7 @@ class QueryTranslator {
 
 
 class Repository {
-  
+
 
 
 
@@ -67217,7 +67299,7 @@ class Repository {
     this.cache = cache;
     this.exceptionService = exceptionService;
 
-    
+
 
 
 
@@ -67228,16 +67310,16 @@ class Repository {
       this.logger.info(`[DRY-RUN] Repository for ${tableName} initialized in dry-run mode. Changes will not be persisted.`);
     }
 
-    
+
     this.entityMapper = new EntityMapper(this.logger);
     this.hydrationService = new HydrationService(this.entityMapper, this.logger);
     this.queryTranslator = new QueryTranslator(this.logger);
 
-    
+
     this._table = this._getTable();
   }
 
-  
+
 
 
 
@@ -67250,7 +67332,7 @@ class Repository {
     return this._dryRun;
   }
 
-  
+
 
 
 
@@ -67271,7 +67353,7 @@ class Repository {
     return table;
   }
 
-  
+
 
 
 
@@ -67285,7 +67367,7 @@ class Repository {
     return operation();
   }
 
-  
+
 
 
 
@@ -67298,15 +67380,15 @@ class Repository {
       }
       let rows;
 
-      
+
       const validation = this.queryTranslator.validate(specification);
       if (validation.valid) {
-        
+
         const query = this.database.select(['*']).from(this.tableName);
         this.queryTranslator.translate(specification, query);
         rows = query.execute();
       } else {
-        
+
         rows = this._table.getAllRows();
         const entities = this.hydrationService.hydrateMany(rows, this.EntityClass);
         return entities.filter(entity => specification.isSatisfiedBy(entity));
@@ -67315,7 +67397,7 @@ class Repository {
     });
   }
 
-  
+
 
 
 
@@ -67325,14 +67407,14 @@ class Repository {
     return results.length > 0 ? results[0] : null;
   }
 
-  
+
 
 
 
 
   findById(id) {
     return this._executeWithRetry(() => {
-      
+
       if (this.cache) {
         const cacheKey = `${this.tableName}:${id}`;
         const cached = this.cache.get(cacheKey);
@@ -67348,7 +67430,7 @@ class Repository {
         return null;
       }
 
-      
+
       if (this.cache) {
         const cacheKey = `${this.tableName}:${id}`;
         this.cache.put(cacheKey, JSON.stringify(row), 300); 
@@ -67359,7 +67441,7 @@ class Repository {
     });
   }
 
-  
+
 
 
 
@@ -67373,7 +67455,7 @@ class Repository {
     return entity;
   }
 
-  
+
 
 
 
@@ -67384,7 +67466,7 @@ class Repository {
     });
   }
 
-  
+
 
 
 
@@ -67393,7 +67475,7 @@ class Repository {
     return this.findOne(specification) !== null;
   }
 
-  
+
 
 
 
@@ -67403,7 +67485,7 @@ class Repository {
     return results.length;
   }
 
-  
+
 
 
 
@@ -67412,11 +67494,11 @@ class Repository {
 
   save(entity, options = {}) {
     return this._executeWithRetry(() => {
-      
+
       entity.validateOrThrow();
       const data = this.hydrationService.dehydrate(entity);
 
-      
+
       if (this._isDryRun(options)) {
         const operation = entity.id ? 'update' : 'insert';
         const simulatedId = entity.id || `dry-run-${Date.now()}`;
@@ -67428,24 +67510,24 @@ class Repository {
         };
       }
       if (entity.id) {
-        
+
         this._table.updateRowById(entity.id, data);
         this.logger.info(`Updated ${this.EntityClass.name} with ID: ${entity.id}`);
       } else {
-        
+
         const newRow = this._table.insertRow(data);
         entity.id = newRow.id;
         this.logger.info(`Inserted new ${this.EntityClass.name} with ID: ${entity.id}`);
       }
 
-      
+
       this.database.save();
 
-      
+
       this.hydrationService.clearDirtyFields(entity);
       this.hydrationService.storeOriginalData(entity, data);
 
-      
+
       if (this.cache) {
         this._clearCache(entity.id);
       }
@@ -67453,41 +67535,41 @@ class Repository {
     });
   }
 
-  
+
 
 
 
 
   saveMany(entities) {
     return this._executeWithRetry(() => {
-      
+
       if (!entities || entities.length === 0) {
         return [];
       }
 
-      
+
       for (const entity of entities) {
         entity.validateOrThrow();
       }
 
-      
+
       const newEntities = entities.filter(e => !e.id);
       const existingEntities = entities.filter(e => e.id);
       const savedEntities = [];
 
-      
+
       if (newEntities.length > 0) {
         const newData = newEntities.map(entity => this.hydrationService.dehydrate(entity));
 
-        
+
         const insertedRows = this._table.insertRows(newData);
 
-        
+
         for (let i = 0; i < newEntities.length; i++) {
           const entity = newEntities[i];
           entity.id = insertedRows[i].id;
 
-          
+
           this.hydrationService.clearDirtyFields(entity);
           this.hydrationService.storeOriginalData(entity, insertedRows[i]);
           savedEntities.push(entity);
@@ -67495,12 +67577,12 @@ class Repository {
         this.logger.info(`Bulk inserted ${newEntities.length} new ${this.EntityClass.name} entities`);
       }
 
-      
+
       for (const entity of existingEntities) {
         const data = this.hydrationService.dehydrate(entity);
         this._table.updateRowById(entity.id, data);
 
-        
+
         this.hydrationService.clearDirtyFields(entity);
         this.hydrationService.storeOriginalData(entity, data);
         savedEntities.push(entity);
@@ -67509,10 +67591,10 @@ class Repository {
         this.logger.info(`Updated ${existingEntities.length} existing ${this.EntityClass.name} entities`);
       }
 
-      
+
       this.database.save();
 
-      
+
       if (this.cache) {
         for (const entity of savedEntities) {
           this._clearCache(entity.id);
@@ -67522,7 +67604,7 @@ class Repository {
     });
   }
 
-  
+
 
 
 
@@ -67535,28 +67617,28 @@ class Repository {
         throw new DomainException('Cannot patch entity without ID - save it first');
       }
 
-      
+
       for (const [key, value] of Object.entries(changes)) {
         if (Object.prototype.hasOwnProperty.call(entity, key)) {
           entity[key] = value;
         }
       }
 
-      
+
       entity.validateOrThrow();
 
-      
+
       const updatedRow = this._table.patchRow(entity.id, changes);
 
-      
+
       this.hydrationService.clearDirtyFields(entity);
       this.hydrationService.storeOriginalData(entity, updatedRow);
       this.logger.info(`Patched ${this.EntityClass.name} with ID: ${entity.id}`);
 
-      
+
       this.database.save();
 
-      
+
       if (this.cache) {
         this._clearCache(entity.id);
       }
@@ -67564,7 +67646,7 @@ class Repository {
     });
   }
 
-  
+
 
 
 
@@ -67575,7 +67657,7 @@ class Repository {
     return this.patch(entity, changes);
   }
 
-  
+
 
 
 
@@ -67587,7 +67669,7 @@ class Repository {
     this.deleteById(entity.id);
   }
 
-  
+
 
 
 
@@ -67597,20 +67679,20 @@ class Repository {
       this.database.save();
       this.logger.info(`Deleted ${this.EntityClass.name} with ID: ${id}`);
 
-      
+
       if (this.cache) {
         this._clearCache(id);
       }
     });
   }
 
-  
+
 
 
 
   deleteMany(entities) {
     this._executeWithRetry(() => {
-      
+
       if (!entities || entities.length === 0) {
         return;
       }
@@ -67621,11 +67703,11 @@ class Repository {
         this._table.deleteRowById(entity.id);
       }
 
-      
+
       this.database.save();
       this.logger.info(`Deleted ${entities.length} ${this.EntityClass.name} entities`);
 
-      
+
       if (this.cache) {
         for (const entity of entities) {
           this._clearCache(entity.id);
@@ -67634,7 +67716,7 @@ class Repository {
     });
   }
 
-  
+
 
 
 
@@ -67652,7 +67734,7 @@ class Repository {
     return entity;
   }
 
-  
+
 
 
 
@@ -67665,7 +67747,7 @@ class Repository {
     }
   }
 
-  
+
 
 
 
@@ -67673,7 +67755,7 @@ class Repository {
     return this._table;
   }
 
-  
+
 
 
 
@@ -67681,7 +67763,7 @@ class Repository {
     return this.EntityClass;
   }
 
-  
+
 
 
 
@@ -67698,7 +67780,7 @@ class Repository {
 
 
 class InvariantViolationException extends DomainException {
-  
+
 
 
 
@@ -67714,7 +67796,7 @@ class InvariantViolationException extends DomainException {
     this.violations = violations;
   }
 
-  
+
 
 
 
@@ -67722,7 +67804,7 @@ class InvariantViolationException extends DomainException {
     return this.aggregateType;
   }
 
-  
+
 
 
 
@@ -67730,7 +67812,7 @@ class InvariantViolationException extends DomainException {
     return this.violations;
   }
 
-  
+
 
 
 
@@ -67749,7 +67831,7 @@ class InvariantViolationException extends DomainException {
 
 
 class Aggregate extends Entity {
-  
+
 
 
 
@@ -67763,7 +67845,7 @@ class Aggregate extends Entity {
     this._invariantViolations = [];
   }
 
-  
+
 
 
 
@@ -67771,7 +67853,7 @@ class Aggregate extends Entity {
     return [...this._children];
   }
 
-  
+
 
 
 
@@ -67783,7 +67865,7 @@ class Aggregate extends Entity {
     }
   }
 
-  
+
 
 
 
@@ -67796,7 +67878,7 @@ class Aggregate extends Entity {
     }
   }
 
-  
+
 
 
 
@@ -67806,7 +67888,7 @@ class Aggregate extends Entity {
     return true;
   }
 
-  
+
 
 
 
@@ -67815,7 +67897,7 @@ class Aggregate extends Entity {
     this._invariantViolations.push(message);
   }
 
-  
+
 
 
 
@@ -67823,7 +67905,7 @@ class Aggregate extends Entity {
     return [...this._invariantViolations];
   }
 
-  
+
 
 
 
@@ -67831,20 +67913,20 @@ class Aggregate extends Entity {
     return this._invariantViolations.length > 0;
   }
 
-  
+
 
 
 
   validate() {
-    
+
     const entityValid = super.validate();
 
-    
+
     const invariantsValid = this.validateInvariants();
     return entityValid && invariantsValid && !this.hasInvariantViolations();
   }
 
-  
+
 
 
 
@@ -67854,20 +67936,20 @@ class Aggregate extends Entity {
     }
   }
 
-  
+
 
 
 
 
   validateOrThrow() {
-    
+
     super.validateOrThrow();
 
-    
+
     this.validateInvariantsOrThrow();
   }
 
-  
+
 
 
 
@@ -67875,7 +67957,7 @@ class Aggregate extends Entity {
     return this._children.length;
   }
 
-  
+
 
 
 
@@ -67883,7 +67965,7 @@ class Aggregate extends Entity {
     return this._children.length > 0;
   }
 
-  
+
 
 
 
@@ -67910,7 +67992,7 @@ function _registerCompositeSpecification(cls) {
 
 
 class Specification {
-  
+
 
 
 
@@ -67920,7 +68002,7 @@ class Specification {
     }
   }
 
-  
+
 
 
 
@@ -67931,7 +68013,7 @@ class Specification {
     throw new Error(`${this.constructor.name} must implement isSatisfiedBy() method`);
   }
 
-  
+
 
 
 
@@ -67940,7 +68022,7 @@ class Specification {
     return new _CompositeSpecificationClass('AND', [this, other]);
   }
 
-  
+
 
 
 
@@ -67949,7 +68031,7 @@ class Specification {
     return new _CompositeSpecificationClass('OR', [this, other]);
   }
 
-  
+
 
 
 
@@ -67957,7 +68039,7 @@ class Specification {
     return new _CompositeSpecificationClass('NOT', [this]);
   }
 
-  
+
 
 
 
@@ -67967,13 +68049,13 @@ class Specification {
     throw new Error(`${this.constructor.name} cannot be translated to a database query`);
   }
 
-  
+
 
 
 
   canBeTranslatedToQuery() {
     try {
-      
+
       const mockBuilder = {
         where: () => mockBuilder,
         andWhere: () => mockBuilder,
@@ -67988,7 +68070,7 @@ class Specification {
     }
   }
 
-  
+
 
 
 
@@ -68006,7 +68088,7 @@ class Specification {
 
 
 class CompositeSpecification extends Specification {
-  
+
 
 
 
@@ -68020,7 +68102,7 @@ class CompositeSpecification extends Specification {
     this._validateSpecifications();
   }
 
-  
+
 
 
 
@@ -68032,7 +68114,7 @@ class CompositeSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
@@ -68048,7 +68130,7 @@ class CompositeSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
@@ -68070,7 +68152,7 @@ class CompositeSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
@@ -68081,21 +68163,21 @@ class CompositeSpecification extends Specification {
       throw new SpecificationException('NOT operator cannot be translated to SheetDBLib queries', 'CompositeSpecification');
     }
 
-    
+
     for (const spec of this.specifications) {
       if (!spec.canBeTranslatedToQuery()) {
         throw new SpecificationException('Cannot translate composite specification - one or more child specifications cannot be translated', 'CompositeSpecification');
       }
     }
 
-    
+
     let builder = this.specifications[0].toQuery(queryBuilder);
 
-    
+
     for (let i = 1; i < this.specifications.length; i++) {
       const spec = this.specifications[i];
 
-      
+
       const tempBuilder = {
         _whereClauses: [],
         where(field, operator, value) {
@@ -68141,17 +68223,17 @@ class CompositeSpecification extends Specification {
       };
       spec.toQuery(tempBuilder);
 
-      
+
       for (const clause of tempBuilder._whereClauses) {
         if (clause.operator === 'IN') {
           if (this.operator === 'AND') {
-            
+
             builder = builder.andWhere(clause.field, 'IN', clause.value);
           } else {
             builder = builder.orWhere(clause.field, 'IN', clause.value);
           }
         } else if (clause.operator === 'LIKE') {
-          
+
           if (this.operator === 'AND') {
             builder = builder.andWhere(clause.field, 'LIKE', clause.value);
           } else {
@@ -68169,7 +68251,7 @@ class CompositeSpecification extends Specification {
     return builder;
   }
 
-  
+
 
 
 
@@ -68180,7 +68262,7 @@ class CompositeSpecification extends Specification {
     return this.specifications.every(spec => spec.canBeTranslatedToQuery());
   }
 
-  
+
 
 
 
@@ -68196,7 +68278,7 @@ class CompositeSpecification extends Specification {
 _registerCompositeSpecification(CompositeSpecification);
 ;
 
- 
+
 
 
 
@@ -68206,7 +68288,7 @@ _registerCompositeSpecification(CompositeSpecification);
 
 
 class FieldSpecification extends Specification {
-  
+
 
 
 
@@ -68219,7 +68301,7 @@ class FieldSpecification extends Specification {
     this._field = field;
     this._operator = operator;
 
-    
+
     if (operator === 'between' && Array.isArray(value) && value.length === 2) {
       this._value = value[0];
       this._secondValue = value[1];
@@ -68230,7 +68312,7 @@ class FieldSpecification extends Specification {
     this._validateOperator();
   }
 
-  
+
 
 
 
@@ -68240,11 +68322,11 @@ class FieldSpecification extends Specification {
     if (!validOperators.includes(this._operator)) {
       throw new SpecificationException(`Invalid operator: ${this._operator}. Valid operators: ${validOperators.join(', ')}`, 'FieldSpecification');
     }
-    
-    
+
+
   }
 
-  
+
 
 
 
@@ -68255,7 +68337,7 @@ class FieldSpecification extends Specification {
       return undefined;
     }
 
-    
+
     const parts = this._field.split('.');
     let value = entity;
     for (const part of parts) {
@@ -68268,16 +68350,16 @@ class FieldSpecification extends Specification {
     return value;
   }
 
-  
 
-  
+
+
 
 
 
 
 
   isSatisfiedBy(entity) {
-    
+
     if (entity === null || entity === undefined) {
       throw new SpecificationException('Cannot evaluate specification on null or undefined entity', 'FieldSpecification');
     }
@@ -68296,24 +68378,24 @@ class FieldSpecification extends Specification {
       case 'lessThanOrEqual':
         return fieldValue <= this._value;
       case 'in':
-        
+
         if (!Array.isArray(this._value)) {
           throw new SpecificationException('in operator requires value to be an array', 'FieldSpecification');
         }
         return this._value.includes(fieldValue);
       case 'notIn':
-        
+
         if (!Array.isArray(this._value)) {
           throw new SpecificationException('notIn operator requires value to be an array', 'FieldSpecification');
         }
         return !this._value.includes(fieldValue);
       case 'between':
-        
-        
+
+
         if (Array.isArray(this._value) && this._value.length !== 2) {
           throw new SpecificationException('between operator requires an array of exactly 2 values', 'FieldSpecification');
         }
-        
+
         if (this._secondValue === null || this._secondValue === undefined) {
           throw new SpecificationException('between operator requires a second value', 'FieldSpecification');
         }
@@ -68323,10 +68405,10 @@ class FieldSpecification extends Specification {
           if (typeof fieldValue !== 'string' || typeof this._value !== 'string') {
             return false;
           }
-          
-          
+
+
           let pattern = RegexUtils.escape(this._value).replace(/%/g, '.*');
-          
+
           pattern = '^' + pattern + '$';
           const regex = new RegExp(pattern, 'i');
           return regex.test(fieldValue);
@@ -68336,7 +68418,7 @@ class FieldSpecification extends Specification {
           if (typeof fieldValue !== 'string' || typeof this._value !== 'string') {
             return true; 
           }
-          
+
           let notLikePattern = RegexUtils.escape(this._value).replace(/%/g, '.*');
           notLikePattern = '^' + notLikePattern + '$';
           const notLikeRegex = new RegExp(notLikePattern, 'i');
@@ -68347,7 +68429,7 @@ class FieldSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
@@ -68370,22 +68452,22 @@ class FieldSpecification extends Specification {
       case 'in':
         return queryBuilder.whereIn(this._field, this._value);
       case 'notIn':
-        
+
         throw new SpecificationException(`Operator 'notIn' cannot be translated to database query - use in-memory filtering`, 'FieldSpecification');
       case 'between':
-        
+
         return queryBuilder.where(this._field, '>=', this._value).andWhere(this._field, '<=', this._secondValue);
       case 'like':
         return queryBuilder.whereLike(this._field, this._value);
       case 'notLike':
-        
+
         throw new SpecificationException(`Operator 'notLike' cannot be translated to database query - use in-memory filtering`, 'FieldSpecification');
       default:
         throw new SpecificationException(`Cannot translate operator ${this._operator} to query`, 'FieldSpecification');
     }
   }
 
-  
+
 
 
 
@@ -68398,7 +68480,7 @@ class FieldSpecification extends Specification {
 }
 ;
 
- 
+
 
 
 
@@ -68407,7 +68489,7 @@ class FieldSpecification extends Specification {
 
 
 class ExpressionSpecification extends Specification {
-  
+
 
 
 
@@ -68416,12 +68498,12 @@ class ExpressionSpecification extends Specification {
   constructor(expression, expressionEngine) {
     super();
 
-    
+
     if (!expression || typeof expression !== 'string' || expression.trim() === '') {
       throw new SpecificationException('Expression must be a non-empty string', 'ExpressionSpecification');
     }
 
-    
+
     if (!expressionEngine) {
       throw new SpecificationException('Expression engine is required', 'ExpressionSpecification');
     }
@@ -68429,7 +68511,7 @@ class ExpressionSpecification extends Specification {
     this.expressionEngine = expressionEngine;
   }
 
-  
+
 
 
 
@@ -68440,7 +68522,7 @@ class ExpressionSpecification extends Specification {
       return this.expressionEngine;
     }
 
-    
+
     try {
       const {
         ExpressionEngineService
@@ -68456,7 +68538,7 @@ class ExpressionSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
@@ -68474,14 +68556,14 @@ class ExpressionSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
 
 
   toQuery(queryBuilder) {
-    
+
     const simplePattern = /\{\{(\w+)\}\}\s*(==|!=|>|<|>=|<=)\s*(.+)/;
     const match = this.expression.match(simplePattern);
     if (!match) {
@@ -68492,7 +68574,7 @@ class ExpressionSpecification extends Specification {
     const [, field, operator, valueStr] = match;
     let value = valueStr.trim();
 
-    
+
     if (value.startsWith("'") && value.endsWith("'")) {
       value = value.slice(1, -1);
     } else if (!isNaN(value)) {
@@ -68503,7 +68585,7 @@ class ExpressionSpecification extends Specification {
       value = false;
     }
 
-    
+
     const operatorMap = {
       '==': '=',
       '!=': '!=',
@@ -68515,7 +68597,7 @@ class ExpressionSpecification extends Specification {
     return queryBuilder.where(field, operatorMap[operator], value);
   }
 
-  
+
 
 
 
@@ -68524,7 +68606,7 @@ class ExpressionSpecification extends Specification {
     return simplePattern.test(this.expression);
   }
 
-  
+
 
 
 
@@ -68534,7 +68616,7 @@ class ExpressionSpecification extends Specification {
 }
 ;
 
- 
+
 
 
 
@@ -68543,7 +68625,7 @@ class ExpressionSpecification extends Specification {
 
 
 class FunctionSpecification extends Specification {
-  
+
 
 
 
@@ -68558,7 +68640,7 @@ class FunctionSpecification extends Specification {
     this.description = description;
   }
 
-  
+
 
 
 
@@ -68574,7 +68656,7 @@ class FunctionSpecification extends Specification {
     }
   }
 
-  
+
 
 
 
@@ -68582,7 +68664,7 @@ class FunctionSpecification extends Specification {
     throw new SpecificationException('Function specifications cannot be translated to database queries', 'FunctionSpecification');
   }
 
-  
+
 
 
 
@@ -68590,7 +68672,7 @@ class FunctionSpecification extends Specification {
     return false;
   }
 
-  
+
 
 
 
@@ -68606,7 +68688,7 @@ class FunctionSpecification extends Specification {
 
 
 class SpecificationBuilder {
-  
+
 
 
 
@@ -68615,7 +68697,7 @@ class SpecificationBuilder {
     this._currentOperator = 'AND';
   }
 
-  
+
 
 
 
@@ -68625,7 +68707,7 @@ class SpecificationBuilder {
     return new SpecificationBuilder();
   }
 
-  
+
 
 
 
@@ -68636,7 +68718,7 @@ class SpecificationBuilder {
     return new FieldSpecificationBuilder(field, new SpecificationBuilder());
   }
 
-  
+
 
 
 
@@ -68645,7 +68727,7 @@ class SpecificationBuilder {
     return new FieldSpecificationBuilder(field, this);
   }
 
-  
+
 
 
 
@@ -68654,7 +68736,7 @@ class SpecificationBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -68663,7 +68745,7 @@ class SpecificationBuilder {
     return this;
   }
 
-  
+
 
 
 
@@ -68675,7 +68757,7 @@ class SpecificationBuilder {
     });
   }
 
-  
+
 
 
 
@@ -68688,7 +68770,7 @@ class SpecificationBuilder {
       return this._specifications[0].spec;
     }
 
-    
+
     let result = this._specifications[0].spec;
     for (let i = 1; i < this._specifications.length; i++) {
       const item = this._specifications[i];
@@ -68708,7 +68790,7 @@ class SpecificationBuilder {
 
 
 class FieldSpecificationBuilder {
-  
+
 
 
 
@@ -68718,7 +68800,7 @@ class FieldSpecificationBuilder {
     this._parentBuilder = parentBuilder;
   }
 
-  
+
 
 
 
@@ -68729,7 +68811,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68740,7 +68822,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68751,7 +68833,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68762,7 +68844,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68773,7 +68855,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68784,7 +68866,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68795,7 +68877,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68806,7 +68888,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68818,7 +68900,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68829,7 +68911,7 @@ class FieldSpecificationBuilder {
     return this._parentBuilder;
   }
 
-  
+
 
 
 
@@ -68848,7 +68930,7 @@ class FieldSpecificationBuilder {
 
 
 class DomainEvent {
-  
+
 
 
 
@@ -68861,7 +68943,7 @@ class DomainEvent {
     this.eventId = this._generateId();
   }
 
-  
+
 
 
 
@@ -68871,7 +68953,7 @@ class DomainEvent {
     return `${this.eventType}_${utils.generateCompactId(12)}`;
   }
 
-  
+
 
 
 
@@ -68879,7 +68961,7 @@ class DomainEvent {
     return this.eventType;
   }
 
-  
+
 
 
 
@@ -68887,7 +68969,7 @@ class DomainEvent {
     return this.eventType;
   }
 
-  
+
 
 
 
@@ -68896,7 +68978,7 @@ class DomainEvent {
     return this.eventType;
   }
 
-  
+
 
 
 
@@ -68904,7 +68986,7 @@ class DomainEvent {
     return this.payload;
   }
 
-  
+
 
 
 
@@ -68912,7 +68994,7 @@ class DomainEvent {
     return this.occurredAt;
   }
 
-  
+
 
 
 
@@ -68920,7 +69002,7 @@ class DomainEvent {
     return this.eventId;
   }
 
-  
+
 
 
 
@@ -68934,7 +69016,7 @@ class DomainEvent {
     };
   }
 
-  
+
 
 
 
@@ -68942,7 +69024,7 @@ class DomainEvent {
     return this.toObject();
   }
 
-  
+
 
 
 
@@ -68957,7 +69039,7 @@ class DomainEvent {
 
 
 class EntityCreatedEvent extends DomainEvent {
-  
+
 
 
 
@@ -68981,7 +69063,7 @@ class EntityCreatedEvent extends DomainEvent {
 
 
 class EntityUpdatedEvent extends DomainEvent {
-  
+
 
 
 
@@ -69005,7 +69087,7 @@ class EntityUpdatedEvent extends DomainEvent {
 
 
 class EntityDeletedEvent extends DomainEvent {
-  
+
 
 
 
@@ -69030,7 +69112,7 @@ class EntityDeletedEvent extends DomainEvent {
 
 
 class EventDispatcher {
-  
+
 
 
 
@@ -69039,7 +69121,7 @@ class EventDispatcher {
     this._handlers = new Map();
   }
 
-  
+
 
 
 
@@ -69060,7 +69142,7 @@ class EventDispatcher {
     this.logger.debug(`Registered handler for event: ${eventType}`);
   }
 
-  
+
 
 
 
@@ -69070,14 +69152,14 @@ class EventDispatcher {
       return;
     }
 
-    
+
     if (!handler) {
       this._handlers.delete(eventType);
       this.logger.debug(`Removed all handlers for event: ${eventType}`);
       return;
     }
 
-    
+
     const handlers = this._handlers.get(eventType);
     const index = handlers.findIndex(h => h.handler === handler);
     if (index > -1) {
@@ -69086,7 +69168,7 @@ class EventDispatcher {
     }
   }
 
-  
+
 
 
 
@@ -69111,7 +69193,7 @@ class EventDispatcher {
     }
   }
 
-  
+
 
 
 
@@ -69121,7 +69203,7 @@ class EventDispatcher {
     }
   }
 
-  
+
 
 
 
@@ -69130,7 +69212,7 @@ class EventDispatcher {
     return this._handlers.get(eventType) || [];
   }
 
-  
+
 
 
 
@@ -69138,14 +69220,14 @@ class EventDispatcher {
     this._handlers.delete(eventType);
   }
 
-  
+
 
 
   clearAll() {
     this._handlers.clear();
   }
 
-  
+
 
 
 
@@ -69228,7 +69310,7 @@ class EnhancedTestRunner {
     };
   }
 
-  
+
 
 
 
@@ -69247,7 +69329,7 @@ class EnhancedTestRunner {
     return this;
   }
 
-  
+
 
 
 
@@ -69260,7 +69342,7 @@ class EnhancedTestRunner {
     return this;
   }
 
-  
+
 
 
 
@@ -69293,7 +69375,7 @@ class EnhancedTestRunner {
     return this.results;
   }
 
-  
+
 
 
 
@@ -69304,14 +69386,14 @@ class EnhancedTestRunner {
     try {
       this._runHooks('beforeEach');
 
-      
+
       test.fn();
       const duration = new Date().getTime() - startTime;
       this._log(`[TEST:END] PASS | Duration: ${duration}ms`);
       this.results.passed++;
     } catch (rawError) {
-      
-      
+
+
       const error = rawError instanceof Error ? rawError : new Error(String(rawError));
       const duration = new Date().getTime() - startTime;
       this._log(`[ERROR:STACK] ${error.stack}`);
@@ -69331,7 +69413,7 @@ class EnhancedTestRunner {
     }
   }
 
-  
+
 
 
 
@@ -69342,7 +69424,7 @@ class EnhancedTestRunner {
     }
   }
 
-  
+
 
 
 
@@ -69355,7 +69437,7 @@ class EnhancedTestRunner {
     }
   }
 
-  
+
 
 
 
@@ -69384,7 +69466,7 @@ const runner = new EnhancedTestRunner();
 
 
 class SmartAssert {
-  
+
 
 
 
@@ -69431,7 +69513,7 @@ class SmartAssert {
     }
   }
 
-  
+
 
 
 
@@ -69442,7 +69524,7 @@ class SmartAssert {
     this._log(passed, expected, actual, message);
   }
 
-  
+
 
 
 
@@ -69453,7 +69535,7 @@ class SmartAssert {
     this._log(passed, `> ${expected}`, actual, message);
   }
 
-  
+
 
 
 
@@ -69464,7 +69546,7 @@ class SmartAssert {
     this._log(passed, `< ${expected}`, actual, message);
   }
 
-  
+
 
 
 
@@ -69475,7 +69557,7 @@ class SmartAssert {
     this._log(passed, expected, actual, message);
   }
 
-  
+
 
 
 
@@ -69485,7 +69567,7 @@ class SmartAssert {
     this._log(passed, true, actual, message);
   }
 
-  
+
 
 
 
@@ -69495,7 +69577,7 @@ class SmartAssert {
     this._log(passed, false, actual, message);
   }
 
-  
+
 
 
 
@@ -69505,7 +69587,7 @@ class SmartAssert {
     this._log(passed, null, actual, message);
   }
 
-  
+
 
 
 
@@ -69515,7 +69597,7 @@ class SmartAssert {
     this._log(passed, 'not null/undefined', actual, message);
   }
 
-  
+
 
 
 
@@ -69528,7 +69610,7 @@ class SmartAssert {
     this._log(passed, expected, actual, message);
   }
 
-  
+
 
 
 
@@ -69540,7 +69622,7 @@ class SmartAssert {
     this._log(passed, expectedType, actualType, message);
   }
 
-  
+
 
 
 
@@ -69550,7 +69632,7 @@ class SmartAssert {
     this._log(passed, 'number', typeof actual, message);
   }
 
-  
+
 
 
 
@@ -69560,7 +69642,7 @@ class SmartAssert {
     this._log(passed, 'string', typeof actual, message);
   }
 
-  
+
 
 
 
@@ -69571,7 +69653,7 @@ class SmartAssert {
     this._log(passed, `Array containing ${JSON.stringify(value)}`, array, message);
   }
 
-  
+
 
 
 
@@ -69579,7 +69661,7 @@ class SmartAssert {
     this._log(false, 'N/A', 'N/A', message);
   }
 
-  
+
 
 
 
@@ -69611,18 +69693,18 @@ class SmartAssert {
 
 
 class SampleSpreadsheetBuilder {
-  
+
 
 
   constructor(spreadsheet) {
     this.spreadsheet = spreadsheet;
     this.id = spreadsheet.getId();
     this.defaultSheet = spreadsheet.getSheets()[0] || null;
-    
+
     this._headersBySheet = new Map();
   }
 
-  
+
 
 
 
@@ -69645,7 +69727,7 @@ class SampleSpreadsheetBuilder {
     SpreadsheetApp.flush();
   }
 
-  
+
 
 
 
@@ -69666,7 +69748,7 @@ class SampleSpreadsheetBuilder {
     SpreadsheetApp.flush();
   }
 
-  
+
 
 
 
@@ -69692,7 +69774,7 @@ class TestContext {
     this.apiCallCount = 0;
   }
 
-  
+
 
 
 
@@ -69700,7 +69782,7 @@ class TestContext {
     this.apiCallCount++;
   }
 
-  
+
 
 
 
@@ -69712,7 +69794,7 @@ class TestContext {
     return this._rootFolder;
   }
 
-  
+
 
 
 
@@ -69730,7 +69812,7 @@ class TestContext {
     return parentFolder ? parentFolder.createFolder(name) : DriveApp.createFolder(name);
   }
 
-  
+
 
 
 
@@ -69742,7 +69824,7 @@ class TestContext {
     return this._spreadsheet;
   }
 
-  
+
 
 
 
@@ -69768,7 +69850,7 @@ class TestContext {
     return spreadsheet;
   }
 
-  
+
 
 
 
@@ -69778,7 +69860,7 @@ class TestContext {
         this._document.getBody();
         return this._document;
       } catch (_e) {
-        
+
         this._trackApiCall();
         this._document = DocumentApp.openById(this._document.getId());
         return this._document;
@@ -69799,7 +69881,7 @@ class TestContext {
     return this._document;
   }
 
-  
+
 
 
 
@@ -69807,14 +69889,14 @@ class TestContext {
     const targetSs = ss || this.getSpreadsheet();
     this._trackApiCall();
 
-    
+
     const protections = targetSs.getProtections(SpreadsheetApp.ProtectionType.RANGE);
     protections.forEach(p => {
       this._trackApiCall();
       p.remove();
     });
 
-    
+
     targetSs.getSheets().forEach(sheet => {
       sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(p => {
         this._trackApiCall();
@@ -69822,7 +69904,7 @@ class TestContext {
       });
     });
 
-    
+
     const namedRanges = targetSs.getNamedRanges();
     namedRanges.forEach(nr => {
       this._trackApiCall();
@@ -69830,7 +69912,7 @@ class TestContext {
     });
     const sheets = targetSs.getSheets();
 
-    
+
     if (sheets.length === 0) {
       targetSs.insertSheet('Sheet1');
     } else {
@@ -69839,7 +69921,7 @@ class TestContext {
       this._trackApiCall();
       firstSheet.clear().clearContents().clearFormats().clearNotes();
 
-      
+
       for (let i = 1; i < sheets.length; i++) {
         this._trackApiCall();
         targetSs.deleteSheet(sheets[i]);
@@ -69848,7 +69930,7 @@ class TestContext {
     }
   }
 
-  
+
 
 
 
@@ -69862,23 +69944,44 @@ class TestContext {
     return new SampleSpreadsheetBuilder(spreadsheet);
   }
 
-  
+
 
 
   resetDocument() {
     const doc = this.getDocument();
     this._trackApiCall();
     try {
-      const body = doc.getBody();
-      body.clear();
+      this._clearBodySafely(doc.getBody());
     } catch (_e) {
-      
+
       this._document = DocumentApp.openById(doc.getId());
-      this._document.getBody().clear();
+      this._clearBodySafely(this._document.getBody());
     }
   }
 
-  
+
+
+
+
+
+
+
+
+
+
+  _clearBodySafely(body) {
+    try {
+      body.clear();
+    } catch (e) {
+      if (!/last paragraph/.test(e.message)) {
+        throw e;
+      }
+      body.appendParagraph('');
+      body.clear();
+    }
+  }
+
+
 
 
   resetAll() {
@@ -69888,7 +69991,7 @@ class TestContext {
     this.apiCallCount = 0;
   }
 
-  
+
 
 
 
@@ -69927,15 +70030,15 @@ const testContext = new TestContext();
 
 
 const ScopeType = Object.freeze({
-  
+
   GLOBAL: 'GLOBAL',
-  
+
   ORG_UNIT: 'ORG_UNIT',
-  
+
   PROJECT: 'PROJECT',
-  
+
   RESOURCE: 'RESOURCE',
-  
+
   CUSTOM: 'CUSTOM'
 });
 
@@ -69970,11 +70073,11 @@ function getScopeTypes() {
 
 
 const ActorType = Object.freeze({
-  
+
   PERSON: 'PERSON',
-  
+
   SYSTEM: 'SYSTEM',
-  
+
   GROUP: 'GROUP'
 });
 
@@ -70009,11 +70112,11 @@ function getActorTypes() {
 
 
 const ResolutionStrategy = Object.freeze({
-  
+
   FIRST: 'FIRST',
-  
+
   ALL: 'ALL',
-  
+
   PRIORITY: 'PRIORITY'
 });
 
@@ -70050,7 +70153,7 @@ function getResolutionStrategies() {
 
 
 class Scope {
-  
+
 
 
 
@@ -70062,21 +70165,21 @@ class Scope {
       throw new Error(`Invalid scope type: ${type}. Must be one of: ${Object.values(ScopeType).join(', ')}`);
     }
 
-    
+
     this.type = type;
 
-    
+
     this.value = value !== null ? cloneDeep_cloneDeep(value) : null;
 
-    
+
     this.hierarchy = Array.isArray(hierarchy) ? [...hierarchy] : [];
 
-    
+
     Object.freeze(this);
     Object.freeze(this.hierarchy);
   }
 
-  
+
 
 
 
@@ -70085,7 +70188,7 @@ class Scope {
     return new Scope(ScopeType.GLOBAL);
   }
 
-  
+
 
 
 
@@ -70096,7 +70199,7 @@ class Scope {
     return new Scope(ScopeType.ORG_UNIT, value, hierarchy);
   }
 
-  
+
 
 
 
@@ -70106,7 +70209,7 @@ class Scope {
     return new Scope(ScopeType.PROJECT, value);
   }
 
-  
+
 
 
 
@@ -70116,7 +70219,7 @@ class Scope {
     return new Scope(ScopeType.RESOURCE, value);
   }
 
-  
+
 
 
 
@@ -70127,7 +70230,7 @@ class Scope {
     return new Scope(ScopeType.CUSTOM, value, hierarchy);
   }
 
-  
+
 
 
 
@@ -70135,7 +70238,7 @@ class Scope {
     return this.type === ScopeType.GLOBAL;
   }
 
-  
+
 
 
 
@@ -70146,23 +70249,23 @@ class Scope {
       return false;
     }
 
-    
+
     if (this.isGlobal()) {
       return true;
     }
 
-    
+
     if (this.type !== other.type) {
       return false;
     }
 
-    
+
     if (this.hierarchy.length === 0 && other.hierarchy.length === 0) {
-      
+
       return this._valuesEqual(other);
     }
 
-    
+
     if (this.hierarchy.length > other.hierarchy.length) {
       return false;
     }
@@ -70174,7 +70277,7 @@ class Scope {
     return true;
   }
 
-  
+
 
 
 
@@ -70187,7 +70290,7 @@ class Scope {
     return this.type === other.type && this._valuesEqual(other) && this._hierarchiesEqual(other);
   }
 
-  
+
 
 
 
@@ -70202,7 +70305,7 @@ class Scope {
     return String(this.value);
   }
 
-  
+
 
 
 
@@ -70215,7 +70318,7 @@ class Scope {
     };
   }
 
-  
+
 
 
 
@@ -70229,7 +70332,7 @@ class Scope {
     return new Scope(obj.type, obj.value, obj.hierarchy);
   }
 
-  
+
 
 
 
@@ -70242,7 +70345,7 @@ class Scope {
     return `Scope[${this.type}:${valueStr}${hierarchyStr}]`;
   }
 
-  
+
 
 
 
@@ -70253,7 +70356,7 @@ class Scope {
     return isEqual(this.value, other.value);
   }
 
-  
+
 
 
 
@@ -70287,7 +70390,7 @@ class Scope {
 
 
 class Actor {
-  
+
 
 
 
@@ -70310,27 +70413,27 @@ class Actor {
       throw new Error('Actor displayName is required and must be a string');
     }
 
-    
+
     this.id = id;
 
-    
+
     this.type = type;
 
-    
+
     this.identifier = identifier;
 
-    
+
     this.displayName = displayName;
 
-    
+
     this.metadata = cloneDeep_cloneDeep(metadata);
 
-    
+
     Object.freeze(this);
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -70343,7 +70446,7 @@ class Actor {
     return new Actor(id, ActorType.PERSON, email, displayName, metadata);
   }
 
-  
+
 
 
 
@@ -70356,7 +70459,7 @@ class Actor {
     return new Actor(id, ActorType.SYSTEM, serviceId, displayName, metadata);
   }
 
-  
+
 
 
 
@@ -70369,7 +70472,7 @@ class Actor {
     return new Actor(id, ActorType.GROUP, groupId, displayName, metadata);
   }
 
-  
+
 
 
 
@@ -70377,7 +70480,7 @@ class Actor {
     return this.type === ActorType.PERSON;
   }
 
-  
+
 
 
 
@@ -70385,7 +70488,7 @@ class Actor {
     return this.type === ActorType.SYSTEM;
   }
 
-  
+
 
 
 
@@ -70393,7 +70496,7 @@ class Actor {
     return this.type === ActorType.GROUP;
   }
 
-  
+
 
 
 
@@ -70406,7 +70509,7 @@ class Actor {
     return this.id === other.id;
   }
 
-  
+
 
 
 
@@ -70417,7 +70520,7 @@ class Actor {
     return this.metadata.hasOwnProperty(key) ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -70430,7 +70533,7 @@ class Actor {
     });
   }
 
-  
+
 
 
 
@@ -70447,7 +70550,7 @@ class Actor {
     };
   }
 
-  
+
 
 
 
@@ -70461,7 +70564,7 @@ class Actor {
     return new Actor(obj.id, obj.type, obj.identifier, obj.displayName, obj.metadata || {});
   }
 
-  
+
 
 
 
@@ -70485,7 +70588,7 @@ class Actor {
 
 
 class Role {
-  
+
 
 
 
@@ -70513,7 +70616,7 @@ class Role {
       metadata = {}
     } = definition;
 
-    
+
     if (!id || typeof id !== 'string') {
       throw new Error('Role id is required and must be a string');
     }
@@ -70530,37 +70633,37 @@ class Role {
       throw new Error('fallbackRoles must be an array');
     }
 
-    
+
     this.id = id;
 
-    
+
     this.name = name;
 
-    
+
     this.description = description;
 
-    
+
     this.scopeType = scopeType;
 
-    
+
     this.resolutionStrategy = resolutionStrategy;
 
-    
+
     this.allowsDelegation = allowsDelegation;
 
-    
+
     this.fallbackRoles = [...fallbackRoles];
 
-    
+
     this.metadata = cloneDeep_cloneDeep(metadata);
 
-    
+
     Object.freeze(this);
     Object.freeze(this.fallbackRoles);
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -70568,7 +70671,7 @@ class Role {
     return this.scopeType === ScopeType.GLOBAL;
   }
 
-  
+
 
 
 
@@ -70576,7 +70679,7 @@ class Role {
     return this.resolutionStrategy === ResolutionStrategy.ALL;
   }
 
-  
+
 
 
 
@@ -70584,7 +70687,7 @@ class Role {
     return this.resolutionStrategy === ResolutionStrategy.PRIORITY;
   }
 
-  
+
 
 
 
@@ -70592,7 +70695,7 @@ class Role {
     return this.fallbackRoles.length > 0;
   }
 
-  
+
 
 
 
@@ -70603,7 +70706,7 @@ class Role {
     return this.metadata.hasOwnProperty(key) ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -70616,7 +70719,7 @@ class Role {
     return this.id === other.id;
   }
 
-  
+
 
 
 
@@ -70636,7 +70739,7 @@ class Role {
     };
   }
 
-  
+
 
 
 
@@ -70650,7 +70753,7 @@ class Role {
     return new Role(obj);
   }
 
-  
+
 
 
 
@@ -70706,7 +70809,7 @@ function parseDate(value) {
 
 
 class Assignment {
-  
+
 
 
 
@@ -70734,7 +70837,7 @@ class Assignment {
       metadata = {}
     } = definition;
 
-    
+
     if (!roleId || typeof roleId !== 'string') {
       throw new Error('Assignment roleId is required and must be a string');
     }
@@ -70745,36 +70848,36 @@ class Assignment {
       throw new Error('Assignment scope is required');
     }
 
-    
+
     this.roleId = roleId;
 
-    
+
     this.actorId = actorId;
 
-    
+
     this.scope = scope instanceof Scope ? scope : Scope.fromJSON(scope);
 
-    
+
     this.priority = typeof priority === 'number' ? priority : 0;
 
-    
+
     this.validFrom = this._parseDate(validFrom);
 
-    
+
     this.validTo = this._parseDate(validTo);
 
-    
+
     this.isActive = isActive === true;
 
-    
+
     this.metadata = cloneDeep_cloneDeep(metadata);
 
-    
+
     Object.freeze(this);
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -70787,31 +70890,31 @@ class Assignment {
     return parseDate(value);
   }
 
-  
+
 
 
 
 
 
   isValidAt(asOfDate = new Date()) {
-    
+
     if (!this.isActive) {
       return false;
     }
 
-    
+
     if (this.validFrom !== null && asOfDate < this.validFrom) {
       return false;
     }
 
-    
+
     if (this.validTo !== null && asOfDate > this.validTo) {
       return false;
     }
     return true;
   }
 
-  
+
 
 
 
@@ -70820,22 +70923,22 @@ class Assignment {
 
 
   matches(roleId, scope, asOfDate = new Date()) {
-    
+
     if (this.roleId !== roleId) {
       return false;
     }
 
-    
+
     if (!this.isValidAt(asOfDate)) {
       return false;
     }
 
-    
-    
+
+
     return this.scope.contains(scope) || this.scope.matches(scope);
   }
 
-  
+
 
 
 
@@ -70848,7 +70951,7 @@ class Assignment {
     return this.roleId === other.roleId && this.actorId === other.actorId && this.scope.matches(other.scope);
   }
 
-  
+
 
 
 
@@ -70859,7 +70962,7 @@ class Assignment {
     return this.metadata.hasOwnProperty(key) ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -70879,7 +70982,7 @@ class Assignment {
     };
   }
 
-  
+
 
 
 
@@ -70893,7 +70996,7 @@ class Assignment {
     return new Assignment(obj);
   }
 
-  
+
 
 
 
@@ -70917,7 +71020,7 @@ class Assignment {
 
 
 class ResolutionResult {
-  
+
 
 
 
@@ -70938,49 +71041,49 @@ class ResolutionResult {
       throw new Error('ResolutionResult data is required');
     }
 
-    
+
 
 
 
 
     this.requestedRole = data.requestedRole;
 
-    
+
 
 
 
 
     this.scope = data.scope;
 
-    
+
 
 
 
 
     this.effectiveActor = data.effectiveActor || null;
 
-    
+
 
 
 
 
     this.principalActor = data.principalActor || null;
 
-    
+
 
 
 
 
     this.allActors = Array.isArray(data.allActors) ? [...data.allActors] : [];
 
-    
+
 
 
 
 
     this.delegationChain = Array.isArray(data.delegationChain) ? [...data.delegationChain] : [];
 
-    
+
 
 
 
@@ -70991,7 +71094,7 @@ class ResolutionResult {
       bcc: (_data$routing3 = data.routing) !== null && _data$routing3 !== void 0 && _data$routing3.bcc ? [...data.routing.bcc] : []
     };
 
-    
+
 
 
 
@@ -71001,21 +71104,21 @@ class ResolutionResult {
       ...cloneDeep_cloneDeep(data.metadata || {})
     };
 
-    
+
 
 
 
 
     this.fallbackUsed = data.fallbackUsed === true;
 
-    
+
 
 
 
 
     this.fallbackRoleId = data.fallbackRoleId || null;
 
-    
+
     Object.freeze(this);
     Object.freeze(this.allActors);
     Object.freeze(this.delegationChain);
@@ -71026,7 +71129,7 @@ class ResolutionResult {
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -71034,7 +71137,7 @@ class ResolutionResult {
     return this.effectiveActor !== null;
   }
 
-  
+
 
 
 
@@ -71042,7 +71145,7 @@ class ResolutionResult {
     return this.delegationChain.length > 0;
   }
 
-  
+
 
 
 
@@ -71050,7 +71153,7 @@ class ResolutionResult {
     return this.delegationChain.length;
   }
 
-  
+
 
 
 
@@ -71062,7 +71165,7 @@ class ResolutionResult {
     return this.effectiveActor.id !== this.principalActor.id;
   }
 
-  
+
 
 
 
@@ -71071,7 +71174,7 @@ class ResolutionResult {
     return [...this.routing.primary, ...this.routing.cc, ...this.routing.bcc];
   }
 
-  
+
 
 
 
@@ -71089,7 +71192,7 @@ class ResolutionResult {
     return Array.from(ids);
   }
 
-  
+
 
 
 
@@ -71116,7 +71219,7 @@ class ResolutionResult {
     });
   }
 
-  
+
 
 
 
@@ -71139,7 +71242,7 @@ class ResolutionResult {
     });
   }
 
-  
+
 
 
 
@@ -71166,7 +71269,7 @@ class ResolutionResult {
     };
   }
 
-  
+
 
 
 
@@ -71194,19 +71297,19 @@ class ResolutionResult {
 
 
 const RoutingPolicy = Object.freeze({
-  
+
   DELEGATE_ONLY: 'DELEGATE_ONLY',
-  
+
   PRINCIPAL_ONLY: 'PRINCIPAL_ONLY',
-  
+
   BOTH_EQUAL: 'BOTH_EQUAL',
-  
+
   DELEGATE_PRIMARY_PRINCIPAL_CC: 'DELEGATE_PRIMARY_PRINCIPAL_CC',
-  
+
   PRINCIPAL_PRIMARY_DELEGATE_CC: 'PRINCIPAL_PRIMARY_DELEGATE_CC',
-  
+
   CHAIN_ALL: 'CHAIN_ALL',
-  
+
   DELEGATE_OR_PRINCIPAL: 'DELEGATE_OR_PRINCIPAL'
 });
 
@@ -71277,7 +71380,7 @@ class DelegationState {
       metadata = {}
     } = definition;
 
-    
+
     if (!id || typeof id !== 'string') {
       throw new Error('Delegation id is required and must be a string');
     }
@@ -71294,7 +71397,7 @@ class DelegationState {
       throw new Error(`Invalid routing policy: ${routingPolicy}`);
     }
 
-    
+
     if (roleIds !== '*' && !Array.isArray(roleIds)) {
       throw new Error('roleIds must be "*" or an array of role IDs');
     }
@@ -71405,7 +71508,7 @@ class DelegationRules {
 
 
 class Delegation_Delegation {
-  
+
 
 
 
@@ -71439,7 +71542,7 @@ class Delegation_Delegation {
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -71452,7 +71555,7 @@ class Delegation_Delegation {
     return this.id === other.id;
   }
 
-  
+
 
 
 
@@ -71466,7 +71569,7 @@ class Delegation_Delegation {
     return new Delegation_Delegation(obj);
   }
 
-  
+
 
 
 
@@ -71492,7 +71595,7 @@ class Delegation_Delegation {
 
 
 class DelegationChain {
-  
+
 
 
 
@@ -71502,13 +71605,13 @@ class DelegationChain {
       throw new Error('Delegations must be an array');
     }
 
-    
+
     for (let i = 0; i < delegations.length; i++) {
       if (!(delegations[i] instanceof Delegation_Delegation)) {
         throw new Error(`Element at index ${i} is not a Delegation`);
       }
 
-      
+
       if (i > 0) {
         const prev = delegations[i - 1];
         const curr = delegations[i];
@@ -71518,13 +71621,13 @@ class DelegationChain {
       }
     }
 
-    
+
     this.delegations = [...delegations];
     Object.freeze(this);
     Object.freeze(this.delegations);
   }
 
-  
+
 
 
 
@@ -71533,7 +71636,7 @@ class DelegationChain {
     return new DelegationChain([]);
   }
 
-  
+
 
 
 
@@ -71543,7 +71646,7 @@ class DelegationChain {
     return new DelegationChain([delegation]);
   }
 
-  
+
 
 
 
@@ -71551,7 +71654,7 @@ class DelegationChain {
     return this.delegations.length === 0;
   }
 
-  
+
 
 
 
@@ -71559,7 +71662,7 @@ class DelegationChain {
     return this.delegations.length;
   }
 
-  
+
 
 
 
@@ -71571,7 +71674,7 @@ class DelegationChain {
     return this.delegations[0].principalId;
   }
 
-  
+
 
 
 
@@ -71583,7 +71686,7 @@ class DelegationChain {
     return this.delegations[this.delegations.length - 1].delegateId;
   }
 
-  
+
 
 
 
@@ -71599,7 +71702,7 @@ class DelegationChain {
     return ids;
   }
 
-  
+
 
 
 
@@ -71607,7 +71710,7 @@ class DelegationChain {
     return this.isEmpty() ? null : this.delegations[0];
   }
 
-  
+
 
 
 
@@ -71615,7 +71718,7 @@ class DelegationChain {
     return this.isEmpty() ? null : this.delegations[this.delegations.length - 1];
   }
 
-  
+
 
 
 
@@ -71627,7 +71730,7 @@ class DelegationChain {
     return this.delegations[index];
   }
 
-  
+
 
 
 
@@ -71636,18 +71739,18 @@ class DelegationChain {
     return this.getAllActorIds().includes(actorId);
   }
 
-  
+
 
 
 
 
 
   wouldCreateCycle(delegation) {
-    
+
     return this.containsActor(delegation.delegateId);
   }
 
-  
+
 
 
 
@@ -71659,7 +71762,7 @@ class DelegationChain {
       throw new Error('Must provide a Delegation instance');
     }
 
-    
+
     if (!this.isEmpty()) {
       const last = this.getLast();
       if (last.delegateId !== delegation.principalId) {
@@ -71667,14 +71770,14 @@ class DelegationChain {
       }
     }
 
-    
+
     if (this.wouldCreateCycle(delegation)) {
       throw new Error(`Cannot extend chain: would create a cycle with delegate ${delegation.delegateId}`);
     }
     return new DelegationChain([...this.delegations, delegation]);
   }
 
-  
+
 
 
 
@@ -71682,7 +71785,7 @@ class DelegationChain {
     this.delegations.forEach(callback);
   }
 
-  
+
 
 
 
@@ -71691,7 +71794,7 @@ class DelegationChain {
     return this.delegations.map(mapper);
   }
 
-  
+
 
 
 
@@ -71701,7 +71804,7 @@ class DelegationChain {
     return this.delegations.every(d => d.isValidAt(asOfDate));
   }
 
-  
+
 
 
 
@@ -71715,7 +71818,7 @@ class DelegationChain {
     };
   }
 
-  
+
 
 
 
@@ -71730,7 +71833,7 @@ class DelegationChain {
     return new DelegationChain(delegations);
   }
 
-  
+
 
 
 
@@ -71757,21 +71860,21 @@ class DelegationChain {
 
 
 class DelegationValidator {
-  
+
 
 
 
 
 
   constructor(options = {}) {
-    
+
     this._maxDelegationDepth = options.maxDelegationDepth || 10;
 
-    
+
     this._logger = options.logger || console;
   }
 
-  
+
 
 
 
@@ -71782,7 +71885,7 @@ class DelegationValidator {
     const errors = [];
     const warnings = [];
 
-    
+
     if (!(delegation instanceof Delegation_Delegation)) {
       errors.push('Input is not a Delegation instance');
       return {
@@ -71792,28 +71895,28 @@ class DelegationValidator {
       };
     }
 
-    
+
     if (delegation.principalId === delegation.delegateId) {
       errors.push('Principal and delegate cannot be the same actor');
     }
 
-    
+
     if (delegation.validTo !== null && delegation.validTo < delegation.validFrom) {
       errors.push('validTo must be after validFrom');
     }
 
-    
+
     const now = new Date();
     if (delegation.validTo !== null && delegation.validTo < now) {
       warnings.push('Delegation is expired');
     }
 
-    
+
     if (delegation.validFrom > now) {
       warnings.push('Delegation has not started yet');
     }
 
-    
+
     if (context.actorExists) {
       if (!context.actorExists(delegation.principalId)) {
         errors.push(`Principal actor not found: ${delegation.principalId}`);
@@ -71823,7 +71926,7 @@ class DelegationValidator {
       }
     }
 
-    
+
     if (context.roleExists && delegation.roleIds !== '*') {
       for (const roleId of delegation.roleIds) {
         if (!context.roleExists(roleId)) {
@@ -71838,7 +71941,7 @@ class DelegationValidator {
     };
   }
 
-  
+
 
 
 
@@ -71849,7 +71952,7 @@ class DelegationValidator {
     const errors = [];
     const warnings = [];
 
-    
+
     if (!(chain instanceof DelegationChain)) {
       errors.push('Input is not a DelegationChain instance');
       return {
@@ -71859,7 +71962,7 @@ class DelegationValidator {
       };
     }
 
-    
+
     if (chain.isEmpty()) {
       return {
         isValid: true,
@@ -71868,18 +71971,18 @@ class DelegationValidator {
       };
     }
 
-    
+
     if (chain.getDepth() > this._maxDelegationDepth) {
       errors.push(`Delegation chain depth (${chain.getDepth()}) exceeds maximum (${this._maxDelegationDepth})`);
     }
 
-    
+
     const cycleCheck = this._detectCycle(chain);
     if (cycleCheck.hasCycle) {
       errors.push(`Circular delegation detected: ${cycleCheck.cycleDescription}`);
     }
 
-    
+
     chain.forEach((delegation, index) => {
       const result = this.validate(delegation, context);
       if (!result.isValid) {
@@ -71892,7 +71995,7 @@ class DelegationValidator {
       });
     });
 
-    
+
     for (let i = 1; i < chain.getDepth(); i++) {
       const prev = chain.getAt(i - 1);
       const curr = chain.getAt(i);
@@ -71901,7 +72004,7 @@ class DelegationValidator {
       }
     }
 
-    
+
     const scopeWarnings = this._checkScopeCoherence(chain);
     warnings.push(...scopeWarnings);
     return {
@@ -71911,7 +72014,7 @@ class DelegationValidator {
     };
   }
 
-  
+
 
 
 
@@ -71936,7 +72039,7 @@ class DelegationValidator {
     };
   }
 
-  
+
 
 
 
@@ -71946,12 +72049,12 @@ class DelegationValidator {
   _checkScopeCoherence(chain) {
     const warnings = [];
 
-    
+
     let previousRestriction = null;
     chain.forEach((delegation, index) => {
       const restriction = delegation.scopeRestriction;
       if (restriction && previousRestriction) {
-        
+
         if (!previousRestriction.contains(restriction)) {
           warnings.push(`Delegation ${index}: scope restriction may be inconsistent with previous delegation`);
         }
@@ -71961,7 +72064,7 @@ class DelegationValidator {
     return warnings;
   }
 
-  
+
 
 
 
@@ -71973,24 +72076,24 @@ class DelegationValidator {
     const errors = [];
     const warnings = [];
 
-    
+
     const delegationResult = this.validate(delegation, context);
     errors.push(...delegationResult.errors);
     warnings.push(...delegationResult.warnings);
     if (!chain.isEmpty()) {
-      
+
       const last = chain.getLast();
       if (last.delegateId !== delegation.principalId) {
         errors.push(`Cannot extend chain: last delegate is ${last.delegateId}, ` + `but new delegation is from ${delegation.principalId}`);
       }
     }
 
-    
+
     if (chain.wouldCreateCycle(delegation)) {
       errors.push(`Would create cycle: ${delegation.delegateId} already in chain`);
     }
 
-    
+
     if (chain.getDepth() + 1 > this._maxDelegationDepth) {
       errors.push(`Would exceed maximum depth: ${chain.getDepth() + 1} > ${this._maxDelegationDepth}`);
     }
@@ -72001,7 +72104,7 @@ class DelegationValidator {
     };
   }
 
-  
+
 
 
 
@@ -72023,7 +72126,7 @@ class DelegationValidator {
 
 
 class RoutingResult {
-  
+
 
 
 
@@ -72032,19 +72135,19 @@ class RoutingResult {
 
 
   constructor(data = {}) {
-    
+
     this.primary = Array.isArray(data.primary) ? [...data.primary] : [];
 
-    
+
     this.cc = Array.isArray(data.cc) ? [...data.cc] : [];
 
-    
+
     this.bcc = Array.isArray(data.bcc) ? [...data.bcc] : [];
 
-    
+
     this.metadata = cloneDeep_cloneDeep(data.metadata || {});
 
-    
+
     Object.freeze(this);
     Object.freeze(this.primary);
     Object.freeze(this.cc);
@@ -72052,7 +72155,7 @@ class RoutingResult {
     Object.freeze(this.metadata);
   }
 
-  
+
 
 
 
@@ -72061,7 +72164,7 @@ class RoutingResult {
     return new RoutingResult({});
   }
 
-  
+
 
 
 
@@ -72073,7 +72176,7 @@ class RoutingResult {
     });
   }
 
-  
+
 
 
 
@@ -72085,7 +72188,7 @@ class RoutingResult {
     });
   }
 
-  
+
 
 
 
@@ -72093,7 +72196,7 @@ class RoutingResult {
     return this.primary.length === 0 && this.cc.length === 0 && this.bcc.length === 0;
   }
 
-  
+
 
 
 
@@ -72101,7 +72204,7 @@ class RoutingResult {
     return this.primary.length + this.cc.length + this.bcc.length;
   }
 
-  
+
 
 
 
@@ -72109,7 +72212,7 @@ class RoutingResult {
     return [...this.primary, ...this.cc, ...this.bcc];
   }
 
-  
+
 
 
 
@@ -72123,7 +72226,7 @@ class RoutingResult {
     return Array.from(ids);
   }
 
-  
+
 
 
 
@@ -72132,7 +72235,7 @@ class RoutingResult {
     return this.getAllRecipients().some(r => r && r.id === actorId);
   }
 
-  
+
 
 
 
@@ -72150,7 +72253,7 @@ class RoutingResult {
     return null;
   }
 
-  
+
 
 
 
@@ -72165,7 +72268,7 @@ class RoutingResult {
     });
   }
 
-  
+
 
 
 
@@ -72180,7 +72283,7 @@ class RoutingResult {
     });
   }
 
-  
+
 
 
 
@@ -72195,7 +72298,7 @@ class RoutingResult {
     });
   }
 
-  
+
 
 
 
@@ -72206,7 +72309,7 @@ class RoutingResult {
       return this;
     }
 
-    
+
     const dedup = (arr1, arr2) => {
       const seen = new Set();
       return [...arr1, ...arr2].filter(actor => {
@@ -72228,7 +72331,7 @@ class RoutingResult {
     });
   }
 
-  
+
 
 
 
@@ -72244,7 +72347,7 @@ class RoutingResult {
     };
   }
 
-  
+
 
 
 
@@ -72280,21 +72383,21 @@ class RoutingResult {
 
 
 class RoutingResolver {
-  
+
 
 
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
 
     this._logger = options.logger || console;
 
-    
+
 
 
 
@@ -72302,7 +72405,7 @@ class RoutingResolver {
     this._defaultPolicy = options.defaultPolicy || RoutingPolicy.DELEGATE_ONLY;
   }
 
-  
+
 
 
 
@@ -72320,19 +72423,19 @@ class RoutingResolver {
       routingPolicy = null
     } = params;
 
-    
+
     const policy = routingPolicy || this._determinePolicy(delegationChain);
 
-    
+
     if (!delegationChain || delegationChain.isEmpty()) {
       return RoutingResult.singlePrimary(principalActor);
     }
 
-    
+
     return this._resolveByPolicy(policy, principalActor, effectiveActor, delegationChain);
   }
 
-  
+
 
 
 
@@ -72344,12 +72447,12 @@ class RoutingResolver {
       return this._defaultPolicy;
     }
 
-    
+
     const lastDelegation = delegationChain.getLast();
     return (lastDelegation === null || lastDelegation === void 0 ? void 0 : lastDelegation.routingPolicy) || this._defaultPolicy;
   }
 
-  
+
 
 
 
@@ -72381,7 +72484,7 @@ class RoutingResolver {
     }
   }
 
-  
+
 
 
 
@@ -72399,7 +72502,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72417,7 +72520,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72427,7 +72530,7 @@ class RoutingResolver {
       primary.push(effectiveActor);
     }
 
-    
+
     if (principalActor && (!effectiveActor || principalActor.id !== effectiveActor.id)) {
       primary.push(principalActor);
     }
@@ -72441,7 +72544,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72449,7 +72552,7 @@ class RoutingResolver {
     const primary = effectiveActor ? [effectiveActor] : [];
     const cc = [];
 
-    
+
     if (principalActor && (!effectiveActor || principalActor.id !== effectiveActor.id)) {
       cc.push(principalActor);
     }
@@ -72463,7 +72566,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72471,7 +72574,7 @@ class RoutingResolver {
     const primary = principalActor ? [principalActor] : [];
     const cc = [];
 
-    
+
     if (effectiveActor && (!principalActor || effectiveActor.id !== principalActor.id)) {
       cc.push(effectiveActor);
     }
@@ -72485,7 +72588,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72493,20 +72596,20 @@ class RoutingResolver {
     const primary = [];
     const seen = new Set();
 
-    
+
     if (delegationChain && !delegationChain.isEmpty()) {
-      
+
       delegationChain.forEach(delegation => {
-        
-        
+
+
       });
 
-      
+
       const actorIds = delegationChain.getAllActorIds();
 
-      
-      
-      
+
+
+
       if (principalActor && !seen.has(principalActor.id)) {
         primary.push(principalActor);
         seen.add(principalActor.id);
@@ -72525,7 +72628,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72548,7 +72651,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72559,7 +72662,7 @@ class RoutingResolver {
       return RoutingResult.empty();
     }
 
-    
+
     const seen = new Set();
     const primary = chainActors.filter(actor => {
       if (!actor || !actor.id || seen.has(actor.id)) {
@@ -72578,7 +72681,7 @@ class RoutingResolver {
     });
   }
 
-  
+
 
 
 
@@ -72601,7 +72704,7 @@ class RoutingResolver {
 
 
 class RoleResolutionError extends BaseError {
-  
+
 
 
 
@@ -72619,7 +72722,7 @@ class RoleResolutionError extends BaseError {
 
 
 class RoleNotFoundError extends RoleResolutionError {
-  
+
 
 
 
@@ -72640,7 +72743,7 @@ class RoleNotFoundError extends RoleResolutionError {
 
 
 class NoActorFoundError extends RoleResolutionError {
-  
+
 
 
 
@@ -72666,7 +72769,7 @@ class NoActorFoundError extends RoleResolutionError {
 
 
 class ActorNotFoundError extends RoleResolutionError {
-  
+
 
 
 
@@ -72687,7 +72790,7 @@ class ActorNotFoundError extends RoleResolutionError {
 
 
 class CircularDelegationError extends RoleResolutionError {
-  
+
 
 
 
@@ -72712,7 +72815,7 @@ class CircularDelegationError extends RoleResolutionError {
 
 
 class InvalidScopeError extends RoleResolutionError {
-  
+
 
 
 
@@ -72739,7 +72842,7 @@ class InvalidScopeError extends RoleResolutionError {
 
 
 class DelegationDepthExceededError extends RoleResolutionError {
-  
+
 
 
 
@@ -72763,7 +72866,7 @@ class DelegationDepthExceededError extends RoleResolutionError {
 
 
 class RoleValidationError extends RoleResolutionError {
-  
+
 
 
 
@@ -72794,28 +72897,28 @@ class RoleValidationError extends RoleResolutionError {
 
 
 class RoleRegistry {
-  
+
 
 
 
 
 
   constructor(options = {}) {
-    
+
     this._logger = options.logger || console;
 
-    
+
     this._roles = new Registry({
       entityName: 'role'
     });
 
-    
+
     if (Array.isArray(options.initialRoles)) {
       options.initialRoles.forEach(role => this.register(role));
     }
   }
 
-  
+
 
 
 
@@ -72842,7 +72945,7 @@ class RoleRegistry {
     return role;
   }
 
-  
+
 
 
 
@@ -72855,7 +72958,7 @@ class RoleRegistry {
     return roles.map(r => this.register(r));
   }
 
-  
+
 
 
 
@@ -72869,7 +72972,7 @@ class RoleRegistry {
     return role;
   }
 
-  
+
 
 
 
@@ -72878,7 +72981,7 @@ class RoleRegistry {
     return this._roles.get(roleId) || null;
   }
 
-  
+
 
 
 
@@ -72887,7 +72990,7 @@ class RoleRegistry {
     return this._roles.has(roleId);
   }
 
-  
+
 
 
 
@@ -72901,7 +73004,7 @@ class RoleRegistry {
     return removed;
   }
 
-  
+
 
 
 
@@ -72909,7 +73012,7 @@ class RoleRegistry {
     return Array.from(this._roles.values());
   }
 
-  
+
 
 
 
@@ -72917,7 +73020,7 @@ class RoleRegistry {
     return Array.from(this._roles.keys());
   }
 
-  
+
 
 
 
@@ -72925,7 +73028,7 @@ class RoleRegistry {
     return this._roles.size;
   }
 
-  
+
 
 
 
@@ -72935,7 +73038,7 @@ class RoleRegistry {
     (_this$_logger$debug3 = (_this$_logger3 = this._logger).debug) === null || _this$_logger$debug3 === void 0 || _this$_logger$debug3.call(_this$_logger3, 'Cleared role registry');
   }
 
-  
+
 
 
 
@@ -72944,7 +73047,7 @@ class RoleRegistry {
     return this.getAll().filter(predicate);
   }
 
-  
+
 
 
 
@@ -72953,7 +73056,7 @@ class RoleRegistry {
     return this.find(role => role.scopeType === scopeType);
   }
 
-  
+
 
 
 
@@ -72961,7 +73064,7 @@ class RoleRegistry {
     return this.find(role => role.allowsDelegation);
   }
 
-  
+
 
 
 
@@ -72976,7 +73079,7 @@ class RoleRegistry {
     };
   }
 
-  
+
 
 
 
@@ -73009,7 +73112,7 @@ class RoleRegistry {
 
 
 class AssignmentSource {
-  
+
 
 
 
@@ -73022,7 +73125,7 @@ class AssignmentSource {
     throw new Error('AssignmentSource.getAssignmentsForRole() must be implemented');
   }
 
-  
+
 
 
 
@@ -73034,7 +73137,7 @@ class AssignmentSource {
     throw new Error('AssignmentSource.getAssignmentsForActor() must be implemented');
   }
 
-  
+
 
 
 
@@ -73052,7 +73155,7 @@ class AssignmentSource {
 
 
 class InMemoryAssignmentSource extends AssignmentSource {
-  
+
 
 
 
@@ -73061,13 +73164,13 @@ class InMemoryAssignmentSource extends AssignmentSource {
   constructor(data = {}) {
     super();
 
-    
+
     this._assignments = data.assignments || [];
 
-    
+
     this._actors = new Map();
 
-    
+
     if (Array.isArray(data.actors)) {
       data.actors.forEach(actor => {
         this._actors.set(actor.id, actor);
@@ -73075,7 +73178,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     }
   }
 
-  
+
 
 
 
@@ -73083,7 +73186,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     this._assignments.push(assignment);
   }
 
-  
+
 
 
 
@@ -73091,7 +73194,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     this._actors.set(actor.id, actor);
   }
 
-  
+
 
 
 
@@ -73102,18 +73205,18 @@ class InMemoryAssignmentSource extends AssignmentSource {
   getAssignmentsForRole(roleId, scope, asOfDate = new Date()) {
     return this._assignments.filter(assignment => {
       var _assignment$scope;
-      
+
       if (assignment.roleId !== roleId) {
         return false;
       }
 
-      
+
       if (typeof assignment.isValidAt === 'function') {
         if (!assignment.isValidAt(asOfDate)) {
           return false;
         }
       } else {
-        
+
         if (assignment.isActive === false) {
           return false;
         }
@@ -73125,22 +73228,22 @@ class InMemoryAssignmentSource extends AssignmentSource {
         }
       }
 
-      
+
       if (typeof ((_assignment$scope = assignment.scope) === null || _assignment$scope === void 0 ? void 0 : _assignment$scope.contains) === 'function') {
         return assignment.scope.contains(scope) || assignment.scope.matches(scope);
       }
 
-      
+
       if (assignment.scope) {
         const assignmentScope = assignment.scope;
         const queryScope = scope;
 
-        
+
         if (assignmentScope.type === 'GLOBAL') {
           return true;
         }
 
-        
+
         if (assignmentScope.type === queryScope.type) {
           return assignmentScope.value === queryScope.value;
         }
@@ -73149,7 +73252,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     });
   }
 
-  
+
 
 
 
@@ -73162,12 +73265,12 @@ class InMemoryAssignmentSource extends AssignmentSource {
         return false;
       }
 
-      
+
       if (typeof assignment.isValidAt === 'function') {
         return assignment.isValidAt(asOfDate);
       }
 
-      
+
       if (assignment.isActive === false) {
         return false;
       }
@@ -73181,7 +73284,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     });
   }
 
-  
+
 
 
 
@@ -73190,7 +73293,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     return this._actors.get(actorId) || null;
   }
 
-  
+
 
 
 
@@ -73198,7 +73301,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     return [...this._assignments];
   }
 
-  
+
 
 
 
@@ -73206,7 +73309,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
     return Array.from(this._actors.values());
   }
 
-  
+
 
 
 
@@ -73227,7 +73330,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
 
 
 class DelegationSource {
-  
+
 
 
 
@@ -73239,7 +73342,7 @@ class DelegationSource {
     throw new Error('DelegationSource.getActiveDelegationsForPrincipal() must be implemented');
   }
 
-  
+
 
 
 
@@ -73251,7 +73354,7 @@ class DelegationSource {
     throw new Error('DelegationSource.getActiveDelegationsForDelegate() must be implemented');
   }
 
-  
+
 
 
 
@@ -73272,7 +73375,7 @@ class DelegationSource {
 
 
 class InMemoryDelegationSource extends DelegationSource {
-  
+
 
 
 
@@ -73280,11 +73383,11 @@ class InMemoryDelegationSource extends DelegationSource {
   constructor(data = {}) {
     super();
 
-    
+
     this._delegations = data.delegations || [];
   }
 
-  
+
 
 
 
@@ -73292,7 +73395,7 @@ class InMemoryDelegationSource extends DelegationSource {
     this._delegations.push(delegation);
   }
 
-  
+
 
 
 
@@ -73305,7 +73408,7 @@ class InMemoryDelegationSource extends DelegationSource {
       return delegation.isValidAt(asOfDate);
     }
 
-    
+
     if (delegation.isActive === false) {
       return false;
     }
@@ -73318,7 +73421,7 @@ class InMemoryDelegationSource extends DelegationSource {
     return true;
   }
 
-  
+
 
 
 
@@ -73333,7 +73436,7 @@ class InMemoryDelegationSource extends DelegationSource {
     });
   }
 
-  
+
 
 
 
@@ -73348,7 +73451,7 @@ class InMemoryDelegationSource extends DelegationSource {
     });
   }
 
-  
+
 
 
 
@@ -73364,25 +73467,25 @@ class InMemoryDelegationSource extends DelegationSource {
     while (currentActorId && !visited.has(currentActorId)) {
       visited.add(currentActorId);
 
-      
+
       const delegations = this.getActiveDelegationsForPrincipal(currentActorId, asOfDate);
 
-      
+
       const applicableDelegation = delegations.find(delegation => {
-        
+
         if (typeof delegation.appliesToRole === 'function') {
           if (!delegation.appliesToRole(roleId)) {
             return false;
           }
         } else {
           var _delegation$roleIds;
-          
+
           if (delegation.roleIds !== '*' && !((_delegation$roleIds = delegation.roleIds) !== null && _delegation$roleIds !== void 0 && _delegation$roleIds.includes(roleId))) {
             return false;
           }
         }
 
-        
+
         if (typeof delegation.appliesToScope === 'function') {
           return delegation.appliesToScope(scope);
         }
@@ -73398,7 +73501,7 @@ class InMemoryDelegationSource extends DelegationSource {
     return chain;
   }
 
-  
+
 
 
 
@@ -73406,7 +73509,7 @@ class InMemoryDelegationSource extends DelegationSource {
     return [...this._delegations];
   }
 
-  
+
 
 
 
@@ -73435,7 +73538,7 @@ class InMemoryDelegationSource extends DelegationSource {
 
 
 class RoleResolver {
-  
+
 
 
 
@@ -73458,41 +73561,41 @@ class RoleResolver {
       throw new Error('DelegationSource is required');
     }
 
-    
+
     this._roleRegistry = roleRegistry;
 
-    
+
     this._assignmentSource = assignmentSource;
 
-    
+
     this._delegationSource = delegationSource;
 
-    
+
     this._logger = options.logger || console;
 
-    
+
     this._defaultRoutingPolicy = options.defaultRoutingPolicy || RoutingPolicy.DELEGATE_ONLY;
 
-    
+
     this._maxDelegationDepth = options.maxDelegationDepth || 10;
 
-    
+
     this._throwOnNotFound = options.throwOnNotFound === true;
 
-    
+
     this._delegationValidator = new DelegationValidator({
       maxDelegationDepth: this._maxDelegationDepth,
       logger: this._logger
     });
 
-    
+
     this._routingResolver = new RoutingResolver({
       logger: this._logger,
       defaultPolicy: this._defaultRoutingPolicy
     });
   }
 
-  
+
 
 
 
@@ -73515,22 +73618,22 @@ class RoleResolver {
     } = options;
     (_this$_logger$debug = (_this$_logger = this._logger).debug) === null || _this$_logger$debug === void 0 || _this$_logger$debug.call(_this$_logger, `Resolving role: ${roleId} in scope: ${(scope === null || scope === void 0 || (_scope$toString = scope.toString) === null || _scope$toString === void 0 ? void 0 : _scope$toString.call(scope)) || JSON.stringify(scope)}`);
 
-    
+
     const role = this._roleRegistry.get(roleId);
     if (!role) {
       throw new RoleNotFoundError(roleId);
     }
 
-    
+
     this._validateScope(role, scope);
 
-    
+
     const assignments = this._assignmentSource.getAssignmentsForRole(roleId, scope, asOfDate);
 
-    
+
     const selectedAssignments = this._applyResolutionStrategy(assignments, role.resolutionStrategy);
 
-    
+
     let fallbackUsed = false;
     let fallbackRoleId = null;
     if (selectedAssignments.length === 0 && includeFallbacks && role.hasFallbacks()) {
@@ -73546,7 +73649,7 @@ class RoleResolver {
             fallbackUsed = true;
             fallbackRoleId = fallbackId;
 
-            
+
             return new ResolutionResult({
               requestedRole: role,
               scope,
@@ -73565,13 +73668,13 @@ class RoleResolver {
           }
         } catch (error) {
           var _this$_logger$debug3, _this$_logger3;
-          
+
           (_this$_logger$debug3 = (_this$_logger3 = this._logger).debug) === null || _this$_logger$debug3 === void 0 || _this$_logger$debug3.call(_this$_logger3, `Fallback ${fallbackId} failed: ${error.message}`);
         }
       }
     }
 
-    
+
     if (selectedAssignments.length === 0) {
       if (this._throwOnNotFound) {
         throw new NoActorFoundError(roleId, scope);
@@ -73579,7 +73682,7 @@ class RoleResolver {
       return ResolutionResult.empty(role, scope);
     }
 
-    
+
     const resolvedActors = [];
     const primaryAssignment = selectedAssignments[0];
     let principalActor = null;
@@ -73594,23 +73697,23 @@ class RoleResolver {
       }
       resolvedActors.push(actor);
 
-      
+
       if (assignment === primaryAssignment) {
         principalActor = actor;
 
-        
+
         const delegationResult = this._resolveDelegationChain(actor, roleId, scope, asOfDate);
         effectiveActor = delegationResult.effectiveActor;
         delegationChain = delegationResult.chain;
       }
     }
 
-    
+
     if (!effectiveActor && principalActor) {
       effectiveActor = principalActor;
     }
 
-    
+
     const policy = routingPolicy || this._getEffectiveRoutingPolicy(delegationChain);
     const routing = this._routingResolver.resolve({
       principalActor,
@@ -73619,14 +73722,14 @@ class RoleResolver {
       routingPolicy: policy
     });
 
-    
+
     if (policy === RoutingPolicy.CHAIN_ALL && !delegationChain.isEmpty()) {
       const chainActors = this._getActorsFromChain(principalActor, delegationChain);
       const enrichedRouting = this._routingResolver.resolveChainAllWithActors(chainActors);
       routing.primary = enrichedRouting.primary;
     }
 
-    
+
     return new ResolutionResult({
       requestedRole: role,
       scope,
@@ -73644,7 +73747,7 @@ class RoleResolver {
     });
   }
 
-  
+
 
 
 
@@ -73660,7 +73763,7 @@ class RoleResolver {
       } catch (error) {
         var _this$_logger$warn2, _this$_logger5;
         (_this$_logger$warn2 = (_this$_logger5 = this._logger).warn) === null || _this$_logger$warn2 === void 0 || _this$_logger$warn2.call(_this$_logger5, `Failed to resolve role ${roleId}: ${error.message}`);
-        
+
         const role = this._roleRegistry.getOrNull(roleId);
         results.set(roleId, ResolutionResult.empty(role || {
           id: roleId
@@ -73672,7 +73775,7 @@ class RoleResolver {
     return results;
   }
 
-  
+
 
 
 
@@ -73686,13 +73789,13 @@ class RoleResolver {
       includeReceivedDelegations = true
     } = options;
 
-    
+
     const actor = this._assignmentSource.getActorById(actorId);
 
-    
+
     const assignments = this._assignmentSource.getAssignmentsForActor(actorId, asOfDate);
 
-    
+
     const directRoles = [];
     for (const assignment of assignments) {
       const role = this._roleRegistry.getOrNull(assignment.roleId);
@@ -73701,13 +73804,13 @@ class RoleResolver {
       }
     }
 
-    
+
     const effectiveRoles = [...directRoles];
     if (includeReceivedDelegations) {
-      
+
       const receivedDelegations = this._delegationSource.getActiveDelegationsForDelegate(actorId, asOfDate);
       for (const delegation of receivedDelegations) {
-        
+
         const delegatedRoleIds = delegation.roleIds === '*' ? this._roleRegistry.getAllIds() : delegation.roleIds;
         for (const roleId of delegatedRoleIds) {
           const role = this._roleRegistry.getOrNull(roleId);
@@ -73725,7 +73828,7 @@ class RoleResolver {
     };
   }
 
-  
+
 
 
 
@@ -73738,7 +73841,7 @@ class RoleResolver {
     return result.routing;
   }
 
-  
+
 
 
 
@@ -73747,18 +73850,18 @@ class RoleResolver {
 
 
   _validateScope(role, scope) {
-    
+
     if (role.scopeType === ScopeType.GLOBAL) {
       return;
     }
 
-    
+
     if ((scope === null || scope === void 0 ? void 0 : scope.type) !== ScopeType.GLOBAL && (scope === null || scope === void 0 ? void 0 : scope.type) !== role.scopeType) {
       throw new InvalidScopeError(role.id, scope === null || scope === void 0 ? void 0 : scope.type, role.scopeType);
     }
   }
 
-  
+
 
 
 
@@ -73776,7 +73879,7 @@ class RoleResolver {
       case ResolutionStrategy.ALL:
         return assignments;
       case ResolutionStrategy.PRIORITY:
-        
+
         const sorted = [...assignments].sort((a, b) => (b.priority || 0) - (a.priority || 0));
         return sorted;
       default:
@@ -73784,7 +73887,7 @@ class RoleResolver {
     }
   }
 
-  
+
 
 
 
@@ -73796,7 +73899,7 @@ class RoleResolver {
 
 
   _resolveDelegationChain(actor, roleId, scope, asOfDate) {
-    
+
     const delegations = this._delegationSource.getDelegationChain(actor.id, roleId, scope, asOfDate);
     if (!delegations || delegations.length === 0) {
       return {
@@ -73805,12 +73908,12 @@ class RoleResolver {
       };
     }
 
-    
+
     if (delegations.length > this._maxDelegationDepth) {
       throw new DelegationDepthExceededError(delegations.length, this._maxDelegationDepth);
     }
 
-    
+
     let chain;
     try {
       chain = new DelegationChain(delegations);
@@ -73823,7 +73926,7 @@ class RoleResolver {
       };
     }
 
-    
+
     const finalDelegateId = chain.getFinalDelegateId();
     const effectiveActor = this._assignmentSource.getActorById(finalDelegateId);
     if (!effectiveActor) {
@@ -73840,7 +73943,7 @@ class RoleResolver {
     };
   }
 
-  
+
 
 
 
@@ -73852,12 +73955,12 @@ class RoleResolver {
       return this._defaultRoutingPolicy;
     }
 
-    
+
     const lastDelegation = chain.getLast();
     return (lastDelegation === null || lastDelegation === void 0 ? void 0 : lastDelegation.routingPolicy) || this._defaultRoutingPolicy;
   }
 
-  
+
 
 
 
@@ -73905,7 +74008,7 @@ class RoleResolver {
 
 
 class PriorityChainResolver {
-  
+
 
 
 
@@ -73919,7 +74022,7 @@ class PriorityChainResolver {
     this._resolvers = resolvers;
   }
 
-  
+
 
 
 
@@ -74108,11 +74211,11 @@ class PriorityChainResolver {
 
 
 const EmptyBehavior = Object.freeze({
-  
+
   HIDE: 'HIDE',
-  
+
   SHOW_PLACEHOLDER: 'SHOW_PLACEHOLDER',
-  
+
   SHOW_EMPTY: 'SHOW_EMPTY'
 });
 
@@ -74123,13 +74226,13 @@ const EmptyBehavior = Object.freeze({
 
 
 const ContainerType = Object.freeze({
-  
+
   NONE: 'NONE',
-  
+
   BOX: 'BOX',
-  
+
   CARD: 'CARD',
-  
+
   SECTION: 'SECTION'
 });
 
@@ -74140,11 +74243,11 @@ const ContainerType = Object.freeze({
 
 
 const OutputFormat = Object.freeze({
-  
+
   HTML: 'html',
-  
+
   MARKDOWN: 'markdown',
-  
+
   TEXT: 'text'
 });
 
@@ -74199,7 +74302,7 @@ function isValidOutputFormat(value) {
 
 
 class BlockDefinition {
-  
+
 
 
 
@@ -74231,7 +74334,7 @@ class BlockDefinition {
       metadata = {}
     } = definition;
 
-    
+
     if (!id || typeof id !== 'string') {
       throw new Error('BlockDefinition id is required and must be a string');
     }
@@ -74256,70 +74359,70 @@ class BlockDefinition {
       throw new Error(`Invalid container type: ${containerType}`);
     }
 
-    
+
 
 
 
 
     this.id = id;
 
-    
+
 
 
 
 
     this.name = name;
 
-    
+
 
 
 
 
     this.description = description;
 
-    
+
 
 
 
 
     this.dataRequirements = Object.freeze([...dataRequirements]);
 
-    
+
 
 
 
 
     this.defaultVisibility = defaultVisibility;
 
-    
+
 
 
 
 
     this.defaultOrder = defaultOrder;
 
-    
+
 
 
 
 
     this.supportedFormats = Object.freeze([...supportedFormats]);
 
-    
+
 
 
 
 
     this.emptyBehavior = emptyBehavior;
 
-    
+
 
 
 
 
     this.containerType = containerType;
 
-    
+
 
 
 
@@ -74328,7 +74431,7 @@ class BlockDefinition {
     Object.freeze(this);
   }
 
-  
+
 
 
 
@@ -74337,7 +74440,7 @@ class BlockDefinition {
     return this.supportedFormats.includes(format);
   }
 
-  
+
 
 
 
@@ -74346,7 +74449,7 @@ class BlockDefinition {
     return this.dataRequirements.includes(key);
   }
 
-  
+
 
 
 
@@ -74354,7 +74457,7 @@ class BlockDefinition {
     return this.dataRequirements.length > 0;
   }
 
-  
+
 
 
 
@@ -74362,7 +74465,7 @@ class BlockDefinition {
     return this.emptyBehavior === EmptyBehavior.HIDE;
   }
 
-  
+
 
 
 
@@ -74370,7 +74473,7 @@ class BlockDefinition {
     return this.defaultVisibility === 'always';
   }
 
-  
+
 
 
 
@@ -74380,7 +74483,7 @@ class BlockDefinition {
     return this.metadata.hasOwnProperty(key) ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -74388,7 +74491,7 @@ class BlockDefinition {
     return this.defaultVisibility === 'never';
   }
 
-  
+
 
 
 
@@ -74409,7 +74512,7 @@ class BlockDefinition {
     };
   }
 
-  
+
 
 
 
@@ -74422,7 +74525,7 @@ class BlockDefinition {
     return new BlockDefinition(obj);
   }
 
-  
+
 
 
 
@@ -74453,7 +74556,7 @@ class BlockDefinition {
 
 
 class BlockResult extends Result {
-  
+
 
 
 
@@ -74487,66 +74590,66 @@ class BlockResult extends Result {
       throw new Error('BlockResult blockType is required');
     }
 
-    
+
     super({
       error
     });
 
-    
+
 
 
 
 
     this.instanceId = instanceId;
 
-    
+
 
 
 
 
     this.blockType = blockType;
 
-    
+
 
 
 
 
     this.isEmpty = Boolean(isEmpty);
 
-    
+
 
 
 
 
     this.isVisible = Boolean(isVisible);
 
-    
+
 
 
 
 
     this.content = content;
 
-    
+
 
 
 
 
     this.metadata = Object.freeze(cloneDeep_cloneDeep(metadata));
 
-    
+
 
 
 
 
     this.processingTime = processingTime;
 
-    
+
 
     Object.freeze(this);
   }
 
-  
+
 
 
 
@@ -74554,10 +74657,10 @@ class BlockResult extends Result {
     return this.isVisible && !this.isEmpty && this.content.length > 0;
   }
 
-  
-  
 
-  
+
+
+
 
 
 
@@ -74567,7 +74670,7 @@ class BlockResult extends Result {
     return key in this.metadata ? this.metadata[key] : defaultValue;
   }
 
-  
+
 
 
 
@@ -74586,7 +74689,7 @@ class BlockResult extends Result {
     };
   }
 
-  
+
 
 
 
@@ -74607,7 +74710,7 @@ class BlockResult extends Result {
     });
   }
 
-  
+
 
 
 
@@ -74629,7 +74732,7 @@ class BlockResult extends Result {
     });
   }
 
-  
+
 
 
 
@@ -74660,7 +74763,7 @@ class BlockResult extends Result {
 
 
 class ContentBlock {
-  
+
 
 
 
@@ -74671,14 +74774,14 @@ class ContentBlock {
       throw new Error('ContentBlock requires a definition');
     }
 
-    
+
 
 
 
 
     this.definition = definition;
 
-    
+
 
 
 
@@ -74688,7 +74791,7 @@ class ContentBlock {
     });
   }
 
-  
+
 
 
 
@@ -74696,7 +74799,7 @@ class ContentBlock {
     return this.definition.id;
   }
 
-  
+
 
 
 
@@ -74704,7 +74807,7 @@ class ContentBlock {
     return this.definition.name;
   }
 
-  
+
 
 
 
@@ -74714,7 +74817,7 @@ class ContentBlock {
     throw new Error('ContentBlock.getData() must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -74724,7 +74827,7 @@ class ContentBlock {
     throw new Error('ContentBlock.isEmpty() must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -74734,7 +74837,7 @@ class ContentBlock {
     throw new Error('ContentBlock.getTemplateId() must be implemented by subclass');
   }
 
-  
+
 
 
 
@@ -74745,18 +74848,18 @@ class ContentBlock {
   evaluate(instanceId, context, format, renderer) {
     const startTime = Date.now();
     try {
-      
+
       const data = this.getData(context);
 
-      
+
       const empty = this.isEmpty(data);
 
-      
+
       if (empty && this.definition.hidesWhenEmpty()) {
         return BlockResult.hidden(instanceId, this.getTypeId(), 'empty');
       }
 
-      
+
       const templateId = this.getTemplateId(format);
       const content = this.render(data, format, renderer, templateId);
       return new BlockResult({
@@ -74773,7 +74876,7 @@ class ContentBlock {
     }
   }
 
-  
+
 
 
 
@@ -74794,7 +74897,7 @@ class ContentBlock {
     });
   }
 
-  
+
 
 
 
@@ -74807,7 +74910,7 @@ class ContentBlock {
     };
   }
 
-  
+
 
 
 
@@ -74816,7 +74919,7 @@ class ContentBlock {
     return this.definition.supportsFormat(format);
   }
 
-  
+
 
 
 
@@ -74836,7 +74939,7 @@ class ContentBlock {
 
 
 class SimpleContentBlock extends ContentBlock {
-  
+
 
 
 
@@ -74854,21 +74957,21 @@ class SimpleContentBlock extends ContentBlock {
       throw new Error('SimpleContentBlock requires a templates object');
     }
 
-    
+
 
 
 
 
     this._dataExtractor = config.dataExtractor;
 
-    
+
 
 
 
 
     this._emptyChecker = config.emptyChecker || (() => false);
 
-    
+
 
 
 
@@ -74876,7 +74979,7 @@ class SimpleContentBlock extends ContentBlock {
     this._templates = config.templates;
   }
 
-  
+
 
 
 
@@ -74885,7 +74988,7 @@ class SimpleContentBlock extends ContentBlock {
     return this._dataExtractor(context);
   }
 
-  
+
 
 
 
@@ -74894,7 +74997,7 @@ class SimpleContentBlock extends ContentBlock {
     return this._emptyChecker(data);
   }
 
-  
+
 
 
 
@@ -74922,7 +75025,7 @@ class SimpleContentBlock extends ContentBlock {
 
 
 class CompositionResult {
-  
+
 
 
 
@@ -74964,77 +75067,77 @@ class CompositionResult {
       throw new Error('CompositionResult content is required');
     }
 
-    
+
 
 
 
 
     this.recipeId = recipeId;
 
-    
+
 
 
 
 
     this.outputFormat = outputFormat;
 
-    
+
 
 
 
 
     this.format = outputFormat;
 
-    
+
 
 
 
 
     this.content = content;
 
-    
+
 
 
 
 
     this.blocks = Object.freeze([...blocks]);
 
-    
+
 
 
 
 
     this.visibleBlocks = blocks.filter(b => b.isVisible).length;
 
-    
+
 
 
 
 
     this.totalBlocks = blocks.length;
 
-    
+
 
 
 
 
     this.isEmpty = this.visibleBlocks === 0;
 
-    
+
 
 
 
 
     this.processingTime = processingTime;
 
-    
+
 
 
 
 
     this.errors = Object.freeze([...errors]);
 
-    
+
 
 
 
@@ -75043,7 +75146,7 @@ class CompositionResult {
     Object.freeze(this);
   }
 
-  
+
 
 
 
@@ -75051,7 +75154,7 @@ class CompositionResult {
     return this.errors.length === 0 && !this.blocks.some(b => b.isError && b.isError());
   }
 
-  
+
 
 
 
@@ -75060,7 +75163,7 @@ class CompositionResult {
     return this.getBlockById(instanceId);
   }
 
-  
+
 
 
 
@@ -75068,7 +75171,7 @@ class CompositionResult {
     return this.blocks.filter(b => b.isVisible);
   }
 
-  
+
 
 
 
@@ -75076,7 +75179,7 @@ class CompositionResult {
     return this.blocks.filter(b => !b.isVisible);
   }
 
-  
+
 
 
 
@@ -75084,7 +75187,7 @@ class CompositionResult {
     return this.blocks.filter(b => b.isError());
   }
 
-  
+
 
 
 
@@ -75092,7 +75195,7 @@ class CompositionResult {
     return this.errors.length > 0 || this.blocks.some(b => b.isError && b.isError());
   }
 
-  
+
 
 
 
@@ -75101,7 +75204,7 @@ class CompositionResult {
     return this.blocks.find(b => b.instanceId === instanceId) || null;
   }
 
-  
+
 
 
 
@@ -75110,7 +75213,7 @@ class CompositionResult {
     return this.blocks.filter(b => b.blockType === blockType);
   }
 
-  
+
 
 
 
@@ -75118,7 +75221,7 @@ class CompositionResult {
     return this.content.length;
   }
 
-  
+
 
 
 
@@ -75130,7 +75233,7 @@ class CompositionResult {
     return totalBlockTime / this.totalBlocks;
   }
 
-  
+
 
 
 
@@ -75150,7 +75253,7 @@ class CompositionResult {
     };
   }
 
-  
+
 
 
 
@@ -75170,7 +75273,7 @@ class CompositionResult {
     });
   }
 
-  
+
 
 
 
@@ -75194,14 +75297,14 @@ class CompositionResult {
 
 
 class ComposableContentError extends BaseError {
-  
+
 
 
 
 
   constructor(message, details = {}) {
     super(message, details);
-    
+
     this.name = 'ComposableContentError';
     this.details = details;
   }
@@ -75213,7 +75316,7 @@ class ComposableContentError extends BaseError {
 
 
 class BlockNotFoundError extends ComposableContentError {
-  
+
 
 
 
@@ -75232,7 +75335,7 @@ class BlockNotFoundError extends ComposableContentError {
 
 
 class RenderingError extends ComposableContentError {
-  
+
 
 
 
@@ -75258,7 +75361,7 @@ class RenderingError extends ComposableContentError {
 
 
 class CompositionError extends ComposableContentError {
-  
+
 
 
 
@@ -75281,7 +75384,7 @@ class CompositionError extends ComposableContentError {
 
 
 class ComposableContentError_RecipeValidationError extends ComposableContentError {
-  
+
 
 
 
@@ -75304,7 +75407,7 @@ class ComposableContentError_RecipeValidationError extends ComposableContentErro
 
 
 class RendererNotFoundError extends ComposableContentError {
-  
+
 
 
 
@@ -75323,7 +75426,7 @@ class RendererNotFoundError extends ComposableContentError {
 
 
 class TemplateNotFoundError extends ComposableContentError {
-  
+
 
 
 
@@ -75342,7 +75445,7 @@ class TemplateNotFoundError extends ComposableContentError {
 
 
 class DataRequirementError extends ComposableContentError {
-  
+
 
 
 
@@ -75395,7 +75498,7 @@ class DataRequirementError extends ComposableContentError {
 
 
 class CompositionRecipe {
-  
+
 
 
 
@@ -75421,7 +75524,7 @@ class CompositionRecipe {
       metadata = {}
     } = definition;
 
-    
+
     const errors = [];
     if (!id || typeof id !== 'string') {
       errors.push('Recipe id is required');
@@ -75436,7 +75539,7 @@ class CompositionRecipe {
       errors.push('Blocks must be an array');
     }
 
-    
+
     const instanceIds = new Set();
     if (Array.isArray(blocks)) {
       blocks.forEach((block, index) => {
@@ -75456,35 +75559,35 @@ class CompositionRecipe {
       throw new ComposableContentError_RecipeValidationError(`Invalid recipe: ${errors.join(', ')}`, id || 'unknown', errors);
     }
 
-    
+
 
 
 
 
     this.id = id;
 
-    
+
 
 
 
 
     this.name = name;
 
-    
+
 
 
 
 
     this.description = description;
 
-    
+
 
 
 
 
     this.outputFormat = outputFormat;
 
-    
+
 
 
 
@@ -75497,14 +75600,14 @@ class CompositionRecipe {
       config: Object.freeze(cloneDeep_cloneDeep(block.config || {}))
     })));
 
-    
+
 
 
 
 
     this.separator = separator;
 
-    
+
 
 
 
@@ -75513,7 +75616,7 @@ class CompositionRecipe {
     Object.freeze(this);
   }
 
-  
+
 
 
 
@@ -75521,7 +75624,7 @@ class CompositionRecipe {
     return [...this.blocks].sort((a, b) => a.order - b.order);
   }
 
-  
+
 
 
 
@@ -75530,7 +75633,7 @@ class CompositionRecipe {
     return this.blocks.find(b => b.instanceId === instanceId) || null;
   }
 
-  
+
 
 
 
@@ -75539,7 +75642,7 @@ class CompositionRecipe {
     return this.blocks.filter(b => b.blockType === blockType);
   }
 
-  
+
 
 
 
@@ -75547,7 +75650,7 @@ class CompositionRecipe {
     return [...new Set(this.blocks.map(b => b.blockType))];
   }
 
-  
+
 
 
 
@@ -75555,7 +75658,7 @@ class CompositionRecipe {
     return this.blocks.length;
   }
 
-  
+
 
 
 
@@ -75564,7 +75667,7 @@ class CompositionRecipe {
     return this.blocks.some(b => b.blockType === blockType);
   }
 
-  
+
 
 
 
@@ -75587,7 +75690,7 @@ class CompositionRecipe {
     };
   }
 
-  
+
 
 
 
@@ -75600,7 +75703,7 @@ class CompositionRecipe {
     return new CompositionRecipe(obj);
   }
 
-  
+
 
 
 
@@ -75624,12 +75727,12 @@ class CompositionRecipe {
 
 
 class VisibilityEvaluator {
-  
+
 
 
 
   constructor(expressionEngine = null) {
-    
+
 
 
 
@@ -75637,7 +75740,7 @@ class VisibilityEvaluator {
     this._expressionEngine = expressionEngine;
   }
 
-  
+
 
 
 
@@ -75645,15 +75748,15 @@ class VisibilityEvaluator {
 
 
   isVisible(visibility, context) {
-    
+
     if (visibility == null) {
       return true;
     }
 
-    
+
     const condition = String(visibility).trim().toLowerCase();
 
-    
+
     if (condition === '' || condition === 'always' || condition === 'true') {
       return true;
     }
@@ -75661,16 +75764,16 @@ class VisibilityEvaluator {
       return false;
     }
 
-    
+
     if (this._expressionEngine) {
       return this._evaluateExpression(visibility, context);
     }
 
-    
+
     return this._evaluateSimpleCondition(visibility, context);
   }
 
-  
+
 
 
 
@@ -75683,12 +75786,12 @@ class VisibilityEvaluator {
       const result = this._expressionEngine.evaluate(expression, contextData);
       return Boolean(result);
     } catch (_error) {
-      
+
       return false;
     }
   }
 
-  
+
 
 
 
@@ -75698,19 +75801,19 @@ class VisibilityEvaluator {
   _evaluateSimpleCondition(condition, context) {
     const trimmed = condition.trim();
 
-    
+
     const isNegated = trimmed.startsWith('!');
     const path = isNegated ? trimmed.slice(1).trim() : trimmed;
 
-    
+
     const value = context.get ? context.get(path) : this._getByPath(context, path);
 
-    
+
     const isTruthy = this._isTruthy(value);
     return isNegated ? !isTruthy : isTruthy;
   }
 
-  
+
 
 
 
@@ -75729,7 +75832,7 @@ class VisibilityEvaluator {
     return current;
   }
 
-  
+
 
 
 
@@ -75758,7 +75861,7 @@ class VisibilityEvaluator {
     return Boolean(value);
   }
 
-  
+
 
 
 
@@ -75766,7 +75869,7 @@ class VisibilityEvaluator {
     return this._expressionEngine !== null;
   }
 
-  
+
 
 
 
@@ -75793,27 +75896,27 @@ class VisibilityEvaluator {
 
 
 class BlockDataContext {
-  
+
 
 
 
 
   constructor(data = {}, globalContext = {}) {
-    
+
 
 
 
 
     this._data = cloneDeep_cloneDeep(data);
 
-    
+
 
 
 
 
     this._globalContext = cloneDeep_cloneDeep(globalContext);
 
-    
+
 
 
 
@@ -75824,7 +75927,7 @@ class BlockDataContext {
     };
   }
 
-  
+
 
 
 
@@ -75838,7 +75941,7 @@ class BlockDataContext {
     return value !== undefined ? value : defaultValue;
   }
 
-  
+
 
 
 
@@ -75847,7 +75950,7 @@ class BlockDataContext {
     return get(this._merged, path) !== undefined;
   }
 
-  
+
 
 
 
@@ -75860,7 +75963,7 @@ class BlockDataContext {
     return result;
   }
 
-  
+
 
 
 
@@ -75868,7 +75971,7 @@ class BlockDataContext {
     return cloneDeep_cloneDeep(this._merged);
   }
 
-  
+
 
 
 
@@ -75876,7 +75979,7 @@ class BlockDataContext {
     return cloneDeep_cloneDeep(this._data);
   }
 
-  
+
 
 
 
@@ -75884,7 +75987,7 @@ class BlockDataContext {
     return cloneDeep_cloneDeep(this._globalContext);
   }
 
-  
+
 
 
 
@@ -75897,7 +76000,7 @@ class BlockDataContext {
     };
   }
 
-  
+
 
 
 
@@ -75911,7 +76014,7 @@ class BlockDataContext {
     }
   }
 
-  
+
 
 
 
@@ -75923,7 +76026,7 @@ class BlockDataContext {
     }, this._globalContext);
   }
 
-  
+
 
 
 
@@ -75935,7 +76038,7 @@ class BlockDataContext {
     });
   }
 
-  
+
 
 
 
@@ -75948,7 +76051,7 @@ class BlockDataContext {
     }, this._globalContext);
   }
 
-  
+
 
 
 
@@ -75956,7 +76059,7 @@ class BlockDataContext {
     return Object.keys(this._merged).length === 0;
   }
 
-  
+
 
 
 
@@ -75964,7 +76067,7 @@ class BlockDataContext {
     return Object.keys(this._merged);
   }
 
-  
+
 
 
 
@@ -75973,7 +76076,7 @@ class BlockDataContext {
     return requiredKeys.every(key => this.has(key));
   }
 
-  
+
 
 
 
@@ -75982,7 +76085,7 @@ class BlockDataContext {
     return requiredKeys.filter(key => !this.has(key));
   }
 
-  
+
 
 
 
@@ -75993,7 +76096,7 @@ class BlockDataContext {
     };
   }
 
-  
+
 
 
 
@@ -76006,7 +76109,7 @@ class BlockDataContext {
     return new BlockDataContext(obj.data || {}, obj.globalContext || {});
   }
 
-  
+
 
 
 
@@ -76037,7 +76140,7 @@ class BlockDataContext {
 
 
 class ContentComposer {
-  
+
 
 
 
@@ -76063,28 +76166,28 @@ class ContentComposer {
       throw new Error('ContentComposer requires a rendererRegistry');
     }
 
-    
+
 
 
 
 
     this._blockRegistry = blockRegistry;
 
-    
+
 
 
 
 
     this._rendererRegistry = rendererRegistry;
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
@@ -76092,7 +76195,7 @@ class ContentComposer {
     this._visibilityEvaluator = new VisibilityEvaluator(expressionEngine);
   }
 
-  
+
 
 
 
@@ -76106,20 +76209,20 @@ class ContentComposer {
     var _this$_logger$debug, _this$_logger;
     const startTime = Date.now();
 
-    
+
     const compositionRecipe = recipe instanceof CompositionRecipe ? recipe : new CompositionRecipe(recipe);
     const dataContext = context instanceof BlockDataContext ? context : new BlockDataContext(context);
     const format = options.format || compositionRecipe.outputFormat;
     const continueOnError = options.continueOnError !== false;
     (_this$_logger$debug = (_this$_logger = this._logger).debug) === null || _this$_logger$debug === void 0 || _this$_logger$debug.call(_this$_logger, `Composing '${compositionRecipe.id}' with ${compositionRecipe.getBlockCount()} blocks`);
 
-    
+
     const renderer = this._rendererRegistry.get(format);
 
-    
+
     const orderedBlocks = compositionRecipe.getOrderedBlocks();
 
-    
+
     const blockResults = [];
     const errors = [];
     for (const blockInstance of orderedBlocks) {
@@ -76148,11 +76251,11 @@ class ContentComposer {
       }
     }
 
-    
+
     const visibleResults = blockResults.filter(r => r.hasDisplayableContent());
     const content = visibleResults.map(r => r.content).join(compositionRecipe.separator);
 
-    
+
     return new CompositionResult({
       recipeId: compositionRecipe.id,
       recipeName: compositionRecipe.name,
@@ -76170,7 +76273,7 @@ class ContentComposer {
     });
   }
 
-  
+
 
 
 
@@ -76181,7 +76284,7 @@ class ContentComposer {
     return this.compose(recipe, context, options).content;
   }
 
-  
+
 
 
 
@@ -76200,27 +76303,27 @@ class ContentComposer {
       config
     } = blockInstance;
 
-    
+
     if (!this._visibilityEvaluator.isVisible(visibility, context)) {
       return BlockResult.hidden(instanceId, blockType, 'visibility_condition');
     }
 
-    
+
     if (!this._blockRegistry.has(blockType)) {
       throw new BlockNotFoundError(blockType);
     }
     const block = this._blockRegistry.createBlock(blockType, config);
 
-    
+
     if (!block.supportsFormat(format)) {
       return BlockResult.hidden(instanceId, blockType, `unsupported_format:${format}`);
     }
 
-    
+
     return block.evaluate(instanceId, context, format, renderer);
   }
 
-  
+
 
 
 
@@ -76229,14 +76332,14 @@ class ContentComposer {
     const compositionRecipe = recipe instanceof CompositionRecipe ? recipe : new CompositionRecipe(recipe);
     const errors = [];
 
-    
+
     for (const blockType of compositionRecipe.getUsedBlockTypes()) {
       if (!this._blockRegistry.has(blockType)) {
         errors.push(`Unknown block type: ${blockType}`);
       }
     }
 
-    
+
     if (!this._rendererRegistry.hasRenderer(compositionRecipe.outputFormat)) {
       errors.push(`No renderer for format: ${compositionRecipe.outputFormat}`);
     }
@@ -76246,7 +76349,7 @@ class ContentComposer {
     };
   }
 
-  
+
 
 
 
@@ -76254,7 +76357,7 @@ class ContentComposer {
     return this._blockRegistry;
   }
 
-  
+
 
 
 
@@ -76262,7 +76365,7 @@ class ContentComposer {
     return this._rendererRegistry;
   }
 
-  
+
 
 
 
@@ -76286,27 +76389,27 @@ class ContentComposer {
 
 
 class BlockRegistry {
-  
+
 
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
 
     this._logger = options.logger || console;
 
-    
+
 
 
 
 
     this._definitions = new Map();
 
-    
+
 
 
 
@@ -76314,7 +76417,7 @@ class BlockRegistry {
     this._factories = new Map();
   }
 
-  
+
 
 
 
@@ -76338,7 +76441,7 @@ class BlockRegistry {
       throw new Error('Factory function is required');
     }
 
-    
+
     const blockDef = definition instanceof BlockDefinition ? definition : new BlockDefinition(definition);
     this._definitions.set(blockDef.id, blockDef);
     this._factories.set(blockDef.id, factory);
@@ -76346,7 +76449,7 @@ class BlockRegistry {
     return blockDef;
   }
 
-  
+
 
 
 
@@ -76362,7 +76465,7 @@ class BlockRegistry {
     return existed;
   }
 
-  
+
 
 
 
@@ -76376,7 +76479,7 @@ class BlockRegistry {
     return definition;
   }
 
-  
+
 
 
 
@@ -76385,7 +76488,7 @@ class BlockRegistry {
     return this._definitions.get(blockType) || null;
   }
 
-  
+
 
 
 
@@ -76398,7 +76501,7 @@ class BlockRegistry {
     return factory(definition, config);
   }
 
-  
+
 
 
 
@@ -76407,7 +76510,7 @@ class BlockRegistry {
     return this._definitions.has(blockType);
   }
 
-  
+
 
 
 
@@ -76415,7 +76518,7 @@ class BlockRegistry {
     return Array.from(this._definitions.keys());
   }
 
-  
+
 
 
 
@@ -76423,7 +76526,7 @@ class BlockRegistry {
     return Array.from(this._definitions.values());
   }
 
-  
+
 
 
 
@@ -76431,7 +76534,7 @@ class BlockRegistry {
     return this._definitions.size;
   }
 
-  
+
 
 
   clear() {
@@ -76441,7 +76544,7 @@ class BlockRegistry {
     (_this$_logger$debug3 = (_this$_logger3 = this._logger).debug) === null || _this$_logger$debug3 === void 0 || _this$_logger$debug3.call(_this$_logger3, 'BlockRegistry: Cleared all registrations');
   }
 
-  
+
 
 
 
@@ -76450,7 +76553,7 @@ class BlockRegistry {
     return this.getAllDefinitions().filter(def => def.supportsFormat(format));
   }
 
-  
+
 
 
 
@@ -76474,21 +76577,21 @@ class BlockRegistry {
 
 
 class BlockRenderer {
-  
+
 
 
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
 
     this._logger = options.logger || console;
 
-    
+
 
 
 
@@ -76496,7 +76599,7 @@ class BlockRenderer {
     this._templates = new Map(Object.entries(options.templates || {}));
   }
 
-  
+
 
 
 
@@ -76506,7 +76609,7 @@ class BlockRenderer {
     throw new Error('BlockRenderer.getFormat() must be implemented');
   }
 
-  
+
 
 
 
@@ -76530,7 +76633,7 @@ class BlockRenderer {
         content = this._processTemplate(template, data);
       }
 
-      
+
       if (options.containerType && options.containerType !== ContainerType.NONE) {
         content = this._wrapInContainer(content, options.containerType, options);
       }
@@ -76540,7 +76643,7 @@ class BlockRenderer {
     }
   }
 
-  
+
 
 
 
@@ -76548,14 +76651,14 @@ class BlockRenderer {
 
 
   _processTemplate(template, data) {
-    
+
     return template.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (match, path) => {
       const value = this._getValueByPath(data, path);
       return value !== undefined && value !== null ? String(value) : '';
     });
   }
 
-  
+
 
 
 
@@ -76568,7 +76671,7 @@ class BlockRenderer {
     }, obj);
   }
 
-  
+
 
 
 
@@ -76580,7 +76683,7 @@ class BlockRenderer {
     return content;
   }
 
-  
+
 
 
 
@@ -76591,7 +76694,7 @@ class BlockRenderer {
     return this;
   }
 
-  
+
 
 
 
@@ -76603,7 +76706,7 @@ class BlockRenderer {
     return this;
   }
 
-  
+
 
 
 
@@ -76612,7 +76715,7 @@ class BlockRenderer {
     return this._templates.has(templateId);
   }
 
-  
+
 
 
 
@@ -76620,7 +76723,7 @@ class BlockRenderer {
     return this._templates.size;
   }
 
-  
+
 
 
 
@@ -76635,7 +76738,7 @@ class BlockRenderer {
 
 
 class HtmlRenderer extends BlockRenderer {
-  
+
 
 
 
@@ -76643,7 +76746,7 @@ class HtmlRenderer extends BlockRenderer {
     return 'html';
   }
 
-  
+
 
 
 
@@ -76672,7 +76775,7 @@ class HtmlRenderer extends BlockRenderer {
 
 
 class MarkdownRenderer extends BlockRenderer {
-  
+
 
 
 
@@ -76680,7 +76783,7 @@ class MarkdownRenderer extends BlockRenderer {
     return 'markdown';
   }
 
-  
+
 
 
 
@@ -76708,7 +76811,7 @@ class MarkdownRenderer extends BlockRenderer {
 
 
 class PlainTextRenderer extends BlockRenderer {
-  
+
 
 
 
@@ -76716,7 +76819,7 @@ class PlainTextRenderer extends BlockRenderer {
     return 'text';
   }
 
-  
+
 
 
 
@@ -76752,21 +76855,21 @@ class PlainTextRenderer extends BlockRenderer {
 
 
 class RendererRegistry {
-  
+
 
 
 
 
 
   constructor(options = {}) {
-    
+
 
 
 
 
     this._logger = options.logger || console;
 
-    
+
 
 
 
@@ -76775,13 +76878,13 @@ class RendererRegistry {
       entityName: 'renderer'
     });
 
-    
+
     if (options.registerDefaults !== false) {
       this._registerDefaults();
     }
   }
 
-  
+
 
 
 
@@ -76797,7 +76900,7 @@ class RendererRegistry {
     }));
   }
 
-  
+
 
 
 
@@ -76814,7 +76917,7 @@ class RendererRegistry {
     return this;
   }
 
-  
+
 
 
 
@@ -76825,7 +76928,7 @@ class RendererRegistry {
     return existed;
   }
 
-  
+
 
 
 
@@ -76839,7 +76942,7 @@ class RendererRegistry {
     return renderer;
   }
 
-  
+
 
 
 
@@ -76848,7 +76951,7 @@ class RendererRegistry {
     return this._renderers.get(format) || null;
   }
 
-  
+
 
 
 
@@ -76857,7 +76960,7 @@ class RendererRegistry {
     return this._renderers.has(format);
   }
 
-  
+
 
 
 
@@ -76865,7 +76968,7 @@ class RendererRegistry {
     return Array.from(this._renderers.keys());
   }
 
-  
+
 
 
 
@@ -76873,7 +76976,7 @@ class RendererRegistry {
     return Array.from(this._renderers.values());
   }
 
-  
+
 
 
 
@@ -76881,14 +76984,14 @@ class RendererRegistry {
     return this._renderers.size;
   }
 
-  
+
 
 
   clear() {
     this._renderers.clear();
   }
 
-  
+
 
 
 
@@ -77043,7 +77146,7 @@ const StepState = {
 
 
 class ProcessMonitorService {
-  
+
 
 
 
@@ -77052,7 +77155,7 @@ class ProcessMonitorService {
     return 'PROCESS_MONITOR_';
   }
 
-  
+
 
 
 
@@ -77061,7 +77164,7 @@ class ProcessMonitorService {
     return 'PM_';
   }
 
-  
+
 
 
 
@@ -77070,7 +77173,7 @@ class ProcessMonitorService {
     return 6 * 60 * 60;
   }
 
-  
+
 
 
 
@@ -77078,7 +77181,7 @@ class ProcessMonitorService {
 
 
   constructor(logger, cacheService, propertiesService) {
-    
+
     if (!logger || typeof logger !== 'object') {
       throw new Error('ProcessMonitorService: logger is required and must be an object');
     }
@@ -77092,28 +77195,28 @@ class ProcessMonitorService {
       throw new Error('ProcessMonitorService: propertiesService is required and must be an object');
     }
 
-    
+
 
 
 
 
     this._logger = logger;
 
-    
+
 
 
 
 
     this._cacheService = cacheService;
 
-    
+
 
 
 
 
     this._propertiesService = propertiesService;
 
-    
+
 
 
 
@@ -77122,7 +77225,7 @@ class ProcessMonitorService {
     this._logger.debug('[ProcessMonitorService] Instance created');
   }
 
-  
+
 
 
 
@@ -77134,7 +77237,7 @@ class ProcessMonitorService {
     return this._cache;
   }
 
-  
+
 
 
 
@@ -77144,7 +77247,7 @@ class ProcessMonitorService {
     return `${ProcessMonitorService.CACHE_PREFIX}${jobId}`;
   }
 
-  
+
 
 
 
@@ -77154,7 +77257,7 @@ class ProcessMonitorService {
     return `${ProcessMonitorService.PROPS_PREFIX}${jobId}`;
   }
 
-  
+
 
 
 
@@ -77164,7 +77267,7 @@ class ProcessMonitorService {
   _writeState(jobId, state, persistToProps = false) {
     const stateJson = JSON.stringify(state);
 
-    
+
     try {
       const cache = this._getCache();
       cache.put(this._getCacheKey(jobId), stateJson, ProcessMonitorService.CACHE_EXPIRATION);
@@ -77173,7 +77276,7 @@ class ProcessMonitorService {
       this._logger.warn(`[ProcessMonitorService] Failed to write to cache: ${error.message}`);
     }
 
-    
+
     if (persistToProps) {
       try {
         this._propertiesService.setProperty(this._getPropsKey(jobId), stateJson);
@@ -77184,14 +77287,14 @@ class ProcessMonitorService {
     }
   }
 
-  
+
 
 
 
 
 
   _readState(jobId) {
-    
+
     try {
       const cache = this._getCache();
       const cached = cache.get(this._getCacheKey(jobId));
@@ -77203,13 +77306,13 @@ class ProcessMonitorService {
       this._logger.warn(`[ProcessMonitorService] Cache read failed: ${error.message}`);
     }
 
-    
+
     try {
       const stored = this._propertiesService.getProperty(this._getPropsKey(jobId));
       if (stored) {
         this._logger.debug(`[ProcessMonitorService] State read from properties for job ${jobId}`);
         const state = JSON.parse(stored);
-        
+
         this._writeState(jobId, state, false);
         return state;
       }
@@ -77219,7 +77322,7 @@ class ProcessMonitorService {
     return null;
   }
 
-  
+
 
 
 
@@ -77238,11 +77341,11 @@ class ProcessMonitorService {
     };
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -77256,13 +77359,13 @@ class ProcessMonitorService {
     state.status = ProcessState.PENDING;
     state.startTime = Date.now();
 
-    
+
     this._writeState(jobId, state, true);
     this._logger.info(`[ProcessMonitorService] Job registered: ${jobId}`);
     return this;
   }
 
-  
+
 
 
 
@@ -77272,13 +77375,13 @@ class ProcessMonitorService {
     state.status = ProcessState.RUNNING;
     state.startTime = state.startTime || Date.now();
 
-    
+
     this._writeState(jobId, state, true);
     this._logger.info(`[ProcessMonitorService] Job started: ${jobId}`);
     return this;
   }
 
-  
+
 
 
 
@@ -77295,17 +77398,17 @@ class ProcessMonitorService {
     state.message = message;
     state.endTime = Date.now();
 
-    
+
     this._writeState(jobId, state, true);
     this._logger.info(`[ProcessMonitorService] Job completed: ${jobId}`);
     return this;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -77330,17 +77433,17 @@ class ProcessMonitorService {
       state.status = ProcessState.RUNNING;
     }
 
-    
+
     this._writeState(jobId, state, false);
     this._logger.debug(`[ProcessMonitorService] Progress updated: ${jobId} - ${state.percentage}%`);
     return this;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -77357,7 +77460,7 @@ class ProcessMonitorService {
       return this;
     }
 
-    
+
     let step = state.steps.find(s => s.name === stepName);
     if (!step) {
       step = {
@@ -77372,13 +77475,13 @@ class ProcessMonitorService {
     step.startTime = Date.now();
     step.endTime = null;
 
-    
+
     this._writeState(jobId, state, false);
     this._logger.debug(`[ProcessMonitorService] Step started: ${jobId} - ${stepName}`);
     return this;
   }
 
-  
+
 
 
 
@@ -77399,13 +77502,13 @@ class ProcessMonitorService {
     step.status = success ? StepState.COMPLETED : StepState.FAILED;
     step.endTime = Date.now();
 
-    
+
     this._writeState(jobId, state, false);
     this._logger.debug(`[ProcessMonitorService] Step ${success ? 'completed' : 'failed'}: ${jobId} - ${stepName}`);
     return this;
   }
 
-  
+
 
 
 
@@ -77432,11 +77535,11 @@ class ProcessMonitorService {
     return this;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -77453,17 +77556,17 @@ class ProcessMonitorService {
     state.error = errorMessage;
     state.endTime = Date.now();
 
-    
+
     this._writeState(jobId, state, true);
     this._logger.error(`[ProcessMonitorService] Job failed: ${jobId} - ${errorMessage}`);
     return this;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -77472,7 +77575,7 @@ class ProcessMonitorService {
     return this._readState(jobId);
   }
 
-  
+
 
 
 
@@ -77481,7 +77584,7 @@ class ProcessMonitorService {
     return this._readState(jobId) !== null;
   }
 
-  
+
 
 
 
@@ -77502,11 +77605,11 @@ class ProcessMonitorService {
     return this;
   }
 
-  
-  
-  
 
-  
+
+
+
+
 
 
 
@@ -77530,7 +77633,7 @@ class ProcessMonitorService {
 
 
 class DashboardUi {
-  
+
 
 
 
@@ -77539,7 +77642,7 @@ class DashboardUi {
     return 1500;
   }
 
-  
+
 
 
 
@@ -77548,7 +77651,7 @@ class DashboardUi {
     return 300;
   }
 
-  
+
 
 
 
@@ -77562,14 +77665,14 @@ class DashboardUi {
       throw new Error('DashboardUi: logger is required and must be an object');
     }
 
-    
+
 
 
 
 
     this._uiService = uiService;
 
-    
+
 
 
 
@@ -77578,7 +77681,7 @@ class DashboardUi {
     this._logger.debug('[DashboardUi] Instance created');
   }
 
-  
+
 
 
 
@@ -77599,7 +77702,7 @@ class DashboardUi {
     return this._uiService.createSidebar().setTitle(title).setContent(html).setWidth(width);
   }
 
-  
+
 
 
 
@@ -77659,7 +77762,7 @@ class DashboardUi {
 </html>`;
   }
 
-  
+
 
 
 
@@ -77687,7 +77790,7 @@ class DashboardUi {
       gap: 16px;
     }
 
-    
+
     .status-container {
       display: flex;
       justify-content: center;
@@ -77753,7 +77856,7 @@ class DashboardUi {
       50% { opacity: 0.5; }
     }
 
-    
+
     .progress-container {
       background: white;
       border-radius: 8px;
@@ -77797,7 +77900,7 @@ class DashboardUi {
       min-height: 16px;
     }
 
-    
+
     .steps-container {
       background: white;
       border-radius: 8px;
@@ -77851,7 +77954,7 @@ class DashboardUi {
       color: #5f6368;
     }
 
-    
+
     .error-container {
       background: #fce8e6;
       border-radius: 8px;
@@ -77875,7 +77978,7 @@ class DashboardUi {
       word-break: break-word;
     }
 
-    
+
     .timing-container {
       text-align: center;
       color: #5f6368;
@@ -77888,7 +77991,7 @@ class DashboardUi {
   </style>`;
   }
 
-  
+
 
 
 
@@ -77907,7 +78010,7 @@ class DashboardUi {
       let pollingTimer = null;
       let startTime = null;
 
-      
+
 
 
       function formatDuration(ms) {
@@ -77921,7 +78024,7 @@ class DashboardUi {
         return seconds + 's';
       }
 
-      
+
 
 
       function capitalize(str) {
@@ -77929,7 +78032,7 @@ class DashboardUi {
         return str.charAt(0).toUpperCase() + str.slice(1);
       }
 
-      
+
 
 
       function updateUI(state) {
@@ -77938,18 +78041,18 @@ class DashboardUi {
           return;
         }
 
-        
+
         if (!startTime && state.startTime) {
           startTime = state.startTime;
         }
 
-        
+
         const statusBadge = document.getElementById('status-badge');
         const statusText = document.getElementById('status-text');
         statusBadge.className = 'status-badge status-' + state.status;
         statusText.textContent = capitalize(state.status);
 
-        
+
         const percentage = state.percentage || 0;
         document.getElementById('percentage').textContent = percentage + '%';
         const progressFill = document.getElementById('progress-fill');
@@ -77958,10 +78061,10 @@ class DashboardUi {
           (state.status === 'completed' ? ' completed' : '') +
           (state.status === 'failed' ? ' failed' : '');
 
-        
+
         document.getElementById('message').textContent = state.message || '';
 
-        
+
         const stepsList = document.getElementById('steps-list');
         if (state.steps && state.steps.length > 0) {
           stepsList.innerHTML = state.steps.map(function(step) {
@@ -77976,7 +78079,7 @@ class DashboardUi {
           }).join('');
         }
 
-        
+
         const errorContainer = document.getElementById('error-container');
         if (state.error) {
           errorContainer.classList.remove('hidden');
@@ -77985,19 +78088,19 @@ class DashboardUi {
           errorContainer.classList.add('hidden');
         }
 
-        
+
         if (startTime) {
           const elapsed = (state.endTime || Date.now()) - startTime;
           document.getElementById('elapsed-time').textContent = 'Elapsed: ' + formatDuration(elapsed);
         }
 
-        
+
         if (state.status === 'completed' || state.status === 'failed') {
           stopPolling();
         }
       }
 
-      
+
 
 
       function escapeHtml(text) {
@@ -78006,7 +78109,7 @@ class DashboardUi {
         return div.innerHTML;
       }
 
-      
+
 
 
       function fetchState() {
@@ -78018,7 +78121,7 @@ class DashboardUi {
           .getMonitorState(JOB_ID);
       }
 
-      
+
 
 
       function startPolling() {
@@ -78027,7 +78130,7 @@ class DashboardUi {
         pollingTimer = setInterval(fetchState, POLLING_INTERVAL);
       }
 
-      
+
 
 
       function stopPolling() {
@@ -78037,16 +78140,16 @@ class DashboardUi {
         }
       }
 
-      
+
       startPolling();
 
-      
+
       window.addEventListener('beforeunload', stopPolling);
     })();
   </script>`;
   }
 
-  
+
 
 
 
@@ -78229,10 +78332,10 @@ Object.assign(__webpack_require__.g, RoleResolutionLib_namespaceObject);
 Object.assign(__webpack_require__.g, ComposableContentLib_namespaceObject);
 Object.assign(__webpack_require__.g, GasProcessMonitorLib_namespaceObject);
 function initializeServices() {
-  
-  
-  
-  
+
+
+
+
   const factory = ServiceFactory;
   return {
     exceptionService: factory.getExceptionService(),

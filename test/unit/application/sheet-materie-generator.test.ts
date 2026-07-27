@@ -48,6 +48,18 @@ class FakeSpreadsheetService {
   }
 }
 
+class RecordingRisolutoreRuoliService extends RisolutoreRuoliService {
+  readonly subjectCduVariants: Cdu[] = [];
+
+  override risolvi(
+    ...args: Parameters<RisolutoreRuoliService['risolvi']>
+  ): ReturnType<RisolutoreRuoliService['risolvi']> {
+    const [ruolo, cdu] = args;
+    if (ruolo === 'DOCENTE_MATERIA') this.subjectCduVariants.push(cdu);
+    return super.risolvi(...args);
+  }
+}
+
 function sheetInfo(name = 'Sheet1', rowCount = 20, columnCount = 10): SpreadsheetSheetInfo[] {
   return [{ name, sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount, columnCount } }];
 }
@@ -86,7 +98,7 @@ function buildCdu(db: FakeDatabase, classeId: string): Cdu {
     date
   );
   const isArticolata = classi.isArticolata(classe);
-  return {
+  const cdu = {
     meta: {
       timestamp: '',
       idConfigurazione: 'CD_MAT',
@@ -127,13 +139,19 @@ function buildCdu(db: FakeDatabase, classeId: string): Cdu {
         },
         consiglioDiClasse
       }
-    },
-    tech: {
+    }
+  } as unknown as Cdu;
+  Object.defineProperty(cdu, 'tech', {
+    value: {
       entita: { classe },
       servizi: [],
       pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
-    }
-  } as unknown as Cdu;
+    },
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
+  return cdu;
 }
 
 describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
@@ -269,20 +287,38 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
+    const roles = new RecordingRisolutoreRuoliService(db);
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
       new MateriaRepository(db),
       new FakeTemplateEngine(),
-      new RisolutoreRuoliService(db)
+      roles
     );
 
-    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+    expect(Object.keys(cdu)).not.toContain('tech');
+    expect(() =>
+      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
+    ).not.toThrow();
 
     // Columns are alphabetical: A=Fisica (bianchi), B=Matematica (bianchi, post-variazione); COORD=rossi on both.
     const colA = sheets.protectCalls.find((r) => r.range === 'Sheet1!A:A');
     const colB = sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B');
     expect(colA?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
     expect(colB?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    expect(roles.subjectCduVariants.map((variant) => variant.meta.parametriInput.materiaCorrente)).toEqual([
+      'FISI',
+      'MATE'
+    ]);
+    for (const variant of roles.subjectCduVariants) {
+      expect(Object.getOwnPropertyDescriptor(variant, 'tech')).toMatchObject({
+        enumerable: false,
+        writable: true,
+        configurable: true,
+        value: cdu.tech
+      });
+      expect(JSON.stringify(variant)).not.toContain('tech');
+    }
+    expect(cdu.meta.parametriInput.materiaCorrente).toBeNull();
   });
 
   test('a class with no CDC subjects protects nothing (no protectRanges call)', () => {

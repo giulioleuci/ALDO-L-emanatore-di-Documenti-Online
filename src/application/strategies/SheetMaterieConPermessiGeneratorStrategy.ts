@@ -96,6 +96,12 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
       ...cdu,
       meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: sigla } }
     };
+    Object.defineProperty(variant, 'tech', {
+      value: cdu.tech,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    });
     return this.roles
       .risolvi('DOCENTE_MATERIA', variant, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
       .map((e) => e.value);

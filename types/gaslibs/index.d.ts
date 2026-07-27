@@ -908,7 +908,10 @@ declare global {
       }
     ): SpreadsheetProtectResult;
     /** Real read-back of protected ranges (Advanced Sheets API `spreadsheets.get`, fields-scoped). Optional `sheetName` filters to a single tab. */
-    getProtectedRanges(spreadsheetId: string, sheetName?: string | null): SpreadsheetProtectedRange[];
+    getProtectedRanges(
+      spreadsheetId: string,
+      sheetName?: string | null
+    ): SpreadsheetProtectedRange[];
   }
   interface DocumentStructureElement {
     index: number;
@@ -939,11 +942,15 @@ declare global {
     heading?: 1 | 2 | 3 | 4 | 5 | 6;
     alignment?: 'center' | 'right' | 'justify' | 'left';
   }
+  interface DocumentListItemOptions {
+    listType?: 'bullet' | 'number';
+  }
   class DocumentBuilder {
     replaceText(searchPattern: string, replacement: string): DocumentBuilder;
     createTable(data: string[][], options?: DocumentCreateTableOptions): DocumentBuilder;
     /** Queues a paragraph append (real op type verified against GoogleApiWrapper/src/services/DocumentBuilder.js). */
     appendParagraph(text: string, options?: DocumentParagraphOptions): DocumentBuilder;
+    appendListItem(text: string, options?: DocumentListItemOptions): DocumentBuilder;
     /** Queues a full body content override (deletes existing body text first). */
     setText(text: string): DocumentBuilder;
     execute(): DocumentBuilderExecuteResult;

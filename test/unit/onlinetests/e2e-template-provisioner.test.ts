@@ -1,5 +1,6 @@
 import {
   E2eTemplateProvisioner,
+  type E2eDocumentParagraphInput,
   type E2eDocumentTable,
   type IArtifactFactory,
   type SheetValueUpdate
@@ -10,12 +11,12 @@ import { TIPI_PIANO } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 function fakeArtifacts(): {
   artifacts: IArtifactFactory;
   created: string[];
-  docContent: Record<string, string[]>;
+  docContent: Record<string, E2eDocumentParagraphInput[]>;
   docTables: Record<string, E2eDocumentTable[]>;
   sheetContent: Record<string, SheetValueUpdate[]>;
 } {
   const created: string[] = [];
-  const docContent: Record<string, string[]> = {};
+  const docContent: Record<string, E2eDocumentParagraphInput[]> = {};
   const docTables: Record<string, E2eDocumentTable[]> = {};
   const sheetContent: Record<string, SheetValueUpdate[]> = {};
   let seq = 0;
@@ -28,7 +29,7 @@ function fakeArtifacts(): {
       createDocument: (
         name: string,
         _folderId: string,
-        paragraphs: string[] = [],
+        paragraphs: E2eDocumentParagraphInput[] = [],
         tables: E2eDocumentTable[] = []
       ) => {
         created.push(`doc:${name}`);
@@ -47,6 +48,12 @@ function fakeArtifacts(): {
   };
 }
 
+function documentText(paragraphs: E2eDocumentParagraphInput[]): string {
+  return paragraphs
+    .map((paragraph) => (typeof paragraph === 'string' ? paragraph : paragraph.text))
+    .join('\n');
+}
+
 test('creates all 12 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 1 doc complesso + 1 sheet permessi + 1 doc piano lavoro + 5 doc piani) when none exist yet', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
@@ -58,7 +65,8 @@ test('creates all 12 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilo
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
-  expect(created).toContain('doc:E2E Riepilogo Template v3');
+  expect(created).toContain('doc:E2E Riepilogo Template v4');
+  expect(created).toContain('doc:E2E Doc Complesso Template v2');
   for (const tipo of TIPI_PIANO) {
     expect(ids.piani[tipo]).toMatch(/^doc_/);
   }
@@ -83,8 +91,8 @@ test('authors real CDU-path placeholder content into newly-created templates, no
 
   const verbaleParagraphs = docContent[ids.verbale] ?? [];
   expect(verbaleParagraphs.length).toBeGreaterThan(0);
-  expect(verbaleParagraphs.join('\n')).toContain('{{focus.classe.anagrafica.nome}}');
-  expect(verbaleParagraphs.join('\n')).toContain('consiglioDiClasse');
+  expect(documentText(verbaleParagraphs)).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(documentText(verbaleParagraphs)).toContain('consiglioDiClasse');
 
   const condottaUpdates = sheetContent[ids.condotta] ?? [];
   expect(condottaUpdates.length).toBeGreaterThan(0);
@@ -94,7 +102,7 @@ test('authors real CDU-path placeholder content into newly-created templates, no
 
   const riepilogoParagraphs = docContent[ids.riepilogo] ?? [];
   expect(riepilogoParagraphs.length).toBeGreaterThan(0);
-  const riepilogoText = riepilogoParagraphs.join('\n');
+  const riepilogoText = documentText(riepilogoParagraphs);
   expect(riepilogoText).not.toContain('{{TABELLA_ALUNNI}}');
   expect(docTables[ids.riepilogo]).toEqual([
     {
@@ -113,11 +121,23 @@ test('authors real CDU-path placeholder content into newly-created templates, no
   expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti}}');
   expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori}}');
   expect(riepilogoText).toContain('{{focus.classe.studenti.statistiche.totale}}');
+  expect(riepilogoParagraphs).toEqual(
+    expect.arrayContaining([
+      {
+        text: '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
+        listType: 'bullet'
+      },
+      {
+        text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}',
+        listType: 'bullet'
+      }
+    ])
+  );
 
   for (const tipo of TIPI_PIANO) {
     const pianoParagraphs = docContent[ids.piani[tipo]] ?? [];
     expect(pianoParagraphs.length).toBeGreaterThan(0);
-    const pianoText = pianoParagraphs.join('\n');
+    const pianoText = documentText(pianoParagraphs);
     expect(pianoText).toContain('{{focus.alunno.anagrafica.nomeCompleto}}');
     expect(pianoText).toContain('{{piano.note}}');
     expect(pianoText).toContain(tipo);
@@ -145,13 +165,23 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  const text = (docContent[ids.docComplesso] ?? []).join('\n');
+  const text = documentText(docContent[ids.docComplesso] ?? []);
   expect(text).toContain("{{#bullet_list:focus.classe.coordinatori | sortBy:'nome'}}");
-  expect(text).toContain("{{#number_list:focus.classe.rappresentanti.studenti | where:'nomeCompleto'}}");
+  expect(text).toContain(
+    "{{#number_list:focus.classe.rappresentanti.studenti | filter:'active',true}}"
+  );
   expect(text).toContain('| uppercase');
+  expect(docContent[ids.docComplesso]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ listType: 'bullet' }),
+      expect.objectContaining({ listType: 'number' })
+    ])
+  );
   const tables = docTables[ids.docComplesso] ?? [];
   const tableText = JSON.stringify(tables);
-  expect(tableText).toContain("tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'");
+  expect(tableText).toContain(
+    "tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'"
+  );
   expect(tableText).toContain('tablecol_loop:focus.classe.consiglioDiClasse');
 });
 
@@ -163,8 +193,12 @@ test('authors the sheet-with-permessi template with the multi-group dynamic_colu
   const text = JSON.stringify(sheetContent[ids.sheetPermessi] ?? []);
   expect(text).toContain('dynamic_columns[');
   expect(text).toContain('source=materieColonne.group1,value=header');
-  expect(text).toContain('source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label');
-  expect(text).toContain('source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label');
+  expect(text).toContain(
+    'source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label'
+  );
+  expect(text).toContain(
+    'source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label'
+  );
 });
 
 test('authors the work-plan (piano di lavoro) template', () => {
@@ -172,7 +206,7 @@ test('authors the work-plan (piano di lavoro) template', () => {
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  const text = (docContent[ids.pianoLavoro] ?? []).join('\n');
+  const text = documentText(docContent[ids.pianoLavoro] ?? []);
   expect(text).toContain('{{focus.classe.anagrafica.nome}}');
   expect(text.length).toBeGreaterThan(0);
 });

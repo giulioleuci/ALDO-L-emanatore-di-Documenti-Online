@@ -1,4 +1,5 @@
 import type {
+  E2eDocumentParagraphInput,
   E2eDocumentTable,
   IArtifactFactory,
   SheetValueUpdate
@@ -21,21 +22,27 @@ export class GasArtifactFactory implements IArtifactFactory {
   createDocument(
     name: string,
     folderId: string,
-    paragraphs: string[] = [],
+    paragraphs: E2eDocumentParagraphInput[] = [],
     tables: E2eDocumentTable[] = []
   ): string {
     const { documentId, builder } = this.documents.createDocument(name, {
       destinationFolder: folderId
     });
-    for (const paragraph of paragraphs) builder.appendParagraph(paragraph);
+    for (const paragraph of paragraphs) {
+      if (typeof paragraph === 'string') {
+        builder.appendParagraph(paragraph);
+      } else if (paragraph.listType !== undefined) {
+        builder.appendListItem(paragraph.text, { listType: paragraph.listType });
+      } else {
+        builder.appendParagraph(paragraph.text);
+      }
+    }
     for (const table of tables) builder.createTable(table.data, table.options);
 
     if (paragraphs.length > 0 || tables.length > 0) {
       const result = builder.execute();
       if (!result.success) {
-        throw new DomainError(
-          `Creazione contenuto documento E2E fallita: ${String(result.error)}`
-        );
+        throw new DomainError(`Creazione contenuto documento E2E fallita: ${String(result.error)}`);
       }
     }
     return documentId;

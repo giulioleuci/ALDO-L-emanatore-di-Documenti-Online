@@ -13,6 +13,13 @@ export interface E2eDocumentTable {
   options?: DocumentCreateTableOptions;
 }
 
+export interface E2eDocumentParagraph {
+  text: string;
+  listType?: 'bullet' | 'number';
+}
+
+export type E2eDocumentParagraphInput = string | E2eDocumentParagraph;
+
 /**
  * Port abstracting Drive-artifact creation, so the provisioner is unit-testable offline.
  * `paragraphs`/`tables`/`updates` are only ever passed on first creation (never on a found-and-reused
@@ -22,7 +29,7 @@ export interface IArtifactFactory {
   createDocument(
     name: string,
     folderId: string,
-    paragraphs?: string[],
+    paragraphs?: E2eDocumentParagraphInput[],
     tables?: E2eDocumentTable[]
   ): string;
   createSheet(name: string, folderId: string, updates?: SheetValueUpdate[]): string;
@@ -30,9 +37,9 @@ export interface IArtifactFactory {
 
 const NAME_VERBALE = 'E2E Verbale Template';
 const NAME_CONDOTTA = 'E2E Condotta Template';
-const NAME_RIEPILOGO = 'E2E Riepilogo Template v3';
+const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
-const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template';
+const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 function namePiano(tipo: string): string {
@@ -46,14 +53,20 @@ function namePiano(tipo: string): string {
  * against real CDU paths (`SPECS_ALDO/02_CDU_STRUTTURA.md` §4.1) so scenario 1/4 actually
  * exercise real substitution, not a blank Doc that merely "doesn't crash".
  */
-const VERBALE_PARAGRAPHS = [
+const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Verbale del Consiglio di Classe',
   'Classe: {{focus.classe.anagrafica.nome}} — Indirizzo: {{focus.classe.anagrafica.indirizzo.nomeSintetico}}',
   'Data: {{meta.date.oggi.breve}}',
   'Composizione del Consiglio di Classe:',
-  '{{#bullet_list:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}{{/bullet_list}}',
+  {
+    text: '{{#bullet_list:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}{{/bullet_list}}',
+    listType: 'bullet'
+  },
   'Coordinatori:',
-  '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{materia}}){{/bullet_list}}'
+  {
+    text: '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{materia}}){{/bullet_list}}',
+    listType: 'bullet'
+  }
 ];
 
 /** `piano.note` matches `PIANI.PARAMETRI` seeded by `E2eSampleDatabaseBuilder` (`{note: "Piano E2E <tipo>"}`,
@@ -68,14 +81,20 @@ function pianoParagraphs(tipo: string): string[] {
   ];
 }
 
-const RIEPILOGO_PARAGRAPHS = [
+const RIEPILOGO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Riepilogo Classe {{focus.classe.anagrafica.nome}}',
   'Elenco studenti:',
   'Numero totale studenti: {{focus.classe.studenti.statistiche.totale}}',
   'Rappresentanti degli studenti:',
-  '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
+  {
+    text: '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
+    listType: 'bullet'
+  },
   'Rappresentanti dei genitori:',
-  '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}'
+  {
+    text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}',
+    listType: 'bullet'
+  }
 ];
 
 const RIEPILOGO_TABLES: E2eDocumentTable[] = [
@@ -104,11 +123,16 @@ const CONDOTTA_ROSTER_ROWS = 30;
  */
 function condottaUpdates(): SheetValueUpdate[] {
   const updates: SheetValueUpdate[] = [
-    { range: 'A1:E1', values: [['Studente', 'Comportamento', 'Impegno', 'Partecipazione', 'Media']] },
+    {
+      range: 'A1:E1',
+      values: [['Studente', 'Comportamento', 'Impegno', 'Partecipazione', 'Media']]
+    },
     {
       range: 'A2',
       values: [
-        ['{{dynamic_rows[source=focus.classe.studenti.listaCompleta,value=anagrafica.nomeCompleto]}}']
+        [
+          '{{dynamic_rows[source=focus.classe.studenti.listaCompleta,value=anagrafica.nomeCompleto]}}'
+        ]
       ]
     }
   ];
@@ -129,9 +153,7 @@ const ASL_IMPORT_ROWS: Array<[string, number]> = [
 ];
 
 function aslImportUpdates(): SheetValueUpdate[] {
-  const updates: SheetValueUpdate[] = [
-    { range: 'A1:C1', values: [['STUDENTE', 'ANNO', 'ORE']] }
-  ];
+  const updates: SheetValueUpdate[] = [{ range: 'A1:C1', values: [['STUDENTE', 'ANNO', 'ORE']] }];
   ASL_IMPORT_ROWS.forEach(([email, ore], i) => {
     updates.push({ range: `A${2 + i}:C${2 + i}`, values: [[email, ASL_IMPORT_ANNO, ore]] });
   });
@@ -139,22 +161,28 @@ function aslImportUpdates(): SheetValueUpdate[] {
 }
 
 /**
- * Exercises bullet/number lists, tablerow/tablecol loops, and pipe filters (sortBy/where/
+ * Exercises bullet/number lists, tablerow/tablecol loops, and pipe filters (sortBy/filter/
  * uppercase) against real CDU paths (`SPECS_ALDO/02_CDU_STRUTTURA.md` §4.1) already confirmed
  * elsewhere in this file: `focus.classe.coordinatori` (VERBALE_PARAGRAPHS), `focus.classe.
  * rappresentanti.studenti` (RIEPILOGO_PARAGRAPHS), `focus.classe.studenti.listaCompleta`
  * (RIEPILOGO_TABLES), and `focus.classe.consiglioDiClasse` (VERBALE_PARAGRAPHS, also in
- * production via `SheetMaterieGeneratorStrategy.buildGroups`). `sortBy`/`where` are piped
+ * production via `SheetMaterieGeneratorStrategy.buildGroups`). `sortBy`/`filter` are piped
  * directly onto each loop directive's own source expression (`{{#loop:path | filter:args}}`);
  * whether that composition actually renders is only provable by a live online run — this test
  * only asserts the authored template string, matching every other test in this file.
  */
-const DOC_COMPLESSO_PARAGRAPHS = [
+const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Report Complesso — {{focus.classe.anagrafica.nome}}',
   'Coordinatori, ordinati per nome (elenco puntato, con filtro sortBy sul source del loop):',
-  "{{#bullet_list:focus.classe.coordinatori | sortBy:'nome'}}{{nome | uppercase}} — {{materia}}{{/bullet_list}}",
-  'Rappresentanti degli studenti (elenco numerato, con filtro where sul source del loop):',
-  "{{#number_list:focus.classe.rappresentanti.studenti | where:'nomeCompleto'}}{{nomeCompleto}}{{/number_list}}"
+  {
+    text: "{{#bullet_list:focus.classe.coordinatori | sortBy:'nome'}}{{nome | uppercase}} — {{materia}}{{/bullet_list}}",
+    listType: 'bullet'
+  },
+  'Rappresentanti degli studenti (elenco numerato, con filtro active sul source del loop):',
+  {
+    text: "{{#number_list:focus.classe.rappresentanti.studenti | filter:'active',true}}{{nomeCompleto}}{{/number_list}}",
+    listType: 'number'
+  }
 ];
 
 const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
@@ -235,7 +263,11 @@ export class E2eTemplateProvisioner {
       DOC_COMPLESSO_PARAGRAPHS,
       DOC_COMPLESSO_TABLES
     );
-    const sheetPermessi = this.findOrCreateSheet(folderId, NAME_SHEET_PERMESSI, sheetPermessiUpdates());
+    const sheetPermessi = this.findOrCreateSheet(
+      folderId,
+      NAME_SHEET_PERMESSI,
+      sheetPermessiUpdates()
+    );
     const pianoLavoro = this.findOrCreateDoc(folderId, NAME_PIANO_LAVORO, PIANO_LAVORO_PARAGRAPHS);
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
@@ -256,7 +288,7 @@ export class E2eTemplateProvisioner {
   private findOrCreateDoc(
     folderId: string,
     name: string,
-    paragraphs: string[],
+    paragraphs: E2eDocumentParagraphInput[],
     tables?: E2eDocumentTable[]
   ): string {
     return (
@@ -267,7 +299,8 @@ export class E2eTemplateProvisioner {
 
   private findOrCreateSheet(folderId: string, name: string, updates: SheetValueUpdate[]): string {
     return (
-      this.drive.findFileByName(folderId, name) ?? this.artifacts.createSheet(name, folderId, updates)
+      this.drive.findFileByName(folderId, name) ??
+      this.artifacts.createSheet(name, folderId, updates)
     );
   }
 }

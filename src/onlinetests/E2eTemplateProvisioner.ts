@@ -34,6 +34,7 @@ const NAME_RIEPILOGO = 'E2E Riepilogo Template v3';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
+const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template`;
 }
@@ -197,6 +198,14 @@ function sheetPermessiUpdates(): SheetValueUpdate[] {
   ];
 }
 
+/** Scenario D (coordinatore's work-plan doc): a minimal per-class template, same CDU paths
+ * already confirmed elsewhere in this file (VERBALE_PARAGRAPHS `focus.classe.anagrafica.*`). */
+const PIANO_LAVORO_PARAGRAPHS = [
+  'Piano di Lavoro Annuale — {{focus.classe.anagrafica.nome}}',
+  'Indirizzo: {{focus.classe.anagrafica.indirizzo.nomeSintetico}}',
+  'Anno scolastico: {{meta.date.oggi.breve}}'
+];
+
 /**
  * Idempotently finds-or-creates the 7 real Drive templates the e2e scenarios generate
  * against (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
@@ -227,11 +236,21 @@ export class E2eTemplateProvisioner {
       DOC_COMPLESSO_TABLES
     );
     const sheetPermessi = this.findOrCreateSheet(folderId, NAME_SHEET_PERMESSI, sheetPermessiUpdates());
+    const pianoLavoro = this.findOrCreateDoc(folderId, NAME_PIANO_LAVORO, PIANO_LAVORO_PARAGRAPHS);
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
-    return { verbale, condotta, riepilogo, aslImportSheet, docComplesso, sheetPermessi, piani };
+    return {
+      verbale,
+      condotta,
+      riepilogo,
+      aslImportSheet,
+      docComplesso,
+      sheetPermessi,
+      pianoLavoro,
+      piani
+    };
   }
 
   private findOrCreateDoc(

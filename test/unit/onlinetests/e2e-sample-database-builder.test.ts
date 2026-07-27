@@ -70,6 +70,7 @@ const TEMPLATE_IDS = {
   aslImportSheet: 'tmpl_asl_import',
   docComplesso: 'tmpl_doc_complesso',
   sheetPermessi: 'tmpl_sheet_permessi',
+  pianoLavoro: 'tmpl_piano_lavoro',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -156,13 +157,13 @@ test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', ()
   expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
 });
 
-test('seeds 10 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc complesso + 1 sheet permessi + 5 piani) each pointing at its provisioned template', () => {
+test('seeds 11 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc complesso + 1 sheet permessi + 1 piano lavoro + 5 piani) each pointing at its provisioned template', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(10);
+  expect(confDoc).toHaveLength(11);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_verbale' });
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
@@ -199,15 +200,15 @@ test('1A and 2B share the same coordinatore, so coordinatore-aggregated emails c
   expect(coordOf(CLASSE_C)).not.toBe(e2eDocenteEmail(1));
 });
 
-test('seeds 4 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genitori, piani reuse', () => {
+test('seeds 5 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genitori, piani reuse, lavoro/coordinatori', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
-  expect(confMail).toHaveLength(4);
+  expect(confMail).toHaveLength(5);
   expect(confMail.map((c) => c[COL_CONF_MAIL.PROCESSO]).sort()).toEqual(
-    ['PER_CARENZA_GENITORI', 'PER_CDC', 'PER_COORDINATORE', 'PER_COORDINATORE'].sort()
+    ['PER_CARENZA_GENITORI', 'PER_CDC', 'PER_COORDINATORE', 'PER_COORDINATORE', 'PER_COORDINATORE'].sort()
   );
   expectCompleteRows(confMail, COL_CONF_MAIL);
 });
@@ -418,6 +419,38 @@ test('seeds a CONF_DOC row using the SHEET_CON_MATERIE_E_PERMESSI generator', ()
   expect(row).toBeDefined();
   expect(row![COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
   expect(row![COL_CONF_DOC.FORMATO]).toBe('GSHEET');
+});
+
+test('CONF_DOC_VERBALE PATH_OUT is per-class, so each class gets its own LOG_FOLD-tracked destination folder', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const verbale = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_VERBALE')!;
+  expect(String(verbale[COL_CONF_DOC.PATH_OUT])).toContain('{{focus.classe.anagrafica.nome}}');
+});
+
+test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti + cartelle real-folder boxes)', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const doc = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_PIANO_LAVORO');
+  expect(doc).toBeDefined();
+  expect(doc![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+
+  const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === 'E2E_MAIL_LAVORO');
+  expect(mail).toBeDefined();
+  expect(mail![COL_CONF_MAIL.PROCESSO]).toBe('PER_COORDINATORE');
+  const boxes = JSON.parse(String(mail![COL_CONF_MAIL.BOX_CFG]));
+  expect(boxes).toEqual([
+    {
+      TIPO_BOX: 'documenti',
+      FILTRO_TIPO: 'E2E_PIANO_LAVORO',
+      DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'E2E_PIANO_LAVORO' } }
+    },
+    { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
+  ]);
 });
 
 test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {

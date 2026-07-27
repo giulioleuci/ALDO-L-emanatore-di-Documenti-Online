@@ -47,14 +47,14 @@ function fakeArtifacts(): {
   };
 }
 
-test('creates all 11 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 1 doc complesso + 1 sheet permessi + 5 doc piani) when none exist yet', () => {
+test('creates all 12 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 1 doc complesso + 1 sheet permessi + 1 doc piano lavoro + 5 doc piani) when none exist yet', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(11);
+  expect(created).toHaveLength(12);
   expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(3);
-  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(8);
+  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(9);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
@@ -73,7 +73,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(10); // condotta + riepilogo + asl import + doc complesso + sheet permessi + 5 piani still created
+  expect(created).toHaveLength(11); // condotta + riepilogo + asl import + doc complesso + sheet permessi + piano lavoro + 5 piani still created
 });
 
 test('authors real CDU-path placeholder content into newly-created templates, not blank artifacts', () => {
@@ -165,6 +165,16 @@ test('authors the sheet-with-permessi template with the multi-group dynamic_colu
   expect(text).toContain('source=materieColonne.group1,value=header');
   expect(text).toContain('source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label');
   expect(text).toContain('source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label');
+});
+
+test('authors the work-plan (piano di lavoro) template', () => {
+  const { artifacts, docContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  const text = (docContent[ids.pianoLavoro] ?? []).join('\n');
+  expect(text).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(text.length).toBeGreaterThan(0);
 });
 
 test('does not re-author content for a reused (found, not created) template', () => {

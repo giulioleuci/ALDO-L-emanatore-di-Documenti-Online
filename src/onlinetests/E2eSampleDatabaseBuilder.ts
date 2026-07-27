@@ -77,10 +77,12 @@ export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export function confDocPiano(tipo: string): string {
   return `E2E_PIANO_${tipo}`;
 }
+export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
 export const CONF_MAIL_VERBALE = 'E2E_MAIL_VERBALE';
 export const CONF_MAIL_CONDOTTA = 'E2E_MAIL_CONDOTTA';
 export const CONF_MAIL_CARENZA = 'E2E_MAIL_CARENZA';
 export const CONF_MAIL_PIANI = 'E2E_MAIL_PIANI';
+export const CONF_MAIL_LAVORO = 'E2E_MAIL_LAVORO';
 export const CONF_IMP_ASL = 'E2E_IMPORT_ASL';
 
 export function e2eDocenteEmail(i: number): string {
@@ -126,6 +128,7 @@ export interface E2eTemplateIds {
   aslImportSheet: string;
   docComplesso: string;
   sheetPermessi: string;
+  pianoLavoro: string;
   piani: Record<(typeof TIPI_PIANO)[number], string>;
 }
 
@@ -607,7 +610,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.verbale }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/{{focus.classe.anagrafica.nome}}',
       [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
       [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -683,6 +686,23 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO,
+      [COL_CONF_DOC.TIPO]: 'PIANO_LAVORO',
+      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.pianoLavoro }),
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
+      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
     });
     for (const tipo of TIPI_PIANO) {
@@ -798,6 +818,26 @@ export class E2eSampleDatabaseBuilder {
           }
         }
       ])
+    });
+    sample.appendRow(TABLE.CONF_MAIL, {
+      [COL_CONF_MAIL.ID]: CONF_MAIL_LAVORO,
+      [COL_CONF_MAIL.OGGETTO]: '[E2E] Piano di lavoro e verbali riunioni',
+      [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
+      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          FILTRO_TIPO: CONF_DOC_PIANO_LAVORO,
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: CONF_DOC_PIANO_LAVORO } }
+        },
+        { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
+      ]),
+      [COL_CONF_MAIL.TESTO]:
+        '<p>In allegato il piano di lavoro; la cartella dei verbali delle riunioni è collegata di seguito.</p>',
+      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.NOREPLY]: false,
+      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+      [COL_CONF_MAIL.CONDIZIONE]: '',
+      [COL_CONF_MAIL.POST_PROCESSO]: null
     });
   }
 

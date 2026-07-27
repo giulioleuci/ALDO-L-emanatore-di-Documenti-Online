@@ -72,10 +72,20 @@ test('creates all 12 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilo
   }
 });
 
+test('verbale template renders the generated custom-plan list through the class CDU placeholder', () => {
+  const { artifacts, docContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  expect(documentText(docContent[ids.verbale]!)).toContain(
+    '{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.items}}'
+  );
+});
+
 test('reuses an existing template by name instead of recreating it', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
-  drive.files.set('FOLDER_1::E2E Verbale Template', 'existing_verbale_id');
+  drive.files.set('FOLDER_1::E2E Verbale Template v2', 'existing_verbale_id');
 
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
@@ -214,7 +224,7 @@ test('authors the work-plan (piano di lavoro) template', () => {
 test('does not re-author content for a reused (found, not created) template', () => {
   const { artifacts, docContent } = fakeArtifacts();
   const drive = new FakeDriveFacade();
-  drive.files.set('FOLDER_1::E2E Verbale Template', 'existing_verbale_id');
+  drive.files.set('FOLDER_1::E2E Verbale Template v2', 'existing_verbale_id');
 
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 

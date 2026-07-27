@@ -10,7 +10,7 @@ import type { DocumentGenerationService } from '../../application/services/Docum
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
-import { TABLE, COL_LOG_DOCS, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
+import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
 import {
   ALL_CLASSI_E2E,
   TIPI_PIANO,
@@ -84,6 +84,51 @@ export function registerE2eScenarioChecks(
     }
   };
 
+  const assertPianiVerbalizzati = (): void => {
+    const piani = db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter((row) => row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS');
+    if (piani.length === 0) {
+      throw new ValidationError('Verbale: nessun piano personalizzato generato da verbalizzare');
+    }
+    for (const piano of piani) {
+      if (piano[COL_LOG_DOCS.STATO] !== 'VERBALIZZATO') {
+        throw new ValidationError(
+          `Verbale: piano ${String(piano[COL_LOG_DOCS.ID_GEN])} non verbalizzato`
+        );
+      }
+    }
+  };
+
+  const assertVerbaleRegistrationMetadata = (): void => {
+    const docs = db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_VERBALE);
+    const folders = db.table(TABLE.LOG_FOLD).findAll();
+    for (const classe of ALL_CLASSI_E2E) {
+      const doc = docs.find((row) => row[COL_LOG_DOCS.CLASSI] === classe);
+      const folder = folders.find((row) => csvContains(row[COL_LOG_FOLD.CLASSI], classe));
+      if (doc?.[COL_LOG_DOCS.MATERIE] !== 'MATE' || folder?.[COL_LOG_FOLD.MATERIE] !== 'MATE') {
+        throw new ValidationError(`Verbale per ${classe} non ha metadata MATERIE configurati`);
+      }
+    }
+  };
+
+  runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {
+    for (const tipo of TIPI_PIANO) {
+      for (const studente of PIANO_STUDENTE[tipo]) {
+        const { fileId, status } = documents.generateForAlunno(studente, confDocPiano(tipo));
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione piano ${tipo} per ${studente} non ha prodotto un fileId (status=${status})`
+          );
+        }
+      }
+    }
+  });
+
   // Every entry-point class needs both doc types (ALL_CLASSI_E2E doc comment):
   // each of the 3 coordinatori and each of the 4 CdC gets its own email
   // (scenari 4/5), so a class missing a doc gets an email with an empty box.
@@ -97,6 +142,8 @@ export function registerE2eScenarioChecks(
       }
     }
     assertPersistedLinks(CONF_DOC_VERBALE, 'Verbale');
+    assertVerbaleRegistrationMetadata();
+    assertPianiVerbalizzati();
   });
 
   runner.add('E2E scenario 2: genera foglio valutazione condotta (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
@@ -203,7 +250,7 @@ export function registerE2eScenarioChecks(
     }
   });
 
-  runner.add('E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
+  runner.add('E2E prerequisite: genera piano di lavoro per gli invii ai coordinatori', sample.sampleSpreadsheetUrl, () => {
     for (const classe of ALL_CLASSI_E2E) {
       const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_PIANO_LAVORO);
       if (fileId === null) {
@@ -212,14 +259,9 @@ export function registerE2eScenarioChecks(
         );
       }
     }
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_VERBALE);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione verbale (per la cartella verbali) per ${classe} non ha prodotto un fileId (status=${status})`
-        );
-      }
-    }
+  });
+
+  runner.add('E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
     const result = getEmailService().sendPattern(CONF_MAIL_LAVORO);
     if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
       throw new ValidationError(`Invio piano di lavoro fallito: ${emailDiagnostics(result)}`);
@@ -238,19 +280,6 @@ export function registerE2eScenarioChecks(
       }
       if ((allegati.folders ?? []).length === 0) {
         throw new ValidationError('LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata');
-      }
-    }
-  });
-
-  runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {
-    for (const tipo of TIPI_PIANO) {
-      for (const studente of PIANO_STUDENTE[tipo]) {
-        const { fileId, status } = documents.generateForAlunno(studente, confDocPiano(tipo));
-        if (fileId === null) {
-          throw new ValidationError(
-            `Generazione piano ${tipo} per ${studente} non ha prodotto un fileId (status=${status})`
-          );
-        }
       }
     }
   });
@@ -285,4 +314,14 @@ export function registerE2eScenarioChecks(
       throw new ValidationError(`Invio piani: 0 email inviate (targets=${result.targets})`);
     }
   });
+}
+
+function csvContains(raw: unknown, value: string): boolean {
+  return (
+    typeof raw === 'string' &&
+    raw
+      .split(',')
+      .map((part) => part.trim())
+      .includes(value)
+  );
 }

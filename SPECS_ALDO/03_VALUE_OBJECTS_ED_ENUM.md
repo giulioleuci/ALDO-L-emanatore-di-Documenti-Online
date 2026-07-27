@@ -43,22 +43,18 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 | `PROFESSIONALE` | Istituto Professionale                                     |
 | `TECNICO`       | Istituto Tecnico                                           |
 
-### `SchemaSottocartelle`
+### `DuplicazioneDocumento`
 
-**Utilizzo:** `CONF_DOC.SCHEMA_SOTTOCARTELLE`
+**Utilizzo:** `CONF_DOC.DUPLICAZIONE`
 
-| Valore                         | Significato                                                                |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| `UNO PER CLASSE`               | Al più un documento per classe                                             |
-| `MULTIPLO PER CLASSE`          | Più documenti consentiti per la stessa classe (nessun controllo duplicati) |
-| `UNO PER DOCENTE`              | Al più un documento per docente                                            |
-| `UNO PER CLASSE PER MATERIA`   | Al più un documento per ciascuna coppia (classe, materia)                  |
-| `UNO PER PIANO PERSONALIZZATO` | Al più un documento per piano personalizzato                               |
-| `UNICO PER SCUOLA`             | Un unico documento per l'intera scuola                                     |
+| Valore      | Significato                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `NEGATA`    | Default. Blocca la generazione se esiste lo stesso `TIPO`, `SOTTOTIPO`, `ID_GEN`, `PATH`, `NOME`. |
+| `PERMESSA`  | Consente una nuova generazione senza eseguire il controllo dei duplicati.                    |
 
-L'unicità è imposta da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).
+Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).
 
-**Default:** nessun default definito — il campo È OBBLIGATORIO.
+**Default:** `NEGATA`.
 
 ---
 

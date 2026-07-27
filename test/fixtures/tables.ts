@@ -163,14 +163,15 @@ export function fixtureTables(): Record<string, Row[]> {
         MODELLI: '{"templateId":"tmpl_verbale"}',
         FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
         PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}',
-        PATH_OUT_SOTTOCARTELLE: null,
-        SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
+        DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,
         POST_PROCESSO: null,
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GDOC',
-        REGISTRA_UTENTI: ''
+        REGISTRA_UTENTI: '',
+        REGISTRA_DOC: '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"","materie":""}',
+        REGISTRA_FOLD: '{}'
       },
       {
         ID: 'CD_ESAME',
@@ -181,14 +182,15 @@ export function fixtureTables(): Record<string, Row[]> {
           '[{"condizione":"{{focus.classe.anagrafica.anno}} == 5","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
         FILE_NAME: null,
         PATH_OUT: null,
-        PATH_OUT_SOTTOCARTELLE: null,
-        SCHEMA_SOTTOCARTELLE: 'UNO PER CLASSE',
+        DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,
         POST_PROCESSO: null,
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GDOC',
-        REGISTRA_UTENTI: ''
+        REGISTRA_UTENTI: '',
+        REGISTRA_DOC: '{}',
+        REGISTRA_FOLD: '{}'
       }
     ],
     CONF_MAIL: [

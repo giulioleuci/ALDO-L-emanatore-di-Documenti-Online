@@ -103,6 +103,16 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     expect(drive.copies).toHaveLength(0);
   });
 
+  test.each(['REGISTRA_DOC', 'REGISTRA_FOLD'])('rolls back both log tables when %s is malformed', (column) => {
+    const tables = fixtureTables();
+    tables.CONF_DOC![0]![column] = '{';
+    const { db, service } = wire(tables);
+
+    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(`${column} malformato`);
+    expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual([]);
+    expect(db.table(TABLE.LOG_FOLD).findAll()).toEqual([]);
+  });
+
   test("returns status 'SKIPPED' when CheckDuplicatesStep prevents a newFileId from being produced", () => {
     const { service } = wire();
     service.generateForClasse(ClasseId.of('5A'), 'CD1');
@@ -130,8 +140,7 @@ describe('DocumentGenerationService.generateForAlunno', () => {
       MODELLI: '{"templateId":"tmpl_piano"}',
       FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
       PATH_OUT: 'Piani',
-      PATH_OUT_SOTTOCARTELLE: null,
-      SCHEMA_SOTTOCARTELLE: 'UNO PER PIANO PERSONALIZZATO',
+      DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
       POST_PROCESSO: null,
       PARAMETRI: '{"tipoPiano":"PEI"}',

@@ -10,13 +10,14 @@ import type { Email } from '../../domain/value-objects/Email';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import {
   StatoDocumento,
-  SchemaSottocartelle,
+  DuplicazioneDocumento,
   GestioneSupplenti,
   FormatoOutput
 } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
+import { resolveLogRegistration } from './logRegistration';
 
 /**
  * Role-resolution port consumed by ApplyPermissionsStep (10 §10). Satisfied
@@ -64,6 +65,7 @@ function parseRegola(raw: string | undefined): GestioneSupplenti {
 
 /** Steps whose failure aborts the pipeline and rolls back the cloned file (10 §8). */
 export const CRITICAL_STEPS: ReadonlySet<string> = new Set([
+  'PrepareInfrastructure',
   'SelectTemplate',
   'CloneTemplate',
   'RenderTemplate',
@@ -85,68 +87,9 @@ function cdu(ctx: PipelineContext): Cdu {
 function cduRecord(ctx: PipelineContext): Record<string, unknown> {
   return cdu(ctx) as unknown as Record<string, unknown>;
 }
-function classeNome(ctx: PipelineContext): string {
-  return cdu(ctx).focus.classe?.anagrafica.nome ?? '';
-}
-
-const LOG_DOC_USER_SELECTORS = ['COORDINATORI', 'DOCENTI', 'CDC', 'ALUNNI', 'GENITORI'] as const;
-type LogDocUserSelector = (typeof LOG_DOC_USER_SELECTORS)[number];
-
-function isLogDocUserSelector(selector: string): selector is LogDocUserSelector {
-  return (LOG_DOC_USER_SELECTORS as readonly string[]).includes(selector);
-}
-
-/** Resolves configured LOG_DOCS users solely from the CDU, preserving first-seen order. */
-export function resolveLogDocUsers(confDoc: ConfigurazioneDocumento, context: Cdu): string {
-  const selectors = confDoc.getRegistraUtenti().map((selector) => selector.toUpperCase());
-  for (const selector of selectors) {
-    if (!isLogDocUserSelector(selector)) {
-      throw new PipelineError(
-        `CONF_DOC ${confDoc.id ?? '?'}: REGISTRA_UTENTI non valido: ${selector}`
-      );
-    }
-  }
-
-  const emails: string[] = [];
-  const seen = new Set<string>();
-  const add = (email: string): void => {
-    const normalized = email.trim();
-    if (normalized !== '' && !seen.has(normalized)) {
-      seen.add(normalized);
-      emails.push(normalized);
-    }
-  };
-  const classe = context.focus.classe;
-  const materiaCorrente = context.meta.parametriInput.materiaCorrente;
-
-  for (const selector of selectors) {
-    switch (selector) {
-      case 'COORDINATORI':
-        for (const coordinatore of classe?.coordinatori ?? []) add(coordinatore.email);
-        break;
-      case 'DOCENTI':
-        if (materiaCorrente === null || materiaCorrente.trim() === '') break;
-        for (const docente of classe?.consiglioDiClasse ?? []) {
-          if (docente.materie.some((materia) => materia.sigla === materiaCorrente)) {
-            add(docente.anagrafica.email);
-          }
-        }
-        break;
-      case 'CDC':
-        for (const docente of classe?.consiglioDiClasse ?? []) add(docente.anagrafica.email);
-        break;
-      case 'ALUNNI':
-        for (const alunno of classe?.studenti?.listaCompleta ?? []) add(alunno.anagrafica.email);
-        break;
-      case 'GENITORI':
-        for (const alunno of classe?.studenti?.listaCompleta ?? []) {
-          for (const genitore of alunno.genitori ?? []) add(genitore.email);
-        }
-        break;
-    }
-  }
-
-  return emails.join(',');
+function nomeCartella(path: string): string {
+  const segments = path.split('/').filter((segment) => segment !== '');
+  return segments[segments.length - 1] ?? '';
 }
 
 /**
@@ -184,29 +127,48 @@ export class AnalyzeContextStep extends Step {
   }
 }
 
-/** Step 2 (10 §4): dedup on LOG_DOCS unless SCHEMA_SOTTOCARTELLE is MULTIPLO_PER_CLASSE. */
+/** Step 2 (10 §4): deduplication is controlled by CONF_DOC.DUPLICAZIONE. */
 export class CheckDuplicatesStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly db: IDatabase
+    private readonly db: IDatabase,
+    private readonly templates: ITemplateEngine
   ) {
     super('CheckDuplicates', logger, { shouldExecuteCondition: generateGate });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    const schema = String(cfg(ctx)[COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]);
-    if (schema === String(SchemaSottocartelle.MULTIPLO_PER_CLASSE)) return; // no dedup (10 §4)
+    const duplicazione = String(
+      cfg(ctx)[COL_CONF_DOC.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA
+    );
+    if (duplicazione === 'PERMESSA') return;
+
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
-    const classe = classeNome(ctx);
+    const tipo = String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '');
+    const tipoPiano = confDoc(ctx).getParametri().tipoPiano;
+    const sottotipo = typeof tipoPiano === 'string' ? tipoPiano : '';
+    const path = this.templates.processString(
+      String(cfg(ctx)[COL_CONF_DOC.PATH_OUT] ?? ''),
+      cduRecord(ctx)
+    );
+    const nome = this.templates.processString(
+      String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? ''),
+      cduRecord(ctx)
+    );
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) =>
-        r[COL_LOG_DOCS.ID_GEN] === idGen &&
-        String(r[COL_LOG_DOCS.CLASSI] ?? '')
-          .split(',')
-          .includes(classe)
+        String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&
+        String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipo &&
+        String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
+        String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
+        String(r[COL_LOG_DOCS.NOME] ?? '') === nome
     );
     if (existing) {
       this.setResult(ctx, 'shouldGenerate', false);
-      this.setResult(ctx, 'skipReason', `Duplicato per ${classe}`);
+      this.setResult(
+        ctx,
+        'skipReason',
+        `Duplicato: TIPO=${tipo}, SOTTOTIPO=${sottotipo}, ID_GEN=${idGen}, PATH=${path}, NOME=${nome}`
+      );
     }
   }
 }
@@ -228,8 +190,19 @@ export class PrepareInfrastructureStep extends Step {
     );
     // findOrCreate over LOG_FOLD + Drive (14 §4); the LOG_FOLD insert is committed
     // by the service transaction (SheetDBLib forbids save() while one is open).
-    const classe = classeNome(ctx);
-    const options = classe !== '' ? { classe } : {};
+    const metadata = resolveLogRegistration(
+      cfg(ctx)[COL_CONF_DOC.REGISTRA_FOLD],
+      this.templates,
+      cduRecord(ctx),
+      'REGISTRA_FOLD'
+    );
+    const options = {
+      classi: metadata.classi,
+      utenti: metadata.utenti,
+      materie: metadata.materie,
+      tipo: String(cfg(ctx)[COL_CONF_DOC.ID] ?? ''),
+      nome: nomeCartella(path)
+    };
     const { folderId } = new AlberoCartelle(this.drive, this.db).findOrCreate(path, options);
     this.setResult(ctx, 'destFolderId', folderId);
     this.setResult(ctx, 'destFolderPath', path);
@@ -357,7 +330,8 @@ export class ApplyPermissionsStep extends Step {
 export class RegisterDocumentStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly db: IDatabase
+    private readonly db: IDatabase,
+    private readonly templates: ITemplateEngine
   ) {
     super('RegisterDocument', logger, {
       shouldExecuteCondition: generateGate,
@@ -365,7 +339,12 @@ export class RegisterDocumentStep extends Step {
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    const configuredUsers = confDoc(ctx).getRegistraUtenti();
+    const metadata = resolveLogRegistration(
+      cfg(ctx)[COL_CONF_DOC.REGISTRA_DOC],
+      this.templates,
+      cduRecord(ctx),
+      'REGISTRA_DOC'
+    );
     const row: Row = {
       [COL_LOG_DOCS.ID]: ctx.get<string>('newFileId')!,
       [COL_LOG_DOCS.ID_GEN]: String(cfg(ctx)[COL_CONF_DOC.ID]),
@@ -378,11 +357,9 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',
       [COL_LOG_DOCS.LINK]: ctx.get<string>('newFileLink') ?? '',
-      [COL_LOG_DOCS.CLASSI]: classeNome(ctx),
-      [COL_LOG_DOCS.UTENTI]:
-        configuredUsers.length > 0
-          ? resolveLogDocUsers(confDoc(ctx), cdu(ctx))
-          : (cdu(ctx).focus.alunno?.anagrafica.email ?? ''),
+      [COL_LOG_DOCS.CLASSI]: metadata.classi,
+      [COL_LOG_DOCS.UTENTI]: metadata.utenti,
+      [COL_LOG_DOCS.MATERIE]: metadata.materie,
       [COL_LOG_DOCS.DATA_CREAZ]: cdu(ctx).meta.date.oggi.breve
     };
     // Persisted by the service's transaction commit (10 §11).

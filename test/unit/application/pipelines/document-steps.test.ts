@@ -7,7 +7,6 @@ import {
   CloneTemplateStep,
   RenderTemplateStep,
   RegisterDocumentStep,
-  resolveLogDocUsers,
   PostProcessStep,
   ApplyPermissionsStep,
   CRITICAL_STEPS
@@ -25,8 +24,7 @@ import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
 import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
-import { SchemaSottocartelle } from '../../../../src/domain/value-objects/enums';
-import { PipelineError } from '../../../../src/domain/errors/DomainError';
+import { DuplicazioneDocumento } from '../../../../src/domain/value-objects/enums';
 
 const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();
@@ -69,14 +67,29 @@ test('AnalyzeContextStep: CONDIZIONE evaluated by GasExpressionEngineLib over th
   expect(ctx.get('shouldGenerate')).toBe(true); // 5A is anno 5
 });
 
-test('CheckDuplicatesStep: existing LOG_DOCS row for same ID_GEN+classe closes the gate (10 §4)', () => {
+test('CheckDuplicatesStep: NEGATA closes the gate only for a matching full document identity', () => {
   const tables = fixtureTables();
-  tables.LOG_DOCS = [{ ID: 'old', ID_GEN: 'CD1', CLASSI: '5A', STATO: 'GENERATO' }];
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Verbali/5',
+      NOME: 'Verbale_5A_01/07/2026',
+      CLASSI: '5A',
+      STATO: 'GENERATO'
+    }
+  ];
   const db = new FakeDatabase(tables);
   const ctx = baseCtx(db);
-  new CheckDuplicatesStep(logger, db).execute(ctx);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    DUPLICAZIONE: DuplicazioneDocumento.NEGATA
+  });
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   expect(ctx.get('shouldGenerate')).toBe(false);
-  expect(String(ctx.get('skipReason'))).toContain('5A');
+  expect(String(ctx.get('skipReason'))).toContain('TIPO=VERBALE');
 });
 
 test('PrepareInfrastructureStep creates folder and registers it in LOG_FOLD (10 §5)', () => {
@@ -88,17 +101,44 @@ test('PrepareInfrastructureStep creates folder and registers it in LOG_FOLD (10 
   expect(drive.folders.get('Verbali/5')).toBe(folderId);
   expect(ctx.get('destFolderPath')).toBe('Verbali/5');
   const row = db.table('LOG_FOLD').find((r) => r.ID === folderId);
+  expect(row?.TIPO).toBe('CD1');
+  expect(row?.NOME).toBe('5');
   expect(row?.PATH).toBe('Verbali/5');
 });
 
-test('PrepareInfrastructureStep reuses an existing folder without a duplicate LOG_FOLD row', () => {
+test('PrepareInfrastructureStep stores only REGISTRA_FOLD-rendered metadata', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    REGISTRA_FOLD: JSON.stringify({
+      classi: '5B',
+      utenti: 'folder@school.it',
+      materie: 'MATE,FISI'
+    })
+  };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+
+  new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);
+
+  expect(db.table('LOG_FOLD').findAll()[0]).toMatchObject({
+    CLASSI: '5B',
+    UTENTI: 'folder@school.it',
+    MATERIE: 'MATE,FISI'
+  });
+});
+
+test('PrepareInfrastructureStep logs a pre-existing folder so email boxes can render it', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   const drive = new FakeDriveFacade();
   const existing = drive.createFolder('Verbali/5'); // pre-existing folder
   new PrepareInfrastructureStep(logger, drive, db, new FakeTemplateEngine()).execute(ctx);
   expect(ctx.get('destFolderId')).toBe(existing);
-  expect(db.table('LOG_FOLD').findAll()).toHaveLength(0); // not re-registered
+  expect(db.table('LOG_FOLD').findAll()).toEqual([
+    expect.objectContaining({ ID: existing, TIPO: 'CD1', NOME: '5', PATH: 'Verbali/5' })
+  ]);
 });
 
 test('GenerateNameStep resolves FILE_NAME via WorkspaceTemplateEngine (10 §6)', () => {
@@ -200,147 +240,54 @@ test('RegisterDocumentStep writes LOG_DOCS row with STATO GENERATO (persisted at
   ctx.set('newFileLink', 'https://drive/file_1');
   ctx.set('nomeFile', 'Verbale_5A_01/07/2026');
   ctx.set('destFolderPath', 'Verbali/5');
-  new RegisterDocumentStep(logger, db).execute(ctx);
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
   expect(row?.STATO).toBe('GENERATO');
   expect(row?.CLASSI).toBe('5A');
 });
 
-test('RegisterDocumentStep writes LOG_DOCS.UTENTI with the alunno email when generation is alunno-scoped', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db);
-  ctx.set('cdu', buildAlunnoCdu(db));
-  ctx.set('newFileId', 'file_pdp_1');
-  ctx.set('newFileLink', 'https://drive/file_pdp_1');
-  ctx.set('nomeFile', 'PDP_a1');
-  ctx.set('destFolderPath', 'Alunni BES/5A');
-  new RegisterDocumentStep(logger, db).execute(ctx);
-  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_pdp_1');
-  expect(row?.UTENTI).toBe('a1@school.it');
-});
-
-test('RegisterDocumentStep leaves LOG_DOCS.UTENTI empty for classe-scoped generation', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db); // classe-scoped CDU (5A), per the existing baseCtx/buildCdu helper
-  ctx.set('newFileId', 'file_1');
-  ctx.set('newFileLink', 'https://drive/file_1');
-  ctx.set('nomeFile', 'Verbale_5A');
-  ctx.set('destFolderPath', 'Verbali/5');
-  new RegisterDocumentStep(logger, db).execute(ctx);
-  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
-  expect(row?.UTENTI).toBe('');
-});
-
-test('RegisterDocumentStep overrides the fallback with ordered unique CDU users from REGISTRA_UTENTI', () => {
+test('RegisterDocumentStep stores only REGISTRA_DOC-rendered metadata', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   const config = {
     ...fixtureTables().CONF_DOC[0]!,
-    REGISTRA_UTENTI: ' coordinatori, CDC, alunni, genitori, CDC '
+    REGISTRA_DOC: JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: 'destinatario@scuola.it',
+      materie: 'MATE,FISI'
+    })
   };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('newFileId', 'file_recipients');
+  ctx.set('newFileId', 'file_metadata');
   ctx.set('nomeFile', 'Verbale_5A');
 
-  new RegisterDocumentStep(logger, db).execute(ctx);
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
 
-  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_recipients')?.UTENTI).toBe(
-    'rossi@school.it,bianchi@school.it,a1@school.it,genitore1@x.it'
-  );
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_metadata')).toMatchObject({
+    CLASSI: '5A',
+    UTENTI: 'destinatario@scuola.it',
+    MATERIE: 'MATE,FISI'
+  });
 });
 
-test('RegisterDocumentStep resolves DOCENTI from the active CDU subject, not the full CDC', () => {
+test('RegisterDocumentStep leaves unconfigured metadata blank without legacy fallback', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: 'DOCENTI' };
-  const context = ctx.get<Cdu>('cdu')!;
-  ctx.set('config', config);
-  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('cdu', {
-    ...context,
-    meta: {
-      ...context.meta,
-      parametriInput: { ...context.meta.parametriInput, materiaCorrente: 'MATE' }
-    }
-  });
-  ctx.set('newFileId', 'file_subject_teachers');
-  ctx.set('nomeFile', 'Verbale_5A');
-
-  new RegisterDocumentStep(logger, db).execute(ctx);
-
-  // baseCtx's CDU is built at now=2026-07-01 (see buildCdu above), after the 5A/MATE
-  // VARIAZIONI_CATTEDRA's 2025-10-01 decorrenza, so MATE's consiglioDiClasse VM
-  // (read via resolveLogDocUsers off the already CattedraResolver-resolved CDU)
-  // is bianchi, not the CLASSI-nominal rossi.
-  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_subject_teachers')?.UTENTI).toBe(
-    'bianchi@school.it'
-  );
-});
-
-test('RegisterDocumentStep tolerates a sparse legacy CDU without genitori', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: 'GENITORI' };
-  const context = ctx.get<Cdu>('cdu')!;
-  const classe = context.focus.classe!;
-  const studenti = classe.studenti!;
-  const sparseStudenti = studenti.listaCompleta.map((alunno) => {
-    const legacyAlunno = { ...alunno } as Partial<typeof alunno>;
-    delete legacyAlunno.genitori;
-    return legacyAlunno;
-  });
-  ctx.set('config', config);
-  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('cdu', {
-    ...context,
-    focus: {
-      ...context.focus,
-      classe: {
-        ...classe,
-        studenti: { ...studenti, listaCompleta: sparseStudenti as typeof studenti.listaCompleta }
-      }
-    }
-  });
-  ctx.set('newFileId', 'file_sparse_parents');
-  ctx.set('nomeFile', 'Verbale_5A');
-
-  new RegisterDocumentStep(logger, db).execute(ctx);
-
-  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_sparse_parents')?.UTENTI).toBe('');
-});
-
-test('RegisterDocumentStep keeps the alunno fallback when REGISTRA_UTENTI is blank', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: '   ' };
+  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_DOC: '{}' };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
   ctx.set('cdu', buildAlunnoCdu(db));
-  ctx.set('newFileId', 'file_blank_recipients');
+  ctx.set('newFileId', 'file_empty_metadata');
   ctx.set('nomeFile', 'PDP_a1');
 
-  new RegisterDocumentStep(logger, db).execute(ctx);
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
 
-  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_blank_recipients')?.UTENTI).toBe(
-    'a1@school.it'
-  );
-});
-
-test('RegisterDocumentStep rejects unknown REGISTRA_UTENTI selectors before inserting LOG_DOCS', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, REGISTRA_UTENTI: 'COORDINATORI, INVALIDO' };
-  ctx.set('config', config);
-  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('newFileId', 'file_invalid_recipients');
-  ctx.set('nomeFile', 'Verbale_5A');
-
-  expect(() => resolveLogDocUsers(ctx.get('confDoc')!, ctx.get('cdu')!)).toThrow(PipelineError);
-  expect(() => new RegisterDocumentStep(logger, db).execute(ctx)).toThrow(
-    'REGISTRA_UTENTI non valido: INVALIDO'
-  );
-  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_invalid_recipients')).toBeNull();
+  expect(db.table('LOG_DOCS').find((row) => row.ID === 'file_empty_metadata')).toMatchObject({
+    CLASSI: '',
+    UTENTI: '',
+    MATERIE: ''
+  });
 });
 
 test('RegisterDocumentStep writes LOG_DOCS.SOTTOTIPO from CONF_DOC.PARAMETRI.tipoPiano', () => {
@@ -358,7 +305,7 @@ test('RegisterDocumentStep writes LOG_DOCS.SOTTOTIPO from CONF_DOC.PARAMETRI.tip
   ctx.set('newFileLink', 'https://drive/file_pdp_bes');
   ctx.set('nomeFile', 'PDP_BES_a1');
   ctx.set('destFolderPath', 'Alunni BES/5A');
-  new RegisterDocumentStep(logger, db).execute(ctx);
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_pdp_bes');
   expect(row?.SOTTOTIPO).toBe('PDP_BES');
 });
@@ -372,7 +319,7 @@ test('RegisterDocumentStep leaves LOG_DOCS.SOTTOTIPO empty when PARAMETRI has no
   ctx.set('newFileLink', 'https://drive/file_1');
   ctx.set('nomeFile', 'Verbale_5A');
   ctx.set('destFolderPath', 'Verbali/5');
-  new RegisterDocumentStep(logger, db).execute(ctx);
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
   expect(row?.SOTTOTIPO).toBe('');
 });
@@ -380,6 +327,7 @@ test('RegisterDocumentStep leaves LOG_DOCS.SOTTOTIPO empty when PARAMETRI has no
 test('critical steps are exactly the rollback points of 10 §8', () => {
   expect([...CRITICAL_STEPS].sort()).toEqual([
     'CloneTemplate',
+    'PrepareInfrastructure',
     'RegisterDocument',
     'RenderTemplate',
     'SelectTemplate'
@@ -470,26 +418,59 @@ test("ApplyPermissionsStep is skipped when PERMESSI is an empty string (regressi
   expect(drive.permissions).toEqual([]);
 });
 
-describe('CheckDuplicatesStep — SCHEMA_SOTTOCARTELLE MULTIPLO_PER_CLASSE skip branch', () => {
-  test('skips dedup checking entirely (no early-return on a matching LOG_DOCS row) when SCHEMA_SOTTOCARTELLE is MULTIPLO_PER_CLASSE', () => {
+describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
+  test('PERMESSA bypasses the duplicate check for an otherwise identical document', () => {
     const tables = fixtureTables();
-    // Row that WOULD otherwise trigger the dedup early-return (same ID_GEN + classe as CD1/5A).
-    tables.LOG_DOCS = [{ ID: 'old', ID_GEN: 'CD1', CLASSI: '5A', STATO: 'GENERATO' }];
+    tables.LOG_DOCS = [
+      {
+        ID: 'old',
+        ID_GEN: 'CD1',
+        TIPO: 'VERBALE',
+        SOTTOTIPO: '',
+        PATH: 'Verbali/5',
+        NOME: 'Verbale_5A_01/07/2026',
+        CLASSI: '5A',
+        STATO: 'GENERATO'
+      }
+    ];
     const db = new FakeDatabase(tables);
     const ctx = baseCtx(db);
     ctx.set('config', {
       ...fixtureTables().CONF_DOC[0]!,
-      SCHEMA_SOTTOCARTELLE: SchemaSottocartelle.MULTIPLO_PER_CLASSE
+      DUPLICAZIONE: DuplicazioneDocumento.PERMESSA
     });
-    new CheckDuplicatesStep(logger, db).execute(ctx);
-    // Gate untouched: still true (as baseCtx set it), no skipReason recorded.
+    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
     expect(ctx.get('shouldGenerate')).toBe(true);
     expect(ctx.get('skipReason')).toBeNull();
   });
+
+  test('NEGATA allows a document when only its generated name differs', () => {
+    const tables = fixtureTables();
+    tables.LOG_DOCS = [
+      {
+        ID: 'old',
+        ID_GEN: 'CD1',
+        TIPO: 'VERBALE',
+        SOTTOTIPO: '',
+        PATH: 'Verbali/5',
+        NOME: 'Altro_verbale',
+        CLASSI: '5A',
+        STATO: 'GENERATO'
+      }
+    ];
+    const db = new FakeDatabase(tables);
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      DUPLICAZIONE: DuplicazioneDocumento.NEGATA
+    });
+    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+    expect(ctx.get('shouldGenerate')).toBe(true);
+  });
 });
 
-describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty options to AlberoCartelle.findOrCreate', () => {
-  test('passes { classe } when classeNome(ctx) is non-empty', () => {
+describe('PrepareInfrastructureStep registration metadata options', () => {
+  test('passes the configured metadata rather than an implicit class fallback', () => {
     const db = new FakeDatabase(fixtureTables());
     const ctx = baseCtx(db); // buildCdu targets classe '5A' -> focus.classe.anagrafica.nome === '5A'
     const findOrCreateSpy = jest
@@ -501,7 +482,13 @@ describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty optio
       db,
       new FakeTemplateEngine()
     ).execute(ctx);
-    expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/5', { classe: '5A' });
+    expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/5', {
+      classi: '',
+      utenti: '',
+      materie: '',
+      tipo: 'CD1',
+      nome: '5'
+    });
     findOrCreateSpy.mockRestore();
   });
 
@@ -524,7 +511,13 @@ describe('PrepareInfrastructureStep — classeNome(ctx) empty-vs-non-empty optio
       db,
       new FakeTemplateEngine()
     ).execute(ctx);
-    expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/Fisso', {});
+    expect(findOrCreateSpy).toHaveBeenCalledWith('Verbali/Fisso', {
+      classi: '',
+      utenti: '',
+      materie: '',
+      tipo: 'CD1',
+      nome: 'Fisso'
+    });
     findOrCreateSpy.mockRestore();
   });
 });

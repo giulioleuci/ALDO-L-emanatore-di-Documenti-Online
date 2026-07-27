@@ -35,7 +35,7 @@ export interface IArtifactFactory {
   createSheet(name: string, folderId: string, updates?: SheetValueUpdate[]): string;
 }
 
-const NAME_VERBALE = 'E2E Verbale Template';
+const NAME_VERBALE = 'E2E Verbale Template v2';
 const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
@@ -65,6 +65,11 @@ const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Coordinatori:',
   {
     text: '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{materia}}){{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Piani personalizzati generati:',
+  {
+    text: '{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.items}}{{studente.nomeCompleto}} - {{sottotipo}}{{/bullet_list}}',
     listType: 'bullet'
   }
 ];

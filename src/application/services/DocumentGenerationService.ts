@@ -204,14 +204,14 @@ export class DocumentGenerationService {
     });
     pipeline
       .addStep(new AnalyzeContextStep(this.logger, this.configs, this.expressionEngine))
-      .addStep(new CheckDuplicatesStep(this.logger, this.db))
+      .addStep(new CheckDuplicatesStep(this.logger, this.db, this.templates))
       .addStep(new PrepareInfrastructureStep(this.logger, this.drive, this.db, this.templates))
       .addStep(new GenerateNameStep(this.logger, this.templates))
       .addStep(new SelectTemplateStep(this.logger, this.configs, this.expressionEngine))
       .addStep(new CloneTemplateStep(this.logger, this.drive))
       .addStep(new RenderTemplateStep(this.logger, this.strategyRegistry))
       .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver))
-      .addStep(new RegisterDocumentStep(this.logger, this.db))
+      .addStep(new RegisterDocumentStep(this.logger, this.db, this.templates))
       .addStep(new PostProcessStep(this.logger, this.db, this.templates, this.now));
 
     pipeline.onError((step, ctx, error) => {

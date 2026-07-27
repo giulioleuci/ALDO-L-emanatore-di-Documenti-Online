@@ -70,7 +70,7 @@ export class LogDocumentoRepository
       [COL_LOG_DOCS.LINK]: link,
       [COL_LOG_DOCS.CLASSI]: options.classe?.value ?? '',
       [COL_LOG_DOCS.UTENTI]: options.utente?.value ?? '',
-      [COL_LOG_DOCS.MATERIA]: options.materia?.value ?? '',
+      [COL_LOG_DOCS.MATERIE]: options.materia?.value ?? '',
       [COL_LOG_DOCS.SOTTOTIPO]: options.sottotipo ?? '',
       [COL_LOG_DOCS.DATA_CREAZ]: new Date().toISOString()
     });

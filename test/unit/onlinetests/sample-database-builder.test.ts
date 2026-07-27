@@ -1,5 +1,5 @@
 import { SampleDatabaseBuilder } from '../../../src/onlinetests/SampleDatabaseBuilder';
-import { TABLE } from '../../../src/config/schema';
+import { COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD, TABLE } from '../../../src/config/schema';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 
 function fakeFactory() {
@@ -83,13 +83,27 @@ describe('SampleDatabaseBuilder', () => {
     expect(alunni.some((a) => a.CLASSE === partner!.ID)).toBe(true);
   });
 
-  it('seeds a CONF_DOC row and a CONF_MAIL row', () => {
+  it('seeds a schema-complete CONF_DOC row with configured registration metadata', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
     new SampleDatabaseBuilder(factory, drive).build();
 
-    expect(factory.__sheets.get(TABLE.CONF_DOC)!.rows).toHaveLength(1);
+    const confDoc = factory.__sheets.get(TABLE.CONF_DOC)!.rows;
+    expect(confDoc).toHaveLength(1);
     expect(factory.__sheets.get(TABLE.CONF_MAIL)!.rows).toHaveLength(1);
+    expect(COL_CONF_DOC.REGISTRA_DOC).toBe('REGISTRA_DOC');
+    expect(COL_CONF_DOC.REGISTRA_FOLD).toBe('REGISTRA_FOLD');
+    expect(COL_LOG_DOCS.MATERIE).toBe('MATERIE');
+    expect(COL_LOG_FOLD.MATERIE).toBe('MATERIE');
+    expect(COL_LOG_DOCS).not.toHaveProperty('MATERIA');
+    expect(COL_LOG_FOLD).not.toHaveProperty('MATERIA');
+
+    expect(JSON.parse(String(confDoc[0]![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '',
+      materie: ''
+    });
+    expect(JSON.parse(String(confDoc[0]![COL_CONF_DOC.REGISTRA_FOLD]))).toEqual({});
   });
 
   it('names artifacts with a fixed (non-timestamped) base name, so repeated runs resolve the same Drive resources (ref ALDO_GLF_AUDIT_RESULTS.md K-1)', () => {

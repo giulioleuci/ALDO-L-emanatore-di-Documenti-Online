@@ -4,6 +4,7 @@ export interface IReadableTable {
   findAll(): Row[];
   find(predicate: (row: Row) => boolean): Row | null;
   insert(row: Row): void;
+  updateRowWhere(match: Row, row: Row): void;
 }
 
 /**

@@ -16,7 +16,7 @@ function csv(cell: unknown): string[] {
 
 /**
  * LOG_FOLD entity (PK = Drive Folder ID, ref 04 §19) — append-only audit record
- * of a created Drive folder. CLASSI is CSV, matched by containment (ref 01).
+ * of a created Drive folder. CLASSI/UTENTI/MATERIE are CSV, matched by containment (ref 01).
  */
 export class LogCartella extends AldoEntity {
   public readonly tipo: string;

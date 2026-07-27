@@ -19,7 +19,7 @@ import type {
 import type { ImportService, ImportResult } from '../../../src/application/services/ImportService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import type { IDriveFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
-import { COL_LOG_DOCS, COL_LOG_MAIL } from '../../../src/config/schema';
+import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL } from '../../../src/config/schema';
 
 const sample: E2eSampleDatabase & { testMode: boolean } = {
   masterSpreadsheetId: 'm',
@@ -42,23 +42,50 @@ function recordingHarness(
   events: string[];
   emailPatterns: string[];
   emailResolutions: () => number;
+  generatedConfigIds: () => string[];
 } {
   const events: string[] = [];
   const rows: Array<Record<string, unknown>> = [];
+  const folders: Array<Record<string, unknown>> = [];
   const emailPatterns: string[] = [];
+  const generatedConfigIds: string[] = [];
   let emailResolutions = 0;
   const documents = {
     generateForClasse(classe: ClasseId, configId: string) {
       events.push('generate-document');
+      generatedConfigIds.push(configId);
+      if (configId === 'E2E_VERBALE') {
+        for (const row of rows) {
+          if (row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS') {
+            row[COL_LOG_DOCS.STATO] = 'VERBALIZZATO';
+          }
+        }
+      }
       rows.push({
         [COL_LOG_DOCS.ID_GEN]: configId,
+        [COL_LOG_DOCS.TIPO]: configId === 'E2E_VERBALE' ? 'VERBALE' : configId,
         [COL_LOG_DOCS.CLASSI]: classe.value,
+        [COL_LOG_DOCS.MATERIE]: configId === 'E2E_VERBALE' ? 'MATE' : '',
         [COL_LOG_DOCS.LINK]: `https://example.test/${configId}/${classe.value}`
       });
+      if (configId === 'E2E_VERBALE') {
+        folders.push({
+          [COL_LOG_FOLD.CLASSI]: `ARCHIVIO,${classe.value}`,
+          [COL_LOG_FOLD.MATERIE]: 'MATE'
+        });
+      }
       return { fileId: `${configId}-${classe.value}`, status: 'CREATED' };
     },
     generateForAlunno(studente: string) {
       events.push('generate-document');
+      generatedConfigIds.push('PIANO_PERSONALIZZATO');
+      rows.push({
+        [COL_LOG_DOCS.ID_GEN]: 'PIANO_PERSONALIZZATO',
+        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.STATO]: 'GENERATO',
+        [COL_LOG_DOCS.CLASSI]: '',
+        [COL_LOG_DOCS.LINK]: `https://example.test/${studente}`
+      });
       return { fileId: studente, status: 'CREATED' };
     }
   } as unknown as DocumentGenerationService;
@@ -90,7 +117,8 @@ function recordingHarness(
   } as ImportService;
   const db = {
     table: (name: string) => ({
-      findAll: () => (name === 'ASL' ? aslRows : name === 'LOG_MAIL' ? logMailRows : rows)
+      findAll: () =>
+        name === 'ASL' ? aslRows : name === 'LOG_MAIL' ? logMailRows : name === 'LOG_FOLD' ? folders : rows
     })
   } as unknown as EmailDb;
   const drive = {
@@ -124,7 +152,13 @@ function recordingHarness(
       throw new Error(`Unexpected service: ${key}`);
     }
   } as ServiceContainer;
-  return { container, events, emailPatterns, emailResolutions: () => emailResolutions };
+  return {
+    container,
+    events,
+    emailPatterns,
+    emailResolutions: () => emailResolutions,
+    generatedConfigIds: () => generatedConfigIds
+  };
 }
 
 function harnessWithImport(
@@ -211,6 +245,15 @@ test('resolves the (memoized) email service exactly once and reuses it across sc
     CONF_MAIL_PIANI
   ]);
   expect(runner.report().failed).toBe(0);
+});
+
+test('scenario 12 sends the prepared work-plan email without regenerating verbali', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  expect(harness.generatedConfigIds().filter((id) => id === 'E2E_VERBALE')).toHaveLength(4);
 });
 
 test('reports strict actionable diagnostics for verbale and condotta email failures', () => {

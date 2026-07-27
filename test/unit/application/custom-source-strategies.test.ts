@@ -57,7 +57,7 @@ function tablesWithFolders(): Record<string, Row[]> {
       LINK: '',
       CLASSI: '5A',
       UTENTI: '',
-      MATERIA: ''
+      MATERIE: ''
     },
     {
       ID: 'fold_3b',
@@ -66,9 +66,9 @@ function tablesWithFolders(): Record<string, Row[]> {
       LINK: '',
       CLASSI: '3B',
       UTENTI: '',
-      MATERIA: ''
+      MATERIE: ''
     },
-    { ID: 'fold_other', TIPO: 'ALTRO', PATH: 'X', LINK: '', CLASSI: '5A', UTENTI: '', MATERIA: '' }
+    { ID: 'fold_other', TIPO: 'ALTRO', PATH: 'X', LINK: '', CLASSI: '5A', UTENTI: '', MATERIE: '' }
   ];
   return tables;
 }
@@ -112,7 +112,7 @@ describe('CERCA_CARTELLE_CLASSE custom SourceStrategy (12 §3)', () => {
         LINK: '',
         CLASSI: '5A',
         UTENTI: '',
-        MATERIA: ''
+        MATERIE: ''
       }
     ];
     const db = new FakeDatabase(tables);

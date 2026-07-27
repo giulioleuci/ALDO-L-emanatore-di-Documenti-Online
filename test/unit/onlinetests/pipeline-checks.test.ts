@@ -100,14 +100,15 @@ function sampleSeedTables(
             MODELLI: '{"templateId":"TEMPLATE_ONLINETEST"}',
             FILE_NAME: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
             PATH_OUT: '_ALDO_ONLINETEST_OUTPUT',
-            PATH_OUT_SOTTOCARTELLE: '',
-            SCHEMA_SOTTOCARTELLE: '',
+            DUPLICAZIONE: 'NEGATA',
             PERMESSI: '',
             POST_PROCESSO: null,
             PARAMETRI: '',
             GESTIONE_ARTICOLAZIONE: '',
             FORMATO: 'PDF',
-            REGISTRA_UTENTI: ''
+            REGISTRA_UTENTI: '',
+            REGISTRA_DOC: '{}',
+            REGISTRA_FOLD: '{}'
           }
         ]
       : [],

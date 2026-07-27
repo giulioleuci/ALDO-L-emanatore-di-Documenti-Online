@@ -28,6 +28,7 @@ import {
   COL_CONF_DOC,
   COL_CONF_MAIL,
   COL_LOG_DOCS,
+  COL_LOG_FOLD,
   COL_PIANI,
   COL_CONF_IMP
 } from '../../../src/config/schema';
@@ -83,6 +84,16 @@ const TEMPLATE_IDS = {
 function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
   for (const row of rows) {
     expect(Object.keys(row).sort()).toEqual(Object.values(columns).sort());
+  }
+}
+
+function expectRegistrationJson(value: unknown): void {
+  const registration = JSON.parse(String(value)) as Record<string, unknown>;
+  expect(registration).toEqual(expect.any(Object));
+  expect(Array.isArray(registration)).toBe(false);
+  for (const [key, expression] of Object.entries(registration)) {
+    expect(['classi', 'utenti', 'materie']).toContain(key);
+    expect(typeof expression).toBe('string');
   }
 }
 
@@ -166,6 +177,16 @@ test('seeds 11 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc compl
   expect(confDoc).toHaveLength(11);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_verbale' });
+  expect(JSON.parse(String(verbale[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+    classi: '{{focus.classe.anagrafica.nome}}',
+    utenti: '',
+    materie: 'MATE'
+  });
+  expect(JSON.parse(String(verbale[COL_CONF_DOC.REGISTRA_FOLD]))).toEqual({
+    classi: '{{focus.classe.anagrafica.nome}}',
+    utenti: '',
+    materie: 'MATE'
+  });
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
   expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_condotta' });
   const riepilogo = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO')!;
@@ -185,6 +206,14 @@ test('seeds 11 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc compl
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
   expect(piani).toHaveLength(5);
   expectCompleteRows(confDoc, COL_CONF_DOC);
+  for (const row of confDoc) {
+    expectRegistrationJson(row[COL_CONF_DOC.REGISTRA_DOC]);
+    expectRegistrationJson(row[COL_CONF_DOC.REGISTRA_FOLD]);
+  }
+  expect(COL_LOG_DOCS.MATERIE).toBe('MATERIE');
+  expect(COL_LOG_FOLD.MATERIE).toBe('MATERIE');
+  expect(COL_LOG_DOCS).not.toHaveProperty('MATERIA');
+  expect(COL_LOG_FOLD).not.toHaveProperty('MATERIA');
 });
 
 test('1A and 2B share the same coordinatore, so coordinatore-aggregated emails cover both classes (not one email per class)', () => {
@@ -430,6 +459,30 @@ test('CONF_DOC_VERBALE PATH_OUT is per-class, so each class gets its own LOG_FOL
   expect(String(verbale[COL_CONF_DOC.PATH_OUT])).toContain('{{focus.classe.anagrafica.nome}}');
 });
 
+test('CONF_DOC_VERBALE verbalizes the generated class plans through AGGIORNA_STATO_DOC', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const verbale = sample.rows[TABLE.CONF_DOC]!.find((row) => row[COL_CONF_DOC.ID] === 'E2E_VERBALE')!;
+  const postProcesso = JSON.parse(String(verbale[COL_CONF_DOC.POST_PROCESSO])) as Array<{
+    tipo: string;
+    stato: string;
+    criteri: Record<string, string>;
+  }>;
+
+  expect(postProcesso).toEqual([
+    {
+      tipo: 'AGGIORNA_STATO_DOC',
+      stato: 'VERBALIZZATO',
+      criteri: {
+        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
+      }
+    }
+  ]);
+});
+
 test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti + cartelle real-folder boxes)', () => {
   const { spreadsheets, sheets } = factory();
   new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
@@ -446,8 +499,8 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(boxes).toEqual([
     {
       TIPO_BOX: 'documenti',
-      FILTRO_TIPO: 'E2E_PIANO_LAVORO',
-      DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'E2E_PIANO_LAVORO' } }
+      FILTRO_TIPO: 'PIANO_LAVORO',
+      DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
     },
     { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
   ]);

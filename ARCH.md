@@ -1,416 +1,465 @@
-# SGSA (Sistema di Gestione Scolastica Automatizzata) — Architettura dei File
+# ALDO (SGSA) — Architectural Inventory of `src/`
 
-Questo file fornisce una descrizione accurata e completa di tutte le cartelle e i file del progetto **SGSA** (nome in codice **ALDO**), un ERP scolastico modulare basato su Google Workspace e implementato in Google Apps Script (GAS) mediante TypeScript.
+This document is a file-by-file architectural inventory of ALDO's own application code — the `src/` tree of this repository, plus the root-level build/config tooling that shapes it. It excludes `GasLibraryFactory/` internals (referenced only as an external dependency ALDO calls into — see its own `CLAUDE.md`/`DOCS_LIBS`) and excludes all test code (`test/`, `*.test.ts`, `__mocks__`, fixtures).
 
----
+**Method**: built from the `aldo-onlinetests-debug` codebase-memory-mcp graph (this project's `home-giulio-Desktop-ALDO-implementing` index was found stale/degenerate — 75 nodes — at the start of this task; `aldo-onlinetests-debug`, indexed against the same `HEAD` commit `203ea16`, was healthy: 3267 nodes/10893 edges, 1820 nodes/6331 edges scoped to `src/`). Folder/file inventory, layer boundaries (`get_architecture`), symbol tables (`search_graph`/`query_graph`), and cross-file wiring (`trace_path`) were pulled from the graph; `Read`/`Grep` filled gaps (library-usage tagging, a few files' full bodies) the graph's structural view doesn't carry.
 
-## Struttura Principale del Workspace
-
-- **`src/`**: Contiene il codice sorgente dell'applicazione organizzato secondo i principi della Clean Architecture.
-- **`test/`**: Contiene la suite di test unitari, di integrazione, fakes e configurazioni per la convalida offline e online.
-- **`scripts/`**: Script di build, deployment e utility di sincronizzazione delle librerie esterne.
-- **`types/`**: Contiene le definizioni di tipo TypeScript specifiche per le librerie importate da `GasLibraryFactory`.
-- **`FAKEDB/`**: File CSV contenenti mock database per simulare le tabelle di Google Sheets localmente nei test.
+**Verified layering health** (`get_architecture(path="src")`, boundary edge counts): `infrastructure→domain` (59 calls), `application→infrastructure` (52), `application→domain` (39), `config→application` (20), `config→infrastructure` (19), `config→domain` (3), `onlinetests→domain`/`→infrastructure` (8/7), `src→config`/`→infrastructure` (5/3, from `index.ts`). **Zero outbound edges from `domain`** — the domain package's 388 nodes have fan-in only, confirming it is genuinely GAS/infrastructure-agnostic. No back-edges (`domain→application`, `domain→infrastructure`, `infrastructure→application`, anything `→presentation`) were found — the dependency direction is clean, matching CLAUDE.md's Clean Architecture mandate. A grep-based bypass check for native GAS globals (`SpreadsheetApp`, `DriveApp`, `DocumentApp`, `GmailApp`, `MailApp`, `PropertiesService`, `CacheService`, `UrlFetchApp`, `Utilities`, `Session`, `ScriptApp`, `LockService`) outside facades found no leaks: every apparent hit outside `infrastructure/facades/*` and the `onlinetests` harness was a comment or a `ServiceFactory.getXService()` call (GoogleApiWrapper's own indirection), never the raw global.
 
 ---
 
-## 1. Directory: `src/`
+## `src/domain/`
 
-Contiene l'intero sorgente TypeScript dell'applicazione, suddiviso nei layer architetturali standard (Domain, Application, Infrastructure, Presentation).
+The domain core: entities, value objects, specifications, repository interfaces, and the one domain error hierarchy. Confirmed GAS/library-agnostic by the graph (0 outbound call/import edges leaving this package). Every entity mirrors one physical table from `SPECS_ALDO/01_SCHEMA_DATABASE.md`.
 
-### File nella Root di `src/`
+### `src/domain/entities/`
 
-- [src/index.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/index.ts): Il punto di ingresso principale dell'applicazione. Si occupa di esporre le funzioni e le macro globali a `globalThis` affinché Google Apps Script possa riconoscerle e invocarle direttamente (es. `onOpen`, `menu_avvioImportazioni`, `resumeJob`).
+Plain data-holding classes (each pairs a `*Data` interface with a class wrapping it), one per DB table, extending the shared `AldoEntity` base.
 
----
+- **`AldoEntity.ts`** — Abstract base class for every domain entity; supplies identity-based equality. *Domain.* Extended by all 21 entity classes below; no outbound dependencies except a `DomainRepositoryLib` structural type.
+- **`Alunno.ts`** (`Alunno`, `AlunnoData`) — Student entity: active/inactive status, BES flag, contact data, tutor reference, historical links. *Domain.* Consumed heavily by `AlunnoRepository`, `AlunnoProvider`, and most `application/context-engine` providers; referenced by `IAlunnoRepository`.
+- **`Carenza.ts`** (`Carenza`, `CarenzaData`) — Academic-shortfall (insufficiency) record for a student in a subject. *Domain.* Read by `CarenzaRepository`, `CarenzeProvider`, `CarenzaFocusProvider`, `CarenzaSpecs`.
+- **`Classe.ts`** (`Classe`, `ClasseData`) — School-class entity, with support for composite/articulated classes and their `Indirizzo`. *Domain.* Central aggregate root — consumed by nearly every repository, provider, and strategy that resolves a class-level context.
+- **`ConfigurazioneDocumento.ts`** (`ConfigurazioneDocumento`, `ConfigurazioneDocumentoData`) — Document-generation rule row, mapped onto `CONF_DOC`. *Domain.* Read by `ConfigurazioneDocumentoRepository` and consumed by `DocumentGenerationService`/`documentSteps.ts` to select templates and generator strategy.
+- **`ConfigurazioneEmail.ts`** (`ConfigurazioneEmail`, `ConfigurazioneEmailData`) — Email-composition rule row, mapped onto `CONF_MAIL`. *Domain.* Read by `ConfigurazioneEmailRepository`, drives `EmailNotificationService`/`emailSteps.ts`.
+- **`ConfigurazioneImport.ts`** (`ConfigurazioneImport`, `ConfigurazioneImportData`) — ETL/import mapping rule, mapped onto `CONF_IMP`. *Domain.* Read by `ConfigurazioneImportRepository`, consumed by `ImportService`/`ImportRecipeMapper`.
+- **`ConsiglioDiClasse.ts`** (`ConsiglioDiClasse`, `Cattedra`) — Aggregate of the class council (coordinator, secretary, one teacher per subject/`Cattedra`). *Domain.* Built by `IClasseRepository.getConsiglioDiClasse` and consumed by `CdcAssembler`/`ConsiglioClasseProvider`.
+- **`Dipartimento.ts`** (`Dipartimento`, `DipartimentoData`) — Academic department entity, with associated subjects and coordinator. *Domain.* Read by `DipartimentoRepository`; queried by `MateriePerDipartimentoSpec`/`DocentiPerDipartimentoSpec`.
+- **`Docente.ts`** (`Docente`, `DocenteData`) — Teacher entity: contact data and special-role associations. *Domain.* Central to role resolution (`CattedraResolver`, `RisolutoreRuoliService`) and most CDU providers.
+- **`Indirizzo.ts`** (`Indirizzo`, `IndirizzoData`) — Course-of-study/curriculum entity. *Domain.* Read by `IndirizzoRepository`; filtered by `IndirizziPerTipoSpec`.
+- **`LogCartella.ts`** (`LogCartella`, `LogCartellaData`) — Record of a Drive folder created for tracking, mapped onto `LOG_FOLD`. *Domain.* Written by `AlberoCartelle` via `LogCartellaRepository`.
+- **`LogDocumento.ts`** (`LogDocumento`, `LogDocumentoData`) — Record of a generated document and its approval state, mapped onto `LOG_DOCS`. *Domain.* Written by `documentSteps.ts`'s `RegisterDocumentStep`; read by `DocumentiProvider` and the `PianiPers*`/`Documenti*` providers.
+- **`LogEmail.ts`** (`LogEmail`, `LogEmailData`) — Send/delivery-state record for every email, mapped onto `LOG_MAIL`. *Domain.* Written by `emailSteps.ts`'s `LogEmailStep`; read by `EmailRetryService`.
+- **`MasterConfig.ts`** (`MasterConfig`, `MasterConfigData`) — Global yearly configuration (principal, root folder id, etc.), mapped onto `MASTER`. *Domain.* Read by `MasterSheetRepository`/`IMasterSheetRepository`; central to `Bootstrap.ts`'s `BootstrapDeps.master`.
+- **`Materia.ts`** (`Materia`, `MateriaData`) — Single subject entity with exam-related options. *Domain.* Read by `MateriaRepository` (cached); used across specs (`MaterieEsameSpec`, `MateriePerDipartimentoSpec`).
+- **`MovimentoAlunno.ts`** (`MovimentoAlunno`, `MovimentoAlunnoData`) — Student transfer/withdrawal/class-change record, mapped onto `MOV_ALUNNI`. *Domain.* Read by `MovimentoAlunnoRepository`; filtered by `MovimentoAlunnoSpecs`.
+- **`OreASL.ts`** (`OreASL`, `OreASLData`) — Work-experience (ASL/PCTO) hours record, mapped onto `ASL`. *Domain.* Read/written by `OreASLRepository`; aggregated by `IAlunnoRepository.getOreASLTotali`.
+- **`Piano.ts`** (`Piano`, `PianoData`) — Personalized education plan (PDP/PEI), mapped onto `PIANI`. *Domain.* Read by `PianoRepository`; consumed by `PianiProvider` and the `PianiPers*` providers.
+- **`Progetto.ts`** (`Progetto`, `ProgettoData`) — Project/PCTO activity entity, mapped onto `PROGETTI`. *Domain.* Read by `ProgettoRepository`; filtered by `ProgettoSpecs`.
+- **`RuoloSpeciale.ts`** (`RuoloSpeciale`, `RuoloSpecialeData`) — Special institutional role (digital-innovation lead, orientation tutor, etc.), mapped onto `RUOLI`. *Domain.* Read (cached) by `RuoloSpecialeRepository`; resolved by `RisolutoreRuoliService`.
+- **`Supplenza.ts`** (`Supplenza`, `SupplenzaData`) — Temporary teacher substitution, mapped onto `SUPPLENZE`. *Domain.* Priority-1 source in the role-resolution hierarchy; read by `SupplenzaRepository`/`CattedraResolver`/`SupplentiSubstitutionLookup`.
+- **`VariazioneCattedra.ts`** (`VariazioneCattedra`, `VariazioneCattedraData`) — Permanent teaching-assignment change effective from a given date, mapped onto `VARIAZIONI_CATTEDRA`. *Domain.* Priority-2 source in role resolution; read by `VariazioneCattedraRepository`/`CattedraResolver`.
 
-### Folder: `src/config/`
+### `src/domain/errors/`
 
-Contiene la configurazione del sistema di Dependency Injection (DI) e la definizione fisica degli schemi delle tabelle del database.
+- **`DomainError.ts`** (`DomainError`, `ConfigurationError`, `EntityNotFoundError`, `MateriaNotFoundError`, `PipelineError`, `ValidationError`) — The full standardized domain-error hierarchy. *Domain.* Thrown throughout `application/*` and `infrastructure/repositories/*`; caught at the entrypoint boundary (`EntryPoints.ts`'s `resumeJob`, `Menu.ts`'s `avvioPersonalizzato`) and by `ServiceContainer.get` on an unregistered lookup.
 
-- [src/config/Bootstrap.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/config/Bootstrap.ts): Contiene la funzione `initAldo()` che registra tutte le implementazioni concrete delle facciate, dei repository e dei servizi applicativi nel DI Container.
-- [src/config/ServiceContainer.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/config/ServiceContainer.ts): Fornisce un wrapper tipizzato basato su `CoreUtilsLib.LazyServiceContainer` per la risoluzione lazy dei servizi a runtime.
-- [src/config/schema.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/config/schema.ts): Definisce gli schemi fisici e le regole di validazione dei dati per tutte le tabelle del foglio Google (relazioni, chiavi primarie, vincoli) utilizzate da `SheetDBLib`.
+### `src/domain/repositories/`
 
----
+19 files declaring 20 interfaces — the abstraction every `infrastructure/repositories/*.ts` class implements. Kept free of infrastructure imports even where they mirror an infrastructure port structurally (see `IExpressionEnginePort` below).
 
-### Folder: `src/presentation/`
+- **`IAlunnoRepository.ts`** — `findById`/`findAttivi` plus aggregate navigation: `getCarenze`, `getPiani`, `getOreASLTotali`.
+- **`ICarenzaRepository.ts`** — `findAll`/`findByAlunno`/`findByClasse`/`findNonNotificate`, plus per-subject shortfall map read/write (`getCarenzePerMateria`, `setCarenzaMateria`).
+- **`IClasseRepository.ts`** — By far the largest (41 lines): base lookups, `getConsiglioDiClasse`, the cattedra/role matrix (`getDocentiPerMateria`, `getAllDocentiCDC`, `getDocentiIRC/ALT`, `getCoordinatori`, `getDocentiRuolo`), articulated-class support (`isArticolata`, `getGruppoArticolazione`, `orderedPartners`, `getMaterieArticolazione`), and per-teacher subject lookups. Also exports the `RepoRow` type alias.
+- **`IConfigurazioneDocumentoRepository.ts`** — `shouldGenerate` (evaluates `CONF_DOC.CONDIZIONE` via the injected expression-engine port) and `resolveTemplateId` (resolves `MODELLI`, including the conditional-array form). Also declares the local `IExpressionEnginePort` interface — a structural mirror of infrastructure's `IExpressionEngine` kept local specifically so this file has no infrastructure import, per CLAUDE.md's domain-purity rule; TypeScript structural typing makes the two interchangeable at call sites.
+- **`IConfigurazioneEmailRepository.ts`** — `findById` only (thin wrapper over the library's generic `Repository<T>` base).
+- **`IConfigurazioneImportRepository.ts`** — `findById` plus `findAttivi` (enabled import jobs).
+- **`IDipartimentoRepository.ts`** — `findByMateria` (department owning a given subject).
+- **`IDocenteRepository.ts`** — `findById`/`findAll`.
+- **`ILogCartellaRepository.ts`** — `findAll`/`findByClasse`.
+- **`ILogDocumentoRepository.ts`** — `findAll`/`findByClasse`/`findByUtente`.
+- **`ILogEmailRepository.ts`** — `findFailed`, `marcaSuccesso` (flip to SUCCESS via composite-key write), `registraInvio` (append a send record).
+- **`IMasterSheetRepository.ts`** — `findConfigAnnoCorrente` (current year, top row) / `findAnniStorici` (historical rows).
+- **`IMateriaRepository.ts`** — Cached lookups (`findAllCached`, `findByIdCached`, `findAllSigle`) plus base `findById`.
+- **`IMovimentoAlunnoRepository.ts`** — `findByAlunno`, most-recent-first.
+- **`IOreASLRepository.ts`** — `getOrCreate` (existing or fresh zero-hours record), `getTotaleOre`.
+- **`IPianoRepository.ts`** — `findByAlunno`.
+- **`IRuoloSpecialeRepository.ts`** — `findAllCached` plus base `findById`.
+- **`ISupplenzaRepository.ts`** — `findSupplenzaSpecifica` — the effective substitute teacher for a titolare/date/context, following the substitution chain to its end.
+- **`IVariazioneCattedraRepository.ts`** — `findByClasse`.
 
-Gestisce l'interazione utente e l'interfaccia all'interno di Google Sheets.
+### `src/domain/specifications/`
 
-- [src/presentation/Menu.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/presentation/Menu.ts): Configura e costruisce i menu personalizzati dell'interfaccia utente di Google Sheets per avviare importazioni, generazione documenti e comunicazioni email.
+The Specification pattern applied to domain filtering/querying — 14 files, 26 concrete specification classes plus the base.
 
----
+- **`Specification.ts`** — Abstract base interface/class for logical composition (AND/OR/NOT) of specifications. *Domain.* Extended by every class below.
+- **`AlunniAttiviSpec.ts`** (`AlunniAttiviSpec`, `RowLike` type) — Selects only active students (not withdrawn/transferred).
+- **`AlunnoSpecs.ts`** (`AlunniInClasseSpec`, `AlunniPerReligioneSpec`, `AlunniRappresentantiSpec`, `AlunniRipetentiSpec`) — Reusable student filters (by class, religion choice, representative status, repeating year).
+- **`CarenzaSpecs.ts`** (`CarenzeNonNotificateSpec`, `CarenzePerAlunnoSpec`, `CarenzePerClasseSpec`) — Filters shortfalls by notification state, student, or class.
+- **`ClasseSpecs.ts`** (`ClassiArticolateSpec`, `ClassiAttiveSpec`, `ClassiPerAnnoSpec`, `ClassiPerIndirizzoSpec`) — Filters classes by articulation, active state, year, or course.
+- **`DocenteSpecs.ts`** (`DocentiITPSpec`, `DocentiPerDipartimentoSpec`) — Finds ITP teachers or teachers of a department.
+- **`IndirizziPerTipoSpec.ts`** (`IndirizziPerTipoSpec`) — Filters courses of study by type.
+- **`MaterieEsameSpec.ts`** (`MaterieEsamePrimaSpec`, `MaterieEsameSecondaSpec`) — Finds subjects involved in exam committees.
+- **`MateriePerDipartimentoSpec.ts`** (`MateriePerDipartimentoSpec`) — Groups subjects by department.
+- **`MovimentoAlunnoSpecs.ts`** (`MovimentiPerAlunnoSpec`, `MovimentiPerTipoSpec`) — Filters transfer records by date/type.
+- **`OreASLSpecs.ts`** (`OreASLPerAlunnoSpec`, `OreASLPerAnnoSpec`) — Selects ASL hours per student or year.
+- **`PianoSpecs.ts`** (`AlunniBESSpec`, `PianiPerAlunnoSpec`, `PianiPerTipoSpec`) — Filters personalized plans by type; also the BES-student selector.
+- **`ProgettoSpecs.ts`** (`ProgettiPerClasseSpec`, `ProgettiPerTipoSpec`) — Finds active projects for a class/student.
+- **`RuoliPerDocenteSpec.ts`** (`RuoliPerDocenteSpec`) — All special roles held by a teacher.
+- **`VariazioneCattedraSpecs.ts`** (`VariazioniPerClasseSpec`, `VariazioniPerMateriaSpec`, `VariazioniPerNuovoTitolareSpec`) — Filters assignment changes valid at a given instant.
 
-### Folder: `src/entrypoints/`
+### `src/domain/value-objects/`
 
-Definisce le funzioni globali non importate usate direttamente dai trigger GAS.
+Immutable VOs and the global enums — 14 files.
 
-- [src/entrypoints/EntryPoints.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/entrypoints/EntryPoints.ts): Dichiara le funzioni ambientali globali che fungono da aggancio diretto per i trigger di foglio di calcolo, menu Sheets e trigger temporizzati del `JobRunnerLib`.
-
----
-
-### Folder: `src/domain/`
-
-Definisce il core del dominio applicativo scolastico (Entità, Value Object, Specifiche logiche) in modo del tutto agnostico rispetto all'infrastruttura e all'ambiente GAS.
-
-#### Sotto-cartella: `src/domain/entities/`
-
-Contiene le classi entità del dominio scolastico e di configurazione.
-
-- [src/domain/entities/AldoEntity.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/AldoEntity.ts): Classe base astratta per tutte le entità del dominio ALDO, con logica di uguaglianza basata sull'identificativo unico.
-- [src/domain/entities/Alunno.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Alunno.ts): Entità studente con informazioni su stato (attivo/inattivo), BES, dati di contatto, tutor e storici.
-- [src/domain/entities/Carenza.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Carenza.ts): Entità per la gestione delle carenze formative (insufficienze) degli studenti in singole materie.
-- [src/domain/entities/Classe.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Classe.ts): Entità per la classe scolastica, con supporto per classi composte (articolate) e indirizzi scolastici.
-- [src/domain/entities/ConfigurazioneDocumento.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/ConfigurazioneDocumento.ts): Entità per le regole di generazione dei documenti (mappata su `CONF_DOC`).
-- [src/domain/entities/ConfigurazioneEmail.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/ConfigurazioneEmail.ts): Entità per le regole di composizione ed invio email (mappata su `CONF_MAIL`).
-- [src/domain/entities/ConfigurazioneImport.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/ConfigurazioneImport.ts): Entità per le configurazioni ETL e mappature dei dati esterni (mappata su `CONF_IMP`).
-- [src/domain/entities/ConsiglioDiClasse.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/ConsiglioDiClasse.ts): Entità aggregata del consiglio di classe (coordinatore, segretario, docenti per materia).
-- [src/domain/entities/Dipartimento.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Dipartimento.ts): Entità dipartimento didattico con associazione materie e coordinatore di dipartimento.
-- [src/domain/entities/Docente.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Docente.ts): Entità docente contenente dati di contatto ed eventuali ruoli speciali d'istituto.
-- [src/domain/entities/Indirizzo.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Indirizzo.ts): Entità che rappresenta l'indirizzo di studio (curriculum scolastico).
-- [src/domain/entities/LogCartella.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/LogCartella.ts): Rappresenta una cartella creata su Google Drive per scopi di tracciamento (mappato su `LOG_FOLD`).
-- [src/domain/entities/LogDocumento.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/LogDocumento.ts): Rappresenta un record di documento generato e i relativi stati di approvazione (mappato su `LOG_DOCS`).
-- [src/domain/entities/LogEmail.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/LogEmail.ts): Traccia l'invio e lo stato di consegna di ogni email (mappato su `LOG_MAIL`).
-- [src/domain/entities/MasterConfig.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/MasterConfig.ts): Entità per i dati configurazione globali annuali (Dirigente, ID cartella root, ecc., mappata su `MASTER`).
-- [src/domain/entities/Materia.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Materia.ts): Entità che rappresenta una singola materia di studio con relative opzioni di esame.
-- [src/domain/entities/MovimentoAlunno.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/MovimentoAlunno.ts): Traccia i trasferimenti, ritiri o passaggi di classe degli alunni (mappato su `MOV_ALUNNI`).
-- [src/domain/entities/OreASL.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/OreASL.ts): Gestisce le ore di Alternanza Scuola Lavoro svolte dall'alunno (mappato su `ASL`).
-- [src/domain/entities/Piano.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Piano.ts): Entità del Piano Didattico Personalizzato / Piano Educativo Individualizzato (mappato su `PIANI`).
-- [src/domain/entities/Progetto.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Progetto.ts): Entità dei progetti e delle attività PCTO/ASL associate a classi o alunni (mappato su `PROGETTI`).
-- [src/domain/entities/RuoloSpeciale.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/RuoloSpeciale.ts): Delinea ruoli particolari come animatore digitale o tutor orientatore (mappato su `RUOLI`).
-- [src/domain/entities/Supplenza.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/Supplenza.ts): Gestisce le supplenze temporanee dei docenti (mappato su `SUPPLENZE`).
-- [src/domain/entities/VariazioneCattedra.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/entities/VariazioneCattedra.ts): Variazioni permanenti di cattedra attive da una specifica data (mappato su `VARIAZIONI_CATTEDRA`).
-
-#### Sotto-cartella: `src/domain/errors/`
-
-- [src/domain/errors/DomainError.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/errors/DomainError.ts): Eccezioni standardizzate per la gestione degli errori legati a violazioni delle regole di business del dominio.
-
-#### Sotto-cartella: `src/domain/repositories/`
-
-- [src/domain/repositories/IClasseRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/repositories/IClasseRepository.ts): Interfaccia custom del repository delle classi per esporre query specifiche ad hoc non supportate dall'astrazione generica.
-
-#### Sotto-cartella: `src/domain/specifications/`
-
-Contiene la logica di filtro e query strutturata secondo il Pattern Specification.
-
-- [src/domain/specifications/Specification.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/Specification.ts): Classe base astratta per la composizione logica di specifiche (AND, OR, NOT).
-- [src/domain/specifications/AlunniAttiviSpec.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/AlunniAttiviSpec.ts): Seleziona solo gli alunni attivi (non ritirati o trasferiti).
-- [src/domain/specifications/AlunnoSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/AlunnoSpecs.ts): Specifiche riusabili per filtrare gli alunni (per classe, BES, ecc.).
-- [src/domain/specifications/CarenzaSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/CarenzaSpecs.ts): Specifiche per selezionare carenze attive, non notificate o per anno scolastico.
-- [src/domain/specifications/ClasseSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/ClasseSpecs.ts): Specifiche per individuare classi articolate, per indirizzo o per anno scolastico.
-- [src/domain/specifications/DocenteSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/DocenteSpecs.ts): Specifiche per trovare ITP, coordinatori o docenti di un dipartimento.
-- [src/domain/specifications/IndirizziPerTipoSpec.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/IndirizziPerTipoSpec.ts): Filtra gli indirizzi scolastici per tipologia.
-- [src/domain/specifications/MaterieEsameSpec.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/MaterieEsameSpec.ts): Trova le materie coinvolte nelle commissioni d'esame.
-- [src/domain/specifications/MateriePerDipartimentoSpec.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/MateriePerDipartimentoSpec.ts): Raggruppa le materie associate ad un dipartimento.
-- [src/domain/specifications/MovimentoAlunnoSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/MovimentoAlunnoSpecs.ts): Filtra i record di trasferimento in base alla data o alla tipologia.
-- [src/domain/specifications/OreASLSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/OreASLSpecs.ts): Seleziona ore ASL per singolo studente o anno di corso.
-- [src/domain/specifications/PianoSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/PianoSpecs.ts): Filtra i piani didattici personalizzati per tipologia.
-- [src/domain/specifications/ProgettoSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/ProgettoSpecs.ts): Trova i progetti attivi per una determinata classe o alunno.
-- [src/domain/specifications/RuoliPerDocenteSpec.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/RuoliPerDocenteSpec.ts): Trova tutti i ruoli speciali ricoperti da un docente.
-- [src/domain/specifications/VariazioneCattedraSpecs.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/specifications/VariazioneCattedraSpecs.ts): Specifica per identificare variazioni di cattedra valide in un dato istante.
-
-#### Sotto-cartella: `src/domain/value-objects/`
-
-Contiene gli oggetti immutabili e gli enumerativi del dominio scolastico.
-
-- [src/domain/value-objects/enums.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/enums.ts): Definisce gli enum globali (es. `StatoDocumento`, `StatoEmail`, `TipoMovimento`, `TipoPiano`).
-- [src/domain/value-objects/AnnoCorso.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/AnnoCorso.ts): Value Object per l'anno di corso (da 1 a 5) con utility di calcolo propedeuticità.
-- [src/domain/value-objects/AnnoScolastico.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/AnnoScolastico.ts): Gestisce il formato dell'anno scolastico "YYYY-YY" con convalida formale.
-- [src/domain/value-objects/ArticolazioneConfig.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/ArticolazioneConfig.ts): Dettaglio sulle suddivisioni degli studenti in gruppi per classi articolate.
-- [src/domain/value-objects/ClasseId.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/ClasseId.ts): Identificativo univoco della classe (es. "5A").
-- [src/domain/value-objects/CsvScope.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/CsvScope.ts): Indica la tipologia e il tracciato record del file di importazione CSV.
-- [src/domain/value-objects/DipartimentoId.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/DipartimentoId.ts): Identificativo univoco del dipartimento didattico.
-- [src/domain/value-objects/DriveFileId.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/DriveFileId.ts): Wrapper tipizzato per gli ID dei file e delle cartelle di Google Drive.
-- [src/domain/value-objects/Email.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/Email.ts): Value Object per indirizzi email con validazione tramite espressioni regolari.
-- [src/domain/value-objects/EsameConfig.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/EsameConfig.ts): Impostazioni per le commissioni e le materie d'esame.
-- [src/domain/value-objects/IndirizzoId.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/IndirizzoId.ts): Identificativo dell'indirizzo curriculare (es. "INF" per Informatica).
-- [src/domain/value-objects/MateriaId.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/MateriaId.ts): Identificativo normalizzato della materia (es. "MAT", "INF").
-- [src/domain/value-objects/PeriodoSupplenza.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/PeriodoSupplenza.ts): Intervallo temporale (inizio/fine) che definisce la durata di una supplenza.
-- [src/domain/value-objects/ValoreCarenza.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/domain/value-objects/ValoreCarenza.ts): Valore dell'insufficienza scolastica.
+- **`enums.ts`** — Global enums: `DuplicazioneDocumento`, `FormatoOutput`, `Genere`, `GestioneArticolazione`, `GestioneSupplenti`, `PermessoACL`, `ProcessoInvio`, `ReligioneScelta`, `StatoDocumento`, `StatoEmail`, `TipoIstituto`, `TipoMovimento`, `TipoPiano`, `TipoProgetto`, plus the `appellativo` helper function. *Domain.* Imported by nearly every layer.
+- **`AnnoCorso.ts`** — Year-of-course VO (1–5) with propaedeutic-calculation helpers.
+- **`AnnoScolastico.ts`** — "YYYY-YY" school-year format with formal validation.
+- **`ArticolazioneConfig.ts`** (`ArticolazioneConfig`, `ArticolazioneJson`) — Configuration for splitting students into articulated-class groups.
+- **`ClasseId.ts`** — Unique class identifier VO (e.g. "5A"); highest fan-in node in the whole `src/` graph (36) via its `.of()` factory.
+- **`CsvScope.ts`** — Import CSV file type/record-layout descriptor.
+- **`DipartimentoId.ts`** — Department identifier VO.
+- **`DriveFileId.ts`** (`DriveFileId`, `DriveFolderId`) — Typed wrappers for Drive file/folder ids.
+- **`Email.ts`** — Email-address VO with regex validation; uses `CoreUtilsLib`.
+- **`EsameConfig.ts`** (`EsameConfig`, `EsameConfigJson`) — Exam-committee/subject configuration.
+- **`IndirizzoId.ts`** — Course-of-study identifier VO (e.g. "INF").
+- **`MateriaId.ts`** — Normalized subject identifier VO (e.g. "MAT", "INF").
+- **`PeriodoSupplenza.ts`** — Start/end interval VO defining a substitution's duration; uses `CoreUtilsLib`.
+- **`ValoreCarenza.ts`** (`ValoreCarenza`, `TipoValoreCarenza`) — Academic-shortfall value VO.
 
 ---
 
-### Folder: `src/application/`
+## `src/application/services/`
 
-Contiene la logica dei casi d'uso (Use Cases), coordinando il flusso dei dati da e verso il dominio.
+Application-layer use-case services that orchestrate business operations — the layer's outward-facing verbs. All are wired as lazy singletons in `Bootstrap.ts`'s `buildAldoContainer`.
 
-#### Sotto-cartella: `src/application/context-engine/`
-
-Il nucleo deputato ad assemblare il **Contesto Dati Unificato (CDU)** prima che una notifica o un verbale venga generato.
-
-- [src/application/context-engine/Cdu.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/Cdu.ts): Interfacce TypeScript che descrivono formalmente l'intero albero dati del CDU.
-- [src/application/context-engine/dates.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/dates.ts): Semplici utility di formattazione delle date per il contesto.
-- [src/application/context-engine/studenti.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/studenti.ts): Logica di estrazione e mappatura degli elenchi studenti della classe.
-- [src/application/context-engine/techEntities.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/techEntities.ts): Mappatori interni per agganciare le entità reali del dominio all'albero dati tecnico.
-- [src/application/context-engine/CdcAssembler.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/CdcAssembler.ts): Assemblatore specializzato dei dati relativi al Consiglio di Classe (CDC).
-- [src/application/context-engine/ContextBuilder.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/ContextBuilder.ts): Orchestratore principale che invoca sequenzialmente i Provider e compila il CDU finale.
-- [src/application/context-engine/ContextEngineFactory.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/ContextEngineFactory.ts): Factory per istanziare e configurare dinamicamente il ContextBuilder con i corretti moduli.
-- [src/application/context-engine/ContextProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/ContextProvider.ts): Definizione dell'interfaccia base `IContextProvider` per l'inserimento dati nel CDU.
-- [src/application/context-engine/ElencoMaterieConPermessi.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/ElencoMaterieConPermessi.ts): Risolve la visualizzazione orizzontale condizionale delle materie ed i permessi di lettura/scrittura dei docenti su Sheets.
-- [src/application/context-engine/Recipe.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/Recipe.ts): Mappa le ricette dati (Recipe) per determinare quali provider eseguire in base all'operazione.
-
-##### Sotto-cartella: `src/application/context-engine/providers/`
-
-Implementazioni dei singoli provider di dati per il CDU.
-
-- [src/application/context-engine/providers/AlunnoProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/AlunnoProvider.ts): Iniesta i dati anagrafici e di contatto dell'alunno nel CDU.
-- [src/application/context-engine/providers/CarenzaFocusProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/CarenzaFocusProvider.ts): Popola i dati dell'insufficienza scolastica target oggetto del documento o della notifica.
-- [src/application/context-engine/providers/CarenzeProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/CarenzeProvider.ts): Aggiunge la lista totale di carenze scolastiche dell'alunno o della classe.
-- [src/application/context-engine/providers/ClasseProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/ClasseProvider.ts): Fornisce informazioni e metadati sulla classe scolastica di riferimento.
-- [src/application/context-engine/providers/ConsiglioClasseProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/ConsiglioClasseProvider.ts): Carica la composizione nominale ed effettiva dei docenti del Consiglio di Classe.
-- [src/application/context-engine/providers/DocumentiProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/DocumentiProvider.ts): Aggiunge metadati relativi ai documenti precedentemente generati per l'entità.
-- [src/application/context-engine/providers/PianiProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/PianiProvider.ts): Estrae i piani didattici personalizzati (PDP, PEI, BES) attivi per l'alunno.
-- [src/application/context-engine/providers/RappresentantiProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/RappresentantiProvider.ts): Carica i dati sui rappresentanti di classe (genitori e alunni).
-- [src/application/context-engine/providers/SchoolProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/SchoolProvider.ts): Fornisce informazioni generali sull'istituto (nome, dirigente scolastico).
-- [src/application/context-engine/providers/StatisticheProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/StatisticheProvider.ts): Calcola ed inserisce nel contesto statistiche aggregate (es. contatori di assenze o carenze).
-- [src/application/context-engine/providers/StoricoProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/StoricoProvider.ts): Integra riferimenti storici ad anni scolastici precedenti.
-- [src/application/context-engine/providers/StudentiProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/StudentiProvider.ts): Fornisce elenchi e filtri specifici di studenti associati alla classe.
-- [src/application/context-engine/providers/TutorProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/providers/TutorProvider.ts): Popola il CDU con le informazioni del docente tutor/orientatore designato per lo studente.
-
-##### Sotto-cartella: `src/application/context-engine/interceptors/`
-
-- [src/application/context-engine/interceptors/SupplentiSubstitutionLookup.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/interceptors/SupplentiSubstitutionLookup.ts): Intercetta la composizione del CDC sostituendo dinamicamente i docenti titolari con i supplenti attivi in base al giorno dell'operazione.
-
-##### Sotto-cartella: `src/application/context-engine/mappers/`
-
-- [src/application/context-engine/mappers/carenzeMapper.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/context-engine/mappers/carenzeMapper.ts): Converte i dati fisici della tabella `CARENZE` in strutture dati formattate per la visualizzazione all'interno di tabelle di report o email.
-
-#### Sotto-cartella: `src/application/email/`
-
-Gestisce la logica di formattazione dei messaggi di posta elettronica.
-
-- [src/application/email/boxes.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/email/boxes.ts): Compone blocchi di testo e layout HTML strutturati (boxes) da iniettare nei corpi delle email mediante `ComposableContentLib`.
-- [src/application/email/saluto.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/email/saluto.ts): Genera le intestazioni e le formule di saluto dinamiche e appropriate in base al destinatario risolto (docente, coordinatore, genitore).
-
-#### Sotto-cartella: `src/application/import/`
-
-Contiene la logica per l'importazione dati e ETL da tracciati esterni.
-
-- [src/application/import/CustomSourceStrategies.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/import/CustomSourceStrategies.ts): Definisce le strategie di formattazione ed estrazione dati per tracciati record specifici non standard.
-- [src/application/import/ImportRecipeMapper.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/import/ImportRecipeMapper.ts): Mappa le ricette di importazione (`CONF_IMP`) legandole a regole di validazione e mapping dello schema.
-
-#### Sotto-cartella: `src/application/strategies/`
-
-Racchiude le strategie concrete di generazione dei documenti (Pattern Strategy).
-
-- [src/application/strategies/GeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/GeneratorStrategy.ts): Interfaccia base `IGeneratorStrategy` che definisce il contratto per la generazione dei documenti.
-- [src/application/strategies/DocPersonalizzatoGeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/DocPersonalizzatoGeneratorStrategy.ts): Genera file Google Docs applicando sostituzioni avanzate e template complessi.
-- [src/application/strategies/DocumentoConTabelleImportateGeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/DocumentoConTabelleImportateGeneratorStrategy.ts): Compone documenti inserendo dinamicamente tabelle esterne all'interno dei segnaposto (placeholder).
-- [src/application/strategies/DocumentoGenericoGeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/DocumentoGenericoGeneratorStrategy.ts): Strategia di fallback che esegue una sostituzione semplice di placeholder testuali su un documento copia del template.
-- [src/application/strategies/SheetMaterieConPermessiGeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/SheetMaterieConPermessiGeneratorStrategy.ts): Genera fogli di calcolo applicando blocchi e permessi di editing granulari per i singoli docenti sulle rispettive materie.
-- [src/application/strategies/SheetMaterieGeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/SheetMaterieGeneratorStrategy.ts): Genera fogli di calcolo per il recupero delle carenze scolastiche.
-- [src/application/strategies/VerbaleGeneratorStrategy.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/strategies/VerbaleGeneratorStrategy.ts): Strategia dedicata alla stesura automatica del verbale del consiglio di classe.
-
-#### Sotto-cartella: `src/application/services/`
-
-Servizi applicativi che orchestrano e avviano le operazioni di business.
-
-- [src/application/services/AggregatoreDati.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/AggregatoreDati.ts): Raggruppa e aggrega dati sparsi su diverse tabelle per supportare reportistiche avanzate.
-- [src/application/services/CattedraResolver.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/CattedraResolver.ts): Implementa la logica di business per stabilire il docente effettivo risolvendo le supplenze e le variazioni temporali.
-- [src/application/services/DocumentBatchService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/DocumentBatchService.ts): Gestisce l'avvio e la ripresa massiva dei processi di generazione documenti mediante la persistenza a blocchi di `JobRunnerLib`.
-- [src/application/services/DocumentGenerationService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/DocumentGenerationService.ts): Avvia e coordina la pipeline di generazione per un singolo documento.
-- [src/application/services/EmailBatchService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/EmailBatchService.ts): Coordina l'invio massivo asincrono delle email sfruttando `JobRunnerLib` per eludere il time limit di GAS.
-- [src/application/services/EmailNotificationService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/EmailNotificationService.ts): Gestisce il flusso per la composizione e l'invio di una singola notifica email.
-- [src/application/services/EmailRetryService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/EmailRetryService.ts): Cerca i tentativi di invio email falliti nei log e ne riesegue la spedizione.
-- [src/application/services/ImportService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/ImportService.ts): Servizio che avvia e controlla l'importazione di file esterni nel database di fogli di calcolo.
-- [src/application/services/ReportService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/ReportService.ts): Genera e aggiorna i fogli e i prospetti riepilogativi ad uso amministrativo.
-- [src/application/services/RisolutoreRuoliService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/services/RisolutoreRuoliService.ts): Risolve indirizzi email per ruoli speciali o cariche d'istituto (es. coordinatori di classe o DS).
-
-#### Sotto-cartella: `src/application/storico/`
-
-Logica e astrazioni per interrogare ed elaborare archivi di anni scolastici passati.
-
-- [src/application/storico/LazyRef.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/LazyRef.ts): Wrapper lazy-loading per connessioni a database storici.
-- [src/application/storico/reconcileSigla.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/reconcileSigla.ts): Utility per uniformare sigle e codici di classi o materie cambiati nel corso degli anni.
-- [src/application/storico/StoricoAlunniService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/StoricoAlunniService.ts): Ricerca della carriera scolastica e dei passaggi degli alunni negli anni passati.
-- [src/application/storico/StoricoClassiService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/StoricoClassiService.ts): Fornisce configurazioni e compagini dei vecchi consigli di classe.
-- [src/application/storico/StoricoDatabaseProvider.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/StoricoDatabaseProvider.ts): Risolve la connessione fisica ai fogli di calcolo corrispondenti agli archivi storici.
-- [src/application/storico/StoricoDocentiService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/StoricoDocentiService.ts): Interroga lo storico dei contratti e dell'insegnamento per singoli docenti.
-- [src/application/storico/StoricoDocumentiService.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/application/storico/StoricoDocumentiService.ts): Recupera log e metadati di verbali o pagelle emessi in sessioni scolastiche chiuse.
+- **`AggregatoreDati.ts`** (`AggregatoreDati`, `DocumentoFiltri`) — Aggregates data scattered across multiple tables to support advanced reporting. *Application.* Constructed with `deps.db`; called from `Bootstrap.buildAldoContainer`.
+- **`CattedraResolver.ts`** (`CattedraResolver`) — Implements the effective-teacher business rule by resolving substitutions/assignment changes over time. *Application.* Uses `RoleResolutionLib`; consumes `ISupplenzaRepository`/`IVariazioneCattedraRepository`/`IClasseRepository` (domain interfaces) — the concrete role-resolution-hierarchy logic described in CLAUDE.md (`SUPPLENZE` → `VARIAZIONI_CATTEDRA` → `CLASSI`).
+- **`DocumentBatchService.ts`** (`DocumentBatchService`, `BatchCheckpoint`, `BatchResult`, `BatchResumeState`) — Starts/resumes bulk document-generation runs, checkpointing state via `JobRunnerLib` so GAS's 6/30-minute execution cap can't truncate a batch. *Application.* Registered in `Bootstrap.ts`; invoked by `avviaGenerazioneDataDriven`.
+- **`DocumentGenerationService.ts`** (`DocumentGenerationService`, `DocumentGenerationDeps`) — Coordinates the generation pipeline for a single document: selects the `GeneratorStrategy` from the `strategyRegistry` (keyed by `CONF_DOC.GENERATORE`), builds the CDU via `ContextBuilder`, and drives `documentSteps.ts`. *Application.* The single biggest consumer of `application→infrastructure` edges; called by `DocumentBatchService`.
+- **`EmailBatchService.ts`** (`EmailBatchService`, `EmailBatchCheckpoint`, `EmailBatchResult`, `EmailBatchResumeState`) — Coordinates mass, checkpointed email sends via `JobRunnerLib`. *Application.* Wraps `EmailNotificationService`; invoked by `avviaInvioNotificheDataDriven`.
+- **`EmailNotificationService.ts`** (`EmailNotificationService`, `EmailNotificationDeps`, `SendPatternOptions`, `SendPatternResult`, `EmailDb` type) — Composes and sends a single notification email by running `emailSteps.ts`'s pipeline (recipient resolution → CDU build → box render → send → log). *Application.* Its static `.create(...)` factory is called directly from `Bootstrap.buildAldoContainer`.
+- **`EmailRetryService.ts`** (`EmailRetryService`, `EmailRetryOptions`, `RetryResult`) — Finds failed send attempts in `LOG_MAIL` and re-executes them through `EmailNotificationService`. *Application.*
+- **`ImportService.ts`** (`ImportService`, `ImportResult`) — Starts and supervises import of external files into the spreadsheet-backed database, driven by `ConfigurazioneImportRepository`. *Application.* Uses `ImportEngine`, `GasProcessMonitorLib`, `GasResilienceLib`; only registered in `Bootstrap.ts` when `deps.importEngine` is supplied.
+- **`ReportService.ts`** (`ReportService`, several report-shape interfaces: `ASLReport`, `CarenzaRow`, `CarenzeReport`, `ReportCarenzeOptions`, `StatisticheClasse`, `StatisticheIstituto`, `Severita` type) — Generates/updates administrative summary sheets. *Application.*
+- **`RisolutoreRuoliService.ts`** (`RisolutoreRuoliService`, `RisolviOptions`, `RoleContext`, `RoleResult`/`RoleStrategy` types) — Resolves email addresses for special institutional roles (class coordinators, DS, etc.) and — critically — is the `IRoleResolver` implementation injected into `documentSteps.ts`'s `ApplyPermissionsStep` for `CONF_DOC.PERMESSI` ACL resolution. *Application.* Uses `RoleResolutionLib`; constructed both standalone (`c.register('risolutoreRuoli', ...)`) and inline inside `DocumentGenerationService`'s and the sheet-strategies' construction in `Bootstrap.ts`.
 
 ---
 
-### Folder: `src/infrastructure/`
+## `src/application/strategies/`
 
-Contiene le implementazioni concrete delle interfacce definite nel dominio e i moduli di integrazione con i servizi Google (facciate) ed il database.
+The Strategy pattern implementation for document generation — one concrete strategy class per `CONF_DOC.GENERATORE` value, all selected through the `strategyRegistry` map built in `Bootstrap.buildAldoContainer` and consumed by `DocumentGenerationService`/`documentSteps.ts`'s `RenderTemplateStep`.
 
-#### Sotto-cartella: `src/infrastructure/db/`
-
-- [src/infrastructure/db/Database.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/db/Database.ts): Interfacce fisiche e query builder di basso livello per l'interazione con le tabelle virtuali.
-- [src/infrastructure/db/SheetDbAdapter.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/db/SheetDbAdapter.ts): L'adattatore concreto che mappa l'ORM `SheetDBLib` sull'interfaccia di persistenza dell'applicazione.
-
-#### Sotto-cartella: `src/infrastructure/facades/`
-
-Implementa le facciate (Pattern Facade) per isolare l'applicazione dall'uso diretto delle API native di Google Apps Script (permettendo anche il mocking nei test).
-
-- [src/infrastructure/facades/ActiveUserFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/ActiveUserFacade.ts): Recupera in sicurezza l'email dell'utente attivo connesso al foglio di calcolo.
-- [src/infrastructure/facades/DocumentTableFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/DocumentTableFacade.ts): Fornisce metodi helper per inserire, formattare o eliminare tabelle complesse all'interno di Google Docs.
-- [src/infrastructure/facades/DriveServiceFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/DriveServiceFacade.ts): Incapsula la gestione dei file, la creazione di cartelle nidificate e l'assegnazione granulare dei permessi Drive (ACL).
-- [src/infrastructure/facades/ExpressionEngineFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/ExpressionEngineFacade.ts): Valuta stringhe di condizioni booleane mediante `GasExpressionEngineLib` per stabilire l'applicabilità di regole di business.
-- [src/infrastructure/facades/GmailServiceFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/GmailServiceFacade.ts): Gestisce la formattazione dei messaggi MIME e l'invio protetto delle email tramite GmailApp.
-- [src/infrastructure/facades/ProcessMonitorFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/ProcessMonitorFacade.ts): Comunica l'avanzamento dei processi batch e i log alla sidebar HTML monitorata dall'utente.
-- [src/infrastructure/facades/PropertiesFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/PropertiesFacade.ts): Interfaccia per il salvataggio permanente dello stato del runner tramite `PropertiesService` di GAS.
-- [src/infrastructure/facades/TemplateEngineFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/TemplateEngineFacade.ts): Elabora e compila stringhe, file Docs o fogli Sheets compilando i tag placeholder con i dati reali estratti dal CDU.
-- [src/infrastructure/facades/UiFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/facades/UiFacade.ts): Gestisce interazioni UI native (alert, prompt di testo, messaggi di caricamento, sidebar).
-
-#### Sotto-cartella: `src/infrastructure/repositories/`
-
-Contiene le classi repository concrete che leggono e scrivono dati sulle rispettive tabelle di Google Sheets. Ciascun file implementa la logica di persistenza per una specifica entità.
-
-- [src/infrastructure/repositories/AlunnoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/AlunnoRepository.ts)
-- [src/infrastructure/repositories/CarenzaRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/CarenzaRepository.ts)
-- [src/infrastructure/repositories/ClasseRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/ClasseRepository.ts)
-- [src/infrastructure/repositories/ConfigurazioneDocumentoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/ConfigurazioneDocumentoRepository.ts)
-- [src/infrastructure/repositories/ConfigurazioneEmailRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/ConfigurazioneEmailRepository.ts)
-- [src/infrastructure/repositories/ConfigurazioneImportRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/ConfigurazioneImportRepository.ts)
-- [src/infrastructure/repositories/DipartimentoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/DipartimentoRepository.ts)
-- [src/infrastructure/repositories/DocenteRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/DocenteRepository.ts)
-- [src/infrastructure/repositories/IndirizzoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/IndirizzoRepository.ts)
-- [src/infrastructure/repositories/LogCartellaRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/LogCartellaRepository.ts)
-- [src/infrastructure/repositories/LogDocumentoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/LogDocumentoRepository.ts)
-- [src/infrastructure/repositories/LogEmailRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/LogEmailRepository.ts)
-- [src/infrastructure/repositories/MasterSheetRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/MasterSheetRepository.ts)
-- [src/infrastructure/repositories/MateriaRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/MateriaRepository.ts)
-- [src/infrastructure/repositories/MovimentoAlunnoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/MovimentoAlunnoRepository.ts)
-- [src/infrastructure/repositories/OreASLRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/OreASLRepository.ts)
-- [src/infrastructure/repositories/PianoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/PianoRepository.ts)
-- [src/infrastructure/repositories/ProgettoRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/ProgettoRepository.ts)
-- [src/infrastructure/repositories/RuoloSpecialeRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/RuoloSpecialeRepository.ts)
-- [src/infrastructure/repositories/SupplenzaRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/SupplenzaRepository.ts)
-- [src/infrastructure/repositories/VariazioneCattedraRepository.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/repositories/VariazioneCattedraRepository.ts)
-
-#### Sotto-cartella: `src/infrastructure/services/`
-
-- [src/infrastructure/services/AlberoCartelle.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/services/AlberoCartelle.ts): Algoritmo per risolvere la gerarchia ad albero delle cartelle Drive, creando o riciclando cartelle e tracciando i percorsi su `LOG_FOLD`.
-
-#### Sotto-cartella: `src/infrastructure/steps/`
-
-Definisce le classi per i singoli step di elaborazione sequenziale delle pipeline di documenti ed email.
-
-- [src/infrastructure/steps/documentSteps.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/steps/documentSteps.ts): Step per la pipeline dei documenti (selezione e clonazione template, rendering, condivisione permessi, salvataggio e log).
-- [src/infrastructure/steps/emailSteps.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/steps/emailSteps.ts): Step per la pipeline delle email (risoluzione destinatari, calcolo condizioni, composizione moduli, invio effettivo e tracciamento).
-- [src/infrastructure/steps/postProcessActions.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/infrastructure/steps/postProcessActions.ts): Azioni post-processo eseguite al termine delle pipeline (es. marcare lo stato `NOTIFICATO` per determinati record).
+- **`GeneratorStrategy.ts`** (`GeneratorStrategy` interface) — The base contract every concrete strategy implements. *Application.*
+- **`DocPersonalizzatoGeneratorStrategy.ts`** — Generates Google Docs with advanced placeholder substitution over complex templates (`CONF_DOC.GENERATORE = 'DOC_PERSONALIZZATO'`). Uses `ITemplateEngine`.
+- **`DocumentoConTabelleImportateGeneratorStrategy.ts`** — Composes documents by dynamically inserting external tables at placeholders (`'DOCUMENTO_CON_TABELLE_IMPORTATE'`); the only strategy needing a live `SpreadsheetService`+`DocumentService` pair, so `Bootstrap.ts` only registers it when both are available.
+- **`DocumentoGenericoGeneratorStrategy.ts`** — Fallback strategy: simple text-placeholder substitution on a template copy (`'DOCUMENTO_GENERICO'`).
+- **`FoglioGenericoGeneratorStrategy.ts`** — Generic-sheet generation strategy (`'FOGLIO_GENERICO'`).
+- **`SheetMaterieConPermessiGeneratorStrategy.ts`** — Generates spreadsheets applying granular per-teacher, per-subject edit permission blocks (`'SHEET_CON_MATERIE_E_PERMESSI'`); the only strategy that also depends on `RisolutoreRuoliService`. Requires a live `SpreadsheetService`.
+- **`SheetMaterieGeneratorStrategy.ts`** — Generates subject-recovery spreadsheets (`'SHEET_CON_MATERIE'`). Requires a live `SpreadsheetService`; depends on `MateriaRepository`.
+- **`VerbaleGeneratorStrategy.ts`** — Dedicated strategy for automatic class-council minutes drafting (`'VERBALE_CDC'`).
 
 ---
 
-### Folder: `src/onlinetests/`
+## `src/application/context-engine/` (with `providers/`, `mappers/`, `interceptors/`)
 
-Contiene il framework e i test dedicati alla validazione live dell'applicazione nell'ambiente reale di Google Apps Script (in-cloud smoke tests).
+The core that assembles the **Contesto Dati Unificato (CDU)** — the single aggregated context object every document/email template renders against, per `SPECS_ALDO/02_CDU_STRUTTURA.md`. `ContextEngineFactory.create()` is the wiring point: it builds one `ContextBuilder`, registers every repository once, registers the substitution interceptor, then registers all 19 providers under their recipe token.
 
-- [src/onlinetests/index.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/index.ts): Il modulo di avvio e orchestratore dei test online.
-- [src/onlinetests/OnlineTestReport.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/OnlineTestReport.ts): Raccoglie i risultati dei test ed elabora report HTML di successo/errore da visualizzare nell'interfaccia.
-- [src/onlinetests/GasSampleSpreadsheetFactory.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/GasSampleSpreadsheetFactory.ts): Genera dinamicamente fogli di calcolo fisici temporanei su Drive per eseguire i test in isolamento.
-- [src/onlinetests/SampleDatabaseBuilder.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/SampleDatabaseBuilder.ts): Popola il foglio temporaneo creato con dati coerenti di test (classi, docenti, materie) mimando il DB reale.
+- **`Cdu.ts`** — TypeScript interfaces formally describing the entire CDU data tree (`Cdu`, `CduAlunno`, `CduCarenzaFocus`, `CduClasse`, `CduDestinatario`, `CduIstituto`, `CduMeta`, `CduTech`, `AlunnoContestoVM`, `DocenteCdcVM`, `PianoPersonalizzatoItem`, `RecipeOptionsView`). *Application.* Every provider mutates a `Cdu` instance in place.
+- **`dates.ts`** (`formatOggi`, `fmt`) — Date-formatting utilities for the context. *Application.* Uses `CoreUtilsLib`.
+- **`studenti.ts`** (`studentiDellaClasse`) — Extracts/maps class student rosters. *Application.*
+- **`techEntities.ts`** (`setClasseEntity`/`getClasseEntity`, `setAlunnoEntity`/`getAlunnoEntity`) — Internal mappers attaching the real domain entity onto the technical CDU tree (a side-channel used by providers/pipeline steps to recover the entity behind a CDU node). *Application.*
+- **`CdcAssembler.ts`** (`CdcAssembler`) — Specialized assembler for Class Council (CDC) data. *Application.* Constructed from `IClasseRepository`+`IMateriaRepository`; consumed by `ContextEngineFactory.create` and passed into `ConsiglioClasseProvider`.
+- **`ContextBuilder.ts`** (`ContextBuilder`) — Main orchestrator: sequentially invokes registered providers/interceptors and compiles the final CDU. *Application.* Built and returned by `ContextEngineFactory.create`; run by `DocumentGenerationService`/`emailSteps.ts`'s `BuildCDUStep`.
+- **`ContextEngineFactory.ts`** (`ContextEngineFactory`) — Factory that wires one `ContextBuilder` with all 7 repositories (built once over one `RepositoryDatabase`) and all 19 providers plus the `SwapAndEnrichInterceptor`. *Application.* Called from `Bootstrap.buildAldoContainer` (`c.register('contextBuilder', ...)`) — its `master` parameter defaults to a repository over the same `database`, which is correct for tests but would break the real composition root (MASTER lives on a separate spreadsheet), so `Bootstrap.ts` always passes `deps.master` explicitly (documented directly in the source as a footgun to avoid).
+- **`ContextProvider.ts`** (`ContextProvider` interface) — Base `IContextProvider`-equivalent contract for CDU data insertion. *Application.* Implemented by all 19 provider classes below.
+- **`ElencoMaterieConPermessi.ts`** (`buildElencoMaterieConPermessi`, `ElencoMateriaConPermessiVM`) — Resolves the conditional horizontal subject display and teacher read/write permissions on Sheets. *Application.* An entry point in the graph (no inbound calls found within `src/` scope — likely invoked by a strategy or test harness only).
+- **`Recipe.ts`** (`recipe`, `makeOptions`, `Recipe`, `RecipeOptions`, `BuildParams` interfaces) — Maps data "recipes" to determine which providers run for a given operation (e.g. `DOCENTE_COMPLETO`, `ALUNNO_COMPLETO`, `FAMIGLIA_COMPLETO`). *Application.* High fan-in (13) — called from `emailSteps.ts` and multiple providers/tests to resolve `RecipeOptions`.
 
-#### Sotto-cartella: `src/onlinetests/checks/`
+### `src/application/context-engine/providers/` (19 classes)
 
-- [src/onlinetests/checks/contextEngineChecks.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/checks/contextEngineChecks.ts): Verifica il corretto assemblaggio del CDU su fogli live.
-- [src/onlinetests/checks/pipelineChecks.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/checks/pipelineChecks.ts): Valida l'esecuzione reale delle pipeline dei documenti e delle email.
-- [src/onlinetests/checks/repositoryChecks.ts](file:///home/giulio/Desktop/ALDO%20implementing/src/onlinetests/checks/repositoryChecks.ts): Esegue e verifica le query complesse di tutti i repository scolastici.
+- **`AlunnoProvider.ts`** — Injects the student's registry/contact data into the CDU.
+- **`CarenzaFocusProvider.ts`** — Populates the specific shortfall targeted by the document/notification.
+- **`CarenzeProvider.ts`** — Adds the student's/class's full shortfall list.
+- **`ClasseProvider.ts`** — Provides class metadata.
+- **`ConsiglioClasseProvider.ts`** — Loads the nominal and effective composition of the Class Council's teachers.
+- **`DocumentiClasseProvider.ts`** — Fills `focus.classe.didattica.documenti` by aggregating `LOG_DOCS` across every class in `params.classiCompetenza`, mirroring `PianiPersClasseProvider`'s multi-class aggregation so a coordinator covering several classes sees one combined list; active in `DOCENTE_COMPLETO` recipes.
+- **`DocumentiProvider.ts`** — Adds metadata about previously generated documents for the entity.
+- **`DocumentiStoricoProvider.ts`** — Fills the historical-documents slice via a `LazyRef` over prior-year `LOG_DOCS` rows tagged with matching `ID_GEN`; skipped entirely when `options.includiStorico` is false.
+- **`PianiPersAlunnoProvider.ts`** — Fills `focus.alunno.didattica.pianiPersonalizzati` from `LOG_DOCS` filtered to `TIPO === 'PIANO_PERS'`, deliberately independent of `DocumentiProvider` so existing boxes keep documented behavior.
+- **`PianiPersAlunnoStoricoProvider.ts`** — Historical mirror of the above via `LazyRef`+`StoricoDocumentiService`.
+- **`PianiPersClasseProvider.ts`** — Class-scoped aggregation of personalized plans across `classiCompetenza`, each item tagged with its owning student (resolved via `AlunnoRepository`).
+- **`PianiPersClasseStoricoProvider.ts`** — Historical mirror, merging every current-year student's prior-year plan documents via a per-student loop (deliberately unbatched — small BES/PDP population per class).
+- **`PianiProvider.ts`** — Extracts active personalized plans (PDP/PEI/BES) for the student.
+- **`RappresentantiProvider.ts`** — Loads class-representative data (parents and students).
+- **`SchoolProvider.ts`** — Provides institute-level information (name, headmaster).
+- **`StatisticheProvider.ts`** — Computes/inserts aggregate statistics (absence/shortfall counters).
+- **`StoricoProvider.ts`** — Integrates historical references to prior school years.
+- **`StudentiProvider.ts`** — Provides class-scoped student list/filters.
+- **`TutorProvider.ts`** — Populates the assigned tutor/orientation-teacher data.
 
----
+All 19 are `Application` layer, implement `ContextProvider`, and are registered exclusively from `ContextEngineFactory.create`; each depends only on domain repository interfaces (never a concrete infrastructure class directly, except where `ContextEngineFactory` itself constructs the concrete repository and injects it).
 
-## 2. Directory: `test/`
+### `src/application/context-engine/interceptors/`
 
-Contiene l'intera infrastruttura di test automatici offline eseguiti via Jest.
+- **`SupplentiSubstitutionLookup.ts`** (`createSupplentiSubstitutionLookup`, `effettivoSupplente`) — Intercepts CDC composition, dynamically swapping titular teachers for active substitutes based on the operation's date; the callback plugged into the library's `SwapAndEnrichInterceptor` (registered by `ContextEngineFactory.create`) which runs after the `consiglio`/`student` providers. *Application.*
 
-### Sotto-cartella: `test/setup/`
+### `src/application/context-engine/mappers/`
 
-- [test/setup/load-gaslibs.cjs](file:///home/giulio/Desktop/ALDO%20implementing/test/setup/load-gaslibs.cjs): Carica i globali e simula l'ambiente Google Apps Script caricando la libreria precompilata `vendor/gaslibs.Code.js`.
-
-### Sotto-cartella: `test/fixtures/`
-
-- [test/fixtures/tables.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fixtures/tables.ts): Dati statici preconfigurati e tabelle mock in formato JS per popolare il database nei test unitari.
-
-### Sotto-cartella: `test/fakes/`
-
-Contiene le implementazioni mock/finto delle facciate infrastrutturali per velocizzare e isolare i test offline.
-
-- [test/fakes/FakeDatabase.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakeDatabase.ts): Simula un foglio di calcolo Google Sheets interamente in memoria a partire da tabelle in formato CSV/JS.
-- [test/fakes/FakeDriveFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakeDriveFacade.ts): Simula le interazioni con i file ed i permessi di Google Drive in memoria.
-- [test/fakes/FakeGmailFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakeGmailFacade.ts): Simula l'invio delle email registrando gli invii in una lista interna ispezionabile nei test.
-- [test/fakes/FakeProcessMonitor.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakeProcessMonitor.ts): Simula la barra di progresso e memorizza gli step eseguiti per asseverarli.
-- [test/fakes/FakePropertiesFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakePropertiesFacade.ts): Mantiene le proprietà di script in una mappa JS interna.
-- [test/fakes/FakeTemplateEngine.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakeTemplateEngine.ts): Mappa sostituzioni semplici di testi ed espansione tabelle per validare il rendering in locale.
-- [test/fakes/FakeUiFacade.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/fakes/FakeUiFacade.ts): Intercetta alert e prompt utente, consentendo risposte mockate programmabili.
-
-### Sotto-cartella: `test/build/`
-
-- [test/build/online-mode.smoke.test.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/build/online-mode.smoke.test.ts): Valida la configurazione di build e verifica che l'output generato per la modalità online includa i moduli corretti.
-
-### Sotto-cartella: `test/integration/`
-
-Test di integrazione offline che verificano l'esecuzione coordinata di più componenti (servizi, passi di pipeline, repository) usando il database finto `FakeDatabase`.
-
-- [test/integration/smoke.test.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/integration/smoke.test.ts): Test generico di caricamento e inizializzazione del sistema.
-- [test/integration/notifica-email.test.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/integration/notifica-email.test.ts): Valida il flusso completo di elaborazione e spedizione delle notifiche email (es. notifiche carenze).
-- [test/integration/verbale-cdc.test.ts](file:///home/giulio/Desktop/ALDO%20implementing/test/integration/verbale-cdc.test.ts): Verifica l'assemblaggio del CDU e la generazione del verbale del CDC.
-
-### Sotto-cartella: `test/unit/`
-
-Test unitari atomici e isolati per verificare le singole classi o funzioni logiche dell'applicazione.
-
-#### Sotto-cartella: `test/unit/domain/`
-
-Test per verificare la validità dei Value Object, delle entità e delle specifiche logiche.
-
-- `alunni-attivi-spec.test.ts`, `anno-corso.test.ts`, `anno-scolastico.test.ts`, `consiglio-di-classe.test.ts`, `drive-ids.test.ts`, `entities.test.ts`, `enums.test.ts`, `identifiers.test.ts`, `supplenza-vos.test.ts`, `valore-carenza.test.ts`.
-
-#### Sotto-cartella: `test/unit/application/`
-
-Test per validare i casi d'uso, i provider dati del CDU e i servizi applicativi.
-
-- `aggregatore-dati.test.ts`, `cattedra-resolver.test.ts`, `custom-source-strategies.test.ts`, `document-batch-service.test.ts`, `document-generation-service.test.ts`, `documento-con-tabelle-generator.test.ts`, `elenco-materie-con-permessi.test.ts`, `email-batch-service.test.ts`, `email-boxes.test.ts`, `email-notification-service.test.ts`, `email-retry-service.test.ts`, `email-saluto.test.ts`, `generator-strategies.test.ts`, `import-recipe-mapper.test.ts`, `import-service.test.ts`, `report-service.test.ts`, `risolutore-ruoli-service.test.ts`, `sheet-materie-generator.test.ts`, `storico-services.test.ts`.
-- **Sotto-cartella `context-engine/`**: `alunno-provider.test.ts`, `builder-istituto.test.ts`, `cdc-filtrato.test.ts`, `classe-provider.test.ts`, `consiglio-provider.test.ts`, `documenti-carenzafocus.test.ts`, `recipes-e2e.test.ts`, `studenti-provider.test.ts`, `swap-supplenti.test.ts`.
-
-#### Sotto-cartella: `test/unit/infrastructure/`
-
-Test per verificare repository, facciate esterne, adattatori del database e step di pipeline.
-
-- `albero-cartelle.test.ts`, `alunno-repository.test.ts`, `carenza-repository.test.ts`, `classe-articolazione.test.ts`, `classe-cattedre.test.ts`, `classe-repository.test.ts`, `config-repositories.test.ts`, `dipartimento-repository.test.ts`, `docente-repository.test.ts`, `document-steps.test.ts`, `document-table-facade.test.ts`, `drive-facade.test.ts`, `email-steps.test.ts`, `expression-engine.test.ts`, `fake-database.test.ts`, `fake-facades.test.ts`, `gmail-facade.test.ts`, `indirizzo-repository.test.ts`, `log-repositories.test.ts`, `master-sheet-repository.test.ts`, `materia-repository.test.ts`, `movimento-alunno-repository.test.ts`, `oreasl-repository.test.ts`, `persistence-composite.test.ts`, `persistence-save.test.ts`, `persistence-writes.test.ts`, `piano-repository.test.ts`, `pipeline-framework.test.ts`, `post-process-actions.test.ts`, `progetto-repository.test.ts`, `properties-facade.test.ts`, `repository-query-pushdown.test.ts`, `ruolo-speciale-repository.test.ts`, `sheetdb-adapter.test.ts`, `supplenza-repository.test.ts`, `template-engine-facade.test.ts`, `ui-facade.test.ts`, `variazione-cattedra-repository.test.ts`.
-
-#### Sotto-cartella: `test/unit/onlinetests/`
-
-Test per convalidare i moduli che compongono l'ambiente di test live.
-
-- `context-engine-checks.test.ts`, `index.test.ts`, `online-test-report.test.ts`, `pipeline-checks.test.ts`, `repository-checks.test.ts`, `sample-database-builder.test.ts`.
-
-#### Sotto-cartella: `test/unit/presentation/`
-
-- `menu.test.ts`: Test unitari sulla costruzione del menu del foglio di calcolo.
-
-#### Sotto-cartella: `test/unit/harness/`
-
-- `gaslibs.test.ts`: Test di integrità dell'harness di esecuzione offline delle librerie esterne.
+- **`carenzeMapper.ts`** (`carenzeDettaglioSemplice`, `curriculumRecord`) — Converts physical `CARENZE` table rows into structures formatted for report/email tables. *Application.*
 
 ---
 
-## 3. Directory: `scripts/`
+## `src/application/import/`
 
-Contiene script Node.js per build, vendor sync e convalida.
+Data-import/ETL logic.
 
-- [scripts/build-and-prepare.cjs](file:///home/giulio/Desktop/ALDO%20implementing/scripts/build-and-prepare.cjs): Gestisce il processo di compilazione Webpack e l'applicazione di patch di compatibilità V8 specifiche per GAS. Supporta diverse modalità: `testing`, `production`, `online` e `testoffline`.
-- [scripts/refresh-vendor.cjs](file:///home/giulio/Desktop/ALDO%20implementing/scripts/refresh-vendor.cjs): Copia e prepara la build precompilata aggiornata delle librerie da `GasLibraryFactory` nella cartella `vendor/` locale.
-- [scripts/verify-vendor.cjs](file:///home/giulio/Desktop/ALDO%20implementing/scripts/verify-vendor.cjs): Effettua un controllo dell'integrità dei moduli presenti nella directory `vendor/`.
-
----
-
-## 4. Directory: `types/`
-
-- [types/gaslibs/index.d.ts](file:///home/giulio/Desktop/ALDO%20implementing/types/gaslibs/index.d.ts): Contiene i tipi globali definiti per le librerie di Apps Script presenti in `vendor/` affinché il compilatore TS possa validarne le chiamate a runtime.
+- **`CustomSourceStrategies.ts`** (`CercaCartelleClasseStrategy`, `CercaDocumentiStrategy`, `createCercaCartelleClasseStrategy`, `createCercaDocumentiStrategy`, `readSheetRows`, `requireRegistered`) — Custom extraction/formatting strategies for non-standard import record layouts. *Application.*
+- **`ImportRecipeMapper.ts`** (`buildSource`, `isGhostRecord`, `toLibraryRecipe`, `AldoImportConfig` interface) — Maps import recipes (`CONF_IMP`) to `ImportEngine`'s validation/mapping schema. *Application.* Used by `ImportService`.
 
 ---
 
-## 5. File di Configurazione della Root
+## `src/application/email/`
 
-- [appsscript.json](file:///home/giulio/Desktop/ALDO%20implementing/appsscript.json): Manifest ufficiale di configurazione per il progetto Google Apps Script (impostazioni V8 runtime, librerie dipendenti, permessi di autorizzazione OAuth scope).
-- [babel.config.cjs](file:///home/giulio/Desktop/ALDO%20implementing/babel.config.cjs): Configurazione di Babel per la transpilazione del bundle JavaScript di output (Code.js) in codice ES compatible con il motore GAS V8 (Chrome 80).
-- [eslint.config.js](file:///home/giulio/Desktop/ALDO%20implementing/eslint.config.js): Regole di linting del progetto. Include restrizioni per evitare la chiamata diretta dei globali di Apps Script al di fuori delle facciate abilitate.
-- [tsconfig.eslint.json](file:///home/giulio/Desktop/ALDO%20implementing/tsconfig.eslint.json): Estensione di configurazione del compilatore TypeScript utilizzata specificamente dall'ambiente ESLint/IDE.
-- [webpack.config.cjs](file:///home/giulio/Desktop/ALDO%20implementing/webpack.config.cjs): Configurazione di Webpack per l'impacchettamento del codice TypeScript e dei relativi file correlati in singoli bundle pronti all'esecuzione in Google Workspace.
-- [jest.config.cjs](file:///home/giulio/Desktop/ALDO%20implementing/jest.config.cjs): Configurazione principale per l'esecuzione dei test unitari tramite Jest.
-- [jest.integration.config.cjs](file:///home/giulio/Desktop/ALDO%20implementing/jest.integration.config.cjs): Configurazione Jest specifica per i test di integrazione offline.
-- [jest.build.config.cjs](file:///home/giulio/Desktop/ALDO%20implementing/jest.build.config.cjs): Configurazione Jest per validare la correttezza del build bundle finale.
-- [CLAUDE.md](file:///home/giulio/Desktop/ALDO%20implementing/CLAUDE.md): File di istruzioni specifiche del progetto, comandi di build/test e linee guida di programmazione.
-- [GEMINI.md](file:///home/giulio/Desktop/ALDO%20implementing/GEMINI.md): File delle preferenze e vincoli dello sviluppatore AI relativi a questa sessione (es. l'obbligo di preferire `GasLibraryFactory` ed il divieto di reinventare codice di libreria).
+Email body composition (a small application-layer sibling of `context-engine/`, not called out by name in CLAUDE.md's layout paragraph but coherent with it — see Structural notes).
+
+- **`boxes.ts`** (`createBoxComposer`, `renderBoxes`, `wrapBox`, `escapeHtml`, `safeColor`, `safeUrl`, plus per-box renderers `renderAssenzeBox`/`renderCarenzeBox`/`renderDocumentiBox`/`renderNoteBox`/`renderPianiPersBox`, and data-shape interfaces `CarenzaFormatoB`, `DocumentoItem`, `PianoPersonalizzatoRow`, `RenderedBox`) — Composes structured HTML box layouts for email bodies via `ComposableContentLib`. *Application.* Consumed by `emailSteps.ts`'s `RenderBoxesStep`.
+- **`saluto.ts`** (`salutoPerTarget`, `EmailTarget`) — Generates the dynamic greeting/salutation appropriate to the resolved recipient (teacher, coordinator, parent). *Application.*
+
+---
+
+## `src/application/storico/`
+
+Logic/abstractions for querying past school years' archives.
+
+- **`LazyRef.ts`** (`LazyRef`) — Lazy-evaluation wrapper used by every historical CDU field (`documenti.storico`, `pianiPersonalizzati.storico`, etc.) so a historical database is only opened if the value is actually read. *Application.*
+- **`reconcileSigla.ts`** (`reconcileSigla`) — Utility to reconcile class/subject codes that changed across years. *Application.*
+- **`StoricoAlunniService.ts`** (`StoricoAlunniService`, `AnnoAlunnoStorico`, `CarenzaStorica`, `Esito` type) — Looks up a student's school career/class-changes in past years. *Application.*
+- **`StoricoClassiService.ts`** (`StoricoClassiService`, `AnnoClasseStorico`, `DocenteMateriaStorico`) — Provides past years' class-council compositions/configurations. *Application.*
+- **`StoricoDatabaseProvider.ts`** (`MasterStoricoDatabaseProvider`, `StoricoDatabaseProvider` interface, `AnnoStorico`) — Resolves the physical spreadsheet connection corresponding to a historical archive year, driven by `MasterConfig`'s historical-year list. Uses `SheetDBLib` and `ServiceFactory.getCacheService()`. *Application.*
+- **`StoricoDocentiService.ts`** (`StoricoDocentiService`, `AnnoDocenteStorico`, `ClasseMateriaStorico`) — Queries a teacher's historical teaching-assignment/contract record. *Application.*
+- **`StoricoDocumentiService.ts`** (`StoricoDocumentiService`, `DocumentoStorico`, `DocumentoStoricoConTipo`) — Retrieves logs/metadata of minutes/report cards issued in closed school years. *Application.* Consumed by the four `*StoricoProvider` classes above.
+
+---
+
+## `src/application/pipelines/`
+
+**Structural note:** CLAUDE.md's documented layout places pipeline "steps" under `src/infrastructure/steps/` — that folder **does not exist** in the current tree. The equivalent classes live here, in `src/application/pipelines/`, built on `GasLibraryFactory`'s `PipelineFramework` `Step` base. This is flagged explicitly in the Structural Findings section below; the description here documents the code as it actually is.
+
+- **`documentSteps.ts`** — The document-generation pipeline's steps (`AnalyzeContextStep`, `SelectTemplateStep`, `CloneTemplateStep`, `GenerateNameStep`, `RenderTemplateStep`, `ApplyPermissionsStep`, `CheckDuplicatesStep`, `RegisterDocumentStep`, `PostProcessStep`, `PrepareInfrastructureStep`), plus the `IRoleResolver` port (satisfied structurally by `RisolutoreRuoliService`), ACL types (`AclEntry`, `PermessiConfig`), and helpers (`cdu`, `cduRecord`, `cfg`, `classeNome`, `confDoc`, `generateGate`, `parseRegola`). Runs inside a `SheetDbAdapter`/`SheetDBLib` transaction (steps call `executePostProcess` from `postProcessActions.ts` and use `AlberoCartelle` for folder placement). *Application.* Driven by `DocumentGenerationService`.
+- **`emailSteps.ts`** — The email-notification pipeline's steps (`BuildCDUStep`, `ResolveRecipientsStep`, `ValutaCondizioniInvioStep`, `ComposeEmailStep`, `RenderBoxesStep`, `SendEmailStep`, `PostProcessEmailStep`, `LogEmailStep`), plus `Destinazione` and helpers (`cdu`, `cduRecord`, `cfg`, `confMail`, `now`, `sendGate`, `storicoOptionsFor`, `target`). Explicitly runs **without** a DB transaction — a sent email can't be rolled back, and `SheetDBLib` forbids `save()` inside a transaction, so `11 §9/§10` mandate explicit `save()` calls instead. *Application.* Driven by `EmailNotificationService`.
+- **`postProcessActions.ts`** (`executePostProcess`, `hasJsonValue`, `findMatchingRows`, `resolveCriteri`, `updateMatching`, `PostProcessAction`, `PostProcessDb` type) — The shared `POST_PROCESSO` JSON-action executor used by both `CONF_DOC` and `CONF_MAIL` (e.g. marking a record `NOTIFICATO`). Criteria values are `{{path}}` templates resolved against the CDU; matching rows are rewritten via the full-previous-row match key so a missing match can never append phantom rows. `hasJsonValue` exists because a live Sheets round-trip returns a blank cell as `''`, not `null` — plain `!= null` checks would let an empty string through into a throwing `JSON.parse('')`. *Application.* Shared by both `documentSteps.ts` and `emailSteps.ts`.
+
+---
+
+## `src/infrastructure/facades/`
+
+Facades (Facade pattern) isolating the application from direct Google Apps Script native APIs — all sanctioned exception points per CLAUDE.md's `GoogleApiWrapper`-only rule, and the seam that makes offline mocking (`test/fakes/*`) possible.
+
+- **`ActiveUserFacade.ts`** (`SessionActiveUserFacade`, `IActiveUserFacade`) — Safely retrieves the active spreadsheet user's email via `ServiceFactory.getUserService()`. *Infrastructure.*
+- **`DocumentTableFacade.ts`** (`DocumentTableFacade`, `IDocumentTableFacade`, `TablePlaceholder`) — Helpers to insert/format/delete complex tables inside Google Docs, wrapping `DocumentService`. *Infrastructure.* Consumed by `DocumentoConTabelleImportateGeneratorStrategy`.
+- **`DriveServiceFacade.ts`** (`DriveServiceFacade`, `IDriveFacade`) — Encapsulates file management, nested folder creation, and granular Drive ACL assignment. *Infrastructure.* Wraps `GoogleApiWrapper`; consumed by `AlberoCartelle`, `documentSteps.ts`, `emailSteps.ts`, `Bootstrap.ts`.
+- **`ExpressionEngineFacade.ts`** (`ExpressionEngineFacade`, `IExpressionEngine`) — Evaluates boolean condition strings via `GasExpressionEngineLib` to decide rule applicability (`CONF_DOC.CONDIZIONE`, `CONF_MAIL.CONDIZIONE`). *Infrastructure.* Consumed by `documentSteps.ts`, `emailSteps.ts`, `DocumentGenerationService`, `ConfigurazioneDocumentoRepository`.
+- **`GmailServiceFacade.ts`** (`GmailServiceFacade`, `IGmailFacade`, `EmailSendOptions`, `EmailSendResult`) — Handles MIME message formatting and protected email sending via `GmailApp`/`GoogleApiWrapper`. *Infrastructure.* Consumed by `emailSteps.ts`'s `SendEmailStep`, `EmailNotificationService`.
+- **`ProcessMonitorFacade.ts`** (`ProcessMonitorFacade`, `IProcessMonitor`) — Reports batch-process progress/logs to the user-monitored HTML sidebar, via `GasProcessMonitorLib`. *Infrastructure.* Injected into `DocumentBatchService`/`EmailBatchService`/`ImportService`.
+- **`PropertiesFacade.ts`** (`ScriptPropertiesFacade`, `IPropertiesFacade`) — Persists runner state via GAS's `PropertiesService`/`ServiceFactory.getPropertiesService()`. *Infrastructure.* Used by `EntryPoints.ts`'s `impostaMasterSpreadsheetId` and `JobRunnerLib`'s checkpoint mechanism (wired in `Bootstrap.ts`).
+- **`TemplateEngineFacade.ts`** (`TemplateEngineFacade`, `ITemplateEngine`) — Processes/compiles strings, Docs files, or Sheets, filling placeholder tags with real data from the CDU, via `WorkspaceTemplateEngine`/`CoreUtilsLib`. *Infrastructure.* Consumed by every `application/strategies/*` class and `documentSteps.ts`.
+- **`UiFacade.ts`** (`GasUiFacade`, `IUiFacade`, `MenuVoce`) — Native UI interactions: alerts, text prompts, loading messages, sidebars, via `GasProcessMonitorLib`+`GoogleApiWrapper`. *Infrastructure.* Consumed by `Menu.ts` (via the `IUiFacade` interface) and instantiated concretely in `index.ts`/`EntryPoints.ts`.
+
+## `src/infrastructure/db/`
+
+- **`Database.ts`** (`IDatabase`, `IReadableTable`, `EqualityQueryBuilder`, `createSelect`, `from`, `Row`/`IndexedLookup` types) — Low-level physical interfaces and query-builder for the virtual tables. Uses `DomainRepositoryLib`/`SheetDBLib`. *Infrastructure.*
+- **`SheetDbAdapter.ts`** (`SheetDbAdapter`, `SheetTableAdapter`, helper functions `cell`, `stripVirtual`) — The concrete adapter mapping `SheetDBLib`'s ORM onto the application's persistence interface; `SheetTableAdapter.findAll`/`.find` are among the highest-fan-in nodes in the graph (26/21 callers), confirming this is the true bottleneck every repository routes through. *Infrastructure.*
+
+## `src/infrastructure/repositories/`
+
+21 concrete repository classes, one per domain repository interface, each implementing persistence over `SheetDbAdapter`/`DomainRepositoryLib`'s generic `Repository<T>` base. Several (`ConfigurazioneDocumentoRepository`, `ConfigurazioneEmailRepository`, `ConfigurazioneImportRepository`, `DipartimentoRepository`, `MasterSheetRepository`, `MateriaRepository`, `RuoloSpecialeRepository`, `ClasseRepository`, `CarenzaRepository`, `SupplenzaRepository`, `IndirizzoRepository`, `VariazioneCattedraRepository`, `MovimentoAlunnoRepository`, `OreASLRepository`, `PianoRepository`, `ProgettoRepository`, `LogCartellaRepository`, `LogDocumentoRepository`, `LogEmailRepository`, `AlunnoRepository`, `DocenteRepository`) own a `this.cache` field (a `CacheService` slot behind `ServiceFactory`, used to speed up `findById`). All are *Infrastructure*, implement their matching `I*Repository` domain interface, and are constructed either directly in `Bootstrap.buildAldoContainer`/`ContextEngineFactory.create` or ad hoc inside a service (e.g. `MateriaRepository` inside the sheet-strategies branch of `Bootstrap.ts`).
+
+- **`AlunnoRepository.ts`** — Implements `IAlunnoRepository`; highest-traffic student-data repository.
+- **`CarenzaRepository.ts`** (also exports `MateriaColumns` interface) — Implements `ICarenzaRepository`; per-subject shortfall matrix read/write.
+- **`ClasseRepository.ts`** (also exports `MateriaColumns` interface, `rowOf` — 13 fan-in) — Implements the large `IClasseRepository` surface (cattedra matrix, articulation, roster).
+- **`ConfigurazioneDocumentoRepository.ts`** (also exports `ModelloCondizionale` interface) — Implements `IConfigurazioneDocumentoRepository`; resolves `MODELLI`/`CONDIZIONE` via `GasExpressionEngineLib`.
+- **`ConfigurazioneEmailRepository.ts`** — Implements `IConfigurazioneEmailRepository`.
+- **`ConfigurazioneImportRepository.ts`** — Implements `IConfigurazioneImportRepository`.
+- **`DipartimentoRepository.ts`** — Implements `IDipartimentoRepository`.
+- **`DocenteRepository.ts`** — Implements `IDocenteRepository`.
+- **`IndirizzoRepository.ts`** — Implements a repository over `Indirizzo` (course-of-study lookups).
+- **`LogCartellaRepository.ts`** (also exports `RegistraOptions`) — Implements `ILogCartellaRepository`; written by `AlberoCartelle`.
+- **`LogDocumentoRepository.ts`** (also exports `RegistraOptions`) — Implements `ILogDocumentoRepository`; written by `documentSteps.ts`.
+- **`LogEmailRepository.ts`** — Implements `ILogEmailRepository`; written by `emailSteps.ts`, read by `EmailRetryService`.
+- **`MasterSheetRepository.ts`** — Implements `IMasterSheetRepository`; the only repository bound to a *different* spreadsheet than the yearly database (see `ContextEngineFactory.create`'s doc comment on this exact footgun).
+- **`MateriaRepository.ts`** — Implements `IMateriaRepository` (cached).
+- **`MovimentoAlunnoRepository.ts`** — Implements `IMovimentoAlunnoRepository`.
+- **`OreASLRepository.ts`** — Implements `IOreASLRepository`.
+- **`PianoRepository.ts`** — Implements `IPianoRepository`.
+- **`ProgettoRepository.ts`** — Implements a repository over `Progetto`.
+- **`RuoloSpecialeRepository.ts`** — Implements `IRuoloSpecialeRepository` (cached).
+- **`SupplenzaRepository.ts`** (also exports `isoDate` helper) — Implements `ISupplenzaRepository`; uses `RoleResolutionLib`/`CoreUtilsLib`.
+- **`VariazioneCattedraRepository.ts`** — Implements `IVariazioneCattedraRepository`.
+
+## `src/infrastructure/services/`
+
+- **`AlberoCartelle.ts`** (`AlberoCartelle`, `CartellaResult`, `FindOrCreateOptions`, `csvContains` helper) — Resolves the Drive folder-tree hierarchy: creates or reuses folders, tracking paths in `LOG_FOLD` via `LogCartellaRepository`. Uses `SheetDBLib` (for CSV-list column parsing) and `IDriveFacade`. *Infrastructure.* Consumed by `documentSteps.ts`'s `PrepareInfrastructureStep` and registered in `Bootstrap.buildAldoContainer`.
+
+---
+
+## `src/presentation/`
+
+- **`Menu.ts`** (`costruisciMenu`, `vociMenu`, `avvioPersonalizzato`, `menuGenerazioneDocumenti`, `menuComunicazioniEmail`, `menuImportazioni`, `MENU_TITOLO`) — Builds the Google Sheets custom menu and the four-step interactive-launcher wrapper (prompt → validate non-empty → open monitoring sidebar → delegate). *Presentation.* Contains genuinely **zero** business logic (confirmed by the graph: the `presentation` package has 0 outbound call edges) — it only takes an `IUiFacade` and a delegate closure as parameters; the closures that touch the DI container are built in `index.ts`/`EntryPoints.ts`, never here. This is the one file matching CLAUDE.md's presentation-layer description exactly.
+
+---
+
+## `src/config/`
+
+The composition root — the only place allowed to know about every concrete facade/service/repository at once.
+
+- **`ServiceContainer.ts`** (`ServiceContainer`, `Factory<T>` type) — A thin, DomainError-typed wrapper over `CoreUtilsLib.LazyServiceContainer` (`GasLibraryFactory`): `register`/`has`/`get`, with `get` throwing `DomainError` on an unregistered lookup instead of the library's own error, and passing `this` (not the inner library container) into factories so sibling-service resolution stays on ALDO's public API. *Config.*
+- **`Bootstrap.ts`** (`initAldo`, `resetAldo`, `buildAldoContainer`, `avviaGenerazioneDataDriven`, `avviaInvioNotificheDataDriven`, `avviaImportazioneDataDriven`, `riprendiJobSospeso`, `creaJobRunner`, `BootstrapDeps` interface) — The DI wiring: `buildAldoContainer` registers essentially every application service and repository as a lazy singleton (verified via `trace_path`: ~60 direct/transitive callees, spanning every strategy, every provider, every repository) — pure composition, no business logic, no native access. `initAldo()` is the per-invocation entry point real GAS code calls; the four `avvia*`/`riprendiJobSospeso` functions are the "data-driven launchers" that kick off a batch job through `JobRunnerLib`. *Config.* Called by every function in `src/entrypoints/EntryPoints.ts` and by `index.ts`'s `menu_avvioImportazioni`/`resumeJob`.
+- **`schema.ts`** (`TABLE`, `COL_MASTER`, `COL_CONF_MAIL`, `COL_CONF_IMP`, `COL_SUPPLENZE`, and further `COL_*` constants per table) — The physical schema constants (table names, column names) matching `SPECS_ALDO/01_SCHEMA_DATABASE.md` UPPERCASE naming, used everywhere a raw table/column string would otherwise be hardcoded. *Config.* Imported by `documentSteps.ts`, `emailSteps.ts`, `postProcessActions.ts`, and most repositories.
+
+---
+
+## `src/entrypoints/`
+
+The deliberate two-file entrypoint split described in CLAUDE.md, needed because GAS shares one global namespace across every script file in a project.
+
+- **`EntryPoints.ts`** (`menu_avvioGenerazioneDocumenti`, `menu_avvioComunicazioniEmail`, `generaPagelle`, `inviaNotificaAssenze`) — A deliberately separate, human-readable, unminified-in-production GAS script file (per `docs/superpowers/specs/2026-07-11-production-split-build-design.md`) so a human can open it directly in the Apps Script editor and run one launcher manually. It imports **no** ALDO/library code — every symbol it calls (`initAldo`, `creaJobRunner`, `avviaGenerazioneDataDriven`, `avviaInvioNotificheDataDriven`, `menuGenerazioneDocumenti`, `menuComunicazioniEmail`, `GasUiFacade`) is declared via `declare global` and supplied at runtime by `src/index.ts`, bundled separately and loaded first. *Entrypoint.* `initAldo` (from `Bootstrap.ts`, re-exposed by `index.ts`) is called from all four functions here.
+
+## `src/index.ts`
+
+- **`index.ts`** (`aldoPing`, `impostaMasterSpreadsheetId`, `onOpen`, `menu_avvioImportazioni`, `resumeJob`) — The other half of the entrypoint split: imports the real `Bootstrap`/`Menu`/`UiFacade`/`PropertiesFacade` symbols and assigns them onto `globalThis` so GAS can call them by name, and so `EntryPoints.ts` can reference them as ambient globals. `onOpen` only calls `costruisciMenu(new GasUiFacade())` — it never triggers `initAldo()` eagerly, exactly as CLAUDE.md specifies. `resumeJob` is the `JobRunnerLib` timed-trigger target; it wraps `riprendiJobSospeso(initAldo(), creaJobRunner())` in a try/catch that logs failures via `console.error` rather than letting them vanish into the trigger's silent execution log. *Entrypoint.*
+
+---
+
+## `src/onlinetests/` (separate webpack entry, built only with `--mode=online`)
+
+Live-GAS smoke-test framework and the checks it runs, built by webpack only in `online` mode into `OnlineTests.js`, then discarded for every other build mode. Not part of the production Code.js bundle. Included here for completeness since it is non-test application code under `src/`, per this document's scope (it is not under `test/`, though it plays a test-harness role).
+
+- **`index.ts`** (`executeOnlineTests`, `runOnlineTests`, `executeE2eScenarios`, `runE2eScenarios`, `mintRootFolder`, `mintE2eRootFolder`, `E2eTestDeps`/`OnlineTestDeps` interfaces) — Orchestrates the whole online-test run: builds real facades (`DriveServiceFacade`, `ScriptPropertiesFacade`, `SessionActiveUserFacade`), calls `initAldo`, provisions sample data via `SampleDatabaseBuilder`/`E2eSampleDatabaseBuilder`, and registers all four check modules. Uses `GasOnlineTestFramework`/`GoogleApiWrapper`.
+- **`OnlineTestReport.ts`** (`TestRunner`, `OnlineTestReport`, `OnlineTestResult`) — Collects results and produces success/error HTML reports for the UI. Uses `GasOnlineTestFramework`.
+- **`GasSampleSpreadsheetFactory.ts`** (`GasSampleSpreadsheetFactory`) — Dynamically creates temporary physical spreadsheets on Drive to run tests in isolation. Uses `GoogleApiWrapper`/`GasOnlineTestFramework`.
+- **`SampleDatabaseBuilder.ts`** (`SampleDatabaseBuilder`, `ISampleSpreadsheet`, `ISampleSpreadsheetFactory`, `alunnoEmail` helper) — Populates the temporary sheet with test-consistent data (classes, teachers, subjects) mimicking the real DB. Uses `GoogleApiWrapper`.
+- **`E2eSampleDatabaseBuilder.ts`** (`E2eSampleDatabaseBuilder`, `ClasseLayout`, `E2eSampleDatabase`, `E2eTemplateIds`, `e2eAlunnoEmail`, `e2eDocenteEmail`, `confDocPiano`) — Builds the richer end-to-end scenario database (full classes, real-shaped `CONF_DOC`/`CONF_MAIL` rows) consumed by the e2e scenario checks.
+- **`E2eTemplateProvisioner.ts`** (`E2eTemplateProvisioner`, `IArtifactFactory` port, `SheetValueUpdate`, `E2eDocumentTable`) — Idempotently provisions the Drive template artifacts (Docs/Sheets) the e2e scenarios render against, only authoring content on first creation, never re-appending on a found-and-reused artifact.
+- **`GasArtifactFactory.ts`** (`GasArtifactFactory`) — The real `DocumentService.createDocument`/`SpreadsheetService.createSpreadsheet`-backed implementation of `IArtifactFactory` — the **only** place in ALDO that creates Drive artifacts from scratch rather than copying a template (production code only ever copies templates).
+- **`checks/contextEngineChecks.ts`** (`registerContextEngineChecks`) — Verifies correct CDU assembly against live sheets. Uses `ContextEngine`/`ServiceContainer`.
+- **`checks/pipelineChecks.ts`** (`registerPipelineChecks`) — Validates real execution of the document/email pipelines. Uses `GoogleApiWrapper`/`JobRunnerLib`/`ServiceContainer`.
+- **`checks/repositoryChecks.ts`** (`registerRepositoryChecks`) — Runs/verifies complex queries across all school repositories. Uses `ServiceContainer`.
+- **`checks/e2eScenarioChecks.ts`** (`registerE2eScenarioChecks`) — Full end-to-end scenario checks (document generation + email notification through `DocumentGenerationService`/`EmailNotificationService` against the provisioned e2e database).
+
+---
+
+## Root-level build/config files
+
+Listed briefly per task scope (not deeply described):
+
+- **`webpack.config.cjs`** — Bundles `src/` (main entry) plus the `online`-mode-only `onlinetests` entry, together with the prebuilt `vendor/gaslibs.Code.js` bundle, into `dist/Code.js` (+`dist/OnlineTests.js` in online mode).
+- **`babel.config.cjs`** — Transpiles output to GAS V8 (Chrome 80)-compatible ES.
+- **`eslint.config.js`** — Lint rules, including the `no-restricted-globals` rule enforcing the native-GAS-global bypass ban outside `GoogleApiWrapper`.
+- **`tsconfig.json`** / **`tsconfig.eslint.json`** — Main compiler config and the ESLint/IDE-specific extension of it.
+- **`jest.config.cjs`** / **`jest.integration.config.cjs`** / **`jest.build.config.cjs`** — The three Jest projects (unit / integration / build-output-shape validation); all share `test/setup/load-gaslibs.cjs`.
+- **`scripts/build-and-prepare.cjs`** — Orchestrates the webpack build, V8-compat patching, and per-mode differences (`testing`/`testoffline`/`production`/`online`).
+- **`scripts/refresh-vendor.cjs`** / **`scripts/verify-vendor.cjs`** — Pull/verify the prebuilt `GasLibraryFactory` bundle into `vendor/`.
+- **`appsscript.json`** — The GAS project manifest (V8 runtime, OAuth scopes, dependent libraries).
+- **`types/gaslibs/index.d.ts`** — Ambient global type declarations for every vendored library symbol referenced throughout `src/` (`DomainRepositoryLib`, `SheetDBLib`, `JobRunnerLib`, `GasExpressionEngineLib`, `RoleResolutionLib`, `GasProcessMonitorLib`, `ComposableContentLib`, `CoreUtilsLib`, `ImportEngine`, `WorkspaceTemplateEngine`, `GasOnlineTestFramework`, `GoogleApiWrapper`/`ServiceFactory`, `PipelineFramework`, etc.) — this is *how* ALDO code type-checks calls into `GasLibraryFactory` without ever importing its source.
+- **`package.json`** — npm scripts for all build/test/push commands (see CLAUDE.md's Commands section).
+
+---
+
+## Structural findings (surprising / worth flagging)
+
+1. **The `src/infrastructure/steps/` folder does not exist.** CLAUDE.md's repository-layout paragraph documents pipeline "steps" living under `src/infrastructure/steps/` (naming `AlberoCartelle` as a `services/`-adjacent example). In the current tree, `documentSteps.ts`, `emailSteps.ts`, and `postProcessActions.ts` live under **`src/application/pipelines/`** instead — an application-layer location, which is arguably more correct (they orchestrate infrastructure via injected facade interfaces, they don't *be* infrastructure), but it means CLAUDE.md's own layout description is out of date relative to the code.
+2. **The repo's own previous `ARCH.md`** (present before this rewrite, last touched at commit `2854831`) was itself stale in exactly the same way — it documented `src/infrastructure/steps/*` as the pipeline-steps location (a path that no longer exists), and its `src/domain/repositories/` section documented only 1 of the 19 repository-interface files, and its provider list under `context-engine/providers/` was missing 6 of the current 19 providers (`DocumentiClasseProvider`, `DocumentiStoricoProvider`, `PianiPersAlunnoProvider`, `PianiPersAlunnoStoricoProvider`, `PianiPersClasseProvider`, `PianiPersClasseStoricoProvider`). This confirms real, fairly recent code growth (new historical/class-scoped CDU providers, a folder move) that outpaced both the docs and the previous inventory.
+3. **`application/pipelines/`, `application/storico/`, and `application/email/`** are all coherent, well-used application subfolders that CLAUDE.md's repository-layout paragraph doesn't name at all (it only calls out `services/`, `strategies/`, `context-engine/`, `import/`). Not a violation — just an undocumented but architecturally sound extension of the layer.
+4. **Domain purity is real, not just aspirational.** The graph shows literally 0 outbound edges from the `domain` package (388 nodes, all fan-in) — no accidental infrastructure/library leakage. The one place domain code needs an infrastructure-shaped type (`IConfigurazioneDocumentoRepository`'s expression-engine dependency), it declares a local structural-mirror interface (`IExpressionEnginePort`) rather than importing the real one — a deliberate, correctly-applied Dependency Inversion pattern, called out in the source's own comments.
+5. **No native-GAS-global bypass found.** A grep sweep for `SpreadsheetApp`/`DriveApp`/`DocumentApp`/`GmailApp`/`MailApp`/`PropertiesService`/`CacheService`/`UrlFetchApp`/`Utilities`/`Session`/`ScriptApp`/`LockService` across all of `src/` turned up matches only in comments or as `ServiceFactory.getXService()` calls (`GoogleApiWrapper`'s own sanctioned indirection) — never a raw native global outside `infrastructure/facades/*` and the `onlinetests` harness.
+6. **`presentation/Menu.ts` has zero outbound call edges** in the graph — it is the one file that matches its documented one-line job description (build the menu, no business logic) with no exceptions; every other "thin" layer (`config`, `entrypoints`) has at least a few, expected, wiring-only edges.
+7. **`MasterSheetRepository` is the one repository bound to a different spreadsheet** than the rest of the yearly database — `ContextEngineFactory.create`'s own doc comment calls out that its `master` parameter default (a repository built over the same `database`) is correct for tests but would throw immediately in the real composition root, which is why `Bootstrap.ts` always passes `deps.master` explicitly. Worth knowing before refactoring either file.
+
+---
+
+## Dependency flow diagram
+
+```mermaid
+flowchart TB
+    subgraph EP["Entrypoints (GAS globals, one shared namespace)"]
+        IDX["src/index.ts<br/>(onOpen, menu_avvioImportazioni, resumeJob)"]
+        EPT["src/entrypoints/EntryPoints.ts<br/>(menu_avvio*, generaPagelle, inviaNotificaAssenze)"]
+    end
+
+    subgraph PRES["Presentation"]
+        MENU["src/presentation/Menu.ts<br/>(costruisciMenu, avvioPersonalizzato)"]
+    end
+
+    subgraph CFG["Config — composition root"]
+        SC["ServiceContainer.ts"]
+        BOOT["Bootstrap.ts<br/>(initAldo, buildAldoContainer,<br/>avvia*DataDriven)"]
+        SCHEMA["schema.ts (TABLE / COL_*)"]
+    end
+
+    subgraph APP["Application"]
+        SVC["services/*<br/>(DocumentGenerationService, EmailNotificationService,<br/>DocumentBatchService, EmailBatchService, ImportService,<br/>CattedraResolver, RisolutoreRuoliService, ReportService, ...)"]
+        STRAT["strategies/*<br/>(7 GeneratorStrategy implementations)"]
+        CDU["context-engine/*<br/>(ContextEngineFactory, ContextBuilder,<br/>19 providers, 1 interceptor, 1 mapper)"]
+        PIPE["pipelines/*<br/>(documentSteps, emailSteps, postProcessActions —<br/>PipelineFramework Step classes)"]
+        STORICO["storico/* · import/* · email/*"]
+    end
+
+    subgraph INFRA["Infrastructure"]
+        FAC["facades/*<br/>(Drive, Gmail, Template, ExpressionEngine,<br/>ProcessMonitor, Properties, ActiveUser, UI, DocumentTable)"]
+        REPO["repositories/* (21 classes)"]
+        DB["db/* (SheetDbAdapter, Database)"]
+        INFSVC["services/AlberoCartelle.ts"]
+    end
+
+    subgraph DOM["Domain (0 outbound edges — verified)"]
+        ENT["entities/* (22)"]
+        REPOI["repositories/* (20 interfaces)"]
+        SPEC["specifications/* (26)"]
+        VO["value-objects/* (14)"]
+        ERR["errors/DomainError.ts"]
+    end
+
+    GLF[["GasLibraryFactory (external)<br/>SheetDBLib · DomainRepositoryLib · JobRunnerLib<br/>GasExpressionEngineLib · RoleResolutionLib · GasProcessMonitorLib<br/>CoreUtilsLib (LazyServiceContainer) · ComposableContentLib<br/>ImportEngine · WorkspaceTemplateEngine · PipelineFramework<br/>GoogleApiWrapper/ServiceFactory · GasOnlineTestFramework"]]
+
+    IDX -->|initAldo, costruisciMenu| BOOT
+    IDX -->|new| MENU
+    EPT -->|ambient globals, resolved by index.ts at runtime| BOOT
+    MENU -.->|IUiFacade param, no direct call| FAC
+
+    BOOT --> SC
+    BOOT --> SVC
+    BOOT --> STRAT
+    BOOT --> CDU
+    BOOT --> REPO
+    BOOT --> INFSVC
+    BOOT --> SCHEMA
+
+    SVC --> STRAT
+    SVC --> CDU
+    SVC --> PIPE
+    SVC --> STORICO
+    SVC --> REPO
+    SVC --> FAC
+    STRAT --> FAC
+    PIPE --> FAC
+    PIPE --> REPO
+    CDU --> REPO
+    STORICO --> DB
+
+    SVC --> REPOI
+    STRAT --> REPOI
+    CDU --> REPOI
+    PIPE --> REPOI
+
+    REPO -.implements.-> REPOI
+    REPO --> DB
+    FAC --> ENT
+    REPO --> ENT
+    CDU --> ENT
+    SVC --> ERR
+    REPO --> ERR
+
+    FAC --> GLF
+    REPO --> GLF
+    DB --> GLF
+    SC --> GLF
+    SVC --> GLF
+    PIPE --> GLF
+    STORICO --> GLF
+    VO --> GLF
+
+    classDef domain fill:#2d5a3d,stroke:#8fd4a8,color:#eafff0
+    classDef infra fill:#5a3d2d,stroke:#d4a88f,color:#fff0ea
+    classDef app fill:#2d3d5a,stroke:#8fa8d4,color:#eaf0ff
+    classDef cfg fill:#5a2d4a,stroke:#d48fc4,color:#ffeaf7
+    classDef ext fill:#3d3d3d,stroke:#aaaaaa,color:#eeeeee
+
+    class ENT,REPOI,SPEC,VO,ERR domain
+    class FAC,REPO,DB,INFSVC infra
+    class SVC,STRAT,CDU,PIPE,STORICO app
+    class SC,BOOT,SCHEMA,IDX,EPT,MENU cfg
+    class GLF ext
+```
+
+**Reading the diagram**: arrows point in the direction of the *call*, not the dependency-inversion arrow — `application` and `infrastructure` both call down into `domain` (never the reverse, confirmed 0 outbound edges from `domain`), `config` (`Bootstrap.ts`) is the only module wide enough to construct concrete instances of every other layer and is the sole place all four converge, and every layer except `domain` and `presentation` ultimately reaches into `GasLibraryFactory` for one of its L0–L4 libraries rather than touching a native GAS global directly.

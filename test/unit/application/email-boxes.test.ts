@@ -579,7 +579,7 @@ test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_
       LINK: 'https://drive.google.com/drive/folders/folder1',
       CLASSI: '5A',
       UTENTI: '',
-      MATERIA: ''
+      MATERIE: 'MATE,FISI'
     }
   ];
   const db = new FakeDatabase(tables);

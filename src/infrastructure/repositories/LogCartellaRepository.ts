@@ -54,7 +54,7 @@ export class LogCartellaRepository
       [COL_LOG_FOLD.LINK]: link,
       [COL_LOG_FOLD.CLASSI]: options.classe?.value ?? '',
       [COL_LOG_FOLD.UTENTI]: options.utente?.value ?? '',
-      [COL_LOG_FOLD.MATERIA]: options.materia?.value ?? ''
+      [COL_LOG_FOLD.MATERIE]: options.materia?.value ?? ''
     });
     this.database.tables[TABLE.LOG_FOLD]!.insertRow(log.toData());
     this.database.save();

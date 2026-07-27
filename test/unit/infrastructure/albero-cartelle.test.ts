@@ -11,11 +11,17 @@ function wire() {
 
 test('creates a new folder and registers it in LOG_FOLD (14 §4)', () => {
   const { drive, db, albero } = wire();
-  const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
+  const res = albero.findOrCreate('Verbali/5', {
+    classe: '5A',
+    tipo: 'CONF_VERBALE',
+    nome: '5'
+  });
   expect(res.created).toBe(true);
   expect(drive.folders.get('Verbali/5')).toBe(res.folderId);
   const row = db.table('LOG_FOLD').find((r) => r.ID === res.folderId);
   expect(row?.PATH).toBe('Verbali/5');
+  expect(row?.TIPO).toBe('CONF_VERBALE');
+  expect(row?.NOME).toBe('5');
   expect(row?.CLASSI).toBe('5A');
 });
 
@@ -33,15 +39,71 @@ test('reuses a folder already recorded in LOG_FOLD without touching Drive (findO
   expect(drive.folders.size).toBe(0); // never created on Drive
 });
 
-test('reuses a folder that exists on Drive but is not in LOG_FOLD, without a duplicate row', () => {
+test('reuses a folder that exists on Drive and records its audit metadata', () => {
   const { drive, db, albero } = wire();
   const existing = drive.createFolder('Verbali/5');
-  const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
+  const res = albero.findOrCreate('Verbali/5', { classe: '5A', tipo: 'CONF_VERBALE' });
   expect(res).toEqual({ folderId: existing, created: false });
-  expect(db.table('LOG_FOLD').findAll()).toHaveLength(0);
+  expect(db.table('LOG_FOLD').findAll()).toEqual([
+    expect.objectContaining({
+      ID: existing,
+      TIPO: 'CONF_VERBALE',
+      NOME: '5',
+      PATH: 'Verbali/5',
+      CLASSI: '5A'
+    })
+  ]);
 });
 
-test('a LOG_FOLD row for the same path but a different classe does not match (per-classe scoping)', () => {
+test('repairs incomplete LOG_FOLD metadata and merges a newly associated class', () => {
+  const { drive, db, albero } = wire();
+  const folderId = drive.createFolder('Verbali/5');
+  db.table('LOG_FOLD').insert({
+    ID: folderId,
+    TIPO: '',
+    NOME: '',
+    PATH: 'Verbali/5',
+    LINK: '',
+    CLASSI: '3B',
+    UTENTI: ''
+  });
+
+  const res = albero.findOrCreate('Verbali/5', {
+    classe: '5A',
+    tipo: 'CONF_VERBALE',
+    nome: '5'
+  });
+
+  expect(res).toEqual({ folderId, created: false });
+  expect(db.table('LOG_FOLD').find((row) => row.ID === folderId)).toEqual(
+    expect.objectContaining({
+      TIPO: 'CONF_VERBALE',
+      NOME: '5',
+      PATH: 'Verbali/5',
+      LINK: `https://drive.google.com/drive/folders/${folderId}`,
+      CLASSI: '3B,5A'
+    })
+  );
+});
+
+test('reusing a folder merges configured classi utenti and materie', () => {
+  const { db, albero } = wire();
+  albero.findOrCreate('Output', { classi: '5A', utenti: 'a@school.it', materie: 'MATE' });
+  albero.findOrCreate('Output', {
+    classi: '5B',
+    utenti: 'b@school.it,a@school.it',
+    materie: 'FISI,MATE'
+  });
+
+  expect(db.table('LOG_FOLD').findAll()).toHaveLength(1);
+  expect(db.table('LOG_FOLD').findAll()[0]).toMatchObject({
+    CLASSI: '5A,5B',
+    UTENTI: 'a@school.it,b@school.it',
+    MATERIE: 'MATE,FISI'
+  });
+});
+
+test('a LOG_FOLD row for the same path is reused and receives the additional class metadata', () => {
   const { db, albero } = wire();
   db.table('LOG_FOLD').insert({
     ID: 'other',
@@ -51,6 +113,6 @@ test('a LOG_FOLD row for the same path but a different classe does not match (pe
     UTENTI: ''
   });
   const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
-  expect(res.created).toBe(true);
-  expect(res.folderId).not.toBe('other');
+  expect(res).toEqual({ folderId: 'other', created: false });
+  expect(db.table('LOG_FOLD').findAll()[0]).toMatchObject({ CLASSI: '3B,5A' });
 });

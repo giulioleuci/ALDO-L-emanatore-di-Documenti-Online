@@ -534,7 +534,7 @@ export class E2eSampleDatabaseBuilder {
         [COL_LOG_DOCS.LINK]: `https://drive.google.com/file/d/E2E_FAKE_${tipo}_2025_2026/edit`,
         [COL_LOG_DOCS.CLASSI]: classe,
         [COL_LOG_DOCS.UTENTI]: studente,
-        [COL_LOG_DOCS.MATERIA]: '',
+        [COL_LOG_DOCS.MATERIE]: '',
         [COL_LOG_DOCS.DATA_CREAZ]: '2025-11-10T09:00:00.000Z',
         [COL_LOG_DOCS.ID_ORIG]: ''
       });
@@ -610,15 +610,33 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.verbale }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/VERBALI/{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.POST_PROCESSO]: JSON.stringify([
+        {
+          tipo: 'AGGIORNA_STATO_DOC',
+          stato: StatoDocumento.VERBALIZZATO,
+          criteri: {
+            [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+            [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
+          }
+        }
+      ]),
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,CDC'
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,CDC',
+      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '',
+        materie: 'MATE'
+      }),
+      [COL_CONF_DOC.REGISTRA_FOLD]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '',
+        materie: 'MATE'
+      })
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_CONDOTTA,
@@ -627,15 +645,16 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.condotta }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Condotta_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/CONDOTTA',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'CDC'
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'CDC',
+      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
@@ -644,15 +663,16 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,DOCENTI'
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,DOCENTI',
+      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_COMPLESSO,
@@ -661,15 +681,16 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI',
+      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_SHEET_PERMESSI,
@@ -678,15 +699,16 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_PERS',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI',
+      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO,
@@ -695,15 +717,16 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.pianoLavoro }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_LAVORO',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI'
+      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI',
+      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     for (const tipo of TIPI_PIANO) {
       sample.appendRow(TABLE.CONF_DOC, {
@@ -715,15 +738,20 @@ export class E2eSampleDatabaseBuilder {
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani[tipo] }),
         [COL_CONF_DOC.FILE_NAME]: `E2E_Piano_${tipo}_{{focus.alunno.anagrafica.nomeCompleto}}`,
-        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT',
-        [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-        [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
         [COL_CONF_DOC.POST_PROCESSO]: null,
         [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tipoPiano: tipo }),
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
-        [COL_CONF_DOC.REGISTRA_UTENTI]: 'ALUNNI,GENITORI'
+        [COL_CONF_DOC.REGISTRA_UTENTI]: 'ALUNNI,GENITORI',
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}}',
+          utenti: '{{focus.alunno.anagrafica.email}}',
+          materie: ''
+        }),
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
       });
     }
   }
@@ -826,8 +854,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         {
           TIPO_BOX: 'documenti',
-          FILTRO_TIPO: CONF_DOC_PIANO_LAVORO,
-          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: CONF_DOC_PIANO_LAVORO } }
+          FILTRO_TIPO: 'PIANO_LAVORO',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
         },
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),

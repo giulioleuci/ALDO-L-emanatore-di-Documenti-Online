@@ -306,16 +306,17 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 | `NOME`                   | String | —   | Nome descrittivo per l'interfaccia utente                                                                                                                                                                                     |
 | `GENERATORE`             | String | —   | Nome della Strategy di generazione (vedi `10_PIPELINE_DOCUMENTI.md`)                                                                                                                                                          |
 | `FORMATO`                | String | —   | Enum                                                                                                                                                                                                                          |
-| `SCHEMA_SOTTOCARTELLE`   | Enum   | —   | Indica quante sottocartelle creare                                                                                                                                                                                            |
-| `PATH_OUT_SOTTOCARTELLE` | String | —   | Pattern per il percorso sottocartella (supporta placeholder `{{...}}`)                                                                                                                                                        |
+| `DUPLICAZIONE`           | Enum   | —   | Politica di generazione duplicata: `NEGATA` (default) blocca l'identita gia generata; `PERMESSA` la consente                                                                                                                   |
 | `GESTIONE_ARTICOLAZIONE` | Enum   | —   | Specifica come gestire la generazione per classi articolate                                                                                                                                                                   |
 | `PATH_OUT`               | String | —   | Pattern per il percorso cartella (supporta placeholder `{{...}}` e separazione cartelle tramite `/`)                                                                                                                          |
 | `FILE_NAME`              | String | —   | Pattern per il nome file (supporta placeholder `{{...}}`)                                                                                                                                                                     |
 | `MODELLI`                | JSON   | —   | ID dei template Drive; forma semplice o condizionale                                                                                                                                                                          |
 | `PERMESSI`               | JSON   | —   | ACL per file e cartelle (ruoli astratti → permessi)                                                                                                                                                                           |
-| `PARAMETRI`              | JSON   | —   | Parametri extra passati al generatore. Campo riservato `overwrite: boolean` (default `false`): se `true`, `CheckDuplicatesStep` salta il controllo duplicati e forza la generazione (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2) |
+| `PARAMETRI`              | JSON   | —   | Parametri extra passati al generatore                                                                                                                                                                                         |
 | `CONDIZIONE`             | String | —   | Espressione logica per la generazione condizionale                                                                                                                                                                            |
 | `POST_PROCESSO`          | JSON   | —   | Azioni automatiche post-generazione (array)                                                                                                                                                                                   |
+| `REGISTRA_DOC`           | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_DOCS`                                                                                                                                        |
+| `REGISTRA_FOLD`          | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_FOLD`                                                                                                                                        |
 
 **Azioni POST_PROCESSO supportate:**
 
@@ -380,11 +381,11 @@ Audit trail immutabile (append-only) di ogni documento generato. Lega l'ID fisic
 | `LINK`       | String       | —   | —           | URL web del file                                                                                 |
 | `CLASSI`     | String (csv) | —   | CLASSI.ID   | Classi associate (se applicabile)                                                                |
 | `UTENTI`     | String (csv) | —   | —           | Email degli utenti associati (alunno o docente)                                                  |
-| `MATERIA`    | String       | —   | MATERIE.ID  | Materia associata (se applicabile)                                                               |
+| `MATERIE`    | String (csv) | —   | MATERIE.ID  | Materie associate (se applicabile), separate da virgola                                         |
 | `DATA_CREAZ` | String       | —   | —           | Timestamp di creazione                                                                           |
 | `ID_ORIG`    | String       | —   | LOG_DOCS.ID | ID del documento di origine (per versioni successive dello stesso documento)                     |
 
-**Nota query CSV:** Le colonne `UTENTI` e `CLASSI` contengono valori separati da virgola. Le query di ricerca per email/classe singola DEVONO usare una ricerca per contenimento (CONTAINS) e MAI l'uguaglianza esatta.
+**Nota query CSV:** Le colonne `UTENTI`, `CLASSI` e `MATERIE` contengono valori separati da virgola. Le query di ricerca per email/classe/materia singola DEVONO usare una ricerca per contenimento (CONTAINS) e MAI l'uguaglianza esatta.
 
 ---
 
@@ -401,7 +402,7 @@ Audit trail delle cartelle create su Google Drive.
 | `LINK`    | String       | —   | —           | URL web                                                                                                            |
 | `CLASSI`  | String (csv) | —   | CLASSI.ID   | Classi associate (se applicabile); valori multipli separati da virgola — stessa semantica CSV di `LOG_DOCS.CLASSI` |
 | `UTENTI`  | String (csv) | —   | —           | Email degli utenti associati (alunno o docente)                                                                    |
-| `MATERIA` | String       | —   | MATERIE.ID  | Materia associata (se applicabile)                                                                                 |
+| `MATERIE` | String (csv) | —   | MATERIE.ID  | Materie associate (se applicabile), separate da virgola                                                               |
 
 ---
 

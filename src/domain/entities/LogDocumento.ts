@@ -17,7 +17,7 @@ function csv(cell: unknown): string[] {
 
 /**
  * LOG_DOCS entity (PK = Drive File ID, ref 04 §18) — append-only audit record of
- * a generated document. Aggregate Root. CLASSI/UTENTI are CSV, matched by
+ * a generated document. CLASSI/UTENTI/MATERIE are CSV, matched by
  * containment (ref 01). cambiaStato/notifica mutate in memory + mark dirty; the
  * repository persists via save() (persistence-seam increment).
  */

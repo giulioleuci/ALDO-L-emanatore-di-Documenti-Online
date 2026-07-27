@@ -357,7 +357,7 @@ test('RenderBoxesStep resolves real LOG_FOLD folders and sets cartelleFolderIds 
       LINK: 'https://drive.google.com/drive/folders/folder1',
       CLASSI: '5A',
       UTENTI: '',
-      MATERIA: ''
+      MATERIE: 'MATE,FISI'
     }
   ];
   const w = wire(
@@ -760,7 +760,7 @@ test('LogEmailStep records cartelleFolderIds in LOG_MAIL.ALLEGATI.folders (11 §
   new LogEmailStep(logger, logMail).execute(w.ctx);
 
   const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
-  const allegati = JSON.parse(String(row['ALLEGATI']));
+  const allegati = JSON.parse(String(row['ALLEGATI'])) as { folders?: string[] };
   expect(allegati.folders).toEqual(['folder1', 'folder2']);
 });
 

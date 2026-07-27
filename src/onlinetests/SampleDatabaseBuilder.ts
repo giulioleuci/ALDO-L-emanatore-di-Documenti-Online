@@ -332,14 +332,19 @@ export class SampleDatabaseBuilder {
       [COL_CONF_DOC.MODELLI]: '{"templateId":"TEMPLATE_ONLINETEST"}',
       [COL_CONF_DOC.FILE_NAME]: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_ONLINETEST_OUTPUT',
-      [COL_CONF_DOC.PATH_OUT_SOTTOCARTELLE]: '',
-      [COL_CONF_DOC.SCHEMA_SOTTOCARTELLE]: '',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null, // PostProcessStep gates on `!= null`, not truthiness
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'PDF',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: ''
+      [COL_CONF_DOC.REGISTRA_UTENTI]: '',
+      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '',
+        materie: ''
+      }),
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
   }
 

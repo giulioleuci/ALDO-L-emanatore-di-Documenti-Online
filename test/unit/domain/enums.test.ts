@@ -2,7 +2,7 @@ import {
   StatoDocumento,
   Genere,
   appellativo,
-  SchemaSottocartelle
+  DuplicazioneDocumento
 } from '../../../src/domain/value-objects/enums';
 
 test('StatoDocumento values match 03', () => {
@@ -15,6 +15,7 @@ test('appellativo maps Genere per 03', () => {
   expect(appellativo(Genere.F)).toBe('Prof.ssa');
 });
 
-test('SchemaSottocartelle includes UNO PER CLASSE', () => {
-  expect(SchemaSottocartelle.UNO_PER_CLASSE).toBe('UNO PER CLASSE');
+test('DuplicazioneDocumento exposes only the explicit allow/deny policy', () => {
+  expect(Object.values(DuplicazioneDocumento).sort()).toEqual(['NEGATA', 'PERMESSA']);
+  expect(DuplicazioneDocumento.NEGATA).toBe('NEGATA');
 });

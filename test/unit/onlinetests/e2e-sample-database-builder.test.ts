@@ -442,7 +442,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === 'E2E_MAIL_LAVORO');
   expect(mail).toBeDefined();
   expect(mail![COL_CONF_MAIL.PROCESSO]).toBe('PER_COORDINATORE');
-  const boxes = JSON.parse(String(mail![COL_CONF_MAIL.BOX_CFG]));
+  const boxes: unknown = JSON.parse(String(mail![COL_CONF_MAIL.BOX_CFG]));
   expect(boxes).toEqual([
     {
       TIPO_BOX: 'documenti',

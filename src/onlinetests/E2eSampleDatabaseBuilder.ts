@@ -626,7 +626,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,CDC',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
         classi: '{{focus.classe.anagrafica.nome}}',
         utenti: '',
@@ -652,7 +651,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'CDC',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
@@ -670,7 +668,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI,DOCENTI',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
@@ -688,7 +685,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
@@ -706,7 +702,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
@@ -724,7 +719,6 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: 'COORDINATORI',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
@@ -745,7 +739,6 @@ export class E2eSampleDatabaseBuilder {
         [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tipoPiano: tipo }),
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
-        [COL_CONF_DOC.REGISTRA_UTENTI]: 'ALUNNI,GENITORI',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
           classi: '{{focus.classe.anagrafica.nome}}',
           utenti: '{{focus.alunno.anagrafica.email}}',

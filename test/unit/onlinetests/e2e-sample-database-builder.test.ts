@@ -242,20 +242,16 @@ test('seeds 5 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genito
   expectCompleteRows(confMail, COL_CONF_MAIL);
 });
 
-test('uses class-wide and student-scoped REGISTRA_UTENTI selector examples in CONF_DOC rows', () => {
+test('does not emit the obsolete REGISTRA_UTENTI column in CONF_DOC rows', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const confDoc = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.CONF_DOC]!;
 
-  expect(confDoc.find((row) => row[COL_CONF_DOC.ID] === 'E2E_VERBALE')![COL_CONF_DOC.REGISTRA_UTENTI]).toBe(
-    'COORDINATORI,CDC'
-  );
-  expect(
-    confDoc.find((row) => row[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO')![
-      COL_CONF_DOC.REGISTRA_UTENTI
-    ]
-  ).toBe('ALUNNI,GENITORI');
+  expect(COL_CONF_DOC).not.toHaveProperty('REGISTRA_UTENTI');
+  for (const row of confDoc) {
+    expect(row).not.toHaveProperty('REGISTRA_UTENTI');
+  }
 });
 
 test('VERBALE and CONDOTTA emails configure documenti/cartelle boxes (so generated documents actually show up as links)', () => {

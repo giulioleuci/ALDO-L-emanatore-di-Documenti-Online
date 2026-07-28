@@ -106,7 +106,6 @@ function sampleSeedTables(
             PARAMETRI: '',
             GESTIONE_ARTICOLAZIONE: '',
             FORMATO: 'PDF',
-            REGISTRA_UTENTI: '',
             REGISTRA_DOC: '{}',
             REGISTRA_FOLD: '{}'
           }

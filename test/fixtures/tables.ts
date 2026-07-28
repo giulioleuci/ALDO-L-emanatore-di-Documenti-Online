@@ -169,7 +169,6 @@ export function fixtureTables(): Record<string, Row[]> {
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GDOC',
-        REGISTRA_UTENTI: '',
         REGISTRA_DOC: '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"","materie":""}',
         REGISTRA_FOLD: '{}'
       },
@@ -188,7 +187,6 @@ export function fixtureTables(): Record<string, Row[]> {
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GDOC',
-        REGISTRA_UTENTI: '',
         REGISTRA_DOC: '{}',
         REGISTRA_FOLD: '{}'
       }

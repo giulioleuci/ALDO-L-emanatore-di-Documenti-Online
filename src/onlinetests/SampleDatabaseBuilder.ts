@@ -338,7 +338,6 @@ export class SampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'PDF',
-      [COL_CONF_DOC.REGISTRA_UTENTI]: '',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
         classi: '{{focus.classe.anagrafica.nome}}',
         utenti: '',

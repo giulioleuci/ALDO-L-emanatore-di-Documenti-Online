@@ -3,15 +3,11 @@ import type { Cdu } from '../context-engine/Cdu';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 
 /**
- * DOC_PERSONALIZZATO generator (10 §9): renders a personalized-plan document
- * (PDP/PEI/PFP). `CONF_DOC.PARAMETRI.tipoPiano` selects which of the student's
- * plans to use (default: the first one PianiProvider found, ref 09 §4); the
- * plan's `PIANI.PARAMETRI` fields (already surfaced on the CDU as
- * `focus.alunno.didattica.piani.items[].parametriGenerazione`, ref 02 §4.2)
- * are exposed to the template under `{{piano.<campo>}}`. A field absent from
- * the plan resolves to an empty string — the same missing-path behaviour
- * WorkspaceTemplateEngine already applies to every other CDU path, so no
- * special-casing is needed to satisfy the spec's "no error on missing field".
+ * DOC_PERSONALIZZATO generator (10 §9): renders the complete focused-plan CDU.
+ * The selected plan is already at `focus.piano`; its generation parameters are
+ * exposed only as the optional compatibility alias `piano`. Templates can use
+ * both `{{focus.piano.tipo}}` and `{{piano.<campo>}}` without the generator
+ * selecting from the student's complete plan list.
  */
 export class DocPersonalizzatoGeneratorStrategy implements GeneratorStrategy {
   constructor(private readonly templates: ITemplateEngine) {}

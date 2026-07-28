@@ -46,15 +46,50 @@ export const DOCENTE_COUNT = 20;
 
 /** Name pools for realistic mock data (item 5) — plain constants, not a name generator. */
 const ALUNNO_COGNOMI = [
-  'Rossi', 'Russo', 'Ferrari', 'Esposito', 'Bianchi', 'Romano', 'Colombo', 'Ricci',
-  'Marino', 'Greco', 'Bruno', 'Gallo', 'Conti', 'DeLuca', 'Mancini', 'Costa', 'Giordano'
+  'Rossi',
+  'Russo',
+  'Ferrari',
+  'Esposito',
+  'Bianchi',
+  'Romano',
+  'Colombo',
+  'Ricci',
+  'Marino',
+  'Greco',
+  'Bruno',
+  'Gallo',
+  'Conti',
+  'DeLuca',
+  'Mancini',
+  'Costa',
+  'Giordano'
 ];
 const ALUNNO_NOMI = [
-  'Marco', 'Giulia', 'Luca', 'Sara', 'Andrea', 'Elena', 'Davide', 'Chiara',
-  'Matteo', 'Francesca', 'Alessandro', 'Martina', 'Simone'
+  'Marco',
+  'Giulia',
+  'Luca',
+  'Sara',
+  'Andrea',
+  'Elena',
+  'Davide',
+  'Chiara',
+  'Matteo',
+  'Francesca',
+  'Alessandro',
+  'Martina',
+  'Simone'
 ];
 const DOCENTE_COGNOMI = [
-  'Rossi', 'Bianchi', 'Verdi', 'Ferrari', 'Romano', 'Galli', 'Fontana', 'Santoro', 'Mariani', 'Villa'
+  'Rossi',
+  'Bianchi',
+  'Verdi',
+  'Ferrari',
+  'Romano',
+  'Galli',
+  'Fontana',
+  'Santoro',
+  'Mariani',
+  'Villa'
 ];
 const DOCENTE_NOMI_M = ['Marco', 'Paolo', 'Alessandro', 'Luca', 'Davide'];
 const DOCENTE_NOMI_F = ['Laura', 'Anna', 'Chiara', 'Elena', 'Francesca'];
@@ -74,9 +109,7 @@ export const CONF_DOC_CONDOTTA = 'E2E_CONDOTTA';
 export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export const CONF_DOC_COMPLESSO = 'E2E_DOC_COMPLESSO';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
-export function confDocPiano(tipo: string): string {
-  return `E2E_PIANO_${tipo}`;
-}
+export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
 export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
 export const CONF_MAIL_VERBALE = 'E2E_MAIL_VERBALE';
 export const CONF_MAIL_CONDOTTA = 'E2E_MAIL_CONDOTTA';
@@ -104,8 +137,10 @@ export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(21);
 export const RIPETENTE_1A = e2eAlunnoEmail(2);
 export const RIPETENTE_3C = e2eAlunnoEmail(41);
 
-/** New 2026-2027 PDP_BES case for 3C — also carries a 2025-2026 plan of record (`seedPianiPersStorico`). */
+/** Additional 2026-2027 PDP_BES case for 3C. */
 export const PDP_BES_3C = e2eAlunnoEmail(42);
+/** Same student deliberately owns two plan subtypes, exercising composite plan identity. */
+export const PIANO_DOPPIO_STUDENTE = e2eAlunnoEmail(25);
 
 /**
  * Which student(s) each TIPI_PIANO type is generated/seeded for (scenario 3, 5):
@@ -116,8 +151,8 @@ export const PDP_BES_3C = e2eAlunnoEmail(42);
 export const PIANO_STUDENTE: Record<(typeof TIPI_PIANO)[number], string[]> = {
   PDP_DSA: [CARENZA_ALUNNO_1],
   PDP_STRANIERI: [CARENZA_ALUNNO_1],
-  PDP_BES: [e2eAlunnoEmail(5), PDP_BES_3C],
-  PEI: [e2eAlunnoEmail(25)],
+  PDP_BES: [e2eAlunnoEmail(5), PDP_BES_3C, PIANO_DOPPIO_STUDENTE],
+  PEI: [PIANO_DOPPIO_STUDENTE],
   PFP: [e2eAlunnoEmail(30)]
 };
 
@@ -510,21 +545,27 @@ export class E2eSampleDatabaseBuilder {
   }
 
   /**
-   * Prior-year (2025-2026) LOG_DOCS rows simulating "this student already had
-   * a plan last year" (PEI, 2B→1B, and the new 3C PDP_BES case, 3C→2C).
-   * ID_GEN MUST equal the exact same `confDocPiano(tipo)` id used in
-   * 2026-2027 — `StoricoDocumentiService.tutti`/`renderPianiPersBox` match a
-   * prior-year doc to the current item by idGen, not by class or SOTTOTIPO.
+   * Prior-year (2025-2026) rows use the stable personalized-plan generator ID.
+   * The dual-plan student has both PEI and PDP_BES history so the email scenario
+   * proves that SOTTOTIPO, not ID_GEN alone, isolates historical associations.
    */
   private seedPianiPersStorico(prior: ISampleSpreadsheet): void {
     const rows: Array<{ tipo: string; studente: string; classe: string }> = [
-      { tipo: 'PEI', studente: PIANO_STUDENTE.PEI[0]!, classe: classePrecedente(CLASSE_B) },
-      { tipo: 'PDP_BES', studente: PDP_BES_3C, classe: classePrecedente(CLASSE_C) }
+      {
+        tipo: 'PEI',
+        studente: PIANO_DOPPIO_STUDENTE,
+        classe: classePrecedente(CLASSE_B)
+      },
+      {
+        tipo: 'PDP_BES',
+        studente: PIANO_DOPPIO_STUDENTE,
+        classe: classePrecedente(CLASSE_B)
+      }
     ];
     for (const { tipo, studente, classe } of rows) {
       prior.appendRow(TABLE.LOG_DOCS, {
         [COL_LOG_DOCS.ID]: `E2E_FAKE_LOGDOC_${tipo}_2025_2026`,
-        [COL_LOG_DOCS.ID_GEN]: confDocPiano(tipo),
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
         [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
         [COL_LOG_DOCS.SOTTOTIPO]: tipo,
         [COL_LOG_DOCS.NOME]: `E2E_Piano_${tipo}_2025_2026`,
@@ -722,31 +763,33 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
-    for (const tipo of TIPI_PIANO) {
-      sample.appendRow(TABLE.CONF_DOC, {
-        [COL_CONF_DOC.ID]: confDocPiano(tipo),
-        // PIANO_PERS (01 §schema TIPO vocabulary), not 'PIANO' — PianiPersClasseProvider/
-        // PianiPersAlunnoProvider filter LOG_DOCS.TIPO==='PIANO_PERS' (item 7).
-        [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-        [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
-        [COL_CONF_DOC.CONDIZIONE]: '',
-        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani[tipo] }),
-        [COL_CONF_DOC.FILE_NAME]: `E2E_Piano_${tipo}_{{focus.alunno.anagrafica.nomeCompleto}}`,
-        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
-        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-        [COL_CONF_DOC.PERMESSI]: '',
-        [COL_CONF_DOC.POST_PROCESSO]: null,
-        [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tipoPiano: tipo }),
-        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-        [COL_CONF_DOC.FORMATO]: 'GDOC',
-        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}}',
-          utenti: '{{focus.alunno.anagrafica.email}}',
-          materie: ''
-        }),
-        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-      });
-    }
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_PIANI,
+      [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
+      [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify(
+        TIPI_PIANO.map((tipo) => ({
+          condizione: `{{focus.piano.tipo}} == "${tipo}"`,
+          templateId: templateIds.piani[tipo]
+        }))
+      ),
+      [COL_CONF_DOC.FILE_NAME]:
+        'E2E_Piano_{{focus.piano.tipo}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '{{focus.alunno.anagrafica.email}}',
+        materie: ''
+      }),
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+    });
   }
 
   private seedConfMail(sample: ISampleSpreadsheet): void {
@@ -800,7 +843,8 @@ export class E2eSampleDatabaseBuilder {
         { TIPO_BOX: 'note' },
         { TIPO_BOX: 'assenze' }
       ]),
-      [COL_CONF_MAIL.TESTO]: '<p>Comunichiamo una carenza rilevata per il/la vostro/a figlio/a.</p>',
+      [COL_CONF_MAIL.TESTO]:
+        '<p>Comunichiamo una carenza rilevata per il/la vostro/a figlio/a.</p>',
       [COL_CONF_MAIL.SUPPLENTI]: false,
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
@@ -812,7 +856,14 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.OGGETTO]: '[E2E] Piani personalizzati', // no class name (item 2, PER_COORDINATORE)
       [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        { TIPO_BOX: 'piani_pers_da_inviare' },
+        {
+          TIPO_BOX: 'piani_pers_da_inviare',
+          arricchisciConStorico: true,
+          configArricchimento: {
+            templateRiga:
+              '<li>E2E_CURRENT={{corrente.sottotipo}}{{#storico}}|E2E_HISTORY={{nome}}{{/storico}}</li>'
+          }
+        },
         { TIPO_BOX: 'piani_pers_inviati' }
       ]),
       [COL_CONF_MAIL.TESTO]: '<p>Piani personalizzati nuovi e già notificati.</p>',

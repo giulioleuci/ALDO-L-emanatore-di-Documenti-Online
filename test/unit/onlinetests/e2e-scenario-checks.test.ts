@@ -8,7 +8,9 @@ import {
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_PIANI,
   CONF_MAIL_VERBALE,
-  CONF_MAIL_LAVORO
+  CONF_MAIL_LAVORO,
+  CONF_DOC_PIANI,
+  PIANO_DOPPIO_STUDENTE
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type {
@@ -19,6 +21,7 @@ import type {
 import type { ImportService, ImportResult } from '../../../src/application/services/ImportService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import type { IDriveFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
+import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL } from '../../../src/config/schema';
 
 const sample: E2eSampleDatabase & { testMode: boolean } = {
@@ -36,19 +39,23 @@ function recordingHarness(
     sent: 1,
     skipped: 0,
     errors: []
-  })
+  }),
+  planEmailText = 'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PEI_2025_2026 ' +
+    'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026'
 ): {
   container: ServiceContainer;
   events: string[];
   emailPatterns: string[];
   emailResolutions: () => number;
   generatedConfigIds: () => string[];
+  planRows: () => Array<Record<string, unknown>>;
 } {
   const events: string[] = [];
   const rows: Array<Record<string, unknown>> = [];
   const folders: Array<Record<string, unknown>> = [];
   const emailPatterns: string[] = [];
   const generatedConfigIds: string[] = [];
+  const planTexts: Record<string, string> = {};
   let emailResolutions = 0;
   const documents = {
     generateForClasse(classe: ClasseId, configId: string) {
@@ -76,17 +83,35 @@ function recordingHarness(
       }
       return { fileId: `${configId}-${classe.value}`, status: 'CREATED' };
     },
-    generateForAlunno(studente: string) {
+    generateForPiano(studente: string, tipo: TipoPiano, configId: string) {
       events.push('generate-document');
-      generatedConfigIds.push('PIANO_PERSONALIZZATO');
+      generatedConfigIds.push(configId);
+      const existing = rows.find(
+        (row) =>
+          row[COL_LOG_DOCS.ID_GEN] === configId &&
+          row[COL_LOG_DOCS.SOTTOTIPO] === tipo &&
+          row[COL_LOG_DOCS.UTENTI] === studente
+      );
+      if (existing !== undefined) {
+        return { fileId: String(existing[COL_LOG_DOCS.ID]), status: 'SKIPPED_DUPLICATE' };
+      }
+      const fileId = `${studente}-${tipo}`;
       rows.push({
-        [COL_LOG_DOCS.ID_GEN]: 'PIANO_PERSONALIZZATO',
+        [COL_LOG_DOCS.ID]: fileId,
+        [COL_LOG_DOCS.ID_GEN]: configId,
         [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
         [COL_LOG_DOCS.STATO]: 'GENERATO',
-        [COL_LOG_DOCS.CLASSI]: '',
-        [COL_LOG_DOCS.LINK]: `https://example.test/${studente}`
+        [COL_LOG_DOCS.CLASSI]: studente === PIANO_DOPPIO_STUDENTE ? '2B' : '1A',
+        [COL_LOG_DOCS.UTENTI]: studente,
+        [COL_LOG_DOCS.LINK]: `https://example.test/${studente}/${tipo}`
       });
-      return { fileId: studente, status: 'CREATED' };
+      planTexts[fileId] = [
+        `Modello E2E ${tipo}`,
+        `Tipo piano: ${tipo}`,
+        `Note: Piano E2E ${tipo}`
+      ].join('\n');
+      return { fileId, status: 'CREATED' };
     }
   } as unknown as DocumentGenerationService;
   const logMailRows: Array<Record<string, unknown>> = [];
@@ -95,8 +120,23 @@ function recordingHarness(
       emailPatterns.push(patternId);
       if (patternId === CONF_MAIL_LAVORO) {
         logMailRows.push({
-          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: ['folder1'] })
+          [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+            docs: ['E2E_PIANO_LAVORO-1A'],
+            folders: ['folder1']
+          })
         });
+      }
+      if (patternId === CONF_MAIL_PIANI) {
+        logMailRows.push({
+          [COL_LOG_MAIL.PATTERN]: CONF_MAIL_PIANI,
+          [COL_LOG_MAIL.TESTO]: planEmailText
+        });
+        for (const row of rows) {
+          if (row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS') {
+            row[COL_LOG_DOCS.NOTIFICATO] = '2026-07-28T09:00:00.000Z';
+          }
+        }
       }
       return resultForPattern(patternId);
     }
@@ -118,11 +158,18 @@ function recordingHarness(
   const db = {
     table: (name: string) => ({
       findAll: () =>
-        name === 'ASL' ? aslRows : name === 'LOG_MAIL' ? logMailRows : name === 'LOG_FOLD' ? folders : rows
+        name === 'ASL'
+          ? aslRows
+          : name === 'LOG_MAIL'
+            ? logMailRows
+            : name === 'LOG_FOLD'
+              ? folders
+              : rows
     })
   } as unknown as EmailDb;
   const drive = {
-    getFileText: () => 'Report Complesso — nessun placeholder residuo'
+    getFileText: (fileId: string) =>
+      planTexts[fileId] ?? 'Report Complesso — nessun placeholder residuo'
   } as unknown as IDriveFacade;
   const spreadsheets = {
     getProtectedRanges: () => [
@@ -157,7 +204,8 @@ function recordingHarness(
     events,
     emailPatterns,
     emailResolutions: () => emailResolutions,
-    generatedConfigIds: () => generatedConfigIds
+    generatedConfigIds: () => generatedConfigIds,
+    planRows: () => rows.filter((row) => row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS')
   };
 }
 
@@ -173,8 +221,7 @@ function harnessWithImport(
     }
   } as ImportService;
   const db = {
-    table: (name: string) =>
-      name === 'ASL' ? { findAll: () => aslRows } : { findAll: () => [] }
+    table: (name: string) => (name === 'ASL' ? { findAll: () => aslRows } : { findAll: () => [] })
   } as unknown as EmailDb;
   const container = {
     get<T>(key: string): T {
@@ -223,14 +270,18 @@ test('refuses to register any check and reports a single failure when the sample
   const runner = new TestRunner();
   const container = {} as ServiceContainer;
 
-  registerE2eScenarioChecks(runner, container, { ...sample, masterTestMode: false, testMode: false });
+  registerE2eScenarioChecks(runner, container, {
+    ...sample,
+    masterTestMode: false,
+    testMode: false
+  });
 
   const report = runner.report();
   expect(report.failed).toBe(1);
   expect(report.results[0]!.message).toMatch(/TEST_MODE/);
 });
 
-test('resolves the (memoized) email service exactly once and reuses it across scenarios 12 and 4-7', () => {
+test('resolves the memoized email service once across the plan scenario and later sends', () => {
   const harness = recordingHarness();
 
   const runner = new TestRunner();
@@ -238,13 +289,47 @@ test('resolves the (memoized) email service exactly once and reuses it across sc
 
   expect(harness.emailResolutions()).toBe(1);
   expect(harness.emailPatterns).toEqual([
+    CONF_MAIL_PIANI,
     CONF_MAIL_LAVORO,
     CONF_MAIL_VERBALE,
     CONF_MAIL_CONDOTTA,
-    CONF_MAIL_CARENZA,
-    CONF_MAIL_PIANI
+    CONF_MAIL_CARENZA
   ]);
-  expect(runner.report().failed).toBe(0);
+  expect(runner.report().results.filter((result) => result.status === 'fail')).toEqual([]);
+});
+
+test('scenario 3 uses one config to render, deduplicate, send, and subtype-isolate PEI/PDP_BES history', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'pass' });
+  expect(new Set(harness.generatedConfigIds().filter((id) => id === CONF_DOC_PIANI))).toEqual(
+    new Set([CONF_DOC_PIANI])
+  );
+  const dualRows = harness
+    .planRows()
+    .filter((row) => row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE);
+  expect(dualRows).toHaveLength(2);
+  expect(dualRows.map((row) => row[COL_LOG_DOCS.SOTTOTIPO]).sort()).toEqual(['PDP_BES', 'PEI']);
+  expect(dualRows.every((row) => row[COL_LOG_DOCS.NOTIFICATO] !== undefined)).toBe(true);
+});
+
+test('scenario 3 fails when prior-year PEI and PDP_BES history is crossed between subtypes', () => {
+  const harness = recordingHarness(
+    undefined,
+    'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026 ' +
+      'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PEI_2025_2026'
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3?.status).toBe('fail');
+  expect(scenario3?.message).toMatch(/storico.*SOTTOTIPO|SOTTOTIPO.*storico/i);
 });
 
 test('scenario 12 sends the prepared work-plan email without regenerating verbali', () => {
@@ -334,7 +419,15 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
       if (key === 'spreadsheets') {
         return {
           getProtectedRanges: () => [
-            { id: 'p1', range: {}, description: '', editors: { users: ['e2edocente1@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false }
+            {
+              id: 'p1',
+              range: {},
+              description: '',
+              editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
+              sheetId: 0,
+              sheetName: 'Sheet1',
+              warningOnly: false
+            }
           ]
         } as unknown as T;
       }
@@ -381,7 +474,11 @@ test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.A
     sendPattern(patternId: string): SendPatternResult {
       if (patternId === CONF_MAIL_LAVORO) {
         rows.push({
-          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: ['folder1'] })
+          [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+            docs: ['E2E_PIANO_LAVORO-1A'],
+            folders: ['folder1']
+          })
         });
       }
       return { targets: 1, sent: 1, skipped: 0, errors: [] };
@@ -418,6 +515,7 @@ test('scenario 12: fails when LOG_MAIL.ALLEGATI.folders is empty', () => {
     sendPattern(patternId: string): SendPatternResult {
       if (patternId === CONF_MAIL_LAVORO) {
         rows.push({
+          [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: [] })
         });
       }

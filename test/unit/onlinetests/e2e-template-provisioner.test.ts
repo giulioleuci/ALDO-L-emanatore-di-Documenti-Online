@@ -94,6 +94,17 @@ test('reuses an existing template by name instead of recreating it', () => {
   expect(created).toHaveLength(11); // condotta + riepilogo + asl import + doc complesso + sheet permessi + piano lavoro + 5 piani still created
 });
 
+test('does not reuse legacy personalized-plan templates after focused CDU placeholders change', () => {
+  const { artifacts, created } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  drive.files.set('FOLDER_1::E2E Piano PEI Template', 'legacy_pei_template');
+
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  expect(ids.piani.PEI).not.toBe('legacy_pei_template');
+  expect(created).toContain('doc:E2E Piano PEI Template v2');
+});
+
 test('authors real CDU-path placeholder content into newly-created templates, not blank artifacts', () => {
   const { artifacts, docContent, docTables, sheetContent } = fakeArtifacts();
   const drive = new FakeDriveFacade();
@@ -149,8 +160,9 @@ test('authors real CDU-path placeholder content into newly-created templates, no
     expect(pianoParagraphs.length).toBeGreaterThan(0);
     const pianoText = documentText(pianoParagraphs);
     expect(pianoText).toContain('{{focus.alunno.anagrafica.nomeCompleto}}');
-    expect(pianoText).toContain('{{piano.note}}');
-    expect(pianoText).toContain(tipo);
+    expect(pianoText).toContain('{{focus.piano.tipo}}');
+    expect(pianoText).toContain('{{focus.piano.parametriGenerazione.note}}');
+    expect(pianoText).toContain(`Modello E2E ${tipo}`);
   }
 });
 

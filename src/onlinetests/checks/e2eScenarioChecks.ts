@@ -11,6 +11,7 @@ import type { EmailDb } from '../../application/services/EmailNotificationServic
 import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
+import { TipoPiano } from '../../domain/value-objects/enums';
 import {
   ALL_CLASSI_E2E,
   TIPI_PIANO,
@@ -20,7 +21,7 @@ import {
   CONF_DOC_COMPLESSO,
   CONF_DOC_SHEET_PERMESSI,
   CONF_DOC_PIANO_LAVORO,
-  confDocPiano,
+  CONF_DOC_PIANI,
   CONF_IMP_ASL,
   CONF_MAIL_VERBALE,
   CONF_MAIL_CONDOTTA,
@@ -28,6 +29,7 @@ import {
   CONF_MAIL_PIANI,
   CONF_MAIL_LAVORO,
   PIANO_STUDENTE,
+  PIANO_DOPPIO_STUDENTE,
   type E2eSampleDatabase
 } from '../E2eSampleDatabaseBuilder';
 
@@ -116,204 +118,395 @@ export function registerE2eScenarioChecks(
     }
   };
 
-  runner.add('E2E scenario 3: genera i piani personalizzati (5 tipi, PDP_BES anche per 3C)', sample.sampleSpreadsheetUrl, () => {
-    for (const tipo of TIPI_PIANO) {
-      for (const studente of PIANO_STUDENTE[tipo]) {
-        const { fileId, status } = documents.generateForAlunno(studente, confDocPiano(tipo));
-        if (fileId === null) {
-          throw new ValidationError(
-            `Generazione piano ${tipo} per ${studente} non ha prodotto un fileId (status=${status})`
+  runner.add(
+    'E2E scenario 3: piani personalizzati con modello condizionale, dedupe e storico per sottotipo',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const drive = container.get<IDriveFacade>('drive');
+      const expectedPlanCount = TIPI_PIANO.reduce(
+        (total, tipo) => total + PIANO_STUDENTE[tipo].length,
+        0
+      );
+      const generated = new Map<string, string>();
+
+      for (const tipo of TIPI_PIANO) {
+        for (const studente of PIANO_STUDENTE[tipo]) {
+          const { fileId, status } = documents.generateForPiano(
+            studente,
+            tipo as TipoPiano,
+            CONF_DOC_PIANI
           );
+          if (fileId === null) {
+            throw new ValidationError(
+              `Generazione piano ${tipo} per ${studente} non ha prodotto un fileId (status=${status})`
+            );
+          }
+          generated.set(`${studente}::${tipo}`, fileId);
         }
       }
+
+      const rowsAfterFirstRun = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI);
+      if (rowsAfterFirstRun.length !== expectedPlanCount) {
+        throw new ValidationError(
+          `Piani: attese ${expectedPlanCount} righe LOG_DOCS, ricevute ${rowsAfterFirstRun.length}`
+        );
+      }
+      if (
+        rowsAfterFirstRun.some(
+          (row) =>
+            row[COL_LOG_DOCS.TIPO] !== 'PIANO_PERS' ||
+            !TIPI_PIANO.includes(row[COL_LOG_DOCS.SOTTOTIPO] as (typeof TIPI_PIANO)[number])
+        )
+      ) {
+        throw new ValidationError(
+          'Piani: LOG_DOCS deve usare ID_GEN unico, TIPO=PIANO_PERS e SOTTOTIPO da PIANI.TIPO'
+        );
+      }
+
+      const dualRows = rowsAfterFirstRun.filter(
+        (row) => row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE
+      );
+      const dualSubtypes = dualRows
+        .map((row) => String(row[COL_LOG_DOCS.SOTTOTIPO]))
+        .sort()
+        .join(',');
+      if (dualRows.length !== 2 || dualSubtypes !== 'PDP_BES,PEI') {
+        throw new ValidationError(
+          `Piani: ${PIANO_DOPPIO_STUDENTE} deve avere due LOG_DOCS distinti PDP_BES,PEI; ricevuti ${dualSubtypes}`
+        );
+      }
+
+      for (const tipo of [TipoPiano.PEI, TipoPiano.PDP_BES]) {
+        const fileId = generated.get(`${PIANO_DOPPIO_STUDENTE}::${tipo}`);
+        if (fileId === undefined) {
+          throw new ValidationError(`Piani: file ${tipo} mancante per ${PIANO_DOPPIO_STUDENTE}`);
+        }
+        const text = drive.getFileText(fileId);
+        for (const expected of [
+          `Modello E2E ${tipo}`,
+          `Tipo piano: ${tipo}`,
+          `Note: Piano E2E ${tipo}`
+        ]) {
+          if (!text.includes(expected)) {
+            throw new ValidationError(
+              `Piani: il documento ${tipo} non contiene il testo renderizzato atteso "${expected}"`
+            );
+          }
+        }
+      }
+
+      for (const tipo of TIPI_PIANO) {
+        for (const studente of PIANO_STUDENTE[tipo]) {
+          documents.generateForPiano(studente, tipo as TipoPiano, CONF_DOC_PIANI);
+        }
+      }
+      const rowsAfterRetry = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI);
+      if (rowsAfterRetry.length !== rowsAfterFirstRun.length) {
+        throw new ValidationError(
+          `Piani: il retry ha creato duplicati (${rowsAfterFirstRun.length} -> ${rowsAfterRetry.length})`
+        );
+      }
+
+      const sendResult = getEmailService().sendPattern(CONF_MAIL_PIANI);
+      if (sendResult.sent === 0 || sendResult.errors.length > 0) {
+        throw new ValidationError(`Invio piani fallito: ${emailDiagnostics(sendResult)}`);
+      }
+      const emailText = db
+        .table(TABLE.LOG_MAIL)
+        .findAll()
+        .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_PIANI)
+        .map((row) => String(row[COL_LOG_MAIL.TESTO] ?? ''))
+        .join('\n');
+      const correctHistory = [
+        'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PEI_2025_2026',
+        'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026'
+      ];
+      const crossedHistory = [
+        'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026',
+        'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PEI_2025_2026'
+      ];
+      if (
+        correctHistory.some((fragment) => !emailText.includes(fragment)) ||
+        crossedHistory.some((fragment) => emailText.includes(fragment))
+      ) {
+        throw new ValidationError(
+          'Invio piani: lo storico deve essere associato solo al SOTTOTIPO corrispondente'
+        );
+      }
+      const notifiedDualRows = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter(
+          (row) =>
+            row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI &&
+            row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE
+        );
+      if (
+        notifiedDualRows.length !== 2 ||
+        notifiedDualRows.some(
+          (row) => String(row[COL_LOG_DOCS.NOTIFICATO] ?? '').trim() === ''
+        )
+      ) {
+        throw new ValidationError(
+          'Invio piani: entrambi i sottotipi del piano doppio devono risultare notificati'
+        );
+      }
     }
-  });
+  );
 
   // Every entry-point class needs both doc types (ALL_CLASSI_E2E doc comment):
   // each of the 3 coordinatori and each of the 4 CdC gets its own email
   // (scenari 4/5), so a class missing a doc gets an email with an empty box.
-  runner.add('E2E scenario 1: genera verbale consiglio di classe (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_VERBALE);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione verbale per ${classe} non ha prodotto un fileId (status=${status})`
+  runner.add(
+    'E2E scenario 1: genera verbale consiglio di classe (tutte le classi)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      for (const classe of ALL_CLASSI_E2E) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_VERBALE
         );
-      }
-    }
-    assertPersistedLinks(CONF_DOC_VERBALE, 'Verbale');
-    assertVerbaleRegistrationMetadata();
-    assertPianiVerbalizzati();
-  });
-
-  runner.add('E2E scenario 2: genera foglio valutazione condotta (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_CONDOTTA);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione foglio condotta per ${classe} non ha prodotto un fileId (status=${status})`
-        );
-      }
-    }
-    assertPersistedLinks(CONF_DOC_CONDOTTA, 'Condotta');
-  });
-
-  runner.add('E2E scenario 8: genera riepilogo classe (tutte le classi)', sample.sampleSpreadsheetUrl, () => {
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_RIEPILOGO);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione riepilogo per ${classe} non ha prodotto un fileId (status=${status})`
-        );
-      }
-    }
-    const rows = db
-      .table(TABLE.LOG_DOCS)
-      .findAll()
-      .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO);
-    if (rows.length !== ALL_CLASSI_E2E.length) {
-      throw new ValidationError(
-        `Riepilogo: attese ${ALL_CLASSI_E2E.length} righe LOG_DOCS, ricevute ${rows.length}`
-      );
-    }
-    assertPersistedLinks(CONF_DOC_RIEPILOGO, 'Riepilogo');
-  });
-
-  runner.add('E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)', sample.sampleSpreadsheetUrl, () => {
-    const importService = container.get<ImportService>('importService');
-    const result = importService.executeImport(CONF_IMP_ASL);
-    if (result.errori.length > 0) {
-      throw new ValidationError(`Import ASL fallito: ${result.errori.join('; ')}`);
-    }
-    if (result.inseriti + result.aggiornati === 0) {
-      throw new ValidationError('Import ASL: nessuna riga inserita o aggiornata');
-    }
-    const expected: Record<string, number> = {
-      'e2ealunno43@onlinetest.aldo.local': 40,
-      'e2ealunno44@onlinetest.aldo.local': 55,
-      'e2ealunno51@onlinetest.aldo.local': 60,
-      'e2ealunno52@onlinetest.aldo.local': 35
-    };
-    const rows = db.table(TABLE.ASL).findAll();
-    for (const [studente, ore] of Object.entries(expected)) {
-      const row = rows.find((r) => r[COL_ASL.STUDENTE] === studente);
-      if (row === undefined) {
-        throw new ValidationError(`Import ASL: riga mancante per ${studente}`);
-      }
-      if (Number(row[COL_ASL.ORE]) !== ore) {
-        throw new ValidationError(
-          `Import ASL: ${studente} atteso ORE=${ore}, ricevuto ${String(row[COL_ASL.ORE])}`
-        );
-      }
-    }
-  });
-
-  runner.add('E2E scenario 10: genera documento complesso (placeholder loops/filtri, tutte le classi)', sample.sampleSpreadsheetUrl, () => {
-    const drive = container.get<IDriveFacade>('drive');
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_COMPLESSO);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione documento complesso per ${classe} non ha prodotto un fileId (status=${status})`
-        );
-      }
-      const text = drive.getFileText(fileId);
-      if (/\{\{[^}]*\}\}/.test(text)) {
-        throw new ValidationError(
-          `Documento complesso per ${classe}: placeholder non risolto trovato nel testo generato`
-        );
-      }
-    }
-    assertPersistedLinks(CONF_DOC_COMPLESSO, 'Documento complesso');
-  });
-
-  runner.add('E2E scenario 11: verifica protezione colonne materie (SHEET_CON_MATERIE_E_PERMESSI)', sample.sampleSpreadsheetUrl, () => {
-    const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_SHEET_PERMESSI);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
-        );
-      }
-      const protections = spreadsheets.getProtectedRanges(fileId);
-      if (protections.length === 0) {
-        throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
-      }
-      for (const p of protections) {
-        if ((p.editors.users ?? []).length === 0) {
+        if (fileId === null) {
           throw new ValidationError(
-            `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
+            `Generazione verbale per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
+      }
+      assertPersistedLinks(CONF_DOC_VERBALE, 'Verbale');
+      assertVerbaleRegistrationMetadata();
+      assertPianiVerbalizzati();
+    }
+  );
+
+  runner.add(
+    'E2E scenario 2: genera foglio valutazione condotta (tutte le classi)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      for (const classe of ALL_CLASSI_E2E) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_CONDOTTA
+        );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione foglio condotta per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
+      }
+      assertPersistedLinks(CONF_DOC_CONDOTTA, 'Condotta');
+    }
+  );
+
+  runner.add(
+    'E2E scenario 8: genera riepilogo classe (tutte le classi)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      for (const classe of ALL_CLASSI_E2E) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_RIEPILOGO
+        );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione riepilogo per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
+      }
+      const rows = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO);
+      if (rows.length !== ALL_CLASSI_E2E.length) {
+        throw new ValidationError(
+          `Riepilogo: attese ${ALL_CLASSI_E2E.length} righe LOG_DOCS, ricevute ${rows.length}`
+        );
+      }
+      assertPersistedLinks(CONF_DOC_RIEPILOGO, 'Riepilogo');
+    }
+  );
+
+  runner.add(
+    'E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const importService = container.get<ImportService>('importService');
+      const result = importService.executeImport(CONF_IMP_ASL);
+      if (result.errori.length > 0) {
+        throw new ValidationError(`Import ASL fallito: ${result.errori.join('; ')}`);
+      }
+      if (result.inseriti + result.aggiornati === 0) {
+        throw new ValidationError('Import ASL: nessuna riga inserita o aggiornata');
+      }
+      const expected: Record<string, number> = {
+        'e2ealunno43@onlinetest.aldo.local': 40,
+        'e2ealunno44@onlinetest.aldo.local': 55,
+        'e2ealunno51@onlinetest.aldo.local': 60,
+        'e2ealunno52@onlinetest.aldo.local': 35
+      };
+      const rows = db.table(TABLE.ASL).findAll();
+      for (const [studente, ore] of Object.entries(expected)) {
+        const row = rows.find((r) => r[COL_ASL.STUDENTE] === studente);
+        if (row === undefined) {
+          throw new ValidationError(`Import ASL: riga mancante per ${studente}`);
+        }
+        if (Number(row[COL_ASL.ORE]) !== ore) {
+          throw new ValidationError(
+            `Import ASL: ${studente} atteso ORE=${ore}, ricevuto ${String(row[COL_ASL.ORE])}`
           );
         }
       }
     }
-  });
+  );
 
-  runner.add('E2E prerequisite: genera piano di lavoro per gli invii ai coordinatori', sample.sampleSpreadsheetUrl, () => {
-    for (const classe of ALL_CLASSI_E2E) {
-      const { fileId, status } = documents.generateForClasse(ClasseId.of(classe), CONF_DOC_PIANO_LAVORO);
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione piano di lavoro per ${classe} non ha prodotto un fileId (status=${status})`
+  runner.add(
+    'E2E scenario 10: genera documento complesso (placeholder loops/filtri, tutte le classi)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const drive = container.get<IDriveFacade>('drive');
+      for (const classe of ALL_CLASSI_E2E) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_COMPLESSO
         );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione documento complesso per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
+        const text = drive.getFileText(fileId);
+        if (/\{\{[^}]*\}\}/.test(text)) {
+          throw new ValidationError(
+            `Documento complesso per ${classe}: placeholder non risolto trovato nel testo generato`
+          );
+        }
+      }
+      assertPersistedLinks(CONF_DOC_COMPLESSO, 'Documento complesso');
+    }
+  );
+
+  runner.add(
+    'E2E scenario 11: verifica protezione colonne materie (SHEET_CON_MATERIE_E_PERMESSI)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
+      for (const classe of ALL_CLASSI_E2E) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_SHEET_PERMESSI
+        );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
+        const protections = spreadsheets.getProtectedRanges(fileId);
+        if (protections.length === 0) {
+          throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
+        }
+        for (const p of protections) {
+          if ((p.editors.users ?? []).length === 0) {
+            throw new ValidationError(
+              `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
+            );
+          }
+        }
       }
     }
-  });
+  );
 
-  runner.add('E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = getEmailService().sendPattern(CONF_MAIL_LAVORO);
-    if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
-      throw new ValidationError(`Invio piano di lavoro fallito: ${emailDiagnostics(result)}`);
-    }
-    const logRows = db.table(TABLE.LOG_MAIL).findAll();
-    if (logRows.length === 0) {
-      throw new ValidationError('Invio piano di lavoro: nessuna riga LOG_MAIL registrata');
-    }
-    for (const row of logRows) {
-      const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
-        docs?: string[];
-        folders?: string[];
-      };
-      if ((allegati.docs ?? []).length === 0) {
-        throw new ValidationError('LOG_MAIL.ALLEGATI.docs è vuoto: il piano di lavoro non è stato allegato');
-      }
-      if ((allegati.folders ?? []).length === 0) {
-        throw new ValidationError('LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata');
+  runner.add(
+    'E2E prerequisite: genera piano di lavoro per gli invii ai coordinatori',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      for (const classe of ALL_CLASSI_E2E) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_PIANO_LAVORO
+        );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione piano di lavoro per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
       }
     }
-  });
+  );
 
-  runner.add('E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = getEmailService().sendPattern(CONF_MAIL_VERBALE);
-    if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
-      throw new ValidationError(`Invio verbale fallito: ${emailDiagnostics(result)}`);
+  runner.add(
+    'E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const result = getEmailService().sendPattern(CONF_MAIL_LAVORO);
+      if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+        throw new ValidationError(`Invio piano di lavoro fallito: ${emailDiagnostics(result)}`);
+      }
+      const logRows = db
+        .table(TABLE.LOG_MAIL)
+        .findAll()
+        .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_LAVORO);
+      if (logRows.length === 0) {
+        throw new ValidationError('Invio piano di lavoro: nessuna riga LOG_MAIL registrata');
+      }
+      for (const row of logRows) {
+        const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
+          docs?: string[];
+          folders?: string[];
+        };
+        if ((allegati.docs ?? []).length === 0) {
+          throw new ValidationError(
+            'LOG_MAIL.ALLEGATI.docs è vuoto: il piano di lavoro non è stato allegato'
+          );
+        }
+        if ((allegati.folders ?? []).length === 0) {
+          throw new ValidationError(
+            'LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata'
+          );
+        }
+      }
     }
-  });
+  );
 
-  runner.add('E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = getEmailService().sendPattern(CONF_MAIL_CONDOTTA);
-    if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
-      throw new ValidationError(`Invio condotta fallito: ${emailDiagnostics(result)}`);
+  runner.add(
+    'E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const result = getEmailService().sendPattern(CONF_MAIL_VERBALE);
+      if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+        throw new ValidationError(`Invio verbale fallito: ${emailDiagnostics(result)}`);
+      }
     }
-  });
+  );
 
-  runner.add('E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)', sample.sampleSpreadsheetUrl, () => {
-    const result = getEmailService().sendPattern(CONF_MAIL_CARENZA);
-    if (result.targets !== 2) {
-      throw new ValidationError(`Invio carenza: attesi 2 target, ricevuti ${result.targets}`);
+  runner.add(
+    'E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const result = getEmailService().sendPattern(CONF_MAIL_CONDOTTA);
+      if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+        throw new ValidationError(`Invio condotta fallito: ${emailDiagnostics(result)}`);
+      }
     }
-    if (result.sent === 0) {
-      throw new ValidationError('Invio carenza: 0 email inviate');
-    }
-  });
+  );
 
-  runner.add('E2E scenario 7: invia piani personalizzati nuovi e già notificati (TEST_MODE)', sample.sampleSpreadsheetUrl, () => {
-    const result = getEmailService().sendPattern(CONF_MAIL_PIANI);
-    if (result.sent === 0) {
-      throw new ValidationError(`Invio piani: 0 email inviate (targets=${result.targets})`);
+  runner.add(
+    'E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const result = getEmailService().sendPattern(CONF_MAIL_CARENZA);
+      if (result.targets !== 2) {
+        throw new ValidationError(`Invio carenza: attesi 2 target, ricevuti ${result.targets}`);
+      }
+      if (result.sent === 0) {
+        throw new ValidationError('Invio carenza: 0 email inviate');
+      }
     }
-  });
+  );
 }
 
 function csvContains(raw: unknown, value: string): boolean {

@@ -256,7 +256,30 @@ focus.alunno:
         array di { anno, nome, link, tipo }  — `tipo` qui è l'ID_GEN del generatore, per il match con `idGen` corrente
 ```
 
-### 4.3 `focus.carenza`
+### 4.3 `focus.piano`
+
+Presente nella recipe di generazione `PIANO_PERSONALIZZATO`. Rappresenta
+esattamente una riga `PIANI`, anche quando lo stesso alunno possiede più piani.
+È la fonte canonica per la selezione del modello, il rendering e la
+registrazione del sottotipo.
+
+```
+focus.piano:
+  tipo                  — TipoPiano della riga focalizzata
+  parametriGenerazione  — oggetto JSON decodificato da PIANI.PARAMETRI
+```
+
+La configurazione unica `CONF_DOC.ID=PIANI_PERSONALIZZATI` DEVE selezionare uno
+dei cinque template condizionali tramite `focus.piano.tipo`. I template leggono
+i dati specifici da `focus.piano.parametriGenerazione.*`. Il medesimo
+`focus.piano.tipo` DEVE diventare `LOG_DOCS.SOTTOTIPO`; non è ammesso usare
+`CONF_DOC.PARAMETRI.tipoPiano` come discriminatore.
+
+Il blocco `focus.alunno.didattica.piani.items` resta l'elenco complessivo dei
+piani dell'alunno. `focus.piano`, invece, è sempre il singolo piano corrente:
+template, CDU di notifica e storico non devono mai mescolare sottotipi diversi.
+
+### 4.4 `focus.carenza`
 
 Presente solo nella pipeline `PER_CARENZA_GENITORI`/`PER_CARENZA_GENITORI_E_ALUNNO`/`PER_CARENZA_GENITORI_E_COORD`. Popolata dal `CarenzaFocusProvider` (vedi `09_CONTEXT_ENGINE.md`), attivo solo nella recipe `CARENZA_COMPLETO`.
 

@@ -8,14 +8,14 @@ Questo documento descrive lo schema fisico del database di SGSA. Il database è 
 
 Lo script orchestratore SGSA è associato a un unico foglio di calcolo **Master Sheet**, che funge da punto di ingresso per i database di ogni anno scolastico. Il Master Sheet DEVE contenere esattamente le colonne seguenti (`ANNO_SCOLASTICO` è la chiave primaria):
 
-| Colonna                | Formato / Vincolo                                         | Descrizione                                                                                                                                           |
-| ---------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ANNO_SCOLASTICO`      | `YYYY-YYYY` (es. `2025-2026`); OBBLIGATORIO, univoco (PK) | Anno scolastico della riga                                                                                                                            |
-| `ID_SPREADSHEET`       | Drive File ID; OBBLIGATORIO                               | ID dello spreadsheet del database dell'anno (strutturato come da schema seguente)                                                                     |
-| `ID_CARTELLA_GOOGLE`   | Drive Folder ID; OBBLIGATORIO                             | ID della cartella Drive radice in cui SEMPRE salvare tutti i documenti generati per l'anno                                                            |
-| `DIRIGENTE_SCOLASTICO` | Testo, formato `"prof.ssa MARIA BIANCHI"`; OBBLIGATORIO   | Nome del dirigente scolastico                                                                                                                         |
-| `SUPERVISORE_EMAIL`    | Email valida oppure vuota                                 | Indirizzo a cui inviare in BCC tutte le email del sistema; PUÒ essere vuoto — in tal caso NESSUN BCC è aggiunto (vedi `11_PIPELINE_EMAIL.md`, Step 4) |
-| `TEST_MODE`             | `VERO`/`FALSO` (booleano) oppure vuoto; default `FALSO`    | Se `VERO`, ogni email inviata dal sistema viene reindirizzata (solo campo A, CC/BCC soppressi) all'indirizzo del proprietario Drive del Master Sheet, invece dei destinatari reali                                                    |
+| Colonna                | Formato / Vincolo                                         | Descrizione                                                                                                                                                                        |
+| ---------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ANNO_SCOLASTICO`      | `YYYY-YYYY` (es. `2025-2026`); OBBLIGATORIO, univoco (PK) | Anno scolastico della riga                                                                                                                                                         |
+| `ID_SPREADSHEET`       | Drive File ID; OBBLIGATORIO                               | ID dello spreadsheet del database dell'anno (strutturato come da schema seguente)                                                                                                  |
+| `ID_CARTELLA_GOOGLE`   | Drive Folder ID; OBBLIGATORIO                             | ID della cartella Drive radice in cui SEMPRE salvare tutti i documenti generati per l'anno                                                                                         |
+| `DIRIGENTE_SCOLASTICO` | Testo, formato `"prof.ssa MARIA BIANCHI"`; OBBLIGATORIO   | Nome del dirigente scolastico                                                                                                                                                      |
+| `SUPERVISORE_EMAIL`    | Email valida oppure vuota                                 | Indirizzo a cui inviare in BCC tutte le email del sistema; PUÒ essere vuoto — in tal caso NESSUN BCC è aggiunto (vedi `11_PIPELINE_EMAIL.md`, Step 4)                              |
+| `TEST_MODE`            | `VERO`/`FALSO` (booleano) oppure vuoto; default `FALSO`   | Se `VERO`, ogni email inviata dal sistema viene reindirizzata (solo campo A, CC/BCC soppressi) all'indirizzo del proprietario Drive del Master Sheet, invece dei destinatari reali |
 
 **Ordinamento e anno corrente:** le righe del Master Sheet DEVONO SEMPRE essere mantenute in ordine cronologico decrescente per `ANNO_SCOLASTICO`. La prima riga È quindi SEMPRE l'anno scolastico corrente; la profondità storica si ottiene scorrendo le righe successive, senza alcun calcolo. NON esiste — e NON DEVE esistere — un parametro di configurazione separato per indicare l'anno corrente.
 
@@ -123,17 +123,17 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 
 Catalogo delle discipline. I codici univoci (`ID`) sono usati come nomi di colonne dinamiche nelle tabelle CLASSI e CARENZE. Lookup table stabile. Ogni colonna dinamica `[MATERIA]` delle tabelle CLASSI e CARENZE DEVE corrispondere a un `ID` presente in questa tabella.
 
-| Colonna      | Tipo   | PK  | Vincoli                   | Descrizione                                                                                                                                                                                                                                          |
-| ------------ | ------ | --- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ID`         | String | ✅  | Uppercase, 2–10 caratteri | Sigla univoca (es. `ITA`, `MAT`)                                                                                                                                                                                                                     |
-| `NOME`       | String | —   | —                         | Nome esteso per documenti ufficiali (es. `Lingua e letteratura italiana`)                                                                                                                                                                            |
-| `SINTESI`    | String | —   | —                         | Nome abbreviato per stampe compatte (es. `Italiano`)                                                                                                                                                                                                 |
-| `COLORE_1`   | String | —   | Hex code                  | Colore primario (bordi, intestazioni)                                                                                                                                                                                                                |
-| `COLORE_2`   | String | —   | Hex code                  | Colore secondario (sfondi)                                                                                                                                                                                                                           |
-| `SIMBOLO`    | String | —   | —                         | Icona/Emoji rappresentativa                                                                                                                                                                                                                          |
-| `ESAME_CFG`  | JSON   | —   | —                         | Prima/seconda prova per indirizzo: `{"prima_prova":["LC"],"seconda_prova":["LS"]}`                                                                                                                                                                   |
-| `EVOLUZIONE` | JSON   | —   | —                         | Evoluzione delle relazioni tra materie negli anni, ad esempio per accorpamento o sdoppiamenti o cambi di nome negli anni di corso. Es. `GST - Storia e Geografia` (1°-2° anno) diventa `STO - Storia` (3°-4°-5° anno): `{"GST":[1,2],"STO":[3,4,5]}` |
-| `IS_RELIGIONE_ALT` | Boolean | —   | —                         | `true` per le righe IRC/ALT: esclude questa materia dal fan-out generico di `CattedraResolver.resolveConsiglio` salvo richiesta esplicita (evita che appaia in ogni enumerazione di cattedra dove prima non compariva) |
+| Colonna            | Tipo    | PK  | Vincoli                   | Descrizione                                                                                                                                                                                                                                          |
+| ------------------ | ------- | --- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ID`               | String  | ✅  | Uppercase, 2–10 caratteri | Sigla univoca (es. `ITA`, `MAT`)                                                                                                                                                                                                                     |
+| `NOME`             | String  | —   | —                         | Nome esteso per documenti ufficiali (es. `Lingua e letteratura italiana`)                                                                                                                                                                            |
+| `SINTESI`          | String  | —   | —                         | Nome abbreviato per stampe compatte (es. `Italiano`)                                                                                                                                                                                                 |
+| `COLORE_1`         | String  | —   | Hex code                  | Colore primario (bordi, intestazioni)                                                                                                                                                                                                                |
+| `COLORE_2`         | String  | —   | Hex code                  | Colore secondario (sfondi)                                                                                                                                                                                                                           |
+| `SIMBOLO`          | String  | —   | —                         | Icona/Emoji rappresentativa                                                                                                                                                                                                                          |
+| `ESAME_CFG`        | JSON    | —   | —                         | Prima/seconda prova per indirizzo: `{"prima_prova":["LC"],"seconda_prova":["LS"]}`                                                                                                                                                                   |
+| `EVOLUZIONE`       | JSON    | —   | —                         | Evoluzione delle relazioni tra materie negli anni, ad esempio per accorpamento o sdoppiamenti o cambi di nome negli anni di corso. Es. `GST - Storia e Geografia` (1°-2° anno) diventa `STO - Storia` (3°-4°-5° anno): `{"GST":[1,2],"STO":[3,4,5]}` |
+| `IS_RELIGIONE_ALT` | Boolean | —   | —                         | `true` per le righe IRC/ALT: esclude questa materia dal fan-out generico di `CattedraResolver.resolveConsiglio` salvo richiesta esplicita (evita che appaia in ogni enumerazione di cattedra dove prima non compariva)                               |
 
 ---
 
@@ -252,6 +252,11 @@ Piani Didattici Personalizzati. Parte dell'aggregato Alunno.
 
 **Chiave primaria composita:** `(STUDENTE, TIPO)` — DEVE esistere AL PIÙ un piano attivo per ogni valore di `TIPO` per ciascuno studente. NON esiste una colonna `ID` UUID.
 
+La generazione documentale usa `PIANI.TIPO` come discriminatore del singolo
+piano: il valore viene esposto in `focus.piano.tipo`, copiato in
+`LOG_DOCS.SOTTOTIPO` e NON deve essere duplicato in
+`CONF_DOC.PARAMETRI.tipoPiano`.
+
 ---
 
 ### PROGETTI
@@ -299,24 +304,38 @@ Ore cumulative di Alternanza Scuola Lavoro per studente per anno. Chiave primari
 
 Motore di configurazione per la generazione documentale. Ogni record definisce completamente un tipo di documento generabile.
 
-| Colonna                  | Tipo   | PK  | Descrizione                                                                                                                                                                                                                   |
-| ------------------------ | ------ | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ID`                     | String | ✅  | Codice identificativo (es. `VERBALE_CDC`)                                                                                                                                                                                     |
-| `TIPO`                   | String | —   | Macro-categoria: (es. `VERBALE`, `PIANO_PERS`, `PIANO_LAVORO`...)                                                                                                                                                             |
-| `NOME`                   | String | —   | Nome descrittivo per l'interfaccia utente                                                                                                                                                                                     |
-| `GENERATORE`             | String | —   | Nome della Strategy di generazione (vedi `10_PIPELINE_DOCUMENTI.md`)                                                                                                                                                          |
-| `FORMATO`                | String | —   | Enum                                                                                                                                                                                                                          |
-| `DUPLICAZIONE`           | Enum   | —   | Politica di generazione duplicata: `NEGATA` (default) blocca l'identita gia generata; `PERMESSA` la consente                                                                                                                   |
-| `GESTIONE_ARTICOLAZIONE` | Enum   | —   | Specifica come gestire la generazione per classi articolate                                                                                                                                                                   |
-| `PATH_OUT`               | String | —   | Pattern per il percorso cartella (supporta placeholder `{{...}}` e separazione cartelle tramite `/`)                                                                                                                          |
-| `FILE_NAME`              | String | —   | Pattern per il nome file (supporta placeholder `{{...}}`)                                                                                                                                                                     |
-| `MODELLI`                | JSON   | —   | ID dei template Drive; forma semplice o condizionale                                                                                                                                                                          |
-| `PERMESSI`               | JSON   | —   | ACL per file e cartelle (ruoli astratti → permessi)                                                                                                                                                                           |
-| `PARAMETRI`              | JSON   | —   | Parametri extra passati al generatore                                                                                                                                                                                         |
-| `CONDIZIONE`             | String | —   | Espressione logica per la generazione condizionale                                                                                                                                                                            |
-| `POST_PROCESSO`          | JSON   | —   | Azioni automatiche post-generazione (array)                                                                                                                                                                                   |
-| `REGISTRA_DOC`           | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_DOCS`                                                                                                                                        |
-| `REGISTRA_FOLD`          | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_FOLD`                                                                                                                                        |
+| Colonna                  | Tipo   | PK  | Descrizione                                                                                                  |
+| ------------------------ | ------ | --- | ------------------------------------------------------------------------------------------------------------ |
+| `ID`                     | String | ✅  | Codice identificativo (es. `VERBALE_CDC`)                                                                    |
+| `TIPO`                   | String | —   | Macro-categoria: (es. `VERBALE`, `PIANO_PERS`, `PIANO_LAVORO`...)                                            |
+| `NOME`                   | String | —   | Nome descrittivo per l'interfaccia utente                                                                    |
+| `GENERATORE`             | String | —   | Nome della Strategy di generazione (vedi `10_PIPELINE_DOCUMENTI.md`)                                         |
+| `FORMATO`                | String | —   | Enum                                                                                                         |
+| `DUPLICAZIONE`           | Enum   | —   | Politica di generazione duplicata: `NEGATA` (default) blocca l'identita gia generata; `PERMESSA` la consente |
+| `GESTIONE_ARTICOLAZIONE` | Enum   | —   | Specifica come gestire la generazione per classi articolate                                                  |
+| `PATH_OUT`               | String | —   | Pattern per il percorso cartella (supporta placeholder `{{...}}` e separazione cartelle tramite `/`)         |
+| `FILE_NAME`              | String | —   | Pattern per il nome file (supporta placeholder `{{...}}`)                                                    |
+| `MODELLI`                | JSON   | —   | ID dei template Drive; forma semplice o condizionale                                                         |
+| `PERMESSI`               | JSON   | —   | ACL per file e cartelle (ruoli astratti → permessi)                                                          |
+| `PARAMETRI`              | JSON   | —   | Parametri extra passati al generatore                                                                        |
+| `CONDIZIONE`             | String | —   | Espressione logica per la generazione condizionale                                                           |
+| `POST_PROCESSO`          | JSON   | —   | Azioni automatiche post-generazione (array)                                                                  |
+| `REGISTRA_DOC`           | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_DOCS`                        |
+| `REGISTRA_FOLD`          | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_FOLD`                        |
+
+> **VINCOLO IMPORTANTE — eccezione obbligatoria per i piani personalizzati.**
+> Benché `CONF_DOC.TIPO` sia in generale una stringa libera, tutti i valori di
+> `PIANI.TIPO` DEVONO essere gestiti da **un solo** record `CONF_DOC`, con
+> `ID=PIANI_PERSONALIZZATI` e `TIPO=PIANO_PERS`. Non sono ammessi record distinti
+> per `PEI`, `PDP_BES`, `PDP_DSA`, `PDP_STRANIERI` o `PFP`.
+>
+> Il record unico DEVE avere cinque rami condizionali in `MODELLI`, valutati su
+> `focus.piano.tipo`, uno per ciascun valore di `TipoPiano`. Il sottotipo non si
+> ricava da `CONF_DOC.PARAMETRI`: è il `PIANI.TIPO` del piano focalizzato. Per
+> rendere stabile l'identità del documento, `REGISTRA_DOC.utenti` DEVE risolvere
+> a `{{focus.alunno.anagrafica.email}}`; il log risultante usa sempre
+> `ID_GEN=PIANI_PERSONALIZZATI`, `TIPO=PIANO_PERS` e
+> `SOTTOTIPO=focus.piano.tipo`.
 
 **Azioni POST_PROCESSO supportate:**
 
@@ -332,18 +351,18 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 
 Motore di configurazione per le notifiche email. Ogni record è un pattern di comunicazione completo.
 
-| Colonna         | Tipo    | PK  | Descrizione                                                                                                                                                                |
-| --------------- | ------- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ID`            | String  | ✅  | Codice pattern (es. `CDC_OTTOBRE`)                                                                                                                                         |
-| `OGGETTO`       | String  | —   | Oggetto email (supporta placeholder `{{...}}`)                                                                                                                             |
+| Colonna         | Tipo    | PK  | Descrizione                                                                                                                                                                                       |
+| --------------- | ------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ID`            | String  | ✅  | Codice pattern (es. `CDC_OTTOBRE`)                                                                                                                                                                |
+| `OGGETTO`       | String  | —   | Oggetto email (supporta placeholder `{{...}}`)                                                                                                                                                    |
 | `PROCESSO`      | String  | —   | Iteratore destinatari: `PER_COORDINATORE`, `PER_DOCENTE`, `PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`, `PER_CARENZA_GENITORI_E_COORD` |
-| `BOX_CFG`       | JSON    | —   | Array di BoxConfig per i contenuti dinamici dell'email                                                                                                                     |
-| `TESTO`         | String  | —   | HTML opzionale inserito prima dei box; supporta placeholder `{{...}}` risolti tramite `WorkspaceTemplateEngine`                                                            |
-| `SUPPLENTI`     | String  | —   | Routing supplenze: `SOLO_TITOLARI`, `SOLO_SUPPLENTI`, `ENTRAMBI`                                                                                                           |
-| `NOREPLY`       | Boolean | —   | Aggiunge disclaimer no-reply nel footer                                                                                                                                    |
-| `COLORE_HEADER` | String  | —   | Hex code dell'header HTML dell'email; default `#007bff` se non specificato (vedi `11_PIPELINE_EMAIL.md`, Step 3)                                                           |
-| `CONDIZIONE`    | String  | —   | Espressione logica per l'invio condizionale (stesso meccanismo di `CONF_DOC.CONDIZIONE`); valutata da `ValutaCondizioniInvioStep`. Se null o vuoto, l'invio procede sempre |
-| `POST_PROCESSO` | JSON    | —   | Azioni post-invio (stesso meccanismo di CONF_DOC)                                                                                                                          |
+| `BOX_CFG`       | JSON    | —   | Array di BoxConfig per i contenuti dinamici dell'email                                                                                                                                            |
+| `TESTO`         | String  | —   | HTML opzionale inserito prima dei box; supporta placeholder `{{...}}` risolti tramite `WorkspaceTemplateEngine`                                                                                   |
+| `SUPPLENTI`     | String  | —   | Routing supplenze: `SOLO_TITOLARI`, `SOLO_SUPPLENTI`, `ENTRAMBI`                                                                                                                                  |
+| `NOREPLY`       | Boolean | —   | Aggiunge disclaimer no-reply nel footer                                                                                                                                                           |
+| `COLORE_HEADER` | String  | —   | Hex code dell'header HTML dell'email; default `#007bff` se non specificato (vedi `11_PIPELINE_EMAIL.md`, Step 3)                                                                                  |
+| `CONDIZIONE`    | String  | —   | Espressione logica per l'invio condizionale (stesso meccanismo di `CONF_DOC.CONDIZIONE`); valutata da `ValutaCondizioniInvioStep`. Se null o vuoto, l'invio procede sempre                        |
+| `POST_PROCESSO` | JSON    | —   | Azioni post-invio (stesso meccanismo di CONF_DOC)                                                                                                                                                 |
 
 ---
 
@@ -368,22 +387,22 @@ Configurazione job ETL per importazioni dati da fonti esterne.
 
 Audit trail immutabile (append-only) di ogni documento generato. Lega l'ID fisico Drive alla configurazione che lo ha generato.
 
-| Colonna      | Tipo         | PK  | FK          | Descrizione                                                                                      |
-| ------------ | ------------ | --- | ----------- | ------------------------------------------------------------------------------------------------ |
-| `ID`         | String       | ✅  | —           | ID Drive del file generato                                                                       |
-| `ID_GEN`     | String       | —   | CONF_DOC.ID | Tipo di configurazione usata                                                                     |
-| `TIPO`       | String       | —   | —           | Tipo del documento; valore derivato da `CONF_DOC.TIPO` (campo categoriale, non PK di `CONF_DOC`) |
-| `SOTTOTIPO`  | String       | —   | —           | Specializzazione del tipo documento (es. `PDP_BES`, `PEI`); non ha FK diretto in CONF_DOC        |
-| `NOME`       | String       | —   | —           | Nome del file                                                                                    |
-| `STATO`      | String       | —   | —           | Enum                                                                                             |
-| `NOTIFICATO` | String       | —   | —           | Timestamp della notifica agli interessati                                                        |
-| `PATH`       | String       | —   | —           | Percorso logico della cartella                                                                   |
-| `LINK`       | String       | —   | —           | URL web del file                                                                                 |
-| `CLASSI`     | String (csv) | —   | CLASSI.ID   | Classi associate (se applicabile)                                                                |
-| `UTENTI`     | String (csv) | —   | —           | Email degli utenti associati (alunno o docente)                                                  |
-| `MATERIE`    | String (csv) | —   | MATERIE.ID  | Materie associate (se applicabile), separate da virgola                                         |
-| `DATA_CREAZ` | String       | —   | —           | Timestamp di creazione                                                                           |
-| `ID_ORIG`    | String       | —   | LOG_DOCS.ID | ID del documento di origine (per versioni successive dello stesso documento)                     |
+| Colonna      | Tipo         | PK  | FK          | Descrizione                                                                                                                                                                    |
+| ------------ | ------------ | --- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ID`         | String       | ✅  | —           | ID Drive del file generato                                                                                                                                                     |
+| `ID_GEN`     | String       | —   | CONF_DOC.ID | Tipo di configurazione usata                                                                                                                                                   |
+| `TIPO`       | String       | —   | —           | Tipo del documento; valore derivato da `CONF_DOC.TIPO` (campo categoriale, non PK di `CONF_DOC`)                                                                               |
+| `SOTTOTIPO`  | String       | —   | —           | Specializzazione del documento. Per `TIPO=PIANO_PERS` è obbligatoriamente il `PIANI.TIPO` focalizzato (es. `PDP_BES`, `PEI`) e discrimina piani generati dallo stesso `ID_GEN` |
+| `NOME`       | String       | —   | —           | Nome del file                                                                                                                                                                  |
+| `STATO`      | String       | —   | —           | Enum                                                                                                                                                                           |
+| `NOTIFICATO` | String       | —   | —           | Timestamp della notifica agli interessati                                                                                                                                      |
+| `PATH`       | String       | —   | —           | Percorso logico della cartella                                                                                                                                                 |
+| `LINK`       | String       | —   | —           | URL web del file                                                                                                                                                               |
+| `CLASSI`     | String (csv) | —   | CLASSI.ID   | Classi associate (se applicabile)                                                                                                                                              |
+| `UTENTI`     | String (csv) | —   | —           | Email degli utenti associati (alunno o docente)                                                                                                                                |
+| `MATERIE`    | String (csv) | —   | MATERIE.ID  | Materie associate (se applicabile), separate da virgola                                                                                                                        |
+| `DATA_CREAZ` | String       | —   | —           | Timestamp di creazione                                                                                                                                                         |
+| `ID_ORIG`    | String       | —   | LOG_DOCS.ID | ID del documento di origine (per versioni successive dello stesso documento)                                                                                                   |
 
 **Nota query CSV:** Le colonne `UTENTI`, `CLASSI` e `MATERIE` contengono valori separati da virgola. Le query di ricerca per email/classe/materia singola DEVONO usare una ricerca per contenimento (CONTAINS) e MAI l'uguaglianza esatta.
 
@@ -402,7 +421,7 @@ Audit trail delle cartelle create su Google Drive.
 | `LINK`    | String       | —   | —           | URL web                                                                                                            |
 | `CLASSI`  | String (csv) | —   | CLASSI.ID   | Classi associate (se applicabile); valori multipli separati da virgola — stessa semantica CSV di `LOG_DOCS.CLASSI` |
 | `UTENTI`  | String (csv) | —   | —           | Email degli utenti associati (alunno o docente)                                                                    |
-| `MATERIE` | String (csv) | —   | MATERIE.ID  | Materie associate (se applicabile), separate da virgola                                                               |
+| `MATERIE` | String (csv) | —   | MATERIE.ID  | Materie associate (se applicabile), separate da virgola                                                            |
 
 ---
 

@@ -10,13 +10,17 @@ import {
   RIPETENTE_1A,
   RIPETENTE_3C,
   PDP_BES_3C,
+  PIANO_DOPPIO_STUDENTE,
+  CONF_DOC_PIANI,
   e2eAlunnoEmail,
   e2eDocenteEmail,
-  confDocPiano,
   CARENZA_ALUNNO_1,
   CARENZA_ALUNNO_2
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
-import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from '../../../src/onlinetests/SampleDatabaseBuilder';
+import type {
+  ISampleSpreadsheet,
+  ISampleSpreadsheetFactory
+} from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import {
   TABLE,
@@ -50,7 +54,10 @@ class RecordingSpreadsheet implements ISampleSpreadsheet {
   }
 }
 
-function factory(): { spreadsheets: ISampleSpreadsheetFactory; sheets: Map<string, RecordingSpreadsheet> } {
+function factory(): {
+  spreadsheets: ISampleSpreadsheetFactory;
+  sheets: Map<string, RecordingSpreadsheet>;
+} {
   const sheets = new Map<string, RecordingSpreadsheet>();
   return {
     sheets,
@@ -81,7 +88,10 @@ const TEMPLATE_IDS = {
   }
 };
 
-function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
+function expectCompleteRows(
+  rows: Record<string, unknown>[],
+  columns: Record<string, string>
+): void {
   for (const row of rows) {
     expect(Object.keys(row).sort()).toEqual(Object.values(columns).sort());
   }
@@ -104,7 +114,12 @@ test('seeds 4 CLASSI rows (2 plain, 1 articolata pair) and exactly 60 ALUNNI spl
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const classi = sample.rows[TABLE.CLASSI]!;
-  expect(classi.map((c) => c[COL_CLASSI.ID])).toEqual([CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER]);
+  expect(classi.map((c) => c[COL_CLASSI.ID])).toEqual([
+    CLASSE_A,
+    CLASSE_B,
+    CLASSE_C,
+    CLASSE_C_PARTNER
+  ]);
 
   const alunni = sample.rows[TABLE.ALUNNI]!;
   expect(alunni).toHaveLength(60);
@@ -168,15 +183,17 @@ test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', ()
   expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
 });
 
-test('seeds 11 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc complesso + 1 sheet permessi + 1 piano lavoro + 5 piani) each pointing at its provisioned template', () => {
+test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and student registration', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(11);
+  expect(confDoc).toHaveLength(7);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
-  expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_verbale' });
+  expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
+    templateId: 'tmpl_verbale'
+  });
   expect(JSON.parse(String(verbale[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
     classi: '{{focus.classe.anagrafica.nome}}',
     utenti: '',
@@ -188,11 +205,15 @@ test('seeds 11 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc compl
     materie: 'MATE'
   });
   const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
-  expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_condotta' });
+  expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({
+    templateId: 'tmpl_condotta'
+  });
   const riepilogo = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO')!;
   expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(riepilogo[COL_CONF_DOC.TIPO]).toBe('RIEPILOGO_CLASSE');
-  expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({ templateId: 'tmpl_riepilogo' });
+  expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({
+    templateId: 'tmpl_riepilogo'
+  });
   const complesso = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO')!;
   expect(complesso[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(complesso[COL_CONF_DOC.MODELLI] as string)).toEqual({
@@ -203,8 +224,28 @@ test('seeds 11 CONF_DOC rows (1 verbale + 1 condotta + 1 riepilogo + 1 doc compl
   expect(JSON.parse(sheetPermessi[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_sheet_permessi'
   });
-  const piani = confDoc.filter((c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO');
-  expect(piani).toHaveLength(5);
+  const piani = confDoc.filter((c) => c[COL_CONF_DOC.TIPO] === 'PIANO_PERS');
+  expect(piani).toHaveLength(1);
+  const piano = piani[0]!;
+  expect(piano[COL_CONF_DOC.ID]).toBe(CONF_DOC_PIANI);
+  expect(piano[COL_CONF_DOC.GENERATORE]).toBe('DOC_PERSONALIZZATO');
+  expect(piano[COL_CONF_DOC.PARAMETRI]).toBe('');
+  expect(String(piano[COL_CONF_DOC.FILE_NAME])).toContain('{{focus.piano.tipo}}');
+  expect(JSON.parse(String(piano[COL_CONF_DOC.MODELLI]))).toEqual([
+    { condizione: '{{focus.piano.tipo}} == "PDP_DSA"', templateId: 'tmpl_pdp_dsa' },
+    { condizione: '{{focus.piano.tipo}} == "PDP_BES"', templateId: 'tmpl_pdp_bes' },
+    {
+      condizione: '{{focus.piano.tipo}} == "PDP_STRANIERI"',
+      templateId: 'tmpl_pdp_stranieri'
+    },
+    { condizione: '{{focus.piano.tipo}} == "PEI"', templateId: 'tmpl_pei' },
+    { condizione: '{{focus.piano.tipo}} == "PFP"', templateId: 'tmpl_pfp' }
+  ]);
+  expect(JSON.parse(String(piano[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+    classi: '{{focus.classe.anagrafica.nome}}',
+    utenti: '{{focus.alunno.anagrafica.email}}',
+    materie: ''
+  });
   expectCompleteRows(confDoc, COL_CONF_DOC);
   for (const row of confDoc) {
     expectRegistrationJson(row[COL_CONF_DOC.REGISTRA_DOC]);
@@ -237,7 +278,13 @@ test('seeds 5 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genito
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
   expect(confMail).toHaveLength(5);
   expect(confMail.map((c) => c[COL_CONF_MAIL.PROCESSO]).sort()).toEqual(
-    ['PER_CARENZA_GENITORI', 'PER_CDC', 'PER_COORDINATORE', 'PER_COORDINATORE', 'PER_COORDINATORE'].sort()
+    [
+      'PER_CARENZA_GENITORI',
+      'PER_CDC',
+      'PER_COORDINATORE',
+      'PER_COORDINATORE',
+      'PER_COORDINATORE'
+    ].sort()
   );
   expectCompleteRows(confMail, COL_CONF_MAIL);
 });
@@ -272,7 +319,9 @@ test('PIANI_PERS POST_PROCESSO criterion matches on the full classiCompetenza li
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
-  const piani = sample.rows[TABLE.CONF_MAIL]!.find((c) => c[COL_CONF_MAIL.ID] === 'E2E_MAIL_PIANI')!;
+  const piani = sample.rows[TABLE.CONF_MAIL]!.find(
+    (c) => c[COL_CONF_MAIL.ID] === 'E2E_MAIL_PIANI'
+  )!;
   const postProcesso = JSON.parse(piani[COL_CONF_MAIL.POST_PROCESSO] as string) as Array<{
     criteri: Record<string, string>;
   }>;
@@ -287,7 +336,9 @@ test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', ()
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const alunni = sample.rows[TABLE.ALUNNI]!;
-  const ripetenti = alunni.filter((a) => a[COL_ALUNNI.RIPETENTE] === true).map((a) => a[COL_ALUNNI.EMAIL]);
+  const ripetenti = alunni
+    .filter((a) => a[COL_ALUNNI.RIPETENTE] === true)
+    .map((a) => a[COL_ALUNNI.EMAIL]);
   expect(ripetenti.sort()).toEqual([RIPETENTE_1A, RIPETENTE_3C].sort());
 });
 
@@ -349,7 +400,7 @@ test('each class has at least one NO and/or ALT religion exception alongside the
   expect(all).toContain('ALT');
 });
 
-test('PDP_BES targets 2 students (5 CONF_DOC piano rows stay one per tipo; PIANI gets one row per (tipo, studente))', () => {
+test('PIANI gets one row per (tipo, studente) while CONF_DOC keeps one plan recipe', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
@@ -357,13 +408,16 @@ test('PDP_BES targets 2 students (5 CONF_DOC piano rows stay one per tipo; PIANI
   const piani = sample.rows[TABLE.CONF_DOC]!.filter(
     (c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO'
   );
-  expect(piani).toHaveLength(5);
+  expect(piani).toHaveLength(1);
   const pianiRows = sample.rows[TABLE.PIANI]!;
   const totalStudenti = TIPI_PIANO.reduce((n, tipo) => n + PIANO_STUDENTE[tipo].length, 0);
   expect(pianiRows).toHaveLength(totalStudenti);
-  expect(pianiRows.filter((r) => r[COL_PIANI.TIPO] === 'PDP_BES').map((r) => r[COL_PIANI.STUDENTE]).sort()).toEqual(
-    [e2eAlunnoEmail(5), PDP_BES_3C].sort()
-  );
+  expect(
+    pianiRows
+      .filter((r) => r[COL_PIANI.TIPO] === 'PDP_BES')
+      .map((r) => r[COL_PIANI.STUDENTE])
+      .sort()
+  ).toEqual([e2eAlunnoEmail(5), PDP_BES_3C, PIANO_DOPPIO_STUDENTE].sort());
 });
 
 test('creates a second (prior-year) sample spreadsheet and a second, later MASTER row for 2025-2026', () => {
@@ -402,7 +456,25 @@ test('prior-year (2025-2026) roster: 1A/3C hold only their repeater, 2B/3C promo
   expect(alunni).toHaveLength(1 + 1 + 20 + 7 + 12);
 });
 
-test('prior-year LOG_DOCS carries the PEI and new-3C-PDP_BES plans, ID_GEN matching the exact current-year confDocPiano id', () => {
+test('seeds one student with both PEI and PDP_BES plans', () => {
+  const { spreadsheets, sheets } = factory();
+  const drive = new FakeDriveFacade();
+  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const rows = sample.rows[TABLE.PIANI]!.filter(
+    (row) => row[COL_PIANI.STUDENTE] === PIANO_DOPPIO_STUDENTE
+  );
+
+  expect(rows.map((row) => row[COL_PIANI.TIPO]).sort()).toEqual(['PDP_BES', 'PEI']);
+  expect(
+    rows.map(
+      (row) =>
+        JSON.parse(String(row[COL_PIANI.PARAMETRI])) as Record<string, unknown>
+    )
+  ).toEqual(expect.arrayContaining([{ note: 'Piano E2E PEI' }, { note: 'Piano E2E PDP_BES' }]));
+});
+
+test('prior-year personalized-plan rows share one generator ID and remain distinguished by SOTTOTIPO', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
@@ -410,16 +482,28 @@ test('prior-year LOG_DOCS carries the PEI and new-3C-PDP_BES plans, ID_GEN match
   const logDocs = prior.rows[TABLE.LOG_DOCS]!;
   expect(logDocs).toHaveLength(2);
 
-  const pei = logDocs.find((r) => r[COL_LOG_DOCS.UTENTI] === PIANO_STUDENTE.PEI[0])!;
-  expect(pei[COL_LOG_DOCS.ID_GEN]).toBe(confDocPiano('PEI'));
+  const rowsForDualStudent = logDocs.filter(
+    (row) => row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE
+  );
+  expect(rowsForDualStudent).toHaveLength(2);
+  expect(rowsForDualStudent.map((row) => row[COL_LOG_DOCS.SOTTOTIPO]).sort()).toEqual([
+    'PDP_BES',
+    'PEI'
+  ]);
+  expect(new Set(logDocs.map((row) => row[COL_LOG_DOCS.ID_GEN]))).toEqual(
+    new Set([CONF_DOC_PIANI])
+  );
+
+  const pei = rowsForDualStudent.find((r) => r[COL_LOG_DOCS.SOTTOTIPO] === 'PEI')!;
+  expect(pei[COL_LOG_DOCS.ID_GEN]).toBe(CONF_DOC_PIANI);
   expect(pei[COL_LOG_DOCS.TIPO]).toBe('PIANO_PERS');
   expect(pei[COL_LOG_DOCS.SOTTOTIPO]).toBe('PEI');
   expect(pei[COL_LOG_DOCS.CLASSI]).toBe('1B');
 
-  const bes = logDocs.find((r) => r[COL_LOG_DOCS.UTENTI] === PDP_BES_3C)!;
-  expect(bes[COL_LOG_DOCS.ID_GEN]).toBe(confDocPiano('PDP_BES'));
+  const bes = rowsForDualStudent.find((r) => r[COL_LOG_DOCS.SOTTOTIPO] === 'PDP_BES')!;
+  expect(bes[COL_LOG_DOCS.ID_GEN]).toBe(CONF_DOC_PIANI);
   expect(bes[COL_LOG_DOCS.SOTTOTIPO]).toBe('PDP_BES');
-  expect(bes[COL_LOG_DOCS.CLASSI]).toBe('2C');
+  expect(bes[COL_LOG_DOCS.CLASSI]).toBe('1B');
 });
 
 test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENERICO generator)', () => {
@@ -460,7 +544,9 @@ test('CONF_DOC_VERBALE verbalizes the generated class plans through AGGIORNA_STA
   new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
-  const verbale = sample.rows[TABLE.CONF_DOC]!.find((row) => row[COL_CONF_DOC.ID] === 'E2E_VERBALE')!;
+  const verbale = sample.rows[TABLE.CONF_DOC]!.find(
+    (row) => row[COL_CONF_DOC.ID] === 'E2E_VERBALE'
+  )!;
   const postProcesso = JSON.parse(String(verbale[COL_CONF_DOC.POST_PROCESSO])) as Array<{
     tipo: string;
     stato: string;

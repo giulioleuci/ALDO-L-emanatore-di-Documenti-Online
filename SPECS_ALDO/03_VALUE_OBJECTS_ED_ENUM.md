@@ -47,10 +47,10 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 **Utilizzo:** `CONF_DOC.DUPLICAZIONE`
 
-| Valore      | Significato                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| `NEGATA`    | Default. Blocca la generazione se esiste lo stesso `TIPO`, `SOTTOTIPO`, `ID_GEN`, `PATH`, `NOME`. |
-| `PERMESSA`  | Consente una nuova generazione senza eseguire il controllo dei duplicati.                    |
+| Valore     | Significato                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| `NEGATA`   | Default. Blocca la generazione se esiste lo stesso `TIPO`, `SOTTOTIPO`, `ID_GEN`, `PATH`, `NOME`. |
+| `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                         |
 
 Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).
 
@@ -88,16 +88,16 @@ Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.
 
 **Utilizzo:** `CONF_MAIL.PROCESSO`
 
-| Valore                          | Destinatari                                                                 |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `PER_COORDINATORE`               | Un'email per coordinatore, aggregando tutte le sue classi                    |
-| `PER_DOCENTE`                    | Un'email per docente del CdC, aggregando tutte le sue classi                 |
-| `PER_CDC`                        | Un'email multi-TO per classe, a tutti i docenti del CdC                      |
-| `PER_ALUNNO`                     | Un'email per alunno attivo                                                   |
-| `PER_GENITORI_ALUNNO`            | Un'email per famiglia (deduplicata per set di tutori)                        |
-| `PER_CARENZA_GENITORI`           | Un'email per riga CARENZE non notificata, ai soli genitori/tutori            |
-| `PER_CARENZA_GENITORI_E_ALUNNO`  | Come sopra, TO genitori + alunno (un'unica email condivisa)                  |
-| `PER_CARENZA_GENITORI_E_COORD`   | Come `PER_CARENZA_GENITORI`, con il coordinatore di classe in CC             |
+| Valore                          | Destinatari                                                       |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `PER_COORDINATORE`              | Un'email per coordinatore, aggregando tutte le sue classi         |
+| `PER_DOCENTE`                   | Un'email per docente del CdC, aggregando tutte le sue classi      |
+| `PER_CDC`                       | Un'email multi-TO per classe, a tutti i docenti del CdC           |
+| `PER_ALUNNO`                    | Un'email per alunno attivo                                        |
+| `PER_GENITORI_ALUNNO`           | Un'email per famiglia (deduplicata per set di tutori)             |
+| `PER_CARENZA_GENITORI`          | Un'email per riga CARENZE non notificata, ai soli genitori/tutori |
+| `PER_CARENZA_GENITORI_E_ALUNNO` | Come sopra, TO genitori + alunno (un'unica email condivisa)       |
+| `PER_CARENZA_GENITORI_E_COORD`  | Come `PER_CARENZA_GENITORI`, con il coordinatore di classe in CC  |
 
 Le tre varianti `PER_CARENZA_GENITORI*` condividono la stessa iterazione su `CARENZE` non notificate
 e possono usare solo i box `carenze`/`note`/`assenze`.
@@ -308,6 +308,13 @@ Transizione tipica: `GENERATO` → `VERBALIZZATO/NOTIFICATO` → `ARCHIVIATO`.
 - **Validazione:** deve corrispondere a un valore presente nella colonna `CONF_DOC.TIPO`
 - **Esempi:** `"VERBALE"`, `"PIANO_PERS"`, `"PIANO_LAVORO"`
 
+> **Eccezione obbligatoria da non confondere con la natura libera della
+> stringa:** per la configurazione unica `PIANI_PERSONALIZZATI`, `TipoDocumento`
+> DEVE essere esattamente `"PIANO_PERS"`. I valori di `TipoPiano` non sono
+> `TipoDocumento`: diventano `LOG_DOCS.SOTTOTIPO` e selezionano il ramo di
+> `CONF_DOC.MODELLI` tramite `focus.piano.tipo`. Configurazioni separate per
+> sottotipo e `CONF_DOC.PARAMETRI.tipoPiano` sono vietate.
+
 ---
 
 ## 3. Value Object — Complessi
@@ -491,6 +498,12 @@ Seleziona il template Drive da usare per la generazione. Supporta due forme:
   { "condizione": "true", "templateId": "1abc_default" }
 ]
 ```
+
+Per `CONF_DOC.ID=PIANI_PERSONALIZZATI` la forma condizionale è obbligatoria e
+contiene esattamente cinque rami, uno per ciascun `TipoPiano`, con condizioni
+`{{focus.piano.tipo}} == "<TIPO>"`. Non si usa un ramo generico `true`, perché
+un tipo sconosciuto deve produrre un errore esplicito invece di scegliere un
+template errato.
 
 | Metodo                               | Comportamento                                                                                         |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |

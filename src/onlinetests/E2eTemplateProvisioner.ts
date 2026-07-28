@@ -43,7 +43,7 @@ const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 function namePiano(tipo: string): string {
-  return `E2E Piano ${tipo} Template`;
+  return `E2E Piano ${tipo} Template v2`;
 }
 
 /**
@@ -74,15 +74,17 @@ const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   }
 ];
 
-/** `piano.note` matches `PIANI.PARAMETRI` seeded by `E2eSampleDatabaseBuilder` (`{note: "Piano E2E <tipo>"}`,
- * ref `DocPersonalizzatoGeneratorStrategy`'s `piano.<campo>` context). */
+/** Personalized-plan templates deliberately print both the focused subtype and
+ * its parameters so the online scenario proves conditional model selection and
+ * focused CDU isolation for students with more than one plan. */
 function pianoParagraphs(tipo: string): string[] {
   return [
-    `Piano Personalizzato — ${tipo}`,
+    `Modello E2E ${tipo}`,
     'Studente: {{focus.alunno.anagrafica.nomeCompleto}}',
     'Classe: {{focus.alunno.classe.nome}}',
     'Data: {{meta.date.oggi.breve}}',
-    'Note: {{piano.note}}'
+    'Tipo piano: {{focus.piano.tipo}}',
+    'Note: {{focus.piano.parametriGenerazione.note}}'
   ];
 }
 

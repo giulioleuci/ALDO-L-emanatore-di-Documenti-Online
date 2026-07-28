@@ -1,5 +1,6 @@
 import { ProcessoInvio, GestioneSupplenti } from '../value-objects/enums';
 import { COL_CONF_MAIL } from '../../config/schema';
+import { ConfigurationError } from '../errors/DomainError';
 import { AldoEntity } from './AldoEntity';
 
 export interface ConfigurazioneEmailData {
@@ -21,6 +22,7 @@ export class ConfigurazioneEmail extends AldoEntity {
   private readonly noreply: boolean;
   private readonly coloreHeaderRaw: string;
   private readonly condizioneRaw: string;
+  private readonly allegatiRaw: unknown;
 
   constructor(data: ConfigurazioneEmailData = {}) {
     super(data);
@@ -48,6 +50,7 @@ export class ConfigurazioneEmail extends AldoEntity {
       typeof data[COL_CONF_MAIL.CONDIZIONE] === 'string'
         ? (data[COL_CONF_MAIL.CONDIZIONE] as string)
         : '';
+    this.allegatiRaw = data[COL_CONF_MAIL.ALLEGATI] ?? null;
   }
 
   /** BoxConfig array parsed from BOX_CFG; empty when null (ref 06 §9). */
@@ -73,6 +76,36 @@ export class ConfigurazioneEmail extends AldoEntity {
     return this.condizioneRaw.trim() === '' ? null : this.condizioneRaw;
   }
 
+  /** Attachment IDs configured in ALLEGATI, preserving their declared order. */
+  getAllegati(): string[] {
+    if (this.allegatiRaw === null) return [];
+    if (typeof this.allegatiRaw !== 'string') {
+      throw this.allegatiConfigurationError();
+    }
+    if (this.allegatiRaw.trim() === '') return [];
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(this.allegatiRaw);
+    } catch {
+      throw this.allegatiConfigurationError();
+    }
+    if (!Array.isArray(parsed)) throw this.allegatiConfigurationError();
+
+    const allegati: string[] = [];
+    const seen = new Set<string>();
+    for (const id of parsed) {
+      if (typeof id !== 'string' || id.trim() === '') {
+        throw this.allegatiConfigurationError();
+      }
+      if (!seen.has(id)) {
+        seen.add(id);
+        allegati.push(id);
+      }
+    }
+    return allegati;
+  }
+
   override toData(): EntityData {
     return {
       [COL_CONF_MAIL.ID]: this.id,
@@ -83,11 +116,18 @@ export class ConfigurazioneEmail extends AldoEntity {
       [COL_CONF_MAIL.TESTO]: this.testoRaw,
       [COL_CONF_MAIL.NOREPLY]: this.noreply,
       [COL_CONF_MAIL.COLORE_HEADER]: this.coloreHeaderRaw,
-      [COL_CONF_MAIL.CONDIZIONE]: this.condizioneRaw
+      [COL_CONF_MAIL.CONDIZIONE]: this.condizioneRaw,
+      [COL_CONF_MAIL.ALLEGATI]: this.allegatiRaw
     };
   }
 
   static fromData(data: ConfigurazioneEmailData): ConfigurazioneEmail {
     return new ConfigurazioneEmail(data);
+  }
+
+  private allegatiConfigurationError(): ConfigurationError {
+    return new ConfigurationError(
+      `CONF_MAIL ${this.id ?? '?'}: ALLEGATI deve essere un array JSON di ID non vuoti`
+    );
   }
 }

@@ -93,7 +93,7 @@ test('DocumentiStoricoProvider: includiStorico true attaches an unresolved LazyR
   expect(storico.isResolved()).toBe(false);
 });
 
-test('DocumentiStoricoProvider: resolving the LazyRef returns documents tagged with idGen', () => {
+test('DocumentiStoricoProvider: resolving the LazyRef keeps family, subtype and generator id distinct', () => {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push({
     ID: 'old1',
@@ -115,6 +115,13 @@ test('DocumentiStoricoProvider: resolving the LazyRef returns documents tagged w
   );
   const storico = cdu.focus.alunno!.didattica.documenti!.storico!.get();
   expect(storico).toEqual([
-    { anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'CD_PDP' }
+    {
+      anno: '2025-2026',
+      nome: 'PDP a1 anno scorso',
+      link: 'http://d/old',
+      tipo: 'PDP',
+      sottotipo: '',
+      idGen: 'CD_PDP'
+    }
   ]);
 });

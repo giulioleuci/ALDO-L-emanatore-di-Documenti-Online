@@ -5,10 +5,12 @@ import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvi
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
 import { LazyRef } from '../../storico/LazyRef';
 
+const TIPO_PIANO_PERS = 'PIANO_PERS';
+
 /**
  * Fills `focus.alunno.didattica.pianiPersonalizzati.storico` (11 §11 new) with
- * a LazyRef over every prior-year document tagged with its ID_GEN, feeding the
- * `piani_pers_da_inviare` box's default historical row. Mirrors
+ * a LazyRef over prior-year PIANO_PERS documents, preserving each subtype for
+ * `piani_pers_da_inviare` history matching. Mirrors
  * DocumentiStoricoProvider: skipped entirely when `includiStorico` is false.
  * Runs after `pianiPersAlunno` in the recipe.
  */
@@ -23,7 +25,7 @@ export class PianiPersAlunnoStoricoProvider implements ContextProvider {
     const profondita = options.profonditaAnniDocumenti;
     const service = new StoricoDocumentiService(this.databases);
     alunno.didattica.pianiPersonalizzati.storico = new LazyRef(() =>
-      service.perAlunnoConTipo(email, profondita)
+      service.perAlunnoConTipo(email, profondita).filter((documento) => documento.tipo === TIPO_PIANO_PERS)
     );
   }
 }

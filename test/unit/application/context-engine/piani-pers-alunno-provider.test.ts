@@ -66,7 +66,7 @@ test('PianiPersAlunnoStoricoProvider: includiStorico false ⇒ no storico key', 
   expect(opened).toBe(false);
 });
 
-test('PianiPersAlunnoStoricoProvider: includiStorico true attaches an unresolved LazyRef tagged by idGen', () => {
+test('PianiPersAlunnoStoricoProvider: includiStorico true attaches an unresolved LazyRef with separate family, subtype and generator fields', () => {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push({
     ID: 'old_pdp', ID_GEN: 'PDP_BES', TIPO: 'PIANO_PERS', SOTTOTIPO: 'PDP_DSA',
@@ -82,6 +82,13 @@ test('PianiPersAlunnoStoricoProvider: includiStorico true attaches an unresolved
   );
   const storico = cdu.focus.alunno!.didattica.pianiPersonalizzati!.storico!.get();
   expect(storico).toEqual([
-    { anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'PDP_BES' }
+    {
+      anno: '2025-2026',
+      nome: 'PDP a1 anno scorso',
+      link: 'http://d/old',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_DSA',
+      idGen: 'PDP_BES'
+    }
   ]);
 });

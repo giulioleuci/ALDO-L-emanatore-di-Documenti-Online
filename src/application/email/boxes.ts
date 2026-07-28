@@ -180,13 +180,13 @@ function renderDocumentiBox(
     return renderRigaStandard(items, str(options.config['displayMode']));
 
   // arricchisciConStorico (11 §11, 13 §4): storico entries are matched to the
-  // current item by ID_GEN, not the display TIPO — StoricoDocumentiService
-  // groups by CONF_DOC.TIPO/LOG_DOCS.ID_GEN, which the CDU item carries as `idGen`.
+  // current item by ID_GEN, not the display TIPO — the historical DTO keeps
+  // the generator id in its dedicated `idGen` field.
   const storico = storicoRef.get();
   const righe = items
     .map((corrente) => {
       const storicoCorrente = storico
-        .filter((s) => s.tipo === corrente.idGen)
+        .filter((s) => s.idGen === corrente.idGen)
         .map(escapeNomeLink);
       return templates.processString(templateRiga, {
         corrente: escapeNomeLink(corrente),
@@ -238,7 +238,9 @@ function renderPianiPersBox(
   const storico = storicoRef?.get() ?? [];
   const righe = items
     .map((corrente) => {
-      const storicoCorrente = storico.filter((s) => s.tipo === corrente.idGen).map(escapeNomeLink);
+      const storicoCorrente = storico
+        .filter((s) => s.sottotipo === corrente.sottotipo)
+        .map(escapeNomeLink);
       return templates.processString(templateRiga, {
         corrente: {
           ...corrente,

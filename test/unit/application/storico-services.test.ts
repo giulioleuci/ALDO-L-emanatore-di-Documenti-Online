@@ -195,11 +195,11 @@ test('StoricoDocumentiService finds prior-year documents matching UTENTI + ID_GE
   expect(service.perAlunno('a1@school.it', 'NOPE', 1)).toEqual([]);
 });
 
-test('StoricoDocumentiService.perAlunnoConTipo returns every prior-year document tagged with its TIPO/ID_GEN, unfiltered (11 §11 arricchisciConStorico)', () => {
+test('StoricoDocumentiService.perAlunnoConTipo returns every prior-year document with distinct family, subtype and generator fields', () => {
   const anni = [annoStorico('2025-2026', annoPrecedente())];
   const service = new StoricoDocumentiService(fakeProvider(anni));
   expect(service.perAlunnoConTipo('a1@school.it', 1)).toEqual([
-    { anno: '2025-2026', nome: '', link: '', tipo: 'CD_PDP' }
+    { anno: '2025-2026', nome: '', link: '', tipo: 'PDP', sottotipo: '', idGen: 'CD_PDP' }
   ]);
   expect(service.perAlunnoConTipo('nope@school.it', 1)).toEqual([]);
 });

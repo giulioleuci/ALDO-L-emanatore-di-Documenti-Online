@@ -6,10 +6,12 @@ import type { DocumentoStoricoConTipo } from '../../storico/StoricoDocumentiServ
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
 import { LazyRef } from '../../storico/LazyRef';
 
+const TIPO_PIANO_PERS = 'PIANO_PERS';
+
 /**
  * Fills `focus.classe.didattica.pianiPersonalizzati.storico` (11 §11 new): one
  * LazyRef merging every distinct current-year student's prior-year documents,
- * each tagged with its ID_GEN. Deliberately a simple per-student loop (not a
+ * restricted to the PIANO_PERS family and carrying its subtype. Deliberately a simple per-student loop (not a
  * batched cross-year query) — the number of BES/PDP students per class is
  * small, so this trades a small amount of historical-DB-open overhead for
  * reusing StoricoDocumentiService as-is. Mirrors PianiPersAlunnoStoricoProvider.
@@ -31,7 +33,9 @@ export class PianiPersClasseStoricoProvider implements ContextProvider {
       )
     ];
     classe.didattica.pianiPersonalizzati.storico = new LazyRef(() =>
-      emails.flatMap((email): DocumentoStoricoConTipo[] => service.perAlunnoConTipo(email, profondita))
+      emails.flatMap((email): DocumentoStoricoConTipo[] =>
+        service.perAlunnoConTipo(email, profondita).filter((documento) => documento.tipo === TIPO_PIANO_PERS)
+      )
     );
   }
 }

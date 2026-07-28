@@ -93,6 +93,13 @@ test('PianiPersClasseStoricoProvider: resolves prior-year docs per distinct stud
   );
   const storico = cdu.focus.classe!.didattica!.pianiPersonalizzati.storico!.get();
   expect(storico).toEqual([
-    { anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'PDP_BES' }
+    {
+      anno: '2025-2026',
+      nome: 'PDP a1 anno scorso',
+      link: 'http://d/old',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_DSA',
+      idGen: 'PDP_BES'
+    }
   ]);
 });

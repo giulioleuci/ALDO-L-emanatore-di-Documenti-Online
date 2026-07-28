@@ -9,9 +9,14 @@ export interface DocumentoStorico {
   link: string;
 }
 
-/** `DocumentoStorico` tagged with its generator id (`LOG_DOCS.ID_GEN`, matched against `CONF_DOC.TIPO`) — feeds `perAlunnoConTipo` (11 §11). */
+/** Historical LOG_DOCS metadata used by both generic-document and personalized-plan boxes. */
 export interface DocumentoStoricoConTipo extends DocumentoStorico {
+  /** LOG_DOCS.TIPO, the document family. */
   tipo: string;
+  /** LOG_DOCS.SOTTOTIPO, used to separate PEI/PDP plan history. */
+  sottotipo: string;
+  /** LOG_DOCS.ID_GEN, retained for generic document-history matching. */
+  idGen: string;
 }
 
 /**
@@ -26,11 +31,11 @@ export class StoricoDocumentiService {
 
   perAlunno(alunnoEmail: string, tipo: string, profondita = 1): DocumentoStorico[] {
     return this.tutti(alunnoEmail, profondita)
-      .filter((d) => d.tipo === tipo)
+      .filter((d) => d.idGen === tipo)
       .map(({ anno, nome, link }) => ({ anno, nome, link }));
   }
 
-  /** Every prior-year document regardless of TIPO, each tagged with its ID_GEN — the `documenti` box groups these by the current item's `idGen` at render time (11 §11). */
+  /** Every prior-year document, with family, subtype and generator id kept separate. */
   perAlunnoConTipo(alunnoEmail: string, profondita = 1): DocumentoStoricoConTipo[] {
     return this.tutti(alunnoEmail, profondita);
   }
@@ -40,7 +45,14 @@ export class StoricoDocumentiService {
     for (const { anno, db } of this.provider.anniStorici(profondita)) {
       const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(db);
       for (const doc of logDocs.findByUtente(Email.of(alunnoEmail))) {
-        out.push({ anno, nome: doc.nome, link: doc.getLink(), tipo: doc.idGen });
+        out.push({
+          anno,
+          nome: doc.nome,
+          link: doc.getLink(),
+          tipo: doc.tipo,
+          sottotipo: doc.getSottotipo(),
+          idGen: doc.idGen
+        });
       }
     }
     return out;

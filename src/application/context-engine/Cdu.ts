@@ -219,6 +219,7 @@ export interface CduAlunno {
     };
     pianiPersonalizzati?: {
       items: PianoPersonalizzatoItem[];
+      /** Lazy prior-year PIANO_PERS documents, matched to rows by SOTTOTIPO. */
       storico?: import('../storico/LazyRef').LazyRef<
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;

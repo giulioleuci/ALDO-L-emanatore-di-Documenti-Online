@@ -131,37 +131,72 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
 });
 
 describe('DocumentGenerationService.generateForPiano', () => {
-  test('builds the focused-plan CDU and renders the selected plan', () => {
+  test('runs two focused plan subtypes through one conditional configuration and skips their reruns independently', () => {
     const tables = fixtureTables();
+    tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{"gravita":"lieve"}' });
     tables.CONF_DOC!.push({
-      ID: 'CD_PIANO',
+      ID: 'PIANI_PERSONALIZZATI',
       TIPO: 'PIANO_PERS',
       GENERATORE: 'DOC_PERSONALIZZATO',
       CONDIZIONE: null,
-      MODELLI: '{"templateId":"tmpl_piano"}',
+      MODELLI: JSON.stringify([
+        { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
+        { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
+      ]),
       FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
       PATH_OUT: 'Piani',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
       POST_PROCESSO: null,
-      PARAMETRI: '{"tipoPiano":"PEI"}',
+      PARAMETRI: '',
       GESTIONE_ARTICOLAZIONE: '',
-      FORMATO: 'GDOC'
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '{{focus.alunno.anagrafica.email}}',
+        materie: ''
+      })
     });
-    const templates = new FakeTemplateEngine();
-    const { service } = wire(tables, {
-      registry: new Map([['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(templates)]])
+    const documentTemplates = new FakeTemplateEngine();
+    const { db, drive, service } = wire(tables, {
+      registry: new Map([
+        ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(documentTemplates)]
+      ])
     });
 
-    const result = service.generateForPiano('a1@school.it', TipoPiano.PEI, 'CD_PIANO');
+    const pei = service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI');
+    const pdpBes = service.generateForPiano(
+      'a1@school.it',
+      TipoPiano.PDP_BES,
+      'PIANI_PERSONALIZZATI'
+    );
 
-    expect(result.fileId).not.toBeNull();
-    expect(result.status).not.toBe('SKIPPED');
-    const ctx = templates.contextFor(result.fileId!) as {
-      focus: { piano: { tipo: TipoPiano; parametriGenerazione: Record<string, unknown> } };
-    };
-    expect(ctx.focus.piano.tipo).toBe(TipoPiano.PEI);
-    expect(ctx.focus.piano.parametriGenerazione).toEqual({ gravita: 'media' });
+    expect(pei.status).toBe('GENERATO');
+    expect(pdpBes.status).toBe('GENERATO');
+    expect(drive.copies.map((copy) => copy.templateId)).toEqual(['tmpl_pei', 'tmpl_pdp_bes']);
+    expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ID_GEN: 'PIANI_PERSONALIZZATI',
+          TIPO: 'PIANO_PERS',
+          SOTTOTIPO: 'PEI',
+          UTENTI: 'a1@school.it'
+        }),
+        expect.objectContaining({
+          ID_GEN: 'PIANI_PERSONALIZZATI',
+          TIPO: 'PIANO_PERS',
+          SOTTOTIPO: 'PDP_BES',
+          UTENTI: 'a1@school.it'
+        })
+      ])
+    );
+    expect(service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')).toEqual({
+      fileId: null,
+      status: 'SKIPPED'
+    });
+    expect(
+      service.generateForPiano('a1@school.it', TipoPiano.PDP_BES, 'PIANI_PERSONALIZZATI')
+    ).toEqual({ fileId: null, status: 'SKIPPED' });
   });
 
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {

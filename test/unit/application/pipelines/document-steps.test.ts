@@ -24,7 +24,7 @@ import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
 import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
-import { DuplicazioneDocumento } from '../../../../src/domain/value-objects/enums';
+import { DuplicazioneDocumento, TipoPiano } from '../../../../src/domain/value-objects/enums';
 
 const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();
@@ -41,6 +41,39 @@ function buildAlunnoCdu(db: FakeDatabase): Cdu {
     { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') },
     recipe('ALUNNO_DETTAGLIATO')
   );
+}
+
+function buildPianoCdu(db: FakeDatabase, pianoTipo: TipoPiano): Cdu {
+  return ContextEngineFactory.create(db).build(
+    {
+      target: 'a1@school.it',
+      tipoTarget: 'alunno',
+      pianoTipo,
+      now: new Date('2026-07-01T09:00:00Z')
+    },
+    recipe('PIANO_PERSONALIZZATO')
+  );
+}
+
+function pianoConfig(): Record<string, unknown> {
+  return {
+    ...fixtureTables().CONF_DOC[0]!,
+    ID: 'PIANI_PERSONALIZZATI',
+    TIPO: 'PIANO_PERS',
+    GENERATORE: 'DOC_PERSONALIZZATO',
+    MODELLI: JSON.stringify([
+      { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
+      { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
+    ]),
+    FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+    PATH_OUT: 'Piani',
+    PARAMETRI: '',
+    REGISTRA_DOC: JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '{{focus.alunno.anagrafica.email}}',
+      materie: ''
+    })
+  };
 }
 
 function baseCtx(db: FakeDatabase, confIndex = 0): PipelineContext {
@@ -90,6 +123,43 @@ test('CheckDuplicatesStep: NEGATA closes the gate only for a matching full docum
   new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   expect(ctx.get('shouldGenerate')).toBe(false);
   expect(String(ctx.get('skipReason'))).toContain('TIPO=VERBALE');
+});
+
+test('CheckDuplicatesStep: PIANO_PERS identity includes focused subtype and configured student', () => {
+  const tables = fixtureTables();
+  tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_BES',
+      UTENTI: 'other@school.it',
+      PATH: 'Piani',
+      NOME: 'Piano_VERDI ANNA'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  const config = pianoConfig();
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildPianoCdu(db, TipoPiano.PDP_BES));
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  expect(ctx.get('shouldGenerate')).toBe(true);
+
+  const matchingTables = fixtureTables();
+  matchingTables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });
+  matchingTables.LOG_DOCS = [{ ...tables.LOG_DOCS[0]!, UTENTI: 'a1@school.it' }];
+  const matchingDb = new FakeDatabase(matchingTables);
+  const matchingCtx = baseCtx(matchingDb);
+  matchingCtx.set('config', config);
+  matchingCtx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  matchingCtx.set('cdu', buildPianoCdu(matchingDb, TipoPiano.PDP_BES));
+  new CheckDuplicatesStep(logger, matchingDb, new FakeTemplateEngine()).execute(matchingCtx);
+  expect(matchingCtx.get('shouldGenerate')).toBe(false);
+  expect(String(matchingCtx.get('skipReason'))).toContain('SOTTOTIPO=PDP_BES');
 });
 
 test('PrepareInfrastructureStep creates folder and registers it in LOG_FOLD (10 §5)', () => {
@@ -160,6 +230,38 @@ test('SelectTemplateStep evaluates conditional MODELLI entries via GasExpression
   const ctx = baseCtx(db, 1); // CD_ESAME: first entry condition {{...anno}} == 5
   new SelectTemplateStep(logger, new ConfigurazioneDocumentoRepository(db), engine).execute(ctx);
   expect(ctx.get('templateId')).toBe('tmpl_esame'); // real evaluation, not the 'true' fallback
+});
+
+test.each([
+  [TipoPiano.PEI, 'tmpl_pei'],
+  [TipoPiano.PDP_BES, 'tmpl_pdp_bes']
+])('SelectTemplateStep selects %s from conditional MODELLI using focus.piano.tipo', (tipo, templateId) => {
+  const tables = fixtureTables();
+  tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  const config = pianoConfig();
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildPianoCdu(db, tipo));
+
+  new SelectTemplateStep(logger, new ConfigurazioneDocumentoRepository(db), engine).execute(ctx);
+  expect(ctx.get('templateId')).toBe(templateId);
+});
+
+test('SelectTemplateStep rejects a focused plan type without a matching MODELLI branch', () => {
+  const tables = fixtureTables();
+  tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PFP', PARAMETRI: '{}' });
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  const config = pianoConfig();
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildPianoCdu(db, TipoPiano.PFP));
+
+  expect(() =>
+    new SelectTemplateStep(logger, new ConfigurazioneDocumentoRepository(db), engine).execute(ctx)
+  ).toThrow('nessun template applicabile');
 });
 
 test('CloneTemplateStep copies via Drive facade and sets newFileId', () => {
@@ -290,31 +392,34 @@ test('RegisterDocumentStep leaves unconfigured metadata blank without legacy fal
   });
 });
 
-test('RegisterDocumentStep writes LOG_DOCS.SOTTOTIPO from CONF_DOC.PARAMETRI.tipoPiano', () => {
+test('RegisterDocumentStep writes plan identity from CONF_DOC and focused CDU, not PARAMETRI', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
-  const confRow = fixtureTables().CONF_DOC[0]!;
-  ctx.set(
-    'confDoc',
-    ConfigurazioneDocumento.fromData({
-      ...confRow,
-      PARAMETRI: JSON.stringify({ tipoPiano: 'PDP_BES' })
-    })
-  );
+  const config = { ...pianoConfig(), PARAMETRI: JSON.stringify({ tipoPiano: 'PDP_DSA' }) };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildPianoCdu(db, TipoPiano.PEI));
   ctx.set('newFileId', 'file_pdp_bes');
   ctx.set('newFileLink', 'https://drive/file_pdp_bes');
   ctx.set('nomeFile', 'PDP_BES_a1');
   ctx.set('destFolderPath', 'Alunni BES/5A');
   new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_pdp_bes');
-  expect(row?.SOTTOTIPO).toBe('PDP_BES');
+  expect(row).toMatchObject({
+    ID_GEN: 'PIANI_PERSONALIZZATI',
+    TIPO: 'PIANO_PERS',
+    SOTTOTIPO: 'PEI',
+    UTENTI: 'a1@school.it'
+  });
 });
 
-test('RegisterDocumentStep leaves LOG_DOCS.SOTTOTIPO empty when PARAMETRI has no tipoPiano (e.g. VERBALE/CONDOTTA, or an empty-string PARAMETRI cell)', () => {
+test('RegisterDocumentStep keeps SOTTOTIPO empty for non-plan generators even with legacy PARAMETRI.tipoPiano', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   const confRow = fixtureTables().CONF_DOC[0]!;
-  ctx.set('confDoc', ConfigurazioneDocumento.fromData({ ...confRow, PARAMETRI: '' }));
+  const config = { ...confRow, PARAMETRI: JSON.stringify({ tipoPiano: 'PEI' }) };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
   ctx.set('newFileId', 'file_1');
   ctx.set('newFileLink', 'https://drive/file_1');
   ctx.set('nomeFile', 'Verbale_5A');

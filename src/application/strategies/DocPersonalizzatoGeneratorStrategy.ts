@@ -1,6 +1,5 @@
 import type { GeneratorStrategy } from './GeneratorStrategy';
 import type { Cdu } from '../context-engine/Cdu';
-import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 
 /**
@@ -17,16 +16,12 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 export class DocPersonalizzatoGeneratorStrategy implements GeneratorStrategy {
   constructor(private readonly templates: ITemplateEngine) {}
 
-  render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
-    const tipoPiano = config.getParametri().tipoPiano;
-    const items = cdu.focus.alunno?.didattica.piani.items ?? [];
-    const piano =
-      (typeof tipoPiano === 'string' ? items.find((i) => i.tipo === tipoPiano) : undefined) ??
-      items[0];
-    const context = {
-      ...(cdu as unknown as Record<string, unknown>),
-      piano: piano?.parametriGenerazione ?? {}
-    };
+  render(fileId: string, cdu: Cdu): void {
+    const piano = cdu.focus.piano?.parametriGenerazione;
+    const context: Record<string, unknown> =
+      piano === undefined
+        ? (cdu as unknown as Record<string, unknown>)
+        : { ...(cdu as unknown as Record<string, unknown>), piano };
     this.templates.processDocument(fileId, context);
   }
 }

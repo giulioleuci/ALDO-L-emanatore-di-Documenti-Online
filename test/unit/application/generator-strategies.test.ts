@@ -2,6 +2,7 @@ import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/str
 import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
+import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 
@@ -67,49 +68,64 @@ test('FoglioGenericoGeneratorStrategy renders the whole CDU into a Sheet with no
 });
 
 describe('DocPersonalizzatoGeneratorStrategy (10 §9)', () => {
-  test('selects the piano matching CONF_DOC.PARAMETRI.tipoPiano and exposes its fields as piano.<campo>', () => {
+  test('renders the full CDU and exposes the focused plan parameters through the piano compatibility alias', () => {
     const cdu = cduConPiani([
       { tipo: 'PDP_DSA', isBes: true, link: '', parametriGenerazione: { gravita: 'lieve' } },
       { tipo: 'PEI', isBes: true, link: '', parametriGenerazione: { sostegno: 'totale' } }
     ]);
+    cdu.focus.piano = {
+      tipo: TipoPiano.PEI,
+      isBes: true,
+      parametriGenerazione: { sostegno: 'totale' }
+    };
     const templates = new FakeTemplateEngine();
     new DocPersonalizzatoGeneratorStrategy(templates).render(
       'file_2',
       cdu,
-      confDoc({ tipoPiano: 'PEI' })
+      confDoc({ tipoPiano: 'PDP_DSA' })
     );
-    const ctx = templates.contextFor('file_2') as { piano: Record<string, unknown> };
+    const ctx = templates.contextFor('file_2') as {
+      focus: { piano: { tipo: string; parametriGenerazione: Record<string, unknown> } };
+      piano: Record<string, unknown>;
+    };
+
+    expect(ctx.focus.piano.tipo).toBe('PEI');
     expect(ctx.piano).toEqual({ sostegno: 'totale' });
   });
 
-  test('defaults to the first plan when CONF_DOC.PARAMETRI.tipoPiano is absent', () => {
+  test('never selects the first available plan when the focused plan is absent', () => {
     const cdu = cduConPiani([
       { tipo: 'PFP', isBes: false, link: '', parametriGenerazione: { sport: 'nuoto' } }
     ]);
     const templates = new FakeTemplateEngine();
     new DocPersonalizzatoGeneratorStrategy(templates).render('file_3', cdu, confDoc());
-    const ctx = templates.contextFor('file_3') as { piano: Record<string, unknown> };
-    expect(ctx.piano).toEqual({ sport: 'nuoto' });
+    const ctx = templates.contextFor('file_3') as { piano?: Record<string, unknown> };
+    expect(ctx.piano).toBeUndefined();
   });
 
   test('a missing field resolves to empty string via the template engine, never an error', () => {
     const cdu = cduConPiani([
       { tipo: 'PEI', isBes: true, link: '', parametriGenerazione: { sostegno: 'totale' } }
     ]);
+    cdu.focus.piano = {
+      tipo: TipoPiano.PEI,
+      isBes: true,
+      parametriGenerazione: { sostegno: 'totale' }
+    };
     const templates = new FakeTemplateEngine();
     new DocPersonalizzatoGeneratorStrategy(templates).render(
       'file_4',
       cdu,
-      confDoc({ tipoPiano: 'PEI' })
+      confDoc()
     );
     const ctx = templates.contextFor('file_4')!;
     expect(templates.processString('{{piano.campoInesistente}}', ctx)).toBe('');
   });
 
-  test('no plans at all -> piano context is an empty object, no crash', () => {
+  test('no focused plan leaves the compatibility alias absent, without crashing', () => {
     const cdu = cduConPiani([]);
     const templates = new FakeTemplateEngine();
     new DocPersonalizzatoGeneratorStrategy(templates).render('file_5', cdu, confDoc());
-    expect((templates.contextFor('file_5') as { piano: unknown }).piano).toEqual({});
+    expect((templates.contextFor('file_5') as { piano?: unknown }).piano).toBeUndefined();
   });
 });

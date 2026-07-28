@@ -87,6 +87,12 @@ function cdu(ctx: PipelineContext): Cdu {
 function cduRecord(ctx: PipelineContext): Record<string, unknown> {
   return cdu(ctx) as unknown as Record<string, unknown>;
 }
+function isPianoPersonalizzato(ctx: PipelineContext): boolean {
+  return confDoc(ctx).tipo === 'PIANO_PERS';
+}
+function sottotipoPiano(ctx: PipelineContext): string {
+  return isPianoPersonalizzato(ctx) ? (cdu(ctx).focus.piano?.tipo ?? '') : '';
+}
 function nomeCartella(path: string): string {
   const segments = path.split('/').filter((segment) => segment !== '');
   return segments[segments.length - 1] ?? '';
@@ -144,8 +150,16 @@ export class CheckDuplicatesStep extends Step {
 
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
     const tipo = String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '');
-    const tipoPiano = confDoc(ctx).getParametri().tipoPiano;
-    const sottotipo = typeof tipoPiano === 'string' ? tipoPiano : '';
+    const pianoPersonalizzato = isPianoPersonalizzato(ctx);
+    const sottotipo = sottotipoPiano(ctx);
+    const utenti = pianoPersonalizzato
+      ? resolveLogRegistration(
+          cfg(ctx)[COL_CONF_DOC.REGISTRA_DOC],
+          this.templates,
+          cduRecord(ctx),
+          'REGISTRA_DOC'
+        ).utenti
+      : '';
     const path = this.templates.processString(
       String(cfg(ctx)[COL_CONF_DOC.PATH_OUT] ?? ''),
       cduRecord(ctx)
@@ -159,6 +173,7 @@ export class CheckDuplicatesStep extends Step {
         String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&
         String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipo &&
         String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
+        (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&
         String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
         String(r[COL_LOG_DOCS.NOME] ?? '') === nome
     );
@@ -349,10 +364,7 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.ID]: ctx.get<string>('newFileId')!,
       [COL_LOG_DOCS.ID_GEN]: String(cfg(ctx)[COL_CONF_DOC.ID]),
       [COL_LOG_DOCS.TIPO]: String(cfg(ctx)[COL_CONF_DOC.TIPO]),
-      [COL_LOG_DOCS.SOTTOTIPO]: (() => {
-        const tipoPiano = confDoc(ctx).getParametri()['tipoPiano'];
-        return typeof tipoPiano === 'string' ? tipoPiano : '';
-      })(),
+      [COL_LOG_DOCS.SOTTOTIPO]: sottotipoPiano(ctx),
       [COL_LOG_DOCS.NOME]: ctx.get<string>('nomeFile')!,
       [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',

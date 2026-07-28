@@ -135,7 +135,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
     const tables = fixtureTables();
     tables.CONF_DOC!.push({
       ID: 'CD_PIANO',
-      TIPO: 'PIANO',
+      TIPO: 'PIANO_PERS',
       GENERATORE: 'DOC_PERSONALIZZATO',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_piano"}',
@@ -167,5 +167,13 @@ describe('DocumentGenerationService.generateForPiano', () => {
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
     const { service } = wire();
     expect(() => service.generateForAlunno('a1@school.it', 'MISSING_ID')).toThrow(PipelineError);
+  });
+
+  test('rejects a configuration whose TIPO is not PIANO_PERS before pipeline execution', () => {
+    const { service } = wire();
+
+    expect(() => service.generateForPiano('a1@school.it', TipoPiano.PEI, 'CD1')).toThrow(
+      'CONF_DOC CD1 deve avere TIPO PIANO_PERS'
+    );
   });
 });

@@ -161,7 +161,8 @@ export class DocumentGenerationService {
       confDocId,
       'PIANO_PERSONALIZZATO',
       jobId,
-      pianoTipo
+      pianoTipo,
+      'PIANO_PERS'
     );
   }
 
@@ -170,11 +171,15 @@ export class DocumentGenerationService {
     confDocId: string,
     cduRecipe: string,
     jobId?: string,
-    pianoTipo?: TipoPiano
+    pianoTipo?: TipoPiano,
+    expectedConfDocTipo?: string
   ): { fileId: string | null; status: string } {
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
+    if (expectedConfDocTipo !== undefined && config.tipo !== expectedConfDocTipo) {
+      throw new PipelineError(`CONF_DOC ${confDocId} deve avere TIPO ${expectedConfDocTipo}`);
+    }
     if (!this.strategyRegistry.has(config.generatore)) {
       throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
     }

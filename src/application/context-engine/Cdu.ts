@@ -12,6 +12,7 @@
 
 import type { LazyRef } from '../storico/LazyRef';
 import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
+import type { TipoPiano } from '../../domain/value-objects/enums';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -192,7 +193,12 @@ export interface CduAlunno {
     };
     asl: { oreCumulate: number; oreAnnoCorrente: number };
     piani: {
-      items: Array<{ tipo: string; isBes: boolean; link: string; parametriGenerazione: unknown }>;
+      items: Array<{
+        tipo: string;
+        isBes: boolean;
+        link: string;
+        parametriGenerazione: Record<string, unknown>;
+      }>;
       hasPiani: boolean;
       hasBes: boolean;
     };
@@ -229,6 +235,13 @@ export interface CduCarenzaFocus {
   classe: string;
   hasAssenze: boolean;
   note: string;
+}
+
+/** The selected personalized plan, available only during plan generation. */
+export interface CduPianoFocus {
+  tipo: TipoPiano;
+  isBes: boolean;
+  parametriGenerazione: Record<string, unknown>;
 }
 
 export interface CduDestinatario {
@@ -275,6 +288,7 @@ export interface Cdu {
     classe?: CduClasse;
     alunno?: CduAlunno;
     carenza?: CduCarenzaFocus;
+    piano?: CduPianoFocus;
   };
   destinatario?: CduDestinatario;
   render?: {

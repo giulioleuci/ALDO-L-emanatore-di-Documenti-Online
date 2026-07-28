@@ -11,6 +11,7 @@ import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import { fixtureTables } from '../../fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
+import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { TABLE } from '../../../src/config/schema';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 import type { Row, IReadableTable } from '../../../src/infrastructure/db/Database';
@@ -129,8 +130,8 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
   });
 });
 
-describe('DocumentGenerationService.generateForAlunno', () => {
-  test('builds the CDU with tipoTarget alunno and renders the matching piano', () => {
+describe('DocumentGenerationService.generateForPiano', () => {
+  test('builds the focused-plan CDU and renders the selected plan', () => {
     const tables = fixtureTables();
     tables.CONF_DOC!.push({
       ID: 'CD_PIANO',
@@ -152,12 +153,15 @@ describe('DocumentGenerationService.generateForAlunno', () => {
       registry: new Map([['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(templates)]])
     });
 
-    const result = service.generateForAlunno('a1@school.it', 'CD_PIANO');
+    const result = service.generateForPiano('a1@school.it', TipoPiano.PEI, 'CD_PIANO');
 
     expect(result.fileId).not.toBeNull();
     expect(result.status).not.toBe('SKIPPED');
-    const ctx = templates.contextFor(result.fileId!) as { piano: Record<string, unknown> };
-    expect(ctx.piano).toEqual({ gravita: 'media' }); // a1@school.it's fixtured PEI piano (tables.ts:249)
+    const ctx = templates.contextFor(result.fileId!) as {
+      focus: { piano: { tipo: TipoPiano; parametriGenerazione: Record<string, unknown> } };
+    };
+    expect(ctx.focus.piano.tipo).toBe(TipoPiano.PEI);
+    expect(ctx.focus.piano.parametriGenerazione).toEqual({ gravita: 'media' });
   });
 
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {

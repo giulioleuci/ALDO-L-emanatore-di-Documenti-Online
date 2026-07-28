@@ -7,6 +7,7 @@ import { TutorProvider } from './providers/TutorProvider';
 import { ConsiglioClasseProvider } from './providers/ConsiglioClasseProvider';
 import { CarenzeProvider } from './providers/CarenzeProvider';
 import { PianiProvider } from './providers/PianiProvider';
+import { PianoFocusProvider } from './providers/PianoFocusProvider';
 import { DocumentiProvider } from './providers/DocumentiProvider';
 import { CarenzaFocusProvider } from './providers/CarenzaFocusProvider';
 import { RappresentantiProvider } from './providers/RappresentantiProvider';
@@ -81,6 +82,7 @@ export class ContextEngineFactory {
       )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))
+      .registerProvider('pianoFocus', new PianoFocusProvider())
       .registerProvider('documenti', new DocumentiProvider(logDocs))
       .registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni))
       .registerProvider('rappresentanti', new RappresentantiProvider(classi))

@@ -26,6 +26,7 @@ import type { PostProcessDb } from '../pipelines/postProcessActions';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';
+import type { TipoPiano } from '../../domain/value-objects/enums';
 
 export interface DocumentGenerationDeps {
   /** Persistence port + the RepositoryDatabase seam (POST_PROCESSO row updates). */
@@ -145,6 +146,32 @@ export class DocumentGenerationService {
     confDocId: string,
     jobId?: string
   ): { fileId: string | null; status: string } {
+    return this.generateForAlunnoWithRecipe(target, confDocId, 'ALUNNO_COMPLETO', jobId);
+  }
+
+  /** Generates one document for one selected personalized plan. */
+  generateForPiano(
+    alunnoEmail: string,
+    pianoTipo: TipoPiano,
+    confDocId: string,
+    jobId?: string
+  ): { fileId: string | null; status: string } {
+    return this.generateForAlunnoWithRecipe(
+      alunnoEmail,
+      confDocId,
+      'PIANO_PERSONALIZZATO',
+      jobId,
+      pianoTipo
+    );
+  }
+
+  private generateForAlunnoWithRecipe(
+    target: string,
+    confDocId: string,
+    cduRecipe: string,
+    jobId?: string,
+    pianoTipo?: TipoPiano
+  ): { fileId: string | null; status: string } {
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
@@ -158,9 +185,10 @@ export class DocumentGenerationService {
         tipoTarget: 'alunno',
         now: this.now,
         idConfigurazione: confDocId,
-        tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO',
+        ...(pianoTipo === undefined ? {} : { pianoTipo })
       },
-      recipe('ALUNNO_COMPLETO')
+      recipe(cduRecipe)
     );
 
     this.db.beginTransaction();

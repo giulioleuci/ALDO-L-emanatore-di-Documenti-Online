@@ -1,6 +1,6 @@
 import type { RecipeOptionsView } from './Cdu';
 import { ValidationError } from '../../domain/errors/DomainError';
-import { GestioneSupplenti } from '../../domain/value-objects/enums';
+import { GestioneSupplenti, type TipoPiano } from '../../domain/value-objects/enums';
 
 /**
  * A Recipe declares which providers to activate (ordered tokens, see 09 §3/§4)
@@ -40,6 +40,8 @@ export interface BuildParams {
   carenzaProgressivo?: number;
   /** Every class the email target is responsible for (11 §12) — feeds classe-wide providers like PianiPersClasseProvider. */
   classiCompetenza?: string[];
+  /** Selected personalized-plan type for the PIANO_PERSONALIZZATO CDU recipe. */
+  pianoTipo?: TipoPiano;
 }
 
 export const DEFAULT_OPTIONS: RecipeOptions = {
@@ -137,6 +139,16 @@ export const RECIPES: Record<string, string[]> = {
     'student',
     'carenze',
     'piani',
+    'pianiPersAlunno',
+    'pianiPersAlunnoStorico'
+  ],
+  PIANO_PERSONALIZZATO: [
+    'school',
+    'class',
+    'student',
+    'carenze',
+    'piani',
+    'pianoFocus',
     'pianiPersAlunno',
     'pianiPersAlunnoStorico'
   ],

@@ -239,7 +239,11 @@ function renderPianiPersBox(
   const righe = items
     .map((corrente) => {
       const storicoCorrente = storico
-        .filter((s) => s.sottotipo === corrente.sottotipo)
+        .filter(
+          (s) =>
+            s.sottotipo === corrente.sottotipo &&
+            (corrente.studente === undefined || s.studenteEmail === corrente.studente.email)
+        )
         .map(escapeNomeLink);
       return templates.processString(templateRiga, {
         corrente: {

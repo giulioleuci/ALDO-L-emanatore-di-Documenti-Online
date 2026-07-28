@@ -99,7 +99,8 @@ test('PianiPersClasseStoricoProvider: resolves prior-year docs per distinct stud
       link: 'http://d/old',
       tipo: 'PIANO_PERS',
       sottotipo: 'PDP_DSA',
-      idGen: 'PDP_BES'
+      idGen: 'PDP_BES',
+      studenteEmail: 'a1@school.it'
     }
   ]);
 });

@@ -34,7 +34,10 @@ export class PianiPersClasseStoricoProvider implements ContextProvider {
     ];
     classe.didattica.pianiPersonalizzati.storico = new LazyRef(() =>
       emails.flatMap((email): DocumentoStoricoConTipo[] =>
-        service.perAlunnoConTipo(email, profondita).filter((documento) => documento.tipo === TIPO_PIANO_PERS)
+        service
+          .perAlunnoConTipo(email, profondita)
+          .filter((documento) => documento.tipo === TIPO_PIANO_PERS)
+          .map((documento) => ({ ...documento, studenteEmail: email }))
       )
     );
   }

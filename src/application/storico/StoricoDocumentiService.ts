@@ -17,6 +17,8 @@ export interface DocumentoStoricoConTipo extends DocumentoStorico {
   sottotipo: string;
   /** LOG_DOCS.ID_GEN, retained for generic document-history matching. */
   idGen: string;
+  /** Set by class-level aggregation to retain the source student's identity. */
+  studenteEmail?: string;
 }
 
 /**

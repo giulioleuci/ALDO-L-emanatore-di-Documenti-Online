@@ -504,11 +504,11 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
     new LazyRef(() => [
       {
         anno: '2025-2026', nome: 'PEI a1 anno scorso', link: 'http://d/old-pei',
-        tipo: 'PIANO_PERS', sottotipo: 'PEI', idGen: 'PIANI_PERSONALIZZATI'
+        tipo: 'PIANO_PERS', sottotipo: 'PEI', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
       },
       {
         anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old-pdp',
-        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI'
+        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
       }
     ])
   );
@@ -520,13 +520,14 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
     templates
   );
   const html = out.boxes['piani_pers_da_inviare']!.html;
-  const [peiRow] = html.split('</li>');
+  const [peiRow, pdpRow] = html.split('</li>');
   expect(html).toContain('PEI a1');
   expect(html).toContain('PDP a2');
   expect(html).not.toContain('<li>PDP_BES — VERDI ANNA:'); // NOTIFICATO, excluded
   expect(out.boxes['piani_pers_da_inviare']!.html).toContain('Si invia anche il link al piano dell\'anno precedente');
   expect(peiRow).toContain('http://d/old-pei');
   expect(peiRow).not.toContain('http://d/old-pdp'); // same ID_GEN, wrong subtype
+  expect(pdpRow).not.toContain('http://d/old-pdp'); // same subtype, different student
 });
 
 test('piani_pers_da_inviare: escapes hostile sottotipo/studente.nomeCompleto in the default-template (historical) path', () => {

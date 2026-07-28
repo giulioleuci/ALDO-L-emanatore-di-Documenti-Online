@@ -154,8 +154,8 @@ function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
 }
 
 /**
- * Orchestration entry point for the 7 e2e scenarios (design spec
- * `2026-07-21-testonline-mock-db-e2e-design.md`): provisions the 7 real Drive templates,
+ * Orchestration entry point for the e2e scenarios (design spec
+ * `2026-07-21-testonline-mock-db-e2e-design.md`): provisions the real Drive artifacts,
  * builds the larger persistent mock database against them, points
  * `PROP_MASTER_SPREADSHEET_ID` at its MASTER sheet (previous value logged, never discarded),
  * boots a real ALDO container (which — via `initAldo`'s TEST_MODE wiring — auto-enables

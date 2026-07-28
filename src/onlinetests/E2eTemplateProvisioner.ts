@@ -42,6 +42,7 @@ const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
+const NAME_STATIC_ATTACHMENT = 'E2E Static Attachment Fixture';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template v2`;
 }
@@ -241,10 +242,15 @@ const PIANO_LAVORO_PARAGRAPHS = [
   'Anno scolastico: {{meta.date.oggi.breve}}'
 ];
 
+const STATIC_ATTACHMENT_PARAGRAPHS = [
+  'ALDO E2E static email attachment',
+  'Questo documento è allegato tramite CONF_MAIL.ALLEGATI senza essere rappresentato da un box.'
+];
+
 /**
- * Idempotently finds-or-creates the 7 real Drive templates the e2e scenarios generate
- * against (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
- * provisioning"): a fixed name per template, looked up via `IDriveFacade.findFileByName`
+ * Idempotently finds-or-creates the real Drive templates and static attachment used by the
+ * e2e scenarios (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
+ * provisioning"): a fixed name per artifact, looked up via `IDriveFacade.findFileByName`
  * before creating — repeated runs reuse the same Drive artifacts, matching the
  * `SampleDatabaseBuilder`/`GasSampleSpreadsheetFactory` reuse-by-fixed-name convention.
  */
@@ -276,6 +282,11 @@ export class E2eTemplateProvisioner {
       sheetPermessiUpdates()
     );
     const pianoLavoro = this.findOrCreateDoc(folderId, NAME_PIANO_LAVORO, PIANO_LAVORO_PARAGRAPHS);
+    const staticAttachment = this.findOrCreateDoc(
+      folderId,
+      NAME_STATIC_ATTACHMENT,
+      STATIC_ATTACHMENT_PARAGRAPHS
+    );
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
@@ -288,6 +299,7 @@ export class E2eTemplateProvisioner {
       docComplesso,
       sheetPermessi,
       pianoLavoro,
+      staticAttachment,
       piani
     };
   }

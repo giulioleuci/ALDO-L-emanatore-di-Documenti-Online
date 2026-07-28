@@ -54,17 +54,19 @@ function documentText(paragraphs: E2eDocumentParagraphInput[]): string {
     .join('\n');
 }
 
-test('creates all 12 templates (1 doc verbale + 1 sheet condotta + 1 doc riepilogo + 1 sheet asl import + 1 doc complesso + 1 sheet permessi + 1 doc piano lavoro + 5 doc piani) when none exist yet', () => {
+test('creates all 13 E2E artifacts, including the real static email attachment', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(12);
+  expect(created).toHaveLength(13);
   expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(3);
-  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(9);
+  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(10);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
+  expect(ids.staticAttachment).toMatch(/^doc_/);
+  expect(created).toContain('doc:E2E Static Attachment Fixture');
   expect(created).toContain('doc:E2E Riepilogo Template v4');
   expect(created).toContain('doc:E2E Doc Complesso Template v2');
   for (const tipo of TIPI_PIANO) {
@@ -91,7 +93,18 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(11); // condotta + riepilogo + asl import + doc complesso + sheet permessi + piano lavoro + 5 piani still created
+  expect(created).toHaveLength(12); // static attachment + condotta + riepilogo + asl import + doc complesso + sheet permessi + piano lavoro + 5 piani still created
+});
+
+test('reuses the real static attachment artifact by its fixed name', () => {
+  const { artifacts, created } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  drive.files.set('FOLDER_1::E2E Static Attachment Fixture', 'existing_static_attachment_id');
+
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  expect(ids.staticAttachment).toBe('existing_static_attachment_id');
+  expect(created).not.toContain('doc:E2E Static Attachment Fixture');
 });
 
 test('does not reuse legacy personalized-plan templates after focused CDU placeholders change', () => {

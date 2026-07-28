@@ -34,7 +34,7 @@ import { AggregatoreDati } from '../../../src/application/services/AggregatoreDa
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
-function wire(extraConfMail: Row[] = []) {
+function wire(extraConfMail: Row[] = [], drive = new FakeDriveFacade()) {
   const tables = fixtureTables();
   tables['CONF_MAIL'] = [...tables['CONF_MAIL']!, ...extraConfMail];
   const db = new FakeDatabase(tables);
@@ -44,9 +44,9 @@ function wire(extraConfMail: Row[] = []) {
     gmail,
     new FakeTemplateEngine(),
     NOW,
-    new FakeDriveFacade()
+    drive
   );
-  return { db, gmail, service };
+  return { db, drive, gmail, service };
 }
 
 function conf(processo: string, overrides: Record<string, unknown> = {}): ConfigurazioneEmail {
@@ -63,6 +63,23 @@ function conf(processo: string, overrides: Record<string, unknown> = {}): Config
     POST_PROCESSO: null,
     ...overrides
   });
+}
+
+function mailRow(id: string, overrides: Record<string, unknown> = {}): Row {
+  return {
+    ID: id,
+    OGGETTO: `Oggetto ${id}`,
+    PROCESSO: 'PER_CDC',
+    BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Contenuto.</p>' }]),
+    TESTO: '',
+    SUPPLENTI: 'SOLO_TITOLARI',
+    NOREPLY: false,
+    COLORE_HEADER: '',
+    CONDIZIONE: null,
+    POST_PROCESSO: null,
+    ALLEGATI: '[]',
+    ...overrides
+  };
 }
 
 /** Full EmailNotificationDeps wiring over a real db, with per-test overrides (deps-injection seam for A17). */
@@ -248,6 +265,162 @@ test.each([
     expect(sentBodies.every((html) => html.includes(documentName))).toBe(true);
   }
 );
+
+test('sendPattern delivers a configured static Word blob even when no box is configured', () => {
+  const wordBlob = {
+    name: 'circolare.doc',
+    contentType: 'application/msword',
+    bytes: 'fixture'
+  };
+  const drive = new FakeDriveFacade();
+  const getFileBlob = jest.spyOn(drive, 'getFileBlob').mockReturnValue(wordBlob);
+  const { service, gmail, db } = wire(
+    [
+      mailRow('STATIC_WORD', {
+        BOX_CFG: '[]',
+        TESTO: '<p>In allegato la circolare.</p>',
+        ALLEGATI: JSON.stringify(['static-word-id'])
+      })
+    ],
+    drive
+  );
+
+  const result = service.sendPattern('STATIC_WORD');
+
+  expect(result).toEqual({ targets: 2, sent: 2, skipped: 0, errors: [] });
+  expect(gmail.sent).toHaveLength(2);
+  expect(gmail.sent.map((message) => message.attachments)).toEqual([[wordBlob], [wordBlob]]);
+  expect(getFileBlob.mock.calls).toEqual([['static-word-id'], ['static-word-id']]);
+  const auditRows = db
+    .table('LOG_MAIL')
+    .findAll()
+    .filter((row) => row['PATTERN'] === 'STATIC_WORD');
+  expect(auditRows).toHaveLength(2);
+  for (const row of auditRows) {
+    expect(JSON.parse(String(row['ALLEGATI']))).toEqual({
+      docs: [],
+      folders: [],
+      attach: ['https://drive.google.com/open?id=static-word-id']
+    });
+  }
+});
+
+test('sendToTarget sends no attachments when the static configuration is empty', () => {
+  const { service, gmail } = wire([mailRow('STATIC_EMPTY', { ALLEGATI: '' })]);
+
+  const result = service.sendToTarget('STATIC_EMPTY', {
+    tipo: 'cdc',
+    tipoTarget: 'classe',
+    target: '5A',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['5A']
+  });
+
+  expect(result).toEqual({ sent: 1, errors: [], skipped: false });
+  expect(gmail.sent).toHaveLength(1);
+  expect(gmail.sent[0]!.attachments).toEqual([]);
+});
+
+test('sendToTarget does not attach a class document unless its box explicitly sets ALLEGA true', () => {
+  const { service, gmail, db } = wire([
+    mailRow('DYNAMIC_NOT_OPTED_IN', {
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'testo_dinamico',
+          CONTENUTO: '<p>Documento collegato.</p>',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        }
+      ])
+    })
+  ]);
+  db.table('LOG_DOCS').insert({
+    ID: 'generated-pdf-id',
+    ID_GEN: 'DOC_CONFIG',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    LINK: 'https://drive.example/generated-pdf',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+
+  service.sendToTarget('DYNAMIC_NOT_OPTED_IN', {
+    tipo: 'cdc',
+    tipoTarget: 'classe',
+    target: '5A',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['5A']
+  });
+
+  expect(gmail.sent).toHaveLength(1);
+  expect(gmail.sent[0]!.attachments).toEqual([]);
+});
+
+test('sendToTarget sends static attachments first, then opted-in class documents, once each', () => {
+  const drive = new FakeDriveFacade();
+  const getFileBlob = jest.spyOn(drive, 'getFileBlob');
+  const { service, gmail, db } = wire(
+    [
+      mailRow('STATIC_AND_DYNAMIC', {
+        ALLEGATI: JSON.stringify(['static-id', 'shared-id']),
+        BOX_CFG: JSON.stringify([
+          {
+            TIPO_BOX: 'testo_dinamico',
+            CONTENUTO: '<p>Documenti allegati.</p>',
+            ALLEGA: true,
+            DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+          }
+        ])
+      })
+    ],
+    drive
+  );
+  db.table('LOG_DOCS').insert({
+    ID: 'shared-id',
+    ID_GEN: 'DOC_SHARED',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    LINK: 'https://drive.example/shared',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  db.table('LOG_DOCS').insert({
+    ID: 'dynamic-id',
+    ID_GEN: 'DOC_DYNAMIC',
+    TIPO: 'PDP',
+    STATO: 'GENERATO',
+    LINK: 'https://drive.example/dynamic',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+
+  service.sendToTarget('STATIC_AND_DYNAMIC', {
+    tipo: 'cdc',
+    tipoTarget: 'classe',
+    target: '5A',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['5A']
+  });
+
+  expect(gmail.sent[0]!.attachments).toEqual([
+    'blob:static-id',
+    'blob:shared-id',
+    'blob:dynamic-id'
+  ]);
+  expect(getFileBlob.mock.calls).toEqual([['static-id'], ['shared-id'], ['dynamic-id']]);
+});
+
+test('malformed static attachment configuration aborts before Gmail with a diagnosable error', () => {
+  const { service, gmail } = wire([
+    mailRow('STATIC_MALFORMED', {
+      ALLEGATI: JSON.stringify({ id: 'not-an-array' })
+    })
+  ]);
+
+  expect(() => service.sendPattern('STATIC_MALFORMED')).toThrow(
+    'CONF_MAIL STATIC_MALFORMED: ALLEGATI deve essere un array JSON di ID non vuoti'
+  );
+  expect(gmail.sent).toHaveLength(0);
+});
 
 test('sendPattern PER_CARENZA_GENITORI stamps NOTIFICATO so a second run sends nothing (11 §10)', () => {
   const { service, gmail, db } = wire();

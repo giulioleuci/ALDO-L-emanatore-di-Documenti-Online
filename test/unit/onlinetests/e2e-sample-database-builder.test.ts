@@ -14,6 +14,7 @@ import {
   CONF_DOC_PIANI,
   CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_PIANI,
+  CONF_MAIL_STATIC_ALLEGATO,
   e2eAlunnoEmail,
   e2eDocenteEmail,
   CARENZA_ALUNNO_1,
@@ -81,6 +82,7 @@ const TEMPLATE_IDS = {
   docComplesso: 'tmpl_doc_complesso',
   sheetPermessi: 'tmpl_sheet_permessi',
   pianoLavoro: 'tmpl_piano_lavoro',
+  staticAttachment: 'real_static_attachment_id',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -275,7 +277,7 @@ test('1A and 2B share the same coordinatore, so coordinatore-aggregated emails c
 test('seeds 6 CONF_MAIL rows: five normal patterns with explicit empty ALLEGATI plus one static attachment fixture', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
+  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
   expect(confMail).toHaveLength(6);
@@ -291,11 +293,12 @@ test('seeds 6 CONF_MAIL rows: five normal patterns with explicit empty ALLEGATI 
   );
   expectCompleteRows(confMail, COL_CONF_MAIL);
   const staticAttachment = confMail.find(
-    (c) => c[COL_CONF_MAIL.ID] === 'E2E_MAIL_STATIC_ALLEGATO'
+    (c) => c[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO
   )!;
   expect(staticAttachment[COL_CONF_MAIL.ALLEGATI]).toBe(
-    JSON.stringify(['1E2EStaticAttachmentFixtureFileId'])
+    JSON.stringify(['real_static_attachment_id'])
   );
+  expect(result.staticAttachmentFileId).toBe('real_static_attachment_id');
   for (const row of confMail.filter((c) => c !== staticAttachment)) {
     expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
   }

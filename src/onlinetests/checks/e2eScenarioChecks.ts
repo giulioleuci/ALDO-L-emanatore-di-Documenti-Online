@@ -28,6 +28,7 @@ import {
   CONF_MAIL_CARENZA,
   CONF_MAIL_PIANI,
   CONF_MAIL_LAVORO,
+  CONF_MAIL_STATIC_ALLEGATO,
   PIANO_STUDENTE,
   PIANO_DOPPIO_STUDENTE,
   type E2eSampleDatabase
@@ -71,6 +72,26 @@ export function registerE2eScenarioChecks(
       emailService = container.get<EmailNotificationService>('emailNotificationService');
     }
     return emailService;
+  };
+
+  const assertNoAttachedFiles = (patternId: string, label: string): void => {
+    const logRows = db
+      .table(TABLE.LOG_MAIL)
+      .findAll()
+      .filter((row) => row[COL_LOG_MAIL.PATTERN] === patternId);
+    if (logRows.length === 0) {
+      throw new ValidationError(`${label}: nessuna riga LOG_MAIL registrata`);
+    }
+    for (const row of logRows) {
+      const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
+        attach?: string[];
+      };
+      if ((allegati.attach ?? []).length > 0) {
+        throw new ValidationError(
+          `${label}: LOG_MAIL.ALLEGATI.attach non è vuoto; nessun PDF/file era configurato con ALLEGA:true`
+        );
+      }
+    }
   };
 
   const assertPersistedLinks = (configId: string, label: string): void => {
@@ -479,6 +500,45 @@ export function registerE2eScenarioChecks(
   );
 
   runner.add(
+    'E2E scenario 13: invia allegato statico non rappresentato da box (TEST_MODE)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const result = getEmailService().sendPattern(CONF_MAIL_STATIC_ALLEGATO);
+      if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
+        throw new ValidationError(`Invio allegato statico fallito: ${emailDiagnostics(result)}`);
+      }
+      const logRows = db
+        .table(TABLE.LOG_MAIL)
+        .findAll()
+        .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_STATIC_ALLEGATO);
+      if (logRows.length === 0) {
+        throw new ValidationError('Invio allegato statico: nessuna riga LOG_MAIL registrata');
+      }
+      const expectedUrl = `https://drive.google.com/open?id=${encodeURIComponent(
+        sample.staticAttachmentFileId
+      )}`;
+      for (const row of logRows) {
+        const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
+          docs?: string[];
+          folders?: string[];
+          attach?: string[];
+        };
+        if ((allegati.docs ?? []).length > 0 || (allegati.folders ?? []).length > 0) {
+          throw new ValidationError(
+            'Invio allegato statico: docs/folders devono contenere soltanto link resi nel corpo'
+          );
+        }
+        const attached = allegati.attach ?? [];
+        if (attached.length !== 1 || attached[0] !== expectedUrl) {
+          throw new ValidationError(
+            `Invio allegato statico: LOG_MAIL.ALLEGATI.attach non contiene il link canonico ${expectedUrl}`
+          );
+        }
+      }
+    }
+  );
+
+  runner.add(
     'E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -486,6 +546,7 @@ export function registerE2eScenarioChecks(
       if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
         throw new ValidationError(`Invio verbale fallito: ${emailDiagnostics(result)}`);
       }
+      assertNoAttachedFiles(CONF_MAIL_VERBALE, 'Invio verbale');
     }
   );
 
@@ -497,6 +558,7 @@ export function registerE2eScenarioChecks(
       if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
         throw new ValidationError(`Invio condotta fallito: ${emailDiagnostics(result)}`);
       }
+      assertNoAttachedFiles(CONF_MAIL_CONDOTTA, 'Invio condotta');
     }
   );
 

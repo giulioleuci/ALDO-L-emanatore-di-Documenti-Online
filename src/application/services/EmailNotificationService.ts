@@ -170,6 +170,7 @@ export class EmailNotificationService {
     if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
+    conf.getAllegati();
 
     let targets = this.enumerateTargets(conf);
     const only = options.onlyRecipients;
@@ -209,6 +210,7 @@ export class EmailNotificationService {
     if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
+    conf.getAllegati();
     const ctx = this.buildPipeline(jobId).execute({
       config: row,
       confMail: conf,

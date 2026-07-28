@@ -9,6 +9,7 @@ import {
   CONF_MAIL_PIANI,
   CONF_MAIL_VERBALE,
   CONF_MAIL_LAVORO,
+  CONF_MAIL_STATIC_ALLEGATO,
   CONF_DOC_PIANI,
   PIANO_DOPPIO_STUDENTE
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
@@ -30,6 +31,7 @@ const sample: E2eSampleDatabase & { testMode: boolean } = {
   sampleSpreadsheetUrl: 'https://example.test/s',
   sampleFolderUrl: 'https://example.test/f',
   masterTestMode: true,
+  staticAttachmentFileId: 'real_static_attachment_id',
   testMode: true
 };
 
@@ -43,7 +45,17 @@ function recordingHarness(
   planEmailText =
     'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
     'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026',
-  workPlanAttachmentLinks: string[] = []
+  workPlanAttachmentLinks: string[] = [],
+  staticAttachmentAudit: {
+    docs: string[];
+    folders: string[];
+    attach: string[];
+  } = {
+    docs: [],
+    folders: [],
+    attach: ['https://drive.google.com/open?id=real_static_attachment_id']
+  },
+  unrequestedDynamicAttachmentPattern: string | null = null
 ): {
   container: ServiceContainer;
   events: string[];
@@ -140,6 +152,25 @@ function recordingHarness(
             row[COL_LOG_DOCS.NOTIFICATO] = '2026-07-28T09:00:00.000Z';
           }
         }
+      }
+      if (patternId === CONF_MAIL_STATIC_ALLEGATO) {
+        logMailRows.push({
+          [COL_LOG_MAIL.PATTERN]: CONF_MAIL_STATIC_ALLEGATO,
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify(staticAttachmentAudit)
+        });
+      }
+      if (patternId === CONF_MAIL_VERBALE || patternId === CONF_MAIL_CONDOTTA) {
+        logMailRows.push({
+          [COL_LOG_MAIL.PATTERN]: patternId,
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+            docs: [`body-link-${patternId}`],
+            folders: [`body-folder-${patternId}`],
+            attach:
+              unrequestedDynamicAttachmentPattern === patternId
+                ? [`https://drive.google.com/open?id=unexpected-${patternId}`]
+                : []
+          })
+        });
       }
       return resultForPattern(patternId);
     }
@@ -294,6 +325,7 @@ test('resolves the memoized email service once across the plan scenario and late
   expect(harness.emailPatterns).toEqual([
     CONF_MAIL_PIANI,
     CONF_MAIL_LAVORO,
+    CONF_MAIL_STATIC_ALLEGATO,
     CONF_MAIL_VERBALE,
     CONF_MAIL_CONDOTTA,
     CONF_MAIL_CARENZA
@@ -355,6 +387,49 @@ test('scenario 12 fails when LOG_MAIL.ALLEGATI records an unrequested real file 
   const scenario12 = runner.report().results.find((result) => result.name.includes('scenario 12'));
   expect(scenario12?.status).toBe('fail');
   expect(scenario12?.message).toMatch(/attach|allegat/i);
+});
+
+test('scenario 13 proves the sent static attachment is audited outside rendered docs/folders', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario13 = runner.report().results.find((result) => result.name.includes('scenario 13'));
+  expect(scenario13).toMatchObject({ status: 'pass' });
+  expect(harness.emailPatterns).toContain(CONF_MAIL_STATIC_ALLEGATO);
+});
+
+test('scenario 13 fails when the static attachment is missing from attach or leaks into body-link audit', () => {
+  const harness = recordingHarness(undefined, undefined, [], {
+    docs: ['real_static_attachment_id'],
+    folders: [],
+    attach: []
+  });
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario13 = runner.report().results.find((result) => result.name.includes('scenario 13'));
+  expect(scenario13?.status).toBe('fail');
+  expect(scenario13?.message).toMatch(/attach|docs|folders|static/i);
+});
+
+test('scenario 4 fails if the minutes email gains an implicit PDF without ALLEGA true', () => {
+  const harness = recordingHarness(
+    undefined,
+    undefined,
+    [],
+    undefined,
+    CONF_MAIL_VERBALE
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario4 = runner.report().results.find((result) => result.name.includes('scenario 4'));
+  expect(scenario4?.status).toBe('fail');
+  expect(scenario4?.message).toMatch(/attach|PDF|ALLEGA/i);
 });
 
 test('reports strict actionable diagnostics for verbale and condotta email failures', () => {

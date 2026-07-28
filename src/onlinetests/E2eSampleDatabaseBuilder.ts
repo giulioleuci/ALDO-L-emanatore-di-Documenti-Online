@@ -117,7 +117,6 @@ export const CONF_MAIL_CARENZA = 'E2E_MAIL_CARENZA';
 export const CONF_MAIL_PIANI = 'E2E_MAIL_PIANI';
 export const CONF_MAIL_LAVORO = 'E2E_MAIL_LAVORO';
 export const CONF_MAIL_STATIC_ALLEGATO = 'E2E_MAIL_STATIC_ALLEGATO';
-export const STATIC_ATTACHMENT_FILE_ID = '1E2EStaticAttachmentFixtureFileId';
 export const CONF_IMP_ASL = 'E2E_IMPORT_ASL';
 
 export function e2eDocenteEmail(i: number): string {
@@ -166,6 +165,7 @@ export interface E2eTemplateIds {
   docComplesso: string;
   sheetPermessi: string;
   pianoLavoro: string;
+  staticAttachment: string;
   piani: Record<(typeof TIPI_PIANO)[number], string>;
 }
 
@@ -178,6 +178,7 @@ export interface E2eSampleDatabase {
   priorSampleSpreadsheetId: string;
   priorSampleSpreadsheetUrl: string;
   masterTestMode: boolean;
+  staticAttachmentFileId: string;
 }
 
 /** anno-1 name for a promotable class (2B→1B, 3C→2C, 3C-LC→2C-LC); ids without a leading digit are unchanged. */
@@ -267,7 +268,7 @@ export class E2eSampleDatabaseBuilder {
     this.seedSupplenzeEVariazioni(sample);
     this.seedPiani(sample);
     this.seedConfDoc(sample, templateIds);
-    this.seedConfMail(sample);
+    this.seedConfMail(sample, templateIds);
     this.seedConfImp(sample, templateIds);
 
     // Previous school year (2025-2026): CLASSI/ALUNNI/LOG_DOCS only — the only
@@ -292,7 +293,8 @@ export class E2eSampleDatabaseBuilder {
       sampleFolderUrl,
       priorSampleSpreadsheetId: prior.id,
       priorSampleSpreadsheetUrl: prior.getUrl(),
-      masterTestMode
+      masterTestMode,
+      staticAttachmentFileId: templateIds.staticAttachment
     };
   }
 
@@ -798,7 +800,7 @@ export class E2eSampleDatabaseBuilder {
     });
   }
 
-  private seedConfMail(sample: ISampleSpreadsheet): void {
+  private seedConfMail(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_VERBALE,
       // No class name (item 2): PER_COORDINATORE covers every class the
@@ -932,7 +934,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.ALLEGATI]: JSON.stringify([STATIC_ATTACHMENT_FILE_ID])
+      [COL_CONF_MAIL.ALLEGATI]: JSON.stringify([templateIds.staticAttachment])
     });
   }
 

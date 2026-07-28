@@ -893,7 +893,7 @@ test('LogEmailStep records cartelleFolderIds in LOG_MAIL.ALLEGATI.folders (11 §
   expect(allegati.folders).toEqual(['folder1', 'folder2']);
 });
 
-test('LogEmailStep records body-link IDs separately from links to files actually attached', () => {
+test('LogEmailStep keeps rendered docs/folders separate from every static attachment link', () => {
   const w = wire();
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
@@ -902,7 +902,10 @@ test('LogEmailStep records body-link IDs separately from links to files actually
   w.ctx.set('corpoHtml', '<p>x</p>');
   w.ctx.set('documentIds', ['body-doc-1']);
   w.ctx.set('cartelleFolderIds', ['body-folder-1']);
-  w.ctx.set('allegatiLinks', ['https://drive.google.com/open?id=attached-doc-1']);
+  w.ctx.set('allegatiLinks', [
+    'https://drive.google.com/open?id=static-doc-1',
+    'https://drive.google.com/open?id=static-doc-2'
+  ]);
   new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
 
   const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
@@ -914,7 +917,10 @@ test('LogEmailStep records body-link IDs separately from links to files actually
   expect(allegati).toEqual({
     docs: ['body-doc-1'],
     folders: ['body-folder-1'],
-    attach: ['https://drive.google.com/open?id=attached-doc-1']
+    attach: [
+      'https://drive.google.com/open?id=static-doc-1',
+      'https://drive.google.com/open?id=static-doc-2'
+    ]
   });
 });
 

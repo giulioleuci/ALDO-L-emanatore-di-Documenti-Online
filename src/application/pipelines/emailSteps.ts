@@ -268,41 +268,57 @@ export class ComposeEmailStep extends Step {
   }
 
   /**
-   * Attachment resolution (11 §13): only when a class is in focus. The optional
-   * tipo/stato filters come from the first BOX_CFG entry that explicitly sets
-   * `ALLEGA: true` and whose `DATI_SORGENTE.metodo` is `documentiPerClasse`.
-   * A data source only renders/filters a body box; it can never attach a PDF
-   * unless the pattern author opts in deliberately.
+   * Static CONF_MAIL.ALLEGATI files are always resolved first. Class documents
+   * are appended only when a documentiPerClasse box explicitly opts in with
+   * ALLEGA=true; their optional tipo/stato filters are preserved.
    */
   private resolveAllegati(
     conf: ConfigurazioneEmail,
     built: Cdu
   ): { ids: string[]; links: string[]; blobs: unknown[] } {
-    if (built.focus.classe === undefined) return { ids: [], links: [], blobs: [] };
+    const attachments = conf.getAllegati().map((id) => ({
+      id,
+      link: `https://drive.google.com/open?id=${encodeURIComponent(id)}`
+    }));
     const boxConfig = conf.getBoxes().find((b) => {
       const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
       return b['ALLEGA'] === true && sorgente?.metodo === 'documentiPerClasse';
     });
-    // Attachment is opt-in (11 §13): a class-scoped pattern must explicitly set
-    // ALLEGA=true. GAS's DriveApp getBlob() converts native Docs/Sheets to PDF,
-    // so using a document data source alone must never send a file unexpectedly.
-    if (boxConfig === undefined) return { ids: [], links: [], blobs: [] };
-    const filtri =
-      (boxConfig?.['DATI_SORGENTE'] as { filtri?: { tipo?: string; stato?: string } } | undefined)
-        ?.filtri ?? {};
-    const classe = getClasseEntity(built);
-    const documenti = this.logDocs
-      .findByClasse(classe)
-      .filter(
-        (d) =>
-          (filtri.tipo === undefined || d.tipo === filtri.tipo) &&
-          (filtri.stato === undefined || String(d.getStato()) === filtri.stato)
+    if (boxConfig !== undefined && built.focus.classe !== undefined) {
+      const filtri =
+        (
+          boxConfig['DATI_SORGENTE'] as
+            | { filtri?: { tipo?: string; stato?: string } }
+            | undefined
+        )?.filtri ?? {};
+      const classe = getClasseEntity(built);
+      const documenti = this.logDocs
+        .findByClasse(classe)
+        .filter(
+          (d) =>
+            (filtri.tipo === undefined || d.tipo === filtri.tipo) &&
+            (filtri.stato === undefined || String(d.getStato()) === filtri.stato)
+        );
+      attachments.push(
+        ...documenti
+          .map((d) => ({ id: d.id ?? '', link: d.getLink() }))
+          .filter((attachment) => attachment.id !== '')
       );
-    const ids = documenti.map((d) => d.id ?? '');
+    }
+
+    const uniqueAttachments: Array<{ id: string; link: string }> = [];
+    const seenIds = new Set<string>();
+    for (const attachment of attachments) {
+      if (!seenIds.has(attachment.id)) {
+        seenIds.add(attachment.id);
+        uniqueAttachments.push(attachment);
+      }
+    }
+
     return {
-      ids,
-      links: documenti.map((d) => d.getLink()).filter((link) => link !== ''),
-      blobs: ids.map((id) => this.drive.getFileBlob(id))
+      ids: uniqueAttachments.map((attachment) => attachment.id),
+      links: uniqueAttachments.map((attachment) => attachment.link),
+      blobs: uniqueAttachments.map((attachment) => this.drive.getFileBlob(attachment.id))
     };
   }
   protected _executeLogic(ctx: PipelineContext): void {

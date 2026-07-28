@@ -144,14 +144,15 @@ function runThroughRender(w: Wiring): string[] {
   return w.ctx.get<string[]>('boxHtmlOrdered')!;
 }
 
-function runThroughCompose(w: Wiring): void {
+function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveFacade {
   runThroughRender(w);
   new ComposeEmailStep(
     logger,
     w.templates,
     new LogDocumentoRepository(w.db),
-    new FakeDriveFacade()
+    drive
   ).execute(w.ctx);
+  return drive;
 }
 
 // --- Step 1: BuildCDUStep ---
@@ -443,6 +444,40 @@ test('ComposeEmailStep resolves no attachments when no box opts in via DATI_SORG
   expect(w.ctx.get('allegati')).toEqual([]);
 });
 
+test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI file without a box or focus class', () => {
+  const w = wire({ ALLEGATI: JSON.stringify(['static id/1?']), BOX_CFG: '[]' });
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
+  delete (w.ctx.get<Cdu>('cdu')!.focus as unknown as Record<string, unknown>)['classe'];
+  w.ctx.set('shouldSend', true); // isolate ComposeEmailStep from the empty-body send gate
+  const drive = new FakeDriveFacade();
+  const getFileBlob = jest.spyOn(drive, 'getFileBlob');
+
+  new ComposeEmailStep(logger, w.templates, new LogDocumentoRepository(w.db), drive).execute(w.ctx);
+
+  expect(w.ctx.get('allegatiIds')).toEqual(['static id/1?']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:static id/1?']);
+  expect(w.ctx.get('allegatiLinks')).toEqual([
+    'https://drive.google.com/open?id=static%20id%2F1%3F'
+  ]);
+  expect(getFileBlob).toHaveBeenCalledTimes(1);
+  expect(getFileBlob).toHaveBeenCalledWith('static id/1?');
+});
+
+test('ComposeEmailStep leaves attachments empty for an empty CONF_MAIL.ALLEGATI cell', () => {
+  const w = wire({ ALLEGATI: '' });
+  const drive = new FakeDriveFacade();
+  const getFileBlob = jest.spyOn(drive, 'getFileBlob');
+
+  runThroughCompose(w, drive);
+
+  expect(w.ctx.get('allegatiIds')).toEqual([]);
+  expect(w.ctx.get('allegati')).toEqual([]);
+  expect(w.ctx.get('allegatiLinks')).toEqual([]);
+  expect(getFileBlob).not.toHaveBeenCalled();
+});
+
 test('ComposeEmailStep never attaches documents from DATI_SORGENTE unless BOX_CFG.ALLEGA is explicitly true', () => {
   const w = wire({
     BOX_CFG: JSON.stringify([
@@ -462,11 +497,70 @@ test('ComposeEmailStep never attaches documents from DATI_SORGENTE unless BOX_CF
     UTENTI: ''
   });
 
-  runThroughCompose(w);
+  const drive = new FakeDriveFacade();
+  const getFileBlob = jest.spyOn(drive, 'getFileBlob');
+  runThroughCompose(w, drive);
 
   expect(w.ctx.get('allegati')).toEqual([]);
   expect(w.ctx.get('allegatiIds')).toEqual([]);
   expect(w.ctx.get('allegatiLinks')).toEqual([]);
+  expect(getFileBlob).not.toHaveBeenCalled();
+});
+
+test('ComposeEmailStep keeps static IDs first and deduplicates them with opted-in class documents', () => {
+  const w = wire({
+    ALLEGATI: JSON.stringify(['static one', 'shared-id', 'static-two']),
+    BOX_CFG: JSON.stringify([
+      {
+        TIPO_BOX: 'testo_dinamico',
+        CONTENUTO: '<p>Documenti allegati.</p>',
+        ALLEGA: true,
+        DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+      }
+    ])
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'shared-id',
+    ID_GEN: 'CD1',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    LINK: 'https://drive.example/shared',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'dynamic-id',
+    ID_GEN: 'CD2',
+    TIPO: 'PDP',
+    STATO: 'GENERATO',
+    LINK: 'https://drive.example/dynamic',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  const drive = new FakeDriveFacade();
+  const getFileBlob = jest.spyOn(drive, 'getFileBlob');
+
+  runThroughCompose(w, drive);
+
+  expect(w.ctx.get('allegatiIds')).toEqual(['static one', 'shared-id', 'static-two', 'dynamic-id']);
+  expect(w.ctx.get('allegati')).toEqual([
+    'blob:static one',
+    'blob:shared-id',
+    'blob:static-two',
+    'blob:dynamic-id'
+  ]);
+  expect(w.ctx.get('allegatiLinks')).toEqual([
+    'https://drive.google.com/open?id=static%20one',
+    'https://drive.google.com/open?id=shared-id',
+    'https://drive.google.com/open?id=static-two',
+    'https://drive.example/dynamic'
+  ]);
+  expect(getFileBlob.mock.calls).toEqual([
+    ['static one'],
+    ['shared-id'],
+    ['static-two'],
+    ['dynamic-id']
+  ]);
 });
 
 test('ComposeEmailStep resolves class-attached documents as blobs once a box opts in via DATI_SORGENTE with no narrowing filtri (11 §13)', () => {
@@ -1010,7 +1104,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     expect(w.ctx.get('allegati')).toEqual([]);
   });
 
-  test('ComposeEmailStep falls back to "" for a document id and still requests its blob (11 §13)', () => {
+  test('ComposeEmailStep ignores a class document with no Drive file ID', () => {
     const w = wire({
       BOX_CFG: JSON.stringify([
         {
@@ -1024,8 +1118,15 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     w.db
       .table('LOG_DOCS')
       .insert({ ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A', UTENTI: '' }); // no ID
-    runThroughCompose(w);
-    expect(w.ctx.get('allegati')).toEqual(['blob:']);
+    const drive = new FakeDriveFacade();
+    const getFileBlob = jest.spyOn(drive, 'getFileBlob');
+
+    runThroughCompose(w, drive);
+
+    expect(w.ctx.get('allegatiIds')).toEqual([]);
+    expect(w.ctx.get('allegati')).toEqual([]);
+    expect(w.ctx.get('allegatiLinks')).toEqual([]);
+    expect(getFileBlob).not.toHaveBeenCalled();
   });
 
   test('ComposeEmailStep filters attachments by BOX_CFG stato as well as tipo (11 §13, 14 §2)', () => {

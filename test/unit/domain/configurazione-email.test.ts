@@ -32,7 +32,8 @@ describe('ConfigurazioneEmail.getAllegati', () => {
     ['a non-array JSON value', JSON.stringify({ id: 'doc-1' })],
     ['an empty attachment ID', JSON.stringify(['doc-1', ''])],
     ['a non-string attachment ID', JSON.stringify(['doc-1', 2])],
-    ['a non-string cell value', 42]
+    ['a non-string cell value', 42],
+    ['a whitespace-only cell', '   ']
   ])('throws ConfigurationError for %s', (_description, raw) => {
     expect(() => config({ [COL_CONF_MAIL.ALLEGATI]: raw }).getAllegati()).toThrow(
       ConfigurationError

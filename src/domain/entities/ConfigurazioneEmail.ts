@@ -82,7 +82,7 @@ export class ConfigurazioneEmail extends AldoEntity {
     if (typeof this.allegatiRaw !== 'string') {
       throw this.allegatiConfigurationError();
     }
-    if (this.allegatiRaw.trim() === '') return [];
+    if (this.allegatiRaw === '') return [];
 
     let parsed: unknown;
     try {

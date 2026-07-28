@@ -28,6 +28,7 @@ export interface CarenzaFormatoB {
 }
 
 interface DocumentoItem {
+  id?: string | undefined;
   nome: string;
   link: string;
   tipo: string;
@@ -37,6 +38,7 @@ interface DocumentoItem {
 }
 
 interface PianoPersonalizzatoRow {
+  id?: string | undefined;
   nome: string;
   link: string;
   sottotipo: string;
@@ -506,13 +508,18 @@ export function renderBoxes(
   templates: ITemplateEngine,
   aggregatoreDati?: AggregatoreDati,
   classeId?: string
-): { ordered: string[]; boxes: Record<string, RenderedBox>; folderIds: string[] } {
+): {
+  ordered: string[];
+  boxes: Record<string, RenderedBox>;
+  documentIds: string[];
+  folderIds: string[];
+} {
   const cfgs = confMail.getBoxes();
   const known = cfgs.filter((c) => {
     const tipo = str(c['TIPO_BOX']);
     return tipo !== '' && tipo in DEFAULT_TITLES;
   });
-  if (known.length === 0) return { ordered: [], boxes: {}, folderIds: [] };
+  if (known.length === 0) return { ordered: [], boxes: {}, documentIds: [], folderIds: [] };
 
   const documentiCfg = known.find((c) => str(c['TIPO_BOX']) === 'documenti');
   const documentiFiltro: { tipo?: string; stato?: string } = {};
@@ -554,6 +561,37 @@ export function renderBoxes(
     ...cdu,
     boxdata: aggregaDati(cdu, materie, documentiFiltro, realCartelle)
   };
+  const boxdata = context['boxdata'] as {
+    documenti: { items: DocumentoItem[] };
+    cartelle: { items: DocumentoItem[] };
+    pianiPersDaInviare: { items: PianoPersonalizzatoRow[] };
+    pianiPersInviati: { items: PianoPersonalizzatoRow[] };
+  };
+  const documentIds = Array.from(
+    new Set(
+      known
+        .flatMap((cfg): Array<{ id?: string | undefined }> => {
+          switch (str(cfg['TIPO_BOX'])) {
+            case 'documenti':
+              return boxdata.documenti.items;
+            case 'piani_pers_da_inviare':
+              return boxdata.pianiPersDaInviare.items;
+            case 'piani_pers_inviati':
+              return boxdata.pianiPersInviati.items;
+            default:
+              return [];
+          }
+        })
+        .map((item) => item.id)
+        .filter((id): id is string => id !== undefined && id !== '')
+    )
+  );
+  const renderedFolderIds =
+    realCartelle === null
+      ? boxdata.cartelle.items
+          .map((item) => item.id)
+          .filter((id): id is string => id !== undefined && id !== '')
+      : folderIds;
   const result = composer.compose(recipe, context);
 
   const byInstance = new Map(result.blocks.map((b) => [b.instanceId, b]));
@@ -580,5 +618,5 @@ export function renderBoxes(
     boxes[tipo] = { id: `${tipo}_${i}`, titolo, html, isEmpty, visibile: html !== '' };
     if (html !== '') ordered.push(html);
   }
-  return { ordered, boxes, folderIds };
+  return { ordered, boxes, documentIds, folderIds: renderedFolderIds };
 }

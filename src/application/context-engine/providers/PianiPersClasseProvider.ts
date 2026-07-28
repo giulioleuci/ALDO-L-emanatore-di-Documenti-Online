@@ -37,6 +37,7 @@ export class PianiPersClasseProvider implements ContextProvider {
           const email = l.getUtenti()[0] ?? '';
           const alunno = email !== '' ? this.alunni.findById(email) : null;
           return {
+            id: l.id ?? undefined,
             nome: l.nome,
             link: l.getLink(),
             tipo: l.tipo,

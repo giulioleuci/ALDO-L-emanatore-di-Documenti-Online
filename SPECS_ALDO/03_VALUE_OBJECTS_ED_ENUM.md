@@ -442,14 +442,15 @@ L'ordine del CSV in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREG
 ```json
 {
   "docs": ["DriveFileId", ...],
-  "folders": ["DriveFolderId", ...]
+  "folders": ["DriveFolderId", ...],
+  "attach": ["DriveFileUrl", ...]
 }
 ```
 
 | Metodo                           | Comportamento                               |
 | -------------------------------- | ------------------------------------------- |
 | `hasAllegati(): boolean`         | `true` se `docs` o `folders` non sono vuoti |
-| `getDocumenti(): DriveFileId[]`  | Array degli ID file allegati                |
+| `getDocumenti(): DriveFileId[]`  | Array degli ID file collegati nel corpo HTML |
 | `getCartelle(): DriveFolderId[]` | Array degli ID cartelle allegate            |
 
 ---
@@ -563,6 +564,7 @@ La chiave `regolaSupplente` controlla come le supplenze influenzano l'assegnazio
   "TIPO_BOX": "carenze | documenti | cartelle | note | assenze | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
   "TITOLO": "string (opzionale; se assente usa il titolo di default del tipo)",
   "ORDINE": 1,
+  "ALLEGA": "boolean (default false; solo true autorizza l'invio Gmail dei file della sorgente)",
   "PREREQUISITI": "string (espressione di visibilità per ComposableContentLib; '' = sempre visibile)",
   "MOSTRA_SE_VUOTO": false,
   "TESTO_VUOTO": "string (Mustache, valutato sull'intera CDU)",

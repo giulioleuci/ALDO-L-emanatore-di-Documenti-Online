@@ -68,6 +68,7 @@ test('DocumentiStoricoProvider: includiStorico false ⇒ no storico key, no hist
     hasDocumenti: true,
     items: [
       {
+        id: 'doc1',
         nome: 'PDP a1',
         link: 'http://d/1',
         tipo: 'PDP',

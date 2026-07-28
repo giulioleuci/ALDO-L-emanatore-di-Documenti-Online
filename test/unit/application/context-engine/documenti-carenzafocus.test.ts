@@ -73,6 +73,7 @@ test('DocumentiProvider: items of the student from LOG_DOCS (02 §4.2)', () => {
     hasDocumenti: true,
     items: [
       {
+        id: 'doc1',
         nome: 'PDP a1',
         link: 'http://d/1',
         tipo: 'PDP',

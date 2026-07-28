@@ -40,8 +40,10 @@ function recordingHarness(
     skipped: 0,
     errors: []
   }),
-  planEmailText = 'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PEI_2025_2026 ' +
-    'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026'
+  planEmailText =
+    'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
+    'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026',
+  workPlanAttachmentLinks: string[] = []
 ): {
   container: ServiceContainer;
   events: string[];
@@ -123,7 +125,8 @@ function recordingHarness(
           [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
             docs: ['E2E_PIANO_LAVORO-1A'],
-            folders: ['folder1']
+            folders: ['folder1'],
+            attach: workPlanAttachmentLinks
           })
         });
       }
@@ -320,8 +323,8 @@ test('scenario 3 uses one config to render, deduplicate, send, and subtype-isola
 test('scenario 3 fails when prior-year PEI and PDP_BES history is crossed between subtypes', () => {
   const harness = recordingHarness(
     undefined,
-    'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026 ' +
-      'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PEI_2025_2026'
+    'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026 ' +
+      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026'
   );
   const runner = new TestRunner();
 
@@ -339,6 +342,19 @@ test('scenario 12 sends the prepared work-plan email without regenerating verbal
   registerE2eScenarioChecks(runner, harness.container, sample);
 
   expect(harness.generatedConfigIds().filter((id) => id === 'E2E_VERBALE')).toHaveLength(4);
+});
+
+test('scenario 12 fails when LOG_MAIL.ALLEGATI records an unrequested real file attachment', () => {
+  const harness = recordingHarness(undefined, undefined, [
+    'https://drive.google.com/open?id=E2E_PIANO_LAVORO-1A'
+  ]);
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario12 = runner.report().results.find((result) => result.name.includes('scenario 12'));
+  expect(scenario12?.status).toBe('fail');
+  expect(scenario12?.message).toMatch(/attach|allegat/i);
 });
 
 test('reports strict actionable diagnostics for verbale and condotta email failures', () => {
@@ -477,7 +493,8 @@ test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.A
           [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
             docs: ['E2E_PIANO_LAVORO-1A'],
-            folders: ['folder1']
+            folders: ['folder1'],
+            attach: []
           })
         });
       }
@@ -516,7 +533,11 @@ test('scenario 12: fails when LOG_MAIL.ALLEGATI.folders is empty', () => {
       if (patternId === CONF_MAIL_LAVORO) {
         rows.push({
           [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
-          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ docs: ['E2E_PIANO_LAVORO-1A'], folders: [] })
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+            docs: ['E2E_PIANO_LAVORO-1A'],
+            folders: [],
+            attach: []
+          })
         });
       }
       return { targets: 1, sent: 1, skipped: 0, errors: [] };

@@ -12,6 +12,8 @@ import {
   PDP_BES_3C,
   PIANO_DOPPIO_STUDENTE,
   CONF_DOC_PIANI,
+  CONF_DOC_PIANO_LAVORO,
+  CONF_MAIL_PIANI,
   e2eAlunnoEmail,
   e2eDocenteEmail,
   CARENZA_ALUNNO_1,
@@ -570,9 +572,14 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
-  const doc = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_PIANO_LAVORO');
+  const doc = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === CONF_DOC_PIANO_LAVORO);
   expect(doc).toBeDefined();
   expect(doc![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(JSON.parse(String(doc![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+    classi: '{{focus.classe.anagrafica.nome}}',
+    utenti: '',
+    materie: ''
+  });
 
   const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === 'E2E_MAIL_LAVORO');
   expect(mail).toBeDefined();
@@ -581,11 +588,30 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(boxes).toEqual([
     {
       TIPO_BOX: 'documenti',
-      FILTRO_TIPO: 'PIANO_LAVORO',
-      DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
+      FILTRO_TIPO: 'PIANO_LAVORO'
     },
     { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
   ]);
+  expect(String(mail![COL_CONF_MAIL.TESTO])).not.toMatch(/in allegato/i);
+});
+
+test('E2E personalized-plan email template keeps a Drive link for every current plan', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === CONF_MAIL_PIANI)!;
+  const boxes = JSON.parse(String(mail[COL_CONF_MAIL.BOX_CFG])) as Array<{
+    TIPO_BOX: string;
+    configArricchimento?: { templateRiga?: string };
+  }>;
+  const template = boxes.find((box) => box.TIPO_BOX === 'piani_pers_da_inviare')!
+    .configArricchimento?.templateRiga;
+  expect(template).toContain('<strong>{{corrente.sottotipo}}</strong>');
+  expect(template).toContain('{{corrente.studente.nomeCompleto}}');
+  expect(template).toContain('<a href="{{corrente.link}}"');
+  expect(template).not.toContain('E2E_CURRENT=');
+  expect(template).not.toContain('E2E_LINK=');
 });
 
 test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {

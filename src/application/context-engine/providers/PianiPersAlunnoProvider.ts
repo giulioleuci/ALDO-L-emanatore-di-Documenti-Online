@@ -23,6 +23,7 @@ export class PianiPersAlunnoProvider implements ContextProvider {
       .findByUtente(getAlunnoEntity(cdu).email)
       .filter((l) => l.tipo === TIPO_PIANO_PERS)
       .map((l) => ({
+        id: l.id ?? undefined,
         nome: l.nome,
         link: l.getLink(),
         tipo: l.tipo,

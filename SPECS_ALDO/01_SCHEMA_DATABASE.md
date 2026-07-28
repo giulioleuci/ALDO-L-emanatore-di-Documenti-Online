@@ -435,7 +435,7 @@ Audit trail di ogni email inviata dal sistema.
 | `DESTINATARI` | String (CSV) | ✅         | —            | Email dei destinatari effettivi                  |
 | `DATA`        | String       | ✅         | —            | Timestamp dell'invio                             |
 | `STATO`       | String       | —          | —            | Enum                                             |
-| `ALLEGATI`    | JSON         | —          | —            | Riferimenti allegati: `{"docs":[],"folders":[]}` |
+| `ALLEGATI`    | JSON         | —          | —            | Riferimenti della mail: `{"docs":["DriveFileId"],"folders":["DriveFolderId"],"attach":["DriveFileUrl"]}`; `docs`/`folders` sono gli asset collegati nel corpo HTML, `attach` conserva i link ai file inviati come allegati reali |
 | `ERRORE`      | String       | —          | —            | Dettaglio dell'errore (se STATO = ERROR)         |
 | `TESTO`       | String       | —          | —            | Corpo email in chiaro (HTML→testo, troncato)     |
 

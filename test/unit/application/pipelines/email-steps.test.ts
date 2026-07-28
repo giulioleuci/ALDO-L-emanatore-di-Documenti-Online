@@ -443,12 +443,39 @@ test('ComposeEmailStep resolves no attachments when no box opts in via DATI_SORG
   expect(w.ctx.get('allegati')).toEqual([]);
 });
 
+test('ComposeEmailStep never attaches documents from DATI_SORGENTE unless BOX_CFG.ALLEGA is explicitly true', () => {
+  const w = wire({
+    BOX_CFG: JSON.stringify([
+      {
+        TIPO_BOX: 'testo_dinamico',
+        CONTENUTO: '<p>Documenti collegati.</p>',
+        DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
+      }
+    ])
+  });
+  w.db.table('LOG_DOCS').insert({
+    ID: 'doc1',
+    ID_GEN: 'CD1',
+    TIPO: 'VERBALE',
+    STATO: 'GENERATO',
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+
+  runThroughCompose(w);
+
+  expect(w.ctx.get('allegati')).toEqual([]);
+  expect(w.ctx.get('allegatiIds')).toEqual([]);
+  expect(w.ctx.get('allegatiLinks')).toEqual([]);
+});
+
 test('ComposeEmailStep resolves class-attached documents as blobs once a box opts in via DATI_SORGENTE with no narrowing filtri (11 §13)', () => {
   const w = wire({
     BOX_CFG: JSON.stringify([
       {
         TIPO_BOX: 'testo_dinamico',
         CONTENUTO: '<p>Allegati disponibili.</p>',
+        ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       }
     ])
@@ -479,6 +506,7 @@ test('ComposeEmailStep filters attachments by the documentiPerClasse BOX_CFG ent
       {
         TIPO_BOX: 'testo_dinamico',
         CONTENUTO: '<p>Allegati disponibili.</p>',
+        ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PDP' } }
       }
     ])
@@ -713,12 +741,13 @@ test('LogEmailStep records LOG_MAIL.TESTO as HTML-stripped plain text of the com
   expect(testo).not.toContain('>');
 });
 
-test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 §9)', () => {
+test('LogEmailStep records links to files actually sent as attachments in LOG_MAIL.ALLEGATI.attach (11 §9)', () => {
   const w = wire({
     BOX_CFG: JSON.stringify([
       {
         TIPO_BOX: 'testo_dinamico',
         CONTENUTO: '<p>Allegati disponibili.</p>',
+        ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       }
     ])
@@ -729,7 +758,8 @@ test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 
     TIPO: 'VERBALE',
     STATO: 'GENERATO',
     CLASSI: '5A',
-    UTENTI: ''
+    UTENTI: '',
+    LINK: 'https://drive/doc1'
   });
   w.db.table('LOG_DOCS').insert({
     ID: 'doc2',
@@ -737,15 +767,20 @@ test('LogEmailStep records the sent attachment doc IDs in LOG_MAIL.ALLEGATI (11 
     TIPO: 'PDP',
     STATO: 'GENERATO',
     CLASSI: '5A',
-    UTENTI: ''
+    UTENTI: '',
+    LINK: 'https://drive/doc2'
   });
   runThroughCompose(w);
   w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
   send(w, new FakeGmailFacade());
   new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
   const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
-  const allegati = JSON.parse(String(row['ALLEGATI'])) as { docs: string[]; folders: string[] };
-  expect(allegati.docs).toEqual(['doc1', 'doc2']);
+  const allegati = JSON.parse(String(row['ALLEGATI'])) as {
+    docs: string[];
+    attach: string[];
+  };
+  expect(allegati.docs).toEqual([]);
+  expect(allegati.attach).toEqual(['https://drive/doc1', 'https://drive/doc2']);
 });
 
 test('LogEmailStep records cartelleFolderIds in LOG_MAIL.ALLEGATI.folders (11 §9)', () => {
@@ -762,6 +797,31 @@ test('LogEmailStep records cartelleFolderIds in LOG_MAIL.ALLEGATI.folders (11 §
   const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
   const allegati = JSON.parse(String(row['ALLEGATI'])) as { folders?: string[] };
   expect(allegati.folders).toEqual(['folder1', 'folder2']);
+});
+
+test('LogEmailStep records body-link IDs separately from links to files actually attached', () => {
+  const w = wire();
+  buildStep(w).execute(w.ctx);
+  w.ctx.set('shouldSend', true);
+  w.ctx.set('sentTo', ['genitore1@x.it']);
+  w.ctx.set('sendErrors', []);
+  w.ctx.set('corpoHtml', '<p>x</p>');
+  w.ctx.set('documentIds', ['body-doc-1']);
+  w.ctx.set('cartelleFolderIds', ['body-folder-1']);
+  w.ctx.set('allegatiLinks', ['https://drive.google.com/open?id=attached-doc-1']);
+  new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
+
+  const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
+  const allegati = JSON.parse(String(row['ALLEGATI'])) as {
+    docs?: string[];
+    folders?: string[];
+    attach?: string[];
+  };
+  expect(allegati).toEqual({
+    docs: ['body-doc-1'],
+    folders: ['body-folder-1'],
+    attach: ['https://drive.google.com/open?id=attached-doc-1']
+  });
 });
 
 test('LogEmailStep records ERROR with message when a send failed (11 §9)', () => {
@@ -956,6 +1016,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
         {
           TIPO_BOX: 'testo_dinamico',
           CONTENUTO: '<p>Allegati disponibili.</p>',
+          ALLEGA: true,
           DATI_SORGENTE: { metodo: 'documentiPerClasse' }
         }
       ])
@@ -973,6 +1034,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
         {
           TIPO_BOX: 'testo_dinamico',
           CONTENUTO: '<p>Allegati disponibili.</p>',
+          ALLEGA: true,
           DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { stato: 'NOTIFICATO' } }
         }
       ])

@@ -224,12 +224,12 @@ export function registerE2eScenarioChecks(
         .map((row) => String(row[COL_LOG_MAIL.TESTO] ?? ''))
         .join('\n');
       const correctHistory = [
-        'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PEI_2025_2026',
-        'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026'
+        'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026',
+        'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'
       ];
       const crossedHistory = [
-        'E2E_CURRENT=PEI|E2E_HISTORY=E2E_Piano_PDP_BES_2025_2026',
-        'E2E_CURRENT=PDP_BES|E2E_HISTORY=E2E_Piano_PEI_2025_2026'
+        'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026',
+        'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026'
       ];
       if (
         correctHistory.some((fragment) => !emailText.includes(fragment)) ||
@@ -457,6 +457,7 @@ export function registerE2eScenarioChecks(
         const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
           docs?: string[];
           folders?: string[];
+          attach?: string[];
         };
         if ((allegati.docs ?? []).length === 0) {
           throw new ValidationError(
@@ -466,6 +467,11 @@ export function registerE2eScenarioChecks(
         if ((allegati.folders ?? []).length === 0) {
           throw new ValidationError(
             'LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata'
+          );
+        }
+        if ((allegati.attach ?? []).length > 0) {
+          throw new ValidationError(
+            'LOG_MAIL.ALLEGATI.attach non è vuoto: il piano di lavoro deve essere collegato nel corpo, non inviato come allegato'
           );
         }
       }

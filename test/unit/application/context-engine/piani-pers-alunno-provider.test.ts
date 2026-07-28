@@ -52,6 +52,7 @@ test('PianiPersAlunnoProvider: filters LOG_DOCS to TIPO=PIANO_PERS only, tags no
   const cdu = build(['class', 'student', 'pianiPersAlunno'], { anniStorici: () => [] });
   expect(cdu.focus.alunno!.didattica.pianiPersonalizzati!.items).toEqual([
     {
+      id: 'doc_pdp_1',
       nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_DSA',
       idGen: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false
     }

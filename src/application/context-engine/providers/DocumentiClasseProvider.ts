@@ -28,6 +28,7 @@ export class DocumentiClasseProvider implements ContextProvider {
       const classe = this.classi.findById(ClasseId.of(id));
       if (classe === null) return [];
       return this.logDocs.findByClasse(classe).map((l) => ({
+        id: l.id ?? undefined,
         nome: l.nome,
         link: l.getLink(),
         tipo: l.tipo,

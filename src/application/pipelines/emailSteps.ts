@@ -246,6 +246,7 @@ export class RenderBoxesStep extends Step {
     if (built.destinatario !== undefined)
       built.destinatario.comunicazione.oggettoCalcolato = oggetto;
     this.setResult(ctx, 'boxHtmlOrdered', result.ordered);
+    this.setResult(ctx, 'documentIds', result.documentIds);
     this.setResult(ctx, 'cartelleFolderIds', result.folderIds);
     this.setResult(ctx, 'shouldSend', ctx.get('shouldSend') === true && result.ordered.length > 0);
     this.setResult(ctx, 'oggettoRisolto', oggetto);
@@ -268,25 +269,24 @@ export class ComposeEmailStep extends Step {
 
   /**
    * Attachment resolution (11 §13): only when a class is in focus. The optional
-   * tipo/stato filters come from the first BOX_CFG entry whose
-   * `DATI_SORGENTE.metodo` is `documentiPerClasse` (14 §2 vocabulary) — the
-   * same box that would otherwise render these documents, reused here so the
-   * filter is configured once per pattern, not duplicated.
+   * tipo/stato filters come from the first BOX_CFG entry that explicitly sets
+   * `ALLEGA: true` and whose `DATI_SORGENTE.metodo` is `documentiPerClasse`.
+   * A data source only renders/filters a body box; it can never attach a PDF
+   * unless the pattern author opts in deliberately.
    */
   private resolveAllegati(
     conf: ConfigurazioneEmail,
     built: Cdu
-  ): { ids: string[]; blobs: unknown[] } {
-    if (built.focus.classe === undefined) return { ids: [], blobs: [] };
+  ): { ids: string[]; links: string[]; blobs: unknown[] } {
+    if (built.focus.classe === undefined) return { ids: [], links: [], blobs: [] };
     const boxConfig = conf.getBoxes().find((b) => {
       const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
-      return sorgente?.metodo === 'documentiPerClasse';
+      return b['ALLEGA'] === true && sorgente?.metodo === 'documentiPerClasse';
     });
-    // Attachment is opt-in (11 §13): a class-scoped pattern that never declares a
-    // documentiPerClasse box must not silently attach every LOG_DOCS row for the
-    // class — GAS's DriveApp getBlob() converts native Docs/Sheets to PDF on the
-    // fly, so an un-opted-in pattern would otherwise generate PDFs nobody asked for.
-    if (boxConfig === undefined) return { ids: [], blobs: [] };
+    // Attachment is opt-in (11 §13): a class-scoped pattern must explicitly set
+    // ALLEGA=true. GAS's DriveApp getBlob() converts native Docs/Sheets to PDF,
+    // so using a document data source alone must never send a file unexpectedly.
+    if (boxConfig === undefined) return { ids: [], links: [], blobs: [] };
     const filtri =
       (boxConfig?.['DATI_SORGENTE'] as { filtri?: { tipo?: string; stato?: string } } | undefined)
         ?.filtri ?? {};
@@ -299,7 +299,11 @@ export class ComposeEmailStep extends Step {
           (filtri.stato === undefined || String(d.getStato()) === filtri.stato)
       );
     const ids = documenti.map((d) => d.id ?? '');
-    return { ids, blobs: ids.map((id) => this.drive.getFileBlob(id)) };
+    return {
+      ids,
+      links: documenti.map((d) => d.getLink()).filter((link) => link !== ''),
+      blobs: ids.map((id) => this.drive.getFileBlob(id))
+    };
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const conf = confMail(ctx);
@@ -335,6 +339,7 @@ export class ComposeEmailStep extends Step {
     this.setResult(ctx, 'corpoHtml', htmlCompleto);
     this.setResult(ctx, 'allegati', allegati.blobs);
     this.setResult(ctx, 'allegatiIds', allegati.ids);
+    this.setResult(ctx, 'allegatiLinks', allegati.links);
   }
 }
 
@@ -468,8 +473,9 @@ export class LogEmailStep extends Step {
     const stato = errors.length > 0 ? StatoEmail.ERROR : StatoEmail.SUCCESS;
     const destinatari = (ctx.get<string[]>('sentTo') ?? []).map((e) => Email.of(e));
     const allegatiInfo = {
-      docs: ctx.get<string[]>('allegatiIds') ?? [],
-      folders: ctx.get<string[]>('cartelleFolderIds') ?? []
+      docs: ctx.get<string[]>('documentIds') ?? [],
+      folders: ctx.get<string[]>('cartelleFolderIds') ?? [],
+      attach: ctx.get<string[]>('allegatiLinks') ?? []
     };
     this.logMail.registraInvio(
       String(cfg(ctx)[COL_CONF_MAIL.ID]),

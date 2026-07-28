@@ -15,6 +15,7 @@ export class DocumentiProvider implements ContextProvider {
     const focusAlunno = cdu.focus.alunno;
     if (focusAlunno === undefined) return;
     const items = this.logDocs.findByUtente(getAlunnoEntity(cdu).email).map((l) => ({
+      id: l.id ?? undefined,
       nome: l.nome,
       link: l.getLink(),
       tipo: l.tipo,

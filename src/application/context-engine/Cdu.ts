@@ -49,6 +49,7 @@ export interface AlunnoContestoVM {
 
 /** One row of `focus.alunno.didattica.pianiPersonalizzati.items` / `focus.classe.didattica.pianiPersonalizzati.items` (11 §11 new). */
 export interface PianoPersonalizzatoItem {
+  id?: string | undefined;
   nome: string;
   link: string;
   tipo: string;

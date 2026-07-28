@@ -760,7 +760,11 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '',
+        materie: ''
+      }),
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
@@ -861,7 +865,7 @@ export class E2eSampleDatabaseBuilder {
           arricchisciConStorico: true,
           configArricchimento: {
             templateRiga:
-              '<li>E2E_CURRENT={{corrente.sottotipo}}{{#storico}}|E2E_HISTORY={{nome}}{{/storico}}</li>'
+              '<li><strong>{{corrente.sottotipo}}</strong> — {{corrente.studente.nomeCompleto}}: <a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
           }
         },
         { TIPO_BOX: 'piani_pers_inviati' }
@@ -898,13 +902,12 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         {
           TIPO_BOX: 'documenti',
-          FILTRO_TIPO: 'PIANO_LAVORO',
-          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
+          FILTRO_TIPO: 'PIANO_LAVORO'
         },
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO]:
-        '<p>In allegato il piano di lavoro; la cartella dei verbali delle riunioni è collegata di seguito.</p>',
+        '<p>Il piano di lavoro e la cartella dei verbali delle riunioni sono collegati di seguito.</p>',
       [COL_CONF_MAIL.SUPPLENTI]: false,
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',

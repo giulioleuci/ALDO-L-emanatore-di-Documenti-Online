@@ -153,6 +153,50 @@ test('documenti box lists links; cartelle box empty ⇒ hidden', () => {
   expect(out.boxes['cartelle']!.html).toBe('');
 });
 
+test('renderBoxes returns the IDs of document and personalized-plan links rendered in the email body', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  const focus = cdu['focus'] as Record<string, unknown>;
+  const alunno = focus['alunno'] as Record<string, unknown>;
+  const didattica = alunno['didattica'] as Record<string, unknown>;
+  didattica['documenti'] = {
+    items: [
+      {
+        id: 'work-plan-1',
+        nome: 'Piano di lavoro 5A',
+        link: 'https://drive/work-plan-1',
+        tipo: 'PIANO_LAVORO',
+        idGen: 'PIANO_LAVORO',
+        stato: 'GENERATO',
+        dataCreazione: '01/07/2026'
+      }
+    ]
+  };
+  didattica['pianiPersonalizzati'] = {
+    items: [
+      {
+        id: 'personal-plan-1',
+        nome: 'PDP Anna',
+        link: 'https://drive/personal-plan-1',
+        sottotipo: 'PDP_BES',
+        idGen: 'PIANI_PERSONALIZZATI',
+        notificato: false
+      }
+    ]
+  };
+
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'documenti' }, { TIPO_BOX: 'piani_pers_da_inviare' }]),
+    cdu,
+    materie(),
+    templates
+  ) as ReturnType<typeof renderBoxes> & { documentIds?: string[] };
+
+  expect(out.documentIds).toEqual(['work-plan-1', 'personal-plan-1']);
+});
+
 test('documenti/cartelle boxes fall back to focus.classe.didattica.documenti when focus.alunno is absent (coordinatore/CdC emails, 11 §11 new)', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
@@ -520,6 +564,7 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
     templates
   );
   const html = out.boxes['piani_pers_da_inviare']!.html;
+  expect((html.match(/Piani personalizzati da notificare/g) ?? [])).toHaveLength(1);
   const [peiRow, pdpRow] = html.split('</li>');
   expect(html).toContain('PEI a1');
   expect(html).toContain('PDP a2');

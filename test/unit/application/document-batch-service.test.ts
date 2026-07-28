@@ -48,10 +48,12 @@ function wirePiani(
   options: {
     monitor?: FakeProcessMonitor;
     configTipo?: string;
+    configId?: string;
     missingConfig?: boolean;
     failForTipo?: TipoPiano;
   } = {}
 ) {
+  const configId = options.configId ?? 'PIANI_PERSONALIZZATI';
   const studenti = [
     new Alunno({
       EMAIL: 'con-piani@school.it',
@@ -78,7 +80,7 @@ function wirePiani(
   };
   const configs = {
     findById: (id: string) =>
-      id === 'PIANI_PERSONALIZZATI' && options.missingConfig !== true
+      id === configId && options.missingConfig !== true
         ? new ConfigurazioneDocumento({
             ID: id,
             TIPO: options.configTipo ?? 'PIANO_PERS',
@@ -109,6 +111,30 @@ function wirePiani(
   );
   return { service, generated, studenti, piani };
 }
+
+test('PIANO_PERS configuration with a nonstandard ID still runs one target per plan', () => {
+  const configId = 'PIANO_INCLUSIONE_2026';
+  const { service, generated } = wirePiani({ configId });
+  const generator = service.batchGenerateHandler({ confDocId: configId, jobId: 'job_inclusione' });
+  let step = generator.next();
+  while (!step.done) step = generator.next();
+
+  expect(generated).toEqual([
+    {
+      studente: 'con-piani@school.it',
+      tipo: TipoPiano.PEI,
+      confDocId: configId,
+      jobId: 'job_inclusione'
+    },
+    {
+      studente: 'con-piani@school.it',
+      tipo: TipoPiano.PDP_BES,
+      confDocId: configId,
+      jobId: 'job_inclusione'
+    }
+  ]);
+  expect(step.value).toMatchObject({ success: true, totale: 2 });
+});
 
 test('PIANI batch yields one persisted checkpoint and one progress update per active-student plan', () => {
   const monitor = new FakeProcessMonitor();

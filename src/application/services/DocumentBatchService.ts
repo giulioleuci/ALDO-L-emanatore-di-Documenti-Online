@@ -68,25 +68,29 @@ export class DocumentBatchService {
     const resume = (params.resumeState ?? null) as BatchResumeState | null;
     const processed = resume === null ? [] : resume.processed.slice();
     const errori = resume === null ? [] : resume.errori.slice();
+    const config = this.configs.findById(confDocId);
 
-    if (confDocId === CONF_DOC_PIANI_PERSONALIZZATI) {
-      return yield* this.generatePiani(confDocId, jobId, resume, processed, errori);
+    if (config === null) {
+      throw new ConfigurationError(`CONF_DOC ${confDocId} non trovato`);
+    }
+    if (confDocId === CONF_DOC_PIANI_PERSONALIZZATI && config.tipo !== 'PIANO_PERS') {
+      throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
+    }
+    if (config.tipo === 'PIANO_PERS') {
+      return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
     }
 
     return yield* this.generateClassi(confDocId, jobId, resume, processed, errori);
   }
 
   private *generatePiani(
+    config: ConfigurazioneDocumento,
     confDocId: string,
     jobId: string,
     resume: BatchResumeState | null,
     processed: string[],
     errori: string[]
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    const config = this.configs.findById(confDocId);
-    if (config === null) {
-      throw new ConfigurationError(`CONF_DOC ${confDocId} non trovato`);
-    }
     if (config.tipo !== 'PIANO_PERS') {
       throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
     }

@@ -53,6 +53,8 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 | `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                         |
 
 Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).
+Per i documenti `PIANO_PERS`, la corrispondenza richiede inoltre lo stesso studente risolto in
+`LOG_DOCS.UTENTI`, così piani dello stesso sottotipo appartenenti ad alunni diversi restano distinti.
 
 **Default:** `NEGATA`.
 

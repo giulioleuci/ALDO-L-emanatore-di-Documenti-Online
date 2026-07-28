@@ -41,6 +41,7 @@ function wire(
     strategy?: GeneratorStrategy;
     registry?: Map<string, GeneratorStrategy>;
     db?: FakeDatabase;
+    now?: Date;
   } = {}
 ) {
   const db = options.db ?? new FakeDatabase(tables);
@@ -58,7 +59,7 @@ function wire(
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: new RisolutoreRuoliService(db),
-    now: new Date('2026-07-01T09:00:00Z')
+    now: options.now ?? new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };
 }
@@ -201,7 +202,62 @@ describe('DocumentGenerationService.generateForPiano', () => {
 
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
     const { service } = wire();
-    expect(() => service.generateForAlunno('a1@school.it', 'MISSING_ID')).toThrow(PipelineError);
+    expect(() =>
+      service.generateForPiano('a1@school.it', TipoPiano.PEI, 'MISSING_ID')
+    ).toThrow(PipelineError);
+  });
+
+  test('skips the same student plan across dates while preserving a different subtype', () => {
+    const tables = fixtureTables();
+    tables.PIANI.push({
+      STUDENTE: 'a1@school.it',
+      TIPO: 'PDP_BES',
+      PARAMETRI: '{"gravita":"lieve"}'
+    });
+    const db = new FakeDatabase(tables);
+    const registry = () =>
+      new Map([
+        [
+          'DOC_PERSONALIZZATO',
+          new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())
+        ]
+      ]);
+    const firstRun = wire(tables, {
+      db,
+      registry: registry(),
+      now: new Date('2026-07-01T09:00:00Z')
+    });
+    const laterRun = wire(tables, {
+      db,
+      registry: registry(),
+      now: new Date('2026-07-02T09:00:00Z')
+    });
+
+    expect(
+      firstRun.service.generateForPiano(
+        'a1@school.it',
+        TipoPiano.PEI,
+        'PIANI_PERSONALIZZATI'
+      ).status
+    ).toBe('GENERATO');
+    expect(
+      laterRun.service.generateForPiano(
+        'a1@school.it',
+        TipoPiano.PEI,
+        'PIANI_PERSONALIZZATI'
+      )
+    ).toEqual({ fileId: null, status: 'SKIPPED' });
+    expect(
+      laterRun.service.generateForPiano(
+        'a1@school.it',
+        TipoPiano.PDP_BES,
+        'PIANI_PERSONALIZZATI'
+      ).status
+    ).toBe('GENERATO');
+
+    expect(firstRun.drive.copies).toHaveLength(1);
+    expect(laterRun.drive.copies).toHaveLength(1);
+    expect(db.table(TABLE.LOG_DOCS).findAll()).toHaveLength(2);
   });
 
   test('rejects a configuration whose TIPO is not PIANO_PERS before pipeline execution', () => {

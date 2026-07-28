@@ -23,10 +23,12 @@ export interface DocumentoStoricoConTipo extends DocumentoStorico {
 
 /**
  * StoricoDocumentiService (13 §4): documents already generated for a student
- * of a given type (`CONF_DOC.TIPO`, matched against `LOG_DOCS.ID_GEN`) in
- * prior school years. Feeds the `documenti` box's `arricchisciConStorico`
- * mode (11 §11, 14 §3) as `{ corrente, storico: LazyRef }` — the LazyRef
- * wrapping is the caller's job (`DocumentiStoricoProvider`).
+ * for a given generator id (matched against `LOG_DOCS.ID_GEN`) in prior school
+ * years. Family (`LOG_DOCS.TIPO`), subtype, and generator id remain separate
+ * metadata in `perAlunnoConTipo`. Feeds the `documenti` box's
+ * `arricchisciConStorico` mode (11 §11, 14 §3) as
+ * `{ corrente, storico: LazyRef }` — the LazyRef wrapping is the caller's job
+ * (`DocumentiStoricoProvider`).
  */
 export class StoricoDocumentiService {
   constructor(private readonly provider: StoricoDatabaseProvider) {}

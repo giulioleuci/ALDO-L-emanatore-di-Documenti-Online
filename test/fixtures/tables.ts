@@ -198,7 +198,7 @@ export function fixtureTables(): Record<string, Row[]> {
         MODELLI:
           '[{"condizione":"{{focus.piano.tipo}} == \\"PDP_DSA\\"","templateId":"tmpl_pdp_dsa"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_BES\\"","templateId":"tmpl_pdp_bes"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_STRANIERI\\"","templateId":"tmpl_pdp_stranieri"},{"condizione":"{{focus.piano.tipo}} == \\"PEI\\"","templateId":"tmpl_pei"},{"condizione":"{{focus.piano.tipo}} == \\"PFP\\"","templateId":"tmpl_pfp"}]',
         FILE_NAME:
-          'Piano_{{focus.piano.tipo}}_{{focus.alunno.anagrafica.nomeCompleto}}_{{meta.date.oggi.iso}}',
+          'Piano_{{focus.piano.tipo}}_{{focus.alunno.anagrafica.nomeCompleto}}',
         PATH_OUT: 'Piani personalizzati/{{focus.classe.anagrafica.nome}}',
         DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,

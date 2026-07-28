@@ -448,6 +448,73 @@ test('deps.monitor flows through to both batch services (15 §9)', () => {
   expect(monitor.registered).toEqual(['job_gen_CD1']);
 });
 
+test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicate files', () => {
+  const tables = fixtureTables();
+  tables.PIANI!.push({
+    STUDENTE: 'a1@school.it',
+    TIPO: 'PDP_BES',
+    PARAMETRI: '{"gravita":"lieve"}'
+  });
+  tables.CONF_DOC!.push({
+    ID: 'PIANI_PERSONALIZZATI',
+    TIPO: 'PIANO_PERS',
+    GENERATORE: 'DOC_PERSONALIZZATO',
+    CONDIZIONE: null,
+    MODELLI: JSON.stringify([
+      { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
+      { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
+    ]),
+    FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+    PATH_OUT: 'Piani',
+    DUPLICAZIONE: 'NEGATA',
+    PERMESSI: null,
+    POST_PROCESSO: null,
+    PARAMETRI: '',
+    GESTIONE_ARTICOLAZIONE: '',
+    FORMATO: 'GDOC',
+    REGISTRA_DOC: JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '{{focus.alunno.anagrafica.email}}',
+      materie: ''
+    }),
+    REGISTRA_FOLD: '{}'
+  });
+  const db = new FakeDatabase(tables);
+  const drive = new FakeDriveFacade();
+  const monitor = new FakeProcessMonitor();
+  const c = buildAldoContainer({
+    db,
+    master: new MasterSheetRepository(db),
+    drive,
+    gmail: new FakeGmailFacade(),
+    templates: new FakeTemplateEngine(),
+    expressionEngine: new ExpressionEngineFacade(),
+    monitor,
+    now: NOW
+  });
+  const batch = c.get<DocumentBatchService>('documentBatchService');
+  const drain = (jobId: string) => {
+    const generator = batch.batchGenerateHandler({
+      confDocId: 'PIANI_PERSONALIZZATI',
+      jobId
+    });
+    let step = generator.next();
+    while (!step.done) step = generator.next();
+    return step.value;
+  };
+
+  expect(drain('job_piani_1')).toMatchObject({ success: true, totale: 2 });
+  expect(drive.copies.map(({ templateId }) => templateId)).toEqual(['tmpl_pei', 'tmpl_pdp_bes']);
+
+  monitor.progress = [];
+  expect(drain('job_piani_2')).toMatchObject({ success: true, totale: 2 });
+  expect(monitor.progress.map(({ message }) => message)).toEqual([
+    'Generazione piano 1/2 a1@school.it:PEI (SKIPPED)',
+    'Generazione piano 2/2 a1@school.it:PDP_BES (SKIPPED)'
+  ]);
+  expect(drive.copies).toHaveLength(2);
+});
+
 /**
  * JobRunnerService's constructor eagerly builds a GoogleApiWrapper PropertiesService,
  * which reads `global.__nativePropertiesService__` (falling back to `global.PropertiesService`

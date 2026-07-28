@@ -32,6 +32,7 @@ import type { ContextBuilder } from '../application/context-engine/ContextBuilde
 import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import { ConfigurazioneImportRepository } from '../infrastructure/repositories/ConfigurazioneImportRepository';
 import { ClasseRepository } from '../infrastructure/repositories/ClasseRepository';
+import { AlunnoRepository } from '../infrastructure/repositories/AlunnoRepository';
 import { LogCartellaRepository } from '../infrastructure/repositories/LogCartellaRepository';
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
@@ -167,6 +168,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     (container) =>
       new DocumentBatchService(
         new ClasseRepository(deps.db),
+        new AlunnoRepository(deps.db),
+        new ConfigurazioneDocumentoRepository(deps.db),
         container.get<DocumentGenerationService>('documentGenerationService'),
         deps.monitor
       )

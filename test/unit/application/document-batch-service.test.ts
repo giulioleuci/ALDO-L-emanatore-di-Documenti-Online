@@ -4,11 +4,20 @@ import {
 } from '../../../src/application/services/DocumentBatchService';
 import type { BatchCheckpoint } from '../../../src/application/services/DocumentBatchService';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { AlunnoRepository } from '../../../src/infrastructure/repositories/AlunnoRepository';
+import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { fixtureTables } from '../../fixtures/tables';
 import { FakeProcessMonitor } from '../../fakes/FakeProcessMonitor';
+import { Alunno } from '../../../src/domain/entities/Alunno';
+import { Piano } from '../../../src/domain/entities/Piano';
+import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
+import { TipoPiano } from '../../../src/domain/value-objects/enums';
+import { ConfigurationError } from '../../../src/domain/errors/DomainError';
+import type { IClasseRepository } from '../../../src/domain/repositories/IClasseRepository';
+import type { IAlunnoRepository } from '../../../src/domain/repositories/IAlunnoRepository';
 
 // The generator contract is what JobRunnerLib executes: it yields a resumable
 // checkpoint per class and fast-forwards from params.resumeState after a
@@ -25,9 +34,222 @@ function wire(options: { failFor?: string; monitor?: FakeProcessMonitor } = {}) 
       return { fileId: `file_${target.value}`, status: 'GENERATO' };
     }
   } as unknown as DocumentGenerationService;
-  const service = new DocumentBatchService(new ClasseRepository(db), documenti, options.monitor);
+  const service = new DocumentBatchService(
+    new ClasseRepository(db),
+    new AlunnoRepository(db),
+    new ConfigurazioneDocumentoRepository(db),
+    documenti,
+    options.monitor
+  );
   return { service, generated };
 }
+
+function wirePiani(
+  options: {
+    monitor?: FakeProcessMonitor;
+    configTipo?: string;
+    missingConfig?: boolean;
+    failForTipo?: TipoPiano;
+  } = {}
+) {
+  const studenti = [
+    new Alunno({
+      EMAIL: 'con-piani@school.it',
+      COGNOMENOME: 'CON PIANI',
+      CLASSE: '5A',
+      RELIGIONE: 'SI',
+      ATTIVO: true
+    }),
+    new Alunno({
+      EMAIL: 'senza-piani@school.it',
+      COGNOMENOME: 'SENZA PIANI',
+      CLASSE: '5A',
+      RELIGIONE: 'SI',
+      ATTIVO: true
+    })
+  ];
+  const piani = [
+    new Piano({ STUDENTE: 'con-piani@school.it', TIPO: 'PEI', PARAMETRI: null }),
+    new Piano({ STUDENTE: 'con-piani@school.it', TIPO: 'PDP_BES', PARAMETRI: null })
+  ];
+  const alunni = {
+    findAttivi: () => studenti,
+    getPiani: (alunno: Alunno) => (alunno.email.value === 'con-piani@school.it' ? piani : [])
+  };
+  const configs = {
+    findById: (id: string) =>
+      id === 'PIANI_PERSONALIZZATI' && options.missingConfig !== true
+        ? new ConfigurazioneDocumento({
+            ID: id,
+            TIPO: options.configTipo ?? 'PIANO_PERS',
+            GENERATORE: 'DOC_PERSONALIZZATO'
+          })
+        : null
+  };
+  const generated: Array<{
+    studente: string;
+    tipo: TipoPiano;
+    confDocId: string;
+    jobId?: string;
+  }> = [];
+  const documenti = {
+    generateForPiano: (studente: string, tipo: TipoPiano, confDocId: string, jobId?: string) => {
+      generated.push({ studente, tipo, confDocId, jobId });
+      if (tipo === options.failForTipo) throw new Error('template non trovato');
+      return { fileId: `file_${studente}_${tipo}`, status: 'GENERATO' };
+    }
+  };
+  const EmptyClassi = { findAttive: () => [] };
+  const service = new DocumentBatchService(
+    EmptyClassi as unknown as IClasseRepository,
+    alunni as unknown as IAlunnoRepository,
+    configs,
+    documenti as unknown as DocumentGenerationService,
+    options.monitor
+  );
+  return { service, generated, studenti, piani };
+}
+
+test('PIANI batch yields one persisted checkpoint and one progress update per active-student plan', () => {
+  const monitor = new FakeProcessMonitor();
+  const { service, generated } = wirePiani({ monitor });
+  const gen = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_piani'
+  });
+  const checkpoints: BatchCheckpoint[] = [];
+  let step = gen.next();
+  while (!step.done) {
+    checkpoints.push(step.value);
+    step = gen.next();
+  }
+
+  expect(generated).toEqual([
+    {
+      studente: 'con-piani@school.it',
+      tipo: TipoPiano.PEI,
+      confDocId: 'PIANI_PERSONALIZZATI',
+      jobId: 'job_piani'
+    },
+    {
+      studente: 'con-piani@school.it',
+      tipo: TipoPiano.PDP_BES,
+      confDocId: 'PIANI_PERSONALIZZATI',
+      jobId: 'job_piani'
+    }
+  ]);
+  expect(checkpoints).toHaveLength(2);
+  expect(checkpoints.map((checkpoint) => checkpoint.percentage)).toEqual([50, 100]);
+  expect(checkpoints[0]).toMatchObject({
+    nextIndex: 1,
+    planTargets: [
+      { studente: 'con-piani@school.it', tipo: TipoPiano.PEI },
+      { studente: 'con-piani@school.it', tipo: TipoPiano.PDP_BES }
+    ]
+  });
+  expect(monitor.progress.map(({ percentage }) => percentage)).toEqual([50, 100]);
+  expect(monitor.progress.map(({ message }) => message)).toEqual([
+    'Generazione piano 1/2 con-piani@school.it:PEI (GENERATO)',
+    'Generazione piano 2/2 con-piani@school.it:PDP_BES (GENERATO)'
+  ]);
+  expect(step.value).toEqual({
+    success: true,
+    totale: 2,
+    processed: ['con-piani@school.it:PEI', 'con-piani@school.it:PDP_BES'],
+    errori: []
+  });
+});
+
+test('PIANI resume consumes its persisted target order without querying current student plans again', () => {
+  const { service, generated, studenti, piani } = wirePiani();
+  const firstRun = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_piani'
+  });
+  const first = firstRun.next();
+  expect(first.done).toBe(false);
+
+  studenti.splice(0);
+  piani.reverse();
+  const resumed = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_piani',
+    resumeState: first.value
+  });
+  let resumedStep = resumed.next();
+  while (!resumedStep.done) resumedStep = resumed.next();
+
+  expect(generated).toEqual([
+    {
+      studente: 'con-piani@school.it',
+      tipo: TipoPiano.PEI,
+      confDocId: 'PIANI_PERSONALIZZATI',
+      jobId: 'job_piani'
+    },
+    {
+      studente: 'con-piani@school.it',
+      tipo: TipoPiano.PDP_BES,
+      confDocId: 'PIANI_PERSONALIZZATI',
+      jobId: 'job_piani'
+    }
+  ]);
+  expect(resumedStep.value.processed).toEqual([
+    'con-piani@school.it:PEI',
+    'con-piani@school.it:PDP_BES'
+  ]);
+});
+
+test('PIANI isolates one plan error with the email:TIPO prefix and continues remaining targets', () => {
+  const monitor = new FakeProcessMonitor();
+  const { service, generated } = wirePiani({ monitor, failForTipo: TipoPiano.PEI });
+  const gen = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_piani'
+  });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(generated.map(({ tipo }) => tipo)).toEqual([TipoPiano.PEI, TipoPiano.PDP_BES]);
+  expect(step.value).toEqual({
+    success: false,
+    totale: 2,
+    processed: ['con-piani@school.it:PEI', 'con-piani@school.it:PDP_BES'],
+    errori: ['con-piani@school.it:PEI: template non trovato']
+  });
+  expect(monitor.progress.map(({ message }) => message)).toEqual([
+    'Errore piano 1/2 con-piani@school.it:PEI: template non trovato',
+    'Generazione piano 2/2 con-piani@school.it:PDP_BES (GENERATO)'
+  ]);
+});
+
+test.each([
+  {
+    missingConfig: true,
+    configTipo: undefined,
+    error: 'CONF_DOC PIANI_PERSONALIZZATI non trovato'
+  },
+  {
+    missingConfig: false,
+    configTipo: 'VERBALE',
+    error: 'CONF_DOC PIANI_PERSONALIZZATI deve avere TIPO PIANO_PERS'
+  }
+])('PIANI stops before job startup on invalid configuration: $error', (scenario) => {
+  const monitor = new FakeProcessMonitor();
+  const { service, generated } = wirePiani({ monitor, ...scenario });
+  const gen = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_piani'
+  });
+
+  expect(() => gen.next()).toThrow(ConfigurationError);
+  expect(() =>
+    wirePiani({ ...scenario })
+      .service.batchGenerateHandler({ confDocId: 'PIANI_PERSONALIZZATI' })
+      .next()
+  ).toThrow(scenario.error);
+  expect(generated).toEqual([]);
+  expect(monitor.registered).toEqual([]);
+});
 
 test('handler yields one resumable checkpoint per active class and returns the total', () => {
   const { service, generated } = wire();

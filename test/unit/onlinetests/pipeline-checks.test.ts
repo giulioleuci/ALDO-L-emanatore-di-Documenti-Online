@@ -123,7 +123,8 @@ function sampleSeedTables(
             NOREPLY: false,
             COLORE_HEADER: '#1565C0',
             CONDIZIONE: '',
-            POST_PROCESSO: null
+            POST_PROCESSO: null,
+            [COL_CONF_MAIL.ALLEGATI]: '[]'
           }
         ]
       : []

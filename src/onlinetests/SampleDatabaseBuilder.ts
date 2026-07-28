@@ -365,7 +365,8 @@ export class SampleDatabaseBuilder {
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null // PostProcessEmailStep gates on `!= null`, not truthiness
+      [COL_CONF_MAIL.POST_PROCESSO]: null, // PostProcessEmailStep gates on `!= null`, not truthiness
+      [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
   }
 

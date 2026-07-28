@@ -1,4 +1,5 @@
 import type { Row } from '../../src/infrastructure/db/Database';
+import { COL_CONF_MAIL } from '../../src/config/schema';
 
 export function fixtureTables(): Record<string, Row[]> {
   return {
@@ -223,7 +224,8 @@ export function fixtureTables(): Record<string, Row[]> {
         NOREPLY: true,
         COLORE_HEADER: '',
         CONDIZIONE: null,
-        POST_PROCESSO: null
+        POST_PROCESSO: null,
+        [COL_CONF_MAIL.ALLEGATI]: '[]'
       },
       {
         ID: 'CARENZE_FAM',
@@ -235,7 +237,8 @@ export function fixtureTables(): Record<string, Row[]> {
         NOREPLY: false,
         COLORE_HEADER: '#ff0000',
         CONDIZIONE: 'carenze > 0',
-        POST_PROCESSO: null
+        POST_PROCESSO: null,
+        [COL_CONF_MAIL.ALLEGATI]: '[]'
       },
       {
         ID: 'CARENZE_NOTIFICA',
@@ -249,7 +252,8 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_HEADER: '',
         CONDIZIONE: null,
         POST_PROCESSO:
-          '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]'
+          '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]',
+        [COL_CONF_MAIL.ALLEGATI]: '[]'
       }
     ],
     CONF_IMP: [

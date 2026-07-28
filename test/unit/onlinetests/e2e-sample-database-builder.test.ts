@@ -272,16 +272,17 @@ test('1A and 2B share the same coordinatore, so coordinatore-aggregated emails c
   expect(coordOf(CLASSE_C)).not.toBe(e2eDocenteEmail(1));
 });
 
-test('seeds 5 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genitori, piani reuse, lavoro/coordinatori', () => {
+test('seeds 6 CONF_MAIL rows: five normal patterns with explicit empty ALLEGATI plus one static attachment fixture', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
-  expect(confMail).toHaveLength(5);
+  expect(confMail).toHaveLength(6);
   expect(confMail.map((c) => c[COL_CONF_MAIL.PROCESSO]).sort()).toEqual(
     [
       'PER_CARENZA_GENITORI',
+      'PER_CDC',
       'PER_CDC',
       'PER_COORDINATORE',
       'PER_COORDINATORE',
@@ -289,6 +290,15 @@ test('seeds 5 CONF_MAIL rows: verbale/coordinatori, condotta/CdC, carenza/genito
     ].sort()
   );
   expectCompleteRows(confMail, COL_CONF_MAIL);
+  const staticAttachment = confMail.find(
+    (c) => c[COL_CONF_MAIL.ID] === 'E2E_MAIL_STATIC_ALLEGATO'
+  )!;
+  expect(staticAttachment[COL_CONF_MAIL.ALLEGATI]).toBe(
+    JSON.stringify(['1E2EStaticAttachmentFixtureFileId'])
+  );
+  for (const row of confMail.filter((c) => c !== staticAttachment)) {
+    expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
+  }
 });
 
 test('does not emit the obsolete REGISTRA_UTENTI column in CONF_DOC rows', () => {

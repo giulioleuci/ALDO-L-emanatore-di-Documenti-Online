@@ -116,6 +116,8 @@ export const CONF_MAIL_CONDOTTA = 'E2E_MAIL_CONDOTTA';
 export const CONF_MAIL_CARENZA = 'E2E_MAIL_CARENZA';
 export const CONF_MAIL_PIANI = 'E2E_MAIL_PIANI';
 export const CONF_MAIL_LAVORO = 'E2E_MAIL_LAVORO';
+export const CONF_MAIL_STATIC_ALLEGATO = 'E2E_MAIL_STATIC_ALLEGATO';
+export const STATIC_ATTACHMENT_FILE_ID = '1E2EStaticAttachmentFixtureFileId';
 export const CONF_IMP_ASL = 'E2E_IMPORT_ASL';
 
 export function e2eDocenteEmail(i: number): string {
@@ -817,7 +819,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null
+      [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_CONDOTTA,
@@ -834,7 +837,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null
+      [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_CARENZA,
@@ -853,7 +857,8 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
       [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null
+      [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_PIANI,
@@ -893,7 +898,8 @@ export class E2eSampleDatabaseBuilder {
             [COL_LOG_DOCS.CLASSI]: '{{destinatario.contesto.classiCompetenza | join}}'
           }
         }
-      ])
+      ]),
+      [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_LAVORO,
@@ -912,7 +918,21 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null
+      [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.ALLEGATI]: '[]'
+    });
+    sample.appendRow(TABLE.CONF_MAIL, {
+      [COL_CONF_MAIL.ID]: CONF_MAIL_STATIC_ALLEGATO,
+      [COL_CONF_MAIL.OGGETTO]: '[E2E] Allegato statico di prova',
+      [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
+      [COL_CONF_MAIL.BOX_CFG]: '[]',
+      [COL_CONF_MAIL.TESTO]: '<p>Messaggio con allegato statico di prova.</p>',
+      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.NOREPLY]: false,
+      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+      [COL_CONF_MAIL.CONDIZIONE]: '',
+      [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.ALLEGATI]: JSON.stringify([STATIC_ATTACHMENT_FILE_ID])
     });
   }
 

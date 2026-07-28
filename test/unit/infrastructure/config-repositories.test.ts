@@ -4,6 +4,7 @@ import { ConfigurazioneImportRepository } from '../../../src/infrastructure/repo
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { ProcessoInvio } from '../../../src/domain/value-objects/enums';
+import { COL_CONF_MAIL } from '../../../src/config/schema';
 
 function db() {
   return new FakeDatabase(fixtureTables());
@@ -34,6 +35,15 @@ test('CONF_MAIL: findByProcesso + boxes + header default + noreply (06 §9)', ()
   expect(fam.getColoreHeader()).toBe('#ff0000');
   expect(fam.getBoxes()).toEqual([]); // null BOX_CFG
   expect(fam.getCondizione()).toBe('carenze > 0');
+});
+
+test('CONF_MAIL repository fixtures explicitly store an empty ALLEGATI JSON array for every existing pattern', () => {
+  const rows = fixtureTables().CONF_MAIL!;
+
+  for (const row of rows) {
+    expect(Object.keys(row).sort()).toEqual(Object.values(COL_CONF_MAIL).sort());
+    expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
+  }
 });
 
 test('CONF_IMP: findAttivi + findByTarget + config parse (06 §10)', () => {

@@ -1,5 +1,11 @@
 import { SampleDatabaseBuilder } from '../../../src/onlinetests/SampleDatabaseBuilder';
-import { COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD, TABLE } from '../../../src/config/schema';
+import {
+  COL_CONF_DOC,
+  COL_CONF_MAIL,
+  COL_LOG_DOCS,
+  COL_LOG_FOLD,
+  TABLE
+} from '../../../src/config/schema';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 
 function fakeFactory() {
@@ -104,6 +110,16 @@ describe('SampleDatabaseBuilder', () => {
       materie: ''
     });
     expect(JSON.parse(String(confDoc[0]![COL_CONF_DOC.REGISTRA_FOLD]))).toEqual({});
+  });
+
+  it('seeds its CONF_MAIL row with an explicit empty ALLEGATI JSON array', () => {
+    const factory = fakeFactory();
+    const drive = new FakeDriveFacade();
+    new SampleDatabaseBuilder(factory, drive).build();
+
+    const row = factory.__sheets.get(TABLE.CONF_MAIL)!.rows[0]!;
+    expect(Object.keys(row).sort()).toEqual(Object.values(COL_CONF_MAIL).sort());
+    expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
   });
 
   it('names artifacts with a fixed (non-timestamped) base name, so repeated runs resolve the same Drive resources (ref ALDO_GLF_AUDIT_RESULTS.md K-1)', () => {

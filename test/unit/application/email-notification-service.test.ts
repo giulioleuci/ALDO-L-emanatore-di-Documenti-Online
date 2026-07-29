@@ -162,6 +162,35 @@ test('PER_COORDINATORE: one target per coordinatore, partner classes excluded, m
   expect(targets[0]!.classiCompetenza.sort()).toEqual(['1F', '5A']);
 });
 
+test('PER_COORDINATORE routes a parent without coordinatore to its partners', () => {
+  const { db, gmail } = wire();
+  const parent = Classe.fromData({ ID: '3C', ANNO: 3, INDIRIZZO: 'LICEO' });
+  const scientifico = Classe.fromData({ ID: '3C-S', ANNO: 3, INDIRIZZO: 'SCIENTIFICO' });
+  const classico = Classe.fromData({ ID: '3C-C', ANNO: 3, INDIRIZZO: 'CLASSICO' });
+  const classiStub = {
+    findAttive: () => [parent],
+    getArticolazione: () => ({ parent: null }),
+    getGruppoArticolazione: () => [parent, scientifico, classico],
+    getCoordinatori: (classe: Classe) => {
+      if (classe.id === '3C-S') {
+        return [Docente.fromData({ EMAIL: 'scientifico@school.it', DIPART: 'X' })];
+      }
+      if (classe.id === '3C-C') {
+        return [Docente.fromData({ EMAIL: 'classico@school.it', DIPART: 'X' })];
+      }
+      return [];
+    }
+  } as unknown as ClasseRepository;
+  const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
+
+  const targets = service.enumerateTargets(conf('PER_COORDINATORE'));
+  const scientificoTarget = targets.find((target) => target.docenteEmail === 'scientifico@school.it')!;
+  const classicoTarget = targets.find((target) => target.docenteEmail === 'classico@school.it')!;
+
+  expect(scientificoTarget.classiCompetenza).toEqual(['3C-S']);
+  expect(classicoTarget.classiCompetenza).toEqual(['3C-C']);
+});
+
 test('PER_DOCENTE: one target per docente with at least one active class (articulated group merged)', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_DOCENTE'));

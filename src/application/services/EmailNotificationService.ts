@@ -286,6 +286,17 @@ export class EmailNotificationService {
   }
 
   /**
+   * An articulated parent is the email entry point, but the CDU must include
+   * documents owned by every partner class in its group.
+   */
+  private classiCompetenza(classe: Classe): string[] {
+    if (this.deps.classi.getArticolazione(classe) === null) {
+      return [classe.id ?? ''];
+    }
+    return this.deps.classi.getGruppoArticolazione(classe).map((membro) => membro.id ?? '');
+  }
+
+  /**
    * Effective council emails for an entry-point classe, deduped and sorted by
    * cognome (deterministic emails[0], ref 11 §14). The teaching-assignment port
    * partner-routes articulated classes internally, so one call is sufficient.
@@ -320,12 +331,27 @@ export class EmailNotificationService {
   private targetsPerCoordinatore(): EmailTarget[] {
     const perCoordinatore = new Map<string, string[]>();
     for (const classe of this.classiEntryPoint()) {
-      for (const coord of this.deps.classi.getCoordinatori(classe)) {
-        const email = coord.id ?? '';
-        if (email === '') continue;
-        const classi = perCoordinatore.get(email) ?? [];
-        classi.push(classe.id ?? '');
-        perCoordinatore.set(email, classi);
+      const diretti = this.deps.classi.getCoordinatori(classe);
+      const destinatari = diretti.length > 0
+        ? diretti.flatMap((docente) =>
+            docente.id === null
+              ? []
+              : [{ email: docente.id, classi: [classe.id ?? ''] }]
+          )
+        : this.deps.classi
+            .getGruppoArticolazione(classe)
+            .filter((membro) => membro.id !== classe.id)
+            .flatMap((partner) =>
+              this.deps.classi.getCoordinatori(partner).flatMap((docente) =>
+                docente.id === null || partner.id === null
+                  ? []
+                  : [{ email: docente.id, classi: [partner.id] }]
+              )
+            );
+      for (const destinatario of destinatari) {
+        const classi = perCoordinatore.get(destinatario.email) ?? [];
+        classi.push(...destinatario.classi);
+        perCoordinatore.set(destinatario.email, classi);
       }
     }
     return [...perCoordinatore.entries()].map(([email, classi]) => ({
@@ -343,7 +369,7 @@ export class EmailNotificationService {
     for (const classe of this.classiEntryPoint()) {
       for (const email of this.cdcEmails(classe)) {
         const classi = perDocente.get(email) ?? [];
-        classi.push(classe.id ?? '');
+        classi.push(...this.classiCompetenza(classe));
         perDocente.set(email, classi);
       }
     }
@@ -364,7 +390,7 @@ export class EmailNotificationService {
       tipoTarget: 'classe' as const,
       target: classe.id ?? '',
       emails: this.cdcEmails(classe, gestioneSupplenti),
-      classiCompetenza: [classe.id ?? '']
+      classiCompetenza: this.classiCompetenza(classe)
     }));
   }
 

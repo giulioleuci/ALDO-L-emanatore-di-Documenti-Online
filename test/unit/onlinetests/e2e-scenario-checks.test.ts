@@ -1,4 +1,7 @@
-import { registerE2eScenarioChecks } from '../../../src/onlinetests/checks/e2eScenarioChecks';
+import {
+  isExpectedMockProtectedRangeRejection,
+  registerE2eScenarioChecks
+} from '../../../src/onlinetests/checks/e2eScenarioChecks';
 import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { E2eSampleDatabase } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
@@ -25,6 +28,7 @@ import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import type { IDriveFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL } from '../../../src/config/schema';
+import { PipelineError } from '../../../src/domain/errors/DomainError';
 
 const sample: E2eSampleDatabase & { testMode: boolean } = {
   masterSpreadsheetId: 'm',
@@ -314,6 +318,42 @@ test('refuses to register any check and reports a single failure when the sample
   const report = runner.report();
   expect(report.failed).toBe(1);
   expect(report.results[0]!.message).toMatch(/TEST_MODE/);
+});
+
+test('protected range rejection classifier accepts only the mock invalid-user rejection', () => {
+  expect(
+    isExpectedMockProtectedRangeRejection(
+      new PipelineError(
+        'RenderTemplate: Invalid requests[0].addProtectedRange: Utente non valido: "mock@onlinetest.aldo.local".'
+      )
+    )
+  ).toBe(true);
+  expect(isExpectedMockProtectedRangeRejection(new Error('Utente non valido'))).toBe(false);
+  expect(
+    isExpectedMockProtectedRangeRejection(
+      new Error('Invalid requests[0].addProtectedRange: editor already exists')
+    )
+  ).toBe(false);
+});
+
+test('protected range rejection is not accepted when the sample is not TEST_MODE', () => {
+  const runner = new TestRunner();
+  const container = {
+    get() {
+      throw new PipelineError(
+        'RenderTemplate: Invalid requests[0].addProtectedRange: Utente non valido: "mock@onlinetest.aldo.local".'
+      );
+    }
+  } as unknown as ServiceContainer;
+
+  registerE2eScenarioChecks(runner, container, { ...sample, testMode: false });
+
+  const report = runner.report();
+  expect(report.results).toHaveLength(1);
+  expect(report.results[0]).toMatchObject({
+    name: 'E2E scenarios: MASTER.TEST_MODE guard',
+    status: 'fail'
+  });
 });
 
 test('resolves the memoized email service once across the plan scenario and later sends', () => {

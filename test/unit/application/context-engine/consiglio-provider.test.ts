@@ -61,7 +61,14 @@ test('CDC coordinatore VM: materie, roles and descrizione', () => {
     appellativo: 'Prof.'
   });
   expect(rossi.materie).toEqual([
-    { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
+    {
+      sigla: 'MATE',
+      nome: 'Matematica',
+      colore: '',
+      specificita: null,
+      classeId: '5A',
+      kind: 'MAIN'
+    }
   ]);
   expect(rossi.ruoli).toEqual({
     isCoordinatore: true,

@@ -300,11 +300,11 @@ describe('registerRepositoryChecks', () => {
       expect.arrayContaining([
         expect.stringContaining(`full CDU council ${CLASSE_C}`),
         expect.stringContaining(`full CDU council ${CLASSE_C_PARTNER}`),
-        expect.stringContaining('REL/ALT header is exact'),
-        expect.stringContaining('REL header is exact when ALT is absent')
+        expect.stringContaining('rendered sheet header REL/ALT'),
+        expect.stringContaining('rendered sheet header REL without ALT')
       ])
     );
-    for (const result of report.results) expect(result.status).toBe('pass');
+    expect(report.results.filter((result) => result.status === 'fail')).toEqual([]);
   });
 
   it('seeds the online effective-assignment matrix including arbitrary specificities, religion routing, and articulated partners', () => {

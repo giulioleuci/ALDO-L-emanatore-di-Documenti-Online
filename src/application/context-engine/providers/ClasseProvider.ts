@@ -85,7 +85,7 @@ export class ClasseProvider implements ContextProvider {
     const materie = this.classi.getMaterieArticolazione(classe);
     return {
       partner: config?.partner?.value ?? null,
-      partners: config?.isParent() === true ? config.partners.map((p) => p.value) : null,
+      partners: this.classi.orderedPartners(classe).map((partner) => partner.id ?? ''),
       parent: config?.parent?.value ?? null,
       materieCondivise: materie?.condivise ?? [],
       materieSeparatePrimoGruppo: materie?.separatePrimoGruppo ?? [],

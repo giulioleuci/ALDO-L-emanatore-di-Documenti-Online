@@ -13,7 +13,6 @@ import {
   e2eAlunnoEmail,
   e2eDocenteEmail
 } from '../E2eSampleDatabaseBuilder';
-import { buildElencoMaterieConPermessi } from '../../application/context-engine/ElencoMaterieConPermessi';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -72,6 +71,19 @@ const EXPECTED_STUDENT_COUNCILS = [
   }
 ] as const;
 
+/** Fixed from the articulated E2E fixture, deliberately independent of rendered items. */
+const EXPECTED_ARTICULATED_COLUMNS = [
+  { header: 'REL', classeId: null, subjects: ['IRC'] },
+  { header: 'MAT', classeId: CLASSE_C, subjects: ['MAT'] },
+  { header: 'ITA', classeId: CLASSE_C, subjects: ['ITA'] },
+  { header: 'ING', classeId: CLASSE_C, subjects: ['ING'] },
+  { header: 'STO', classeId: CLASSE_C, subjects: ['STO'] },
+  { header: 'MAT', classeId: CLASSE_C_PARTNER, subjects: ['MAT'] },
+  { header: 'ITA', classeId: CLASSE_C_PARTNER, subjects: ['ITA'] },
+  { header: 'ING', classeId: CLASSE_C_PARTNER, subjects: ['ING'] },
+  { header: 'STO', classeId: CLASSE_C_PARTNER, subjects: ['STO'] }
+] as const;
+
 function emails(values: Iterable<string>): string[] {
   return [...values].sort();
 }
@@ -114,24 +126,42 @@ function assignmentRecipients(assignments: TeachingAssignment[]): string[] {
   return emails(unique(assignmentTuples(assignments).map((tuple) => tuple.actor)));
 }
 
-function councilTuples(
-  assignments: TeachingAssignment[],
-  cdu: ReturnType<ContextBuilder['build']>
-): string[] {
-  const classeId = cdu.focus.classe?.anagrafica.nome ?? CLASSE_A;
+function councilTuple(
+  docente: { anagrafica: { email: string } },
+  materia: { sigla: string; specificita: string | null; classeId?: string; kind?: string }
+): string {
+  return [
+    materia.classeId ?? 'missing',
+    materia.sigla,
+    materia.kind ?? 'missing',
+    materia.specificita ?? 'null',
+    docente.anagrafica.email
+  ].join('|');
+}
+
+function councilTuples(cdu: ReturnType<ContextBuilder['build']>): string[] {
   return (cdu.focus.classe?.consiglioDiClasse ?? []).flatMap((docente) =>
-    docente.materie.map((materia) => {
-      const tuple = assignmentTuples(assignments).find(
-        (candidate) =>
-          candidate.materia === materia.sigla &&
-          candidate.specifica === materia.specificita &&
-          candidate.actor === docente.anagrafica.email
-      );
-      return tuple === undefined
-        ? `${classeId}|${materia.sigla}|unknown|${materia.specificita ?? 'null'}|${docente.anagrafica.email}`
-        : tupleKey(tuple);
-    })
+    docente.materie.map((materia) => councilTuple(docente, materia))
   );
+}
+
+function councilRows(cdu: ReturnType<ContextBuilder['build']>): string[] {
+  return (cdu.focus.classe?.consiglioDiClasse ?? []).map((docente) =>
+    `${docente.anagrafica.email}:${docente.materie
+      .map((materia) => councilTuple(docente, materia))
+      .sort()
+      .join(',')}`
+  );
+}
+
+function expectedCouncilRows(assignments: TeachingAssignment[]): string[] {
+  const rows = new Map<string, string[]>();
+  for (const tuple of assignmentTuples(assignments)) {
+    const row = rows.get(tuple.actor) ?? [];
+    row.push(tupleKey(tuple));
+    rows.set(tuple.actor, row);
+  }
+  return [...rows.entries()].map(([actor, tuples]) => `${actor}:${tuples.sort().join(',')}`);
 }
 
 function assertCouncilTuples(
@@ -140,10 +170,22 @@ function assertCouncilTuples(
   cdu: ReturnType<ContextBuilder['build']>
 ): void {
   const expected = assignmentTuples(assignments).map(tupleKey).sort();
-  const actual = councilTuples(assignments, cdu).sort();
+  const actual = councilTuples(cdu).sort();
   if (JSON.stringify(expected) !== JSON.stringify(actual)) {
     throw new ValidationError(
       `${consumer}: expectedTuples=${JSON.stringify(expected)}, actualTuples=${JSON.stringify(actual)}`
+    );
+  }
+  const expectedRows = expectedCouncilRows(assignments).sort();
+  const actualRows = councilRows(cdu).sort();
+  if (expectedRows.length !== actualRows.length) {
+    throw new ValidationError(
+      `${consumer}: expectedCouncilLength=${expectedRows.length}, actualCouncilLength=${actualRows.length}`
+    );
+  }
+  if (JSON.stringify(expectedRows) !== JSON.stringify(actualRows)) {
+    throw new ValidationError(
+      `${consumer}: expectedRows=${JSON.stringify(expectedRows)}, actualRows=${JSON.stringify(actualRows)}`
     );
   }
 }
@@ -218,31 +260,65 @@ export function registerEffectiveAssignmentConsumerChecks(
   );
   const roles = new RisolutoreRuoliService(db, resolver);
 
-  runner.add('Effective assignment consumers: REL/ALT header is exact', sample.sampleSpreadsheetUrl, () => {
-    const special = buildElencoMaterieConPermessi([], true)[0];
-    if (
-      special?.sigla !== 'REL/ALT' ||
-      special.nome !== 'Religione/Alternativa' ||
-      JSON.stringify(special.roles) !== JSON.stringify(['IRC', 'ALT'])
-    ) {
-      throw new ValidationError(`expected REL/ALT header, actual=${JSON.stringify(special)}`);
+  const renderedSheetHeaders = (sheetCdu: ReturnType<ContextBuilder['build']>): string[] => {
+    const sheets = {
+      getSheetInfo: (): SpreadsheetSheetInfo[] => [
+        { name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }
+      ],
+      protectRanges: (): SpreadsheetProtectResult => ({
+        spreadsheetId: 'header-sheet', protectedCount: 0, protectedRangeIds: []
+      })
+    } as unknown as SpreadsheetService;
+    const rendered: SheetColumnLayout[] = [];
+    const templates = {
+      processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
+        const groups = context['materieColonne'] as {
+          group1: Array<Record<string, unknown>>;
+          group2?: Array<Record<string, unknown>>;
+          group3?: Array<Record<string, unknown>>;
+        };
+        const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
+          (item, index) => ({
+            sheetName: 'Sheet1',
+            column: index + 1,
+            header: typeof item['header'] === 'string' ? item['header'] : '',
+            isLabel: false,
+            item
+          })
+        );
+        rendered.push(...layout);
+        return layout;
+      }
+    } as unknown as ITemplateEngine;
+    const config = ConfigurazioneDocumento.fromData({
+      ID: 'MATRIX_HEADERS', TIPO: 'MATRIX', GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+      CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
+      DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
+    });
+    new SheetMaterieConPermessiGeneratorStrategy(sheets, new MateriaRepository(db), templates, roles).render(
+      'header-sheet', sheetCdu, config
+    );
+    return rendered.map((column) => String(column.header));
+  };
+
+  runner.add('Effective assignment consumers: rendered sheet header REL/ALT', sample.sampleSpreadsheetUrl, () => {
+    const headers = renderedSheetHeaders(cdu);
+    if (headers[0] !== 'REL/ALT') {
+      throw new ValidationError(`expected rendered REL/ALT header, actual=${JSON.stringify(headers)}`);
     }
   });
 
-  runner.add(
-    'Effective assignment consumers: REL header is exact when ALT is absent',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const special = buildElencoMaterieConPermessi([], false)[0];
-      if (
-        special?.sigla !== 'REL' ||
-        special.nome !== 'Religione' ||
-        JSON.stringify(special.roles) !== JSON.stringify(['IRC'])
-      ) {
-        throw new ValidationError(`expected REL header, actual=${JSON.stringify(special)}`);
-      }
+  runner.add('Effective assignment consumers: rendered sheet header REL without ALT', sample.sampleSpreadsheetUrl, () => {
+    const noAltCdu = contextBuilder.build(
+      { target: CLASSE_C, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
+      recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
+    );
+    const headers = renderedSheetHeaders(noAltCdu);
+    if (headers[0] !== 'REL') {
+      throw new ValidationError(`expected rendered REL header, actual=${JSON.stringify(headers)}`);
     }
-  );
+  });
 
   runner.add(
     'Effective assignment consumers: full CDU council',
@@ -590,19 +666,40 @@ export function registerEffectiveAssignmentConsumerChecks(
         if (requests.length !== columnItems.length) {
           throw new ValidationError(`consumer=spreadsheet column ACL ${classeId}, expectedColumns=${columnItems.length}, actualColumns=${requests.length}`);
         }
+        if (columnItems.length !== EXPECTED_ARTICULATED_COLUMNS.length) {
+          throw new ValidationError(
+            `consumer=spreadsheet column ACL ${classeId}, expectedFixtureColumns=${JSON.stringify(EXPECTED_ARTICULATED_COLUMNS)}, actualColumns=${JSON.stringify(columnItems)}`
+          );
+        }
         for (const [index, item] of columnItems.entries()) {
-          const subjects = Array.isArray(item['roles']) ? item['roles'] : [item['sigla']];
-          const owner = typeof item['classeId'] === 'string' ? item['classeId'] : null;
+          const expectedColumn = EXPECTED_ARTICULATED_COLUMNS[index]!;
+          const actualHeader =
+            typeof item['header'] === 'string'
+              ? item['header']
+              : typeof item['sigla'] === 'string'
+                ? item['sigla']
+                : '';
+          const actualOwner = typeof item['classeId'] === 'string' ? item['classeId'] : null;
+          if (actualHeader !== expectedColumn.header || actualOwner !== expectedColumn.classeId) {
+            throw new ValidationError(
+              `consumer=spreadsheet column ACL ${classeId}, column=${index + 1}, expectedHeader=${expectedColumn.header}, actualHeader=${actualHeader}, expectedOwner=${expectedColumn.classeId ?? 'shared'}, actualOwner=${actualOwner ?? 'shared'}, actualColumns=${JSON.stringify(columnItems)}`
+            );
+          }
+          const expectedSubjects: readonly string[] = expectedColumn.subjects;
           const expectedEditors = emails(unique([
             ...coordinators,
             ...assignmentTuples(partnerAssignments)
-              .filter((tuple) => subjects.includes(tuple.materia) && (owner === null || tuple.classeId === owner))
+              .filter(
+                (tuple) =>
+                  expectedSubjects.includes(tuple.materia) &&
+                  (expectedColumn.classeId === null || tuple.classeId === expectedColumn.classeId)
+              )
               .map((tuple) => tuple.actor)
           ]));
           const actualEditors = emails(requests[index]?.editors?.users ?? []);
           if (JSON.stringify(expectedEditors) !== JSON.stringify(actualEditors)) {
             throw new ValidationError(
-              `consumer=spreadsheet column ACL ${classeId}, column=${index + 1}, owner=${owner ?? 'shared'}, subjects=${subjects.join('|')}, expected=${expectedEditors.join('|')}, actual=${actualEditors.join('|')}`
+              `consumer=spreadsheet column ACL ${classeId}, column=${index + 1}, owner=${expectedColumn.classeId ?? 'shared'}, subjects=${expectedColumn.subjects.join('|')}, expected=${expectedEditors.join('|')}, actual=${actualEditors.join('|')}`
             );
           }
         }

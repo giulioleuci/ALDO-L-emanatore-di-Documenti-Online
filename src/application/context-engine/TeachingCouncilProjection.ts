@@ -228,7 +228,9 @@ function councilVmStrategy(
             materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
             assignment.slot.materia,
           colore: '',
-          specificita: assignment.slot.specifica
+          specificita: assignment.slot.specifica,
+          classeId: assignment.classeId,
+          kind: assignment.slot.kind
         })),
         ruoli: {
           isCoordinatore,

@@ -95,5 +95,5 @@ test('ClasseProvider: articulated partner points to parent + counterpart', () =>
   const c = build('1F-LSO').focus.classe!;
   expect(c.articolazione?.parent).toBe('1F');
   expect(c.articolazione?.partner).toBe('1F-LSS');
-  expect(c.articolazione?.partners).toBeNull();
+  expect(c.articolazione?.partners).toEqual(['1F-LSO', '1F-LSS']);
 });

@@ -31,9 +31,10 @@ describe('vendored GasLibraryFactory public API', () => {
     expect(interceptor).toBeInstanceOf(ContextInterceptor);
 
     const assignmentSource = new WideRowAssignmentSource();
-    expect(assignmentSource).toBeInstanceOf(AssignmentSource);
-    expect(typeof AssignmentSource.prototype.getAssignments).toBe('function');
-    expect(AssignmentSource.prototype.getAssignmentsForRole).toBeUndefined();
+    expect(assignmentSource).toBeInstanceOf(EffectiveAssignmentSource);
+    expect(assignmentSource).not.toBeInstanceOf(AssignmentSource);
+    expect(typeof EffectiveAssignmentSource.prototype.getAssignments).toBe('function');
+    expect(typeof AssignmentSource.prototype.getAssignmentsForRole).toBe('function');
 
     const result = new EffectiveAssignmentResult({
       slot,
@@ -55,7 +56,7 @@ describe('vendored GasLibraryFactory public API', () => {
 
     const exportedConstructors: unknown[] = [
       EffectiveAssignmentResult,
-      AssignmentSource,
+      EffectiveAssignmentSource,
       OverrideSource,
       ActorSource,
       WideRowAssignmentSource,

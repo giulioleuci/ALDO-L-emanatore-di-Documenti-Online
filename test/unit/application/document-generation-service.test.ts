@@ -1,9 +1,11 @@
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
 import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
-import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
+import {
+  composeContextBuilder,
+  composeRisolutoreRuoli
+} from '../../../src/config/ApplicationComposition';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import type { GeneratorStrategy } from '../../../src/application/strategies/GeneratorStrategy';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
@@ -53,12 +55,12 @@ function wire(
   const service = new DocumentGenerationService({
     db,
     drive,
-    contextBuilder: ContextEngineFactory.create(db),
+    contextBuilder: composeContextBuilder(db),
     strategyRegistry: registry,
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
-    roleResolver: new RisolutoreRuoliService(db),
+    roleResolver: composeRisolutoreRuoli(db),
     now: options.now ?? new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };

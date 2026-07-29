@@ -15,7 +15,10 @@ import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import type { ContextBuilder } from '../../../src/application/context-engine/ContextBuilder';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
+import {
+  composeContextBuilder,
+  composeEmailNotificationService
+} from '../../../src/config/ApplicationComposition';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
 import { AlunnoRepository } from '../../../src/infrastructure/repositories/AlunnoRepository';
@@ -43,7 +46,7 @@ function wire(extraConfMail: Row[] = [], drive = new FakeDriveFacade()) {
   tables['CONF_MAIL'] = [...tables['CONF_MAIL']!, ...extraConfMail];
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const service = EmailNotificationService.create(
+  const service = composeEmailNotificationService(
     db,
     gmail,
     new FakeTemplateEngine(),
@@ -101,7 +104,7 @@ function fullDeps(
     drive: new FakeDriveFacade(),
     templates: new FakeTemplateEngine(),
     now: NOW,
-    contextBuilder: ContextEngineFactory.create(db, master, teachingAssignments),
+    contextBuilder: composeContextBuilder(db, master, teachingAssignments),
     expressionEngine: new ExpressionEngineFacade(),
     docenti: new DocenteRepository(db),
     alunni: new AlunnoRepository(db),
@@ -812,7 +815,7 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const db = new FakeDatabase(tables);
     const gmail = new FakeGmailFacade();
     const monitor = new FakeProcessMonitor();
-    const service = EmailNotificationService.create(
+    const service = composeEmailNotificationService(
       db,
       gmail,
       new FakeTemplateEngine(),
@@ -840,28 +843,31 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     );
   });
 
-  test('static create wires the supplied teaching resolver into the notification CDU builder', () => {
+  test('composition wires the supplied teaching resolver into notification enumeration', () => {
     const db = new FakeDatabase(fixtureTables());
     const master = new MasterSheetRepository(db);
-    const teachingAssignments = new AldoTeachingAssignmentResolver(db);
-    const createContext = jest.spyOn(ContextEngineFactory, 'create');
-    try {
-      EmailNotificationService.create(
-        db,
-        new FakeGmailFacade(),
-        new FakeTemplateEngine(),
-        NOW,
-        new FakeDriveFacade(),
-        teachingAssignments,
-        undefined,
-        undefined,
-        master
-      );
+    const injected = Docente.fromData({
+      EMAIL: 'injected@school.test',
+      COGNOME: 'INJECTED',
+      NOME: 'IRENE',
+      GENERE: 'F'
+    });
+    const service = composeEmailNotificationService(
+      db,
+      new FakeGmailFacade(),
+      new FakeTemplateEngine(),
+      NOW,
+      new FakeDriveFacade(),
+      teachingResolverFor([assignmentFor(injected)]),
+      undefined,
+      undefined,
+      master
+    );
 
-      expect(createContext).toHaveBeenCalledWith(db, master, teachingAssignments);
-    } finally {
-      createContext.mockRestore();
-    }
+    const target = service
+      .enumerateTargets(service.getConfigurazione('CDC_OTTOBRE'))
+      .find((candidate) => candidate.target === '5A');
+    expect(target?.emails).toEqual(['injected@school.test']);
   });
 
   test('PER_ALUNNO falls back to "" target/email when the alunno has no id', () => {

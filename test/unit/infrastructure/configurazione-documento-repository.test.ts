@@ -1,7 +1,7 @@
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
+import { composeContextBuilder } from '../../../src/config/ApplicationComposition';
 import { recipe } from '../../../src/application/context-engine/Recipe';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
@@ -14,7 +14,7 @@ function focusedPianoCdu(tipo: TipoPiano) {
     tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: tipo, PARAMETRI: '{}' });
   }
   const db = new FakeDatabase(tables);
-  return ContextEngineFactory.create(db).build(
+  return composeContextBuilder(db).build(
     { target: 'a1@school.it', tipoTarget: 'alunno', pianoTipo: tipo, now: new Date('2026-07-01T09:00:00Z') },
     recipe('PIANO_PERSONALIZZATO')
   );

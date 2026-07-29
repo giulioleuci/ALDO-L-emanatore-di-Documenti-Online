@@ -1,6 +1,8 @@
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
 import { recipe } from '../../../src/application/context-engine/Recipe';
-import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
+import {
+  composeContextBuilder,
+  composeRisolutoreRuoli
+} from '../../../src/config/ApplicationComposition';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { fixtureTables } from '../../fixtures/tables';
 import { GestioneSupplenti } from '../../../src/domain/value-objects/enums';
@@ -232,14 +234,14 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
     const db = new FakeDatabase(fixtureTables());
     const teachingAssignments = new AldoTeachingAssignmentResolver(db);
     const now = new Date('2025-10-15T09:00:00Z');
-    const cdu = ContextEngineFactory.create(db, undefined, teachingAssignments).build(
+    const cdu = composeContextBuilder(db, undefined, teachingAssignments).build(
       { target: '5A', tipoTarget: 'classe', now, materiaCorrente: 'MATE' },
       recipe('CLASSE_COMPLETA')
     );
     const cdcEmails = cdu.focus
       .classe!.consiglioDiClasse.filter((d) => d.materie.some((m) => m.sigla === 'MATE'))
       .map((d) => d.anagrafica.email);
-    const service = new RisolutoreRuoliService(db, teachingAssignments);
+    const service = composeRisolutoreRuoli(db, teachingAssignments);
     const roleEmails = service.risolvi('DOCENTE_MATERIA', cdu).map((e) => e.value);
 
     expect(cdcEmails).toEqual(['bianchi@school.it']);
@@ -250,7 +252,7 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
     const db = new FakeDatabase(fixtureTables());
     const teachingAssignments = new AldoTeachingAssignmentResolver(db);
     const now = new Date('2025-11-15T09:00:00Z');
-    const cdu = ContextEngineFactory.create(db, undefined, teachingAssignments).build(
+    const cdu = composeContextBuilder(db, undefined, teachingAssignments).build(
       { target: '5A', tipoTarget: 'classe', now },
       recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
     );
@@ -267,7 +269,7 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
     // rossi->bianchi->verdi supplenza chain still applies correctly to its OWN
     // unrelated context.
     const coordinatoriNominali = cdu.focus.classe!.coordinatori ?? [];
-    const service = new RisolutoreRuoliService(db, teachingAssignments);
+    const service = composeRisolutoreRuoli(db, teachingAssignments);
     const coordEmails = service
       .risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
       .map((e) => e.value)
@@ -302,12 +304,12 @@ describe('complete effective-assignment acceptance matrix', () => {
       assertEffectiveActor(assignments, slot, expectedActor);
     }
 
-    const contextBuilder = ContextEngineFactory.create(db, undefined, assignmentsResolver);
+    const contextBuilder = composeContextBuilder(db, undefined, assignmentsResolver);
     const classCdu = contextBuilder.build(
       { target: '5A', tipoTarget: 'classe', now: MATRIX_DATE },
       recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
     );
-    const roles = new RisolutoreRuoliService(db, assignmentsResolver);
+    const roles = composeRisolutoreRuoli(db, assignmentsResolver);
     const expectedAll = sorted([
       'rossi@school.it',
       'bianchi@school.it',

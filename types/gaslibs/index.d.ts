@@ -731,6 +731,16 @@ declare global {
     toJSON(): Record<string, unknown>;
   }
   abstract class AssignmentSource {
+    getAssignmentsForRole(roleId: string, scope: Scope, asOfDate?: Date): unknown[];
+    getAssignmentsForActor(actorId: string, asOfDate?: Date): unknown[];
+    getActorById(actorId: string): Actor | null;
+  }
+  class InMemoryAssignmentSource extends AssignmentSource {
+    constructor(data?: { assignments?: unknown[]; actors?: Actor[] });
+    addAssignment(assignment: unknown): void;
+    addActor(actor: Actor): void;
+  }
+  abstract class EffectiveAssignmentSource {
     getAssignments(context: Record<string, unknown>, asOfDate: Date): AssignmentCandidate[];
   }
   abstract class OverrideSource {
@@ -741,7 +751,7 @@ declare global {
   }
   type SourceRows = ReadonlyArray<Record<string, unknown>> | ((context: Record<string, unknown>) => ReadonlyArray<Record<string, unknown>>);
   type ValueMapping = unknown | { from: string; parse?: 'csv' };
-  class WideRowAssignmentSource extends AssignmentSource {
+  class WideRowAssignmentSource extends EffectiveAssignmentSource {
     constructor(options?: {
       rows?: SourceRows;
       rowIdentityPath?: string;
@@ -763,9 +773,9 @@ declare global {
     constructor(options?: { rows?: SourceRows; mapping?: Record<string, ValueMapping | Record<string, ValueMapping>> });
     getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[];
   }
-  class CompositeAssignmentSource extends AssignmentSource {
+  class CompositeAssignmentSource extends EffectiveAssignmentSource {
     constructor(options?: {
-      sources?: AssignmentSource[];
+      sources?: EffectiveAssignmentSource[];
       identity?: string[];
       mergeMetadata?: (left: Record<string, unknown>, right: Record<string, unknown>) => Record<string, unknown>;
     });
@@ -774,7 +784,7 @@ declare global {
   class EffectiveAssignmentResolver {
     constructor(options: {
       actorSource: ActorSource;
-      assignmentSource: AssignmentSource;
+      assignmentSource: EffectiveAssignmentSource;
       overrideSource: OverrideSource;
       delegationSource: MappedDelegationSource | { getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[] } | InMemoryDelegationSource;
       policy?: ResolutionPolicy;

@@ -2,7 +2,7 @@ import {
   EmailBatchService,
   JOB_TYPE_INVIO_EMAIL
 } from '../../../src/application/services/EmailBatchService';
-import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
+import { composeEmailNotificationService } from '../../../src/config/ApplicationComposition';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
@@ -16,7 +16,7 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 function wire(monitor?: FakeProcessMonitor) {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const notification = EmailNotificationService.create(
+  const notification = composeEmailNotificationService(
     db,
     gmail,
     new FakeTemplateEngine(),

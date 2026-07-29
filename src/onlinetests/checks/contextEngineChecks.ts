@@ -18,7 +18,7 @@ import type {
   TeachingAssignment
 } from '../../application/ports/ITeachingAssignmentResolver';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
-import { RisolutoreRuoliService } from '../../application/services/RisolutoreRuoliService';
+import { composeRisolutoreRuoli } from '../../config/ApplicationComposition';
 import { ResolveRecipientsStep } from '../../application/pipelines/emailSteps';
 import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps';
 import { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
@@ -260,7 +260,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     { target: CLASSE_A, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
   );
-  const roles = new RisolutoreRuoliService(db, resolver);
+  const roles = composeRisolutoreRuoli(db, resolver);
 
   const renderedSheetHeaders = (sheetCdu: ReturnType<ContextBuilder['build']>): string[] => {
     const sheets = {

@@ -1,5 +1,4 @@
 import { EmailRetryService } from '../../../src/application/services/EmailRetryService';
-import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
@@ -9,6 +8,7 @@ import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import { composeEmailNotificationService } from '../../../src/config/ApplicationComposition';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
@@ -28,7 +28,7 @@ function wire(logMailRows: Row[], logger?: LoggerService) {
   tables['LOG_MAIL'] = logMailRows;
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const emailService = EmailNotificationService.create(
+  const emailService = composeEmailNotificationService(
     db,
     gmail,
     new FakeTemplateEngine(),
@@ -163,7 +163,7 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
   ];
   const db = new FakeDatabase(tables);
   const gmail = new FakeGmailFacade();
-  const emailService = EmailNotificationService.create(
+  const emailService = composeEmailNotificationService(
     db,
     gmail,
     new FakeTemplateEngine(),

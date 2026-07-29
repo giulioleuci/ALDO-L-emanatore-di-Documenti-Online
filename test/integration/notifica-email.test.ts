@@ -1,4 +1,4 @@
-import { EmailNotificationService } from '../../src/application/services/EmailNotificationService';
+import { composeEmailNotificationService } from '../../src/config/ApplicationComposition';
 import { FakeDatabase } from '../fakes/FakeDatabase';
 import { fixtureTables } from '../fixtures/tables';
 import { FakeTemplateEngine } from '../fakes/FakeTemplateEngine';
@@ -11,7 +11,7 @@ const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supp
 function wire() {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
-  const service = EmailNotificationService.create(
+  const service = composeEmailNotificationService(
     db,
     gmail,
     new FakeTemplateEngine(),

@@ -2,7 +2,11 @@ import { SheetMaterieGeneratorStrategy } from '../../../src/application/strategi
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../../src/application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
+import {
+  composeContextBuilder,
+  composeRisolutoreRuoli,
+  composeRisolutoreRuoliDependencies
+} from '../../../src/config/ApplicationComposition';
 import { recipe } from '../../../src/application/context-engine/Recipe';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
@@ -88,7 +92,7 @@ function confDoc(
 
 /** Builds a realistic CDU through the shared teaching-assignment port. */
 function buildCdu(db: FakeDatabase, classeId: string): Cdu {
-  return ContextEngineFactory.create(db).build(
+  return composeContextBuilder(db).build(
     {
       target: classeId,
       tipoTarget: 'classe',
@@ -234,7 +238,9 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
-    const roles = new RecordingRisolutoreRuoliService(db);
+    const roles = new RecordingRisolutoreRuoliService(
+      composeRisolutoreRuoliDependencies(db)
+    );
     const templates = new FakeTemplateEngine();
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
@@ -291,7 +297,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       sheets,
       new MateriaRepository(db),
       new FakeTemplateEngine(),
-      new RisolutoreRuoliService(db)
+      composeRisolutoreRuoli(db)
     );
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
@@ -316,7 +322,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       sheets,
       new MateriaRepository(db),
       templates,
-      new RisolutoreRuoliService(db)
+      composeRisolutoreRuoli(db)
     );
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
@@ -338,5 +344,37 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     expect(
       sheets.protectCalls.find((request) => request.range === 'Sheet1!F:F')?.editors?.users?.sort()
     ).toEqual(['rossi@school.it', 'verdi@school.it']);
+  });
+
+  test('articulated partner columns retain ACL ownership when the same teacher holds both separated slots', () => {
+    const tables = fixtureTables();
+    const lss = tables.CLASSI!.find((row) => row.ID === '1F-LSS')!;
+    lss.FISI = 'bianchi@school.it';
+    const db = new FakeDatabase(tables);
+    const cdu = buildCdu(db, '1F');
+    cdu.focus.classe!.articolazione = {
+      partner: null,
+      partners: ['1F-LSO', '1F-LSS'],
+      parent: null,
+      materieCondivise: ['MATE'],
+      materieSeparatePrimoGruppo: ['FISI'],
+      materieSeparateSecondoGruppo: ['FISI']
+    };
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      composeRisolutoreRuoli(db)
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    expect(
+      sheets.protectCalls.find((request) => request.range === 'Sheet1!D:D')?.editors?.users?.sort()
+    ).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    expect(
+      sheets.protectCalls.find((request) => request.range === 'Sheet1!F:F')?.editors?.users?.sort()
+    ).toEqual(['bianchi@school.it', 'rossi@school.it']);
   });
 });

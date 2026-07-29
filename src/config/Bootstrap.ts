@@ -27,6 +27,12 @@ import { DocumentoConTabelleImportateGeneratorStrategy } from '../application/st
 import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
 import { DocumentTableFacade } from '../infrastructure/facades/DocumentTableFacade';
 import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
+import { DocenteRepository } from '../infrastructure/repositories/DocenteRepository';
+import { RuoloSpecialeRepository } from '../infrastructure/repositories/RuoloSpecialeRepository';
+import { OreASLRepository } from '../infrastructure/repositories/OreASLRepository';
+import { DipartimentoRepository } from '../infrastructure/repositories/DipartimentoRepository';
+import { CarenzaRepository } from '../infrastructure/repositories/CarenzaRepository';
+import { ConfigurazioneEmailRepository } from '../infrastructure/repositories/ConfigurazioneEmailRepository';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositories/ConfigurazioneDocumentoRepository';
@@ -102,16 +108,50 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('logger', () => logger);
   c.register('db', () => deps.db);
   c.register('drive', () => deps.drive);
+  c.register('classi', () => new ClasseRepository(deps.db));
+  c.register('docenti', () => new DocenteRepository(deps.db));
+  c.register('alunni', () => new AlunnoRepository(deps.db));
+  c.register('materie', () => new MateriaRepository(deps.db));
+  c.register('ruoliSpeciali', () => new RuoloSpecialeRepository(deps.db));
+  c.register('dipartimenti', () => new DipartimentoRepository(deps.db));
+  c.register('oreAsl', () => new OreASLRepository(deps.db));
+  c.register('carenze', () => new CarenzaRepository(deps.db));
+  c.register('logDocumenti', () => new LogDocumentoRepository(deps.db));
+  c.register('logEmail', () => new LogEmailRepository(deps.db));
+  c.register('configurazioniEmail', () => new ConfigurazioneEmailRepository(deps.db));
   c.register(
     'teachingAssignmentResolver',
     () => new AldoTeachingAssignmentResolver(deps.db)
   );
+  c.register(
+    'risolutoreRuoli',
+    (container) =>
+      new RisolutoreRuoliService({
+        classi: container.get<ClasseRepository>('classi'),
+        docenti: container.get<DocenteRepository>('docenti'),
+        alunni: container.get<AlunnoRepository>('alunni'),
+        dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
+        materie: container.get<MateriaRepository>('materie'),
+        ruoli: container.get<RuoloSpecialeRepository>('ruoliSpeciali'),
+        teachingAssignments: container.get<ITeachingAssignmentResolver>(
+          'teachingAssignmentResolver'
+        )
+      })
+  );
   c.register('contextBuilder', (container) =>
-    ContextEngineFactory.create(
-      deps.db,
-      deps.master,
-      container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
-    )
+    ContextEngineFactory.create({
+      master: deps.master,
+      teachingAssignments: container.get<ITeachingAssignmentResolver>(
+        'teachingAssignmentResolver'
+      ),
+      ruoli: container.get<RuoloSpecialeRepository>('ruoliSpeciali'),
+      docenti: container.get<DocenteRepository>('docenti'),
+      classi: container.get<ClasseRepository>('classi'),
+      alunni: container.get<AlunnoRepository>('alunni'),
+      materie: container.get<MateriaRepository>('materie'),
+      oreAsl: container.get<OreASLRepository>('oreAsl'),
+      logDocs: container.get<LogDocumentoRepository>('logDocumenti')
+    })
   );
   if (deps.spreadsheets !== undefined) {
     c.register('spreadsheets', () => deps.spreadsheets!);
@@ -129,7 +169,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
     ]);
     if (deps.spreadsheets !== undefined) {
-      const materie = new MateriaRepository(deps.db);
+      const materie = container.get<MateriaRepository>('materie');
       registry.set(
         'SHEET_CON_MATERIE',
         new SheetMaterieGeneratorStrategy(deps.spreadsheets, materie, deps.templates)
@@ -140,10 +180,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
           deps.spreadsheets,
           materie,
           deps.templates,
-          new RisolutoreRuoliService(
-            deps.db,
-            container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
-          )
+          container.get<RisolutoreRuoliService>('risolutoreRuoli')
         )
       );
       if (deps.documents !== undefined) {
@@ -171,22 +208,11 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         templates: deps.templates,
         expressionEngine: deps.expressionEngine,
         configs: new ConfigurazioneDocumentoRepository(deps.db),
-        roleResolver: new RisolutoreRuoliService(
-          deps.db,
-          container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
-        ),
+        roleResolver: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
         now: deps.now,
         monitor: deps.monitor,
         logger
       })
-  );
-  c.register(
-    'risolutoreRuoli',
-    (container) =>
-      new RisolutoreRuoliService(
-        deps.db,
-        container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
-      )
   );
   c.register(
     'documentBatchService',
@@ -199,18 +225,33 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         deps.monitor
       )
   );
-  c.register('emailNotificationService', (container) =>
-    EmailNotificationService.create(
-      deps.db,
-      deps.gmail,
-      deps.templates,
-      deps.now,
-      deps.drive,
-      container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
-      logger,
-      deps.monitor,
-      deps.master
-    )
+  c.register(
+    'emailNotificationService',
+    (container) =>
+      new EmailNotificationService({
+        db: deps.db,
+        gmail: deps.gmail,
+        drive: deps.drive,
+        templates: deps.templates,
+        now: deps.now,
+        contextBuilder: container.get<ContextBuilder>('contextBuilder'),
+        expressionEngine: deps.expressionEngine,
+        docenti: container.get<DocenteRepository>('docenti'),
+        alunni: container.get<AlunnoRepository>('alunni'),
+        classi: container.get<ClasseRepository>('classi'),
+        carenze: container.get<CarenzaRepository>('carenze'),
+        confMail: container.get<ConfigurazioneEmailRepository>('configurazioniEmail'),
+        logMail: container.get<LogEmailRepository>('logEmail'),
+        logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
+        master: deps.master,
+        materie: container.get<MateriaRepository>('materie'),
+        aggregatoreDati: container.get<AggregatoreDati>('aggregatoreDati'),
+        teachingAssignments: container.get<ITeachingAssignmentResolver>(
+          'teachingAssignmentResolver'
+        ),
+        ...(deps.monitor === undefined ? {} : { monitor: deps.monitor }),
+        logger
+      })
   );
   c.register(
     'emailBatchService',

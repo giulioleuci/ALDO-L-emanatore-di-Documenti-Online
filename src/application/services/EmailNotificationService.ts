@@ -24,27 +24,16 @@ import {
   LogEmailStep,
   PostProcessEmailStep
 } from '../pipelines/emailSteps';
-import { ExpressionEngineFacade } from '../../infrastructure/facades/ExpressionEngineFacade';
-import { ContextEngineFactory } from '../context-engine/ContextEngineFactory';
-import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
-import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
-import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
-import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
-import { ConfigurazioneEmailRepository } from '../../infrastructure/repositories/ConfigurazioneEmailRepository';
 import type { IConfigurazioneEmailRepository } from '../../domain/repositories/IConfigurazioneEmailRepository';
-import { LogEmailRepository } from '../../infrastructure/repositories/LogEmailRepository';
 import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
-import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
-import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
-import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
 import { GestioneSupplenti, ProcessoInvio } from '../../domain/value-objects/enums';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 import { PipelineError } from '../../domain/errors/DomainError';
-import { AggregatoreDati } from './AggregatoreDati';
+import type { AggregatoreDati } from './AggregatoreDati';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 
 /** Everything the email subsystem needs from persistence: ALDO port + repository seam. */
@@ -109,51 +98,6 @@ export class EmailNotificationService {
     this.deps = rest;
     this.monitor = monitor;
     this.logger = logger ?? new LoggerService();
-  }
-
-  /**
-   * Convenience wiring over one database (composition-root shortcut and tests).
-   * `master` defaults to a repository built over `db` — correct for tests where
-   * MASTER lives in the same fake db as everything else, WRONG for the real
-   * composition root: MASTER lives on a separate spreadsheet, and `Repository`'s
-   * base constructor binds its table eagerly, so building it over the year db
-   * throws immediately (ref `ContextEngineFactory.create`'s same-shaped doc
-   * comment). `Bootstrap.ts` always passes its already-opened `deps.master`.
-   */
-  static create(
-    db: EmailDb,
-    gmail: IGmailFacade,
-    templates: ITemplateEngine,
-    now: Date,
-    drive: IDriveFacade,
-    teachingAssignments: ITeachingAssignmentResolver,
-    logger?: LoggerService,
-    monitor?: IProcessMonitor,
-    master: IMasterSheetRepository = new MasterSheetRepository(db)
-  ): EmailNotificationService {
-    const base: EmailNotificationDeps = {
-      db,
-      gmail,
-      drive,
-      templates,
-      now,
-      contextBuilder: ContextEngineFactory.create(db, master, teachingAssignments),
-      expressionEngine: new ExpressionEngineFacade(),
-      docenti: new DocenteRepository(db),
-      alunni: new AlunnoRepository(db),
-      classi: new ClasseRepository(db),
-      carenze: new CarenzaRepository(db),
-      confMail: new ConfigurazioneEmailRepository(db),
-      logMail: new LogEmailRepository(db),
-      logDocs: new LogDocumentoRepository(db),
-      master,
-      materie: new MateriaRepository(db),
-      aggregatoreDati: new AggregatoreDati(db),
-      teachingAssignments
-    };
-    if (logger !== undefined) base.logger = logger;
-    if (monitor !== undefined) base.monitor = monitor;
-    return new EmailNotificationService(base);
   }
 
   /** All emails go to `email` instead of the real recipients (11 §15). */

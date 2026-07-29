@@ -435,7 +435,7 @@ test('composes articulated partner MAIN, ITP, and SPECIFICA slots through GLF', 
   expect(lssMain.titolare.id).toBe('articulated-new@school.test');
 });
 
-test('deduplicates wildcard articulated changes and delegations after partner resolution', () => {
+test('retains each partner owner for wildcard articulated changes and delegations', () => {
   const tables = freshTables();
   const lso = tables.CLASSI!.find((row) => row.ID === '1F-LSO')!;
   const lss = tables.CLASSI!.find((row) => row.ID === '1F-LSS')!;
@@ -470,8 +470,12 @@ test('deduplicates wildcard articulated changes and delegations after partner re
 
   const assignments = resolver.resolveMateria(parent, MateriaId.of('MAT'), new Date('2026-02-15'));
 
-  expect(assignments).toHaveLength(1);
-  expect(assignments[0]!.classeId.value).toBe('1F-LSO');
-  expect(assignments[0]!.titolare.id).toBe('articulated-common-new@school.test');
-  expect(assignments[0]!.docenteEffettivo.id).toBe('articulated-common-sub@school.test');
+  expect(assignments.map((assignment) => assignment.classeId.value)).toEqual([
+    '1F-LSO',
+    '1F-LSS'
+  ]);
+  for (const assignment of assignments) {
+    expect(assignment.titolare.id).toBe('articulated-common-new@school.test');
+    expect(assignment.docenteEffettivo.id).toBe('articulated-common-sub@school.test');
+  }
 });

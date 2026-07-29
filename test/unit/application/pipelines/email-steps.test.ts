@@ -11,7 +11,7 @@ import {
 import { ConfigurazioneEmail } from '../../../../src/domain/entities/ConfigurazioneEmail';
 import { Docente } from '../../../../src/domain/entities/Docente';
 import { Alunno } from '../../../../src/domain/entities/Alunno';
-import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
 import type { EmailTarget } from '../../../../src/application/email/saluto';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
@@ -143,7 +143,7 @@ function wire(
 }
 
 function buildStep(w: Wiring): BuildCDUStep {
-  return new BuildCDUStep(logger, ContextEngineFactory.create(w.db), w.docenti, w.alunni);
+  return new BuildCDUStep(logger, composeContextBuilder(w.db), w.docenti, w.alunni);
 }
 
 function runThroughRender(w: Wiring): string[] {
@@ -225,7 +225,7 @@ test('BuildCDUStep copies EmailTarget.classiCompetenza into BuildParams', () => 
       classiCompetenza: ['5A', '1F']
     }
   );
-  const real = ContextEngineFactory.create(w.db);
+  const real = composeContextBuilder(w.db);
   let capturedParams: BuildParams | undefined;
   const spyBuilder = {
     build: (params: BuildParams, r: Recipe) => {
@@ -1106,7 +1106,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
 
   test('BuildCDUStep omits idConfigurazione when the CONF_MAIL row has no ID', () => {
     const w = wire({ ID: null });
-    const builder = ContextEngineFactory.create(w.db);
+    const builder = composeContextBuilder(w.db);
     const buildSpy = jest.spyOn(builder, 'build');
     new BuildCDUStep(logger, builder, w.docenti, w.alunni).execute(w.ctx);
     const params = buildSpy.mock.calls[0]![0] as { idConfigurazione?: string };
@@ -1116,7 +1116,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
   test('BuildCDUStep falls back to "" for docente.id when the injected docente lookup returns a Docente with no id', () => {
     const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
     const docentiStub = { findById: () => Docente.fromData({}) } as unknown as DocenteRepository;
-    new BuildCDUStep(logger, ContextEngineFactory.create(w.db), docentiStub, w.alunni).execute(
+    new BuildCDUStep(logger, composeContextBuilder(w.db), docentiStub, w.alunni).execute(
       w.ctx
     );
     const cdu = w.ctx.get<Cdu>('cdu')!;
@@ -1137,7 +1137,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const alunniStub = {
       findById: () => Alunno.fromData({ ATTIVO: true })
     } as unknown as AlunnoRepository;
-    new BuildCDUStep(logger, ContextEngineFactory.create(w.db), w.docenti, alunniStub).execute(
+    new BuildCDUStep(logger, composeContextBuilder(w.db), w.docenti, alunniStub).execute(
       w.ctx
     );
     const cdu = w.ctx.get<Cdu>('cdu')!;

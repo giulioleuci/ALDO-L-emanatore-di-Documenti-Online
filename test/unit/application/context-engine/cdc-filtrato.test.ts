@@ -1,4 +1,4 @@
-import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import { recipe } from '../../../../src/application/context-engine/Recipe';
 import type { DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
@@ -17,7 +17,7 @@ function tablesWithIrc(): Record<string, Row[]> {
 }
 
 function filtrato(target: string): DocenteCdcVM[] {
-  const cdu = ContextEngineFactory.create(new FakeDatabase(tablesWithIrc())).build(
+  const cdu = composeContextBuilder(new FakeDatabase(tablesWithIrc())).build(
     { target, tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') },
     recipe('ALUNNO_COMPLETO')
   );
@@ -69,7 +69,7 @@ test('Task 6 filters arbitrary specificities from curriculum and preserves the a
   const db = new FakeDatabase(tables);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   const resolveConsiglio = jest.spyOn(teachingAssignments, 'resolveConsiglio');
-  const cdu = ContextEngineFactory.create(
+  const cdu = composeContextBuilder(
     db,
     new MasterSheetRepository(db),
     teachingAssignments

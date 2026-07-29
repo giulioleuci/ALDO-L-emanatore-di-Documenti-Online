@@ -11,12 +11,14 @@ import {
   ApplyPermissionsStep,
   CRITICAL_STEPS
 } from '../../../../src/application/pipelines/documentSteps';
-import { RisolutoreRuoliService } from '../../../../src/application/services/RisolutoreRuoliService';
 import { VerbaleGeneratorStrategy } from '../../../../src/application/strategies/VerbaleGeneratorStrategy';
 import { ConfigurazioneDocumento } from '../../../../src/domain/entities/ConfigurazioneDocumento';
 import { ConfigurazioneDocumentoRepository } from '../../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import { ExpressionEngineFacade } from '../../../../src/infrastructure/facades/ExpressionEngineFacade';
-import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import {
+  composeContextBuilder,
+  composeRisolutoreRuoli
+} from '../../../../src/config/ApplicationComposition';
 import { recipe } from '../../../../src/application/context-engine/Recipe';
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
 import { FakeDriveFacade } from '../../../../test/fakes/FakeDriveFacade';
@@ -30,21 +32,21 @@ const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();
 
 function buildCdu(db: FakeDatabase): Cdu {
-  return ContextEngineFactory.create(db).build(
+  return composeContextBuilder(db).build(
     { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') },
     recipe('CLASSE_COMPLETA')
   );
 }
 
 function buildAlunnoCdu(db: FakeDatabase): Cdu {
-  return ContextEngineFactory.create(db).build(
+  return composeContextBuilder(db).build(
     { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') },
     recipe('ALUNNO_DETTAGLIATO')
   );
 }
 
 function buildPianoCdu(db: FakeDatabase, pianoTipo: TipoPiano): Cdu {
-  return ContextEngineFactory.create(db).build(
+  return composeContextBuilder(db).build(
     {
       target: 'a1@school.it',
       tipoTarget: 'alunno',
@@ -490,7 +492,7 @@ test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §1
   ctx.set('newFileId', 'file_1');
   ctx.set('destFolderId', 'folder_1');
   const drive = new FakeDriveFacade();
-  new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
 
   const fileAcls = drive.permissions.filter((p) => p.fileId === 'file_1');
   expect(fileAcls).toEqual([{ fileId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }]);
@@ -508,7 +510,7 @@ test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db); // CD1 has PERMESSI null
   const drive = new FakeDriveFacade();
-  new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
   expect(drive.permissions).toEqual([]);
 });
 
@@ -518,7 +520,7 @@ test("ApplyPermissionsStep is skipped when PERMESSI is an empty string (regressi
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: '' });
   const drive = new FakeDriveFacade();
   expect(() =>
-    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx)
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx)
   ).not.toThrow();
   expect(drive.permissions).toEqual([]);
 });
@@ -631,7 +633,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
   const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z'); // rossi -> bianchi -> verdi chain active for 5A
 
   function buildCduAt(db: FakeDatabase, now: Date): Cdu {
-    return ContextEngineFactory.create(db).build(
+    return composeContextBuilder(db).build(
       { target: '5A', tipoTarget: 'classe', now },
       recipe('CLASSE_COMPLETA')
     );
@@ -649,7 +651,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     });
     ctx.set('destFolderId', 'folder_1'); // newFileId intentionally left unset (null)
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
     expect(drive.permissions).toEqual([]);
   });
 
@@ -665,7 +667,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     });
     ctx.set('newFileId', 'file_1'); // destFolderId intentionally left unset (null)
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
     expect(drive.permissions).toEqual([]);
   });
 
@@ -691,7 +693,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
       ctx.set('shouldGenerate', true);
       ctx.set('newFileId', 'file_1');
       const drive = new FakeDriveFacade();
-      new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+      new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
       const fileEmails = drive.permissions
         .filter((p) => p.fileId === 'file_1')
         .map((p) => p.email)
@@ -716,7 +718,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     ctx.set('newFileId', 'file_1');
     ctx.set('destFolderId', 'folder_1');
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, new RisolutoreRuoliService(db)).execute(ctx);
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
 
     const fileEmails = drive.permissions
       .filter((p) => p.fileId === 'file_1')

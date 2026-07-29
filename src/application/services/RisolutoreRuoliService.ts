@@ -1,13 +1,7 @@
 import type { Cdu } from '../context-engine/Cdu';
-import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
-import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
-import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
-import { DipartimentoRepository } from '../../infrastructure/repositories/DipartimentoRepository';
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
-import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
-import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
 import type { IRuoloSpecialeRepository } from '../../domain/repositories/IRuoloSpecialeRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
@@ -23,7 +17,6 @@ import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
 } from '../ports/ITeachingAssignmentResolver';
-import { AldoTeachingAssignmentResolver } from '../../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 
 export interface RisolviOptions {
@@ -42,6 +35,16 @@ interface RoleContext {
 }
 
 type RoleStrategy = (ctx: RoleContext) => Email[];
+
+export interface RisolutoreRuoliDependencies {
+  classi: IClasseRepository;
+  docenti: IDocenteRepository;
+  alunni: IAlunnoRepository;
+  dipartimenti: IDipartimentoRepository;
+  materie: IMateriaRepository;
+  ruoli: IRuoloSpecialeRepository;
+  teachingAssignments: ITeachingAssignmentResolver;
+}
 
 const routedActorOperations: ProjectionOperation[] = [
   { type: 'flatMap', path: 'routing.primary' },
@@ -91,16 +94,21 @@ export class RisolutoreRuoliService {
   });
   private readonly registro: Map<string, RoleStrategy>;
 
-  constructor(
-    database: RepositoryDatabase,
-    teachingAssignments: ITeachingAssignmentResolver = new AldoTeachingAssignmentResolver(database)
-  ) {
-    this.classi = new ClasseRepository(database);
-    this.docenti = new DocenteRepository(database);
-    this.alunni = new AlunnoRepository(database);
-    this.dipartimenti = new DipartimentoRepository(database);
-    this.materie = new MateriaRepository(database);
-    this.ruoli = new RuoloSpecialeRepository(database);
+  constructor({
+    classi,
+    docenti,
+    alunni,
+    dipartimenti,
+    materie,
+    ruoli,
+    teachingAssignments
+  }: RisolutoreRuoliDependencies) {
+    this.classi = classi;
+    this.docenti = docenti;
+    this.alunni = alunni;
+    this.dipartimenti = dipartimenti;
+    this.materie = materie;
+    this.ruoli = ruoli;
     this.teachingAssignments = teachingAssignments;
     this.registro = this.buildRegistro();
   }

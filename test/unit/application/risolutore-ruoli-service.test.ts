@@ -1,5 +1,8 @@
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
-import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
+import {
+  composeContextBuilder,
+  composeRisolutoreRuoli
+} from '../../../src/config/ApplicationComposition';
 import { recipe } from '../../../src/application/context-engine/Recipe';
 import type { BuildParams } from '../../../src/application/context-engine/Recipe';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
@@ -20,8 +23,8 @@ function build(
 ): { cdu: Cdu; service: RisolutoreRuoliService } {
   const db = new FakeDatabase(fixtureTables());
   const buildParams: BuildParams = { target: '5A', tipoTarget: 'classe', now: NOW, ...params };
-  const cdu = ContextEngineFactory.create(db).build(buildParams, recipe(recipeName));
-  return { cdu, service: new RisolutoreRuoliService(db) };
+  const cdu = composeContextBuilder(db).build(buildParams, recipe(recipeName));
+  return { cdu, service: composeRisolutoreRuoli(db) };
 }
 
 function emails(
@@ -124,11 +127,11 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
 
   function buildAt(now: Date) {
     const db = new FakeDatabase(fixtureTables());
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = composeContextBuilder(db).build(
       { target: '5A', tipoTarget: 'classe', now },
       recipe('CLASSE_COMPLETA')
     );
-    return { cdu, service: new RisolutoreRuoliService(db) };
+    return { cdu, service: composeRisolutoreRuoli(db) };
   }
 
   test('SOLO_TITOLARI (default) ignores active supplenze', () => {
@@ -173,11 +176,11 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
     const db = new FakeDatabase(fixtureTables());
     const teachingAssignments = new AldoTeachingAssignmentResolver(db);
     const resolveSpy = jest.spyOn(teachingAssignments, 'resolveConsiglio');
-    const cdu = ContextEngineFactory.create(db, undefined, teachingAssignments).build(
+    const cdu = composeContextBuilder(db, undefined, teachingAssignments).build(
       { target: '5A', tipoTarget: 'classe', now: INSIDE_WINDOW },
       recipe('CLASSE_COMPLETA')
     );
-    const service = new RisolutoreRuoliService(db, teachingAssignments);
+    const service = composeRisolutoreRuoli(db, teachingAssignments);
 
     emails(service, 'CDC', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI });
 
@@ -231,7 +234,7 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     // second, still-resolvable member (rossi) to prove the drop is selective.
     const fullTables = fixtureTables();
     const dbFull = new FakeDatabase(fullTables);
-    const cdu = ContextEngineFactory.create(dbFull).build(
+    const cdu = composeContextBuilder(dbFull).build(
       { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2025-06-01T09:00:00Z') },
       recipe('ALUNNO_COMPLETO')
     );
@@ -241,7 +244,7 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
       (r) => r['EMAIL'] !== 'bianchi@school.it'
     );
     const dbMissingBianchi = new FakeDatabase(tablesMissingBianchi);
-    const service = new RisolutoreRuoliService(dbMissingBianchi);
+    const service = composeRisolutoreRuoli(dbMissingBianchi);
 
     expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual([
       'bianchi@school.it',
@@ -278,11 +281,11 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
       { ID: 'LETTERE', NOME: 'Dipartimento di lettere', CAPO: '', MATERIE: 'ITA' }
     ];
     const db = new FakeDatabase(tables);
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = composeContextBuilder(db).build(
       { target: '5A', tipoTarget: 'classe', now: NOW, materiaCorrente: 'MATE' },
       recipe('CLASSE_COMPLETA')
     );
-    const service = new RisolutoreRuoliService(db);
+    const service = composeRisolutoreRuoli(db);
     expect(emails(service, 'CAPO_DIPARTIMENTO', cdu)).toEqual([]);
   });
 
@@ -314,7 +317,7 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     // carries a1's focus over the full ALUNNI table, but the service resolves
     // through a database where a1's ALUNNI row has been removed.
     const dbFull = new FakeDatabase(fixtureTables());
-    const cdu = ContextEngineFactory.create(dbFull).build(
+    const cdu = composeContextBuilder(dbFull).build(
       { target: 'a1@school.it', tipoTarget: 'alunno', now: NOW },
       recipe('ALUNNO_COMPLETO')
     );
@@ -323,7 +326,7 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     tablesMissingA1.ALUNNI = (tablesMissingA1.ALUNNI as Row[]).filter(
       (r) => r['EMAIL'] !== 'a1@school.it'
     );
-    const service = new RisolutoreRuoliService(new FakeDatabase(tablesMissingA1));
+    const service = composeRisolutoreRuoli(new FakeDatabase(tablesMissingA1));
 
     expect(emails(service, 'FAMIGLIA', cdu)).toEqual([]);
   });
@@ -331,11 +334,11 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
   test('the supplenza-routing loop skips a docente with a blank id, and orders BOTH_EQUAL results with titolare first', () => {
     const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z');
     const db = new FakeDatabase(fixtureTables());
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = composeContextBuilder(db).build(
       { target: '5A', tipoTarget: 'classe', now: INSIDE_WINDOW },
       recipe('CLASSE_COMPLETA')
     );
-    const service = new RisolutoreRuoliService(db);
+    const service = composeRisolutoreRuoli(db);
     const rossi = new DocenteRepository(db).findById('rossi@school.it')!;
     // No EMAIL key at all -> Docente.id is null -> titolareEmail resolves to '' in applicaSupplenze.
     const ghost = new Docente({ COGNOME: 'GHOST', NOME: 'X', GENERE: 'M' });
@@ -361,11 +364,11 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     const afterDecorrenza = build({ materiaCorrente: 'MATE' }, 'CLASSE_COMPLETA');
     // Rebuild at a date before the 2025-10-01 decorrenza: nominal holder (rossi) still applies.
     const db = new FakeDatabase(fixtureTables());
-    const cduBefore = ContextEngineFactory.create(db).build(
+    const cduBefore = composeContextBuilder(db).build(
       { target: '5A', tipoTarget: 'classe', now: new Date('2025-09-01'), materiaCorrente: 'MATE' },
       recipe('CLASSE_COMPLETA')
     );
-    const service = new RisolutoreRuoliService(db);
+    const service = composeRisolutoreRuoli(db);
     expect(emails(service, 'DOCENTE_MATERIA', cduBefore)).toEqual(['rossi@school.it']);
     expect(emails(service, 'DOCENTE_MATERIA', afterDecorrenza.cdu)).toEqual(['bianchi@school.it']);
   });
@@ -381,11 +384,11 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     // instead of being artificially exempted. Anchored at 2025-11-15, inside the window.
     const INSIDE_WINDOW = new Date('2025-11-15T09:00:00Z');
     const db = new FakeDatabase(fixtureTables());
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = composeContextBuilder(db).build(
       { target: '5A', tipoTarget: 'classe', now: INSIDE_WINDOW },
       recipe('CLASSE_COMPLETA')
     );
-    const service = new RisolutoreRuoliService(db);
+    const service = composeRisolutoreRuoli(db);
     expect(
       emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
     ).toEqual(['bianchi@school.it']); // ITA-scoped delegation does not apply to IRC/ALT
@@ -393,11 +396,11 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
 
   test('DOCENTE_MATERIA and DOCENTE_PRIMA_PROVA now partner-route an articulated PARENT class (fix — used to silently return [])', () => {
     const db = new FakeDatabase(fixtureTables());
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = composeContextBuilder(db).build(
       { target: '1F', tipoTarget: 'classe', now: NOW, materiaCorrente: 'FISI' },
       recipe('CLASSE_COMPLETA')
     );
-    const service = new RisolutoreRuoliService(db);
+    const service = composeRisolutoreRuoli(db);
     // FISI is split per-partner (1F-LSO=bianchi, 1F-LSS=verdi); '1F' itself (the
     // parent) has no FISI column. Before this fix, resolvePermanenti('1F', FISI, ...)
     // resolved directly against the parent and returned [].
@@ -405,7 +408,7 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
 
     // MATE is shared (COMUNE, rossi on both partners) -- prima_prova matches SCIENTIFICO
     // (1F's own indirizzo), and the merge must not duplicate rossi.
-    const cduMate = ContextEngineFactory.create(db).build(
+    const cduMate = composeContextBuilder(db).build(
       { target: '1F', tipoTarget: 'classe', now: NOW, materiaCorrente: 'MATE' },
       recipe('CLASSE_COMPLETA')
     );
@@ -440,12 +443,12 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     });
     const db = new FakeDatabase(tables);
     const INSIDE_WINDOW = new Date('2026-01-15T09:00:00Z');
-    const service = new RisolutoreRuoliService(db);
+    const service = composeRisolutoreRuoli(db);
 
     // DOCENTE_MATERIA, ENTRAMBI: bianchi (1F-LSO) now correctly has neri as an
     // active substitute; verdi (1F-LSS/FISI) is untouched (no supplenza scoped
     // to it in this window).
-    const cduMateria = ContextEngineFactory.create(db).build(
+    const cduMateria = composeContextBuilder(db).build(
       { target: '1F', tipoTarget: 'classe', now: INSIDE_WINDOW, materiaCorrente: 'FISI' },
       recipe('CLASSE_COMPLETA')
     );
@@ -455,7 +458,7 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
 
     // CDC, ENTRAMBI: the same fix reaches the group role too (rossi/MATE
     // untouched, bianchi/FISI gets neri, verdi/FISI untouched).
-    const cduCdc = ContextEngineFactory.create(db).build(
+    const cduCdc = composeContextBuilder(db).build(
       { target: '1F', tipoTarget: 'classe', now: INSIDE_WINDOW },
       recipe('CLASSE_COMPLETA')
     );

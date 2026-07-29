@@ -2309,6 +2309,8 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject_0, {
   DuplicateAssignmentSlotError: () => (DuplicateAssignmentSlotError),
   EffectiveAssignmentResolver: () => (EffectiveAssignmentResolver),
   EffectiveAssignmentResult: () => (EffectiveAssignmentResult),
+  EffectiveAssignmentSource: () => (EffectiveAssignmentSource),
+  InMemoryAssignmentSource: () => (InMemoryAssignmentSource),
   InMemoryDelegationSource: () => (InMemoryDelegationSource),
   InconsistentAssignmentOverrideError: () => (InconsistentAssignmentOverrideError),
   InvalidScopeError: () => (InvalidScopeError),
@@ -2370,6 +2372,8 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   DuplicateAssignmentSlotError: () => (DuplicateAssignmentSlotError),
   EffectiveAssignmentResolver: () => (EffectiveAssignmentResolver),
   EffectiveAssignmentResult: () => (EffectiveAssignmentResult),
+  EffectiveAssignmentSource: () => (EffectiveAssignmentSource),
+  InMemoryAssignmentSource: () => (InMemoryAssignmentSource),
   InMemoryDelegationSource: () => (InMemoryDelegationSource),
   InconsistentAssignmentOverrideError: () => (InconsistentAssignmentOverrideError),
   InvalidScopeError: () => (InvalidScopeError),
@@ -73335,7 +73339,7 @@ class RoutingResolver {
 
 
     if (!delegationChain || delegationChain.isEmpty()) {
-      return RoutingResult.singlePrimary(principalActor);
+      return principalActor ? RoutingResult.singlePrimary(principalActor) : RoutingResult.empty();
     }
 
 
@@ -74016,9 +74020,227 @@ class InMemoryDelegationSource extends DelegationSource {
 }
 ;
 
+
+
+
+
+
+
+
+
+
 class AssignmentSource {
+
+
+
+
+
+
+
+
+
+  getAssignmentsForRole(roleId, scope, asOfDate = new Date()) {
+    throw new Error('AssignmentSource.getAssignmentsForRole() must be implemented');
+  }
+
+
+
+
+
+
+
+
+
+  getAssignmentsForActor(actorId, asOfDate = new Date()) {
+    throw new Error('AssignmentSource.getAssignmentsForActor() must be implemented');
+  }
+
+
+
+
+
+
+
+
+  getActorById(actorId) {
+    throw new Error('AssignmentSource.getActorById() must be implemented');
+  }
+}
+
+
+
+
+
+
+class InMemoryAssignmentSource extends AssignmentSource {
+
+
+
+
+
+
+  constructor(data = {}) {
+    super();
+
+
+    this._assignments = data.assignments || [];
+
+
+    this._actors = new Map();
+
+
+    if (Array.isArray(data.actors)) {
+      data.actors.forEach(actor => {
+        this._actors.set(actor.id, actor);
+      });
+    }
+  }
+
+
+
+
+
+  addAssignment(assignment) {
+    this._assignments.push(assignment);
+  }
+
+
+
+
+
+  addActor(actor) {
+    this._actors.set(actor.id, actor);
+  }
+
+
+
+
+
+
+
+
+
+  getAssignmentsForRole(roleId, scope, asOfDate = new Date()) {
+    return this._assignments.filter(assignment => {
+      var _assignment$scope;
+
+      if (assignment.roleId !== roleId) {
+        return false;
+      }
+
+
+      if (typeof assignment.isValidAt === 'function') {
+        if (!assignment.isValidAt(asOfDate)) {
+          return false;
+        }
+      } else {
+
+        if (assignment.isActive === false) {
+          return false;
+        }
+        if (assignment.validFrom && asOfDate < new Date(assignment.validFrom)) {
+          return false;
+        }
+        if (assignment.validTo && asOfDate > new Date(assignment.validTo)) {
+          return false;
+        }
+      }
+
+
+      if (typeof ((_assignment$scope = assignment.scope) === null || _assignment$scope === void 0 ? void 0 : _assignment$scope.contains) === 'function') {
+        return assignment.scope.contains(scope) || assignment.scope.matches(scope);
+      }
+
+
+      if (assignment.scope) {
+        const assignmentScope = assignment.scope;
+        const queryScope = scope;
+
+
+        if (assignmentScope.type === 'GLOBAL') {
+          return true;
+        }
+
+
+        if (assignmentScope.type === queryScope.type) {
+          return assignmentScope.value === queryScope.value;
+        }
+      }
+      return true;
+    });
+  }
+
+
+
+
+
+
+
+
+  getAssignmentsForActor(actorId, asOfDate = new Date()) {
+    return this._assignments.filter(assignment => {
+      if (assignment.actorId !== actorId) {
+        return false;
+      }
+
+
+      if (typeof assignment.isValidAt === 'function') {
+        return assignment.isValidAt(asOfDate);
+      }
+
+
+      if (assignment.isActive === false) {
+        return false;
+      }
+      if (assignment.validFrom && asOfDate < new Date(assignment.validFrom)) {
+        return false;
+      }
+      if (assignment.validTo && asOfDate > new Date(assignment.validTo)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+
+
+
+
+
+  getActorById(actorId) {
+    return this._actors.get(actorId) || null;
+  }
+
+
+
+
+
+  getAllAssignments() {
+    return [...this._assignments];
+  }
+
+
+
+
+
+  getAllActors() {
+    return Array.from(this._actors.values());
+  }
+
+
+
+
+
+  clear() {
+    this._assignments = [];
+    this._actors.clear();
+  }
+}
+;
+
+class EffectiveAssignmentSource {
   getAssignments(_context, _asOfDate) {
-    throw new Error('AssignmentSource.getAssignments() must be implemented');
+    throw new Error('EffectiveAssignmentSource.getAssignments() must be implemented');
   }
 }
 class OverrideSource {
@@ -74089,7 +74311,7 @@ function rowsFor(rows, context) {
 }
 
 
-class WideRowAssignmentSource extends AssignmentSource {
+class WideRowAssignmentSource extends EffectiveAssignmentSource {
   constructor({
     rows,
     rowIdentityPath,
@@ -74204,7 +74426,7 @@ class MappedDelegationSource {
 }
 
 
-class CompositeAssignmentSource extends AssignmentSource {
+class CompositeAssignmentSource extends EffectiveAssignmentSource {
   constructor({
     sources,
     identity = ['slot.key', 'actorId'],
@@ -74776,6 +74998,20 @@ function withTrace(error, trace) {
   error.resolutionTrace = trace;
   return error;
 }
+function EffectiveAssignmentResolver_getPath(value, path) {
+  return String(path).split('.').reduce((current, part) => current == null ? undefined : current[part], value);
+}
+function resultIdentityValue(result, field) {
+  if (field === 'slot') return result.slot.key;
+  if (field === 'principalActor') return result.permanentActor && result.permanentActor.id;
+  const value = EffectiveAssignmentResolver_getPath(result, field);
+  if (value && typeof value === 'object') {
+    if (typeof value.key === 'string') return value.key;
+    if (typeof value.id === 'string') return value.id;
+    return JSON.stringify(value);
+  }
+  return value;
+}
 
 
 class EffectiveAssignmentResolver {
@@ -74820,7 +75056,15 @@ class EffectiveAssignmentResolver {
     const candidates = this._assignmentSource.getAssignments(context, asOfDate).filter(candidate => candidate instanceof AssignmentCandidate).sort((left, right) => left.slot.key.localeCompare(right.slot.key) || left.actorId.localeCompare(right.actorId));
     const overrides = this._overrideSource.getOverrides(context, asOfDate);
     this._validateOverrides(candidates, overrides, asOfDate);
-    return candidates.filter(candidate => candidate.isValidAt(asOfDate)).map(candidate => this._resolveCandidate(candidate, context, asOfDate, overrides, routingPolicy));
+    const results = candidates.filter(candidate => candidate.isValidAt(asOfDate)).map(candidate => this._resolveCandidate(candidate, context, asOfDate, overrides, routingPolicy));
+    const byIdentity = new Map();
+    results.forEach(result => {
+      const key = this._policy.resultIdentity.map(field => resultIdentityValue(result, field)).join('\u0000');
+      if (!byIdentity.has(key)) {
+        byIdentity.set(key, result);
+      }
+    });
+    return [...byIdentity.values()];
   }
   _resolveCandidate(candidate, context, asOfDate, overrides, routingPolicy) {
     let trace = append(new ResolutionTrace(), 'BASE', 'CONSIDERED', candidate.id, candidate.actorId, 'candidate loaded');
@@ -74899,19 +75143,20 @@ class EffectiveAssignmentResolver {
     }
     const latest = Math.max(...applicable.map(override => override.effectiveFrom.getTime()));
     const finalists = applicable.filter(override => override.effectiveFrom.getTime() === latest);
-    if (finalists.length > 1) {
+    if (finalists.length > 1 && this._policy.tieBehavior === 'THROW') {
       trace = append(trace, 'OVERRIDE', 'REJECTED', candidate.id, candidate.actorId, 'ambiguous latest overrides', {
         overrideIds: finalists.map(override => override.id)
       });
       throw withTrace(new AmbiguousAssignmentOverrideError(candidate.id, finalists.map(override => override.id)), trace);
     }
-    applicable.filter(override => override !== finalists[0]).forEach(override => {
+    const selected = finalists[0];
+    applicable.filter(override => override !== selected).forEach(override => {
       trace = append(trace, 'OVERRIDE', 'REJECTED', candidate.id, candidate.actorId, 'superseded by a later override', {
         overrideId: override.id
       });
     });
     return {
-      override: finalists[0],
+      override: selected,
       trace
     };
   }
@@ -74982,6 +75227,12 @@ class EffectiveAssignmentResolver {
   }
 }
 ;
+
+
+
+
+
+
 
 
 

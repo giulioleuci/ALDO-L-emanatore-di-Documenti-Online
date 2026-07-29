@@ -1,11 +1,11 @@
-import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import { recipe } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams } from '../../../../src/application/context-engine/Recipe';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
 function factory() {
-  return ContextEngineFactory.create(new FakeDatabase(fixtureTables()));
+  return composeContextBuilder(new FakeDatabase(fixtureTables()));
 }
 const now = new Date('2026-07-01T09:00:00Z');
 

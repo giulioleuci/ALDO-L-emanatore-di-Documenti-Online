@@ -133,7 +133,7 @@ Catalogo delle discipline. I codici univoci (`ID`) sono usati come nomi di colon
 | `SIMBOLO`          | String  | —   | —                         | Icona/Emoji rappresentativa                                                                                                                                                                                                                          |
 | `ESAME_CFG`        | JSON    | —   | —                         | Prima/seconda prova per indirizzo: `{"prima_prova":["LC"],"seconda_prova":["LS"]}`                                                                                                                                                                   |
 | `EVOLUZIONE`       | JSON    | —   | —                         | Evoluzione delle relazioni tra materie negli anni, ad esempio per accorpamento o sdoppiamenti o cambi di nome negli anni di corso. Es. `GST - Storia e Geografia` (1°-2° anno) diventa `STO - Storia` (3°-4°-5° anno): `{"GST":[1,2],"STO":[3,4,5]}` |
-| `IS_RELIGIONE_ALT` | Boolean | —   | —                         | `true` per le righe IRC/ALT: esclude questa materia dal fan-out generico di `CattedraResolver.resolveConsiglio` salvo richiesta esplicita (evita che appaia in ogni enumerazione di cattedra dove prima non compariva)                               |
+| `IS_RELIGIONE_ALT` | Boolean | —   | —                         | `true` per le righe IRC/ALT: esclude questa materia dal fan-out generico di `ITeachingAssignmentResolver.resolveConsiglio` salvo richiesta esplicita (evita che appaia in ogni enumerazione di cattedra dove prima non compariva)                      |
 
 ---
 

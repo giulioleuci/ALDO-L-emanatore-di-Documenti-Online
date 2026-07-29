@@ -46,7 +46,7 @@ class AldoActorSource extends ActorSource {
   }
 }
 
-class EffectiveResultSource extends AssignmentSource {
+class EffectiveResultSource extends EffectiveAssignmentSource {
   constructor(private readonly results: readonly EffectiveAssignmentResult[]) {
     super();
   }
@@ -71,7 +71,7 @@ class ArticulatedResolutionConfiguration implements ResolutionConfiguration {
   constructor(private readonly targets: readonly TargetResolution[]) {}
 
   resolve(asOfDate: Date, routingPolicy: RoutingPolicyValue | null): EffectiveAssignmentResult[] {
-    const resolvedSources: AssignmentSource[] = [];
+    const resolvedSources: EffectiveAssignmentSource[] = [];
     for (const target of this.targets) {
       resolvedSources.push(
         new EffectiveResultSource(
@@ -89,6 +89,7 @@ class ArticulatedResolutionConfiguration implements ResolutionConfiguration {
         'metadata.result.baseActor.id',
         'metadata.result.permanentActor.id',
         'actorId',
+        'slot.dimensions.classe',
         'slot.dimensions.materia',
         'slot.dimensions.kind',
         'slot.dimensions.specifica'

@@ -169,13 +169,14 @@ function descrizione(
 function tipoArticolazione(
   classi: IClasseRepository,
   classe: Classe,
-  email: string
+  assignments: FlattenedProjectionAssignment[]
 ): DocenteCdcVM['tipoArticolazione'] {
   if (!classi.isArticolata(classe)) return null;
   const partners = classi.orderedPartners(classe);
   if (partners.length < 2) return null;
-  const inPrimo = classi.getMaterieDelDocente(partners[0]!, email).length > 0;
-  const inSecondo = classi.getMaterieDelDocente(partners[1]!, email).length > 0;
+  const classIds = new Set(assignments.map((assignment) => assignment.classeId));
+  const inPrimo = classIds.has(partners[0]!.classeId.value);
+  const inSecondo = classIds.has(partners[1]!.classeId.value);
   if (inPrimo && inSecondo) return 'COMUNE';
   if (inPrimo) return 'SEPARATO_PRIMO';
   if (inSecondo) return 'SEPARATO_SECONDO';
@@ -242,7 +243,7 @@ function councilVmStrategy(
           sostituisce:
             sostituisce === null ? null : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
         },
-        tipoArticolazione: tipoArticolazione(classi, classe, rowDocente.id),
+        tipoArticolazione: tipoArticolazione(classi, classe, assignments),
         isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
         flags: { isNotLast: index < groups.length - 1 }
       } satisfies DocenteCdcVM;

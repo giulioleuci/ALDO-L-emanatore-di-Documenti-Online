@@ -1,8 +1,10 @@
 import { DocumentGenerationService } from '../../src/application/services/DocumentGenerationService';
-import { ContextEngineFactory } from '../../src/application/context-engine/ContextEngineFactory';
 import { VerbaleGeneratorStrategy } from '../../src/application/strategies/VerbaleGeneratorStrategy';
 import { ConfigurazioneDocumentoRepository } from '../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
-import { RisolutoreRuoliService } from '../../src/application/services/RisolutoreRuoliService';
+import {
+  composeContextBuilder,
+  composeRisolutoreRuoli
+} from '../../src/config/ApplicationComposition';
 import { ExpressionEngineFacade } from '../../src/infrastructure/facades/ExpressionEngineFacade';
 import type { GeneratorStrategy } from '../../src/application/strategies/GeneratorStrategy';
 import { FakeDatabase } from '../fakes/FakeDatabase';
@@ -20,14 +22,14 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
   const service = new DocumentGenerationService({
     db,
     drive,
-    contextBuilder: ContextEngineFactory.create(db),
+    contextBuilder: composeContextBuilder(db),
     strategyRegistry: new Map([
       ['VERBALE_CDC', strategy ?? new VerbaleGeneratorStrategy(templates)]
     ]),
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
-    roleResolver: new RisolutoreRuoliService(db),
+    roleResolver: composeRisolutoreRuoli(db),
     now: new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };

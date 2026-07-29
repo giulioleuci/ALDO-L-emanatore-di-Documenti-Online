@@ -1,4 +1,4 @@
-import { ContextEngineFactory } from '../../../../src/application/context-engine/ContextEngineFactory';
+import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import { recipe } from '../../../../src/application/context-engine/Recipe';
 import type { DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
 import { GestioneSupplenti } from '../../../../src/domain/value-objects/enums';
@@ -32,7 +32,7 @@ const duringSupplenza = new Date('2025-11-15T09:00:00Z');
 
 function cdc(gestione?: GestioneSupplenti, now = duringSupplenza): DocenteCdcVM[] {
   const overrides = gestione === undefined ? {} : { gestioneSupplenti: gestione };
-  const cdu = ContextEngineFactory.create(new FakeDatabase(tablesWith4B())).build(
+  const cdu = composeContextBuilder(new FakeDatabase(tablesWith4B())).build(
     { target: '4B', tipoTarget: 'classe', now },
     recipe('CLASSE_COMPLETA', overrides)
   );

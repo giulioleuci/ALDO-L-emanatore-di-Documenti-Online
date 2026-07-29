@@ -8,11 +8,17 @@ import { ClasseRepository } from '../../../../src/infrastructure/repositories/Cl
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { councilProjectionOperations } from '../../../../src/application/context-engine/TeachingCouncilProjection';
+import { GestioneSupplenti } from '../../../../src/domain/value-objects/enums';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
-function cdc(target: string, now: Date = new Date('2026-07-01T09:00:00Z')): DocenteCdcVM[] {
-  const db = new FakeDatabase(fixtureTables());
+function cdc(
+  target: string,
+  now: Date = new Date('2026-07-01T09:00:00Z'),
+  tables = fixtureTables(),
+  gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
+): DocenteCdcVM[] {
+  const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   const resolveConsiglio = jest.spyOn(teachingAssignments, 'resolveConsiglio');
@@ -27,7 +33,10 @@ function cdc(target: string, now: Date = new Date('2026-07-01T09:00:00Z')): Doce
     tipoTarget: 'classe',
     now
   };
-  const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
+  const recipe: Recipe = {
+    providers: ['class', 'consiglio'],
+    options: makeOptions({ gestioneSupplenti })
+  };
   const result = b.build(params, recipe).focus.classe!.consiglioDiClasse!;
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.objectContaining({ id: target }),
@@ -84,6 +93,58 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
   expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('COMUNE'); // MATE in both partners
   expect(byEmail(list, 'bianchi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO'); // FISI in 1F-LSO only
   expect(byEmail(list, 'verdi@school.it').tipoArticolazione).toBe('SEPARATO_SECONDO'); // FISI in 1F-LSS only
+});
+
+test('tipoArticolazione follows resolved partner assignments for replacements and substitutes', () => {
+  const tables = fixtureTables();
+  tables.DOCENTI!.push(
+    {
+      EMAIL: 'replacement@school.test',
+      COGNOME: 'REPLACEMENT',
+      NOME: 'RITA',
+      GENERE: 'F',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    },
+    {
+      EMAIL: 'substitute@school.test',
+      COGNOME: 'SUBSTITUTE',
+      NOME: 'SARA',
+      GENERE: 'F',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    }
+  );
+  tables.VARIAZIONI_CATTEDRA!.push({
+    CLASSE_ID: '1F-LSS',
+    MATERIA_ID: 'MATE',
+    VECCHIO_TITOLARE: 'rossi@school.it',
+    NUOVO_TITOLARE: 'replacement@school.test',
+    DATA_DECORRENZA: '2026-01-01'
+  });
+  tables.SUPPLENZE!.push({
+    TITOLARE: 'replacement@school.test',
+    SUPPLENTE: 'substitute@school.test',
+    DAL: '2026-02-01',
+    AL: null,
+    CLASSI: '1F-LSS',
+    MATERIE: 'MATE'
+  });
+
+  const list = cdc(
+    '1F',
+    new Date('2026-02-15T09:00:00Z'),
+    tables,
+    GestioneSupplenti.ENTRAMBI
+  );
+
+  expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO');
+  expect(byEmail(list, 'replacement@school.test').tipoArticolazione).toBe(
+    'SEPARATO_SECONDO'
+  );
+  expect(byEmail(list, 'substitute@school.test').tipoArticolazione).toBe(
+    'SEPARATO_SECONDO'
+  );
 });
 
 test('the council projection delegates grouping and ordering to GLF configuration', () => {

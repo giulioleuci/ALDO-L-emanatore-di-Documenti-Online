@@ -32,6 +32,7 @@ import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { DriveServiceFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import type { ITeachingAssignmentResolver } from '../../../src/application/ports/ITeachingAssignmentResolver';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -102,6 +103,30 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
   const registry = c.get<Map<string, unknown>>('strategyRegistry');
   expect(registry.has('FOGLIO_GENERICO')).toBe(true);
+});
+
+test('container injects one role and teaching resolver graph into every document consumer', () => {
+  const c = container();
+  const teachingAssignments = c.get<ITeachingAssignmentResolver>(
+    'teachingAssignmentResolver'
+  );
+  const roles = c.get<RisolutoreRuoliService>('risolutoreRuoli');
+  const documents = c.get<DocumentGenerationService>('documentGenerationService');
+
+  expect(
+    (
+      roles as unknown as {
+        teachingAssignments: ITeachingAssignmentResolver;
+      }
+    ).teachingAssignments
+  ).toBe(teachingAssignments);
+  expect(
+    (
+      documents as unknown as {
+        roleResolver: RisolutoreRuoliService;
+      }
+    ).roleResolver
+  ).toBe(roles);
 });
 
 test('notification council enumeration consumes the registered GLF teaching resolver', () => {

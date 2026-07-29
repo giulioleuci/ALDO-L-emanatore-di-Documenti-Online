@@ -399,10 +399,11 @@ describe('complete effective-assignment acceptance matrix', () => {
     );
 
     const sheets = new MatrixSpreadsheetService();
+    const templateEngine = new FakeTemplateEngine();
     new SheetMaterieConPermessiGeneratorStrategy(
       sheets as unknown as SpreadsheetService,
       new MateriaRepository(db),
-      new FakeTemplateEngine(),
+      templateEngine,
       roles
     ).render('matrix-sheet', classCdu, sheetConfiguration());
     const sheetAclRecipients = sorted(
@@ -415,6 +416,28 @@ describe('complete effective-assignment acceptance matrix', () => {
     expect(sorted(emailRecipients)).toEqual(expectedAll);
     expect(documentAclRecipients).toEqual(expectedAll);
     expect(sheetAclRecipients).toEqual(expectedAll);
+    const groups = templateEngine.sheetContextFor('matrix-sheet')?.['materieColonne'] as {
+      group1: Array<{ sigla: string; roles?: string[]; classeId?: string }>;
+      group2?: Array<{ sigla: string; roles?: string[]; classeId?: string }>;
+      group3?: Array<{ sigla: string; roles?: string[]; classeId?: string }>;
+    };
+    const columns = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
+    expect(sheets.protectCalls).toHaveLength(columns.length);
+    const coordinators = classi.getCoordinatori(classe).flatMap((docente) =>
+      docente.id === null ? [] : [docente.id]
+    );
+    for (const [index, column] of columns.entries()) {
+      const subjects = column.roles ?? [column.sigla];
+      const expectedEditors = sorted(
+        [...coordinators, ...assignments.flatMap((assignment) =>
+          subjects.includes(assignment.slot.materia.value) &&
+          (column.classeId === undefined || assignment.classeId.value === column.classeId)
+            ? assignment.routing.primary.flatMap((docente) => (docente.id === null ? [] : [docente.id]))
+            : []
+        )].filter((email, position, all) => all.indexOf(email) === position)
+      );
+      expect(sorted(sheets.protectCalls[index]?.editors?.users ?? [])).toEqual(expectedEditors);
+    }
     expect(
       sorted(
         roles

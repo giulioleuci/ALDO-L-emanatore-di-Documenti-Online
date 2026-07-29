@@ -8,9 +8,12 @@ import { CLASSE_BASE, ALUNNO_PARTNER_EMAIL } from '../SampleDatabaseBuilder';
 import {
   ASSIGNMENT_MATRIX_DATE_E2E,
   CLASSE_A,
+  CLASSE_C,
+  CLASSE_C_PARTNER,
   e2eAlunnoEmail,
   e2eDocenteEmail
 } from '../E2eSampleDatabaseBuilder';
+import { buildElencoMaterieConPermessi } from '../../application/context-engine/ElencoMaterieConPermessi';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -73,14 +76,76 @@ function emails(values: Iterable<string>): string[] {
   return [...values].sort();
 }
 
-function assignmentRecipients(assignments: TeachingAssignment[]): string[] {
-  return emails(
-    new Set(
-      assignments.flatMap((assignment) =>
-        assignment.routing.primary.flatMap((docente) => (docente.id === null ? [] : [docente.id]))
-      )
+interface AssignmentTuple {
+  classeId: string;
+  materia: string;
+  kind: string;
+  specifica: string | null;
+  actor: string;
+}
+
+function unique(values: string[]): string[] {
+  return values.filter((value, index) => values.indexOf(value) === index);
+}
+
+function tupleKey(tuple: AssignmentTuple): string {
+  return [tuple.classeId, tuple.materia, tuple.kind, tuple.specifica ?? 'null', tuple.actor].join('|');
+}
+
+function assignmentTuples(assignments: TeachingAssignment[]): AssignmentTuple[] {
+  return assignments.flatMap((assignment) =>
+    assignment.routing.primary.flatMap((docente) =>
+      docente.id === null
+        ? []
+        : [
+            {
+              classeId: assignment.classeId.value,
+              materia: assignment.slot.materia.value,
+              kind: assignment.slot.kind,
+              specifica: assignment.slot.specifica,
+              actor: docente.id
+            }
+          ]
     )
   );
+}
+
+function assignmentRecipients(assignments: TeachingAssignment[]): string[] {
+  return emails(unique(assignmentTuples(assignments).map((tuple) => tuple.actor)));
+}
+
+function councilTuples(
+  assignments: TeachingAssignment[],
+  cdu: ReturnType<ContextBuilder['build']>
+): string[] {
+  const classeId = cdu.focus.classe?.anagrafica.nome ?? CLASSE_A;
+  return (cdu.focus.classe?.consiglioDiClasse ?? []).flatMap((docente) =>
+    docente.materie.map((materia) => {
+      const tuple = assignmentTuples(assignments).find(
+        (candidate) =>
+          candidate.materia === materia.sigla &&
+          candidate.specifica === materia.specificita &&
+          candidate.actor === docente.anagrafica.email
+      );
+      return tuple === undefined
+        ? `${classeId}|${materia.sigla}|unknown|${materia.specificita ?? 'null'}|${docente.anagrafica.email}`
+        : tupleKey(tuple);
+    })
+  );
+}
+
+function assertCouncilTuples(
+  consumer: string,
+  assignments: TeachingAssignment[],
+  cdu: ReturnType<ContextBuilder['build']>
+): void {
+  const expected = assignmentTuples(assignments).map(tupleKey).sort();
+  const actual = councilTuples(assignments, cdu).sort();
+  if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+    throw new ValidationError(
+      `${consumer}: expectedTuples=${JSON.stringify(expected)}, actualTuples=${JSON.stringify(actual)}`
+    );
+  }
 }
 
 function consumerDiagnostic(
@@ -113,7 +178,7 @@ function assertSameRecipients(
   actual: string[],
   assignments: TeachingAssignment[]
 ): void {
-  const normalized = emails(new Set(actual));
+  const normalized = emails(actual);
   if (JSON.stringify(expected) !== JSON.stringify(normalized)) {
     throw new ValidationError(consumerDiagnostic(consumer, expected, normalized, assignments));
   }
@@ -153,16 +218,37 @@ export function registerEffectiveAssignmentConsumerChecks(
   );
   const roles = new RisolutoreRuoliService(db, resolver);
 
+  runner.add('Effective assignment consumers: REL/ALT header is exact', sample.sampleSpreadsheetUrl, () => {
+    const special = buildElencoMaterieConPermessi([], true)[0];
+    if (
+      special?.sigla !== 'REL/ALT' ||
+      special.nome !== 'Religione/Alternativa' ||
+      JSON.stringify(special.roles) !== JSON.stringify(['IRC', 'ALT'])
+    ) {
+      throw new ValidationError(`expected REL/ALT header, actual=${JSON.stringify(special)}`);
+    }
+  });
+
+  runner.add(
+    'Effective assignment consumers: REL header is exact when ALT is absent',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const special = buildElencoMaterieConPermessi([], false)[0];
+      if (
+        special?.sigla !== 'REL' ||
+        special.nome !== 'Religione' ||
+        JSON.stringify(special.roles) !== JSON.stringify(['IRC'])
+      ) {
+        throw new ValidationError(`expected REL header, actual=${JSON.stringify(special)}`);
+      }
+    }
+  );
+
   runner.add(
     'Effective assignment consumers: full CDU council',
     sample.sampleSpreadsheetUrl,
     () => {
-      assertSameRecipients(
-        'full CDU council',
-        expected,
-        cdu.focus.classe?.consiglioDiClasse?.map((docente) => docente.anagrafica.email) ?? [],
-        assignments
-      );
+      assertCouncilTuples('full CDU council', assignments, cdu);
     }
   );
 
@@ -383,6 +469,146 @@ export function registerEffectiveAssignmentConsumerChecks(
       );
     }
   );
+
+  for (const classeId of [CLASSE_C, CLASSE_C_PARTNER]) {
+    runner.add(
+      `Effective assignment consumers: full CDU council ${classeId}`,
+      sample.sampleSpreadsheetUrl,
+      () => {
+        const partner = classi.findById(classeId);
+        if (partner === null) {
+          throw new ValidationError(`class=${classeId}, expectedActor=partner, actualActor=missing`);
+        }
+        const partnerAssignments = resolver.resolveConsiglio(partner, ASSIGNMENT_MATRIX_DATE_E2E, {
+          includeReligioneAlt: true,
+          routingPolicy: RoutingPolicy.BOTH_EQUAL
+        });
+        const ownAssignments = partnerAssignments.filter(
+          (assignment) => assignment.classeId.value === classeId
+        );
+        if (ownAssignments.length === 0) {
+          throw new ValidationError(
+            `consumer=partner ownership, class=${classeId}, expectedActor=partner-assignment, actualActor=missing`
+          );
+        }
+        const partnerCdu = contextBuilder.build(
+          { target: classeId, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
+          recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
+        );
+        assertCouncilTuples(`full CDU council ${classeId}`, partnerAssignments, partnerCdu);
+        assertSameRecipients(
+          `role recipients ${classeId}`,
+          assignmentRecipients(partnerAssignments),
+          roles
+            .risolvi('CDC', partnerCdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+            .map((email) => email.value),
+          partnerAssignments
+        );
+
+        const expectedRecipients = assignmentRecipients(partnerAssignments);
+        const emailRecipients: string[] = [];
+        const principals = unique(
+          partnerAssignments.flatMap((assignment) =>
+            assignment.titolare.id === null ? [] : [assignment.titolare.id]
+          )
+        );
+        const confMail = ConfigurazioneEmail.fromData({
+          ID: 'MATRIX_PARTNER_EMAIL', OGGETTO: 'Matrix', PROCESSO: 'PER_DOCENTE', BOX_CFG: null,
+          TESTO: '', SUPPLENTI: 'ENTRAMBI', NOREPLY: false, COLORE_HEADER: '', CONDIZIONE: null,
+          POST_PROCESSO: null, ALLEGATI: '[]'
+        });
+        for (const principal of principals) {
+          const ctx = new PipelineContext();
+          ctx.set('shouldSend', true);
+          ctx.set('now', ASSIGNMENT_MATRIX_DATE_E2E);
+          ctx.set('confMail', confMail);
+          ctx.set('emailTarget', {
+            tipo: 'docente', tipoTarget: 'classe', target: classeId, docenteEmail: principal,
+            emails: [principal], classiCompetenza: [classeId], teachingAssignmentTarget: true
+          });
+          new ResolveRecipientsStep(new LoggerService(), new DocenteRepository(db), classi, resolver).execute(ctx);
+          for (const destination of ctx.get<Array<{ emails: string[] }>>('destinatariFinali') ?? []) {
+            emailRecipients.push(...destination.emails);
+          }
+        }
+        assertSameRecipients(`email recipients ${classeId}`, expectedRecipients, emailRecipients, partnerAssignments);
+
+        const permissions: string[] = [];
+        const drive = {
+          setPermission: (_fileId: string, email: string): void => {
+            permissions.push(email);
+          }
+        } as unknown as IDriveFacade;
+        const row = {
+          ID: 'MATRIX_PARTNER_DOCUMENT', TIPO: 'MATRIX', GENERATORE: 'DOCUMENTO_GENERICO',
+          CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
+          DUPLICAZIONE: 'NEGATA',
+          PERMESSI: JSON.stringify({ file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }], folder: [], regolaSupplente: { file: 'ENTRAMBI' } }),
+          POST_PROCESSO: null, PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC',
+          REGISTRA_DOC: '{}', REGISTRA_FOLD: '{}'
+        };
+        const documentCtx = new PipelineContext();
+        documentCtx.set('config', row);
+        documentCtx.set('confDoc', ConfigurazioneDocumento.fromData(row));
+        documentCtx.set('cdu', partnerCdu);
+        documentCtx.set('shouldGenerate', true);
+        documentCtx.set('newFileId', `matrix-document-${classeId}`);
+        new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(documentCtx);
+        assertSameRecipients(`document ACL recipients ${classeId}`, expectedRecipients, permissions, partnerAssignments);
+
+        const requests: SpreadsheetProtectRequest[] = [];
+        const columnItems: Array<Record<string, unknown>> = [];
+        const sheets = {
+          getSheetInfo: (): SpreadsheetSheetInfo[] => [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }],
+          protectRanges: (_spreadsheetId: string, input: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]): SpreadsheetProtectResult => {
+            requests.push(...(Array.isArray(input) ? input : [input]));
+            return { spreadsheetId: 'matrix-sheet', protectedCount: requests.length, protectedRangeIds: requests.map((_, index) => index) };
+          }
+        } as unknown as SpreadsheetService;
+        const templates = {
+          processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
+            const groups = context['materieColonne'] as { group1: Array<Record<string, unknown>>; group2?: Array<Record<string, unknown>>; group3?: Array<Record<string, unknown>> };
+            const items = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
+            columnItems.push(...items);
+            return items.map((item, index) => ({
+              sheetName: 'Sheet1', column: index + 1,
+              header: typeof item['header'] === 'string' ? item['header'] : typeof item['sigla'] === 'string' ? item['sigla'] : '',
+              isLabel: false, item
+            }));
+          }
+        } as unknown as ITemplateEngine;
+        const sheetConfig = ConfigurazioneDocumento.fromData({
+          ID: 'MATRIX_PARTNER_SHEET', TIPO: 'MATRIX', GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+          CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
+          DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
+          GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
+        });
+        new SheetMaterieConPermessiGeneratorStrategy(sheets, new MateriaRepository(db), templates, roles).render(
+          `matrix-sheet-${classeId}`, partnerCdu, sheetConfig
+        );
+        const coordinators = classi.getCoordinatori(partner).flatMap((docente) => docente.id === null ? [] : [docente.id]);
+        if (requests.length !== columnItems.length) {
+          throw new ValidationError(`consumer=spreadsheet column ACL ${classeId}, expectedColumns=${columnItems.length}, actualColumns=${requests.length}`);
+        }
+        for (const [index, item] of columnItems.entries()) {
+          const subjects = Array.isArray(item['roles']) ? item['roles'] : [item['sigla']];
+          const owner = typeof item['classeId'] === 'string' ? item['classeId'] : null;
+          const expectedEditors = emails(unique([
+            ...coordinators,
+            ...assignmentTuples(partnerAssignments)
+              .filter((tuple) => subjects.includes(tuple.materia) && (owner === null || tuple.classeId === owner))
+              .map((tuple) => tuple.actor)
+          ]));
+          const actualEditors = emails(requests[index]?.editors?.users ?? []);
+          if (JSON.stringify(expectedEditors) !== JSON.stringify(actualEditors)) {
+            throw new ValidationError(
+              `consumer=spreadsheet column ACL ${classeId}, column=${index + 1}, owner=${owner ?? 'shared'}, subjects=${subjects.join('|')}, expected=${expectedEditors.join('|')}, actual=${actualEditors.join('|')}`
+            );
+          }
+        }
+      }
+    );
+  }
 
   for (const { student: studentEmail, actors } of EXPECTED_STUDENT_COUNCILS) {
     runner.add(

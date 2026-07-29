@@ -20,14 +20,14 @@ L'aggiunta DEVE seguire il flusso standard del sistema, attraversando i livelli 
 
 ### A. Livello L3 — Context Engine (CDU Enrichment)
 
-La logica di preparazione dell'array DEVE risiedere in un `ViewModelMapper` o in un Interceptor del `ContextEngine` (vedi `09_CONTEXT_ENGINE.md`).
+La logica di preparazione dell'array DEVE risiedere in un `ViewModelMapper` o in un Interceptor del `ContextEngine`, nel rispetto della struttura CDU canonica in `02_CDU_STRUTTURA.md`.
 
 **Logica di trasformazione:**
 
 1.  Recupero di tutti i docenti dal `consiglioDiClasse` nel CDU.
 2.  **Filtro:** Escludere le materie con ID `IRC` e `ALT` dalla lista standard.
 3.  **Ordinamento:** Ordinare le restanti materie alfabeticamente per `sigla`.
-4.  **Iniezione:** Prependere all'array un oggetto speciale:
+4.  **Iniezione:** Prependere all'array un oggetto speciale solo per i ruoli realmente presenti. Con ALT presente:
     ```json
     {
       "sigla": "REL/ALT",
@@ -36,6 +36,7 @@ La logica di preparazione dell'array DEVE risiedere in un `ViewModelMapper` o in
       "colore": "#E0E0E0"
     }
     ```
+    Senza ALT, l'oggetto è invece `{ "sigla": "REL", "isSpecial": true, "roles": ["IRC"], "colore": "#E0E0E0" }`: non è lecito esporre né autorizzare ALT per una classe che non la possiede.
 5.  **Output:** L'array risultante viene mappato in `cdu.focus.classe.elencoMaterieConPermessi`.
 
 ### B. Livello L2 — Workspace Template Engine (Espansione)
@@ -48,7 +49,7 @@ Il motore DEVE gestire l'espansione orizzontale del placeholder.
 
 ### C. Livello L4 — DocumentoPipeline (Strategy)
 
-La gestione dei permessi DEVE usare la strategia `SheetMaterieConPermessiGeneratorStrategy` o una sua estensione (vedi `10_PIPELINE_DOCUMENTI.md`).
+La gestione dei permessi DEVE usare la strategia `SheetMaterieConPermessiGeneratorStrategy` o una sua estensione, coerente con le configurazioni `CONF_DOC` definite in `01_SCHEMA_DATABASE.md`.
 
 **Logica di protezione (Step 8 — ApplyPermissions):**
 Per ogni colonna generata:

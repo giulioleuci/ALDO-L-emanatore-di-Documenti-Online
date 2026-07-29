@@ -296,6 +296,14 @@ describe('registerRepositoryChecks', () => {
         expect.stringContaining('articulated parent')
       ])
     );
+    expect(report.results.map((result) => result.name)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(`full CDU council ${CLASSE_C}`),
+        expect.stringContaining(`full CDU council ${CLASSE_C_PARTNER}`),
+        expect.stringContaining('REL/ALT header is exact'),
+        expect.stringContaining('REL header is exact when ALT is absent')
+      ])
+    );
     for (const result of report.results) expect(result.status).toBe('pass');
   });
 

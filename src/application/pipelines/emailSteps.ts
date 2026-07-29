@@ -1,7 +1,7 @@
 import type { Cdu, CduDestinatario } from '../context-engine/Cdu';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { BuildParams, RecipeOptions } from '../context-engine/Recipe';
-import type { EmailTarget } from '../email/saluto';
+import { emailTargetId, type EmailTarget } from '../email/saluto';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type {
@@ -366,7 +366,7 @@ export class ComposeEmailStep extends Step {
   }
 }
 
-/** Step 5 (11 §7): SUPPLENTI routing per docente/classe; multi-TO passthrough for cdc/genitori/alunno. */
+/** Step 5 (11 §7): teaching-assignment routing for PER_DOCENTE; every other process is declared passthrough. */
 export class ResolveRecipientsStep extends Step {
   private readonly projector = new CollectionProjector({ logger: new LoggerService() });
 
@@ -383,8 +383,12 @@ export class ResolveRecipientsStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const t = target(ctx);
-    if (t.tipo !== 'docente') {
-      // PER_CDC / genitori / alunno: one multi-TO message, not subject to SUPPLENTI (11 §7/§12).
+    if (
+      confMail(ctx).processo !== ProcessoInvio.PER_DOCENTE ||
+      t.tipo !== 'docente' ||
+      t.teachingAssignmentTarget !== true
+    ) {
+      // Coordinator, PER_CDC, family and student targets are declared recipients.
       const dest: Destinazione = t.cc !== undefined ? { emails: t.emails, cc: t.cc } : { emails: t.emails };
       this.setResult(ctx, 'destinatariFinali', [dest] satisfies Destinazione[]);
       return;
@@ -404,12 +408,7 @@ export class ResolveRecipientsStep extends Step {
           includeReligioneAlt: true,
           routingPolicy: routingPolicyByGestioneSupplenti[confMail(ctx).supplenti]
         })
-        .filter(
-          (assignment) =>
-            assignment.titolare.id === titolareEmail ||
-            assignment.titolareNominale.id === titolareEmail ||
-            assignment.docenteEffettivo.id === titolareEmail
-        );
+        .filter((assignment) => assignment.titolare.id === titolareEmail);
     });
     const routingRows = assignments.map((assignment) => ({
       routing: {
@@ -511,7 +510,8 @@ export class LogEmailStep extends Step {
     const allegatiInfo = {
       docs: ctx.get<string[]>('documentIds') ?? [],
       folders: ctx.get<string[]>('cartelleFolderIds') ?? [],
-      attach: ctx.get<string[]>('allegatiLinks') ?? []
+      attach: ctx.get<string[]>('allegatiLinks') ?? [],
+      logicalTargetId: emailTargetId(target(ctx))
     };
     this.logMail.registraInvio(
       String(cfg(ctx)[COL_CONF_MAIL.ID]),

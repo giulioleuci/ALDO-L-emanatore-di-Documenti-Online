@@ -6,7 +6,7 @@ import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionE
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { PostProcessDb } from '../pipelines/postProcessActions';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
-import type { EmailTarget } from '../email/saluto';
+import { emailTargetId, type EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Alunno } from '../../domain/entities/Alunno';
@@ -80,6 +80,8 @@ export interface EmailNotificationDeps {
 export interface SendPatternOptions {
   /** Restrict the run to targets whose candidate emails intersect this list (retry seam, 11 §16). */
   onlyRecipients?: string[];
+  /** Restrict the run to stable pre-routing logical target ids (new retry seam). */
+  onlyTargetIds?: string[];
 }
 
 export interface SendPatternResult {
@@ -172,9 +174,16 @@ export class EmailNotificationService {
     conf.getAllegati();
 
     let targets = this.enumerateTargets(conf);
-    const only = options.onlyRecipients;
-    if (only !== undefined) {
-      targets = targets.filter((t) => t.emails.some((e) => only.includes(e)));
+    const onlyTargetIds = options.onlyTargetIds;
+    if (onlyTargetIds !== undefined) {
+      targets = targets.filter((target) =>
+        onlyTargetIds.includes(emailTargetId(target))
+      );
+    } else {
+      const only = options.onlyRecipients;
+      if (only !== undefined) {
+        targets = targets.filter((t) => t.emails.some((e) => only.includes(e)));
+      }
     }
 
     const result: SendPatternResult = { targets: targets.length, sent: 0, skipped: 0, errors: [] };
@@ -400,7 +409,8 @@ export class EmailNotificationService {
       target: classi[0]!,
       docenteEmail: email,
       emails: [email],
-      classiCompetenza: classi
+      classiCompetenza: classi,
+      teachingAssignmentTarget: true
     }));
   }
 

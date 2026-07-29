@@ -6,7 +6,7 @@ import type { EmailNotificationService } from './EmailNotificationService';
 import { escapeHtml } from '../email/boxes';
 
 export interface EmailRetryOptions {
-  /** Give up after this many failed attempts for the same (PATTERN, DESTINATARI) (default 3, 11 §16). */
+  /** Give up after this many failed attempts for the same pattern/logical target (default 3, 11 §16). */
   maxTentativi?: number;
   logger?: LoggerService;
 }
@@ -18,8 +18,8 @@ export interface RetryResult {
 
 /**
  * Retry of failed sends (11 §16): scans LOG_MAIL for STATO = ERROR, groups by
- * (PATTERN, DESTINATARI) — each ERROR record counts as one past attempt — and
- * re-runs the pattern restricted to those recipients. A successful re-send
+ * stable logical target when available (with physical recipients as the legacy
+ * fallback). Each ERROR record counts as one past attempt. A successful re-send
  * updates the original records to SUCCESS; once maxTentativi is reached the
  * failure is permanent and the supervisore is notified.
  */
@@ -41,7 +41,8 @@ export class EmailRetryService {
   retryFailed(): RetryResult {
     const groups = new Map<string, LogEmail[]>();
     for (const failed of this.logMail.findFailed()) {
-      const key = `${failed.pattern}::${failed.destinatariRaw}`;
+      const logicalTargetId = this.logicalTargetId(failed);
+      const key = `${failed.pattern}::${logicalTargetId ?? failed.destinatariRaw}`;
       const group = groups.get(key) ?? [];
       group.push(failed);
       groups.set(key, group);
@@ -55,9 +56,13 @@ export class EmailRetryService {
         result.permanent += 1;
         continue;
       }
-      const run = this.emailService.sendPattern(first.pattern, {
-        onlyRecipients: first.getDestinatari()
-      });
+      const logicalTargetId = this.logicalTargetId(first);
+      const run = this.emailService.sendPattern(
+        first.pattern,
+        logicalTargetId === null
+          ? { onlyRecipients: first.getDestinatari() }
+          : { onlyTargetIds: [logicalTargetId] }
+      );
       if (run.sent > 0 && run.errors.length === 0) {
         for (const record of group) this.logMail.marcaSuccesso(record);
         result.retried += 1;
@@ -70,6 +75,11 @@ export class EmailRetryService {
       }
     }
     return result;
+  }
+
+  private logicalTargetId(record: LogEmail): string | null {
+    const value = record.getAllegati()['logicalTargetId'];
+    return typeof value === 'string' && value.trim() !== '' ? value : null;
   }
 
   /** Permanent failure: log as error and notify the supervisore (11 §16). */

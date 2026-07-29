@@ -120,3 +120,69 @@ test('registraPermanente redacts the recipient email in the error log on permane
   const errorCalls = errorMock.mock.calls.map((args: unknown[]) => args[0] as string);
   expect(errorCalls.some((msg) => msg.includes('@'))).toBe(false);
 });
+
+test('retry uses the logged logical PER_DOCENTE target when a substitute also owns a chair', () => {
+  const tables = fixtureTables();
+  for (const classe of tables.CLASSI!) {
+    classe.ATTIVA = classe.ID === '5A';
+  }
+  const cinqueA = tables.CLASSI!.find((row) => row.ID === '5A')!;
+  cinqueA.ITA = 'verdi@school.it';
+  tables.SUPPLENZE!.push({
+    TITOLARE: 'bianchi@school.it',
+    SUPPLENTE: 'verdi@school.it',
+    DAL: '2026-06-01',
+    AL: '2026-08-31',
+    CLASSI: '5A',
+    MATERIE: '*'
+  });
+  tables.CONF_MAIL!.push({
+    ID: 'DOC_RETRY',
+    OGGETTO: 'Promemoria docente',
+    PROCESSO: 'PER_DOCENTE',
+    BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Promemoria.</p>"}]',
+    TESTO: '',
+    SUPPLENTI: 'SOLO_SUPPLENTI',
+    NOREPLY: false,
+    COLORE_HEADER: '',
+    CONDIZIONE: null,
+    POST_PROCESSO: null,
+    ALLEGATI: '[]'
+  });
+  tables.LOG_MAIL = [
+    {
+      PATTERN: 'DOC_RETRY',
+      DESTINATARI: 'verdi@school.it',
+      DATA: '2026-06-30T10:00:00.000Z',
+      STATO: 'ERROR',
+      ALLEGATI: JSON.stringify({
+        logicalTargetId: 'docente:bianchi@school.it'
+      }),
+      ERRORE: 'quota'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const gmail = new FakeGmailFacade();
+  const emailService = EmailNotificationService.create(
+    db,
+    gmail,
+    new FakeTemplateEngine(),
+    NOW,
+    new FakeDriveFacade(),
+    new AldoTeachingAssignmentResolver(db)
+  );
+  const retry = new EmailRetryService(
+    new LogEmailRepository(db),
+    emailService,
+    gmail,
+    new MasterSheetRepository(db)
+  );
+
+  const result = retry.retryFailed();
+
+  expect(result).toEqual({ retried: 1, permanent: 0 });
+  expect(gmail.sent).toHaveLength(1);
+  expect(gmail.sent[0]!.to).toEqual(['verdi@school.it']);
+  expect(gmail.sent[0]!.htmlBody).toContain('BIANCHI LUCIA');
+  expect(gmail.sent[0]!.htmlBody).not.toContain('VERDI GIO');
+});

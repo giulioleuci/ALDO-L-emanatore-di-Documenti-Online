@@ -33,6 +33,12 @@ import { FakeGmailFacade } from '../../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../../src/infrastructure/db/Database';
 import { AggregatoreDati } from '../../../../src/application/services/AggregatoreDati';
+import type {
+  ITeachingAssignmentResolver,
+  TeachingAssignment
+} from '../../../../src/application/ports/ITeachingAssignmentResolver';
+import { MateriaId } from '../../../../src/domain/value-objects/MateriaId';
+import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
 
 const logger = new LoggerService();
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window
@@ -68,7 +74,8 @@ function docenteTarget(): EmailTarget {
     target: '5A',
     docenteEmail: 'rossi@school.it',
     emails: ['rossi@school.it'],
-    classiCompetenza: []
+    classiCompetenza: [],
+    teachingAssignmentTarget: true
   };
 }
 
@@ -100,7 +107,8 @@ function docente4BTarget(): EmailTarget {
     target: '4B',
     docenteEmail: 'rossi@school.it',
     emails: ['rossi@school.it'],
-    classiCompetenza: []
+    classiCompetenza: [],
+    teachingAssignmentTarget: true
   };
 }
 
@@ -650,7 +658,7 @@ test('SOLO_TITOLARI keeps the titolare (11 §7)', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_TITOLARI' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
-  expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
+  expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }]);
 });
 
 test('SOLO_SUPPLENTI keeps a raw docente target that no longer owns a resolved chair', () => {
@@ -658,14 +666,98 @@ test('SOLO_SUPPLENTI keeps a raw docente target that no longer owns a resolved c
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
   // Chain on NOW without materia filter: rossi → bianchi (5A,'*') → verdi (5A, ITA matches wildcard query).
-  expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
+  expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }]);
 });
 
 test('ENTRAMBI keeps a raw docente target that no longer owns a resolved chair', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
-  expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
+  expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }]);
+});
+
+test('PER_COORDINATORE stays on its declared recipient and never assignment-routes', () => {
+  const w = wire(
+    { PROCESSO: 'PER_COORDINATORE', SUPPLENTI: 'SOLO_SUPPLENTI' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '5A',
+      docenteEmail: 'rossi@school.it',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['5A']
+    }
+  );
+  w.ctx.set('shouldSend', true);
+  const resolveConsiglio = jest.fn();
+  const teachingAssignments = {
+    resolveMateria: jest.fn(),
+    resolveConsiglio
+  } as unknown as ITeachingAssignmentResolver;
+
+  new ResolveRecipientsStep(
+    logger,
+    w.docenti,
+    new ClasseRepository(w.db),
+    teachingAssignments
+  ).execute(w.ctx);
+
+  expect(w.ctx.get('destinatariFinali')).toEqual([
+    { emails: ['rossi@school.it'] }
+  ]);
+  expect(resolveConsiglio).not.toHaveBeenCalled();
+});
+
+test('PER_DOCENTE routes only assignments owned by its principal logical target', () => {
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '5A',
+      docenteEmail: 'bianchi@school.it',
+      emails: ['bianchi@school.it'],
+      classiCompetenza: ['5A'],
+      teachingAssignmentTarget: true
+    }
+  );
+  w.ctx.set('shouldSend', true);
+  const rossi = Docente.fromData({ EMAIL: 'rossi@school.it', COGNOME: 'ROSSI' });
+  const bianchi = Docente.fromData({ EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI' });
+  const verdi = Docente.fromData({ EMAIL: 'verdi@school.it', COGNOME: 'VERDI' });
+  const assignment = (
+    titolare: Docente,
+    effettivo: Docente,
+    primary: Docente[]
+  ): TeachingAssignment => ({
+    slot: { materia: MateriaId.of('MATE'), kind: 'MAIN', specifica: null },
+    classeId: ClasseId.of('5A'),
+    titolareNominale: titolare,
+    titolare,
+    docenteEffettivo: effettivo,
+    delegationChain: [],
+    routing: { primary, cc: [], bcc: [] },
+    trace: []
+  });
+  const teachingAssignments = {
+    resolveMateria: jest.fn(),
+    resolveConsiglio: jest.fn(() => [
+      assignment(rossi, bianchi, [rossi, bianchi]),
+      assignment(bianchi, verdi, [bianchi, verdi])
+    ])
+  } as unknown as ITeachingAssignmentResolver;
+
+  new ResolveRecipientsStep(
+    logger,
+    w.docenti,
+    new ClasseRepository(w.db),
+    teachingAssignments
+  ).execute(w.ctx);
+
+  expect(w.ctx.get('destinatariFinali')).toEqual([
+    { emails: ['bianchi@school.it'] },
+    { emails: ['verdi@school.it'] }
+  ]);
 });
 
 test('genitori/cdc targets are single multi-TO destinations not subject to SUPPLENTI (11 §7/§12)', () => {
@@ -926,7 +1018,8 @@ test('LogEmailStep keeps rendered docs/folders separate from every static attach
     attach: [
       'https://drive.google.com/open?id=static-doc-1',
       'https://drive.google.com/open?id=static-doc-2'
-    ]
+    ],
+    logicalTargetId: 'genitori:a1@school.it:1'
   });
 });
 
@@ -941,6 +1034,22 @@ test('LogEmailStep records ERROR with message when a send failed (11 §9)', () =
   const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
   expect(row['STATO']).toBe('ERROR');
   expect(String(row['ERRORE'])).toContain('broken@x.it');
+});
+
+test('LogEmailStep stores a stable logical target id beside post-routing recipients', () => {
+  const w = wire();
+  w.ctx.set('shouldSend', true);
+  w.ctx.set('sentTo', ['physical-recipient@x.it']);
+  w.ctx.set('sendErrors', ['quota']);
+  w.ctx.set('corpoHtml', '<p>x</p>');
+
+  new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
+
+  const row = w.db.tables['LOG_MAIL']!.getAllRows()[0]!;
+  const allegati = JSON.parse(String(row['ALLEGATI'])) as {
+    logicalTargetId?: string;
+  };
+  expect(allegati.logicalTargetId).toBe('genitori:a1@school.it:1');
 });
 
 test('PostProcessEmailStep stamps CARENZE.NOTIFICATO only after a successful send (11 §10)', () => {
@@ -1212,6 +1321,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
         tipo: 'docente',
         tipoTarget: 'classe',
         target: '5A',
+        teachingAssignmentTarget: true,
         emails: ['ghost@school.it'],
         classiCompetenza: []
       }
@@ -1235,7 +1345,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     expect(w.ctx.get('destinatariFinali')).toEqual([]);
   });
 
-  test('ENTRAMBI resolves per-competenza-classe, falling back to null for a class with no active supplenza (11 §7/§12)', () => {
+  test('ENTRAMBI does not assignment-route a coordinator with multiple competence classes', () => {
     const w = wire(
       { PROCESSO: 'PER_COORDINATORE', SUPPLENTI: 'ENTRAMBI' },
       {
@@ -1249,12 +1359,10 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     );
     buildStep(w).execute(w.ctx);
     w.ctx.set('shouldSend', true);
-    // 5A: rossi -> bianchi -> verdi (full delegation chain, as in the SOLO_SUPPLENTI test below);
-    // 9Z: no supplenza row at all -> null, dropped from `supplenti`.
-    expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
+    expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }]);
   });
 
-  test('SOLO_SUPPLENTI falls back to the titolare for a competenza class with no active supplenza (11 §7)', () => {
+  test('SOLO_SUPPLENTI also keeps a coordinator on the declared recipient', () => {
     const w = wire(
       { PROCESSO: 'PER_COORDINATORE', SUPPLENTI: 'SOLO_SUPPLENTI' },
       {
@@ -1268,12 +1376,11 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     );
     buildStep(w).execute(w.ctx);
     w.ctx.set('shouldSend', true);
-    // 5A chain resolves to verdi (as the existing SOLO_SUPPLENTI test shows); 9Z has none -> titolare.
     expect(
       resolve(w)
         .map((r) => r.emails[0])
         .sort()
-    ).toEqual(['bianchi@school.it']);
+    ).toEqual(['rossi@school.it']);
   });
 
   // --- Step 6: SendEmailStep ---

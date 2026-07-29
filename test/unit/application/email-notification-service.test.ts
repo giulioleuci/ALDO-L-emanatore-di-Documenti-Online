@@ -448,11 +448,13 @@ test('sendPattern delivers a configured static Word blob even when no box is con
     .filter((row) => row['PATTERN'] === 'STATIC_WORD');
   expect(auditRows).toHaveLength(2);
   for (const row of auditRows) {
-    expect(JSON.parse(String(row['ALLEGATI']))).toEqual({
+    const allegati = JSON.parse(String(row['ALLEGATI'])) as Record<string, unknown>;
+    expect(allegati).toMatchObject({
       docs: [],
       folders: [],
       attach: ['https://drive.google.com/open?id=static-word-id']
     });
+    expect(allegati['logicalTargetId']).toMatch(/^cdc:/);
   }
 });
 
@@ -470,6 +472,49 @@ test('sendToTarget sends no attachments when the static configuration is empty',
   expect(result).toEqual({ sent: 1, errors: [], skipped: false });
   expect(gmail.sent).toHaveLength(1);
   expect(gmail.sent[0]!.attachments).toEqual([]);
+});
+
+test('sendToTarget never assignment-routes a flagged target under PER_COORDINATORE', () => {
+  const { db, gmail } = wire([
+    mailRow('COORDINATORE_STALE_TARGET', {
+      PROCESSO: 'PER_COORDINATORE',
+      SUPPLENTI: 'SOLO_SUPPLENTI'
+    })
+  ]);
+  const coordinatore = Docente.fromData({
+    EMAIL: 'rossi@school.it',
+    COGNOME: 'Rossi',
+    DIPART: 'X'
+  });
+  const supplente = Docente.fromData({
+    EMAIL: 'bianchi@school.it',
+    COGNOME: 'Bianchi',
+    DIPART: 'X'
+  });
+  const service = new EmailNotificationService(
+    fullDeps(db, gmail, {
+      teachingAssignments: teachingResolverFor([
+        {
+          ...assignmentFor(coordinatore),
+          docenteEffettivo: supplente,
+          routing: { primary: [supplente], cc: [], bcc: [] }
+        }
+      ])
+    })
+  );
+
+  const result = service.sendToTarget('COORDINATORE_STALE_TARGET', {
+    tipo: 'docente',
+    tipoTarget: 'classe',
+    target: '5A',
+    docenteEmail: 'rossi@school.it',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['5A'],
+    teachingAssignmentTarget: true
+  });
+
+  expect(result).toEqual({ sent: 1, errors: [], skipped: false });
+  expect(gmail.sent[0]!.to).toEqual(['rossi@school.it']);
 });
 
 test('sendToTarget does not attach a class document unless its box explicitly sets ALLEGA true', () => {

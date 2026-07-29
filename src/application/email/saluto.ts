@@ -13,6 +13,12 @@ export interface EmailTarget {
   target: string;
   /** For docente targets: the titolare being addressed. */
   docenteEmail?: string;
+  /**
+   * True only for PER_DOCENTE targets enumerated from PRINCIPAL_ONLY teaching
+   * assignments. Other docente-shaped targets (for example coordinators) are
+   * declared recipients and must not be assignment-routed.
+   */
+  teachingAssignmentTarget?: true;
   /** Raw candidate emails (docente / CdC docenti / alunno / tutors). */
   emails: string[];
   /** For coordinatore multi-classe: every coordinated class id (11 §12). */
@@ -21,6 +27,14 @@ export interface EmailTarget {
   carenzaProgressivo?: number;
   /** Cc-only addresses for the PER_CARENZA_GENITORI_E_COORD pattern (coordinatore, not part of the greeting). */
   cc?: string[];
+}
+
+/** Stable pre-routing identity persisted with LOG_MAIL for unambiguous retries. */
+export function emailTargetId(target: EmailTarget): string {
+  const logicalRecipient = target.docenteEmail ?? target.target;
+  const progressivo =
+    target.carenzaProgressivo === undefined ? '' : `:${target.carenzaProgressivo}`;
+  return `${target.tipo}:${logicalRecipient}${progressivo}`;
 }
 
 /**

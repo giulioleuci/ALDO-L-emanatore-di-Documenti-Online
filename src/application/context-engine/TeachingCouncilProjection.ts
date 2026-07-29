@@ -15,15 +15,20 @@ export type CollectionProjectionOperation = ProjectionOperation;
 
 export const councilProjectionOperations: CollectionProjectionOperation[] = [
   {
+    type: 'flatMap',
+    path: 'routing.primary',
+    mergeParent: true
+  },
+  {
     type: 'groupBy',
-    keys: ['routing.primary.0.id', 'titolare.id', 'docenteEffettivo.id'],
+    keys: ['id'],
     aggregates: {
       assignments: { type: 'collect', path: '$item' }
     }
   },
   {
     type: 'sortBy',
-    keys: [{ path: 'routing.primary.0.metadata.cognome', direction: 'ASC' }]
+    keys: [{ path: 'assignments.0.metadata.cognome', direction: 'ASC' }]
   },
   { type: 'strategy', name: 'aldoTeachingCouncilVm' }
 ];
@@ -75,8 +80,10 @@ interface ProjectionAssignment {
   studentSpecificityPattern: string;
 }
 
+type FlattenedProjectionAssignment = ProjectionAssignment & ProjectionTeacher;
+
 interface ProjectionGroup {
-  assignments: ProjectionAssignment[];
+  assignments: FlattenedProjectionAssignment[];
 }
 
 interface ProjectionRuntime {
@@ -193,7 +200,7 @@ function councilVmStrategy(
     return groups.map((group, index) => {
       const assignments = group.assignments;
       const first = assignments[0]!;
-      const rowDocente = first.routing.primary[0]!;
+      const rowDocente = first;
       const hasDelegation = first.docenteEffettivo.id !== first.titolare.id;
       const displaysDelegation =
         hasDelegation &&

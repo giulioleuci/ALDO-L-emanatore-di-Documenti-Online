@@ -15,6 +15,136 @@ import {
   MATERIA_1,
   ALUNNO_PARTNER_EMAIL
 } from '../SampleDatabaseBuilder';
+import {
+  ASSIGNMENT_MATRIX_DATE_E2E,
+  CLASSE_A,
+  CLASSE_C,
+  CLASSE_C_PARENT,
+  CLASSE_C_PARTNER,
+  e2eDocenteEmail
+} from '../E2eSampleDatabaseBuilder';
+
+interface AssignmentMatrixSample {
+  sampleSpreadsheetUrl: string;
+}
+
+interface ExpectedAssignment {
+  materia: string;
+  kind: 'MAIN' | 'ITP' | 'SPECIFICA';
+  specifica: string | null;
+  actor: string;
+}
+
+const EXPECTED_ASSIGNMENT_MATRIX: ExpectedAssignment[] = [
+  { materia: 'MAT', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(10) },
+  { materia: 'INF', kind: 'ITP', specifica: null, actor: e2eDocenteEmail(11) },
+  {
+    materia: 'LAB',
+    kind: 'SPECIFICA',
+    specifica: 'GRUPPO_A',
+    actor: e2eDocenteEmail(3)
+  },
+  {
+    materia: 'LAB',
+    kind: 'SPECIFICA',
+    specifica: 'SEMINARIO_POMERIDIANO',
+    actor: e2eDocenteEmail(4)
+  },
+  {
+    materia: 'INTERPRET',
+    kind: 'SPECIFICA',
+    specifica: 'CHITARRA',
+    actor: e2eDocenteEmail(5)
+  },
+  { materia: 'IRC', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(12) },
+  { materia: 'ALT', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(14) }
+];
+
+function matrixDiagnostic(
+  expected: ExpectedAssignment,
+  assignment: ReturnType<ITeachingAssignmentResolver['resolveConsiglio']>[number] | undefined
+): string {
+  return [
+    `class=${CLASSE_A}`,
+    `subject=${expected.materia}`,
+    `slotKind=${expected.kind}`,
+    `specificity=${expected.specifica ?? 'null'}`,
+    `expectedActor=${expected.actor}`,
+    `actualActor=${assignment?.docenteEffettivo.id ?? 'missing'}`,
+    `glfTrace=${JSON.stringify(assignment?.trace ?? [])}`
+  ].join(', ');
+}
+
+/**
+ * Complete live-GAS acceptance matrix. Every assertion uses the final ALDO port,
+ * while the diagnostic preserves the complete GLF trace needed to debug a
+ * cross-runtime mismatch.
+ */
+export function registerEffectiveAssignmentMatrixChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: AssignmentMatrixSample
+): void {
+  const db = container.get<RepositoryDatabase>('db');
+  const classi = new ClasseRepository(db);
+  const resolver = container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver');
+  const classe = classi.findById(CLASSE_A);
+  if (classe === null) {
+    runner.add('Effective assignment matrix: fixture class', sample.sampleSpreadsheetUrl, () => {
+      throw new ValidationError(
+        `class=${CLASSE_A}, subject=*, slotKind=*, specificity=null, expectedActor=fixture, actualActor=missing, glfTrace=[]`
+      );
+    });
+    return;
+  }
+  const assignments = resolver.resolveConsiglio(classe, ASSIGNMENT_MATRIX_DATE_E2E, {
+    includeReligioneAlt: true,
+    routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL
+  });
+
+  for (const expected of EXPECTED_ASSIGNMENT_MATRIX) {
+    runner.add(
+      `Effective assignment matrix: ${expected.kind} ${expected.materia}${expected.specifica === null ? '' : `.${expected.specifica}`}`,
+      sample.sampleSpreadsheetUrl,
+      () => {
+        const assignment = assignments.find(
+          (candidate) =>
+            candidate.slot.materia.value === expected.materia &&
+            candidate.slot.kind === expected.kind &&
+            candidate.slot.specifica === expected.specifica
+        );
+        if (assignment?.docenteEffettivo.id !== expected.actor) {
+          throw new ValidationError(matrixDiagnostic(expected, assignment));
+        }
+      }
+    );
+  }
+
+  runner.add(
+    'Effective assignment matrix: articulated parent retains assignments owned by both partners',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const parent = classi.findById(CLASSE_C_PARENT);
+      const parentAssignments =
+        parent === null
+          ? []
+          : resolver.resolveConsiglio(parent, ASSIGNMENT_MATRIX_DATE_E2E, {
+              includeReligioneAlt: true,
+              routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL
+            });
+      for (const classeId of [CLASSE_C, CLASSE_C_PARTNER]) {
+        const assignment = parentAssignments.find(
+          (candidate) => candidate.classeId.value === classeId
+        );
+        if (assignment === undefined) {
+          throw new ValidationError(
+            `class=${classeId}, subject=*, slotKind=*, specificity=null, expectedActor=partner-assignment, actualActor=missing, glfTrace=[]`
+          );
+        }
+      }
+    }
+  );
+}
 
 /**
  * Registers repository round-trip and role-resolution priority-chain checks

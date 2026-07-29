@@ -2,6 +2,7 @@ import {
   E2eSampleDatabaseBuilder,
   CLASSE_A,
   CLASSE_B,
+  CLASSE_C_PARENT,
   CLASSE_C,
   CLASSE_C_PARTNER,
   MATERIE_E2E,
@@ -111,7 +112,7 @@ function expectRegistrationJson(value: unknown): void {
   }
 }
 
-test('seeds 4 CLASSI rows (2 plain, 1 articolata pair) and exactly 60 ALUNNI split 20/20/8/12', () => {
+test('seeds an articulated parent with two populated partners and exactly 60 partner-enrolled students', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
@@ -121,9 +122,23 @@ test('seeds 4 CLASSI rows (2 plain, 1 articolata pair) and exactly 60 ALUNNI spl
   expect(classi.map((c) => c[COL_CLASSI.ID])).toEqual([
     CLASSE_A,
     CLASSE_B,
+    CLASSE_C_PARENT,
     CLASSE_C,
     CLASSE_C_PARTNER
   ]);
+  expect(
+    JSON.parse(
+      String(
+        classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARENT)![
+          COL_CLASSI.ARTICOLAZIONE
+        ]
+      )
+    )
+  ).toEqual({
+    parent: null,
+    partner: null,
+    partners: `${CLASSE_C},${CLASSE_C_PARTNER}`
+  });
 
   const alunni = sample.rows[TABLE.ALUNNI]!;
   expect(alunni).toHaveLength(60);

@@ -28,18 +28,35 @@ import {
 
 export const CLASSE_A = '1A';
 export const CLASSE_B = '2B';
+export const CLASSE_C_PARENT = '3C-ART';
 export const CLASSE_C = '3C';
 export const CLASSE_C_PARTNER = '3C-LC';
 /**
  * Every entry-point class (05 §5 / EmailNotificationService.classiEntryPoint):
- * CLASSE_C/CLASSE_C_PARTNER are a symmetric articolazione pair (parent: null on
- * both sides), so — unlike a parent/child articolazione — neither is filtered
- * out, and each gets its own PER_COORDINATORE/PER_CDC target. A real-scenario
- * document run must generate for all 4, not just CLASSE_A/CLASSE_B, or the
- * other two coordinatori/CdC get emails with empty documenti boxes.
+ * CLASSE_C_PARENT aggregates CLASSE_C/CLASSE_C_PARTNER, so both partner rows
+ * are filtered and the parent receives the single PER_COORDINATORE/PER_CDC
+ * target for the articulated group.
  */
-export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER];
+export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT];
 export const MATERIE_E2E = ['MAT', 'ITA', 'ING', 'STO'];
+export const ASSIGNMENT_MATERIE_E2E = [
+  ...MATERIE_E2E,
+  'INF',
+  'LAB',
+  'INTERPRET',
+  'IRC',
+  'ALT'
+] as const;
+export const ASSIGNMENT_MATRIX_DATE_E2E = new Date('2026-07-15T09:00:00Z');
+const ASSIGNMENT_COLUMNS_E2E = [
+  ...MATERIE_E2E,
+  'INF.itp',
+  'LAB.GRUPPO_A',
+  'LAB.SEMINARIO_POMERIDIANO',
+  'INTERPRET.CHITARRA',
+  'IRC',
+  'ALT'
+];
 export const INDIRIZZO_E2E = 'IND_E2E';
 export const DIPART_E2E = 'DIPART_E2E';
 export const DOCENTE_COUNT = 20;
@@ -191,7 +208,7 @@ function classePrecedente(classeId: string): string {
 const HEADERS: Record<string, string[]> = {
   [TABLE.ALUNNI]: Object.values(COL_ALUNNI),
   [TABLE.DOCENTI]: Object.values(COL_DOCENTI),
-  [TABLE.CLASSI]: [...Object.values(COL_CLASSI), ...MATERIE_E2E],
+  [TABLE.CLASSI]: [...Object.values(COL_CLASSI), ...ASSIGNMENT_COLUMNS_E2E],
   [TABLE.MATERIE]: Object.values(COL_MATERIE),
   [TABLE.INDIRIZZI]: Object.values(COL_INDIRIZZI),
   [TABLE.DIPART]: Object.values(COL_DIPART),
@@ -325,7 +342,11 @@ export class E2eSampleDatabaseBuilder {
         id: CLASSE_C,
         count: 8,
         coordIndex: 3,
-        articolazione: JSON.stringify({ parent: null, partner: CLASSE_C_PARTNER, partners: null }),
+        articolazione: JSON.stringify({
+          parent: CLASSE_C_PARENT,
+          partner: CLASSE_C_PARTNER,
+          partners: null
+        }),
         studentRepCount: 2,
         parentRepCount: 1,
         religionExceptions: [{ index: 2, scelta: ReligioneScelta.ALT }]
@@ -334,7 +355,11 @@ export class E2eSampleDatabaseBuilder {
         id: CLASSE_C_PARTNER,
         count: 12,
         coordIndex: 4,
-        articolazione: JSON.stringify({ parent: null, partner: CLASSE_C, partners: null }),
+        articolazione: JSON.stringify({
+          parent: CLASSE_C_PARENT,
+          partner: CLASSE_C,
+          partners: null
+        }),
         studentRepCount: 1,
         parentRepCount: 2,
         religionExceptions: [
@@ -368,9 +393,14 @@ export class E2eSampleDatabaseBuilder {
       MAT: 'Matematica',
       ITA: 'Italiano',
       ING: 'Inglese',
-      STO: 'Storia'
+      STO: 'Storia',
+      INF: 'Informatica',
+      LAB: 'Laboratorio',
+      INTERPRET: 'Interpretazione musicale',
+      IRC: 'Religione cattolica',
+      ALT: 'Attività alternativa'
     };
-    MATERIE_E2E.forEach((sigla) => {
+    ASSIGNMENT_MATERIE_E2E.forEach((sigla) => {
       sample.appendRow(TABLE.MATERIE, {
         [COL_MATERIE.ID]: sigla,
         [COL_MATERIE.NOME]: nomi[sigla],
@@ -379,7 +409,8 @@ export class E2eSampleDatabaseBuilder {
         [COL_MATERIE.COLORE_2]: '#90CAF9',
         [COL_MATERIE.SIMBOLO]: sigla.charAt(0),
         [COL_MATERIE.ESAME_CFG]: '',
-        [COL_MATERIE.EVOLUZIONE]: ''
+        [COL_MATERIE.EVOLUZIONE]: '',
+        [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
       });
     });
   }
@@ -394,22 +425,38 @@ export class E2eSampleDatabaseBuilder {
         [COL_DOCENTI.NOME]: (genere === 'F' ? DOCENTE_NOMI_F : DOCENTE_NOMI_M)[(i - 1) % 5]!,
         [COL_DOCENTI.GENERE]: genere,
         [COL_DOCENTI.DIPART]: DIPART_E2E,
-        [COL_DOCENTI.ITP]: false
+        [COL_DOCENTI.ITP]: i === 2 || i === 11
       });
     }
   }
 
   /**
-   * 4 CLASSI rows (2 plain + 1 articolata pair). Cattedra assignment for each of the 4
-   * MATERIE_E2E columns is a deterministic round-robin over the first 8 docenti
-   * (`(classIndex * MATERIE_E2E.length + materiaIndex) % 8`, 1-based) — 4 classi x 4 materie
-   * = 16 cattedra slots into 8 teachers guarantees realistic overlap (each of those 8 teaches
-   * in >=1 other class besides their own), while docenti 9-20 exist in DOCENTI without a
-   * CLASSI-priority cattedra (available for SUPPLENZE/VARIAZIONI_CATTEDRA and coordinatore
-   * roles instead, see `seedSupplenzeEVariazioni`).
+   * 5 CLASSI rows (2 plain + 1 articulated parent + 2 populated partners).
+   * Non-parent rows retain deterministic round-robin assignments over the
+   * first 8 docenti; the parent resolves the union of its partners.
    */
   private seedClassi(sample: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
     layouts.forEach((layout, classIndex) => {
+      if (layout.id === CLASSE_C) {
+        sample.appendRow(TABLE.CLASSI, {
+          [COL_CLASSI.ID]: CLASSE_C_PARENT,
+          [COL_CLASSI.ANNO]: 3,
+          [COL_CLASSI.INDIRIZZO]: INDIRIZZO_E2E,
+          [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
+            parent: null,
+            partner: null,
+            partners: `${CLASSE_C},${CLASSE_C_PARTNER}`
+          }),
+          [COL_CLASSI.RUOLI]: '',
+          [COL_CLASSI.ATTIVA]: true,
+          [COL_CLASSI.COORD]: e2eDocenteEmail(3),
+          [COL_CLASSI.IRC]: '',
+          [COL_CLASSI.ALT]: '',
+          [COL_CLASSI.SEZ]: 'C',
+          [COL_CLASSI.TERMINALE]: false,
+          [COL_CLASSI.STORICO]: ''
+        });
+      }
       const row: Record<string, unknown> = {
         [COL_CLASSI.ID]: layout.id,
         [COL_CLASSI.ANNO]: 3,
@@ -430,6 +477,16 @@ export class E2eSampleDatabaseBuilder {
         const docenteIndex = ((classIndex * MATERIE_E2E.length + materiaIndex) % 8) + 1;
         row[sigla] = e2eDocenteEmail(docenteIndex);
       });
+      if (layout.id === CLASSE_A) {
+        Object.assign(row, {
+          'INF.itp': e2eDocenteEmail(2),
+          'LAB.GRUPPO_A': e2eDocenteEmail(3),
+          'LAB.SEMINARIO_POMERIDIANO': e2eDocenteEmail(4),
+          'INTERPRET.CHITARRA': e2eDocenteEmail(5),
+          [COL_CLASSI.IRC]: e2eDocenteEmail(6),
+          [COL_CLASSI.ALT]: e2eDocenteEmail(7)
+        });
+      }
       sample.appendRow(TABLE.CLASSI, row);
     });
   }
@@ -450,7 +507,16 @@ export class E2eSampleDatabaseBuilder {
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: layout.id,
           [COL_ALUNNI.RELIGIONE]: eccezione?.scelta ?? ReligioneScelta.SI,
-          [COL_ALUNNI.CURRICULUM]: '',
+          [COL_ALUNNI.CURRICULUM]:
+            layout.id !== CLASSE_A
+              ? ''
+              : n === 0
+                ? JSON.stringify({ LAB: ['GRUPPO_A'] })
+                : n === 1
+                  ? JSON.stringify({ LAB: ['SEMINARIO_POMERIDIANO'] })
+                  : n === 3
+                    ? JSON.stringify({ INTERPRET: ['CHITARRA'] })
+                    : '',
           [COL_ALUNNI.ATTIVO]: true,
           // Repeaters (item "repeaters"): redoing this same class, see
           // `seedClassiAnnoPrecedente`/`seedAlunniAnnoPrecedente`.
@@ -630,6 +696,37 @@ export class E2eSampleDatabaseBuilder {
       [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: MATERIE_E2E[0],
       [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(1),
       [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(10),
+      [COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA]: '2026-07-05'
+    });
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(2),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(11),
+      [COL_SUPPLENZE.DAL]: '2026-07-01',
+      [COL_SUPPLENZE.AL]: '2026-07-31',
+      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+      [COL_SUPPLENZE.MATERIE]: 'INF'
+    });
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(13),
+      [COL_SUPPLENZE.DAL]: '2026-07-01',
+      [COL_SUPPLENZE.AL]: '2026-07-31',
+      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+      [COL_SUPPLENZE.MATERIE]: 'ALT'
+    });
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(13),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(14),
+      [COL_SUPPLENZE.DAL]: '2026-07-01',
+      [COL_SUPPLENZE.AL]: '2026-07-31',
+      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+      [COL_SUPPLENZE.MATERIE]: 'ALT'
+    });
+    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
+      [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
+      [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: 'IRC',
+      [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(6),
+      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(12),
       [COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA]: '2026-07-05'
     });
   }

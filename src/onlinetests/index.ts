@@ -8,8 +8,14 @@ import { initAldo, PROP_MASTER_SPREADSHEET_ID } from '../config/Bootstrap';
 import { TestRunner, type OnlineTestReport } from './OnlineTestReport';
 import { SampleDatabaseBuilder, type ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
-import { registerRepositoryChecks } from './checks/repositoryChecks';
-import { registerContextEngineChecks } from './checks/contextEngineChecks';
+import {
+  registerEffectiveAssignmentMatrixChecks,
+  registerRepositoryChecks
+} from './checks/repositoryChecks';
+import {
+  registerContextEngineChecks,
+  registerEffectiveAssignmentConsumerChecks
+} from './checks/contextEngineChecks';
 import { registerPipelineChecks } from './checks/pipelineChecks';
 import { E2eSampleDatabaseBuilder, type E2eTemplateIds } from './E2eSampleDatabaseBuilder';
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
@@ -174,13 +180,18 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
       ServiceFactory.getPermissionService(),
       (rootFolder as NonNullable<typeof rootFolder>).getId()
     );
-  const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
+  const spreadsheetFactory =
+    overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
   const artifactFactory =
     overrides.artifactFactory ??
-    new GasArtifactFactory(ServiceFactory.getDocumentService(), ServiceFactory.getSpreadsheetService());
+    new GasArtifactFactory(
+      ServiceFactory.getDocumentService(),
+      ServiceFactory.getSpreadsheetService()
+    );
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const initAldoFn = overrides.initAldo ?? initAldo;
-  const log = overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
+  const log =
+    overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
 
   const templateFolderId = drive.createFolder('_ALDO_E2E_TEMPLATES');
   const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
@@ -200,6 +211,8 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
 
   const runner = new TestRunner();
+  registerEffectiveAssignmentMatrixChecks(runner, container, sample);
+  registerEffectiveAssignmentConsumerChecks(runner, container, sample);
   registerE2eScenarioChecks(runner, container, { ...sample, testMode: sample.masterTestMode });
 
   return runner.report();

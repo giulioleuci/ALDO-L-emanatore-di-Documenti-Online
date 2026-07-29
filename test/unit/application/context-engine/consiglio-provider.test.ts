@@ -89,13 +89,18 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
 test('the council projection delegates grouping and ordering to GLF configuration', () => {
   expect(councilProjectionOperations).toEqual([
     {
+      type: 'flatMap',
+      path: 'routing.primary',
+      mergeParent: true
+    },
+    {
       type: 'groupBy',
-      keys: ['routing.primary.0.id', 'titolare.id', 'docenteEffettivo.id'],
+      keys: ['id'],
       aggregates: { assignments: { type: 'collect', path: '$item' } }
     },
     {
       type: 'sortBy',
-      keys: [{ path: 'routing.primary.0.metadata.cognome', direction: 'ASC' }]
+      keys: [{ path: 'assignments.0.metadata.cognome', direction: 'ASC' }]
     },
     { type: 'strategy', name: 'aldoTeachingCouncilVm' }
   ]);

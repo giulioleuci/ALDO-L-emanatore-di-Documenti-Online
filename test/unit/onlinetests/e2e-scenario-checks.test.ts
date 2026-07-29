@@ -11,7 +11,8 @@ import {
   CONF_MAIL_LAVORO,
   CONF_MAIL_STATIC_ALLEGATO,
   CONF_DOC_PIANI,
-  PIANO_DOPPIO_STUDENTE
+  PIANO_DOPPIO_STUDENTE,
+  ALL_CLASSI_E2E
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type {
@@ -373,7 +374,9 @@ test('scenario 12 sends the prepared work-plan email without regenerating verbal
 
   registerE2eScenarioChecks(runner, harness.container, sample);
 
-  expect(harness.generatedConfigIds().filter((id) => id === 'E2E_VERBALE')).toHaveLength(4);
+  expect(harness.generatedConfigIds().filter((id) => id === 'E2E_VERBALE')).toHaveLength(
+    ALL_CLASSI_E2E.length
+  );
 });
 
 test('scenario 12 fails when LOG_MAIL.ALLEGATI records an unrequested real file attachment', () => {

@@ -1,6 +1,10 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
 import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
-import { registerRepositoryChecks } from '../../../src/onlinetests/checks/repositoryChecks';
+import {
+  registerEffectiveAssignmentMatrixChecks,
+  registerRepositoryChecks
+} from '../../../src/onlinetests/checks/repositoryChecks';
+import { registerEffectiveAssignmentConsumerChecks } from '../../../src/onlinetests/checks/contextEngineChecks';
 import type { SampleDatabase } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
   CLASSE_BASE,
@@ -22,8 +26,82 @@ import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { fixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import {
+  E2eSampleDatabaseBuilder,
+  CLASSE_A,
+  CLASSE_C_PARENT,
+  CLASSE_C,
+  CLASSE_C_PARTNER,
+  e2eAlunnoEmail,
+  e2eDocenteEmail
+} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import type {
+  ISampleSpreadsheet,
+  ISampleSpreadsheetFactory
+} from '../../../src/onlinetests/SampleDatabaseBuilder';
+import {
+  TABLE,
+  COL_ALUNNI,
+  COL_CLASSI,
+  COL_MATERIE,
+  COL_SUPPLENZE,
+  COL_VARIAZIONI_CATTEDRA
+} from '../../../src/config/schema';
 
 const NOW = new Date('2026-07-12T09:00:00Z');
+
+class RecordingSpreadsheet implements ISampleSpreadsheet {
+  readonly rows: Record<string, Record<string, unknown>[]> = {};
+
+  constructor(readonly id: string) {}
+
+  addSheet(name: string): void {
+    this.rows[name] = [];
+  }
+
+  appendRow(sheetName: string, row: Record<string, unknown>): void {
+    (this.rows[sheetName] ??= []).push(row);
+  }
+
+  getUrl(): string {
+    return `https://example.test/${this.id}`;
+  }
+}
+
+function e2eRecordingFactory(): {
+  spreadsheets: ISampleSpreadsheetFactory;
+  sheets: Map<string, RecordingSpreadsheet>;
+} {
+  const sheets = new Map<string, RecordingSpreadsheet>();
+  return {
+    sheets,
+    spreadsheets: {
+      createSpreadsheet: (name: string) => {
+        const spreadsheet = new RecordingSpreadsheet(`id_${name}`);
+        sheets.set(name, spreadsheet);
+        return spreadsheet;
+      }
+    }
+  };
+}
+
+const E2E_TEMPLATE_IDS = {
+  verbale: 'tmpl_verbale',
+  condotta: 'tmpl_condotta',
+  riepilogo: 'tmpl_riepilogo',
+  aslImportSheet: 'tmpl_asl_import',
+  docComplesso: 'tmpl_doc_complesso',
+  sheetPermessi: 'tmpl_sheet_permessi',
+  pianoLavoro: 'tmpl_piano_lavoro',
+  staticAttachment: 'static_attachment',
+  piani: {
+    PDP_DSA: 'tmpl_pdp_dsa',
+    PDP_BES: 'tmpl_pdp_bes',
+    PDP_STRANIERI: 'tmpl_pdp_stranieri',
+    PEI: 'tmpl_pei',
+    PFP: 'tmpl_pfp'
+  }
+};
 
 /** Table rows mirroring SampleDatabaseBuilder's real seed (see SampleDatabaseBuilder.ts), keyed by
  * the same exported constants so these checks exercise real ClasseRepository/AlunnoRepository/
@@ -178,6 +256,189 @@ function sampleFixture(): SampleDatabase {
 }
 
 describe('registerRepositoryChecks', () => {
+  it('registers passing online matrix checks across the resolver and all assignment consumers', () => {
+    const { spreadsheets, sheets } = e2eRecordingFactory();
+    const sample = new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(
+      E2E_TEMPLATE_IDS
+    );
+    const db = new FakeDatabase({
+      ...(sheets.get('_ALDO_E2E_SAMPLE')!.rows as Record<string, Row[]>),
+      MASTER: sheets.get('_ALDO_E2E_MASTER')!.rows.MASTER as Row[]
+    });
+    const container = buildAldoContainer({
+      db,
+      master: new MasterSheetRepository(db),
+      drive: new FakeDriveFacade(),
+      gmail: new FakeGmailFacade(),
+      templates: new FakeTemplateEngine(),
+      expressionEngine: new ExpressionEngineFacade(),
+      now: new Date('2026-07-15T09:00:00Z')
+    });
+    const runner = new TestRunner();
+
+    registerEffectiveAssignmentMatrixChecks(runner, container, sample);
+    registerEffectiveAssignmentConsumerChecks(runner, container, sample);
+
+    const report = runner.report();
+    expect(report.results.length).toBeGreaterThanOrEqual(10);
+    expect(report.results.map((result) => result.name)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('MAIN'),
+        expect.stringContaining('ITP'),
+        expect.stringContaining('SPECIFICA'),
+        expect.stringContaining('IRC'),
+        expect.stringContaining('ALT'),
+        expect.stringContaining('CDU'),
+        expect.stringContaining('email'),
+        expect.stringContaining('document ACL'),
+        expect.stringContaining('spreadsheet column ACL'),
+        expect.stringContaining('REL/ALT'),
+        expect.stringContaining('articulated parent')
+      ])
+    );
+    for (const result of report.results) expect(result.status).toBe('pass');
+  });
+
+  it('seeds the online effective-assignment matrix including arbitrary specificities, religion routing, and articulated partners', () => {
+    const { spreadsheets, sheets } = e2eRecordingFactory();
+    new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(E2E_TEMPLATE_IDS);
+    const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows;
+    const classi = rows[TABLE.CLASSI]!;
+    const matrixClass = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_A)!;
+
+    expect(matrixClass).toMatchObject({
+      MAT: e2eDocenteEmail(1),
+      'INF.itp': e2eDocenteEmail(2),
+      'LAB.GRUPPO_A': e2eDocenteEmail(3),
+      'LAB.SEMINARIO_POMERIDIANO': e2eDocenteEmail(4),
+      'INTERPRET.CHITARRA': e2eDocenteEmail(5),
+      IRC: e2eDocenteEmail(6),
+      ALT: e2eDocenteEmail(7)
+    });
+
+    const religionRows = rows[TABLE.MATERIE]!.filter((row) =>
+      ['IRC', 'ALT'].includes(String(row[COL_MATERIE.ID]))
+    );
+    expect(religionRows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          [COL_MATERIE.ID]: 'IRC',
+          [COL_MATERIE.IS_RELIGIONE_ALT]: true
+        }),
+        expect.objectContaining({
+          [COL_MATERIE.ID]: 'ALT',
+          [COL_MATERIE.IS_RELIGIONE_ALT]: true
+        })
+      ])
+    );
+
+    expect(rows[TABLE.VARIAZIONI_CATTEDRA]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: 'MAT',
+          [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(1),
+          [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(10)
+        }),
+        expect.objectContaining({
+          [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: 'IRC',
+          [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(6),
+          [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(12)
+        })
+      ])
+    );
+    expect(rows[TABLE.SUPPLENZE]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(2),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(11),
+          [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+          [COL_SUPPLENZE.MATERIE]: 'INF'
+        }),
+        expect.objectContaining({
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(13),
+          [COL_SUPPLENZE.MATERIE]: 'ALT'
+        }),
+        expect.objectContaining({
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(13),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(14),
+          [COL_SUPPLENZE.MATERIE]: 'ALT'
+        })
+      ])
+    );
+
+    const parent = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARENT)!;
+    const partnerA = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C)!;
+    const partnerB = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARTNER)!;
+    expect(JSON.parse(String(parent[COL_CLASSI.ARTICOLAZIONE]))).toEqual({
+      parent: null,
+      partner: null,
+      partners: `${CLASSE_C},${CLASSE_C_PARTNER}`
+    });
+    expect(
+      (JSON.parse(String(partnerA[COL_CLASSI.ARTICOLAZIONE])) as { parent: string }).parent
+    ).toBe(CLASSE_C_PARENT);
+    expect(
+      (JSON.parse(String(partnerB[COL_CLASSI.ARTICOLAZIONE])) as { parent: string }).parent
+    ).toBe(CLASSE_C_PARENT);
+    expect(partnerA.MAT).toBeTruthy();
+    expect(partnerB.MAT).toBeTruthy();
+
+    const matrixStudents = rows[TABLE.ALUNNI]!.filter((row) => row[COL_ALUNNI.CLASSE] === CLASSE_A);
+    expect(matrixStudents.map((row) => row[COL_ALUNNI.RELIGIONE])).toEqual(
+      expect.arrayContaining(['SI', 'ALT', 'NO'])
+    );
+    expect(matrixStudents.map((row) => row[COL_ALUNNI.CURRICULUM])).toEqual(
+      expect.arrayContaining([
+        JSON.stringify({ LAB: ['GRUPPO_A'] }),
+        JSON.stringify({ LAB: ['SEMINARIO_POMERIDIANO'] })
+      ])
+    );
+  });
+
+  it('reports slot diagnostics when a student-filtered council diverges from the hand-derived matrix', () => {
+    const { spreadsheets, sheets } = e2eRecordingFactory();
+    const sample = new E2eSampleDatabaseBuilder(
+      spreadsheets,
+      new FakeDriveFacade()
+    ).build(E2E_TEMPLATE_IDS);
+    const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows;
+    const student = rows[TABLE.ALUNNI]!.find(
+      (row) => row[COL_ALUNNI.EMAIL] === e2eAlunnoEmail(2)
+    )!;
+    student[COL_ALUNNI.RELIGIONE] = 'NO';
+    const db = new FakeDatabase({
+      ...(rows as Record<string, Row[]>),
+      MASTER: sheets.get('_ALDO_E2E_MASTER')!.rows.MASTER as Row[]
+    });
+    const container = buildAldoContainer({
+      db,
+      master: new MasterSheetRepository(db),
+      drive: new FakeDriveFacade(),
+      gmail: new FakeGmailFacade(),
+      templates: new FakeTemplateEngine(),
+      expressionEngine: new ExpressionEngineFacade(),
+      now: new Date('2026-07-15T09:00:00Z')
+    });
+    const runner = new TestRunner();
+
+    registerEffectiveAssignmentConsumerChecks(runner, container, sample);
+
+    const result = runner
+      .report()
+      .results.find((candidate) => candidate.name.includes(e2eAlunnoEmail(2)));
+    expect(result?.status).toBe('fail');
+    expect(result?.message).toContain(`class=${CLASSE_A}`);
+    expect(result?.message).toContain('subject=IRC');
+    expect(result?.message).toContain('slotKind=MAIN');
+    expect(result?.message).toContain('specificity=null');
+    expect(result?.message).toContain(`expectedActor=${e2eDocenteEmail(12)}`);
+    expect(result?.message).toContain('actualActor=missing');
+    expect(result?.message).toContain('glfTrace=');
+  });
+
   it('registers a passing ClasseRepository check when the seeded classe round-trips correctly', () => {
     const runner = new TestRunner();
     registerRepositoryChecks(runner, buildFakeContainer(), sampleFixture());

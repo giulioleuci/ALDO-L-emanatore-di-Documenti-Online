@@ -8,7 +8,7 @@ Questo documento descrive la logica e i requisiti tecnici per l'implementazione 
 
 Creare un'intestazione dinamica orizzontale in un foglio di calcolo che:
 
-1.  **Accorpi** le materie di Religione (colonna speciale `CLASSI.IRC`) e Alternativa (colonna speciale `CLASSI.ALT`) nella prima cella generata, con etichetta visualizzata `REL/ALT`; se `CLASSI.ALT` non è presente nella classe, l'etichetta mostra solo `REL`. `REL/ALT` è esclusivamente un'etichetta di visualizzazione: gli identificatori tecnici delle colonne restano `IRC` e `ALT` (vedi `01_SCHEMA_DATABASE.md`).
+1.  **Accorpi** le materie IRC e ALT nella prima cella generata, con etichetta visualizzata `REL/ALT`; se ALT non è presente nella classe, l'etichetta mostra solo `REL`. IRC e ALT sono righe della tabella `MATERIE` con `IS_RELIGIONE_ALT=true` e sono risolte separatamente dalla stessa pipeline GLF delle altre cattedre. `REL/ALT` è esclusivamente un'etichetta combinata di presentazione/ACL: gli identificatori tecnici restano `IRC` e `ALT` (vedi `01_SCHEMA_DATABASE.md`).
 2.  **Elenchi** tutte le altre sigle delle materie del Consiglio di Classe in ordine alfabetico (per sigla).
 3.  **Protegga** le colonne risultanti permettendo l'editing della colonna solo ai docenti titolari delle rispettive materie (con gestione supplenti) e al coordinatore della classe.
 
@@ -53,17 +53,16 @@ La gestione dei permessi DEVE usare la strategia `SheetMaterieConPermessiGenerat
 **Logica di protezione (Step 8 — ApplyPermissions):**
 Per ogni colonna generata:
 
-1.  **Caso Materia Standard:**
-    - Risolvere il docente tramite `RisolutoreRuoliService.risolvi("DOCENTE_MATERIA", cdu)` passando la sigla specifica.
+1.  **Caso Materia:**
+    - Risolvere tutte le cattedre della materia tramite `RisolutoreRuoliService.risolvi("DOCENTE_MATERIA", cdu)` passando la sigla specifica. Sono incluse le dimensioni di slot di prima classe `MAIN`, `ITP` (`MATERIA.itp`) e `SPECIFICA` (`MATERIA.<specifica>`).
+    - Il valore `<specifica>` è arbitrario e non appartiene a un catalogo tecnico chiuso. Gli strumenti musicali (`CHITARRA`, `PIANOFORTE`, ecc.) sono esempi, non l'unico uso ammesso.
     - Applicare protezione range alla colonna per l'email ottenuta.
 2.  **Caso Speciale "REL/ALT":**
-    - Recuperare i docenti direttamente dalle colonne speciali della classe tramite il repository:
-      - `docentiIRC = ClasseRepository.getDocentiIRC(classe)` — colonna speciale `CLASSI.IRC`
-      - `docentiALT = ClasseRepository.getDocentiALT(classe)` — colonna speciale `CLASSI.ALT`; array vuoto se la classe non prevede attività alternativa
-    - **Merge:** Concatenare i due array e deduplicare per email. Per ciascun docente risultante, applicare la risoluzione supplenze tramite `RisolutoreRuoliService` (regola `ENTRAMBI` raccomandata per garantire copertura sia al titolare che all'eventuale supplente).
+    - Risolvere indipendentemente `IRC` e `ALT` tramite la stessa pipeline di assegnazione GLF (`SUPPLENZE` → `VARIAZIONI_CATTEDRA` → fallback `CLASSI`).
+    - **Merge:** Concatenare gli attori già risolti e deduplicare per email. La regola `ENTRAMBI` è raccomandata per garantire copertura sia al titolare sia all'eventuale supplente.
     - **ACL:** Applicare la protezione della colonna a tutti i docenti risultanti dall'unione.
 
-> **NOTA DI IMPLEMENTAZIONE:** Le colonne `IRC` e `ALT` **NON** sono materie standard e **NON DEVONO** essere risolte tramite `RisolutoreRuoliService.risolvi("DOCENTE_MATERIA", cdu)`: quella strategy legge `meta.parametriInput.materiaCorrente` e lo usa per cercare la corrispondente colonna in `MATERIE`, dove `IRC` e `ALT` non esistono. I metodi `getDocentiIRC(classe)` e `getDocentiALT(classe)` fanno parte del contratto di `ClasseRepository` (vedi `06_REPOSITORY.md`), analogamente a come `getAllDocentiCDC()` gestisce già internamente queste colonne speciali.
+> **NOTA DI IMPLEMENTAZIONE:** Non esiste un percorso di risoluzione diretto o alternativo per IRC/ALT. Entrambe devono esistere in `MATERIE` con `IS_RELIGIONE_ALT=true` e passare per `ITeachingAssignmentResolver`; solo la proiezione finale le combina sotto l'etichetta `REL/ALT`.
 
 ---
 
@@ -71,6 +70,7 @@ Per ogni colonna generata:
 
 - **Sorgente:** Tabella `CLASSI` (colonne dinamiche materie + colonne speciali `IRC` e `ALT`).
 - **Resilienza:** La risoluzione DEVE SEMPRE passare per `RoleResolutionLib` per onorare la gerarchia di Priority (Supplenti > Variazioni > Titolari).
+- **Granularità degli override:** lo schema corrente di `VARIAZIONI_CATTEDRA` e `SUPPLENZE` non contiene un discriminatore più fine di classe, materia e attore nominato. Di conseguenza una riga si applica a tutti gli slot `MAIN`/`ITP`/`SPECIFICA` corrispondenti detenuti da quell'attore; non è lecito inventare un filtro di specificità assente dal DB.
 - **Invariante Permessi:** Il Coordinatore di classe (`CLASSI.COORD`) DEVE SEMPRE mantenere l'accesso in scrittura su tutte le colonne generate, indipendentemente dalla materia.
 
 ---

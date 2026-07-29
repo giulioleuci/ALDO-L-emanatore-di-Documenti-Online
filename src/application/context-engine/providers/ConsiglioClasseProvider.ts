@@ -5,6 +5,7 @@ import type { IClasseRepository } from '../../../domain/repositories/IClasseRepo
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
 import {
+  attachCouncilProjectionMetadata,
   createTeachingCouncilProjection,
   prepareCouncilAssignments,
   resolveCouncilForProjection
@@ -40,5 +41,6 @@ export class ConsiglioClasseProvider implements ContextProvider {
     );
     focusClasse.consiglioDiClasse = prepareCouncilAssignments(assignments) as never;
     this.projection.intercept('consiglio', cdu, cdu, options);
+    attachCouncilProjectionMetadata(cdu, assignments);
   }
 }

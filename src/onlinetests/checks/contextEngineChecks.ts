@@ -29,6 +29,7 @@ import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepo
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import { getCduMateriaAssignmentIdentity } from '../../application/context-engine/CduInternalMetadata';
 
 interface AssignmentMatrixSample {
   sampleSpreadsheetUrl: string;
@@ -128,12 +129,13 @@ function assignmentRecipients(assignments: TeachingAssignment[]): string[] {
 
 function councilTuple(
   docente: { anagrafica: { email: string } },
-  materia: { sigla: string; specificita: string | null; classeId?: string; kind?: string }
+  materia: { sigla: string; specificita: string | null }
 ): string {
+  const identity = getCduMateriaAssignmentIdentity(materia);
   return [
-    materia.classeId ?? 'missing',
+    identity?.classeId ?? 'missing',
     materia.sigla,
-    materia.kind ?? 'missing',
+    identity?.kind ?? 'missing',
     materia.specificita ?? 'null',
     docente.anagrafica.email
   ].join('|');

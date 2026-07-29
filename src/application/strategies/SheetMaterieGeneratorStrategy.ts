@@ -5,6 +5,7 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ConfigurationError } from '../../domain/errors/DomainError';
+import { getCduArticolazionePartners } from '../context-engine/CduInternalMetadata';
 
 /** 0-based column index -> A1 letters ("A", "Z", "AA", ...). Still needed by the
  * `_E_PERMESSI` subclass to turn a `SheetColumnLayout.column` (1-based) into an
@@ -146,7 +147,7 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
   protected buildGroups(classe: CduClasse): MaterieGroups {
     if (classe.flags.isArticolata && classe.articolazione !== undefined) {
       const a = classe.articolazione;
-      const partners = a.partners ?? [];
+      const partners = getCduArticolazionePartners(a) ?? a.partners ?? [];
       const group1 = this.resolveMateriaColumns(a.materieCondivise);
       const group2 = this.resolveMateriaColumns(a.materieSeparatePrimoGruppo, partners[0]);
       const group3 = this.resolveMateriaColumns(a.materieSeparateSecondoGruppo, partners[1]);

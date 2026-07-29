@@ -1,4 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
+import { attachCduArticolazionePartners } from '../CduInternalMetadata';
 import type { Cdu, CduClasse } from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
@@ -57,7 +58,13 @@ export class ClasseProvider implements ContextProvider {
       }))
     };
 
-    if (isArticolata) focusClasse.articolazione = this.buildArticolazione(classe);
+    if (isArticolata) {
+      const articolazione = this.buildArticolazione(classe);
+      focusClasse.articolazione = attachCduArticolazionePartners(
+        articolazione,
+        this.classi.orderedPartners(classe).map((partner) => partner.id ?? '')
+      );
+    }
 
     cdu.focus.classe = focusClasse;
   }
@@ -85,7 +92,7 @@ export class ClasseProvider implements ContextProvider {
     const materie = this.classi.getMaterieArticolazione(classe);
     return {
       partner: config?.partner?.value ?? null,
-      partners: this.classi.orderedPartners(classe).map((partner) => partner.id ?? ''),
+      partners: config?.isParent() === true ? config.partners.map((partner) => partner.value) : null,
       parent: config?.parent?.value ?? null,
       materieCondivise: materie?.condivise ?? [],
       materieSeparatePrimoGruppo: materie?.separatePrimoGruppo ?? [],

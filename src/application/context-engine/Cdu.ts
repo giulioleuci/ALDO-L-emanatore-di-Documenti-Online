@@ -17,15 +17,7 @@ import type { TipoPiano } from '../../domain/value-objects/enums';
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
   anagrafica: { nome: string; cognome: string; email: string; genere: string; appellativo: string };
-  materie: Array<{
-    sigla: string;
-    nome: string;
-    colore: string;
-    specificita: string | null;
-    /** Assignment identity retained for downstream CDU consistency checks. */
-    classeId?: string;
-    kind?: string;
-  }>;
+  materie: Array<{ sigla: string; nome: string; colore: string; specificita: string | null }>;
   ruoli: {
     isCoordinatore: boolean;
     isTutorAsl: boolean;

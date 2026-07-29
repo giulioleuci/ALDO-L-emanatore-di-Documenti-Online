@@ -1,4 +1,4 @@
-import type { DocenteCdcVM } from './Cdu';
+import type { Cdu, DocenteCdcVM } from './Cdu';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -10,6 +10,7 @@ import type { Docente } from '../../domain/entities/Docente';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { GestioneSupplenti, ReligioneScelta } from '../../domain/value-objects/enums';
 import { getClasseEntity } from './techEntities';
+import { attachCduMateriaAssignmentIdentity } from './CduInternalMetadata';
 
 export type CollectionProjectionOperation = ProjectionOperation;
 
@@ -228,9 +229,7 @@ function councilVmStrategy(
             materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
             assignment.slot.materia,
           colore: '',
-          specificita: assignment.slot.specifica,
-          classeId: assignment.classeId,
-          kind: assignment.slot.kind
+          specificita: assignment.slot.specifica
         })),
         ruoli: {
           isCoordinatore,
@@ -292,4 +291,38 @@ export function resolveCouncilForProjection(
     includeReligioneAlt: true,
     routingPolicy: routingPolicyByGestioneSupplenti[gestioneSupplenti]
   });
+}
+
+/**
+ * The GLF projector materializes fresh VM objects, so assignment identity is
+ * attached only after interception. This remains internal metadata: templates
+ * and serialized CDU data retain the canonical four-field materia shape.
+ */
+export function attachCouncilProjectionMetadata(cdu: Cdu, assignments: TeachingAssignment[]): void {
+  const candidatesByActor = new Map<string, TeachingAssignment[]>();
+  for (const assignment of assignments) {
+    for (const docente of assignment.routing.primary) {
+      if (docente.id === null) continue;
+      const candidates = candidatesByActor.get(docente.id) ?? [];
+      candidates.push(assignment);
+      candidatesByActor.set(docente.id, candidates);
+    }
+  }
+  for (const docente of cdu.focus.classe?.consiglioDiClasse ?? []) {
+    const candidates = [...(candidatesByActor.get(docente.anagrafica.email) ?? [])];
+    for (const materia of docente.materie) {
+      const index = candidates.findIndex(
+        (assignment) =>
+          assignment.slot.materia.value === materia.sigla &&
+          assignment.slot.specifica === materia.specificita
+      );
+      const assignment = index === -1 ? undefined : candidates.splice(index, 1)[0];
+      if (assignment !== undefined) {
+        attachCduMateriaAssignmentIdentity(materia, {
+          classeId: assignment.classeId.value,
+          kind: assignment.slot.kind
+        });
+      }
+    }
+  }
 }

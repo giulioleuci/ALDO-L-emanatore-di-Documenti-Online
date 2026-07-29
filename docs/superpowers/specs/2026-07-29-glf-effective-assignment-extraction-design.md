@@ -158,6 +158,10 @@ The policy configures:
 - delegation depth and cycle behavior;
 - routing policy.
 
+A finite delegation-depth guard is optional. ALDO disables it because the
+authoritative SUPPLENZE contract requires traversal to the final actor at any
+finite depth; cycle detection remains mandatory.
+
 ### ResolutionResult and ResolutionTrace
 
 The result exposes:

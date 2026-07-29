@@ -43,13 +43,10 @@ test('CDCFilterAlunno: religione ALT excludes IRC (no ALT teacher configured)', 
   expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
 });
 
-test('wired GLF resolver preserves specificity and filters it by student curriculum', () => {
+test('Task 5 wired GLF resolver does not apply Task 6 curriculum filtering or CDU specificity', () => {
   const tables = teachingSlotFixtureTables();
   const alunno = tables.ALUNNI!.find((row) => row.EMAIL === 'a1@school.it')!;
-  alunno.CURRICULUM = JSON.stringify({
-    LAB: ['GRUPPO_A'],
-    INTERPRET: ['CHITARRA']
-  });
+  alunno.CURRICULUM = null;
   const db = new FakeDatabase(tables);
   const cdu = ContextEngineFactory.create(
     db,
@@ -65,27 +62,13 @@ test('wired GLF resolver preserves specificity and filters it by student curricu
   );
   const consiglio = cdu.focus.alunno!.consiglioDiClasseFiltrato!;
 
-  const gruppoA = consiglio.find(
-    (row) => row.anagrafica.email === 'specific-a@school.test'
-  )!;
-  expect(gruppoA.materie).toEqual(
+  expect(consiglio.map((row) => row.anagrafica.email)).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({
-        sigla: 'LAB',
-        specificita: 'GRUPPO_A'
-      })
+      'specific-a@school.test',
+      'specific-b@school.test',
+      'guitar@school.test'
     ])
   );
-  const chitarra = consiglio.find(
-    (row) => row.anagrafica.email === 'guitar@school.test'
-  )!;
-  expect(chitarra.materie).toEqual([
-    expect.objectContaining({
-      sigla: 'INTERPRET',
-      specificita: 'CHITARRA'
-    })
-  ]);
-  expect(
-    consiglio.some((row) => row.anagrafica.email === 'specific-b@school.test')
-  ).toBe(false);
+  expect(consiglio.flatMap((row) => row.materie).every((materia) => materia.specificita === null))
+    .toBe(true);
 });

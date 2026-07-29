@@ -23,7 +23,7 @@ import {
   JOB_TYPE_GENERAZIONE_DOCUMENTI
 } from '../../../src/application/services/DocumentBatchService';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
-import { fixtureTables } from '../../../test/fixtures/tables';
+import { fixtureTables, teachingSlotFixtureTables } from '../../../test/fixtures/tables';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
@@ -102,6 +102,33 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
   const registry = c.get<Map<string, unknown>>('strategyRegistry');
   expect(registry.has('FOGLIO_GENERICO')).toBe(true);
+});
+
+test('notification council enumeration consumes the registered GLF teaching resolver', () => {
+  const db = new FakeDatabase(teachingSlotFixtureTables());
+  const c = buildAldoContainer({
+    db,
+    master: new MasterSheetRepository(db),
+    drive: new FakeDriveFacade(),
+    gmail: new FakeGmailFacade(),
+    templates: new FakeTemplateEngine(),
+    expressionEngine: new ExpressionEngineFacade(),
+    now: NOW
+  });
+  const service = c.get<EmailNotificationService>('emailNotificationService');
+  const config = service.getConfigurazione('CDC_OTTOBRE');
+
+  const target5A = service
+    .enumerateTargets(config)
+    .find((target) => target.target === '5A')!;
+
+  expect(target5A.emails).toEqual(
+    expect.arrayContaining([
+      'specific-a@school.test',
+      'specific-b@school.test',
+      'guitar@school.test'
+    ])
+  );
 });
 
 test('the wired email service actually sends through the container graph (smoke)', () => {

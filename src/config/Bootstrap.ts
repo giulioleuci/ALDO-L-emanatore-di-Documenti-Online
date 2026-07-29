@@ -186,13 +186,14 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         deps.monitor
       )
   );
-  c.register('emailNotificationService', () =>
+  c.register('emailNotificationService', (container) =>
     EmailNotificationService.create(
       deps.db,
       deps.gmail,
       deps.templates,
       deps.now,
       deps.drive,
+      container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
       logger,
       deps.monitor,
       deps.master

@@ -8,6 +8,7 @@ import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
@@ -32,7 +33,8 @@ function wire(logMailRows: Row[], logger?: LoggerService) {
     gmail,
     new FakeTemplateEngine(),
     NOW,
-    new FakeDriveFacade()
+    new FakeDriveFacade(),
+    new AldoTeachingAssignmentResolver(db)
   );
   const retry = new EmailRetryService(
     new LogEmailRepository(db),

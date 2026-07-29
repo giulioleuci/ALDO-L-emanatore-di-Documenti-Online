@@ -28,9 +28,14 @@ import { MasterSheetRepository } from '../../../src/infrastructure/repositories/
 import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
-import { CattedraResolver } from '../../../src/application/services/CattedraResolver';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
+import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
+import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import type {
+  ITeachingAssignmentResolver,
+  TeachingAssignment
+} from '../../../src/application/ports/ITeachingAssignmentResolver';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -44,7 +49,8 @@ function wire(extraConfMail: Row[] = [], drive = new FakeDriveFacade()) {
     gmail,
     new FakeTemplateEngine(),
     NOW,
-    drive
+    drive,
+    new AldoTeachingAssignmentResolver(db)
   );
   return { db, drive, gmail, service };
 }
@@ -88,13 +94,15 @@ function fullDeps(
   gmail: FakeGmailFacade,
   overrides: Partial<EmailNotificationDeps> = {}
 ): EmailNotificationDeps {
+  const master = new MasterSheetRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   return {
     db,
     gmail,
     drive: new FakeDriveFacade(),
     templates: new FakeTemplateEngine(),
     now: NOW,
-    contextBuilder: ContextEngineFactory.create(db),
+    contextBuilder: ContextEngineFactory.create(db, master, teachingAssignments),
     expressionEngine: new ExpressionEngineFacade(),
     docenti: new DocenteRepository(db),
     alunni: new AlunnoRepository(db),
@@ -103,12 +111,42 @@ function fullDeps(
     confMail: new ConfigurazioneEmailRepository(db),
     logMail: new LogEmailRepository(db),
     logDocs: new LogDocumentoRepository(db),
-    master: new MasterSheetRepository(db),
+    master,
     supplenze: new SupplenzaRepository(db),
     materie: new MateriaRepository(db),
-    cattedraResolver: new CattedraResolver(db),
+    teachingAssignments,
     aggregatoreDati: new AggregatoreDati(db),
     ...overrides
+  };
+}
+
+function assignmentFor(titolare: Docente): TeachingAssignment {
+  return {
+    slot: {
+      materia: MateriaId.of('MATE'),
+      kind: 'MAIN',
+      specifica: null
+    },
+    classeId: ClasseId.of('5A'),
+    titolareNominale: titolare,
+    titolare,
+    docenteEffettivo: titolare,
+    delegationChain: [],
+    routing: {
+      primary: [titolare],
+      cc: [],
+      bcc: []
+    },
+    trace: []
+  };
+}
+
+function teachingResolverFor(
+  assignments: TeachingAssignment[]
+): ITeachingAssignmentResolver {
+  return {
+    resolveMateria: () => assignments,
+    resolveConsiglio: () => assignments
   };
 }
 
@@ -622,6 +660,7 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       new FakeTemplateEngine(),
       NOW,
       new FakeDriveFacade(),
+      new AldoTeachingAssignmentResolver(db),
       undefined,
       monitor
     );
@@ -641,6 +680,30 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'complete')).toBe(
       true
     );
+  });
+
+  test('static create wires the supplied teaching resolver into the notification CDU builder', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const master = new MasterSheetRepository(db);
+    const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+    const createContext = jest.spyOn(ContextEngineFactory, 'create');
+    try {
+      EmailNotificationService.create(
+        db,
+        new FakeGmailFacade(),
+        new FakeTemplateEngine(),
+        NOW,
+        new FakeDriveFacade(),
+        teachingAssignments,
+        undefined,
+        undefined,
+        master
+      );
+
+      expect(createContext).toHaveBeenCalledWith(db, master, teachingAssignments);
+    } finally {
+      createContext.mockRestore();
+    }
   });
 
   test('PER_ALUNNO falls back to "" target/email when the alunno has no id', () => {
@@ -682,29 +745,17 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       getArticolazione: () => null,
       isArticolata: () => false
     } as unknown as ClasseRepository;
-    const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
-    const spy = jest.spyOn(CattedraResolver.prototype, 'resolveConsiglio').mockReturnValue([
-      {
-        materia: MateriaId.of('MATE'),
-        isItp: false,
-        titolare: Docente.fromData({}),
-        supplente: null
-      },
-      {
-        materia: MateriaId.of('MATE'),
-        isItp: false,
-        titolare: Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }),
-        supplente: null
-      }
+    const teachingAssignments = teachingResolverFor([
+      assignmentFor(Docente.fromData({})),
+      assignmentFor(Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }))
     ]);
-    try {
-      const targets = service.enumerateTargets(conf('PER_DOCENTE'));
-      expect(targets).toHaveLength(1);
-      expect(targets[0]!.docenteEmail).toBe('rossi@school.it');
-      expect(targets[0]!.classiCompetenza).toEqual(['']);
-    } finally {
-      spy.mockRestore();
-    }
+    const service = new EmailNotificationService(
+      fullDeps(db, gmail, { classi: classiStub, teachingAssignments })
+    );
+    const targets = service.enumerateTargets(conf('PER_DOCENTE'));
+    expect(targets).toHaveLength(1);
+    expect(targets[0]!.docenteEmail).toBe('rossi@school.it');
+    expect(targets[0]!.classiCompetenza).toEqual(['']);
   });
 
   test('targetsPerCdc falls back to "" for target and classiCompetenza when the classe has no id', () => {
@@ -715,29 +766,22 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       getArticolazione: () => null,
       isArticolata: () => false
     } as unknown as ClasseRepository;
-    const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
-    const spy = jest.spyOn(CattedraResolver.prototype, 'resolveConsiglio').mockReturnValue([
+    const teachingAssignments = teachingResolverFor([
+      assignmentFor(Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }))
+    ]);
+    const service = new EmailNotificationService(
+      fullDeps(db, gmail, { classi: classiStub, teachingAssignments })
+    );
+    const targets = service.enumerateTargets(conf('PER_CDC'));
+    expect(targets).toEqual([
       {
-        materia: MateriaId.of('MATE'),
-        isItp: false,
-        titolare: Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }),
-        supplente: null
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '',
+        emails: ['rossi@school.it'],
+        classiCompetenza: ['']
       }
     ]);
-    try {
-      const targets = service.enumerateTargets(conf('PER_CDC'));
-      expect(targets).toEqual([
-        {
-          tipo: 'cdc',
-          tipoTarget: 'classe',
-          target: '',
-          emails: ['rossi@school.it'],
-          classiCompetenza: ['']
-        }
-      ]);
-    } finally {
-      spy.mockRestore();
-    }
   });
 
   test('targetsPerGenitori skips alunni without tutors, dedups repeated tutor sets, and falls back to "" when the alunno has no id', () => {

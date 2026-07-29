@@ -38,7 +38,6 @@ export class AlunnoProvider implements ContextProvider {
       );
     const indirizzo = this.classi.getIndirizzo(classe);
 
-    const curriculum = curriculumRecord(alunno);
     const focusAlunno: CduAlunno = {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
       status: {
@@ -47,7 +46,7 @@ export class AlunnoProvider implements ContextProvider {
         isRipetente: alunno.isRipetente(),
         isRappresentante: alunno.isRappresentante()
       },
-      curriculum,
+      curriculum: curriculumRecord(alunno),
       classe: {
         nome: classe.nome,
         indirizzoSigla: classe.indirizzo,
@@ -69,8 +68,7 @@ export class AlunnoProvider implements ContextProvider {
         classe,
         alunno.religione,
         params.now,
-        options.gestioneSupplenti,
-        curriculum
+        options.gestioneSupplenti
       );
     }
 

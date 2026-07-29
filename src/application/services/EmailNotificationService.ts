@@ -45,8 +45,8 @@ import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepo
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
-import { CattedraResolver } from './CattedraResolver';
 import { AggregatoreDati } from './AggregatoreDati';
+import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 
 /** Everything the email subsystem needs from persistence: ALDO port + repository seam. */
 export type EmailDb = IDatabase & PostProcessDb & RepositoryDatabase;
@@ -71,7 +71,7 @@ export interface EmailNotificationDeps {
   materie: IMateriaRepository;
   aggregatoreDati: AggregatoreDati;
   /** Effective-teacher resolution (SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI, ref CLAUDE.md). */
-  cattedraResolver: CattedraResolver;
+  teachingAssignments: ITeachingAssignmentResolver;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
   now: Date;
   /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
@@ -125,6 +125,7 @@ export class EmailNotificationService {
     templates: ITemplateEngine,
     now: Date,
     drive: IDriveFacade,
+    teachingAssignments: ITeachingAssignmentResolver,
     logger?: LoggerService,
     monitor?: IProcessMonitor,
     master: IMasterSheetRepository = new MasterSheetRepository(db)
@@ -135,7 +136,7 @@ export class EmailNotificationService {
       drive,
       templates,
       now,
-      contextBuilder: ContextEngineFactory.create(db, master),
+      contextBuilder: ContextEngineFactory.create(db, master, teachingAssignments),
       expressionEngine: new ExpressionEngineFacade(),
       docenti: new DocenteRepository(db),
       alunni: new AlunnoRepository(db),
@@ -148,7 +149,7 @@ export class EmailNotificationService {
       supplenze: new SupplenzaRepository(db),
       materie: new MateriaRepository(db),
       aggregatoreDati: new AggregatoreDati(db),
-      cattedraResolver: new CattedraResolver(db)
+      teachingAssignments
     };
     if (logger !== undefined) base.logger = logger;
     if (monitor !== undefined) base.monitor = monitor;
@@ -328,14 +329,12 @@ export class EmailNotificationService {
 
   /**
    * Effective council emails for an entry-point classe, deduped and sorted by
-   * cognome (deterministic emails[0], ref 11 §14). CattedraResolver
-   * partner-routes articulated classes internally (ref cattedra-resolution
-   * design doc Phase B) — a single resolveConsiglio call is correct whether
-   * `classe` is articulated or not.
+   * cognome (deterministic emails[0], ref 11 §14). The teaching-assignment port
+   * partner-routes articulated classes internally, so one call is sufficient.
    */
   private cdcEmails(classe: Classe): string[] {
     const byEmail = new Map<string, string>(); // email -> cognome
-    for (const a of this.deps.cattedraResolver.resolveConsiglio(classe, this.deps.now)) {
+    for (const a of this.deps.teachingAssignments.resolveConsiglio(classe, this.deps.now)) {
       const email = a.titolare.id ?? '';
       if (email !== '' && !byEmail.has(email)) {
         byEmail.set(email, a.titolare.cognome);

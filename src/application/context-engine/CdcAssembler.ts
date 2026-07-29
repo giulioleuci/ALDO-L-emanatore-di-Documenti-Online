@@ -15,7 +15,7 @@ interface RowGroup {
   rowDocente: Docente;
   isSupplenteRow: boolean;
   sostituisce: Docente | null;
-  materieRaw: Array<{ sigla: string; isItp: boolean; specificita: string | null }>;
+  materieRaw: Array<{ sigla: string; isItp: boolean }>;
 }
 
 export interface CattedraAssignmentsResolver {
@@ -56,15 +56,13 @@ export class CdcAssembler {
    * teachers, plus the IRC teacher when the student chose religion (SI) or the
    * ALT teacher when ALT (neither for NO) — IRC/ALT are flagged MATERIE rows
    * (ref design doc Phase A), resolved through CattedraResolver like any other
-   * materia, split-row capable. Specificity slots are retained only when their
-   * suffix occurs in the student's curriculum for that materia (14 §1.3).
+   * materia, split-row capable.
    */
   assembleFiltrato(
     classe: Classe,
     religione: ReligioneScelta,
     date: Date,
-    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI,
-    curriculum: Record<string, { specifiche: string[] }> = {}
+    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
   ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
     const partners = this.classi.orderedPartners(classe);
@@ -72,8 +70,7 @@ export class CdcAssembler {
     const filtered = full.filter((a) => {
       if (a.materia.value === 'IRC') return religione === ReligioneScelta.SI;
       if (a.materia.value === 'ALT') return religione === ReligioneScelta.ALT;
-      if (a.specifica === undefined || a.specifica === null) return true;
-      return curriculum[a.materia.value]?.specifiche.includes(a.specifica) === true;
+      return true;
     });
     return this.toVMsFromAssignments(filtered, classe, isArticolata, partners, gestioneSupplenti);
   }
@@ -99,11 +96,7 @@ export class CdcAssembler {
         group = { rowDocente, isSupplenteRow, sostituisce, materieRaw: [] };
         byKey.set(key, group);
       }
-      group.materieRaw.push({
-        sigla: a.materia.value,
-        isItp: a.isItp,
-        specificita: a.specifica ?? null
-      });
+      group.materieRaw.push({ sigla: a.materia.value, isItp: a.isItp });
     }
 
     const coord = new Set(this.classi.getCoordinatori(classe).map((d) => d.id ?? ''));
@@ -156,7 +149,7 @@ export class CdcAssembler {
         sigla: m.sigla,
         nome: this.materie.findByIdCached(MateriaId.of(m.sigla))?.nome ?? m.sigla,
         colore: '',
-        specificita: m.specificita
+        specificita: null
       })),
       ruoli: {
         isCoordinatore,
@@ -190,12 +183,8 @@ export class CdcAssembler {
     email: string
   ): DocenteCdcVM['tipoArticolazione'] {
     if (!isArticolata || partners.length < 2) return null;
-    const inPrimo = this.classi
-      .getTeachingSlots(partners[0]!)
-      .some((slot) => slot.actorEmails.includes(email));
-    const inSecondo = this.classi
-      .getTeachingSlots(partners[1]!)
-      .some((slot) => slot.actorEmails.includes(email));
+    const inPrimo = this.classi.getMaterieDelDocente(partners[0]!, email).length > 0;
+    const inSecondo = this.classi.getMaterieDelDocente(partners[1]!, email).length > 0;
     if (inPrimo && inSecondo) return 'COMUNE';
     if (inPrimo) return 'SEPARATO_PRIMO';
     if (inSecondo) return 'SEPARATO_SECONDO';

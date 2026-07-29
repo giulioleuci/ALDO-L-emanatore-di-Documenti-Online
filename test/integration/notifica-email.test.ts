@@ -4,6 +4,7 @@ import { fixtureTables } from '../fixtures/tables';
 import { FakeTemplateEngine } from '../fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../fakes/FakeDriveFacade';
+import { AldoTeachingAssignmentResolver } from '../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window
 
@@ -15,7 +16,8 @@ function wire() {
     gmail,
     new FakeTemplateEngine(),
     NOW,
-    new FakeDriveFacade()
+    new FakeDriveFacade(),
+    new AldoTeachingAssignmentResolver(db)
   );
   return { db, gmail, service };
 }

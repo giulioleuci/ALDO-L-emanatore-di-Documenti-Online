@@ -9,6 +9,7 @@ import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
+import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
@@ -20,7 +21,8 @@ function wire(monitor?: FakeProcessMonitor) {
     gmail,
     new FakeTemplateEngine(),
     NOW,
-    new FakeDriveFacade()
+    new FakeDriveFacade(),
+    new AldoTeachingAssignmentResolver(db)
   );
   const service = new EmailBatchService(notification, monitor);
   return { gmail, service };

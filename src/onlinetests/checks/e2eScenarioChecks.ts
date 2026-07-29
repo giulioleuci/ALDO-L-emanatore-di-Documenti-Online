@@ -281,23 +281,26 @@ export function registerE2eScenarioChecks(
       if (sendResult.sent === 0 || sendResult.errors.length > 0) {
         throw new ValidationError(`Invio piani fallito: ${emailDiagnostics(sendResult)}`);
       }
-      const planEmailsByRecipient = new Map<string, string>();
+      const planEmailsByLogicalTarget = new Map<string, string>();
       const planMailRows = db
         .table(TABLE.LOG_MAIL)
         .findAll()
         .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_PIANI);
       for (const row of planMailRows) {
-        const recipient = String(row[COL_LOG_MAIL.DESTINATARI] ?? '').trim();
-        if (recipient === '') {
-          throw new ValidationError('Invio piani: LOG_MAIL.DESTINATARI mancante');
+        const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
+          logicalTargetId?: unknown;
+        };
+        const logicalTargetId = String(allegati.logicalTargetId ?? '').trim();
+        if (logicalTargetId === '') {
+          throw new ValidationError('Invio piani: LOG_MAIL.ALLEGATI.logicalTargetId mancante');
         }
         const text = String(row[COL_LOG_MAIL.TESTO] ?? '');
-        planEmailsByRecipient.set(
-          recipient,
-          `${planEmailsByRecipient.get(recipient) ?? ''}\n${text}`
+        planEmailsByLogicalTarget.set(
+          logicalTargetId,
+          `${planEmailsByLogicalTarget.get(logicalTargetId) ?? ''}\n${text}`
         );
       }
-      const emailText = Array.from(planEmailsByRecipient.values())
+      const emailText = Array.from(planEmailsByLogicalTarget.values())
         .join('\n')
         .replace(/\s+/g, ' ')
         .trim();
@@ -307,25 +310,25 @@ export function registerE2eScenarioChecks(
           row[COL_LOG_DOCS.SOTTOTIPO] === TipoPiano.PDP_BES
       );
       const partnerPlanName = String(partnerPlan?.[COL_LOG_DOCS.NOME] ?? '').trim();
-      const scientificoEmail = planEmailsByRecipient.get(e2eDocenteEmail(3)) ?? '';
-      const classicoEmail = planEmailsByRecipient.get(e2eDocenteEmail(4)) ?? '';
+      const scientificoEmail = planEmailsByLogicalTarget.get(`docente:${e2eDocenteEmail(3)}`) ?? '';
+      const classicoEmail = planEmailsByLogicalTarget.get(`docente:${e2eDocenteEmail(4)}`) ?? '';
       if (partnerPlanName === '' || !scientificoEmail.includes(partnerPlanName)) {
         throw new ValidationError(
-          'Invio piani: il piano PDP_BES della classe articolata 3C-S non è presente nell\'email del coordinatore scientifico'
+          "Invio piani: il piano PDP_BES della classe articolata 3C-S non è presente nell'email del coordinatore scientifico"
         );
       }
       if (classicoEmail.includes(partnerPlanName)) {
         throw new ValidationError(
-          'Invio piani: il piano PDP_BES della classe articolata 3C-S è presente nell\'email del coordinatore classico'
+          "Invio piani: il piano PDP_BES della classe articolata 3C-S è presente nell'email del coordinatore classico"
         );
       }
       const correctHistory = [
-        'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026',
-        'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'
+        "PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026",
+        "PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026"
       ];
       const crossedHistory = [
-        'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026',
-        'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026'
+        "PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026",
+        "PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026"
       ];
       if (
         correctHistory.some((fragment) => !emailText.includes(fragment)) ||
@@ -345,9 +348,7 @@ export function registerE2eScenarioChecks(
         );
       if (
         notifiedDualRows.length !== 2 ||
-        notifiedDualRows.some(
-          (row) => String(row[COL_LOG_DOCS.NOTIFICATO] ?? '').trim() === ''
-        )
+        notifiedDualRows.some((row) => String(row[COL_LOG_DOCS.NOTIFICATO] ?? '').trim() === '')
       ) {
         throw new ValidationError(
           'Invio piani: entrambi i sottotipi del piano doppio devono risultare notificati'

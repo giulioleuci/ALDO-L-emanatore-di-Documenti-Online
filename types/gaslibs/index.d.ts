@@ -530,6 +530,28 @@ declare global {
     appliesToRole(roleId: string): boolean;
     getMetadata(): Record<string, unknown>;
   }
+  class DelegationChain {
+    constructor(delegations?: Delegation[]);
+    readonly delegations: readonly Delegation[];
+    static empty(): DelegationChain;
+    static single(delegation: Delegation): DelegationChain;
+    static fromJSON(obj: Record<string, unknown>): DelegationChain;
+    isEmpty(): boolean;
+    getDepth(): number;
+    getOriginalPrincipalId(): string | null;
+    getFinalDelegateId(): string | null;
+    getAllActorIds(): string[];
+    getFirst(): Delegation | null;
+    getLast(): Delegation | null;
+    getAt(index: number): Delegation | null;
+    containsActor(actorId: string): boolean;
+    wouldCreateCycle(delegation: Delegation): boolean;
+    extend(delegation: Delegation): DelegationChain;
+    forEach(callback: (delegation: Delegation, index: number) => void): void;
+    map<T>(mapper: (delegation: Delegation, index: number) => T): T[];
+    isValidAt(asOfDate?: Date): boolean;
+    toJSON(): Record<string, unknown>;
+  }
   class Scope {
     static global(): Scope;
     static orgUnit(value: string): Scope;
@@ -693,7 +715,7 @@ declare global {
       baseActor?: Actor | null;
       permanentActor?: Actor | null;
       effectiveActor?: Actor | null;
-      delegationChain?: { toJSON(): unknown; isEmpty(): boolean };
+      delegationChain?: DelegationChain;
       routing?: RoutingResult | null;
       trace?: ResolutionTrace;
       metadata?: Record<string, unknown>;
@@ -702,8 +724,10 @@ declare global {
     readonly baseActor: Actor | null;
     readonly permanentActor: Actor | null;
     readonly effectiveActor: Actor | null;
+    readonly delegationChain: DelegationChain;
     readonly routing: RoutingResult | null;
     readonly trace: ResolutionTrace;
+    readonly metadata: Readonly<Record<string, unknown>>;
     toJSON(): Record<string, unknown>;
   }
   abstract class AssignmentSource {
@@ -762,22 +786,25 @@ declare global {
       routingPolicy?: RoutingPolicyValue | null;
     }): EffectiveAssignmentResult[];
   }
-  class MalformedAssignmentSlotError extends Error {
+  class RoleResolutionError extends Error {
+    constructor(message: string, context?: Record<string, unknown>, originalError?: Error | null);
+  }
+  class MalformedAssignmentSlotError extends RoleResolutionError {
     constructor(message: string, context?: Record<string, unknown>);
   }
-  class DuplicateAssignmentSlotError extends Error {
+  class DuplicateAssignmentSlotError extends RoleResolutionError {
     constructor(slotKey: string, context?: Record<string, unknown>);
   }
-  class InconsistentAssignmentOverrideError extends Error {
+  class InconsistentAssignmentOverrideError extends RoleResolutionError {
     constructor(message: string, context?: Record<string, unknown>);
   }
-  class AmbiguousAssignmentOverrideError extends Error {
+  class AmbiguousAssignmentOverrideError extends RoleResolutionError {
     constructor(candidateId: string, overrideIds?: string[], context?: Record<string, unknown>);
   }
-  class AssignmentActorNotFoundError extends Error {
+  class AssignmentActorNotFoundError extends RoleResolutionError {
     constructor(actorId: string, context?: Record<string, unknown>);
   }
-  class OverlappingDelegationError extends Error {
+  class OverlappingDelegationError extends RoleResolutionError {
     constructor(actorId: string, context?: Record<string, unknown>);
   }
 

@@ -30,6 +30,28 @@ describe('vendored GasLibraryFactory public API', () => {
     ]);
     expect(interceptor).toBeInstanceOf(ContextInterceptor);
 
+    const assignmentSource = new WideRowAssignmentSource();
+    expect(assignmentSource).toBeInstanceOf(AssignmentSource);
+    expect(typeof AssignmentSource.prototype.getAssignments).toBe('function');
+    expect(AssignmentSource.prototype.getAssignmentsForRole).toBeUndefined();
+
+    const result = new EffectiveAssignmentResult({
+      slot,
+      delegationChain: DelegationChain.empty(),
+      metadata: { candidateId: candidate.id }
+    });
+    expect(result.delegationChain).toBeInstanceOf(DelegationChain);
+    expect(result.metadata).toEqual({ candidateId: candidate.id });
+    expect(new MalformedAssignmentSlotError('invalid slot')).toBeInstanceOf(RoleResolutionError);
+
+    if (false) {
+      // @ts-expect-error The runtime requires a real DelegationChain instance.
+      new EffectiveAssignmentResult({
+        slot,
+        delegationChain: { isEmpty: () => true, toJSON: () => [] }
+      });
+    }
+
     const exportedConstructors: unknown[] = [
       EffectiveAssignmentResult,
       AssignmentSource,

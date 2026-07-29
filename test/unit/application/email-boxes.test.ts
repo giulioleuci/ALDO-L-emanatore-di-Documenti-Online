@@ -685,12 +685,65 @@ test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_
     materie(),
     templates,
     aggregatoreDati,
-    '5A'
+    ['5A']
   );
 
   expect(out.boxes['cartelle']!.html).toContain('https://drive.google.com/drive/folders/folder1');
   expect(out.boxes['cartelle']!.html).toContain('Verbali 5A');
   expect(out.folderIds).toEqual(['folder1']);
+});
+
+test('cartellePerClasse includes folders for all competent classes and deduplicates them by ID', () => {
+  const tables = fixtureTables();
+  (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
+    {
+      ID: 'folder1',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5A',
+      PATH: '_ALDO_E2E_OUTPUT/5A',
+      LINK: 'https://drive.google.com/drive/folders/folder1',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE,FISI'
+    },
+    {
+      ID: 'folder2',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5B',
+      PATH: '_ALDO_E2E_OUTPUT/5B',
+      LINK: 'https://drive.google.com/drive/folders/folder2',
+      CLASSI: '5B',
+      UTENTI: '',
+      MATERIE: 'MATE,FISI'
+    },
+    {
+      ID: 'folder1',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5A',
+      PATH: '_ALDO_E2E_OUTPUT/5A',
+      LINK: 'https://drive.google.com/drive/folders/folder1',
+      CLASSI: '5A,5B',
+      UTENTI: '',
+      MATERIE: 'MATE,FISI'
+    }
+  ];
+  const aggregatoreDati = new AggregatoreDati(new FakeDatabase(tables));
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }]),
+    cduRecord(),
+    materie(),
+    templates,
+    aggregatoreDati,
+    ['5A', '5B']
+  );
+
+  expect(out.folderIds.sort()).toEqual(['folder1', 'folder2']);
+  expect(out.boxes['cartelle']!.html).toContain('Verbali 5A');
+  expect(out.boxes['cartelle']!.html).toContain('Verbali 5B');
 });
 
 test('cartelle box without DATI_SORGENTE falls back to CDU-embedded items and reports empty folderIds', () => {

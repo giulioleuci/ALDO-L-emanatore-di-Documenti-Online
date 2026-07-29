@@ -390,6 +390,52 @@ test('RenderBoxesStep resolves real LOG_FOLD folders and sets cartelleFolderIds 
   expect(w.ctx.get<string[]>('cartelleFolderIds')).toEqual(['folder1']);
 });
 
+test('RenderBoxesStep includes cartellePerClasse folders for every competent target class', () => {
+  const tables = fixtureTables();
+  (tables['LOG_FOLD'] as Row[]) = [
+    {
+      ID: 'folder1',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5A',
+      PATH: '_ALDO_E2E_OUTPUT/5A',
+      LINK: 'https://drive.google.com/drive/folders/folder1',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE,FISI'
+    },
+    {
+      ID: 'folder2',
+      TIPO: 'E2E_VERBALE',
+      NOME: 'Verbali 5B',
+      PATH: '_ALDO_E2E_OUTPUT/5B',
+      LINK: 'https://drive.google.com/drive/folders/folder2',
+      CLASSI: '5B',
+      UTENTI: '',
+      MATERIE: 'MATE,FISI'
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: '[{"TIPO_BOX":"cartelle","DATI_SORGENTE":{"metodo":"cartellePerClasse"}}]'
+    },
+    { ...docenteTarget(), classiCompetenza: ['5A', '5B'] },
+    tables
+  );
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(
+    logger,
+    new MateriaRepository(w.db),
+    w.templates,
+    new AggregatoreDati(w.db)
+  ).execute(w.ctx);
+
+  expect(w.ctx.get<string[]>('cartelleFolderIds')!.sort()).toEqual(['folder1', 'folder2']);
+  expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 5A');
+  expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 5B');
+});
+
 test('RenderBoxesStep sets cartelleFolderIds to [] when no cartellePerClasse opt-in is configured', () => {
   const w = wire();
   buildStep(w).execute(w.ctx);

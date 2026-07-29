@@ -63,6 +63,7 @@ export interface RenderedBox {
 }
 
 const DEFAULT_BORDER = '#ddd';
+const folderProjector = new CollectionProjector({ logger: new LoggerService() });
 
 /**
  * HTML-context escaping (XSS prevention) delegated to CoreUtilsLib's
@@ -507,7 +508,7 @@ export function renderBoxes(
   materie: IMateriaRepository,
   templates: ITemplateEngine,
   aggregatoreDati?: AggregatoreDati,
-  classeId?: string
+  classeIds?: string[]
 ): {
   ordered: string[];
   boxes: Record<string, RenderedBox>;
@@ -533,8 +534,20 @@ export function renderBoxes(
     (cartelleCfg?.['DATI_SORGENTE'] as { metodo?: string } | undefined)?.metodo
   );
   const realCartelle: LogCartella[] | null =
-    cartelleMetodo === 'cartellePerClasse' && aggregatoreDati !== undefined && classeId !== undefined
-      ? ((aggregatoreDati.perMetodo('cartellePerClasse', { classeId }) as LogCartella[] | null) ?? [])
+    cartelleMetodo === 'cartellePerClasse' && aggregatoreDati !== undefined && classeIds !== undefined
+      ? (() => {
+          const cartelle = classeIds.flatMap(
+            (classeId) =>
+              (aggregatoreDati.perMetodo('cartellePerClasse', { classeId }) as LogCartella[] | null) ?? []
+          );
+          const distinct = folderProjector.project(
+            cartelle.flatMap((folder, index) =>
+              folder.id === null ? [] : [{ id: folder.id, index }]
+            ),
+            [{ type: 'distinctBy', keys: ['id'] }]
+          ).value as Array<{ index: number }>;
+          return distinct.map(({ index }) => cartelle[index]!);
+        })()
       : null;
   const folderIds = (realCartelle ?? [])
     .map((f) => f.id)

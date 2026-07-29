@@ -232,8 +232,14 @@ export class RenderBoxesStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const built = cdu(ctx);
-    const classeId =
+    const focusClasseId =
       built.focus.classe !== undefined ? (getClasseEntity(built).id ?? undefined) : undefined;
+    const classeIds =
+      target(ctx).classiCompetenza.length > 0
+        ? target(ctx).classiCompetenza
+        : focusClasseId === undefined
+          ? undefined
+          : [focusClasseId];
     const result = renderBoxes(
       this.composer,
       confMail(ctx),
@@ -241,7 +247,7 @@ export class RenderBoxesStep extends Step {
       this.materie,
       this.templates,
       this.aggregatoreDati,
-      classeId
+      classeIds
     );
     built.render = { boxes: result.boxes, body: { htmlCompleto: '', htmlSoloContenuto: '' } };
     const oggetto = this.templates.processString(confMail(ctx).oggetto, cduRecord(ctx));

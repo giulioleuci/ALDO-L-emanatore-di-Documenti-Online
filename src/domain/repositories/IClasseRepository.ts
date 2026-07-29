@@ -8,6 +8,15 @@ import type { MateriaId } from '../value-objects/MateriaId';
 import type { ArticolazioneConfig } from '../value-objects/ArticolazioneConfig';
 
 export type RepoRow = Record<string, string | number | boolean | null>;
+export type TeachingSlotKind = 'MAIN' | 'ITP' | 'SPECIFICA';
+
+export interface TeachingSlotDescriptor {
+  column: string;
+  materia: MateriaId;
+  kind: TeachingSlotKind;
+  specifica: string | null;
+  actorEmails: string[];
+}
 
 export interface IClasseRepository {
   findById(id: ClasseId): Classe | null;
@@ -19,6 +28,7 @@ export interface IClasseRepository {
   // --- Cattedra matrix / roles (ref 06 §3) ---
   getDocentiPerMateria(classe: Classe, materia: MateriaId): Docente[];
   getITPPerMateria(classe: Classe, materia: MateriaId): Docente[];
+  getTeachingSlots(classe: Classe): TeachingSlotDescriptor[];
   getAllDocentiCDC(classe: Classe): Docente[];
   getDocentiIRC(classe: Classe): Docente[];
   getDocentiALT(classe: Classe): Docente[];

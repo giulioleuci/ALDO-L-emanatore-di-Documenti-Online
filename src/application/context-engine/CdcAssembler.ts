@@ -5,7 +5,7 @@ import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { GestioneSupplenti, ReligioneScelta } from '../../domain/value-objects/enums';
-import type { CattedraResolver, CattedraAssignment } from '../services/CattedraResolver';
+import type { CattedraAssignment } from '../services/CattedraResolver';
 
 const RUOLO_TUTOR_ASL = 'TUTOR_ASL';
 const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
@@ -15,7 +15,15 @@ interface RowGroup {
   rowDocente: Docente;
   isSupplenteRow: boolean;
   sostituisce: Docente | null;
-  materieRaw: Array<{ sigla: string; isItp: boolean }>;
+  materieRaw: Array<{ sigla: string; isItp: boolean; specificita: string | null }>;
+}
+
+export interface CattedraAssignmentsResolver {
+  resolveConsiglio(
+    classe: Classe,
+    data: Date,
+    options?: { includeReligioneAlt?: boolean }
+  ): CattedraAssignment[];
 }
 
 /**
@@ -28,7 +36,7 @@ export class CdcAssembler {
   constructor(
     private readonly classi: IClasseRepository,
     private readonly materie: IMateriaRepository,
-    private readonly cattedraResolver: CattedraResolver
+    private readonly cattedraResolver: CattedraAssignmentsResolver
   ) {}
 
   /** Full council of the class (09 §4) at `date`, per the confirmed split-row design. */
@@ -48,16 +56,15 @@ export class CdcAssembler {
    * teachers, plus the IRC teacher when the student chose religion (SI) or the
    * ALT teacher when ALT (neither for NO) — IRC/ALT are flagged MATERIE rows
    * (ref design doc Phase A), resolved through CattedraResolver like any other
-   * materia, split-row capable. Specificity filtering by
-   * `focus.alunno.curriculum` applies only where specificity columns exist in
-   * the cattedra matrix — that matrix has none yet, so specificity filtering
-   * is deferred (14 §1.3).
+   * materia, split-row capable. Specificity slots are retained only when their
+   * suffix occurs in the student's curriculum for that materia (14 §1.3).
    */
   assembleFiltrato(
     classe: Classe,
     religione: ReligioneScelta,
     date: Date,
-    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
+    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI,
+    curriculum: Record<string, { specifiche: string[] }> = {}
   ): DocenteCdcVM[] {
     const isArticolata = this.classi.isArticolata(classe);
     const partners = this.classi.orderedPartners(classe);
@@ -65,7 +72,8 @@ export class CdcAssembler {
     const filtered = full.filter((a) => {
       if (a.materia.value === 'IRC') return religione === ReligioneScelta.SI;
       if (a.materia.value === 'ALT') return religione === ReligioneScelta.ALT;
-      return true;
+      if (a.specifica === undefined || a.specifica === null) return true;
+      return curriculum[a.materia.value]?.specifiche.includes(a.specifica) === true;
     });
     return this.toVMsFromAssignments(filtered, classe, isArticolata, partners, gestioneSupplenti);
   }
@@ -91,7 +99,11 @@ export class CdcAssembler {
         group = { rowDocente, isSupplenteRow, sostituisce, materieRaw: [] };
         byKey.set(key, group);
       }
-      group.materieRaw.push({ sigla: a.materia.value, isItp: a.isItp });
+      group.materieRaw.push({
+        sigla: a.materia.value,
+        isItp: a.isItp,
+        specificita: a.specifica ?? null
+      });
     }
 
     const coord = new Set(this.classi.getCoordinatori(classe).map((d) => d.id ?? ''));
@@ -144,7 +156,7 @@ export class CdcAssembler {
         sigla: m.sigla,
         nome: this.materie.findByIdCached(MateriaId.of(m.sigla))?.nome ?? m.sigla,
         colore: '',
-        specificita: null
+        specificita: m.specificita
       })),
       ruoli: {
         isCoordinatore,
@@ -178,8 +190,12 @@ export class CdcAssembler {
     email: string
   ): DocenteCdcVM['tipoArticolazione'] {
     if (!isArticolata || partners.length < 2) return null;
-    const inPrimo = this.classi.getMaterieDelDocente(partners[0]!, email).length > 0;
-    const inSecondo = this.classi.getMaterieDelDocente(partners[1]!, email).length > 0;
+    const inPrimo = this.classi
+      .getTeachingSlots(partners[0]!)
+      .some((slot) => slot.actorEmails.includes(email));
+    const inSecondo = this.classi
+      .getTeachingSlots(partners[1]!)
+      .some((slot) => slot.actorEmails.includes(email));
     if (inPrimo && inSecondo) return 'COMUNE';
     if (inPrimo) return 'SEPARATO_PRIMO';
     if (inSecondo) return 'SEPARATO_SECONDO';

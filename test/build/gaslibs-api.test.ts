@@ -44,6 +44,7 @@ describe('vendored GasLibraryFactory public API', () => {
     expect(result.metadata).toEqual({ candidateId: candidate.id });
     expect(new MalformedAssignmentSlotError('invalid slot')).toBeInstanceOf(RoleResolutionError);
 
+    // eslint-disable-next-line no-constant-condition
     if (false) {
       // @ts-expect-error The runtime requires a real DelegationChain instance.
       new EffectiveAssignmentResult({

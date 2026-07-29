@@ -2,7 +2,7 @@ import { ClasseRepository } from '../../../src/infrastructure/repositories/Class
 import { Classe } from '../../../src/domain/entities/Classe';
 import { Docente } from '../../../src/domain/entities/Docente';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
-import { fixtureTables } from '../../../test/fixtures/tables';
+import { fixtureTables, teachingSlotFixtureTables } from '../../../test/fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
@@ -21,6 +21,62 @@ test('findById maps CLASSI row to Classe entity', () => {
   expect(c?.nome).toBe('5A');
   expect(c?.anno.value).toBe(5);
   expect(c?.indirizzo).toBe('SCIENTIFICO');
+});
+
+test('getTeachingSlots enumerates every populated subject slot and preserves arbitrary specificities', () => {
+  const r = new ClasseRepository(new FakeDatabase(teachingSlotFixtureTables()));
+  const classe = r.findById(ClasseId.of('5A'))!;
+
+  const slots = r.getTeachingSlots(classe);
+  expect(slots.find((slot) => slot.column === 'MAT')).toEqual({
+    column: 'MAT',
+    materia: MateriaId.of('MAT'),
+    kind: 'MAIN',
+    specifica: null,
+    actorEmails: ['main@school.test']
+  });
+  expect(slots.find((slot) => slot.column === 'INF.itp')).toEqual({
+    column: 'INF.itp',
+    materia: MateriaId.of('INF'),
+    kind: 'ITP',
+    specifica: null,
+    actorEmails: ['itp@school.test']
+  });
+  expect(slots.find((slot) => slot.column === 'LAB.GRUPPO_A')).toEqual({
+    column: 'LAB.GRUPPO_A',
+    materia: MateriaId.of('LAB'),
+    kind: 'SPECIFICA',
+    specifica: 'GRUPPO_A',
+    actorEmails: ['specific-a@school.test']
+  });
+  expect(slots.find((slot) => slot.column === 'LAB.GRUPPO.A')).toEqual({
+    column: 'LAB.GRUPPO.A',
+    materia: MateriaId.of('LAB'),
+    kind: 'SPECIFICA',
+    specifica: 'GRUPPO.A',
+    actorEmails: ['specific-b@school.test']
+  });
+  expect(slots.find((slot) => slot.column === 'INTERPRET.CHITARRA')).toEqual({
+    column: 'INTERPRET.CHITARRA',
+    materia: MateriaId.of('INTERPRET'),
+    kind: 'SPECIFICA',
+    specifica: 'CHITARRA',
+    actorEmails: ['guitar@school.test']
+  });
+  expect(slots.find((slot) => slot.column === 'IRC')).toEqual({
+    column: 'IRC',
+    materia: MateriaId.of('IRC'),
+    kind: 'MAIN',
+    specifica: null,
+    actorEmails: ['irc@school.test']
+  });
+  expect(slots.find((slot) => slot.column === 'ALT')).toEqual({
+    column: 'ALT',
+    materia: MateriaId.of('ALT'),
+    kind: 'MAIN',
+    specifica: null,
+    actorEmails: ['alt@school.test']
+  });
 });
 
 test('getConsiglioDiClasse derives cattedre from teacher columns (05/06)', () => {

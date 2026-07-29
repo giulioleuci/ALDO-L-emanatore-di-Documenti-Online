@@ -6,6 +6,9 @@ import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
 import { GestioneSupplenti, ReligioneScelta } from '../../../../src/domain/value-objects/enums';
+import { teachingSlotFixtureTables } from '../../../fixtures/tables';
+import { TeachingAssignmentCattedraAdapter } from '../../../../src/application/context-engine/TeachingAssignmentCattedraAdapter';
+import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 function seed() {
   return {
@@ -124,6 +127,33 @@ test('articulated class: shared subject appears once (COMUNE), separate subjects
   expect(bianchiRow.tipoArticolazione).toBe('SEPARATO_PRIMO');
   const verdiRow = vms.find((v) => v.anagrafica.email === 'verdi@school.it')!;
   expect(verdiRow.tipoArticolazione).toBe('SEPARATO_SECONDO');
+});
+
+test('articulated specificity-only teachers keep their partner articulation tag', () => {
+  const tables = teachingSlotFixtureTables();
+  const lso = tables.CLASSI!.find((row) => row.ID === '1F-LSO')!;
+  const lss = tables.CLASSI!.find((row) => row.ID === '1F-LSS')!;
+  lso['LAB.GRUPPO_A'] = 'specific-a@school.test';
+  lss['LAB.GRUPPO_B'] = 'specific-b@school.test';
+  const db = new FakeDatabase(tables);
+  const classi = new ClasseRepository(db);
+  const materie = new MateriaRepository(db);
+  const adapter = new TeachingAssignmentCattedraAdapter(
+    new AldoTeachingAssignmentResolver(db)
+  );
+  const a = new CdcAssembler(classi, materie, adapter);
+  const classe = classi.findById(ClasseId.of('1F'))!;
+
+  const vms = a.assembleForClasse(classe, new Date('2026-02-15'));
+
+  expect(
+    vms.find((row) => row.anagrafica.email === 'specific-a@school.test')!
+      .tipoArticolazione
+  ).toBe('SEPARATO_PRIMO');
+  expect(
+    vms.find((row) => row.anagrafica.email === 'specific-b@school.test')!
+      .tipoArticolazione
+  ).toBe('SEPARATO_SECONDO');
 });
 
 test('assembleFiltrato adds the IRC teacher for religione SI, on top of effective subject teachers', () => {

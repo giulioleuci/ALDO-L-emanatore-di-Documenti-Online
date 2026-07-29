@@ -3,8 +3,10 @@ import type { Cdu } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
-import type { CattedraResolver } from '../../services/CattedraResolver';
-import { CdcAssembler } from '../CdcAssembler';
+import {
+  CdcAssembler,
+  type CattedraAssignmentsResolver
+} from '../CdcAssembler';
 import { getClasseEntity } from '../techEntities';
 
 /**
@@ -19,7 +21,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
   constructor(
     classi: IClasseRepository,
     materie: IMateriaRepository,
-    cattedraResolver: CattedraResolver
+    cattedraResolver: CattedraAssignmentsResolver
   ) {
     this.cdc = new CdcAssembler(classi, materie, cattedraResolver);
   }

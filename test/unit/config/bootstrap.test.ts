@@ -31,6 +31,7 @@ import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/Expr
 import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { DriveServiceFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
+import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -93,6 +94,9 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.has('documentBatchService')).toBe(true);
   expect(c.has('emailBatchService')).toBe(true);
   expect(c.get('risolutoreRuoli')).toBeInstanceOf(RisolutoreRuoliService);
+  const teachingAssignments = c.get('teachingAssignmentResolver');
+  expect(teachingAssignments).toBeInstanceOf(AldoTeachingAssignmentResolver);
+  expect(c.get('teachingAssignmentResolver')).toBe(teachingAssignments);
   expect(c.get('reportService')).toBeInstanceOf(ReportService);
   expect(c.get('aggregatoreDati')).toBeInstanceOf(AggregatoreDati);
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);

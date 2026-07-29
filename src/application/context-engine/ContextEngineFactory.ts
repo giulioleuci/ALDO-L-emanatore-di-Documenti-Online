@@ -19,6 +19,8 @@ import { PianiPersAlunnoStoricoProvider } from './providers/PianiPersAlunnoStori
 import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
 import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
+import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
+import { TeachingAssignmentCattedraAdapter } from './TeachingAssignmentCattedraAdapter';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { CdcAssembler } from './CdcAssembler';
 import { CattedraResolver } from '../services/CattedraResolver';
@@ -57,7 +59,8 @@ export class ContextEngineFactory {
    */
   static create(
     database: RepositoryDatabase,
-    master: IMasterSheetRepository = new MasterSheetRepository(database)
+    master: IMasterSheetRepository = new MasterSheetRepository(database),
+    teachingAssignments?: ITeachingAssignmentResolver
   ): ContextBuilder {
     const ruoli: IRuoloSpecialeRepository = new RuoloSpecialeRepository(database);
     const docenti: IDocenteRepository = new DocenteRepository(database);
@@ -66,7 +69,10 @@ export class ContextEngineFactory {
     const materie: IMateriaRepository = new MateriaRepository(database);
     const oreAsl: IOreASLRepository = new OreASLRepository(database);
     const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(database);
-    const cattedraResolver = new CattedraResolver(database);
+    const cattedraResolver =
+      teachingAssignments === undefined
+        ? new CattedraResolver(database)
+        : new TeachingAssignmentCattedraAdapter(teachingAssignments);
     const cdc = new CdcAssembler(classi, materie, cattedraResolver);
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 

@@ -1,4 +1,8 @@
-import type { IClasseRepository, RepoRow } from '../../domain/repositories/IClasseRepository';
+import type {
+  IClasseRepository,
+  RepoRow,
+  TeachingSlotDescriptor
+} from '../../domain/repositories/IClasseRepository';
 import { Classe } from '../../domain/entities/Classe';
 import { Docente } from '../../domain/entities/Docente';
 import { Indirizzo } from '../../domain/entities/Indirizzo';
@@ -98,6 +102,40 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     if (cols === undefined)
       throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
     return this.loadDocenti(this.rowOf(classe)[cols.itp]);
+  }
+
+  getTeachingSlots(classe: Classe): TeachingSlotDescriptor[] {
+    const row = this.rowOf(classe);
+    const descriptors: TeachingSlotDescriptor[] = [];
+    for (const materia of this.materieColumns.keys()) {
+      const main = materia;
+      const itp = `${materia}.itp`;
+      const prefix = `${materia}.`;
+      const add = (
+        column: string,
+        kind: TeachingSlotDescriptor['kind'],
+        specifica: string | null
+      ): void => {
+        const actorEmails = this.csvEmails(row[column]);
+        if (actorEmails.length > 0) {
+          descriptors.push({
+            column,
+            materia: MateriaId.of(materia),
+            kind,
+            specifica,
+            actorEmails
+          });
+        }
+      };
+      add(main, 'MAIN', null);
+      add(itp, 'ITP', null);
+      for (const column of Object.keys(row)) {
+        if (column.startsWith(prefix) && column !== itp) {
+          add(column, 'SPECIFICA', column.slice(prefix.length));
+        }
+      }
+    }
+    return descriptors;
   }
 
   /** All teachers of the class council: every main + itp column, deduped, sorted by surname. */

@@ -444,3 +444,87 @@ export function fixtureTables(): Record<string, Row[]> {
     LOG_MAIL: []
   };
 }
+
+/** Complete first-class teaching-slot matrix used by the GLF assignment-adapter tests. */
+export function teachingSlotFixtureTables(): Record<string, Row[]> {
+  const tables = fixtureTables();
+  const expanded = Object.fromEntries(
+    Object.entries(tables).map(([name, rows]) => [name, rows.map((row) => ({ ...row }))])
+  );
+  const classe5A = expanded.CLASSI!.find((row) => row.ID === '5A')!;
+  Object.assign(classe5A, {
+    MAT: 'main@school.test',
+    'INF.itp': 'itp@school.test',
+    'LAB.GRUPPO_A': 'specific-a@school.test',
+    'LAB.GRUPPO_B': 'specific-b@school.test',
+    'LAB.GRUPPO.A': 'specific-b@school.test',
+    'INTERPRET.CHITARRA': 'guitar@school.test',
+    IRC: 'irc@school.test',
+    ALT: 'alt@school.test'
+  });
+  expanded.DOCENTI!.push(
+    {
+      EMAIL: 'main@school.test',
+      COGNOME: 'MAIN',
+      NOME: 'TEACHER',
+      GENERE: 'M',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    },
+    {
+      EMAIL: 'itp@school.test',
+      COGNOME: 'ITP',
+      NOME: 'TEACHER',
+      GENERE: 'F',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: true
+    },
+    {
+      EMAIL: 'specific-a@school.test',
+      COGNOME: 'SPECIFIC',
+      NOME: 'A',
+      GENERE: 'F',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    },
+    {
+      EMAIL: 'specific-b@school.test',
+      COGNOME: 'SPECIFIC',
+      NOME: 'B',
+      GENERE: 'M',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    },
+    {
+      EMAIL: 'guitar@school.test',
+      COGNOME: 'GUITAR',
+      NOME: 'TEACHER',
+      GENERE: 'F',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    },
+    {
+      EMAIL: 'irc@school.test',
+      COGNOME: 'IRC',
+      NOME: 'TEACHER',
+      GENERE: 'M',
+      DIPART: 'LETTERE',
+      ITP: false
+    },
+    {
+      EMAIL: 'alt@school.test',
+      COGNOME: 'ALT',
+      NOME: 'TEACHER',
+      GENERE: 'F',
+      DIPART: 'LETTERE',
+      ITP: false
+    }
+  );
+  expanded.MATERIE!.push(
+    { ID: 'MAT', IS_RELIGIONE_ALT: false },
+    { ID: 'INF', IS_RELIGIONE_ALT: false },
+    { ID: 'LAB', IS_RELIGIONE_ALT: false },
+    { ID: 'INTERPRET', IS_RELIGIONE_ALT: false }
+  );
+  return expanded;
+}

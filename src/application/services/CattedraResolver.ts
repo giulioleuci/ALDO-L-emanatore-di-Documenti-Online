@@ -23,6 +23,7 @@ export interface CattedraAssignment {
   materia: MateriaId;
   titolare: Docente;
   isItp: boolean;
+  specifica?: string | null;
   supplente: Docente | null;
   /**
    * The classe this assignment was actually resolved against — the queried

@@ -50,6 +50,8 @@ import { ExpressionEngineFacade } from '../infrastructure/facades/ExpressionEngi
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import { ProcessMonitorFacade } from '../infrastructure/facades/ProcessMonitorFacade';
 import { ConfigurationError } from '../domain/errors/DomainError';
+import type { ITeachingAssignmentResolver } from '../application/ports/ITeachingAssignmentResolver';
+import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 /** ScriptProperties key holding the Master Sheet spreadsheet id (15 §7, 06 §0). */
 export const PROP_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
@@ -100,7 +102,17 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('logger', () => logger);
   c.register('db', () => deps.db);
   c.register('drive', () => deps.drive);
-  c.register('contextBuilder', () => ContextEngineFactory.create(deps.db, deps.master));
+  c.register(
+    'teachingAssignmentResolver',
+    () => new AldoTeachingAssignmentResolver(deps.db)
+  );
+  c.register('contextBuilder', (container) =>
+    ContextEngineFactory.create(
+      deps.db,
+      deps.master,
+      container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
+    )
+  );
   if (deps.spreadsheets !== undefined) {
     c.register('spreadsheets', () => deps.spreadsheets!);
   }

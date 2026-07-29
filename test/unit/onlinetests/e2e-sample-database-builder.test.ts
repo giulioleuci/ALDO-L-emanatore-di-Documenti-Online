@@ -13,6 +13,9 @@ import {
   PDP_BES_3C,
   PIANO_DOPPIO_STUDENTE,
   CONF_DOC_PIANI,
+  CONF_DOC_CONDOTTA,
+  CONF_DOC_RIEPILOGO,
+  CONF_DOC_COMPLESSO,
   CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_PIANI,
   CONF_MAIL_STATIC_ALLEGATO,
@@ -44,11 +47,13 @@ import {
 class RecordingSpreadsheet implements ISampleSpreadsheet {
   id: string;
   rows: Record<string, Record<string, unknown>[]> = {};
+  headers: Record<string, string[]> = {};
   constructor(id: string) {
     this.id = id;
   }
-  addSheet(name: string): void {
+  addSheet(name: string, headerRow: string[]): void {
     this.rows[name] = [];
+    this.headers[name] = headerRow;
   }
   appendRow(sheetName: string, row: Record<string, unknown>): void {
     (this.rows[sheetName] ??= []).push(row);
@@ -119,6 +124,9 @@ test('seeds an articulated parent with two populated partners and exactly 60 par
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const classi = sample.rows[TABLE.CLASSI]!;
+  const headers = sample.headers[TABLE.CLASSI]!;
+  expect(headers.filter((header) => header === COL_CLASSI.IRC)).toHaveLength(1);
+  expect(headers.filter((header) => header === COL_CLASSI.ALT)).toHaveLength(1);
   expect(classi.map((c) => c[COL_CLASSI.ID])).toEqual([
     CLASSE_A,
     CLASSE_B,
@@ -227,6 +235,14 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_condotta'
   });
+  for (const id of [CONF_DOC_CONDOTTA, CONF_DOC_RIEPILOGO, CONF_DOC_COMPLESSO]) {
+    const row = confDoc.find((candidate) => candidate[COL_CONF_DOC.ID] === id)!;
+    expect(JSON.parse(String(row[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '',
+      materie: ''
+    });
+  }
   const riepilogo = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO')!;
   expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(riepilogo[COL_CONF_DOC.TIPO]).toBe('RIEPILOGO_CLASSE');

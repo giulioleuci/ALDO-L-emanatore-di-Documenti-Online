@@ -53,9 +53,7 @@ const ASSIGNMENT_COLUMNS_E2E = [
   'INF.itp',
   'LAB.GRUPPO_A',
   'LAB.SEMINARIO_POMERIDIANO',
-  'INTERPRET.CHITARRA',
-  'IRC',
-  'ALT'
+  'INTERPRET.CHITARRA'
 ];
 export const INDIRIZZO_E2E = 'IND_E2E';
 export const DIPART_E2E = 'DIPART_E2E';
@@ -745,6 +743,11 @@ export class E2eSampleDatabaseBuilder {
   }
 
   private seedConfDoc(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
+    const classRegistration = JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '',
+      materie: ''
+    });
     sample.appendRow(TABLE.CONF_DOC, {
       [COL_CONF_DOC.ID]: CONF_DOC_VERBALE,
       [COL_CONF_DOC.TIPO]: 'VERBALE',
@@ -793,7 +796,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
@@ -810,7 +813,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {
@@ -827,7 +830,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {

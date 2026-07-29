@@ -40,16 +40,15 @@ export interface MateriaColumn {
 /**
  * The `materieColonne` groups object placed onto the rendering context (see
  * class doc comment for the full `dynamic_columns` placeholder convention).
- * `group2`/`group3` (and their labels) are omitted entirely when the
- * corresponding partner has no subject-specific columns — mirrors
- * `SheetProcessor.js`'s own "empty 2nd+ group renders nothing, no label
- * either" rule.
+ * Every group is always an array so templates can safely reference all three
+ * dynamic-column sources. Labels remain optional when the corresponding
+ * partner has no subject-specific columns.
  */
 export interface MaterieGroups {
   group1: MateriaColumn[];
-  group2?: MateriaColumn[];
+  group2: MateriaColumn[];
   group2Label?: string;
-  group3?: MateriaColumn[];
+  group3: MateriaColumn[];
   group3Label?: string;
 }
 
@@ -153,15 +152,21 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
       const group3 = this.resolveMateriaColumns(a.materieSeparateSecondoGruppo, partners[1]);
       return {
         group1,
-        ...(group2.length > 0 ? { group2, group2Label: partners[0] ?? 'Gruppo 1' } : {}),
-        ...(group3.length > 0 ? { group3, group3Label: partners[1] ?? 'Gruppo 2' } : {})
+        group2,
+        group3,
+        ...(group2.length > 0 ? { group2Label: partners[0] ?? 'Gruppo 1' } : {}),
+        ...(group3.length > 0 ? { group3Label: partners[1] ?? 'Gruppo 2' } : {})
       };
     }
     const sigle = new Set<string>();
     for (const d of classe.consiglioDiClasse ?? []) {
       for (const m of d.materie) sigle.add(m.sigla);
     }
-    return { group1: this.resolveMateriaColumns([...sigle].sort((a, b) => a.localeCompare(b))) };
+    return {
+      group1: this.resolveMateriaColumns([...sigle].sort((a, b) => a.localeCompare(b))),
+      group2: [],
+      group3: []
+    };
   }
 
   /** Resolves each sigla's display text (ports the pre-refactor `columnsFor`'s lookup logic: `MateriaRepository.findByIdCached(...).sintesi`, falling back to the sigla itself) BEFORE the item is placed on the context, so the template's `value=header` expression is a plain field read. */

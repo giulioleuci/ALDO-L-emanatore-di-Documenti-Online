@@ -125,8 +125,8 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
       { sigla: 'FISI', header: 'Fisica' },
       { sigla: 'MATE', header: 'Matematica' }
     ]);
-    expect(groups.group2).toBeUndefined();
-    expect(groups.group3).toBeUndefined();
+    expect(groups.group2).toEqual([]);
+    expect(groups.group3).toEqual([]);
   });
 
   test('CONF_DOC.PARAMETRI.sheetName selects the target sheet/tab', () => {
@@ -230,6 +230,32 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
     expect(groups.group2Label).toBe('1F-LSO');
     expect(groups.group3).toEqual([{ sigla: 'FISI', header: 'Fisica', classeId: '1F-LSS' }]);
     expect(groups.group3Label).toBe('1F-LSS');
+  });
+
+  test('articulated class exposes empty dynamic-column arrays when partner groups have no subjects', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '1F');
+    cdu.focus.classe!.articolazione = {
+      partner: null,
+      partners: ['1F-LSO', '1F-LSS'],
+      parent: null,
+      materieCondivise: ['MATE'],
+      materieSeparatePrimoGruppo: [],
+      materieSeparateSecondoGruppo: []
+    };
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieGeneratorStrategy(
+      new FakeSpreadsheetService(sheetInfo()),
+      new MateriaRepository(db),
+      templates
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
+
+    const groups = templates.sheetContextFor('file_1')?.['materieColonne'] as MaterieGroups;
+    expect(groups.group1).toEqual([{ sigla: 'MATE', header: 'Matematica' }]);
+    expect(groups.group2).toEqual([]);
+    expect(groups.group3).toEqual([]);
   });
 });
 

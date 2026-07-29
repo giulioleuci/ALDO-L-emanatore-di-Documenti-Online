@@ -284,7 +284,9 @@ export function registerE2eScenarioChecks(
         .findAll()
         .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_PIANI)
         .map((row) => String(row[COL_LOG_MAIL.TESTO] ?? ''))
-        .join('\n');
+        .join('\n')
+        .replace(/\s+/g, ' ')
+        .trim();
       const correctHistory = [
         'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026',
         'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'

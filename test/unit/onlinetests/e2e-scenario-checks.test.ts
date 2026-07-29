@@ -388,6 +388,20 @@ test('scenario 3 uses one config to render, deduplicate, send, and subtype-isola
   expect(dualRows.every((row) => row[COL_LOG_DOCS.NOTIFICATO] !== undefined)).toBe(true);
 });
 
+test('scenario 3 accepts historical-plan lines separated by HTML-to-text newlines', () => {
+  const harness = recordingHarness(
+    undefined,
+    'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina\nDisponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026\n' +
+      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina\nDisponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'pass' });
+});
+
 test('scenario 3 fails when prior-year PEI and PDP_BES history is crossed between subtypes', () => {
   const harness = recordingHarness(
     undefined,

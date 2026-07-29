@@ -256,6 +256,8 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
     expect(groups.group1).toEqual([{ sigla: 'MATE', header: 'Matematica' }]);
     expect(groups.group2).toEqual([]);
     expect(groups.group3).toEqual([]);
+    expect(groups.group2Label).toBeUndefined();
+    expect(groups.group3Label).toBeUndefined();
   });
 });
 

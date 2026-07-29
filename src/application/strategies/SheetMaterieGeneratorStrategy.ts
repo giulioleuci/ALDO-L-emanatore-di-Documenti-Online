@@ -30,6 +30,8 @@ interface SheetMaterieParams {
 export interface MateriaColumn {
   sigla: string;
   header: string;
+  /** Partner class that owns this column when the subject is articulated. */
+  classeId?: string;
   isSpecial?: boolean;
   roles?: string[];
 }
@@ -146,8 +148,8 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
       const a = classe.articolazione;
       const partners = a.partners ?? [];
       const group1 = this.resolveMateriaColumns(a.materieCondivise);
-      const group2 = this.resolveMateriaColumns(a.materieSeparatePrimoGruppo);
-      const group3 = this.resolveMateriaColumns(a.materieSeparateSecondoGruppo);
+      const group2 = this.resolveMateriaColumns(a.materieSeparatePrimoGruppo, partners[0]);
+      const group3 = this.resolveMateriaColumns(a.materieSeparateSecondoGruppo, partners[1]);
       return {
         group1,
         ...(group2.length > 0 ? { group2, group2Label: partners[0] ?? 'Gruppo 1' } : {}),
@@ -162,10 +164,16 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
   }
 
   /** Resolves each sigla's display text (ports the pre-refactor `columnsFor`'s lookup logic: `MateriaRepository.findByIdCached(...).sintesi`, falling back to the sigla itself) BEFORE the item is placed on the context, so the template's `value=header` expression is a plain field read. */
-  private resolveMateriaColumns(sigle: string[]): MateriaColumn[] {
-    return sigle.filter((sigla) => sigla !== 'IRC' && sigla !== 'ALT').map((sigla) => {
-      const header = this.materie.findByIdCached(MateriaId.of(sigla))?.sintesi.trim();
-      return { sigla, header: header !== undefined && header !== '' ? header : sigla };
-    });
+  private resolveMateriaColumns(sigle: string[], classeId?: string): MateriaColumn[] {
+    return sigle
+      .filter((sigla) => sigla !== 'IRC' && sigla !== 'ALT')
+      .map((sigla) => {
+        const header = this.materie.findByIdCached(MateriaId.of(sigla))?.sintesi.trim();
+        return {
+          sigla,
+          header: header !== undefined && header !== '' ? header : sigla,
+          ...(classeId === undefined ? {} : { classeId })
+        };
+      });
   }
 }

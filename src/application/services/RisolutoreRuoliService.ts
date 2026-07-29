@@ -28,6 +28,8 @@ import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCoun
 
 export interface RisolviOptions {
   regolaSupplente?: GestioneSupplenti;
+  /** Restricts an articulated subject role to the assignment owned by one partner class. */
+  classeId?: string;
 }
 
 interface RoleContext {
@@ -36,6 +38,7 @@ interface RoleContext {
   data: Date;
   materiaCorrente: MateriaId | null;
   routingPolicy: RoutingPolicyValue;
+  classeId: string | null;
 }
 
 type RoleStrategy = (ctx: RoleContext) => Email[];
@@ -56,9 +59,11 @@ interface RoutedActor {
 }
 
 function routingRows(assignments: TeachingAssignment[]): Array<{
+  classeId: string;
   routing: { primary: RoutedActor[] };
 }> {
   return assignments.map((assignment) => ({
+    classeId: assignment.classeId.value,
     routing: {
       primary: assignment.routing.primary.flatMap((docente) =>
         docente.id === null ? [] : [{ id: docente.id, cognome: docente.cognome }]
@@ -80,7 +85,10 @@ export class RisolutoreRuoliService {
   private readonly materie: IMateriaRepository;
   private readonly ruoli: IRuoloSpecialeRepository;
   private readonly teachingAssignments: ITeachingAssignmentResolver;
-  private readonly projector = new CollectionProjector({ logger: new LoggerService() });
+  private readonly projector = new CollectionProjector({
+    expressionEngine: new ExpressionEngineService({ logger: new LoggerService() }),
+    logger: new LoggerService()
+  });
   private readonly registro: Map<string, RoleStrategy>;
 
   constructor(
@@ -114,7 +122,8 @@ export class RisolutoreRuoliService {
       data: new Date(cdu.meta.date.oggi.iso),
       materiaCorrente:
         materiaRaw !== null && materiaRaw.trim() !== '' ? MateriaId.of(materiaRaw) : null,
-      routingPolicy: routingPolicyByGestioneSupplenti[gestione]
+      routingPolicy: routingPolicyByGestioneSupplenti[gestione],
+      classeId: options.classeId?.trim() || null
     };
   }
 
@@ -127,10 +136,7 @@ export class RisolutoreRuoliService {
       ['DOCENTI_IRC_ALT', (c) => this.docentiIrcAlt(c)],
       ['SEGRETARIO_CDC', (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'SEGRETARIO'))],
       ['TUTOR_ASL', (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ASL'))],
-      [
-        'TUTOR_ORIENT',
-        (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ORIENT'))
-      ],
+      ['TUTOR_ORIENT', (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ORIENT'))],
       ['DOCENTE_MATERIA', (c) => this.docenteMateria(c)],
       ['CAPO_DIPARTIMENTO', (c) => this.emailsOf(this.capoDipartimento(c))],
       ['DOCENTE_PRIMA_PROVA', (c) => this.docentiProva(c, 'prima')],
@@ -167,12 +173,7 @@ export class RisolutoreRuoliService {
   private docentiIrcAlt(ctx: RoleContext): Email[] {
     const groups = [MateriaId.of('IRC'), MateriaId.of('ALT')].map((materia) => ({
       assignments: routingRows(
-        this.teachingAssignments.resolveMateria(
-          ctx.classe,
-          materia,
-          ctx.data,
-          ctx.routingPolicy
-        )
+        this.teachingAssignments.resolveMateria(ctx.classe, materia, ctx.data, ctx.routingPolicy)
       )
     }));
     const actors = this.projector.project(groups, mergedRoutingOperations).value as RoutedActor[];
@@ -193,7 +194,8 @@ export class RisolutoreRuoliService {
         ctx.materiaCorrente,
         ctx.data,
         ctx.routingPolicy
-      )
+      ),
+      ctx.classeId
     );
   }
 
@@ -229,11 +231,17 @@ export class RisolutoreRuoliService {
     return this.routedEmails(assignments);
   }
 
-  private routedEmails(assignments: TeachingAssignment[]): Email[] {
-    const actors = this.projector.project(
-      routingRows(assignments),
-      routedActorOperations
-    ).value as RoutedActor[];
+  private routedEmails(assignments: TeachingAssignment[], classeId: string | null = null): Email[] {
+    const operations: ProjectionOperation[] =
+      classeId === null
+        ? routedActorOperations
+        : [
+            { type: 'filter', expression: 'classeId == selectedClasseId' },
+            ...routedActorOperations
+          ];
+    const actors = this.projector.project(routingRows(assignments), operations, {
+      selectedClasseId: classeId
+    }).value as RoutedActor[];
     return actors.map((actor) => Email.of(actor.id));
   }
 
@@ -270,8 +278,10 @@ export class RisolutoreRuoliService {
 
   private distinctEmails(emails: Email[]): Email[] {
     const values = emails.map((email) => ({ value: email.value }));
-    return (this.projector.project(values, [{ type: 'distinctBy', keys: ['value'] }]).value as Array<{
-      value: string;
-    }>).map((email) => Email.of(email.value));
+    return (
+      this.projector.project(values, [{ type: 'distinctBy', keys: ['value'] }]).value as Array<{
+        value: string;
+      }>
+    ).map((email) => Email.of(email.value));
   }
 }

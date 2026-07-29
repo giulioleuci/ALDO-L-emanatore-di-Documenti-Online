@@ -28,21 +28,6 @@ export const councilProjectionOperations: CollectionProjectionOperation[] = [
   { type: 'strategy', name: 'aldoTeachingCouncilVm' }
 ];
 
-/**
- * Task 3's projector materializes group keys as literal properties, so the
- * executable sort reads the first collected assignment. The exported contract
- * above remains the application configuration vocabulary from the extraction
- * plan; no ordering loop is implemented in ALDO.
- */
-const executableCouncilProjectionOperations: CollectionProjectionOperation[] = [
-  councilProjectionOperations[0]!,
-  {
-    type: 'sortBy',
-    keys: [{ path: 'assignments.0.routing.primary.0.metadata.cognome', direction: 'ASC' }]
-  },
-  councilProjectionOperations[2]!
-];
-
 export const studentCouncilFilterOperations: CollectionProjectionOperation[] = [
   {
     type: 'filter',
@@ -51,15 +36,11 @@ export const studentCouncilFilterOperations: CollectionProjectionOperation[] = [
   },
   {
     type: 'filter',
-    expression:
-      'slot.hasSpecificity == false || slot.specifica match studentSpecificityPattern'
+    expression: 'slot.hasSpecificity == false || slot.specifica match studentSpecificityPattern'
   }
 ];
 
-export const routingPolicyByGestioneSupplenti: Record<
-  GestioneSupplenti,
-  RoutingPolicyValue
-> = {
+export const routingPolicyByGestioneSupplenti: Record<GestioneSupplenti, RoutingPolicyValue> = {
   [GestioneSupplenti.SOLO_SUPPLENTI]: RoutingPolicy.DELEGATE_OR_PRINCIPAL,
   [GestioneSupplenti.ENTRAMBI]: RoutingPolicy.BOTH_EQUAL,
   [GestioneSupplenti.SOLO_TITOLARI]: RoutingPolicy.PRINCIPAL_ONLY
@@ -92,11 +73,10 @@ interface ProjectionAssignment {
   };
   studentReligion: string;
   studentSpecificityPattern: string;
-  $item: Omit<ProjectionAssignment, '$item'>;
 }
 
 interface ProjectionGroup {
-  assignments: Array<Omit<ProjectionAssignment, '$item'>>;
+  assignments: ProjectionAssignment[];
 }
 
 interface ProjectionRuntime {
@@ -120,7 +100,7 @@ function assignmentInput(
   studentReligion: string,
   studentSpecificityPattern: string
 ): ProjectionAssignment {
-  const plain = {
+  return {
     slot: {
       materia: assignment.slot.materia.value,
       kind: assignment.slot.kind,
@@ -138,7 +118,6 @@ function assignmentInput(
     studentReligion,
     studentSpecificityPattern
   };
-  return { ...plain, $item: plain };
 }
 
 export function prepareCouncilAssignments(
@@ -156,9 +135,7 @@ export function prepareStudentCouncilAssignments(
     assignmentInput(
       assignment,
       String(religione),
-      specificityPattern(
-        curriculum[assignment.slot.materia.value]?.specifiche ?? []
-      )
+      specificityPattern(curriculum[assignment.slot.materia.value]?.specifiche ?? [])
     )
   );
 }
@@ -255,9 +232,7 @@ function councilVmStrategy(
         stato: {
           isSupplente,
           sostituisce:
-            sostituisce === null
-              ? null
-              : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
+            sostituisce === null ? null : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
         },
         tipoArticolazione: tipoArticolazione(classi, classe, rowDocente.id),
         isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
@@ -288,12 +263,12 @@ export function createTeachingCouncilProjection(
     consiglio: new CollectionProjectionInterceptor(new LoggerService(), projector, {
       targetProviders: ['consiglio'],
       targetPaths: ['focus.classe.consiglioDiClasse'],
-      operations: executableCouncilProjectionOperations
+      operations: councilProjectionOperations
     }),
     alunno: new CollectionProjectionInterceptor(new LoggerService(), projector, {
       targetProviders: ['student'],
       targetPaths: ['focus.alunno.consiglioDiClasseFiltrato'],
-      operations: [...studentCouncilFilterOperations, ...executableCouncilProjectionOperations]
+      operations: [...studentCouncilFilterOperations, ...councilProjectionOperations]
     })
   };
 }

@@ -2,10 +2,7 @@ import {
   SheetMaterieGeneratorStrategy,
   columnIndexToLetters
 } from './SheetMaterieGeneratorStrategy';
-import type {
-  MateriaColumn,
-  MaterieGroups
-} from './SheetMaterieGeneratorStrategy';
+import type { MateriaColumn, MaterieGroups } from './SheetMaterieGeneratorStrategy';
 import type { Cdu, CduClasse } from '../context-engine/Cdu';
 import { buildElencoMaterieConPermessi } from '../context-engine/ElencoMaterieConPermessi';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
@@ -105,7 +102,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
                 regolaSupplente: GestioneSupplenti.ENTRAMBI
               })
               .map((email) => email.value)
-          : this.resolveDocentiMateria(cdu, sigla);
+          : this.resolveDocentiMateria(cdu, sigla, item.classeId);
         const col = columnIndexToLetters(column.column - 1);
         const editors = this.projector.project(
           [...docenti, ...coordinatori].map((value) => ({ value })),
@@ -122,7 +119,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   }
 
   /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */
-  private resolveDocentiMateria(cdu: Cdu, sigla: string): string[] {
+  private resolveDocentiMateria(cdu: Cdu, sigla: string, classeId?: string): string[] {
     const variant: Cdu = {
       ...cdu,
       meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: sigla } }
@@ -134,7 +131,10 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
       configurable: true
     });
     return this.roles
-      .risolvi('DOCENTE_MATERIA', variant, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+      .risolvi('DOCENTE_MATERIA', variant, {
+        regolaSupplente: GestioneSupplenti.ENTRAMBI,
+        ...(classeId === undefined ? {} : { classeId })
+      })
       .map((e) => e.value);
   }
 }

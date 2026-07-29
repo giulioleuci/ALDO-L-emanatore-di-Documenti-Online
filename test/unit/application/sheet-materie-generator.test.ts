@@ -222,9 +222,9 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
 
     const groups = templates.sheetContextFor('file_1')?.['materieColonne'] as MaterieGroups;
     expect(groups.group1).toEqual([{ sigla: 'MATE', header: 'Matematica' }]);
-    expect(groups.group2).toEqual([{ sigla: 'FISI', header: 'Fisica' }]);
+    expect(groups.group2).toEqual([{ sigla: 'FISI', header: 'Fisica', classeId: '1F-LSO' }]);
     expect(groups.group2Label).toBe('1F-LSO');
-    expect(groups.group3).toEqual([{ sigla: 'FISI', header: 'Fisica' }]);
+    expect(groups.group3).toEqual([{ sigla: 'FISI', header: 'Fisica', classeId: '1F-LSS' }]);
     expect(groups.group3Label).toBe('1F-LSS');
   });
 });
@@ -253,9 +253,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       'FISI',
       'MATE'
     ]);
-    const renderedGroups = templates.sheetContextFor('file_1')?.[
-      'materieColonne'
-    ] as MaterieGroups;
+    const renderedGroups = templates.sheetContextFor('file_1')?.['materieColonne'] as MaterieGroups;
     expect(renderedGroups.group1[0]).toMatchObject({
       sigla: 'REL',
       header: 'REL',
@@ -268,10 +266,9 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const colC = sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C');
     expect(colB?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
     expect(colC?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
-    expect(roles.subjectCduVariants.map((variant) => variant.meta.parametriInput.materiaCorrente)).toEqual([
-      'FISI',
-      'MATE'
-    ]);
+    expect(
+      roles.subjectCduVariants.map((variant) => variant.meta.parametriInput.materiaCorrente)
+    ).toEqual(['FISI', 'MATE']);
     for (const variant of roles.subjectCduVariants) {
       expect(Object.getOwnPropertyDescriptor(variant, 'tech')).toMatchObject({
         enumerable: false,
@@ -314,10 +311,11 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       materieSeparateSecondoGruppo: ['FISI']
     };
     const sheets = new FakeSpreadsheetService(sheetInfo());
+    const templates = new FakeTemplateEngine();
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
       new MateriaRepository(db),
-      new FakeTemplateEngine(),
+      templates,
       new RisolutoreRuoliService(db)
     );
 
@@ -331,5 +329,14 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       'Sheet1!D:D',
       'Sheet1!F:F'
     ]);
+    const groups = templates.sheetContextFor('file_1')?.['materieColonne'] as MaterieGroups;
+    expect(groups.group2).toEqual([{ sigla: 'FISI', header: 'Fisica', classeId: '1F-LSO' }]);
+    expect(groups.group3).toEqual([{ sigla: 'FISI', header: 'Fisica', classeId: '1F-LSS' }]);
+    expect(
+      sheets.protectCalls.find((request) => request.range === 'Sheet1!D:D')?.editors?.users?.sort()
+    ).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    expect(
+      sheets.protectCalls.find((request) => request.range === 'Sheet1!F:F')?.editors?.users?.sort()
+    ).toEqual(['rossi@school.it', 'verdi@school.it']);
   });
 });

@@ -62558,8 +62558,11 @@ class CollectionProjector {
     });
     return Array.from(groups.values()).map(group => {
       const result = {};
-      keys.forEach((path, keyIndex) => {
-        result[path] = copy(group.keyValues[keyIndex]);
+      keys.forEach(path => {
+        const rootPath = path.split('.')[0];
+        if (!CollectionProjector_hasOwn(result, rootPath)) {
+          result[rootPath] = copy(this._read(group.items[0], rootPath, index, targetPath));
+        }
       });
       Object.keys(operation.aggregates).forEach(name => {
         result[name] = this._aggregate(group.items, operation.aggregates[name], index, targetPath);
@@ -62707,6 +62710,9 @@ class CollectionProjector {
   _read(value, path, index, targetPath) {
     if (!path || typeof path !== 'string' || path.split('.').some(part => !part)) {
       throw this._error(`Invalid path '${path}'`, index, targetPath);
+    }
+    if (path === '$item') {
+      return value;
     }
     let current = value;
     path.split('.').forEach(part => {

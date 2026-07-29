@@ -1,6 +1,7 @@
 import {
   isExpectedMockProtectedRangeRejection,
-  registerE2eScenarioChecks
+  registerE2eScenarioChecks,
+  verifyProtectedRangeScenario
 } from '../../../src/onlinetests/checks/e2eScenarioChecks';
 import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
@@ -336,24 +337,18 @@ test('protected range rejection classifier accepts only the mock invalid-user re
   ).toBe(false);
 });
 
-test('protected range rejection is not accepted when the sample is not TEST_MODE', () => {
-  const runner = new TestRunner();
-  const container = {
-    get() {
-      throw new PipelineError(
-        'RenderTemplate: Invalid requests[0].addProtectedRange: Utente non valido: "mock@onlinetest.aldo.local".'
-      );
+test('scenario 11 rethrows the matching mock rejection when test mode is false', () => {
+  const rejection = new PipelineError(
+    'RenderTemplate: Invalid requests[0].addProtectedRange: Utente non valido: "mock@onlinetest.aldo.local".'
+  );
+  const documents = {
+    generateForClasse: () => {
+      throw rejection;
     }
-  } as unknown as ServiceContainer;
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {} as SpreadsheetService;
 
-  registerE2eScenarioChecks(runner, container, { ...sample, testMode: false });
-
-  const report = runner.report();
-  expect(report.results).toHaveLength(1);
-  expect(report.results[0]).toMatchObject({
-    name: 'E2E scenarios: MASTER.TEST_MODE guard',
-    status: 'fail'
-  });
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, false)).toThrow(rejection);
 });
 
 test('resolves the memoized email service once across the plan scenario and later sends', () => {

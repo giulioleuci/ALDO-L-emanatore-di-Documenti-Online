@@ -48,6 +48,42 @@ export function isExpectedMockProtectedRangeRejection(error: unknown): boolean {
   return message.includes('addProtectedRange') && message.includes('Utente non valido');
 }
 
+export function verifyProtectedRangeScenario(
+  documents: DocumentGenerationService,
+  spreadsheets: SpreadsheetService,
+  testMode: boolean
+): void {
+  for (const classe of ALL_CLASSI_E2E) {
+    let fileId: string | null;
+    let status: string;
+    try {
+      ({ fileId, status } = documents.generateForClasse(
+        ClasseId.of(classe),
+        CONF_DOC_SHEET_PERMESSI
+      ));
+    } catch (error) {
+      if (testMode && isExpectedMockProtectedRangeRejection(error)) continue;
+      throw error;
+    }
+    if (fileId === null) {
+      throw new ValidationError(
+        `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
+      );
+    }
+    const protections = spreadsheets.getProtectedRanges(fileId);
+    if (protections.length === 0) {
+      throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
+    }
+    for (const p of protections) {
+      if ((p.editors.users ?? []).length === 0) {
+        throw new ValidationError(
+          `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
+        );
+      }
+    }
+  }
+}
+
 /**
  * Registers the 8 e2e scenario checks (design spec `2026-07-21-testonline-mock-db-e2e-design.md`,
  * scenario 8 added by `2026-07-23-email-links-boxes-riepilogo-logmail-design.md`).
@@ -421,35 +457,7 @@ export function registerE2eScenarioChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
-      for (const classe of ALL_CLASSI_E2E) {
-        let fileId: string | null;
-        let status: string;
-        try {
-          ({ fileId, status } = documents.generateForClasse(
-            ClasseId.of(classe),
-            CONF_DOC_SHEET_PERMESSI
-          ));
-        } catch (error) {
-          if (sample.testMode && isExpectedMockProtectedRangeRejection(error)) continue;
-          throw error;
-        }
-        if (fileId === null) {
-          throw new ValidationError(
-            `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
-          );
-        }
-        const protections = spreadsheets.getProtectedRanges(fileId);
-        if (protections.length === 0) {
-          throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
-        }
-        for (const p of protections) {
-          if ((p.editors.users ?? []).length === 0) {
-            throw new ValidationError(
-              `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
-            );
-          }
-        }
-      }
+      verifyProtectedRangeScenario(documents, spreadsheets, sample.testMode);
     }
   );
 

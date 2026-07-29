@@ -290,8 +290,8 @@ export function registerE2eScenarioChecks(
         const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
           logicalTargetId?: unknown;
         };
-        const logicalTargetId = String(allegati.logicalTargetId ?? '').trim();
-        if (logicalTargetId === '') {
+        const logicalTargetId = allegati.logicalTargetId;
+        if (typeof logicalTargetId !== 'string' || logicalTargetId.trim() === '') {
           throw new ValidationError('Invio piani: LOG_MAIL.ALLEGATI.logicalTargetId mancante');
         }
         const text = String(row[COL_LOG_MAIL.TESTO] ?? '');

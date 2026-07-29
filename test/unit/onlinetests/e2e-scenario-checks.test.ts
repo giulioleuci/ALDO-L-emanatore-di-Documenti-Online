@@ -68,7 +68,7 @@ function recordingHarness(
     attach: ['https://drive.google.com/open?id=real_static_attachment_id']
   },
   unrequestedDynamicAttachmentPattern: string | null = null,
-  planEmailRows: Array<{ logicalTargetId: string; text: string }> | null = null
+  planEmailRows: Array<{ logicalTargetId: unknown; text: string }> | null = null
 ): {
   container: ServiceContainer;
   events: string[];
@@ -168,10 +168,13 @@ function recordingHarness(
               : planEmailText
           ).map(([recipient, text]) => ({ logicalTargetId: `docente:${recipient}`, text }));
         for (const { logicalTargetId, text } of emails) {
+          const deliveryRecipient =
+            planEmailRows === null && typeof logicalTargetId === 'string'
+              ? logicalTargetId.slice(8)
+              : 'owner@onlinetest.aldo.local';
           logMailRows.push({
             [COL_LOG_MAIL.PATTERN]: CONF_MAIL_PIANI,
-            [COL_LOG_MAIL.DESTINATARI]:
-              planEmailRows === null ? logicalTargetId.slice(8) : 'owner@onlinetest.aldo.local',
+            [COL_LOG_MAIL.DESTINATARI]: deliveryRecipient,
             [COL_LOG_MAIL.TESTO]: text,
             [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ logicalTargetId })
           });
@@ -496,6 +499,19 @@ test('scenario 3 identifies articulated coordinators through logical targets whe
 
   const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
   expect(scenario3).toMatchObject({ status: 'pass' });
+});
+
+test('scenario 3 rejects a non-string logical target id', () => {
+  const harness = recordingHarness(undefined, undefined, undefined, undefined, null, [
+    { logicalTargetId: 3, text: 'PDP_BES — Ricci Luca: E2E_Piano_PDP_BES_Ricci Luca' }
+  ]);
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'fail' });
+  expect(scenario3?.message).toMatch(/logicalTargetId mancante/);
 });
 
 test('scenario 3 fails when prior-year PEI and PDP_BES history is crossed between subtypes', () => {

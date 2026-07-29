@@ -6,18 +6,21 @@ import type { BuildParams, Recipe } from '../../../../src/application/context-en
 import type { DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
-import { CattedraResolver } from '../../../../src/application/services/CattedraResolver';
+import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import { councilProjectionOperations } from '../../../../src/application/context-engine/TeachingCouncilProjection';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
 function cdc(target: string, now: Date = new Date('2026-07-01T09:00:00Z')): DocenteCdcVM[] {
   const db = new FakeDatabase(fixtureTables());
   const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const resolveConsiglio = jest.spyOn(teachingAssignments, 'resolveConsiglio');
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi));
   b.registerProvider(
     'consiglio',
-    new ConsiglioClasseProvider(classi, new MateriaRepository(db), new CattedraResolver(db))
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
   const params: BuildParams = {
     target,
@@ -25,7 +28,13 @@ function cdc(target: string, now: Date = new Date('2026-07-01T09:00:00Z')): Doce
     now
   };
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
-  return b.build(params, recipe).focus.classe!.consiglioDiClasse!;
+  const result = b.build(params, recipe).focus.classe!.consiglioDiClasse!;
+  expect(resolveConsiglio).toHaveBeenCalledWith(
+    expect.objectContaining({ id: target }),
+    new Date(now.toISOString().slice(0, 10)),
+    expect.objectContaining({ includeReligioneAlt: true })
+  );
+  return result;
 }
 const byEmail = (list: DocenteCdcVM[], email: string) =>
   list.find((d) => d.anagrafica.email === email)!;
@@ -75,4 +84,19 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
   expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('COMUNE'); // MATE in both partners
   expect(byEmail(list, 'bianchi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO'); // FISI in 1F-LSO only
   expect(byEmail(list, 'verdi@school.it').tipoArticolazione).toBe('SEPARATO_SECONDO'); // FISI in 1F-LSS only
+});
+
+test('the council projection delegates grouping and ordering to GLF configuration', () => {
+  expect(councilProjectionOperations).toEqual([
+    {
+      type: 'groupBy',
+      keys: ['routing.primary.0.id', 'titolare.id', 'docenteEffettivo.id'],
+      aggregates: { assignments: { type: 'collect', path: '$item' } }
+    },
+    {
+      type: 'sortBy',
+      keys: [{ path: 'routing.primary.0.metadata.cognome', direction: 'ASC' }]
+    },
+    { type: 'strategy', name: 'aldoTeachingCouncilVm' }
+  ]);
 });

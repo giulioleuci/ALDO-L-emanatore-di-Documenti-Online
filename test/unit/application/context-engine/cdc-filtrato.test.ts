@@ -6,6 +6,7 @@ import { fixtureTables, teachingSlotFixtureTables } from '../../../fixtures/tabl
 import type { Row } from '../../../../src/infrastructure/db/Database';
 import { MasterSheetRepository } from '../../../../src/infrastructure/repositories/MasterSheetRepository';
 import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import { studentCouncilFilterOperations } from '../../../../src/application/context-engine/TeachingCouncilProjection';
 
 // IRC teacher distinct from any subject teacher of 5A, so religion filtering is observable.
 function tablesWithIrc(): Record<string, Row[]> {
@@ -22,6 +23,21 @@ function filtrato(target: string): DocenteCdcVM[] {
   );
   return cdu.focus.alunno!.consiglioDiClasseFiltrato!;
 }
+
+test('Task 6 declares religion and curriculum decisions directly as projection expressions', () => {
+  expect(studentCouncilFilterOperations).toEqual([
+    {
+      type: 'filter',
+      expression:
+        '(slot.materia != "IRC" && slot.materia != "ALT") || (slot.materia == "IRC" && studentReligion == "SI") || (slot.materia == "ALT" && studentReligion == "ALT")'
+    },
+    {
+      type: 'filter',
+      expression:
+        'slot.hasSpecificity == false || slot.specifica match studentSpecificityPattern'
+    }
+  ]);
+});
 
 // 5A: MATE's effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since
 // 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
@@ -43,15 +59,20 @@ test('CDCFilterAlunno: religione ALT excludes IRC (no ALT teacher configured)', 
   expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
 });
 
-test('Task 5 wired GLF resolver does not apply Task 6 curriculum filtering or CDU specificity', () => {
+test('Task 6 filters arbitrary specificities from curriculum and preserves the accepted specificity', () => {
   const tables = teachingSlotFixtureTables();
   const alunno = tables.ALUNNI!.find((row) => row.EMAIL === 'a1@school.it')!;
-  alunno.CURRICULUM = null;
+  alunno.CURRICULUM = JSON.stringify({
+    LAB: ['GRUPPO_A'],
+    INTERPRET: ['CHITARRA']
+  });
   const db = new FakeDatabase(tables);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const resolveConsiglio = jest.spyOn(teachingAssignments, 'resolveConsiglio');
   const cdu = ContextEngineFactory.create(
     db,
     new MasterSheetRepository(db),
-    new AldoTeachingAssignmentResolver(db)
+    teachingAssignments
   ).build(
     {
       target: 'a1@school.it',
@@ -62,13 +83,29 @@ test('Task 5 wired GLF resolver does not apply Task 6 curriculum filtering or CD
   );
   const consiglio = cdu.focus.alunno!.consiglioDiClasseFiltrato!;
 
+  expect(resolveConsiglio).toHaveBeenCalledWith(
+    expect.objectContaining({ id: '5A' }),
+    new Date('2026-02-15'),
+    expect.objectContaining({ includeReligioneAlt: true })
+  );
   expect(consiglio.map((row) => row.anagrafica.email)).toEqual(
     expect.arrayContaining([
+      'main@school.test',
+      'itp@school.test',
       'specific-a@school.test',
-      'specific-b@school.test',
-      'guitar@school.test'
+      'guitar@school.test',
+      'irc@school.test'
     ])
   );
-  expect(consiglio.flatMap((row) => row.materie).every((materia) => materia.specificita === null))
-    .toBe(true);
+  expect(consiglio.map((row) => row.anagrafica.email)).not.toContain('specific-b@school.test');
+  expect(
+    consiglio
+      .flatMap((row) => row.materie)
+      .map((materia) => [materia.sigla, materia.specificita])
+  ).toEqual(
+    expect.arrayContaining([
+      ['LAB', 'GRUPPO_A'],
+      ['INTERPRET', 'CHITARRA']
+    ])
+  );
 });

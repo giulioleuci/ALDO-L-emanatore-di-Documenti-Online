@@ -1,10 +1,9 @@
 import { SheetMaterieGeneratorStrategy } from '../../../src/application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../../src/application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
-import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
-import { CdcAssembler } from '../../../src/application/context-engine/CdcAssembler';
-import { CattedraResolver } from '../../../src/application/services/CattedraResolver';
+import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
+import { recipe } from '../../../src/application/context-engine/Recipe';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
@@ -50,11 +49,13 @@ class FakeSpreadsheetService {
 
 class RecordingRisolutoreRuoliService extends RisolutoreRuoliService {
   readonly subjectCduVariants: Cdu[] = [];
+  readonly roleCalls: string[] = [];
 
   override risolvi(
     ...args: Parameters<RisolutoreRuoliService['risolvi']>
   ): ReturnType<RisolutoreRuoliService['risolvi']> {
     const [ruolo, cdu] = args;
+    this.roleCalls.push(ruolo);
     if (ruolo === 'DOCENTE_MATERIA') this.subjectCduVariants.push(cdu);
     return super.risolvi(...args);
   }
@@ -85,72 +86,19 @@ function confDoc(
   });
 }
 
-/** Builds a minimal but realistic Cdu for classeId, using the real CdcAssembler over the fixture DB. */
+/** Builds a realistic CDU through the shared teaching-assignment port. */
 function buildCdu(db: FakeDatabase, classeId: string): Cdu {
-  const classi = new ClasseRepository(db);
-  const materie = new MateriaRepository(db);
-  const classe = classi.findById(classeId);
-  if (classe === null) throw new Error(`fixture classe ${classeId} not found`);
-  const date = new Date('2026-07-09'); // matches the hardcoded meta.date.oggi.iso below
-  const consiglioDiClasse = new CdcAssembler(classi, materie, new CattedraResolver(db)).assembleForClasse(
-    classe,
-    date
-  );
-  const isArticolata = classi.isArticolata(classe);
-  const cdu = {
-    meta: {
-      timestamp: '',
+  return ContextEngineFactory.create(db).build(
+    {
+      target: classeId,
+      tipoTarget: 'classe',
+      now: new Date('2026-07-09'),
       idConfigurazione: 'CD_MAT',
       tipoOperazione: 'GENERAZIONE_DOCUMENTO',
-      idEsecuzione: 'e1',
-      date: {
-        oggi: {
-          breve: '09/07/2026',
-          estesa: '',
-          iso: '2026-07-09',
-          giorno: '9',
-          mese: '7',
-          anno: '2026',
-          ora: '10:00'
-        }
-      },
-      parametriInput: {
-        target: classeId,
-        tipoTarget: 'classe',
-        materiaCorrente: null,
-        opzioni: {} as never
-      }
+      idEsecuzione: 'e1'
     },
-    focus: {
-      classe: {
-        anagrafica: {
-          nome: classeId,
-          anno: classe.anno.value,
-          sezione: '',
-          indirizzo: { nome: '', nomeSintetico: '', sigla: '', tipo: '' }
-        },
-        flags: {
-          isClassePrima: false,
-          isTriennio: true,
-          isPrimoBiennio: false,
-          isTerminale: true,
-          isArticolata
-        },
-        consiglioDiClasse
-      }
-    }
-  } as unknown as Cdu;
-  Object.defineProperty(cdu, 'tech', {
-    value: {
-      entita: { classe },
-      servizi: [],
-      pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
-    },
-    enumerable: false,
-    writable: true,
-    configurable: true
-  });
-  return cdu;
+    recipe('CLASSE_COMPLETA')
+  );
 }
 
 describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
@@ -287,10 +235,11 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const roles = new RecordingRisolutoreRuoliService(db);
+    const templates = new FakeTemplateEngine();
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
       new MateriaRepository(db),
-      new FakeTemplateEngine(),
+      templates,
       roles
     );
 
@@ -299,11 +248,26 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
     ).not.toThrow();
 
-    // Columns are alphabetical: A=Fisica (bianchi), B=Matematica (bianchi, post-variazione); COORD=rossi on both.
-    const colA = sheets.protectCalls.find((r) => r.range === 'Sheet1!A:A');
+    expect(cdu.focus.classe?.elencoMaterieConPermessi?.map((item) => item.sigla)).toEqual([
+      'REL',
+      'FISI',
+      'MATE'
+    ]);
+    const renderedGroups = templates.sheetContextFor('file_1')?.[
+      'materieColonne'
+    ] as MaterieGroups;
+    expect(renderedGroups.group1[0]).toMatchObject({
+      sigla: 'REL',
+      header: 'REL',
+      isSpecial: true,
+      roles: ['IRC']
+    });
+    expect(roles.roleCalls).toContain('DOCENTI_IRC_ALT');
+    // A=REL, then ordinary columns alphabetically: B=Fisica, C=Matematica.
     const colB = sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B');
-    expect(colA?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    const colC = sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C');
     expect(colB?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
+    expect(colC?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
     expect(roles.subjectCduVariants.map((variant) => variant.meta.parametriInput.materiaCorrente)).toEqual([
       'FISI',
       'MATE'
@@ -359,11 +323,13 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
-    // column layout order: A=MATE (group1), B=label(1F-LSO, no ACL), C=FISI (group2), D=label(1F-LSS, no ACL), E=FISI (group3)
+    // column layout order: A=REL/ALT, B=MATE (group1), C=label(1F-LSO, no ACL),
+    // D=FISI (group2), E=label(1F-LSS, no ACL), F=FISI (group3)
     expect(sheets.protectCalls.map((r) => r.range).sort()).toEqual([
       'Sheet1!A:A',
-      'Sheet1!C:C',
-      'Sheet1!E:E'
+      'Sheet1!B:B',
+      'Sheet1!D:D',
+      'Sheet1!F:F'
     ]);
   });
 });

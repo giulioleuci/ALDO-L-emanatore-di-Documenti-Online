@@ -21,7 +21,8 @@ import { DocenteRepository } from '../../../../src/infrastructure/repositories/D
 
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
-import { SupplenzaRepository } from '../../../../src/infrastructure/repositories/SupplenzaRepository';
+import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
+import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { MasterSheetRepository } from '../../../../src/infrastructure/repositories/MasterSheetRepository';
 import { LogEmailRepository } from '../../../../src/infrastructure/repositories/LogEmailRepository';
 import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
@@ -636,7 +637,12 @@ test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and omits noReply block w
 // --- Step 5: ResolveRecipientsStep ---
 
 function resolve(w: Wiring): Array<{ emails: string[]; cc?: string[] }> {
-  new ResolveRecipientsStep(logger, w.docenti, new SupplenzaRepository(w.db)).execute(w.ctx);
+  new ResolveRecipientsStep(
+    logger,
+    w.docenti,
+    new ClasseRepository(w.db),
+    new AldoTeachingAssignmentResolver(w.db)
+  ).execute(w.ctx);
   return w.ctx.get<Array<{ emails: string[]; cc?: string[] }>>('destinatariFinali')!;
 }
 
@@ -644,22 +650,22 @@ test('SOLO_TITOLARI keeps the titolare (11 §7)', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_TITOLARI' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
-  expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }]);
+  expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
 });
 
-test('SOLO_SUPPLENTI routes to the chain-resolved supplente (11 §7)', () => {
+test('SOLO_SUPPLENTI keeps a raw docente target that no longer owns a resolved chair', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_SUPPLENTI' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
   // Chain on NOW without materia filter: rossi → bianchi (5A,'*') → verdi (5A, ITA matches wildcard query).
-  expect(resolve(w)).toEqual([{ emails: ['verdi@school.it'] }]);
+  expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
 });
 
-test('ENTRAMBI addresses titolare and supplente as separate sends (11 §7)', () => {
+test('ENTRAMBI keeps a raw docente target that no longer owns a resolved chair', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
-  expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }, { emails: ['verdi@school.it'] }]);
+  expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
 });
 
 test('genitori/cdc targets are single multi-TO destinations not subject to SUPPLENTI (11 §7/§12)', () => {
@@ -1220,8 +1226,13 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     buildStep(w).execute(w.ctx);
     w.ctx.set('shouldSend', true);
     const docentiStub = { findById: () => Docente.fromData({}) } as unknown as DocenteRepository;
-    new ResolveRecipientsStep(logger, docentiStub, new SupplenzaRepository(w.db)).execute(w.ctx);
-    expect(w.ctx.get('destinatariFinali')).toEqual([{ emails: [''] }]);
+    new ResolveRecipientsStep(
+      logger,
+      docentiStub,
+      new ClasseRepository(w.db),
+      new AldoTeachingAssignmentResolver(w.db)
+    ).execute(w.ctx);
+    expect(w.ctx.get('destinatariFinali')).toEqual([]);
   });
 
   test('ENTRAMBI resolves per-competenza-classe, falling back to null for a class with no active supplenza (11 §7/§12)', () => {
@@ -1240,7 +1251,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     w.ctx.set('shouldSend', true);
     // 5A: rossi -> bianchi -> verdi (full delegation chain, as in the SOLO_SUPPLENTI test below);
     // 9Z: no supplenza row at all -> null, dropped from `supplenti`.
-    expect(resolve(w)).toEqual([{ emails: ['rossi@school.it'] }, { emails: ['verdi@school.it'] }]);
+    expect(resolve(w)).toEqual([{ emails: ['bianchi@school.it'] }]);
   });
 
   test('SOLO_SUPPLENTI falls back to the titolare for a competenza class with no active supplenza (11 §7)', () => {
@@ -1262,7 +1273,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
       resolve(w)
         .map((r) => r.emails[0])
         .sort()
-    ).toEqual(['rossi@school.it', 'verdi@school.it']);
+    ).toEqual(['bianchi@school.it']);
   });
 
   // --- Step 6: SendEmailStep ---

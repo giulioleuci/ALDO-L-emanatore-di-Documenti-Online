@@ -25,7 +25,6 @@ import { ConfigurazioneEmailRepository } from '../../../src/infrastructure/repos
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
 import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
-import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
@@ -112,7 +111,6 @@ function fullDeps(
     logMail: new LogEmailRepository(db),
     logDocs: new LogDocumentoRepository(db),
     master,
-    supplenze: new SupplenzaRepository(db),
     materie: new MateriaRepository(db),
     teachingAssignments,
     aggregatoreDati: new AggregatoreDati(db),
@@ -168,6 +166,63 @@ test('PER_DOCENTE: one target per docente with at least one active class (articu
   expect(emails).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
 });
 
+test('PER_DOCENTE enumerates titular targets once and defers ENTRAMBI routing to ResolveRecipientsStep', () => {
+  const { db, gmail } = wire();
+  const titolare = Docente.fromData({
+    EMAIL: 'rossi@school.it',
+    COGNOME: 'Rossi',
+    DIPART: 'X'
+  });
+  const supplente = Docente.fromData({
+    EMAIL: 'bianchi@school.it',
+    COGNOME: 'Bianchi',
+    DIPART: 'X'
+  });
+  const resolveConsiglio = jest.fn(
+    (
+      _classe: Classe,
+      _date: Date,
+      options?: { routingPolicy?: RoutingPolicyValue }
+    ): TeachingAssignment[] => [
+      {
+        ...assignmentFor(titolare),
+        docenteEffettivo: supplente,
+        routing: {
+          primary:
+            options?.routingPolicy === RoutingPolicy.PRINCIPAL_ONLY
+              ? [titolare]
+              : [supplente, titolare],
+          cc: [],
+          bcc: []
+        }
+      }
+    ]
+  );
+  const teachingAssignments: ITeachingAssignmentResolver = {
+    resolveMateria: () => [],
+    resolveConsiglio
+  };
+  const service = new EmailNotificationService(
+    fullDeps(db, gmail, { teachingAssignments })
+  );
+
+  const targets = service.enumerateTargets(
+    conf('PER_DOCENTE', { SUPPLENTI: 'ENTRAMBI' })
+  );
+
+  expect(targets.map((target) => target.docenteEmail)).toEqual([
+    'rossi@school.it'
+  ]);
+  expect(resolveConsiglio).toHaveBeenCalledWith(
+    expect.any(Classe),
+    NOW,
+    expect.objectContaining({
+      includeReligioneAlt: true,
+      routingPolicy: RoutingPolicy.PRINCIPAL_ONLY
+    })
+  );
+});
+
 test('PER_CDC: one multi-TO target per entry class (parent aggregates the articulated group, 05 §5)', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_CDC'));
@@ -179,6 +234,64 @@ test('PER_CDC: one multi-TO target per entry class (parent aggregates the articu
   expect(t5a.emails.sort()).toEqual(['bianchi@school.it']);
   const t1f = targets.find((t) => t.target === '1F')!;
   expect(t1f.emails.sort()).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
+});
+
+test('PER_CDC applies CONF_MAIL.SUPPLENTI through the shared resolver', () => {
+  const { db, gmail } = wire();
+  const titolare = Docente.fromData({
+    EMAIL: 'rossi@school.it',
+    COGNOME: 'Rossi',
+    DIPART: 'X'
+  });
+  const supplente = Docente.fromData({
+    EMAIL: 'bianchi@school.it',
+    COGNOME: 'Bianchi',
+    DIPART: 'X'
+  });
+  const resolveConsiglio = jest.fn(
+    (
+      _classe: Classe,
+      _date: Date,
+      options?: { routingPolicy?: RoutingPolicyValue }
+    ): TeachingAssignment[] => [
+      {
+        ...assignmentFor(titolare),
+        docenteEffettivo: supplente,
+        routing: {
+          primary:
+            options?.routingPolicy === RoutingPolicy.DELEGATE_OR_PRINCIPAL
+              ? [supplente]
+              : [titolare],
+          cc: [],
+          bcc: []
+        }
+      }
+    ]
+  );
+  const service = new EmailNotificationService(
+    fullDeps(db, gmail, {
+      teachingAssignments: {
+        resolveMateria: () => [],
+        resolveConsiglio
+      }
+    })
+  );
+
+  const targets = service.enumerateTargets(
+    conf('PER_CDC', { SUPPLENTI: 'SOLO_SUPPLENTI' })
+  );
+
+  expect(targets.every((target) => target.emails[0] === 'bianchi@school.it')).toBe(
+    true
+  );
+  expect(resolveConsiglio).toHaveBeenCalledWith(
+    expect.any(Classe),
+    NOW,
+    expect.objectContaining({
+      includeReligioneAlt: true,
+      routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL
+    })
+  );
 });
 
 test('PER_CDC: cdcEmails is deterministically sorted by cognome (BIANCHI < ROSSI < VERDI), so emails[0] is stable regardless of resolveConsiglio materia/class iteration order (11 §14 fix)', () => {

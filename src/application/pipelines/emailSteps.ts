@@ -12,7 +12,8 @@ import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
-import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
+import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
@@ -25,9 +26,10 @@ import { salutoPerTarget } from '../email/saluto';
 import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../email/boxes';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
-import { ProcessoInvio, StatoEmail, GestioneSupplenti } from '../../domain/value-objects/enums';
+import { ProcessoInvio, StatoEmail } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
+import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 
 /**
  * NotificaPipeline steps (ref 11) on the PipelineFramework `Step` base, same
@@ -366,10 +368,13 @@ export class ComposeEmailStep extends Step {
 
 /** Step 5 (11 §7): SUPPLENTI routing per docente/classe; multi-TO passthrough for cdc/genitori/alunno. */
 export class ResolveRecipientsStep extends Step {
+  private readonly projector = new CollectionProjector({ logger: new LoggerService() });
+
   constructor(
     logger: LoggerService,
     private readonly docenti: IDocenteRepository,
-    private readonly supplenze: ISupplenzaRepository
+    private readonly classi: IClasseRepository,
+    private readonly teachingAssignments: ITeachingAssignmentResolver
   ) {
     super('ResolveRecipients', logger, {
       shouldExecuteCondition: sendGate,
@@ -389,27 +394,37 @@ export class ResolveRecipientsStep extends Step {
       this.setResult(ctx, 'destinatariFinali', [{ emails: t.emails }] satisfies Destinazione[]);
       return;
     }
-    const classi = t.classiCompetenza.length > 0 ? t.classiCompetenza : [t.target];
-    // Per-class substitute resolution — a multi-class coordinatore can have
-    // different supplenti on different classes (11 §12).
-    const perClasse = classi.map(
-      (c) =>
-        this.supplenze.findSupplenzaSpecifica(titolare, now(ctx), ClasseId.of(c))?.supplente ?? null
-    );
     const titolareEmail = titolare.id ?? '';
-    const supplenti = [...new Set(perClasse.filter((s): s is string => s !== null))];
-
-    let finali: string[];
-    switch (confMail(ctx).supplenti) {
-      case GestioneSupplenti.SOLO_SUPPLENTI:
-        // Classes without an active supplenza stay with the titolare.
-        finali = [...new Set(perClasse.map((s) => s ?? titolareEmail))];
-        break;
-      case GestioneSupplenti.ENTRAMBI:
-        finali = [titolareEmail, ...supplenti];
-        break;
-      default: // SOLO_TITOLARI
-        finali = [titolareEmail];
+    const classeIds = t.classiCompetenza.length > 0 ? t.classiCompetenza : [t.target];
+    const assignments = classeIds.flatMap((classeId) => {
+      const classe = this.classi.findById(ClasseId.of(classeId));
+      if (classe === null) return [];
+      return this.teachingAssignments
+        .resolveConsiglio(classe, now(ctx), {
+          includeReligioneAlt: true,
+          routingPolicy: routingPolicyByGestioneSupplenti[confMail(ctx).supplenti]
+        })
+        .filter(
+          (assignment) =>
+            assignment.titolare.id === titolareEmail ||
+            assignment.titolareNominale.id === titolareEmail ||
+            assignment.docenteEffettivo.id === titolareEmail
+        );
+    });
+    const routingRows = assignments.map((assignment) => ({
+      routing: {
+        primary: assignment.routing.primary.flatMap((docente) =>
+          docente.id === null ? [] : [{ id: docente.id }]
+        )
+      }
+    }));
+    const routed = this.projector.project(routingRows, [
+      { type: 'flatMap', path: 'routing.primary' },
+      { type: 'distinctBy', keys: ['id'] }
+    ]).value as Array<{ id: string }>;
+    const finali = routed.map((actor) => actor.id);
+    if (finali.length === 0 && titolareEmail !== '') {
+      finali.push(titolareEmail);
     }
     this.setResult(
       ctx,

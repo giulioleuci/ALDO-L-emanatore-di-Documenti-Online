@@ -4,8 +4,14 @@ import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IOreASLRepository } from '../../../domain/repositories/IOreASLRepository';
+import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
-import type { CdcAssembler } from '../CdcAssembler';
+import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
+import {
+  createTeachingCouncilProjection,
+  prepareStudentCouncilAssignments,
+  resolveCouncilForProjection
+} from '../TeachingCouncilProjection';
 import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
 import { setAlunnoEntity } from '../techEntities';
 import { curriculumRecord } from '../mappers/carenzeMapper';
@@ -19,12 +25,18 @@ import { EntityNotFoundError } from '../../../domain/errors/DomainError';
  * filled by their own providers. Stashes the live Alunno entity in tech.entita.
  */
 export class AlunnoProvider implements ContextProvider {
+  private readonly projection: CollectionProjectionInterceptor | undefined;
+
   constructor(
     private readonly alunni: IAlunnoRepository,
     private readonly classi: IClasseRepository,
     private readonly oreAsl: IOreASLRepository,
-    private readonly cdc?: CdcAssembler
-  ) {}
+    private readonly teachingAssignments?: ITeachingAssignmentResolver,
+    materie?: IMateriaRepository
+  ) {
+    this.projection =
+      materie === undefined ? undefined : createTeachingCouncilProjection(classi, materie).alunno;
+  }
 
   provide(cdu: Cdu, params: BuildParams, options: RecipeOptions): void {
     const alunno = this.alunni.findById(params.target);
@@ -62,17 +74,25 @@ export class AlunnoProvider implements ContextProvider {
       }
     };
     // Per-alunno filtered council (14 §1.3): built here because alunno recipes
-    // don't run the consiglio provider. Only when a CdcAssembler is wired in.
-    if (this.cdc !== undefined) {
-      focusAlunno.consiglioDiClasseFiltrato = this.cdc.assembleFiltrato(
+    // don't run the consiglio provider. Only when the shared port is wired in.
+    if (this.teachingAssignments !== undefined) {
+      const assignments = resolveCouncilForProjection(
+        this.teachingAssignments,
         classe,
-        alunno.religione,
         params.now,
         options.gestioneSupplenti
       );
+      focusAlunno.consiglioDiClasseFiltrato = prepareStudentCouncilAssignments(
+        assignments,
+        alunno.religione,
+        focusAlunno.curriculum
+      ) as never;
     }
 
     cdu.focus.alunno = focusAlunno;
+    if (this.projection !== undefined && focusAlunno.consiglioDiClasseFiltrato !== undefined) {
+      this.projection.intercept('student', cdu, cdu, options);
+    }
   }
 
   private oreAnnoCorrente(cdu: Cdu, alunno: Alunno): number {

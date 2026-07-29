@@ -57,12 +57,12 @@ test('SOLO_SUPPLENTI: the titolare VM becomes the chain-resolved supplente (09 �
   expect(rossi.materie.map((m) => m.sigla)).toEqual(['MATE']); // subject covered by the supplente
 });
 
-test('ENTRAMBI: the titolare is kept, sostituisce records the supplente (09 §5)', () => {
+test('ENTRAMBI: the GLF primary actor is projected first with the principal in sostituisce (09 §5)', () => {
   const rossi = rossiSlot(cdc(GestioneSupplenti.ENTRAMBI));
-  expect(rossi.anagrafica.email).toBe('rossi@school.it');
+  expect(rossi.anagrafica.email).toBe('bianchi@school.it');
   expect(rossi.stato).toEqual({
-    isSupplente: false,
-    sostituisce: { nome: 'BIANCHI LUCIA', email: 'bianchi@school.it' }
+    isSupplente: true,
+    sostituisce: { nome: 'ROSSI MARIO', email: 'rossi@school.it' }
   });
 });
 

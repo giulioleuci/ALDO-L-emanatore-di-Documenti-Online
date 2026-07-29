@@ -116,7 +116,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   if (deps.spreadsheets !== undefined) {
     c.register('spreadsheets', () => deps.spreadsheets!);
   }
-  c.register('strategyRegistry', () => {
+  c.register('strategyRegistry', (container) => {
     // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value
     // implemented. The Sheet/Doc-structural strategies need a live
     // SpreadsheetService/DocumentService (deps.spreadsheets/deps.documents,
@@ -140,7 +140,10 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
           deps.spreadsheets,
           materie,
           deps.templates,
-          new RisolutoreRuoliService(deps.db)
+          new RisolutoreRuoliService(
+            deps.db,
+            container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
+          )
         )
       );
       if (deps.documents !== undefined) {
@@ -168,13 +171,23 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         templates: deps.templates,
         expressionEngine: deps.expressionEngine,
         configs: new ConfigurazioneDocumentoRepository(deps.db),
-        roleResolver: new RisolutoreRuoliService(deps.db),
+        roleResolver: new RisolutoreRuoliService(
+          deps.db,
+          container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
+        ),
         now: deps.now,
         monitor: deps.monitor,
         logger
       })
   );
-  c.register('risolutoreRuoli', () => new RisolutoreRuoliService(deps.db));
+  c.register(
+    'risolutoreRuoli',
+    (container) =>
+      new RisolutoreRuoliService(
+        deps.db,
+        container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver')
+      )
+  );
   c.register(
     'documentBatchService',
     (container) =>

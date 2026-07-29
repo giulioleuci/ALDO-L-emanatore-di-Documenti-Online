@@ -4,19 +4,21 @@ import { RisolutoreRuoliService } from '../../../src/application/services/Risolu
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { fixtureTables } from '../../fixtures/tables';
 import { GestioneSupplenti } from '../../../src/domain/value-objects/enums';
+import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 describe('CDU / RisolutoreRuoliService agreement across the resolution layers (17)', () => {
   test('after the permanent variazione, before any supplenza: CDU and DOCENTE_MATERIA agree on bianchi', () => {
     const db = new FakeDatabase(fixtureTables());
+    const teachingAssignments = new AldoTeachingAssignmentResolver(db);
     const now = new Date('2025-10-15T09:00:00Z');
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = ContextEngineFactory.create(db, undefined, teachingAssignments).build(
       { target: '5A', tipoTarget: 'classe', now, materiaCorrente: 'MATE' },
       recipe('CLASSE_COMPLETA')
     );
     const cdcEmails = cdu.focus.classe!.consiglioDiClasse
       .filter((d) => d.materie.some((m) => m.sigla === 'MATE'))
       .map((d) => d.anagrafica.email);
-    const service = new RisolutoreRuoliService(db);
+    const service = new RisolutoreRuoliService(db, teachingAssignments);
     const roleEmails = service
       .risolvi('DOCENTE_MATERIA', cdu)
       .map((e) => e.value);
@@ -27,8 +29,9 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
 
   test('during the active supplenza (chain rossi->bianchi->verdi for ITA), CDC (ENTRAMBI) and role routing (ENTRAMBI) agree', () => {
     const db = new FakeDatabase(fixtureTables());
+    const teachingAssignments = new AldoTeachingAssignmentResolver(db);
     const now = new Date('2025-11-15T09:00:00Z');
-    const cdu = ContextEngineFactory.create(db).build(
+    const cdu = ContextEngineFactory.create(db, undefined, teachingAssignments).build(
       { target: '5A', tipoTarget: 'classe', now },
       recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
     );
@@ -45,13 +48,13 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
     // rossi->bianchi->verdi supplenza chain still applies correctly to its OWN
     // unrelated context.
     const coordinatoriNominali = cdu.focus.classe!.coordinatori ?? [];
-    const service = new RisolutoreRuoliService(db);
+    const service = new RisolutoreRuoliService(db, teachingAssignments);
     const coordEmails = service
       .risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
       .map((e) => e.value)
       .sort();
 
     expect(coordinatoriNominali.map((c) => c.email)).toEqual(['rossi@school.it']); // COORD is not cattedra-resolved
-    expect(coordEmails).toEqual(['rossi@school.it', 'verdi@school.it']); // rossi's own chain-resolved supply
+    expect(coordEmails).toEqual(['rossi@school.it']); // non-teaching role remains declared school role
   });
 });

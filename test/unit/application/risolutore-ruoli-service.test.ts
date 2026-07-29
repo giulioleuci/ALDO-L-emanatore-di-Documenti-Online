@@ -10,6 +10,7 @@ import { ClasseRepository } from '../../../src/infrastructure/repositories/Class
 import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
 import { Docente } from '../../../src/domain/entities/Docente';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -135,18 +136,18 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
     expect(emails(service, 'COORDINATORI', cdu)).toEqual(['rossi@school.it']);
   });
 
-  test('SOLO_SUPPLENTI routes a coordinator to the chain-resolved substitute', () => {
+  test('SOLO_SUPPLENTI leaves non-teaching coordinator roles as declared', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
     expect(
       emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
-    ).toEqual(['verdi@school.it']);
+    ).toEqual(['rossi@school.it']);
   });
 
-  test('ENTRAMBI keeps both titolare and substitute', () => {
+  test('ENTRAMBI leaves non-teaching coordinator roles as declared', () => {
     const { cdu, service } = buildAt(INSIDE_WINDOW);
     expect(
       emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
-    ).toEqual(['rossi@school.it', 'verdi@school.it']);
+    ).toEqual(['rossi@school.it']);
   });
 
   // REPORT_GLF.md B4: with no active supplenza, RoutingResolver's
@@ -168,16 +169,26 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
     ).toEqual(['rossi@school.it']);
   });
 
-  test('applicaSupplenze routes through RoleResolutionLib.RoutingResolver, not a hand-rolled switch', () => {
-    const { cdu, service } = buildAt(INSIDE_WINDOW);
-    const resolveSpy = jest.spyOn(RoutingResolver.prototype, 'resolve');
+  test('teaching roles pass the declarative routing policy through the shared port', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+    const resolveSpy = jest.spyOn(teachingAssignments, 'resolveConsiglio');
+    const cdu = ContextEngineFactory.create(db, undefined, teachingAssignments).build(
+      { target: '5A', tipoTarget: 'classe', now: INSIDE_WINDOW },
+      recipe('CLASSE_COMPLETA')
+    );
+    const service = new RisolutoreRuoliService(db, teachingAssignments);
 
-    emails(service, 'COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI });
+    emails(service, 'CDC', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI });
 
     expect(resolveSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ routingPolicy: RoutingPolicy.BOTH_EQUAL })
+      expect.objectContaining({ id: '5A' }),
+      new Date('2025-11-15'),
+      expect.objectContaining({
+        includeReligioneAlt: true,
+        routingPolicy: RoutingPolicy.BOTH_EQUAL
+      })
     );
-    resolveSpy.mockRestore();
   });
 
   test('student/family roles are never subject to supplenza routing', () => {
@@ -232,7 +243,10 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
     const dbMissingBianchi = new FakeDatabase(tablesMissingBianchi);
     const service = new RisolutoreRuoliService(dbMissingBianchi);
 
-    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual(['rossi@school.it']);
+    expect(emails(service, 'CDC_FILTER_ALUNNO', cdu)).toEqual([
+      'bianchi@school.it',
+      'rossi@school.it'
+    ]);
   });
 
   test('docenteMateria (DOCENTE_MATERIA) returns [] when ctx.materiaCorrente is null (no materiaCorrente supplied)', () => {
@@ -335,7 +349,7 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
         regolaSupplente: GestioneSupplenti.ENTRAMBI
       });
       // Ghost (blank id) contributes nothing; rossi's BOTH_EQUAL pair keeps titolare first.
-      expect(result.map((e) => e.value)).toEqual(['rossi@school.it', 'verdi@school.it']);
+      expect(result.map((e) => e.value)).toEqual(['rossi@school.it']);
     } finally {
       spy.mockRestore();
     }
@@ -374,7 +388,7 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     const service = new RisolutoreRuoliService(db);
     expect(
       emails(service, 'DOCENTI_IRC_ALT', cdu, { regolaSupplente: GestioneSupplenti.SOLO_SUPPLENTI })
-    ).toEqual(['verdi@school.it']); // was ['bianchi@school.it'] before this fix
+    ).toEqual(['bianchi@school.it']); // ITA-scoped delegation does not apply to IRC/ALT
   });
 
   test('DOCENTE_MATERIA and DOCENTE_PRIMA_PROVA now partner-route an articulated PARENT class (fix — used to silently return [])', () => {

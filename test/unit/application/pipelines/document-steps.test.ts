@@ -670,8 +670,8 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
   });
 
   test.each([
-    ['SOLO_SUPPLENTI', ['verdi@school.it']],
-    ['ENTRAMBI', ['rossi@school.it', 'verdi@school.it']],
+    ['SOLO_SUPPLENTI', ['rossi@school.it']],
+    ['ENTRAMBI', ['rossi@school.it']],
     [undefined, ['rossi@school.it']],
     ['QUALCOSA_DI_IGNOTO', ['rossi@school.it']]
   ])(
@@ -726,7 +726,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
       .filter((p) => p.fileId === 'folder_1')
       .map((p) => p.email)
       .sort();
-    expect(fileEmails).toEqual(['verdi@school.it']); // SOLO_SUPPLENTI -> chain-resolved delegate only
-    expect(folderEmails).toEqual(['rossi@school.it', 'verdi@school.it']); // ENTRAMBI -> both
+    expect(fileEmails).toEqual(['rossi@school.it']); // non-teaching role remains declared
+    expect(folderEmails).toEqual(['rossi@school.it']); // non-teaching role remains declared
   });
 });

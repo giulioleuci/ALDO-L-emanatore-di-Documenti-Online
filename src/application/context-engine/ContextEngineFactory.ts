@@ -20,10 +20,8 @@ import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
 import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
-import { TeachingAssignmentCattedraAdapter } from './TeachingAssignmentCattedraAdapter';
+import { AldoTeachingAssignmentResolver } from '../../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
-import { CdcAssembler } from './CdcAssembler';
-import { CattedraResolver } from '../services/CattedraResolver';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../infrastructure/repositories/RuoloSpecialeRepository';
@@ -60,7 +58,7 @@ export class ContextEngineFactory {
   static create(
     database: RepositoryDatabase,
     master: IMasterSheetRepository = new MasterSheetRepository(database),
-    teachingAssignments?: ITeachingAssignmentResolver
+    teachingAssignments: ITeachingAssignmentResolver = new AldoTeachingAssignmentResolver(database)
   ): ContextBuilder {
     const ruoli: IRuoloSpecialeRepository = new RuoloSpecialeRepository(database);
     const docenti: IDocenteRepository = new DocenteRepository(database);
@@ -69,22 +67,20 @@ export class ContextEngineFactory {
     const materie: IMateriaRepository = new MateriaRepository(database);
     const oreAsl: IOreASLRepository = new OreASLRepository(database);
     const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(database);
-    const cattedraResolver =
-      teachingAssignments === undefined
-        ? new CattedraResolver(database)
-        : new TeachingAssignmentCattedraAdapter(teachingAssignments);
-    const cdc = new CdcAssembler(classi, materie, cattedraResolver);
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
     return new ContextBuilder()
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
       .registerProvider('class', new ClasseProvider(classi, alunni))
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))
-      .registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, cdc))
+      .registerProvider(
+        'student',
+        new AlunnoProvider(alunni, classi, oreAsl, teachingAssignments, materie)
+      )
       .registerProvider('tutor', new TutorProvider(classi))
       .registerProvider(
         'consiglio',
-        new ConsiglioClasseProvider(classi, materie, cattedraResolver)
+        new ConsiglioClasseProvider(classi, materie, teachingAssignments)
       )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))

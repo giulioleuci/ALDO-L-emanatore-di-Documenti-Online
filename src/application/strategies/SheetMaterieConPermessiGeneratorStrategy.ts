@@ -2,8 +2,12 @@ import {
   SheetMaterieGeneratorStrategy,
   columnIndexToLetters
 } from './SheetMaterieGeneratorStrategy';
-import type { MateriaColumn } from './SheetMaterieGeneratorStrategy';
-import type { Cdu } from '../context-engine/Cdu';
+import type {
+  MateriaColumn,
+  MaterieGroups
+} from './SheetMaterieGeneratorStrategy';
+import type { Cdu, CduClasse } from '../context-engine/Cdu';
+import { buildElencoMaterieConPermessi } from '../context-engine/ElencoMaterieConPermessi';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
@@ -23,26 +27,14 @@ import { GestioneSupplenti } from '../../domain/value-objects/enums';
  * full access. Group-label pseudo-columns (`isLabel: true`, articulated
  * classes) carry no ACL — they are structural headers, not subject columns.
  *
- * Does NOT implement the separate MAT_NON_STANDARD.md
- * `{{focus.classe.elencoMaterieConPermessi}}` REL/ALT horizontal-expansion
- * placeholder. Re-verified against library source (2026-07-10): the claim
- * that WorkspaceTemplateEngine lacks this structural-expansion capability was
- * WRONG — `PlaceholderService.processSheet`'s `{{dynamic_columns[source=...,
- * value=...,acl=...,scope=column]}}` directive
- * (`WorkspaceTemplateEngine/src/processors/SheetProcessor.js#_prepareDynamicColumnRequests`)
- * already does exactly this: one column per source-array item, with a
- * per-item header path and an optional per-item ACL protecting the whole
- * column. This strategy still doesn't use the directive's own static `acl=`
- * for ITS OWN protection, because the editor list needs full
- * role-resolution/supplenza-chain logic (`RisolutoreRuoliService`) the
- * directive's static per-item expression can't express — that logic stays
- * here, in `protectColumns`, applied to the layout `dynamic_columns` already
- * resolved. Wiring `elencoMaterieConPermessi` itself onto `dynamic_columns` is
- * a genuine, separate scope decision (new CONF_DOC.PARAMETRI/template
- * contract for REL/ALT), left out of this task; `ElencoMaterieConPermessi.ts`
- * and the `DOCENTI_IRC_ALT` role remain forward-compatible groundwork for it.
+ * The MAT_NON_STANDARD REL/ALT display group is injected at the start of the
+ * first dynamic group and also exposed at the canonical
+ * `focus.classe.elencoMaterieConPermessi` path. Its editors are the separately
+ * resolved IRC and ALT actors merged by the `DOCENTI_IRC_ALT` role.
  */
 export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGeneratorStrategy {
+  private readonly projector = new CollectionProjector({ logger: new LoggerService() });
+
   constructor(
     sheets: SpreadsheetService,
     materie: IMateriaRepository,
@@ -55,6 +47,34 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   override render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
     const { sheetName, layout } = this.renderColumns(fileId, cdu, config);
     this.protectColumns(fileId, cdu, sheetName, layout);
+  }
+
+  protected override buildGroups(classe: CduClasse): MaterieGroups {
+    const consiglio = classe.consiglioDiClasse ?? [];
+    if (consiglio.length === 0) {
+      classe.elencoMaterieConPermessi = [];
+      return super.buildGroups(classe);
+    }
+    const hasAlt = consiglio.some((docente) =>
+      docente.materie.some((materia) => materia.sigla === 'ALT')
+    );
+    const elenco = buildElencoMaterieConPermessi(consiglio, hasAlt);
+    classe.elencoMaterieConPermessi = elenco;
+    const special = elenco.find((item) => item.isSpecial);
+    const groups = super.buildGroups(classe);
+    if (special === undefined) return groups;
+    return {
+      ...groups,
+      group1: [
+        {
+          sigla: special.sigla,
+          header: special.sigla,
+          isSpecial: true,
+          roles: special.roles
+        },
+        ...groups.group1
+      ]
+    };
   }
 
   /**
@@ -76,14 +96,25 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     const requests = layout
       .map((column) => {
         if (column.isLabel) return null;
-        const sigla = (column.item as MateriaColumn | null)?.sigla;
-        if (sigla === undefined) return null;
-        const docenti = this.resolveDocentiMateria(cdu, sigla);
+        const item = column.item as MateriaColumn | null;
+        if (item === null) return null;
+        const sigla = item.sigla;
+        const docenti = item.isSpecial
+          ? this.roles
+              .risolvi('DOCENTI_IRC_ALT', cdu, {
+                regolaSupplente: GestioneSupplenti.ENTRAMBI
+              })
+              .map((email) => email.value)
+          : this.resolveDocentiMateria(cdu, sigla);
         const col = columnIndexToLetters(column.column - 1);
+        const editors = this.projector.project(
+          [...docenti, ...coordinatori].map((value) => ({ value })),
+          [{ type: 'distinctBy', keys: ['value'] }]
+        ).value as Array<{ value: string }>;
         return {
           range: `${sheetName}!${col}:${col}`,
           description: `Colonna materia ${sigla} (10 §9)`,
-          editors: { users: [...new Set([...docenti, ...coordinatori])] }
+          editors: { users: editors.map((editor) => editor.value) }
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);

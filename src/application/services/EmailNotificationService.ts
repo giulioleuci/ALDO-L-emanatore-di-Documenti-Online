@@ -11,7 +11,6 @@ import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEm
 import type { Classe } from '../../domain/entities/Classe';
 import type { Alunno } from '../../domain/entities/Alunno';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
-import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
@@ -40,10 +39,10 @@ import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDoc
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import { MasterSheetRepository } from '../../infrastructure/repositories/MasterSheetRepository';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
-import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
-import { ProcessoInvio } from '../../domain/value-objects/enums';
+import { GestioneSupplenti, ProcessoInvio } from '../../domain/value-objects/enums';
+import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 import { PipelineError } from '../../domain/errors/DomainError';
 import { AggregatoreDati } from './AggregatoreDati';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
@@ -67,7 +66,6 @@ export interface EmailNotificationDeps {
   logMail: ILogEmailRepository;
   logDocs: ILogDocumentoRepository;
   master: IMasterSheetRepository;
-  supplenze: ISupplenzaRepository;
   materie: IMateriaRepository;
   aggregatoreDati: AggregatoreDati;
   /** Effective-teacher resolution (SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI, ref CLAUDE.md). */
@@ -102,6 +100,7 @@ export class EmailNotificationService {
   private readonly monitor: IProcessMonitor | undefined;
   private readonly logger: LoggerService;
   private testEmail: string | null = null;
+  private readonly projector = new CollectionProjector({ logger: new LoggerService() });
 
   constructor(deps: EmailNotificationDeps) {
     const { logger, monitor, ...rest } = deps;
@@ -146,7 +145,6 @@ export class EmailNotificationService {
       logMail: new LogEmailRepository(db),
       logDocs: new LogDocumentoRepository(db),
       master,
-      supplenze: new SupplenzaRepository(db),
       materie: new MateriaRepository(db),
       aggregatoreDati: new AggregatoreDati(db),
       teachingAssignments
@@ -245,7 +243,14 @@ export class EmailNotificationService {
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
       .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
-      .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.supplenze))
+      .addStep(
+        new ResolveRecipientsStep(
+          this.logger,
+          d.docenti,
+          d.classi,
+          d.teachingAssignments
+        )
+      )
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))
       .addStep(new LogEmailStep(this.logger, d.logMail))
       .addStep(new PostProcessEmailStep(this.logger, d.db, d.templates));
@@ -271,7 +276,7 @@ export class EmailNotificationService {
       case ProcessoInvio.PER_DOCENTE:
         return this.targetsPerDocente();
       case ProcessoInvio.PER_CDC:
-        return this.targetsPerCdc();
+        return this.targetsPerCdc(conf.supplenti);
       case ProcessoInvio.PER_ALUNNO:
         return this.deps.alunni.findAttivi().map((a) => ({
           tipo: 'alunno' as const,
@@ -332,17 +337,31 @@ export class EmailNotificationService {
    * cognome (deterministic emails[0], ref 11 §14). The teaching-assignment port
    * partner-routes articulated classes internally, so one call is sufficient.
    */
-  private cdcEmails(classe: Classe): string[] {
-    const byEmail = new Map<string, string>(); // email -> cognome
-    for (const a of this.deps.teachingAssignments.resolveConsiglio(classe, this.deps.now)) {
-      const email = a.titolare.id ?? '';
-      if (email !== '' && !byEmail.has(email)) {
-        byEmail.set(email, a.titolare.cognome);
+  private cdcEmails(
+    classe: Classe,
+    gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
+  ): string[] {
+    const assignments = this.deps.teachingAssignments.resolveConsiglio(
+      classe,
+      this.deps.now,
+      {
+        includeReligioneAlt: true,
+        routingPolicy: routingPolicyByGestioneSupplenti[gestioneSupplenti]
       }
-    }
-    return [...byEmail.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([email]) => email);
+    );
+    const routingRows = assignments.map((assignment) => ({
+      routing: {
+        primary: assignment.routing.primary.flatMap((docente) =>
+          docente.id === null ? [] : [{ id: docente.id, cognome: docente.cognome }]
+        )
+      }
+    }));
+    const actors = this.projector.project(routingRows, [
+      { type: 'flatMap', path: 'routing.primary' },
+      { type: 'distinctBy', keys: ['id'] },
+      { type: 'sortBy', keys: [{ path: 'cognome', direction: 'ASC' }] }
+    ]).value as Array<{ id: string }>;
+    return actors.map((docente) => docente.id);
   }
 
   private targetsPerCoordinatore(): EmailTarget[] {
@@ -385,12 +404,12 @@ export class EmailNotificationService {
     }));
   }
 
-  private targetsPerCdc(): EmailTarget[] {
+  private targetsPerCdc(gestioneSupplenti: GestioneSupplenti): EmailTarget[] {
     return this.classiEntryPoint().map((classe) => ({
       tipo: 'cdc' as const,
       tipoTarget: 'classe' as const,
       target: classe.id ?? '',
-      emails: this.cdcEmails(classe),
+      emails: this.cdcEmails(classe, gestioneSupplenti),
       classiCompetenza: [classe.id ?? '']
     }));
   }

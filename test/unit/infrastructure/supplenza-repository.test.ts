@@ -46,22 +46,6 @@ test('findByTitolare / findBySupplente / findAttive', () => {
   ).toEqual(['bianchi@school.it', 'rossi@school.it']);
 });
 
-test('findSupplenzaSpecifica follows the replacement chain to the final substitute (06 §14)', () => {
-  const r = repo();
-  // rossi→bianchi→verdi active on 15/11 for 5A/ITA: effective substitute is verdi.
-  expect(
-    r.findSupplenzaSpecifica(rossi, new Date('2025-11-15'), ClasseId.of('5A'), MateriaId.of('ITA'))!
-      .supplente
-  ).toBe('verdi@school.it');
-  // on 25/11 the second link has ended: chain stops at bianchi.
-  expect(
-    r.findSupplenzaSpecifica(rossi, new Date('2025-11-25'), ClasseId.of('5A'), MateriaId.of('ITA'))!
-      .supplente
-  ).toBe('bianchi@school.it');
-  // no active supplenza for rossi in July.
-  expect(r.findSupplenzaSpecifica(rossi, new Date('2025-07-01'))).toBeNull();
-});
-
 test('getTitolare / getSupplente resolve Docente entities', () => {
   const r = repo();
   const s = r.findByTitolare(rossi)[0]!;
@@ -69,9 +53,9 @@ test('getTitolare / getSupplente resolve Docente entities', () => {
   expect(r.getSupplente(s).id).toBe('bianchi@school.it');
 });
 
-// --- A19: indexed-lookup fallback, overlap-conflict, and delegation-chain branches ---
+// --- A19: indexed-lookup fallback, overlap-conflict, and hydration branches ---
 
-describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain branches', () => {
+describe('SupplenzaRepository — indexed-lookup fallback, overlap, and hydration branches', () => {
   test('findByTitolare falls back to a full scan when indexedLookup returns null', () => {
     const { r, db } = repoAndDb();
     jest.spyOn(db.tables.SUPPLENZE!, 'indexedLookup').mockReturnValue(null);
@@ -84,13 +68,6 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
     expect(r.findBySupplente(rossi).map((s) => s.titolare)).toEqual(['verdi@school.it']);
   });
 
-  test('findSupplenzaSpecifica returns null immediately when titolare.id is blank', () => {
-    const repository = repo();
-    expect(
-      repository.findSupplenzaSpecifica(Docente.fromData({ EMAIL: '' }), new Date())
-    ).toBeNull();
-  });
-
   test('creaSupplenza throws ValidationError when an overlapping supplenza exists for the same titolare+context', () => {
     const r = repo();
     const verdiD = Docente.fromData({ EMAIL: 'verdi@school.it' });
@@ -98,15 +75,6 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
     expect(() =>
       r.creaSupplenza(rossi, verdiD, new Date('2025-11-10'), new Date('2025-11-20'), '5A', '*')
     ).toThrow(ValidationError);
-  });
-
-  test('the delegation chain resolves to null when the titolare has no outgoing delegation on that date', () => {
-    const r = repo();
-    const verdi = Docente.fromData({ EMAIL: 'verdi@school.it' });
-    // Other supplenze (rossi→bianchi, bianchi→verdi) are active on 15/11, so `applicabili`
-    // is non-empty, but verdi's own verdi→rossi row is only active in September — no chain
-    // starts at verdi on this date, so getDelegationChain returns length 0.
-    expect(r.findSupplenzaSpecifica(verdi, new Date('2025-11-15'))).toBeNull();
   });
 
   test('requireDocente throws EntityNotFoundError for an unknown email', () => {
@@ -120,33 +88,6 @@ describe('SupplenzaRepository — indexed-lookup fallback and overlap/chain bran
       MATERIE: '*'
     });
     expect(() => r.getTitolare(s)).toThrow(EntityNotFoundError);
-  });
-
-  test('findSupplenzaSpecifica keeps only the first-seen supplenza when two applicable rows share the same titolare→supplente arc', () => {
-    const db = new FakeDatabase({
-      ...fixtureTables(),
-      SUPPLENZE: [
-        ...(fixtureTables().SUPPLENZE ?? []),
-        // Same arc (rossi→bianchi) as the fixture row, also active on 15/11.
-        {
-          TITOLARE: 'rossi@school.it',
-          SUPPLENTE: 'bianchi@school.it',
-          DAL: '2025-11-05',
-          AL: '2025-11-25',
-          CLASSI: '5A',
-          MATERIE: '*'
-        }
-      ]
-    });
-    const r = new SupplenzaRepository(db);
-    expect(
-      r.findSupplenzaSpecifica(
-        rossi,
-        new Date('2025-11-15'),
-        ClasseId.of('5A'),
-        MateriaId.of('ITA')
-      )!.supplente
-    ).toBe('verdi@school.it');
   });
 
   test('creaSupplenza stores "" for titolare/supplente when the Docente has no id', () => {

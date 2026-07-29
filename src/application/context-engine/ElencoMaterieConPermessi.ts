@@ -15,10 +15,8 @@ const SPECIAL_COLORE = '#E0E0E0';
 /**
  * Builds `focus.classe.elencoMaterieConPermessi` (MAT_NON_STANDARD §2.A): the
  * REL/ALT merge is prepended, followed by every other CDC subject sorted
- * alphabetically by sigla. `IRC`/`ALT` never actually appear in
- * `consiglioDiClasse.materie` (ConsiglioClasseProvider/CdcAssembler only walk
- * the standard subject columns — ref ClasseRepository.getAllDocentiCDC), so the
- * spec's IRC/ALT exclusion filter here is defensive, not load-bearing.
+ * alphabetically by sigla. The GLF projection excludes `IRC`/`ALT` from the
+ * ordinary columns before prepending the special display group.
  * `hasAlt` (whether the class has an ALT column value) decides the special
  * column's label/roles — degrades to "REL"/["IRC"] when there is no ALT.
  */
@@ -26,17 +24,6 @@ export function buildElencoMaterieConPermessi(
   consiglioDiClasse: DocenteCdcVM[],
   hasAlt: boolean
 ): ElencoMateriaConPermessiVM[] {
-  const bySigla = new Map<string, { sigla: string; nome: string; colore: string }>();
-  for (const docente of consiglioDiClasse) {
-    for (const m of docente.materie) {
-      if (m.sigla === 'IRC' || m.sigla === 'ALT') continue;
-      if (!bySigla.has(m.sigla))
-        bySigla.set(m.sigla, { sigla: m.sigla, nome: m.nome, colore: m.colore });
-    }
-  }
-  const materie: ElencoMateriaConPermessiVM[] = [...bySigla.values()]
-    .sort((a, b) => a.sigla.localeCompare(b.sigla))
-    .map((m) => ({ ...m, isSpecial: false, roles: [m.sigla] }));
   const special: ElencoMateriaConPermessiVM = {
     sigla: hasAlt ? 'REL/ALT' : 'REL',
     nome: hasAlt ? 'Religione/Alternativa' : 'Religione',
@@ -44,5 +31,28 @@ export function buildElencoMaterieConPermessi(
     roles: hasAlt ? ['IRC', 'ALT'] : ['IRC'],
     colore: SPECIAL_COLORE
   };
-  return [special, ...materie];
+  const registry = new ProjectionRegistry().register('aldoMateriaPermessiVm', (value) =>
+    (value as Array<{ sigla: string; nome: string; colore: string }>).map((materia) => ({
+      ...materia,
+      isSpecial: false,
+      roles: [materia.sigla]
+    }))
+  );
+  const projector = new CollectionProjector({
+    registry,
+    expressionEngine: new ExpressionEngineService({ logger: new LoggerService() }),
+    logger: new LoggerService()
+  });
+  return projector.project(
+    consiglioDiClasse,
+    [
+      { type: 'flatMap', path: 'materie' },
+      { type: 'filter', expression: '{{sigla}} != "IRC" && {{sigla}} != "ALT"' },
+      { type: 'distinctBy', keys: ['sigla'] },
+      { type: 'sortBy', keys: [{ path: 'sigla', direction: 'ASC' }] },
+      { type: 'strategy', name: 'aldoMateriaPermessiVm' },
+      { type: 'prepend', value: special }
+    ],
+    { targetPath: 'focus.classe.elencoMaterieConPermessi' }
+  ).value as ElencoMateriaConPermessiVM[];
 }

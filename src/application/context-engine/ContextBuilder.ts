@@ -7,8 +7,8 @@ import { formatOggi } from './dates';
  * Assembles the CDU (spec 09 §2), built ON the ContextEngine library's
  * reusable components: the `ProviderRegistry` (Registry Pattern) stores/
  * resolves providers by recipe token, the `InterceptorRegistry` +
- * `ContextInterceptor` middleware apply cross-cutting enrichment (e.g.
- * SwapAndEnrichInterceptor for supplenti) after each provider, and —
+ * `ContextInterceptor` middleware apply cross-cutting declarative projections
+ * after selected providers, and —
  * assembly itself — the library's `ContextAssembler.assembleInto()`
  * MUTATION mode: every provider receives the SAME shared CDU across the
  * whole recipe run and mutates it in place (matching

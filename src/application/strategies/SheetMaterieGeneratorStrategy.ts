@@ -30,6 +30,8 @@ interface SheetMaterieParams {
 export interface MateriaColumn {
   sigla: string;
   header: string;
+  isSpecial?: boolean;
+  roles?: string[];
 }
 
 /**
@@ -161,7 +163,7 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
 
   /** Resolves each sigla's display text (ports the pre-refactor `columnsFor`'s lookup logic: `MateriaRepository.findByIdCached(...).sintesi`, falling back to the sigla itself) BEFORE the item is placed on the context, so the template's `value=header` expression is a plain field read. */
   private resolveMateriaColumns(sigle: string[]): MateriaColumn[] {
-    return sigle.map((sigla) => {
+    return sigle.filter((sigla) => sigla !== 'IRC' && sigla !== 'ALT').map((sigla) => {
       const header = this.materie.findByIdCached(MateriaId.of(sigla))?.sintesi.trim();
       return { sigla, header: header !== undefined && header !== '' ? header : sigla };
     });

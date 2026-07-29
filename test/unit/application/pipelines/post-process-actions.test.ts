@@ -228,6 +228,33 @@ describe('postProcessActions — CSV containment matching', () => {
     expect(db.tables['LOG_DOCS']!.getByPK('3')!['STATO']).toBe('GENERATO');
   });
 
+  test('VERBALE partner action updates no plans for a normal class with no partners', () => {
+    const tables = fixtureTables();
+    tables['LOG_DOCS'] = [
+      { ID: '1', TIPO: 'PIANO_PERS', CLASSI: '3C', STATO: 'GENERATO' },
+      { ID: '2', TIPO: 'PIANO_PERS', CLASSI: '4A', STATO: 'GENERATO' }
+    ];
+    const db = new FakeDatabase(tables);
+    const actions = JSON.stringify([
+      {
+        tipo: 'AGGIORNA_STATO_DOC',
+        stato: 'VERBALIZZATO',
+        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{focus.classe.articolazione.partners | join}}' }
+      }
+    ]);
+    const normalClassCdu = {
+      focus: {
+        classe: {
+          anagrafica: { nome: '3C' },
+          articolazione: { partners: [] }
+        }
+      }
+    };
+
+    expect(executePostProcess(actions, normalClassCdu, db, new FakeTemplateEngine(), NOW, logger)).toBe(0);
+    expect(db.tables['LOG_DOCS']!.getAllRows().every((row) => row['STATO'] === 'GENERATO')).toBe(true);
+  });
+
   test('a multi-valued criterion bypasses the single-column indexed fast path (it cannot answer a containment query)', () => {
     const tables = fixtureTables();
     tables['LOG_DOCS'] = [{ ID: '1', TIPO: 'PIANO_PERS', CLASSI: '1A', NOTIFICATO: '' }];

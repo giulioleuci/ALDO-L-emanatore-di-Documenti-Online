@@ -599,6 +599,7 @@ test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans 
     criteri: Record<string, string>;
   }>;
 
+  expect(postProcesso).toHaveLength(2);
   expect(postProcesso).toContainEqual(
     {
       tipo: 'AGGIORNA_STATO_DOC',

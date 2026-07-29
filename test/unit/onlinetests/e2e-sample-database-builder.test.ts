@@ -585,7 +585,7 @@ test('CONF_DOC_VERBALE PATH_OUT is per-class, so each class gets its own LOG_FOL
   expect(String(verbale[COL_CONF_DOC.PATH_OUT])).toContain('{{focus.classe.anagrafica.nome}}');
 });
 
-test('CONF_DOC_VERBALE verbalizes the generated class plans through AGGIORNA_STATO_DOC', () => {
+test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans through AGGIORNA_STATO_DOC', () => {
   const { spreadsheets, sheets } = factory();
   new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
 
@@ -599,7 +599,7 @@ test('CONF_DOC_VERBALE verbalizes the generated class plans through AGGIORNA_STA
     criteri: Record<string, string>;
   }>;
 
-  expect(postProcesso).toEqual([
+  expect(postProcesso).toContainEqual(
     {
       tipo: 'AGGIORNA_STATO_DOC',
       stato: 'VERBALIZZATO',
@@ -608,7 +608,15 @@ test('CONF_DOC_VERBALE verbalizes the generated class plans through AGGIORNA_STA
         [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
       }
     }
-  ]);
+  );
+  expect(postProcesso).toContainEqual({
+    tipo: 'AGGIORNA_STATO_DOC',
+    stato: 'VERBALIZZATO',
+    criteri: {
+      [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+      [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.partners | join}}'
+    }
+  });
 });
 
 test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti + cartelle real-folder boxes)', () => {

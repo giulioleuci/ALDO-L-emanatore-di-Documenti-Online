@@ -766,6 +766,14 @@ export class E2eSampleDatabaseBuilder {
             [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
             [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
           }
+        },
+        {
+          tipo: 'AGGIORNA_STATO_DOC',
+          stato: StatoDocumento.VERBALIZZATO,
+          criteri: {
+            [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+            [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.partners | join}}'
+          }
         }
       ]),
       [COL_CONF_DOC.PARAMETRI]: '',

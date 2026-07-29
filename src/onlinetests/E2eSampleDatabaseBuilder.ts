@@ -28,9 +28,9 @@ import {
 
 export const CLASSE_A = '1A';
 export const CLASSE_B = '2B';
-export const CLASSE_C_PARENT = '3C-ART';
-export const CLASSE_C = '3C';
-export const CLASSE_C_PARTNER = '3C-LC';
+export const CLASSE_C_PARENT = '3C';
+export const CLASSE_C = '3C-S';
+export const CLASSE_C_PARTNER = '3C-C';
 /**
  * Every entry-point class (05 §5 / EmailNotificationService.classiEntryPoint):
  * CLASSE_C_PARENT aggregates CLASSE_C/CLASSE_C_PARTNER, so both partner rows
@@ -196,7 +196,7 @@ export interface E2eSampleDatabase {
   staticAttachmentFileId: string;
 }
 
-/** anno-1 name for a promotable class (2B→1B, 3C→2C, 3C-LC→2C-LC); ids without a leading digit are unchanged. */
+/** anno-1 name for a promotable class (2B→1B, 3C-S→2C-S, 3C-C→2C-C); ids without a leading digit are unchanged. */
 function classePrecedente(classeId: string): string {
   const m = /^(\d+)(.*)$/.exec(classeId);
   if (m === null) return classeId;
@@ -447,7 +447,7 @@ export class E2eSampleDatabaseBuilder {
           }),
           [COL_CLASSI.RUOLI]: '',
           [COL_CLASSI.ATTIVA]: true,
-          [COL_CLASSI.COORD]: e2eDocenteEmail(3),
+          [COL_CLASSI.COORD]: '',
           [COL_CLASSI.IRC]: '',
           [COL_CLASSI.ALT]: '',
           [COL_CLASSI.SEZ]: 'C',
@@ -532,9 +532,9 @@ export class E2eSampleDatabaseBuilder {
 
   /**
    * Previous-year (2025-2026) CLASSI rows: each class becomes its anno-1 name
-   * (2B→1B, 3C→2C, 3C-LC→2C-LC), reusing the same coordinatore/cattedra
+   * (2B→1B, 3C-S→2C-S, 3C-C→2C-C), reusing the same coordinatore/cattedra
    * assignment as the current year (same teachers, one year earlier). 1A and
-   * 3C additionally get a same-name row for their repeater (item
+   * 3C-S additionally get a same-name row for their repeater (item
    * "repeaters") — the only reason 1A (normally an entry class with no
    * prior-year identity) has any 2025-2026 presence at all.
    */
@@ -545,7 +545,7 @@ export class E2eSampleDatabaseBuilder {
       layout,
       classIndex
     }));
-    // The 3C repeater needs a same-name 3C row, distinct from 2C (the promoted majority).
+    // The 3C-S repeater needs a same-name row, distinct from 2C-S (the promoted majority).
     rows.push({ id: CLASSE_C, layout: layouts[classeCIndex]!, classIndex: classeCIndex });
 
     for (const { id, layout, classIndex } of rows) {
@@ -553,7 +553,7 @@ export class E2eSampleDatabaseBuilder {
         [COL_CLASSI.ID]: id,
         [COL_CLASSI.ANNO]: 3,
         [COL_CLASSI.INDIRIZZO]: INDIRIZZO_E2E,
-        // Not carried over: current-year articolazione partner names (3C-LC/3C)
+        // Not carried over: current-year articolazione partner names (3C-S/3C-C)
         // don't apply verbatim to the promoted prior-year pair, and neither
         // storico service reads it.
         [COL_CLASSI.ARTICOLAZIONE]: '',

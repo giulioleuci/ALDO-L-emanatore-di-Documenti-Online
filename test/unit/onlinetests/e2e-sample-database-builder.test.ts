@@ -134,6 +134,13 @@ test('seeds an articulated parent with two populated partners and exactly 60 par
     CLASSE_C,
     CLASSE_C_PARTNER
   ]);
+  const parent = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARENT)!;
+  const partnerScientifico = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C)!;
+  const partnerClassico = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARTNER)!;
+  expect(parent[COL_CLASSI.ID]).toBe('3C');
+  expect(parent[COL_CLASSI.COORD]).toBe('');
+  expect(partnerScientifico[COL_CLASSI.ID]).toBe('3C-S');
+  expect(partnerClassico[COL_CLASSI.ID]).toBe('3C-C');
   expect(
     JSON.parse(
       String(
@@ -483,22 +490,22 @@ test('creates a second (prior-year) sample spreadsheet and a second, later MASTE
   expect(rows[1]![COL_MASTER.ID_SPREADSHEET]).toBe(prior.id);
 });
 
-test('prior-year (2025-2026) roster: 1A/3C hold only their repeater, 2B/3C promote to 1B/2C(-LC)', () => {
+test('prior-year (2025-2026) roster: 1A/3C-S hold only their repeater, 2B/3C partners promote to 1B/2C partners', () => {
   const { spreadsheets, sheets } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const prior = sheets.get('_ALDO_E2E_SAMPLE_PRIOR')!;
 
   const classi = prior.rows[TABLE.CLASSI]!.map((c) => c[COL_CLASSI.ID]);
-  expect(classi.sort()).toEqual(['1A', '1B', '2C', '2C-LC', '3C'].sort());
+  expect(classi.sort()).toEqual(['1A', '1B', '2C-S', '2C-C', '3C-S'].sort());
 
   const alunni = prior.rows[TABLE.ALUNNI]!;
   const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
   expect(byClasse('1A').map((a) => a[COL_ALUNNI.EMAIL])).toEqual([RIPETENTE_1A]);
-  expect(byClasse('3C').map((a) => a[COL_ALUNNI.EMAIL])).toEqual([RIPETENTE_3C]);
+  expect(byClasse('3C-S').map((a) => a[COL_ALUNNI.EMAIL])).toEqual([RIPETENTE_3C]);
   expect(byClasse('1B')).toHaveLength(20);
-  expect(byClasse('2C')).toHaveLength(7); // 8 CLASSE_C students minus the repeater
-  expect(byClasse('2C-LC')).toHaveLength(12);
+  expect(byClasse('2C-S')).toHaveLength(7); // 8 CLASSE_C students minus the repeater
+  expect(byClasse('2C-C')).toHaveLength(12);
   expect(alunni).toHaveLength(1 + 1 + 20 + 7 + 12);
 });
 

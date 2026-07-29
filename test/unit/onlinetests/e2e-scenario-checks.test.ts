@@ -16,6 +16,7 @@ import {
   CONF_MAIL_STATIC_ALLEGATO,
   CONF_DOC_PIANI,
   PIANO_DOPPIO_STUDENTE,
+  PDP_BES_3C,
   ALL_CLASSI_E2E
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
@@ -48,9 +49,12 @@ function recordingHarness(
     skipped: 0,
     errors: []
   }),
-  planEmailText =
+  planEmailText:
+    | string
+    | Record<string, string> =
     'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
-    'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026',
+    'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026 ' +
+    'PDP_BES — Ricci Luca: E2E_Piano_PDP_BES_Ricci Luca',
   workPlanAttachmentLinks: string[] = [],
   staticAttachmentAudit: {
     docs: string[];
@@ -124,6 +128,10 @@ function recordingHarness(
         [COL_LOG_DOCS.STATO]: 'GENERATO',
         [COL_LOG_DOCS.CLASSI]: studente === PIANO_DOPPIO_STUDENTE ? '2B' : '1A',
         [COL_LOG_DOCS.UTENTI]: studente,
+        [COL_LOG_DOCS.NOME]:
+          studente === PDP_BES_3C
+            ? 'E2E_Piano_PDP_BES_Ricci Luca'
+            : `E2E_Piano_${tipo}_${studente}`,
         [COL_LOG_DOCS.LINK]: `https://example.test/${studente}/${tipo}`
       });
       planTexts[fileId] = [
@@ -149,10 +157,17 @@ function recordingHarness(
         });
       }
       if (patternId === CONF_MAIL_PIANI) {
-        logMailRows.push({
-          [COL_LOG_MAIL.PATTERN]: CONF_MAIL_PIANI,
-          [COL_LOG_MAIL.TESTO]: planEmailText
-        });
+        const emailsByRecipient =
+          typeof planEmailText === 'string'
+            ? { 'e2edocente3@onlinetest.aldo.local': planEmailText }
+            : planEmailText;
+        for (const [recipient, text] of Object.entries(emailsByRecipient)) {
+          logMailRows.push({
+            [COL_LOG_MAIL.PATTERN]: CONF_MAIL_PIANI,
+            [COL_LOG_MAIL.DESTINATARI]: recipient,
+            [COL_LOG_MAIL.TESTO]: text
+          });
+        }
         for (const row of rows) {
           if (row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS') {
             row[COL_LOG_DOCS.NOTIFICATO] = '2026-07-28T09:00:00.000Z';
@@ -392,8 +407,63 @@ test('scenario 3 accepts historical-plan lines separated by HTML-to-text newline
   const harness = recordingHarness(
     undefined,
     'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina\nDisponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026\n' +
-      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina\nDisponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'
+      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina\nDisponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026\n' +
+      'PDP_BES — Ricci Luca: E2E_Piano_PDP_BES_Ricci Luca'
   );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'pass' });
+});
+
+test('scenario 3 rejects an email that omits the articulated-partner plan', () => {
+  const harness = recordingHarness(
+    undefined,
+    'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
+      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'fail' });
+});
+
+test('scenario 3 rejects the articulated-partner plan when it appears only in the classico coordinator email', () => {
+  const baseEmail =
+    'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
+    'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026';
+  const scientificoEmail = baseEmail;
+  const classicoEmail = `${baseEmail} PDP_BES — Ricci Luca: E2E_Piano_PDP_BES_Ricci Luca`;
+  expect(scientificoEmail).not.toContain('E2E_Piano_PDP_BES_Ricci Luca');
+  expect(classicoEmail).toContain('E2E_Piano_PDP_BES_Ricci Luca');
+  const harness = recordingHarness(undefined, {
+    'e2edocente3@onlinetest.aldo.local': scientificoEmail,
+    'e2edocente4@onlinetest.aldo.local': classicoEmail
+  });
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'fail' });
+});
+
+test('scenario 3 accepts the articulated-partner plan only in the scientifico coordinator email', () => {
+  const baseEmail =
+    'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
+    'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026';
+  const scientificoEmail = `${baseEmail} PDP_BES — Ricci Luca: E2E_Piano_PDP_BES_Ricci Luca`;
+  const classicoEmail = baseEmail;
+  expect(scientificoEmail).toContain('E2E_Piano_PDP_BES_Ricci Luca');
+  expect(classicoEmail).not.toContain('E2E_Piano_PDP_BES_Ricci Luca');
+  const harness = recordingHarness(undefined, {
+    'e2edocente3@onlinetest.aldo.local': scientificoEmail,
+    'e2edocente4@onlinetest.aldo.local': classicoEmail
+  });
   const runner = new TestRunner();
 
   registerE2eScenarioChecks(runner, harness.container, sample);
@@ -406,7 +476,8 @@ test('scenario 3 fails when prior-year PEI and PDP_BES history is crossed betwee
   const harness = recordingHarness(
     undefined,
     'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026 ' +
-      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026'
+      'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026 ' +
+      'PDP_BES — Ricci Luca: E2E_Piano_PDP_BES_Ricci Luca'
   );
   const runner = new TestRunner();
 

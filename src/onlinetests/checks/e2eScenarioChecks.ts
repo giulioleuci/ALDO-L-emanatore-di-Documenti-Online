@@ -31,6 +31,8 @@ import {
   CONF_MAIL_STATIC_ALLEGATO,
   PIANO_STUDENTE,
   PIANO_DOPPIO_STUDENTE,
+  PDP_BES_3C,
+  e2eDocenteEmail,
   type E2eSampleDatabase
 } from '../E2eSampleDatabaseBuilder';
 
@@ -279,14 +281,44 @@ export function registerE2eScenarioChecks(
       if (sendResult.sent === 0 || sendResult.errors.length > 0) {
         throw new ValidationError(`Invio piani fallito: ${emailDiagnostics(sendResult)}`);
       }
-      const emailText = db
+      const planEmailsByRecipient = new Map<string, string>();
+      const planMailRows = db
         .table(TABLE.LOG_MAIL)
         .findAll()
-        .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_PIANI)
-        .map((row) => String(row[COL_LOG_MAIL.TESTO] ?? ''))
+        .filter((row) => row[COL_LOG_MAIL.PATTERN] === CONF_MAIL_PIANI);
+      for (const row of planMailRows) {
+        const recipient = String(row[COL_LOG_MAIL.DESTINATARI] ?? '').trim();
+        if (recipient === '') {
+          throw new ValidationError('Invio piani: LOG_MAIL.DESTINATARI mancante');
+        }
+        const text = String(row[COL_LOG_MAIL.TESTO] ?? '');
+        planEmailsByRecipient.set(
+          recipient,
+          `${planEmailsByRecipient.get(recipient) ?? ''}\n${text}`
+        );
+      }
+      const emailText = Array.from(planEmailsByRecipient.values())
         .join('\n')
         .replace(/\s+/g, ' ')
         .trim();
+      const partnerPlan = rowsAfterFirstRun.find(
+        (row) =>
+          row[COL_LOG_DOCS.UTENTI] === PDP_BES_3C &&
+          row[COL_LOG_DOCS.SOTTOTIPO] === TipoPiano.PDP_BES
+      );
+      const partnerPlanName = String(partnerPlan?.[COL_LOG_DOCS.NOME] ?? '').trim();
+      const scientificoEmail = planEmailsByRecipient.get(e2eDocenteEmail(3)) ?? '';
+      const classicoEmail = planEmailsByRecipient.get(e2eDocenteEmail(4)) ?? '';
+      if (partnerPlanName === '' || !scientificoEmail.includes(partnerPlanName)) {
+        throw new ValidationError(
+          'Invio piani: il piano PDP_BES della classe articolata 3C-S non è presente nell\'email del coordinatore scientifico'
+        );
+      }
+      if (classicoEmail.includes(partnerPlanName)) {
+        throw new ValidationError(
+          'Invio piani: il piano PDP_BES della classe articolata 3C-S è presente nell\'email del coordinatore classico'
+        );
+      }
       const correctHistory = [
         'PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PEI_2025_2026',
         'PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell\'anno precedente: E2E_Piano_PDP_BES_2025_2026'

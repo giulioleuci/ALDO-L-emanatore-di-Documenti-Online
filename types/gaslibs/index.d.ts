@@ -65,10 +65,8 @@ declare global {
   // ContextProvider.provide(cdu, params, options): void), instead of the
   // library's original `assemble()` flat, provider-name-keyed merge — which
   // remains available/unchanged for consumers that want that shape. Reused
-  // as-is: ProviderRegistry (Registry Pattern), InterceptorRegistry +
-  // ContextInterceptor middleware (SwapAndEnrichInterceptor, generalized with
-  // `targetPaths` for per-item nested-array swaps — see below), and the
-  // shared ExpressionEngine for conditions.
+  // as-is: ProviderRegistry, InterceptorRegistry, ContextInterceptor middleware,
+  // and the shared ExpressionEngine for conditions.
   interface LibContextProvider {
     provide(...args: unknown[]): unknown;
   }
@@ -175,33 +173,65 @@ declare global {
       options?: object
     ): T;
   }
-  /**
-   * Entity substitution interceptor. Default (atomic) mode swaps the WHOLE
-   * `data` payload via `substitutionLookup(data, context, options) => substitute|null`.
-   * `config.targetPaths` mode instead walks one or more nested arrays (via
-   * the base class's `_forEachAt`) and calls `substitutionLookup(item,
-   * context, options)` once PER ITEM, expecting back `null` (no swap) or a
-   * `_forEachAt` 3-way outcome descriptor — this is what SGSA uses to make an
-   * independent per-docente decision under the GestioneSupplenti 3-way rule
-   * across `focus.classe.consiglioDiClasse`/`focus.alunno.consiglioDiClasseFiltrato`,
-   * with the rule itself read from `options` inside the callback (NOT via the
-   * library's own boolean `optionFlag`/`_shouldIntercept` gate, which is
-   * skipped automatically once `targetPaths` is configured — see the
-   * library's JSDoc for why a single global boolean can't express an N-way
-   * per-item rule).
-   */
-  class SwapAndEnrichInterceptor extends ContextInterceptor {
+  type ProjectionOperation =
+    | { type: 'filter'; expression: string }
+    | { type: 'map'; fields: Record<string, { from?: string; value?: unknown }> }
+    | { type: 'flatMap'; path?: string; strategy?: string; mergeParent?: boolean }
+    | {
+        type: 'groupBy';
+        keys: string[];
+        aggregates: Record<
+          string,
+          { type: 'count' | 'collect' | 'collectDistinct' | 'first' | 'last' | 'sum'; path?: string }
+        >;
+      }
+    | { type: 'distinctBy'; keys: string[] }
+    | { type: 'sortBy'; keys: Array<{ path: string; direction: 'ASC' | 'DESC' }> }
+    | { type: 'prepend' | 'append'; value: unknown; when?: string }
+    | { type: 'strategy'; name: string; config?: Record<string, unknown> };
+  interface ProjectionTraceEntry {
+    index: number;
+    type: ProjectionOperation['type'];
+    inputCount: number;
+    outputCount: number;
+  }
+  type ProjectionStrategy = (
+    value: unknown,
+    operation: ProjectionOperation,
+    runtime: Record<string, unknown>
+  ) => unknown[];
+  class ProjectionRegistry {
+    constructor();
+    register(name: string, strategy: ProjectionStrategy): this;
+    get(name: string): ProjectionStrategy | null;
+    has(name: string): boolean;
+  }
+  class CollectionProjector {
+    constructor(options?: {
+      registry?: ProjectionRegistry;
+      expressionEngine?: { evaluate(expression: string, context?: Record<string, unknown>): unknown } | null;
+      logger?: LoggerService | null;
+    });
+    project(
+      inputArray: unknown[],
+      operations: ProjectionOperation[],
+      runtimeContext?: Record<string, unknown>
+    ): { value: unknown[]; trace: ProjectionTraceEntry[] };
+  }
+  class CollectionProjectionInterceptor extends ContextInterceptor {
     constructor(
       logger: LoggerService,
-      substitutionLookup: (item: unknown, context: unknown, options: unknown) => unknown,
-      config?: {
-        originalPropertyName?: string;
-        metadataFlags?: Record<string, unknown>;
-        targetProviders?: string[] | null;
-        optionFlag?: string;
-        targetPaths?: string[] | null;
+      projector: CollectionProjector,
+      config: {
+        targetProviders: string[];
+        targetPaths: string[];
+        operations: ProjectionOperation[];
+        optionFlag?: string | null;
       }
     );
+  }
+  class CollectionProjectionError extends Error {
+    constructor(message: string, context?: { operationIndex?: number | null; targetPath?: string | null } & Record<string, unknown>);
   }
 
   // --- SheetDBLib (L2): ORM entry point (tables, save, ACID-like transactions) ---
@@ -524,9 +554,7 @@ declare global {
     clear(): void;
   }
 
-  // --- RoleResolutionLib: routing (ref REPORT_GLF.md B4) and priority-chain
-  // resolution (ref B3), used by RisolutoreRuoliService/CattedraResolver
-  // instead of hand-rolled policy switches / source-priority if-chains.
+  // --- RoleResolutionLib: routing and effective-assignment resolution.
   type RoutingPolicyValue =
     | 'DELEGATE_ONLY'
     | 'PRINCIPAL_ONLY'
@@ -574,16 +602,183 @@ declare global {
       routingPolicy?: RoutingPolicyValue | null;
     }): RoutingResult;
   }
-  /**
-   * Tries an ordered list of resolver functions, returning the first
-   * non-null/non-undefined result — for priority-ordered lookups over
-   * heterogeneous data sources (e.g. SGSA's SUPPLENZE -> VARIAZIONI_CATTEDRA ->
-   * CLASSI hierarchy), distinct from RoleResolver's transitive delegation
-   * crawl over one homogeneous RoleRegistry.
-   */
-  class PriorityChainResolver<TArgs extends unknown[], TResult> {
-    constructor(resolvers: Array<(...args: TArgs) => TResult | null | undefined>);
-    resolve(...args: TArgs): TResult | null;
+  type AssignmentDimension = string | number | boolean | null;
+  type AssignmentDimensions = Record<string, AssignmentDimension>;
+  interface ResolutionTraceEntry {
+    stage: 'BASE' | 'OVERRIDE' | 'DELEGATION' | 'ROUTING';
+    decision: 'CONSIDERED' | 'REJECTED' | 'SELECTED' | 'APPLIED';
+    candidateId: string | null;
+    actorId: string | null;
+    reason: string;
+    metadata: Record<string, unknown>;
+  }
+  class AssignmentSlot {
+    constructor(options: { dimensions: AssignmentDimensions });
+    readonly dimensions: Readonly<AssignmentDimensions>;
+    readonly key: string;
+    get(name: string): AssignmentDimension;
+    matches(scopeDimensions?: Record<string, AssignmentDimension | '*'>): boolean;
+    toJSON(): { dimensions: AssignmentDimensions };
+  }
+  class AssignmentCandidate {
+    constructor(options: {
+      id: string;
+      actorId: string;
+      slot: AssignmentSlot | { dimensions: AssignmentDimensions };
+      validFrom?: Date | string | number | null;
+      validTo?: Date | string | number | null;
+      source?: string;
+      priority?: number;
+      metadata?: Record<string, unknown>;
+    });
+    readonly id: string;
+    readonly actorId: string;
+    readonly slot: AssignmentSlot;
+    readonly validFrom: Date | null;
+    readonly validTo: Date | null;
+    readonly source: string;
+    readonly priority: number;
+    readonly metadata: Readonly<Record<string, unknown>>;
+    isValidAt(date?: Date | string | number): boolean;
+    toJSON(): Record<string, unknown>;
+  }
+  class AssignmentOverride {
+    constructor(options: {
+      id: string;
+      previousActorId: string;
+      nextActorId: string;
+      slotScope: AssignmentDimensions;
+      effectiveFrom: Date | string | number;
+      source?: string;
+      metadata?: Record<string, unknown>;
+    });
+    readonly id: string;
+    readonly previousActorId: string;
+    readonly nextActorId: string;
+    readonly slotScope: Readonly<AssignmentDimensions>;
+    readonly effectiveFrom: Date;
+    matches(candidate: AssignmentCandidate, date?: Date | string | number): boolean;
+    toJSON(): Record<string, unknown>;
+  }
+  class ResolutionPolicy {
+    constructor(options?: {
+      tieBehavior?: 'THROW' | 'FIRST';
+      missingActorBehavior?: 'THROW' | 'NULL';
+      maxDelegationDepth?: number | null;
+      routingPolicy?: RoutingPolicyValue;
+      resultIdentity?: string[];
+    });
+    readonly tieBehavior: 'THROW' | 'FIRST';
+    readonly missingActorBehavior: 'THROW' | 'NULL';
+    readonly maxDelegationDepth: number | null;
+    readonly routingPolicy: RoutingPolicyValue;
+    readonly resultIdentity: readonly string[];
+    toJSON(): {
+      tieBehavior: 'THROW' | 'FIRST';
+      missingActorBehavior: 'THROW' | 'NULL';
+      maxDelegationDepth: number | null;
+      routingPolicy: RoutingPolicyValue;
+      resultIdentity: string[];
+    };
+  }
+  class ResolutionTrace {
+    constructor(entries?: ResolutionTraceEntry[]);
+    readonly entries: readonly ResolutionTraceEntry[];
+    append(entry: ResolutionTraceEntry): ResolutionTrace;
+    toJSON(): ResolutionTraceEntry[];
+  }
+  class EffectiveAssignmentResult {
+    constructor(options: {
+      slot: AssignmentSlot;
+      baseActor?: Actor | null;
+      permanentActor?: Actor | null;
+      effectiveActor?: Actor | null;
+      delegationChain?: { toJSON(): unknown; isEmpty(): boolean };
+      routing?: RoutingResult | null;
+      trace?: ResolutionTrace;
+      metadata?: Record<string, unknown>;
+    });
+    readonly slot: AssignmentSlot;
+    readonly baseActor: Actor | null;
+    readonly permanentActor: Actor | null;
+    readonly effectiveActor: Actor | null;
+    readonly routing: RoutingResult | null;
+    readonly trace: ResolutionTrace;
+    toJSON(): Record<string, unknown>;
+  }
+  abstract class AssignmentSource {
+    getAssignments(context: Record<string, unknown>, asOfDate: Date): AssignmentCandidate[];
+  }
+  abstract class OverrideSource {
+    getOverrides(context: Record<string, unknown>, asOfDate: Date): AssignmentOverride[];
+  }
+  abstract class ActorSource {
+    getActor(actorId: string): Actor | null;
+  }
+  type SourceRows = ReadonlyArray<Record<string, unknown>> | ((context: Record<string, unknown>) => ReadonlyArray<Record<string, unknown>>);
+  type ValueMapping = unknown | { from: string; parse?: 'csv' };
+  class WideRowAssignmentSource extends AssignmentSource {
+    constructor(options?: {
+      rows?: SourceRows;
+      rowIdentityPath?: string;
+      actorSource?: ActorSource;
+      columns?: Array<{
+        name: string;
+        slotDimensions?: Record<string, ValueMapping>;
+        contextDimensions?: Record<string, ValueMapping>;
+      }>;
+      csv?: boolean;
+    });
+    getAssignments(context: Record<string, unknown>, asOfDate: Date): AssignmentCandidate[];
+  }
+  class MappedOverrideSource extends OverrideSource {
+    constructor(options?: { rows?: SourceRows; mapping?: Record<string, ValueMapping | Record<string, ValueMapping>> });
+    getOverrides(context: Record<string, unknown>, asOfDate: Date): AssignmentOverride[];
+  }
+  class MappedDelegationSource {
+    constructor(options?: { rows?: SourceRows; mapping?: Record<string, ValueMapping | Record<string, ValueMapping>> });
+    getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[];
+  }
+  class CompositeAssignmentSource extends AssignmentSource {
+    constructor(options?: {
+      sources?: AssignmentSource[];
+      identity?: string[];
+      mergeMetadata?: (left: Record<string, unknown>, right: Record<string, unknown>) => Record<string, unknown>;
+    });
+    getAssignments(context: Record<string, unknown>, asOfDate: Date): AssignmentCandidate[];
+  }
+  class EffectiveAssignmentResolver {
+    constructor(options: {
+      actorSource: ActorSource;
+      assignmentSource: AssignmentSource;
+      overrideSource: OverrideSource;
+      delegationSource: MappedDelegationSource | { getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[] } | InMemoryDelegationSource;
+      policy?: ResolutionPolicy;
+      routingResolver?: RoutingResolver;
+    });
+    resolve(options: {
+      context?: Record<string, unknown>;
+      asOfDate: Date;
+      routingPolicy?: RoutingPolicyValue | null;
+    }): EffectiveAssignmentResult[];
+  }
+  class MalformedAssignmentSlotError extends Error {
+    constructor(message: string, context?: Record<string, unknown>);
+  }
+  class DuplicateAssignmentSlotError extends Error {
+    constructor(slotKey: string, context?: Record<string, unknown>);
+  }
+  class InconsistentAssignmentOverrideError extends Error {
+    constructor(message: string, context?: Record<string, unknown>);
+  }
+  class AmbiguousAssignmentOverrideError extends Error {
+    constructor(candidateId: string, overrideIds?: string[], context?: Record<string, unknown>);
+  }
+  class AssignmentActorNotFoundError extends Error {
+    constructor(actorId: string, context?: Record<string, unknown>);
+  }
+  class OverlappingDelegationError extends Error {
+    constructor(actorId: string, context?: Record<string, unknown>);
   }
 
   // --- JobRunnerLib (L3): long-running jobs via generator functions ---

@@ -2110,6 +2110,9 @@ __webpack_require__.d(PipelineFramework_namespaceObject, {
 var ContextEngine_namespaceObject_0 = {};
 __webpack_require__.r(ContextEngine_namespaceObject_0);
 __webpack_require__.d(ContextEngine_namespaceObject_0, {
+  CollectionProjectionError: () => (CollectionProjectionError),
+  CollectionProjectionInterceptor: () => (CollectionProjectionInterceptor),
+  CollectionProjector: () => (CollectionProjector),
   ContextAssembler: () => (ContextAssembler),
   ContextEngineError: () => (ContextEngineError),
   ContextInterceptor: () => (ContextInterceptor),
@@ -2118,12 +2121,12 @@ __webpack_require__.d(ContextEngine_namespaceObject_0, {
   DependencyResolutionError: () => (DependencyResolutionError),
   DependencyResolver: () => (DependencyResolver),
   InterceptorRegistry: () => (InterceptorRegistry),
+  ProjectionRegistry: () => (ProjectionRegistry),
   ProviderExecutionError: () => (ProviderExecutionError),
   ProviderNotFoundError: () => (ProviderNotFoundError),
   ProviderRegistry: () => (ProviderRegistry),
   RecipeParser: () => (RecipeParser),
   RecipeValidationError: () => (RecipeValidationError),
-  SwapAndEnrichInterceptor: () => (SwapAndEnrichInterceptor),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -2131,6 +2134,9 @@ __webpack_require__.d(ContextEngine_namespaceObject_0, {
 var ContextEngine_namespaceObject = {};
 __webpack_require__.r(ContextEngine_namespaceObject);
 __webpack_require__.d(ContextEngine_namespaceObject, {
+  CollectionProjectionError: () => (CollectionProjectionError),
+  CollectionProjectionInterceptor: () => (CollectionProjectionInterceptor),
+  CollectionProjector: () => (CollectionProjector),
   ContextAssembler: () => (ContextAssembler),
   ContextEngineError: () => (ContextEngineError),
   ContextInterceptor: () => (ContextInterceptor),
@@ -2139,12 +2145,12 @@ __webpack_require__.d(ContextEngine_namespaceObject, {
   DependencyResolutionError: () => (DependencyResolutionError),
   DependencyResolver: () => (DependencyResolver),
   InterceptorRegistry: () => (InterceptorRegistry),
+  ProjectionRegistry: () => (ProjectionRegistry),
   ProviderExecutionError: () => (ProviderExecutionError),
   ProviderNotFoundError: () => (ProviderNotFoundError),
   ProviderRegistry: () => (ProviderRegistry),
   RecipeParser: () => (RecipeParser),
   RecipeValidationError: () => (RecipeValidationError),
-  SwapAndEnrichInterceptor: () => (SwapAndEnrichInterceptor),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -2284,22 +2290,39 @@ __webpack_require__.r(RoleResolutionLib_namespaceObject_0);
 __webpack_require__.d(RoleResolutionLib_namespaceObject_0, {
   Actor: () => (Actor),
   ActorNotFoundError: () => (ActorNotFoundError),
+  ActorSource: () => (ActorSource),
   ActorType: () => (ActorType),
+  AmbiguousAssignmentOverrideError: () => (AmbiguousAssignmentOverrideError),
   Assignment: () => (Assignment),
+  AssignmentActorNotFoundError: () => (AssignmentActorNotFoundError),
+  AssignmentCandidate: () => (AssignmentCandidate),
+  AssignmentOverride: () => (AssignmentOverride),
+  AssignmentSlot: () => (AssignmentSlot),
   AssignmentSource: () => (AssignmentSource),
   CircularDelegationError: () => (CircularDelegationError),
+  CompositeAssignmentSource: () => (CompositeAssignmentSource),
   Delegation: () => (Delegation_Delegation),
   DelegationChain: () => (DelegationChain),
   DelegationDepthExceededError: () => (DelegationDepthExceededError),
   DelegationSource: () => (DelegationSource),
   DelegationValidator: () => (DelegationValidator),
+  DuplicateAssignmentSlotError: () => (DuplicateAssignmentSlotError),
+  EffectiveAssignmentResolver: () => (EffectiveAssignmentResolver),
+  EffectiveAssignmentResult: () => (EffectiveAssignmentResult),
   InMemoryAssignmentSource: () => (InMemoryAssignmentSource),
   InMemoryDelegationSource: () => (InMemoryDelegationSource),
+  InconsistentAssignmentOverrideError: () => (InconsistentAssignmentOverrideError),
   InvalidScopeError: () => (InvalidScopeError),
+  MalformedAssignmentSlotError: () => (MalformedAssignmentSlotError),
+  MappedDelegationSource: () => (MappedDelegationSource),
+  MappedOverrideSource: () => (MappedOverrideSource),
   NoActorFoundError: () => (NoActorFoundError),
-  PriorityChainResolver: () => (PriorityChainResolver),
+  OverlappingDelegationError: () => (OverlappingDelegationError),
+  OverrideSource: () => (OverrideSource),
+  ResolutionPolicy: () => (ResolutionPolicy),
   ResolutionResult: () => (ResolutionResult),
   ResolutionStrategy: () => (ResolutionStrategy),
+  ResolutionTrace: () => (ResolutionTrace),
   Role: () => (Role),
   RoleNotFoundError: () => (RoleNotFoundError),
   RoleRegistry: () => (RoleRegistry),
@@ -2311,6 +2334,7 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject_0, {
   RoutingResult: () => (RoutingResult),
   Scope: () => (Scope),
   ScopeType: () => (ScopeType),
+  WideRowAssignmentSource: () => (WideRowAssignmentSource),
   getActorTypes: () => (getActorTypes),
   getResolutionStrategies: () => (getResolutionStrategies),
   getRoutingPolicies: () => (getRoutingPolicies),
@@ -2328,22 +2352,39 @@ __webpack_require__.r(RoleResolutionLib_namespaceObject);
 __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   Actor: () => (Actor),
   ActorNotFoundError: () => (ActorNotFoundError),
+  ActorSource: () => (ActorSource),
   ActorType: () => (ActorType),
+  AmbiguousAssignmentOverrideError: () => (AmbiguousAssignmentOverrideError),
   Assignment: () => (Assignment),
+  AssignmentActorNotFoundError: () => (AssignmentActorNotFoundError),
+  AssignmentCandidate: () => (AssignmentCandidate),
+  AssignmentOverride: () => (AssignmentOverride),
+  AssignmentSlot: () => (AssignmentSlot),
   AssignmentSource: () => (AssignmentSource),
   CircularDelegationError: () => (CircularDelegationError),
+  CompositeAssignmentSource: () => (CompositeAssignmentSource),
   Delegation: () => (Delegation_Delegation),
   DelegationChain: () => (DelegationChain),
   DelegationDepthExceededError: () => (DelegationDepthExceededError),
   DelegationSource: () => (DelegationSource),
   DelegationValidator: () => (DelegationValidator),
+  DuplicateAssignmentSlotError: () => (DuplicateAssignmentSlotError),
+  EffectiveAssignmentResolver: () => (EffectiveAssignmentResolver),
+  EffectiveAssignmentResult: () => (EffectiveAssignmentResult),
   InMemoryAssignmentSource: () => (InMemoryAssignmentSource),
   InMemoryDelegationSource: () => (InMemoryDelegationSource),
+  InconsistentAssignmentOverrideError: () => (InconsistentAssignmentOverrideError),
   InvalidScopeError: () => (InvalidScopeError),
+  MalformedAssignmentSlotError: () => (MalformedAssignmentSlotError),
+  MappedDelegationSource: () => (MappedDelegationSource),
+  MappedOverrideSource: () => (MappedOverrideSource),
   NoActorFoundError: () => (NoActorFoundError),
-  PriorityChainResolver: () => (PriorityChainResolver),
+  OverlappingDelegationError: () => (OverlappingDelegationError),
+  OverrideSource: () => (OverrideSource),
+  ResolutionPolicy: () => (ResolutionPolicy),
   ResolutionResult: () => (ResolutionResult),
   ResolutionStrategy: () => (ResolutionStrategy),
+  ResolutionTrace: () => (ResolutionTrace),
   Role: () => (Role),
   RoleNotFoundError: () => (RoleNotFoundError),
   RoleRegistry: () => (RoleRegistry),
@@ -2355,6 +2396,7 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   RoutingResult: () => (RoutingResult),
   Scope: () => (Scope),
   ScopeType: () => (ScopeType),
+  WideRowAssignmentSource: () => (WideRowAssignmentSource),
   getActorTypes: () => (getActorTypes),
   getResolutionStrategies: () => (getResolutionStrategies),
   getRoutingPolicies: () => (getRoutingPolicies),
@@ -61828,6 +61870,23 @@ class DataProvider {
 
 
 
+class CollectionProjectionError extends ContextEngineError {
+  constructor(message, context = {}) {
+    super(message, {
+      operationIndex: context.operationIndex == null ? null : context.operationIndex,
+      targetPath: context.targetPath == null ? null : context.targetPath,
+      ...context
+    });
+    this.name = 'CollectionProjectionError';
+  }
+}
+;
+
+
+
+
+
+
 
 
 
@@ -61938,6 +61997,9 @@ class ContextInterceptor {
       return modifiedData;
     } catch (error) {
       this._logger.error(`[${name}] Interception failed: ${error.message}`);
+      if (error instanceof CollectionProjectionError) {
+        throw error;
+      }
       throw new Error(`Interceptor failed for '${name}': ${error.message}`);
     }
   }
@@ -62220,220 +62282,455 @@ class InterceptorRegistry {
 ;
 
 
+const CollectionProjectionInterceptor_hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 
-
-
-
-
-
-
-
-
-
-class SwapAndEnrichInterceptor extends ContextInterceptor {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  constructor(logger, substitutionLookup, config = {}) {
+class CollectionProjectionInterceptor extends ContextInterceptor {
+  constructor(logger, projector, config = {}) {
     super(logger);
-
-
-    if (typeof substitutionLookup !== 'function') {
-      throw new Error('SwapAndEnrichInterceptor: substitutionLookup is required and must be a function');
+    if (!projector || typeof projector.project !== 'function') {
+      throw new Error('CollectionProjectionInterceptor: projector must provide project()');
     }
-    if (config !== null && typeof config !== 'object') {
-      throw new Error('SwapAndEnrichInterceptor: config must be an object or null');
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+      throw new Error('CollectionProjectionInterceptor: config must be an object');
     }
-
-
-
-
-
-
-    this._substitutionLookup = substitutionLookup;
-
-
-
-
-
-
-    this._originalPropertyName = config.originalPropertyName || 'original';
-
-
-
-
-
-
-    this._metadataFlags = config.metadataFlags || {
-      isSubstitute: true
-    };
-
-
-
-
-
-
-    this._targetProviders = config.targetProviders || null;
-
-
-
-
-
-
-    this._optionFlag = config.optionFlag || 'applyOverrides';
-
-
-
-
-
-
-
-    if (config.targetPaths !== undefined && config.targetPaths !== null) {
-      if (!Array.isArray(config.targetPaths) || config.targetPaths.some(p => typeof p !== 'string')) {
-        throw new Error('SwapAndEnrichInterceptor: config.targetPaths must be an array of strings if provided');
+    ['targetProviders', 'targetPaths', 'operations'].forEach(key => {
+      if (!Array.isArray(config[key])) {
+        throw new Error(`CollectionProjectionInterceptor: config.${key} must be an array`);
       }
+    });
+    if (config.targetProviders.some(name => !name || typeof name !== 'string') || config.targetPaths.some(path => !path || typeof path !== 'string')) {
+      throw new Error('CollectionProjectionInterceptor: target providers and paths must be non-empty strings');
     }
-    this._targetPaths = config.targetPaths || null;
+    if (config.optionFlag !== undefined && config.optionFlag !== null && typeof config.optionFlag !== 'string') {
+      throw new Error('CollectionProjectionInterceptor: optionFlag must be a string or null');
+    }
+    this._projector = projector;
+    this._targetProviders = config.targetProviders.slice();
+    this._targetPaths = config.targetPaths.slice();
+    this._operations = config.operations.slice();
+    this._optionFlag = config.optionFlag || null;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-  _shouldIntercept(name, data, context, options) {
-
-
-
-
-    if (this._targetPaths === null && options[this._optionFlag] !== true) {
-      this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Option flag '${this._optionFlag}' not enabled`);
-      return false;
-    }
-
-
-    if (this._targetProviders !== null && !this._targetProviders.includes(name)) {
-      this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Provider not in target list: ${this._targetProviders.join(', ')}`);
-      return false;
-    }
-    return true;
+  _shouldIntercept(name, _data, _context, options) {
+    const normalizedOptions = options || {};
+    return this._targetProviders.includes(name) && (this._optionFlag === null || normalizedOptions[this._optionFlag] === true);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   _performIntercept(name, data, context, options) {
-    if (this._targetPaths !== null) {
-      return this._performIntercept_targetPaths(name, data, context, options);
-    }
-    try {
-
-      this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Checking for substitution...`);
-      const substituteData = this._substitutionLookup(data, context, options);
-
-
-      if (substituteData == null) {
-        this._logger.debug(`[${name}] SwapAndEnrichInterceptor: No substitution found`);
-        return data;
-      }
-
-
-      this._logger.info(`[${name}] SwapAndEnrichInterceptor: Substitution found, performing swap & enrich`);
-
-
-      const swappedData = {
-        ...substituteData,
-
-        ...this._metadataFlags,
-
-        [this._originalPropertyName]: data 
-      };
-      this._logger.debug(`[${name}] SwapAndEnrichInterceptor: Swapped with original stored in '${this._originalPropertyName}'`);
-      return swappedData;
-    } catch (error) {
-      this._logger.error(`[${name}] SwapAndEnrichInterceptor: Substitution lookup failed: ${error.message}`);
-      throw new Error(`Substitution lookup failed: ${error.message}`);
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  _performIntercept_targetPaths(name, data, context, options) {
-    for (const path of this._targetPaths) {
-      this._forEachAt(data, path, (item, _index, _array) => {
-        try {
-          return this._substitutionLookup(item, context, options);
-        } catch (error) {
-          this._logger.error(`[${name}] SwapAndEnrichInterceptor: Substitution lookup failed for path '${path}': ${error.message}`);
-          throw new Error(`Substitution lookup failed: ${error.message}`);
-        }
+    this._targetPaths.forEach(targetPath => {
+      const target = this._readTarget(data, targetPath);
+      const result = this._projector.project(target, this._operations, {
+        ...(options || {}),
+        providerName: name,
+        context,
+        data,
+        targetPath
       });
-    }
+      this._writeTarget(data, targetPath, result.value);
+      if (this._logger && typeof this._logger.debug === 'function') {
+        this._logger.debug(`[${name}] Collection projection applied to '${targetPath}'`);
+      }
+    });
     return data;
+  }
+  _readTarget(data, path) {
+    let current = data;
+    path.split('.').forEach(part => {
+      if (current === null || current === undefined || typeof current !== 'object' || !CollectionProjectionInterceptor_hasOwn(current, part)) {
+        throw new CollectionProjectionError(`Target path '${path}' does not exist`, {
+          operationIndex: -1,
+          targetPath: path
+        });
+      }
+      current = current[part];
+    });
+    return current;
+  }
+  _writeTarget(data, path, value) {
+    const parts = path.split('.');
+    const last = parts.pop();
+    let current = data;
+    parts.forEach(part => {
+      current = current[part];
+    });
+    current[last] = value;
   }
 }
 ;
+
+
+
+
+
+class ProjectionRegistry {
+  constructor() {
+    this._strategies = new Map();
+  }
+  register(name, strategy) {
+    if (!name || typeof name !== 'string') {
+      throw new CollectionProjectionError('Projection strategy name must be a non-empty string');
+    }
+    if (typeof strategy !== 'function') {
+      throw new CollectionProjectionError(`Projection strategy '${name}' must be a function`);
+    }
+    if (this._strategies.has(name)) {
+      throw new CollectionProjectionError(`Projection strategy '${name}' is already registered`);
+    }
+    this._strategies.set(name, strategy);
+    return this;
+  }
+  get(name) {
+    return this._strategies.get(name) || null;
+  }
+  has(name) {
+    return this._strategies.has(name);
+  }
+}
+;
+
+
+const CollectionProjector_hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+function copy(value) {
+  if (Array.isArray(value)) {
+    return value.map(copy);
+  }
+  if (value instanceof Date) {
+    return new Date(value.getTime());
+  }
+  if (value && typeof value === 'object') {
+    const clone = {};
+    Object.keys(value).forEach(key => {
+      clone[key] = copy(value[key]);
+    });
+    return clone;
+  }
+  return value;
+}
+function keyFor(values) {
+  return JSON.stringify(values.map(value => [typeof value, value]));
+}
+
+
+
+
+class CollectionProjector {
+  constructor({
+    registry = new ProjectionRegistry(),
+    expressionEngine = null,
+    logger = null
+  } = {}) {
+    if (!registry || typeof registry.get !== 'function') {
+      throw new Error('CollectionProjector: registry must provide get(name)');
+    }
+    if (expressionEngine !== null && typeof expressionEngine.evaluate !== 'function') {
+      throw new Error('CollectionProjector: expressionEngine must provide evaluate(expression, context)');
+    }
+    this._registry = registry;
+    this._expressionEngine = expressionEngine;
+    this._logger = logger;
+  }
+  project(inputArray, operations, runtimeContext = {}) {
+    const targetPath = runtimeContext && runtimeContext.targetPath ? runtimeContext.targetPath : null;
+    if (!Array.isArray(inputArray)) {
+      throw this._error('Projection input must be an array', -1, targetPath);
+    }
+    if (!Array.isArray(operations)) {
+      throw this._error('Projection operations must be an array', -1, targetPath);
+    }
+    let value = copy(inputArray);
+    const trace = [];
+    operations.forEach((operation, index) => {
+      const inputCount = value.length;
+      try {
+        value = this._apply(value, operation, runtimeContext || {}, index, targetPath);
+      } catch (error) {
+        if (error instanceof CollectionProjectionError) {
+          throw error;
+        }
+        throw this._error(error.message, index, targetPath, error);
+      }
+      trace.push({
+        index,
+        type: operation && operation.type,
+        inputCount,
+        outputCount: value.length
+      });
+    });
+    return {
+      value: copy(value),
+      trace
+    };
+  }
+  _apply(value, operation, runtime, index, targetPath) {
+    if (!operation || typeof operation !== 'object' || Array.isArray(operation)) {
+      throw this._error('Projection operation must be an object', index, targetPath);
+    }
+    switch (operation.type) {
+      case 'filter':
+        return this._filter(value, operation, runtime, index, targetPath);
+      case 'map':
+        return this._map(value, operation, index, targetPath);
+      case 'flatMap':
+        return this._flatMap(value, operation, runtime, index, targetPath);
+      case 'groupBy':
+        return this._groupBy(value, operation, index, targetPath);
+      case 'distinctBy':
+        return this._distinctBy(value, operation, index, targetPath);
+      case 'sortBy':
+        return this._sortBy(value, operation, index, targetPath);
+      case 'prepend':
+      case 'append':
+        return this._insert(value, operation, runtime, index, targetPath);
+      case 'strategy':
+        return this._strategy(value, operation, runtime, index, targetPath);
+      default:
+        throw this._error(`Unknown projection operation '${operation.type}'`, index, targetPath);
+    }
+  }
+  _filter(value, operation, runtime, index, targetPath) {
+    if (!operation.expression || typeof operation.expression !== 'string') {
+      throw this._error('filter.expression must be a non-empty string', index, targetPath);
+    }
+    return value.filter((item, itemIndex) => this._evaluate(operation.expression, this._itemRuntime(runtime, item, itemIndex), index, targetPath));
+  }
+  _map(value, operation, index, targetPath) {
+    if (!operation.fields || typeof operation.fields !== 'object' || Array.isArray(operation.fields)) {
+      throw this._error('map.fields must be an object', index, targetPath);
+    }
+    return value.map(item => {
+      const mapped = {};
+      Object.keys(operation.fields).forEach(field => {
+        const config = operation.fields[field];
+        if (!config || typeof config !== 'object' || Array.isArray(config)) {
+          throw this._error(`map.fields.${field} must be an object`, index, targetPath);
+        }
+        if (typeof config.from === 'string') {
+          mapped[field] = copy(this._read(item, config.from, index, targetPath));
+        } else if (CollectionProjector_hasOwn(config, 'value')) {
+          mapped[field] = copy(config.value);
+        } else {
+          throw this._error(`map.fields.${field} requires 'from' or 'value'`, index, targetPath);
+        }
+      });
+      return mapped;
+    });
+  }
+  _flatMap(value, operation, runtime, index, targetPath) {
+    if (!operation.path && !operation.strategy) {
+      throw this._error('flatMap requires a path or strategy', index, targetPath);
+    }
+    const projected = [];
+    value.forEach((parent, itemIndex) => {
+      const source = operation.path ? this._read(parent, operation.path, index, targetPath) : copy(parent);
+      const nested = operation.strategy ? this._runStrategy(operation.strategy, source, operation, this._itemRuntime(runtime, parent, itemIndex), index, targetPath) : source;
+      if (!Array.isArray(nested)) {
+        throw this._error('flatMap source must resolve to an array', index, targetPath);
+      }
+      nested.forEach(child => {
+        if (operation.mergeParent) {
+          if (!parent || typeof parent !== 'object' || Array.isArray(parent) || !child || typeof child !== 'object' || Array.isArray(child)) {
+            throw this._error('flatMap.mergeParent requires object parent and child values', index, targetPath);
+          }
+          projected.push({
+            ...copy(parent),
+            ...copy(child)
+          });
+        } else {
+          projected.push(copy(child));
+        }
+      });
+    });
+    return projected;
+  }
+  _groupBy(value, operation, index, targetPath) {
+    const keys = this._keys(operation.keys, 'groupBy.keys', index, targetPath);
+    if (!operation.aggregates || typeof operation.aggregates !== 'object' || Array.isArray(operation.aggregates)) {
+      throw this._error('groupBy.aggregates must be an object', index, targetPath);
+    }
+    const groups = new Map();
+    value.forEach(item => {
+      const keyValues = keys.map(path => this._read(item, path, index, targetPath));
+      const groupKey = keyFor(keyValues);
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          keyValues,
+          items: []
+        });
+      }
+      groups.get(groupKey).items.push(item);
+    });
+    return Array.from(groups.values()).map(group => {
+      const result = {};
+      keys.forEach((path, keyIndex) => {
+        result[path] = copy(group.keyValues[keyIndex]);
+      });
+      Object.keys(operation.aggregates).forEach(name => {
+        result[name] = this._aggregate(group.items, operation.aggregates[name], index, targetPath);
+      });
+      return result;
+    });
+  }
+  _aggregate(items, config, index, targetPath) {
+    if (!config || typeof config !== 'object' || Array.isArray(config) || typeof config.type !== 'string') {
+      throw this._error('Invalid aggregate configuration', index, targetPath);
+    }
+    const needsPath = ['collect', 'collectDistinct', 'first', 'last', 'sum'].includes(config.type);
+    if (needsPath && (!config.path || typeof config.path !== 'string')) {
+      throw this._error(`Aggregate '${config.type}' requires a path`, index, targetPath);
+    }
+    const values = needsPath ? items.map(item => this._read(item, config.path, index, targetPath)) : [];
+    switch (config.type) {
+      case 'count':
+        return items.length;
+      case 'collect':
+        return values.map(copy);
+      case 'collectDistinct':
+        {
+          const seen = new Set();
+          return values.filter(item => {
+            const key = keyFor([item]);
+            if (seen.has(key)) {
+              return false;
+            }
+            seen.add(key);
+            return true;
+          }).map(copy);
+        }
+      case 'first':
+        return values.length ? copy(values[0]) : null;
+      case 'last':
+        return values.length ? copy(values[values.length - 1]) : null;
+      case 'sum':
+        if (values.some(item => typeof item !== 'number')) {
+          throw this._error('sum aggregate requires numeric values', index, targetPath);
+        }
+        return values.reduce((total, item) => total + item, 0);
+      default:
+        throw this._error(`Unsupported aggregate type '${config.type}'`, index, targetPath);
+    }
+  }
+  _distinctBy(value, operation, index, targetPath) {
+    const keys = this._keys(operation.keys, 'distinctBy.keys', index, targetPath);
+    const seen = new Set();
+    return value.filter(item => {
+      const key = keyFor(keys.map(path => this._read(item, path, index, targetPath)));
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    }).map(copy);
+  }
+  _sortBy(value, operation, index, targetPath) {
+    if (!Array.isArray(operation.keys) || operation.keys.length === 0) {
+      throw this._error('sortBy.keys must be a non-empty array', index, targetPath);
+    }
+    const keys = operation.keys.map(config => {
+      if (!config || typeof config.path !== 'string' || !['ASC', 'DESC'].includes(config.direction)) {
+        throw this._error('sortBy keys require path and ASC or DESC direction', index, targetPath);
+      }
+      return config;
+    });
+    return value.map((item, itemIndex) => ({
+      item,
+      itemIndex
+    })).sort((left, right) => {
+      for (const key of keys) {
+        const leftValue = this._read(left.item, key.path, index, targetPath);
+        const rightValue = this._read(right.item, key.path, index, targetPath);
+        if (leftValue === rightValue) {
+          continue;
+        }
+        const comparison = leftValue < rightValue ? -1 : 1;
+        return key.direction === 'ASC' ? comparison : -comparison;
+      }
+      return left.itemIndex - right.itemIndex;
+    }).map(({
+      item
+    }) => copy(item));
+  }
+  _insert(value, operation, runtime, index, targetPath) {
+    if (!CollectionProjector_hasOwn(operation, 'value')) {
+      throw this._error(`${operation.type}.value is required`, index, targetPath);
+    }
+    if (CollectionProjector_hasOwn(operation, 'when')) {
+      if (typeof operation.when !== 'string' || operation.when.trim() === '') {
+        throw this._error(`${operation.type}.when must be a non-empty string`, index, targetPath);
+      }
+      if (!this._evaluate(operation.when, runtime, index, targetPath)) {
+        return value.map(copy);
+      }
+    }
+    const inserted = copy(operation.value);
+    return operation.type === 'prepend' ? [inserted, ...value.map(copy)] : [...value.map(copy), inserted];
+  }
+  _strategy(value, operation, runtime, index, targetPath) {
+    const result = this._runStrategy(operation.name, value, operation, runtime, index, targetPath);
+    if (!Array.isArray(result)) {
+      throw this._error(`Strategy '${operation.name}' must return an array`, index, targetPath);
+    }
+    return result.map(copy);
+  }
+  _runStrategy(name, value, operation, runtime, index, targetPath) {
+    if (!name || typeof name !== 'string') {
+      throw this._error('Strategy name must be a non-empty string', index, targetPath);
+    }
+    const strategy = this._registry.get(name);
+    if (!strategy) {
+      throw this._error(`Unknown projection strategy '${name}'`, index, targetPath);
+    }
+    const result = strategy(copy(value), copy(operation), runtime);
+    return copy(result);
+  }
+  _evaluate(expression, context, index, targetPath) {
+    if (!this._expressionEngine) {
+      throw this._error('An expressionEngine is required for expressions', index, targetPath);
+    }
+    try {
+      return this._expressionEngine.evaluate(expression, context) === true;
+    } catch (error) {
+      throw this._error(`Expression evaluation failed: ${error.message}`, index, targetPath, error);
+    }
+  }
+  _itemRuntime(runtime, item, index) {
+    return {
+      ...(runtime && typeof runtime === 'object' ? runtime : {}),
+      ...(item && typeof item === 'object' && !Array.isArray(item) ? item : {}),
+      item: copy(item),
+      value: copy(item),
+      index
+    };
+  }
+  _keys(keys, label, index, targetPath) {
+    if (!Array.isArray(keys) || keys.length === 0 || keys.some(path => !path || typeof path !== 'string')) {
+      throw this._error(`${label} must be a non-empty array of paths`, index, targetPath);
+    }
+    return keys;
+  }
+  _read(value, path, index, targetPath) {
+    if (!path || typeof path !== 'string' || path.split('.').some(part => !part)) {
+      throw this._error(`Invalid path '${path}'`, index, targetPath);
+    }
+    let current = value;
+    path.split('.').forEach(part => {
+      if (current === null || current === undefined || typeof current !== 'object' || !CollectionProjector_hasOwn(current, part)) {
+        throw this._error(`Path '${path}' does not exist`, index, targetPath);
+      }
+      current = current[part];
+    });
+    return current;
+  }
+  _error(message, operationIndex, targetPath, originalError = null) {
+    return new CollectionProjectionError(message, {
+      operationIndex,
+      targetPath,
+      originalError
+    });
+  }
+}
+;
+
+
+
 
 
 
@@ -70785,7 +71082,8 @@ function parseDate(value) {
     return null;
   }
   if (value instanceof Date) {
-    return new Date(value.getTime());
+    const copy = new Date(value.getTime());
+    return isNaN(copy.getTime()) ? null : copy;
   }
   if (typeof value === 'string') {
     const parsed = new Date(value);
@@ -71282,6 +71580,486 @@ class ResolutionResult {
     const delegationInfo = this.isDelegated() ? ` (delegated from ${((_this$principalActor2 = this.principalActor) === null || _this$principalActor2 === void 0 ? void 0 : _this$principalActor2.displayName) || ((_this$principalActor3 = this.principalActor) === null || _this$principalActor3 === void 0 ? void 0 : _this$principalActor3.id)})` : '';
     const fallbackInfo = this.fallbackUsed ? ` [fallback: ${this.fallbackRoleId}]` : '';
     return `ResolutionResult[${((_this$requestedRole3 = this.requestedRole) === null || _this$requestedRole3 === void 0 ? void 0 : _this$requestedRole3.id) || 'unknown'}] -> ${((_this$effectiveActor2 = this.effectiveActor) === null || _this$effectiveActor2 === void 0 ? void 0 : _this$effectiveActor2.displayName) || ((_this$effectiveActor3 = this.effectiveActor) === null || _this$effectiveActor3 === void 0 ? void 0 : _this$effectiveActor3.id)}${delegationInfo}${fallbackInfo}`;
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+class RoleResolutionError extends BaseError {
+
+
+
+
+
+
+  constructor(message, context = {}, originalError = null) {
+    super(message, context, originalError);
+    this.name = 'RoleResolutionError';
+  }
+}
+
+
+
+
+
+
+class RoleNotFoundError extends RoleResolutionError {
+
+
+
+
+
+  constructor(roleId, context = {}) {
+    super(`Role not found: ${roleId}`, {
+      ...context,
+      roleId
+    });
+    this.name = 'RoleNotFoundError';
+    this.roleId = roleId;
+  }
+}
+
+
+
+
+
+
+class NoActorFoundError extends RoleResolutionError {
+
+
+
+
+
+
+  constructor(roleId, scope = null, context = {}) {
+    var _scope$toString;
+    const scopeStr = scope ? ` in scope ${((_scope$toString = scope.toString) === null || _scope$toString === void 0 ? void 0 : _scope$toString.call(scope)) || JSON.stringify(scope)}` : '';
+    super(`No actor found for role ${roleId}${scopeStr}`, {
+      ...context,
+      roleId,
+      scope
+    });
+    this.name = 'NoActorFoundError';
+    this.roleId = roleId;
+    this.scope = scope;
+  }
+}
+
+
+
+
+
+
+class ActorNotFoundError extends RoleResolutionError {
+
+
+
+
+
+  constructor(actorId, context = {}) {
+    super(`Actor not found: ${actorId}`, {
+      ...context,
+      actorId
+    });
+    this.name = 'ActorNotFoundError';
+    this.actorId = actorId;
+  }
+}
+
+
+
+
+
+
+class CircularDelegationError extends RoleResolutionError {
+
+
+
+
+
+
+  constructor(actorId, chain = [], context = {}) {
+    const chainStr = chain.length > 0 ? ` (chain: ${chain.join(' -> ')})` : '';
+    super(`Circular delegation detected for actor: ${actorId}${chainStr}`, {
+      ...context,
+      actorId,
+      chain
+    });
+    this.name = 'CircularDelegationError';
+    this.actorId = actorId;
+    this.chain = chain;
+  }
+}
+
+
+
+
+
+
+class InvalidScopeError extends RoleResolutionError {
+
+
+
+
+
+
+
+  constructor(roleId, providedScopeType, expectedScopeType, context = {}) {
+    super(`Invalid scope for role ${roleId}: expected ${expectedScopeType}, got ${providedScopeType}`, {
+      ...context,
+      roleId,
+      providedScopeType,
+      expectedScopeType
+    });
+    this.name = 'InvalidScopeError';
+    this.roleId = roleId;
+    this.providedScopeType = providedScopeType;
+    this.expectedScopeType = expectedScopeType;
+  }
+}
+
+
+
+
+
+
+class DelegationDepthExceededError extends RoleResolutionError {
+
+
+
+
+
+
+  constructor(actualDepth, maxDepth, context = {}) {
+    super(`Delegation chain depth (${actualDepth}) exceeds maximum (${maxDepth})`, {
+      ...context,
+      actualDepth,
+      maxDepth
+    });
+    this.name = 'DelegationDepthExceededError';
+    this.actualDepth = actualDepth;
+    this.maxDepth = maxDepth;
+  }
+}
+
+
+
+
+
+
+class RoleValidationError extends RoleResolutionError {
+
+
+
+
+
+
+  constructor(message, errors = [], context = {}) {
+    super(message, {
+      ...context,
+      validationErrors: errors
+    });
+    this.name = 'RoleValidationError';
+    this.validationErrors = errors;
+  }
+}
+
+
+class MalformedAssignmentSlotError extends RoleResolutionError {
+  constructor(message, context = {}) {
+    super(message, context);
+    this.name = 'MalformedAssignmentSlotError';
+  }
+}
+
+
+class DuplicateAssignmentSlotError extends RoleResolutionError {
+  constructor(slotKey, context = {}) {
+    super(`Duplicate assignment slot: ${slotKey}`, {
+      ...context,
+      slotKey
+    });
+    this.name = 'DuplicateAssignmentSlotError';
+    this.slotKey = slotKey;
+  }
+}
+
+
+class InconsistentAssignmentOverrideError extends RoleResolutionError {
+  constructor(message, context = {}) {
+    super(message, context);
+    this.name = 'InconsistentAssignmentOverrideError';
+  }
+}
+
+
+class AmbiguousAssignmentOverrideError extends RoleResolutionError {
+  constructor(candidateId, overrideIds = [], context = {}) {
+    super(`Ambiguous assignment overrides for candidate: ${candidateId}`, {
+      ...context,
+      candidateId,
+      overrideIds: [...overrideIds]
+    });
+    this.name = 'AmbiguousAssignmentOverrideError';
+    this.candidateId = candidateId;
+    this.overrideIds = Object.freeze([...overrideIds]);
+  }
+}
+
+
+class AssignmentActorNotFoundError extends RoleResolutionError {
+  constructor(actorId, context = {}) {
+    super(`Assignment actor not found: ${actorId}`, {
+      ...context,
+      actorId
+    });
+    this.name = 'AssignmentActorNotFoundError';
+    this.actorId = actorId;
+  }
+}
+
+
+class OverlappingDelegationError extends RoleResolutionError {
+  constructor(actorId, context = {}) {
+    super(`Overlapping delegation for actor: ${actorId}`, {
+      ...context,
+      actorId
+    });
+    this.name = 'OverlappingDelegationError';
+    this.actorId = actorId;
+  }
+}
+;
+
+function isDimensionValue(value) {
+  return value === null || typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number' && Number.isFinite(value);
+}
+
+
+class AssignmentSlot {
+  constructor({
+    dimensions
+  } = {}) {
+    if (!dimensions || typeof dimensions !== 'object' || Array.isArray(dimensions)) {
+      throw new MalformedAssignmentSlotError('Assignment slot dimensions must be an object');
+    }
+    const entries = Object.entries(dimensions);
+    if (entries.length === 0) {
+      throw new MalformedAssignmentSlotError('Assignment slot dimensions must not be empty');
+    }
+    entries.forEach(([name, value]) => {
+      if (!name.trim() || !isDimensionValue(value)) {
+        throw new MalformedAssignmentSlotError('Assignment slot dimensions contain an invalid value', {
+          name,
+          value
+        });
+      }
+    });
+    this.dimensions = Object.freeze({
+      ...dimensions
+    });
+    this.key = JSON.stringify(entries.sort(([left], [right]) => left.localeCompare(right)).reduce((result, [name, value]) => {
+      result[name] = value;
+      return result;
+    }, {}));
+    Object.freeze(this);
+  }
+  get(name) {
+    return Object.prototype.hasOwnProperty.call(this.dimensions, name) ? this.dimensions[name] : null;
+  }
+  matches(scopeDimensions = {}) {
+    if (!scopeDimensions || typeof scopeDimensions !== 'object' || Array.isArray(scopeDimensions)) {
+      return false;
+    }
+    return Object.entries(scopeDimensions).every(([name, expected]) => {
+      return expected === '*' || this.get(name) === expected;
+    });
+  }
+  toJSON() {
+    return {
+      dimensions: {
+        ...this.dimensions
+      }
+    };
+  }
+}
+;
+
+function freezeDeep(value, seen = new WeakSet()) {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (seen.has(value)) {
+    return value;
+  }
+  seen.add(value);
+  Object.keys(value).forEach(key => {
+    value[key] = freezeDeep(value[key], seen);
+  });
+  return Object.freeze(value);
+}
+
+
+function cloneAndFreeze(value) {
+  return freezeDeep(cloneDeep_cloneDeep(value));
+}
+;
+
+
+
+
+function requiredString(value, field) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new RoleValidationError(`${field} is required and must be a non-blank string`);
+  }
+  return value;
+}
+function parseRequiredDate(value, field) {
+  const parsed = parseDate(value);
+  if (value !== null && value !== undefined && parsed === null) {
+    throw new RoleValidationError(`${field} must be a valid ISO-safe date`);
+  }
+  return parsed;
+}
+
+
+class AssignmentCandidate {
+  constructor({
+    id,
+    actorId,
+    slot,
+    validFrom = null,
+    validTo = null,
+    source = 'base',
+    priority = 0,
+    metadata = {}
+  } = {}) {
+    this.id = requiredString(id, 'Assignment candidate id');
+    this.actorId = requiredString(actorId, 'Assignment candidate actorId');
+    this.slot = slot instanceof AssignmentSlot ? slot : new AssignmentSlot(slot);
+    this.validFrom = parseRequiredDate(validFrom, 'Assignment candidate validFrom');
+    this.validTo = parseRequiredDate(validTo, 'Assignment candidate validTo');
+    if (this.validFrom && this.validTo && this.validFrom > this.validTo) {
+      throw new RoleValidationError('Assignment candidate validFrom must not be after validTo');
+    }
+    this.source = requiredString(source, 'Assignment candidate source');
+    if (typeof priority !== 'number' || !Number.isFinite(priority)) {
+      throw new RoleValidationError('Assignment candidate priority must be a finite number');
+    }
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      throw new RoleValidationError('Assignment candidate metadata must be an object');
+    }
+    this.priority = priority;
+    this.metadata = cloneAndFreeze(metadata);
+    Object.freeze(this);
+  }
+  isValidAt(date = new Date()) {
+    const asOf = parseDate(date);
+    if (asOf === null) {
+      throw new RoleValidationError('Assignment candidate validity date must be valid');
+    }
+    return (!this.validFrom || asOf >= this.validFrom) && (!this.validTo || asOf <= this.validTo);
+  }
+  toJSON() {
+    return {
+      id: this.id,
+      actorId: this.actorId,
+      slot: this.slot.toJSON(),
+      validFrom: this.validFrom ? this.validFrom.toISOString() : null,
+      validTo: this.validTo ? this.validTo.toISOString() : null,
+      source: this.source,
+      priority: this.priority,
+      metadata: {
+        ...this.metadata
+      }
+    };
+  }
+}
+;
+
+
+
+
+function AssignmentOverride_requiredString(value, field) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new InconsistentAssignmentOverrideError(`${field} is required and must be a non-blank string`);
+  }
+  return value;
+}
+function AssignmentOverride_isDimensionValue(value) {
+  return value === null || typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number' && Number.isFinite(value);
+}
+
+
+class AssignmentOverride {
+  constructor({
+    id,
+    previousActorId,
+    nextActorId,
+    slotScope,
+    effectiveFrom,
+    source = 'override',
+    metadata = {}
+  } = {}) {
+    this.id = AssignmentOverride_requiredString(id, 'Assignment override id');
+    this.previousActorId = AssignmentOverride_requiredString(previousActorId, 'Assignment override previousActorId');
+    this.nextActorId = AssignmentOverride_requiredString(nextActorId, 'Assignment override nextActorId');
+    if (this.previousActorId === this.nextActorId) {
+      throw new InconsistentAssignmentOverrideError('Assignment override must change actor');
+    }
+    if (!slotScope || typeof slotScope !== 'object' || Array.isArray(slotScope)) {
+      throw new InconsistentAssignmentOverrideError('Assignment override slotScope must be an object');
+    }
+    const scopeEntries = Object.entries(slotScope);
+    if (scopeEntries.length === 0 || scopeEntries.some(([name, value]) => !name.trim() || !AssignmentOverride_isDimensionValue(value))) {
+      throw new InconsistentAssignmentOverrideError('Assignment override slotScope must not be empty');
+    }
+    this.slotScope = Object.freeze({
+      ...slotScope
+    });
+    this.effectiveFrom = parseDate(effectiveFrom);
+    if (this.effectiveFrom === null) {
+      throw new InconsistentAssignmentOverrideError('Assignment override effectiveFrom must be a valid ISO-safe date');
+    }
+    this.source = AssignmentOverride_requiredString(source, 'Assignment override source');
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      throw new InconsistentAssignmentOverrideError('Assignment override metadata must be an object');
+    }
+    this.metadata = cloneAndFreeze(metadata);
+    Object.freeze(this);
+  }
+  matches(candidate, date = new Date()) {
+    const asOf = parseDate(date);
+    return candidate instanceof AssignmentCandidate && asOf !== null && asOf >= this.effectiveFrom && candidate.actorId === this.previousActorId && candidate.isValidAt(asOf) && candidate.slot.matches(this.slotScope);
+  }
+  toJSON() {
+    return {
+      id: this.id,
+      previousActorId: this.previousActorId,
+      nextActorId: this.nextActorId,
+      slotScope: {
+        ...this.slotScope
+      },
+      effectiveFrom: this.effectiveFrom.toISOString(),
+      source: this.source,
+      metadata: {
+        ...this.metadata
+      }
+    };
   }
 }
 ;
@@ -71843,6 +72621,131 @@ class DelegationChain {
     }
     const actorIds = this.getAllActorIds();
     return `DelegationChain[${actorIds.join(' -> ')}]`;
+  }
+}
+;
+
+
+const STAGES = Object.freeze(['BASE', 'OVERRIDE', 'DELEGATION', 'ROUTING']);
+const DECISIONS = Object.freeze(['CONSIDERED', 'REJECTED', 'SELECTED', 'APPLIED']);
+function normalizeEntry({
+  stage,
+  decision,
+  candidateId = null,
+  actorId = null,
+  reason,
+  metadata = {}
+} = {}) {
+  if (!STAGES.includes(stage) || !DECISIONS.includes(decision)) {
+    throw new RoleValidationError('Resolution trace entry has an invalid stage or decision');
+  }
+  if (candidateId !== null && typeof candidateId !== 'string' || actorId !== null && typeof actorId !== 'string') {
+    throw new RoleValidationError('Resolution trace candidateId and actorId must be strings or null');
+  }
+  if (typeof reason !== 'string' || !reason.trim()) {
+    throw new RoleValidationError('Resolution trace reason must be a non-blank string');
+  }
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    throw new RoleValidationError('Resolution trace metadata must be an object');
+  }
+  return cloneAndFreeze({
+    stage,
+    decision,
+    candidateId,
+    actorId,
+    reason,
+    metadata
+  });
+}
+
+
+class ResolutionTrace {
+  constructor(entries = []) {
+    if (!Array.isArray(entries)) {
+      throw new RoleValidationError('Resolution trace entries must be an array');
+    }
+    this.entries = Object.freeze(entries.map(normalizeEntry));
+    Object.freeze(this);
+  }
+  append(entry) {
+    return new ResolutionTrace([...this.entries, entry]);
+  }
+  toJSON() {
+    return this.entries.map(entry => ({
+      ...entry,
+      metadata: {
+        ...entry.metadata
+      }
+    }));
+  }
+}
+;
+
+
+
+
+
+
+function actorOrNull(value, field) {
+  if (value !== null && !(value instanceof Actor)) {
+    throw new RoleValidationError(`${field} must be an Actor or null`);
+  }
+  return value;
+}
+function serialize(value) {
+  return value && typeof value.toJSON === 'function' ? value.toJSON() : value;
+}
+
+
+class EffectiveAssignmentResult {
+  constructor({
+    slot,
+    baseActor = null,
+    permanentActor = null,
+    effectiveActor = null,
+    delegationChain = DelegationChain.empty(),
+    routing = null,
+    trace = new ResolutionTrace(),
+    metadata = {}
+  } = {}) {
+    if (!(slot instanceof AssignmentSlot)) {
+      throw new RoleValidationError('Effective assignment result slot must be an AssignmentSlot');
+    }
+    if (!(delegationChain instanceof DelegationChain)) {
+      throw new RoleValidationError('Effective assignment result delegationChain must be a DelegationChain');
+    }
+    if (!(trace instanceof ResolutionTrace)) {
+      throw new RoleValidationError('Effective assignment result trace must be a ResolutionTrace');
+    }
+    if (routing !== null && (!routing || typeof routing !== 'object' || Array.isArray(routing))) {
+      throw new RoleValidationError('Effective assignment result routing must be an object or null');
+    }
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      throw new RoleValidationError('Effective assignment result metadata must be an object');
+    }
+    this.slot = slot;
+    this.baseActor = actorOrNull(baseActor, 'baseActor');
+    this.permanentActor = actorOrNull(permanentActor, 'permanentActor');
+    this.effectiveActor = actorOrNull(effectiveActor, 'effectiveActor');
+    this.delegationChain = delegationChain;
+    this.routing = routing === null ? null : cloneAndFreeze(routing);
+    this.trace = trace;
+    this.metadata = cloneAndFreeze(metadata);
+    Object.freeze(this);
+  }
+  toJSON() {
+    return {
+      slot: this.slot.toJSON(),
+      baseActor: serialize(this.baseActor),
+      permanentActor: serialize(this.permanentActor),
+      effectiveActor: serialize(this.effectiveActor),
+      delegationChain: this.delegationChain.toJSON(),
+      routing: serialize(this.routing),
+      trace: this.trace.toJSON(),
+      metadata: {
+        ...this.metadata
+      }
+    };
   }
 }
 ;
@@ -72703,198 +73606,6 @@ class RoutingResolver {
 
 
 
-class RoleResolutionError extends BaseError {
-
-
-
-
-
-
-  constructor(message, context = {}, originalError = null) {
-    super(message, context, originalError);
-    this.name = 'RoleResolutionError';
-  }
-}
-
-
-
-
-
-
-class RoleNotFoundError extends RoleResolutionError {
-
-
-
-
-
-  constructor(roleId, context = {}) {
-    super(`Role not found: ${roleId}`, {
-      ...context,
-      roleId
-    });
-    this.name = 'RoleNotFoundError';
-    this.roleId = roleId;
-  }
-}
-
-
-
-
-
-
-class NoActorFoundError extends RoleResolutionError {
-
-
-
-
-
-
-  constructor(roleId, scope = null, context = {}) {
-    var _scope$toString;
-    const scopeStr = scope ? ` in scope ${((_scope$toString = scope.toString) === null || _scope$toString === void 0 ? void 0 : _scope$toString.call(scope)) || JSON.stringify(scope)}` : '';
-    super(`No actor found for role ${roleId}${scopeStr}`, {
-      ...context,
-      roleId,
-      scope
-    });
-    this.name = 'NoActorFoundError';
-    this.roleId = roleId;
-    this.scope = scope;
-  }
-}
-
-
-
-
-
-
-class ActorNotFoundError extends RoleResolutionError {
-
-
-
-
-
-  constructor(actorId, context = {}) {
-    super(`Actor not found: ${actorId}`, {
-      ...context,
-      actorId
-    });
-    this.name = 'ActorNotFoundError';
-    this.actorId = actorId;
-  }
-}
-
-
-
-
-
-
-class CircularDelegationError extends RoleResolutionError {
-
-
-
-
-
-
-  constructor(actorId, chain = [], context = {}) {
-    const chainStr = chain.length > 0 ? ` (chain: ${chain.join(' -> ')})` : '';
-    super(`Circular delegation detected for actor: ${actorId}${chainStr}`, {
-      ...context,
-      actorId,
-      chain
-    });
-    this.name = 'CircularDelegationError';
-    this.actorId = actorId;
-    this.chain = chain;
-  }
-}
-
-
-
-
-
-
-class InvalidScopeError extends RoleResolutionError {
-
-
-
-
-
-
-
-  constructor(roleId, providedScopeType, expectedScopeType, context = {}) {
-    super(`Invalid scope for role ${roleId}: expected ${expectedScopeType}, got ${providedScopeType}`, {
-      ...context,
-      roleId,
-      providedScopeType,
-      expectedScopeType
-    });
-    this.name = 'InvalidScopeError';
-    this.roleId = roleId;
-    this.providedScopeType = providedScopeType;
-    this.expectedScopeType = expectedScopeType;
-  }
-}
-
-
-
-
-
-
-class DelegationDepthExceededError extends RoleResolutionError {
-
-
-
-
-
-
-  constructor(actualDepth, maxDepth, context = {}) {
-    super(`Delegation chain depth (${actualDepth}) exceeds maximum (${maxDepth})`, {
-      ...context,
-      actualDepth,
-      maxDepth
-    });
-    this.name = 'DelegationDepthExceededError';
-    this.actualDepth = actualDepth;
-    this.maxDepth = maxDepth;
-  }
-}
-
-
-
-
-
-
-class RoleValidationError extends RoleResolutionError {
-
-
-
-
-
-
-  constructor(message, errors = [], context = {}) {
-    super(message, {
-      ...context,
-      validationErrors: errors
-    });
-    this.name = 'RoleValidationError';
-    this.validationErrors = errors;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class RoleRegistry {
 
@@ -73519,6 +74230,231 @@ class InMemoryDelegationSource extends DelegationSource {
 }
 ;
 
+class EffectiveAssignmentSource_AssignmentSource {
+  getAssignments(_context, _asOfDate) {
+    throw new Error('AssignmentSource.getAssignments() must be implemented');
+  }
+}
+class OverrideSource {
+  getOverrides(_context, _asOfDate) {
+    throw new Error('OverrideSource.getOverrides() must be implemented');
+  }
+}
+class ActorSource {
+  getActor(_actorId) {
+    throw new Error('ActorSource.getActor() must be implemented');
+  }
+}
+function splitCsv(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap(splitCsv);
+  }
+  if (typeof value !== 'string') {
+    return value == null ? [] : [String(value)];
+  }
+  return value.split(',').map(item => item.trim()).filter(Boolean);
+}
+
+
+function matchesContextDimensions(context, dimensions = {}) {
+  return Object.entries(dimensions).every(([name, expected]) => {
+    const values = splitCsv(expected);
+    return values.includes('*') || values.includes(String(context[name]));
+  });
+}
+;
+
+
+
+
+
+
+function getPath(value, path) {
+  if (typeof path !== 'string' || !path.trim()) {
+    return undefined;
+  }
+  return path.split('.').reduce((current, part) => current == null ? undefined : current[part], value);
+}
+function mapped(row, definition) {
+  if (definition && typeof definition === 'object' && !Array.isArray(definition) && 'from' in definition) {
+    const value = getPath(row, definition.from);
+    return definition.parse === 'csv' ? splitCsv(value) : value;
+  }
+  return definition;
+}
+function mapDimensions(row, dimensions = {}) {
+  return Object.entries(dimensions).reduce((result, [name, definition]) => {
+    result[name] = mapped(row, definition);
+    return result;
+  }, {});
+}
+function expandDimensions(dimensions) {
+  return Object.entries(dimensions).reduce((combinations, [name, value]) => {
+    const values = Array.isArray(value) ? value : [value];
+    return combinations.flatMap(combination => values.map(item => ({
+      ...combination,
+      [name]: item
+    })));
+  }, [{}]);
+}
+function rowsFor(rows, context) {
+  const resolved = typeof rows === 'function' ? rows(context) : rows;
+  return Array.isArray(resolved) ? resolved : [];
+}
+
+
+class WideRowAssignmentSource extends EffectiveAssignmentSource_AssignmentSource {
+  constructor({
+    rows,
+    rowIdentityPath,
+    actorSource,
+    columns,
+    csv: useCsv = true
+  } = {}) {
+    super();
+    this._rows = rows;
+    this._rowIdentityPath = rowIdentityPath;
+    this._actorSource = actorSource;
+    this._columns = columns || [];
+    this._csv = useCsv;
+  }
+  getAssignments(context, _asOfDate) {
+    const candidates = [];
+    rowsFor(this._rows, context).forEach(row => {
+      const rowId = getPath(row, this._rowIdentityPath);
+      this._columns.forEach(column => {
+        const contextDimensions = mapDimensions(row, column.contextDimensions);
+        if (!matchesContextDimensions(context, contextDimensions)) {
+          return;
+        }
+        const ids = this._csv ? splitCsv(getPath(row, column.name)) : [getPath(row, column.name)].filter(Boolean);
+        ids.forEach(actorId => {
+          candidates.push(new AssignmentCandidate({
+            id: `${rowId}:${column.name}:${actorId}`,
+            actorId,
+            slot: new AssignmentSlot({
+              dimensions: mapDimensions(row, column.slotDimensions)
+            }),
+            source: 'wide-row',
+            metadata: {
+              rowIdentity: rowId,
+              column: column.name,
+              contextDimensions
+            }
+          }));
+        });
+      });
+    });
+    return candidates;
+  }
+}
+
+
+class MappedOverrideSource extends OverrideSource {
+  constructor({
+    rows,
+    mapping
+  } = {}) {
+    super();
+    this._rows = rows;
+    this._mapping = mapping || {};
+  }
+  getOverrides(context, _asOfDate) {
+    return rowsFor(this._rows, context).flatMap(row => {
+      const slotScope = mapDimensions(row, this._mapping.scope);
+      return expandDimensions(slotScope).map(scope => ({
+        row,
+        slotScope: scope
+      }));
+    }).filter(({
+      slotScope
+    }) => matchesContextDimensions(context, slotScope)).map(({
+      row,
+      slotScope
+    }) => new AssignmentOverride({
+      id: mapped(row, this._mapping.id),
+      previousActorId: mapped(row, this._mapping.previousActorId),
+      nextActorId: mapped(row, this._mapping.nextActorId),
+      effectiveFrom: mapped(row, this._mapping.effectiveFrom),
+      slotScope,
+      source: 'mapped-override'
+    }));
+  }
+}
+
+
+class MappedDelegationSource {
+  constructor({
+    rows,
+    mapping
+  } = {}) {
+    this._rows = rows;
+    this._mapping = mapping || {};
+  }
+  getDelegations(context, asOfDate) {
+    return rowsFor(this._rows, context).map(row => {
+      const scope = mapDimensions(row, this._mapping.scope);
+      return {
+        row,
+        scope
+      };
+    }).filter(({
+      scope
+    }) => matchesContextDimensions(context, scope)).map(({
+      row,
+      scope
+    }) => new Delegation_Delegation({
+      id: mapped(row, this._mapping.id),
+      principalId: mapped(row, this._mapping.principalId),
+      delegateId: mapped(row, this._mapping.delegateId),
+      validFrom: mapped(row, this._mapping.validFrom),
+      validTo: mapped(row, this._mapping.validTo),
+      routingPolicy: mapped(row, this._mapping.routingPolicy) || undefined,
+      metadata: {
+        scope
+      }
+    })).filter(delegation => delegation.isValidAt(asOfDate));
+  }
+}
+
+
+class CompositeAssignmentSource extends EffectiveAssignmentSource_AssignmentSource {
+  constructor({
+    sources,
+    identity = ['slot.key', 'actorId'],
+    mergeMetadata = (left, right) => ({
+      ...left,
+      ...right
+    })
+  } = {}) {
+    super();
+    this._sources = sources || [];
+    this._identity = identity;
+    this._mergeMetadata = mergeMetadata;
+  }
+  getAssignments(context, asOfDate) {
+    const byIdentity = new Map();
+    this._sources.forEach(source => source.getAssignments(context, asOfDate).forEach(candidate => {
+      const key = this._identity.map(path => getPath(candidate, path)).join('\u0000');
+      const existing = byIdentity.get(key);
+      if (!existing) {
+        byIdentity.set(key, candidate);
+        return;
+      }
+      const metadata = this._mergeMetadata(existing.metadata || {}, candidate.metadata || {});
+      byIdentity.set(key, existing instanceof AssignmentCandidate ? new AssignmentCandidate({
+        ...existing.toJSON(),
+        metadata
+      }) : {
+        ...existing,
+        metadata
+      });
+    }));
+    return [...byIdentity.values()];
+  }
+}
+;
+
 
 
 
@@ -73987,58 +74923,287 @@ class RoleResolver {
 ;
 
 
+const TIE_BEHAVIORS = Object.freeze(['THROW', 'FIRST']);
+const MISSING_ACTOR_BEHAVIORS = Object.freeze(['THROW', 'NULL']);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PriorityChainResolver {
-
-
-
-
-
-
-
-  constructor(resolvers) {
-    if (!Array.isArray(resolvers) || resolvers.length === 0) {
-      throw new TypeError('PriorityChainResolver requires a non-empty array of resolver functions');
+class ResolutionPolicy {
+  constructor({
+    tieBehavior = 'THROW',
+    missingActorBehavior = 'THROW',
+    maxDelegationDepth = null,
+    routingPolicy = RoutingPolicy.DELEGATE_OR_PRINCIPAL,
+    resultIdentity = ['slot', 'principalActor']
+  } = {}) {
+    if (!TIE_BEHAVIORS.includes(tieBehavior)) {
+      throw new RoleValidationError(`Invalid tie behavior: ${tieBehavior}`);
     }
-    this._resolvers = resolvers;
+    if (!MISSING_ACTOR_BEHAVIORS.includes(missingActorBehavior)) {
+      throw new RoleValidationError(`Invalid missing actor behavior: ${missingActorBehavior}`);
+    }
+    if (maxDelegationDepth !== null && (!Number.isInteger(maxDelegationDepth) || maxDelegationDepth < 1)) {
+      throw new RoleValidationError('maxDelegationDepth must be null or a positive integer');
+    }
+    if (!isValidRoutingPolicy(routingPolicy)) {
+      throw new RoleValidationError(`Invalid routing policy: ${routingPolicy}`);
+    }
+    if (!Array.isArray(resultIdentity) || resultIdentity.length === 0 || resultIdentity.some(field => typeof field !== 'string' || !field.trim())) {
+      throw new RoleValidationError('resultIdentity must be a non-empty array of non-blank strings');
+    }
+    this.tieBehavior = tieBehavior;
+    this.missingActorBehavior = missingActorBehavior;
+    this.maxDelegationDepth = maxDelegationDepth;
+    this.routingPolicy = routingPolicy;
+    this.resultIdentity = Object.freeze([...resultIdentity]);
+    Object.freeze(this);
   }
-
-
-
-
-
-
-
-  resolve(...args) {
-    for (const resolver of this._resolvers) {
-      const result = resolver(...args);
-      if (result !== null && result !== undefined) {
-        return result;
-      }
-    }
-    return null;
+  toJSON() {
+    return {
+      tieBehavior: this.tieBehavior,
+      missingActorBehavior: this.missingActorBehavior,
+      maxDelegationDepth: this.maxDelegationDepth,
+      routingPolicy: this.routingPolicy,
+      resultIdentity: [...this.resultIdentity]
+    };
   }
 }
 ;
+
+
+
+
+
+
+
+
+function append(trace, stage, decision, candidateId, actorId, reason, metadata = {}) {
+  return trace.append({
+    stage,
+    decision,
+    candidateId,
+    actorId,
+    reason,
+    metadata
+  });
+}
+function withTrace(error, trace) {
+  error.resolutionTrace = trace;
+  return error;
+}
+
+
+class EffectiveAssignmentResolver {
+  constructor({
+    actorSource,
+    assignmentSource,
+    overrideSource,
+    delegationSource,
+    policy = new ResolutionPolicy(),
+    routingResolver = new RoutingResolver()
+  } = {}) {
+    if (!actorSource || typeof actorSource.getActor !== 'function') {
+      throw new RoleValidationError('actorSource.getActor is required');
+    }
+    if (!assignmentSource || typeof assignmentSource.getAssignments !== 'function') {
+      throw new RoleValidationError('assignmentSource.getAssignments is required');
+    }
+    if (!overrideSource || typeof overrideSource.getOverrides !== 'function') {
+      throw new RoleValidationError('overrideSource.getOverrides is required');
+    }
+    if (!delegationSource || typeof delegationSource.getDelegations !== 'function' && typeof delegationSource.getActiveDelegationsForPrincipal !== 'function') {
+      throw new RoleValidationError('delegationSource.getDelegations or getActiveDelegationsForPrincipal is required');
+    }
+    if (!(policy instanceof ResolutionPolicy)) {
+      throw new RoleValidationError('policy must be a ResolutionPolicy');
+    }
+    this._actorSource = actorSource;
+    this._assignmentSource = assignmentSource;
+    this._overrideSource = overrideSource;
+    this._delegationSource = delegationSource;
+    this._policy = policy;
+    this._routingResolver = routingResolver;
+  }
+  resolve({
+    context = {},
+    asOfDate,
+    routingPolicy = null
+  } = {}) {
+    if (!(asOfDate instanceof Date) || Number.isNaN(asOfDate.getTime())) {
+      throw new RoleValidationError('asOfDate must be a valid Date');
+    }
+    const candidates = this._assignmentSource.getAssignments(context, asOfDate).filter(candidate => candidate instanceof AssignmentCandidate).sort((left, right) => left.slot.key.localeCompare(right.slot.key) || left.actorId.localeCompare(right.actorId));
+    const overrides = this._overrideSource.getOverrides(context, asOfDate);
+    this._validateOverrides(candidates, overrides, asOfDate);
+    return candidates.filter(candidate => candidate.isValidAt(asOfDate)).map(candidate => this._resolveCandidate(candidate, context, asOfDate, overrides, routingPolicy));
+  }
+  _resolveCandidate(candidate, context, asOfDate, overrides, routingPolicy) {
+    let trace = append(new ResolutionTrace(), 'BASE', 'CONSIDERED', candidate.id, candidate.actorId, 'candidate loaded');
+    const baseActor = this._getActor(candidate.actorId, candidate.id, trace, 'BASE');
+    trace = append(trace, 'BASE', 'SELECTED', candidate.id, baseActor && baseActor.id, 'valid base candidate selected');
+    const overrideSelection = this._selectOverride(candidate, overrides, asOfDate, trace);
+    trace = overrideSelection.trace;
+    const selectedOverride = overrideSelection.override;
+    let permanentActor = baseActor;
+    if (selectedOverride) {
+      trace = append(trace, 'OVERRIDE', 'APPLIED', candidate.id, selectedOverride.nextActorId, 'latest matching override applied', {
+        overrideId: selectedOverride.id
+      });
+      permanentActor = this._getActor(selectedOverride.nextActorId, candidate.id, trace, 'OVERRIDE');
+    } else {
+      trace = append(trace, 'OVERRIDE', 'REJECTED', candidate.id, candidate.actorId, 'no applicable override');
+    }
+    const delegation = this._resolveDelegations(permanentActor, candidate, context, asOfDate, trace);
+    trace = delegation.trace;
+    const routing = this._routingResolver.resolve({
+      principalActor: permanentActor,
+      effectiveActor: delegation.effectiveActor,
+      delegationChain: delegation.chain,
+      routingPolicy: routingPolicy || this._policy.routingPolicy
+    });
+    trace = append(trace, 'ROUTING', 'SELECTED', candidate.id, delegation.effectiveActor && delegation.effectiveActor.id, 'routing resolved', {
+      policy: routingPolicy || this._policy.routingPolicy
+    });
+    return new EffectiveAssignmentResult({
+      slot: candidate.slot,
+      baseActor,
+      permanentActor,
+      effectiveActor: delegation.effectiveActor,
+      delegationChain: delegation.chain,
+      routing,
+      trace,
+      metadata: {
+        candidateId: candidate.id
+      }
+    });
+  }
+  _validateOverrides(candidates, overrides, asOfDate) {
+    overrides.filter(override => asOfDate >= override.effectiveFrom).forEach(override => {
+      if (!candidates.some(candidate => override.matches(candidate, asOfDate))) {
+        let trace = append(new ResolutionTrace(), 'OVERRIDE', 'CONSIDERED', null, override.previousActorId, 'effective override validated', {
+          overrideId: override.id
+        });
+        trace = append(trace, 'OVERRIDE', 'REJECTED', null, override.previousActorId, 'effective override does not match a base candidate', {
+          overrideId: override.id
+        });
+        throw withTrace(new InconsistentAssignmentOverrideError('Applicable override does not match a base actor', {
+          overrideId: override.id
+        }), trace);
+      }
+    });
+  }
+  _selectOverride(candidate, overrides, asOfDate, trace) {
+    const applicable = [];
+    overrides.forEach(override => {
+      trace = append(trace, 'OVERRIDE', 'CONSIDERED', candidate.id, candidate.actorId, 'override evaluated', {
+        overrideId: override.id
+      });
+      if (!override.matches(candidate, asOfDate)) {
+        trace = append(trace, 'OVERRIDE', 'REJECTED', candidate.id, candidate.actorId, 'override does not match candidate', {
+          overrideId: override.id
+        });
+        return;
+      }
+      applicable.push(override);
+    });
+    if (applicable.length === 0) {
+      return {
+        override: null,
+        trace
+      };
+    }
+    const latest = Math.max(...applicable.map(override => override.effectiveFrom.getTime()));
+    const finalists = applicable.filter(override => override.effectiveFrom.getTime() === latest);
+    if (finalists.length > 1) {
+      trace = append(trace, 'OVERRIDE', 'REJECTED', candidate.id, candidate.actorId, 'ambiguous latest overrides', {
+        overrideIds: finalists.map(override => override.id)
+      });
+      throw withTrace(new AmbiguousAssignmentOverrideError(candidate.id, finalists.map(override => override.id)), trace);
+    }
+    applicable.filter(override => override !== finalists[0]).forEach(override => {
+      trace = append(trace, 'OVERRIDE', 'REJECTED', candidate.id, candidate.actorId, 'superseded by a later override', {
+        overrideId: override.id
+      });
+    });
+    return {
+      override: finalists[0],
+      trace
+    };
+  }
+  _resolveDelegations(permanentActor, candidate, context, asOfDate, trace) {
+    let chain = DelegationChain.empty();
+    let current = permanentActor;
+    while (current) {
+      const outgoing = this._getOutgoingDelegations(current.id, context, asOfDate).filter(delegation => delegation.principalId === current.id && delegation.isValidAt(asOfDate) && matchesContextDimensions(context, delegation.metadata.scope));
+      if (outgoing.length === 0) {
+        trace = append(trace, 'DELEGATION', 'REJECTED', candidate.id, current.id, 'no outgoing delegation');
+        return {
+          chain,
+          effectiveActor: current,
+          trace
+        };
+      }
+      if (outgoing.length > 1) {
+        trace = append(trace, 'DELEGATION', 'REJECTED', candidate.id, current.id, 'overlapping outgoing delegations', {
+          delegationIds: outgoing.map(item => item.id)
+        });
+        throw withTrace(new OverlappingDelegationError(current.id, {
+          delegationIds: outgoing.map(item => item.id)
+        }), trace);
+      }
+      const next = outgoing[0];
+      if (chain.wouldCreateCycle(next)) {
+        trace = append(trace, 'DELEGATION', 'REJECTED', candidate.id, next.delegateId, 'delegation cycle detected', {
+          delegationId: next.id
+        });
+        throw withTrace(new CircularDelegationError(next.delegateId, [...chain.getAllActorIds(), next.delegateId]), trace);
+      }
+      if (this._policy.maxDelegationDepth !== null && chain.getDepth() + 1 > this._policy.maxDelegationDepth) {
+        trace = append(trace, 'DELEGATION', 'REJECTED', candidate.id, current.id, 'delegation depth exceeds configured maximum', {
+          delegationId: next.id
+        });
+        throw withTrace(new DelegationDepthExceededError(chain.getDepth() + 1, this._policy.maxDelegationDepth), trace);
+      }
+      chain = chain.extend(next);
+      current = this._getActor(next.delegateId, candidate.id, trace, 'DELEGATION');
+      trace = append(trace, 'DELEGATION', 'APPLIED', candidate.id, current && current.id, 'delegation applied', {
+        delegationId: next.id
+      });
+    }
+    return {
+      chain,
+      effectiveActor: current,
+      trace
+    };
+  }
+  _getOutgoingDelegations(actorId, context, asOfDate) {
+    if (typeof this._delegationSource.getDelegations === 'function') {
+      return this._delegationSource.getDelegations(context, asOfDate).filter(item => item.principalId === actorId);
+    }
+    return this._delegationSource.getActiveDelegationsForPrincipal(actorId, asOfDate);
+  }
+  _getActor(actorId, candidateId, trace, stage) {
+    const actor = this._actorSource.getActor(actorId);
+    if (actor) {
+      return actor;
+    }
+    if (this._policy.missingActorBehavior === 'NULL') {
+      return null;
+    }
+    const failureTrace = append(trace || new ResolutionTrace(), stage || 'BASE', 'REJECTED', candidateId, actorId, 'assignment actor not found');
+    throw withTrace(new AssignmentActorNotFoundError(actorId, {
+      candidateId
+    }), failureTrace);
+  }
+}
+;
+
+
+
+
+
+
+
+
 
 
 

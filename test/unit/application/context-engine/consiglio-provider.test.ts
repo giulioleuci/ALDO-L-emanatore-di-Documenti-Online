@@ -72,6 +72,8 @@ test('CDC coordinatore VM: materie, roles and descrizione', () => {
   expect(rossi.materie).toEqual([
     { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
   ]);
+  expect(rossi.materieDescrizione).toBe('Matematica');
+  expect(rossi.gruppoNome).toBeNull();
   expect(rossi.ruoli).toEqual({
     isCoordinatore: true,
     isTutorAsl: true,
@@ -93,6 +95,11 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
   expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('COMUNE'); // MATE in both partners
   expect(byEmail(list, 'bianchi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO'); // FISI in 1F-LSO only
   expect(byEmail(list, 'verdi@school.it').tipoArticolazione).toBe('SEPARATO_SECONDO'); // FISI in 1F-LSS only
+  expect(byEmail(list, 'rossi@school.it').gruppoNome).toBeNull();
+  expect(byEmail(list, 'bianchi@school.it').gruppoNome).toBe('Liceo scientifico');
+  expect(byEmail(list, 'verdi@school.it').gruppoNome).toBe('Liceo scientifico scienze applicate');
+  expect(byEmail(list, 'bianchi@school.it').materieDescrizione).toBe('Fisica');
+  expect(byEmail(list, 'verdi@school.it').materieDescrizione).toBe('Fisica');
 });
 
 test('tipoArticolazione follows resolved partner assignments for replacements and substitutes', () => {

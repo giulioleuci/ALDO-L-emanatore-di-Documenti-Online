@@ -183,6 +183,17 @@ function tipoArticolazione(
   return null;
 }
 
+function gruppoNome(
+  classi: IClasseRepository,
+  classe: Classe,
+  tipo: DocenteCdcVM['tipoArticolazione']
+): string | null {
+  if (tipo !== 'SEPARATO_PRIMO' && tipo !== 'SEPARATO_SECONDO') return null;
+  const partners = classi.orderedPartners(classe);
+  const partner = tipo === 'SEPARATO_PRIMO' ? partners[0] : partners[1];
+  return partner === undefined ? null : classi.getIndirizzo(partner).nome;
+}
+
 function councilVmStrategy(
   classi: IClasseRepository,
   materie: IMateriaRepository
@@ -216,6 +227,15 @@ function councilVmStrategy(
       const isCoordinatore = coordinatori.has(rowDocente.id);
       const isTutorAsl = tutorAsl.has(rowDocente.id);
       const isTutorOrientamento = tutorOrient.has(rowDocente.id);
+      const materieVm = assignments.map((assignment) => ({
+        sigla: assignment.slot.materia,
+        nome:
+          materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
+          assignment.slot.materia,
+        colore: '',
+        specificita: assignment.slot.specifica
+      }));
+      const tipoArt = tipoArticolazione(classi, classe, assignments);
       return {
         anagrafica: {
           nome: rowDocente.nome,
@@ -224,14 +244,8 @@ function councilVmStrategy(
           genere: rowDocente.genere,
           appellativo: rowDocente.appellativo
         },
-        materie: assignments.map((assignment) => ({
-          sigla: assignment.slot.materia,
-          nome:
-            materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
-            assignment.slot.materia,
-          colore: '',
-          specificita: assignment.slot.specifica
-        })),
+        materie: materieVm,
+        materieDescrizione: materieVm.map((m) => m.nome).join(', '),
         ruoli: {
           isCoordinatore,
           isTutorAsl,
@@ -243,7 +257,8 @@ function councilVmStrategy(
           sostituisce:
             sostituisce === null ? null : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
         },
-        tipoArticolazione: tipoArticolazione(classi, classe, assignments),
+        tipoArticolazione: tipoArt,
+        gruppoNome: gruppoNome(classi, classe, tipoArt),
         isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
         flags: { isNotLast: index < groups.length - 1 }
       } satisfies DocenteCdcVM;

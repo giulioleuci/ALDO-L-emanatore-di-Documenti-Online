@@ -18,6 +18,8 @@ import type { TipoPiano } from '../../domain/value-objects/enums';
 export interface DocenteCdcVM {
   anagrafica: { nome: string; cognome: string; email: string; genere: string; appellativo: string };
   materie: Array<{ sigla: string; nome: string; colore: string; specificita: string | null }>;
+  /** Every subject in `materie`, names comma-joined (09 §10 — for flat, template-simple display). */
+  materieDescrizione: string;
   ruoli: {
     isCoordinatore: boolean;
     isTutorAsl: boolean;
@@ -26,6 +28,8 @@ export interface DocenteCdcVM {
   };
   stato: { isSupplente: boolean; sostituisce: { nome: string; email: string } | null };
   tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null;
+  /** Resolved major name for SEPARATO_PRIMO/SEPARATO_SECONDO; null for COMUNE and non-articulated classes (09 §10). */
+  gruppoNome: string | null;
   isITP: boolean;
   flags: { isNotLast: boolean };
 }

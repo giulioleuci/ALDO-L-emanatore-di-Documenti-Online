@@ -40,6 +40,7 @@ const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
+const NAME_DOC_ARTICOLATA = 'E2E Doc Articolata Template';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 const NAME_STATIC_ATTACHMENT = 'E2E Static Attachment Fixture';
@@ -211,6 +212,47 @@ const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
 ];
 
 /**
+ * DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA (design spec
+ * `2026-07-30-classe-articolata-report-design.md`): 4 flat `bullet_list`
+ * blocks over already-shaped CDU arrays (Tasks 1-5) — no nested loops, no
+ * `where`/`map`/`join` pipes, so nothing here depends on unproven
+ * WorkspaceTemplateEngine pipe-chaining behavior.
+ */
+const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
+  'Documento Complesso Classe Articolata — {{focus.classe.anagrafica.nome}}',
+  'Elenco studenti (indirizzo tra parentesi):',
+  {
+    text: "{{#bullet_list:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'}}{{anagrafica.nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}",
+    listType: 'bullet'
+  },
+  'Docenti comuni a tutta la classe (materie tra parentesi):',
+  {
+    text: '{{#bullet_list:focus.classe.consiglioDiClasseComune}}{{anagrafica.nome}} {{anagrafica.cognome}} ({{materieDescrizione}}){{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Docenti per indirizzo (materie e indirizzo tra parentesi):',
+  {
+    text: '{{#bullet_list:focus.classe.consiglioDiClasseSeparato}}{{materieDescrizione}} ({{gruppoNome}}){{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Rappresentanti degli studenti (indirizzo tra parentesi):',
+  {
+    text: '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Rappresentanti dei genitori (indirizzo tra parentesi):',
+  {
+    text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Coordinatori (indirizzo tra parentesi):',
+  {
+    text: '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{indirizzo.nome}}){{/bullet_list}}',
+    listType: 'bullet'
+  }
+];
+
+/**
  * Single header cell carrying the whole multi-group `{{dynamic_columns[...]}}` placeholder
  * (`WorkspaceTemplateEngine_docs.md` "Sintassi multi-gruppo"): 3 sequential column groups,
  * groups 2/3 each preceded by a structural label column (`label2`/`label3`), resolved against
@@ -276,6 +318,11 @@ export class E2eTemplateProvisioner {
       DOC_COMPLESSO_PARAGRAPHS,
       DOC_COMPLESSO_TABLES
     );
+    const docArticolata = this.findOrCreateDoc(
+      folderId,
+      NAME_DOC_ARTICOLATA,
+      DOC_ARTICOLATA_PARAGRAPHS
+    );
     const sheetPermessi = this.findOrCreateSheet(
       folderId,
       NAME_SHEET_PERMESSI,
@@ -291,8 +338,6 @@ export class E2eTemplateProvisioner {
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
-    // TODO(Task 7): implement docArticolata template provisioning
-    const docArticolata = '';
     return {
       verbale,
       condotta,

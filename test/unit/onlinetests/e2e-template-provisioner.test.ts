@@ -59,9 +59,9 @@ test('creates all 13 E2E artifacts, including the real static email attachment',
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(13);
+  expect(created).toHaveLength(14);
   expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(3);
-  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(10);
+  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(11);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
@@ -69,6 +69,8 @@ test('creates all 13 E2E artifacts, including the real static email attachment',
   expect(created).toContain('doc:E2E Static Attachment Fixture');
   expect(created).toContain('doc:E2E Riepilogo Template v4');
   expect(created).toContain('doc:E2E Doc Complesso Template v2');
+  expect(ids.docArticolata).toMatch(/^doc_/);
+  expect(created).toContain('doc:E2E Doc Articolata Template');
   for (const tipo of TIPI_PIANO) {
     expect(ids.piani[tipo]).toMatch(/^doc_/);
   }
@@ -93,7 +95,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(12); // static attachment + condotta + riepilogo + asl import + doc complesso + sheet permessi + piano lavoro + 5 piani still created
+  expect(created).toHaveLength(13); // static attachment + condotta + riepilogo + asl import + doc complesso + doc articolata + sheet permessi + piano lavoro + 5 piani still created
 });
 
 test('reuses the real static attachment artifact by its fixed name', () => {
@@ -218,6 +220,25 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
     "tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'"
   );
   expect(tableText).toContain('tablecol_loop:focus.classe.consiglioDiClasse');
+});
+
+test('authors the articulated-class template with 4 flat bullet lists, no nested loops or filter pipes', () => {
+  const { artifacts, docContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  const text = documentText(docContent[ids.docArticolata] ?? []);
+  expect(text).toContain('{{#bullet_list:focus.classe.studenti.listaCompleta');
+  expect(text).toContain('{{anagrafica.nomeCompleto}} ({{indirizzo.nome}})');
+  expect(text).toContain('{{#bullet_list:focus.classe.consiglioDiClasseComune}}');
+  expect(text).toContain('({{materieDescrizione}})');
+  expect(text).toContain('{{#bullet_list:focus.classe.consiglioDiClasseSeparato}}');
+  expect(text).toContain('({{gruppoNome}})');
+  expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.coordinatori}}');
+  expect(text).not.toMatch(/\|\s*where/);
+  expect(text).not.toMatch(/\|\s*map/);
 });
 
 test('authors the sheet-with-permessi template with the multi-group dynamic_columns placeholder', () => {

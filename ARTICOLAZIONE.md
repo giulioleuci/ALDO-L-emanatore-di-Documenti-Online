@@ -82,11 +82,15 @@ partner hanno studenti reali.
 
 - `consiglioDiClasse` (`DocenteCdcVM[]`, costruito da
   `TeachingCouncilProjection.councilVmStrategy`) era invece **già
-  corretto** per il gruppo articolato: il resolver GLF sottostante
-  (`AldoTeachingAssignmentResolver`/`CattedraResolver`, delegato via GLF —
-  commit `5051dfc "refactor: delegate teaching resolution to GLF"`) risolve
-  già gli assignment su entrambe le classi partner quando il focus è la
-  parent, e ogni docente viene taggato `tipoArticolazione`:
+  corretto** per il gruppo articolato: il resolver sottostante
+  (`AldoTeachingAssignmentResolver`, che delega alla risoluzione GLF-side
+  tramite i tipi ambient `ResolutionConfiguration`/`ActorSource`/
+  `EffectiveAssignmentSource`/`EffectiveAssignmentResolver` consumati in
+  `AldoTeachingResolutionConfig.ts` — commit `5051dfc "refactor: delegate
+  teaching resolution to GLF"`, che ha sostituito il precedente
+  `CattedraResolver` ALDO-locale, non GLF) risolve già gli assignment su
+  entrambe le classi partner quando il focus è la parent, e ogni docente
+  viene taggato `tipoArticolazione`:
   `'COMUNE'` (stesso docente/materia in entrambe le partner),
   `'SEPARATO_PRIMO'`/`'SEPARATO_SECONDO'` (solo in una), calcolato
   confrontando gli id-classe degli assignment con

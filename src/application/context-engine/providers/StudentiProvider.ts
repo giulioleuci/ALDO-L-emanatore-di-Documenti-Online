@@ -76,7 +76,11 @@ export class StudentiProvider implements ContextProvider {
         religione: alunno.religione
       },
       curriculum: curriculumRecord(alunno),
-      indirizzo: { sigla: classe.indirizzo, nome: indirizzo.nome, nomeSintetico: indirizzo.nomeSintetico },
+      indirizzo: {
+        sigla: classe.indirizzo,
+        nome: indirizzo.nome,
+        nomeSintetico: indirizzo.nomeSintetico
+      },
       didattica: {
         carenze: { hasCarenze: dettaglio.length > 0, numero: dettaglio.length, dettaglio },
         piani: { hasPiani: pianiItems.length > 0, hasBes, items: pianiItems },

@@ -4,12 +4,13 @@ import { TutorProvider } from '../../../../src/application/context-engine/provid
 import { RappresentantiProvider } from '../../../../src/application/context-engine/providers/RappresentantiProvider';
 import { makeOptions } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
+import type { Row } from '../../../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
-function build(target: string) {
-  const db = new FakeDatabase(fixtureTables());
+function build(target: string, tables = fixtureTables()) {
+  const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi));
@@ -96,4 +97,46 @@ test('ClasseProvider: articulated partner points to parent + counterpart', () =>
   expect(c.articolazione?.parent).toBe('1F');
   expect(c.articolazione?.partner).toBe('1F-LSS');
   expect(c.articolazione?.partners).toBeNull();
+});
+
+test('RappresentantiProvider: articulated parent merges reps across partners, tagged by indirizzo (09 §10)', () => {
+  const tables = fixtureTables();
+  (tables['ALUNNI'] as Row[]).push(
+    {
+      EMAIL: 'r1@school.it',
+      COGNOMENOME: 'UNO REP',
+      CLASSE: '1F-LSO',
+      RELIGIONE: 'SI',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: true,
+      RAPPR_GEN: '',
+      CURRICULUM: null
+    },
+    {
+      EMAIL: 'r2@school.it',
+      COGNOMENOME: 'DUE REP',
+      CLASSE: '1F-LSS',
+      RELIGIONE: 'SI',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: true,
+      RAPPR_GEN: 'Tre Genitore',
+      CURRICULUM: null
+    }
+  );
+  const c = build('1F', tables).focus.classe!;
+  expect(c.rappresentanti).toEqual({
+    studenti: [
+      { nomeCompleto: 'UNO REP', email: 'r1@school.it', indirizzo: { nome: 'Liceo scientifico' } },
+      {
+        nomeCompleto: 'DUE REP',
+        email: 'r2@school.it',
+        indirizzo: { nome: 'Liceo scientifico scienze applicate' }
+      }
+    ],
+    genitori: [
+      { nomeCompleto: 'Tre Genitore', indirizzo: { nome: 'Liceo scientifico scienze applicate' } }
+    ]
+  });
 });

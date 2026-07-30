@@ -139,8 +139,8 @@ export interface CduClasse {
     orientamento: Array<{ nome: string; email: string }>;
   };
   rappresentanti?: {
-    studenti: Array<{ nomeCompleto: string; email: string }>;
-    genitori: Array<{ nomeCompleto: string }>;
+    studenti: Array<{ nomeCompleto: string; email: string; indirizzo?: { nome: string } }>;
+    genitori: Array<{ nomeCompleto: string; indirizzo?: { nome: string } }>;
   };
   consiglioDiClasse?: DocenteCdcVM[];
   /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */

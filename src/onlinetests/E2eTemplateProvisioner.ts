@@ -291,12 +291,15 @@ export class E2eTemplateProvisioner {
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
     }
+    // TODO(Task 7): implement docArticolata template provisioning
+    const docArticolata = '';
     return {
       verbale,
       condotta,
       riepilogo,
       aslImportSheet,
       docComplesso,
+      docArticolata,
       sheetPermessi,
       pianoLavoro,
       staticAttachment,

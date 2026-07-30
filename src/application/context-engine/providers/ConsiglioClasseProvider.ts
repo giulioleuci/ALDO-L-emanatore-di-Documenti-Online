@@ -1,5 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu } from '../Cdu';
+import type { Cdu, DocenteCdcVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
@@ -23,7 +23,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
   private readonly projection: CollectionProjectionInterceptor;
 
   constructor(
-    classi: IClasseRepository,
+    private readonly classi: IClasseRepository,
     materie: IMateriaRepository,
     private readonly teachingAssignments: ITeachingAssignmentResolver
   ) {
@@ -33,14 +33,27 @@ export class ConsiglioClasseProvider implements ContextProvider {
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
+    const classe = getClasseEntity(cdu);
     const assignments = resolveCouncilForProjection(
       this.teachingAssignments,
-      getClasseEntity(cdu),
+      classe,
       new Date(cdu.meta.date.oggi.iso),
       options.gestioneSupplenti
     );
     focusClasse.consiglioDiClasse = prepareCouncilAssignments(assignments) as never;
     this.projection.intercept('consiglio', cdu, cdu, options);
     attachCouncilProjectionMetadata(cdu, assignments);
+
+    if (this.classi.isArticolata(classe)) {
+      const consiglio: DocenteCdcVM[] = focusClasse.consiglioDiClasse ?? [];
+      focusClasse.consiglioDiClasseComune = consiglio.filter(
+        (docente) => docente.tipoArticolazione === 'COMUNE'
+      );
+      focusClasse.consiglioDiClasseSeparato = consiglio.filter(
+        (docente) =>
+          docente.tipoArticolazione === 'SEPARATO_PRIMO' ||
+          docente.tipoArticolazione === 'SEPARATO_SECONDO'
+      );
+    }
   }
 }

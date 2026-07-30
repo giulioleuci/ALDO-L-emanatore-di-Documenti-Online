@@ -154,6 +154,47 @@ test('tipoArticolazione follows resolved partner assignments for replacements an
   );
 });
 
+test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/separato (09 §10)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const recipe: Recipe = {
+    providers: ['class', 'consiglio'],
+    options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
+  };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+  expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
+    'rossi@school.it'
+  ]);
+  expect(
+    focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()
+  ).toEqual(['bianchi@school.it', 'verdi@school.it']);
+});
+
+test('ConsiglioClasseProvider: non-articulated class has no comune/separato split', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+  expect(focusClasse.consiglioDiClasseComune).toBeUndefined();
+  expect(focusClasse.consiglioDiClasseSeparato).toBeUndefined();
+});
+
 test('the council projection delegates grouping and ordering to GLF configuration', () => {
   expect(councilProjectionOperations).toEqual([
     {

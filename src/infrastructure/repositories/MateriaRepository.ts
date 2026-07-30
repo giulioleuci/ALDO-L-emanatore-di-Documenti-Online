@@ -46,6 +46,11 @@ export class MateriaRepository extends Repository<Materia> implements IMateriaRe
     return this.all().find((m) => m.id === id.value) ?? null;
   }
 
+  findSpecifiche(materia: MateriaId): Materia[] {
+    const prefix = `${materia.value}.`;
+    return this.all().filter((m) => typeof m.id === 'string' && m.id.startsWith(prefix));
+  }
+
   findEsamePrima(indirizzo: IndirizzoId): Materia[] {
     const spec = new MaterieEsamePrimaSpec(indirizzo);
     return this.all().filter((m) => spec.isSatisfiedBy(m));

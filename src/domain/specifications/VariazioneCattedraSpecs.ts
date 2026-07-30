@@ -6,7 +6,7 @@ import type { Email } from '../value-objects/Email';
 import { COL_VARIAZIONI } from '../../config/schema';
 
 /**
- * Variations covering a class. CLASSE_ID is CSV-containment (wildcard/multi-value),
+ * Variations covering a class. CLASSI is CSV-containment (wildcard/multi-value),
  * not a plain equality column, so this is not pushdown-eligible (ref ALDO_GLF_AUDIT_RESULTS.md D-4).
  */
 export class VariazioniPerClasseSpec implements Specification<VariazioneCattedra> {
@@ -20,7 +20,7 @@ export class VariazioniPerClasseSpec implements Specification<VariazioneCattedra
 }
 
 /**
- * Variations covering a subject. MATERIA_ID is CSV-containment, not pushdown-eligible
+ * Variations covering a subject. MATERIE is CSV-containment, not pushdown-eligible
  * (ref ALDO_GLF_AUDIT_RESULTS.md D-4).
  */
 export class VariazioniPerMateriaSpec implements Specification<VariazioneCattedra> {
@@ -41,5 +41,16 @@ export class VariazioniPerNuovoTitolareSpec implements Specification<VariazioneC
   }
   toQueryObject(): Record<string, unknown> {
     return { [COL_VARIAZIONI.NUOVO_TITOLARE]: this.email.value };
+  }
+}
+
+/** Variations by titolare — plain equality on TITOLARE, pushdown-eligible. */
+export class VariazioniPerTitolareSpec implements Specification<VariazioneCattedra> {
+  constructor(private readonly email: Email) {}
+  isSatisfiedBy(v: VariazioneCattedra): boolean {
+    return v.titolare === this.email.value;
+  }
+  toQueryObject(): Record<string, unknown> {
+    return { [COL_VARIAZIONI.TITOLARE]: this.email.value };
   }
 }

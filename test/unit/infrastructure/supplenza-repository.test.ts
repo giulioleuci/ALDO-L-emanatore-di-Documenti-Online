@@ -77,6 +77,34 @@ describe('SupplenzaRepository — indexed-lookup fallback, overlap, and hydratio
     ).toThrow(ValidationError);
   });
 
+  test('creaSupplenza detects overlap between a restriction-by-omission row and an explicit-CSV row for the same nominal cattedra', () => {
+    const db = new FakeDatabase({
+      ...fixtureTables(),
+      SUPPLENZE: [
+        ...(fixtureTables().SUPPLENZE ?? []),
+        {
+          TITOLARE: 'bianchi@school.it',
+          SUPPLENTE: 'rossi@school.it',
+          DAL: '2026-03-01',
+          AL: '2026-03-10',
+          // Restriction-by-omission: resolves to bianchi's own nominal FISI
+          // cattedre (5A, 1F-LSO per fixtureTables' CLASSI). Its raw CLASSI/
+          // MATERIE text ('' / 'FISI') never intersects the explicit-CSV row
+          // below ('5A' / 'FISI') -- the pre-expansion check alone would miss
+          // this real overlap (ref design 2026-07-30-cattedra-chain-verification §5).
+          CLASSI: '',
+          MATERIE: 'FISI'
+        }
+      ]
+    });
+    const r = new SupplenzaRepository(db);
+    const bianchi = Docente.fromData({ EMAIL: 'bianchi@school.it' });
+    const verdi = Docente.fromData({ EMAIL: 'verdi@school.it' });
+    expect(() =>
+      r.creaSupplenza(bianchi, verdi, new Date('2026-03-05'), new Date('2026-03-08'), '5A', 'FISI')
+    ).toThrow(ValidationError);
+  });
+
   test('requireDocente throws EntityNotFoundError for an unknown email', () => {
     const r = repo();
     const s = Supplenza.fromData({

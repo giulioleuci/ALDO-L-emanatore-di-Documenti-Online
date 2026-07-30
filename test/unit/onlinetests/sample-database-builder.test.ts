@@ -1,9 +1,10 @@
-import { SampleDatabaseBuilder } from '../../../src/onlinetests/SampleDatabaseBuilder';
+import { SampleDatabaseBuilder, MATERIA_1 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
   COL_CONF_DOC,
   COL_CONF_MAIL,
   COL_LOG_DOCS,
   COL_LOG_FOLD,
+  COL_MATERIE,
   TABLE
 } from '../../../src/config/schema';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
@@ -54,6 +55,16 @@ describe('SampleDatabaseBuilder', () => {
     expect(master.rows[0].ID_CARTELLA_GOOGLE).toBeDefined();
   });
 
+  it('seeds a MATERIA.SPECIFICA catalog row alongside the base MATERIA_1 row (design 2026-07-30)', () => {
+    const factory = fakeFactory();
+    const drive = new FakeDriveFacade();
+    new SampleDatabaseBuilder(factory, drive).build();
+
+    const materie = factory.__sheets.get(TABLE.MATERIE)!.rows;
+    expect(materie.some((row) => row[COL_MATERIE.ID] === MATERIA_1)).toBe(true);
+    expect(materie.some((row) => row[COL_MATERIE.ID] === `${MATERIA_1}.SPECIALE`)).toBe(true);
+  });
+
   it('seeds a SUPPLENZE row and a VARIAZIONI_CATTEDRA row on the same class/subject/date window, targeting different teachers', () => {
     const factory = fakeFactory();
     const drive = new FakeDriveFacade();
@@ -63,8 +74,8 @@ describe('SampleDatabaseBuilder', () => {
     const variazioni = factory.__sheets.get(TABLE.VARIAZIONI_CATTEDRA)!.rows;
     expect(supplenze).toHaveLength(1);
     expect(variazioni).toHaveLength(1);
-    expect(supplenze[0].CLASSI).toBe(variazioni[0].CLASSE_ID);
-    expect(supplenze[0].MATERIE).toBe(variazioni[0].MATERIA_ID);
+    expect(supplenze[0].CLASSI).toBe(variazioni[0].CLASSI);
+    expect(supplenze[0].MATERIE).toBe(variazioni[0].MATERIE);
 
     // The two sources must disagree on the resolved teacher, otherwise a role-resolution test
     // asserting "SUPPLENZE wins" would pass even if priority-resolution logic picked

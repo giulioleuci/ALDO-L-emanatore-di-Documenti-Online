@@ -55,6 +55,11 @@ const ASSIGNMENT_COLUMNS_E2E = [
   'LAB.SEMINARIO_POMERIDIANO',
   'INTERPRET.CHITARRA'
 ];
+/**
+ * Specifica catalog rows (design 2026-07-30-materie-specifica-catalog): every
+ * dotted SPECIFICA column in ASSIGNMENT_COLUMNS_E2E needs its own MATERIE row.
+ */
+const SPECIFICA_MATERIE_E2E = ['LAB.GRUPPO_A', 'LAB.SEMINARIO_POMERIDIANO', 'INTERPRET.CHITARRA'];
 export const INDIRIZZO_E2E = 'IND_E2E';
 export const DIPART_E2E = 'DIPART_E2E';
 export const DOCENTE_COUNT = 20;
@@ -411,6 +416,19 @@ export class E2eSampleDatabaseBuilder {
         [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
       });
     });
+    SPECIFICA_MATERIE_E2E.forEach((id) => {
+      sample.appendRow(TABLE.MATERIE, {
+        [COL_MATERIE.ID]: id,
+        [COL_MATERIE.NOME]: id,
+        [COL_MATERIE.SINTESI]: id,
+        [COL_MATERIE.COLORE_1]: '#1565C0',
+        [COL_MATERIE.COLORE_2]: '#90CAF9',
+        [COL_MATERIE.SIMBOLO]: id.charAt(0),
+        [COL_MATERIE.ESAME_CFG]: '',
+        [COL_MATERIE.EVOLUZIONE]: '',
+        [COL_MATERIE.IS_RELIGIONE_ALT]: false
+      });
+    });
   }
 
   /** 20 DOCENTI rows, alternating GENERE, all in the single E2E dipartimento; realistic Italian names (item 5). */
@@ -690,11 +708,11 @@ export class E2eSampleDatabaseBuilder {
       [COL_SUPPLENZE.MATERIE]: MATERIE_E2E[0]
     });
     sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: MATERIE_E2E[0],
-      [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(1),
+      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+      [COL_VARIAZIONI_CATTEDRA.MATERIE]: MATERIE_E2E[0],
+      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(1),
       [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(10),
-      [COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA]: '2026-07-05'
+      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
     });
     sample.appendRow(TABLE.SUPPLENZE, {
       [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(2),
@@ -721,11 +739,58 @@ export class E2eSampleDatabaseBuilder {
       [COL_SUPPLENZE.MATERIE]: 'ALT'
     });
     sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: 'IRC',
-      [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(6),
+      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'IRC',
+      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(6),
       [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(12),
-      [COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA]: '2026-07-05'
+      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
+    });
+    // 2-hop VARIAZIONI_CATTEDRA override chain on CLASSE_A/ITA (docente 2, the
+    // round-robin nominal holder, genuinely untouched by any other row above):
+    // docente2 -> docente15 -> docente16, both hops decorse before
+    // ASSIGNMENT_MATRIX_DATE_E2E so the chain must be walked to its final
+    // holder, not stop at the intermediate hop (ref design
+    // 2026-07-30-cattedra-chain-verification-design.md, EXPECTED_ASSIGNMENT_MATRIX 'ITA').
+    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
+      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'ITA',
+      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(2),
+      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(15),
+      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-01'
+    });
+    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
+      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'ITA',
+      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(15),
+      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(16),
+      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-08'
+    });
+    // Restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE): docente8
+    // nominally holds STO in both CLASSE_B and CLASSE_C_PARTNER (only subject he
+    // teaches). A CLASSI-omitted, MATERIE=STO-scoped supplenza must resolve
+    // to BOTH his nominal STO cattedre from his own actual teaching slots, not
+    // a naive cross-product with classes/subjects he doesn't teach (ref design
+    // 2026-07-30-cattedra-resolution-wiring-design.md §2 worked example).
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(8),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(17),
+      [COL_SUPPLENZE.DAL]: '2026-07-01',
+      [COL_SUPPLENZE.AL]: '2026-07-31',
+      [COL_SUPPLENZE.CLASSI]: '',
+      [COL_SUPPLENZE.MATERIE]: 'STO'
+    });
+    // .SPECIFICA-targeted MATERIE entry on a SUPPLENZE row (not VARIAZIONI_
+    // CATTEDRA, ref design §8 bullet 3): reuses the existing specifica-bearing
+    // LAB.SEMINARIO_POMERIDIANO slot (sub-project 4 catalog) rather than adding
+    // a new one. A fresh Aug window keeps this independent of the July
+    // EXPECTED_ASSIGNMENT_MATRIX assertion for the same slot.
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(4),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
+      [COL_SUPPLENZE.DAL]: '2026-08-01',
+      [COL_SUPPLENZE.AL]: '2026-08-10',
+      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+      [COL_SUPPLENZE.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO'
     });
   }
 

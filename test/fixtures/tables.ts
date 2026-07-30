@@ -394,17 +394,17 @@ export function fixtureTables(): Record<string, Row[]> {
     ],
     VARIAZIONI_CATTEDRA: [
       {
-        CLASSE_ID: '5A',
-        MATERIA_ID: 'MATE',
-        VECCHIO_TITOLARE: 'rossi@school.it',
+        TITOLARE: 'rossi@school.it',
         NUOVO_TITOLARE: 'bianchi@school.it',
-        DATA_DECORRENZA: '2025-10-01'
+        DAL: '2025-10-01',
+        CLASSI: '5A',
+        MATERIE: 'MATE'
       }
-      // A '1F'/FISI row was here (feat(R2d) 03421d8), but CLASSE_ID='1F' — the
+      // A '1F'/FISI row was here (feat(R2d) 03421d8), but CLASSI='1F' — the
       // articulated parent — never legitimately, nominally holds FISI: it's split
       // per-partner (1F-LSO=bianchi, 1F-LSS=verdi; see classe-articolazione.test.ts).
-      // VECCHIO_TITOLARE='bianchi@school.it' does match 1F-LSO's nominal FISI holder,
-      // so retargeting CLASSE_ID to '1F-LSO' would be internally consistent — but the
+      // TITOLARE='bianchi@school.it' does match 1F-LSO's nominal FISI holder,
+      // so retargeting CLASSI to '1F-LSO' would be internally consistent — but the
       // articulated-fixture invariant (bianchi=1F-LSO/FISI, rossi=COMUNE/MATE,
       // verdi=1F-LSS/FISI, all three present with distinct COMUNE/SEPARATO_PRIMO/
       // SEPARATO_SECONDO tags) is relied on verbatim by consiglio-provider.test.ts,
@@ -524,7 +524,14 @@ export function teachingSlotFixtureTables(): Record<string, Row[]> {
     { ID: 'MAT', IS_RELIGIONE_ALT: false },
     { ID: 'INF', IS_RELIGIONE_ALT: false },
     { ID: 'LAB', IS_RELIGIONE_ALT: false },
-    { ID: 'INTERPRET', IS_RELIGIONE_ALT: false }
+    { ID: 'INTERPRET', IS_RELIGIONE_ALT: false },
+    // Specifica catalog rows (design 2026-07-30-materie-specifica-catalog):
+    // every dotted MATERIE.ID used as a SPECIFICA slot must exist as its own row.
+    { ID: 'LAB.GRUPPO_A', NOME: 'Laboratorio - Gruppo A', IS_RELIGIONE_ALT: false },
+    { ID: 'LAB.GRUPPO_B', NOME: 'Laboratorio - Gruppo B', IS_RELIGIONE_ALT: false },
+    { ID: 'LAB.GRUPPO.A', NOME: 'Laboratorio - Gruppo.A', IS_RELIGIONE_ALT: false },
+    { ID: 'INTERPRET.CHITARRA', NOME: 'Interpretazione - Chitarra', IS_RELIGIONE_ALT: false },
+    { ID: 'INTERPRET.PIANOFORTE', NOME: 'Interpretazione - Pianoforte', IS_RELIGIONE_ALT: false }
   );
   return expanded;
 }

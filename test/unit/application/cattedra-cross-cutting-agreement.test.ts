@@ -69,18 +69,18 @@ function matrixTables(): Record<string, Row[]> {
   );
   tables.VARIAZIONI_CATTEDRA = [
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'MAT',
-      VECCHIO_TITOLARE: 'main@school.test',
+      TITOLARE: 'main@school.test',
       NUOVO_TITOLARE: 'changed-main@school.test',
-      DATA_DECORRENZA: '2026-07-01'
+      DAL: '2026-07-01',
+      CLASSI: '5A',
+      MATERIE: 'MAT'
     },
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'IRC',
-      VECCHIO_TITOLARE: 'irc@school.test',
+      TITOLARE: 'irc@school.test',
       NUOVO_TITOLARE: 'irc-change@school.test',
-      DATA_DECORRENZA: '2026-07-01'
+      DAL: '2026-07-01',
+      CLASSI: '5A',
+      MATERIE: 'IRC'
     }
   ];
   tables.SUPPLENZE = [

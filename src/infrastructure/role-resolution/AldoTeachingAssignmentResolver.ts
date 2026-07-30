@@ -10,6 +10,7 @@ import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import { MateriaId as MateriaIdValue } from '../../domain/value-objects/MateriaId';
 import { DocenteRepository } from '../repositories/DocenteRepository';
 import { AldoTeachingResolutionConfig } from './AldoTeachingResolutionConfig';
+import { AmbiguousVariazioneCattedraError } from '../../domain/errors/DomainError';
 
 export class AldoTeachingAssignmentResolver implements ITeachingAssignmentResolver {
   private readonly config: AldoTeachingResolutionConfig;
@@ -27,9 +28,19 @@ export class AldoTeachingAssignmentResolver implements ITeachingAssignmentResolv
     routingPolicy?: RoutingPolicyValue
   ): TeachingAssignment[] {
     const configuration = this.config.create(classe, materia);
-    return configuration
-      .resolve(data, routingPolicy ?? null)
-      .map((result) => this.toTeachingAssignment(result));
+    try {
+      return configuration
+        .resolve(data, routingPolicy ?? null)
+        .map((result) => this.toTeachingAssignment(result));
+    } catch (error) {
+      // The library never leaks past ALDO's own facade (ref CLAUDE.md
+      // "src/infrastructure/" — infra facades wrap library calls behind
+      // ALDO-owned interfaces).
+      if (error instanceof AmbiguousAssignmentOverrideError) {
+        throw new AmbiguousVariazioneCattedraError(error.message);
+      }
+      throw error;
+    }
   }
 
   resolveConsiglio(

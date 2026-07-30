@@ -79,6 +79,16 @@ test('getTeachingSlots enumerates every populated subject slot and preserves arb
   });
 });
 
+test('getTeachingSlots throws MateriaNotFoundError when a SPECIFICA slot has no matching MATERIE row', () => {
+  const tables = teachingSlotFixtureTables();
+  const classe5A = tables.CLASSI!.find((row) => row.ID === '5A')!;
+  classe5A['LAB.UNREGISTERED'] = 'ghost@school.test';
+  const r = new ClasseRepository(new FakeDatabase(tables));
+  const classe = r.findById(ClasseId.of('5A'))!;
+
+  expect(() => r.getTeachingSlots(classe)).toThrow(MateriaNotFoundError);
+});
+
 test('getConsiglioDiClasse derives cattedre from teacher columns (05/06)', () => {
   // IRC is now a MATERIE row (IS_RELIGIONE_ALT flag, ref 01_SCHEMA_DATABASE.md
   // Nota IRC/ALT) and 5A.IRC is populated in the fixture, so this raw
@@ -167,6 +177,32 @@ test('two sequential dynamic-column writes on the same Classe instance both stic
   expect(row.COORD).toBe('bianchi@school.it');
   expect(ruoli.SEGRETARIO).toBe('bianchi@school.it');
   expect(row.MATE).toBe('rossi@school.it');
+});
+
+describe('findByDocenteAssegnato', () => {
+  test('finds every class where the docente holds any teaching slot (MAIN/ITP/SPECIFICA)', () => {
+    const r = new ClasseRepository(new FakeDatabase(teachingSlotFixtureTables()));
+
+    expect(r.findByDocenteAssegnato('main@school.test').map((c) => c.id)).toEqual(['5A']);
+    expect(r.findByDocenteAssegnato('specific-a@school.test').map((c) => c.id)).toEqual(['5A']);
+  });
+
+  test('a docente holding MATE in several classes is found in all of them', () => {
+    const r = repo();
+
+    expect(r.findByDocenteAssegnato('rossi@school.it').map((c) => c.id).sort()).toEqual([
+      '1F',
+      '1F-LSO',
+      '1F-LSS',
+      '5A'
+    ]);
+  });
+
+  test('a docente with no teaching slot anywhere yields []', () => {
+    const r = repo();
+
+    expect(r.findByDocenteAssegnato('nobody@school.it')).toEqual([]);
+  });
 });
 
 // --- A16: remaining uncovered branches (indirizzo miss, articolazione edge

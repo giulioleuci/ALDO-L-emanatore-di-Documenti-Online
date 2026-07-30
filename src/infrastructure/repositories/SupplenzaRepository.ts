@@ -1,9 +1,11 @@
 import { Supplenza } from '../../domain/entities/Supplenza';
 import { DocenteRepository } from './DocenteRepository';
+import { ClasseRepository } from './ClasseRepository';
 import { EntityNotFoundError, ValidationError } from '../../domain/errors/DomainError';
 import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
 import type { Docente } from '../../domain/entities/Docente';
 import { TABLE, COL_SUPPLENZE } from '../../config/schema';
+import { expandRowToPairs, pairsOverlap } from '../role-resolution/RowScopeExpansion';
 
 const utils = new UtilsService();
 /** ISO day via CoreUtilsLib (UTC — deterministic across host timezones). */
@@ -20,10 +22,12 @@ function isoDate(d: Date): string {
  */
 export class SupplenzaRepository extends Repository<Supplenza> implements ISupplenzaRepository {
   private readonly docenti: DocenteRepository;
+  private readonly classi: ClasseRepository;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.SUPPLENZE, Supplenza);
     this.docenti = new DocenteRepository(database);
+    this.classi = new ClasseRepository(database);
     // O(1) hot-lookup indices for findByTitolare/findBySupplente (ref
     // REPORT_GLF.md A2). SUPPLENZE has no Specification here (the filter is a
     // direct entity-field predicate, not a domain spec), so this bypasses
@@ -57,8 +61,15 @@ export class SupplenzaRepository extends Repository<Supplenza> implements ISuppl
   /**
    * Creates and appends a supplenza, enforcing the invariant that a teacher has
    * no two supplenze with overlapping periods for the same class+subject context
-   * (ref 04 §14, 06 §14). Appends through the library table seam; throws (without
-   * creating) on violation.
+   * (ref 04 §14, 06 §14). Two rows conflict when their periods overlap and
+   * EITHER their raw CLASSI/MATERIE CSV/wildcard text overlaps (`contestoOverlaps`,
+   * the ordinary case) OR their post-expansion concrete (classe, materia, kind,
+   * specifica) cattedre coincide — the raw-text check alone misses a conflict
+   * between a restriction-by-omission row (empty CLASSI) and an explicit-CSV
+   * row for the same titolare, since their raw scopes never textually
+   * intersect even when they resolve to the same cattedre (ref design
+   * 2026-07-30-cattedra-chain-verification §5). Appends through the library
+   * table seam; throws (without creating) on violation.
    */
   creaSupplenza(
     titolare: Docente,
@@ -76,7 +87,19 @@ export class SupplenzaRepository extends Repository<Supplenza> implements ISuppl
       [COL_SUPPLENZE.CLASSI]: classi,
       [COL_SUPPLENZE.MATERIE]: materie
     });
-    const conflitto = this.findByTitolare(titolare).find((s) => nuova.contestoOverlaps(s));
+    const anchorEmail = titolare.id ?? '';
+    const nuovaPairs = expandRowToPairs(this.classi, anchorEmail, classi, materie);
+    const conflitto = this.findByTitolare(titolare).find((s) => {
+      if (nuova.contestoOverlaps(s)) return true;
+      if (!nuova.getPeriodo().overlaps(s.getPeriodo())) return false;
+      const existingPairs = expandRowToPairs(
+        this.classi,
+        anchorEmail,
+        s.getClassiRaw(),
+        s.getMaterieRaw()
+      );
+      return pairsOverlap(nuovaPairs, existingPairs);
+    });
     if (conflitto !== undefined) {
       throw new ValidationError(
         `Supplenza sovrapposta per ${titolare.id ?? '?'} nello stesso contesto classe+materia`

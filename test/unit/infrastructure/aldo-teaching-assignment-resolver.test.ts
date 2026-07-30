@@ -6,6 +6,7 @@ import type { Row } from '../../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { teachingSlotFixtureTables } from '../../../test/fixtures/tables';
+import { AmbiguousVariazioneCattedraError } from '../../../src/domain/errors/DomainError';
 
 function freshTables(): Record<string, Row[]> {
   const tables = teachingSlotFixtureTables();
@@ -70,46 +71,46 @@ test('resolves MAIN, ITP, arbitrary SPECIFICA, IRC, and ALT through GLF mappings
   );
   tables.VARIAZIONI_CATTEDRA = [
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'MAT',
-      VECCHIO_TITOLARE: 'main@school.test',
+      TITOLARE: 'main@school.test',
       NUOVO_TITOLARE: 'main-new@school.test',
-      DATA_DECORRENZA: '2026-01-15'
+      DAL: '2026-01-15',
+      CLASSI: '5A',
+      MATERIE: 'MAT'
     },
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'INF',
-      VECCHIO_TITOLARE: 'itp@school.test',
+      TITOLARE: 'itp@school.test',
       NUOVO_TITOLARE: 'itp-new@school.test',
-      DATA_DECORRENZA: '2026-01-15'
+      DAL: '2026-01-15',
+      CLASSI: '5A',
+      MATERIE: 'INF'
     },
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'LAB',
-      VECCHIO_TITOLARE: 'specific-a@school.test',
+      TITOLARE: 'specific-a@school.test',
       NUOVO_TITOLARE: 'specific-old-new@school.test',
-      DATA_DECORRENZA: '2025-12-01'
+      DAL: '2025-12-01',
+      CLASSI: '5A',
+      MATERIE: 'LAB'
     },
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'LAB',
-      VECCHIO_TITOLARE: 'specific-a@school.test',
+      TITOLARE: 'specific-a@school.test',
       NUOVO_TITOLARE: 'specific-new@school.test',
-      DATA_DECORRENZA: '2026-01-15'
+      DAL: '2026-01-15',
+      CLASSI: '5A',
+      MATERIE: 'LAB'
     },
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'IRC',
-      VECCHIO_TITOLARE: 'irc@school.test',
+      TITOLARE: 'irc@school.test',
       NUOVO_TITOLARE: 'irc-new@school.test',
-      DATA_DECORRENZA: '2026-01-10'
+      DAL: '2026-01-10',
+      CLASSI: '5A',
+      MATERIE: 'IRC'
     },
     {
-      CLASSE_ID: '5A',
-      MATERIA_ID: 'ALT',
-      VECCHIO_TITOLARE: 'alt@school.test',
+      TITOLARE: 'alt@school.test',
       NUOVO_TITOLARE: 'alt-new@school.test',
-      DATA_DECORRENZA: '2026-01-10'
+      DAL: '2026-01-10',
+      CLASSI: '5A',
+      MATERIE: 'ALT'
     }
   ];
   tables.SUPPLENZE = [
@@ -211,57 +212,41 @@ test('resolves MAIN, ITP, arbitrary SPECIFICA, IRC, and ALT through GLF mappings
   expect(ordinaryCouncil.map(columnOf)).not.toEqual(expect.arrayContaining(['IRC', 'ALT']));
 });
 
-test('rejects tied latest overrides, a stale old holder, and a missing new holder', () => {
+test('rejects tied latest overrides and a missing new holder', () => {
   const cases: Array<{
     name: string;
     variazioni: Row[];
-    error:
-      | typeof AmbiguousAssignmentOverrideError
-      | typeof InconsistentAssignmentOverrideError
-      | typeof AssignmentActorNotFoundError;
+    error: typeof AmbiguousVariazioneCattedraError | typeof AssignmentActorNotFoundError;
   }> = [
     {
       name: 'tied',
       variazioni: [
         {
-          CLASSE_ID: '5A',
-          MATERIA_ID: 'MAT',
-          VECCHIO_TITOLARE: 'main@school.test',
+          TITOLARE: 'main@school.test',
           NUOVO_TITOLARE: 'specific-a@school.test',
-          DATA_DECORRENZA: '2026-01-01'
+          DAL: '2026-01-01',
+          CLASSI: '5A',
+          MATERIE: 'MAT'
         },
         {
-          CLASSE_ID: '5A',
-          MATERIA_ID: 'MAT',
-          VECCHIO_TITOLARE: 'main@school.test',
+          TITOLARE: 'main@school.test',
           NUOVO_TITOLARE: 'specific-b@school.test',
-          DATA_DECORRENZA: '2026-01-01'
+          DAL: '2026-01-01',
+          CLASSI: '5A',
+          MATERIE: 'MAT'
         }
       ],
-      error: AmbiguousAssignmentOverrideError
-    },
-    {
-      name: 'stale',
-      variazioni: [
-        {
-          CLASSE_ID: '5A',
-          MATERIA_ID: 'MAT',
-          VECCHIO_TITOLARE: 'other@school.test',
-          NUOVO_TITOLARE: 'specific-a@school.test',
-          DATA_DECORRENZA: '2026-01-01'
-        }
-      ],
-      error: InconsistentAssignmentOverrideError
+      error: AmbiguousVariazioneCattedraError
     },
     {
       name: 'missing',
       variazioni: [
         {
-          CLASSE_ID: '5A',
-          MATERIA_ID: 'MAT',
-          VECCHIO_TITOLARE: 'main@school.test',
+          TITOLARE: 'main@school.test',
           NUOVO_TITOLARE: 'missing@school.test',
-          DATA_DECORRENZA: '2026-01-01'
+          DAL: '2026-01-01',
+          CLASSI: '5A',
+          MATERIE: 'MAT'
         }
       ],
       error: AssignmentActorNotFoundError
@@ -277,6 +262,29 @@ test('rejects tied latest overrides, a stale old holder, and a missing new holde
       resolver.resolveMateria(classe5A, MateriaId.of('MAT'), new Date('2026-02-15'))
     ).toThrow(scenario.error);
   }
+});
+
+test('a VARIAZIONI_CATTEDRA row whose TITOLARE matches no actual holder is inert, not an error', () => {
+  const tables = freshTables();
+  tables.VARIAZIONI_CATTEDRA = [
+    {
+      TITOLARE: 'other@school.test',
+      NUOVO_TITOLARE: 'specific-a@school.test',
+      DAL: '2026-01-01',
+      CLASSI: '5A',
+      MATERIE: 'MAT'
+    }
+  ];
+  tables.SUPPLENZE = [];
+  const { resolver, classe5A } = resolverFor(tables);
+
+  const [assignment] = resolver.resolveMateria(
+    classe5A,
+    MateriaId.of('MAT'),
+    new Date('2026-02-15')
+  );
+
+  expect(assignment!.titolare.email.value).toBe('main@school.test');
 });
 
 test('rejects delegation cycles and overlapping outgoing delegations', () => {
@@ -389,11 +397,11 @@ test('composes articulated partner MAIN, ITP, and SPECIFICA slots through GLF', 
   );
   tables.VARIAZIONI_CATTEDRA = [
     {
-      CLASSE_ID: '1F-LSS',
-      MATERIA_ID: 'MAT',
-      VECCHIO_TITOLARE: 'main@school.test',
+      TITOLARE: 'main@school.test',
       NUOVO_TITOLARE: 'articulated-new@school.test',
-      DATA_DECORRENZA: '2026-01-15'
+      DAL: '2026-01-15',
+      CLASSI: '1F-LSS',
+      MATERIE: 'MAT'
     }
   ];
   tables.SUPPLENZE = [
@@ -447,11 +455,11 @@ test('retains each partner owner for wildcard articulated changes and delegation
   );
   tables.VARIAZIONI_CATTEDRA = [
     {
-      CLASSE_ID: '*',
-      MATERIA_ID: '*',
-      VECCHIO_TITOLARE: 'main@school.test',
+      TITOLARE: 'main@school.test',
       NUOVO_TITOLARE: 'articulated-common-new@school.test',
-      DATA_DECORRENZA: '2026-01-15'
+      DAL: '2026-01-15',
+      CLASSI: '*',
+      MATERIE: '*'
     }
   ];
   tables.SUPPLENZE = [

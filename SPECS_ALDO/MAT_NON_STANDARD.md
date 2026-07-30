@@ -71,7 +71,7 @@ Per ogni colonna generata:
 
 - **Sorgente:** Tabella `CLASSI` (colonne dinamiche materie + colonne speciali `IRC` e `ALT`).
 - **Resilienza:** La risoluzione DEVE SEMPRE passare per `RoleResolutionLib` per onorare la gerarchia di Priority (Supplenti > Variazioni > Titolari).
-- **Granularità degli override:** lo schema corrente di `VARIAZIONI_CATTEDRA` e `SUPPLENZE` non contiene un discriminatore più fine di classe, materia e attore nominato. Di conseguenza una riga si applica a tutti gli slot `MAIN`/`ITP`/`SPECIFICA` corrispondenti detenuti da quell'attore; non è lecito inventare un filtro di specificità assente dal DB.
+- **Granularità degli override (slot-targeting):** una riga `VARIAZIONI_CATTEDRA`/`SUPPLENZE` può indirizzare l'intera materia (tutti gli slot `MAIN`/`ITP`/`SPECIFICA`) oppure uno slot specifico tramite `MATERIE` in forma `MATERIA.itp`/`MATERIA.SPECIFICA` — vedi progetto 3 (slot-targeting) e progetto 4 (catalogo `MATERIE` composito) del 2026-07-30. Un valore `SPECIFICA` usato in questo modo DEVE corrispondere a una riga `MATERIE` reale con `ID = MATERIA.SPECIFICA` (invariante del catalogo composito, `01_SCHEMA_DATABASE.md` §MATERIE) — un filtro di specificità che non corrisponde a nessuna riga `MATERIE` non è lecito.
 - **Invariante Permessi:** Il Coordinatore di classe (`CLASSI.COORD`) DEVE SEMPRE mantenere l'accesso in scrittura su tutte le colonne generate, indipendentemente dalla materia.
 
 ---

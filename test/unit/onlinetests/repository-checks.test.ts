@@ -222,11 +222,11 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
     VARIAZIONI_CATTEDRA: includeClasse
       ? [
           {
-            CLASSE_ID: CLASSE_BASE,
-            MATERIA_ID: MATERIA_1,
-            VECCHIO_TITOLARE: DOCENTE_1,
+            TITOLARE: DOCENTE_1,
             NUOVO_TITOLARE: DOCENTE_3,
-            DATA_DECORRENZA: '2026-07-05'
+            DAL: '2026-07-05',
+            CLASSI: CLASSE_BASE,
+            MATERIE: MATERIA_1
           }
         ]
       : []
@@ -343,15 +343,15 @@ describe('registerRepositoryChecks', () => {
     expect(rows[TABLE.VARIAZIONI_CATTEDRA]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
-          [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: 'MAT',
-          [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(1),
+          [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'MAT',
+          [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(1),
           [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(10)
         }),
         expect.objectContaining({
-          [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_A,
-          [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: 'IRC',
-          [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: e2eDocenteEmail(6),
+          [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'IRC',
+          [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(6),
           [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(12)
         })
       ])

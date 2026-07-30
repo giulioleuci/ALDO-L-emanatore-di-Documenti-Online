@@ -116,11 +116,11 @@ test('tipoArticolazione follows resolved partner assignments for replacements an
     }
   );
   tables.VARIAZIONI_CATTEDRA!.push({
-    CLASSE_ID: '1F-LSS',
-    MATERIA_ID: 'MATE',
-    VECCHIO_TITOLARE: 'rossi@school.it',
+    TITOLARE: 'rossi@school.it',
     NUOVO_TITOLARE: 'replacement@school.test',
-    DATA_DECORRENZA: '2026-01-01'
+    DAL: '2026-01-01',
+    CLASSI: '1F-LSS',
+    MATERIE: 'MATE'
   });
   tables.SUPPLENZE!.push({
     TITOLARE: 'replacement@school.test',

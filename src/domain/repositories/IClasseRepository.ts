@@ -29,6 +29,8 @@ export interface IClasseRepository {
   getDocentiPerMateria(classe: Classe, materia: MateriaId): Docente[];
   getITPPerMateria(classe: Classe, materia: MateriaId): Docente[];
   getTeachingSlots(classe: Classe): TeachingSlotDescriptor[];
+  /** Classes where the docente holds any teaching slot (MAIN/ITP/SPECIFICA), across all subjects. */
+  findByDocenteAssegnato(docenteEmail: string): Classe[];
   getAllDocentiCDC(classe: Classe): Docente[];
   getDocentiIRC(classe: Classe): Docente[];
   getDocentiALT(classe: Classe): Docente[];

@@ -39,7 +39,12 @@ const EXPECTED_STUDENT_COUNCILS = [
   {
     student: e2eAlunnoEmail(1),
     actors: [
+      // docente2 still appears in its own right for INF/ITP (ENTRAMBI shows both
+      // titolare and supplente as separate rows, ref BOTH_EQUAL routing);
+      // docente16 is ITA's own final holder (2-hop VARIAZIONI_CATTEDRA chain
+      // 2 -> 15 -> 16), a fully-applied override with no dual-display.
       e2eDocenteEmail(2),
+      e2eDocenteEmail(16),
       e2eDocenteEmail(3),
       e2eDocenteEmail(4),
       e2eDocenteEmail(10),
@@ -49,7 +54,12 @@ const EXPECTED_STUDENT_COUNCILS = [
   {
     student: e2eAlunnoEmail(2),
     actors: [
+      // docente2 still appears in its own right for INF/ITP (ENTRAMBI shows both
+      // titolare and supplente as separate rows, ref BOTH_EQUAL routing);
+      // docente16 is ITA's own final holder (2-hop VARIAZIONI_CATTEDRA chain
+      // 2 -> 15 -> 16), a fully-applied override with no dual-display.
       e2eDocenteEmail(2),
+      e2eDocenteEmail(16),
       e2eDocenteEmail(3),
       e2eDocenteEmail(4),
       e2eDocenteEmail(10),
@@ -60,7 +70,12 @@ const EXPECTED_STUDENT_COUNCILS = [
   {
     student: e2eAlunnoEmail(4),
     actors: [
+      // docente2 still appears in its own right for INF/ITP (ENTRAMBI shows both
+      // titolare and supplente as separate rows, ref BOTH_EQUAL routing);
+      // docente16 is ITA's own final holder (2-hop VARIAZIONI_CATTEDRA chain
+      // 2 -> 15 -> 16), a fully-applied override with no dual-display.
       e2eDocenteEmail(2),
+      e2eDocenteEmail(16),
       e2eDocenteEmail(3),
       e2eDocenteEmail(4),
       e2eDocenteEmail(5),

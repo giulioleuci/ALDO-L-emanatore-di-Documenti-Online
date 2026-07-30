@@ -154,11 +154,11 @@ function sampleSeedTables(): Record<string, Row[]> {
     ],
     VARIAZIONI_CATTEDRA: [
       {
-        CLASSE_ID: CLASSE_BASE,
-        MATERIA_ID: MATERIA_1,
-        VECCHIO_TITOLARE: DOCENTE_1,
+        TITOLARE: DOCENTE_1,
         NUOVO_TITOLARE: DOCENTE_3,
-        DATA_DECORRENZA: '2026-07-05'
+        DAL: '2026-07-05',
+        CLASSI: CLASSE_BASE,
+        MATERIE: MATERIA_1
       }
     ],
     CONF_DOC: [

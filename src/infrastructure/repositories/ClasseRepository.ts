@@ -49,6 +49,7 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   private readonly indirizzi: IndirizzoRepository;
   private readonly alunni: AlunnoRepository;
   private readonly materieColumns: Map<string, MateriaColumns>;
+  private readonly materieIds: Set<string>;
 
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.CLASSI, Classe);
@@ -56,9 +57,15 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     this.indirizzi = new IndirizzoRepository(database);
     this.alunni = new AlunnoRepository(database);
     this.materieColumns = new Map<string, MateriaColumns>();
+    this.materieIds = new Set<string>();
     for (const row of database.tables[TABLE.MATERIE]!.getAllRows()) {
       const id = row[COL_MATERIE.ID];
-      if (typeof id === 'string' && id.length > 0) {
+      if (typeof id !== 'string' || id.length === 0) continue;
+      this.materieIds.add(id);
+      // Specifica catalog rows (design 2026-07-30-materie-specifica-catalog):
+      // a dotted MATERIE.ID is a catalog entry for a slot suffix, not a
+      // cattedra-matrix column of its own — don't register it as a base subject.
+      if (!id.includes('.')) {
         this.materieColumns.set(id, { main: id, itp: `${id}.itp` });
       }
     }
@@ -131,11 +138,24 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       add(itp, 'ITP', null);
       for (const column of Object.keys(row)) {
         if (column.startsWith(prefix) && column !== itp) {
-          add(column, 'SPECIFICA', column.slice(prefix.length));
+          const specifica = column.slice(prefix.length);
+          if (!this.materieIds.has(column)) {
+            throw new MateriaNotFoundError(
+              `Specifica ${column} non registrata in MATERIE (materia ${materia})`
+            );
+          }
+          add(column, 'SPECIFICA', specifica);
         }
       }
     }
     return descriptors;
+  }
+
+  /** Classes where the docente holds any teaching slot (MAIN/ITP/SPECIFICA), across all subjects. */
+  findByDocenteAssegnato(docenteEmail: string): Classe[] {
+    return this.findAll().filter((classe) =>
+      this.getTeachingSlots(classe).some((slot) => slot.actorEmails.includes(docenteEmail))
+    );
   }
 
   /** All teachers of the class council: every main + itp column, deduped, sorted by surname. */

@@ -18,6 +18,7 @@ import {
 import {
   ASSIGNMENT_MATRIX_DATE_E2E,
   CLASSE_A,
+  CLASSE_B,
   CLASSE_C,
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
@@ -57,7 +58,12 @@ const EXPECTED_ASSIGNMENT_MATRIX: ExpectedAssignment[] = [
     actor: e2eDocenteEmail(5)
   },
   { materia: 'IRC', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(12) },
-  { materia: 'ALT', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(14) }
+  { materia: 'ALT', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(14) },
+  // 2-hop VARIAZIONI_CATTEDRA override chain (docente2 -> docente15 -> docente16,
+  // both hops decorse before ASSIGNMENT_MATRIX_DATE_E2E): must resolve to the
+  // final holder, not the intermediate one (ref design
+  // 2026-07-30-cattedra-chain-verification-design.md).
+  { materia: 'ITA', kind: 'MAIN', specifica: null, actor: e2eDocenteEmail(16) }
 ];
 
 function matrixDiagnostic(
@@ -144,6 +150,54 @@ export function registerEffectiveAssignmentMatrixChecks(
       }
     }
   );
+
+  runner.add(
+    'Effective assignment matrix: restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE) resolves both of the anchor\'s own STO cattedre',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const materiaSto = MateriaId.of('STO');
+      for (const classeId of [CLASSE_B, CLASSE_C_PARTNER]) {
+        const classe = classi.findById(classeId);
+        if (classe === null) throw new ValidationError(`Classe seed ${classeId} non trovata`);
+        // CLASSE_C_PARTNER is articulated: resolveMateria resolves BOTH partners'
+        // slots (AldoTeachingResolutionConfig.resolutionClasses), so pick the
+        // entry actually owned by this classeId rather than assuming index 0.
+        const actor = resolver
+          .resolveMateria(classe, materiaSto, ASSIGNMENT_MATRIX_DATE_E2E, RoutingPolicy.DELEGATE_OR_PRINCIPAL)
+          .find((candidate) => candidate.classeId.value === classeId)?.docenteEffettivo.id;
+        if (actor !== e2eDocenteEmail(17)) {
+          throw new ValidationError(
+            `class=${classeId}, subject=STO, slotKind=MAIN, specificity=null, expectedActor=${e2eDocenteEmail(17)}, actualActor=${actor ?? 'missing'}, glfTrace=[]`
+          );
+        }
+      }
+    }
+  );
+
+  runner.add(
+    'Effective assignment matrix: .SPECIFICA-targeted MATERIE entry on a SUPPLENZE row overrides just that slot',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const classe = classi.findById(CLASSE_A);
+      if (classe === null) throw new ValidationError(`Classe seed ${CLASSE_A} non trovata`);
+      const assignment = resolver
+        .resolveMateria(
+          classe,
+          MateriaId.of('LAB'),
+          new Date('2026-08-05T09:00:00Z'),
+          RoutingPolicy.DELEGATE_OR_PRINCIPAL
+        )
+        .find(
+          (candidate) =>
+            candidate.slot.kind === 'SPECIFICA' && candidate.slot.specifica === 'SEMINARIO_POMERIDIANO'
+        );
+      if (assignment?.docenteEffettivo.id !== e2eDocenteEmail(18)) {
+        throw new ValidationError(
+          `class=${CLASSE_A}, subject=LAB, slotKind=SPECIFICA, specificity=SEMINARIO_POMERIDIANO, expectedActor=${e2eDocenteEmail(18)}, actualActor=${assignment?.docenteEffettivo.id ?? 'missing'}, glfTrace=${JSON.stringify(assignment?.trace ?? [])}`
+        );
+      }
+    }
+  );
 }
 
 /**
@@ -214,11 +268,11 @@ export function registerRepositoryChecks(
       const classe = classi.findById(CLASSE_BASE);
       if (classe === null) throw new ValidationError(`Classe seed ${CLASSE_BASE} non trovata`);
       // Inside SUPPLENZE.DAL..AL (2026-07-01..2026-07-10) and BEFORE
-      // VARIAZIONI_CATTEDRA.DATA_DECORRENZA (2026-07-05): GLF applies
+      // VARIAZIONI_CATTEDRA.DAL (2026-07-05): GLF applies
       // SUPPLENZE routing to whichever holder priority 2/3 already produced.
       // Since SUPPLENZE.TITOLARE
       // is DOCENTE_1 (the CLASSI nominal holder, not the not-yet-decorsa
-      // VARIAZIONI_CATTEDRA holder), this date must stay before DATA_DECORRENZA so
+      // VARIAZIONI_CATTEDRA holder), this date must stay before DAL so
       // priority 2/3 still yields DOCENTE_1 for priority 1 to find and redirect.
       const docente = cattedre.resolveMateria(
         classe,
@@ -241,7 +295,7 @@ export function registerRepositoryChecks(
       const classe = classi.findById(CLASSE_BASE);
       if (classe === null) throw new ValidationError(`Classe seed ${CLASSE_BASE} non trovata`);
       // After SUPPLENZE.AL (2026-07-10) — SUPPLENZE no longer applies — and on/after
-      // VARIAZIONI_CATTEDRA.DATA_DECORRENZA (2026-07-05), so priority 2 wins.
+      // VARIAZIONI_CATTEDRA.DAL (2026-07-05), so priority 2 wins.
       const docente = cattedre.resolveMateria(
         classe,
         materia,
@@ -262,7 +316,7 @@ export function registerRepositoryChecks(
     () => {
       const classe = classi.findById(CLASSE_BASE);
       if (classe === null) throw new ValidationError(`Classe seed ${CLASSE_BASE} non trovata`);
-      // Before SUPPLENZE.DAL (2026-07-01) and before VARIAZIONI_CATTEDRA.DATA_DECORRENZA
+      // Before SUPPLENZE.DAL (2026-07-01) and before VARIAZIONI_CATTEDRA.DAL
       // (2026-07-05) — neither source applies, so the CLASSI nominal holder (priority 3) wins.
       const docente = cattedre.resolveMateria(
         classe,

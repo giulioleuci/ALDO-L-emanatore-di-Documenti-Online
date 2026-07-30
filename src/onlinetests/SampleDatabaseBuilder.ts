@@ -179,6 +179,18 @@ export class SampleDatabaseBuilder {
       [COL_MATERIE.ESAME_CFG]: '',
       [COL_MATERIE.EVOLUZIONE]: ''
     });
+    // Specifica catalog row (design 2026-07-30-materie-specifica-catalog):
+    // a dotted MATERIE.ID, catalog-only here (no CLASSI SPECIFICA column uses it).
+    sample.appendRow(TABLE.MATERIE, {
+      [COL_MATERIE.ID]: `${MATERIA_1}.SPECIALE`,
+      [COL_MATERIE.NOME]: 'Matematica speciale',
+      [COL_MATERIE.SINTESI]: 'MAT.SPECIALE',
+      [COL_MATERIE.COLORE_1]: '#1565C0',
+      [COL_MATERIE.COLORE_2]: '#90CAF9',
+      [COL_MATERIE.SIMBOLO]: 'M',
+      [COL_MATERIE.ESAME_CFG]: '',
+      [COL_MATERIE.EVOLUZIONE]: ''
+    });
   }
 
   private seedDocenti(sample: ISampleSpreadsheet): void {
@@ -309,11 +321,11 @@ export class SampleDatabaseBuilder {
       [COL_SUPPLENZE.MATERIE]: MATERIA_1
     });
     sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSE_ID]: CLASSE_BASE,
-      [COL_VARIAZIONI_CATTEDRA.MATERIA_ID]: MATERIA_1,
-      [COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE]: DOCENTE_1,
+      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_BASE,
+      [COL_VARIAZIONI_CATTEDRA.MATERIE]: MATERIA_1,
+      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: DOCENTE_1,
       [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: DOCENTE_3,
-      [COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA]: '2026-07-05'
+      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
     });
   }
 

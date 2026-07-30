@@ -123,9 +123,11 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 
 Catalogo delle discipline. I codici univoci (`ID`) sono usati come nomi di colonne dinamiche nelle tabelle CLASSI e CARENZE. Lookup table stabile. Ogni colonna dinamica `[MATERIA]` delle tabelle CLASSI e CARENZE DEVE corrispondere a un `ID` presente in questa tabella.
 
+`ID` può essere una sigla semplice (`MATE`) oppure un composito `[MATERIA].[SPECIFICA]` (es. `INTERPRET.CHITARRA`) che cataloga una specifica indirizzata da uno slot `CLASSI`/`CARENZE` con suffisso dinamico (`MAT_NON_STANDARD.md` §3). Una riga con `ID` composito usa le stesse colonne di una riga base (nessuna colonna aggiuntiva); `IS_RELIGIONE_ALT` non ha senso per una riga specifica (IRC/ALT non hanno specifiche) ed è sempre `false`/assente, senza enforcement a livello DB. **Invariante:** se esiste una riga `MATERIE` con `ID` composito, la parte `[MATERIA]` DEVE esistere anche come riga `MATERIE` propria (sigla semplice).
+
 | Colonna            | Tipo    | PK  | Vincoli                   | Descrizione                                                                                                                                                                                                                                          |
 | ------------------ | ------- | --- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ID`               | String  | ✅  | Uppercase, 2–10 caratteri | Sigla univoca (es. `ITA`, `MAT`)                                                                                                                                                                                                                     |
+| `ID`               | String  | ✅  | Sigla semplice: uppercase, 2–10 caratteri; oppure composito `[MATERIA].[SPECIFICA]` | Sigla univoca (es. `ITA`, `MAT`) o composito (es. `INTERPRET.CHITARRA`)                                                                                                                                                                     |
 | `NOME`             | String  | —   | —                         | Nome esteso per documenti ufficiali (es. `Lingua e letteratura italiana`)                                                                                                                                                                            |
 | `SINTESI`          | String  | —   | —                         | Nome abbreviato per stampe compatte (es. `Italiano`)                                                                                                                                                                                                 |
 | `COLORE_1`         | String  | —   | Hex code                  | Colore primario (bordi, intestazioni)                                                                                                                                                                                                                |
@@ -184,15 +186,15 @@ Incarichi speciali d'istituto. Lookup table stabile.
 
 ### VARIAZIONI_CATTEDRA
 
-Cambi permanenti di titolarità avvenuti dopo l'inizio anno. Rappresenta il livello **Priority 2** nella gerarchia di risoluzione ruoli: sovrascrive CLASSI ma è sovrascrivibile da una supplenza attiva.
+Cambi permanenti di titolarità avvenuti dopo l'inizio anno. Rappresenta il livello **Priority 2** nella gerarchia di risoluzione ruoli: sovrascrive CLASSI ma è sovrascrivibile da una supplenza attiva. Struttura speculare a `SUPPLENZE` (senza `AL`: una variazione è permanente finché non viene superata da una `DAL` successiva per lo stesso `TITOLARE`/scope).
 
-| Colonna            | Tipo   | PK (parte) | FK            | Descrizione                              |
-| ------------------ | ------ | ---------- | ------------- | ---------------------------------------- |
-| `CLASSE_ID`        | String | ✅         | CLASSI.ID     | Classi interessate, separate da virgola  |
-| `MATERIA_ID`       | String | ✅         | MATERIE.ID    | Materie interessate, separate da virgola |
-| `VECCHIO_TITOLARE` | String | —          | DOCENTI.EMAIL | Docente che cessa la titolarità          |
-| `NUOVO_TITOLARE`   | String | —          | DOCENTI.EMAIL | Docente che acquisisce la titolarità     |
-| `DATA_DECORRENZA`  | Date   | —          | —             | Data di efficacia della variazione       |
+| Colonna          | Tipo   | PK (parte) | FK            | Vincoli           | Descrizione                          |
+| ---------------- | ------ | ---------- | ------------- | ------------------ | ------------------------------------ |
+| `TITOLARE`       | String | ✅         | DOCENTI.EMAIL | —                 | Docente che cessa la titolarità      |
+| `NUOVO_TITOLARE` | String | ✅         | DOCENTI.EMAIL | —                 | Docente che acquisisce la titolarità |
+| `DAL`            | Date   | ✅         | —             | Obbligatorio       | Data di efficacia della variazione   |
+| `CLASSI`         | String | ✅         | CLASSI.ID     | CSV o `*` (tutte) | Classi interessate                   |
+| `MATERIE`        | String | ✅         | MATERIE.ID    | CSV o `*` (tutte) | Materie interessate                  |
 
 ---
 
@@ -209,11 +211,11 @@ Sostituzioni temporanee dei docenti. Rappresenta il livello **Priority 1** nella
 | `CLASSI`    | String | ✅         | CLASSI.ID     | CSV o `*` (tutte) | Classi coperte dalla supplenza                                                          |
 | `MATERIE`   | String | ✅         | MATERIE.ID    | CSV o `*` (tutte) | Materie coperte dalla supplenza                                                         |
 
-**Invariante:** Un docente NON PUÒ MAI avere due supplenze con periodi sovrapposti per lo stesso contesto classe+materia. Questo invariante DEVE essere verificato prima della creazione di ogni nuova supplenza (vedi `SupplenzaRepository.findSupplenzaSpecifica()` in `06_REPOSITORY.md`).
+**Invariante:** Un docente NON PUÒ MAI avere due supplenze con periodi sovrapposti per lo stesso contesto classe+materia. Questo invariante DEVE essere verificato prima della creazione di ogni nuova supplenza (`SupplenzaRepository.creaSupplenza()`). Il confronto NON può fermarsi al testo grezzo di `CLASSI`/`MATERIE`: una riga a restrizione-per-omissione (`CLASSI` vuoto) e una riga con CSV esplicito per lo stesso titolare possono risolvere alla stessa cattedra pur senza che i loro testi grezzi si intersechino mai — il controllo confronta quindi anche le coppie concrete `(classe, materia, kind, specifica)` post-espansione (`RowScopeExpansion.expandRowToPairs`/`pairsOverlap`, condiviso con la risoluzione di `AldoTeachingResolutionConfig`), oltre al confronto testuale ordinario (`contestoOverlaps`).
 
 **Catene di supplenza:** un `SUPPLENTE` PUÒ a sua volta essere `TITOLARE` in un altro record `SUPPLENZE` (supplenza del supplente). NON esiste alcun limite di profondità: la risoluzione del docente effettivamente attivo DEVE seguire la catena ricorsivamente fino all'ultimo supplente attivo per la data e il contesto richiesti (vedi `RisolutoreRuoliService` in `14_SERVIZI_UTILITY.md`).
 
-**Nota su chiave primaria e colonne CSV:** le colonne `CLASSI` e `MATERIE` partecipano alla chiave primaria come testo grezzo. L'unicità è quindi puramente testuale: due CSV semanticamente equivalenti ma scritti in ordine diverso (es. `"5A,4B"` vs `"4B,5A"`) NON sono riconosciuti come duplicati dal confronto di chiave, mentre l'invariante di business sulla sovrapposizione richiede il confronto semantico (`applicaAClasse`/`applicaAMateria`), eseguito SOLO a runtime. Lo stesso vale per `VARIAZIONI_CATTEDRA` (`CLASSE_ID`, `MATERIA_ID`) e per `LOG_MAIL` (`DESTINATARI`). L'utente DEVE mantenere un ordine coerente nei CSV per evitare duplicati logici non rilevati dal sistema.
+**Nota su chiave primaria e colonne CSV:** le colonne `CLASSI` e `MATERIE` partecipano alla chiave primaria come testo grezzo. L'unicità è quindi puramente testuale: due CSV semanticamente equivalenti ma scritti in ordine diverso (es. `"5A,4B"` vs `"4B,5A"`) NON sono riconosciuti come duplicati dal confronto di chiave, mentre l'invariante di business sulla sovrapposizione richiede il confronto semantico (`applicaAClasse`/`applicaAMateria` per il testo grezzo, più le coppie concrete post-espansione per la restrizione-per-omissione — vedi sopra), eseguito SOLO a runtime. Lo stesso vale per `VARIAZIONI_CATTEDRA` (`CLASSI`, `MATERIE`) e per `LOG_MAIL` (`DESTINATARI`). L'utente DEVE mantenere un ordine coerente nei CSV per evitare duplicati logici non rilevati dal sistema.
 
 ---
 
@@ -458,7 +460,7 @@ Priority 1 — SUPPLENZE
   → il supplente sovrascrive tutto
 
 Priority 2 — VARIAZIONI_CATTEDRA
-  Se esiste una variazione con DATA_DECORRENZA ≤ T
+  Se esiste una variazione con DAL ≤ T (la più recente per TITOLARE/scope vince)
   → il NUOVO_TITOLARE sovrascrive il titolare nominale in CLASSI
 
 Priority 3 — CLASSI (fallback)

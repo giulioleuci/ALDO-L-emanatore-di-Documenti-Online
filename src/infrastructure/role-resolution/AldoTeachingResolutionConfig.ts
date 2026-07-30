@@ -1,6 +1,7 @@
 import type { Classe } from '../../domain/entities/Classe';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ClasseRepository } from '../repositories/ClasseRepository';
+import { ANY, expandRowScope } from './RowScopeExpansion';
 import {
   COL_CLASSI,
   COL_DOCENTI,
@@ -11,6 +12,9 @@ import {
 } from '../../config/schema';
 
 const ADAPTER_ID = '__ALDO_ASSIGNMENT_ID';
+const ADAPTER_COLUMN = '__ALDO_SLOT';
+const SLOT_KIND_COLUMN = '__ALDO_SLOT_KIND';
+const SLOT_SPECIFICA_COLUMN = '__ALDO_SLOT_SPECIFICA';
 
 interface ResolutionConfiguration {
   resolve(asOfDate: Date, routingPolicy: RoutingPolicyValue | null): EffectiveAssignmentResult[];
@@ -100,6 +104,41 @@ class ArticulatedResolutionConfiguration implements ResolutionConfiguration {
   }
 }
 
+// Row-scope expansion primitives (restriction-by-omission, .itp/.SPECIFICA
+// per-entry slot targeting) live in RowScopeExpansion.ts, shared with
+// SupplenzaRepository's overlap invariant.
+
+function stringColumn(row: Record<string, unknown>, column: string): string {
+  const value = row[column];
+  return typeof value === 'string' ? value : '';
+}
+
+/** Expands every row's scope, materializing one synthetic row per resulting fragment (design §2-3). */
+function expandRows(
+  classi: ClasseRepository,
+  rows: ReadonlyArray<Record<string, unknown>>,
+  anchorColumn: string,
+  classiColumn: string,
+  materieColumn: string
+): Array<Record<string, unknown>> {
+  return rows.flatMap((row) => {
+    const anchor = stringColumn(row, anchorColumn);
+    const fragments = expandRowScope(
+      classi,
+      anchor,
+      stringColumn(row, classiColumn),
+      stringColumn(row, materieColumn)
+    );
+    return fragments.map((fragment) => ({
+      ...row,
+      [classiColumn]: fragment.classi,
+      [materieColumn]: fragment.materie,
+      [SLOT_KIND_COLUMN]: fragment.kind,
+      [SLOT_SPECIFICA_COLUMN]: fragment.specifica
+    }));
+  });
+}
+
 export class AldoTeachingResolutionConfig {
   private readonly classi: ClasseRepository;
   private readonly actorSource: ActorSource;
@@ -110,11 +149,23 @@ export class AldoTeachingResolutionConfig {
     this.classi = new ClasseRepository(database);
     this.actorSource = new AldoActorSource(database.tables[TABLE.DOCENTI]!.getAllRows());
     this.overrideRows = this.withAdapterIds(
-      database.tables[TABLE.VARIAZIONI_CATTEDRA]!.getAllRows(),
+      expandRows(
+        this.classi,
+        database.tables[TABLE.VARIAZIONI_CATTEDRA]!.getAllRows(),
+        COL_VARIAZIONI_CATTEDRA.TITOLARE,
+        COL_VARIAZIONI_CATTEDRA.CLASSI,
+        COL_VARIAZIONI_CATTEDRA.MATERIE
+      ),
       'VAR'
     );
     this.delegationRows = this.withAdapterIds(
-      database.tables[TABLE.SUPPLENZE]!.getAllRows(),
+      expandRows(
+        this.classi,
+        database.tables[TABLE.SUPPLENZE]!.getAllRows(),
+        COL_SUPPLENZE.TITOLARE,
+        COL_SUPPLENZE.CLASSI,
+        COL_SUPPLENZE.MATERIE
+      ),
       'SUP'
     );
   }
@@ -125,12 +176,14 @@ export class AldoTeachingResolutionConfig {
       rows: this.overrideRows,
       mapping: {
         id: { from: ADAPTER_ID },
-        previousActorId: { from: COL_VARIAZIONI_CATTEDRA.VECCHIO_TITOLARE },
+        previousActorId: { from: COL_VARIAZIONI_CATTEDRA.TITOLARE },
         nextActorId: { from: COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE },
-        effectiveFrom: { from: COL_VARIAZIONI_CATTEDRA.DATA_DECORRENZA },
+        effectiveFrom: { from: COL_VARIAZIONI_CATTEDRA.DAL },
         scope: {
-          classe: { from: COL_VARIAZIONI_CATTEDRA.CLASSE_ID, parse: 'csv' },
-          materia: { from: COL_VARIAZIONI_CATTEDRA.MATERIA_ID, parse: 'csv' }
+          classe: { from: COL_VARIAZIONI_CATTEDRA.CLASSI, parse: 'csv' },
+          materia: { from: COL_VARIAZIONI_CATTEDRA.MATERIE, parse: 'csv' },
+          kind: { from: SLOT_KIND_COLUMN },
+          specifica: { from: SLOT_SPECIFICA_COLUMN }
         }
       }
     });
@@ -144,7 +197,9 @@ export class AldoTeachingResolutionConfig {
         validTo: { from: COL_SUPPLENZE.AL },
         scope: {
           classe: { from: COL_SUPPLENZE.CLASSI, parse: 'csv' },
-          materia: { from: COL_SUPPLENZE.MATERIE, parse: 'csv' }
+          materia: { from: COL_SUPPLENZE.MATERIE, parse: 'csv' },
+          kind: { from: SLOT_KIND_COLUMN },
+          specifica: { from: SLOT_SPECIFICA_COLUMN }
         }
       }
     });
@@ -153,63 +208,51 @@ export class AldoTeachingResolutionConfig {
       const descriptors = this.classi
         .getTeachingSlots(target)
         .filter((descriptor) => descriptor.materia.equals(materia));
-      const row: Record<string, unknown> = {
-        [COL_CLASSI.ID]: target.classeId.value
-      };
-      const columns: Array<{
-        name: string;
-        slotDimensions: Record<string, ValueMapping>;
-        contextDimensions: Record<string, ValueMapping>;
-      }> = [];
-      let slotIndex = 0;
       for (const descriptor of descriptors) {
-        const adapterColumn = `__ALDO_SLOT_${slotIndex}`;
-        slotIndex += 1;
-        row[adapterColumn] = descriptor.actorEmails.join(',');
-        columns.push({
-          name: adapterColumn,
-          slotDimensions: {
-            classe: { from: COL_CLASSI.ID },
-            materia: descriptor.materia.value,
+        const row: Record<string, unknown> = {
+          [COL_CLASSI.ID]: target.classeId.value,
+          [ADAPTER_COLUMN]: descriptor.actorEmails.join(',')
+        };
+        // One resolver+context per slot (not per materia): delegation matching
+        // (unlike override matching) is only context-scoped, not per-candidate
+        // slot-scoped, in RoleResolutionLib — this is what makes SUPPLENZE's
+        // .itp/.SPECIFICA slot targeting (design §3) actually discriminate.
+        const assignmentSource = new WideRowAssignmentSource({
+          rows: [row],
+          rowIdentityPath: COL_CLASSI.ID,
+          actorSource: this.actorSource,
+          columns: [
+            {
+              name: ADAPTER_COLUMN,
+              slotDimensions: {
+                classe: { from: COL_CLASSI.ID },
+                materia: descriptor.materia.value,
+                kind: descriptor.kind,
+                specifica: descriptor.specifica
+              },
+              contextDimensions: {
+                classe: { from: COL_CLASSI.ID },
+                materia: descriptor.materia.value
+              }
+            }
+          ]
+        });
+        targets.push({
+          resolver: new EffectiveAssignmentResolver({
+            actorSource: this.actorSource,
+            assignmentSource,
+            overrideSource: mappedOverrides,
+            delegationSource: mappedDelegations,
+            policy: new ResolutionPolicy({ maxDelegationDepth: null })
+          }),
+          context: {
+            classe: target.classeId.value,
+            materia: materia.value,
             kind: descriptor.kind,
-            specifica: descriptor.specifica
-          },
-          contextDimensions: {
-            classe: { from: COL_CLASSI.ID },
-            materia: descriptor.materia.value
+            specifica: descriptor.specifica ?? ANY
           }
         });
       }
-      const assignmentSource = new CompositeAssignmentSource({
-        sources: [
-          new WideRowAssignmentSource({
-            rows: [row],
-            rowIdentityPath: COL_CLASSI.ID,
-            actorSource: this.actorSource,
-            columns
-          })
-        ],
-        identity: [
-          'actorId',
-          'slot.dimensions.classe',
-          'slot.dimensions.materia',
-          'slot.dimensions.kind',
-          'slot.dimensions.specifica'
-        ]
-      });
-      targets.push({
-        resolver: new EffectiveAssignmentResolver({
-          actorSource: this.actorSource,
-          assignmentSource,
-          overrideSource: mappedOverrides,
-          delegationSource: mappedDelegations,
-          policy: new ResolutionPolicy({ maxDelegationDepth: null })
-        }),
-        context: {
-          classe: target.classeId.value,
-          materia: materia.value
-        }
-      });
     }
 
     return new ArticulatedResolutionConfiguration(targets);
@@ -219,7 +262,10 @@ export class AldoTeachingResolutionConfig {
     const materie: Array<{ materia: MateriaId; isReligioneAlt: boolean }> = [];
     for (const row of this.database.tables[TABLE.MATERIE]!.getAllRows()) {
       const id = row[COL_MATERIE.ID];
-      if (typeof id === 'string' && id !== '') {
+      // Specifica catalog rows (design 2026-07-30-materie-specifica-catalog):
+      // a dotted MATERIE.ID is a slot-suffix catalog entry, not its own
+      // resolvable subject — resolution walks it via the base materia's slots.
+      if (typeof id === 'string' && id !== '' && !id.includes('.')) {
         materie.push({
           materia: MateriaId.of(id),
           isReligioneAlt: row[COL_MATERIE.IS_RELIGIONE_ALT] === true

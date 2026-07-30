@@ -5,7 +5,7 @@ import {
   MaterieEsameSecondaSpec
 } from '../../../src/domain/specifications/MaterieEsameSpec';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
-import { fixtureTables } from '../../../test/fixtures/tables';
+import { fixtureTables, teachingSlotFixtureTables } from '../../../test/fixtures/tables';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 
@@ -70,6 +70,19 @@ test('findEsamePrima / findEsameSeconda filter via specs', () => {
 test('exam specs report toQueryObject null (in-memory only, 07 §4)', () => {
   expect(new MaterieEsamePrimaSpec(IndirizzoId.of('SCIENTIFICO')).toQueryObject()).toBeNull();
   expect(new MaterieEsameSecondaSpec(IndirizzoId.of('LSSA')).toQueryObject()).toBeNull();
+});
+
+test('findSpecifiche returns MATERIE rows whose ID is MATERIA.<anything>', () => {
+  const r = new MateriaRepository(new FakeDatabase(teachingSlotFixtureTables()));
+  expect(r.findSpecifiche(MateriaId.of('INTERPRET')).map((m) => m.id)).toEqual([
+    'INTERPRET.CHITARRA',
+    'INTERPRET.PIANOFORTE'
+  ]);
+});
+
+test('findSpecifiche returns empty array for a materia with no specifiche', () => {
+  const r = new MateriaRepository(new FakeDatabase(teachingSlotFixtureTables()));
+  expect(r.findSpecifiche(MateriaId.of('MAT'))).toEqual([]);
 });
 
 test('findByIdCached + caching (06 §Caching)', () => {

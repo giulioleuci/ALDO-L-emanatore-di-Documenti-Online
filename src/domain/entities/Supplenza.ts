@@ -83,10 +83,23 @@ export class Supplenza extends AldoEntity {
   getMaterieScope(): CsvScope {
     return this.materie;
   }
+  getClassiRaw(): string {
+    return this.classiRaw;
+  }
+  getMaterieRaw(): string {
+    return this.materieRaw;
+  }
 
   /**
-   * True when this supplenza's period and (class ∧ subject) context both overlap
-   * another's — the condition the creation invariant forbids (ref 04 §14).
+   * True when this supplenza's period and (class ∧ subject) context both
+   * overlap another's, compared on the raw CLASSI/MATERIE CSV/wildcard text
+   * (ref 04 §14). A necessary-but-not-sufficient fast check: it catches
+   * ordinary CSV/wildcard collisions but, being pre-expansion, cannot detect
+   * an overlap between a restriction-by-omission row (empty CLASSI) and an
+   * explicit-CSV row even when their resolved cattedre coincide — callers
+   * enforcing the full invariant must also check the post-expansion concrete
+   * (classe, materia) pairs (`RowScopeExpansion.expandRowToPairs` +
+   * `pairsOverlap`, ref design 2026-07-30-cattedra-chain-verification §5).
    */
   contestoOverlaps(other: Supplenza): boolean {
     return (

@@ -451,7 +451,9 @@ export class E2eSampleDatabaseBuilder {
   /**
    * 5 CLASSI rows (2 plain + 1 articulated parent + 2 populated partners).
    * Non-parent rows retain deterministic round-robin assignments over the
-   * first 8 docenti; the parent resolves the union of its partners.
+   * first 8 docenti; the parent resolves the union of its partners. Single
+   * exception: 3C-C's MAT is pinned to 3C-S's own MAT holder so the articulated
+   * group has one genuinely shared (COMUNE) cattedra — see the inline comment.
    */
   private seedClassi(sample: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
     layouts.forEach((layout, classIndex) => {
@@ -495,6 +497,21 @@ export class E2eSampleDatabaseBuilder {
         const docenteIndex = ((classIndex * MATERIE_E2E.length + materiaIndex) % 8) + 1;
         row[sigla] = e2eDocenteEmail(docenteIndex);
       });
+      if (layout.id === CLASSE_C_PARTNER) {
+        // Cattedra COMUNE al gruppo articolato 3C (override mirato del round-robin,
+        // che altrimenti darebbe insiemi di docenti DISGIUNTI alle due partner —
+        // docenti 1-4 a 3C-S, 5-8 a 3C-C — rendendo `tipoArticolazione` mai
+        // `'COMUNE'` e `focus.classe.consiglioDiClasseComune` strutturalmente vuoto).
+        // docente1 tiene già MAT in 3C-S (classIndex 2, materiaIndex 0): pinnando qui
+        // la stessa materia allo stesso docente si ottiene un docente realmente
+        // condiviso da tutto il gruppo, come in una vera classe articolata (alcune
+        // cattedre comuni, le altre separate per indirizzo). Le restanti materie di
+        // 3C-C restano sui docenti 6/7/8, quindi lo split SEPARATO_PRIMO/SECONDO
+        // continua a essere esercitato. STO/3C-C NON va toccata: docente8 vi tiene
+        // l'unica altra sua cattedra STO, su cui poggia il caso SUPPLENZE
+        // "restriction-by-omission" (vedi `seedSupplenzeEVariazioni`).
+        row[MATERIE_E2E[0]!] = e2eDocenteEmail(1);
+      }
       if (layout.id === CLASSE_A) {
         Object.assign(row, {
           'INF.itp': e2eDocenteEmail(2),

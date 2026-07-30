@@ -87,14 +87,20 @@ const EXPECTED_STUDENT_COUNCILS = [
   }
 ] as const;
 
-/** Fixed from the articulated E2E fixture, deliberately independent of rendered items. */
+/**
+ * Fixed from the articulated E2E fixture, deliberately independent of rendered items.
+ * MAT is a **condivisa** column (`classeId: null`, one column for the whole group):
+ * `E2eSampleDatabaseBuilder.seedClassi` pins 3C-C's MAT to 3C-S's own MAT holder
+ * (e2edocente1), so `ClasseRepository.getMaterieArticolazione` classifies it as shared
+ * and the generator emits a single ungrouped column for it — unlike ITA/ING/STO, which
+ * have disjoint holders per partner and therefore get one column each per classe.
+ */
 const EXPECTED_ARTICULATED_COLUMNS = [
   { header: 'REL', classeId: null, subjects: ['IRC'] },
-  { header: 'MAT', classeId: CLASSE_C, subjects: ['MAT'] },
+  { header: 'MAT', classeId: null, subjects: ['MAT'] },
   { header: 'ITA', classeId: CLASSE_C, subjects: ['ITA'] },
   { header: 'ING', classeId: CLASSE_C, subjects: ['ING'] },
   { header: 'STO', classeId: CLASSE_C, subjects: ['STO'] },
-  { header: 'MAT', classeId: CLASSE_C_PARTNER, subjects: ['MAT'] },
   { header: 'ITA', classeId: CLASSE_C_PARTNER, subjects: ['ITA'] },
   { header: 'ING', classeId: CLASSE_C_PARTNER, subjects: ['ING'] },
   { header: 'STO', classeId: CLASSE_C_PARTNER, subjects: ['STO'] }

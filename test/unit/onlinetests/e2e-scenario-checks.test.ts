@@ -111,8 +111,22 @@ function recordingHarness(
       }
       const fileId = `${configId}-${classe.value}`;
       if (configId === CONF_DOC_ARTICOLATA) {
-        planTexts[fileId] =
-          'Report Complesso Classe Articolata — Coordinatore 3C-S: VERDI — Coordinatore 3C-C: FERRARI';
+        // Testo rappresentativo di quello REALMENTE reso dal template
+        // DOC_ARTICOLATA_PARAGRAPHS sul fixture e2e: nomi docente in Title Case
+        // (`Docente.getNomeCompleto()` non applica alcuna trasformazione di case e i
+        // pool DOCENTE_COGNOMI/DOCENTE_NOMI_* sono in Title Case), coordinatori resi
+        // "Cognome Nome" e docenti comuni resi "Nome Cognome (materie)". Una fixture
+        // in ALL CAPS mascherava il bug delle asserzioni di scenario 10b.
+        planTexts[fileId] = [
+          'Documento Complesso Classe Articolata — 3C',
+          'Docenti comuni a tutta la classe (materie tra parentesi):',
+          'Marco Rossi (Matematica, Matematica)',
+          'Elenco studenti (indirizzo tra parentesi):',
+          'Ferrari Giulia (Liceo Scientifico (E2E))',
+          'Coordinatori (indirizzo tra parentesi):',
+          'Verdi Alessandro (Liceo Scientifico (E2E))',
+          'Ferrari Elena (Liceo Scientifico (E2E))'
+        ].join(' ');
       }
       return { fileId, status: 'CREATED' };
     },

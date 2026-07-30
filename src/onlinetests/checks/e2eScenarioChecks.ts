@@ -510,17 +510,40 @@ export function registerE2eScenarioChecks(
         );
       }
       // e2eDocenteEmail(3)/(4) coordinate 3C-S/3C-C respectively (E2eSampleDatabaseBuilder
-      // classLayouts) with DOCENTE_COGNOMI surnames VERDI/FERRARI — their presence proves
-      // ClasseProvider.coordinatori now merges both partners' distinct coordinators
-      // (the bug fixed in Task 3), not just the (empty) parent row.
-      if (!text.includes('VERDI')) {
-        throw new ValidationError(
-          'Documento complesso classe articolata: coordinatore di 3C-S (VERDI) assente dal testo'
-        );
+      // `classLayouts`). La lista `coordinatori` del template rende `{{nome}}` =
+      // `Docente.getNomeCompleto()` = "COGNOME NOME" **senza** trasformazioni di case:
+      // i pool DOCENTE_COGNOMI/DOCENTE_NOMI_M/_F sono in Title Case, quindi le stringhe
+      // realmente presenti nel documento sono "Verdi Alessandro" / "Ferrari Elena".
+      // La presenza di ENTRAMBI prova che ClasseProvider.coordinatori fonde i due
+      // coordinatori distinti delle partner (bug fixato nel Task 3), non solo la riga
+      // parent (che ha COORD vuoto).
+      //
+      // Il nome COMPLETO è obbligatorio per il coordinatore di 3C-C: il solo cognome
+      // "Ferrari" collide con lo studente "Ferrari Giulia" (ALUNNO_COGNOMI, counter 54,
+      // in 3C-C) che compare nella PRIMA bullet list dello stesso documento, quindi
+      // `includes('Ferrari')` passerebbe anche col bug presente. "Ferrari Elena" può
+      // essere prodotto solo dalla lista coordinatori (la lista dei docenti comuni rende
+      // "Nome Cognome", ordine invertito).
+      for (const [gruppo, coordinatore] of [
+        ['3C-S', 'Verdi Alessandro'],
+        ['3C-C', 'Ferrari Elena']
+      ] as const) {
+        if (!text.includes(coordinatore)) {
+          throw new ValidationError(
+            `Documento complesso classe articolata: coordinatore di ${gruppo} (${coordinatore}) assente dal testo`
+          );
+        }
       }
-      if (!text.includes('FERRARI')) {
+      // Copertura end-to-end dello split comune/separato (Task 5): e2eDocenteEmail(1)
+      // ("Rossi Marco") tiene MAT in ENTRAMBE le partner (override esplicito in
+      // `E2eSampleDatabaseBuilder.seedClassi`), quindi è l'unico docente `COMUNE` del
+      // gruppo e deve comparire nella bullet list "Docenti comuni a tutta la classe",
+      // resa come `{{anagrafica.nome}} {{anagrafica.cognome}} ({{materieDescrizione}})`.
+      // Senza questa asserzione `consiglioDiClasseComune` potrebbe essere vuoto senza
+      // che nessun check se ne accorga (la lista vuota non lascia placeholder residui).
+      if (!text.includes('Marco Rossi (Matematica')) {
         throw new ValidationError(
-          'Documento complesso classe articolata: coordinatore di 3C-C (FERRARI) assente dal testo'
+          'Documento complesso classe articolata: la lista dei docenti comuni non contiene il docente COMUNE atteso ("Marco Rossi (Matematica...)") — consiglioDiClasseComune vuoto?'
         );
       }
       const logRow = db

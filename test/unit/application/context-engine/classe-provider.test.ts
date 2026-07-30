@@ -140,3 +140,30 @@ test('RappresentantiProvider: articulated parent merges reps across partners, ta
     ]
   });
 });
+
+test('ClasseProvider: articulated parent merges coordinatori across partners, tagged by indirizzo (09 §10)', () => {
+  const tables = fixtureTables();
+  const classi = tables['CLASSI'] as Row[];
+  const parent = classi.find((r) => r['ID'] === '1F')!;
+  const lss = classi.find((r) => r['ID'] === '1F-LSS')!;
+  parent['COORD'] = '';
+  lss['COORD'] = 'verdi@school.it';
+
+  const c = build('1F', tables).focus.classe!;
+  expect(c.coordinatori).toEqual([
+    {
+      nome: 'ROSSI MARIO',
+      email: 'rossi@school.it',
+      materia: 'MATE',
+      appellativo: 'Prof.',
+      indirizzo: { nome: 'Liceo scientifico' }
+    },
+    {
+      nome: 'VERDI GIO',
+      email: 'verdi@school.it',
+      materia: 'FISI',
+      appellativo: 'Prof.',
+      indirizzo: { nome: 'Liceo scientifico scienze applicate' }
+    }
+  ]);
+});

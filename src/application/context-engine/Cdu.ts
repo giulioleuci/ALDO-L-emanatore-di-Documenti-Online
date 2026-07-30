@@ -133,7 +133,13 @@ export interface CduClasse {
     materieSeparatePrimoGruppo: string[];
     materieSeparateSecondoGruppo: string[];
   };
-  coordinatori?: Array<{ nome: string; email: string; materia: string; appellativo: string }>;
+  coordinatori?: Array<{
+    nome: string;
+    email: string;
+    materia: string;
+    appellativo: string;
+    indirizzo?: { nome: string };
+  }>;
   tutor?: {
     asl: Array<{ nome: string; email: string }>;
     orientamento: Array<{ nome: string; email: string }>;

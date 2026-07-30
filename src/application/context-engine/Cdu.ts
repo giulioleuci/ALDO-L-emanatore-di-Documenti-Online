@@ -36,6 +36,7 @@ export interface AlunnoContestoVM {
   genitori: Array<{ email: string }>;
   status: { isBes: boolean; isRipetente: boolean; isRappresentante: boolean; religione: string };
   curriculum: Record<string, { specifiche: string[] }>;
+  indirizzo: { sigla: string; nome: string; nomeSintetico: string };
   didattica: {
     carenze: {
       hasCarenze: boolean;

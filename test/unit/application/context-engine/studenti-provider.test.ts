@@ -62,6 +62,7 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
     genitori: [{ email: 'genitore1@x.it' }],
     status: { isBes: true, isRipetente: false, isRappresentante: true, religione: 'SI' },
     curriculum: { INTERP: { specifiche: ['CHITARRA', 'PIANO'] } },
+    indirizzo: { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico' },
     didattica: {
       // getCarenze returns rows most-recent first: prog.2 (MATE 5) then prog.1 (MATE 4.5, FISI ...).
       carenze: {
@@ -132,4 +133,43 @@ test('StudentiProvider: articulated parent aggregates + groups by indirizzo (09 
   expect(s.perIndirizzo!['SCIENTIFICO']!.map((a) => a.anagrafica.email)).toEqual(['s1@school.it']);
   expect(s.perIndirizzo!['LSSA']!.map((a) => a.anagrafica.email)).toEqual(['s2@school.it']);
   expect(s.listaCompleta.some((a) => a.anagrafica.email === 's3@school.it')).toBe(false);
+});
+
+test('StudentiProvider: each articulated-parent student is tagged with their OWN partner indirizzo (09 §10)', () => {
+  const tables = fixtureTables();
+  (tables['ALUNNI'] as Row[]).push(
+    {
+      EMAIL: 's1@school.it',
+      COGNOMENOME: 'ALFA UNO',
+      CLASSE: '1F-LSO',
+      RELIGIONE: 'SI',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: false,
+      CURRICULUM: null
+    },
+    {
+      EMAIL: 's2@school.it',
+      COGNOMENOME: 'BETA DUE',
+      CLASSE: '1F-LSS',
+      RELIGIONE: 'SI',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: false,
+      CURRICULUM: null
+    }
+  );
+  const s = build('1F', tables).focus.classe!.studenti!;
+  const s1 = s.listaCompleta.find((a) => a.anagrafica.email === 's1@school.it')!;
+  const s2 = s.listaCompleta.find((a) => a.anagrafica.email === 's2@school.it')!;
+  expect(s1.indirizzo).toEqual({
+    sigla: 'SCIENTIFICO',
+    nome: 'Liceo scientifico',
+    nomeSintetico: 'Scientifico'
+  });
+  expect(s2.indirizzo).toEqual({
+    sigla: 'LSSA',
+    nome: 'Liceo scientifico scienze applicate',
+    nomeSintetico: 'Scienze applicate'
+  });
 });

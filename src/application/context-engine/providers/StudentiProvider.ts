@@ -4,6 +4,7 @@ import type { IClasseRepository } from '../../../domain/repositories/IClasseRepo
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
+import type { Classe } from '../../../domain/entities/Classe';
 import { getClasseEntity } from '../techEntities';
 import { carenzeDettaglioSemplice, curriculumRecord } from '../mappers/carenzeMapper';
 
@@ -35,7 +36,7 @@ export class StudentiProvider implements ContextProvider {
         const vms = this.classi
           .getStudenti(partner)
           .filter((alunno) => alunno.isAttivo())
-          .map((alunno) => this.buildVM(alunno));
+          .map((alunno) => this.buildVM(alunno, partner));
         const sigla = partner.indirizzo;
         if (!(sigla in perIndirizzo)) {
           perIndirizzo[sigla] = [];
@@ -50,12 +51,13 @@ export class StudentiProvider implements ContextProvider {
         listaCompleta: this.classi
           .getStudenti(classe)
           .filter((alunno) => alunno.isAttivo())
-          .map((alunno) => this.buildVM(alunno))
+          .map((alunno) => this.buildVM(alunno, classe))
       };
     }
   }
 
-  private buildVM(alunno: Alunno): AlunnoContestoVM {
+  private buildVM(alunno: Alunno, classe: Classe): AlunnoContestoVM {
+    const indirizzo = this.classi.getIndirizzo(classe);
     const dettaglio = carenzeDettaglioSemplice(
       this.alunni.getCarenze(alunno),
       this.materie.findAllSigle()
@@ -74,6 +76,7 @@ export class StudentiProvider implements ContextProvider {
         religione: alunno.religione
       },
       curriculum: curriculumRecord(alunno),
+      indirizzo: { sigla: classe.indirizzo, nome: indirizzo.nome, nomeSintetico: indirizzo.nomeSintetico },
       didattica: {
         carenze: { hasCarenze: dettaglio.length > 0, numero: dettaglio.length, dettaglio },
         piani: { hasPiani: pianiItems.length > 0, hasBes, items: pianiItems },

@@ -128,6 +128,7 @@ export const CONF_DOC_VERBALE = 'E2E_VERBALE';
 export const CONF_DOC_CONDOTTA = 'E2E_CONDOTTA';
 export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export const CONF_DOC_COMPLESSO = 'E2E_DOC_COMPLESSO';
+export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
 export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
@@ -183,6 +184,7 @@ export interface E2eTemplateIds {
   riepilogo: string;
   aslImportSheet: string;
   docComplesso: string;
+  docArticolata: string;
   sheetPermessi: string;
   pianoLavoro: string;
   staticAttachment: string;
@@ -897,6 +899,23 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.anagrafica.nome}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_ARTICOLATA,
+      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA',
+      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ARTICOLATA',
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,

@@ -16,6 +16,7 @@ import {
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
+  CONF_DOC_ARTICOLATA,
   CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_PIANI,
   CONF_MAIL_STATIC_ALLEGATO,
@@ -86,6 +87,7 @@ const TEMPLATE_IDS = {
   riepilogo: 'tmpl_riepilogo',
   aslImportSheet: 'tmpl_asl_import',
   docComplesso: 'tmpl_doc_complesso',
+  docArticolata: 'tmpl_doc_articolata',
   sheetPermessi: 'tmpl_sheet_permessi',
   pianoLavoro: 'tmpl_piano_lavoro',
   staticAttachment: 'real_static_attachment_id',
@@ -223,7 +225,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(7);
+  expect(confDoc).toHaveLength(8);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'
@@ -242,7 +244,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_condotta'
   });
-  for (const id of [CONF_DOC_CONDOTTA, CONF_DOC_RIEPILOGO, CONF_DOC_COMPLESSO]) {
+  for (const id of [CONF_DOC_CONDOTTA, CONF_DOC_RIEPILOGO, CONF_DOC_COMPLESSO, CONF_DOC_ARTICOLATA]) {
     const row = confDoc.find((candidate) => candidate[COL_CONF_DOC.ID] === id)!;
     expect(JSON.parse(String(row[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
       classi: '{{focus.classe.anagrafica.nome}}',
@@ -569,6 +571,20 @@ test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENER
   expect(row![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(String(row![COL_CONF_DOC.MODELLI]))).toEqual({
     templateId: TEMPLATE_IDS.docComplesso
+  });
+});
+
+test('seeds the CONF_DOC row for the articulated-class complex document', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const row = sample.rows[TABLE.CONF_DOC]!.find(
+    (r) => r[COL_CONF_DOC.ID] === CONF_DOC_ARTICOLATA
+  )!;
+  expect(row[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA');
+  expect(row[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(JSON.parse(row[COL_CONF_DOC.MODELLI] as string)).toEqual({
+    templateId: 'tmpl_doc_articolata'
   });
 });
 

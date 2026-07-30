@@ -14,11 +14,13 @@ import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../
 import { TipoPiano } from '../../domain/value-objects/enums';
 import {
   ALL_CLASSI_E2E,
+  CLASSE_C_PARENT,
   TIPI_PIANO,
   CONF_DOC_VERBALE,
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
+  CONF_DOC_ARTICOLATA,
   CONF_DOC_SHEET_PERMESSI,
   CONF_DOC_PIANO_LAVORO,
   CONF_DOC_PIANI,
@@ -484,6 +486,56 @@ export function registerE2eScenarioChecks(
         }
       }
       assertPersistedLinks(CONF_DOC_COMPLESSO, 'Documento complesso');
+    }
+  );
+
+  runner.add(
+    'E2E scenario 10b: genera documento complesso classe articolata (3C)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const drive = container.get<IDriveFacade>('drive');
+      const { fileId, status } = documents.generateForClasse(
+        ClasseId.of(CLASSE_C_PARENT),
+        CONF_DOC_ARTICOLATA
+      );
+      if (fileId === null) {
+        throw new ValidationError(
+          `Generazione documento complesso classe articolata per ${CLASSE_C_PARENT} non ha prodotto un fileId (status=${status})`
+        );
+      }
+      const text = drive.getFileText(fileId);
+      if (/\{\{[^}]*\}\}/.test(text)) {
+        throw new ValidationError(
+          `Documento complesso classe articolata: placeholder non risolto trovato nel testo generato`
+        );
+      }
+      // e2eDocenteEmail(3)/(4) coordinate 3C-S/3C-C respectively (E2eSampleDatabaseBuilder
+      // classLayouts) with DOCENTE_COGNOMI surnames VERDI/FERRARI — their presence proves
+      // ClasseProvider.coordinatori now merges both partners' distinct coordinators
+      // (the bug fixed in Task 3), not just the (empty) parent row.
+      if (!text.includes('VERDI')) {
+        throw new ValidationError(
+          'Documento complesso classe articolata: coordinatore di 3C-S (VERDI) assente dal testo'
+        );
+      }
+      if (!text.includes('FERRARI')) {
+        throw new ValidationError(
+          'Documento complesso classe articolata: coordinatore di 3C-C (FERRARI) assente dal testo'
+        );
+      }
+      const logRow = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .find(
+          (row) =>
+            row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_ARTICOLATA &&
+            row[COL_LOG_DOCS.CLASSI] === CLASSE_C_PARENT
+        );
+      if (logRow === undefined || String(logRow[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
+        throw new ValidationError(
+          `Documento complesso classe articolata per ${CLASSE_C_PARENT} non ha un LOG_DOCS.LINK persistito`
+        );
+      }
     }
   );
 

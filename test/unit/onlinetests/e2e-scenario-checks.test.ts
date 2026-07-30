@@ -15,6 +15,7 @@ import {
   CONF_MAIL_LAVORO,
   CONF_MAIL_STATIC_ALLEGATO,
   CONF_DOC_PIANI,
+  CONF_DOC_ARTICOLATA,
   PIANO_DOPPIO_STUDENTE,
   PDP_BES_3C,
   ALL_CLASSI_E2E
@@ -108,7 +109,12 @@ function recordingHarness(
           [COL_LOG_FOLD.MATERIE]: 'MATE'
         });
       }
-      return { fileId: `${configId}-${classe.value}`, status: 'CREATED' };
+      const fileId = `${configId}-${classe.value}`;
+      if (configId === CONF_DOC_ARTICOLATA) {
+        planTexts[fileId] =
+          'Report Complesso Classe Articolata — Coordinatore 3C-S: VERDI — Coordinatore 3C-C: FERRARI';
+      }
+      return { fileId, status: 'CREATED' };
     },
     generateForPiano(studente: string, tipo: TipoPiano, configId: string) {
       events.push('generate-document');

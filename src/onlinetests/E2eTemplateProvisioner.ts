@@ -40,7 +40,6 @@ const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
-const NAME_DOC_ARTICOLATA = 'E2E Doc Articolata Template';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 const NAME_STATIC_ATTACHMENT = 'E2E Static Attachment Fixture';
@@ -212,37 +211,6 @@ const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
 ];
 
 /**
- * Articulated-class report: demonstrates CDU paths specific to articulated classes
- * (`focus.classe.articolazione.partners` for the partner list).
- */
-const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Report Classe Articolata — {{focus.classe.anagrafica.nome}}',
-  'Classi partner:',
-  {
-    text: '{{#bullet_list:focus.classe.articolazione.partners}}{{anagrafica.nome}}{{/bullet_list}}',
-    listType: 'bullet'
-  },
-  'Coordinatori:',
-  {
-    text: '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{materia}}){{/bullet_list}}',
-    listType: 'bullet'
-  }
-];
-
-const DOC_ARTICOLATA_TABLES: E2eDocumentTable[] = [
-  {
-    data: [
-      ['Partner', 'Studenti'],
-      [
-        "{{#tablerow_loop:focus.classe.articolazione.partners}}{{anagrafica.nome}}",
-        '{{studenti.statistiche.totale}}'
-      ]
-    ],
-    options: { headerRow: true, alternatingRows: true }
-  }
-];
-
-/**
  * Single header cell carrying the whole multi-group `{{dynamic_columns[...]}}` placeholder
  * (`WorkspaceTemplateEngine_docs.md` "Sintassi multi-gruppo"): 3 sequential column groups,
  * groups 2/3 each preceded by a structural label column (`label2`/`label3`), resolved against
@@ -308,12 +276,6 @@ export class E2eTemplateProvisioner {
       DOC_COMPLESSO_PARAGRAPHS,
       DOC_COMPLESSO_TABLES
     );
-    const docArticolata = this.findOrCreateDoc(
-      folderId,
-      NAME_DOC_ARTICOLATA,
-      DOC_ARTICOLATA_PARAGRAPHS,
-      DOC_ARTICOLATA_TABLES
-    );
     const sheetPermessi = this.findOrCreateSheet(
       folderId,
       NAME_SHEET_PERMESSI,
@@ -335,7 +297,6 @@ export class E2eTemplateProvisioner {
       riepilogo,
       aslImportSheet,
       docComplesso,
-      docArticolata,
       sheetPermessi,
       pianoLavoro,
       staticAttachment,

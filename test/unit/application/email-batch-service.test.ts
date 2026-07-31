@@ -94,6 +94,30 @@ test('GasProcessMonitorLib progress calls (15 §9): register/start once, progres
   expect(monitor.completed).toHaveLength(1);
 });
 
+test('caps a chunk to remaining Gmail quota, not just chunkSize (11 §14)', () => {
+  const { gmail, service } = wire();
+  gmail.remainingQuota = 1;
+  // CDC_OTTOBRE enumerates 2 targets; chunkSize 2 but quota only allows 1.
+  const { checkpoints, result } = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
+  );
+  expect(gmail.sent).toHaveLength(1);
+  expect(checkpoints[0]!.nextIndex).toBe(1);
+  expect(result.success).toBe(false); // stopped short of full quota
+});
+
+test('zero remaining quota suspends cleanly without sending (no resume-trigger churn)', () => {
+  const { gmail, service } = wire();
+  gmail.remainingQuota = 0;
+  const { checkpoints, result } = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
+  );
+  expect(gmail.sent).toHaveLength(0);
+  expect(checkpoints).toHaveLength(1);
+  expect(checkpoints[0]!.errors).toContain('quota Gmail esaurita — sospeso, richiede riavvio esplicito');
+  expect(result.errors).toContain('quota Gmail esaurita — sospeso, richiede riavvio esplicito');
+});
+
 test('resume does not re-register/re-start the job', () => {
   const monitor = new FakeProcessMonitor();
   const { service } = wire(monitor);

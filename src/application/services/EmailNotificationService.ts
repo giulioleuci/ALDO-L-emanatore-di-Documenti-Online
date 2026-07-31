@@ -100,6 +100,11 @@ export class EmailNotificationService {
     this.logger = logger ?? new LoggerService();
   }
 
+  /** Exposes the Gmail port for batch-level quota checks (11 §14), without duplicating the dependency. */
+  getGmailFacade(): IGmailFacade {
+    return this.deps.gmail;
+  }
+
   /** All emails go to `email` instead of the real recipients (11 §15). */
   enableTestMode(email: string): void {
     this.testEmail = email;

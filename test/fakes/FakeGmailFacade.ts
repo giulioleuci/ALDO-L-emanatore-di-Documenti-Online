@@ -8,6 +8,7 @@ import type {
 export class FakeGmailFacade implements IGmailFacade {
   public readonly sent: EmailSendOptions[] = [];
   public readonly failFor = new Set<string>();
+  public remainingQuota = 1000;
 
   sendEmail(opts: EmailSendOptions): EmailSendResult {
     const broken = opts.to.find((e) => this.failFor.has(e));
@@ -16,5 +17,9 @@ export class FakeGmailFacade implements IGmailFacade {
     }
     this.sent.push(opts);
     return { success: true };
+  }
+
+  getRemainingQuota(): number {
+    return this.remainingQuota;
   }
 }

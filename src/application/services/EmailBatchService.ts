@@ -65,7 +65,22 @@ export class EmailBatchService {
     }
 
     while (i < targets.length) {
-      const fine = Math.min(i + chunkSize, targets.length);
+      const remainingQuota = this.email.getGmailFacade().getRemainingQuota();
+      if (remainingQuota <= 0) {
+        errors.push('quota Gmail esaurita — sospeso, richiede riavvio esplicito');
+        this.monitor?.completeJob(jobId, `${sent} email inviate, sospeso per quota esaurita`);
+        yield {
+          percentage: (i / targets.length) * 100,
+          nextIndex: i,
+          processed: processed.slice(),
+          sent,
+          errors: errors.slice()
+        };
+        return { success: false, totale: targets.length, processed, sent, errors };
+      }
+      const quotaCapped = remainingQuota < chunkSize;
+      const effectiveChunk = Math.min(chunkSize, remainingQuota);
+      const fine = Math.min(i + effectiveChunk, targets.length);
       for (; i < fine; i++) {
         const target = targets[i]!;
         const esito = this.email.sendToTarget(patternId, target, jobId);
@@ -74,6 +89,20 @@ export class EmailBatchService {
         processed.push(target.target);
       }
       const percentage = (i / targets.length) * 100;
+
+      if (quotaCapped && i < targets.length) {
+        errors.push('quota Gmail esaurita — sospeso, richiede riavvio esplicito');
+        this.monitor?.completeJob(jobId, `${sent} email inviate, sospeso per quota esaurita`);
+        yield {
+          percentage,
+          nextIndex: i,
+          processed: processed.slice(),
+          sent,
+          errors: errors.slice()
+        };
+        return { success: false, totale: targets.length, processed, sent, errors };
+      }
+
       this.monitor?.updateProgress(
         jobId,
         percentage,

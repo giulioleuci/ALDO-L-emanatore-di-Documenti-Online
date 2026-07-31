@@ -22,10 +22,15 @@ export interface EmailSendResult {
 
 export interface IGmailFacade {
   sendEmail(opts: EmailSendOptions): EmailSendResult;
+  getRemainingQuota(): number;
 }
 
 export class GmailServiceFacade implements IGmailFacade {
   constructor(private readonly mail: MailService) {}
+
+  getRemainingQuota(): number {
+    return this.mail.getQuotaUsage();
+  }
 
   sendEmail(opts: EmailSendOptions): EmailSendResult {
     const mailOpts: MailSendOptions = {

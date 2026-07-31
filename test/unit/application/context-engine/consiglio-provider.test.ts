@@ -100,6 +100,10 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
   expect(byEmail(list, 'verdi@school.it').gruppoNome).toBe('Liceo scientifico scienze applicate');
   expect(byEmail(list, 'bianchi@school.it').materieDescrizione).toBe('Fisica');
   expect(byEmail(list, 'verdi@school.it').materieDescrizione).toBe('Fisica');
+  expect(byEmail(list, 'rossi@school.it').materie).toEqual([
+    { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
+  ]);
+  expect(byEmail(list, 'rossi@school.it').materieDescrizione).toBe('Matematica');
 });
 
 test('tipoArticolazione follows resolved partner assignments for replacements and substitutes', () => {

@@ -194,6 +194,18 @@ function gruppoNome(
   return partner === undefined ? null : classi.getIndirizzo(partner).nome;
 }
 
+function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const item of items) {
+    const key = `${item.sigla} ${item.specificita ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(item);
+  }
+  return result;
+}
+
 function councilVmStrategy(
   classi: IClasseRepository,
   materie: IMateriaRepository
@@ -227,7 +239,7 @@ function councilVmStrategy(
       const isCoordinatore = coordinatori.has(rowDocente.id);
       const isTutorAsl = tutorAsl.has(rowDocente.id);
       const isTutorOrientamento = tutorOrient.has(rowDocente.id);
-      const materieVm = assignments.map((assignment) => ({
+      const rawMaterieVm = assignments.map((assignment) => ({
         sigla: assignment.slot.materia,
         nome:
           materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
@@ -236,6 +248,8 @@ function councilVmStrategy(
         specificita: assignment.slot.specifica
       }));
       const tipoArt = tipoArticolazione(classi, classe, assignments);
+      const isParent = classi.getArticolazione(classe)?.isParent() === true;
+      const materieVm = tipoArt === 'COMUNE' && isParent ? dedupeMaterie(rawMaterieVm) : rawMaterieVm;
       return {
         anagrafica: {
           nome: rowDocente.nome,

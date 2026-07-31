@@ -21,6 +21,7 @@ import { AldoTeachingAssignmentResolver } from '../../src/infrastructure/role-re
 import { COL_CONF_MAIL } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
 import type { CduClasse } from '../../src/application/context-engine/Cdu';
+import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
 
 // --- Scenario A: 2-hop VARIAZIONI_CATTEDRA override chain (rossi -> hopA -> hopB)
 // on 5A/MATE. Verifies the final holder, not an intermediate hop, is what
@@ -82,6 +83,7 @@ test('doc-gen: 2-hop VARIAZIONI_CATTEDRA chain resolves the generated CDU to the
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
+    classi: new ClasseRepository(db),
     now: CHAIN_NOW
   });
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');

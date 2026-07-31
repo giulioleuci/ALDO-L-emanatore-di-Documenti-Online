@@ -36,6 +36,8 @@ export interface IClasseRepository {
   getDocentiALT(classe: Classe): Docente[];
   getCoordinatori(classe: Classe): Docente[];
   getDocentiRuolo(classe: Classe, nomeRuolo: string): Docente[];
+  /** Merges a RUOLI-based role across an articulated parent's partner classes; plain getDocentiRuolo otherwise. */
+  getDocentiRuoloArticolato(classe: Classe, nomeRuolo: string): Docente[];
 
   // --- Indirizzo / studenti (ref 06 §3) ---
   getIndirizzo(classe: Classe): Indirizzo;

@@ -274,7 +274,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
   });
 });
 
-describe('DocumentGenerationService.generateForClasse — articulated parent (ARTICOLAZIONE.md item 7)', () => {
+describe('DocumentGenerationService.generateForClasse — articulated parent (ARTICOLAZIONE.md item 4)', () => {
   class CapturingStrategy implements GeneratorStrategy {
     cdu: Cdu | undefined;
     render(_fileId: string, cdu: Cdu): void {
@@ -325,6 +325,49 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
     expect(strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items.map((i) => i.id)).toEqual([
       'LD1'
     ]);
+  });
+
+  test('targeting a partner class directly sees only its own data, not the sibling partner\'s LOG_DOCS (narrowed to parent-only expansion)', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_PARTNER',
+      TIPO: 'GENERICO',
+      GENERATORE: 'CAPTURING',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    tables.LOG_DOCS!.push({
+      ID: 'LD_SIBLING',
+      ID_GEN: 'CD_PARTNER',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_DSA',
+      NOME: 'Piano DSA sorella',
+      STATO: 'PUBBLICATO',
+      NOTIFICATO: true,
+      PATH: '',
+      LINK: 'https://drive/piano-dsa-sibling',
+      CLASSI: '1F-LSS',
+      UTENTI: 'altro-studente@school.test',
+      MATERIE: '',
+      DATA_CREAZ: '2026-06-01T00:00:00.000Z',
+      ID_ORIG: ''
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    service.generateForClasse(ClasseId.of('1F-LSO'), 'CD_PARTNER');
+
+    expect(strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items).toEqual([]);
   });
 
   test('standard (non-articulated) class is unaffected: classiCompetenza is just the target', () => {

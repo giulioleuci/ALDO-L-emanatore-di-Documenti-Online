@@ -14,6 +14,7 @@ import { fixtureTables } from '../fixtures/tables';
 import { ClasseId } from '../../src/domain/value-objects/ClasseId';
 import { COL_LOG_DOCS } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
+import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
 
 function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: GeneratorStrategy) {
   const db = new FakeDatabase(tables);
@@ -30,6 +31,7 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
+    classi: new ClasseRepository(db),
     now: new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };

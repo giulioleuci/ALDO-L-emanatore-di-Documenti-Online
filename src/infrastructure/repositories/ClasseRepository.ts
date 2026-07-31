@@ -197,6 +197,19 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return this.getDocentiRuolo(classe, nomeRuolo)[0] ?? null;
   }
 
+  /** Merges a RUOLI-based role across an articulated parent's partner classes; plain getDocentiRuolo otherwise. */
+  getDocentiRuoloArticolato(classe: Classe, nomeRuolo: string): Docente[] {
+    const config = this.getArticolazione(classe);
+    if (config?.isParent() !== true) return this.getDocentiRuolo(classe, nomeRuolo);
+    const byEmail = new Map<string, Docente>();
+    for (const gruppo of [classe, ...this.getClassiPartner(classe)]) {
+      for (const docente of this.getDocentiRuolo(gruppo, nomeRuolo)) {
+        if (docente.id !== null) byEmail.set(docente.id, docente);
+      }
+    }
+    return [...byEmail.values()];
+  }
+
   // --- Storico / indirizzo / studenti (ref 06 §3) ---
 
   getStorico(classe: Classe): ClasseId[] {

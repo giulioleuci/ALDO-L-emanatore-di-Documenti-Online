@@ -216,10 +216,10 @@ function councilVmStrategy(
     const classe = getClasseEntity(cdu);
     const coordinatori = new Set(classi.getCoordinatori(classe).map((docente) => docente.id ?? ''));
     const tutorAsl = new Set(
-      classi.getDocentiRuolo(classe, 'TUTOR_ASL').map((docente) => docente.id ?? '')
+      classi.getDocentiRuoloArticolato(classe, 'TUTOR_ASL').map((docente) => docente.id ?? '')
     );
     const tutorOrient = new Set(
-      classi.getDocentiRuolo(classe, 'TUTOR_ORIENT').map((docente) => docente.id ?? '')
+      classi.getDocentiRuoloArticolato(classe, 'TUTOR_ORIENT').map((docente) => docente.id ?? '')
     );
 
     return groups.map((group, index) => {

@@ -41,7 +41,7 @@ export interface DocumentGenerationDeps {
   /** GasExpressionEngineLib port (CONDIZIONE + conditional MODELLI). */
   expressionEngine: IExpressionEngine;
   configs: IConfigurazioneDocumentoRepository;
-  /** Needed to expand an articulated parent target into its partner classes (ARTICOLAZIONE.md item 7). */
+  /** Needed to expand an articulated parent target into its partner classes (ARTICOLAZIONE.md item 4). */
   classi: IClasseRepository;
   /** Role -> Email resolver for ACL application (14 §1); RisolutoreRuoliService satisfies it. */
   roleResolver: IRoleResolver;
@@ -104,7 +104,10 @@ export class DocumentGenerationService {
 
     const classe = this.classi.findById(target);
     if (classe === null) throw new PipelineError(`Classe ${target.value} non trovata`);
-    const classiCompetenza = this.classi.getGruppoArticolazione(classe).map((c) => c.id ?? '');
+    const articolazione = this.classi.getArticolazione(classe);
+    const classiCompetenza = (
+      articolazione?.isParent() === true ? [classe, ...this.classi.getClassiPartner(classe)] : [classe]
+    ).map((c) => c.id ?? '');
 
     const cdu = this.contextBuilder.build(
       {

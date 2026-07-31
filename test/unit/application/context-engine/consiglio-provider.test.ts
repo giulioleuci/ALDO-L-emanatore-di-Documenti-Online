@@ -1,6 +1,7 @@
 import { ContextBuilder } from '../../../../src/application/context-engine/ContextBuilder';
 import { ClasseProvider } from '../../../../src/application/context-engine/providers/ClasseProvider';
 import { ConsiglioClasseProvider } from '../../../../src/application/context-engine/providers/ConsiglioClasseProvider';
+import { TutorProvider } from '../../../../src/application/context-engine/providers/TutorProvider';
 import { makeOptions } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
 import type { DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
@@ -104,6 +105,37 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
     { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
   ]);
   expect(byEmail(list, 'rossi@school.it').materieDescrizione).toBe('Matematica');
+});
+
+test('councilVmStrategy tutor flags stay consistent with focus.classe.tutor for an articulated parent when TUTOR_ASL is defined only on a partner row', () => {
+  const tables = fixtureTables();
+  const lso = tables.CLASSI!.find((r) => r.ID === '1F-LSO')!;
+  lso.RUOLI = JSON.stringify({ TUTOR_ASL: 'bianchi@school.it' });
+  const db = new FakeDatabase(tables);
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider('tutor', new TutorProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const recipe: Recipe = {
+    providers: ['class', 'tutor', 'consiglio'],
+    options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
+  };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+
+  // focus.classe.tutor is merged across partners (Task 3): bianchi shows up there.
+  expect(focusClasse.tutor!.asl.map((t) => t.email)).toEqual(['bianchi@school.it']);
+
+  // The CDU's own consiglioDiClasse entry for bianchi must agree -- not stay
+  // internally contradictory by reading TUTOR_ASL unexpanded off the parent row alone.
+  const bianchi = byEmail(focusClasse.consiglioDiClasse!, 'bianchi@school.it');
+  expect(bianchi.ruoli.isTutorAsl).toBe(true);
+  expect(bianchi.ruoli.descrizione).toContain('Tutor ASL');
 });
 
 test('tipoArticolazione follows resolved partner assignments for replacements and substitutes', () => {

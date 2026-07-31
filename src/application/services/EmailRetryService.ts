@@ -19,9 +19,26 @@ export interface RetryResult {
 /** Job type under which the retry handler is registered in JobRunnerLib. */
 export const JOB_TYPE_RETRY_EMAIL = 'RETRY_EMAIL_BATCH';
 
+/**
+ * Resume anchor persisted by JobRunnerLib to ScriptProperties at suspension.
+ * `processedKeys` identifies already-attempted groups by the same stable key
+ * `groupFailed()` uses (`pattern::logicalTargetId|destinatariRaw`) — NOT a
+ * positional index. A raw index into `groupFailed()`'s output is unsafe: a
+ * successful `processGroup()` call flips its rows out of STATO=ERROR via
+ * `marcaSuccesso()`, so the failed-group array recomputed on the next
+ * `retryHandler` invocation can be shorter/reordered relative to the one the
+ * previous invocation yielded checkpoints against, and an index-based resume
+ * can silently skip groups that were never actually retried.
+ */
+export interface RetryResumeState extends RetryResult {
+  processedKeys: string[];
+}
+
 /** Checkpoint yielded by `retryHandler` once per failed-group batch. */
-export interface RetryCheckpoint extends RetryResult {
+export interface RetryCheckpoint extends RetryResumeState {
+  /** Informational only (progress display) — NOT used to resume. */
   groupIndex: number;
+  /** Informational only (progress display) — recomputed each invocation, may shrink as groups succeed. */
   totalGroups: number;
 }
 
@@ -50,7 +67,7 @@ export class EmailRetryService {
   retryFailed(): RetryResult {
     const groups = this.groupFailed();
     let result: RetryResult = { retried: 0, permanent: 0 };
-    for (const group of groups) result = this.mergeResult(result, this.processGroup(group));
+    for (const [, group] of groups) result = this.mergeResult(result, this.processGroup(group));
     return result;
   }
 
@@ -58,20 +75,38 @@ export class EmailRetryService {
    * JobRunnerLib handler (11 §16, 15 §5): one checkpoint per failed-group
    * batch, so a pattern with many failed/grouped emails gets execution-window
    * protection instead of running the whole retry synchronously.
+   *
+   * Resume anchor is `resumeState.processedKeys` (group identity), not a
+   * positional index — see `RetryResumeState` doc comment for why an index
+   * is unsafe here (successful groups shrink `groupFailed()`'s output
+   * between invocations since `marcaSuccesso()` flips their rows out of
+   * STATO=ERROR).
    */
   *retryHandler(
     params: JobHandlerParams & { jobId?: string }
   ): Generator<RetryCheckpoint, RetryResult, void> {
     const jobId = String(params.jobId ?? 'retry_email');
-    const resume = (params.resumeState ?? null) as { groupIndex: number } | null;
+    const resume = (params.resumeState ?? null) as RetryResumeState | null;
     const groups = this.groupFailed();
     if (resume === null) this.logger.info(`EmailRetry: avviato job ${jobId}, ${groups.length} gruppi`);
 
-    let result: RetryResult = { retried: 0, permanent: 0 };
-    const startIndex = resume?.groupIndex ?? 0;
-    for (let i = startIndex; i < groups.length; i++) {
-      result = this.mergeResult(result, this.processGroup(groups[i]!));
-      yield { ...result, groupIndex: i + 1, totalGroups: groups.length };
+    const processedKeys = resume ? resume.processedKeys.slice() : [];
+    const alreadyProcessed = new Set(processedKeys);
+    const pending = groups.filter(([key]) => !alreadyProcessed.has(key));
+
+    let result: RetryResult = {
+      retried: resume?.retried ?? 0,
+      permanent: resume?.permanent ?? 0
+    };
+    for (const [key, group] of pending) {
+      result = this.mergeResult(result, this.processGroup(group));
+      processedKeys.push(key);
+      yield {
+        ...result,
+        processedKeys: processedKeys.slice(),
+        groupIndex: processedKeys.length,
+        totalGroups: groups.length
+      };
     }
     return result;
   }
@@ -92,7 +127,12 @@ export class EmailRetryService {
     );
   }
 
-  private groupFailed(): LogEmail[][] {
+  /**
+   * Returns `[key, group]` pairs, not bare groups — the key (kept alongside
+   * the group, not discarded via `Map.values()`) is what `retryHandler` uses
+   * as its stable resume identity in `RetryResumeState.processedKeys`.
+   */
+  private groupFailed(): Array<[string, LogEmail[]]> {
     const groups = new Map<string, LogEmail[]>();
     for (const failed of this.logMail.findFailed()) {
       const logicalTargetId = this.logicalTargetId(failed);
@@ -101,7 +141,7 @@ export class EmailRetryService {
       group.push(failed);
       groups.set(key, group);
     }
-    return [...groups.values()];
+    return [...groups.entries()];
   }
 
   private mergeResult(a: RetryResult, b: RetryResult): RetryResult {

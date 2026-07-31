@@ -200,17 +200,75 @@ test('retryHandler yields one checkpoint per failed-group batch and resumes from
   expect(first.value).toMatchObject({ groupIndex: 1, totalGroups: 2 });
   let step = first;
   while (!step.done) step = gen.next();
-  expect(step.value.retried + step.value.permanent).toBeGreaterThan(0);
+  // Both single-email groups succeed against the fake Gmail facade (no failFor entries),
+  // so exactly 2 retried and 0 permanent — not just "some work happened".
+  expect(step.value.retried).toBe(2);
+  expect(step.value.permanent).toBe(0);
+  expect(step.value.retried + step.value.permanent).toBe(2);
+});
+
+/**
+ * Reproduces the resume bug found in review: `groupFailed()` is recomputed
+ * fresh from LOG_MAIL's STATO=ERROR rows on every `retryHandler` invocation.
+ * When a group succeeds, `processGroup()` flips its rows out of ERROR via
+ * `marcaSuccesso()` — so the failed-group array on a real second invocation
+ * (a JobRunnerLib resume, a brand-new generator instance seeded only from the
+ * persisted checkpoint) is shorter than the one the first invocation yielded
+ * checkpoints against. A resume anchored on a raw positional index
+ * (`groupIndex`) would then skip whatever shifted into that index — the job
+ * could report "done" without ever having retried every failed group. The
+ * fix anchors resume on `processedKeys` (stable per-group identity) instead.
+ */
+test('retryHandler resume is correct across two separate generator instances (does not skip unretried groups)', () => {
+  const { db, retry } = wire([
+    failedRow('2026-06-30T10:00:00.000Z', 'genitore1@x.it'),
+    failedRow('2026-06-29T10:00:00.000Z', 'genitore2@x.it')
+  ]);
+
+  // First execution: simulate a mid-run suspend by draining only the first yield,
+  // never letting this generator instance run to completion.
+  const gen1 = retry.retryHandler({ resumeState: null, jobId: 'job_retry_1' });
+  const first = gen1.next();
+  expect(first.done).toBe(false);
+  const resumeState = first.value;
+  expect(resumeState.processedKeys).toHaveLength(1);
+
+  // The processed group's LOG_MAIL rows flipped out of ERROR — this is exactly what
+  // shrinks groupFailed()'s output on the next invocation and is what an index-based
+  // resume anchor gets wrong.
+  const remainingErrorsAfterFirstYield = db.tables['LOG_MAIL']!.getAllRows().filter(
+    (r) => r['STATO'] === 'ERROR'
+  );
+  expect(remainingErrorsAfterFirstYield).toHaveLength(1);
+
+  // Second execution: a real JobRunnerLib resume — a brand-new generator instance,
+  // seeded only with the checkpoint state (as JobRunnerLib replays it from ScriptProperties),
+  // with no memory of the first generator's local variables.
+  const gen2 = retry.retryHandler({ resumeState, jobId: 'job_retry_1' });
+  let step = gen2.next();
+  while (!step.done) step = gen2.next();
+
+  // Both originally-failed groups must be accounted for across the two invocations
+  // combined — exactly 2, not merely "> 0" — proving the second (still-pending) group
+  // was not skipped by the resume.
+  expect(step.value.retried).toBe(2);
+  expect(step.value.permanent).toBe(0);
+  expect(step.value.retried + step.value.permanent).toBe(2);
+  expect(db.tables['LOG_MAIL']!.getAllRows().filter((r) => r['STATO'] === 'ERROR')).toHaveLength(0);
 });
 
 test('registerJobHandlers registers under JOB_TYPE_RETRY_EMAIL', () => {
   // wire()'s first param (LOG_MAIL rows) is required by the existing helper —
-  // pass an empty array since this test only exercises registration wiring.
-  const { retry } = wire([]);
+  // pass an empty array since registration doesn't touch groupFailed()/LOG_MAIL at all;
+  // assert that explicitly rather than relying on a comment.
+  const { db, retry } = wire([]);
   const registered: string[] = [];
   const queue = {
     registerJobHandler: (type: string) => registered.push(type)
   } as unknown as JobQueueLike;
   retry.registerJobHandlers(queue);
   expect(registered).toEqual([JOB_TYPE_RETRY_EMAIL]);
+  // registerJobHandlers only wires the callback into the queue — it must not itself
+  // touch LOG_MAIL, so an empty fixture is provably safe, not just "probably fine".
+  expect(db.tables['LOG_MAIL']!.getAllRows()).toHaveLength(0);
 });

@@ -69,16 +69,23 @@ partner hanno studenti reali.
   - `rappresentanti.studenti`/`.genitori` sempre vuoti (nessuno studente
     appartiene mai alla parent).
   - `coordinatori` vuoto o errato (la riga `COORD` della parent è
-    tipicamente vuota — vedi `E2eSampleDatabaseBuilder.ts:470` — mentre i
+    tipicamente vuota — vedi `E2eSampleDatabaseBuilder.ts:472` — mentre i
     coordinatori reali vivono sulle righe partner, distinti per gruppo fin
     dai commit `f01e3e6`/`b771f6d`, ma mai letti dal CDU).
 
   Questo era un bug generale: **qualunque documento** puntato alla classe
   parent (non solo `DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA`) riceveva
   rappresentanti/coordinatori vuoti o sbagliati. Fixato in questo lavoro:
-  entrambi i provider ora seguono lo stesso pattern di
-  `studentiDellaClasse` (iterano `getClassiPartner`), taggando ogni
-  voce con `indirizzo: { nome }` del gruppo di provenienza.
+  entrambi i provider ora si espandono sul gruppo come
+  `studentiDellaClasse`, taggando ogni voce con `indirizzo: { nome }` del
+  gruppo di provenienza. L'iterazione non è però identica nei due casi:
+  `RappresentantiProvider` itera le sole partner (`getClassiPartner(classe)`,
+  come `studentiDellaClasse` — la parent non ha studenti propri per
+  definizione), mentre `ClasseProvider.buildCoordinatori` itera
+  `[classe, ...getClassiPartner(classe)]`, includendo di proposito anche la
+  riga parent: il suo `COORD` è tipicamente vuoto ma, se valorizzato, è un
+  coordinatore legittimo dell'intero gruppo e va incluso (scelta esplicita
+  del design spec, non un'asimmetria accidentale).
 
 - `consiglioDiClasse` (`DocenteCdcVM[]`, costruito da
   `TeachingCouncilProjection.councilVmStrategy`) era invece **già
@@ -112,14 +119,26 @@ partner hanno studenti reali.
 
 ## 3. Invio email
 
-L'instradamento email era già "articulation-aware" prima di questo
-lavoro, indipendentemente dal CDU documentale:
+L'instradamento email era già "articulation-aware" prima di questo lavoro
+**limitatamente all'instradamento per coordinatore**; la risoluzione dei
+destinatari basati sugli studenti della classe, invece, **non lo è**:
 
 - `RisolutoreRuoliService.genitoriClasse` (`RisolutoreRuoliService.ts:267-269`)
   usa `classi.getStudenti(ctx.classe, true).flatMap(getTutors)` — nota che
-  usa i tutor (`TUTOR_1`/`TUTOR_2`), non `RAPPR_GEN`, e comunque opera
-  sulla classe passata nel contesto di invio (che per gli scenari
-  coordinatore-aggregato è già la classe corretta, non la parent vuota).
+  usa i tutor (`TUTOR_1`/`TUTOR_2`), non `RAPPR_GEN`. Lo stesso vale per
+  `RisolutoreRuoliService.rappresentantiStudenti`
+  (`RisolutoreRuoliService.ts:271-276`), che filtra
+  `classi.getStudenti(ctx.classe, true)` per `isRappresentante()`.
+  **Nessuno dei due si espande sulle classi partner**: `getStudenti`
+  (`ClasseRepository.ts:221-224`) fa un match esatto su `ALUNNI.CLASSE`, e
+  nessuno studente ha mai come classe l'id della parent. Se un `CONF_MAIL`
+  punta alla classe parent (`3C`) con destinatario `GENITORI_CLASSE` o
+  `RAPPRESENTANTI_STUDENTI`, il risultato è **zero destinatari, in
+  silenzio** — esattamente lo stesso pattern di bug fixato in sezione 2 per
+  `RappresentantiProvider`/`ClasseProvider.coordinatori`, ma sul lato invio.
+  Non affrontato in questo lavoro (vedi sezione 4): è un cambio di
+  comportamento su destinatari reali di email, fuori dallo scope della
+  generazione documentale.
 - `EmailNotificationService.classiCompetenza`/`targetsPerCoordinatore`
   (`EmailNotificationService.ts:292-297,331-365`) instradano
   esplicitamente per partner — è il fix "route articulated coordinators
@@ -129,9 +148,11 @@ lavoro, indipendentemente dal CDU documentale:
   coordinatori realmente distinti di `3C-S`/`3C-C`, usati anche dallo
   scenario e2e di questo lavoro come prova che il merge CDU funziona).
 
-Il contrasto prima di questo lavoro era quindi: **l'invio email sapeva
-già gestire coordinatori distinti per partner; la costruzione del CDU
-documentale no.** Le due cose vivevano in codice completamente separato
+Il contrasto prima di questo lavoro era quindi: **l'invio email sapeva già
+gestire coordinatori distinti per partner; la costruzione del CDU
+documentale no** (mentre i destinatari email derivati dagli studenti della
+classe restano tuttora non espansi, vedi sopra). Le due cose vivevano in
+codice completamente separato
 (`EmailNotificationService` vs. `ClasseProvider`) e non condividevano
 alcuna logica di espansione — motivo per cui il bug in sezione 2 è potuto
 restare latente: nessuno scenario e2e esistente generava mai un
@@ -146,5 +167,8 @@ rappresentanti/coordinatori.
 | `RappresentantiProvider` non espandeva sulle partner per una classe parent | **Fixata** in questo lavoro (Task 2) |
 | `ClasseProvider.coordinatori` non espandeva sulle partner per una classe parent | **Fixata** in questo lavoro (Task 3) |
 | `consiglioDiClasse` mancava nome del gruppo/major e stringa materie pronta | **Fixata** in questo lavoro (Task 4) |
+| Nessun array già filtrato per docenti comuni/separati del gruppo: i template avrebbero dovuto filtrare lato placeholder su `tipoArticolazione` | **Fixata** in questo lavoro (Task 5): `ConsiglioClasseProvider` emette `consiglioDiClasseComune`/`consiglioDiClasseSeparato` (filtro server-side, `undefined` per le classi non articolate) |
+| `RisolutoreRuoliService.genitoriClasse`/`rappresentantiStudenti` non si espandono sulle classi partner (`getStudenti(ctx.classe, true)` sulla sola classe focus) | Aperta — non affrontata in questo lavoro: stesso pattern di bug di `RappresentantiProvider`/`coordinatori` ma sul lato invio email, quindi un `CONF_MAIL` puntato alla classe parent con destinatario `GENITORI_CLASSE`/`RAPPRESENTANTI_STUDENTI` risolve a zero destinatari in silenzio. Fuori scope: è un cambio di comportamento su destinatari reali, non sulla generazione documentale |
+| `DocenteCdcVM.materieDescrizione` ripete la stessa materia per un docente `COMUNE` (una voce `materie[]` per ciascuna partner, es. "Matematica, Matematica") | Aperta — artefatto di rendering, non di correttezza: `materie[]` è per-assignment e un docente comune ha un assignment per partner. Emerso solo ora, perché il fixture e2e non produceva alcun docente `COMUNE` prima di questo lavoro |
 | Nessun modo di generare "un solo documento per il gruppo" diverso da puntare alla parent + CDU espanso | Aperta — architetturalmente non esiste un target "gruppo articolato" di prima classe in `DocumentGenerationService`; funziona solo perché i provider ora si espandono internamente quando il focus è la parent |
 | Fixture e2e: tutte le classi (comprese le due partner di `3C`) condividono lo stesso `INDIRIZZI` id (`IND_E2E`) | Aperta — non blocca la correttezza (ogni entità viene comunque taggata con l'indirizzo della propria classe di provenienza), ma rende la demo del nuovo documento meno leggibile: entrambi i gruppi mostrano lo stesso nome di indirizzo tra parentesi. Non affrontata in questo lavoro per non toccare il seeding condiviso da tutti gli altri scenari e2e. |

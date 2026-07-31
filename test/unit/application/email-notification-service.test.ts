@@ -171,6 +171,7 @@ test('PER_COORDINATORE routes a parent without coordinatore to its partners', ()
     findAttive: () => [parent],
     getArticolazione: () => ({ parent: null }),
     getGruppoArticolazione: () => [parent, scientifico, classico],
+    getClassiPartner: () => [scientifico, classico],
     getCoordinatori: (classe: Classe) => {
       if (classe.id === '3C-S') {
         return [Docente.fromData({ EMAIL: 'scientifico@school.it', DIPART: 'X' })];

@@ -287,10 +287,19 @@ export class EmailNotificationService {
 
   /**
    * An articulated parent is the email entry point, but the CDU must include
-   * documents owned by every partner class in its group.
+   * documents owned by every partner class in its group. Expansion is
+   * parent-only (never bidirectional via a partner) — every caller of this
+   * method already restricts `classe` to `classiEntryPoint()`, so a partner
+   * class never reaches here in practice, but narrowing explicitly keeps
+   * this in step with `DocumentGenerationService.generateForClasse` and
+   * avoids resurfacing the partner-to-sibling data leak that fix addressed
+   * if a future call site skips that filter.
    */
   private classiCompetenza(classe: Classe): string[] {
-    return this.deps.classi.getGruppoArticolazione(classe).map((membro) => membro.id ?? '');
+    const config = this.deps.classi.getArticolazione(classe);
+    const gruppo =
+      config?.isParent() === true ? [classe, ...this.deps.classi.getClassiPartner(classe)] : [classe];
+    return gruppo.map((membro) => membro.id ?? '');
   }
 
   /**
@@ -336,8 +345,7 @@ export class EmailNotificationService {
               : [{ email: docente.id, classi: [classe.id ?? ''] }]
           )
         : this.deps.classi
-            .getGruppoArticolazione(classe)
-            .filter((membro) => membro.id !== classe.id)
+            .getClassiPartner(classe)
             .flatMap((partner) =>
               this.deps.classi.getCoordinatori(partner).flatMap((docente) =>
                 docente.id === null || partner.id === null

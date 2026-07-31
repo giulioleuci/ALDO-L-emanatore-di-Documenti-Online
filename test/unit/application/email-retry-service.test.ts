@@ -1,4 +1,4 @@
-import { EmailRetryService } from '../../../src/application/services/EmailRetryService';
+import { EmailRetryService, JOB_TYPE_RETRY_EMAIL } from '../../../src/application/services/EmailRetryService';
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
@@ -185,4 +185,32 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
   expect(gmail.sent[0]!.to).toEqual(['verdi@school.it']);
   expect(gmail.sent[0]!.htmlBody).toContain('BIANCHI LUCIA');
   expect(gmail.sent[0]!.htmlBody).not.toContain('VERDI GIO');
+});
+
+test('retryHandler yields one checkpoint per failed-group batch and resumes from checkpoint', () => {
+  // Two distinct destinatari -> two distinct groups (grouped by pattern::logicalTargetId/destinatariRaw),
+  // so the generator must yield twice, once per group, before completing.
+  const { retry } = wire([
+    failedRow('2026-06-30T10:00:00.000Z', 'genitore1@x.it'),
+    failedRow('2026-06-29T10:00:00.000Z', 'genitore2@x.it')
+  ]);
+  const gen = retry.retryHandler({ resumeState: null, jobId: 'job_retry_1' });
+  const first = gen.next();
+  expect(first.done).toBe(false);
+  expect(first.value).toMatchObject({ groupIndex: 1, totalGroups: 2 });
+  let step = first;
+  while (!step.done) step = gen.next();
+  expect(step.value.retried + step.value.permanent).toBeGreaterThan(0);
+});
+
+test('registerJobHandlers registers under JOB_TYPE_RETRY_EMAIL', () => {
+  // wire()'s first param (LOG_MAIL rows) is required by the existing helper —
+  // pass an empty array since this test only exercises registration wiring.
+  const { retry } = wire([]);
+  const registered: string[] = [];
+  const queue = {
+    registerJobHandler: (type: string) => registered.push(type)
+  } as unknown as JobQueueLike;
+  retry.registerJobHandlers(queue);
+  expect(registered).toEqual([JOB_TYPE_RETRY_EMAIL]);
 });

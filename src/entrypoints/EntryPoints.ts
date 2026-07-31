@@ -31,6 +31,7 @@ declare global {
     patternId: string,
     runner: JobRunnerService
   ): unknown;
+  function avviaRetryEmailDataDriven(c: ServiceContainer, runner: JobRunnerService): unknown;
   function menuGenerazioneDocumenti(ui: IUiFacade, avvia: (configId: string) => void): void;
   function menuComunicazioniEmail(ui: IUiFacade, avvia: (patternId: string) => void): void;
   const GasUiFacade: new () => IUiFacade;
@@ -50,9 +51,22 @@ function menu_avvioComunicazioniEmail(): void {
   );
 }
 
+/**
+ * Launcher (15 §4, 11 §16): scheduled retry of failed LOG_MAIL sends. Unlike
+ * the two wrappers above it takes no configuration id to prompt for, so
+ * there is no `avvioPersonalizzato` dialog step and — deliberately — no
+ * entry in Menu.ts's AVVIA PROCESSI menu: retry is meant to run unattended
+ * from a time-driven trigger calling this function by name, not from the
+ * interactive UI.
+ */
+function menu_avvioRetryEmail(): void {
+  avviaRetryEmailDataDriven(initAldo(), creaJobRunner());
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).menu_avvioGenerazioneDocumenti = menu_avvioGenerazioneDocumenti;
 (globalThis as any).menu_avvioComunicazioniEmail = menu_avvioComunicazioniEmail;
+(globalThis as any).menu_avvioRetryEmail = menu_avvioRetryEmail;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
 // ---------------------------------------------------------------------------

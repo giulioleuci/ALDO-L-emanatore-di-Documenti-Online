@@ -12,6 +12,7 @@ import {
   creaJobRunner,
   avviaGenerazioneDataDriven,
   avviaInvioNotificheDataDriven,
+  avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
   riprendiJobSospeso,
   PROP_MASTER_SPREADSHEET_ID
@@ -81,6 +82,7 @@ export function resumeJob(): void {
 (globalThis as any).creaJobRunner = creaJobRunner;
 (globalThis as any).avviaGenerazioneDataDriven = avviaGenerazioneDataDriven;
 (globalThis as any).avviaInvioNotificheDataDriven = avviaInvioNotificheDataDriven;
+(globalThis as any).avviaRetryEmailDataDriven = avviaRetryEmailDataDriven;
 (globalThis as any).menuGenerazioneDocumenti = menuGenerazioneDocumenti;
 (globalThis as any).menuComunicazioniEmail = menuComunicazioniEmail;
 (globalThis as any).GasUiFacade = GasUiFacade;

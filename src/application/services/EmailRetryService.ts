@@ -16,6 +16,15 @@ export interface RetryResult {
   permanent: number;
 }
 
+/** Job type under which the retry handler is registered in JobRunnerLib. */
+export const JOB_TYPE_RETRY_EMAIL = 'RETRY_EMAIL_BATCH';
+
+/** Checkpoint yielded by `retryHandler` once per failed-group batch. */
+export interface RetryCheckpoint extends RetryResult {
+  groupIndex: number;
+  totalGroups: number;
+}
+
 /**
  * Retry of failed sends (11 §16): scans LOG_MAIL for STATO = ERROR, groups by
  * stable logical target when available (with physical recipients as the legacy
@@ -39,6 +48,51 @@ export class EmailRetryService {
   }
 
   retryFailed(): RetryResult {
+    const groups = this.groupFailed();
+    let result: RetryResult = { retried: 0, permanent: 0 };
+    for (const group of groups) result = this.mergeResult(result, this.processGroup(group));
+    return result;
+  }
+
+  /**
+   * JobRunnerLib handler (11 §16, 15 §5): one checkpoint per failed-group
+   * batch, so a pattern with many failed/grouped emails gets execution-window
+   * protection instead of running the whole retry synchronously.
+   */
+  *retryHandler(
+    params: JobHandlerParams & { jobId?: string }
+  ): Generator<RetryCheckpoint, RetryResult, void> {
+    const jobId = String(params.jobId ?? 'retry_email');
+    const resume = (params.resumeState ?? null) as { groupIndex: number } | null;
+    const groups = this.groupFailed();
+    if (resume === null) this.logger.info(`EmailRetry: avviato job ${jobId}, ${groups.length} gruppi`);
+
+    let result: RetryResult = { retried: 0, permanent: 0 };
+    const startIndex = resume?.groupIndex ?? 0;
+    for (let i = startIndex; i < groups.length; i++) {
+      result = this.mergeResult(result, this.processGroup(groups[i]!));
+      yield { ...result, groupIndex: i + 1, totalGroups: groups.length };
+    }
+    return result;
+  }
+
+  /** JobRunnerLib registry callback (passed to run/resume). */
+  registerJobHandlers(queue: JobQueueLike): void {
+    queue.registerJobHandler(JOB_TYPE_RETRY_EMAIL, (params) => this.retryHandler(params));
+  }
+
+  /** Starts the retry through JobRunnerLib (state + resume triggers managed by the library). */
+  start(runner: JobRunnerService, jobName: string, forceRestart = false): unknown {
+    return runner.run(
+      jobName,
+      JOB_TYPE_RETRY_EMAIL,
+      { jobId: jobName },
+      (queue) => this.registerJobHandlers(queue),
+      forceRestart
+    );
+  }
+
+  private groupFailed(): LogEmail[][] {
     const groups = new Map<string, LogEmail[]>();
     for (const failed of this.logMail.findFailed()) {
       const logicalTargetId = this.logicalTargetId(failed);
@@ -47,34 +101,36 @@ export class EmailRetryService {
       group.push(failed);
       groups.set(key, group);
     }
+    return [...groups.values()];
+  }
 
-    const result: RetryResult = { retried: 0, permanent: 0 };
-    for (const group of groups.values()) {
-      const first = group[0]!;
-      if (group.length >= this.maxTentativi) {
-        this.registraPermanente(first, group.length);
-        result.permanent += 1;
-        continue;
-      }
-      const logicalTargetId = this.logicalTargetId(first);
-      const run = this.emailService.sendPattern(
-        first.pattern,
-        logicalTargetId === null
-          ? { onlyRecipients: first.getDestinatari() }
-          : { onlyTargetIds: [logicalTargetId] }
-      );
-      if (run.sent > 0 && run.errors.length === 0) {
-        for (const record of group) this.logMail.marcaSuccesso(record);
-        result.retried += 1;
-      } else {
-        this.logger.warn(
-          PiiRedactor.redact(
-            `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
-          )
-        );
-      }
+  private mergeResult(a: RetryResult, b: RetryResult): RetryResult {
+    return { retried: a.retried + b.retried, permanent: a.permanent + b.permanent };
+  }
+
+  private processGroup(group: LogEmail[]): RetryResult {
+    const first = group[0]!;
+    if (group.length >= this.maxTentativi) {
+      this.registraPermanente(first, group.length);
+      return { retried: 0, permanent: 1 };
     }
-    return result;
+    const logicalTargetId = this.logicalTargetId(first);
+    const run = this.emailService.sendPattern(
+      first.pattern,
+      logicalTargetId === null
+        ? { onlyRecipients: first.getDestinatari() }
+        : { onlyTargetIds: [logicalTargetId] }
+    );
+    if (run.sent > 0 && run.errors.length === 0) {
+      for (const record of group) this.logMail.marcaSuccesso(record);
+      return { retried: 1, permanent: 0 };
+    }
+    this.logger.warn(
+      PiiRedactor.redact(
+        `EmailRetry: nuovo tentativo fallito per ${first.pattern} → ${first.destinatariRaw} (${run.errors.join('; ')})`
+      )
+    );
+    return { retried: 0, permanent: 0 };
   }
 
   private logicalTargetId(record: LogEmail): string | null {

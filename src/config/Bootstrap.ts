@@ -308,6 +308,11 @@ export function avviaInvioNotificheDataDriven(
     .start(runner, `mail_${patternId}`, patternId);
 }
 
+/** Data-driven launcher (15 §4): scheduled retry of failed LOG_MAIL sends (11 §16). */
+export function avviaRetryEmailDataDriven(c: ServiceContainer, runner: JobRunnerService): unknown {
+  return c.get<EmailRetryService>('emailRetryService').start(runner, 'retry_email');
+}
+
 /**
  * Data-driven launcher (15 §4): ETL import (12 §3). Executed synchronously —
  * `eseguiImportazione` is a single execution, not an iteration (15 §6); it is
@@ -335,9 +340,11 @@ export function riprendiJobSospeso(
 ): unknown {
   const documenti = c.get<DocumentBatchService>('documentBatchService');
   const email = c.get<EmailBatchService>('emailBatchService');
+  const retry = c.get<EmailRetryService>('emailRetryService');
   return runner.resume(jobName, (queue) => {
     documenti.registerJobHandlers(queue);
     email.registerJobHandlers(queue);
+    retry.registerJobHandlers(queue);
   });
 }
 

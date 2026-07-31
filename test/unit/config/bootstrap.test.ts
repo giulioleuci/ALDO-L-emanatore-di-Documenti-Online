@@ -2,6 +2,7 @@ import {
   buildAldoContainer,
   avviaGenerazioneDataDriven,
   avviaInvioNotificheDataDriven,
+  avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
   riprendiJobSospeso,
   initAldo,
@@ -11,7 +12,7 @@ import {
 } from '../../../src/config/Bootstrap';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
-import { EmailRetryService } from '../../../src/application/services/EmailRetryService';
+import { EmailRetryService, JOB_TYPE_RETRY_EMAIL } from '../../../src/application/services/EmailRetryService';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
 import { ReportService } from '../../../src/application/services/ReportService';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
@@ -196,6 +197,17 @@ test('avviaInvioNotificheDataDriven starts the email batch job (15 §4/§6)', ()
   });
 });
 
+test('avviaRetryEmailDataDriven starts the retry job under its registered type (15 §4/§6, 11 §16)', () => {
+  const { runner, calls } = fakeRunner();
+  avviaRetryEmailDataDriven(container(), runner);
+  expect(calls[0]).toMatchObject({
+    jobName: 'retry_email',
+    jobType: JOB_TYPE_RETRY_EMAIL,
+    params: { jobId: 'retry_email' }
+  });
+  expect(calls[0]!.registered).toEqual([JOB_TYPE_RETRY_EMAIL]);
+});
+
 test('avviaImportazioneDataDriven fails typed when no ImportEngine is configured (12 §3)', () => {
   expect(() => avviaImportazioneDataDriven(container(), 'IMPORT_ALUNNI')).toThrow(
     ConfigurationError
@@ -253,12 +265,12 @@ test('avviaImportazioneDataDriven runs the real ImportService when an ImportEngi
   expect(result).toEqual({ inseriti: 1, aggiornati: 0, saltati: 0, ghost: 0, errori: [] });
 });
 
-test('riprendiJobSospeso re-registers BOTH batch registries so the library can pick by job type (15 §5)', () => {
+test('riprendiJobSospeso re-registers ALL THREE job registries so the library can pick by job type (15 §5)', () => {
   const { runner, calls } = fakeRunner();
   riprendiJobSospeso(container(), runner);
   expect(calls[0]!.jobName).toBe('');
   expect(calls[0]!.registered.sort()).toEqual(
-    [JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL].sort()
+    [JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL, JOB_TYPE_RETRY_EMAIL].sort()
   );
 });
 

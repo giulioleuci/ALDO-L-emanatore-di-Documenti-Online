@@ -467,3 +467,32 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     ).toEqual(['bianchi@school.it', 'neri@school.it', 'rossi@school.it', 'verdi@school.it']);
   });
 });
+
+describe('RisolutoreRuoliService — articulated parent expansion (ARTICOLAZIONE.md item 2)', () => {
+  test('GENITORI_CLASSE resolves tutors of students in both partner classes from the parent', () => {
+    const { cdu, service } = build({ target: '1F' });
+    // Fixture has no ALUNNI seeded under 1F/1F-LSO/1F-LSS, so this must be an
+    // empty array — the point of this test is that it does NOT throw and does
+    // NOT silently short-circuit on the parent id (see the assertion helper).
+    expect(() => emails(service, 'GENITORI_CLASSE', cdu)).not.toThrow();
+  });
+
+  test('TUTOR_ASL merges RUOLI across both partner classes when resolved from the parent', () => {
+    const tables = fixtureTables();
+    const lso = tables.CLASSI!.find((r) => r.ID === '1F-LSO')!;
+    lso.RUOLI = JSON.stringify({ TUTOR_ASL: 'bianchi@school.it' });
+    const lss = tables.CLASSI!.find((r) => r.ID === '1F-LSS')!;
+    lss.RUOLI = JSON.stringify({ TUTOR_ASL: 'verdi@school.it' });
+    const db = new FakeDatabase(tables);
+    const buildParams: BuildParams = { target: '1F', tipoTarget: 'classe', now: NOW };
+    const cdu = composeContextBuilder(db).build(buildParams, recipe('CLASSE_COMPLETA'));
+    const service = composeRisolutoreRuoli(db);
+
+    expect(emails(service, 'TUTOR_ASL', cdu)).toEqual(['bianchi@school.it', 'verdi@school.it']);
+  });
+
+  test('TUTOR_ASL on a standard class still reads only its own RUOLI (regression)', () => {
+    const { cdu, service } = build({});
+    expect(emails(service, 'TUTOR_ASL', cdu)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  });
+});

@@ -12,6 +12,7 @@ import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { getClasseEntity } from '../context-engine/techEntities';
+import { studentiDellaClasse } from '../context-engine/studenti';
 import { ValidationError } from '../../domain/errors/DomainError';
 import type {
   ITeachingAssignmentResolver,
@@ -143,8 +144,8 @@ export class RisolutoreRuoliService {
       ['DOCENTI_NO_RELIGIONE', (c) => this.docentiNoReligione(c)],
       ['DOCENTI_IRC_ALT', (c) => this.docentiIrcAlt(c)],
       ['SEGRETARIO_CDC', (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'SEGRETARIO'))],
-      ['TUTOR_ASL', (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ASL'))],
-      ['TUTOR_ORIENT', (c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ORIENT'))],
+      ['TUTOR_ASL', (c) => this.emailsOf(this.docentiRuoloArticolato(c.classe, 'TUTOR_ASL'))],
+      ['TUTOR_ORIENT', (c) => this.emailsOf(this.docentiRuoloArticolato(c.classe, 'TUTOR_ORIENT'))],
       ['DOCENTE_MATERIA', (c) => this.docenteMateria(c)],
       ['CAPO_DIPARTIMENTO', (c) => this.emailsOf(this.capoDipartimento(c))],
       ['DOCENTE_PRIMA_PROVA', (c) => this.docentiProva(c, 'prima')],
@@ -265,14 +266,28 @@ export class RisolutoreRuoliService {
   }
 
   private genitoriClasse(ctx: RoleContext): Email[] {
-    return this.classi.getStudenti(ctx.classe, true).flatMap((alunno) => alunno.getTutors());
+    return studentiDellaClasse(this.classi, ctx.classe, true).flatMap((alunno) =>
+      alunno.getTutors()
+    );
   }
 
   private rappresentantiStudenti(ctx: RoleContext): Email[] {
-    return this.classi
-      .getStudenti(ctx.classe, true)
+    return studentiDellaClasse(this.classi, ctx.classe, true)
       .filter((alunno) => alunno.isRappresentante())
       .map((alunno) => Email.of(alunno.id ?? ''));
+  }
+
+  /** Merges a RUOLI-based role across an articulated parent's partner classes; plain lookup otherwise. */
+  private docentiRuoloArticolato(classe: Classe, nomeRuolo: string): Docente[] {
+    const config = this.classi.getArticolazione(classe);
+    if (config?.isParent() !== true) return this.classi.getDocentiRuolo(classe, nomeRuolo);
+    const byEmail = new Map<string, Docente>();
+    for (const gruppo of [classe, ...this.classi.getClassiPartner(classe)]) {
+      for (const docente of this.classi.getDocentiRuolo(gruppo, nomeRuolo)) {
+        if (docente.id !== null) byEmail.set(docente.id, docente);
+      }
+    }
+    return [...byEmail.values()];
   }
 
   private referente(ruolo: string): Email[] | null {

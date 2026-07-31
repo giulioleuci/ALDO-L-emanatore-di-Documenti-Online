@@ -18,13 +18,41 @@ export class TutorProvider implements ContextProvider {
     const classe = getClasseEntity(cdu);
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
+
+    const config = this.classi.getArticolazione(classe);
+    if (config?.isParent() === true) {
+      focusClasse.tutor = {
+        asl: this.tutorGruppo(classe, RUOLO_TUTOR_ASL),
+        orientamento: this.tutorGruppo(classe, RUOLO_TUTOR_ORIENT)
+      };
+      return;
+    }
+
     focusClasse.tutor = {
-      asl: this.classi
-        .getDocentiRuolo(classe, RUOLO_TUTOR_ASL)
-        .map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' })),
-      orientamento: this.classi
-        .getDocentiRuolo(classe, RUOLO_TUTOR_ORIENT)
-        .map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' }))
+      asl: this.tutorVM(classe, RUOLO_TUTOR_ASL),
+      orientamento: this.tutorVM(classe, RUOLO_TUTOR_ORIENT)
     };
+  }
+
+  private tutorVM(
+    classe: ReturnType<typeof getClasseEntity>,
+    ruolo: string
+  ): Array<{ nome: string; email: string }> {
+    return this.classi
+      .getDocentiRuolo(classe, ruolo)
+      .map((d) => ({ nome: d.getNomeCompleto(), email: d.id ?? '' }));
+  }
+
+  private tutorGruppo(
+    classe: ReturnType<typeof getClasseEntity>,
+    ruolo: string
+  ): Array<{ nome: string; email: string }> {
+    const byEmail = new Map<string, { nome: string; email: string }>();
+    for (const gruppo of [classe, ...this.classi.getClassiPartner(classe)]) {
+      for (const vm of this.tutorVM(gruppo, ruolo)) {
+        if (vm.email !== '') byEmail.set(vm.email, vm);
+      }
+    }
+    return [...byEmail.values()];
   }
 }

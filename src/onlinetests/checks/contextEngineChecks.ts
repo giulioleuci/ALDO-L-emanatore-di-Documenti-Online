@@ -177,16 +177,6 @@ function councilRows(cdu: ReturnType<ContextBuilder['build']>): string[] {
   );
 }
 
-function expectedCouncilRows(assignments: TeachingAssignment[]): string[] {
-  const rows = new Map<string, string[]>();
-  for (const tuple of assignmentTuples(assignments)) {
-    const row = rows.get(tuple.actor) ?? [];
-    row.push(tupleKey(tuple));
-    rows.set(tuple.actor, row);
-  }
-  return [...rows.entries()].map(([actor, tuples]) => `${actor}:${tuples.sort().join(',')}`);
-}
-
 function assertCouncilTuples(
   consumer: string,
   assignments: TeachingAssignment[],
@@ -201,7 +191,7 @@ function assertCouncilTuples(
 
   for (const tupleStr of allTuples) {
     const parts = tupleStr.split('|');
-    if (parts.length < 5) {
+    if (parts.length < 5 || parts[1] === undefined || parts[3] === undefined || parts[4] === undefined) {
       dedupedTuples.push(tupleStr);
       continue;
     }

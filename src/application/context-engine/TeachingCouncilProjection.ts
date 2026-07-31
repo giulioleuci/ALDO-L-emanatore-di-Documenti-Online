@@ -239,17 +239,17 @@ function councilVmStrategy(
       const isCoordinatore = coordinatori.has(rowDocente.id);
       const isTutorAsl = tutorAsl.has(rowDocente.id);
       const isTutorOrientamento = tutorOrient.has(rowDocente.id);
-      const rawMaterieVm = assignments.map((assignment) => ({
-        sigla: assignment.slot.materia,
-        nome:
-          materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
-          assignment.slot.materia,
-        colore: '',
-        specificita: assignment.slot.specifica
-      }));
+      const materieVm = dedupeMaterie(
+        assignments.map((assignment) => ({
+          sigla: assignment.slot.materia,
+          nome:
+            materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
+            assignment.slot.materia,
+          colore: '',
+          specificita: assignment.slot.specifica
+        }))
+      );
       const tipoArt = tipoArticolazione(classi, classe, assignments);
-      const isParent = classi.getArticolazione(classe)?.isParent() === true;
-      const materieVm = tipoArt === 'COMUNE' && isParent ? dedupeMaterie(rawMaterieVm) : rawMaterieVm;
       return {
         anagrafica: {
           nome: rowDocente.nome,

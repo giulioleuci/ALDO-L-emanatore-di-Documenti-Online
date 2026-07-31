@@ -192,14 +192,43 @@ function assertCouncilTuples(
   assignments: TeachingAssignment[],
   cdu: ReturnType<ContextBuilder['build']>
 ): void {
-  const expected = assignmentTuples(assignments).map(tupleKey).sort();
+  // Deduplicate expected tuples to match councilVmStrategy's dedupeMaterie behavior:
+  // remove duplicate (actor, materia, specificita) combinations, keeping the first occurrence
+  const allTuples = assignmentTuples(assignments).map(tupleKey);
+  const seenDedupeKeys = new Set<string>();
+  const dedupedTuples: string[] = [];
+  const tuplesByActor = new Map<string, Set<string>>();
+
+  for (const tupleStr of allTuples) {
+    const parts = tupleStr.split('|');
+    if (parts.length < 5) {
+      dedupedTuples.push(tupleStr);
+      continue;
+    }
+    const actor = parts[4];
+    const dedupeKey = `${actor}|${parts[1]}|${parts[3]}`; // actor|materia|specificita
+    if (seenDedupeKeys.has(dedupeKey)) continue; // skip duplicate
+    seenDedupeKeys.add(dedupeKey);
+    dedupedTuples.push(tupleStr);
+
+    // Track for rows
+    if (!tuplesByActor.has(actor)) {
+      tuplesByActor.set(actor, new Set());
+    }
+    tuplesByActor.get(actor)!.add(tupleStr);
+  }
+
+  const expected = dedupedTuples.sort();
   const actual = councilTuples(cdu).sort();
   if (JSON.stringify(expected) !== JSON.stringify(actual)) {
     throw new ValidationError(
       `${consumer}: expectedTuples=${JSON.stringify(expected)}, actualTuples=${JSON.stringify(actual)}`
     );
   }
-  const expectedRows = expectedCouncilRows(assignments).sort();
+
+  const expectedRows = [...tuplesByActor.entries()]
+    .map(([actor, tuples]) => `${actor}:${[...tuples].sort().join(',')}`)
+    .sort();
   const actualRows = councilRows(cdu).sort();
   if (expectedRows.length !== actualRows.length) {
     throw new ValidationError(

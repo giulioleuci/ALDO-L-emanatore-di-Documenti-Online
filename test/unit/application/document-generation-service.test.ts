@@ -17,6 +17,8 @@ import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { TABLE } from '../../../src/config/schema';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 import type { Row, IReadableTable } from '../../../src/infrastructure/db/Database';
+import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import type { Cdu } from '../../../src/application/context-engine/Cdu';
 
 /**
  * A FakeDatabase whose LOG_DOCS.find() always misses, while every other
@@ -61,6 +63,7 @@ function wire(
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
+    classi: new ClasseRepository(db),
     now: options.now ?? new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };
@@ -268,5 +271,87 @@ describe('DocumentGenerationService.generateForPiano', () => {
     expect(() => service.generateForPiano('a1@school.it', TipoPiano.PEI, 'CD1')).toThrow(
       'CONF_DOC CD1 deve avere TIPO PIANO_PERS'
     );
+  });
+});
+
+describe('DocumentGenerationService.generateForClasse — articulated parent (ARTICOLAZIONE.md item 7)', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  test('includes personalized plans filed under a partner class when targeting the parent', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_CLASSE_COMPLETA',
+      TIPO: 'GENERICO',
+      GENERATORE: 'CAPTURING',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    tables.LOG_DOCS!.push({
+      ID: 'LD1',
+      ID_GEN: 'CD_CLASSE_COMPLETA',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_DSA',
+      NOME: 'Piano DSA',
+      STATO: 'PUBBLICATO',
+      NOTIFICATO: true,
+      PATH: '',
+      LINK: 'https://drive/piano-dsa',
+      CLASSI: '1F-LSO',
+      UTENTI: 'studente@school.test',
+      MATERIE: '',
+      DATA_CREAZ: '2026-06-01T00:00:00.000Z',
+      ID_ORIG: ''
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    service.generateForClasse(ClasseId.of('1F'), 'CD_CLASSE_COMPLETA');
+
+    expect(strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items.map((i) => i.id)).toEqual([
+      'LD1'
+    ]);
+  });
+
+  test('standard (non-articulated) class is unaffected: classiCompetenza is just the target', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_5A',
+      TIPO: 'GENERICO',
+      GENERATORE: 'CAPTURING',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    service.generateForClasse(ClasseId.of('5A'), 'CD_5A');
+
+    expect(strategy.cdu?.meta.parametriInput.target).toBe('5A');
+    expect(strategy.cdu?.focus.classe?.flags.isArticolata).toBe(false);
   });
 });

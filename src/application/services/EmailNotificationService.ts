@@ -290,9 +290,6 @@ export class EmailNotificationService {
    * documents owned by every partner class in its group.
    */
   private classiCompetenza(classe: Classe): string[] {
-    if (this.deps.classi.getArticolazione(classe) === null) {
-      return [classe.id ?? ''];
-    }
     return this.deps.classi.getGruppoArticolazione(classe).map((membro) => membro.id ?? '');
   }
 

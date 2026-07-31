@@ -936,7 +936,8 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const classiStub = {
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
-      isArticolata: () => false
+      isArticolata: () => false,
+      getGruppoArticolazione: () => [classeNoId]
     } as unknown as ClasseRepository;
     const teachingAssignments = teachingResolverFor([
       assignmentFor(Docente.fromData({})),
@@ -957,7 +958,8 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     const classiStub = {
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
-      isArticolata: () => false
+      isArticolata: () => false,
+      getGruppoArticolazione: () => [classeNoId]
     } as unknown as ClasseRepository;
     const teachingAssignments = teachingResolverFor([
       assignmentFor(Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }))

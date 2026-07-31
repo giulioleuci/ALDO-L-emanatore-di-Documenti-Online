@@ -209,6 +209,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         expressionEngine: deps.expressionEngine,
         configs: new ConfigurazioneDocumentoRepository(deps.db),
         roleResolver: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
+        classi: container.get<ClasseRepository>('classi'),
         now: deps.now,
         monitor: deps.monitor,
         logger

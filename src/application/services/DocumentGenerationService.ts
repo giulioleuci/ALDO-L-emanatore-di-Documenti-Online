@@ -5,6 +5,7 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
 import { recipe } from '../context-engine/Recipe';
@@ -40,6 +41,8 @@ export interface DocumentGenerationDeps {
   /** GasExpressionEngineLib port (CONDIZIONE + conditional MODELLI). */
   expressionEngine: IExpressionEngine;
   configs: IConfigurazioneDocumentoRepository;
+  /** Needed to expand an articulated parent target into its partner classes (ARTICOLAZIONE.md item 7). */
+  classi: IClasseRepository;
   /** Role -> Email resolver for ACL application (14 §1); RisolutoreRuoliService satisfies it. */
   roleResolver: IRoleResolver;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
@@ -65,6 +68,7 @@ export class DocumentGenerationService {
   private readonly templates: ITemplateEngine;
   private readonly expressionEngine: IExpressionEngine;
   private readonly configs: IConfigurazioneDocumentoRepository;
+  private readonly classi: IClasseRepository;
   private readonly roleResolver: IRoleResolver;
   private readonly now: Date;
   private readonly monitor: IProcessMonitor | undefined;
@@ -78,6 +82,7 @@ export class DocumentGenerationService {
     this.templates = deps.templates;
     this.expressionEngine = deps.expressionEngine;
     this.configs = deps.configs;
+    this.classi = deps.classi;
     this.roleResolver = deps.roleResolver;
     this.now = deps.now;
     this.monitor = deps.monitor;
@@ -97,13 +102,18 @@ export class DocumentGenerationService {
       throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
     }
 
+    const classe = this.classi.findById(target);
+    if (classe === null) throw new PipelineError(`Classe ${target.value} non trovata`);
+    const classiCompetenza = this.classi.getGruppoArticolazione(classe).map((c) => c.id ?? '');
+
     const cdu = this.contextBuilder.build(
       {
         target: target.value,
         tipoTarget: 'classe',
         now: this.now,
         idConfigurazione: confDocId,
-        tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO',
+        classiCompetenza
       },
       recipe('CLASSE_COMPLETA')
     );

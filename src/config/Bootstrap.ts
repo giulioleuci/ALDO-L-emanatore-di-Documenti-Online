@@ -389,6 +389,19 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   const spreadsheetService = ServiceFactory.getSpreadsheetService();
   const documentService = ServiceFactory.getDocumentService();
 
+  // Built up-front (rather than inline in the buildAldoContainer() deps
+  // object below) so the same instance can also be threaded into
+  // ImportEngine's constructor — GasProcessMonitorLib job progress for
+  // imports (15 §9), mirroring how emailBatchService/documentBatchService
+  // already receive deps.monitor.
+  const monitor = new ProcessMonitorFacade(
+    new ProcessMonitorService(
+      logger,
+      ServiceFactory.getCacheService(),
+      ServiceFactory.getPropertiesService()
+    )
+  );
+
   // GasDataImporter's Loader writes through the raw SheetDBLib table API
   // (insertRows/updateRowById/deleteRowById), not the ALDO IDatabase port —
   // SheetDbAdapter.getDatabaseService() (ref REPORT_GLF.md B9) shares the same
@@ -398,7 +411,10 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     logger,
     driveService,
     spreadsheetService,
-    db.getDatabaseService()
+    db.getDatabaseService(),
+    null, // expressionEngine — GasDataImporter's calculated-field feature, unused by ALDO's current CONF_IMP recipes
+    null, // exceptionService — ALDO doesn't inject GasResilienceLib retry here today; out of scope for this task
+    monitor
   );
   // CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI (12 §3) are ALDO-specific source
   // strategies, not part of the library's built-in vocabulary — registered
@@ -434,13 +450,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     importEngine,
     spreadsheets: spreadsheetService,
     documents: documentService,
-    monitor: new ProcessMonitorFacade(
-      new ProcessMonitorService(
-        logger,
-        ServiceFactory.getCacheService(),
-        ServiceFactory.getPropertiesService()
-      )
-    ),
+    monitor,
     now,
     logger
   });

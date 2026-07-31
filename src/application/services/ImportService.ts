@@ -54,6 +54,7 @@ export class ImportService {
     let ghostCount = 0;
 
     const result = this.engine.runImport(recipe, {
+      jobId: `imp_${configId}`,
       postTransform: (mapped, configuration) => {
         const load = configuration.getLoad();
         const keyColumns = load.conflictKey === undefined ? [] : [load.conflictKey];

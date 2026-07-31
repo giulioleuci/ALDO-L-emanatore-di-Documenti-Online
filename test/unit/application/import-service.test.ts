@@ -145,6 +145,29 @@ test('unknown CONF_IMP id throws', () => {
   expect(() => service.executeImport('NOPE')).toThrow();
 });
 
+test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)', () => {
+  const database = db([confImpRow()]);
+  let capturedOptions: { jobId?: string } | undefined;
+  const engine = {
+    runImport: (recipe: ImportRecipe, options: { jobId?: string }) => {
+      capturedOptions = options;
+      return {
+        success: true,
+        importName: recipe.name,
+        durationMs: 0,
+        extract: { rowsExtracted: 0, rowCount: 0 },
+        transform: { rowsTransformed: 0, recordsProcessed: 0 },
+        load: { inserted: 0, updated: 0, skipped: 0, deleted: 0, total: 0, recordsProcessed: 0, failed: 0 }
+      };
+    }
+  } as unknown as ImportEngine;
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+
+  service.executeImport('IMPORT_ALUNNI');
+
+  expect(capturedOptions?.jobId).toBe('imp_IMPORT_ALUNNI');
+});
+
 test('executeAllActiveImports runs each active job independently; one failure does not abort the batch', () => {
   const database = db([
     confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),

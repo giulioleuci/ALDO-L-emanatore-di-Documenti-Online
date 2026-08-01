@@ -15,6 +15,12 @@ function classe(): Classe {
 }
 
 describe('ClassiAttiveSpec', () => {
+  test('is a GLF Specification instance (type alignment, no behavior change)', () => {
+    const spec = new ClassiAttiveSpec();
+    // Ambient GLF global (types/gaslibs/index.d.ts), loaded by test/setup/load-gaslibs.cjs.
+    expect(spec).toBeInstanceOf(Specification);
+  });
+
   test('isSatisfiedBy true when ATTIVA dynamic column is true', () => {
     const c = classe();
     c.setDynamicColumn(COL_CLASSI.ATTIVA, true);

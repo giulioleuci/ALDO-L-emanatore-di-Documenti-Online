@@ -1,10 +1,10 @@
-import type { Specification } from './Specification';
+import { Specification } from './Specification';
 import type { Classe } from '../entities/Classe';
 import type { IndirizzoId } from '../value-objects/IndirizzoId';
 import { COL_CLASSI } from '../../config/schema';
 
 /** Active classes (ref 06 §3). */
-export class ClassiAttiveSpec implements Specification<Classe> {
+export class ClassiAttiveSpec extends Specification<Classe> {
   isSatisfiedBy(c: Classe): boolean {
     return c.getDynamicColumns()[COL_CLASSI.ATTIVA] === true;
   }
@@ -18,8 +18,10 @@ export class ClassiAttiveSpec implements Specification<Classe> {
  * cells may come back as strings, so this needs the numeric coercion the
  * equality-only pushdown builder doesn't perform (ref infrastructure/db/Database.ts).
  */
-export class ClassiPerAnnoSpec implements Specification<Classe> {
-  constructor(private readonly anno: number) {}
+export class ClassiPerAnnoSpec extends Specification<Classe> {
+  constructor(private readonly anno: number) {
+    super();
+  }
   isSatisfiedBy(c: Classe): boolean {
     return c.anno.value === this.anno;
   }
@@ -29,8 +31,10 @@ export class ClassiPerAnnoSpec implements Specification<Classe> {
 }
 
 /** Classes in a given indirizzo (ref 06 §3). */
-export class ClassiPerIndirizzoSpec implements Specification<Classe> {
-  constructor(private readonly indirizzoId: IndirizzoId) {}
+export class ClassiPerIndirizzoSpec extends Specification<Classe> {
+  constructor(private readonly indirizzoId: IndirizzoId) {
+    super();
+  }
   isSatisfiedBy(c: Classe): boolean {
     return c.indirizzo === this.indirizzoId.value;
   }
@@ -40,7 +44,7 @@ export class ClassiPerIndirizzoSpec implements Specification<Classe> {
 }
 
 /** Classes belonging to an articolazione group (non-empty ARTICOLAZIONE JSON). Non-equality predicate: not pushdown-eligible. */
-export class ClassiArticolateSpec implements Specification<Classe> {
+export class ClassiArticolateSpec extends Specification<Classe> {
   isSatisfiedBy(c: Classe): boolean {
     const a = c.getDynamicColumns()[COL_CLASSI.ARTICOLAZIONE];
     return typeof a === 'string' && a.trim().length > 0;

@@ -994,9 +994,13 @@ declare global {
   // The minimal shape Repository.find()/QueryTranslator actually need. GLF's own
   // FieldSpecification/CompositeSpecification (SpecificationLike, with and/or/not
   // and canBeTranslatedToQuery/toQuery) satisfy it, and so do ALDO's domain-pure
-  // `Specification<T>` implementations, which only ever provide isSatisfiedBy +
-  // toQueryObject (ref REPORT_GLF.md B1/A1) to keep the domain layer free of any
-  // GLF/query-builder import.
+  // `Specification<T>` implementations (src/domain/specifications/Specification.ts),
+  // which extend the ambient `Specification` class below and add isSatisfiedBy +
+  // toQueryObject (ref REPORT_GLF.md B1/A1). ALDO's domain layer does reference this
+  // ambient global directly (no `@DomainRepositoryLib` module import exists — see
+  // AldoEntity.ts's identical precedent with `Entity`), but stays free of any
+  // query-builder import: `toQueryObject` is ALDO-local and RepositoryQueryBuilder
+  // is never touched outside infrastructure.
   interface QueryableSpecification {
     isSatisfiedBy(entity: unknown): boolean;
     toQueryObject?(): Record<string, unknown> | null;

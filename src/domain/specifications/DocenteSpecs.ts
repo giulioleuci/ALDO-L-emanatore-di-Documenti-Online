@@ -1,11 +1,13 @@
-import type { Specification } from './Specification';
+import { Specification } from './Specification';
 import type { Docente } from '../entities/Docente';
 import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { COL_DOCENTI } from '../../config/schema';
 
 /** Teachers of a department (ref 06 §2). */
-export class DocentiPerDipartimentoSpec implements Specification<Docente> {
-  constructor(private readonly dipartId: DipartimentoId) {}
+export class DocentiPerDipartimentoSpec extends Specification<Docente> {
+  constructor(private readonly dipartId: DipartimentoId) {
+    super();
+  }
   isSatisfiedBy(d: Docente): boolean {
     return DipartimentoId.of(d.dipart).equals(this.dipartId);
   }
@@ -15,7 +17,7 @@ export class DocentiPerDipartimentoSpec implements Specification<Docente> {
 }
 
 /** ITP (laboratory) teachers (ref 06 §2). */
-export class DocentiITPSpec implements Specification<Docente> {
+export class DocentiITPSpec extends Specification<Docente> {
   isSatisfiedBy(d: Docente): boolean {
     return d.isITP();
   }

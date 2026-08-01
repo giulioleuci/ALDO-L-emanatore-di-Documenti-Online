@@ -1,4 +1,4 @@
-import type { Specification } from './Specification';
+import { Specification } from './Specification';
 import type { VariazioneCattedra } from '../entities/VariazioneCattedra';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
@@ -9,8 +9,10 @@ import { COL_VARIAZIONI } from '../../config/schema';
  * Variations covering a class. CLASSI is CSV-containment (wildcard/multi-value),
  * not a plain equality column, so this is not pushdown-eligible (ref ALDO_GLF_AUDIT_RESULTS.md D-4).
  */
-export class VariazioniPerClasseSpec implements Specification<VariazioneCattedra> {
-  constructor(private readonly classeId: ClasseId) {}
+export class VariazioniPerClasseSpec extends Specification<VariazioneCattedra> {
+  constructor(private readonly classeId: ClasseId) {
+    super();
+  }
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.applicaAClasse(this.classeId);
   }
@@ -23,8 +25,10 @@ export class VariazioniPerClasseSpec implements Specification<VariazioneCattedra
  * Variations covering a subject. MATERIE is CSV-containment, not pushdown-eligible
  * (ref ALDO_GLF_AUDIT_RESULTS.md D-4).
  */
-export class VariazioniPerMateriaSpec implements Specification<VariazioneCattedra> {
-  constructor(private readonly materiaId: MateriaId) {}
+export class VariazioniPerMateriaSpec extends Specification<VariazioneCattedra> {
+  constructor(private readonly materiaId: MateriaId) {
+    super();
+  }
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.applicaAMateria(this.materiaId);
   }
@@ -34,8 +38,10 @@ export class VariazioniPerMateriaSpec implements Specification<VariazioneCattedr
 }
 
 /** Variations by new titolare — plain equality on NUOVO_TITOLARE, pushdown-eligible. */
-export class VariazioniPerNuovoTitolareSpec implements Specification<VariazioneCattedra> {
-  constructor(private readonly email: Email) {}
+export class VariazioniPerNuovoTitolareSpec extends Specification<VariazioneCattedra> {
+  constructor(private readonly email: Email) {
+    super();
+  }
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.nuovoTitolare === this.email.value;
   }
@@ -45,8 +51,10 @@ export class VariazioniPerNuovoTitolareSpec implements Specification<VariazioneC
 }
 
 /** Variations by titolare — plain equality on TITOLARE, pushdown-eligible. */
-export class VariazioniPerTitolareSpec implements Specification<VariazioneCattedra> {
-  constructor(private readonly email: Email) {}
+export class VariazioniPerTitolareSpec extends Specification<VariazioneCattedra> {
+  constructor(private readonly email: Email) {
+    super();
+  }
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.titolare === this.email.value;
   }

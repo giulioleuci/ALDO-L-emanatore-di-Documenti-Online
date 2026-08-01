@@ -1,4 +1,4 @@
-import type { Specification } from './Specification';
+import { Specification } from './Specification';
 import type { Piano } from '../entities/Piano';
 import type { Alunno } from '../entities/Alunno';
 import type { Email } from '../value-objects/Email';
@@ -6,8 +6,10 @@ import type { TipoPiano } from '../value-objects/enums';
 import { COL_PIANI } from '../../config/schema';
 
 /** PIANI of a student (ref 07 §8). */
-export class PianiPerAlunnoSpec implements Specification<Piano> {
-  constructor(private readonly email: Email) {}
+export class PianiPerAlunnoSpec extends Specification<Piano> {
+  constructor(private readonly email: Email) {
+    super();
+  }
   isSatisfiedBy(p: Piano): boolean {
     return p.studente === this.email.value;
   }
@@ -17,8 +19,10 @@ export class PianiPerAlunnoSpec implements Specification<Piano> {
 }
 
 /** PIANI of a given type (ref 07 §8). */
-export class PianiPerTipoSpec implements Specification<Piano> {
-  constructor(private readonly tipo: TipoPiano) {}
+export class PianiPerTipoSpec extends Specification<Piano> {
+  constructor(private readonly tipo: TipoPiano) {
+    super();
+  }
   isSatisfiedBy(p: Piano): boolean {
     return p.tipo === this.tipo;
   }
@@ -32,8 +36,10 @@ export class PianiPerTipoSpec implements Specification<Piano> {
  * of BES student emails (resolved by PianoRepository by the caller), so the spec
  * does not depend on infrastructure. In-memory only.
  */
-export class AlunniBESSpec implements Specification<Alunno> {
-  constructor(private readonly besStudentEmails: Set<string>) {}
+export class AlunniBESSpec extends Specification<Alunno> {
+  constructor(private readonly besStudentEmails: Set<string>) {
+    super();
+  }
   isSatisfiedBy(a: Alunno): boolean {
     return this.besStudentEmails.has(a.email.value);
   }

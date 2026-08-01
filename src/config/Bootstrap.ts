@@ -93,6 +93,15 @@ export interface BootstrapDeps {
   documents?: DocumentService;
   /** GasProcessMonitorLib port (15 §9) — sidebar progress for the two batch jobs. */
   monitor?: IProcessMonitor;
+  /**
+   * ScriptProperties port (15 §7), also handed to `EmailBatchService` so it can
+   * persist its own pattern-scoped quota-suspend checkpoint outside
+   * JobRunnerLib's own resume state (see `EmailBatchService`'s class
+   * docstring) — a generator `return` after a quota suspend makes JobRunnerLib
+   * discard `resumeState`, so a naive restart would re-send to every
+   * already-processed recipient without this.
+   */
+  properties?: IPropertiesFacade;
   now: Date;
   logger?: LoggerService;
 }
@@ -259,7 +268,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     (container) =>
       new EmailBatchService(
         container.get<EmailNotificationService>('emailNotificationService'),
-        deps.monitor
+        deps.monitor,
+        deps.properties
       )
   );
   c.register(
@@ -478,6 +488,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
     spreadsheets: spreadsheetService,
     documents: documentService,
     monitor,
+    properties,
     now,
     logger
   });

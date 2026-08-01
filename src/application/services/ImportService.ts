@@ -36,7 +36,7 @@ export const JOB_TYPE_IMPORT_CHUNKED = 'IMPORT_CHUNKED';
  * `executeImportChunked` (below) drives the library's alternative
  * checkpoint-based `startImport`/`runImportChunk` pair (GasDataImporter.md
  * "Resumable/chunked imports") for recipes whose source data can exceed a
- * single GAS execution window. **Known gap, flagged not fixed:**
+ * single GAS execution window. **Known gap #1, flagged not fixed:**
  * `runImportChunk` has no `postTransform` hook parameter, so Ghost Record
  * Detection does NOT run in this path today (`executeImportChunked` always
  * reports `ghost: 0`). Before wiring `menu_avvioImportazioneChunked` to any
@@ -44,6 +44,34 @@ export const JOB_TYPE_IMPORT_CHUNKED = 'IMPORT_CHUNKED';
  * `runImportChunk` with the same hook `runImport` supports, or filter ghost
  * rows client-side between the checkpoint yields. `menu_avvioImportazioni`
  * (the synchronous path) remains the default/primary launcher.
+ *
+ * **Known gap #2 — checkpoint-size budget:** `executeImportChunked` calls
+ * `runImportChunk(recipe, checkpoint, { maxRows: 50 })` with an explicit,
+ * conservative row budget rather than GLF's default (`maxRows: 500`). The
+ * yielded `ImportCheckpoint.buffer` carries the chunk's transformed rows and
+ * gets persisted by JobRunnerLib's own timeout-suspension path via a plain
+ * `JSON.stringify` -> `setProperties`, with no size-based offload —
+ * ScriptProperties caps a single value at ~9 KB. 500 rows of typical
+ * ALUNNI-shaped data would badly exceed that and fail the checkpoint write
+ * silently corrupting resumability; 50 keeps a serialized chunk comfortably
+ * under the cap for the row shapes ALDO's CONF_IMP recipes use today. If a
+ * future recipe has much wider rows, re-derive this budget from an estimate
+ * of the serialized row size, don't just raise it back toward 500.
+ *
+ * **Known gap #3 — no progress visibility on the chunked path:** unlike the
+ * synchronous path (`executeImport`, `jobId: imp_<configId>`, consumed by
+ * `Menu.ts`'s monitoring sidebar via its `imp_` prefix match),
+ * `executeImportChunked` gives no equivalent visibility. GLF's
+ * `ImportEngine.runImportChunk` (out of scope to change here) makes no
+ * `monitor.*` calls, `ImportService.start`'s `jobName` is
+ * `imp_chunked_<configId>` — which would not match the sidebar's `imp_`
+ * prefix scan anyway — and `ImportCheckpoint` has no `percentage` field for
+ * JobRunnerLib's own progress tracking to read. This is a real gap but,
+ * exactly like the Ghost Record Detection gap above, the chunked launcher is
+ * not wired to any live CONF_IMP recipe yet, so this is flagged rather than
+ * fixed here. Wiring real progress into this path would need a GLF-side
+ * change to `runImportChunk` (to accept a monitor / emit percentage), out of
+ * scope for ALDO-local changes.
  */
 export class ImportService {
   constructor(
@@ -128,8 +156,11 @@ export class ImportService {
    * deactivated mid-run does not keep being driven to completion.
    *
    * Ghost Record Detection is NOT applied in this path — see the class
-   * docstring's "Known gap" note. `ghost` is always `0` in the returned
-   * `ImportResult`.
+   * docstring's "Known gap #1" note. `ghost` is always `0` in the returned
+   * `ImportResult`. Each chunk is bounded to `maxRows: 50` (class docstring's
+   * "Known gap #2") to keep the yielded `ImportCheckpoint.buffer` well under
+   * ScriptProperties' ~9 KB per-value cap when JobRunnerLib persists it on
+   * timeout suspension.
    */
   *executeImportChunked(
     configId: string,
@@ -151,7 +182,7 @@ export class ImportService {
 
     let checkpoint = resumeState ?? this.engine.startImport(recipe);
     while (!checkpoint.done) {
-      const step = this.engine.runImportChunk(recipe, checkpoint);
+      const step = this.engine.runImportChunk(recipe, checkpoint, { maxRows: 50 });
       checkpoint = step.checkpoint;
       if (!step.done) yield checkpoint;
     }

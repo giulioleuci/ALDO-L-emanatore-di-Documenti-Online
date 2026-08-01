@@ -91,3 +91,41 @@ describe('ClassiArticolateSpec', () => {
     expect(new ClassiArticolateSpec().toQueryObject()).toBeNull();
   });
 });
+
+describe('specification composition (Task 8: and()/or()/not() via GLF Specification)', () => {
+  test('and() composes two ALDO specs; isSatisfiedBy matches only entities satisfying both legs', () => {
+    const composed = new ClassiAttiveSpec().and(new ClassiPerAnnoSpec(5));
+
+    const attivaAnno5 = classe(); // anno 5 (helper default)
+    attivaAnno5.setDynamicColumn(COL_CLASSI.ATTIVA, true);
+    expect(composed.isSatisfiedBy(attivaAnno5)).toBe(true); // both legs satisfied
+
+    const inattivaAnno5 = classe(); // ATTIVA left absent/false
+    expect(composed.isSatisfiedBy(inattivaAnno5)).toBe(false); // fails the ATTIVA leg
+
+    const attivaAnno1 = Classe.create(ClasseId.of('1A'), AnnoCorso.of(1), 'SCIENTIFICO');
+    attivaAnno1.setDynamicColumn(COL_CLASSI.ATTIVA, true);
+    expect(composed.isSatisfiedBy(attivaAnno1)).toBe(false); // fails the anno leg
+
+    // The object and()/or()/not() return is GLF's own CompositeSpecification
+    // (vendor/gaslibs.Code.js), NOT an instance of ALDO's local `Specification`
+    // base class — it has no `toQueryObject` of its own (only isSatisfiedBy /
+    // toQuery / canBeTranslatedToQuery). DomainRepositoryLib's
+    // `Repository.find()` only takes the query-pushdown path when
+    // `QueryTranslator._hasQueryObjectCriteria()` is true (a live, non-null
+    // `toQueryObject()`) or `canBeTranslatedToQuery()` is true.
+    // `CompositeSpecification.canBeTranslatedToQuery()` in turn requires every
+    // composed child's own `canBeTranslatedToQuery()` to be true — and ALDO's
+    // concrete specs never implement `toQuery`/`canBeTranslatedToQuery` (they
+    // only implement `toQueryObject`, ALDO's own pushdown hook), so both
+    // checks come back false/undefined for a composed spec. `validate()`
+    // therefore reports invalid and `Repository.find()` falls back to
+    // hydrating every row and filtering in-memory with
+    // `specification.isSatisfiedBy(entity)` — exactly the path exercised
+    // above. This is intentional, not a bug: composed specs "just work"
+    // against `Repository.find()` precisely because they fail pushdown and
+    // fall back, even though no ALDO spec implements the query-builder half
+    // of GLF's `SpecificationLike`.
+    expect((composed as unknown as { toQueryObject?: unknown }).toQueryObject).toBeUndefined();
+  });
+});

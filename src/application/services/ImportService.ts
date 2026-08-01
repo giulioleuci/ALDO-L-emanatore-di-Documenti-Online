@@ -119,9 +119,13 @@ export class ImportService {
    * — when supplied (e.g. from `JobHandlerParams.resumeState` on resume) —
    * is used as-is instead of calling `startImport` again.
    *
-   * ATTIVO is intentionally not checked here (unlike `executeImport`): the
-   * chunked launcher is invoked explicitly for one recipe id, not iterated
-   * over `findAttivi()`, so there is no batch to skip past.
+   * ATTIVO is checked here exactly as in `executeImport` (same guard,
+   * checked unconditionally before the recipe is built): the chunked
+   * launcher is an alternative path for the same operation as
+   * `executeImport`/`menu_avvioImportazioni`, not a separate batch
+   * mechanism, so a CONF_IMP recipe disabled via `ATTIVO=false` must be
+   * blocked identically on both paths — including on resume, so a recipe
+   * deactivated mid-run does not keep being driven to completion.
    *
    * Ghost Record Detection is NOT applied in this path — see the class
    * docstring's "Known gap" note. `ghost` is always `0` in the returned
@@ -133,6 +137,16 @@ export class ImportService {
   ): Generator<ImportCheckpoint, ImportResult, void> {
     const conf = this.configs.findById(configId);
     if (conf === null) throw new PipelineError(`CONF_IMP ${configId} non trovato`);
+    if (!conf.isAttivo()) {
+      return {
+        inseriti: 0,
+        aggiornati: 0,
+        saltati: 0,
+        ghost: 0,
+        errori: ['skipped: ATTIVO=false']
+      };
+    }
+
     const recipe = toLibraryRecipe(conf);
 
     let checkpoint = resumeState ?? this.engine.startImport(recipe);

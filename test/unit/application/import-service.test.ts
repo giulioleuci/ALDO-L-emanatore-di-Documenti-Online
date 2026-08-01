@@ -217,6 +217,36 @@ test('executeImportChunked yields one checkpoint per stage transition and resolv
   expect(calls).toBe(3);
 });
 
+test('executeImportChunked skips immediately when ATTIVO is false, same as executeImport (12 §3 step 2)', () => {
+  const database = db([confImpRow({ ATTIVO: false })]);
+  const engine = {
+    startImport: () => {
+      throw new Error('should not start');
+    },
+    runImportChunk: () => {
+      throw new Error('should not run a chunk');
+    }
+  } as unknown as ImportEngine;
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+
+  const gen = service.executeImportChunked('IMPORT_ALUNNI');
+  const checkpoints: ImportCheckpoint[] = [];
+  let step = gen.next();
+  while (!step.done) {
+    checkpoints.push(step.value);
+    step = gen.next();
+  }
+
+  expect(checkpoints).toEqual([]);
+  expect(step.value).toEqual({
+    inseriti: 0,
+    aggiornati: 0,
+    saltati: 0,
+    ghost: 0,
+    errori: ['skipped: ATTIVO=false']
+  });
+});
+
 test('executeAllActiveImports runs each active job independently; one failure does not abort the batch', () => {
   const database = db([
     confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),

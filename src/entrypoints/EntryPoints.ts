@@ -69,18 +69,27 @@ function menu_avvioRetryEmail(): void {
 }
 
 /**
- * Launcher (15 §4, GasDataImporter.md "Resumable/chunked imports"): chunked,
- * resumable ETL import for one CONF_IMP recipe. Like `menu_avvioRetryEmail`
- * above, this is meant to run unattended from the Apps Script editor's "Run"
- * dropdown (or a trigger) rather than the interactive UI — deliberately no
- * entry in Menu.ts's AVVIA PROCESSI menu. `menu_avvioImportazioni` (the
- * synchronous, dialog-driven launcher) remains the default/primary path;
- * this one is an alternative for recipes whose source can exceed a single
- * GAS execution window, not a replacement — see `ImportService`'s class
- * docstring for the Ghost Record Detection gap this path does not yet cover.
- * Unlike the zero-argument retry launcher, a chunked import always targets
- * one recipe, so this takes `configId` directly (edit the call site below,
- * or copy it, before relying on it against a live recipe).
+ * Launcher implementation (15 §4, GasDataImporter.md "Resumable/chunked
+ * imports"): chunked, resumable ETL import for one CONF_IMP recipe.
+ * `menu_avvioImportazioni` (the synchronous, dialog-driven launcher) remains
+ * the default/primary path; this one is an alternative for recipes whose
+ * source can exceed a single GAS execution window, not a replacement — see
+ * `ImportService`'s class docstring for the Ghost Record Detection gap this
+ * path does not yet cover.
+ *
+ * Unlike `menu_avvioRetryEmail` (zero-arg), this function requires
+ * `configId`, which neither the Apps Script editor's "Run" dropdown nor a
+ * time-driven trigger can supply — both invoke a target function with no
+ * arguments. So this function is **not** itself a Run-dropdown/trigger
+ * target. Follow the same convention as the `generaPagelle`/
+ * `inviaNotificaAssenze` examples further down this file: define (or copy)
+ * a small zero-arg wrapper per recipe with the real CONF_IMP.ID baked in —
+ * e.g. `function importaAlunniChunked() { menu_avvioImportazioneChunked('IMPORT_ALUNNI'); }`
+ * — and run/trigger that wrapper instead. There is deliberately no entry in
+ * Menu.ts's AVVIA PROCESSI menu for this launcher; a UI-prompt-driven
+ * variant (`avvioPersonalizzato`, as `menu_avvioImportazioni` uses) was
+ * considered but rejected here because a chunked run is meant to be
+ * unattended/scheduled, not started interactively from a dialog.
  */
 function menu_avvioImportazioneChunked(configId: string): void {
   avviaImportazioneChunkedDataDriven(initAldo(), configId, creaJobRunner());
@@ -94,17 +103,20 @@ function menu_avvioImportazioneChunked(configId: string): void {
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
 // ---------------------------------------------------------------------------
-// Non-interactive launchers — one per document/email pattern.
+// Non-interactive launchers — one per document/email/import recipe.
 //
-// The two functions above prompt for a CONF_DOC.ID / CONF_MAIL.ID via a
-// dialog. Once a document type or email pattern is stable, copy one of the
-// examples below, rename it, and hardcode its id — that gives you a single
-// function you can run directly from the Apps Script editor's "Run" dropdown
-// (or wire to a time-driven trigger), with no dialog prompt.
+// The functions above either prompt for an id via a dialog, or (for chunked
+// import) require one as a parameter that no Run-dropdown/trigger invocation
+// can supply. Once a document type, email pattern, or import recipe is
+// stable, copy one of the examples below, rename it, and hardcode its id —
+// that gives you a single zero-arg function you can run directly from the
+// Apps Script editor's "Run" dropdown (or wire to a time-driven trigger),
+// with no dialog prompt and no argument to supply.
 //
-// Example — replace 'PAGELLE_1Q' / 'ASSENZE_SETTIMANALI' with a real row id
-// from CONF_DOC / CONF_MAIL before relying on these two functions; they are
-// templates, not verified against live configuration data.
+// Example — replace 'PAGELLE_1Q' / 'ASSENZE_SETTIMANALI' / 'IMPORT_ALUNNI'
+// with a real row id from CONF_DOC / CONF_MAIL / CONF_IMP before relying on
+// these functions; they are templates, not verified against live
+// configuration data.
 // ---------------------------------------------------------------------------
 
 /** Launches document generation for the CONF_DOC row "PAGELLE_1Q" (example — edit the id before use). */
@@ -117,7 +129,18 @@ function inviaNotificaAssenze(): void {
   avviaInvioNotificheDataDriven(initAldo(), 'ASSENZE_SETTIMANALI', creaJobRunner());
 }
 
+/**
+ * Runs the chunked/resumable import for the CONF_IMP row "IMPORT_ALUNNI"
+ * (example — edit the id before use). This is the zero-arg wrapper
+ * `menu_avvioImportazioneChunked`'s docstring refers to: the actual
+ * Run-dropdown/trigger target for a given recipe.
+ */
+function importaAlunniChunked(): void {
+  menu_avvioImportazioneChunked('IMPORT_ALUNNI');
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).generaPagelle = generaPagelle;
 (globalThis as any).inviaNotificaAssenze = inviaNotificaAssenze;
+(globalThis as any).importaAlunniChunked = importaAlunniChunked;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

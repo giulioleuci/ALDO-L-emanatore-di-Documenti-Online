@@ -159,6 +159,11 @@ export class EmailBatchService {
         yield checkpoint;
         return { success: false, totale: targets.length, processed, sent, errors };
       }
+      // `quotaCapped` alone only means "quota was tight enough to shrink this chunk below
+      // chunkSize" — it's also true when a naturally undersized last chunk happens to finish
+      // off `targets`. It's the `i < targets.length` check below (after the chunk is consumed)
+      // that turns this into a real signal: only when targets remain does a capped chunk mean
+      // "quota genuinely ran out mid-batch, suspend"; otherwise the loop just ends normally.
       const quotaCapped = remainingQuota < chunkSize;
       const effectiveChunk = Math.min(chunkSize, remainingQuota);
       const fine = Math.min(i + effectiveChunk, targets.length);

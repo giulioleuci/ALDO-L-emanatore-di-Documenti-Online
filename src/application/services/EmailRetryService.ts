@@ -40,6 +40,12 @@ export interface RetryCheckpoint extends RetryResumeState {
   groupIndex: number;
   /** Informational only (progress display) — recomputed each invocation, may shrink as groups succeed. */
   totalGroups: number;
+  /**
+   * `processedKeys.length / totalGroups * 100`, read by JobRunnerLib's
+   * `monitor.updateProgress` (unlike `EmailBatchCheckpoint`, this was previously
+   * missing here, so the retry job reported 0% for its whole duration).
+   */
+  percentage: number;
 }
 
 /**
@@ -105,7 +111,8 @@ export class EmailRetryService {
         ...result,
         processedKeys: processedKeys.slice(),
         groupIndex: processedKeys.length,
-        totalGroups: groups.length
+        totalGroups: groups.length,
+        percentage: groups.length === 0 ? 0 : (processedKeys.length / groups.length) * 100
       };
     }
     return result;

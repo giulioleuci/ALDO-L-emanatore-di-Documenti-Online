@@ -19,6 +19,12 @@
  * style) while every consumer still sees and imports `Specification`.
  */
 abstract class AldoSpecification<T> extends Specification {
+  // This override only typechecks because TS checks method-syntax parameters
+  // bivariantly: `isSatisfiedBy(candidate: T)` narrows the base class's
+  // `isSatisfiedBy(entity: unknown)`, which is unsound under strict function-type
+  // variance. A future strictness bump (e.g. a `strictFunctionTypes` edge case
+  // around abstract method overrides) could break this silently — if it does,
+  // start here.
   abstract override isSatisfiedBy(candidate: T): boolean;
   abstract toQueryObject(): Record<string, unknown> | null;
 }

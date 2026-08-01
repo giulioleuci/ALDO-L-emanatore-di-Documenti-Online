@@ -197,7 +197,7 @@ test('retryHandler yields one checkpoint per failed-group batch and resumes from
   const gen = retry.retryHandler({ resumeState: null, jobId: 'job_retry_1' });
   const first = gen.next();
   expect(first.done).toBe(false);
-  expect(first.value).toMatchObject({ groupIndex: 1, totalGroups: 2 });
+  expect(first.value).toMatchObject({ groupIndex: 1, totalGroups: 2, percentage: 50 });
   let step = first;
   while (!step.done) step = gen.next();
   // Both single-email groups succeed against the fake Gmail facade (no failFor entries),
@@ -255,6 +255,37 @@ test('retryHandler resume is correct across two separate generator instances (do
   expect(step.value.permanent).toBe(0);
   expect(step.value.retried + step.value.permanent).toBe(2);
   expect(db.tables['LOG_MAIL']!.getAllRows().filter((r) => r['STATO'] === 'ERROR')).toHaveLength(0);
+});
+
+/**
+ * Deferred finding fix: `RetryCheckpoint` previously had no `percentage` field,
+ * so JobRunnerLib's `monitor.updateProgress` had nothing to read and the retry
+ * job reported 0% for its entire duration (unlike `EmailBatchCheckpoint`, which
+ * always had one). Pins the percentage at each of three checkpoints across a
+ * multi-group run, not just the last one.
+ */
+test('retryHandler checkpoint percentage reflects processed groups out of total across a multi-group run', () => {
+  const { retry } = wire([
+    failedRow('2026-06-28T10:00:00.000Z', 'genitore1@x.it'),
+    failedRow('2026-06-29T10:00:00.000Z', 'genitore2@x.it'),
+    failedRow('2026-06-30T10:00:00.000Z', 'genitore3@x.it')
+  ]);
+  const gen = retry.retryHandler({ resumeState: null, jobId: 'job_retry_pct' });
+
+  const first = gen.next();
+  expect(first.done).toBe(false);
+  expect(first.value.percentage).toBeCloseTo((1 / 3) * 100);
+
+  const second = gen.next();
+  expect(second.done).toBe(false);
+  expect(second.value.percentage).toBeCloseTo((2 / 3) * 100);
+
+  const third = gen.next();
+  expect(third.done).toBe(false);
+  expect(third.value.percentage).toBeCloseTo(100);
+
+  const fourth = gen.next();
+  expect(fourth.done).toBe(true);
 });
 
 test('registerJobHandlers registers under JOB_TYPE_RETRY_EMAIL', () => {

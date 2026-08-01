@@ -53779,10 +53779,84 @@ class QueuePersistenceHandler {
   _key(suffix) {
     return `${suffix}_${this.jobName}`;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _resolveResumeStatePatch(state) {
+    const stateJson = JSON.stringify(state);
+    const stateSize = stateJson.length;
+    if (stateSize > QueuePersistenceHandler.LARGE_STATE_THRESHOLD) {
+      const fileId = this._saveLargeStateToDrive(stateJson);
+      return {
+        properties: {
+          [this._key('state')]: `__DRIVE__:${fileId}`,
+          [this._key('state_size')]: String(stateSize)
+        },
+        propertiesToDelete: []
+      };
+    }
+    return {
+      properties: {
+        [this._key('state')]: stateJson
+      },
+      propertiesToDelete: [this._key('state_size')]
+    };
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _resolveResumeStatePatchForBatch(state) {
+    try {
+      return this._resolveResumeStatePatch(state);
+    } catch (_driveError) {
+      return {
+        properties: {
+          [this._key('state')]: JSON.stringify(state)
+        },
+        propertiesToDelete: [this._key('state_size')]
+      };
+    }
+  }
   batchSave(updates) {
     const properties = {};
+    const propertiesToDelete = [];
     if (updates.resumeState !== undefined) {
-      properties[this._key('state')] = JSON.stringify(updates.resumeState);
+      const patch = this._resolveResumeStatePatchForBatch(updates.resumeState);
+      Object.assign(properties, patch.properties);
+      propertiesToDelete.push(...patch.propertiesToDelete);
     }
     if (updates.progress !== undefined) {
       properties[this._key('progress')] = JSON.stringify(updates.progress);
@@ -53801,18 +53875,15 @@ class QueuePersistenceHandler {
     if (Object.keys(properties).length > 0) {
       this._propertiesService.setProperties(properties);
     }
+    propertiesToDelete.forEach(key => this._propertiesService.deleteProperty(key));
   }
   saveResumeState(state) {
-    const stateJson = JSON.stringify(state);
-    const stateSize = stateJson.length;
-    if (stateSize > QueuePersistenceHandler.LARGE_STATE_THRESHOLD) {
-      const fileId = this._saveLargeStateToDrive(stateJson);
-      this._propertiesService.setProperty(this._key('state'), `__DRIVE__:${fileId}`);
-      this._propertiesService.setProperty(this._key('state_size'), String(stateSize));
-    } else {
-      this._propertiesService.setObjectProperty(this._key('state'), state);
-      this._propertiesService.deleteProperty(this._key('state_size'));
-    }
+    const {
+      properties,
+      propertiesToDelete
+    } = this._resolveResumeStatePatch(state);
+    this._propertiesService.setProperties(properties);
+    propertiesToDelete.forEach(key => this._propertiesService.deleteProperty(key));
   }
   loadResumeState() {
     const stateValue = this._propertiesService.getProperty(this._key('state'));
@@ -65619,6 +65690,7 @@ Loader_defineProperty(Loader, "STRATEGIES", ['INSERT_ONLY', 'UPDATE_ONLY', 'UPSE
 
 
 
+
 class ImportCheckpoint {
 
 
@@ -65780,6 +65852,13 @@ class ImportPipelineExecutor {
 
 
 
+
+
+
+
+
+
+
   runImportChunk(recipe, checkpoint, budget = {}) {
     const maxRows = budget.maxRows || 500;
     const config = new ImportConfiguration(recipe, this.facade.logger);
@@ -65820,22 +65899,6 @@ class ImportPipelineExecutor {
         done: false
       };
     }
-
-
-
-
-    if (checkpoint.stage === 'TRANSFORM') {
-      const transformConfig = config.getTransform();
-      const transformed = this.facade._transformer.transform(checkpoint.buffer || [], transformConfig);
-      const counters = {
-        ...checkpoint.counters,
-        transformed: transformed.length
-      };
-      return {
-        checkpoint: new ImportCheckpoint(checkpoint.recipeName, 'LOAD', checkpoint.sourceCursor, checkpoint.rowOffset, checkpoint.loadOffset, counters, transformed, false),
-        done: false
-      };
-    }
     if (checkpoint.stage === 'LOAD') {
       const loadConfig = config.getLoad();
       const buffer = checkpoint.buffer || [];
@@ -65868,12 +65931,22 @@ class ImportPipelineExecutor {
         done: false
       };
     }
+    if (checkpoint.stage === 'DONE') {
+
+      return {
+        checkpoint,
+        done: true
+      };
+    }
 
 
-    return {
-      checkpoint,
-      done: true
-    };
+
+
+
+    throw new ImportError(`Cannot resume checkpoint with unrecognized stage "${checkpoint.stage}" for recipe "${checkpoint.recipeName}"; expected one of EXTRACT, LOAD, DONE.`, 'UNRECOGNIZED_CHECKPOINT_STAGE', {
+      stage: checkpoint.stage,
+      recipeName: checkpoint.recipeName
+    });
   }
   runImport(recipe, options = {}) {
     const startTime = Date.now();

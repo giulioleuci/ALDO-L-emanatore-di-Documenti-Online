@@ -168,6 +168,55 @@ test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)',
   expect(capturedOptions?.jobId).toBe('imp_IMPORT_ALUNNI');
 });
 
+test('executeImportChunked yields one checkpoint per stage transition and resolves ImportResult', () => {
+  const database = db([confImpRow()]);
+  let calls = 0;
+  const engine = {
+    startImport: (recipe: ImportRecipe) => ({
+      recipeName: recipe.name,
+      stage: 'EXTRACT',
+      sourceCursor: null,
+      rowOffset: 0,
+      loadOffset: 0,
+      counters: { extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 },
+      buffer: null,
+      done: false
+    }),
+    runImportChunk: (_recipe: ImportRecipe, checkpoint: ImportCheckpoint) => {
+      calls++;
+      if (checkpoint.stage === 'EXTRACT')
+        return {
+          checkpoint: { ...checkpoint, stage: 'TRANSFORM', buffer: [{ EMAIL: 'a@x.it' }] },
+          done: false
+        };
+      if (checkpoint.stage === 'TRANSFORM')
+        return { checkpoint: { ...checkpoint, stage: 'LOAD' }, done: false };
+      return {
+        checkpoint: {
+          ...checkpoint,
+          stage: 'DONE',
+          done: true,
+          counters: { ...checkpoint.counters, inserted: 1 }
+        },
+        done: true
+      };
+    }
+  } as unknown as ImportEngine;
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+
+  const gen = service.executeImportChunked('IMPORT_ALUNNI');
+  const checkpoints: ImportCheckpoint[] = [];
+  let step = gen.next();
+  while (!step.done) {
+    checkpoints.push(step.value);
+    step = gen.next();
+  }
+
+  expect(checkpoints.map((c) => c.stage)).toEqual(['TRANSFORM', 'LOAD']);
+  expect(step.value.inseriti).toBe(1);
+  expect(calls).toBe(3);
+});
+
 test('executeAllActiveImports runs each active job independently; one failure does not abort the batch', () => {
   const database = db([
     confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),

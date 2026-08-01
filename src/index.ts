@@ -14,6 +14,7 @@ import {
   avviaInvioNotificheDataDriven,
   avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
+  avviaImportazioneChunkedDataDriven,
   riprendiJobSospeso,
   PROP_MASTER_SPREADSHEET_ID
 } from './config/Bootstrap';
@@ -83,6 +84,7 @@ export function resumeJob(): void {
 (globalThis as any).avviaGenerazioneDataDriven = avviaGenerazioneDataDriven;
 (globalThis as any).avviaInvioNotificheDataDriven = avviaInvioNotificheDataDriven;
 (globalThis as any).avviaRetryEmailDataDriven = avviaRetryEmailDataDriven;
+(globalThis as any).avviaImportazioneChunkedDataDriven = avviaImportazioneChunkedDataDriven;
 (globalThis as any).menuGenerazioneDocumenti = menuGenerazioneDocumenti;
 (globalThis as any).menuComunicazioniEmail = menuComunicazioniEmail;
 (globalThis as any).GasUiFacade = GasUiFacade;

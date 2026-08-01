@@ -1310,6 +1310,52 @@ declare global {
     transform: { rowsTransformed: number; recordsProcessed: number };
     load: ImportLoadResult & { recordsProcessed: number; failed: number };
   }
+  /**
+   * Resumable-import checkpoint (GasDataImporter.md "Resumable/chunked
+   * imports"): plain, JSON-serializable — safe to round-trip through
+   * `PropertiesService`/`JobRunnerLib` via `JSON.stringify`/`JSON.parse` +
+   * `ImportCheckpoint.fromJSON`. `stage` transitions EXTRACT -> LOAD ->
+   * (EXTRACT again, or DONE); `TRANSFORM` is kept only so a checkpoint
+   * persisted by an older library version still resumes — current runs never
+   * transition into it themselves (transform now happens inline during
+   * EXTRACT, on the bounded chunk).
+   */
+  interface ImportCheckpoint {
+    recipeName: string;
+    stage: 'EXTRACT' | 'TRANSFORM' | 'LOAD' | 'DONE';
+    /** Opaque, owned by the extract strategy. */
+    sourceCursor: unknown;
+    /** 0/1 flag: 1 once EXTRACT reports the source exhausted. */
+    rowOffset: number;
+    /** Count of non-empty LOAD chunks already committed (see OVERWRITE first-chunk gating). */
+    loadOffset: number;
+    counters: {
+      extracted: number;
+      transformed: number;
+      inserted: number;
+      updated: number;
+      skipped: number;
+      deleted: number;
+    };
+    /** Rows in flight between stages. */
+    buffer: Record<string, unknown>[] | null;
+    done: boolean;
+  }
+  const ImportCheckpoint: {
+    /** Builds a fresh checkpoint at EXTRACT with zeroed counters. */
+    initial(recipeName: string): ImportCheckpoint;
+    /** Rehydrates a checkpoint after a PropertiesService round-trip. */
+    fromJSON(obj: Record<string, unknown>): ImportCheckpoint;
+    /** Throws if `checkpoint.recipeName !== recipeName`. */
+    assertMatches(checkpoint: ImportCheckpoint, recipeName: string): void;
+  };
+  interface ImportChunkBudget {
+    maxRows?: number;
+  }
+  interface ImportChunkResult {
+    checkpoint: ImportCheckpoint;
+    done: boolean;
+  }
   /** Wraps a raw recipe with validation; thrown by the constructor on invalid shape. */
   class ImportConfiguration {
     constructor(recipe: ImportRecipe, logger?: unknown);
@@ -1345,6 +1391,24 @@ declare global {
         ) => Record<string, unknown>[];
       }
     ): ImportRunResult;
+    /**
+     * Validates `recipe` (same validation as `runImport`) and returns a fresh
+     * `ImportCheckpoint` at the `EXTRACT` stage. Does not extract, transform,
+     * or load anything yet.
+     */
+    startImport(recipe: ImportRecipe, options?: Record<string, unknown>): ImportCheckpoint;
+    /**
+     * Advances `checkpoint` by one bounded unit of work. `recipe` must be
+     * re-passed on every call (intentionally not part of the serializable
+     * checkpoint); throws if `recipe.name !== checkpoint.recipeName`. Caller
+     * loops until `done` is `true`, persisting `checkpoint` between calls
+     * (e.g. via `JobRunnerLib`'s generator-yield checkpointing).
+     */
+    runImportChunk(
+      recipe: ImportRecipe,
+      checkpoint: ImportCheckpoint,
+      budget?: ImportChunkBudget
+    ): ImportChunkResult;
     /** Registers a custom SourceStrategy subclass under `name` (source.type) and whitelists the type. */
     registerCustomSource(
       name: string,

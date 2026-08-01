@@ -2160,6 +2160,7 @@ __webpack_require__.r(GasDataImporter_namespaceObject_0);
 __webpack_require__.d(GasDataImporter_namespaceObject_0, {
   ConfigurationError: () => (ConfigurationError_ConfigurationError),
   FolderStrategy: () => (FolderStrategy),
+  ImportCheckpoint: () => (ImportCheckpoint),
   ImportConfiguration: () => (ImportConfiguration),
   ImportEngine: () => (ImportEngine),
   ImportError: () => (ImportError),
@@ -2179,6 +2180,7 @@ __webpack_require__.r(GasDataImporter_namespaceObject);
 __webpack_require__.d(GasDataImporter_namespaceObject, {
   ConfigurationError: () => (ConfigurationError_ConfigurationError),
   FolderStrategy: () => (FolderStrategy),
+  ImportCheckpoint: () => (ImportCheckpoint),
   ImportConfiguration: () => (ImportConfiguration),
   ImportEngine: () => (ImportEngine),
   ImportError: () => (ImportError),
@@ -63813,6 +63815,31 @@ class SourceStrategy {
 
 
 
+
+  supportsCursor() {
+    return false;
+  }
+
+
+
+
+
+
+
+
+
+
+  extractChunk(_config, _cursor, _maxRows) {
+    throw new Error(`extractChunk not supported by ${this.constructor.name}`);
+  }
+
+
+
+
+
+
+
+
   _arrayToObjects(data, hasHeaders = true) {
     if (!data || data.length === 0) {
       return [];
@@ -63947,6 +63974,145 @@ class SheetByIdStrategy extends SourceStrategy {
 
 
 
+  supportsCursor() {
+    return true;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  extractChunk(config, cursor, maxRows) {
+    var _targetSheet$gridProp, _targetSheet$gridProp2;
+    this._validateConfig(config, ['sheetId']);
+    const hasHeaders = config.hasHeaders !== false;
+    const sheetId = config.sheetId;
+    const sheets = this._spreadsheetService.getSheetInfo(sheetId);
+    if (!sheets || sheets.length === 0) {
+      throw new SourceError('Spreadsheet has no sheets', 'NO_SHEETS_FOUND', {
+        sheetId
+      });
+    }
+    const targetSheet = config.tabName ? sheets.find(s => s.name === config.tabName) : sheets[0];
+    if (!targetSheet) {
+      throw new SourceError(`Sheet tab "${config.tabName}" not found in spreadsheet`, 'TAB_NOT_FOUND', {
+        sheetId,
+        tabName: config.tabName
+      });
+    }
+    const gridLastRow = ((_targetSheet$gridProp = targetSheet.gridProperties) === null || _targetSheet$gridProp === void 0 ? void 0 : _targetSheet$gridProp.rowCount) ?? targetSheet.rowCount;
+    const gridLastCol = ((_targetSheet$gridProp2 = targetSheet.gridProperties) === null || _targetSheet$gridProp2 === void 0 ? void 0 : _targetSheet$gridProp2.columnCount) ?? targetSheet.columnCount;
+
+
+
+
+    const rangeBounds = config.range ? this._parseRangeBounds(config.range) : null;
+    const windowStartRow = rangeBounds ? rangeBounds.startRow : 1;
+    const windowEndRow = rangeBounds ? Math.min(rangeBounds.endRow, gridLastRow) : gridLastRow;
+    const startCol = rangeBounds ? rangeBounds.startCol : 1;
+    const lastCol = rangeBounds ? rangeBounds.endCol : gridLastCol;
+    const headerOffset = hasHeaders ? 1 : 0;
+    const startRow = windowStartRow + headerOffset + cursor.rowOffset;
+    if (windowEndRow === 0 || windowStartRow > windowEndRow || startRow > windowEndRow) {
+      return {
+        rows: [],
+        nextCursor: {
+          ...cursor
+        },
+        exhausted: true
+      };
+    }
+    const endRow = Math.min(startRow + maxRows - 1, windowEndRow);
+    const range = `${targetSheet.name}!${this._columnToLetter(startCol)}${startRow}:${this._columnToLetter(lastCol)}${endRow}`;
+    const values = this._spreadsheetService.getRanges(sheetId, range) || [];
+    let headers = cursor.headers;
+    if (!headers) {
+      if (hasHeaders) {
+        const headerRange = `${targetSheet.name}!${this._columnToLetter(startCol)}${windowStartRow}:${this._columnToLetter(lastCol)}${windowStartRow}`;
+        headers = (this._spreadsheetService.getRanges(sheetId, headerRange) || [[]])[0];
+      } else {
+        headers = Array.from({
+          length: lastCol - startCol + 1
+        }, (_, i) => `Col_${i}`);
+      }
+    }
+    const rows = values.map(row => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = this._coerceValue(row[index] !== undefined ? row[index] : null);
+      });
+      return obj;
+    });
+    const consumedRows = endRow - startRow + 1;
+    const newRowOffset = cursor.rowOffset + consumedRows;
+    const exhausted = endRow >= windowEndRow;
+    return {
+      rows,
+      nextCursor: {
+        rowOffset: newRowOffset,
+        headers
+      },
+      exhausted
+    };
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  _parseRangeBounds(range) {
+    const bare = range.includes('!') ? range.slice(range.indexOf('!') + 1) : range;
+    const match = /^([A-Za-z]+)(\d+):([A-Za-z]+)(\d+)$/.exec(bare);
+    if (!match) {
+      return null;
+    }
+    return {
+      startCol: this._letterToColumn(match[1]),
+      startRow: parseInt(match[2], 10),
+      endCol: this._letterToColumn(match[3]),
+      endRow: parseInt(match[4], 10)
+    };
+  }
+
+
+
+
+
+
+
+
+  _letterToColumn(letters) {
+    let column = 0;
+    const upper = letters.toUpperCase();
+    for (let i = 0; i < upper.length; i++) {
+      column = column * 26 + (upper.charCodeAt(i) - 64);
+    }
+    return column;
+  }
+
+
+
+
+
 
 
 
@@ -63988,10 +64154,10 @@ class SheetByIdStrategy extends SourceStrategy {
 
         fullRange = range.includes('!') ? range : `${targetSheet.name}!${range}`;
       } else {
-        var _targetSheet$gridProp, _targetSheet$gridProp2;
+        var _targetSheet$gridProp3, _targetSheet$gridProp4;
 
-        const lastRow = ((_targetSheet$gridProp = targetSheet.gridProperties) === null || _targetSheet$gridProp === void 0 ? void 0 : _targetSheet$gridProp.rowCount) ?? targetSheet.rowCount;
-        const lastCol = ((_targetSheet$gridProp2 = targetSheet.gridProperties) === null || _targetSheet$gridProp2 === void 0 ? void 0 : _targetSheet$gridProp2.columnCount) ?? targetSheet.columnCount;
+        const lastRow = ((_targetSheet$gridProp3 = targetSheet.gridProperties) === null || _targetSheet$gridProp3 === void 0 ? void 0 : _targetSheet$gridProp3.rowCount) ?? targetSheet.rowCount;
+        const lastCol = ((_targetSheet$gridProp4 = targetSheet.gridProperties) === null || _targetSheet$gridProp4 === void 0 ? void 0 : _targetSheet$gridProp4.columnCount) ?? targetSheet.columnCount;
         if (lastRow === 0 || lastCol === 0) {
           this.logger.warn(`[SheetByIdStrategy] Sheet is empty`);
           return [];
@@ -64940,6 +65106,107 @@ class Loader {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+  loadChunk(data, loadConfig, {
+    isFirstChunk
+  }) {
+    if (!Array.isArray(data)) {
+      throw new LoadError('Data must be an array', 'INVALID_DATA', {
+        dataType: typeof data
+      });
+    }
+    this._validateLoadConfig(loadConfig);
+    const targetTable = loadConfig.targetTable;
+    const conflictResolution = loadConfig.conflictResolution;
+    const conflictKey = loadConfig.conflictKey;
+    const updateIfNewer = loadConfig.updateIfNewer || {};
+    this.logger.info(`[Loader] Loading chunk of ${data.length} rows into table "${targetTable}" using strategy "${conflictResolution}" (isFirstChunk=${isFirstChunk})`);
+    try {
+      if (!this._db.tables[targetTable]) {
+        throw new LoadError(`Target table "${targetTable}" not found in database`, 'TABLE_NOT_FOUND', {
+          targetTable,
+          availableTables: Object.keys(this._db.tables)
+        });
+      }
+      const table = this._db.tables[targetTable];
+      let result;
+      if (data.length === 0) {
+        result = {
+          success: true,
+          inserted: 0,
+          updated: 0,
+          skipped: 0,
+          deleted: 0,
+          total: 0
+        };
+      } else {
+        switch (conflictResolution) {
+          case 'INSERT_ONLY':
+            result = this._insertOnly(table, data, conflictKey);
+            break;
+          case 'UPDATE_ONLY':
+            result = this._updateOnly(table, data, conflictKey, updateIfNewer);
+            break;
+          case 'UPSERT':
+            result = this._upsert(table, data, conflictKey, updateIfNewer);
+            break;
+          case 'OVERWRITE':
+
+
+
+
+
+
+
+
+            result = isFirstChunk ? this._overwrite(table, data, conflictKey) : this._appendAll(table, data);
+            break;
+          default:
+            throw new LoadError(`Unknown conflict resolution strategy: ${conflictResolution}`, 'UNKNOWN_STRATEGY', {
+              conflictResolution
+            });
+        }
+      }
+
+
+
+      this.logger.info('[Loader] Saving chunk to database...');
+      this._db.save();
+      this.logger.info(`[Loader] Chunk load complete: ${JSON.stringify(result)}`);
+      return result;
+    } catch (error) {
+      if (error instanceof LoadError) {
+        throw error;
+      }
+      this.logger.error(`[Loader] Chunk load failed: ${error.message}`);
+      throw new LoadError(`Failed to load data chunk: ${error.message}`, 'LOAD_FAILED', {
+        targetTable,
+        conflictResolution,
+        originalError: error.message
+      });
+    }
+  }
+
+
+
+
+
+
+
+
+
   _insertOnly(table, data, conflictKey) {
     try {
 
@@ -65177,6 +65444,48 @@ class Loader {
 
 
 
+
+
+
+
+
+
+
+
+
+
+  _appendAll(table, data) {
+    try {
+      let inserted = 0;
+      if (data.length > 0) {
+        table.insertRows(data);
+        inserted = data.length;
+        this.logger.info(`[Loader] Bulk appended ${inserted} rows unconditionally (chunked OVERWRITE, non-first chunk)`);
+      }
+      return {
+        success: true,
+        inserted,
+        updated: 0,
+        skipped: 0,
+        deleted: 0,
+        total: data.length
+      };
+    } catch (error) {
+      this.logger.error(`[Loader] Failed to append rows: ${error.message}`);
+      throw new LoadError(`Failed to append rows: ${error.message}`, 'APPEND_FAILED', {
+        originalError: error.message
+      });
+    }
+  }
+
+
+
+
+
+
+
+
+
   _shouldUpdate(existing, incoming, timestampColumn) {
     if (!timestampColumn) {
       return true; 
@@ -65243,9 +65552,273 @@ Loader_defineProperty(Loader, "STRATEGIES", ['INSERT_ONLY', 'UPDATE_ONLY', 'UPSE
 ;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+class ImportCheckpoint {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  constructor(recipeName, stage, sourceCursor, rowOffset, loadOffset, counters, buffer, done) {
+    this.recipeName = recipeName;
+    this.stage = stage;
+    this.sourceCursor = sourceCursor;
+    this.rowOffset = rowOffset;
+    this.loadOffset = loadOffset;
+    this.counters = counters;
+    this.buffer = buffer;
+    this.done = done;
+  }
+
+
+
+
+
+
+  static initial(recipeName) {
+    return new ImportCheckpoint(recipeName, 'EXTRACT', null, 0, 0, {
+      extracted: 0,
+      transformed: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      deleted: 0
+    }, null, false);
+  }
+
+
+
+
+
+
+
+  static fromJSON(obj) {
+    return new ImportCheckpoint(obj.recipeName, obj.stage, obj.sourceCursor, obj.rowOffset, obj.loadOffset, obj.counters, obj.buffer, obj.done);
+  }
+
+
+
+
+
+
+
+  static assertMatches(checkpoint, recipeName) {
+    if (checkpoint.recipeName !== recipeName) {
+      throw new Error(`Checkpoint recipeName mismatch: checkpoint is for "${checkpoint.recipeName}", resuming "${recipeName}"`);
+    }
+  }
+}
+
+;
+
+
+
 class ImportPipelineExecutor {
   constructor(facade) {
     this.facade = facade;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  startImport(recipe, _options = {}) {
+    const config = new ImportConfiguration(recipe, this.facade.logger);
+    this.facade.logger.info(`[ImportEngine] startImport: ${config.getName()}`);
+    return ImportCheckpoint.initial(config.getName());
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  runImportChunk(recipe, checkpoint, budget = {}) {
+    const maxRows = budget.maxRows || 500;
+    const config = new ImportConfiguration(recipe, this.facade.logger);
+    ImportCheckpoint.assertMatches(checkpoint, config.getName());
+    if (checkpoint.stage === 'EXTRACT') {
+      const sourceConfig = config.getSource();
+      const strategy = this.facade._sourceFactory.createStrategy(sourceConfig.type);
+      let rows;
+      let cursor = checkpoint.sourceCursor;
+      let exhausted;
+      if (strategy.supportsCursor()) {
+        const result = strategy.extractChunk(sourceConfig.config, cursor ?? {
+          rowOffset: 0,
+          headers: null
+        }, maxRows);
+        rows = result.rows;
+        cursor = result.nextCursor;
+        exhausted = result.exhausted;
+      } else {
+        rows = strategy.extract(sourceConfig.config);
+        exhausted = true;
+      }
+
+
+
+
+      const transformConfig = config.getTransform();
+      const transformedChunk = this.facade._transformer.transform(rows, transformConfig);
+      const counters = {
+        ...checkpoint.counters,
+        extracted: checkpoint.counters.extracted + rows.length,
+        transformed: checkpoint.counters.transformed + transformedChunk.length
+      };
+      return {
+        checkpoint: new ImportCheckpoint(checkpoint.recipeName, 'LOAD', cursor, exhausted ? 1 : 0,
+
+        checkpoint.loadOffset, counters, transformedChunk, false),
+        done: false
+      };
+    }
+
+
+
+
+    if (checkpoint.stage === 'TRANSFORM') {
+      const transformConfig = config.getTransform();
+      const transformed = this.facade._transformer.transform(checkpoint.buffer || [], transformConfig);
+      const counters = {
+        ...checkpoint.counters,
+        transformed: transformed.length
+      };
+      return {
+        checkpoint: new ImportCheckpoint(checkpoint.recipeName, 'LOAD', checkpoint.sourceCursor, checkpoint.rowOffset, checkpoint.loadOffset, counters, transformed, false),
+        done: false
+      };
+    }
+    if (checkpoint.stage === 'LOAD') {
+      const loadConfig = config.getLoad();
+      const buffer = checkpoint.buffer || [];
+      const isFirstChunk = checkpoint.loadOffset === 0;
+      const result = this.facade._loader.loadChunk(buffer, loadConfig, {
+        isFirstChunk
+      });
+      const counters = {
+        ...checkpoint.counters,
+        inserted: checkpoint.counters.inserted + result.inserted,
+        updated: checkpoint.counters.updated + result.updated,
+        skipped: checkpoint.counters.skipped + result.skipped,
+        deleted: checkpoint.counters.deleted + result.deleted
+      };
+
+
+
+
+      const newLoadOffset = buffer.length > 0 ? checkpoint.loadOffset + 1 : checkpoint.loadOffset;
+      const extractionExhausted = checkpoint.rowOffset === 1;
+      if (extractionExhausted) {
+        const doneCheckpoint = new ImportCheckpoint(checkpoint.recipeName, 'DONE', checkpoint.sourceCursor, checkpoint.rowOffset, newLoadOffset, counters, null, true);
+        return {
+          checkpoint: doneCheckpoint,
+          done: true
+        };
+      }
+      return {
+        checkpoint: new ImportCheckpoint(checkpoint.recipeName, 'EXTRACT', checkpoint.sourceCursor, checkpoint.rowOffset, newLoadOffset, counters, null, false),
+        done: false
+      };
+    }
+
+
+    return {
+      checkpoint,
+      done: true
+    };
   }
   runImport(recipe, options = {}) {
     const startTime = Date.now();
@@ -65478,7 +66051,7 @@ class ImportEngine {
     this._pipelineExecutor = new ImportPipelineExecutor(this);
     this._strategyRegistry = new ImportStrategyRegistry(this);
     this._recipeValidator = new ImportRecipeValidator(this);
-    const pipelineMethods = ['runImport', '_executePipeline', '_executeExtract', '_executeTransform', '_executeLoad', '_generateDryRunLoadResult'];
+    const pipelineMethods = ['runImport', '_executePipeline', '_executeExtract', '_executeTransform', '_executeLoad', '_generateDryRunLoadResult', 'startImport', 'runImportChunk'];
     pipelineMethods.forEach(m => {
       this[m] = this._pipelineExecutor[m].bind(this._pipelineExecutor);
     });
@@ -65506,6 +66079,12 @@ class ImportEngine {
 }
 
 ;
+
+
+
+
+
+
 
 
 

@@ -13,6 +13,9 @@ export interface ImportResult {
 /** Columns never subject to Ghost Record Detection besides the conflict key (ref 12 §3). */
 const META_COLUMNS = ['DATA_MODIFICA'];
 
+/** Job type under which the chunked/resumable import handler is registered in JobRunnerLib. */
+export const JOB_TYPE_IMPORT_CHUNKED = 'IMPORT_CHUNKED';
+
 /**
  * Import application service (ref 12 §3): orchestrates GasDataImporter's
  * `ImportEngine` — extraction, transformation and load strategy resolution
@@ -29,6 +32,18 @@ const META_COLUMNS = ['DATA_MODIFICA'];
  * filtering entirely inside the library's own pipeline, so imports still get
  * `GasResilienceLib`-backed retry/backoff and `GasProcessMonitorLib` job
  * progress reporting, both of which the private-method bypass silently lost.
+ *
+ * `executeImportChunked` (below) drives the library's alternative
+ * checkpoint-based `startImport`/`runImportChunk` pair (GasDataImporter.md
+ * "Resumable/chunked imports") for recipes whose source data can exceed a
+ * single GAS execution window. **Known gap, flagged not fixed:**
+ * `runImportChunk` has no `postTransform` hook parameter, so Ghost Record
+ * Detection does NOT run in this path today (`executeImportChunked` always
+ * reports `ghost: 0`). Before wiring `menu_avvioImportazioneChunked` to any
+ * live CONF_IMP recipe that relies on ghost filtering, either extend
+ * `runImportChunk` with the same hook `runImport` supports, or filter ghost
+ * rows client-side between the checkpoint yields. `menu_avvioImportazioni`
+ * (the synchronous path) remains the default/primary launcher.
  */
 export class ImportService {
   constructor(
@@ -93,5 +108,69 @@ export class ImportService {
       }
     }
     return results;
+  }
+
+  /**
+   * Resumable/chunked run of one CONF_IMP job (GasDataImporter.md
+   * "Resumable/chunked imports"): drives `ImportEngine.startImport` /
+   * `runImportChunk` in a loop, yielding the intermediate `ImportCheckpoint`
+   * after every non-final chunk so a `JobRunnerLib` job can persist it to
+   * `PropertiesService` and resume across GAS execution windows. `resumeState`
+   * — when supplied (e.g. from `JobHandlerParams.resumeState` on resume) —
+   * is used as-is instead of calling `startImport` again.
+   *
+   * ATTIVO is intentionally not checked here (unlike `executeImport`): the
+   * chunked launcher is invoked explicitly for one recipe id, not iterated
+   * over `findAttivi()`, so there is no batch to skip past.
+   *
+   * Ghost Record Detection is NOT applied in this path — see the class
+   * docstring's "Known gap" note. `ghost` is always `0` in the returned
+   * `ImportResult`.
+   */
+  *executeImportChunked(
+    configId: string,
+    resumeState?: ImportCheckpoint
+  ): Generator<ImportCheckpoint, ImportResult, void> {
+    const conf = this.configs.findById(configId);
+    if (conf === null) throw new PipelineError(`CONF_IMP ${configId} non trovato`);
+    const recipe = toLibraryRecipe(conf);
+
+    let checkpoint = resumeState ?? this.engine.startImport(recipe);
+    while (!checkpoint.done) {
+      const step = this.engine.runImportChunk(recipe, checkpoint);
+      checkpoint = step.checkpoint;
+      if (!step.done) yield checkpoint;
+    }
+
+    return {
+      inseriti: checkpoint.counters.inserted,
+      aggiornati: checkpoint.counters.updated,
+      saltati: checkpoint.counters.skipped,
+      // Ghost-record detection (12 §3) is not yet applied in the chunked
+      // path — see the class docstring's "Known gap" note.
+      ghost: 0,
+      errori: []
+    };
+  }
+
+  /** JobRunnerLib registry callback (passed to run/resume) for the chunked import handler. */
+  registerJobHandlers(queue: JobQueueLike): void {
+    queue.registerJobHandler(JOB_TYPE_IMPORT_CHUNKED, (params) =>
+      this.executeImportChunked(
+        String((params as { configId?: string }).configId ?? ''),
+        (params as { resumeState?: ImportCheckpoint }).resumeState
+      )
+    );
+  }
+
+  /** Starts the chunked import through JobRunnerLib (state + resume triggers managed by the library). */
+  start(runner: JobRunnerService, jobName: string, configId: string, forceRestart = false): unknown {
+    return runner.run(
+      jobName,
+      JOB_TYPE_IMPORT_CHUNKED,
+      { configId },
+      (queue) => this.registerJobHandlers(queue),
+      forceRestart
+    );
   }
 }

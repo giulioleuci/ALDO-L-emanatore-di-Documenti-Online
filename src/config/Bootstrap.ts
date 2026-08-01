@@ -328,10 +328,35 @@ export function avviaImportazioneDataDriven(c: ServiceContainer, configId: strin
 }
 
 /**
+ * Data-driven launcher (15 §4): chunked/resumable ETL import
+ * (GasDataImporter.md "Resumable/chunked imports"). Alternative path for
+ * CONF_IMP recipes whose source can exceed a single GAS execution window —
+ * `avviaImportazioneDataDriven` (synchronous) remains the default/primary
+ * launcher; this one is wired in addition, not instead. See
+ * `ImportService`'s class docstring for the Ghost Record Detection gap this
+ * path does not yet cover.
+ */
+export function avviaImportazioneChunkedDataDriven(
+  c: ServiceContainer,
+  configId: string,
+  runner: JobRunnerService
+): unknown {
+  if (!c.has('importService')) {
+    throw new ConfigurationError(
+      `Importazione ${configId} non disponibile: nessun ImportEngine configurato (12 §3, richiede DriveService/SpreadsheetService live)`
+    );
+  }
+  return c.get<ImportService>('importService').start(runner, `imp_chunked_${configId}`, configId);
+}
+
+/**
  * Resume entry (15 §5): JobRunnerLib's timed trigger invokes the global
  * `resumeJob`; jobName '' lets the library resolve it from the trigger context
- * (`job_for_trigger_<id>` in ScriptProperties). Both batch registries are
+ * (`job_for_trigger_<id>` in ScriptProperties). All batch registries are
  * re-registered — the library picks the handler by the persisted job type.
+ * `importService` is only registered when a live `ImportEngine` was wired
+ * (12 §3, requires live DriveService/SpreadsheetService) — same guard as
+ * `avviaImportazioneDataDriven`/`avviaImportazioneChunkedDataDriven` above.
  */
 export function riprendiJobSospeso(
   c: ServiceContainer,
@@ -341,10 +366,12 @@ export function riprendiJobSospeso(
   const documenti = c.get<DocumentBatchService>('documentBatchService');
   const email = c.get<EmailBatchService>('emailBatchService');
   const retry = c.get<EmailRetryService>('emailRetryService');
+  const importazione = c.has('importService') ? c.get<ImportService>('importService') : null;
   return runner.resume(jobName, (queue) => {
     documenti.registerJobHandlers(queue);
     email.registerJobHandlers(queue);
     retry.registerJobHandlers(queue);
+    importazione?.registerJobHandlers(queue);
   });
 }
 

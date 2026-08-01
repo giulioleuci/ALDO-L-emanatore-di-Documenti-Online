@@ -32,6 +32,11 @@ declare global {
     runner: JobRunnerService
   ): unknown;
   function avviaRetryEmailDataDriven(c: ServiceContainer, runner: JobRunnerService): unknown;
+  function avviaImportazioneChunkedDataDriven(
+    c: ServiceContainer,
+    configId: string,
+    runner: JobRunnerService
+  ): unknown;
   function menuGenerazioneDocumenti(ui: IUiFacade, avvia: (configId: string) => void): void;
   function menuComunicazioniEmail(ui: IUiFacade, avvia: (patternId: string) => void): void;
   const GasUiFacade: new () => IUiFacade;
@@ -63,10 +68,29 @@ function menu_avvioRetryEmail(): void {
   avviaRetryEmailDataDriven(initAldo(), creaJobRunner());
 }
 
+/**
+ * Launcher (15 §4, GasDataImporter.md "Resumable/chunked imports"): chunked,
+ * resumable ETL import for one CONF_IMP recipe. Like `menu_avvioRetryEmail`
+ * above, this is meant to run unattended from the Apps Script editor's "Run"
+ * dropdown (or a trigger) rather than the interactive UI — deliberately no
+ * entry in Menu.ts's AVVIA PROCESSI menu. `menu_avvioImportazioni` (the
+ * synchronous, dialog-driven launcher) remains the default/primary path;
+ * this one is an alternative for recipes whose source can exceed a single
+ * GAS execution window, not a replacement — see `ImportService`'s class
+ * docstring for the Ghost Record Detection gap this path does not yet cover.
+ * Unlike the zero-argument retry launcher, a chunked import always targets
+ * one recipe, so this takes `configId` directly (edit the call site below,
+ * or copy it, before relying on it against a live recipe).
+ */
+function menu_avvioImportazioneChunked(configId: string): void {
+  avviaImportazioneChunkedDataDriven(initAldo(), configId, creaJobRunner());
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).menu_avvioGenerazioneDocumenti = menu_avvioGenerazioneDocumenti;
 (globalThis as any).menu_avvioComunicazioniEmail = menu_avvioComunicazioniEmail;
 (globalThis as any).menu_avvioRetryEmail = menu_avvioRetryEmail;
+(globalThis as any).menu_avvioImportazioneChunked = menu_avvioImportazioneChunked;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
 // ---------------------------------------------------------------------------

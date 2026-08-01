@@ -27,36 +27,21 @@ export interface ConcretePair {
   specifica: string;
 }
 
+// splitCsvList and groupMateriaEntriesBySlot are pure, ALDO-independent CSV
+// parsing helpers now owned by RoleResolutionLib (ref
+// DOCS_LIBS/RoleResolutionLib.md "Materia slot CSV parsing") and consumed here
+// as ambient globals (vendor bundle flattens the library's exports onto
+// `global` — no import statement, same convention as LoggerService,
+// ExpressionEngineService, etc. — ref types/gaslibs/index.d.ts). Thin
+// pass-through wrappers (not a re-implementation) so existing ALDO callers
+// importing these names from this module keep working unchanged; accessed via
+// `globalThis.<name>` (property access, not a bare identifier) so the wrapper
+// doesn't shadow/recurse into itself.
 export function splitCsvList(raw: string): string[] {
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  return globalThis.splitCsvList(raw);
 }
-
-/**
- * Groups a MATERIE CSV's entries by slot qualifier, per-entry (a single CSV can
- * legitimately mix a bare materia with a slot-qualified one from a different
- * materia). `MATERIA` -> any slot; `MATERIA.itp` -> ITP; `MATERIA.<anything
- * else>` -> SPECIFICA.
- */
 export function groupMateriaEntriesBySlot(materieRaw: string): MateriaSlotGroup[] {
-  const groups = new Map<string, MateriaSlotGroup>();
-  for (const entry of splitCsvList(materieRaw)) {
-    const dot = entry.indexOf('.');
-    const base = dot === -1 ? entry : entry.slice(0, dot);
-    const suffix = dot === -1 ? null : entry.slice(dot + 1);
-    const kind = suffix === null ? ANY : suffix.toUpperCase() === 'ITP' ? 'ITP' : 'SPECIFICA';
-    const specifica = kind === 'SPECIFICA' && suffix !== null ? suffix : ANY;
-    const key = `${kind} ${specifica}`;
-    const existing = groups.get(key);
-    if (existing) {
-      existing.materie.push(base);
-    } else {
-      groups.set(key, { kind, specifica, materie: [base] });
-    }
-  }
-  return [...groups.values()];
+  return globalThis.groupMateriaEntriesBySlot(materieRaw);
 }
 
 /**
@@ -186,25 +171,14 @@ export function expandRowToPairs(
   );
 }
 
-/** Whether two slot qualifiers can refer to the same physical teaching post (ANY matches any kind/specifica). */
+// slotCompatible and pairsOverlap are likewise pure and now owned by
+// RoleResolutionLib (same ambient-global consumption as above).
 export function slotCompatible(
   a: { kind: string; specifica: string },
   b: { kind: string; specifica: string }
 ): boolean {
-  if (a.kind === ANY || b.kind === ANY) return true;
-  if (a.kind !== b.kind) return false;
-  if (a.kind !== 'SPECIFICA') return true;
-  return a.specifica === ANY || b.specifica === ANY || a.specifica === b.specifica;
+  return globalThis.slotCompatible(a, b);
 }
-
-/** True if any pair in `a` shares a (classe, materia) with a slot-compatible pair in `b`. */
 export function pairsOverlap(a: readonly ConcretePair[], b: readonly ConcretePair[]): boolean {
-  for (const pa of a) {
-    for (const pb of b) {
-      if (pa.classeId === pb.classeId && pa.materia === pb.materia && slotCompatible(pa, pb)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return globalThis.pairsOverlap(a, b);
 }

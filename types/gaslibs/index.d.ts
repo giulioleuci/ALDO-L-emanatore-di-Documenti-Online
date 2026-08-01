@@ -513,6 +513,37 @@ declare global {
   }
   class StepExecutionError extends Error {}
 
+  // --- RoleResolutionLib (L4): materia-slot CSV parsing helpers (ref
+  // DOCS_LIBS/RoleResolutionLib.md "Materia slot CSV parsing"). Reusable
+  // parsing for MATERIA.itp/MATERIA.specifica-style CSV cattedra columns;
+  // ALDO's RowScopeExpansion.ts re-exports these under the same names. ---
+  /** Base materia ids sharing one (kind, specifica) slot qualifier within a row. */
+  interface LibMateriaSlotGroup {
+    /** 'ITP' | 'SPECIFICA' | '*' (bare, any slot). */
+    kind: string;
+    /** Literal specifica id, or '*' when not SPECIFICA-qualified. */
+    specifica: string;
+    materie: string[];
+  }
+  /** One concrete (classe, materia, kind, specifica) teaching-slot tuple. */
+  interface LibConcretePair {
+    classeId: string;
+    materia: string;
+    kind: string;
+    specifica: string;
+  }
+  /** Splits a comma-separated string into trimmed, non-empty entries. */
+  function splitCsvList(raw: string): string[];
+  /** Groups a materia CSV's entries by slot qualifier (see doc comment in RowScopeExpansion.ts). */
+  function groupMateriaEntriesBySlot(materieRaw: string): LibMateriaSlotGroup[];
+  /** Whether two slot qualifiers can refer to the same physical teaching post ('*' matches any kind/specifica). */
+  function slotCompatible(
+    a: { kind: string; specifica: string },
+    b: { kind: string; specifica: string }
+  ): boolean;
+  /** True if any pair in `a` shares a (classe, materia) with a slot-compatible pair in `b`. */
+  function pairsOverlap(a: readonly LibConcretePair[], b: readonly LibConcretePair[]): boolean;
+
   // --- RoleResolutionLib (L4): delegation-chain building blocks ---
   // SGSA maps SUPPLENZE rows to Delegation value objects and delegates the
   // transitive supply-of-supply crawl (cycle-guarded) to the library.

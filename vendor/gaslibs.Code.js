@@ -11,7 +11,7 @@ function exampleUsage() {
 } (() => { 
  	var __webpack_modules__ = ({
 
- 448
+ 67
 (module, exports, __webpack_require__) {
 
  module = __webpack_require__.nmd(module);
@@ -2347,10 +2347,14 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject_0, {
   getRoutingPolicies: () => (getRoutingPolicies),
   getRoutingPolicyDescription: () => (getRoutingPolicyDescription),
   getScopeTypes: () => (getScopeTypes),
+  groupMateriaEntriesBySlot: () => (groupMateriaEntriesBySlot),
   isValidActorType: () => (isValidActorType),
   isValidResolutionStrategy: () => (isValidResolutionStrategy),
   isValidRoutingPolicy: () => (isValidRoutingPolicy),
-  isValidScopeType: () => (isValidScopeType)
+  isValidScopeType: () => (isValidScopeType),
+  pairsOverlap: () => (pairsOverlap),
+  slotCompatible: () => (slotCompatible),
+  splitCsvList: () => (splitCsvList)
 });
 
 
@@ -2412,10 +2416,14 @@ __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   getRoutingPolicies: () => (getRoutingPolicies),
   getRoutingPolicyDescription: () => (getRoutingPolicyDescription),
   getScopeTypes: () => (getScopeTypes),
+  groupMateriaEntriesBySlot: () => (groupMateriaEntriesBySlot),
   isValidActorType: () => (isValidActorType),
   isValidResolutionStrategy: () => (isValidResolutionStrategy),
   isValidRoutingPolicy: () => (isValidRoutingPolicy),
-  isValidScopeType: () => (isValidScopeType)
+  isValidScopeType: () => (isValidScopeType),
+  pairsOverlap: () => (pairsOverlap),
+  slotCompatible: () => (slotCompatible),
+  splitCsvList: () => (splitCsvList)
 });
 
 
@@ -9113,7 +9121,7 @@ class ValidationUtils {
   }
 }
 
-var he = __webpack_require__(448);
+var he = __webpack_require__(67);
 ;
 
 
@@ -70964,6 +70972,112 @@ const testContext = new TestContext();
 
 
 
+
+
+
+
+
+
+
+const ANY = '*';
+
+
+
+
+
+
+
+
+function splitCsvList(raw) {
+  return raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function groupMateriaEntriesBySlot(materieRaw) {
+  const groups = new Map();
+  for (const entry of splitCsvList(materieRaw)) {
+    const dot = entry.indexOf('.');
+    const base = dot === -1 ? entry : entry.slice(0, dot);
+    const suffix = dot === -1 ? null : entry.slice(dot + 1);
+    const kind = suffix === null ? ANY : suffix.toUpperCase() === 'ITP' ? 'ITP' : 'SPECIFICA';
+    const specifica = kind === 'SPECIFICA' && suffix !== null ? suffix : ANY;
+    const key = `${kind} ${specifica}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.materie.push(base);
+    } else {
+      groups.set(key, {
+        kind,
+        specifica,
+        materie: [base]
+      });
+    }
+  }
+  return [...groups.values()];
+}
+
+
+
+
+
+
+
+
+
+function slotCompatible(a, b) {
+  if (a.kind === ANY || b.kind === ANY) {
+    return true;
+  }
+  if (a.kind !== b.kind) {
+    return false;
+  }
+  if (a.kind !== 'SPECIFICA') {
+    return true;
+  }
+  return a.specifica === ANY || b.specifica === ANY || a.specifica === b.specifica;
+}
+
+
+
+
+
+
+
+
+
+function pairsOverlap(a, b) {
+  for (const pa of a) {
+    for (const pb of b) {
+      if (pa.classeId === pb.classeId && pa.materia === pb.materia && slotCompatible(pa, pb)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+;
+
+
+
+
+
+
+
+
+
+
+
 const ScopeType = Object.freeze({
 
   GLOBAL: 'GLOBAL',
@@ -75964,6 +76078,10 @@ class EffectiveAssignmentResolver {
   }
 }
 ;
+
+
+
+
 
 
 

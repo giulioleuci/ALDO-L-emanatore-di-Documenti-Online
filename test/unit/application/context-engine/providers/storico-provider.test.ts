@@ -5,7 +5,6 @@ import type {
   StoricoDatabaseProvider,
   AnnoStorico
 } from '../../../../../src/application/storico/StoricoDatabaseProvider';
-import { LazyRef } from '../../../../../src/application/storico/LazyRef';
 
 function cduWithAlunno(email: string): Cdu {
   return {

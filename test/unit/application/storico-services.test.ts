@@ -1,4 +1,3 @@
-import { LazyRef } from '../../../src/application/storico/LazyRef';
 import { reconcileSigla } from '../../../src/application/storico/reconcileSigla';
 import { StoricoAlunniService } from '../../../src/application/storico/StoricoAlunniService';
 import { StoricoDocumentiService } from '../../../src/application/storico/StoricoDocumentiService';

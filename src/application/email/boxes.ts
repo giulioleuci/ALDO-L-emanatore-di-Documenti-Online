@@ -1,7 +1,6 @@
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
-import type { LazyRef } from '../storico/LazyRef';
 import type { DocumentoStoricoConTipo } from '../storico/StoricoDocumentiService';
 import type { AggregatoreDati } from '../services/AggregatoreDati';
 import type { LogCartella } from '../../domain/entities/LogCartella';

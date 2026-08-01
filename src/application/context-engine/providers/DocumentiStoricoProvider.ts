@@ -3,7 +3,6 @@ import type { Cdu } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
-import { LazyRef } from '../../storico/LazyRef';
 
 /**
  * Fills `focus.alunno.didattica.documenti.storico` (11 §11, 13 §4) with a

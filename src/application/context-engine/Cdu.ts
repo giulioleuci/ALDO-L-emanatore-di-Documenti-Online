@@ -10,7 +10,6 @@
  * and is attached NON-enumerable (never serialized — see 02 §7).
  */
 
-import type { LazyRef } from '../storico/LazyRef';
 import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
 import type { TipoPiano } from '../../domain/value-objects/enums';
 
@@ -174,7 +173,7 @@ export interface CduClasse {
   didattica?: {
     pianiPersonalizzati: {
       items: PianoPersonalizzatoItem[];
-      storico?: import('../storico/LazyRef').LazyRef<
+      storico?: LazyRef<
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;
     };
@@ -227,14 +226,14 @@ export interface CduAlunno {
       }>;
       hasDocumenti: boolean;
       /** Lazy prior-year documents grouped by ID_GEN at render time (11 §11 arricchisciConStorico, 13 §4). */
-      storico?: import('../storico/LazyRef').LazyRef<
+      storico?: LazyRef<
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;
     };
     pianiPersonalizzati?: {
       items: PianoPersonalizzatoItem[];
       /** Lazy prior-year PIANO_PERS documents, matched to rows by SOTTOTIPO. */
-      storico?: import('../storico/LazyRef').LazyRef<
+      storico?: LazyRef<
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;
     };

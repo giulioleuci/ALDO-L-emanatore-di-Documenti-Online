@@ -12,7 +12,6 @@ import { MateriaRepository } from '../../../src/infrastructure/repositories/Mate
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
-import { LazyRef } from '../../../src/application/storico/LazyRef';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
 
 const logger = new LoggerService();

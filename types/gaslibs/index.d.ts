@@ -49,6 +49,16 @@ declare global {
     clear(): void;
   }
 
+  /**
+   * Generic single-value lazy loader — defers a loader function until first
+   * get(), then caches the result (ref CoreUtilsLib/src/utils/LazyRef.js).
+   */
+  class LazyRef<T> {
+    constructor(loader: () => T);
+    get(): T;
+    isResolved(): boolean;
+  }
+
   // --- GasExpressionEngineLib (L2): safe AST expression evaluation (no eval) ---
   // evaluate() resolves {{path}} placeholders from `context` then evaluates the
   // expression (custom operators: in/between/match; functions: len/abs/round…).

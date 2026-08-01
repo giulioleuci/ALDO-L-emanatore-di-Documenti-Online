@@ -4,7 +4,6 @@ import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import type { DocumentoStoricoConTipo } from '../../storico/StoricoDocumentiService';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
-import { LazyRef } from '../../storico/LazyRef';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
 

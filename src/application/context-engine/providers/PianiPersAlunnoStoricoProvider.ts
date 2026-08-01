@@ -3,7 +3,6 @@ import type { Cdu } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
-import { LazyRef } from '../../storico/LazyRef';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
 

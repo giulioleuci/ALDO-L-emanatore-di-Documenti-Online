@@ -3,7 +3,6 @@ import type { Cdu } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { StoricoAlunniService } from '../../storico/StoricoAlunniService';
-import { LazyRef } from '../../storico/LazyRef';
 
 /**
  * Lazy loader for previous-years data (09 §8, 13 §2). When `includiStorico` is

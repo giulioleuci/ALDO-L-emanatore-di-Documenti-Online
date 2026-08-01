@@ -11,7 +11,7 @@ function exampleUsage() {
 } (() => { 
  	var __webpack_modules__ = ({
 
- 67
+ 448
 (module, exports, __webpack_require__) {
 
  module = __webpack_require__.nmd(module);
@@ -504,6 +504,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject_0, {
   HashUtils: () => (HashUtils),
   HtmlSanitizer: () => (HtmlSanitizer),
   InterfaceRegistry: () => (InterfaceRegistry),
+  LazyRef: () => (LazyRef),
   LazyServiceContainer: () => (LazyServiceContainer),
   LodashFacade: () => (LodashFacade),
   LoggerInterface: () => (LoggerInterface),
@@ -629,6 +630,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   HashUtils: () => (HashUtils),
   HtmlSanitizer: () => (HtmlSanitizer),
   InterfaceRegistry: () => (InterfaceRegistry),
+  LazyRef: () => (LazyRef),
   LazyServiceContainer: () => (LazyServiceContainer),
   LodashFacade: () => (LodashFacade),
   LoggerInterface: () => (LoggerInterface),
@@ -9111,7 +9113,7 @@ class ValidationUtils {
   }
 }
 
-var he = __webpack_require__(67);
+var he = __webpack_require__(448);
 ;
 
 
@@ -9421,6 +9423,47 @@ class Delegation {
     return target;
   }
 }
+;
+
+
+
+
+
+
+
+
+
+
+
+class LazyRef {
+
+
+
+  constructor(loader) {
+    this._resolved = false;
+    this._value = undefined;
+    this._loader = loader;
+  }
+
+
+
+
+  get() {
+    if (!this._resolved) {
+      this._value = this._loader();
+      this._resolved = true;
+    }
+    return this._value;
+  }
+
+
+
+
+  isResolved() {
+    return this._resolved;
+  }
+}
+
 ;
 
 
@@ -12058,6 +12101,10 @@ class ConfigurationBuilder {
 ;
 const testing = {};
 ;
+
+
+
+
 
 
 

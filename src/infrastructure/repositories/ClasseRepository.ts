@@ -381,7 +381,9 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return classi.filter((c) => {
       const config = this.getArticolazione(c);
       if (config === null) return true;
-      return gestione === GestioneArticolazione.ARTICOLATA ? !config.isParent() : !config.isPartner();
+      return gestione === GestioneArticolazione.ARTICOLATA
+        ? !config.isParent()
+        : !config.isPartner();
     });
   }
 

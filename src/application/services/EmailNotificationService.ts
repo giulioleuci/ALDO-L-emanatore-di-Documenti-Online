@@ -30,7 +30,11 @@ import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRep
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
-import { GestioneArticolazione, GestioneSupplenti, ProcessoInvio } from '../../domain/value-objects/enums';
+import {
+  GestioneArticolazione,
+  GestioneSupplenti,
+  ProcessoInvio
+} from '../../domain/value-objects/enums';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { AggregatoreDati } from './AggregatoreDati';
@@ -125,9 +129,7 @@ export class EmailNotificationService {
     let targets = this.enumerateTargets(conf);
     const onlyTargetIds = options.onlyTargetIds;
     if (onlyTargetIds !== undefined) {
-      targets = targets.filter((target) =>
-        onlyTargetIds.includes(emailTargetId(target))
-      );
+      targets = targets.filter((target) => onlyTargetIds.includes(emailTargetId(target)));
     } else {
       const only = options.onlyRecipients;
       if (only !== undefined) {
@@ -201,14 +203,7 @@ export class EmailNotificationService {
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
       .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
-      .addStep(
-        new ResolveRecipientsStep(
-          this.logger,
-          d.docenti,
-          d.classi,
-          d.teachingAssignments
-        )
-      )
+      .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.classi, d.teachingAssignments))
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))
       .addStep(new LogEmailStep(this.logger, d.logMail))
       .addStep(new PostProcessEmailStep(this.logger, d.db, d.templates));
@@ -292,19 +287,23 @@ export class EmailNotificationService {
   }
 
   /**
-   * An articulated parent is the email entry point, but the CDU must include
-   * documents owned by every partner class in its group. Expansion is
-   * parent-only (never bidirectional via a partner) — every caller of this
-   * method already restricts `classe` to `classiEntryPoint()`, so a partner
-   * class never reaches here in practice, but narrowing explicitly keeps
-   * this in step with `DocumentGenerationService.generateForClasse` and
-   * avoids resurfacing the partner-to-sibling data leak that fix addressed
-   * if a future call site skips that filter.
+   * An articulated parent is the email entry point under `COMPLETA`, but the
+   * CDU must include documents owned by every partner class in its group.
+   * Expansion is parent-only (never bidirectional via a partner). Under
+   * `ARTICOLATA` a partner class is itself the entry point returned by
+   * `classiEntryPoint()`, so it routinely reaches this method — but since a
+   * partner is never `isParent()`, the narrowing still correctly yields
+   * `[classe]` unexpanded for it. This keeps the method in step with
+   * `DocumentGenerationService.generateForClasse` and avoids resurfacing the
+   * partner-to-sibling data leak that fix addressed if a future call site
+   * skips the entry-point filter entirely.
    */
   private classiCompetenza(classe: Classe): string[] {
     const config = this.deps.classi.getArticolazione(classe);
     const gruppo =
-      config?.isParent() === true ? [classe, ...this.deps.classi.getClassiPartner(classe)] : [classe];
+      config?.isParent() === true
+        ? [classe, ...this.deps.classi.getClassiPartner(classe)]
+        : [classe];
     return gruppo.map((membro) => membro.id ?? '');
   }
 
@@ -317,14 +316,10 @@ export class EmailNotificationService {
     classe: Classe,
     gestioneSupplenti: GestioneSupplenti = GestioneSupplenti.SOLO_TITOLARI
   ): string[] {
-    const assignments = this.deps.teachingAssignments.resolveConsiglio(
-      classe,
-      this.deps.now,
-      {
-        includeReligioneAlt: true,
-        routingPolicy: routingPolicyByGestioneSupplenti[gestioneSupplenti]
-      }
-    );
+    const assignments = this.deps.teachingAssignments.resolveConsiglio(classe, this.deps.now, {
+      includeReligioneAlt: true,
+      routingPolicy: routingPolicyByGestioneSupplenti[gestioneSupplenti]
+    });
     const routingRows = assignments.map((assignment) => ({
       routing: {
         primary: assignment.routing.primary.flatMap((docente) =>
@@ -344,21 +339,22 @@ export class EmailNotificationService {
     const perCoordinatore = new Map<string, string[]>();
     for (const classe of this.classiEntryPoint(gestione)) {
       const diretti = this.deps.classi.getCoordinatori(classe);
-      const destinatari = diretti.length > 0
-        ? diretti.flatMap((docente) =>
-            docente.id === null
-              ? []
-              : [{ email: docente.id, classi: [classe.id ?? ''] }]
-          )
-        : this.deps.classi
-            .getClassiPartner(classe)
-            .flatMap((partner) =>
-              this.deps.classi.getCoordinatori(partner).flatMap((docente) =>
-                docente.id === null || partner.id === null
-                  ? []
-                  : [{ email: docente.id, classi: [partner.id] }]
-              )
-            );
+      const destinatari =
+        diretti.length > 0
+          ? diretti.flatMap((docente) =>
+              docente.id === null ? [] : [{ email: docente.id, classi: [classe.id ?? ''] }]
+            )
+          : this.deps.classi
+              .getClassiPartner(classe)
+              .flatMap((partner) =>
+                this.deps.classi
+                  .getCoordinatori(partner)
+                  .flatMap((docente) =>
+                    docente.id === null || partner.id === null
+                      ? []
+                      : [{ email: docente.id, classi: [partner.id] }]
+                  )
+              );
       for (const destinatario of destinatari) {
         const classi = perCoordinatore.get(destinatario.email) ?? [];
         classi.push(...destinatario.classi);
@@ -434,7 +430,11 @@ export class EmailNotificationService {
    * composition (`buildRecipients`, e.g. tipo/emails/cc).
    */
   private targetsPerCarenza(
-    buildRecipients: (alunno: Alunno) => { tipo: EmailTarget['tipo']; emails: string[]; cc?: string[] }
+    buildRecipients: (alunno: Alunno) => {
+      tipo: EmailTarget['tipo'];
+      emails: string[];
+      cc?: string[];
+    }
   ): EmailTarget[] {
     const targets: EmailTarget[] = [];
     for (const carenza of this.deps.carenze.findNonNotificate()) {

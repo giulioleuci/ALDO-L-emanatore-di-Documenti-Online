@@ -1,4 +1,4 @@
-import { FormatoOutput } from '../value-objects/enums';
+import { FormatoOutput, GestioneArticolazione } from '../value-objects/enums';
 import { COL_CONF_DOC } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -17,6 +17,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
   public readonly tipo: string;
   public readonly generatore: string;
   public readonly formato: FormatoOutput;
+  public readonly gestioneArticolazione: GestioneArticolazione;
   private readonly modelliRaw: string | null;
   private readonly condizioneRaw: string;
   private readonly parametriRaw: string | null;
@@ -31,6 +32,10 @@ export class ConfigurazioneDocumento extends AldoEntity {
         ? (data[COL_CONF_DOC.GENERATORE] as string)
         : '';
     this.formato = (data[COL_CONF_DOC.FORMATO] as FormatoOutput) ?? FormatoOutput.GDOC;
+    this.gestioneArticolazione =
+      data[COL_CONF_DOC.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
+        ? GestioneArticolazione.ARTICOLATA
+        : GestioneArticolazione.COMPLETA;
     this.modelliRaw =
       typeof data[COL_CONF_DOC.MODELLI] === 'string'
         ? (data[COL_CONF_DOC.MODELLI] as string)
@@ -91,6 +96,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
       [COL_CONF_DOC.TIPO]: this.tipo,
       [COL_CONF_DOC.GENERATORE]: this.generatore,
       [COL_CONF_DOC.FORMATO]: this.formato,
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: this.gestioneArticolazione,
       [COL_CONF_DOC.MODELLI]: this.modelliRaw,
       [COL_CONF_DOC.CONDIZIONE]: this.condizioneRaw,
       [COL_CONF_DOC.PARAMETRI]: this.parametriRaw

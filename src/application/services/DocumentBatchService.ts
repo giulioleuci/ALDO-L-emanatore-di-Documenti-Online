@@ -80,7 +80,7 @@ export class DocumentBatchService {
       return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
     }
 
-    return yield* this.generateClassi(confDocId, jobId, resume, processed, errori);
+    return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
   }
 
   private *generatePiani(
@@ -155,13 +155,17 @@ export class DocumentBatchService {
   }
 
   private *generateClassi(
+    config: ConfigurazioneDocumento,
     confDocId: string,
     jobId: string,
     resume: BatchResumeState | null,
     processed: string[],
     errori: string[]
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    const attive = this.classi.findAttive();
+    const attive = this.classi.filterPerGestioneArticolazione(
+      this.classi.findAttive(),
+      config.gestioneArticolazione
+    );
     if (resume === null) {
       this.monitor?.registerJob(jobId);
       this.monitor?.startJob(jobId);

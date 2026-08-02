@@ -277,7 +277,7 @@ test.each([
   expect(monitor.registered).toEqual([]);
 });
 
-test('handler yields one resumable checkpoint per active class and returns the total', () => {
+test('handler yields one resumable checkpoint per targeted class and returns the total', () => {
   const { service, generated } = wire();
   const gen = service.batchGenerateHandler({ confDocId: 'CD1' });
   const checkpoints: BatchCheckpoint[] = [];
@@ -287,15 +287,18 @@ test('handler yields one resumable checkpoint per active class and returns the t
     step = gen.next();
   }
   const result = step.value;
-  // Fixture has 4 active classes (5A, 1F, 1F-LSO, 1F-LSS); 3B is inactive.
-  expect(generated).toEqual(['5A:CD1', '1F:CD1', '1F-LSO:CD1', '1F-LSS:CD1']);
-  expect(checkpoints).toHaveLength(4);
+  // Fixture has 4 active classes (5A, 1F, 1F-LSO, 1F-LSS; 3B is inactive).
+  // CD1.GESTIONE_ARTICOLAZIONE = COMPLETA (fixture default), so the
+  // articulated partners 1F-LSO/1F-LSS are excluded; only the parent (1F)
+  // and the standalone class (5A) are targeted.
+  expect(generated).toEqual(['5A:CD1', '1F:CD1']);
+  expect(checkpoints).toHaveLength(2);
   expect(checkpoints[0]!.nextIndex).toBe(1);
-  expect(checkpoints[3]!.percentage).toBe(100);
+  expect(checkpoints[1]!.percentage).toBe(100);
   expect(result).toEqual({
     success: true,
-    totale: 4,
-    processed: ['5A', '1F', '1F-LSO', '1F-LSS'],
+    totale: 2,
+    processed: ['5A', '1F'],
     errori: []
   });
 });
@@ -304,24 +307,24 @@ test('handler resumes from params.resumeState without reprocessing completed cla
   const { service, generated } = wire();
   const gen = service.batchGenerateHandler({
     confDocId: 'CD1',
-    resumeState: { nextIndex: 2, processed: ['5A', '1F'], errori: [] }
+    resumeState: { nextIndex: 1, processed: ['5A'], errori: [] }
   });
   let step = gen.next();
   while (!step.done) step = gen.next();
   const result = step.value;
-  expect(generated).toEqual(['1F-LSO:CD1', '1F-LSS:CD1']); // 5A and 1F skipped
-  expect(result.processed).toEqual(['5A', '1F', '1F-LSO', '1F-LSS']);
+  expect(generated).toEqual(['1F:CD1']); // 5A skipped, already processed
+  expect(result.processed).toEqual(['5A', '1F']);
 });
 
 test('a single class failure is isolated: logged in errori, the batch continues (15 §8)', () => {
-  const { service, generated } = wire({ failFor: '1F' });
+  const { service, generated } = wire({ failFor: '5A' });
   const gen = service.batchGenerateHandler({ confDocId: 'CD1' });
   let step = gen.next();
   while (!step.done) step = gen.next();
   const result = step.value;
-  expect(generated).toEqual(['5A:CD1', '1F-LSO:CD1', '1F-LSS:CD1']); // 1F skipped, rest still ran
-  expect(result.processed).toEqual(['5A', '1F', '1F-LSO', '1F-LSS']); // still marked processed (attempted)
-  expect(result.errori).toEqual(['1F: template non trovato']);
+  expect(generated).toEqual(['1F:CD1']); // 5A failed, 1F still ran
+  expect(result.processed).toEqual(['5A', '1F']); // still marked processed (attempted)
+  expect(result.errori).toEqual(['5A: template non trovato']);
   expect(result.success).toBe(false);
 });
 
@@ -333,9 +336,9 @@ test('GasProcessMonitorLib progress calls (15 §9): register/start once, progres
   while (!step.done) step = gen.next();
   expect(monitor.registered).toEqual(['job_1']);
   expect(monitor.started).toEqual(['job_1']);
-  expect(monitor.progress).toHaveLength(4);
+  expect(monitor.progress).toHaveLength(2);
   expect(monitor.progress[0]!.message).toContain('5A');
-  expect(monitor.progress[3]!.percentage).toBe(100);
+  expect(monitor.progress[1]!.percentage).toBe(100);
   expect(monitor.completed).toHaveLength(1);
   expect(monitor.errors).toHaveLength(0); // non-critical per-element errors never call setError
 });
@@ -357,7 +360,7 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   const gen = service.batchGenerateHandler({
     confDocId: 'CD1',
     jobId: 'job_1',
-    resumeState: { nextIndex: 2, processed: ['5A', '1F'], errori: [] }
+    resumeState: { nextIndex: 1, processed: ['5A'], errori: [] }
   });
   let step = gen.next();
   while (!step.done) step = gen.next();

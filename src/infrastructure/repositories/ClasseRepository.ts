@@ -15,6 +15,7 @@ import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { ArticolazioneConfig } from '../../domain/value-objects/ArticolazioneConfig';
+import { GestioneArticolazione } from '../../domain/value-objects/enums';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
 import {
   ClassiAttiveSpec,
@@ -368,6 +369,20 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     const parent = config.isParent() ? classe : this.getClasseParent(classe);
     if (parent === null) return [];
     return this.getClassiPartner(parent);
+  }
+
+  /**
+   * Filters `classi` by CONF_DOC/CONF_MAIL.GESTIONE_ARTICOLAZIONE: `COMPLETA`
+   * excludes articolazione partners, `ARTICOLATA` excludes the parent.
+   * Standard (non-articulated) classes always pass. The single place in the
+   * app that decides class inclusion by articulation type.
+   */
+  filterPerGestioneArticolazione(classi: Classe[], gestione: GestioneArticolazione): Classe[] {
+    return classi.filter((c) => {
+      const config = this.getArticolazione(c);
+      if (config === null) return true;
+      return gestione === GestioneArticolazione.ARTICOLATA ? !config.isParent() : !config.isPartner();
+    });
   }
 
   /** Every subject the teacher holds in this class, tagged main vs itp column (09 §4). */

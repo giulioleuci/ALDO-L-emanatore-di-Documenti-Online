@@ -6,6 +6,7 @@ import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
+import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 
 function repo(): ClasseRepository {
   return new ClasseRepository(new FakeDatabase(fixtureTables()));
@@ -88,4 +89,22 @@ test('getDocentiPerMateriaArticolata resolves by student indirizzo', () => {
   expect(r.getDocentiPerMateriaArticolata(parent, MateriaId.of('MATE')).map((d) => d.id)).toEqual([
     'rossi@school.it'
   ]);
+});
+
+test('filterPerGestioneArticolazione: COMPLETA excludes partners, keeps parent + standalone (default)', () => {
+  const r = repo();
+  const result = r.filterPerGestioneArticolazione(
+    [classe('1F'), classe('1F-LSO'), classe('1F-LSS'), classe('5A')],
+    GestioneArticolazione.COMPLETA
+  );
+  expect(result.map((c) => c.id).sort()).toEqual(['1F', '5A']);
+});
+
+test('filterPerGestioneArticolazione: ARTICOLATA excludes the parent, keeps partners + standalone', () => {
+  const r = repo();
+  const result = r.filterPerGestioneArticolazione(
+    [classe('1F'), classe('1F-LSO'), classe('1F-LSS'), classe('5A')],
+    GestioneArticolazione.ARTICOLATA
+  );
+  expect(result.map((c) => c.id).sort()).toEqual(['1F-LSO', '1F-LSS', '5A']);
 });

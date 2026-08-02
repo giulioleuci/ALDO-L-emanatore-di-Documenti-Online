@@ -6,6 +6,7 @@ import type { Indirizzo } from '../entities/Indirizzo';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
 import type { ArticolazioneConfig } from '../value-objects/ArticolazioneConfig';
+import type { GestioneArticolazione } from '../value-objects/enums';
 
 export type RepoRow = Record<string, string | number | boolean | null>;
 export type TeachingSlotKind = 'MAIN' | 'ITP' | 'SPECIFICA';
@@ -57,6 +58,13 @@ export interface IClasseRepository {
   } | null;
   /** The parent's two partners in canonical [primo, secondo] order, from any class in the group. */
   orderedPartners(classe: Classe): Classe[];
+  /**
+   * Filters `classi` by CONF_DOC/CONF_MAIL.GESTIONE_ARTICOLAZIONE: `COMPLETA`
+   * excludes articolazione partners, `ARTICOLATA` excludes the parent.
+   * Standard (non-articulated) classes always pass. The single place in the
+   * app that decides class inclusion by articulation type.
+   */
+  filterPerGestioneArticolazione(classi: Classe[], gestione: GestioneArticolazione): Classe[];
 
   // --- Per-docente subject lookups (ref 09 §4) ---
   getMaterieDelDocente(

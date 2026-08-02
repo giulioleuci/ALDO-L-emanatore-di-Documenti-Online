@@ -1,4 +1,4 @@
-import { ProcessoInvio, GestioneSupplenti } from '../value-objects/enums';
+import { ProcessoInvio, GestioneSupplenti, GestioneArticolazione } from '../value-objects/enums';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ConfigurationError } from '../errors/DomainError';
 import { AldoEntity } from './AldoEntity';
@@ -17,6 +17,7 @@ export class ConfigurazioneEmail extends AldoEntity {
   public readonly oggetto: string;
   public readonly processo: ProcessoInvio;
   public readonly supplenti: GestioneSupplenti;
+  public readonly gestioneArticolazione: GestioneArticolazione;
   private readonly boxCfgRaw: string | null;
   private readonly testoRaw: string;
   private readonly noreply: boolean;
@@ -35,6 +36,10 @@ export class ConfigurazioneEmail extends AldoEntity {
     this.processo = data[COL_CONF_MAIL.PROCESSO] as ProcessoInvio;
     this.supplenti =
       (data[COL_CONF_MAIL.SUPPLENTI] as GestioneSupplenti) ?? GestioneSupplenti.SOLO_TITOLARI;
+    this.gestioneArticolazione =
+      data[COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
+        ? GestioneArticolazione.ARTICOLATA
+        : GestioneArticolazione.COMPLETA;
     this.boxCfgRaw =
       typeof data[COL_CONF_MAIL.BOX_CFG] === 'string'
         ? (data[COL_CONF_MAIL.BOX_CFG] as string)
@@ -112,6 +117,7 @@ export class ConfigurazioneEmail extends AldoEntity {
       [COL_CONF_MAIL.OGGETTO]: this.oggetto,
       [COL_CONF_MAIL.PROCESSO]: this.processo,
       [COL_CONF_MAIL.SUPPLENTI]: this.supplenti,
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: this.gestioneArticolazione,
       [COL_CONF_MAIL.BOX_CFG]: this.boxCfgRaw,
       [COL_CONF_MAIL.TESTO]: this.testoRaw,
       [COL_CONF_MAIL.NOREPLY]: this.noreply,

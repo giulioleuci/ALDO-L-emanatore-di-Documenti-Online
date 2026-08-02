@@ -38,6 +38,7 @@ import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
 } from '../../../src/application/ports/ITeachingAssignmentResolver';
+import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -172,6 +173,7 @@ test('PER_COORDINATORE routes a parent without coordinatore to its partners', ()
     getArticolazione: () => ({ parent: null }),
     getGruppoArticolazione: () => [parent, scientifico, classico],
     getClassiPartner: () => [scientifico, classico],
+    filterPerGestioneArticolazione: (classi: Classe[]) => classi,
     getCoordinatori: (classe: Classe) => {
       if (classe.id === '3C-S') {
         return [Docente.fromData({ EMAIL: 'scientifico@school.it', DIPART: 'X' })];
@@ -336,6 +338,99 @@ test('PER_CDC: cdcEmails is deterministically sorted by cognome (BIANCHI < ROSSI
   // NOT resolveConsiglio's raw materia/class iteration order (which yields rossi first).
   expect(t1f.emails).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
   expect(t1f.emails[0]).toBe('bianchi@school.it');
+});
+
+test('targetsPerCoordinatore honors CONF_MAIL.GESTIONE_ARTICOLAZIONE=ARTICOLATA: partners are entry points, parent is excluded', () => {
+  const { db, gmail } = wire();
+  const parent = Classe.fromData({ ID: '3C', ANNO: 3, INDIRIZZO: 'LICEO' });
+  const scientifico = Classe.fromData({ ID: '3C-S', ANNO: 3, INDIRIZZO: 'SCIENTIFICO' });
+  const classico = Classe.fromData({ ID: '3C-C', ANNO: 3, INDIRIZZO: 'CLASSICO' });
+  const classiStub = {
+    findAttive: () => [parent, scientifico, classico],
+    filterPerGestioneArticolazione: (classi: Classe[], gestione: GestioneArticolazione) =>
+      classi.filter((c) =>
+        gestione === GestioneArticolazione.ARTICOLATA ? c.id !== '3C' : c.id === '3C'
+      ),
+    getCoordinatori: (classe: Classe) => {
+      if (classe.id === '3C-S') {
+        return [Docente.fromData({ EMAIL: 'scientifico@school.it', DIPART: 'X' })];
+      }
+      if (classe.id === '3C-C') {
+        return [Docente.fromData({ EMAIL: 'classico@school.it', DIPART: 'X' })];
+      }
+      return [];
+    },
+    getClassiPartner: () => []
+  } as unknown as ClasseRepository;
+  const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
+
+  const targets = service.enumerateTargets(
+    conf('PER_COORDINATORE', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' })
+  );
+
+  expect(targets.map((t) => t.docenteEmail).sort()).toEqual([
+    'classico@school.it',
+    'scientifico@school.it'
+  ]);
+});
+
+test('targetsPerDocente honors CONF_MAIL.GESTIONE_ARTICOLAZIONE=ARTICOLATA: partners are entry points, parent is excluded', () => {
+  const { db, gmail } = wire();
+  const parent = Classe.fromData({ ID: '3C', ANNO: 3, INDIRIZZO: 'LICEO' });
+  const scientifico = Classe.fromData({ ID: '3C-S', ANNO: 3, INDIRIZZO: 'SCIENTIFICO' });
+  const classiStub = {
+    findAttive: () => [parent, scientifico],
+    filterPerGestioneArticolazione: (classi: Classe[], gestione: GestioneArticolazione) =>
+      classi.filter((c) =>
+        gestione === GestioneArticolazione.ARTICOLATA ? c.id !== '3C' : c.id === '3C'
+      ),
+    getArticolazione: () => null
+  } as unknown as ClasseRepository;
+  const teachingAssignments = teachingResolverFor([
+    assignmentFor(Docente.fromData({ EMAIL: 'scientifico-doc@school.it', DIPART: 'X' }))
+  ]);
+  const service = new EmailNotificationService(
+    fullDeps(db, gmail, { classi: classiStub, teachingAssignments })
+  );
+
+  const targets = service.enumerateTargets(
+    conf('PER_DOCENTE', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' })
+  );
+
+  expect(targets.map((t) => t.docenteEmail)).toEqual(['scientifico-doc@school.it']);
+  expect(targets[0]!.classiCompetenza).toEqual(['3C-S']);
+});
+
+test('targetsPerCdc honors CONF_MAIL.GESTIONE_ARTICOLAZIONE=ARTICOLATA: partners are entry points, parent is excluded', () => {
+  const { db, gmail } = wire();
+  const parent = Classe.fromData({ ID: '3C', ANNO: 3, INDIRIZZO: 'LICEO' });
+  const scientifico = Classe.fromData({ ID: '3C-S', ANNO: 3, INDIRIZZO: 'SCIENTIFICO' });
+  const classiStub = {
+    findAttive: () => [parent, scientifico],
+    filterPerGestioneArticolazione: (classi: Classe[], gestione: GestioneArticolazione) =>
+      classi.filter((c) =>
+        gestione === GestioneArticolazione.ARTICOLATA ? c.id !== '3C' : c.id === '3C'
+      ),
+    getArticolazione: () => null
+  } as unknown as ClasseRepository;
+  const teachingAssignments = teachingResolverFor([
+    assignmentFor(Docente.fromData({ EMAIL: 'scientifico-doc@school.it', DIPART: 'X' }))
+  ]);
+  const service = new EmailNotificationService(
+    fullDeps(db, gmail, { classi: classiStub, teachingAssignments })
+  );
+
+  const targets = service.enumerateTargets(conf('PER_CDC', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' }));
+
+  expect(targets).toEqual([
+    {
+      tipo: 'cdc',
+      tipoTarget: 'classe',
+      target: '3C-S',
+      emails: ['scientifico-doc@school.it'],
+      classiCompetenza: ['3C-S']
+    }
+  ]);
 });
 
 test('PER_ALUNNO: one target per active student', () => {
@@ -919,6 +1014,7 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
       isArticolata: () => false,
+      filterPerGestioneArticolazione: (classi: Classe[]) => classi,
       getCoordinatori: () => [
         Docente.fromData({}),
         Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' })
@@ -938,7 +1034,8 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
       isArticolata: () => false,
-      getGruppoArticolazione: () => [classeNoId]
+      getGruppoArticolazione: () => [classeNoId],
+      filterPerGestioneArticolazione: (classi: Classe[]) => classi
     } as unknown as ClasseRepository;
     const teachingAssignments = teachingResolverFor([
       assignmentFor(Docente.fromData({})),
@@ -960,7 +1057,8 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       findAttive: () => [classeNoId],
       getArticolazione: () => null,
       isArticolata: () => false,
-      getGruppoArticolazione: () => [classeNoId]
+      getGruppoArticolazione: () => [classeNoId],
+      filterPerGestioneArticolazione: (classi: Classe[]) => classi
     } as unknown as ClasseRepository;
     const teachingAssignments = teachingResolverFor([
       assignmentFor(Docente.fromData({ EMAIL: 'rossi@school.it', DIPART: 'X' }))

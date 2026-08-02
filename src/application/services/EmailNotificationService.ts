@@ -30,7 +30,7 @@ import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRep
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
-import { GestioneSupplenti, ProcessoInvio } from '../../domain/value-objects/enums';
+import { GestioneArticolazione, GestioneSupplenti, ProcessoInvio } from '../../domain/value-objects/enums';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { AggregatoreDati } from './AggregatoreDati';
@@ -230,11 +230,11 @@ export class EmailNotificationService {
   enumerateTargets(conf: ConfigurazioneEmail): EmailTarget[] {
     switch (conf.processo) {
       case ProcessoInvio.PER_COORDINATORE:
-        return this.targetsPerCoordinatore();
+        return this.targetsPerCoordinatore(conf.gestioneArticolazione);
       case ProcessoInvio.PER_DOCENTE:
-        return this.targetsPerDocente();
+        return this.targetsPerDocente(conf.gestioneArticolazione);
       case ProcessoInvio.PER_CDC:
-        return this.targetsPerCdc(conf.supplenti);
+        return this.targetsPerCdc(conf.supplenti, conf.gestioneArticolazione);
       case ProcessoInvio.PER_ALUNNO:
         return this.deps.alunni.findAttivi().map((a) => ({
           tipo: 'alunno' as const,
@@ -280,14 +280,15 @@ export class EmailNotificationService {
   }
 
   /**
-   * Entry-point classes: every active class except articolazione partners —
-   * the parent aggregates the whole articulated group (11 §12, 05 §5).
+   * Entry-point classes: `COMPLETA` (default) excludes articolazione
+   * partners, `ARTICOLATA` excludes the parent — the excluded side's
+   * classes are represented through the included side's `classiCompetenza`
+   * expansion (11 §12, 05 §5). Delegates to the single shared filter
+   * (`ClasseRepository.filterPerGestioneArticolazione`, same mechanism as
+   * `DocumentBatchService.generateClassi`).
    */
-  private classiEntryPoint(): Classe[] {
-    return this.deps.classi.findAttive().filter((c) => {
-      const config = this.deps.classi.getArticolazione(c);
-      return config === null || config.parent === null;
-    });
+  private classiEntryPoint(gestione: GestioneArticolazione): Classe[] {
+    return this.deps.classi.filterPerGestioneArticolazione(this.deps.classi.findAttive(), gestione);
   }
 
   /**
@@ -339,9 +340,9 @@ export class EmailNotificationService {
     return actors.map((docente) => docente.id);
   }
 
-  private targetsPerCoordinatore(): EmailTarget[] {
+  private targetsPerCoordinatore(gestione: GestioneArticolazione): EmailTarget[] {
     const perCoordinatore = new Map<string, string[]>();
-    for (const classe of this.classiEntryPoint()) {
+    for (const classe of this.classiEntryPoint(gestione)) {
       const diretti = this.deps.classi.getCoordinatori(classe);
       const destinatari = diretti.length > 0
         ? diretti.flatMap((docente) =>
@@ -374,9 +375,9 @@ export class EmailNotificationService {
     }));
   }
 
-  private targetsPerDocente(): EmailTarget[] {
+  private targetsPerDocente(gestione: GestioneArticolazione): EmailTarget[] {
     const perDocente = new Map<string, string[]>();
-    for (const classe of this.classiEntryPoint()) {
+    for (const classe of this.classiEntryPoint(gestione)) {
       for (const email of this.cdcEmails(classe)) {
         const classi = perDocente.get(email) ?? [];
         classi.push(...this.classiCompetenza(classe));
@@ -394,8 +395,11 @@ export class EmailNotificationService {
     }));
   }
 
-  private targetsPerCdc(gestioneSupplenti: GestioneSupplenti): EmailTarget[] {
-    return this.classiEntryPoint().map((classe) => ({
+  private targetsPerCdc(
+    gestioneSupplenti: GestioneSupplenti,
+    gestioneArticolazione: GestioneArticolazione
+  ): EmailTarget[] {
+    return this.classiEntryPoint(gestioneArticolazione).map((classe) => ({
       tipo: 'cdc' as const,
       tipoTarget: 'classe' as const,
       target: classe.id ?? '',

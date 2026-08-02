@@ -210,6 +210,23 @@ export function fixtureTables(): Record<string, Row[]> {
         REGISTRA_DOC:
           '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"{{focus.alunno.anagrafica.email}}","materie":""}',
         REGISTRA_FOLD: '{}'
+      },
+      {
+        ID: 'CD_ARTICOLATA',
+        TIPO: 'VERBALE_ARTICOLATO',
+        GENERATORE: 'VERBALE_CDC',
+        CONDIZIONE: null,
+        MODELLI: '{"templateId":"tmpl_verbale"}',
+        FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
+        PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}',
+        DUPLICAZIONE: 'NEGATA',
+        PERMESSI: null,
+        POST_PROCESSO: null,
+        PARAMETRI: null,
+        GESTIONE_ARTICOLAZIONE: 'ARTICOLATA',
+        FORMATO: 'GDOC',
+        REGISTRA_DOC: '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"","materie":""}',
+        REGISTRA_FOLD: '{}'
       }
     ],
     CONF_MAIL: [

@@ -303,6 +303,31 @@ test('handler yields one resumable checkpoint per targeted class and returns the
   });
 });
 
+test('generateClassi honors CONF_DOC.GESTIONE_ARTICOLAZIONE=ARTICOLATA: the parent is excluded, partners are targeted', () => {
+  const { service, generated } = wire();
+  const gen = service.batchGenerateHandler({ confDocId: 'CD_ARTICOLATA' });
+  const checkpoints: BatchCheckpoint[] = [];
+  let step = gen.next();
+  while (!step.done) {
+    checkpoints.push(step.value);
+    step = gen.next();
+  }
+  const result = step.value;
+  // Same 4 active classes as CD1 (5A, 1F, 1F-LSO, 1F-LSS), but CD_ARTICOLATA.
+  // GESTIONE_ARTICOLAZIONE = ARTICOLATA, so this proves config.gestioneArticolazione
+  // genuinely threads into filterPerGestioneArticolazione: the parent (1F) is
+  // excluded and the articulated partners (1F-LSO/1F-LSS) are targeted instead
+  // -- the opposite subset from the COMPLETA case above.
+  expect(generated).toEqual(['5A:CD_ARTICOLATA', '1F-LSO:CD_ARTICOLATA', '1F-LSS:CD_ARTICOLATA']);
+  expect(checkpoints).toHaveLength(3);
+  expect(result).toEqual({
+    success: true,
+    totale: 3,
+    processed: ['5A', '1F-LSO', '1F-LSS'],
+    errori: []
+  });
+});
+
 test('handler resumes from params.resumeState without reprocessing completed classes (JobRunnerLib resume cycle)', () => {
   const { service, generated } = wire();
   const gen = service.batchGenerateHandler({

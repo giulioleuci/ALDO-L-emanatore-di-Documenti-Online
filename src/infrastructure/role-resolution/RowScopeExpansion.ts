@@ -34,15 +34,31 @@ export interface ConcretePair {
 // `global` — no import statement, same convention as LoggerService,
 // ExpressionEngineService, etc. — ref types/gaslibs/index.d.ts). Thin
 // pass-through wrappers (not a re-implementation) so existing ALDO callers
-// importing these names from this module keep working unchanged; accessed via
-// `globalThis.<name>` (property access, not a bare identifier) so the wrapper
-// doesn't shadow/recurse into itself.
-export function splitCsvList(raw: string): string[] {
+// importing these names from this module keep working unchanged.
+//
+// The internal function identifier MUST differ from the ambient global name
+// it delegates to — `globalThis.<name>` property access alone is not enough.
+// webpack.config.cjs's onlinetestsConfig builds with `iife: false` (GAS must
+// call test functions by bare name), so nothing wraps that bundle in a
+// closure: production-mode scope hoisting dumps every reachable module's
+// top-level declarations straight into the file's top level. A wrapper
+// declared as `function groupMateriaEntriesBySlot` there becomes itself the
+// literal `globalThis.groupMateriaEntriesBySlot` — GLF's vendor bundle
+// assigns the same global name via `Object.assign(global, RoleResolutionLib)`,
+// but the locally-declared function wins the slot and the wrapper recurses
+// into itself (`RangeError: Maximum call stack size exceeded`), which is
+// exactly what happened when `RowScopeExpansion.ts` was reachable from the
+// OnlineTests entry. Declaring under a distinct local name and re-exporting
+// under the original one keeps every real importer (which resolves via
+// webpack module linking, never `globalThis`) working unchanged while
+// leaving the ambient global name free for GLF's assignment to win.
+function callSplitCsvList(raw: string): string[] {
   return globalThis.splitCsvList(raw);
 }
-export function groupMateriaEntriesBySlot(materieRaw: string): MateriaSlotGroup[] {
+function callGroupMateriaEntriesBySlot(materieRaw: string): MateriaSlotGroup[] {
   return globalThis.groupMateriaEntriesBySlot(materieRaw);
 }
+export { callSplitCsvList as splitCsvList, callGroupMateriaEntriesBySlot as groupMateriaEntriesBySlot };
 
 /**
  * (classe, materia) pairs the anchor teacher nominally holds — via
@@ -61,7 +77,7 @@ export function nominalPairsForAnchor(
 ): Array<{ classeId: string; materia: string }> {
   const trimmed = classiRaw.trim();
   const anchorClasses = classi.findByDocenteAssegnato(anchorEmail);
-  const explicitCsv = trimmed !== '' && trimmed !== ANY ? splitCsvList(classiRaw) : null;
+  const explicitCsv = trimmed !== '' && trimmed !== ANY ? callSplitCsvList(classiRaw) : null;
   const candidateClasses =
     explicitCsv === null
       ? anchorClasses
@@ -113,7 +129,7 @@ export function expandRowScope(
     }));
   }
 
-  const groups = groupMateriaEntriesBySlot(materieRaw);
+  const groups = callGroupMateriaEntriesBySlot(materieRaw);
 
   if (!classiEmpty) {
     return groups.map((group) => ({
@@ -153,7 +169,7 @@ export function expandRowToPairs(
   const groups: MateriaSlotGroup[] =
     materieTrimmed === '' || materieTrimmed === ANY
       ? [{ kind: ANY, specifica: ANY, materie: [] }]
-      : groupMateriaEntriesBySlot(materieRaw);
+      : callGroupMateriaEntriesBySlot(materieRaw);
 
   return groups.flatMap((group) =>
     nominalPairsForAnchor(
@@ -172,13 +188,15 @@ export function expandRowToPairs(
 }
 
 // slotCompatible and pairsOverlap are likewise pure and now owned by
-// RoleResolutionLib (same ambient-global consumption as above).
-export function slotCompatible(
+// RoleResolutionLib (same ambient-global consumption, same distinct-local-name
+// requirement, as splitCsvList/groupMateriaEntriesBySlot above).
+function callSlotCompatible(
   a: { kind: string; specifica: string },
   b: { kind: string; specifica: string }
 ): boolean {
   return globalThis.slotCompatible(a, b);
 }
-export function pairsOverlap(a: readonly ConcretePair[], b: readonly ConcretePair[]): boolean {
+function callPairsOverlap(a: readonly ConcretePair[], b: readonly ConcretePair[]): boolean {
   return globalThis.pairsOverlap(a, b);
 }
+export { callSlotCompatible as slotCompatible, callPairsOverlap as pairsOverlap };

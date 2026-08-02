@@ -1031,6 +1031,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
@@ -1049,6 +1050,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
@@ -1069,6 +1071,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
@@ -1110,6 +1113,7 @@ export class E2eSampleDatabaseBuilder {
           }
         }
       ]),
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
@@ -1130,6 +1134,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
@@ -1143,6 +1148,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: JSON.stringify([templateIds.staticAttachment])
     });
   }

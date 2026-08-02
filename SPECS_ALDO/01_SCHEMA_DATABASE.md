@@ -314,7 +314,7 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 | `GENERATORE`             | String | —   | Nome della Strategy di generazione (vedi `10_PIPELINE_DOCUMENTI.md`)                                         |
 | `FORMATO`                | String | —   | Enum                                                                                                         |
 | `DUPLICAZIONE`           | Enum   | —   | Politica di generazione duplicata: `NEGATA` (default) blocca l'identita gia generata; `PERMESSA` la consente |
-| `GESTIONE_ARTICOLAZIONE` | Enum   | —   | Specifica come gestire la generazione per classi articolate                                                  |
+| `GESTIONE_ARTICOLAZIONE` | Enum   | —   | `COMPLETA` (default) esclude le classi partner dal batch di generazione (solo genitore/classe standard); `ARTICOLATA` esclude la classe genitore (solo partner/classe standard)                                                  |
 | `PATH_OUT`               | String | —   | Pattern per il percorso cartella (supporta placeholder `{{...}}` e separazione cartelle tramite `/`)         |
 | `FILE_NAME`              | String | —   | Pattern per il nome file (supporta placeholder `{{...}}`)                                                    |
 | `MODELLI`                | JSON   | —   | ID dei template Drive; forma semplice o condizionale                                                         |
@@ -365,6 +365,7 @@ Motore di configurazione per le notifiche email. Ogni record è un pattern di co
 | `COLORE_HEADER` | String  | —   | Hex code dell'header HTML dell'email; default `#007bff` se non specificato (vedi `11_PIPELINE_EMAIL.md`, Step 3)                                                                                  |
 | `CONDIZIONE`    | String  | —   | Espressione logica per l'invio condizionale (stesso meccanismo di `CONF_DOC.CONDIZIONE`); valutata da `ValutaCondizioniInvioStep`. Se null o vuoto, l'invio procede sempre                        |
 | `POST_PROCESSO` | JSON    | —   | Azioni post-invio (stesso meccanismo di CONF_DOC)                                                                                                                                                 |
+| `GESTIONE_ARTICOLAZIONE` | Enum | —   | Stesso significato di `CONF_DOC.GESTIONE_ARTICOLAZIONE`: `COMPLETA` (default) esclude le classi partner dai punti di ingresso della notifica; `ARTICOLATA` esclude la classe genitore |
 
 ---
 

@@ -4,11 +4,11 @@ This document summarizes the open issues and architectural gaps in SGSA/ALDO reg
 
 ---
 
-## 1. Unused Database Column: `COL_CONF_DOC.GESTIONE_ARTICOLAZIONE`
+## 1. `GESTIONE_ARTICOLAZIONE` Now Filters Which Classes Are Targeted
 
-- **Status**: Open
-- **Description**: The column `GESTIONE_ARTICOLAZIONE` exists in the `CONF_DOC` schema and is seeded in test fixtures (typically set to `''` or occasionally `'COMPLETA'`), but it is never read anywhere within `src/application`.
-- **Impact**: It is currently a dead schema column with no effect on document generation logic. Resolving it requires a product design decision on whether to implement specific behaviors or deprecate the field.
+- **Status**: Fixed
+- **Description**: `CONF_DOC.GESTIONE_ARTICOLAZIONE` was a dead schema column (never read by application code). Fixed: `ClasseRepository.filterPerGestioneArticolazione` is now the single place in the app that decides class inclusion by articulation type — `COMPLETA` (default) excludes partner classes, `ARTICOLATA` excludes the parent class, standard classes always pass. `DocumentBatchService.generateClassi` applies it against the relevant `CONF_DOC` row before generating documents. The same column and mechanism were added to `CONF_MAIL` and wired into `EmailNotificationService.classiEntryPoint` for `PER_COORDINATORE`/`PER_DOCENTE`/`PER_CDC`, which previously hardcoded the `COMPLETA`-equivalent behavior unconditionally.
+- **Impact**: Batch document generation and CONF_MAIL notification targeting now both honor an explicit ARTICOLATA/COMPLETA choice per config row, instead of generating a document per physical class unconditionally (previous document-generation behavior) or always assuming COMPLETA (previous email-notification behavior).
 
 ---
 

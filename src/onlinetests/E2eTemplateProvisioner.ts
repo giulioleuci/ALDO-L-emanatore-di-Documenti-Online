@@ -41,6 +41,7 @@ const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
 const NAME_DOC_ARTICOLATA = 'E2E Doc Articolata Template';
+const NAME_CDC_RIEPILOGO = 'E2E CDC Riepilogo Firme Template';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 const NAME_STATIC_ATTACHMENT = 'E2E Static Attachment Fixture';
@@ -252,6 +253,31 @@ const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   }
 ];
 
+const CDC_RIEPILOGO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
+  'Riepilogo firme del Consiglio di Classe {{focus.classe.anagrafica.nome}}',
+  'Indirizzo: {{focus.classe.anagrafica.indirizzo.nomeSintetico}}',
+  'Data: {{meta.date.oggi.breve}}',
+  'Docenti presenti:'
+];
+
+/** The existing verbale template already renders `consiglioDiClasse` for every generated
+ * class, while the riepilogo template proves the row-loop table contract. Reusing their
+ * common CDU shape keeps this signature table valid for both plain classes and articulated
+ * partners selected by ARTICOLATA. */
+const CDC_RIEPILOGO_TABLES: E2eDocumentTable[] = [
+  {
+    data: [
+      ['Docente', 'Materie', 'Firma'],
+      [
+        '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}',
+        '{{materieDescrizione}}',
+        '________________'
+      ]
+    ],
+    options: { headerRow: true, alternatingRows: true }
+  }
+];
+
 /**
  * Single header cell carrying the whole multi-group `{{dynamic_columns[...]}}` placeholder
  * (`WorkspaceTemplateEngine_docs.md` "Sintassi multi-gruppo"): 3 sequential column groups,
@@ -323,6 +349,12 @@ export class E2eTemplateProvisioner {
       NAME_DOC_ARTICOLATA,
       DOC_ARTICOLATA_PARAGRAPHS
     );
+    const cdcRiepilogo = this.findOrCreateDoc(
+      folderId,
+      NAME_CDC_RIEPILOGO,
+      CDC_RIEPILOGO_PARAGRAPHS,
+      CDC_RIEPILOGO_TABLES
+    );
     const sheetPermessi = this.findOrCreateSheet(
       folderId,
       NAME_SHEET_PERMESSI,
@@ -345,6 +377,7 @@ export class E2eTemplateProvisioner {
       aslImportSheet,
       docComplesso,
       docArticolata,
+      cdcRiepilogo,
       sheetPermessi,
       pianoLavoro,
       staticAttachment,

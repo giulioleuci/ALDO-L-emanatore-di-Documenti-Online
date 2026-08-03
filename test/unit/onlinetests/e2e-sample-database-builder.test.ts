@@ -18,6 +18,7 @@ import {
   CONF_DOC_COMPLESSO,
   CONF_DOC_ARTICOLATA,
   CONF_DOC_PIANO_LAVORO,
+  CONF_MAIL_VERBALE,
   CONF_MAIL_PIANI,
   CONF_MAIL_STATIC_ALLEGATO,
   e2eAlunnoEmail,
@@ -88,6 +89,7 @@ const TEMPLATE_IDS = {
   aslImportSheet: 'tmpl_asl_import',
   docComplesso: 'tmpl_doc_complesso',
   docArticolata: 'tmpl_doc_articolata',
+  cdcRiepilogo: 'tmpl_cdc_riepilogo',
   sheetPermessi: 'tmpl_sheet_permessi',
   pianoLavoro: 'tmpl_piano_lavoro',
   staticAttachment: 'real_static_attachment_id',
@@ -225,7 +227,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(8);
+  expect(confDoc).toHaveLength(9);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'
@@ -383,6 +385,18 @@ test('PIANI_PERS POST_PROCESSO criterion matches on the full classiCompetenza li
   expect(postProcesso[0]!.criteri[COL_LOG_DOCS.CLASSI]).toBe(
     '{{destinatario.contesto.classiCompetenza | join}}'
   );
+});
+
+test('the observable coordinator verbale email targets articulated partners instead of their parent', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const row = sheets
+    .get('_ALDO_E2E_SAMPLE')!
+    .rows[TABLE.CONF_MAIL]!.find((candidate) => candidate[COL_CONF_MAIL.ID] === CONF_MAIL_VERBALE);
+
+  expect(row?.[COL_CONF_MAIL.PROCESSO]).toBe('PER_COORDINATORE');
+  expect(row?.[COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]).toBe('ARTICOLATA');
 });
 
 test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', () => {
@@ -585,6 +599,30 @@ test('seeds the CONF_DOC row for the articulated-class complex document', () => 
   expect(row[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(row[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_doc_articolata'
+  });
+  expect(row[COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]).toBe('ARTICOLATA');
+});
+
+test('seeds an articulated generic CDC signature-summary document with registration metadata', () => {
+  const { spreadsheets, sheets } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS);
+
+  const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.CONF_DOC]!;
+  const row = rows.find((candidate) => candidate[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO_FIRME_CDC');
+
+  expect(row).toEqual(expect.objectContaining({
+    [COL_CONF_DOC.TIPO]: 'RIEPILOGO_FIRME_CDC',
+    [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+    [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+    [COL_CONF_DOC.FORMATO]: 'GDOC'
+  }));
+  expect(JSON.parse(String(row?.[COL_CONF_DOC.MODELLI]))).toEqual({
+    templateId: 'tmpl_cdc_riepilogo'
+  });
+  expect(JSON.parse(String(row?.[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+    classi: '{{focus.classe.anagrafica.nome}}',
+    utenti: '',
+    materie: ''
   });
 });
 

@@ -54,14 +54,14 @@ function documentText(paragraphs: E2eDocumentParagraphInput[]): string {
     .join('\n');
 }
 
-test('creates all 13 E2E artifacts, including the real static email attachment', () => {
+test('creates all 15 E2E artifacts, including the CDC signature-summary template', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(14);
+  expect(created).toHaveLength(15);
   expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(3);
-  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(11);
+  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(12);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
@@ -71,9 +71,34 @@ test('creates all 13 E2E artifacts, including the real static email attachment',
   expect(created).toContain('doc:E2E Doc Complesso Template v2');
   expect(ids.docArticolata).toMatch(/^doc_/);
   expect(created).toContain('doc:E2E Doc Articolata Template');
+  expect(ids).toHaveProperty('cdcRiepilogo', expect.stringMatching(/^doc_/));
+  expect(created).toContain('doc:E2E CDC Riepilogo Firme Template');
   for (const tipo of TIPI_PIANO) {
     expect(ids.piani[tipo]).toMatch(/^doc_/);
   }
+});
+
+test('authors the CDC signature-summary template with a row-loop council table', () => {
+  const { artifacts, docContent, docTables } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  expect(documentText(docContent[ids.cdcRiepilogo] ?? [])).toContain(
+    'Riepilogo firme del Consiglio di Classe {{focus.classe.anagrafica.nome}}'
+  );
+  expect(docTables[ids.cdcRiepilogo]).toEqual([
+    {
+      data: [
+        ['Docente', 'Materie', 'Firma'],
+        [
+          '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}',
+          '{{materieDescrizione}}',
+          '________________'
+        ]
+      ],
+      options: { headerRow: true, alternatingRows: true }
+    }
+  ]);
 });
 
 test('verbale template renders the generated custom-plan list through the class CDU placeholder', () => {
@@ -95,7 +120,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(13); // static attachment + condotta + riepilogo + asl import + doc complesso + doc articolata + sheet permessi + piano lavoro + 5 piani still created
+  expect(created).toHaveLength(14); // cdc riepilogo + static attachment + condotta + riepilogo + asl import + doc complesso + doc articolata + sheet permessi + piano lavoro + 5 piani still created
 });
 
 test('reuses the real static attachment artifact by its fixed name', () => {

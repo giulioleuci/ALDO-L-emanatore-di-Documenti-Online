@@ -129,6 +129,7 @@ export const CONF_DOC_CONDOTTA = 'E2E_CONDOTTA';
 export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export const CONF_DOC_COMPLESSO = 'E2E_DOC_COMPLESSO';
 export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';
+export const CONF_DOC_RIEPILOGO_FIRME_CDC = 'E2E_RIEPILOGO_FIRME_CDC';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
 export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
@@ -185,6 +186,7 @@ export interface E2eTemplateIds {
   aslImportSheet: string;
   docComplesso: string;
   docArticolata: string;
+  cdcRiepilogo: string;
   sheetPermessi: string;
   pianoLavoro: string;
   staticAttachment: string;
@@ -937,7 +939,24 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
+      [COL_CONF_DOC.TIPO]: 'RIEPILOGO_FIRME_CDC',
+      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.cdcRiepilogo }),
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_RiepilogoFirmeCdc_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI_FIRME_CDC',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
@@ -1041,7 +1060,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {

@@ -14,7 +14,9 @@ import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../
 import { TipoPiano } from '../../domain/value-objects/enums';
 import {
   ALL_CLASSI_E2E,
+  CLASSE_C,
   CLASSE_C_PARENT,
+  CLASSE_C_PARTNER,
   TIPI_PIANO,
   CONF_DOC_VERBALE,
   CONF_DOC_CONDOTTA,
@@ -149,6 +151,17 @@ export function registerE2eScenarioChecks(
       if (row === undefined || String(row[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
         throw new ValidationError(`${label} per ${classe} non ha un LOG_DOCS.LINK persistito`);
       }
+    }
+  };
+
+  const assertArticolata3CResults = (label: string, classi: string[]): void => {
+    const missingPartners = [CLASSE_C, CLASSE_C_PARTNER].filter(
+      (classe) => !classi.includes(classe)
+    );
+    if (missingPartners.length > 0 || classi.includes(CLASSE_C_PARENT)) {
+      throw new ValidationError(
+        `${label}: GESTIONE_ARTICOLAZIONE=ARTICOLATA richiede le partner ${CLASSE_C}, ${CLASSE_C_PARTNER} ed esclude la parent ${CLASSE_C_PARENT}; ricevute ${classi.join(', ')}`
+      );
     }
   };
 
@@ -494,70 +507,46 @@ export function registerE2eScenarioChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const drive = container.get<IDriveFacade>('drive');
-      const { fileId, status } = documents.generateForClasse(
-        ClasseId.of(CLASSE_C_PARENT),
-        CONF_DOC_ARTICOLATA
-      );
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione documento complesso classe articolata per ${CLASSE_C_PARENT} non ha prodotto un fileId (status=${status})`
-        );
-      }
-      const text = drive.getFileText(fileId);
-      if (/\{\{[^}]*\}\}/.test(text)) {
-        throw new ValidationError(
-          `Documento complesso classe articolata: placeholder non risolto trovato nel testo generato`
-        );
-      }
-      // e2eDocenteEmail(3)/(4) coordinate 3C-S/3C-C respectively (E2eSampleDatabaseBuilder
-      // `classLayouts`). La lista `coordinatori` del template rende `{{nome}}` =
-      // `Docente.getNomeCompleto()` = "COGNOME NOME" **senza** trasformazioni di case:
-      // i pool DOCENTE_COGNOMI/DOCENTE_NOMI_M/_F sono in Title Case, quindi le stringhe
-      // realmente presenti nel documento sono "Verdi Alessandro" / "Ferrari Elena".
-      // La presenza di ENTRAMBI prova che ClasseProvider.coordinatori fonde i due
-      // coordinatori distinti delle partner (bug fixato nel Task 3), non solo la riga
-      // parent (che ha COORD vuoto).
-      //
-      // Il nome COMPLETO è obbligatorio per il coordinatore di 3C-C: il solo cognome
-      // "Ferrari" collide con lo studente "Ferrari Giulia" (ALUNNO_COGNOMI, counter 54,
-      // in 3C-C) che compare nella PRIMA bullet list dello stesso documento, quindi
-      // `includes('Ferrari')` passerebbe anche col bug presente. "Ferrari Elena" può
-      // essere prodotto solo dalla lista coordinatori (la lista dei docenti comuni rende
-      // "Nome Cognome", ordine invertito).
       for (const [gruppo, coordinatore] of [
-        ['3C-S', 'Verdi Alessandro'],
-        ['3C-C', 'Ferrari Elena']
+        [CLASSE_C, 'Verdi Alessandro'],
+        [CLASSE_C_PARTNER, 'Ferrari Elena']
       ] as const) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(gruppo),
+          CONF_DOC_ARTICOLATA
+        );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione documento complesso classe articolata per ${gruppo} non ha prodotto un fileId (status=${status})`
+          );
+        }
+        const text = drive.getFileText(fileId);
+        if (/\{\{[^}]*\}\}/.test(text)) {
+          throw new ValidationError(
+            `Documento complesso classe articolata per ${gruppo}: placeholder non risolto trovato nel testo generato`
+          );
+        }
         if (!text.includes(coordinatore)) {
           throw new ValidationError(
             `Documento complesso classe articolata: coordinatore di ${gruppo} (${coordinatore}) assente dal testo`
           );
         }
       }
-      // Copertura end-to-end dello split comune/separato (Task 5): e2eDocenteEmail(1)
-      // ("Rossi Marco") tiene MAT in ENTRAMBE le partner (override esplicito in
-      // `E2eSampleDatabaseBuilder.seedClassi`), quindi è l'unico docente `COMUNE` del
-      // gruppo e deve comparire nella bullet list "Docenti comuni a tutta la classe",
-      // resa come `{{anagrafica.nome}} {{anagrafica.cognome}} ({{materieDescrizione}})`.
-      // Senza questa asserzione `consiglioDiClasseComune` potrebbe essere vuoto senza
-      // che nessun check se ne accorga (la lista vuota non lascia placeholder residui).
-      if (!text.includes('Marco Rossi (Matematica')) {
-        throw new ValidationError(
-          'Documento complesso classe articolata: la lista dei docenti comuni non contiene il docente COMUNE atteso ("Marco Rossi (Matematica...)") — consiglioDiClasseComune vuoto?'
-        );
-      }
-      const logRow = db
+      const logRows = db
         .table(TABLE.LOG_DOCS)
         .findAll()
-        .find(
-          (row) =>
-            row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_ARTICOLATA &&
-            row[COL_LOG_DOCS.CLASSI] === CLASSE_C_PARENT
-        );
-      if (logRow === undefined || String(logRow[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
-        throw new ValidationError(
-          `Documento complesso classe articolata per ${CLASSE_C_PARENT} non ha un LOG_DOCS.LINK persistito`
-        );
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_ARTICOLATA);
+      assertArticolata3CResults(
+        'Documento complesso classe articolata',
+        logRows.map((row) => String(row[COL_LOG_DOCS.CLASSI] ?? ''))
+      );
+      for (const gruppo of [CLASSE_C, CLASSE_C_PARTNER]) {
+        const logRow = logRows.find((row) => row[COL_LOG_DOCS.CLASSI] === gruppo);
+        if (logRow === undefined || String(logRow[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
+          throw new ValidationError(
+            `Documento complesso classe articolata per ${gruppo} non ha un LOG_DOCS.LINK persistito`
+          );
+        }
       }
     }
   );
@@ -672,7 +661,12 @@ export function registerE2eScenarioChecks(
     'E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const result = getEmailService().sendPattern(CONF_MAIL_VERBALE);
+      const emailService = getEmailService();
+      const articolataClassi = emailService
+        .enumerateTargets(emailService.getConfigurazione(CONF_MAIL_VERBALE))
+        .flatMap((target) => target.classiCompetenza);
+      assertArticolata3CResults('Invio verbale', articolataClassi);
+      const result = emailService.sendPattern(CONF_MAIL_VERBALE);
       if (result.sent === 0 || result.skipped > 0 || result.errors.length > 0) {
         throw new ValidationError(`Invio verbale fallito: ${emailDiagnostics(result)}`);
       }

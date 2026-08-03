@@ -18,7 +18,10 @@ import {
   CONF_DOC_ARTICOLATA,
   PIANO_DOPPIO_STUDENTE,
   PDP_BES_3C,
-  ALL_CLASSI_E2E
+  ALL_CLASSI_E2E,
+  CLASSE_C,
+  CLASSE_C_PARENT,
+  CLASSE_C_PARTNER
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type {
@@ -69,13 +72,15 @@ function recordingHarness(
     attach: ['https://drive.google.com/open?id=real_static_attachment_id']
   },
   unrequestedDynamicAttachmentPattern: string | null = null,
-  planEmailRows: Array<{ logicalTargetId: unknown; text: string }> | null = null
+  planEmailRows: Array<{ logicalTargetId: unknown; text: string }> | null = null,
+  articolataMailClasses = [CLASSE_C, CLASSE_C_PARTNER]
 ): {
   container: ServiceContainer;
   events: string[];
   emailPatterns: string[];
   emailResolutions: () => number;
   generatedConfigIds: () => string[];
+  classGenerationTargets: (configId: string) => string[];
   planRows: () => Array<Record<string, unknown>>;
 } {
   const events: string[] = [];
@@ -83,12 +88,16 @@ function recordingHarness(
   const folders: Array<Record<string, unknown>> = [];
   const emailPatterns: string[] = [];
   const generatedConfigIds: string[] = [];
+  const classGenerationTargets = new Map<string, string[]>();
   const planTexts: Record<string, string> = {};
   let emailResolutions = 0;
   const documents = {
     generateForClasse(classe: ClasseId, configId: string) {
       events.push('generate-document');
       generatedConfigIds.push(configId);
+      const targets = classGenerationTargets.get(configId) ?? [];
+      targets.push(classe.value);
+      classGenerationTargets.set(configId, targets);
       if (configId === 'E2E_VERBALE') {
         for (const row of rows) {
           if (row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS') {
@@ -225,6 +234,12 @@ function recordingHarness(
         });
       }
       return resultForPattern(patternId);
+    },
+    getConfigurazione(patternId: string) {
+      return { id: patternId };
+    },
+    enumerateTargets(config: { id: string }) {
+      return config.id === CONF_MAIL_VERBALE ? [{ classiCompetenza: articolataMailClasses }] : [];
     }
   } as EmailNotificationService;
   const aslRows: Array<Record<string, unknown>> = [
@@ -291,6 +306,7 @@ function recordingHarness(
     emailPatterns,
     emailResolutions: () => emailResolutions,
     generatedConfigIds: () => generatedConfigIds,
+    classGenerationTargets: (configId) => classGenerationTargets.get(configId) ?? [],
     planRows: () => rows.filter((row) => row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS')
   };
 }
@@ -561,6 +577,22 @@ test('scenario 12 sends the prepared work-plan email without regenerating verbal
   );
 });
 
+test('scenario 10b generates the ARTICOLATA document for both partners, never the parent', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario10b = runner
+    .report()
+    .results.find((result) => result.name.includes('scenario 10b'));
+  expect(scenario10b).toMatchObject({ status: 'pass' });
+  expect(harness.classGenerationTargets(CONF_DOC_ARTICOLATA).sort()).toEqual(
+    [CLASSE_C, CLASSE_C_PARTNER].sort()
+  );
+  expect(harness.classGenerationTargets(CONF_DOC_ARTICOLATA)).not.toContain(CLASSE_C_PARENT);
+});
+
 test('scenario 12 fails when LOG_MAIL.ALLEGATI records an unrequested real file attachment', () => {
   const harness = recordingHarness(undefined, undefined, [
     'https://drive.google.com/open?id=E2E_PIANO_LAVORO-1A'
@@ -609,6 +641,21 @@ test('scenario 4 fails if the minutes email gains an implicit PDF without ALLEGA
   const scenario4 = runner.report().results.find((result) => result.name.includes('scenario 4'));
   expect(scenario4?.status).toBe('fail');
   expect(scenario4?.message).toMatch(/attach|PDF|ALLEGA/i);
+});
+
+test('scenario 4 rejects an ARTICOLATA mail target set that retains the parent class', () => {
+  const harness = recordingHarness(undefined, undefined, undefined, undefined, null, null, [
+    CLASSE_C,
+    CLASSE_C_PARTNER,
+    CLASSE_C_PARENT
+  ]);
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario4 = runner.report().results.find((result) => result.name.includes('scenario 4'));
+  expect(scenario4?.status).toBe('fail');
+  expect(scenario4?.message).toMatch(/ARTICOLATA.*parent|parent.*ARTICOLATA/i);
 });
 
 test('reports strict actionable diagnostics for verbale and condotta email failures', () => {

@@ -1118,6 +1118,7 @@ declare global {
     spreadsheetId: string;
     protectedCount: number;
     protectedRangeIds: number[];
+    replies?: unknown[];
   }
   interface SpreadsheetProtectFailure {
     request: SpreadsheetProtectRequest;

@@ -50,32 +50,36 @@ function emailDiagnostics(result: SendPatternResult): string {
   ].join(', ');
 }
 
-export function isExpectedMockProtectedRangeRejection(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return message.includes('addProtectedRange') && message.includes('Utente non valido');
-}
-
 export function verifyProtectedRangeScenario(
   documents: DocumentGenerationService,
   spreadsheets: SpreadsheetService,
   testMode: boolean
 ): void {
   for (const classe of ALL_CLASSI_E2E) {
-    let fileId: string | null;
-    let status: string;
-    try {
-      ({ fileId, status } = documents.generateForClasse(
-        ClasseId.of(classe),
-        CONF_DOC_SHEET_PERMESSI
-      ));
-    } catch (error) {
-      if (testMode && isExpectedMockProtectedRangeRejection(error)) continue;
-      throw error;
-    }
+    const { fileId, status } = documents.generateForClasse(
+      ClasseId.of(classe),
+      CONF_DOC_SHEET_PERMESSI
+    );
     if (fileId === null) {
       throw new ValidationError(
         `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
       );
+    }
+    if (testMode) {
+      const headers = spreadsheets
+        .getRanges(fileId, 'A1:ZZ1')
+        .flat()
+        .map((value) => String(value).trim())
+        .filter(Boolean);
+      if (headers.length === 0) {
+        throw new ValidationError(`Sheet permessi per ${classe}: intestazioni non renderizzate`);
+      }
+      if (headers.some((header) => header.includes('{{') || header.includes('}}'))) {
+        throw new ValidationError(
+          `Sheet permessi per ${classe}: placeholder residuo nelle intestazioni`
+        );
+      }
+      continue;
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
     if (protections.length === 0) {

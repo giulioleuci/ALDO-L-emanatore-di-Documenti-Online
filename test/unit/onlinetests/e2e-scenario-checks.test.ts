@@ -1,5 +1,4 @@
 import {
-  isExpectedMockProtectedRangeRejection,
   registerE2eScenarioChecks,
   verifyProtectedRangeScenario
 } from '../../../src/onlinetests/checks/e2eScenarioChecks';
@@ -287,6 +286,7 @@ function recordingHarness(
       planTexts[fileId] ?? 'Report Complesso — nessun placeholder residuo'
   } as unknown as IDriveFacade;
   const spreadsheets = {
+    getRanges: () => [['MAT', 'ALT', 'Docente']],
     getProtectedRanges: () => [
       {
         id: 1,
@@ -397,23 +397,7 @@ test('refuses to register any check and reports a single failure when the sample
   expect(report.results[0]!.message).toMatch(/TEST_MODE/);
 });
 
-test('protected range rejection classifier accepts only the mock invalid-user rejection', () => {
-  expect(
-    isExpectedMockProtectedRangeRejection(
-      new PipelineError(
-        'RenderTemplate: Invalid requests[0].addProtectedRange: Utente non valido: "mock@onlinetest.aldo.local".'
-      )
-    )
-  ).toBe(true);
-  expect(isExpectedMockProtectedRangeRejection(new Error('Utente non valido'))).toBe(false);
-  expect(
-    isExpectedMockProtectedRangeRejection(
-      new Error('Invalid requests[0].addProtectedRange: editor already exists')
-    )
-  ).toBe(false);
-});
-
-test('scenario 11 rethrows the matching mock rejection when test mode is false', () => {
+test('protected range scenario does not swallow generation errors in test mode', () => {
   const rejection = new PipelineError(
     'RenderTemplate: Invalid requests[0].addProtectedRange: Utente non valido: "mock@onlinetest.aldo.local".'
   );
@@ -424,7 +408,52 @@ test('scenario 11 rethrows the matching mock rejection when test mode is false',
   } as unknown as DocumentGenerationService;
   const spreadsheets = {} as SpreadsheetService;
 
-  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, false)).toThrow(rejection);
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(rejection);
+});
+
+test('protected range scenario: test mode requires rendered headers despite structured protection failures', () => {
+  const protectionResult = {
+    spreadsheetId: 'rendered-sheet',
+    protectedCount: 0,
+    protectedRangeIds: [],
+    replies: [],
+    failures: [
+      {
+        request: {
+          range: 'Sheet1!A:A',
+          editors: { users: ['mock@onlinetest.aldo.local'] }
+        },
+        message: 'Utente non valido: "mock@onlinetest.aldo.local".'
+      }
+    ]
+  };
+  const spreadsheets = {
+    getRanges: () => [['MAT', 'ALT', 'Docente']],
+    getProtectedRanges: () => [],
+    protectRanges: () => protectionResult
+  } as unknown as SpreadsheetService;
+  const documents = {
+    generateForClasse: () => {
+      spreadsheets.protectRanges('rendered-sheet', [], { onError: 'continue' });
+      return { fileId: 'rendered-sheet', status: 'CREATED' };
+    }
+  } as unknown as DocumentGenerationService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).not.toThrow();
+  expect(protectionResult.failures).toHaveLength(1);
+});
+
+test('protected range scenario rejects residual header placeholders in test mode', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'unrendered-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['{{dynamic_columns[source=materie]}}']]
+  } as unknown as SpreadsheetService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
+    /placeholder residuo/
+  );
 });
 
 test('resolves the memoized email service once across the plan scenario and later sends', () => {
@@ -763,6 +792,7 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
     get<T>(key: string): T {
       if (key === 'spreadsheets') {
         return {
+          getRanges: () => [['MAT', 'ALT', 'Docente']],
           getProtectedRanges: () => [
             {
               id: 'p1',
@@ -787,12 +817,15 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
   expect(scenario11).toMatchObject({ status: 'pass' });
 });
 
-test('scenario 11: fails when a generated sheet has no protected ranges', () => {
+test('scenario 11: allows missing protected ranges as test-mode diagnostics after rendering', () => {
   const harness = recordingHarness();
   const container = {
     get<T>(key: string): T {
       if (key === 'spreadsheets') {
-        return { getProtectedRanges: () => [] } as unknown as T;
+        return {
+          getRanges: () => [['MAT', 'ALT', 'Docente']],
+          getProtectedRanges: () => []
+        } as unknown as T;
       }
       return harness.container.get<T>(key);
     }
@@ -802,7 +835,7 @@ test('scenario 11: fails when a generated sheet has no protected ranges', () => 
   registerE2eScenarioChecks(runner, container, sample);
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
-  expect(scenario11?.status).toBe('fail');
+  expect(scenario11?.status).toBe('pass');
 });
 
 test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.ALLEGATI', () => {

@@ -82,4 +82,61 @@ describe('resolveLogRegistration', () => {
       );
     }
   );
+
+  test('classe-articolata piano-di-lavoro pattern: classi covers parent + partners, utenti covers the fused coordinatori (both partner coordinators reachable when queried by their own classe id)', () => {
+    const cduParent = {
+      focus: {
+        classe: {
+          anagrafica: { nome: '3C' },
+          articolazione: { partners: ['3C-S', '3C-C'] },
+          coordinatori: [
+            { email: 'scientifico@school.it' },
+            { email: 'classico@school.it' }
+          ]
+        }
+      }
+    };
+
+    const metadata = resolveLogRegistration(
+      JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+        utenti: '{{#focus.classe.coordinatori}}{{email}},{{/focus.classe.coordinatori}}',
+        materie: ''
+      }),
+      templates,
+      cduParent,
+      'REGISTRA_DOC'
+    );
+
+    expect(metadata.classi.split(',').sort()).toEqual(['3C', '3C-C', '3C-S']);
+    expect(metadata.utenti.split(',').sort()).toEqual([
+      'classico@school.it',
+      'scientifico@school.it'
+    ]);
+  });
+
+  test('classe-articolata piano-di-lavoro pattern: a plain (non-articulated) classe registers only its own id, no trailing artifacts', () => {
+    const cduPlain = {
+      focus: {
+        classe: {
+          anagrafica: { nome: '1A' },
+          coordinatori: [{ email: 'rossi@school.it' }]
+        }
+      }
+    };
+
+    const metadata = resolveLogRegistration(
+      JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+        utenti: '{{#focus.classe.coordinatori}}{{email}},{{/focus.classe.coordinatori}}',
+        materie: ''
+      }),
+      templates,
+      cduPlain,
+      'REGISTRA_DOC'
+    );
+
+    expect(metadata.classi).toBe('1A');
+    expect(metadata.utenti).toBe('rossi@school.it');
+  });
 });

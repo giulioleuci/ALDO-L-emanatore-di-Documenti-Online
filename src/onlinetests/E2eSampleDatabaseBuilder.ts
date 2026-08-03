@@ -973,9 +973,19 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
+      // Il piano di lavoro è un documento UNICO per classe (mai per singolo
+      // docente/materia): per una classe articolata parent, la registrazione
+      // deve coprire l'intero gruppo (join di focus.classe.articolazione
+      // .partners, gestisce con grazia anche il caso "non articolata" dove
+      // .partners è assente — vedi log-registration.test.ts) così che il box
+      // "documenti" trovi il documento anche quando interrogato con
+      // classiCompetenza=[partner] (EmailNotificationService.
+      // targetsPerCoordinatore instrada ogni coordinatore di partner
+      // separatamente). I coordinatori (fusi tra le partner da
+      // ClasseProvider.buildCoordinatori per il parent) vanno in UTENTI.
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '',
+        classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+        utenti: '{{#focus.classe.coordinatori}}{{email}},{{/focus.classe.coordinatori}}',
         materie: ''
       }),
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'

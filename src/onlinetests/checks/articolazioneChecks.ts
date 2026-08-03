@@ -285,9 +285,11 @@ export function registerArticolazioneChecks(
       for (const classe of targets) {
         const row = generatedRows.find((candidate) => candidate[COL_LOG_DOCS.CLASSI] === classe);
         const fileId = generatedFiles.get(classe);
+        const persistedFileId = row?.[COL_LOG_DOCS.ID];
         const nome = row?.[COL_LOG_DOCS.NOME];
         const link = row?.[COL_LOG_DOCS.LINK];
         if (
+          persistedFileId !== fileId ||
           row?.[COL_LOG_DOCS.TIPO] !== 'RIEPILOGO_FIRME_CDC' ||
           typeof nome !== 'string' ||
           nome.trim() === '' ||
@@ -296,7 +298,7 @@ export function registerArticolazioneChecks(
           fileId === undefined
         ) {
           throw new ValidationError(
-            `Documento CDC per ${classe} privo di metadata LOG_DOCS validi.`
+            `Documento CDC per ${classe} privo di fileId LOG_DOCS o metadata validi.`
           );
         }
         const text = drive.getFileText(fileId);

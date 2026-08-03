@@ -226,6 +226,63 @@ test('CDC check rejects a stale LOG_DOCS row that is not bound to the generated 
   ).toThrow(/fileId LOG_DOCS/);
 });
 
+test('CDC check rejects a rendered class repeater that loses LAB.SEMINARIO_POMERIDIANO', () => {
+  const rows: Array<Record<string, unknown>> = [];
+  const db = {
+    table(name: string) {
+      if (name === TABLE.CONF_DOC) {
+        return {
+          findAll: () => [
+            {
+              [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
+              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA'
+            }
+          ]
+        };
+      }
+      return { findAll: () => rows };
+    }
+  };
+  const classi = {
+    findAttive: () =>
+      [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id })),
+    filterPerGestioneArticolazione: () =>
+      [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id }))
+  };
+  const documents = {
+    generateForClasse: (classe: { value: string }) => {
+      const fileId = `cdc-${classe.value}`;
+      rows.push({
+        [COL_LOG_DOCS.ID]: fileId,
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_RIEPILOGO_FIRME_CDC,
+        [COL_LOG_DOCS.CLASSI]: classe.value,
+        [COL_LOG_DOCS.TIPO]: 'RIEPILOGO_FIRME_CDC',
+        [COL_LOG_DOCS.NOME]: `CDC ${classe.value}`,
+        [COL_LOG_DOCS.LINK]: `https://example.test/${classe.value}`
+      });
+      return { fileId, status: 'CREATED' };
+    }
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'db') return db as T;
+      if (key === 'classi') return classi as T;
+      if (key === 'documentGenerationService') return documents as T;
+      if (key === 'drive') {
+        return {
+          getFileText: (fileId: string) =>
+            `Riepilogo firme del Consiglio di Classe ${fileId.replace('cdc-', '')} Matematica`
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() =>
+    runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
+  ).toThrow(/LAB\.SEMINARIO_POMERIDIANO/);
+});
+
 test('dual-plan check rejects rendered output that loses the selected subtype', () => {
   const rows: Array<Record<string, unknown>> = [];
   const documents = {

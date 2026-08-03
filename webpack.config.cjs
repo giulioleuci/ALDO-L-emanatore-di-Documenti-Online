@@ -97,7 +97,7 @@ module.exports = (env) => {
   const onlinetestsConfig = {
     name: 'onlinetests',
     mode: 'production',
-    entry: './src/onlinetests/index.ts',
+    entry: './src/onlinetests/OnlineTestsEntry.ts',
     devtool: 'source-map',
     output: {
       filename: 'OnlineTests.js',

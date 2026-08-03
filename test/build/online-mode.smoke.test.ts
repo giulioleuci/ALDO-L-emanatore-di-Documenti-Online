@@ -18,6 +18,10 @@ describe('online build mode', () => {
     expect(codeJs).not.toEqual(onlineTestsJs);
     expect(onlineTestsJs).toContain('__coverage__');
     expect(codeJs).not.toContain('__coverage__');
+    expect(onlineTestsJs).toContain('function runArticolazioneScenarios()');
+    expect(onlineTestsJs).toContain('gasGlobal.runArticolazioneScenarios = runArticolazioneScenarios');
+    expect(onlineTestsJs).toMatch(/new ScriptPropertiesFacade\b/);
+    expect(onlineTestsJs).not.toContain('onlinetests_ScriptPropertiesFacade');
 
     const avgLineLen = (s: string) => s.length / (s.split('\n').length || 1);
     expect(avgLineLen(codeJs)).toBeLessThan(200);

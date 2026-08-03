@@ -3,6 +3,7 @@ import type { DocenteCdcVM } from './Cdu';
 /** One column of `focus.classe.elencoMaterieConPermessi` (MAT_NON_STANDARD §1/§2.A). */
 export interface ElencoMateriaConPermessiVM {
   sigla: string;
+  specificita?: string | null;
   nome: string;
   isSpecial: boolean;
   /** Materia sigle (or ["IRC","ALT"]/["IRC"] for the special column) the ACL step resolves per column. */
@@ -32,7 +33,7 @@ export function buildElencoMaterieConPermessi(
     colore: SPECIAL_COLORE
   };
   const registry = new ProjectionRegistry().register('aldoMateriaPermessiVm', (value) =>
-    (value as Array<{ sigla: string; nome: string; colore: string }>).map((materia) => ({
+    (value as Array<{ sigla: string; specificita?: string | null; nome: string; colore: string }>).map((materia) => ({
       ...materia,
       isSpecial: false,
       roles: [materia.sigla]
@@ -48,8 +49,14 @@ export function buildElencoMaterieConPermessi(
     [
       { type: 'flatMap', path: 'materie' },
       { type: 'filter', expression: '{{sigla}} != "IRC" && {{sigla}} != "ALT"' },
-      { type: 'distinctBy', keys: ['sigla'] },
-      { type: 'sortBy', keys: [{ path: 'sigla', direction: 'ASC' }] },
+      { type: 'distinctBy', keys: ['sigla', 'specificita'] },
+      {
+        type: 'sortBy',
+        keys: [
+          { path: 'sigla', direction: 'ASC' },
+          { path: 'specificita', direction: 'ASC' }
+        ]
+      },
       { type: 'strategy', name: 'aldoMateriaPermessiVm' },
       { type: 'prepend', value: special }
     ],

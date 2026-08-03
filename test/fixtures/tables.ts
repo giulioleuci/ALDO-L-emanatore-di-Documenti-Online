@@ -115,6 +115,24 @@ export function fixtureTables(): Record<string, Row[]> {
         SINTESI: 'Alternativa',
         ESAME_CFG: null,
         IS_RELIGIONE_ALT: true
+      },
+      {
+        ID: 'LAB',
+        NOME: 'Laboratorio',
+        SINTESI: 'Laboratorio',
+        ESAME_CFG: null
+      },
+      {
+        ID: 'LAB.GRUPPO_A',
+        NOME: 'Laboratorio - Gruppo A',
+        SINTESI: 'Lab A',
+        ESAME_CFG: null
+      },
+      {
+        ID: 'LAB.GRUPPO_B',
+        NOME: 'Laboratorio - Gruppo B',
+        SINTESI: 'Lab B',
+        ESAME_CFG: null
       }
     ],
     ALUNNI: [

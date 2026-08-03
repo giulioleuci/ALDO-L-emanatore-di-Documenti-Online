@@ -271,6 +271,118 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
 });
 
 describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
+  test('renders and protects one column per subject specificity using catalog SINTESI', () => {
+    const tables = fixtureTables();
+    tables.CLASSI!.push({
+      ID: '5LAB',
+      ANNO: 5,
+      INDIRIZZO: 'SCIENTIFICO',
+      ARTICOLAZIONE: null,
+      RUOLI: null,
+      ATTIVA: true,
+      COORD: 'rossi@school.it',
+      'LAB.GRUPPO_A': 'docente-a@school.it',
+      'LAB.GRUPPO_B': 'docente-b@school.it'
+    });
+    tables.DOCENTI!.push(
+      {
+        EMAIL: 'docente-a@school.it',
+        COGNOME: 'DOCENTE',
+        NOME: 'A',
+        GENERE: 'F',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: false
+      },
+      {
+        EMAIL: 'docente-b@school.it',
+        COGNOME: 'DOCENTE',
+        NOME: 'B',
+        GENERE: 'M',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: false
+      }
+    );
+    const db = new FakeDatabase(tables);
+    const cdu = buildCdu(db, '5LAB');
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const roles = new RecordingRisolutoreRuoliService(
+      composeRisolutoreRuoliDependencies(db)
+    );
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates,
+      roles
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    const groups = templates.sheetContextFor('file_1')?.['materieColonne'] as MaterieGroups;
+    expect(groups.group1.filter((item) => !item.isSpecial)).toEqual([
+      { sigla: 'LAB', specificita: 'GRUPPO_A', header: 'Lab A' },
+      { sigla: 'LAB', specificita: 'GRUPPO_B', header: 'Lab B' }
+    ]);
+    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B')?.editors?.users).toEqual(
+      expect.arrayContaining(['docente-a@school.it'])
+    );
+    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C')?.editors?.users).toEqual(
+      expect.arrayContaining(['docente-b@school.it'])
+    );
+    expect(roles.subjectCduVariants.map((v) => v.meta.parametriInput.materiaCorrente)).toEqual([
+      'LAB',
+      'LAB'
+    ]);
+  });
+
+  test('keeps MAIN and ITP teachers on one non-specific subject column', () => {
+    const tables = fixtureTables();
+    tables.CLASSI!.push({
+      ID: '5LAB_KINDS',
+      ANNO: 5,
+      INDIRIZZO: 'SCIENTIFICO',
+      ARTICOLAZIONE: null,
+      RUOLI: null,
+      ATTIVA: true,
+      COORD: 'rossi@school.it',
+      LAB: 'docente-main@school.it',
+      'LAB.itp': 'docente-itp@school.it'
+    });
+    tables.DOCENTI!.push(
+      {
+        EMAIL: 'docente-main@school.it',
+        COGNOME: 'DOCENTE',
+        NOME: 'MAIN',
+        GENERE: 'F',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: false
+      },
+      {
+        EMAIL: 'docente-itp@school.it',
+        COGNOME: 'DOCENTE',
+        NOME: 'ITP',
+        GENERE: 'M',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: true
+      }
+    );
+    const db = new FakeDatabase(tables);
+    const cdu = buildCdu(db, '5LAB_KINDS');
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      composeRisolutoreRuoli(db)
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B')?.editors?.users).toEqual(
+      expect.arrayContaining(['docente-main@school.it', 'docente-itp@school.it'])
+    );
+  });
+
   test('keeps the rendered sheet when a legacy protection result has no failures field', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');

@@ -3,9 +3,13 @@ import type { Cdu, CduClasse } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
+import type { TeachingSlotKind } from '../../domain/repositories/IClasseRepository';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ConfigurationError } from '../../domain/errors/DomainError';
-import { getCduArticolazionePartners } from '../context-engine/CduInternalMetadata';
+import {
+  getCduArticolazionePartners,
+  getCduMateriaAssignmentIdentity
+} from '../context-engine/CduInternalMetadata';
 
 /** 0-based column index -> A1 letters ("A", "Z", "AA", ...). Still needed by the
  * `_E_PERMESSI` subclass to turn a `SheetColumnLayout.column` (1-based) into an
@@ -30,9 +34,11 @@ interface SheetMaterieParams {
  * contract — see class doc comment). */
 export interface MateriaColumn {
   sigla: string;
+  specificita?: string;
   header: string;
   /** Partner class that owns this column when the subject is articulated. */
   classeId?: string;
+  kind?: TeachingSlotKind;
   isSpecial?: boolean;
   roles?: string[];
 }
@@ -51,6 +57,8 @@ export interface MaterieGroups {
   group3: MateriaColumn[];
   group3Label?: string;
 }
+
+type MateriaColumnInput = Omit<MateriaColumn, 'header'>;
 
 function readParams(config: ConfigurazioneDocumento): SheetMaterieParams {
   const p = config.getParametri();
@@ -147,9 +155,13 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
     if (classe.flags.isArticolata && classe.articolazione !== undefined) {
       const a = classe.articolazione;
       const partners = getCduArticolazionePartners(a) ?? a.partners ?? [];
-      const group1 = this.resolveMateriaColumns(a.materieCondivise);
-      const group2 = this.resolveMateriaColumns(a.materieSeparatePrimoGruppo, partners[0]);
-      const group3 = this.resolveMateriaColumns(a.materieSeparateSecondoGruppo, partners[1]);
+      const group1 = this.resolveMateriaColumns(a.materieCondivise.map((id) => this.columnForId(id)));
+      const group2 = this.resolveMateriaColumns(
+        a.materieSeparatePrimoGruppo.map((id) => this.columnForId(id, partners[0]))
+      );
+      const group3 = this.resolveMateriaColumns(
+        a.materieSeparateSecondoGruppo.map((id) => this.columnForId(id, partners[1]))
+      );
       return {
         group1,
         group2,
@@ -158,28 +170,62 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
         ...(group3.length > 0 ? { group3Label: partners[1] ?? 'Gruppo 2' } : {})
       };
     }
-    const sigle = new Set<string>();
+    const columns = new Map<string, MateriaColumnInput>();
     for (const d of classe.consiglioDiClasse ?? []) {
-      for (const m of d.materie) sigle.add(m.sigla);
+      for (const m of d.materie) {
+        const identity = getCduMateriaAssignmentIdentity(m);
+        const column: MateriaColumnInput = {
+          sigla: m.sigla,
+          ...(m.specificita === null ? {} : { specificita: m.specificita }),
+          ...(identity?.kind === 'SPECIFICA' ? { kind: identity.kind } : {})
+        };
+        columns.set(`${column.sigla}.${column.specificita ?? ''}`, column);
+      }
     }
     return {
-      group1: this.resolveMateriaColumns([...sigle].sort((a, b) => a.localeCompare(b))),
+      group1: this.resolveMateriaColumns(
+        [...columns.values()].sort((a, b) => this.catalogId(a).localeCompare(this.catalogId(b)))
+      ),
       group2: [],
       group3: []
     };
   }
 
-  /** Resolves each sigla's display text (ports the pre-refactor `columnsFor`'s lookup logic: `MateriaRepository.findByIdCached(...).sintesi`, falling back to the sigla itself) BEFORE the item is placed on the context, so the template's `value=header` expression is a plain field read. */
-  private resolveMateriaColumns(sigle: string[], classeId?: string): MateriaColumn[] {
-    return sigle
-      .filter((sigla) => sigla !== 'IRC' && sigla !== 'ALT')
-      .map((sigla) => {
-        const header = this.materie.findByIdCached(MateriaId.of(sigla))?.sintesi.trim();
-        return {
-          sigla,
-          header: header !== undefined && header !== '' ? header : sigla,
-          ...(classeId === undefined ? {} : { classeId })
+  private columnForId(id: string, classeId?: string): MateriaColumnInput {
+    const separator = id.indexOf('.');
+    return {
+      sigla: separator === -1 ? id : id.slice(0, separator),
+      ...(separator === -1 ? {} : { specificita: id.slice(separator + 1), kind: 'SPECIFICA' }),
+      ...(classeId === undefined ? {} : { classeId })
+    };
+  }
+
+  private catalogId(column: Pick<MateriaColumnInput, 'sigla' | 'specificita'>): string {
+    return column.specificita === undefined ? column.sigla : `${column.sigla}.${column.specificita}`;
+  }
+
+  /** Resolves each column's display text from MATERIE.SINTESI before template rendering. */
+  private resolveMateriaColumns(columns: MateriaColumnInput[]): MateriaColumn[] {
+    return columns
+      .filter((column) => column.sigla !== 'IRC' && column.sigla !== 'ALT')
+      .map((column) => {
+        const catalogId = this.catalogId(column);
+        const materia =
+          column.specificita === undefined
+            ? this.materie.findByIdCached(MateriaId.of(column.sigla))
+            : (this.materie
+                .findSpecifiche(MateriaId.of(column.sigla))
+                .find((item) => item.id === catalogId) ?? null);
+        const header = materia?.sintesi.trim();
+        const { kind, ...rendered } = column;
+        const result: MateriaColumn = {
+          ...rendered,
+          header: header !== undefined && header !== '' ? header : catalogId
         };
+        if (kind !== undefined) {
+          Object.defineProperty(result, 'kind', { value: kind, enumerable: false });
+        }
+        return result;
       });
   }
 }

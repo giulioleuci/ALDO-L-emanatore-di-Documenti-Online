@@ -103,7 +103,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
                 regolaSupplente: GestioneSupplenti.ENTRAMBI
               })
               .map((email) => email.value)
-          : this.resolveDocentiMateria(cdu, sigla, item.classeId);
+          : this.resolveDocentiMateria(cdu, item);
         const col = columnIndexToLetters(column.column - 1);
         const editors = this.projector.project(
           [...docenti, ...coordinatori].map((value) => ({ value })),
@@ -126,7 +126,8 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   }
 
   /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */
-  private resolveDocentiMateria(cdu: Cdu, sigla: string, classeId?: string): string[] {
+  private resolveDocentiMateria(cdu: Cdu, item: MateriaColumn): string[] {
+    const sigla = item.sigla;
     const variant: Cdu = {
       ...cdu,
       meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: sigla } }
@@ -140,7 +141,9 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     return this.roles
       .risolvi('DOCENTE_MATERIA', variant, {
         regolaSupplente: GestioneSupplenti.ENTRAMBI,
-        ...(classeId === undefined ? {} : { classeId })
+        ...(item.classeId === undefined ? {} : { classeId: item.classeId }),
+        ...(item.specificita === undefined ? {} : { specifica: item.specificita }),
+        ...(item.kind === undefined ? {} : { kind: item.kind })
       })
       .map((e) => e.value);
   }

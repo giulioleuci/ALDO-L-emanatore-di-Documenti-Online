@@ -16,7 +16,8 @@ import { studentiDellaClasse } from '../context-engine/studenti';
 import { ValidationError } from '../../domain/errors/DomainError';
 import type {
   ITeachingAssignmentResolver,
-  TeachingAssignment
+  TeachingAssignment,
+  TeachingSlotKind
 } from '../ports/ITeachingAssignmentResolver';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 
@@ -24,6 +25,8 @@ export interface RisolviOptions {
   regolaSupplente?: GestioneSupplenti;
   /** Restricts an articulated subject role to the assignment owned by one partner class. */
   classeId?: string;
+  specifica?: string;
+  kind?: TeachingSlotKind;
 }
 
 interface RoleContext {
@@ -33,6 +36,8 @@ interface RoleContext {
   materiaCorrente: MateriaId | null;
   routingPolicy: RoutingPolicyValue;
   classeId: string | null;
+  specifica: string | null;
+  kind: TeachingSlotKind | null;
 }
 
 type RoleStrategy = (ctx: RoleContext) => Email[];
@@ -132,7 +137,9 @@ export class RisolutoreRuoliService {
       materiaCorrente:
         materiaRaw !== null && materiaRaw.trim() !== '' ? MateriaId.of(materiaRaw) : null,
       routingPolicy: routingPolicyByGestioneSupplenti[gestione],
-      classeId: options.classeId?.trim() || null
+      classeId: options.classeId?.trim() || null,
+      specifica: options.specifica?.trim() || null,
+      kind: options.kind ?? null
     };
   }
 
@@ -203,12 +210,17 @@ export class RisolutoreRuoliService {
 
   private docenteMateria(ctx: RoleContext): Email[] {
     if (ctx.materiaCorrente === null) return [];
+    const assignments = this.teachingAssignments.resolveMateria(
+      ctx.classe,
+      ctx.materiaCorrente,
+      ctx.data,
+      ctx.routingPolicy
+    );
     return this.routedEmails(
-      this.teachingAssignments.resolveMateria(
-        ctx.classe,
-        ctx.materiaCorrente,
-        ctx.data,
-        ctx.routingPolicy
+      assignments.filter(
+        (assignment) =>
+          (ctx.specifica === null || assignment.slot.specifica === ctx.specifica) &&
+          (ctx.kind === null || assignment.slot.kind === ctx.kind)
       ),
       ctx.classeId
     );

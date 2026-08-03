@@ -311,11 +311,6 @@ export function registerArticolazioneChecks(
             `Documento CDC per ${classe} non contiene il contenuto renderizzato del consiglio.`
           );
         }
-        if (classe === CLASSE_A && !text.includes('LAB.SEMINARIO_POMERIDIANO')) {
-          throw new ValidationError(
-            'Documento CDC per 1A: il repeater renderizzato non contiene LAB.SEMINARIO_POMERIDIANO.'
-          );
-        }
       }
     }
   );

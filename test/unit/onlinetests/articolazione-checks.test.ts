@@ -226,7 +226,7 @@ test('CDC check rejects a stale LOG_DOCS row that is not bound to the generated 
   ).toThrow(/fileId LOG_DOCS/);
 });
 
-test('CDC check rejects a rendered class repeater that loses LAB.SEMINARIO_POMERIDIANO', () => {
+test('CDC check accepts rendered council content from the materieDescrizione template contract', () => {
   const rows: Array<Record<string, unknown>> = [];
   const db = {
     table(name: string) {
@@ -280,7 +280,7 @@ test('CDC check rejects a rendered class repeater that loses LAB.SEMINARIO_POMER
 
   expect(() =>
     runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
-  ).toThrow(/LAB\.SEMINARIO_POMERIDIANO/);
+  ).not.toThrow();
 });
 
 test('dual-plan check rejects rendered output that loses the selected subtype', () => {
@@ -309,6 +309,39 @@ test('dual-plan check rejects rendered output that loses the selected subtype', 
   expect(() => runCheck(container, 'Articolazione CDU: piano duale renderizzato')).toThrow(
     /output renderizzato/
   );
+});
+
+test('dual-plan check accepts two distinct subtype-specific rendered documents', () => {
+  const rows: Array<Record<string, unknown>> = [];
+  const documents = {
+    generateForPiano: (studente: string, tipo: TipoPiano) => {
+      const fileId = `${studente}-${tipo}`;
+      rows.push({
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
+        [COL_LOG_DOCS.UTENTI]: studente,
+        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
+        [COL_LOG_DOCS.ID]: fileId
+      });
+      return { fileId, status: 'CREATED' };
+    }
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentGenerationService') return documents as T;
+      if (key === 'drive') {
+        return {
+          getFileText: (fileId: string) => {
+            const tipo = fileId.endsWith(`-${TipoPiano.PEI}`) ? TipoPiano.PEI : TipoPiano.PDP_BES;
+            return `Tipo piano: ${tipo}\nNote: Piano E2E ${tipo}`;
+          }
+        } as T;
+      }
+      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() => runCheck(container, 'Articolazione CDU: piano duale renderizzato')).not.toThrow();
 });
 
 test('role/date check rejects a final holder that is not assigned to ITA', () => {

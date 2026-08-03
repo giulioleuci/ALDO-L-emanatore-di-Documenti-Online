@@ -5,6 +5,11 @@ import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import { SessionActiveUserFacade } from '../infrastructure/facades/ActiveUserFacade';
 import { initAldo, PROP_MASTER_SPREADSHEET_ID } from '../config/Bootstrap';
+import { TABLE } from '../config/schema';
+import { ConfigurationError } from '../domain/errors/DomainError';
+import type { MasterConfig } from '../domain/entities/MasterConfig';
+import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
+import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { TestRunner, type OnlineTestReport } from './OnlineTestReport';
 import { SampleDatabaseBuilder, type ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
@@ -21,6 +26,7 @@ import { E2eSampleDatabaseBuilder, type E2eTemplateIds } from './E2eSampleDataba
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { GasArtifactFactory } from './GasArtifactFactory';
 import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
+import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { e2eActiveRepresentativesInterceptor } from './E2eActiveRepresentativesInterceptor';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 
@@ -226,4 +232,98 @@ export function runE2eScenarios(): void {
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).runE2eScenarios = runE2eScenarios;
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+
+/**
+ * Seams for the read-only articulation suite. Unlike {@link E2eTestDeps}, this
+ * entry point deliberately has no factories for spreadsheets, Drive artifacts,
+ * or the E2E fixture: it is intended to run against the MASTER already selected
+ * in ScriptProperties.
+ */
+export interface ArticolazioneTestDeps {
+  clock: () => Date;
+  properties: IPropertiesFacade;
+  initAldo: (now?: Date, props?: IPropertiesFacade) => ServiceContainer;
+  readMasterConfig: (masterId: string) => Pick<
+    MasterConfig,
+    'idSpreadsheet' | 'idCartellaRoot' | 'testMode'
+  >;
+  log: (message: string) => void;
+}
+
+/** Reads the currently selected MASTER through the same repository and SheetDB adapter as Bootstrap. */
+function readCurrentMasterConfig(
+  masterId: string
+): Pick<MasterConfig, 'idSpreadsheet' | 'idCartellaRoot' | 'testMode'> {
+  const logger = ServiceFactory.getLogger();
+  const masterDb = new SheetDbAdapter(
+    new DatabaseService(
+      masterId,
+      logger,
+      ServiceFactory.getUtils(),
+      ServiceFactory.getCacheService().getScriptCache(),
+      null,
+      { verifyTables: [TABLE.MASTER] }
+    )
+  );
+  return new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
+}
+
+/**
+ * Read-only verification entry point for the persisted articulated E2E fixture.
+ * It refuses an absent or non-test MASTER before bootstrapping ALDO, and never
+ * provisions or mutates an E2E database.
+ */
+export function executeArticolazioneScenarios(
+  overrides: Partial<ArticolazioneTestDeps> = {}
+): OnlineTestReport {
+  const clock = overrides.clock ?? ((): Date => new Date());
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const readMasterConfig = overrides.readMasterConfig ?? readCurrentMasterConfig;
+  const log =
+    overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
+  const masterSpreadsheetId = properties.get(PROP_MASTER_SPREADSHEET_ID);
+
+  if (masterSpreadsheetId === null || masterSpreadsheetId.trim() === '') {
+    throw new ConfigurationError(
+      `ScriptProperties.${PROP_MASTER_SPREADSHEET_ID} mancante: gli scenari articolazione richiedono un MASTER E2E esistente`
+    );
+  }
+
+  const master = readMasterConfig(masterSpreadsheetId);
+  if (!master.testMode) {
+    throw new ConfigurationError(
+      'Gli scenari articolazione rifiutano un MASTER con TEST_MODE diverso da true.'
+    );
+  }
+
+  const container = initAldoFn(clock(), properties);
+  const sampleSpreadsheetUrl = `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`;
+  const sample = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: '',
+    priorSampleSpreadsheetUrl: '',
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: '',
+    testMode: master.testMode
+  };
+
+  const runner = new TestRunner();
+  registerArticolazioneChecks(runner, container, sample);
+  const report = runner.report();
+  log(JSON.stringify(report));
+  return report;
+}
+
+/** GAS Run-dropdown entry point for the already-provisioned articulation fixture. */
+export function runArticolazioneScenarios(): void {
+  executeArticolazioneScenarios();
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+(globalThis as any).runArticolazioneScenarios = runArticolazioneScenarios;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

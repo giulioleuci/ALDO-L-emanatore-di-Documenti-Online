@@ -1,5 +1,10 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
-import { executeOnlineTests, dumpOnlineCoverage } from '../../../src/onlinetests/index';
+import {
+  executeArticolazioneScenarios,
+  executeOnlineTests,
+  dumpOnlineCoverage
+} from '../../../src/onlinetests/index';
+import { E2eSampleDatabaseBuilder } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import {
   CLASSE_BASE,
   CLASSE_PARTNER,
@@ -316,6 +321,50 @@ describe('executeOnlineTests', () => {
     });
 
     expect(activeUserEmail).toHaveBeenCalled();
+  });
+});
+
+describe('executeArticolazioneScenarios', () => {
+  it('rejects a missing MASTER pointer before ALDO initialization or E2E provisioning', () => {
+    const initAldo = jest.fn();
+    const build = jest.spyOn(E2eSampleDatabaseBuilder.prototype, 'build');
+
+    expect(() =>
+      executeArticolazioneScenarios({
+        properties: fakeProperties(null),
+        initAldo,
+        readMasterConfig: jest.fn(),
+        clock: () => NOW,
+        log: jest.fn()
+      })
+    ).toThrow(/MASTER_SPREADSHEET_ID.*mancante/i);
+
+    expect(initAldo).not.toHaveBeenCalled();
+    expect(build).not.toHaveBeenCalled();
+    build.mockRestore();
+  });
+
+  it('rejects a MASTER that is not a test database before ALDO initialization or E2E provisioning', () => {
+    const initAldo = jest.fn();
+    const build = jest.spyOn(E2eSampleDatabaseBuilder.prototype, 'build');
+
+    expect(() =>
+      executeArticolazioneScenarios({
+        properties: fakeProperties('UNSAFE_MASTER'),
+        initAldo,
+        readMasterConfig: () => ({
+          idSpreadsheet: 'PRODUCTION_DB',
+          idCartellaRoot: 'PRODUCTION_ROOT',
+          testMode: false
+        }),
+        clock: () => NOW,
+        log: jest.fn()
+      })
+    ).toThrow(/TEST_MODE/i);
+
+    expect(initAldo).not.toHaveBeenCalled();
+    expect(build).not.toHaveBeenCalled();
+    build.mockRestore();
   });
 });
 

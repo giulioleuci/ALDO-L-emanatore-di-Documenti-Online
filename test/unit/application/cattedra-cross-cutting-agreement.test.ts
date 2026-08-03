@@ -206,7 +206,8 @@ class MatrixSpreadsheetService {
     return {
       spreadsheetId: 'sheet-matrix',
       protectedCount: all.length,
-      protectedRangeIds: all.map((_, index) => index)
+      protectedRangeIds: all.map((_, index) => index),
+      replies: []
     };
   }
 }

@@ -10,7 +10,7 @@ function compileBestEffortProtectionContract(service: SpreadsheetService):
   return result.failures[0];
 }
 
-function compileProtectionRepliesContract(service: SpreadsheetService): unknown[] | undefined {
+function compileProtectionRepliesContract(service: SpreadsheetService): unknown[] {
   return service.protectRanges('spreadsheet-id', { range: 'Sheet1!A:A' }).replies;
 }
 

@@ -46,7 +46,8 @@ class FakeSpreadsheetService {
     return {
       spreadsheetId: 'sheet1',
       protectedCount: arr.length,
-      protectedRangeIds: arr.map((_, i) => i)
+      protectedRangeIds: arr.map((_, i) => i),
+      replies: []
     };
   }
 }

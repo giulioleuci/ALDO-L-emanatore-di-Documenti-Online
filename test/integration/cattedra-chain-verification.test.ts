@@ -288,7 +288,7 @@ test('sheet ACL: a .SPECIFICA-targeted VARIAZIONI_CATTEDRA row reroutes the INTE
     ): SpreadsheetProtectResult {
       const all = Array.isArray(requests) ? requests : [requests];
       this.protectCalls.push(...all);
-      return { spreadsheetId: 'sheet', protectedCount: all.length, protectedRangeIds: all.map((_, i) => i) };
+      return { spreadsheetId: 'sheet', protectedCount: all.length, protectedRangeIds: all.map((_, i) => i), replies: [] };
     }
   };
   new SheetMaterieConPermessiGeneratorStrategy(

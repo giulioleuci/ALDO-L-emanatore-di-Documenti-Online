@@ -308,7 +308,7 @@ export function registerEffectiveAssignmentConsumerChecks(
         { name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }
       ],
       protectRanges: (): SpreadsheetProtectResult => ({
-        spreadsheetId: 'header-sheet', protectedCount: 0, protectedRangeIds: []
+        spreadsheetId: 'header-sheet', protectedCount: 0, protectedRangeIds: [], replies: []
       })
     } as unknown as SpreadsheetService;
     const rendered: SheetColumnLayout[] = [];
@@ -497,7 +497,8 @@ export function registerEffectiveAssignmentConsumerChecks(
           return {
             spreadsheetId: 'matrix-sheet',
             protectedCount: requests.length,
-            protectedRangeIds: requests.map((_, index) => index)
+            protectedRangeIds: requests.map((_, index) => index),
+            replies: []
           };
         }
       } as unknown as SpreadsheetService;
@@ -680,7 +681,7 @@ export function registerEffectiveAssignmentConsumerChecks(
           getSheetInfo: (): SpreadsheetSheetInfo[] => [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }],
           protectRanges: (_spreadsheetId: string, input: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]): SpreadsheetProtectResult => {
             requests.push(...(Array.isArray(input) ? input : [input]));
-            return { spreadsheetId: 'matrix-sheet', protectedCount: requests.length, protectedRangeIds: requests.map((_, index) => index) };
+            return { spreadsheetId: 'matrix-sheet', protectedCount: requests.length, protectedRangeIds: requests.map((_, index) => index), replies: [] };
           }
         } as unknown as SpreadsheetService;
         const templates = {

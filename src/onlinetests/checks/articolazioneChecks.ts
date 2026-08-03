@@ -7,7 +7,8 @@ import type { EmailNotificationService } from '../../application/services/EmailN
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
-import { GestioneSupplenti } from '../../domain/value-objects/enums';
+import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
+import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import type { TestRunner } from '../OnlineTestReport';
 import {
@@ -17,11 +18,13 @@ import {
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
   CONF_DOC_ARTICOLATA,
+  CONF_DOC_PIANI,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_VERBALE,
   INDIRIZZO_E2E,
+  PIANO_DOPPIO_STUDENTE,
   e2eDocenteEmail,
   type E2eSampleDatabase
 } from '../E2eSampleDatabaseBuilder';
@@ -99,6 +102,9 @@ export function registerArticolazioneChecks(
       const after = afterSubstitution.focus.classe?.consiglioDiClasse ?? [];
       const seminar = current.find((docente) => docente.anagrafica.email === e2eDocenteEmail(18));
       const original = after.find((docente) => docente.anagrafica.email === e2eDocenteEmail(4));
+      const replacementAfterBoundary = after.find(
+        (docente) => docente.anagrafica.email === e2eDocenteEmail(18)
+      );
       const finalHolder = current.find(
         (docente) => docente.anagrafica.email === e2eDocenteEmail(16)
       );
@@ -112,7 +118,11 @@ export function registerArticolazioneChecks(
         !original.materie.some(
           (materia) => materia.sigla === 'LAB' && materia.specificita === 'SEMINARIO_POMERIDIANO'
         ) ||
-        finalHolder === undefined
+        replacementAfterBoundary !== undefined ||
+        finalHolder === undefined ||
+        !finalHolder.materie.some(
+          (materia) => materia.sigla === 'ITA' && materia.specificita === null
+        )
       ) {
         throw new ValidationError(
           'Risoluzione CDU articolazione: attesi supplente LAB.SEMINARIO_POMERIDIANO, titolare dopo il confine e titolare finale ITA.'
@@ -130,9 +140,16 @@ export function registerArticolazioneChecks(
       const classe = cdu.focus.classe;
       const council = classe?.consiglioDiClasse ?? [];
       const emails = council.map((docente) => docente.anagrafica.email);
+      let serialized: string;
+      try {
+        serialized = JSON.stringify(cdu);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'errore sconosciuto';
+        throw new ValidationError(`CDU articolazione non serializzabile: ${message}`);
+      }
 
       if (
-        JSON.stringify(cdu) === '' ||
+        serialized.trim() === '' ||
         new Set(emails).size !== emails.length ||
         council.some((docente) => docente.materieDescrizione.trim() === '') ||
         classe?.anagrafica.indirizzo.sigla !== INDIRIZZO_E2E ||
@@ -230,8 +247,17 @@ export function registerArticolazioneChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const db = container.get<TableDatabase>('db');
+      const classi = container.get<ClasseRepository>('classi');
       const documents = container.get<DocumentGenerationService>('documentGenerationService');
-      for (const classe of [CLASSE_C, CLASSE_C_PARTNER]) {
+      const drive = container.get<IDriveFacade>('drive');
+      const config = documentConfig(db, CONF_DOC_RIEPILOGO_FIRME_CDC);
+      const targets = classi
+        .filterPerGestioneArticolazione(classi.findAttive(), config.gestioneArticolazione)
+        .map((classe) => classe.id ?? '');
+      assertSameTargets('CONF_DOC CDC ARTICOLATA', targets, ARTICOLATA_TARGETS);
+
+      const generatedFiles = new Map<string, string>();
+      for (const classe of targets) {
         const result = documents.generateForClasse(
           ClasseId.of(classe),
           CONF_DOC_RIEPILOGO_FIRME_CDC
@@ -241,31 +267,90 @@ export function registerArticolazioneChecks(
             `Documento CDC per ${classe} non generato (status=${result.status})`
           );
         }
+        generatedFiles.set(classe, result.fileId);
       }
-      const generated = db
+      const generatedRows = db
         .table(TABLE.LOG_DOCS)
         .findAll()
-        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO_FIRME_CDC)
-        .map((row) => {
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO_FIRME_CDC);
+      assertSameTargets(
+        'LOG_DOCS CDC ARTICOLATA',
+        generatedRows.map((row) => {
           const classe = row[COL_LOG_DOCS.CLASSI];
           return typeof classe === 'string' ? classe : '';
-        });
-      assertSameTargets('LOG_DOCS CDC ARTICOLATA', generated, [CLASSE_C, CLASSE_C_PARTNER]);
+        }),
+        ARTICOLATA_TARGETS
+      );
+
+      for (const classe of targets) {
+        const row = generatedRows.find((candidate) => candidate[COL_LOG_DOCS.CLASSI] === classe);
+        const fileId = generatedFiles.get(classe);
+        const nome = row?.[COL_LOG_DOCS.NOME];
+        const link = row?.[COL_LOG_DOCS.LINK];
+        if (
+          row?.[COL_LOG_DOCS.TIPO] !== 'RIEPILOGO_FIRME_CDC' ||
+          typeof nome !== 'string' ||
+          nome.trim() === '' ||
+          typeof link !== 'string' ||
+          link.trim() === '' ||
+          fileId === undefined
+        ) {
+          throw new ValidationError(
+            `Documento CDC per ${classe} privo di metadata LOG_DOCS validi.`
+          );
+        }
+        const text = drive.getFileText(fileId);
+        if (
+          !text.includes(`Riepilogo firme del Consiglio di Classe ${classe}`) ||
+          !text.includes('Matematica') ||
+          /\{\{[^}]*\}\}/.test(text)
+        ) {
+          throw new ValidationError(
+            `Documento CDC per ${classe} non contiene il contenuto renderizzato del consiglio.`
+          );
+        }
+      }
     }
   );
 
-  runner.add('Articolazione CDU: specifica nel repeater', sample.sampleSpreadsheetUrl, () => {
-    const contextBuilder = container.get<ContextBuilder>('contextBuilder');
-    const cdu = classCdu(contextBuilder, CLASSE_A, new Date('2026-08-05'));
-    const seminar = (cdu.focus.classe?.consiglioDiClasse ?? []).find(
-      (docente) => docente.anagrafica.email === e2eDocenteEmail(18)
-    );
-    const hasSpecifica =
-      seminar?.materie.some(
-        (materia) => materia.sigla === 'LAB' && materia.specificita === 'SEMINARIO_POMERIDIANO'
-      ) ?? false;
-    if (!hasSpecifica) {
-      throw new ValidationError('Il repeater CDU ha perso la specifica LAB.SEMINARIO_POMERIDIANO.');
+  runner.add('Articolazione CDU: piano duale renderizzato', sample.sampleSpreadsheetUrl, () => {
+    const db = container.get<TableDatabase>('db');
+    const documents = container.get<DocumentGenerationService>('documentGenerationService');
+    const drive = container.get<IDriveFacade>('drive');
+    const generated = [TipoPiano.PEI, TipoPiano.PDP_BES].map((tipo) => ({
+      tipo,
+      result: documents.generateForPiano(PIANO_DOPPIO_STUDENTE, tipo, CONF_DOC_PIANI)
+    }));
+
+    if (generated.some(({ result }) => result.fileId === null)) {
+      throw new ValidationError('Piano duale: uno dei due sottotipi non ha prodotto un documento.');
     }
+    const fileIds = generated.map(({ result }) => result.fileId as string);
+    if (new Set(fileIds).size !== fileIds.length) {
+      throw new ValidationError('Piano duale: PEI e PDP_BES hanno riusato lo stesso file.');
+    }
+    for (const { tipo, result } of generated) {
+      const fileId = result.fileId as string;
+      const text = drive.getFileText(fileId);
+      if (!text.includes(`Tipo piano: ${tipo}`) || !text.includes(`Note: Piano E2E ${tipo}`)) {
+        throw new ValidationError(`Piano duale: output renderizzato non coerente per ${tipo}.`);
+      }
+    }
+    const rows = db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter(
+        (row) =>
+          row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI &&
+          row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE
+      );
+    assertSameTargets(
+      'Piano duale LOG_DOCS',
+      rows.map((row) => {
+        const subtype = row[COL_LOG_DOCS.SOTTOTIPO];
+        return typeof subtype === 'string' ? subtype : '';
+      }),
+      [TipoPiano.PEI, TipoPiano.PDP_BES]
+    );
   });
 }

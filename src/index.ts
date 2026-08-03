@@ -26,7 +26,6 @@ import {
 } from './presentation/Menu';
 import { GasUiFacade } from './infrastructure/facades/UiFacade';
 import { ScriptPropertiesFacade } from './infrastructure/facades/PropertiesFacade';
-import { runArticolazioneScenarios } from './onlinetests';
 
 export function aldoPing(): string {
   return 'ALDO OK';
@@ -76,7 +75,6 @@ export function resumeJob(): void {
 (globalThis as any).onOpen = onOpen;
 (globalThis as any).menu_avvioImportazioni = menu_avvioImportazioni;
 (globalThis as any).resumeJob = resumeJob;
-(globalThis as any).runArticolazioneScenarios = runArticolazioneScenarios;
 
 // Exposed for src/entrypoints/EntryPoints.ts (production split build, docs/superpowers/specs/2026-07-11-production-split-build-design.md):
 // that file calls these by name as ambient globals instead of importing them,

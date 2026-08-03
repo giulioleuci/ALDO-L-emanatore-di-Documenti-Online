@@ -19,23 +19,18 @@ jest.mock('../../src/infrastructure/facades/PropertiesFacade', () => ({
     set: jest.fn()
   }))
 }));
-jest.mock('../../src/onlinetests', () => ({ runArticolazioneScenarios: jest.fn() }));
-
 import { aldoPing, resumeJob, impostaMasterSpreadsheetId } from '../../src/index';
 import { initAldo, riprendiJobSospeso } from '../../src/config/Bootstrap';
 import { ScriptPropertiesFacade } from '../../src/infrastructure/facades/PropertiesFacade';
-import { runArticolazioneScenarios } from '../../src/onlinetests';
 
 test('aldoPing returns readiness string', () => {
   expect(aldoPing()).toBe('ALDO OK');
 });
 
-test('exposes runArticolazioneScenarios as a GAS global entry point', () => {
+test('does not expose runArticolazioneScenarios as a GAS global entry point', () => {
   const gasGlobal = globalThis as typeof globalThis & { runArticolazioneScenarios?: () => void };
 
-  expect(gasGlobal.runArticolazioneScenarios).toBeDefined();
-  gasGlobal.runArticolazioneScenarios!();
-  expect(runArticolazioneScenarios).toHaveBeenCalledTimes(1);
+  expect(gasGlobal.runArticolazioneScenarios).toBeUndefined();
 });
 
 describe('resumeJob', () => {

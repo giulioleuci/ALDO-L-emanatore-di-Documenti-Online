@@ -323,7 +323,3 @@ export function executeArticolazioneScenarios(
 export function runArticolazioneScenarios(): void {
   executeArticolazioneScenarios();
 }
-
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-(globalThis as any).runArticolazioneScenarios = runArticolazioneScenarios;
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

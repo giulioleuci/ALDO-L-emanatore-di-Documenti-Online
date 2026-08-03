@@ -30,7 +30,8 @@ import { GestioneSupplenti } from '../../domain/value-objects/enums';
  * resolved IRC and ALT actors merged by the `DOCENTI_IRC_ALT` role.
  */
 export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGeneratorStrategy {
-  private readonly projector = new CollectionProjector({ logger: new LoggerService() });
+  private readonly logger = new LoggerService();
+  private readonly projector = new CollectionProjector({ logger: this.logger });
 
   constructor(
     sheets: SpreadsheetService,
@@ -115,7 +116,13 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
-    if (requests.length > 0) this.sheets.protectRanges(fileId, requests);
+    if (requests.length === 0) return;
+    const result = this.sheets.protectRanges(fileId, requests, { onError: 'continue' });
+    for (const failure of result.failures ?? []) {
+      this.logger.warn(
+        `SHEET_CON_MATERIE_E_PERMESSI: protezione ${failure.request.range} non applicata — ${failure.message}`
+      );
+    }
   }
 
   /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */

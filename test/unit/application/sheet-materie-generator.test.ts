@@ -18,7 +18,12 @@ import type { MaterieGroups } from '../../../src/application/strategies/SheetMat
 
 class FakeSpreadsheetService {
   protectCalls: Array<{ range: string; description?: string; editors?: { users?: string[] } }> = [];
-  constructor(private readonly sheets: SpreadsheetSheetInfo[]) {}
+  protectOptions: SpreadsheetProtectOptions | undefined;
+  constructor(
+    private readonly sheets: SpreadsheetSheetInfo[],
+    private readonly protectionFailures: SpreadsheetProtectFailure[] = [],
+    private readonly returnsFailureList = true
+  ) {}
   getSheetInfo(): SpreadsheetSheetInfo[] {
     return this.sheets;
   }
@@ -39,15 +44,18 @@ class FakeSpreadsheetService {
   }
   protectRanges(
     _id: string,
-    requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]
-  ): SpreadsheetProtectResult {
+    requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[],
+    options?: SpreadsheetProtectOptions
+  ): SpreadsheetProtectResult | SpreadsheetProtectBestEffortResult {
     const arr = Array.isArray(requests) ? requests : [requests];
     this.protectCalls.push(...arr);
+    this.protectOptions = options;
     return {
       spreadsheetId: 'sheet1',
       protectedCount: arr.length,
       protectedRangeIds: arr.map((_, i) => i),
-      replies: []
+      replies: [],
+      ...(this.returnsFailureList ? { failures: this.protectionFailures } : {})
     };
   }
 }
@@ -263,6 +271,57 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
 });
 
 describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
+  test('keeps the rendered sheet when a legacy protection result has no failures field', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '5A');
+    const sheets = new FakeSpreadsheetService(sheetInfo(), [], false);
+    const templates = new FakeTemplateEngine();
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates,
+      composeRisolutoreRuoli(db)
+    );
+
+    expect(() =>
+      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
+    ).not.toThrow();
+
+    expect(templates.renderedSheets).toHaveLength(1);
+  });
+
+  test('keeps the rendered sheet when a returned range protection failure is continued', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '5A');
+    const sheets = new FakeSpreadsheetService(sheetInfo(), [
+      {
+        request: { range: 'Sheet1!B:B', editors: { users: ['rossi@school.it'] } },
+        message: 'Invalid protected-range editor'
+      }
+    ]);
+    const templates = new FakeTemplateEngine();
+    const warn = jest.spyOn(LoggerService.prototype, 'warn');
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates,
+      composeRisolutoreRuoli(db)
+    );
+
+    expect(() =>
+      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
+    ).not.toThrow();
+
+    expect(templates.renderedSheets).toHaveLength(1);
+    expect(sheets.protectOptions).toEqual({ onError: 'continue' });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Sheet1!B:B')
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid protected-range editor')
+    );
+  });
+
   test('protects each subject column for its resolved teacher(s) + the coordinator, skipping group-label columns', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');

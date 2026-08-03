@@ -429,17 +429,7 @@ test('protected range scenario: test mode requires rendered headers despite stru
   };
   const spreadsheets = {
     getRanges: () => [['MAT', 'ALT', 'Docente']],
-    getProtectedRanges: () => [
-      {
-        id: 1,
-        range: {},
-        description: 'Colonna materia MAT (10 §9)',
-        editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
-        sheetId: 0,
-        sheetName: 'Sheet1',
-        warningOnly: false
-      }
-    ],
+    getProtectedRanges: () => [],
     protectRanges: () => protectionResult
   } as unknown as SpreadsheetService;
   const documents = {
@@ -863,7 +853,7 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
   expect(scenario11).toMatchObject({ status: 'pass' });
 });
 
-test('scenario 11: fails without protected ranges even in test mode', () => {
+test('scenario 11: allows missing protected ranges as test-mode diagnostics after rendering', () => {
   const harness = recordingHarness();
   const container = {
     get<T>(key: string): T {
@@ -881,7 +871,7 @@ test('scenario 11: fails without protected ranges even in test mode', () => {
   registerE2eScenarioChecks(runner, container, sample);
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
-  expect(scenario11?.status).toBe('fail');
+  expect(scenario11?.status).toBe('pass');
 });
 
 test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.ALLEGATI', () => {

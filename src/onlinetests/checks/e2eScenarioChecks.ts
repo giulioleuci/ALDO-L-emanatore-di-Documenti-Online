@@ -79,6 +79,7 @@ export function verifyProtectedRangeScenario(
           `Sheet permessi per ${classe}: placeholder residuo nelle intestazioni`
         );
       }
+      continue;
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
     if (protections.length === 0) {

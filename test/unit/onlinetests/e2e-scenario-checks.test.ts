@@ -16,9 +16,12 @@ import {
   CONF_MAIL_STATIC_ALLEGATO,
   CONF_DOC_PIANI,
   CONF_DOC_ARTICOLATA,
+  CONF_DOC_RIEPILOGO_FIRME_CDC,
   PIANO_DOPPIO_STUDENTE,
   PDP_BES_3C,
   ALL_CLASSI_E2E,
+  CLASSE_A,
+  CLASSE_B,
   CLASSE_C,
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER
@@ -105,11 +108,19 @@ function recordingHarness(
           }
         }
       }
+      const fileId = `${configId}-${classe.value}`;
       rows.push({
+        [COL_LOG_DOCS.ID]: fileId,
         [COL_LOG_DOCS.ID_GEN]: configId,
-        [COL_LOG_DOCS.TIPO]: configId === 'E2E_VERBALE' ? 'VERBALE' : configId,
+        [COL_LOG_DOCS.TIPO]:
+          configId === 'E2E_VERBALE'
+            ? 'VERBALE'
+            : configId === CONF_DOC_RIEPILOGO_FIRME_CDC
+              ? 'RIEPILOGO_FIRME_CDC'
+              : configId,
         [COL_LOG_DOCS.CLASSI]: classe.value,
         [COL_LOG_DOCS.MATERIE]: configId === 'E2E_VERBALE' ? 'MATE' : '',
+        [COL_LOG_DOCS.NOME]: `${configId} ${classe.value}`,
         [COL_LOG_DOCS.LINK]: `https://example.test/${configId}/${classe.value}`
       });
       if (configId === 'E2E_VERBALE') {
@@ -118,7 +129,6 @@ function recordingHarness(
           [COL_LOG_FOLD.MATERIE]: 'MATE'
         });
       }
-      const fileId = `${configId}-${classe.value}`;
       if (configId === CONF_DOC_ARTICOLATA) {
         // Testo rappresentativo di quello REALMENTE reso dal template
         // DOC_ARTICOLATA_PARAGRAPHS sul fixture e2e: nomi docente in Title Case
@@ -136,6 +146,10 @@ function recordingHarness(
           'Verdi Alessandro (Liceo Scientifico (E2E))',
           'Ferrari Elena (Liceo Scientifico (E2E))'
         ].join(' ');
+      }
+      if (configId === CONF_DOC_RIEPILOGO_FIRME_CDC) {
+        planTexts[fileId] =
+          `Riepilogo firme del Consiglio di Classe ${classe.value} Matematica`;
       }
       return { fileId, status: 'CREATED' };
     },
@@ -591,6 +605,20 @@ test('scenario 10b generates the ARTICOLATA document for both partners, never th
     [CLASSE_C, CLASSE_C_PARTNER].sort()
   );
   expect(harness.classGenerationTargets(CONF_DOC_ARTICOLATA)).not.toContain(CLASSE_C_PARENT);
+});
+
+test('E2E phase persists CDC summaries for plain classes and articulated partners, never the parent', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  expect(harness.classGenerationTargets(CONF_DOC_RIEPILOGO_FIRME_CDC).sort()).toEqual(
+    [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].sort()
+  );
+  expect(harness.classGenerationTargets(CONF_DOC_RIEPILOGO_FIRME_CDC)).not.toContain(
+    CLASSE_C_PARENT
+  );
 });
 
 test('scenario 12 fails when LOG_MAIL.ALLEGATI records an unrequested real file attachment', () => {

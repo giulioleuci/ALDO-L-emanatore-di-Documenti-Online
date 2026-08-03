@@ -2,7 +2,6 @@ import type { ServiceContainer } from '../../config/ServiceContainer';
 import { COL_CONF_DOC, COL_LOG_DOCS, TABLE } from '../../config/schema';
 import { ContextBuilder } from '../../application/context-engine/ContextBuilder';
 import { recipe } from '../../application/context-engine/Recipe';
-import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailNotificationService } from '../../application/services/EmailNotificationService';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ValidationError } from '../../domain/errors/DomainError';
@@ -248,7 +247,6 @@ export function registerArticolazioneChecks(
     () => {
       const db = container.get<TableDatabase>('db');
       const classi = container.get<ClasseRepository>('classi');
-      const documents = container.get<DocumentGenerationService>('documentGenerationService');
       const drive = container.get<IDriveFacade>('drive');
       const config = documentConfig(db, CONF_DOC_RIEPILOGO_FIRME_CDC);
       const targets = classi
@@ -256,19 +254,6 @@ export function registerArticolazioneChecks(
         .map((classe) => classe.id ?? '');
       assertSameTargets('CONF_DOC CDC ARTICOLATA', targets, ARTICOLATA_TARGETS);
 
-      const generatedFiles = new Map<string, string>();
-      for (const classe of targets) {
-        const result = documents.generateForClasse(
-          ClasseId.of(classe),
-          CONF_DOC_RIEPILOGO_FIRME_CDC
-        );
-        if (result.fileId === null) {
-          throw new ValidationError(
-            `Documento CDC per ${classe} non generato (status=${result.status})`
-          );
-        }
-        generatedFiles.set(classe, result.fileId);
-      }
       const generatedRows = db
         .table(TABLE.LOG_DOCS)
         .findAll()
@@ -284,18 +269,17 @@ export function registerArticolazioneChecks(
 
       for (const classe of targets) {
         const row = generatedRows.find((candidate) => candidate[COL_LOG_DOCS.CLASSI] === classe);
-        const fileId = generatedFiles.get(classe);
-        const persistedFileId = row?.[COL_LOG_DOCS.ID];
+        const fileId = row?.[COL_LOG_DOCS.ID];
         const nome = row?.[COL_LOG_DOCS.NOME];
         const link = row?.[COL_LOG_DOCS.LINK];
         if (
-          persistedFileId !== fileId ||
+          typeof fileId !== 'string' ||
+          fileId.trim() === '' ||
           row?.[COL_LOG_DOCS.TIPO] !== 'RIEPILOGO_FIRME_CDC' ||
           typeof nome !== 'string' ||
           nome.trim() === '' ||
           typeof link !== 'string' ||
-          link.trim() === '' ||
-          fileId === undefined
+          link.trim() === ''
         ) {
           throw new ValidationError(
             `Documento CDC per ${classe} privo di fileId LOG_DOCS o metadata validi.`
@@ -317,27 +301,7 @@ export function registerArticolazioneChecks(
 
   runner.add('Articolazione CDU: piano duale renderizzato', sample.sampleSpreadsheetUrl, () => {
     const db = container.get<TableDatabase>('db');
-    const documents = container.get<DocumentGenerationService>('documentGenerationService');
     const drive = container.get<IDriveFacade>('drive');
-    const generated = [TipoPiano.PEI, TipoPiano.PDP_BES].map((tipo) => ({
-      tipo,
-      result: documents.generateForPiano(PIANO_DOPPIO_STUDENTE, tipo, CONF_DOC_PIANI)
-    }));
-
-    if (generated.some(({ result }) => result.fileId === null)) {
-      throw new ValidationError('Piano duale: uno dei due sottotipi non ha prodotto un documento.');
-    }
-    const fileIds = generated.map(({ result }) => result.fileId as string);
-    if (new Set(fileIds).size !== fileIds.length) {
-      throw new ValidationError('Piano duale: PEI e PDP_BES hanno riusato lo stesso file.');
-    }
-    for (const { tipo, result } of generated) {
-      const fileId = result.fileId as string;
-      const text = drive.getFileText(fileId);
-      if (!text.includes(`Tipo piano: ${tipo}`) || !text.includes(`Note: Piano E2E ${tipo}`)) {
-        throw new ValidationError(`Piano duale: output renderizzato non coerente per ${tipo}.`);
-      }
-    }
     const rows = db
       .table(TABLE.LOG_DOCS)
       .findAll()
@@ -354,5 +318,23 @@ export function registerArticolazioneChecks(
       }),
       [TipoPiano.PEI, TipoPiano.PDP_BES]
     );
+
+    const persisted = [TipoPiano.PEI, TipoPiano.PDP_BES].map((tipo) => {
+      const row = rows.find((candidate) => candidate[COL_LOG_DOCS.SOTTOTIPO] === tipo);
+      const fileId = row?.[COL_LOG_DOCS.ID];
+      if (typeof fileId !== 'string' || fileId.trim() === '') {
+        throw new ValidationError(`Piano duale: LOG_DOCS.ID mancante per ${tipo}.`);
+      }
+      return { tipo, fileId };
+    });
+    if (new Set(persisted.map(({ fileId }) => fileId)).size !== persisted.length) {
+      throw new ValidationError('Piano duale: PEI e PDP_BES hanno riusato lo stesso file.');
+    }
+    for (const { tipo, fileId } of persisted) {
+      const text = drive.getFileText(fileId);
+      if (!text.includes(`Tipo piano: ${tipo}`) || !text.includes(`Note: Piano E2E ${tipo}`)) {
+        throw new ValidationError(`Piano duale: output renderizzato non coerente per ${tipo}.`);
+      }
+    }
   });
 }

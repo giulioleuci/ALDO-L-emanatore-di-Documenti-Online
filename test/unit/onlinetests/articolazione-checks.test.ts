@@ -11,7 +11,8 @@ import {
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
   CONF_DOC_PIANI,
-  CONF_DOC_RIEPILOGO_FIRME_CDC
+  CONF_DOC_RIEPILOGO_FIRME_CDC,
+  PIANO_DOPPIO_STUDENTE
 } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
 
@@ -66,6 +67,70 @@ const sample: E2eSampleDatabase & { testMode: boolean } = {
   testMode: true
 };
 
+function persistedArtifactContainer(): {
+  container: ServiceContainer;
+  rows: Array<Record<string, unknown>>;
+} {
+  const rows: Array<Record<string, unknown>> = [
+    ...[CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((classe) => ({
+      [COL_LOG_DOCS.ID]: `cdc-${classe}`,
+      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_RIEPILOGO_FIRME_CDC,
+      [COL_LOG_DOCS.CLASSI]: classe,
+      [COL_LOG_DOCS.TIPO]: 'RIEPILOGO_FIRME_CDC',
+      [COL_LOG_DOCS.NOME]: `CDC ${classe}`,
+      [COL_LOG_DOCS.LINK]: `https://example.test/cdc-${classe}`
+    })),
+    ...[TipoPiano.PEI, TipoPiano.PDP_BES].map((tipo) => ({
+      [COL_LOG_DOCS.ID]: `piano-${tipo}`,
+      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
+      [COL_LOG_DOCS.UTENTI]: PIANO_DOPPIO_STUDENTE,
+      [COL_LOG_DOCS.SOTTOTIPO]: tipo
+    }))
+  ];
+  const db = {
+    table(name: string) {
+      if (name === TABLE.CONF_DOC) {
+        return {
+          findAll: () => [
+            {
+              [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
+              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA'
+            }
+          ]
+        };
+      }
+      return { findAll: () => rows };
+    }
+  };
+  const classi = {
+    findAttive: () =>
+      [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id })),
+    filterPerGestioneArticolazione: () =>
+      [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id }))
+  };
+  const drive = {
+    getFileText(fileId: string) {
+      if (fileId.startsWith('cdc-')) {
+        return `Riepilogo firme del Consiglio di Classe ${fileId.slice(4)} Matematica`;
+      }
+      const tipo = fileId.slice('piano-'.length);
+      return `Tipo piano: ${tipo}\nNote: Piano E2E ${tipo}`;
+    }
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'db') return db as T;
+      if (key === 'classi') return classi as T;
+      if (key === 'drive') return drive as T;
+      if (key === 'documentGenerationService') {
+        throw new Error('read-only verification requested documentGenerationService');
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+  return { container, rows };
+}
+
 test('registers the articulation checks only for a TEST_MODE sample', () => {
   const runner = new RecordingRunner();
 
@@ -119,49 +184,26 @@ test('registers only a TEST_MODE guard failure for an unsafe sample', () => {
   ]);
 });
 
-test('CDC check rejects a generated partner document without rendered council content', () => {
-  const rows: Array<Record<string, unknown>> = [];
-  const db = {
-    table(name: string) {
-      if (name === TABLE.CONF_DOC) {
-        return {
-          findAll: () => [
-            {
-              [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA'
-            }
-          ]
-        };
-      }
-      return { findAll: () => rows };
-    }
-  };
-  const classi = {
-    findAttive: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id })),
-    filterPerGestioneArticolazione: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id }))
-  };
-  const documents = {
-    generateForClasse: (classe: { value: string }) => {
-      rows.push({
-        [COL_LOG_DOCS.ID]: `cdc-${classe.value}`,
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-        [COL_LOG_DOCS.CLASSI]: classe.value,
-        [COL_LOG_DOCS.TIPO]: 'RIEPILOGO_FIRME_CDC',
-        [COL_LOG_DOCS.NOME]: `CDC ${classe.value}`,
-        [COL_LOG_DOCS.LINK]: `https://example.test/${classe.value}`
-      });
-      return { fileId: `cdc-${classe.value}`, status: 'CREATED' };
-    }
-  };
+test('artifact verification is read-only and repeatable over persisted LOG_DOCS fixtures', () => {
+  const { container, rows } = persistedArtifactContainer();
+  const before = JSON.stringify(rows);
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    expect(() =>
+      runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
+    ).not.toThrow();
+    expect(() => runCheck(container, 'Articolazione CDU: piano duale renderizzato')).not.toThrow();
+  }
+
+  expect(JSON.stringify(rows)).toBe(before);
+});
+
+test('CDC check rejects persisted partner content without the rendered council', () => {
+  const base = persistedArtifactContainer();
   const container = {
     get<T>(key: string): T {
-      if (key === 'db') return db as T;
-      if (key === 'classi') return classi as T;
-      if (key === 'documentGenerationService') return documents as T;
       if (key === 'drive') return { getFileText: () => 'Riepilogo firme' } as T;
-      throw new Error(`Unexpected dependency: ${key}`);
+      return base.container.get<T>(key);
     }
   } as ServiceContainer;
 
@@ -170,139 +212,27 @@ test('CDC check rejects a generated partner document without rendered council co
   ).toThrow(/contenuto renderizzato/);
 });
 
-test('CDC check rejects a stale LOG_DOCS row that is not bound to the generated file', () => {
-  const rows: Array<Record<string, unknown>> = [];
-  const db = {
-    table(name: string) {
-      if (name === TABLE.CONF_DOC) {
-        return {
-          findAll: () => [
-            {
-              [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA'
-            }
-          ]
-        };
-      }
-      return { findAll: () => rows };
-    }
-  };
-  const classi = {
-    findAttive: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id })),
-    filterPerGestioneArticolazione: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id }))
-  };
-  const documents = {
-    generateForClasse: (classe: { value: string }) => {
-      rows.push({
-        [COL_LOG_DOCS.ID]: `stale-${classe.value}`,
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-        [COL_LOG_DOCS.CLASSI]: classe.value,
-        [COL_LOG_DOCS.TIPO]: 'RIEPILOGO_FIRME_CDC',
-        [COL_LOG_DOCS.NOME]: `CDC ${classe.value}`,
-        [COL_LOG_DOCS.LINK]: `https://example.test/stale-${classe.value}`
-      });
-      return { fileId: `cdc-${classe.value}`, status: 'CREATED' };
-    }
-  };
-  const container = {
-    get<T>(key: string): T {
-      if (key === 'db') return db as T;
-      if (key === 'classi') return classi as T;
-      if (key === 'documentGenerationService') return documents as T;
-      if (key === 'drive') {
-        return {
-          getFileText: (fileId: string) =>
-            `Riepilogo firme del Consiglio di Classe ${fileId.replace('cdc-', '')} Matematica`
-        } as T;
-      }
-      throw new Error(`Unexpected dependency: ${key}`);
-    }
-  } as ServiceContainer;
+test('CDC check rejects a persisted LOG_DOCS row without a file ID', () => {
+  const { container, rows } = persistedArtifactContainer();
+  const row = rows.find(
+    (candidate) =>
+      candidate[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO_FIRME_CDC &&
+      candidate[COL_LOG_DOCS.CLASSI] === CLASSE_C
+  );
+  if (row === undefined) throw new Error('Missing CDC fixture row');
+  row[COL_LOG_DOCS.ID] = '';
 
   expect(() =>
     runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
   ).toThrow(/fileId LOG_DOCS/);
 });
 
-test('CDC check accepts rendered council content from the materieDescrizione template contract', () => {
-  const rows: Array<Record<string, unknown>> = [];
-  const db = {
-    table(name: string) {
-      if (name === TABLE.CONF_DOC) {
-        return {
-          findAll: () => [
-            {
-              [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA'
-            }
-          ]
-        };
-      }
-      return { findAll: () => rows };
-    }
-  };
-  const classi = {
-    findAttive: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id })),
-    filterPerGestioneArticolazione: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id }))
-  };
-  const documents = {
-    generateForClasse: (classe: { value: string }) => {
-      const fileId = `cdc-${classe.value}`;
-      rows.push({
-        [COL_LOG_DOCS.ID]: fileId,
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-        [COL_LOG_DOCS.CLASSI]: classe.value,
-        [COL_LOG_DOCS.TIPO]: 'RIEPILOGO_FIRME_CDC',
-        [COL_LOG_DOCS.NOME]: `CDC ${classe.value}`,
-        [COL_LOG_DOCS.LINK]: `https://example.test/${classe.value}`
-      });
-      return { fileId, status: 'CREATED' };
-    }
-  };
-  const container = {
-    get<T>(key: string): T {
-      if (key === 'db') return db as T;
-      if (key === 'classi') return classi as T;
-      if (key === 'documentGenerationService') return documents as T;
-      if (key === 'drive') {
-        return {
-          getFileText: (fileId: string) =>
-            `Riepilogo firme del Consiglio di Classe ${fileId.replace('cdc-', '')} Matematica`
-        } as T;
-      }
-      throw new Error(`Unexpected dependency: ${key}`);
-    }
-  } as ServiceContainer;
-
-  expect(() =>
-    runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
-  ).not.toThrow();
-});
-
 test('dual-plan check rejects rendered output that loses the selected subtype', () => {
-  const rows: Array<Record<string, unknown>> = [];
-  const documents = {
-    generateForPiano: (studente: string, tipo: TipoPiano) => {
-      const fileId = `${studente}-${tipo}`;
-      rows.push({
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
-        [COL_LOG_DOCS.UTENTI]: studente,
-        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
-        [COL_LOG_DOCS.ID]: fileId
-      });
-      return { fileId, status: 'CREATED' };
-    }
-  };
+  const base = persistedArtifactContainer();
   const container = {
     get<T>(key: string): T {
-      if (key === 'documentGenerationService') return documents as T;
       if (key === 'drive') return { getFileText: () => 'Tipo piano: WRONG' } as T;
-      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
-      throw new Error(`Unexpected dependency: ${key}`);
+      return base.container.get<T>(key);
     }
   } as ServiceContainer;
 
@@ -311,37 +241,14 @@ test('dual-plan check rejects rendered output that loses the selected subtype', 
   );
 });
 
-test('dual-plan check accepts two distinct subtype-specific rendered documents', () => {
-  const rows: Array<Record<string, unknown>> = [];
-  const documents = {
-    generateForPiano: (studente: string, tipo: TipoPiano) => {
-      const fileId = `${studente}-${tipo}`;
-      rows.push({
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
-        [COL_LOG_DOCS.UTENTI]: studente,
-        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
-        [COL_LOG_DOCS.ID]: fileId
-      });
-      return { fileId, status: 'CREATED' };
-    }
-  };
-  const container = {
-    get<T>(key: string): T {
-      if (key === 'documentGenerationService') return documents as T;
-      if (key === 'drive') {
-        return {
-          getFileText: (fileId: string) => {
-            const tipo = fileId.endsWith(`-${TipoPiano.PEI}`) ? TipoPiano.PEI : TipoPiano.PDP_BES;
-            return `Tipo piano: ${tipo}\nNote: Piano E2E ${tipo}`;
-          }
-        } as T;
-      }
-      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
-      throw new Error(`Unexpected dependency: ${key}`);
-    }
-  } as ServiceContainer;
+test('dual-plan check rejects persisted subtypes that share one file ID', () => {
+  const { container, rows } = persistedArtifactContainer();
+  const planRows = rows.filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI);
+  planRows[1]![COL_LOG_DOCS.ID] = planRows[0]![COL_LOG_DOCS.ID];
 
-  expect(() => runCheck(container, 'Articolazione CDU: piano duale renderizzato')).not.toThrow();
+  expect(() => runCheck(container, 'Articolazione CDU: piano duale renderizzato')).toThrow(
+    /stesso file/
+  );
 });
 
 test('role/date check rejects a final holder that is not assigned to ITA', () => {

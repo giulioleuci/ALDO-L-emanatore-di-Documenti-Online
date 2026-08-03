@@ -23,6 +23,7 @@ import {
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
   CONF_DOC_ARTICOLATA,
+  CONF_DOC_RIEPILOGO_FIRME_CDC,
   CONF_DOC_SHEET_PERMESSI,
   CONF_DOC_PIANO_LAVORO,
   CONF_DOC_PIANI,
@@ -546,6 +547,62 @@ export function registerE2eScenarioChecks(
           throw new ValidationError(
             `Documento complesso classe articolata per ${gruppo} non ha un LOG_DOCS.LINK persistito`
           );
+        }
+      }
+    }
+  );
+
+  runner.add(
+    'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const drive = container.get<IDriveFacade>('drive');
+      const targets = [
+        ...ALL_CLASSI_E2E.filter((classe) => classe !== CLASSE_C_PARENT),
+        CLASSE_C,
+        CLASSE_C_PARTNER
+      ];
+      for (const classe of targets) {
+        const { fileId, status } = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_RIEPILOGO_FIRME_CDC
+        );
+        if (fileId === null) {
+          throw new ValidationError(
+            `Generazione riepilogo firme CDC per ${classe} non ha prodotto un fileId (status=${status})`
+          );
+        }
+        const text = drive.getFileText(fileId);
+        if (
+          !text.includes(`Riepilogo firme del Consiglio di Classe ${classe}`) ||
+          !text.includes('Matematica') ||
+          /\{\{[^}]*\}\}/.test(text)
+        ) {
+          throw new ValidationError(
+            `Riepilogo firme CDC per ${classe} non contiene il consiglio renderizzato atteso`
+          );
+        }
+      }
+
+      const rows = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO_FIRME_CDC);
+      const persistedTargets = rows.map((row) => String(row[COL_LOG_DOCS.CLASSI] ?? '')).sort();
+      if (JSON.stringify(persistedTargets) !== JSON.stringify([...targets].sort())) {
+        throw new ValidationError(
+          `Riepilogo firme CDC: target LOG_DOCS attesi ${targets.join(', ')}, ricevuti ${persistedTargets.join(', ')}`
+        );
+      }
+      for (const row of rows) {
+        if (
+          typeof row[COL_LOG_DOCS.ID] !== 'string' ||
+          String(row[COL_LOG_DOCS.ID]).trim() === '' ||
+          row[COL_LOG_DOCS.TIPO] !== 'RIEPILOGO_FIRME_CDC' ||
+          String(row[COL_LOG_DOCS.NOME] ?? '').trim() === '' ||
+          String(row[COL_LOG_DOCS.LINK] ?? '').trim() === ''
+        ) {
+          throw new ValidationError('Riepilogo firme CDC: metadata LOG_DOCS incompleti');
         }
       }
     }

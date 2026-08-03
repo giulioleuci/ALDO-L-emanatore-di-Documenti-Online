@@ -19301,6 +19301,37 @@ class SpreadsheetGridManager {
         }
       };
     });
+    if (options.onError === 'continue') {
+      const replies = [];
+      const protectedRangeIds = [];
+      const failures = [];
+      requests.forEach((request, index) => {
+        try {
+          const result = this.facade._executeWithRetry(() => Sheets.Spreadsheets.batchUpdate({
+            requests: [request]
+          }, spreadsheetId), {
+            spreadsheetId,
+            requestCount: 1
+          }, 3);
+          const reply = result.replies[0];
+          replies.push(reply);
+          protectedRangeIds.push(reply.addProtectedRange.protectedRange.protectedRangeId);
+        } catch (error) {
+          failures.push({
+            request: requestsArray[index],
+            message: error && error.message || String(error)
+          });
+        }
+      });
+      this._logger.info(`Successfully created ${protectedRangeIds.length} protected range(s)`);
+      return {
+        spreadsheetId,
+        protectedCount: protectedRangeIds.length,
+        protectedRangeIds,
+        replies,
+        failures
+      };
+    }
     const result = this.facade._executeWithRetry(() => Sheets.Spreadsheets.batchUpdate({
       requests
     }, spreadsheetId), {

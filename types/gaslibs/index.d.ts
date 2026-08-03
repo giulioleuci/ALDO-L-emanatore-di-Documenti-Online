@@ -1119,6 +1119,17 @@ declare global {
     protectedCount: number;
     protectedRangeIds: number[];
   }
+  interface SpreadsheetProtectFailure {
+    request: SpreadsheetProtectRequest;
+    message: string;
+  }
+  interface SpreadsheetProtectBestEffortResult extends SpreadsheetProtectResult {
+    failures: SpreadsheetProtectFailure[];
+  }
+  interface SpreadsheetProtectOptions {
+    globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean };
+    onError?: 'continue';
+  }
   interface SpreadsheetProtectedRange {
     id: number;
     range: unknown;
@@ -1180,9 +1191,12 @@ declare global {
     protectRanges(
       spreadsheetId: string,
       requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[],
-      options?: {
-        globalEditors?: { users?: string[]; groups?: string[]; domainUsersCanEdit?: boolean };
-      }
+      options: SpreadsheetProtectOptions & { onError: 'continue' }
+    ): SpreadsheetProtectBestEffortResult;
+    protectRanges(
+      spreadsheetId: string,
+      requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[],
+      options?: SpreadsheetProtectOptions
     ): SpreadsheetProtectResult;
     /** Real read-back of protected ranges (Advanced Sheets API `spreadsheets.get`, fields-scoped). Optional `sheetName` filters to a single tab. */
     getProtectedRanges(

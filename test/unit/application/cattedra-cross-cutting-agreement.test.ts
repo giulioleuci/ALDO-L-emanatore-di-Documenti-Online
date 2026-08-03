@@ -420,9 +420,9 @@ describe('complete effective-assignment acceptance matrix', () => {
     expect(documentAclRecipients).toEqual(expectedAll);
     expect(sheetAclRecipients).toEqual(expectedAll);
     const groups = templateEngine.sheetContextFor('matrix-sheet')?.['materieColonne'] as {
-      group1: Array<{ sigla: string; roles?: string[]; classeId?: string }>;
-      group2?: Array<{ sigla: string; roles?: string[]; classeId?: string }>;
-      group3?: Array<{ sigla: string; roles?: string[]; classeId?: string }>;
+      group1: Array<{ sigla: string; specificita?: string; roles?: string[]; classeId?: string }>;
+      group2?: Array<{ sigla: string; specificita?: string; roles?: string[]; classeId?: string }>;
+      group3?: Array<{ sigla: string; specificita?: string; roles?: string[]; classeId?: string }>;
     };
     const columns = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
     expect(sheets.protectCalls).toHaveLength(columns.length);
@@ -434,6 +434,8 @@ describe('complete effective-assignment acceptance matrix', () => {
       const expectedEditors = sorted(
         [...coordinators, ...assignments.flatMap((assignment) =>
           subjects.includes(assignment.slot.materia.value) &&
+          (column.specificita === undefined ||
+            assignment.slot.specifica === column.specificita) &&
           (column.classeId === undefined || assignment.classeId.value === column.classeId)
             ? assignment.routing.primary.flatMap((docente) => (docente.id === null ? [] : [docente.id]))
             : []

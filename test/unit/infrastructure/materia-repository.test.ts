@@ -89,7 +89,7 @@ test('findByIdCached + caching (06 §Caching)', () => {
   const db = new FakeDatabase(fixtureTables());
   const r = new MateriaRepository(db);
   expect(r.findByIdCached(MateriaId.of('MATE'))?.sintesi).toBe('Matematica');
-  expect(r.findAllCached()).toHaveLength(4); // MATE, FISI, IRC, ALT
+  expect(r.findAllCached()).toHaveLength(7); // MATE, FISI, IRC, ALT, LAB, LAB.GRUPPO_A, LAB.GRUPPO_B
   db.table('MATERIE').insert({ ID: 'STOR', NOME: 'Storia', SINTESI: 'Storia', ESAME_CFG: null });
-  expect(r.findAllCached()).toHaveLength(4); // cache held
+  expect(r.findAllCached()).toHaveLength(7); // cache held
 });

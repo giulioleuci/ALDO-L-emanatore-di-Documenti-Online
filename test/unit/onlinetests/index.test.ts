@@ -61,7 +61,8 @@ describe('structured online entry-point reports', () => {
     expect(output).toContain(
       '🚀 [INIT] AVVIO JOB: online_tests (Tipo: ONLINE_TEST_SUITE)'
     );
-    expect(output).toContain('Online test report in 1000ms');
+    expect(output).toContain('Online test report:');
+    expect(output).toContain('(COMPLETED in 1000ms)');
     expect(output).toContain("🏁 [COMPLETED] Job 'online_tests' completed successfully");
     expect(logSpy).not.toHaveBeenCalledWith(JSON.stringify(expected));
   });

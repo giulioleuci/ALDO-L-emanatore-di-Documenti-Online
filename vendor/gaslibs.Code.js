@@ -2663,7 +2663,7 @@ class StructuredLogFormatter {
     const normalizedStatus = Object.prototype.hasOwnProperty.call(STEP_ICONS, status) ? status : this._text(status || 'UNKNOWN');
     const icon = STEP_ICONS[normalizedStatus] || ITEM_ICONS.GENERIC;
     const envelope = this._isDetailEnvelope(details) ? details : null;
-    const detailText = this._detailsText(envelope ? envelope.reason !== undefined ? envelope.reason : envelope.content : details);
+    const detailText = envelope ? envelope.reason !== undefined ? this._detailsText(envelope.reason) : this._contentText(envelope.content) : this._detailsText(details);
     const duration = envelope ? this._duration(envelope.durationMs) : null;
     const displayStatus = normalizedStatus === 'ERROR' ? 'FAILED' : normalizedStatus;
     const timedStatus = duration === null ? displayStatus : `${displayStatus} in ${duration}ms`;
@@ -2705,6 +2705,20 @@ class StructuredLogFormatter {
       values.push(`Progress: ${this._text(details.percentage)}%`);
     }
     return values.join('; ');
+  }
+  _contentText(content) {
+    if (!content || typeof content !== 'object' || Array.isArray(content)) {
+      return this._detailsText(content);
+    }
+    try {
+      return Object.keys(content).map(key => {
+        const value = content[key];
+        const rendered = Array.isArray(value) ? value.length === 0 ? '[]' : value.map(item => this._text(item)).join(', ') : this._text(value);
+        return `${key}: ${rendered}`;
+      }).join('; ');
+    } catch (_error) {
+      return '[Unrenderable details]';
+    }
   }
   _detailsText(details) {
     if (details === undefined || details === null || details === '') {

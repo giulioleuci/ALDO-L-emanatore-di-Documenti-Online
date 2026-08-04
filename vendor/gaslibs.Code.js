@@ -2528,6 +2528,205 @@ __webpack_require__.d(GasProcessMonitorLib_namespaceObject, {
 
 
 
+const MAJOR_BORDER = '='.repeat(70);
+const SECTION_BORDER = '-'.repeat(70);
+const ITEM_ICONS = {
+  DOCUMENT: '📄',
+  EMAIL: '✉️',
+  IMPORT: '📥',
+  RETRY: '🔁',
+  GENERIC: '📦'
+};
+const STEP_ICONS = {
+  EXECUTED: '✅',
+  SKIPPED: '⚠️',
+  ERROR: '❌'
+};
+
+
+class StructuredLogFormatter {
+
+
+
+  constructor(safeStringify) {
+    this._safeStringify = safeStringify;
+  }
+
+
+
+
+
+  treePrefix(position = {}) {
+    const depth = Math.max(0, Number.isFinite(position.depth) ? position.depth : 0);
+    if (depth === 0) {
+      return '';
+    }
+    const ancestors = Array.isArray(position.ancestorHasNext) ? position.ancestorHasNext : [];
+    let prefix = '  ';
+    for (let index = 0; index < depth - 1; index++) {
+      prefix += ancestors[index] ? '│    ' : '     ';
+    }
+    return prefix + (position.isLast ? '└─ ' : '├─ ');
+  }
+
+
+  jobStart(jobName, jobType) {
+    return [MAJOR_BORDER, `🚀 [INIT] AVVIO JOB: ${this._text(jobName)} (Tipo: ${this._text(jobType)})`, MAJOR_BORDER];
+  }
+
+
+  jobResume(jobName, jobType, details) {
+    const lines = [MAJOR_BORDER, `🔄 [RESUME] RIPRESA JOB: ${this._text(jobName)} (Tipo: ${this._text(jobType)})`];
+    const detailText = this._resumeDetails(details);
+    if (detailText) {
+      lines.push(detailText);
+    }
+    lines.push(MAJOR_BORDER);
+    return lines;
+  }
+
+
+  jobEnd(jobName, isSuccess, details) {
+    const status = isSuccess ? '🏁 [COMPLETED]' : '❌ [FAILED]';
+    let message = isSuccess ? `${status} Job '${this._text(jobName)}' completed successfully` : `${status} Job '${this._text(jobName)}' failed`;
+    const detailText = this._detailsText(details);
+    if (detailText) {
+      message += ` (${detailText})`;
+    }
+    return [MAJOR_BORDER, ...this._splitPlain(message), MAJOR_BORDER];
+  }
+
+
+  jobSuspended(jobName, details) {
+    let message = `⏸️ [SUSPENDED] Job '${this._text(jobName)}' suspended`;
+    const detailText = this._detailsText(details);
+    if (detailText) {
+      message += ` (${detailText})`;
+    }
+    return [MAJOR_BORDER, ...this._splitPlain(message), MAJOR_BORDER];
+  }
+
+
+  batchStart(totalItems, label) {
+    const count = this._count(totalItems);
+    const itemLabel = label ? this._text(label) : count === 1 ? 'Item' : 'Items';
+    return [SECTION_BORDER, '', `📑 [PROCESSING BATCH] (${count} ${itemLabel} in queue)`];
+  }
+
+
+  itemStart(itemIndex, totalItems, itemLabel, identifier, kind = 'GENERIC') {
+    const normalizedKind = Object.prototype.hasOwnProperty.call(ITEM_ICONS, kind) ? kind : 'GENERIC';
+    return ['', `${ITEM_ICONS[normalizedKind]} [${normalizedKind} ${this._count(itemIndex)}/${this._count(totalItems)}] ${this._text(itemLabel)}: ${this._text(identifier)}`];
+  }
+
+
+  step(message, position) {
+    return this._treeLines(this._text(message), position);
+  }
+
+
+  pipelineStart(pipelineName, totalSteps, position) {
+    const count = this._count(totalSteps);
+    const unit = count === 1 ? 'step' : 'steps';
+    return this._treeLines(`🛠️ [${this._text(pipelineName)}] Processing (${count} ${unit})`, position);
+  }
+
+
+  pipelineStep(stepName, status, details, position) {
+    const normalizedStatus = Object.prototype.hasOwnProperty.call(STEP_ICONS, status) ? status : this._text(status || 'UNKNOWN');
+    const icon = STEP_ICONS[normalizedStatus] || ITEM_ICONS.GENERIC;
+    const detailText = this._detailsText(details);
+    let message = `${icon} [${this._text(stepName)}]: ${normalizedStatus}`;
+    if (detailText) {
+      message += normalizedStatus === 'EXECUTED' && detailText.indexOf('completed in ') === 0 ? ` ${detailText.substring('completed '.length)}` : ` (${detailText})`;
+    }
+    return this._treeLines(message, position);
+  }
+
+
+  summary(label, durationMs, itemDetails, position) {
+    let message = `${this._text(label)} in ${this._count(durationMs)}ms`;
+    const details = this._detailsText(itemDetails);
+    if (details) {
+      message += ` (${details})`;
+    }
+    return this._treeLines(message, position);
+  }
+  _resumeDetails(details) {
+    if (!details || typeof details !== 'object' || Array.isArray(details)) {
+      return this._detailsText(details);
+    }
+    const values = [];
+    if (details.checkpoint !== undefined) {
+      values.push(`Checkpoint: ${this._text(details.checkpoint)}`);
+    }
+    if (details.percentage !== undefined) {
+      values.push(`Progress: ${this._text(details.percentage)}%`);
+    }
+    return values.join('; ');
+  }
+  _detailsText(details) {
+    if (details === undefined || details === null || details === '') {
+      return '';
+    }
+    try {
+      if (Array.isArray(details)) {
+        return details.map(item => this._text(item)).join('\n');
+      }
+      if (typeof details === 'object') {
+        return this._safeStringify(details);
+      }
+      return String(details);
+    } catch (_error) {
+      return '[Unrenderable details]';
+    }
+  }
+  _text(value) {
+    try {
+      if (value === undefined) {
+        return 'undefined';
+      }
+      if (value === null) {
+        return 'null';
+      }
+      if (typeof value === 'object') {
+        return this._safeStringify(value);
+      }
+      return String(value);
+    } catch (_error) {
+      return '[Unrenderable details]';
+    }
+  }
+  _count(value) {
+    return Number.isFinite(value) ? Math.max(0, value) : 0;
+  }
+  _splitPlain(message) {
+    return String(message).split(/\r?\n/);
+  }
+  _treeLines(message, position = {}) {
+    const lines = this._splitPlain(message);
+    const firstPrefix = this.treePrefix(position);
+    if (!firstPrefix) {
+      return lines;
+    }
+    const continuation = firstPrefix.replace(/[├└]─ $/, '   ');
+    return lines.map((line, index) => `${index === 0 ? firstPrefix : continuation}${line}`);
+  }
+}
+
+;
+
+
+
+
+
+
+
+
+
+
+
+
 class LoggerService {
 
 
@@ -2555,6 +2754,7 @@ class LoggerService {
       INFO: 3,
       DEBUG: 4
     };
+    this._structured = new StructuredLogFormatter(this._safeStringify.bind(this));
   }
 
 
@@ -2784,12 +2984,75 @@ class LoggerService {
   }
 
 
+  _writeStructured(level, lines) {
+    if (!this._isLevelActive(level)) {
+      return this;
+    }
+    for (const line of lines) {
+      Logger.log(line);
+    }
+    return this;
+  }
+
+
+  logJobStart(jobName, jobType) {
+    return this._writeStructured('INFO', this._structured.jobStart(jobName, jobType));
+  }
+
+
+  logJobResume(jobName, jobType, details) {
+    return this._writeStructured('INFO', this._structured.jobResume(jobName, jobType, details));
+  }
+
+
+  logJobEnd(jobName, isSuccess, details) {
+    return this._writeStructured(isSuccess ? 'INFO' : 'ERROR', this._structured.jobEnd(jobName, isSuccess, details));
+  }
+
+
+  logJobSuspended(jobName, details) {
+    return this._writeStructured('WARN', this._structured.jobSuspended(jobName, details));
+  }
+
+
+  logBatchStart(totalItems, label) {
+    return this._writeStructured('INFO', this._structured.batchStart(totalItems, label));
+  }
+
+
+  logItemStart(itemIndex, totalItems, itemLabel, identifier, kind) {
+    return this._writeStructured('INFO', this._structured.itemStart(itemIndex, totalItems, itemLabel, identifier, kind));
+  }
+
+
+  logStep(message, position) {
+    return this._writeStructured('INFO', this._structured.step(message, position));
+  }
+
+
+  logPipelineStart(pipelineName, totalSteps, position) {
+    return this._writeStructured('INFO', this._structured.pipelineStart(pipelineName, totalSteps, position));
+  }
+
+
+  logPipelineStep(stepName, status, details, position) {
+    const level = status === 'ERROR' ? 'ERROR' : status === 'SKIPPED' ? 'WARN' : 'INFO';
+    return this._writeStructured(level, this._structured.pipelineStep(stepName, status, details, position));
+  }
+
+
+  logSummary(label, durationMs, itemDetails, position) {
+    return this._writeStructured('INFO', this._structured.summary(label, durationMs, itemDetails, position));
+  }
+
+
 
 
 
 
   child(prefix) {
     const parentLogger = this;
+    const prefixed = label => `[${prefix}] ${label}`;
     return {
       debug: msg => {
         if (typeof msg === 'function') {
@@ -2820,7 +3083,17 @@ class LoggerService {
           return parentLogger.log(level, () => `[${prefix}] ${msg()}`);
         }
         return parentLogger.log(level, `[${prefix}] ${msg}`);
-      }
+      },
+      logJobStart: (jobName, jobType) => parentLogger.logJobStart(prefixed(jobName), jobType),
+      logJobResume: (jobName, jobType, details) => parentLogger.logJobResume(prefixed(jobName), jobType, details),
+      logJobEnd: (jobName, isSuccess, details) => parentLogger.logJobEnd(prefixed(jobName), isSuccess, details),
+      logJobSuspended: (jobName, details) => parentLogger.logJobSuspended(prefixed(jobName), details),
+      logBatchStart: (totalItems, label) => parentLogger.logBatchStart(totalItems, label === undefined ? undefined : prefixed(label)),
+      logItemStart: (itemIndex, totalItems, itemLabel, identifier, kind) => parentLogger.logItemStart(itemIndex, totalItems, prefixed(itemLabel), identifier, kind),
+      logStep: (message, position) => parentLogger.logStep(message, position),
+      logPipelineStart: (pipelineName, totalSteps, position) => parentLogger.logPipelineStart(prefixed(pipelineName), totalSteps, position),
+      logPipelineStep: (stepName, status, details, position) => parentLogger.logPipelineStep(prefixed(stepName), status, details, position),
+      logSummary: (label, durationMs, itemDetails, position) => parentLogger.logSummary(prefixed(label), durationMs, itemDetails, position)
     };
   }
 }
@@ -54276,7 +54549,6 @@ class JobExecutor {
   execute(handler, parameters, startTime, maxDuration) {
 
     if (this._stateManager.isCancelled()) {
-      this._logger.info(`Job ${this._stateManager.jobName} was cancelled, aborting execution`);
       this._stateManager.releaseLock();
       return {
         done: true,
@@ -54325,7 +54597,6 @@ class JobExecutor {
       while (!next.done) {
 
         if (this._stateManager.isCancelled()) {
-          this._logger.info(`Job ${this._stateManager.jobName} cancelled during execution`);
           this._stateManager.releaseLock();
           this._triggerManager.deleteExistingTriggers();
           return {
@@ -54364,7 +54635,6 @@ class JobExecutor {
           timestamp: new Date().getTime()
         }
       });
-      this._logger.info(`Job ${this._stateManager.jobName} completed successfully`);
       return {
         done: true,
         value: result
@@ -54374,7 +54644,6 @@ class JobExecutor {
 
       if (error instanceof TimeoutException) {
         var _progress;
-        this._logger.info(`Interrupting job ${this._stateManager.jobName} due to timeout. State saved.`);
 
         this._stateManager.releaseLock(); 
         this._stateManager.batchSave({
@@ -54393,7 +54662,6 @@ class JobExecutor {
       }
 
 
-      this._logger.error(`Error in job ${this._stateManager.jobName}: ${error.message}`);
 
       this._stateManager.releaseLock();
       this._stateManager.batchSave({
@@ -54607,11 +54875,9 @@ class JobQueue {
         stateManager.saveType(jobType);
         stateManager.saveConfiguration(this._config);
       }
-      this._logger.info(`Starting job ${jobName} (type: ${jobType})`);
       const savedState = stateManager.loadResumeState();
       if (savedState && !forceRestart) {
         parameters.resumeState = savedState;
-        this._logger.info(`Resuming job ${jobName} from saved state.`);
       }
       const handler = this._jobHandlers[jobType];
       if (!handler) {
@@ -54621,8 +54887,6 @@ class JobQueue {
 
 
       if (executionResult.done) {
-
-        this._logger.info(`Job ${jobName} completed successfully`);
 
 
         stateManager.resetRetryCount();
@@ -54671,8 +54935,6 @@ class JobQueue {
 
 
         const newRetryCount = stateManager.incrementRetryCount();
-        this._logger.info(`Job ${jobName} timed out. Retry ${newRetryCount}${this._maxRetries !== null ? ' of ' + this._maxRetries : ''}`);
-
 
 
 
@@ -54686,8 +54948,6 @@ class JobQueue {
         return null;
       }
     } catch (error) {
-      this._logger.error(`Fatal error in job ${jobName}: ${error.stack}`);
-
 
       const retryCount = stateManager.incrementRetryCount();
 
@@ -54963,6 +55223,67 @@ class CapturingLogger {
     this._realLogger.log(level, message);
     return this;
   }
+  _semantic(method, args, level, message, status) {
+    this._capture(level, message, {
+      method,
+      status
+    });
+    if (typeof this._realLogger[method] === 'function') {
+      this._realLogger[method](...args);
+    } else {
+      this._realLogger[level.toLowerCase()](message);
+    }
+    return this;
+  }
+  _withoutTrailingUndefined(args) {
+    const result = args.slice();
+    while (result.length && result[result.length - 1] === undefined) {
+      result.pop();
+    }
+    return result;
+  }
+  logJobStart(jobName, jobType) {
+    const args = [jobName, jobType];
+    return this._semantic('logJobStart', args, 'INFO', `Job '${jobName}' started (${jobType})`, 'INIT');
+  }
+  logJobResume(jobName, jobType, details) {
+    const args = this._withoutTrailingUndefined([jobName, jobType, details]);
+    return this._semantic('logJobResume', args, 'INFO', `Job resume: ${jobName} (${jobType})`, 'RESUME');
+  }
+  logJobEnd(jobName, isSuccess, details) {
+    const args = this._withoutTrailingUndefined([jobName, isSuccess, details]);
+    const status = isSuccess ? 'COMPLETED' : 'FAILED';
+    return this._semantic('logJobEnd', args, isSuccess ? 'INFO' : 'ERROR', `Job end: ${jobName} (${status})`, status);
+  }
+  logJobSuspended(jobName, details) {
+    const args = this._withoutTrailingUndefined([jobName, details]);
+    return this._semantic('logJobSuspended', args, 'WARN', `Job suspended: ${jobName}`, 'SUSPENDED');
+  }
+  logBatchStart(totalItems, label) {
+    const args = this._withoutTrailingUndefined([totalItems, label]);
+    return this._semantic('logBatchStart', args, 'INFO', `Batch start: ${totalItems}${label ? ` ${label}` : ''}`, 'BATCH');
+  }
+  logItemStart(itemIndex, totalItems, itemLabel, identifier, kind) {
+    const args = [itemIndex, totalItems, itemLabel, identifier, kind];
+    return this._semantic('logItemStart', args, 'INFO', `Item ${itemIndex}/${totalItems}: ${itemLabel} ${identifier}`, 'ITEM');
+  }
+  logStep(message, position) {
+    const args = [message, position];
+    return this._semantic('logStep', args, 'INFO', `Step: ${message}`, 'STEP');
+  }
+  logPipelineStart(pipelineName, totalSteps, position) {
+    const args = this._withoutTrailingUndefined([pipelineName, totalSteps, position]);
+    return this._semantic('logPipelineStart', args, 'INFO', `Pipeline start: ${pipelineName} (${totalSteps})`, 'PIPELINE');
+  }
+  logPipelineStep(stepName, status, details, position) {
+    const args = [stepName, status, details, position];
+    const level = status === 'ERROR' ? 'ERROR' : status === 'SKIPPED' ? 'WARN' : 'INFO';
+    return this._semantic('logPipelineStep', args, level, `Pipeline step: ${stepName} (${status})`, status);
+  }
+  logSummary(label, durationMs, itemDetails, position) {
+    const args = this._withoutTrailingUndefined([label, durationMs, itemDetails, position]);
+    return this._semantic('logSummary', args, 'INFO', `Summary: ${label} (${durationMs}ms)`, 'SUMMARY');
+  }
 
 
 
@@ -55088,15 +55409,63 @@ class JobRunnerExecutionController {
     this._propertiesService = facade._propertiesService;
     this._triggerService = facade._triggerService;
   }
+  _semantic(logger, method, args, level, fallbackMessage) {
+    if (typeof logger[method] === 'function') {
+      logger[method](...args);
+    } else if (typeof logger[level] === 'function') {
+      logger[level](fallbackMessage);
+    } else {
+      logger.info(fallbackMessage);
+    }
+  }
+  _logJobStart(logger, jobName, jobType) {
+    this._semantic(logger, 'logJobStart', [jobName, jobType], 'info', `Starting job ${jobName} (type: ${jobType})`);
+  }
+  _logJobResume(logger, jobName, jobType, details) {
+    this._semantic(logger, 'logJobResume', details === undefined ? [jobName, jobType] : [jobName, jobType, details], 'info', `Resuming job ${jobName} (type: ${jobType})`);
+  }
+  _logTerminal(logger, jobName, result, status) {
+    const state = status && status.state;
+    if (state === 'cancelled') {
+      this._semantic(logger, 'logJobEnd', [jobName, false, 'cancelled'], 'error', `Job ${jobName} cancelled`);
+    } else if (state === 'failed' || state === 'error') {
+      this._semantic(logger, 'logJobEnd', [jobName, false, state], 'error', `Job ${jobName} failed (${state})`);
+    } else if (result === null) {
+      this._semantic(logger, 'logJobSuspended', [jobName, 'state saved; automatic resume scheduled'], 'warn', `Job ${jobName} suspended; automatic resume scheduled`);
+    } else {
+      this._semantic(logger, 'logJobEnd', [jobName, true], 'info', `Job ${jobName} completed successfully`);
+    }
+  }
+  _status(queue, jobName, result) {
+    if (typeof queue.getStatus === 'function') {
+      return queue.getStatus(jobName);
+    }
+    return {
+      state: result === null ? 'to_resume' : 'completed'
+    };
+  }
   run(jobName, jobType, parameters, jobHandlerRegistryCallback, forceRestart = false, maxDurationMs = 25 * 60 * 1000, loggingConfig = null) {
-    if (!jobName || typeof jobName !== 'string') throw new Error('MyJobRunnerService.run: jobName is required and must be a non-empty string');
-    if (!jobType || typeof jobType !== 'string') throw new Error('MyJobRunnerService.run: jobType is required and must be a non-empty string');
-    if (!parameters || typeof parameters !== 'object') throw new Error('MyJobRunnerService.run: parameters is required and must be an object');
-    if (typeof jobHandlerRegistryCallback !== 'function') throw new Error('MyJobRunnerService.run: jobHandlerRegistryCallback must be a function');
-    if (typeof forceRestart !== 'boolean') throw new Error('MyJobRunnerService.run: forceRestart must be a boolean');
-    if (typeof maxDurationMs !== 'number' || maxDurationMs <= 0) throw new Error('MyJobRunnerService.run: maxDurationMs must be a positive number');
-    this._logger.info(`MyJobRunnerService.run: Starting job '${jobName}' of type '${jobType}'`);
-    if (loggingConfig) this.facade._validateLoggingConfig(loggingConfig);
+    if (!jobName || typeof jobName !== 'string') {
+      throw new Error('MyJobRunnerService.run: jobName is required and must be a non-empty string');
+    }
+    if (!jobType || typeof jobType !== 'string') {
+      throw new Error('MyJobRunnerService.run: jobType is required and must be a non-empty string');
+    }
+    if (!parameters || typeof parameters !== 'object') {
+      throw new Error('MyJobRunnerService.run: parameters is required and must be an object');
+    }
+    if (typeof jobHandlerRegistryCallback !== 'function') {
+      throw new Error('MyJobRunnerService.run: jobHandlerRegistryCallback must be a function');
+    }
+    if (typeof forceRestart !== 'boolean') {
+      throw new Error('MyJobRunnerService.run: forceRestart must be a boolean');
+    }
+    if (typeof maxDurationMs !== 'number' || maxDurationMs <= 0) {
+      throw new Error('MyJobRunnerService.run: maxDurationMs must be a positive number');
+    }
+    if (loggingConfig) {
+      this.facade._validateLoggingConfig(loggingConfig);
+    }
     let capturingLogger = null;
     let effectiveLogger = this._logger;
     if (loggingConfig) {
@@ -55104,6 +55473,7 @@ class JobRunnerExecutionController {
       effectiveLogger = capturingLogger;
       this._logger.debug('MyJobRunnerService.run: Capturing logger enabled');
     }
+    this._logJobStart(effectiveLogger, jobName, jobType);
     const queue = this.facade._createQueue();
     queue.setMaxDuration(maxDurationMs);
     const services = {
@@ -55124,15 +55494,12 @@ class JobRunnerExecutionController {
       jobCompleted = false;
     try {
       result = queue.execute(jobName, jobType, parameters, forceRestart);
-      if (result !== null) {
-        effectiveLogger.info(`MyJobRunnerService.run: Job '${jobName}' completed successfully`);
-        jobCompleted = true;
-      } else {
-        effectiveLogger.info(`MyJobRunnerService.run: Job '${jobName}' suspended due to timeout, will resume automatically`);
-      }
+      const status = this._status(queue, jobName, result);
+      this._logTerminal(effectiveLogger, jobName, result, status);
+      jobCompleted = result !== null || status.state === 'cancelled' || status.state === 'failed' || status.state === 'error';
     } catch (err) {
       error = err;
-      effectiveLogger.error(`MyJobRunnerService.run: Error executing job '${jobName}': ${err.message}`);
+      this._semantic(effectiveLogger, 'logJobEnd', [jobName, false, err.message], 'error', `Job ${jobName} failed: ${err.message}`);
     } finally {
       if (capturingLogger && (jobCompleted || error)) {
         try {
@@ -55142,7 +55509,9 @@ class JobRunnerExecutionController {
         }
       }
     }
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return result;
   }
   resume(jobName, jobHandlerRegistryCallback, maxDurationMs = 25 * 60 * 1000) {
@@ -55153,16 +55522,33 @@ class JobRunnerExecutionController {
         this._logger.debug(`MyJobRunnerService.resume: Determined job name '${jobName}' from trigger ID '${triggerId}'`);
       }
     }
-    if (!jobName) throw new Error('MyJobRunnerService.resume: Unable to determine job name. Provide jobName or ensure trigger context is available.');
-    this._logger.info(`MyJobRunnerService.resume: Resuming job '${jobName}'`);
+    if (!jobName) {
+      throw new Error('MyJobRunnerService.resume: Unable to determine job name. Provide jobName or ensure trigger context is available.');
+    }
     const queue = this.facade._createQueue();
     const lockService = new LockService(this._logger);
     const stateManager = new JobStateManager(jobName, this._propertiesService, this._utils, lockService);
     const savedConfig = stateManager.loadConfiguration();
     queue.applyConfiguration(savedConfig);
-    if (maxDurationMs) queue.setMaxDuration(maxDurationMs);
+    if (maxDurationMs) {
+      queue.setMaxDuration(maxDurationMs);
+    }
     const jobType = stateManager.loadType();
-    if (!jobType) throw new Error(`MyJobRunnerService.resume: Unable to determine job type for '${jobName}'`);
+    if (!jobType) {
+      throw new Error(`MyJobRunnerService.resume: Unable to determine job type for '${jobName}'`);
+    }
+    const resumeState = stateManager.loadResumeState();
+    const currentStatus = this._status(queue, jobName, null);
+    const details = {};
+    if (resumeState && resumeState.nextIndex !== undefined) {
+      details.checkpoint = `nextIndex: ${resumeState.nextIndex}`;
+    } else if (resumeState && resumeState.position !== undefined) {
+      details.checkpoint = String(resumeState.position);
+    }
+    if (Number.isFinite(currentStatus.percentage)) {
+      details.percentage = currentStatus.percentage;
+    }
+    this._logJobResume(this._logger, jobName, jobType, Object.keys(details).length > 0 ? details : undefined);
     const services = {
       logger: this._logger,
       utils: this._utils,
@@ -55174,13 +55560,16 @@ class JobRunnerExecutionController {
     const parameters = {
       services: services
     };
-    if (jobDefinition) parameters.jobDefinition = jobDefinition;
+    if (jobDefinition) {
+      parameters.jobDefinition = jobDefinition;
+    }
     try {
       const result = queue.execute(jobName, jobType, parameters, false);
-      if (result !== null) this._logger.info(`MyJobRunnerService.resume: Job '${jobName}' completed successfully`);else this._logger.info(`MyJobRunnerService.resume: Job '${jobName}' suspended again, will resume automatically`);
+      const status = this._status(queue, jobName, result);
+      this._logTerminal(this._logger, jobName, result, status);
       return result;
     } catch (error) {
-      this._logger.error(`MyJobRunnerService.resume: Error resuming job '${jobName}': ${error.message}`);
+      this._semantic(this._logger, 'logJobEnd', [jobName, false, error.message], 'error', `Job ${jobName} failed while resuming: ${error.message}`);
       throw error;
     }
   }
@@ -55996,52 +56385,6 @@ class PipelineContext {
 
 
 
-
-
-
-
-
-class PipelineError extends BaseError {
-
-
-
-
-
-
-
-
-  constructor(message, context = {}) {
-    super(message, context);
-
-    this.name = 'PipelineError';
-  }
-
-
-
-
-  toString() {
-    let message = `${this.name}: ${this.message}`;
-    if (this.context && Object.keys(this.context).length > 0) {
-      message += '\nContext: ' + JSON.stringify(this.context, null, 2);
-    }
-    return message;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Pipeline {
 
 
@@ -56072,6 +56415,7 @@ class Pipeline {
     this._monitor = options.monitor || null;
     this._jobId = options.jobId || null;
     this._dryRun = options.dryRun || false;
+    this._logPosition = this._normalizeLogPosition(options.logPosition);
     this._steps = [];
     this._hooks = {
       beforeStep: [],
@@ -56088,6 +56432,63 @@ class Pipeline {
 
   _isDryRun(options = {}) {
     return options.dryRun !== undefined ? Boolean(options.dryRun) : Boolean(this._dryRun);
+  }
+  _normalizeLogPosition(position) {
+    const value = position && typeof position === 'object' ? position : {};
+    return {
+      depth: Math.max(0, Number.isFinite(value.depth) ? value.depth : 0),
+      isLast: Boolean(value.isLast),
+      ancestorHasNext: Array.isArray(value.ancestorHasNext) ? value.ancestorHasNext.slice() : []
+    };
+  }
+  _stepLogPosition(index) {
+    return {
+      depth: this._logPosition.depth + 1,
+      isLast: index === this._steps.length - 1,
+      ancestorHasNext: [...this._logPosition.ancestorHasNext, true]
+    };
+  }
+  _summaryLogPosition() {
+    return {
+      ...this._logPosition,
+      isLast: true
+    };
+  }
+  _logPipelineStart() {
+    if (typeof this._logger.logPipelineStart === 'function') {
+      this._logger.logPipelineStart(this._name, this._steps.length, this._logPosition);
+    } else {
+      this._logger.info(`[${this._name}] Starting pipeline (${this._steps.length} steps)`);
+    }
+  }
+  _logPipelineStep(stepName, status, details, position) {
+    if (typeof this._logger.logPipelineStep === 'function') {
+      this._logger.logPipelineStep(stepName, status, details, position);
+      return;
+    }
+    const message = `[${this._name}] ${stepName}: ${status}${details ? ` (${details})` : ''}`;
+    if (status === 'ERROR') {
+      this._logger.error(message);
+    } else if (status === 'SKIPPED') {
+      this._logger.warn(message);
+    } else {
+      this._logger.info(message);
+    }
+  }
+  _logPipelineSummary(context, prefix = '') {
+    const summary = context.getSummary();
+    let details = `${summary.completedSteps} executed, ${summary.skippedSteps} skipped, ` + `${summary.failedSteps} failed`;
+    if (prefix) {
+      details = `${prefix}; ${details}`;
+    }
+    if (summary.stopRequested) {
+      details += `; stopped: ${summary.stopReason}`;
+    }
+    if (typeof this._logger.logSummary === 'function') {
+      this._logger.logSummary('⏹️ Pipeline completed', context.getTotalDuration(), details, this._summaryLogPosition());
+    } else {
+      this._logger.info(`[${this._name}] Pipeline completed in ${context.getTotalDuration()}ms (${details})`);
+    }
   }
 
 
@@ -56217,6 +56618,7 @@ class Pipeline {
     const context = new PipelineContext(initialData);
     const dryRun = this._isDryRun(options);
     let pipelineSuccess = true;
+    this._logPipelineStart();
     if (dryRun) {
       const stepNames = this._steps.map(s => s.getName());
       context.set('dryRun', true);
@@ -56224,12 +56626,18 @@ class Pipeline {
       this._logger.info(`[${this._name}] [DRY-RUN] Would execute ${this._steps.length} steps: ${stepNames.join(', ')}`);
       context.markCompleted();
       this._invokeHooks(this._hooks.onComplete, context, true);
+      this._logPipelineSummary(context, 'dry run');
       return context;
     }
-    this._logger.info(`[${this._name}] Starting pipeline (${this._steps.length} steps)`);
-    for (const step of this._steps) {
+    for (let stepIndex = 0; stepIndex < this._steps.length; stepIndex++) {
+      var _result$error;
+      const step = this._steps[stepIndex];
       if (context.shouldStop()) {
-        this._logger.info(`[${this._name}] Stop requested: ${context.getStopReason()}`);
+        if (typeof this._logger.logStep === 'function') {
+          this._logger.logStep(`⏹️ Stop requested: ${context.getStopReason()}`, this._stepLogPosition(stepIndex));
+        } else {
+          this._logger.info(`[${this._name}] Stop requested: ${context.getStopReason()}`);
+        }
         break;
       }
       const stepName = step.getName();
@@ -56250,6 +56658,7 @@ class Pipeline {
         context.recordStepExecution(stepName, 'failed', 0, {
           error: error.message
         });
+        this._logPipelineStep(stepName, 'ERROR', error.message || 'step failed', this._stepLogPosition(stepIndex));
         if (this._monitor && this._jobId && typeof this._monitor.logStepComplete === 'function') {
           try {
             this._monitor.logStepComplete(this._jobId, stepName, false);
@@ -56266,6 +56675,9 @@ class Pipeline {
       context.recordStepExecution(stepName, status, result.durationMs || 0, result.error ? {
         error: result.error.message
       } : {});
+      const semanticStatus = status === 'completed' ? 'EXECUTED' : status === 'skipped' ? 'SKIPPED' : 'ERROR';
+      const details = status === 'skipped' ? result.skipReason || 'condition not met' : status === 'failed' ? ((_result$error = result.error) === null || _result$error === void 0 ? void 0 : _result$error.message) || 'step failed' : `completed in ${result.durationMs || 0}ms`;
+      this._logPipelineStep(stepName, semanticStatus, details, this._stepLogPosition(stepIndex));
       if (this._monitor && this._jobId) {
         try {
           if (status === 'skipped' && typeof this._monitor.logStepSkipped === 'function') {
@@ -56288,7 +56700,7 @@ class Pipeline {
     }
     context.markCompleted();
     this._invokeHooks(this._hooks.onComplete, context, pipelineSuccess);
-    this._logger.info(`[${this._name}] Pipeline completed in ${context.getTotalDuration()}ms`);
+    this._logPipelineSummary(context);
     return context;
   }
 
@@ -56320,6 +56732,51 @@ class Pipeline {
         onComplete: this._hooks.onComplete.length > 0
       }
     };
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class PipelineError extends BaseError {
+
+
+
+
+
+
+
+
+  constructor(message, context = {}) {
+    super(message, context);
+
+    this.name = 'PipelineError';
+  }
+
+
+
+
+  toString() {
+    let message = `${this.name}: ${this.message}`;
+    if (this.context && Object.keys(this.context).length > 0) {
+      message += '\nContext: ' + JSON.stringify(this.context, null, 2);
+    }
+    return message;
   }
 }
 ;
@@ -56393,6 +56850,7 @@ class StepExecutionError extends PipelineError {
   }
 }
 ;
+
 
 
 
@@ -56593,22 +57051,20 @@ class Step {
     try {
 
       if (!this.shouldExecute(context)) {
-        this._logger.info(`[${this._name}] Skipped (condition not met)`);
         return {
           success: true,
           skipped: true,
+          skipReason: 'condition not met',
           durationMs: Date.now() - startTime
         };
       }
 
 
       this.verifyContext(context);
-      this._logger.debug(`[${this._name}] Executing...`);
 
 
       this._executeLogic(context);
       const durationMs = Date.now() - startTime;
-      this._logger.debug(`[${this._name}] Completed in ${durationMs}ms`);
       return {
         success: true,
         skipped: false,
@@ -56618,11 +57074,7 @@ class Step {
       const durationMs = Date.now() - startTime;
 
 
-      this._logger.error(`[${this._name}] Failed after ${durationMs}ms: ${error.message}`);
-
-
       if (this._continueOnError) {
-        this._logger.warn(`[${this._name}] Continuing despite error (continueOnError=true)`);
         return {
           success: true,
           skipped: false,
@@ -60993,7 +61445,6 @@ class ContextStepExecutor {
         }
       }
     }
-    this.facade._logger.info(`[${providerName}] Provider execution completed`);
     return data;
   }
   assemble(recipe, initialParams = {}, options = {}) {
@@ -61008,15 +61459,15 @@ class ContextStepExecutor {
       throw new Error('ContextAssembler.assemble: options must be an object or null');
     }
     const startTime = Date.now();
+    let executedProviders = 0;
+    let skippedProviders = 0;
+    let failedProviders = 0;
     try {
 
-      this.facade._logger.info('Starting context assembly...');
       const validatedRecipe = this.facade._recipeParser.parse(recipe);
 
 
       const context = {};
-      let executedProviders = 0;
-      let skippedProviders = 0;
 
 
       for (const providerConfig of validatedRecipe.providers) {
@@ -61025,7 +61476,6 @@ class ContextStepExecutor {
 
           const shouldExecute = this._evaluateCondition(providerConfig.condition, initialParams, context);
           if (!shouldExecute) {
-            this.facade._logger.info(`[${providerName}] Skipped (condition not met)`);
             skippedProviders++;
             continue;
           }
@@ -61037,7 +61487,9 @@ class ContextStepExecutor {
           context[providerName] = result;
           executedProviders++;
         } catch (error) {
-          this.facade._logger.error(`[${providerName}] Provider execution failed: ${error.message}`);
+          failedProviders++;
+          const durationMs = Date.now() - startTime;
+          this.facade._logger.error(`[${providerName}] Provider execution failed after ${durationMs}ms ` + `(${executedProviders} providers executed, ${skippedProviders} skipped, ` + `${failedProviders} failed): ${error.message}`);
           throw new ContextEngineError(`Provider '${providerName}' failed: ${error.message}`, {
             providerName,
             providerType: providerConfig.type,
@@ -61046,14 +61498,14 @@ class ContextStepExecutor {
         }
       }
       const durationMs = Date.now() - startTime;
-      this.facade._logger.info(`Context assembly completed in ${durationMs}ms ` + `(${executedProviders} executed, ${skippedProviders} skipped)`);
+      this._logAssemblySummary(durationMs, executedProviders, skippedProviders, failedProviders, options.logPosition);
       return context;
     } catch (error) {
       const durationMs = Date.now() - startTime;
-      this.facade._logger.error(`Context assembly failed after ${durationMs}ms: ${error.message}`);
       if (error instanceof ContextEngineError) {
         throw error;
       }
+      this.facade._logger.error(`Context assembly failed after ${durationMs}ms ` + `(${executedProviders} providers executed, ${skippedProviders} skipped, ` + `${failedProviders} failed): ${error.message}`);
       throw new ContextEngineError(`Context assembly failed: ${error.message}`, {
         originalError: error
       });
@@ -61104,7 +61556,14 @@ class ContextStepExecutor {
         }
       }
     }
-    this.facade._logger.info(`[${providerName}] Provider execution completed (mutate mode)`);
+  }
+  _logAssemblySummary(durationMs, executedProviders, skippedProviders, failedProviders, logPosition) {
+    const details = `${executedProviders} providers executed, ` + `${skippedProviders} skipped, ${failedProviders} failed`;
+    if (typeof this.facade._logger.logSummary === 'function') {
+      this.facade._logger.logSummary('⚙️ Context Assembly completed', durationMs, details, logPosition);
+    } else {
+      this.facade._logger.info(`Context assembly completed in ${durationMs}ms (${details})`);
+    }
   }
 
 
@@ -61155,11 +61614,11 @@ class ContextStepExecutor {
       throw new Error('ContextAssembler.assembleInto: options must be an object or null');
     }
     const startTime = Date.now();
+    let executedProviders = 0;
+    let skippedProviders = 0;
+    let failedProviders = 0;
     try {
-      this.facade._logger.info('Starting mutation-mode context assembly...');
       const validatedRecipe = this.facade._recipeParser.parse(recipe);
-      let executedProviders = 0;
-      let skippedProviders = 0;
       for (const providerConfig of validatedRecipe.providers) {
         const providerName = providerConfig.name;
         try {
@@ -61168,14 +61627,15 @@ class ContextStepExecutor {
 
           const shouldExecute = this._evaluateCondition(providerConfig.condition, initialParams, sharedTarget);
           if (!shouldExecute) {
-            this.facade._logger.info(`[${providerName}] Skipped (condition not met)`);
             skippedProviders++;
             continue;
           }
           this._executeMutatingProvider(providerConfig, sharedTarget, initialParams, options);
           executedProviders++;
         } catch (error) {
-          this.facade._logger.error(`[${providerName}] Provider execution failed: ${error.message}`);
+          failedProviders++;
+          const durationMs = Date.now() - startTime;
+          this.facade._logger.error(`[${providerName}] Provider execution failed after ${durationMs}ms ` + `(${executedProviders} providers executed, ${skippedProviders} skipped, ` + `${failedProviders} failed): ${error.message}`);
           throw new ContextEngineError(`Provider '${providerName}' failed: ${error.message}`, {
             providerName,
             providerType: providerConfig.type,
@@ -61184,14 +61644,14 @@ class ContextStepExecutor {
         }
       }
       const durationMs = Date.now() - startTime;
-      this.facade._logger.info(`Mutation-mode context assembly completed in ${durationMs}ms ` + `(${executedProviders} executed, ${skippedProviders} skipped)`);
+      this._logAssemblySummary(durationMs, executedProviders, skippedProviders, failedProviders, options.logPosition);
       return sharedTarget;
     } catch (error) {
       const durationMs = Date.now() - startTime;
-      this.facade._logger.error(`Mutation-mode context assembly failed after ${durationMs}ms: ${error.message}`);
       if (error instanceof ContextEngineError) {
         throw error;
       }
+      this.facade._logger.error(`Mutation-mode context assembly failed after ${durationMs}ms ` + `(${executedProviders} providers executed, ${skippedProviders} skipped, ` + `${failedProviders} failed): ${error.message}`);
       throw new ContextEngineError(`Mutation-mode context assembly failed: ${error.message}`, {
         originalError: error
       });

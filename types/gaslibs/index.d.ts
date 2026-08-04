@@ -4,12 +4,57 @@ export {};
 
 declare global {
   // --- CoreUtilsLib (L0) ---
+  type LogItemKind = 'DOCUMENT' | 'EMAIL' | 'IMPORT' | 'RETRY' | 'GENERIC';
+  type PipelineStepStatus = 'EXECUTED' | 'SKIPPED' | 'ERROR';
+
+  interface TreePosition {
+    depth: number;
+    isLast: boolean;
+    ancestorHasNext?: boolean[];
+  }
+
+  interface JobResumeDetails {
+    checkpoint?: string;
+    percentage?: number;
+  }
+
+  type LogDetails =
+    | string
+    | string[]
+    | Record<string, string | number | boolean | null | undefined>;
+
   class LoggerService {
     trace(msg: string, ...args: unknown[]): void;
     debug(msg: string, ...args: unknown[]): void;
     info(msg: string, ...args: unknown[]): void;
     warn(msg: string, ...args: unknown[]): void;
     error(msg: string, ...args: unknown[]): void;
+    logJobStart(jobName: string, jobType: string): this;
+    logJobResume(jobName: string, jobType: string, details?: JobResumeDetails): this;
+    logJobEnd(jobName: string, isSuccess: boolean, details?: LogDetails): this;
+    logJobSuspended(jobName: string, details?: LogDetails): this;
+    logBatchStart(totalItems: number, label?: string): this;
+    logItemStart(
+      itemIndex: number,
+      totalItems: number,
+      itemLabel: string,
+      identifier: string,
+      kind?: LogItemKind
+    ): this;
+    logStep(message: string, position: TreePosition): this;
+    logPipelineStart(pipelineName: string, totalSteps: number, position: TreePosition): this;
+    logPipelineStep(
+      stepName: string,
+      status: PipelineStepStatus,
+      details: LogDetails | undefined,
+      position: TreePosition
+    ): this;
+    logSummary(
+      label: string,
+      durationMs: number,
+      itemDetails?: LogDetails,
+      position?: TreePosition
+    ): this;
   }
 
   class HtmlSanitizer {
@@ -168,19 +213,19 @@ declare global {
     assemble(
       recipe: ContextAssemblerRecipe,
       initialParams?: Record<string, unknown>,
-      options?: Record<string, unknown>
+      options?: Record<string, unknown> & { logPosition?: TreePosition }
     ): Record<string, unknown>;
     assembleAsync(
       recipe: ContextAssemblerRecipe,
       initialParams?: Record<string, unknown>,
-      options?: Record<string, unknown>
+      options?: Record<string, unknown> & { logPosition?: TreePosition }
     ): Record<string, unknown>;
     /** Mutation mode — see class doc. Returns `sharedTarget` (mutated in place) for convenience. */
     assembleInto<T extends object>(
       sharedTarget: T,
       recipe: ContextAssemblerRecipe,
       initialParams?: object,
-      options?: object
+      options?: Record<string, unknown> & { logPosition?: TreePosition }
     ): T;
   }
   type ProjectionOperation =
@@ -192,7 +237,10 @@ declare global {
         keys: string[];
         aggregates: Record<
           string,
-          { type: 'count' | 'collect' | 'collectDistinct' | 'first' | 'last' | 'sum'; path?: string }
+          {
+            type: 'count' | 'collect' | 'collectDistinct' | 'first' | 'last' | 'sum';
+            path?: string;
+          }
         >;
       }
     | { type: 'distinctBy'; keys: string[] }
@@ -219,7 +267,9 @@ declare global {
   class CollectionProjector {
     constructor(options?: {
       registry?: ProjectionRegistry;
-      expressionEngine?: { evaluate(expression: string, context?: Record<string, unknown>): unknown } | null;
+      expressionEngine?: {
+        evaluate(expression: string, context?: Record<string, unknown>): unknown;
+      } | null;
       logger?: LoggerService | null;
     });
     project(
@@ -241,7 +291,13 @@ declare global {
     );
   }
   class CollectionProjectionError extends Error {
-    constructor(message: string, context?: { operationIndex?: number | null; targetPath?: string | null } & Record<string, unknown>);
+    constructor(
+      message: string,
+      context?: { operationIndex?: number | null; targetPath?: string | null } & Record<
+        string,
+        unknown
+      >
+    );
   }
 
   // --- SheetDBLib (L2): ORM entry point (tables, save, ACID-like transactions) ---
@@ -494,6 +550,7 @@ declare global {
         monitor?: unknown;
         jobId?: string | null;
         dryRun?: boolean;
+        logPosition?: TreePosition;
       }
     );
     getName(): string;
@@ -790,7 +847,9 @@ declare global {
   abstract class ActorSource {
     getActor(actorId: string): Actor | null;
   }
-  type SourceRows = ReadonlyArray<Record<string, unknown>> | ((context: Record<string, unknown>) => ReadonlyArray<Record<string, unknown>>);
+  type SourceRows =
+    | ReadonlyArray<Record<string, unknown>>
+    | ((context: Record<string, unknown>) => ReadonlyArray<Record<string, unknown>>);
   type ValueMapping = unknown | { from: string; parse?: 'csv' };
   class WideRowAssignmentSource extends EffectiveAssignmentSource {
     constructor(options?: {
@@ -807,18 +866,27 @@ declare global {
     getAssignments(context: Record<string, unknown>, asOfDate: Date): AssignmentCandidate[];
   }
   class MappedOverrideSource extends OverrideSource {
-    constructor(options?: { rows?: SourceRows; mapping?: Record<string, ValueMapping | Record<string, ValueMapping>> });
+    constructor(options?: {
+      rows?: SourceRows;
+      mapping?: Record<string, ValueMapping | Record<string, ValueMapping>>;
+    });
     getOverrides(context: Record<string, unknown>, asOfDate: Date): AssignmentOverride[];
   }
   class MappedDelegationSource {
-    constructor(options?: { rows?: SourceRows; mapping?: Record<string, ValueMapping | Record<string, ValueMapping>> });
+    constructor(options?: {
+      rows?: SourceRows;
+      mapping?: Record<string, ValueMapping | Record<string, ValueMapping>>;
+    });
     getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[];
   }
   class CompositeAssignmentSource extends EffectiveAssignmentSource {
     constructor(options?: {
       sources?: EffectiveAssignmentSource[];
       identity?: string[];
-      mergeMetadata?: (left: Record<string, unknown>, right: Record<string, unknown>) => Record<string, unknown>;
+      mergeMetadata?: (
+        left: Record<string, unknown>,
+        right: Record<string, unknown>
+      ) => Record<string, unknown>;
     });
     getAssignments(context: Record<string, unknown>, asOfDate: Date): AssignmentCandidate[];
   }
@@ -827,7 +895,10 @@ declare global {
       actorSource: ActorSource;
       assignmentSource: EffectiveAssignmentSource;
       overrideSource: OverrideSource;
-      delegationSource: MappedDelegationSource | { getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[] } | InMemoryDelegationSource;
+      delegationSource:
+        | MappedDelegationSource
+        | { getDelegations(context: Record<string, unknown>, asOfDate: Date): Delegation[] }
+        | InMemoryDelegationSource;
       policy?: ResolutionPolicy;
       routingResolver?: RoutingResolver;
     });
@@ -903,11 +974,14 @@ declare global {
       jobType: string,
       params: Record<string, unknown>,
       registryCallback: (queue: JobQueueLike, services?: unknown) => void,
-      forceRestart?: boolean
+      forceRestart?: boolean,
+      maxDurationMs?: number,
+      loggingConfig?: unknown
     ): unknown;
     resume(
       jobName: string,
-      registryCallback: (queue: JobQueueLike, services?: unknown) => void
+      registryCallback: (queue: JobQueueLike, services?: unknown) => void,
+      maxDurationMs?: number
     ): unknown;
     getStatus(jobName: string): { state: string; percentage?: number };
     cancelJob(jobName: string): void;

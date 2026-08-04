@@ -81,4 +81,13 @@ describe('vendored GasLibraryFactory public API', () => {
     expect(globals['PriorityChainResolver']).toBeUndefined();
     expect(globals['SwapAndEnrichInterceptor']).toBeUndefined();
   });
+
+  it('publishes hierarchical logging methods', () => {
+    const logger = new LoggerService();
+
+    expect(typeof logger.logJobStart).toBe('function');
+    expect(typeof logger.logJobResume).toBe('function');
+    expect(typeof logger.logPipelineStep).toBe('function');
+    expect(typeof logger.logSummary).toBe('function');
+  });
 });

@@ -164,6 +164,169 @@ function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveF
   return drive;
 }
 
+function logDetails(result: StepExecutionResult): unknown {
+  return result.logDetails;
+}
+
+describe('email pipeline operational log details', () => {
+  test('publishes the built CDU target and the send-condition decision', () => {
+    const w = wire({ CONDIZIONE: '{{focus.alunno.didattica.carenze.numero}} > 99' });
+
+    const built = buildStep(w).execute(w.ctx);
+    const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+
+    expect(logDetails(built)).toEqual({ Target: 'a1@school.it' });
+    expect(logDetails(decision)).toEqual({ Send: false, Reason: 'Condition not met' });
+  });
+
+  test('publishes the rendered-box count, including zero', () => {
+    const w = wire({ BOX_CFG: '[]' });
+    buildStep(w).execute(w.ctx);
+    new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+
+    const rendered = new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(
+      w.ctx
+    );
+
+    expect(logDetails(rendered)).toEqual({ Boxes: 0 });
+  });
+
+  test('publishes every rendered box in the operational count', () => {
+    const w = wire({
+      BOX_CFG: JSON.stringify([
+        { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Uno</p>' },
+        { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Due</p>' },
+        { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Tre</p>' }
+      ])
+    });
+    buildStep(w).execute(w.ctx);
+    new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+
+    const rendered = new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(
+      w.ctx
+    );
+
+    expect(logDetails(rendered)).toEqual({ Boxes: 3 });
+  });
+
+  test('publishes the subject and attachment count without the composed HTML body', () => {
+    const w = wire({ OGGETTO: 'Convocazione consiglio', ALLEGATI: '["file-1","file-2"]' });
+    runThroughRender(w);
+
+    const composed = new ComposeEmailStep(
+      logger,
+      w.templates,
+      new LogDocumentoRepository(w.db),
+      new FakeDriveFacade()
+    ).execute(w.ctx);
+
+    expect(logDetails(composed)).toEqual({ Subject: 'Convocazione consiglio', Attachments: 2 });
+    expect(JSON.stringify(logDetails(composed))).not.toContain('<!DOCTYPE html>');
+  });
+
+  test('publishes the resolved To and Cc operational addresses', () => {
+    const w = wire({}, {
+      tipo: 'genitori',
+      tipoTarget: 'alunno',
+      target: 'a1@school.it',
+      emails: ['docente@example.edu'],
+      cc: ['segreteria@example.edu'],
+      classiCompetenza: []
+    });
+    w.ctx.set('shouldSend', true);
+
+    const recipients = new ResolveRecipientsStep(
+      logger,
+      w.docenti,
+      new ClasseRepository(w.db),
+      new AldoTeachingAssignmentResolver(w.db)
+    ).execute(w.ctx);
+
+    expect(logDetails(recipients)).toEqual({
+      To: ['docente@example.edu'],
+      Cc: ['segreteria@example.edu']
+    });
+  });
+
+  test('publishes sent operational recipients and no log-email payload', () => {
+    const w = wire({ OGGETTO: 'Convocazione consiglio' });
+    runThroughCompose(w);
+    w.ctx.set('destinatariFinali', [{ emails: ['docente@example.edu'] }]);
+    const noSupervisore = {
+      findConfigAnnoCorrente: () => ({ hasSupervisore: () => false, supervisoreEmail: null })
+    } as unknown as MasterSheetRepository;
+
+    const sent = new SendEmailStep(logger, new FakeGmailFacade(), noSupervisore).execute(w.ctx);
+    const logged = new LogEmailStep(logger, new LogEmailRepository(w.db)).execute(w.ctx);
+
+    expect(logDetails(sent)).toEqual({ Sent: 1, Recipients: ['docente@example.edu'] });
+    expect(logDetails(logged)).toBeNull();
+  });
+
+  test('publishes Bcc/test routing and send errors without rendering the email body', () => {
+    const w = wire({ OGGETTO: 'Convocazione consiglio' });
+    runThroughCompose(w);
+    w.ctx.set('destinatariFinali', [{ emails: ['broken@example.edu'], cc: ['segreteria@example.edu'] }]);
+    const gmail = new FakeGmailFacade();
+    gmail.failFor.add('tester@example.edu');
+    w.ctx.set('testEmail', 'tester@example.edu');
+
+    const result = new SendEmailStep(logger, gmail, new MasterSheetRepository(w.db)).execute(w.ctx);
+
+    expect(logDetails(result)).toEqual({
+      Sent: 0,
+      Recipients: ['tester@example.edu'],
+      Errors: ['simulated failure for tester@example.edu'],
+      Cc: [],
+      Bcc: []
+    });
+    expect(JSON.stringify(logDetails(result))).not.toContain('<!DOCTYPE html>');
+  });
+
+  test('publishes normal-mode Cc and supervisor Bcc addresses separately', () => {
+    const w = wire({ OGGETTO: 'Convocazione consiglio' });
+    runThroughCompose(w);
+    w.ctx.set('destinatariFinali', [
+      { emails: ['docente@example.edu'], cc: ['segreteria@example.edu'] }
+    ]);
+
+    const result = new SendEmailStep(
+      logger,
+      new FakeGmailFacade(),
+      new MasterSheetRepository(w.db)
+    ).execute(w.ctx);
+
+    expect(logDetails(result)).toEqual({
+      Sent: 1,
+      Recipients: ['docente@example.edu'],
+      Cc: ['segreteria@example.edu'],
+      Bcc: ['super@school.it']
+    });
+  });
+
+  test('publishes post-process action names and affected row count', () => {
+    const post = JSON.stringify([
+      {
+        tipo: 'INSERISCI_TIMESTAMP',
+        tab: 'CARENZE',
+        col: 'NOTIFICATO',
+        criteri: {
+          STUDENTE: '{{focus.carenza.studente}}',
+          PROGRESSIVO: '{{focus.carenza.progressivo}}'
+        }
+      }
+    ]);
+    const w = wire({ PROCESSO: 'PER_CARENZA_GENITORI', POST_PROCESSO: post });
+    runThroughCompose(w);
+    w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+    send(w, new FakeGmailFacade());
+
+    const postProcessed = new PostProcessEmailStep(logger, w.db, w.templates).execute(w.ctx);
+
+    expect(logDetails(postProcessed)).toEqual({ Actions: ['INSERISCI_TIMESTAMP'], Updated: 1 });
+  });
+});
+
 // --- Step 1: BuildCDUStep ---
 
 test('BuildCDUStep PER_GENITORI_ALUNNO builds FAMIGLIA_COMPLETO CDU and enriches destinatario (11 §3)', () => {
@@ -930,7 +1093,7 @@ test('send failure is collected, does not break the pipeline (11 §8)', () => {
   expect(gmail.sent).toHaveLength(1);
 });
 
-test('send failure redacts the recipient email in the error log (11 §8)', () => {
+test('send failure keeps the operational recipient email in the error log (11 §8)', () => {
   const w = wire();
   runThroughCompose(w);
   w.ctx.set('destinatariFinali', [{ emails: ['broken@x.it'] }]);
@@ -945,9 +1108,9 @@ test('send failure redacts the recipient email in the error log (11 §8)', () =>
     error: errorMock
   } as unknown as LoggerService;
   new SendEmailStep(mockLogger, gmail, new MasterSheetRepository(w.db)).execute(w.ctx);
-  expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
+  expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('broken@x.it'));
   const errorCalls = errorMock.mock.calls.map((args: unknown[]) => args[0] as string);
-  expect(errorCalls.some((msg) => msg.includes('@'))).toBe(false);
+  expect(errorCalls.some((msg) => msg.includes('[EMAIL_REDACTED]'))).toBe(false);
 });
 
 // --- Steps 7-8: LogEmailStep + PostProcessEmailStep ---

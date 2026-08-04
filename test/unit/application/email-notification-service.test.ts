@@ -597,9 +597,47 @@ test('sendToTarget sends no attachments when the static configuration is empty',
     classiCompetenza: ['5A']
   });
 
-  expect(result).toEqual({ sent: 1, errors: [], skipped: false });
+  expect(result).toMatchObject({
+    sent: 1,
+    errors: [],
+    skipped: false,
+    recipients: ['rossi@school.it'],
+    subject: 'Oggetto STATIC_EMPTY'
+  });
+  expect(result.durationMs).toEqual(expect.any(Number));
   expect(gmail.sent).toHaveLength(1);
   expect(gmail.sent[0]!.attachments).toEqual([]);
+});
+
+test('sendToTarget returns the subject, operational recipients, and measured duration from the pipeline context', () => {
+  const { service } = wire([
+    mailRow('TARGET_RESULT', { OGGETTO: 'Convocazione consiglio' })
+  ]);
+  const nowSpy = jest
+    .spyOn(Date, 'now')
+    .mockReturnValueOnce(1000)
+    .mockReturnValue(1230);
+
+  try {
+    expect(
+      service.sendToTarget('TARGET_RESULT', {
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '5A',
+        emails: ['docente@example.edu'],
+        classiCompetenza: ['5A']
+      }, 'job')
+    ).toEqual({
+      sent: 1,
+      errors: [],
+      skipped: false,
+      recipients: ['docente@example.edu'],
+      subject: 'Convocazione consiglio',
+      durationMs: 230
+    });
+  } finally {
+    nowSpy.mockRestore();
+  }
 });
 
 test('sendToTarget never assignment-routes a flagged target under PER_COORDINATORE', () => {
@@ -641,7 +679,14 @@ test('sendToTarget never assignment-routes a flagged target under PER_COORDINATO
     teachingAssignmentTarget: true
   });
 
-  expect(result).toEqual({ sent: 1, errors: [], skipped: false });
+  expect(result).toMatchObject({
+    sent: 1,
+    errors: [],
+    skipped: false,
+    recipients: ['rossi@school.it'],
+    subject: 'Oggetto COORDINATORE_STALE_TARGET'
+  });
+  expect(result.durationMs).toEqual(expect.any(Number));
   expect(gmail.sent[0]!.to).toEqual(['rossi@school.it']);
 });
 
@@ -907,7 +952,14 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       emails: ['rossi@school.it'],
       classiCompetenza: ['5A']
     });
-    expect(result).toEqual({ sent: 0, errors: [], skipped: true });
+    expect(result).toMatchObject({
+      sent: 0,
+      errors: [],
+      skipped: true,
+      recipients: [],
+      subject: ''
+    });
+    expect(result.durationMs).toEqual(expect.any(Number));
   });
 
   test('sendToTarget sends and returns sent/errors/skipped:false on a successful run', () => {

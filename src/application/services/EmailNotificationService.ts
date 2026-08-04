@@ -84,6 +84,15 @@ export interface SendPatternResult {
   errors: string[];
 }
 
+export interface EmailTargetResult {
+  sent: number;
+  errors: string[];
+  skipped: boolean;
+  recipients: string[];
+  subject: string;
+  durationMs: number;
+}
+
 /**
  * Email-notification application service (ref 11, 12): enumerates the logical
  * recipients dictated by CONF_MAIL.PROCESSO (11 §3/§12) and runs the 8-step
@@ -164,7 +173,8 @@ export class EmailNotificationService {
     patternId: string,
     target: EmailTarget,
     jobId?: string
-  ): { sent: number; errors: string[]; skipped: boolean } {
+  ): EmailTargetResult {
+    const startedAt = Date.now();
     const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);
     if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     const conf = this.deps.confMail.findById(patternId);
@@ -177,11 +187,23 @@ export class EmailNotificationService {
       now: this.deps.now,
       testEmail: this.testEmail
     });
-    if (ctx.get('shouldSend') === false) return { sent: 0, errors: [], skipped: true };
+    if (ctx.get('shouldSend') === false) {
+      return {
+        sent: 0,
+        errors: [],
+        skipped: true,
+        recipients: [],
+        subject: '',
+        durationMs: Math.max(0, Date.now() - startedAt)
+      };
+    }
     return {
       sent: ctx.get<number>('sentCount') ?? 0,
       errors: ctx.get<string[]>('sendErrors') ?? [],
-      skipped: false
+      skipped: false,
+      recipients: ctx.get<string[]>('sentTo') ?? [],
+      subject: ctx.get<string>('oggettoRisolto') ?? '',
+      durationMs: Math.max(0, Date.now() - startedAt)
     };
   }
 

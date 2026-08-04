@@ -131,6 +131,10 @@ export class AnalyzeContextStep extends Step {
       this.configs.shouldGenerate(confDoc(ctx), cduRecord(ctx), this.engine)
     );
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Generate: boolean } {
+    return { Generate: ctx.get('shouldGenerate') === true };
+  }
 }
 
 /** Step 2 (10 §4): deduplication is controlled by CONF_DOC.DUPLICAZIONE. */
@@ -186,6 +190,14 @@ export class CheckDuplicatesStep extends Step {
       );
     }
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): string {
+    return ctx.get('shouldGenerate') === false
+      ? String(ctx.get('skipReason') ?? '')
+      : String(cfg(ctx)[COL_CONF_DOC.DUPLICAZIONE]) === 'PERMESSA'
+        ? 'Duplicates allowed'
+        : 'No duplicate found';
+  }
 }
 
 /** Step 3-4 (10 §5): PATH_OUT rendered by WorkspaceTemplateEngine; folder created + logged in LOG_FOLD. */
@@ -222,6 +234,15 @@ export class PrepareInfrastructureStep extends Step {
     this.setResult(ctx, 'destFolderId', folderId);
     this.setResult(ctx, 'destFolderPath', path);
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Folder: string; Path: string; Id: string } {
+    const path = ctx.get<string>('destFolderPath') ?? '';
+    return {
+      Folder: nomeCartella(path),
+      Path: path,
+      Id: ctx.get<string>('destFolderId') ?? ''
+    };
+  }
 }
 
 /** Step 5 (10 §6): FILE_NAME rendered by WorkspaceTemplateEngine over the CDU. */
@@ -238,6 +259,10 @@ export class GenerateNameStep extends Step {
       'nomeFile',
       this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME]), cduRecord(ctx))
     );
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): string {
+    return ctx.get<string>('nomeFile') ?? '';
   }
 }
 
@@ -256,6 +281,10 @@ export class SelectTemplateStep extends Step {
       'templateId',
       this.configs.resolveTemplateId(confDoc(ctx), cduRecord(ctx), this.engine)
     );
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): string {
+    return ctx.get<string>('templateId') ?? '';
   }
 }
 
@@ -280,6 +309,10 @@ export class CloneTemplateStep extends Step {
     // /edit (not /view): generated files must open ready to edit, not in preview (10 §8).
     this.setResult(ctx, 'newFileLink', buildFileLink(fileId, confDoc(ctx).formato));
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): string {
+    return ctx.get<string>('newFileId') ?? '';
+  }
 }
 
 /** Step 8 (10 §9): rendering delegated to the GENERATORE strategy (→ WorkspaceTemplateEngine). */
@@ -298,6 +331,10 @@ export class RenderTemplateStep extends Step {
     const strategy = this.registry.get(generatore);
     if (!strategy) throw new PipelineError(`GENERATORE non registrato: ${generatore}`); // 10 §9
     strategy.render(ctx.get<string>('newFileId')!, cdu(ctx), confDoc(ctx));
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): string {
+    return String(cfg(ctx)[COL_CONF_DOC.GENERATORE]);
   }
 }
 
@@ -319,11 +356,18 @@ export class ApplyPermissionsStep extends Step {
     // Supplenza routing is applied separately for file and folder (14 §1.2).
     const fileId = ctx.get<string>('newFileId');
     if (fileId !== null) {
-      this.applica(perms.file ?? [], fileId, cduObj, parseRegola(perms.regolaSupplente?.file));
+      this.applica(
+        ctx,
+        perms.file ?? [],
+        fileId,
+        cduObj,
+        parseRegola(perms.regolaSupplente?.file)
+      );
     }
     const folderId = ctx.get<string>('destFolderId');
     if (folderId !== null) {
       this.applica(
+        ctx,
         perms.folder ?? [],
         folderId,
         cduObj,
@@ -332,12 +376,30 @@ export class ApplyPermissionsStep extends Step {
     }
   }
 
-  private applica(acl: AclEntry[], targetId: string, cduObj: Cdu, regola: GestioneSupplenti): void {
+  private applica(
+    ctx: PipelineContext,
+    acl: AclEntry[],
+    targetId: string,
+    cduObj: Cdu,
+    regola: GestioneSupplenti
+  ): void {
     for (const { ruolo, permesso } of acl) {
       for (const email of this.roles.risolvi(ruolo, cduObj, { regolaSupplente: regola })) {
         this.drive.setPermission(targetId, email.value, permesso);
+        const key = permesso === 'SCRITTURA' ? 'permissionEditors' : 'permissionViewers';
+        const collected = ctx.get<string[]>(key) ?? [];
+        if (!collected.includes(email.value)) {
+          this.setResult(ctx, key, [...collected, email.value]);
+        }
       }
     }
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Editors: string[]; Viewers: string[] } {
+    return {
+      Editors: ctx.get<string[]>('permissionEditors') ?? [],
+      Viewers: ctx.get<string[]>('permissionViewers') ?? []
+    };
   }
 }
 
@@ -376,6 +438,11 @@ export class RegisterDocumentStep extends Step {
     };
     // Persisted by the service's transaction commit (10 §11).
     this.db.table(TABLE.LOG_DOCS).insert(row);
+    this.setResult(ctx, 'documentStatus', StatoDocumento.GENERATO);
+  }
+
+  protected override _getLogDetails(): null {
+    return null;
   }
 }
 
@@ -393,6 +460,9 @@ export class PostProcessStep extends Step {
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
+    const actions = JSON.parse(String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO])) as Array<{
+      tipo?: unknown;
+    }>;
     const updated = executePostProcess(
       String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO]),
       cduRecord(ctx),
@@ -402,5 +472,17 @@ export class PostProcessStep extends Step {
       this.logger
     );
     this.setResult(ctx, 'postProcessUpdated', updated);
+    this.setResult(
+      ctx,
+      'postProcessActions',
+      actions.flatMap((action) => (typeof action.tipo === 'string' ? [action.tipo] : []))
+    );
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Actions: string[]; Updated: number } {
+    return {
+      Actions: ctx.get<string[]>('postProcessActions') ?? [],
+      Updated: ctx.get<number>('postProcessUpdated') ?? 0
+    };
   }
 }

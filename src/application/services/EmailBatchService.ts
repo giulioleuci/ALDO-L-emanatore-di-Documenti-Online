@@ -169,18 +169,30 @@ export class EmailBatchService {
       const quotaCapped = remainingQuota < chunkSize;
       const effectiveChunk = Math.min(chunkSize, remainingQuota);
       const fine = Math.min(i + effectiveChunk, targets.length);
+      let progressDetail = '';
       for (; i < fine; i++) {
         const target = targets[i]!;
+        const targetHeader = target.emails.join(',') || target.target;
         this.logger?.logItemStart(
           i + 1,
           targets.length,
           'Target',
-          PiiRedactor.redact(target.target),
+          targetHeader,
           'EMAIL'
         );
         const esito = this.email.sendToTarget(patternId, target, jobId);
         sent += esito.sent;
         errors.push(...esito.errors);
+        const recipients = esito.recipients.length > 0 ? esito.recipients : target.emails;
+        const subject = esito.subject === '' ? patternId : esito.subject;
+        const outcome = esito.sent > 0 ? 'Email sent' : esito.skipped ? 'Email skipped' : 'Email failed';
+        const detail = `${subject} -> ${recipients.join(',')}`;
+        progressDetail = detail;
+        this.logger?.logSummary(outcome, esito.durationMs, detail, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
         processed.push(target.target);
       }
       const percentage = (i / targets.length) * 100;
@@ -202,7 +214,7 @@ export class EmailBatchService {
       this.monitor?.updateProgress(
         jobId,
         percentage,
-        `${processed.length}/${targets.length} destinatari elaborati`
+        `${processed.length}/${targets.length} destinatari elaborati: ${progressDetail}`
       );
       yield {
         percentage,

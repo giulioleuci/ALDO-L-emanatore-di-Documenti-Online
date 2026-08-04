@@ -124,19 +124,55 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     const { service } = wire();
     service.generateForClasse(ClasseId.of('5A'), 'CD1');
     const second = service.generateForClasse(ClasseId.of('5A'), 'CD1');
-    expect(second).toEqual({ fileId: null, status: 'SKIPPED' });
+    expect(second).toMatchObject({
+      fileId: null,
+      fileName: null,
+      fileLink: null,
+      status: 'SKIPPED'
+    });
+    expect(second.durationMs).toEqual(expect.any(Number));
   });
 
-  test("returns status 'UNKNOWN' when newFileId is set but the LOG_DOCS row can't be found back", () => {
+  test("returns status 'GENERATO' from pipeline context when LOG_DOCS cannot be read back", () => {
     const db = new LogDocsNeverFoundDatabase(fixtureTables());
     const { service } = wire(fixtureTables(), { db });
     const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
     expect(result.fileId).not.toBeNull();
-    expect(result.status).toBe('UNKNOWN');
+    expect(result.status).toBe('GENERATO');
   });
 });
 
 describe('DocumentGenerationService.generateForPiano', () => {
+  test('returns the generated document metadata and measured duration from the completed pipeline context', () => {
+    const registry = new Map([
+      ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())]
+    ]);
+    const { service } = wire(fixtureTables(), { registry });
+    const nowSpy = jest
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(1000)
+      .mockReturnValue(9572);
+
+    try {
+      expect(
+        service.generateForPiano(
+          'a2@school.it',
+          TipoPiano.PDP_DSA,
+          'PIANI_PERSONALIZZATI',
+          'job'
+        )
+      ).toEqual({
+        fileId: 'file_2',
+        fileName: 'Piano_PDP_DSA_NERI PAOLO',
+        fileLink: 'https://docs.google.com/document/d/file_2/edit',
+        status: 'GENERATO',
+        durationMs: 8572
+      });
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
   test('runs two focused plan subtypes through one conditional configuration and skips their reruns independently', () => {
     const tables = fixtureTables();
     tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{"gravita":"lieve"}' });
@@ -196,13 +232,15 @@ describe('DocumentGenerationService.generateForPiano', () => {
         })
       ])
     );
-    expect(service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')).toEqual({
+    expect(service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')).toMatchObject({
       fileId: null,
+      fileName: null,
+      fileLink: null,
       status: 'SKIPPED'
     });
     expect(
       service.generateForPiano('a1@school.it', TipoPiano.PDP_BES, 'PIANI_PERSONALIZZATI')
-    ).toEqual({ fileId: null, status: 'SKIPPED' });
+    ).toMatchObject({ fileId: null, fileName: null, fileLink: null, status: 'SKIPPED' });
   });
 
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
@@ -251,7 +289,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
         TipoPiano.PEI,
         'PIANI_PERSONALIZZATI'
       )
-    ).toEqual({ fileId: null, status: 'SKIPPED' });
+    ).toMatchObject({ fileId: null, fileName: null, fileLink: null, status: 'SKIPPED' });
     expect(
       laterRun.service.generateForPiano(
         'a1@school.it',

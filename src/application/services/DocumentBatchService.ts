@@ -126,7 +126,7 @@ export class DocumentBatchService {
         i + 1,
         targets.length,
         'Target',
-        PiiRedactor.redact(targetId),
+        targetId,
         'DOCUMENT'
       );
       let message: string;
@@ -137,10 +137,21 @@ export class DocumentBatchService {
           confDocId,
           jobId
         );
-        message = `Generazione piano ${i + 1}/${targets.length} ${targetId} (${result.status})`;
+        const name = result.fileName ?? targetId;
+        this.logger?.logSummary('Document generated', result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        message = `Document generated: ${name} (${result.status} in ${result.durationMs}ms)`;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${targetId}: ${reason}`);
+        this.logger?.logSummary('Document failed', 0, `${targetId}: ${reason}`, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
         message = `Errore piano ${i + 1}/${targets.length} ${targetId}: ${reason}`;
       }
       processed.push(targetId);
@@ -192,10 +203,22 @@ export class DocumentBatchService {
       );
       let message = `Generazione documento classe ${classe.id ?? '?'}`;
       try {
-        this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
+        const result = this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
+        const name = result.fileName ?? classe.id ?? '?';
+        this.logger?.logSummary('Document generated', result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < attive.length]
+        });
+        message = `Document generated: ${name} (${result.status} in ${result.durationMs}ms)`;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${classe.id ?? '?'}: ${reason}`);
+        this.logger?.logSummary('Document failed', 0, `${classe.id ?? '?'}: ${reason}`, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < attive.length]
+        });
         message = `Errore: ${reason} (classe ${classe.id ?? '?'})`;
       }
       processed.push(classe.id ?? '');

@@ -137,6 +137,10 @@ export class BuildCDUStep extends Step {
     this.setResult(ctx, 'cdu', built);
   }
 
+  protected override _getLogDetails(ctx: PipelineContext): { Target: string } {
+    return { Target: target(ctx).target };
+  }
+
   private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget): CduDestinatario {
     const docente = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
     const alunno = t.tipoTarget === 'alunno' ? this.alunni.findById(t.target) : null;
@@ -213,6 +217,19 @@ export class ValutaCondizioniInvioStep extends Step {
       condizione === null ? true : this.engine.evaluateBoolean(condizione, cduRecord(ctx))
     );
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Send: boolean; Reason: string } {
+    const shouldSend = ctx.get('shouldSend') === true;
+    return {
+      Send: shouldSend,
+      Reason:
+        confMail(ctx).getCondizione() === null
+          ? 'No condition configured'
+          : shouldSend
+            ? 'Condition met'
+            : 'Condition not met'
+    };
+  }
 }
 
 /** Step 3 (11 §5): BOX_CFG → ContentComposer; populates cdu.render.boxes and resolves OGGETTO. */
@@ -263,6 +280,10 @@ export class RenderBoxesStep extends Step {
         (result.ordered.length > 0 || confMail(ctx).getAllegati().length > 0)
     );
     this.setResult(ctx, 'oggettoRisolto', oggetto);
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Boxes: number } {
+    return { Boxes: (ctx.get<string[]>('boxHtmlOrdered') ?? []).length };
   }
 }
 
@@ -370,6 +391,13 @@ export class ComposeEmailStep extends Step {
     this.setResult(ctx, 'allegatiIds', allegati.ids);
     this.setResult(ctx, 'allegatiLinks', allegati.links);
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Subject: string; Attachments: number } {
+    return {
+      Subject: ctx.get<string>('oggettoRisolto') ?? '',
+      Attachments: (ctx.get<string[]>('allegatiIds') ?? []).length
+    };
+  }
 }
 
 /** Step 5 (11 §7): teaching-assignment routing for PER_DOCENTE; every other process is declared passthrough. */
@@ -437,6 +465,14 @@ export class ResolveRecipientsStep extends Step {
       finali.map((email) => ({ emails: [email] })) satisfies Destinazione[]
     );
   }
+
+  protected override _getLogDetails(ctx: PipelineContext): { To: string[]; Cc: string[] } {
+    const destinations = ctx.get<Destinazione[]>('destinatariFinali') ?? [];
+    return {
+      To: destinations.flatMap((destination) => destination.emails),
+      Cc: destinations.flatMap((destination) => destination.cc ?? [])
+    };
+  }
 }
 
 /** Step 6 (11 §8): physical send; supervisore BCC hardcoded (11 §6); failures collected, never thrown. */
@@ -457,6 +493,8 @@ export class SendEmailStep extends Step {
     const destinazioni = ctx.get<Destinazione[]>('destinatariFinali')!;
     const errors: string[] = [];
     const attempted: string[] = [];
+    const resolvedCc: string[] = [];
+    const resolvedBcc: string[] = [];
     let sent = 0;
 
     for (const dest of destinazioni) {
@@ -472,13 +510,15 @@ export class SendEmailStep extends Step {
       // Test-send mode redirects `to` to the tester; real cc/bcc recipients must not leak alongside it (11 §15).
       if (supervisore !== null && testEmail === null) opts.bcc = [supervisore];
       if (dest.cc !== undefined && testEmail === null) opts.cc = dest.cc;
+      for (const email of opts.cc ?? []) if (!resolvedCc.includes(email)) resolvedCc.push(email);
+      for (const email of opts.bcc ?? []) if (!resolvedBcc.includes(email)) resolvedBcc.push(email);
       const result = this.gmail.sendEmail(opts);
       if (result.success) {
         sent += 1;
       } else {
         // MUST log, collect and continue (11 §8).
         const msg = result.error ?? 'errore di invio sconosciuto';
-        this.logger.error(PiiRedactor.redact(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`));
+        this.logger.error(`SendEmail: invio fallito a ${to.join(',')}: ${msg}`);
         errors.push(msg);
       }
     }
@@ -486,6 +526,22 @@ export class SendEmailStep extends Step {
     this.setResult(ctx, 'sendErrors', errors);
     this.setResult(ctx, 'sentCount', sent);
     this.setResult(ctx, 'sentTo', attempted);
+    this.setResult(ctx, 'sentCc', resolvedCc);
+    this.setResult(ctx, 'sentBcc', resolvedBcc);
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): Record<string, string | number | string[]> {
+    const errors = ctx.get<string[]>('sendErrors') ?? [];
+    const cc = ctx.get<string[]>('sentCc') ?? [];
+    const bcc = ctx.get<string[]>('sentBcc') ?? [];
+    const details: Record<string, string | number | string[]> = {
+      Sent: ctx.get<number>('sentCount') ?? 0,
+      Recipients: ctx.get<string[]>('sentTo') ?? []
+    };
+    if (errors.length > 0) details.Errors = errors;
+    if (errors.length > 0 || cc.length > 0) details.Cc = cc;
+    if (errors.length > 0 || bcc.length > 0) details.Bcc = bcc;
+    return details;
   }
 
   /** Current-year MASTER.SUPERVISORE_EMAIL; empty ⇒ WARN and no BCC (11 §6 nota). */
@@ -529,6 +585,10 @@ export class LogEmailStep extends Step {
     );
     this.setResult(ctx, 'logStato', stato);
   }
+
+  protected override _getLogDetails(): null {
+    return null;
+  }
 }
 
 /** Step 8 (11 §10): POST_PROCESSO actions, only when at least one send succeeded; explicit save(). */
@@ -546,6 +606,9 @@ export class PostProcessEmailStep extends Step {
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
+    const actions = JSON.parse(String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO])) as Array<{
+      tipo?: unknown;
+    }>;
     const updated = executePostProcess(
       String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO]),
       cduRecord(ctx),
@@ -557,5 +620,17 @@ export class PostProcessEmailStep extends Step {
     // These mutations land after LogEmailStep's save — persist explicitly (11 §10).
     this.db.save();
     this.setResult(ctx, 'postProcessUpdated', updated);
+    this.setResult(
+      ctx,
+      'postProcessActions',
+      actions.flatMap((action) => (typeof action.tipo === 'string' ? [action.tipo] : []))
+    );
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): { Actions: string[]; Updated: number } {
+    return {
+      Actions: ctx.get<string[]>('postProcessActions') ?? [],
+      Updated: ctx.get<number>('postProcessUpdated') ?? 0
+    };
   }
 }

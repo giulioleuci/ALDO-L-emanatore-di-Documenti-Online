@@ -12,6 +12,7 @@ import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { FakePropertiesFacade } from '../../../test/fakes/FakePropertiesFacade';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import type { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
@@ -45,6 +46,45 @@ test('emits structured email batch/items', () => {
   expect(output).toContain('📑 [PROCESSING BATCH] (2 Items in queue)');
   expect(output).toContain('✉️ [EMAIL 1/2]');
   expect(output).toContain('✉️ [EMAIL 2/2]');
+  expect(output).toContain('bianchi@school.it');
+  expect(output).not.toContain('[EMAIL_REDACTED]');
+});
+
+test('emits a content-first timed summary using the per-target email result', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const target = {
+    tipo: 'docente' as const,
+    tipoTarget: 'classe' as const,
+    target: '5A',
+    emails: ['docente@example.edu'],
+    classiCompetenza: []
+  };
+  const notification = {
+    enumerateTargets: () => [target],
+    getConfigurazione: () => ({}),
+    getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
+    sendToTarget: () => ({
+      sent: 1,
+      errors: [],
+      skipped: false,
+      recipients: ['docente@example.edu'],
+      subject: 'Convocazione consiglio',
+      durationMs: 230
+    })
+  };
+  const service = new EmailBatchService(
+    notification as unknown as EmailNotificationService,
+    undefined,
+    undefined,
+    new LoggerService()
+  );
+
+  drain(service.batchSendHandler({ patternId: 'RESULT', chunkSize: 1, resumeState: null }));
+
+  expect(lines.join('\n')).toContain(
+    'Email sent: Convocazione consiglio -> docente@example.edu (COMPLETED in 230ms)'
+  );
 });
 
 test('resumed email batch logs persisted item index without resending earlier targets', () => {

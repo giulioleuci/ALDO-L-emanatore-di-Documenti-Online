@@ -88,6 +88,157 @@ function baseCtx(db: FakeDatabase, confIndex = 0): PipelineContext {
   return ctx;
 }
 
+function logDetails(result: StepExecutionResult): unknown {
+  return (result as StepExecutionResult & { logDetails: unknown }).logDetails;
+}
+
+describe('document pipeline operational log details', () => {
+  test('publishes the generation decision and duplicate-check reason', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+
+    const analyze = new AnalyzeContextStep(
+      logger,
+      new ConfigurazioneDocumentoRepository(db),
+      engine
+    ).execute(ctx);
+    const duplicateCheck = new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(
+      ctx
+    );
+
+    expect(logDetails(analyze)).toEqual({ Generate: true });
+    expect(logDetails(duplicateCheck)).toBe('No duplicate found');
+  });
+
+  test('publishes the duplicate identity when generation is stopped', () => {
+    const tables = fixtureTables();
+    tables.LOG_DOCS = [
+      {
+        ID: 'old',
+        ID_GEN: 'CD1',
+        TIPO: 'VERBALE',
+        SOTTOTIPO: '',
+        PATH: 'Verbali/5',
+        NOME: 'Verbale_5A_01/07/2026',
+        CLASSI: '5A',
+        STATO: 'GENERATO'
+      }
+    ];
+    const db = new FakeDatabase(tables);
+    const ctx = baseCtx(db);
+
+    const result = new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+
+    expect(logDetails(result)).toBe(
+      'Duplicato: TIPO=VERBALE, SOTTOTIPO=, ID_GEN=CD1, PATH=Verbali/5, NOME=Verbale_5A_01/07/2026'
+    );
+  });
+
+  test('publishes folder, filename, template and cloned file identifiers without a file link', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    const drive = new FakeDriveFacade();
+
+    const infrastructure = new PrepareInfrastructureStep(
+      logger,
+      drive,
+      db,
+      new FakeTemplateEngine()
+    ).execute(ctx);
+    const generatedName = new GenerateNameStep(logger, new FakeTemplateEngine()).execute(ctx);
+    const selectedTemplate = new SelectTemplateStep(
+      logger,
+      new ConfigurazioneDocumentoRepository(db),
+      engine
+    ).execute(ctx);
+    const clonedTemplate = new CloneTemplateStep(logger, drive).execute(ctx);
+
+    expect(logDetails(infrastructure)).toEqual({
+      Folder: '5',
+      Path: 'Verbali/5',
+      Id: 'folder_1'
+    });
+    expect(logDetails(generatedName)).toBe('Verbale_5A_01/07/2026');
+    expect(logDetails(selectedTemplate)).toBe('tmpl_verbale');
+    expect(logDetails(clonedTemplate)).toBe('file_2');
+    expect(JSON.stringify(logDetails(clonedTemplate))).not.toContain('https://');
+  });
+
+  test('publishes the configured generator without scanning the rendered file', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    ctx.set('newFileId', 'file_1');
+    const registry = new Map([
+      ['VERBALE_CDC', new VerbaleGeneratorStrategy(new FakeTemplateEngine())]
+    ]);
+
+    const result = new RenderTemplateStep(logger, registry).execute(ctx);
+
+    expect(logDetails(result)).toBe('VERBALE_CDC');
+  });
+
+  test('publishes unique operational permission addresses and no registration payload', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    const perms = {
+      file: [
+        { ruolo: 'COORDINATORI', permesso: 'SCRITTURA' },
+        { ruolo: 'COORDINATORI', permesso: 'SCRITTURA' }
+      ],
+      folder: [{ ruolo: 'CDC', permesso: 'LETTURA' }]
+    };
+    ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: JSON.stringify(perms) });
+    ctx.set('newFileId', 'file_1');
+    ctx.set('destFolderId', 'folder_1');
+    ctx.set('nomeFile', 'Verbale_5A_01/07/2026');
+    ctx.set('destFolderPath', 'Verbali/5');
+    const drive = new FakeDriveFacade();
+
+    const permissions = new ApplyPermissionsStep(
+      logger,
+      drive,
+      composeRisolutoreRuoli(db)
+    ).execute(ctx);
+    const registration = new RegisterDocumentStep(
+      logger,
+      db,
+      new FakeTemplateEngine()
+    ).execute(ctx);
+
+    expect(logDetails(permissions)).toEqual({
+      Editors: ['rossi@school.it'],
+      Viewers: ['bianchi@school.it']
+    });
+    expect(drive.permissions).toHaveLength(3);
+    expect(logDetails(registration)).toBeNull();
+  });
+
+  test('publishes post-process action names and affected row count', () => {
+    const tables = fixtureTables();
+    tables.LOG_DOCS = [{ ID: 'file_9', ID_GEN: 'CD1', STATO: 'GENERATO', CLASSI: '5A' }];
+    const db = new FakeDatabase(tables);
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      POST_PROCESSO: JSON.stringify([
+        { tipo: 'AGGIORNA_STATO_DOC', stato: 'ARCHIVIATO', criteri: { ID: 'file_9' } }
+      ])
+    });
+
+    const result = new PostProcessStep(
+      logger,
+      db,
+      new FakeTemplateEngine(),
+      new Date('2026-07-05T10:00:00Z')
+    ).execute(ctx);
+
+    expect(logDetails(result)).toEqual({
+      Actions: ['AGGIORNA_STATO_DOC'],
+      Updated: 1
+    });
+  });
+});
+
 test('AnalyzeContextStep: empty CONDIZIONE => shouldGenerate true (via ExpressionEngine repo helper)', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);

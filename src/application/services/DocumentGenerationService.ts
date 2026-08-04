@@ -25,7 +25,7 @@ import {
 } from '../pipelines/documentSteps';
 import type { PostProcessDb } from '../pipelines/postProcessActions';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import { TABLE, COL_CONF_DOC, COL_LOG_DOCS } from '../../config/schema';
+import { TABLE, COL_CONF_DOC } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { TipoPiano } from '../../domain/value-objects/enums';
 
@@ -50,6 +50,14 @@ export interface DocumentGenerationDeps {
   /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
   monitor?: IProcessMonitor | undefined;
   logger?: LoggerService;
+}
+
+export interface DocumentGenerationResult {
+  fileId: string | null;
+  fileName: string | null;
+  fileLink: string | null;
+  status: string;
+  durationMs: number;
 }
 
 /**
@@ -94,7 +102,8 @@ export class DocumentGenerationService {
     target: ClasseId,
     confDocId: string,
     jobId?: string
-  ): { fileId: string | null; status: string } {
+  ): DocumentGenerationResult {
+    const startedAt = Date.now();
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
@@ -141,16 +150,7 @@ export class DocumentGenerationService {
     }
     this.db.commit();
 
-    const fileId = ctx.get<string>('newFileId');
-    const status =
-      fileId !== null
-        ? String(
-            this.db.table(TABLE.LOG_DOCS).find((r) => r[COL_LOG_DOCS.ID] === fileId)?.[
-              COL_LOG_DOCS.STATO
-            ] ?? 'UNKNOWN'
-          )
-        : 'SKIPPED';
-    return { fileId, status };
+    return this.resultFromContext(ctx, startedAt);
   }
 
   /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
@@ -158,7 +158,7 @@ export class DocumentGenerationService {
     target: string,
     confDocId: string,
     jobId?: string
-  ): { fileId: string | null; status: string } {
+  ): DocumentGenerationResult {
     return this.generateForAlunnoWithRecipe(target, confDocId, 'ALUNNO_COMPLETO', jobId);
   }
 
@@ -168,7 +168,7 @@ export class DocumentGenerationService {
     pianoTipo: TipoPiano,
     confDocId: string,
     jobId?: string
-  ): { fileId: string | null; status: string } {
+  ): DocumentGenerationResult {
     return this.generateForAlunnoWithRecipe(
       alunnoEmail,
       confDocId,
@@ -186,7 +186,8 @@ export class DocumentGenerationService {
     jobId?: string,
     pianoTipo?: TipoPiano,
     expectedConfDocTipo?: string
-  ): { fileId: string | null; status: string } {
+  ): DocumentGenerationResult {
+    const startedAt = Date.now();
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
@@ -225,16 +226,18 @@ export class DocumentGenerationService {
     }
     this.db.commit();
 
+    return this.resultFromContext(ctx, startedAt);
+  }
+
+  private resultFromContext(ctx: PipelineContext, startedAt: number): DocumentGenerationResult {
     const fileId = ctx.get<string>('newFileId');
-    const status =
-      fileId !== null
-        ? String(
-            this.db.table(TABLE.LOG_DOCS).find((r) => r[COL_LOG_DOCS.ID] === fileId)?.[
-              COL_LOG_DOCS.STATO
-            ] ?? 'UNKNOWN'
-          )
-        : 'SKIPPED';
-    return { fileId, status };
+    return {
+      fileId,
+      fileName: ctx.get<string>('nomeFile'),
+      fileLink: ctx.get<string>('newFileLink'),
+      status: ctx.get<string>('documentStatus') ?? (fileId === null ? 'SKIPPED' : 'GENERATO'),
+      durationMs: Math.max(0, Date.now() - startedAt)
+    };
   }
 
   /**

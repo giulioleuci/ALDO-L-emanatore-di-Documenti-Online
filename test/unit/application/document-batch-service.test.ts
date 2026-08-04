@@ -33,7 +33,13 @@ function wire(
     generateForClasse: (target: ClasseId, confDocId: string) => {
       if (target.value === options.failFor) throw new Error('template non trovato');
       generated.push(`${target.value}:${confDocId}`);
-      return { fileId: `file_${target.value}`, status: 'GENERATO' };
+      return {
+        fileId: `file_${target.value}`,
+        fileName: `Documento_${target.value}`,
+        fileLink: `https://docs.google.com/document/d/file_${target.value}/edit`,
+        status: 'GENERATO',
+        durationMs: 8572
+      };
     }
   } as unknown as DocumentGenerationService;
   const service = new DocumentBatchService(
@@ -102,7 +108,13 @@ function wirePiani(
     generateForPiano: (studente: string, tipo: TipoPiano, confDocId: string, jobId?: string) => {
       generated.push({ studente, tipo, confDocId, jobId });
       if (tipo === options.failForTipo) throw new Error('template non trovato');
-      return { fileId: `file_${studente}_${tipo}`, status: 'GENERATO' };
+      return {
+        fileId: `file_${studente}_${tipo}`,
+        fileName: `Piano_${tipo}_${studente}`,
+        fileLink: `https://docs.google.com/document/d/file_${studente}_${tipo}/edit`,
+        status: 'GENERATO',
+        durationMs: 8572
+      };
     }
   };
   const EmptyClassi = { findAttive: () => [] };
@@ -117,7 +129,7 @@ function wirePiani(
   return { service, generated, studenti, piani };
 }
 
-test('emits structured document batch/items and redacts student identifiers', () => {
+test('emits unredacted document target headers and content-first timed item summaries', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
   const { service } = wirePiani({ logger: new LoggerService() });
@@ -133,7 +145,11 @@ test('emits structured document batch/items and redacts student identifiers', ()
   expect(output).toContain('📑 [PROCESSING BATCH] (2 Items in queue)');
   expect(output).toContain('📄 [DOCUMENT 1/2]');
   expect(output).toContain('📄 [DOCUMENT 2/2]');
-  expect(output).not.toContain('con-piani@school.it');
+  expect(output).toContain('con-piani@school.it:PEI');
+  expect(output).not.toContain('[EMAIL_REDACTED]');
+  expect(output).toContain(
+    'Document generated: Piano_PEI_con-piani@school.it (COMPLETED in 8572ms)'
+  );
 });
 
 test('PIANO_PERS configuration with a nonstandard ID still runs one target per plan', () => {
@@ -199,8 +215,8 @@ test('PIANI batch yields one persisted checkpoint and one progress update per ac
   });
   expect(monitor.progress.map(({ percentage }) => percentage)).toEqual([50, 100]);
   expect(monitor.progress.map(({ message }) => message)).toEqual([
-    'Generazione piano 1/2 con-piani@school.it:PEI (GENERATO)',
-    'Generazione piano 2/2 con-piani@school.it:PDP_BES (GENERATO)'
+    'Document generated: Piano_PEI_con-piani@school.it (GENERATO in 8572ms)',
+    'Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
   ]);
   expect(step.value).toEqual({
     success: true,
@@ -268,7 +284,7 @@ test('PIANI isolates one plan error with the email:TIPO prefix and continues rem
   });
   expect(monitor.progress.map(({ message }) => message)).toEqual([
     'Errore piano 1/2 con-piani@school.it:PEI: template non trovato',
-    'Generazione piano 2/2 con-piani@school.it:PDP_BES (GENERATO)'
+    'Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
   ]);
 });
 

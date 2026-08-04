@@ -197,7 +197,8 @@ export class EmailNotificationService {
     const d = this.deps;
     const pipeline = new Pipeline(this.logger, null, {
       name: 'NotificaPipeline',
-      stopOnError: false
+      stopOnError: false,
+      logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
     })
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))

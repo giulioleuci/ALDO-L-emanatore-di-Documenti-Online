@@ -66,7 +66,10 @@ export class ContextBuilder {
     const libRecipe: ContextAssemblerRecipe = {
       providers: recipe.providers.map((token) => ({ name: token, type: token }))
     };
-    this.assembler.assembleInto(cdu, libRecipe, params, recipe.options);
+    this.assembler.assembleInto(cdu, libRecipe, params, {
+      ...recipe.options,
+      logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
+    });
     return cdu;
   }
 

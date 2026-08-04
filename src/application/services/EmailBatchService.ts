@@ -65,7 +65,8 @@ export class EmailBatchService {
   constructor(
     private readonly email: EmailNotificationService,
     private readonly monitor?: IProcessMonitor,
-    private readonly properties?: IPropertiesFacade
+    private readonly properties?: IPropertiesFacade,
+    private readonly logger?: LoggerService
   ) {}
 
   /** ScriptProperties key under which quota-suspend resume state is persisted, scoped per CONF_MAIL pattern. */
@@ -138,6 +139,7 @@ export class EmailBatchService {
     const errors = resume === null ? [] : resume.errors.slice();
     let sent = resume?.sent ?? 0;
     let i = resume?.nextIndex ?? 0;
+    this.logger?.logBatchStart(targets.length);
 
     if (resume === null) {
       this.monitor?.registerJob(jobId);
@@ -169,6 +171,13 @@ export class EmailBatchService {
       const fine = Math.min(i + effectiveChunk, targets.length);
       for (; i < fine; i++) {
         const target = targets[i]!;
+        this.logger?.logItemStart(
+          i + 1,
+          targets.length,
+          'Target',
+          PiiRedactor.redact(target.target),
+          'EMAIL'
+        );
         const esito = this.email.sendToTarget(patternId, target, jobId);
         sent += esito.sent;
         errors.push(...esito.errors);
@@ -229,7 +238,8 @@ export class EmailBatchService {
     runner: JobRunnerService,
     jobName: string,
     patternId: string,
-    forceRestart = false
+    forceRestart = false,
+    maxDurationMs?: number
   ): unknown {
     if (forceRestart) {
       this.clearPersistedResume(patternId);
@@ -240,7 +250,8 @@ export class EmailBatchService {
       JOB_TYPE_INVIO_EMAIL,
       { patternId, jobId: jobName, ...(resumeState === null ? {} : { resumeState }) },
       (queue) => this.registerJobHandlers(queue),
-      forceRestart
+      forceRestart,
+      maxDurationMs
     );
   }
 }

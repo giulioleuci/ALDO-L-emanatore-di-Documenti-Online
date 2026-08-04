@@ -15,7 +15,11 @@ import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 
-function wire(monitor?: FakeProcessMonitor, properties?: IPropertiesFacade) {
+function wire(
+  monitor?: FakeProcessMonitor,
+  properties?: IPropertiesFacade,
+  logger?: LoggerService
+) {
   const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
   const notification = composeEmailNotificationService(
@@ -26,9 +30,52 @@ function wire(monitor?: FakeProcessMonitor, properties?: IPropertiesFacade) {
     new FakeDriveFacade(),
     new AldoTeachingAssignmentResolver(db)
   );
-  const service = new EmailBatchService(notification, monitor, properties);
+  const service = new EmailBatchService(notification, monitor, properties, logger);
   return { gmail, service };
 }
+
+test('emits structured email batch/items', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { service } = wire(undefined, undefined, new LoggerService());
+
+  drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1, resumeState: null }));
+
+  const output = lines.join('\n');
+  expect(output).toContain('📑 [PROCESSING BATCH] (2 Items in queue)');
+  expect(output).toContain('✉️ [EMAIL 1/2]');
+  expect(output).toContain('✉️ [EMAIL 2/2]');
+});
+
+test('resumed email batch logs persisted item index without resending earlier targets', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { gmail, service } = wire(undefined, undefined, new LoggerService());
+
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 1,
+      resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+    })
+  );
+
+  expect(gmail.sent).toHaveLength(1);
+  expect(lines.join('\n')).toContain('✉️ [EMAIL 2/2]');
+});
+
+test('quota suspension before processing logs the batch but no email item', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { gmail, service } = wire(undefined, undefined, new LoggerService());
+  gmail.remainingQuota = 0;
+
+  drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null }));
+
+  const output = lines.join('\n');
+  expect(output).toContain('📑 [PROCESSING BATCH] (2 Items in queue)');
+  expect(output).not.toContain('[EMAIL 1/2]');
+});
 
 interface RunnerCall {
   jobName: string;

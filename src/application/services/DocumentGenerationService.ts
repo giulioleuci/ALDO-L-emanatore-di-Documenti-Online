@@ -246,7 +246,8 @@ export class DocumentGenerationService {
   private buildPipeline(jobId?: string): Pipeline {
     const pipeline = new Pipeline(this.logger, null, {
       name: 'DocumentoPipeline',
-      stopOnError: false
+      stopOnError: false,
+      logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
     });
     pipeline
       .addStep(new AnalyzeContextStep(this.logger, this.configs, this.expressionEngine))

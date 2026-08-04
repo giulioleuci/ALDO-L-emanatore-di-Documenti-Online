@@ -24,7 +24,9 @@ import type { IAlunnoRepository } from '../../../src/domain/repositories/IAlunno
 // suspension. The trigger/state machinery itself is the library's (tested in
 // the GasLibraryFactory monorepo and online).
 
-function wire(options: { failFor?: string; monitor?: FakeProcessMonitor } = {}) {
+function wire(
+  options: { failFor?: string; monitor?: FakeProcessMonitor; logger?: LoggerService } = {}
+) {
   const db = new FakeDatabase(fixtureTables());
   const generated: string[] = [];
   const documenti = {
@@ -39,7 +41,8 @@ function wire(options: { failFor?: string; monitor?: FakeProcessMonitor } = {}) 
     new AlunnoRepository(db),
     new ConfigurazioneDocumentoRepository(db),
     documenti,
-    options.monitor
+    options.monitor,
+    options.logger
   );
   return { service, generated };
 }
@@ -51,6 +54,7 @@ function wirePiani(
     configId?: string;
     missingConfig?: boolean;
     failForTipo?: TipoPiano;
+    logger?: LoggerService;
   } = {}
 ) {
   const configId = options.configId ?? 'PIANI_PERSONALIZZATI';
@@ -107,10 +111,30 @@ function wirePiani(
     alunni as unknown as IAlunnoRepository,
     configs,
     documenti as unknown as DocumentGenerationService,
-    options.monitor
+    options.monitor,
+    options.logger
   );
   return { service, generated, studenti, piani };
 }
+
+test('emits structured document batch/items and redacts student identifiers', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { service } = wirePiani({ logger: new LoggerService() });
+
+  const generator = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_piani'
+  });
+  let step = generator.next();
+  while (!step.done) step = generator.next();
+
+  const output = lines.join('\n');
+  expect(output).toContain('📑 [PROCESSING BATCH] (2 Items in queue)');
+  expect(output).toContain('📄 [DOCUMENT 1/2]');
+  expect(output).toContain('📄 [DOCUMENT 2/2]');
+  expect(output).not.toContain('con-piani@school.it');
+});
 
 test('PIANO_PERS configuration with a nonstandard ID still runs one target per plan', () => {
   const configId = 'PIANO_INCLUSIONE_2026';

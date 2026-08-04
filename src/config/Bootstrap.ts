@@ -125,10 +125,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('logDocumenti', () => new LogDocumentoRepository(deps.db));
   c.register('logEmail', () => new LogEmailRepository(deps.db));
   c.register('configurazioniEmail', () => new ConfigurazioneEmailRepository(deps.db));
-  c.register(
-    'teachingAssignmentResolver',
-    () => new AldoTeachingAssignmentResolver(deps.db)
-  );
+  c.register('teachingAssignmentResolver', () => new AldoTeachingAssignmentResolver(deps.db));
   c.register(
     'risolutoreRuoli',
     (container) =>
@@ -147,9 +144,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('contextBuilder', (container) =>
     ContextEngineFactory.create({
       master: deps.master,
-      teachingAssignments: container.get<ITeachingAssignmentResolver>(
-        'teachingAssignmentResolver'
-      ),
+      teachingAssignments: container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
       ruoli: container.get<RuoloSpecialeRepository>('ruoliSpeciali'),
       docenti: container.get<DocenteRepository>('docenti'),
       classi: container.get<ClasseRepository>('classi'),
@@ -229,7 +224,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         new AlunnoRepository(deps.db),
         new ConfigurazioneDocumentoRepository(deps.db),
         container.get<DocumentGenerationService>('documentGenerationService'),
-        deps.monitor
+        deps.monitor,
+        logger
       )
   );
   c.register(
@@ -266,7 +262,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       new EmailBatchService(
         container.get<EmailNotificationService>('emailNotificationService'),
         deps.monitor,
-        deps.properties
+        deps.properties,
+        logger
       )
   );
   c.register(
@@ -297,27 +294,35 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
 export function avviaGenerazioneDataDriven(
   c: ServiceContainer,
   configId: string,
-  runner: JobRunnerService
+  runner: JobRunnerService,
+  maxDurationMs?: number
 ): unknown {
   return c
     .get<DocumentBatchService>('documentBatchService')
-    .start(runner, `gen_${configId}`, configId);
+    .start(runner, `gen_${configId}`, configId, false, maxDurationMs);
 }
 
 /** Data-driven launcher (15 §4): mass email for a CONF_MAIL pattern. */
 export function avviaInvioNotificheDataDriven(
   c: ServiceContainer,
   patternId: string,
-  runner: JobRunnerService
+  runner: JobRunnerService,
+  maxDurationMs?: number
 ): unknown {
   return c
     .get<EmailBatchService>('emailBatchService')
-    .start(runner, `mail_${patternId}`, patternId);
+    .start(runner, `mail_${patternId}`, patternId, false, maxDurationMs);
 }
 
 /** Data-driven launcher (15 §4): scheduled retry of failed LOG_MAIL sends (11 §16). */
-export function avviaRetryEmailDataDriven(c: ServiceContainer, runner: JobRunnerService): unknown {
-  return c.get<EmailRetryService>('emailRetryService').start(runner, 'retry_email');
+export function avviaRetryEmailDataDriven(
+  c: ServiceContainer,
+  runner: JobRunnerService,
+  maxDurationMs?: number
+): unknown {
+  return c
+    .get<EmailRetryService>('emailRetryService')
+    .start(runner, 'retry_email', false, maxDurationMs);
 }
 
 /**
@@ -346,14 +351,17 @@ export function avviaImportazioneDataDriven(c: ServiceContainer, configId: strin
 export function avviaImportazioneChunkedDataDriven(
   c: ServiceContainer,
   configId: string,
-  runner: JobRunnerService
+  runner: JobRunnerService,
+  maxDurationMs?: number
 ): unknown {
   if (!c.has('importService')) {
     throw new ConfigurationError(
       `Importazione ${configId} non disponibile: nessun ImportEngine configurato (12 §3, richiede DriveService/SpreadsheetService live)`
     );
   }
-  return c.get<ImportService>('importService').start(runner, `imp_chunked_${configId}`, configId);
+  return c
+    .get<ImportService>('importService')
+    .start(runner, `imp_chunked_${configId}`, configId, false, maxDurationMs);
 }
 
 /**
@@ -368,18 +376,23 @@ export function avviaImportazioneChunkedDataDriven(
 export function riprendiJobSospeso(
   c: ServiceContainer,
   runner: JobRunnerService,
-  jobName = ''
+  jobName = '',
+  maxDurationMs?: number
 ): unknown {
   const documenti = c.get<DocumentBatchService>('documentBatchService');
   const email = c.get<EmailBatchService>('emailBatchService');
   const retry = c.get<EmailRetryService>('emailRetryService');
   const importazione = c.has('importService') ? c.get<ImportService>('importService') : null;
-  return runner.resume(jobName, (queue) => {
-    documenti.registerJobHandlers(queue);
-    email.registerJobHandlers(queue);
-    retry.registerJobHandlers(queue);
-    importazione?.registerJobHandlers(queue);
-  });
+  return runner.resume(
+    jobName,
+    (queue) => {
+      documenti.registerJobHandlers(queue);
+      email.registerJobHandlers(queue);
+      retry.registerJobHandlers(queue);
+      importazione?.registerJobHandlers(queue);
+    },
+    maxDurationMs
+  );
 }
 
 let runtime: ServiceContainer | null = null;
@@ -498,9 +511,7 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
         `TEST_MODE attivo ma il Master Sheet ${masterId} non ha un proprietario Drive risolvibile`
       );
     }
-    container
-      .get<EmailNotificationService>('emailNotificationService')
-      .enableTestMode(ownerEmail);
+    container.get<EmailNotificationService>('emailNotificationService').enableTestMode(ownerEmail);
   }
 
   runtime = container;

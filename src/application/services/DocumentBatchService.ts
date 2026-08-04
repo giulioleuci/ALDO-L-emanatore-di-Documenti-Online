@@ -56,7 +56,8 @@ export class DocumentBatchService {
     private readonly alunni: IAlunnoRepository,
     private readonly configs: DocumentConfigLookup,
     private readonly documenti: DocumentGenerationService,
-    private readonly monitor?: IProcessMonitor
+    private readonly monitor?: IProcessMonitor,
+    private readonly logger?: LoggerService
   ) {}
 
   /** JobRunnerLib handler: one checkpoint per class or personalized plan. */
@@ -116,10 +117,18 @@ export class DocumentBatchService {
       this.monitor?.registerJob(jobId);
       this.monitor?.startJob(jobId);
     }
+    this.logger?.logBatchStart(targets.length);
 
     for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
       const target = targets[i]!;
       const targetId = `${target.studente}:${target.tipo}`;
+      this.logger?.logItemStart(
+        i + 1,
+        targets.length,
+        'Target',
+        PiiRedactor.redact(targetId),
+        'DOCUMENT'
+      );
       let message: string;
       try {
         const result = this.documenti.generateForPiano(
@@ -170,9 +179,17 @@ export class DocumentBatchService {
       this.monitor?.registerJob(jobId);
       this.monitor?.startJob(jobId);
     }
+    this.logger?.logBatchStart(attive.length);
 
     for (let i = resume?.nextIndex ?? 0; i < attive.length; i++) {
       const classe = attive[i]!;
+      this.logger?.logItemStart(
+        i + 1,
+        attive.length,
+        'Target',
+        classe.id ?? '?',
+        'DOCUMENT'
+      );
       let message = `Generazione documento classe ${classe.id ?? '?'}`;
       try {
         this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
@@ -207,14 +224,16 @@ export class DocumentBatchService {
     runner: JobRunnerService,
     jobName: string,
     confDocId: string,
-    forceRestart = false
+    forceRestart = false,
+    maxDurationMs?: number
   ): unknown {
     return runner.run(
       jobName,
       JOB_TYPE_GENERAZIONE_DOCUMENTI,
       { confDocId, jobId: jobName },
       (queue) => this.registerJobHandlers(queue),
-      forceRestart
+      forceRestart,
+      maxDurationMs
     );
   }
 }

@@ -11,7 +11,10 @@ import {
 } from '../../../src/config/Bootstrap';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
-import { EmailRetryService, JOB_TYPE_RETRY_EMAIL } from '../../../src/application/services/EmailRetryService';
+import {
+  EmailRetryService,
+  JOB_TYPE_RETRY_EMAIL
+} from '../../../src/application/services/EmailRetryService';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
 import { ReportService } from '../../../src/application/services/ReportService';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
@@ -54,6 +57,7 @@ interface RunnerCall {
   jobName: string;
   jobType?: string;
   params?: Record<string, unknown>;
+  maxDurationMs?: number;
   registered: string[];
 }
 
@@ -70,9 +74,11 @@ function fakeRunner() {
       jobName: string,
       jobType: string,
       params: Record<string, unknown>,
-      cb: (q: JobQueueLike) => void
+      cb: (q: JobQueueLike) => void,
+      _forceRestart?: boolean,
+      maxDurationMs?: number
     ) => {
-      calls.push({ jobName, jobType, params, registered: capture(cb) });
+      calls.push({ jobName, jobType, params, maxDurationMs, registered: capture(cb) });
       return 'started';
     },
     resume: (jobName: string, cb: (q: JobQueueLike) => void) => {
@@ -107,9 +113,7 @@ test('container resolves every application service as a lazy singleton (08 §2, 
 
 test('container injects one role and teaching resolver graph into every document consumer', () => {
   const c = container();
-  const teachingAssignments = c.get<ITeachingAssignmentResolver>(
-    'teachingAssignmentResolver'
-  );
+  const teachingAssignments = c.get<ITeachingAssignmentResolver>('teachingAssignmentResolver');
   const roles = c.get<RisolutoreRuoliService>('risolutoreRuoli');
   const documents = c.get<DocumentGenerationService>('documentGenerationService');
 
@@ -143,9 +147,7 @@ test('notification council enumeration consumes the registered GLF teaching reso
   const service = c.get<EmailNotificationService>('emailNotificationService');
   const config = service.getConfigurazione('CDC_OTTOBRE');
 
-  const target5A = service
-    .enumerateTargets(config)
-    .find((target) => target.target === '5A')!;
+  const target5A = service.enumerateTargets(config).find((target) => target.target === '5A')!;
 
   expect(target5A.emails).toEqual(
     expect.arrayContaining([
@@ -196,15 +198,16 @@ test('avviaInvioNotificheDataDriven starts the email batch job (15 §4/§6)', ()
   });
 });
 
-test('avviaRetryEmailDataDriven starts the retry job under its registered type (15 §4/§6, 11 §16)', () => {
+test('avviaRetryEmailDataDriven passes its execution limit to JobRunnerLib', () => {
   const { runner, calls } = fakeRunner();
-  avviaRetryEmailDataDriven(container(), runner);
+  avviaRetryEmailDataDriven(container(), runner, 30 * 60 * 1000);
   expect(calls[0]).toMatchObject({
     jobName: 'retry_email',
     jobType: JOB_TYPE_RETRY_EMAIL,
     params: { jobId: 'retry_email' }
   });
   expect(calls[0]!.registered).toEqual([JOB_TYPE_RETRY_EMAIL]);
+  expect(calls[0]!.maxDurationMs).toBe(30 * 60 * 1000);
 });
 
 test('avviaImportazioneDataDriven fails typed when no ImportEngine is configured (12 §3)', () => {
@@ -353,9 +356,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
       commit: jest.fn(),
       rollback: jest.fn()
     };
-    const databaseService = jest
-      .fn()
-      .mockImplementation(() => fakeDb);
+    const databaseService = jest.fn().mockImplementation(() => fakeDb);
     (global as unknown as { DatabaseService: unknown }).DatabaseService = databaseService;
     const restore = () => {
       (global as unknown as { DatabaseService: unknown }).DatabaseService = original;

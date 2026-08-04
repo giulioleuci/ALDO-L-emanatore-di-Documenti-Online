@@ -25,10 +25,10 @@ The logs are intended for authorized ALDO personnel. Operational email addresses
 
 The formatter is content-first whenever details exist:
 
-- success with details: `[GenerateName]: Name: PDP_DSA_Rossi_Mario_2026 (EXECUTED in 0ms)`;
-- success without details: `[AnalyzeContext]: EXECUTED in 0ms`;
-- skipped: `[ApplyPermissions]: Condition not met (SKIPPED)`;
-- failed: `[CloneTemplate]: Drive copy failed (FAILED in 120ms)`.
+- success with details (without obvious text strings): `[GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 0ms)`;
+- success without details: `[AnalyzeContext] EXECUTED in 0ms`;
+- skipped: `[ApplyPermissions] Condition not met (SKIPPED)`;
+- failed: `[CloneTemplate] Drive copy failed (FAILED in 120ms)`.
 
 This ordering makes the operational result scannable while preserving status and timing for diagnostics. The same content-first rule applies to context, pipeline, item, and job summaries whenever they contain result details.
 
@@ -42,18 +42,18 @@ ALDO document and email steps will explicitly select their operational outputs. 
 | `CheckDuplicates` | duplicate found/not found and reused document ID when applicable |
 | `PrepareInfrastructure` | destination folder name, path, and ID |
 | `GenerateName` | generated filename |
-| `SelectTemplate` | selected template name or ID |
-| `CloneTemplate` | new file ID and Drive link |
+| `SelectTemplate` | selected template ID |
+| `CloneTemplate` | new file ID |
 | `RenderTemplate` | rendered/replaced element count when the underlying strategy exposes it |
 | `ApplyPermissions` | editor and viewer email addresses, plus permission counts |
-| `RegisterDocument` | `LOG_DOCS` ID and registration status |
+| `RegisterDocument` | only status |
 | `PostProcess` | executed action count and action names |
 | `ValutaCondizioniInvio` | send/skip decision and reason |
 | `RenderBoxes` | number of boxes generated and their identifiers when available |
 | `ComposeEmail` | subject and body/attachment summary, not full body contents |
 | `ResolveRecipients` | To, CC, and BCC addresses |
 | `SendEmail` | delivery result and message/thread identifier when available |
-| `LogEmail` | `LOG_MAIL` registration ID and status |
+| `LogEmail` | only status |
 | `PostProcessEmail` | executed action count and action names |
 
 If an underlying library does not currently expose a useful count or identifier, the step reports the closest truthful value already available. It must not fabricate a value or perform a second API call solely for logging.
@@ -98,10 +98,11 @@ Logs therefore expose three useful levels of timing:
 📄 [DOCUMENT 1/7] Target: user@example.edu:PDP_DSA
   ├─ ⚙️ Context Assembly: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 59ms)
   ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
-  │    ├─ ✅ [GenerateName]: Name: PDP_DSA_Rossi_Mario_2026 (EXECUTED in 0ms)
-  │    ├─ ✅ [CloneTemplate]: File ID: ...; Link: ... (EXECUTED in 2756ms)
-  │    ├─ ✅ [ApplyPermissions]: Editors: docente@example.edu; Viewers: famiglia@example.edu (EXECUTED in 420ms)
-  │    └─ ✅ [RegisterDocument]: LOG_DOCS: ... (EXECUTED in 1ms)
+  │    ├─ ✅ [GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 0ms)
+  │    ├─ ✅ [SelectTemplate] 1TemplateId (EXECUTED in 1ms)
+  │    ├─ ✅ [CloneTemplate] 1GeneratedFileId (EXECUTED in 2756ms)
+  │    ├─ ✅ [ApplyPermissions] Editors: docente@example.edu; Viewers: famiglia@example.edu (EXECUTED in 420ms)
+  │    └─ ✅ [RegisterDocument] EXECUTED in 1ms
   └─ ✅ Document generated: PDP_DSA_Rossi_Mario_2026 (COMPLETED in 8572ms)
 ```
 

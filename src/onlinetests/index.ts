@@ -251,12 +251,11 @@ function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
  */
 export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const masterSpreadsheetId = properties.get(PROP_MASTER_SPREADSHEET_ID)?.trim();
-  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
-    throw new ConfigurationError(
-      'MASTER_SPREADSHEET_ID missing. Run impostaMasterSpreadsheetId from _ALDO_E2E_MASTER first.'
-    );
-  }
+  const configuredMasterSpreadsheetId = properties.get(PROP_MASTER_SPREADSHEET_ID)?.trim();
+  const masterSpreadsheetId =
+    configuredMasterSpreadsheetId === undefined || configuredMasterSpreadsheetId === ''
+      ? ServiceFactory.getSpreadsheetService().getActiveStandard().getId()
+      : configuredMasterSpreadsheetId;
 
   const clock = overrides.clock ?? ((): Date => new Date());
   const rootFolder = overrides.drive === undefined ? mintE2eRootFolder() : null;

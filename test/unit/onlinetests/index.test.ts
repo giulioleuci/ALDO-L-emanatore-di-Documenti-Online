@@ -386,9 +386,39 @@ describe('executeArticolazioneScenarios', () => {
 });
 
 describe('executeE2eScenarios', () => {
-  it('rejects a missing bound MASTER before creating artifacts', () => {
-    expect(() => executeE2eScenarios({ properties: fakeProperties({}) })).toThrow(
-      'MASTER_SPREADSHEET_ID missing. Run impostaMasterSpreadsheetId from _ALDO_E2E_MASTER first.'
+  it('uses its bound MASTER when no master property is registered yet', () => {
+    const setMasterSpreadsheetId = jest.fn();
+    const properties: IPropertiesFacade = {
+      get: jest.fn(() => null),
+      set: setMasterSpreadsheetId
+    };
+    const spreadsheetFactory = fakeSpreadsheetFactory();
+    const getActiveStandard = jest.fn(() => ({ getId: () => 'bound-master-id' }));
+    const spreadsheetService = jest
+      .spyOn(ServiceFactory, 'getSpreadsheetService')
+      .mockReturnValue({ getActiveStandard } as never);
+
+    try {
+      executeE2eScenarios({
+        properties,
+        spreadsheetFactory,
+        drive: new FakeDriveFacade(),
+        artifactFactory: {
+          createDocument: jest.fn((name: string) => `doc_${name}`),
+          createSheet: jest.fn((name: string) => `sheet_${name}`)
+        },
+        clock: () => NOW,
+        initAldo: () => buildFakeContainer(),
+        log: jest.fn()
+      });
+    } finally {
+      spreadsheetService.mockRestore();
+    }
+
+    expect(spreadsheetFactory.openExistingSpreadsheet).toHaveBeenCalledWith('bound-master-id');
+    expect(setMasterSpreadsheetId).toHaveBeenCalledWith(
+      PROP_MASTER_SPREADSHEET_ID,
+      'bound-master-id'
     );
   });
 

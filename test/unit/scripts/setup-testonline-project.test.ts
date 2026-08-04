@@ -27,4 +27,12 @@ describe('resolveSetupAction', () => {
   test('refuses a partial untracked setup unless replacement is explicitly requested', () => {
     expect(resolveSetupAction(null, { claspExists: true, trackingExists: false }, false)).toBe('partial-error');
   });
+
+  test('refuses mismatched local pointers unless replacement is explicitly requested', () => {
+    expect(resolveSetupAction(null, { claspExists: true, trackingExists: true }, false)).toBe('partial-error');
+  });
+
+  test('refuses tracking-only local state unless replacement is explicitly requested', () => {
+    expect(resolveSetupAction(null, { claspExists: false, trackingExists: true }, false)).toBe('partial-error');
+  });
 });

@@ -33,7 +33,7 @@ function partialState() {
 
 function resolveSetupAction(existing, partial, replace) {
   if (existing !== null && !replace) return 'existing';
-  if (partial.claspExists && !partial.trackingExists && !replace) return 'partial-error';
+  if (!replace && (partial.claspExists || partial.trackingExists)) return 'partial-error';
   return 'create';
 }
 

@@ -13,4 +13,8 @@ export class GasSampleSpreadsheetFactory implements ISampleSpreadsheetFactory {
   createSpreadsheet(name: string): ISampleSpreadsheet {
     return testContext.buildSampleSpreadsheet(name, this.rootFolder);
   }
+
+  openExistingSpreadsheet(spreadsheetId: string): ISampleSpreadsheet {
+    return testContext.buildSampleSpreadsheetById(spreadsheetId);
+  }
 }

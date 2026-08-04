@@ -250,6 +250,14 @@ function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
  * run alone (design spec "New checks").
  */
 export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError(
+      'MASTER_SPREADSHEET_ID missing. Run impostaMasterSpreadsheetId from _ALDO_E2E_MASTER first.'
+    );
+  }
+
   const clock = overrides.clock ?? ((): Date => new Date());
   const rootFolder = overrides.drive === undefined ? mintE2eRootFolder() : null;
   const drive =
@@ -267,21 +275,18 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
       ServiceFactory.getDocumentService(),
       ServiceFactory.getSpreadsheetService()
     );
-  const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const initAldoFn = overrides.initAldo ?? initAldo;
   const log =
     overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
 
+  const master = spreadsheetFactory.openExistingSpreadsheet(masterSpreadsheetId);
   const templateFolderId = drive.createFolder('_ALDO_E2E_TEMPLATES');
   const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
     templateFolderId
   );
-  const sample = new E2eSampleDatabaseBuilder(spreadsheetFactory, drive).build(templateIds);
+  const sample = new E2eSampleDatabaseBuilder(spreadsheetFactory, drive).build(templateIds, master);
 
-  const previousMasterId = properties.get(PROP_MASTER_SPREADSHEET_ID);
-  if (previousMasterId !== null && previousMasterId.trim() !== '') {
-    log(`Previous MASTER_SPREADSHEET_ID before e2e-scenario override: ${previousMasterId}`);
-  }
+  log(`Previous MASTER_SPREADSHEET_ID before e2e-scenario override: ${masterSpreadsheetId}`);
   properties.set(PROP_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
 
   const container = initAldoFn(clock(), properties);

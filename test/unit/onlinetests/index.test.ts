@@ -1,9 +1,11 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
 import {
   executeArticolazioneScenarios,
+  executeE2eScenarios,
   executeOnlineTests,
   dumpOnlineCoverage
 } from '../../../src/onlinetests/index';
+import { PROP_MASTER_SPREADSHEET_ID } from '../../../src/config/Bootstrap';
 import { E2eSampleDatabaseBuilder } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import {
   CLASSE_BASE,
@@ -219,24 +221,39 @@ function buildFakeContainer(): ServiceContainer {
 
 function fakeSpreadsheetFactory() {
   const sheets = new Map<string, { headers: string[]; rows: Record<string, unknown>[] }>();
+  const createSpreadsheet = jest.fn((name: string) => ({
+    id: `SS_${name}`,
+    addSheet: (sheetName: string, headerRow: string[]) =>
+      sheets.set(sheetName, { headers: headerRow, rows: [] }),
+    appendRow: (sheetName: string, row: Record<string, unknown>) =>
+      sheets.get(sheetName)!.rows.push(row),
+    getUrl: () => `https://docs.google.com/spreadsheets/d/SS_${name}`
+  }));
+  const boundMaster = {
+    id: 'bound-master-id',
+    addSheet: (sheetName: string, headerRow: string[]) =>
+      sheets.set(sheetName, { headers: headerRow, rows: [] }),
+    appendRow: (sheetName: string, row: Record<string, unknown>) =>
+      sheets.get(sheetName)!.rows.push(row),
+    getUrl: () => 'https://docs.google.com/spreadsheets/d/bound-master-id'
+  };
   return {
-    createSpreadsheet: jest.fn((name: string) => ({
-      id: `SS_${name}`,
-      addSheet: (sheetName: string, headerRow: string[]) =>
-        sheets.set(sheetName, { headers: headerRow, rows: [] }),
-      appendRow: (sheetName: string, row: Record<string, unknown>) =>
-        sheets.get(sheetName)!.rows.push(row),
-      getUrl: () => `https://docs.google.com/spreadsheets/d/SS_${name}`
-    }))
+    createSpreadsheet,
+    openExistingSpreadsheet: jest.fn(() => boundMaster)
   };
 }
 
-function fakeProperties(initial: string | null = null): IPropertiesFacade {
-  let value = initial;
+function fakeProperties(initial: string | null | Record<string, string> = null): IPropertiesFacade {
+  const values: Record<string, string> =
+    typeof initial === 'object' && initial !== null
+      ? { ...initial }
+      : initial === null
+        ? {}
+        : { [PROP_MASTER_SPREADSHEET_ID]: initial };
   return {
-    get: jest.fn(() => value),
-    set: jest.fn((_key: string, newValue: string) => {
-      value = newValue;
+    get: jest.fn((key: string) => values[key] ?? null),
+    set: jest.fn((key: string, newValue: string) => {
+      values[key] = newValue;
     })
   };
 }
@@ -365,6 +382,46 @@ describe('executeArticolazioneScenarios', () => {
     expect(initAldo).not.toHaveBeenCalled();
     expect(build).not.toHaveBeenCalled();
     build.mockRestore();
+  });
+});
+
+describe('executeE2eScenarios', () => {
+  it('rejects a missing bound MASTER before creating artifacts', () => {
+    expect(() => executeE2eScenarios({ properties: fakeProperties({}) })).toThrow(
+      'MASTER_SPREADSHEET_ID missing. Run impostaMasterSpreadsheetId from _ALDO_E2E_MASTER first.'
+    );
+  });
+
+  it('opens the bound MASTER and creates only the sample and prior spreadsheets', () => {
+    const setMasterSpreadsheetId = jest.fn();
+    const properties: IPropertiesFacade = {
+      get: jest.fn(() => 'bound-master-id'),
+      set: setMasterSpreadsheetId
+    };
+    const spreadsheetFactory = fakeSpreadsheetFactory();
+
+    executeE2eScenarios({
+      properties,
+      spreadsheetFactory,
+      drive: new FakeDriveFacade(),
+      artifactFactory: {
+        createDocument: jest.fn((name: string) => `doc_${name}`),
+        createSheet: jest.fn((name: string) => `sheet_${name}`)
+      },
+      clock: () => NOW,
+      initAldo: () => buildFakeContainer(),
+      log: jest.fn()
+    });
+
+    expect(spreadsheetFactory.openExistingSpreadsheet).toHaveBeenCalledWith('bound-master-id');
+    expect(setMasterSpreadsheetId).toHaveBeenCalledWith(
+      PROP_MASTER_SPREADSHEET_ID,
+      'bound-master-id'
+    );
+    expect(spreadsheetFactory.createSpreadsheet.mock.calls.map(([name]) => name)).toEqual([
+      '_ALDO_E2E_SAMPLE',
+      '_ALDO_E2E_SAMPLE_PRIOR'
+    ]);
   });
 });
 

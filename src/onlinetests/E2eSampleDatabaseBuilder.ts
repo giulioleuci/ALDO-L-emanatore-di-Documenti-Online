@@ -268,13 +268,12 @@ export class E2eSampleDatabaseBuilder {
     private readonly drive: IDriveFacade
   ) {}
 
-  build(templateIds: E2eTemplateIds): E2eSampleDatabase {
+  build(templateIds: E2eTemplateIds, master: ISampleSpreadsheet): E2eSampleDatabase {
     const baseName = '_ALDO_E2E';
     const folderId = this.drive.createFolder(baseName);
     const sampleFolderUrl = `https://drive.google.com/drive/folders/${folderId}`;
 
     const sample = this.spreadsheets.createSpreadsheet(`${baseName}_SAMPLE`);
-    const master = this.spreadsheets.createSpreadsheet(`${baseName}_MASTER`);
 
     for (const [table, headerRow] of Object.entries(HEADERS)) {
       sample.addSheet(table, headerRow);

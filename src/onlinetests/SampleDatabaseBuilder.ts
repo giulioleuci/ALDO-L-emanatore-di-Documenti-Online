@@ -40,6 +40,7 @@ export interface ISampleSpreadsheet {
  */
 export interface ISampleSpreadsheetFactory {
   createSpreadsheet(name: string): ISampleSpreadsheet;
+  openExistingSpreadsheet(spreadsheetId: string): ISampleSpreadsheet;
 }
 
 export interface SampleDatabase {

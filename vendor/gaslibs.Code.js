@@ -70994,6 +70994,19 @@ class TestContext {
 
 
 
+
+
+
+  buildSampleSpreadsheetById(spreadsheetId) {
+    this._trackApiCall();
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    this.resetSpreadsheet(spreadsheet);
+    return new SampleSpreadsheetBuilder(spreadsheet);
+  }
+
+
+
+
   resetDocument() {
     const doc = this.getDocument();
     this._trackApiCall();

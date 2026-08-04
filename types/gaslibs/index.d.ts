@@ -1683,6 +1683,8 @@ declare global {
     resetAll(): void;
     /** Gets-or-creates + resets a named spreadsheet, wrapped for add-sheet/append-row sample-data construction. */
     buildSampleSpreadsheet(name: string, parentFolder?: unknown | null): SampleSpreadsheetBuilder;
+    /** Opens + resets an existing spreadsheet by ID, wrapped for sample-data construction. */
+    buildSampleSpreadsheetById(spreadsheetId: string): SampleSpreadsheetBuilder;
   }
   const testContext: TestContext;
   /** Generic sample-spreadsheet construction helper (ref GasOnlineTestFramework/src/SampleSpreadsheetBuilder.js). */

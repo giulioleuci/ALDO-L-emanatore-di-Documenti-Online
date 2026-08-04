@@ -71,16 +71,20 @@ class RecordingSpreadsheet implements ISampleSpreadsheet {
 function e2eRecordingFactory(): {
   spreadsheets: ISampleSpreadsheetFactory;
   sheets: Map<string, RecordingSpreadsheet>;
+  master: RecordingSpreadsheet;
 } {
   const sheets = new Map<string, RecordingSpreadsheet>();
+  const master = new RecordingSpreadsheet('bound-master-id');
   return {
     sheets,
+    master,
     spreadsheets: {
       createSpreadsheet: (name: string) => {
         const spreadsheet = new RecordingSpreadsheet(`id_${name}`);
         sheets.set(name, spreadsheet);
         return spreadsheet;
-      }
+      },
+      openExistingSpreadsheet: () => master
     }
   };
 }
@@ -257,13 +261,14 @@ function sampleFixture(): SampleDatabase {
 
 describe('registerRepositoryChecks', () => {
   it('registers passing online matrix checks across the resolver and all assignment consumers', () => {
-    const { spreadsheets, sheets } = e2eRecordingFactory();
+    const { spreadsheets, sheets, master } = e2eRecordingFactory();
     const sample = new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(
-      E2E_TEMPLATE_IDS
+      E2E_TEMPLATE_IDS,
+      master
     );
     const db = new FakeDatabase({
       ...(sheets.get('_ALDO_E2E_SAMPLE')!.rows as Record<string, Row[]>),
-      MASTER: sheets.get('_ALDO_E2E_MASTER')!.rows.MASTER as Row[]
+      MASTER: master.rows.MASTER as Row[]
     });
     const container = buildAldoContainer({
       db,
@@ -308,8 +313,11 @@ describe('registerRepositoryChecks', () => {
   });
 
   it('seeds the online effective-assignment matrix including arbitrary specificities, religion routing, and articulated partners', () => {
-    const { spreadsheets, sheets } = e2eRecordingFactory();
-    new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(E2E_TEMPLATE_IDS);
+    const { spreadsheets, sheets, master } = e2eRecordingFactory();
+    new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(
+      E2E_TEMPLATE_IDS,
+      master
+    );
     const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows;
     const classi = rows[TABLE.CLASSI]!;
     const matrixClass = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_A)!;
@@ -407,11 +415,11 @@ describe('registerRepositoryChecks', () => {
   });
 
   it('reports slot diagnostics when a student-filtered council diverges from the hand-derived matrix', () => {
-    const { spreadsheets, sheets } = e2eRecordingFactory();
+    const { spreadsheets, sheets, master } = e2eRecordingFactory();
     const sample = new E2eSampleDatabaseBuilder(
       spreadsheets,
       new FakeDriveFacade()
-    ).build(E2E_TEMPLATE_IDS);
+    ).build(E2E_TEMPLATE_IDS, master);
     const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows;
     const student = rows[TABLE.ALUNNI]!.find(
       (row) => row[COL_ALUNNI.EMAIL] === e2eAlunnoEmail(2)
@@ -419,7 +427,7 @@ describe('registerRepositoryChecks', () => {
     student[COL_ALUNNI.RELIGIONE] = 'NO';
     const db = new FakeDatabase({
       ...(rows as Record<string, Row[]>),
-      MASTER: sheets.get('_ALDO_E2E_MASTER')!.rows.MASTER as Row[]
+      MASTER: master.rows.MASTER as Row[]
     });
     const container = buildAldoContainer({
       db,

@@ -697,9 +697,10 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
       ...fixtureTables().CONF_DOC[0]!,
       DUPLICAZIONE: DuplicazioneDocumento.PERMESSA
     });
-    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+    const result = new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
     expect(ctx.get('shouldGenerate')).toBe(true);
     expect(ctx.get('skipReason')).toBeNull();
+    expect(logDetails(result)).toBe('Duplicates allowed');
   });
 
   test('NEGATA allows a document when only its generated name differs', () => {

@@ -175,8 +175,22 @@ describe('email pipeline operational log details', () => {
     const built = buildStep(w).execute(w.ctx);
     const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
 
-    expect(logDetails(built)).toEqual({ Target: 'a1@school.it' });
+    expect(logDetails(built)).toEqual({
+      Target: 'a1@school.it',
+      TargetType: 'alunno',
+      Recipe: 'FAMIGLIA_COMPLETO',
+      Context: 'Built'
+    });
     expect(logDetails(decision)).toEqual({ Send: false, Reason: 'Condition not met' });
+  });
+
+  test('publishes the exact true send decision when the configured condition passes', () => {
+    const w = wire({ CONDIZIONE: 'true' });
+    buildStep(w).execute(w.ctx);
+
+    const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+
+    expect(logDetails(decision)).toEqual({ Send: true, Reason: 'Condition met' });
   });
 
   test('publishes the rendered-box count, including zero', () => {

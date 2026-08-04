@@ -130,6 +130,7 @@ export class DocumentBatchService {
         'DOCUMENT'
       );
       let message: string;
+      const itemStartedAt = Date.now();
       try {
         const result = this.documenti.generateForPiano(
           target.studente,
@@ -138,20 +139,26 @@ export class DocumentBatchService {
           jobId
         );
         const name = result.fileName ?? targetId;
-        this.logger?.logSummary('Document generated', result.durationMs, name, {
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
           depth: 1,
           isLast: true,
           ancestorHasNext: [i + 1 < targets.length]
         });
-        message = `Document generated: ${name} (${result.status} in ${result.durationMs}ms)`;
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${targetId}: ${reason}`);
-        this.logger?.logSummary('Document failed', 0, `${targetId}: ${reason}`, {
-          depth: 1,
-          isLast: true,
-          ancestorHasNext: [i + 1 < targets.length]
-        });
+        this.logger?.logSummary(
+          'Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${targetId}: ${reason}`,
+          {
+            depth: 1,
+            isLast: true,
+            ancestorHasNext: [i + 1 < targets.length]
+          }
+        );
         message = `Errore piano ${i + 1}/${targets.length} ${targetId}: ${reason}`;
       }
       processed.push(targetId);
@@ -202,23 +209,30 @@ export class DocumentBatchService {
         'DOCUMENT'
       );
       let message = `Generazione documento classe ${classe.id ?? '?'}`;
+      const itemStartedAt = Date.now();
       try {
         const result = this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
         const name = result.fileName ?? classe.id ?? '?';
-        this.logger?.logSummary('Document generated', result.durationMs, name, {
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
           depth: 1,
           isLast: true,
           ancestorHasNext: [i + 1 < attive.length]
         });
-        message = `Document generated: ${name} (${result.status} in ${result.durationMs}ms)`;
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${classe.id ?? '?'}: ${reason}`);
-        this.logger?.logSummary('Document failed', 0, `${classe.id ?? '?'}: ${reason}`, {
-          depth: 1,
-          isLast: true,
-          ancestorHasNext: [i + 1 < attive.length]
-        });
+        this.logger?.logSummary(
+          'Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${classe.id ?? '?'}: ${reason}`,
+          {
+            depth: 1,
+            isLast: true,
+            ancestorHasNext: [i + 1 < attive.length]
+          }
+        );
         message = `Errore: ${reason} (classe ${classe.id ?? '?'})`;
       }
       processed.push(classe.id ?? '');
@@ -233,6 +247,14 @@ export class DocumentBatchService {
       `${processed.length} classi elaborate, ${errori.length} errori`
     );
     return { success, totale: attive.length, processed, errori };
+  }
+
+  private static documentOutcome(status: string): string {
+    return status === 'GENERATO'
+      ? 'Document generated'
+      : status === 'SKIPPED'
+        ? 'Document skipped'
+        : 'Document failed';
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */

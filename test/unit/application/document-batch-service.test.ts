@@ -25,7 +25,13 @@ import type { IAlunnoRepository } from '../../../src/domain/repositories/IAlunno
 // the GasLibraryFactory monorepo and online).
 
 function wire(
-  options: { failFor?: string; monitor?: FakeProcessMonitor; logger?: LoggerService } = {}
+  options: {
+    failFor?: string;
+    monitor?: FakeProcessMonitor;
+    logger?: LoggerService;
+    resultStatus?: 'GENERATO' | 'SKIPPED';
+    resultDurationMs?: number;
+  } = {}
 ) {
   const db = new FakeDatabase(fixtureTables());
   const generated: string[] = [];
@@ -33,12 +39,13 @@ function wire(
     generateForClasse: (target: ClasseId, confDocId: string) => {
       if (target.value === options.failFor) throw new Error('template non trovato');
       generated.push(`${target.value}:${confDocId}`);
+      const skipped = options.resultStatus === 'SKIPPED';
       return {
-        fileId: `file_${target.value}`,
-        fileName: `Documento_${target.value}`,
-        fileLink: `https://docs.google.com/document/d/file_${target.value}/edit`,
-        status: 'GENERATO',
-        durationMs: 8572
+        fileId: skipped ? null : `file_${target.value}`,
+        fileName: skipped ? null : `Documento_${target.value}`,
+        fileLink: skipped ? null : `https://docs.google.com/document/d/file_${target.value}/edit`,
+        status: options.resultStatus ?? 'GENERATO',
+        durationMs: options.resultDurationMs ?? 8572
       };
     }
   } as unknown as DocumentGenerationService;
@@ -61,6 +68,8 @@ function wirePiani(
     missingConfig?: boolean;
     failForTipo?: TipoPiano;
     logger?: LoggerService;
+    resultStatus?: 'GENERATO' | 'SKIPPED';
+    resultDurationMs?: number;
   } = {}
 ) {
   const configId = options.configId ?? 'PIANI_PERSONALIZZATI';
@@ -108,12 +117,13 @@ function wirePiani(
     generateForPiano: (studente: string, tipo: TipoPiano, confDocId: string, jobId?: string) => {
       generated.push({ studente, tipo, confDocId, jobId });
       if (tipo === options.failForTipo) throw new Error('template non trovato');
+      const skipped = options.resultStatus === 'SKIPPED';
       return {
-        fileId: `file_${studente}_${tipo}`,
-        fileName: `Piano_${tipo}_${studente}`,
-        fileLink: `https://docs.google.com/document/d/file_${studente}_${tipo}/edit`,
-        status: 'GENERATO',
-        durationMs: 8572
+        fileId: skipped ? null : `file_${studente}_${tipo}`,
+        fileName: skipped ? null : `Piano_${tipo}_${studente}`,
+        fileLink: skipped ? null : `https://docs.google.com/document/d/file_${studente}_${tipo}/edit`,
+        status: options.resultStatus ?? 'GENERATO',
+        durationMs: options.resultDurationMs ?? 8572
       };
     }
   };
@@ -149,6 +159,24 @@ test('emits unredacted document target headers and content-first timed item summ
   expect(output).not.toContain('[EMAIL_REDACTED]');
   expect(output).toContain(
     'Document generated: Piano_PEI_con-piani@school.it (COMPLETED in 8572ms)'
+  );
+});
+
+test('uses a skipped document summary when the PIANI pipeline returns SKIPPED', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { service } = wirePiani({
+    logger: new LoggerService(),
+    resultStatus: 'SKIPPED',
+    resultDurationMs: 321
+  });
+
+  const generator = service.batchGenerateHandler({ confDocId: 'PIANI_PERSONALIZZATI' });
+  let step = generator.next();
+  while (!step.done) step = generator.next();
+
+  expect(lines.join('\n')).toContain(
+    'Document skipped: con-piani@school.it:PEI (COMPLETED in 321ms)'
   );
 });
 
@@ -391,6 +419,29 @@ test('a single class failure is isolated: logged in errori, the batch continues 
   expect(result.processed).toEqual(['5A', '1F']); // still marked processed (attempted)
   expect(result.errori).toEqual(['5A: template non trovato']);
   expect(result.success).toBe(false);
+});
+
+test('uses the elapsed duration in a failed class summary', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const now = jest
+    .spyOn(Date, 'now')
+    .mockReturnValueOnce(1_000)
+    .mockReturnValueOnce(1_250)
+    .mockReturnValue(1_250);
+  const { service } = wire({ failFor: '5A', logger: new LoggerService() });
+
+  try {
+    const generator = service.batchGenerateHandler({ confDocId: 'CD1' });
+    let step = generator.next();
+    while (!step.done) step = generator.next();
+  } finally {
+    now.mockRestore();
+  }
+
+  expect(lines.join('\n')).toContain(
+    'Document failed: 5A: template non trovato (COMPLETED in 250ms)'
+  );
 });
 
 test('GasProcessMonitorLib progress calls (15 §9): register/start once, progress per class, complete at the end', () => {

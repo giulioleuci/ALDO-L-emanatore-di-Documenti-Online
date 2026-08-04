@@ -137,8 +137,20 @@ export class BuildCDUStep extends Step {
     this.setResult(ctx, 'cdu', built);
   }
 
-  protected override _getLogDetails(ctx: PipelineContext): { Target: string } {
-    return { Target: target(ctx).target };
+  protected override _getLogDetails(ctx: PipelineContext): {
+    Target: string;
+    TargetType: EmailTarget['tipoTarget'];
+    Recipe: string;
+    Context: 'Built';
+  } {
+    const conf = confMail(ctx);
+    const t = target(ctx);
+    return {
+      Target: t.target,
+      TargetType: t.tipoTarget,
+      Recipe: RECIPE_PER_PROCESSO[conf.processo],
+      Context: 'Built'
+    };
   }
 
   private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget): CduDestinatario {

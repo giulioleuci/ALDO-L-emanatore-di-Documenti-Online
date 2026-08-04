@@ -21,7 +21,16 @@ The logs are intended for authorized ALDO personnel. Operational email addresses
 
 ### Structured step results
 
-`PipelineFramework.Step` will define an optional protected result-details hook that receives the completed `PipelineContext` and returns a flat record of display-safe values. The pipeline calls this hook after successful execution and appends the returned values to the existing status and duration output using the structured logger; it will not inspect or diff the entire `PipelineContext`.
+`PipelineFramework.Step` will define an optional protected result-details hook that receives the completed `PipelineContext` and returns a flat record of display-safe values. The pipeline calls this hook after successful execution and renders the returned values immediately after the step name. Status and duration are trailing metadata in parentheses; the renderer will not inspect or diff the entire `PipelineContext`.
+
+The formatter is content-first whenever details exist:
+
+- success with details: `[GenerateName]: Name: PDP_DSA_Rossi_Mario_2026 (EXECUTED in 0ms)`;
+- success without details: `[AnalyzeContext]: EXECUTED in 0ms`;
+- skipped: `[ApplyPermissions]: Condition not met (SKIPPED)`;
+- failed: `[CloneTemplate]: Drive copy failed (FAILED in 120ms)`.
+
+This ordering makes the operational result scannable while preserving status and timing for diagnostics. The same content-first rule applies to context, pipeline, item, and job summaries whenever they contain result details.
 
 The contract accepts scalars and short scalar arrays only. Undefined values and empty arrays are omitted. Objects containing arbitrary domain state are rejected or safely summarized, preventing accidental CDU dumps. Steps that produce no useful result retain the existing concise line.
 
@@ -87,16 +96,16 @@ Logs therefore expose three useful levels of timing:
 
 ```text
 📄 [DOCUMENT 1/7] Target: user@example.edu:PDP_DSA
-  ├─ ⚙️ Context Assembly completed in 59ms (...)
+  ├─ ⚙️ Context Assembly: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 59ms)
   ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
-  │    ├─ ✅ [GenerateName]: EXECUTED in 0ms — Name: PDP_DSA_Rossi_Mario_2026
-  │    ├─ ✅ [CloneTemplate]: EXECUTED in 2756ms — File ID: ...; Link: ...
-  │    ├─ ✅ [ApplyPermissions]: EXECUTED in 420ms — Editors: docente@example.edu; Viewers: famiglia@example.edu
-  │    └─ ✅ [RegisterDocument]: EXECUTED in 1ms — LOG_DOCS: ...
-  └─ ✅ Document generated in 8572ms — PDP_DSA_Rossi_Mario_2026
+  │    ├─ ✅ [GenerateName]: Name: PDP_DSA_Rossi_Mario_2026 (EXECUTED in 0ms)
+  │    ├─ ✅ [CloneTemplate]: File ID: ...; Link: ... (EXECUTED in 2756ms)
+  │    ├─ ✅ [ApplyPermissions]: Editors: docente@example.edu; Viewers: famiglia@example.edu (EXECUTED in 420ms)
+  │    └─ ✅ [RegisterDocument]: LOG_DOCS: ... (EXECUTED in 1ms)
+  └─ ✅ Document generated: PDP_DSA_Rossi_Mario_2026 (COMPLETED in 8572ms)
 ```
 
-Exact punctuation remains the responsibility of the common formatter. The behavioral requirements are stable indentation, truthful values, and bounded single-line summaries.
+Exact separators between multiple detail fields remain the responsibility of the common formatter. The behavioral requirements are content-first ordering, trailing parenthesized status/timing, stable indentation, truthful values, and bounded single-line summaries.
 
 ## Error Handling
 
@@ -112,7 +121,7 @@ Changes follow test-driven development across both repositories.
 
 GasLibraryFactory tests will prove:
 
-- step details render with status, timing, arrays, omission of empty values, and multiline-safe indentation;
+- step details render before trailing status/timing, with arrays, omission of empty values, and multiline-safe indentation;
 - scoped positions indent ordinary nested messages, restore after success/failure, and do not override explicit positions;
 - pipeline execution supplies the correct position scope to nested services;
 - transaction commit drains table queues before final spreadsheet flush and preserves failure semantics;

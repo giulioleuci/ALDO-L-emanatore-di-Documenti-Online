@@ -281,7 +281,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     const engine = deps.importEngine;
     c.register(
       'importService',
-      () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db))
+      () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db), logger)
     );
   }
   c.register('reportService', () => new ReportService(deps.db));

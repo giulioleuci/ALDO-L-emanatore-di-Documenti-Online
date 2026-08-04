@@ -60,6 +60,41 @@ test('retries a failed send below maxTentativi and marks the original record SUC
   expect(original['STATO']).toBe('SUCCESS');
 });
 
+test('retryFailed emits synchronous lifecycle and structured retry items', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { retry } = wire(
+    [failedRow('2026-06-30T10:00:00.000Z')],
+    new LoggerService()
+  );
+
+  expect(retry.retryFailed()).toEqual({ retried: 1, permanent: 0 });
+
+  const output = lines.join('\n');
+  expect(output).toContain('🚀 [INIT] AVVIO JOB: retry_email (Tipo: EMAIL_RETRY)');
+  expect(output).toContain('🔁 [RETRY 1/1]');
+  expect(output).toContain("🏁 [COMPLETED] Job 'retry_email' completed successfully");
+});
+
+test('retryHandler emits batch/items without duplicating JobRunner lifecycle', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { retry } = wire(
+    [failedRow('2026-06-30T10:00:00.000Z')],
+    new LoggerService()
+  );
+
+  const handler = retry.retryHandler({ jobId: 'retry_email', resumeState: null });
+  let step = handler.next();
+  while (!step.done) step = handler.next();
+
+  const output = lines.join('\n');
+  expect(output).toContain('📑 [PROCESSING BATCH] (1 Item in queue)');
+  expect(output).toContain('🔁 [RETRY 1/1]');
+  expect(output).not.toContain('AVVIO JOB:');
+  expect(output).not.toContain('[COMPLETED] JOB');
+});
+
 test('after maxTentativi failures the error is permanent and the admin is notified (11 §16)', () => {
   const rows = [
     failedRow('2026-06-28T10:00:00.000Z'),

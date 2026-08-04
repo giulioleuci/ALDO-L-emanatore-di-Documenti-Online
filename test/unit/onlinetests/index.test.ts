@@ -3,7 +3,9 @@ import {
   executeArticolazioneScenarios,
   executeE2eScenarios,
   executeOnlineTests,
-  dumpOnlineCoverage
+  dumpOnlineCoverage,
+  runE2eScenarios,
+  runOnlineTests
 } from '../../../src/onlinetests/index';
 import { PROP_ONLINETEST_MASTER_SPREADSHEET_ID } from '../../../src/onlinetests';
 import { E2eSampleDatabaseBuilder } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
@@ -35,6 +37,60 @@ import { COL_CONF_DOC, COL_CONF_MAIL } from '../../../src/config/schema';
 
 const NOW = new Date('2026-07-12T09:00:00Z');
 const RECIPIENT_EMAIL = 'attivo@onlinetest.aldo.local';
+
+function report(failed = 0) {
+  return {
+    suite: 'aldo-online-tests' as const,
+    startedAt: '2026-07-12T09:00:00.000Z',
+    finishedAt: '2026-07-12T09:00:01.000Z',
+    passed: failed === 0 ? 3 : 2,
+    failed,
+    results: []
+  };
+}
+
+describe('structured online entry-point reports', () => {
+  it('runOnlineTests emits start, summary and success footer without dumping report JSON', () => {
+    const lines: string[] = [];
+    const logSpy = jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+    const expected = report();
+
+    expect(runOnlineTests(() => expected, new LoggerService())).toBe(expected);
+
+    const output = lines.join('\n');
+    expect(output).toContain(
+      '🚀 [INIT] AVVIO JOB: online_tests (Tipo: ONLINE_TEST_SUITE)'
+    );
+    expect(output).toContain('Online test report in 1000ms');
+    expect(output).toContain("🏁 [COMPLETED] Job 'online_tests' completed successfully");
+    expect(logSpy).not.toHaveBeenCalledWith(JSON.stringify(expected));
+  });
+
+  it('runE2eScenarios derives a failed footer from report failures', () => {
+    const lines: string[] = [];
+    const logSpy = jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+    const expected = report(1);
+
+    expect(runE2eScenarios(() => expected, new LoggerService())).toBe(expected);
+
+    const output = lines.join('\n');
+    expect(output).toContain('🚀 [INIT] AVVIO JOB: e2e_scenarios (Tipo: E2E_SCENARIO_SUITE)');
+    expect(output).toContain("[FAILED] Job 'e2e_scenarios' failed");
+    expect(logSpy).not.toHaveBeenCalledWith(JSON.stringify(expected));
+  });
+
+  it('logs and rethrows online setup failures', () => {
+    const lines: string[] = [];
+    jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+
+    expect(() =>
+      runOnlineTests(() => {
+        throw new Error('setup failed');
+      }, new LoggerService())
+    ).toThrow('setup failed');
+    expect(lines.join('\n')).toContain("[FAILED] Job 'online_tests' failed (setup failed)");
+  });
+});
 
 function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
   for (const row of rows) {
@@ -461,21 +517,27 @@ describe('dumpOnlineCoverage', () => {
   });
 
   it('logs the istanbul coverage map when instrumentation populated globalThis.__coverage__', () => {
-    const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
+    const info = jest.fn();
+    const loggerSpy = jest
+      .spyOn(ServiceFactory, 'getLogger')
+      .mockReturnValue({ info } as never);
     (globalThis as { __coverage__?: unknown }).__coverage__ = { 'src/foo.ts': { s: { '0': 1 } } };
 
     dumpOnlineCoverage();
 
-    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ 'src/foo.ts': { s: { '0': 1 } } }));
-    logSpy.mockRestore();
+    expect(info).toHaveBeenCalledWith(JSON.stringify({ 'src/foo.ts': { s: { '0': 1 } } }));
+    loggerSpy.mockRestore();
   });
 
   it('logs an empty object when the bundle was not built with instrumentation', () => {
-    const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => {});
+    const info = jest.fn();
+    const loggerSpy = jest
+      .spyOn(ServiceFactory, 'getLogger')
+      .mockReturnValue({ info } as never);
 
     dumpOnlineCoverage();
 
-    expect(logSpy).toHaveBeenCalledWith('{}');
-    logSpy.mockRestore();
+    expect(info).toHaveBeenCalledWith('{}');
+    loggerSpy.mockRestore();
   });
 });

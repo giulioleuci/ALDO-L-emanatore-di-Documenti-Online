@@ -34,10 +34,17 @@ export class GasUiFacade implements IUiFacade {
   }
 
   chiediInput(titolo: string, messaggio: string): string {
-    return this.ui.prompt(titolo, messaggio, undefined).getResponseText().trim();
+    return this.ui.prompt(titolo, messaggio).getResponseText().trim();
   }
 
   mostraMessaggio(titolo: string, messaggio: string): void {
+    const normalized = messaggio.trim().toLowerCase();
+    const safeMessage = PiiRedactor.redact(messaggio);
+    if (normalized.startsWith('errore:')) {
+      this.logger.error(safeMessage);
+    } else if (normalized.includes('annullata')) {
+      this.logger.warn(safeMessage);
+    }
     this.ui.alert(titolo, messaggio, undefined);
   }
 

@@ -168,6 +168,38 @@ test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)',
   expect(capturedOptions?.jobId).toBe('imp_IMPORT_ALUNNI');
 });
 
+test('executeAllActiveImports emits one lifecycle with structured import items', () => {
+  const database = db([
+    confImpRow({ ID: 'IMPORT_ALUNNI' }),
+    confImpRow({ ID: 'IMPORT_DOCENTI', TARGET: 'DOCENTI' })
+  ]);
+  const { engine } = fakeEngine([], (data) => ({
+    success: true,
+    inserted: data.length,
+    updated: 0,
+    skipped: 0,
+    deleted: 0,
+    total: data.length
+  }));
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const service = new ImportService(
+    engine,
+    new ConfigurazioneImportRepository(database),
+    new LoggerService()
+  );
+
+  const result = service.executeAllActiveImports();
+
+  expect(result).toHaveLength(2);
+  const output = lines.join('\n');
+  expect(output).toContain('🚀 [INIT] AVVIO JOB: import_all (Tipo: IMPORT_BATCH)');
+  expect(output).toContain('📥 [IMPORT 1/2]');
+  expect(output).toContain('📥 [IMPORT 2/2]');
+  expect(output.match(/AVVIO JOB:/g)).toHaveLength(1);
+  expect(output).toContain("🏁 [COMPLETED] Job 'import_all' completed successfully");
+});
+
 test('executeImportChunked yields one checkpoint per stage transition and resolves ImportResult', () => {
   const database = db([confImpRow()]);
   let calls = 0;

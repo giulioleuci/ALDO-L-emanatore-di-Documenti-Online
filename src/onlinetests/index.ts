@@ -48,8 +48,7 @@ export interface OnlineTestDeps {
   /** Same signature as `Bootstrap.ts`'s real `initAldo` — swapped for a canned-container fake in tests. */
   initAldo: (now?: Date, props?: IPropertiesFacade) => ServiceContainer;
   activeUserEmail: () => string;
-  /** Logging seam for the "previous MASTER_SPREADSHEET_ID" notice — NOT `Logger.log` itself (that
-   * native call is reserved for {@link runOnlineTests}'s own top-level report dump, per design). */
+  /** Logging seam for scenario diagnostics; top-level reports use the semantic LoggerService API. */
   log: (message: string) => void;
 }
 
@@ -199,10 +198,44 @@ function mintRootFolder(): GoogleAppsScript.Drive.Folder {
   ) as GoogleAppsScript.Drive.Folder;
 }
 
-/** GAS Run-dropdown entry point (design spec §2): no arguments, so it runs with no setup. */
-export function runOnlineTests(): void {
-  const report = executeOnlineTests();
-  Logger.log(JSON.stringify(report));
+function runReportedSuite(
+  jobName: string,
+  jobType: string,
+  execute: () => OnlineTestReport,
+  logger: LoggerService
+): OnlineTestReport {
+  logger.logJobStart(jobName, jobType);
+  try {
+    const report = execute();
+    const startedAt = new Date(report.startedAt).getTime();
+    const finishedAt = new Date(report.finishedAt).getTime();
+    const durationMs =
+      Number.isFinite(startedAt) && Number.isFinite(finishedAt)
+        ? Math.max(0, finishedAt - startedAt)
+        : 0;
+    logger.logSummary('🧪 Online test report', durationMs, {
+      passed: report.passed,
+      failed: report.failed
+    });
+    logger.logJobEnd(
+      jobName,
+      report.failed === 0,
+      `${report.passed} passed, ${report.failed} failed`
+    );
+    return report;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.logJobEnd(jobName, false, PiiRedactor.redact(reason));
+    throw error;
+  }
+}
+
+/** GAS Run-dropdown entry point (design spec §2): defaults run with no setup. */
+export function runOnlineTests(
+  execute: () => OnlineTestReport = executeOnlineTests,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('online_tests', 'ONLINE_TEST_SUITE', execute, logger);
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
@@ -218,7 +251,7 @@ export function runOnlineTests(): void {
  */
 export function dumpOnlineCoverage(): void {
   const coverage = (globalThis as { __coverage__?: unknown }).__coverage__ ?? {};
-  Logger.log(JSON.stringify(coverage));
+  ServiceFactory.getLogger().info(JSON.stringify(coverage));
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
@@ -306,10 +339,12 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   return runner.report();
 }
 
-/** GAS Run-dropdown entry point: no arguments, so it runs with no setup. */
-export function runE2eScenarios(): void {
-  const report = executeE2eScenarios();
-  Logger.log(JSON.stringify(report));
+/** GAS Run-dropdown entry point: defaults run with no setup. */
+export function runE2eScenarios(
+  execute: () => OnlineTestReport = executeE2eScenarios,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('e2e_scenarios', 'E2E_SCENARIO_SUITE', execute, logger);
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

@@ -70,11 +70,62 @@ export class EmailRetryService {
     this.logger = options.logger ?? new LoggerService();
   }
 
+  private semantic(
+    method: string,
+    args: unknown[],
+    fallback: string,
+    level: 'info' | 'warn' | 'error' = 'info'
+  ): void {
+    const candidate = (this.logger as unknown as Record<string, unknown>)[method];
+    if (typeof candidate === 'function') {
+      candidate.apply(this.logger, args);
+      return;
+    }
+    const basic = [level, 'info', 'warn', 'error']
+      .map((name) => (this.logger as unknown as Record<string, unknown>)[name])
+      .find((value) => typeof value === 'function');
+    if (typeof basic === 'function') basic.call(this.logger, fallback);
+  }
+
   retryFailed(): RetryResult {
     const groups = this.groupFailed();
+    this.semantic(
+      'logJobStart',
+      ['retry_email', 'EMAIL_RETRY'],
+      'EmailRetry: starting retry_email (EMAIL_RETRY)'
+    );
+    this.semantic('logBatchStart', [groups.length], `EmailRetry: ${groups.length} groups`);
     let result: RetryResult = { retried: 0, permanent: 0 };
-    for (const [, group] of groups) result = this.mergeResult(result, this.processGroup(group));
-    return result;
+    try {
+      for (let index = 0; index < groups.length; index++) {
+        const [key, group] = groups[index]!;
+        const safeKey = PiiRedactor.redact(key);
+        this.semantic(
+          'logItemStart',
+          [index + 1, groups.length, 'Gruppo', safeKey, 'RETRY'],
+          `EmailRetry: group ${index + 1}/${groups.length} ${safeKey}`
+        );
+        result = this.mergeResult(result, this.processGroup(group));
+      }
+      const details = `${result.retried} retried, ${result.permanent} permanent`;
+      this.semantic(
+        'logJobEnd',
+        ['retry_email', result.permanent === 0, details],
+        `EmailRetry: completed retry_email (${details})`,
+        result.permanent === 0 ? 'info' : 'error'
+      );
+      return result;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const safeReason = PiiRedactor.redact(reason);
+      this.semantic(
+        'logJobEnd',
+        ['retry_email', false, safeReason],
+        `EmailRetry: retry_email failed (${safeReason})`,
+        'error'
+      );
+      throw error;
+    }
   }
 
   /**
@@ -91,10 +142,9 @@ export class EmailRetryService {
   *retryHandler(
     params: JobHandlerParams & { jobId?: string }
   ): Generator<RetryCheckpoint, RetryResult, void> {
-    const jobId = String(params.jobId ?? 'retry_email');
     const resume = (params.resumeState ?? null) as RetryResumeState | null;
     const groups = this.groupFailed();
-    if (resume === null) this.logger.info(`EmailRetry: avviato job ${jobId}, ${groups.length} gruppi`);
+    this.semantic('logBatchStart', [groups.length], `EmailRetry: ${groups.length} groups`);
 
     const processedKeys = resume ? resume.processedKeys.slice() : [];
     const alreadyProcessed = new Set(processedKeys);
@@ -105,6 +155,12 @@ export class EmailRetryService {
       permanent: resume?.permanent ?? 0
     };
     for (const [key, group] of pending) {
+      const safeKey = PiiRedactor.redact(key);
+      this.semantic(
+        'logItemStart',
+        [processedKeys.length + 1, groups.length, 'Gruppo', safeKey, 'RETRY'],
+        `EmailRetry: group ${processedKeys.length + 1}/${groups.length} ${safeKey}`
+      );
       result = this.mergeResult(result, this.processGroup(group));
       processedKeys.push(key);
       yield {
@@ -124,13 +180,19 @@ export class EmailRetryService {
   }
 
   /** Starts the retry through JobRunnerLib (state + resume triggers managed by the library). */
-  start(runner: JobRunnerService, jobName: string, forceRestart = false): unknown {
+  start(
+    runner: JobRunnerService,
+    jobName: string,
+    forceRestart = false,
+    maxDurationMs?: number
+  ): unknown {
     return runner.run(
       jobName,
       JOB_TYPE_RETRY_EMAIL,
       { jobId: jobName },
       (queue) => this.registerJobHandlers(queue),
-      forceRestart
+      forceRestart,
+      maxDurationMs
     );
   }
 

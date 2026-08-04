@@ -76,11 +76,27 @@ export const JOB_TYPE_IMPORT_CHUNKED = 'IMPORT_CHUNKED';
 export class ImportService {
   constructor(
     private readonly engine: ImportEngine,
-    private readonly configs: IConfigurazioneImportRepository
+    private readonly configs: IConfigurazioneImportRepository,
+    private readonly logger: LoggerService = new LoggerService()
   ) {}
 
   /** Runs one CONF_IMP job end to end (ref 12 §3, steps 1-8). */
   executeImport(configId: string): ImportResult {
+    const jobName = `import_${configId}`;
+    this.logger.logJobStart(jobName, 'IMPORT');
+    try {
+      const result = this.executeImportItem(configId);
+      this.logger.logJobEnd(jobName, true, `${result.errori.length} errors`);
+      return result;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.logJobEnd(jobName, false, PiiRedactor.redact(reason));
+      throw error;
+    }
+  }
+
+  /** One import without lifecycle framing; used by both public wrappers. */
+  private executeImportItem(configId: string): ImportResult {
     const conf = this.configs.findById(configId);
     if (conf === null) throw new PipelineError(`CONF_IMP ${configId} non trovato`);
     if (!conf.isAttivo()) {
@@ -123,10 +139,21 @@ export class ImportService {
   /** Runs every ATTIVO=true CONF_IMP job in sequence; one failure never aborts the others (ref 12 §3). */
   executeAllActiveImports(): Array<{ configId: string; result: ImportResult }> {
     const results: Array<{ configId: string; result: ImportResult }> = [];
-    for (const conf of this.configs.findAttivi()) {
+    const active = this.configs.findAttivi();
+    this.logger.logJobStart('import_all', 'IMPORT_BATCH');
+    this.logger.logBatchStart(active.length);
+    for (let index = 0; index < active.length; index++) {
+      const conf = active[index]!;
       const configId = conf.id ?? '';
+      this.logger.logItemStart(
+        index + 1,
+        active.length,
+        'Configurazione',
+        PiiRedactor.redact(configId),
+        'IMPORT'
+      );
       try {
-        results.push({ configId, result: this.executeImport(configId) });
+        results.push({ configId, result: this.executeImportItem(configId) });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         results.push({
@@ -135,6 +162,12 @@ export class ImportService {
         });
       }
     }
+    const failures = results.filter(({ result }) => result.errori.length > 0).length;
+    this.logger.logJobEnd(
+      'import_all',
+      failures === 0,
+      `${results.length} imports processed, ${failures} failed`
+    );
     return results;
   }
 
@@ -209,13 +242,20 @@ export class ImportService {
   }
 
   /** Starts the chunked import through JobRunnerLib (state + resume triggers managed by the library). */
-  start(runner: JobRunnerService, jobName: string, configId: string, forceRestart = false): unknown {
+  start(
+    runner: JobRunnerService,
+    jobName: string,
+    configId: string,
+    forceRestart = false,
+    maxDurationMs?: number
+  ): unknown {
     return runner.run(
       jobName,
       JOB_TYPE_IMPORT_CHUNKED,
       { configId },
       (queue) => this.registerJobHandlers(queue),
-      forceRestart
+      forceRestart,
+      maxDurationMs
     );
   }
 }

@@ -110,12 +110,10 @@ function main() {
 
   if (action === 'partial-error') {
     console.error(
-      '.clasp.json exists but .aldo-testonline.json does not (or scriptId does not match) — ' +
-        'refusing to run clasp create again, which would mint a SECOND MASTER sheet.\n' +
-        'Either restore .aldo-testonline.json manually (scriptId from .clasp.json + the MASTER ' +
-        "sheet's spreadsheet id from its URL), or delete .clasp.json to start fresh.\n" +
-        'See docs/superpowers/specs/2026-07-22-testonline-project-setup-push-design.md, ' +
-        '"Fallback: if clasp create fails" for the manual recovery steps.'
+      'Local Apps Script tracking is incomplete or inconsistent — refusing to run clasp create because it could repoint a current deployment.\n' +
+        'To keep the existing project, restore both .clasp.json and .aldo-testonline.json from a known-good setup, ' +
+        'with matching scriptId values and the MASTER spreadsheet id in .aldo-testonline.json.\n' +
+        'To intentionally provision a replacement, run npm run setup:testonline -- --replace.'
     );
     process.exitCode = 1;
     return;

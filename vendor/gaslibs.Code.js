@@ -2589,6 +2589,20 @@ class StructuredLogFormatter {
   jobEnd(jobName, isSuccess, details) {
     const status = isSuccess ? '🏁 [COMPLETED]' : '❌ [FAILED]';
     let message = isSuccess ? `${status} Job '${this._text(jobName)}' completed successfully` : `${status} Job '${this._text(jobName)}' failed`;
+    if (this._isDetailEnvelope(details)) {
+      const content = this._detailsText(details.reason !== undefined ? details.reason : details.content);
+      const duration = this._duration(details.durationMs);
+      if (content) {
+        message += `: ${content}`;
+      }
+      const terminalStatus = isSuccess ? 'COMPLETED' : 'FAILED';
+      if (duration !== null) {
+        message += ` (${terminalStatus} in ${duration}ms)`;
+      } else if (content) {
+        message += ` (${terminalStatus})`;
+      }
+      return [MAJOR_BORDER, ...this._splitPlain(message), MAJOR_BORDER];
+    }
     const detailText = this._detailsText(details);
     if (detailText) {
       message += ` (${detailText})`;
@@ -2599,6 +2613,19 @@ class StructuredLogFormatter {
 
   jobSuspended(jobName, details) {
     let message = `⏸️ [SUSPENDED] Job '${this._text(jobName)}' suspended`;
+    if (this._isDetailEnvelope(details)) {
+      const content = this._detailsText(details.reason !== undefined ? details.reason : details.content);
+      const duration = this._duration(details.durationMs);
+      if (content) {
+        message += `: ${content}`;
+      }
+      if (duration !== null) {
+        message += ` (SUSPENDED after ${duration}ms)`;
+      } else if (content) {
+        message += ' (SUSPENDED)';
+      }
+      return [MAJOR_BORDER, ...this._splitPlain(message), MAJOR_BORDER];
+    }
     const detailText = this._detailsText(details);
     if (detailText) {
       message += ` (${detailText})`;
@@ -2635,22 +2662,36 @@ class StructuredLogFormatter {
   pipelineStep(stepName, status, details, position) {
     const normalizedStatus = Object.prototype.hasOwnProperty.call(STEP_ICONS, status) ? status : this._text(status || 'UNKNOWN');
     const icon = STEP_ICONS[normalizedStatus] || ITEM_ICONS.GENERIC;
-    const detailText = this._detailsText(details);
-    let message = `${icon} [${this._text(stepName)}]: ${normalizedStatus}`;
+    const envelope = this._isDetailEnvelope(details) ? details : null;
+    const detailText = this._detailsText(envelope ? envelope.reason !== undefined ? envelope.reason : envelope.content : details);
+    const duration = envelope ? this._duration(envelope.durationMs) : null;
+    const displayStatus = normalizedStatus === 'ERROR' ? 'FAILED' : normalizedStatus;
+    const timedStatus = duration === null ? displayStatus : `${displayStatus} in ${duration}ms`;
+    let message = `${icon} [${this._text(stepName)}]`;
     if (detailText) {
-      message += normalizedStatus === 'EXECUTED' && detailText.indexOf('completed in ') === 0 ? ` ${detailText.substring('completed '.length)}` : ` (${detailText})`;
+      message += ` ${detailText} (${timedStatus})`;
+    } else {
+      message += ` ${timedStatus}`;
     }
     return this._treeLines(message, position);
   }
 
 
   summary(label, durationMs, itemDetails, position) {
-    let message = `${this._text(label)} in ${this._count(durationMs)}ms`;
+    let message = `${this._text(label)}:`;
     const details = this._detailsText(itemDetails);
     if (details) {
-      message += ` (${details})`;
+      message += ` ${details} (COMPLETED in ${this._count(durationMs)}ms)`;
+    } else {
+      message += ` COMPLETED in ${this._count(durationMs)}ms`;
     }
     return this._treeLines(message, position);
+  }
+  _isDetailEnvelope(details) {
+    return Boolean(details && typeof details === 'object' && !Array.isArray(details) && (Object.prototype.hasOwnProperty.call(details, 'content') || Object.prototype.hasOwnProperty.call(details, 'durationMs') || Object.prototype.hasOwnProperty.call(details, 'reason')));
+  }
+  _duration(value) {
+    return Number.isFinite(value) && value >= 0 ? value : null;
   }
   _resumeDetails(details) {
     if (!details || typeof details !== 'object' || Array.isArray(details)) {
@@ -2671,9 +2712,15 @@ class StructuredLogFormatter {
     }
     try {
       if (Array.isArray(details)) {
+        if (details.length === 0) {
+          return '';
+        }
         return details.map(item => this._text(item)).join('\n');
       }
       if (typeof details === 'object') {
+        if (Object.keys(details).length === 0) {
+          return '';
+        }
         return this._safeStringify(details);
       }
       return String(details);
@@ -2755,6 +2802,7 @@ class LoggerService {
       DEBUG: 4
     };
     this._structured = new StructuredLogFormatter(this._safeStringify.bind(this));
+    this._positionStack = [];
   }
 
 
@@ -2885,6 +2933,34 @@ class LoggerService {
     }
     return formattedMessage;
   }
+  _currentPosition() {
+    return this._positionStack.length > 0 ? this._positionStack[this._positionStack.length - 1] : undefined;
+  }
+  _resolvePosition(position) {
+    return position === undefined ? this._currentPosition() : position;
+  }
+  _emit(level, message, context = null) {
+    if (!this._isLevelActive(level)) {
+      return this;
+    }
+    const evaluatedMessage = this._evaluateMessage(message);
+    const evaluatedContext = context !== null ? this._evaluateMessage(context) : null;
+    const formatted = this._formatMessage(level, evaluatedMessage, evaluatedContext);
+    const position = this._currentPosition();
+    if (position === undefined) {
+      Logger.log(formatted);
+      return this;
+    }
+    return this._writeStructured(level, this._structured.step(formatted, position));
+  }
+  withPosition(position, callback) {
+    this._positionStack.push(position);
+    try {
+      return callback();
+    } finally {
+      this._positionStack.pop();
+    }
+  }
 
 
 
@@ -2893,13 +2969,7 @@ class LoggerService {
 
 
   debug(message, context = null) {
-    if (!this._isLevelActive('DEBUG')) {
-      return this;
-    }
-    const evaluatedMessage = this._evaluateMessage(message);
-    const evaluatedContext = context !== null ? this._evaluateMessage(context) : null;
-    Logger.log(this._formatMessage('DEBUG', evaluatedMessage, evaluatedContext));
-    return this;
+    return this._emit('DEBUG', message, context);
   }
 
 
@@ -2909,13 +2979,7 @@ class LoggerService {
 
 
   info(message, context = null) {
-    if (!this._isLevelActive('INFO')) {
-      return this;
-    }
-    const evaluatedMessage = this._evaluateMessage(message);
-    const evaluatedContext = context !== null ? this._evaluateMessage(context) : null;
-    Logger.log(this._formatMessage('INFO', evaluatedMessage, evaluatedContext));
-    return this;
+    return this._emit('INFO', message, context);
   }
 
 
@@ -2925,13 +2989,7 @@ class LoggerService {
 
 
   warn(message, context = null) {
-    if (!this._isLevelActive('WARN')) {
-      return this;
-    }
-    const evaluatedMessage = this._evaluateMessage(message);
-    const evaluatedContext = context !== null ? this._evaluateMessage(context) : null;
-    Logger.log(this._formatMessage('WARN', evaluatedMessage, evaluatedContext));
-    return this;
+    return this._emit('WARN', message, context);
   }
 
 
@@ -2941,13 +2999,7 @@ class LoggerService {
 
 
   error(message, context = null) {
-    if (!this._isLevelActive('ERROR')) {
-      return this;
-    }
-    const evaluatedMessage = this._evaluateMessage(message);
-    const evaluatedContext = context !== null ? this._evaluateMessage(context) : null;
-    Logger.log(this._formatMessage('ERROR', evaluatedMessage, evaluatedContext));
-    return this;
+    return this._emit('ERROR', message, context);
   }
 
 
@@ -2978,9 +3030,7 @@ class LoggerService {
     if (this._logLevels[upperLevel] === undefined || !this._isLevelActive(upperLevel)) {
       return this;
     }
-    const evaluatedMessage = this._evaluateMessage(message);
-    Logger.log(this._formatMessage(upperLevel, evaluatedMessage));
-    return this;
+    return this._emit(upperLevel, message);
   }
 
 
@@ -3026,23 +3076,23 @@ class LoggerService {
 
 
   logStep(message, position) {
-    return this._writeStructured('INFO', this._structured.step(message, position));
+    return this._writeStructured('INFO', this._structured.step(message, this._resolvePosition(position)));
   }
 
 
   logPipelineStart(pipelineName, totalSteps, position) {
-    return this._writeStructured('INFO', this._structured.pipelineStart(pipelineName, totalSteps, position));
+    return this._writeStructured('INFO', this._structured.pipelineStart(pipelineName, totalSteps, this._resolvePosition(position)));
   }
 
 
   logPipelineStep(stepName, status, details, position) {
     const level = status === 'ERROR' ? 'ERROR' : status === 'SKIPPED' ? 'WARN' : 'INFO';
-    return this._writeStructured(level, this._structured.pipelineStep(stepName, status, details, position));
+    return this._writeStructured(level, this._structured.pipelineStep(stepName, status, details, this._resolvePosition(position)));
   }
 
 
   logSummary(label, durationMs, itemDetails, position) {
-    return this._writeStructured('INFO', this._structured.summary(label, durationMs, itemDetails, position));
+    return this._writeStructured('INFO', this._structured.summary(label, durationMs, itemDetails, this._resolvePosition(position)));
   }
 
 
@@ -3093,7 +3143,8 @@ class LoggerService {
       logStep: (message, position) => parentLogger.logStep(message, position),
       logPipelineStart: (pipelineName, totalSteps, position) => parentLogger.logPipelineStart(prefixed(pipelineName), totalSteps, position),
       logPipelineStep: (stepName, status, details, position) => parentLogger.logPipelineStep(prefixed(stepName), status, details, position),
-      logSummary: (label, durationMs, itemDetails, position) => parentLogger.logSummary(prefixed(label), durationMs, itemDetails, position)
+      logSummary: (label, durationMs, itemDetails, position) => parentLogger.logSummary(prefixed(label), durationMs, itemDetails, position),
+      withPosition: (position, callback) => parentLogger.withPosition(position, callback)
     };
   }
 }
@@ -49548,6 +49599,9 @@ class DatabaseConnectionManager {
       throw new Error('No transaction in progress. Call beginTransaction() first.');
     }
     try {
+      Object.keys(this.facade.tables).forEach(tableName => {
+        this.facade.tables[tableName].flush();
+      });
       this._spreadsheetService.flushBatch();
       const duration = Date.now() - this.facade._transaction.startTime;
       this._logger.info(`Transaction committed successfully (${duration}ms)`);
@@ -55223,6 +55277,12 @@ class CapturingLogger {
     this._realLogger.log(level, message);
     return this;
   }
+  withPosition(position, callback) {
+    if (typeof this._realLogger.withPosition === 'function') {
+      return this._realLogger.withPosition(position, callback);
+    }
+    return callback();
+  }
   _semantic(method, args, level, message, status) {
     this._capture(level, message, {
       method,
@@ -55424,16 +55484,27 @@ class JobRunnerExecutionController {
   _logJobResume(logger, jobName, jobType, details) {
     this._semantic(logger, 'logJobResume', details === undefined ? [jobName, jobType] : [jobName, jobType, details], 'info', `Resuming job ${jobName} (type: ${jobType})`);
   }
-  _logTerminal(logger, jobName, result, status) {
+  _logTerminal(logger, jobName, result, status, durationMs) {
     const state = status && status.state;
     if (state === 'cancelled') {
-      this._semantic(logger, 'logJobEnd', [jobName, false, 'cancelled'], 'error', `Job ${jobName} cancelled`);
+      this._semantic(logger, 'logJobEnd', [jobName, false, {
+        reason: 'cancelled',
+        durationMs
+      }], 'error', `Job ${jobName} cancelled after ${durationMs}ms`);
     } else if (state === 'failed' || state === 'error') {
-      this._semantic(logger, 'logJobEnd', [jobName, false, state], 'error', `Job ${jobName} failed (${state})`);
+      this._semantic(logger, 'logJobEnd', [jobName, false, {
+        reason: state,
+        durationMs
+      }], 'error', `Job ${jobName} failed (${state}) after ${durationMs}ms`);
     } else if (result === null) {
-      this._semantic(logger, 'logJobSuspended', [jobName, 'state saved; automatic resume scheduled'], 'warn', `Job ${jobName} suspended; automatic resume scheduled`);
+      this._semantic(logger, 'logJobSuspended', [jobName, {
+        reason: 'state saved; automatic resume scheduled',
+        durationMs
+      }], 'warn', `Job ${jobName} suspended; automatic resume scheduled after ${durationMs}ms`);
     } else {
-      this._semantic(logger, 'logJobEnd', [jobName, true], 'info', `Job ${jobName} completed successfully`);
+      this._semantic(logger, 'logJobEnd', [jobName, true, {
+        durationMs
+      }], 'info', `Job ${jobName} completed successfully in ${durationMs}ms`);
     }
   }
   _status(queue, jobName, result) {
@@ -55473,6 +55544,7 @@ class JobRunnerExecutionController {
       effectiveLogger = capturingLogger;
       this._logger.debug('MyJobRunnerService.run: Capturing logger enabled');
     }
+    const startedAt = Date.now();
     this._logJobStart(effectiveLogger, jobName, jobType);
     const queue = this.facade._createQueue();
     queue.setMaxDuration(maxDurationMs);
@@ -55483,7 +55555,7 @@ class JobRunnerExecutionController {
       triggers: this._triggerService
     };
     jobHandlerRegistryCallback(queue, services);
-    const jobDefinition = this._jobDefinitionRegistry.getDefinition(jobName);
+    const jobDefinition = this._jobDefinitionRegistry.jobExists(jobName) ? this._jobDefinitionRegistry.getDefinition(jobName) : null;
     if (jobDefinition) {
       parameters.jobDefinition = jobDefinition;
       effectiveLogger.debug(`MyJobRunnerService.run: Job definition found for '${jobName}'`);
@@ -55495,11 +55567,14 @@ class JobRunnerExecutionController {
     try {
       result = queue.execute(jobName, jobType, parameters, forceRestart);
       const status = this._status(queue, jobName, result);
-      this._logTerminal(effectiveLogger, jobName, result, status);
+      this._logTerminal(effectiveLogger, jobName, result, status, Date.now() - startedAt);
       jobCompleted = result !== null || status.state === 'cancelled' || status.state === 'failed' || status.state === 'error';
     } catch (err) {
       error = err;
-      this._semantic(effectiveLogger, 'logJobEnd', [jobName, false, err.message], 'error', `Job ${jobName} failed: ${err.message}`);
+      this._semantic(effectiveLogger, 'logJobEnd', [jobName, false, {
+        reason: err.message,
+        durationMs: Date.now() - startedAt
+      }], 'error', `Job ${jobName} failed: ${err.message}`);
     } finally {
       if (capturingLogger && (jobCompleted || error)) {
         try {
@@ -55515,6 +55590,7 @@ class JobRunnerExecutionController {
     return result;
   }
   resume(jobName, jobHandlerRegistryCallback, maxDurationMs = 25 * 60 * 1000) {
+    const startedAt = Date.now();
     if (!jobName) {
       const triggerId = this.facade._getCurrentTriggerId();
       if (triggerId) {
@@ -55556,7 +55632,7 @@ class JobRunnerExecutionController {
       triggers: this._triggerService
     };
     jobHandlerRegistryCallback(queue, services);
-    const jobDefinition = this._jobDefinitionRegistry.getDefinition(jobName);
+    const jobDefinition = this._jobDefinitionRegistry.jobExists(jobName) ? this._jobDefinitionRegistry.getDefinition(jobName) : null;
     const parameters = {
       services: services
     };
@@ -55566,10 +55642,13 @@ class JobRunnerExecutionController {
     try {
       const result = queue.execute(jobName, jobType, parameters, false);
       const status = this._status(queue, jobName, result);
-      this._logTerminal(this._logger, jobName, result, status);
+      this._logTerminal(this._logger, jobName, result, status, Date.now() - startedAt);
       return result;
     } catch (error) {
-      this._semantic(this._logger, 'logJobEnd', [jobName, false, error.message], 'error', `Job ${jobName} failed while resuming: ${error.message}`);
+      this._semantic(this._logger, 'logJobEnd', [jobName, false, {
+        reason: error.message,
+        durationMs: Date.now() - startedAt
+      }], 'error', `Job ${jobName} failed while resuming: ${error.message}`);
       throw error;
     }
   }
@@ -56454,6 +56533,14 @@ class Pipeline {
       isLast: true
     };
   }
+  _executionLogPosition(index) {
+    const stepPosition = this._stepLogPosition(index);
+    return {
+      depth: stepPosition.depth + 1,
+      isLast: false,
+      ancestorHasNext: [...stepPosition.ancestorHasNext, !stepPosition.isLast]
+    };
+  }
   _logPipelineStart() {
     if (typeof this._logger.logPipelineStart === 'function') {
       this._logger.logPipelineStart(this._name, this._steps.length, this._logPosition);
@@ -56466,7 +56553,16 @@ class Pipeline {
       this._logger.logPipelineStep(stepName, status, details, position);
       return;
     }
-    const message = `[${this._name}] ${stepName}: ${status}${details ? ` (${details})` : ''}`;
+    const isEnvelope = Boolean(details && typeof details === 'object' && !Array.isArray(details) && (Object.prototype.hasOwnProperty.call(details, 'content') || Object.prototype.hasOwnProperty.call(details, 'durationMs') || Object.prototype.hasOwnProperty.call(details, 'reason')));
+    const envelope = isEnvelope ? details : {};
+    const content = isEnvelope ? envelope.content : details;
+    const reason = envelope.reason !== undefined ? envelope.reason : status === 'SKIPPED' ? 'condition not met' : 'step failed';
+    const duration = Number.isFinite(envelope.durationMs) && envelope.durationMs >= 0 ? envelope.durationMs : null;
+    const fallbackDetails = this._fallbackDetailText(status === 'EXECUTED' ? content : reason);
+    const displayStatus = status === 'ERROR' ? 'FAILED' : status;
+    const timedStatus = status !== 'SKIPPED' && duration !== null ? `${displayStatus} in ${duration}ms` : displayStatus;
+    const body = fallbackDetails ? `${fallbackDetails} (${timedStatus})` : timedStatus;
+    const message = `[${this._name}] [${stepName}] ${body}`;
     if (status === 'ERROR') {
       this._logger.error(message);
     } else if (status === 'SKIPPED') {
@@ -56474,6 +56570,22 @@ class Pipeline {
     } else {
       this._logger.info(message);
     }
+  }
+  _fallbackDetailText(details) {
+    if (details === undefined || details === null || details === '') {
+      return '';
+    }
+    if (Array.isArray(details)) {
+      return details.join('\n');
+    }
+    if (typeof details === 'object') {
+      try {
+        return JSON.stringify(details);
+      } catch (_error) {
+        return '[Unrenderable details]';
+      }
+    }
+    return String(details);
   }
   _logPipelineSummary(context, prefix = '') {
     const summary = context.getSummary();
@@ -56651,14 +56763,18 @@ class Pipeline {
       }
       let result;
       try {
-        result = this._executeStep(step, context);
+        const executeStep = () => this._executeStep(step, context);
+        result = typeof this._logger.withPosition === 'function' ? this._logger.withPosition(this._executionLogPosition(stepIndex), executeStep) : executeStep();
       } catch (error) {
         pipelineSuccess = false;
         this._invokeHooks(this._hooks.onError, step, context, error);
         context.recordStepExecution(stepName, 'failed', 0, {
           error: error.message
         });
-        this._logPipelineStep(stepName, 'ERROR', error.message || 'step failed', this._stepLogPosition(stepIndex));
+        this._logPipelineStep(stepName, 'ERROR', {
+          reason: error.message || 'step failed',
+          durationMs: 0
+        }, this._stepLogPosition(stepIndex));
         if (this._monitor && this._jobId && typeof this._monitor.logStepComplete === 'function') {
           try {
             this._monitor.logStepComplete(this._jobId, stepName, false);
@@ -56676,7 +56792,15 @@ class Pipeline {
         error: result.error.message
       } : {});
       const semanticStatus = status === 'completed' ? 'EXECUTED' : status === 'skipped' ? 'SKIPPED' : 'ERROR';
-      const details = status === 'skipped' ? result.skipReason || 'condition not met' : status === 'failed' ? ((_result$error = result.error) === null || _result$error === void 0 ? void 0 : _result$error.message) || 'step failed' : `completed in ${result.durationMs || 0}ms`;
+      const details = status === 'skipped' ? {
+        reason: result.skipReason || 'condition not met'
+      } : status === 'failed' ? {
+        reason: ((_result$error = result.error) === null || _result$error === void 0 ? void 0 : _result$error.message) || 'step failed',
+        durationMs: result.durationMs || 0
+      } : {
+        content: result.logDetails,
+        durationMs: result.durationMs || 0
+      };
       this._logPipelineStep(stepName, semanticStatus, details, this._stepLogPosition(stepIndex));
       if (this._monitor && this._jobId) {
         try {
@@ -56885,6 +57009,7 @@ class StepExecutionError extends PipelineError {
 
 
 
+
 class Step {
 
 
@@ -57045,6 +57170,16 @@ class Step {
 
 
 
+  _getLogDetails(_context) {
+    return null;
+  }
+
+
+
+
+
+
+
 
   execute(context) {
     const startTime = Date.now();
@@ -57065,11 +57200,17 @@ class Step {
 
       this._executeLogic(context);
       const durationMs = Date.now() - startTime;
-      return {
+      const result = {
         success: true,
         skipped: false,
         durationMs
       };
+      try {
+        result.logDetails = this._getLogDetails(context);
+      } catch (detailError) {
+        this._logger.warn(`[${this._name}] Unable to collect log details: ${detailError.message}`);
+      }
+      return result;
     } catch (error) {
       const durationMs = Date.now() - startTime;
 

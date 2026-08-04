@@ -18,10 +18,17 @@ declare global {
     percentage?: number;
   }
 
+  type LogDetailScalar = string | number | boolean | null | undefined;
   type LogDetails =
     | string
-    | string[]
-    | Record<string, string | number | boolean | null | undefined>;
+    | LogDetailScalar[]
+    | Record<string, LogDetailScalar | LogDetailScalar[]>;
+
+  interface PipelineStepDetails {
+    content?: LogDetails;
+    durationMs?: number;
+    reason?: string;
+  }
 
   class LoggerService {
     trace(msg: string, ...args: unknown[]): void;
@@ -46,8 +53,8 @@ declare global {
     logPipelineStep(
       stepName: string,
       status: PipelineStepStatus,
-      details: LogDetails | undefined,
-      position: TreePosition
+      details: PipelineStepDetails | LogDetails | undefined,
+      position?: TreePosition
     ): this;
     logSummary(
       label: string,
@@ -55,6 +62,7 @@ declare global {
       itemDetails?: LogDetails,
       position?: TreePosition
     ): this;
+    withPosition<T>(position: TreePosition, callback: () => T): T;
   }
 
   class HtmlSanitizer {
@@ -484,6 +492,7 @@ declare global {
     success: boolean;
     skipped: boolean;
     durationMs: number;
+    logDetails: LogDetails | null;
     error?: Error;
   }
   interface StepOptions {
@@ -537,6 +546,7 @@ declare global {
       defaultValue?: T | null
     ): T | null;
     protected abstract _executeLogic(context: PipelineContext): void;
+    protected _getLogDetails(context: PipelineContext): LogDetails | null;
     execute(context: PipelineContext): StepExecutionResult;
   }
   class Pipeline {

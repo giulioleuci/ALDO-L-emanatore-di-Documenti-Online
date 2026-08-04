@@ -66,6 +66,28 @@ test('vendored PipelineFramework, WorkspaceTemplateEngine, RoleResolutionLib and
   expect(typeof JobDefinitionRegistry).toBe('function');
 });
 
+test('vendored logger preserves scoped callback results and renders pipeline content before status', () => {
+  const logSpy = jest.spyOn(Logger, 'log').mockImplementation(() => undefined);
+  const logger = new LoggerService();
+  const position: TreePosition = { depth: 1, isLast: true, ancestorHasNext: [false] };
+
+  const callbackResult = logger.withPosition(position, () => 'scoped-result');
+  logger.logPipelineStep(
+    'GenerateName',
+    'EXECUTED',
+    { content: 'PDP_DSA_Rossi_Mario_2026', durationMs: 12 },
+    position
+  );
+
+  expect(callbackResult).toBe('scoped-result');
+  expect(logSpy).toHaveBeenCalledWith(
+    expect.stringContaining(
+      '[GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 12ms)'
+    )
+  );
+  logSpy.mockRestore();
+});
+
 test('vendored GoogleApiWrapper MailService and ComposableContentLib globals are loaded', () => {
   expect(typeof MailService).toBe('function');
   expect(typeof ContentComposer).toBe('function');

@@ -13,16 +13,21 @@ jest.mock('../../src/presentation/Menu', () => ({
   menuImportazioni: jest.fn()
 }));
 jest.mock('../../src/infrastructure/facades/UiFacade', () => ({ GasUiFacade: jest.fn() }));
-import { aldoPing, resumeJob } from '../../src/index';
+import '../../src/index';
+import '../../src/entrypoints/EntryPoints_Base';
 import { initAldo, riprendiJobSospeso } from '../../src/config/Bootstrap';
 
+const gasGlobal = globalThis as typeof globalThis & {
+  aldoPing: () => string;
+  resumeJob: () => void;
+  runArticolazioneScenarios?: () => void;
+};
+
 test('aldoPing returns readiness string', () => {
-  expect(aldoPing()).toBe('ALDO OK');
+  expect(gasGlobal.aldoPing()).toBe('ALDO OK');
 });
 
 test('does not expose runArticolazioneScenarios as a GAS global entry point', () => {
-  const gasGlobal = globalThis as typeof globalThis & { runArticolazioneScenarios?: () => void };
-
   expect(gasGlobal.runArticolazioneScenarios).toBeUndefined();
 });
 
@@ -32,7 +37,7 @@ describe('resumeJob', () => {
       throw new Error('CONF_DOC row misconfigured');
     });
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => resumeJob()).not.toThrow();
+    expect(() => gasGlobal.resumeJob()).not.toThrow();
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('CONF_DOC row misconfigured'));
     errorSpy.mockRestore();
   });
@@ -40,7 +45,12 @@ describe('resumeJob', () => {
   test('calls riprendiJobSospeso with the initialized container and runner on success', () => {
     const container = { get: jest.fn() };
     (initAldo as jest.Mock).mockReturnValue(container);
-    resumeJob();
-    expect(riprendiJobSospeso).toHaveBeenCalledWith(container, expect.anything());
+    gasGlobal.resumeJob();
+    expect(riprendiJobSospeso).toHaveBeenCalledWith(
+      container,
+      expect.anything(),
+      '',
+      30 * 60 * 1000
+    );
   });
 });

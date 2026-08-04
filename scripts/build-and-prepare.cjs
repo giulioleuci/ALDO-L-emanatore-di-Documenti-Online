@@ -76,10 +76,21 @@ async function main() {
   const vendorBundle = path.join(rootDir, 'vendor', 'gaslibs.Code.js');
   const aldoCoreBundle = path.join(distDir, 'aldo-core.js');
   const entryPointsBundle = path.join(distDir, 'EntryPoints.js');
+  const productionEntryPoints = [
+    {
+      js: path.join(distDir, 'EntryPoints_Base.js'),
+      gs: path.join(distDir, 'EntryPoints_Base.gs')
+    },
+    {
+      js: path.join(distDir, 'EntryPoints_Menu.js'),
+      gs: path.join(distDir, 'EntryPoints_Menu.gs')
+    },
+    { js: path.join(distDir, 'EntryPoints_User.js'), gs: path.join(distDir, 'EntryPoints_User.gs') }
+  ];
 
   const webpackCmd =
     mode === 'production'
-      ? 'npx webpack'
+      ? 'npx webpack --env production'
       : mode === 'online'
         ? 'npx webpack --env readable --env online'
         : 'npx webpack --env readable';
@@ -106,7 +117,7 @@ async function main() {
     info(`Offline tests: Will run after build (unit + integration)`);
   } else if (mode === 'production') {
     info(`Code.js:      Vendor + ALDO core — minified (Terser), no comments`);
-    info(`EntryPoints.js: ALDO document-gen/email-sending launchers — readable, with comments`);
+    info(`EntryPoints_Base/Menu/User.gs: readable ALDO entry points, with comments`);
   } else {
     info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
   }
@@ -144,7 +155,14 @@ async function main() {
     fail('dist/aldo-core.js was not produced by Webpack');
     process.exit(1);
   }
-  if (!fs.existsSync(entryPointsBundle)) {
+  if (mode === 'production') {
+    for (const { js } of productionEntryPoints) {
+      if (!fs.existsSync(js)) {
+        fail(`dist/${path.basename(js)} was not produced by Webpack`);
+        process.exit(1);
+      }
+    }
+  } else if (!fs.existsSync(entryPointsBundle)) {
     fail('dist/EntryPoints.js was not produced by Webpack');
     process.exit(1);
   }
@@ -202,10 +220,13 @@ async function main() {
       }
       fs.writeFileSync(codeJsPath, minified.code + '\n;\n' + core, 'utf8');
       ok('Wrote dist/Code.js (vendor prelude minified + ALDO core, minified, no comments)');
-      ok('Kept dist/EntryPoints.js separate (readable, with comments)');
+      for (const { js, gs } of productionEntryPoints) {
+        fs.renameSync(js, gs);
+        fs.rmSync(js + '.map', { force: true });
+      }
+      ok('Kept dist/EntryPoints_Base/Menu/User.gs separate (readable, with comments)');
       fs.rmSync(aldoCoreBundle, { force: true });
       fs.rmSync(aldoCoreBundle + '.map', { force: true });
-      fs.rmSync(entryPointsBundle + '.map', { force: true });
     } else if (mode === 'online') {
       const entrypoints = fs.readFileSync(entryPointsBundle, 'utf8');
 
@@ -570,19 +591,22 @@ async function main() {
   }
 
   if (mode === 'production') {
-    const entryPointsFinalPath = path.join(distDir, 'EntryPoints.js');
-    const entryPointsCode = fs.readFileSync(entryPointsFinalPath, 'utf8');
     let entryWarnings = 0;
-    for (const { label, regex, reason } of scanPatterns) {
-      const matches = entryPointsCode.match(regex);
-      if (matches) {
-        warn(`EntryPoints.js: found ${matches.length} instance(s) of ${c.bold}${label}${c.reset}`);
-        info(`  Reason: ${reason}`);
-        entryWarnings += matches.length;
+    for (const { gs } of productionEntryPoints) {
+      const entryPointsCode = fs.readFileSync(gs, 'utf8');
+      for (const { label, regex, reason } of scanPatterns) {
+        const matches = entryPointsCode.match(regex);
+        if (matches) {
+          warn(
+            `${path.basename(gs)}: found ${matches.length} instance(s) of ${c.bold}${label}${c.reset}`
+          );
+          info(`  Reason: ${reason}`);
+          entryWarnings += matches.length;
+        }
       }
     }
     if (entryWarnings === 0) {
-      ok('EntryPoints.js: no GAS V8 compatibility issues detected (scan-only, not rewritten)');
+      ok('EntryPoints_Base/Menu/User.gs: no GAS V8 compatibility issues detected (scan-only)');
     }
     warningCount += entryWarnings;
   }
@@ -682,16 +706,22 @@ gas-source-map.json
 
     let productionVerifyPassed = true;
     const codeJsContent = fs.readFileSync(codeJsPath, 'utf8');
-    const entryPointsFinalPath = path.join(distDir, 'EntryPoints.js');
-    const entryPointsContent = fs.existsSync(entryPointsFinalPath)
-      ? fs.readFileSync(entryPointsFinalPath, 'utf8')
-      : '';
-
-    const launcherNames = [
-      'menu_avvioGenerazioneDocumenti',
-      'menu_avvioComunicazioniEmail',
-      'generaPagelle',
-      'inviaNotificaAssenze'
+    const entryPointContents = productionEntryPoints.map(({ gs }) => ({
+      file: path.basename(gs),
+      content: fs.existsSync(gs) ? fs.readFileSync(gs, 'utf8') : ''
+    }));
+    const entryPointRequirements = [
+      ['EntryPoints_Base.gs', ['MAX_JOB_EXECUTION_TIME_MS', 'resumeJob']],
+      [
+        'EntryPoints_Menu.gs',
+        [
+          'onOpen',
+          'menu_avvioGenerazioneDocumenti',
+          'menu_avvioComunicazioniEmail',
+          'menu_avvioImportazioni'
+        ]
+      ],
+      ['EntryPoints_User.gs', ['generaPagelle', 'inviaNotificaAssenze', 'importaAlunniChunked']]
     ];
     // menu_avvioGenerazioneDocumenti/menu_avvioComunicazioniEmail legitimately
     // appear in Code.js as STRING data: src/presentation/Menu.ts's vociMenu()
@@ -699,7 +729,11 @@ gas-source-map.json
     // (menu.addItem(label, 'funcName')), and that file is part of core, not
     // EntryPoints.ts. Only the two non-interactive example launchers — never
     // referenced anywhere in core — are safe to check by bare name.
-    const namesForbiddenInCodeJs = ['generaPagelle', 'inviaNotificaAssenze'];
+    const namesForbiddenInCodeJs = [
+      'generaPagelle',
+      'inviaNotificaAssenze',
+      'importaAlunniChunked'
+    ];
 
     const leakedIntoCodeJs = namesForbiddenInCodeJs.filter((name) => codeJsContent.includes(name));
     if (leakedIntoCodeJs.length > 0) {
@@ -718,48 +752,47 @@ gas-source-map.json
       ok('Code.js contains no JSDoc comment blocks (minified, comment-free)');
     }
 
-    if (!fs.existsSync(entryPointsFinalPath)) {
-      fail('dist/EntryPoints.js was not produced');
-      productionVerifyPassed = false;
-    } else {
-      if (!entryPointsContent.includes('/**')) {
-        fail(
-          'EntryPoints.js contains no JSDoc comment blocks — expected readable, commented output'
-        );
+    for (const [file, requiredNames] of entryPointRequirements) {
+      const entryPoint = entryPointContents.find((candidate) => candidate.file === file);
+      if (!entryPoint || entryPoint.content === '') {
+        fail(`dist/${file} was not produced`);
+        productionVerifyPassed = false;
+        continue;
+      }
+      if (!entryPoint.content.includes('/**')) {
+        fail(`${file} contains no JSDoc comment blocks — expected readable, commented output`);
         productionVerifyPassed = false;
       } else {
-        ok('EntryPoints.js retains JSDoc comment blocks');
+        ok(`${file} retains JSDoc comment blocks`);
       }
 
-      const missingFromEntryPoints = launcherNames.filter(
-        (name) => !entryPointsContent.includes(name)
+      const missingFromEntryPoints = requiredNames.filter(
+        (name) => !entryPoint.content.includes(name)
       );
       if (missingFromEntryPoints.length > 0) {
-        fail(
-          `EntryPoints.js is missing expected launcher(s): ${missingFromEntryPoints.join(', ')}`
-        );
+        fail(`${file} is missing expected entry point(s): ${missingFromEntryPoints.join(', ')}`);
         productionVerifyPassed = false;
       } else {
-        ok('EntryPoints.js contains all expected launcher functions');
+        ok(`${file} contains expected entry points`);
       }
 
-      const lineCount = entryPointsContent.split('\n').length || 1;
-      const avgLineLength = entryPointsContent.length / lineCount;
+      const lineCount = entryPoint.content.split('\n').length || 1;
+      const avgLineLength = entryPoint.content.length / lineCount;
       if (avgLineLength > 200) {
         fail(
-          `EntryPoints.js looks minified (avg line length ${avgLineLength.toFixed(0)} chars) — expected readable multi-line output`
+          `${file} looks minified (avg line length ${avgLineLength.toFixed(0)} chars) — expected readable multi-line output`
         );
         productionVerifyPassed = false;
       } else {
         ok(
-          `EntryPoints.js is readable (avg line length ${avgLineLength.toFixed(0)} chars over ${lineCount} lines)`
+          `${file} is readable (avg line length ${avgLineLength.toFixed(0)} chars over ${lineCount} lines)`
         );
       }
     }
 
     const testLeakLabels = [
       ['Code.js', codeJsContent],
-      ['EntryPoints.js', entryPointsContent]
+      ...entryPointContents.map(({ file, content }) => [file, content])
     ];
     let testLeakFound = false;
     for (const [label, content] of testLeakLabels) {

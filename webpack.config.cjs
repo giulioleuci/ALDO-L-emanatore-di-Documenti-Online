@@ -34,6 +34,7 @@ const instrumentedBabelRule = makeBabelRule(true);
 
 module.exports = (env) => {
   const readable = !!(env && env.readable);
+  const productionSplit = !!(env && env.production);
   // Signaled from scripts/build-and-prepare.cjs's --mode=online webpack
   // invocation only (`npx webpack --env readable --env online`). Every other
   // build mode (production/testing/testoffline) must NOT build the online
@@ -71,17 +72,15 @@ module.exports = (env) => {
     ]
   };
 
-  // Document-generation/email-sending entry points (docs/superpowers/specs/
-  // 2026-07-11-production-split-build-design.md): always readable, always
-  // commented, regardless of --env readable or the ALDO build mode — this
-  // file is meant to be opened and read/extended by a human.
-  const entrypointsConfig = {
-    name: 'entrypoints',
+  // Entry points always remain readable. Production emits Base/Menu/User as
+  // individual GAS files; non-production combines them for one-file debugging.
+  const makeEntrypointsConfig = (name, entry, filename) => ({
+    name,
     mode: 'production',
-    entry: './src/entrypoints/EntryPoints.ts',
+    entry,
     devtool: 'source-map',
     output: {
-      filename: 'EntryPoints.js',
+      filename,
       path: path.resolve(__dirname, 'dist'),
       clean: false,
       iife: false
@@ -89,7 +88,27 @@ module.exports = (env) => {
     resolve: { extensions: ['.ts', '.js', '.json'] },
     module: { rules: [babelRule] },
     optimization: { minimize: false }
-  };
+  });
+
+  const entrypointsConfigs = productionSplit
+    ? [
+        makeEntrypointsConfig(
+          'entrypoints-base',
+          './src/entrypoints/EntryPoints_Base.ts',
+          'EntryPoints_Base.js'
+        ),
+        makeEntrypointsConfig(
+          'entrypoints-menu',
+          './src/entrypoints/EntryPoints_Menu.ts',
+          'EntryPoints_Menu.js'
+        ),
+        makeEntrypointsConfig(
+          'entrypoints-user',
+          './src/entrypoints/EntryPoints_User.ts',
+          'EntryPoints_User.js'
+        )
+      ]
+    : [makeEntrypointsConfig('entrypoints', './src/entrypoints/EntryPoints.ts', 'EntryPoints.js')];
 
   // Online GAS test suite (docs/superpowers/specs/2026-07-11-offline-online-test-expansion-design.md):
   // always its own output file, never concatenated into Code.js, so it can be
@@ -110,7 +129,7 @@ module.exports = (env) => {
     optimization: { minimize: false }
   };
 
-  const configs = [coreConfig, entrypointsConfig];
+  const configs = [coreConfig, ...entrypointsConfigs];
   if (online) {
     configs.push(onlinetestsConfig);
   }

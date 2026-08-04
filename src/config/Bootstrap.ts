@@ -59,9 +59,6 @@ import { ConfigurationError } from '../domain/errors/DomainError';
 import type { ITeachingAssignmentResolver } from '../application/ports/ITeachingAssignmentResolver';
 import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
-/** ScriptProperties key holding the Master Sheet spreadsheet id (15 §7, 06 §0). */
-export const PROP_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
-
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
 export interface BootstrapDeps {
   db: EmailDb;
@@ -402,13 +399,8 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   if (runtime !== null) return runtime;
   const logger = ServiceFactory.getLogger();
   const properties = props ?? new ScriptPropertiesFacade();
-
-  const masterId = properties.get(PROP_MASTER_SPREADSHEET_ID);
-  if (masterId === null || masterId.trim() === '') {
-    throw new ConfigurationError(
-      `ScriptProperties.${PROP_MASTER_SPREADSHEET_ID} mancante: impossibile localizzare il Master Sheet`
-    );
-  }
+  const spreadsheetService = ServiceFactory.getSpreadsheetService();
+  const masterId = spreadsheetService.getActiveStandard().getId();
   const utils = ServiceFactory.getUtils();
   const cache = ServiceFactory.getCacheService().getScriptCache();
   const masterDb = new SheetDbAdapter(
@@ -423,7 +415,6 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   );
 
   const driveService = ServiceFactory.getDriveService();
-  const spreadsheetService = ServiceFactory.getSpreadsheetService();
   const documentService = ServiceFactory.getDocumentService();
 
   // Built up-front (rather than inline in the buildAldoContainer() deps

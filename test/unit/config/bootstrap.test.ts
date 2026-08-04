@@ -7,8 +7,7 @@ import {
   riprendiJobSospeso,
   initAldo,
   resetAldo,
-  creaJobRunner,
-  PROP_MASTER_SPREADSHEET_ID
+  creaJobRunner
 } from '../../../src/config/Bootstrap';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
@@ -354,19 +353,23 @@ describe('initAldo — singleton reuse + missing master id', () => {
       commit: jest.fn(),
       rollback: jest.fn()
     };
-    (global as unknown as { DatabaseService: unknown }).DatabaseService = jest
+    const databaseService = jest
       .fn()
       .mockImplementation(() => fakeDb);
-    return () => {
+    (global as unknown as { DatabaseService: unknown }).DatabaseService = databaseService;
+    const restore = () => {
       (global as unknown as { DatabaseService: unknown }).DatabaseService = original;
     };
+    return Object.assign(restore, { databaseService });
   }
 
-  function mockServiceFactory() {
+  function mockServiceFactory(masterId = 'BOUND_MASTER_ID') {
     const spies = [
       jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue(fakeLogger as never),
       jest.spyOn(ServiceFactory, 'getDriveService').mockReturnValue({} as never),
-      jest.spyOn(ServiceFactory, 'getSpreadsheetService').mockReturnValue({} as never),
+      jest.spyOn(ServiceFactory, 'getSpreadsheetService').mockReturnValue({
+        getActiveStandard: () => ({ getId: () => masterId })
+      } as never),
       jest.spyOn(ServiceFactory, 'getDocumentService').mockReturnValue({} as never),
       jest.spyOn(ServiceFactory, 'getPermissionService').mockReturnValue({} as never),
       jest.spyOn(ServiceFactory, 'getMailService').mockReturnValue({} as never),
@@ -380,6 +383,40 @@ describe('initAldo — singleton reuse + missing master id', () => {
 
   afterEach(() => {
     resetAldo();
+  });
+
+  test('opens the Master database from the bound spreadsheet without reading properties', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const restoreFactory = mockServiceFactory('BOUND_MASTER_ID');
+    const fakeMaster = { idSpreadsheet: 'ss1', idCartellaRoot: 'root1' } as never;
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue(fakeMaster);
+    const props = {
+      get: jest.fn(() => {
+        throw new Error('Master ID must not be read from Script Properties');
+      }),
+      set: jest.fn()
+    };
+
+    try {
+      initAldo(new Date('2026-01-01'), props);
+
+      expect(restoreDb.databaseService).toHaveBeenNthCalledWith(
+        1,
+        'BOUND_MASTER_ID',
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        null,
+        expect.objectContaining({ verifyTables: ['MASTER'] })
+      );
+      expect(props.get).not.toHaveBeenCalled();
+    } finally {
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
   });
 
   test('returns the same ServiceContainer instance on a second call (singleton)', () => {
@@ -403,18 +440,6 @@ describe('initAldo — singleton reuse + missing master id', () => {
     }
   });
 
-  test.each([null, '', '   '])(
-    'throws ConfigurationError when the master id property is %p',
-    (value) => {
-      resetAldo();
-      const props = { get: jest.fn().mockReturnValue(value), set: jest.fn() };
-      expect(() => initAldo(new Date(), props as never)).toThrow(ConfigurationError);
-      expect(() => initAldo(new Date(), props as never)).toThrow(
-        new RegExp(`${PROP_MASTER_SPREADSHEET_ID} mancante`)
-      );
-    }
-  );
-
   test('enables EmailNotificationService test mode with the MASTER file owner email when annoCorrente.testMode is true', () => {
     const restoreDb = mockDatabaseServiceGlobal();
     const restoreFactory = mockServiceFactory();
@@ -433,7 +458,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
     try {
       const props = { get: jest.fn().mockReturnValue('MASTER_ID_1'), set: jest.fn() };
       initAldo(new Date('2026-01-01'), props);
-      expect(ownerSpy).toHaveBeenCalledWith('MASTER_ID_1');
+      expect(ownerSpy).toHaveBeenCalledWith('BOUND_MASTER_ID');
       expect(enableSpy).toHaveBeenCalledWith('owner@school.it');
     } finally {
       enableSpy.mockRestore();

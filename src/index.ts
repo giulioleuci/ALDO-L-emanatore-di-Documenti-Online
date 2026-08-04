@@ -15,8 +15,7 @@ import {
   avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
   avviaImportazioneChunkedDataDriven,
-  riprendiJobSospeso,
-  PROP_MASTER_SPREADSHEET_ID
+  riprendiJobSospeso
 } from './config/Bootstrap';
 import {
   costruisciMenu,
@@ -25,22 +24,9 @@ import {
   menuImportazioni
 } from './presentation/Menu';
 import { GasUiFacade } from './infrastructure/facades/UiFacade';
-import { ScriptPropertiesFacade } from './infrastructure/facades/PropertiesFacade';
 
 export function aldoPing(): string {
   return 'ALDO OK';
-}
-
-/**
- * One-time manual bootstrap (setup script, spec 3): run once from the Apps Script editor's
- * Run dropdown after the first push to a MASTER-bound project. Reads this script's own bound
- * container id via the vendored SpreadsheetService escape hatch (never SpreadsheetApp
- * directly) and writes it to ScriptProperties — the value initAldo() requires on every
- * subsequent execution (Bootstrap.ts:275-280).
- */
-export function impostaMasterSpreadsheetId(): void {
-  const id = ServiceFactory.getSpreadsheetService().getActiveStandard().getId();
-  new ScriptPropertiesFacade().set(PROP_MASTER_SPREADSHEET_ID, id);
 }
 
 export function onOpen(): void {
@@ -71,7 +57,6 @@ export function resumeJob(): void {
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).aldoPing = aldoPing;
-(globalThis as any).impostaMasterSpreadsheetId = impostaMasterSpreadsheetId;
 (globalThis as any).onOpen = onOpen;
 (globalThis as any).menu_avvioImportazioni = menu_avvioImportazioni;
 (globalThis as any).resumeJob = resumeJob;

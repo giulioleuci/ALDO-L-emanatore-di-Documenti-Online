@@ -4,7 +4,7 @@ import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFaca
 import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade';
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import { SessionActiveUserFacade } from '../infrastructure/facades/ActiveUserFacade';
-import { initAldo, PROP_MASTER_SPREADSHEET_ID } from '../config/Bootstrap';
+import { initAldo } from '../config/Bootstrap';
 import { TABLE } from '../config/schema';
 import { ConfigurationError } from '../domain/errors/DomainError';
 import type { MasterConfig } from '../domain/entities/MasterConfig';
@@ -29,6 +29,9 @@ import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
 import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { e2eActiveRepresentativesInterceptor } from './E2eActiveRepresentativesInterceptor';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
+
+/** Test-only fixture pointer; production startup always uses its bound spreadsheet. */
+export const PROP_ONLINETEST_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
 
 /**
  * Every seam {@link executeOnlineTests} needs that ultimately touches something outside plain
@@ -87,11 +90,11 @@ export function executeArticolazioneScenarios(
   const readMasterConfig = overrides.readMasterConfig ?? readCurrentMasterConfig;
   const log =
     overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
-  const masterSpreadsheetId = properties.get(PROP_MASTER_SPREADSHEET_ID);
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID);
 
   if (masterSpreadsheetId === null || masterSpreadsheetId.trim() === '') {
     throw new ConfigurationError(
-      `ScriptProperties.${PROP_MASTER_SPREADSHEET_ID} mancante: gli scenari articolazione richiedono un MASTER E2E esistente`
+      `ScriptProperties.${PROP_ONLINETEST_MASTER_SPREADSHEET_ID} mancante: gli scenari articolazione richiedono un MASTER E2E esistente`
     );
   }
 
@@ -125,7 +128,7 @@ export function executeArticolazioneScenarios(
 
 /**
  * Orchestration entry point (design spec §2): builds a throwaway sample SGSA database (B2/B3),
- * points `PROP_MASTER_SPREADSHEET_ID` at it (recording, never silently discarding, whatever value
+ * records the generated fixture ID in the test-only property (never silently discarding whatever value
  * was already there), boots a real ALDO container over it via `initAldo()`, and runs every
  * registered check group (B4 repositories, B5 context engine + document/email pipeline) against
  * one shared {@link TestRunner}.
@@ -162,11 +165,11 @@ export function executeOnlineTests(overrides: Partial<OnlineTestDeps> = {}): Onl
 
   const sample = new SampleDatabaseBuilder(spreadsheetFactory, drive).build();
 
-  const previousMasterId = properties.get(PROP_MASTER_SPREADSHEET_ID);
+  const previousMasterId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID);
   if (previousMasterId !== null && previousMasterId.trim() !== '') {
     log(`Previous MASTER_SPREADSHEET_ID before online-test override: ${previousMasterId}`);
   }
-  properties.set(PROP_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
+  properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
 
   const container = initAldoFn(clock(), properties);
 
@@ -242,7 +245,7 @@ function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
  * Orchestration entry point for the e2e scenarios (design spec
  * `2026-07-21-testonline-mock-db-e2e-design.md`): provisions the real Drive artifacts,
  * builds the larger persistent mock database against them, points
- * `PROP_MASTER_SPREADSHEET_ID` at its MASTER sheet (previous value logged, never discarded),
+ * the test-only fixture property at its MASTER sheet (previous value logged, never discarded),
  * boots a real ALDO container (which — via `initAldo`'s TEST_MODE wiring — auto-enables
  * `EmailNotificationService` test mode from the mock MASTER's `TEST_MODE=true`), and runs
  * `registerE2eScenarioChecks`. Deliberately a SEPARATE top-level entry point from
@@ -251,7 +254,9 @@ function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
  */
 export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const configuredMasterSpreadsheetId = properties.get(PROP_MASTER_SPREADSHEET_ID)?.trim();
+  const configuredMasterSpreadsheetId = properties
+    .get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)
+    ?.trim();
   const masterSpreadsheetId =
     configuredMasterSpreadsheetId === undefined || configuredMasterSpreadsheetId === ''
       ? ServiceFactory.getSpreadsheetService().getActiveStandard().getId()
@@ -286,7 +291,7 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   const sample = new E2eSampleDatabaseBuilder(spreadsheetFactory, drive).build(templateIds, master);
 
   log(`Previous MASTER_SPREADSHEET_ID before e2e-scenario override: ${masterSpreadsheetId}`);
-  properties.set(PROP_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
+  properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
 
   const container = initAldoFn(clock(), properties);
   container

@@ -5,7 +5,7 @@ import {
   executeOnlineTests,
   dumpOnlineCoverage
 } from '../../../src/onlinetests/index';
-import { PROP_MASTER_SPREADSHEET_ID } from '../../../src/config/Bootstrap';
+import { PROP_ONLINETEST_MASTER_SPREADSHEET_ID } from '../../../src/onlinetests';
 import { E2eSampleDatabaseBuilder } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import {
   CLASSE_BASE,
@@ -249,7 +249,7 @@ function fakeProperties(initial: string | null | Record<string, string> = null):
       ? { ...initial }
       : initial === null
         ? {}
-        : { [PROP_MASTER_SPREADSHEET_ID]: initial };
+        : { [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: initial };
   return {
     get: jest.fn((key: string) => values[key] ?? null),
     set: jest.fn((key: string, newValue: string) => {
@@ -417,7 +417,7 @@ describe('executeE2eScenarios', () => {
 
     expect(spreadsheetFactory.openExistingSpreadsheet).toHaveBeenCalledWith('bound-master-id');
     expect(setMasterSpreadsheetId).toHaveBeenCalledWith(
-      PROP_MASTER_SPREADSHEET_ID,
+      PROP_ONLINETEST_MASTER_SPREADSHEET_ID,
       'bound-master-id'
     );
   });
@@ -445,7 +445,7 @@ describe('executeE2eScenarios', () => {
 
     expect(spreadsheetFactory.openExistingSpreadsheet).toHaveBeenCalledWith('bound-master-id');
     expect(setMasterSpreadsheetId).toHaveBeenCalledWith(
-      PROP_MASTER_SPREADSHEET_ID,
+      PROP_ONLINETEST_MASTER_SPREADSHEET_ID,
       'bound-master-id'
     );
     expect(spreadsheetFactory.createSpreadsheet.mock.calls.map(([name]) => name)).toEqual([

@@ -45,7 +45,7 @@ test('ALUNNO_DETTAGLIATO on a1 assembles the full student focus; storico is skip
   expect(a.didattica.asl).toEqual({ oreCumulate: 100, oreAnnoCorrente: 60 });
   expect(a.didattica.carenze.numero).toBe(3);
   expect(a.didattica.piani.items).toEqual([
-    { tipo: 'PEI', isBes: true, link: '', parametriGenerazione: { gravita: 'media' } }
+    { tipo: 'PEI', tipoLabel: 'PEI', isBes: true, link: '', parametriGenerazione: { gravita: 'media' } }
   ]);
   expect(a.didattica.documenti).toEqual({ hasDocumenti: false, items: [] });
   // includiStorico defaults to false → StoricoProvider is a no-op, no LazyRef.

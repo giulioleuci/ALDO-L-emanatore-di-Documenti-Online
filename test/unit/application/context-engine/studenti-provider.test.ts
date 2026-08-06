@@ -76,12 +76,16 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
         hasCarenze: true,
         numero: 3,
         dettaglio: [
-          { materia: 'MATE', voto: '5' },
-          { materia: 'MATE', voto: '4.5' },
-          { materia: 'FISI', voto: 'Studio scarso' }
+          { materia: 'MATE', materiaNome: 'Matematica', voto: '5' },
+          { materia: 'MATE', materiaNome: 'Matematica', voto: '4.5' },
+          { materia: 'FISI', materiaNome: 'Fisica', voto: 'Studio scarso' }
         ]
       },
-      piani: { hasPiani: true, hasBes: true, items: [{ tipo: 'PEI', isBes: true }] },
+      piani: {
+        hasPiani: true,
+        hasBes: true,
+        items: [{ tipo: 'PEI', tipoLabel: 'PEI', isBes: true }]
+      },
       pcto: { oreCumulate: 100 }
     }
   });

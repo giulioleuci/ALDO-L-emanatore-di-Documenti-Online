@@ -87,9 +87,9 @@ test('CarenzeProvider: dettaglio flattened from CARENZE (02 §4.2)', () => {
     numero: 3,
     hasCarenze: true,
     dettaglio: [
-      { materia: 'MATE', voto: '5' },
-      { materia: 'MATE', voto: '4.5' },
-      { materia: 'FISI', voto: 'Studio scarso' }
+      { materia: 'MATE', materiaNome: 'Matematica', voto: '5' },
+      { materia: 'MATE', materiaNome: 'Matematica', voto: '4.5' },
+      { materia: 'FISI', materiaNome: 'Fisica', voto: 'Studio scarso' }
     ]
   });
 });
@@ -99,7 +99,15 @@ test('PianiProvider: items + isBes update of the status placeholder (09 §4 note
   expect(a.didattica.piani).toEqual({
     hasPiani: true,
     hasBes: true,
-    items: [{ tipo: 'PEI', isBes: true, link: '', parametriGenerazione: { gravita: 'media' } }]
+    items: [
+      {
+        tipo: 'PEI',
+        tipoLabel: 'PEI',
+        isBes: true,
+        link: '',
+        parametriGenerazione: { gravita: 'media' }
+      }
+    ]
   });
   expect(a.status.isBes).toBe(true);
 });
@@ -108,7 +116,7 @@ test('a non-BES student (PFP): isBes stays false, class resolved for alunno targ
   const a = build('a3@school.it').focus.alunno!;
   expect(a.status.isBes).toBe(false);
   expect(a.didattica.piani.items).toEqual([
-    { tipo: 'PFP', isBes: false, link: '', parametriGenerazione: {} }
+    { tipo: 'PFP', tipoLabel: 'PFP', isBes: false, link: '', parametriGenerazione: {} }
   ]);
   expect(a.classe.nome).toBe('5A');
 });

@@ -2,6 +2,7 @@ import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import { getAlunnoEntity } from '../techEntities';
+import { tipoPianoLabel } from '../mappers/labels';
 
 /**
  * Fills `focus.alunno.didattica.piani` from PIANI (09 §4, 02 §4.2) and updates
@@ -17,6 +18,7 @@ export class PianiProvider implements ContextProvider {
     if (focusAlunno === undefined) return;
     const items = this.alunni.getPiani(getAlunnoEntity(cdu)).map((p) => ({
       tipo: p.tipo,
+      tipoLabel: tipoPianoLabel(p.tipo),
       isBes: p.isBES(),
       link: '',
       parametriGenerazione: p.getParametri()

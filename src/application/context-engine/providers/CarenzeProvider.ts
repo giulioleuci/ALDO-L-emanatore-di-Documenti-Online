@@ -20,7 +20,8 @@ export class CarenzeProvider implements ContextProvider {
     if (focusAlunno === undefined) return;
     const dettaglio = carenzeDettaglioSemplice(
       this.alunni.getCarenze(getAlunnoEntity(cdu)),
-      this.materie.findAllSigle()
+      this.materie.findAllSigle(),
+      this.materie
     );
     focusAlunno.didattica.carenze = {
       dettaglio,

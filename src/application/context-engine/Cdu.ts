@@ -49,9 +49,13 @@ export interface AlunnoContestoVM {
     carenze: {
       hasCarenze: boolean;
       numero: number;
-      dettaglio: Array<{ materia: string; voto: string }>;
+      dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
     };
-    piani: { hasPiani: boolean; hasBes: boolean; items: Array<{ tipo: string; isBes: boolean }> };
+    piani: {
+      hasPiani: boolean;
+      hasBes: boolean;
+      items: Array<{ tipo: string; tipoLabel: string; isBes: boolean }>;
+    };
     pcto: { oreCumulate: number };
   };
 }
@@ -213,7 +217,7 @@ export interface CduAlunno {
   consiglioDiClasseFiltrato?: DocenteCdcVM[];
   didattica: {
     carenze: {
-      dettaglio: Array<{ materia: string; voto: string }>;
+      dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
       numero: number;
       hasCarenze: boolean;
     };
@@ -221,6 +225,7 @@ export interface CduAlunno {
     piani: {
       items: Array<{
         tipo: string;
+        tipoLabel: string;
         isBes: boolean;
         link: string;
         parametriGenerazione: Record<string, unknown>;

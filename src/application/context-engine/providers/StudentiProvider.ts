@@ -7,6 +7,7 @@ import type { Alunno } from '../../../domain/entities/Alunno';
 import type { Classe } from '../../../domain/entities/Classe';
 import { getClasseEntity } from '../techEntities';
 import { carenzeDettaglioSemplice, curriculumArray } from '../mappers/carenzeMapper';
+import { tipoPianoLabel } from '../mappers/labels';
 
 /**
  * Populates `focus.classe.studenti` (09 §4/§10). Builds one alunno-in-context
@@ -60,11 +61,12 @@ export class StudentiProvider implements ContextProvider {
     const indirizzo = this.classi.getIndirizzo(classe);
     const dettaglio = carenzeDettaglioSemplice(
       this.alunni.getCarenze(alunno),
-      this.materie.findAllSigle()
+      this.materie.findAllSigle(),
+      this.materie
     );
     const pianiItems = this.alunni
       .getPiani(alunno)
-      .map((p) => ({ tipo: p.tipo, isBes: p.isBES() }));
+      .map((p) => ({ tipo: p.tipo, tipoLabel: tipoPianoLabel(p.tipo), isBes: p.isBES() }));
     const hasBes = pianiItems.some((p) => p.isBes);
     return {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },

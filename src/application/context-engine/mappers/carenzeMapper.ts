@@ -1,6 +1,7 @@
 import type { Carenza } from '../../../domain/entities/Carenza';
 import type { Alunno } from '../../../domain/entities/Alunno';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
+import { MateriaId } from '../../../domain/value-objects/MateriaId';
 
 /**
  * Flattens the CARENZE matrix rows into the simple `{ materia, voto }` list the
@@ -11,9 +12,10 @@ import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRe
  */
 export function carenzeDettaglioSemplice(
   carenze: Carenza[],
-  sigle: string[]
-): Array<{ materia: string; voto: string }> {
-  const out: Array<{ materia: string; voto: string }> = [];
+  sigle: string[],
+  materie: IMateriaRepository
+): Array<{ materia: string; materiaNome: string; voto: string }> {
+  const out: Array<{ materia: string; materiaNome: string; voto: string }> = [];
   for (const carenza of carenze) {
     for (const sigla of sigle) {
       const cella = carenza.getCella(sigla);
@@ -21,7 +23,8 @@ export function carenzeDettaglioSemplice(
         continue;
       const voto = String(cella).trim();
       if (voto === '') continue;
-      out.push({ materia: sigla, voto });
+      const materiaNome = materie.findByIdCached(MateriaId.of(sigla))?.nome ?? sigla;
+      out.push({ materia: sigla, materiaNome, voto });
     }
   }
   return out;

@@ -1,0 +1,1277 @@
+# 02 — Struttura del Contesto Dati Unificato (CDU) — Versione Ottimizzata per WorkspaceTemplateEngine
+
+Il **CDU (Contesto Dati Unificato)** è la struttura JSON centrale attorno alla quale ruota ogni operazione di SGSA. Prima di generare un documento tramite `WorkspaceTemplateEngine` o inviare una notifica email, il `ContextEngine` e i relativi mappers assemblano il CDU che aggrega tutti i dati necessari in un'unica gerarchia fortemente tipizzata.
+
+**Questo documento è il target strutturale del CDU dopo la ristrutturazione orientata al template engine.** Il consumatore PRIMARIO del CDU è `WorkspaceTemplateEngine` (risoluzione placeholder, loop strutturali e filtri pipe). Pertanto:
+
+- Ogni dato che un template può voler stampare o iterare è raggiungibile con un **percorso corto e stabile**.
+- Le **mappe a chiavi dinamiche** (es. `curriculum["INTERPRETAZIONE"]`) sono **vietate** in punti potenzialmente iterabili: le chiavi dinamiche non sono indirizzabili in un placeholder senza hardcodare l'id.
+- Nei template **non compare MAI un valore di dominio hardcodato** (id materia, indirizzo, nome, email, sigla): tutto è risolto dal CDU.
+- La **ridondanza è una feature**: parti ripetute (anche copie 1:1) dentro il CDU sono accettate e incoraggiate se semplificano i placeholder.
+
+> **DIRETTIVA CRITICA DI ARCHITETTURA (NO BACKWARD COMPATIBILITY):**
+> Il sistema non è in produzione. Non esistono campi deprecati, percorsi di fallback o mappature legacy. La ristrutturazione qui descritta SOSTITUISCE integralmente la struttura precedente.
+
+---
+
+## 0. Principi di ristrutturazione (regole vincolanti per la progettazione del CDU)
+
+Il CDU è progettato intorno alle capacità di `WorkspaceTemplateEngine`:
+
+| Capacità motore | Uso nel CDU |
+| :--- | :--- |
+| Sostituzione piatta `{{percorso.valore}}` | Dati scalari su path brevi e stabili |
+| Sezioni `{{#array}}...{{/array}}`, `{{^array}}` | Iterazione/condizione su array o booleani `hasXxx` |
+| Loop strutturali `{{#bullet_list:path}}`, `{{#number_list:path}}`, `{{#tablerow_loop:path}}`, `{{#tablecol_loop:path}}` | Qualunque lista da renderizzare come elenco/tabella |
+| Loop Sheets `{{dynamic_rows[source=...,value=...]}}`, `{{dynamic_columns[...]}}` | Espansione righe/colonne dinamiche |
+| Filtri pipe `{{value | filter:args}}`, `{{#loop:path | filter:args}}` | **Solo presentazione** (sortBy, uppercase, join, map, limit, ...) |
+| Filtri `where`/`exclude` con argomenti | **Vincolati a proprietà booleane/shape** (`where:'isBes',true`); MAI con valori di dominio |
+
+Regole vincolanti:
+
+1. **Array-prima.** Ogni sorgente di loop è un array a un percorso stabile. Le mappe a chiavi dinamiche che possono essere iterate sono trasformate in array di record.
+2. **Denormalizzazione 1:1 negli item.** Ogni elemento di un array porta con sé il contesto che il template può servire (nome classe, indirizzo, `appellativoCompleto`, ...) anche se è una copia 1:1 di dati già presenti altrove nel CDU. Dentro un loop i placeholder devono restare cortissimi e mai richiedere navigazione parent (`../`) né path assoluti lunghi.
+3. **Partizioni semantiche precalcolate.** I raggruppamenti basati su *valori di dominio* (COMUNE/SEPARATO, PRIMA/SECONDA prova, ITP) sono già divisi in array dedicati dal CDU, così il template non scrive `| where:'tipoArticolazione','COMUNE'` con un valore hardcodato.
+4. **Stringhe e label precalcolate.** Il CDU espone già le forme testuali pronte per la stampa (`appellativoCompleto`, `materieDescrizione`, `tipoLabel`, `religioneLabel`, `docentiDescrizione`, ...): un solo placeholder al posto di concatenazioni o catene di filtri.
+5. **Booleani companion.** Ogni array su cui un template può voler fare un branch ha accanto un booleano `hasXxx` (es. `hasProgetti`, `hasCarenze`, `hasBocciature`) per `{{#hasXxx}}` / `{{^hasXxx}}`.
+6. **Budget di lunghezza placeholder.** Dentro i loop: ≤ 2-3 segmenti (`{{nomeCompleto}}`, `{{anagrafica.nomeCompleto}}`, `{{didattica.piani.hasPiani}}`). Fuori dai loop: ≤ 4 segmenti (`{{focus.classe.anagrafica.nome}}`). Un path più lungo va ridotto denormalizzando.
+
+---
+
+## 1. Struttura generale
+
+Il CDU è articolato in sei sezioni di primo livello:
+
+| Sezione | Scopo |
+| :--- | :--- |
+| **`meta`** | Dati tecnici dell'operazione: timestamp, ID esecuzione, date formattate, configurazione box e parametri di input. |
+| **`istituto`** | Dati globali dell'istituzione scolastica: dirigenti, ruoli di staff e statistiche d'istituto. |
+| **`focus`** | Il cuore dei dati di business oggetto dell'operazione: classe focalizzata (`focus.classe`), eventuale alunno (`focus.alunno`), singolo piano personalizzato (`focus.piano`), singola carenza (`focus.carenza`). |
+| **`destinatario`** | Dati anagrafici, ruoli, permessi e saluti specifici per il destinatario della mail o del documento generato. |
+| **`render`** | HTML pre-renderizzato dei box di testo dinamici (utilizzato unicamente nella pipeline email). |
+| **`tech`** | Riferimenti agli oggetti vivi di dominio e servizi (non serializzati, protetti tramite `enumerable: false`). |
+
+---
+
+## 2. Sezione `meta`
+
+Contiene i metadati di contesto per l'esecuzione corrente. Invariata (già orientata al template: date preformattate, flag tecnici).
+
+```yaml
+meta:
+  timestamp: string               # ISO 8601 del momento di costruzione del CDU (es. "2026-03-30T10:15:30.000Z")
+  idConfigurazione: string        # ID del record CONF_DOC o CONF_MAIL attivo (es. "VERBALE_CDC", "CDC_NOTIFICA")
+  tipoOperazione: string          # "GENERAZIONE_DOCUMENTO" | "INVIO_NOTIFICA"
+  idEsecuzione: string            # UUID univoco del job corrente
+
+  date:
+    oggi:
+      breve: string               # "DD/MM/YYYY" (es. "30/03/2026")
+      estesa: string              # "DD mese YYYY" (es. "30 marzo 2026")
+      iso: string                 # "YYYY-MM-DD"
+      giorno: string              # "DD"
+      mese: string                # "MM"
+      anno: string                # "YYYY"
+      ora: string                 # "HH:MM"
+
+  configurazioneBox:
+    boxAttivi: string[]           # Array di ID dei box di contenuto abilitati
+    boxVuotiNascosti: string[]    # Array di ID dei box nascosti poiché privi di dati
+    ordineVisualizzazione: string[] # Ordine sequenziale di rendering dei box
+
+  parametriInput:
+    target: string                # Identificativo target (es. "5AB-LC-LS", "mario.rossi@alunni.edu.it")
+    tipoTarget: string            # "classe" | "alunno" | "docente"
+    materiaCorrente: string | null # MateriaId di contesto (se l'operazione è specifica per una cattedra)
+    opzioni: object               # Tecnico: NON usato dai template (vedi §4.1 dei parametri di input per l'elenco)
+```
+
+---
+
+## 3. Sezione `istituto`
+
+Invariata. Contiene i dati anagrafici ed organizzativi generali dell'istituto scolastico, forniti dal `SchoolProvider`.
+
+```yaml
+istituto:
+  organizzazione:
+    annoScolastico: string       # es. "2025-2026"
+    dirigente:
+      nomeCompleto: string       # Formato testuale per atti (es. "Prof.ssa Maria Bianchi")
+
+  staff:
+    referenteBes: PersonVM | null       # Oggetto Persona standardizzato (§8.1)
+    animatoreDigitale: PersonVM | null  # Oggetto Persona standardizzato (§8.1)
+
+  statistiche:
+    totaleClassi: number
+    totaleDocenti: number
+    totaleAlunni: number
+```
+
+> `istituto.organizzazione.annoScolastico` viene **copiato 1:1** in `focus.classe.anagrafica.annoScolastico` (Principio 2): dentro i template e i loop non è necessario risalire a `istituto.*`.
+
+---
+
+## 4. Sezione `focus`
+
+### 4.1 `focus.classe`
+
+Vista completa della classe scolastica focalizzata, ristrutturata per l'iterazione.
+
+```yaml
+focus.classe:
+  anagrafica:
+    nome: string                 # es. "5AB-LC-LS" o "4A"
+    anno: number                 # 1–5 (anno di corso)
+    sezione: string              # es. "A", "AB"
+    annoScolastico: string       # ✎ copia 1:1 di istituto.organizzazione.annoScolastico (self-containment)
+    indirizzo:
+      sigla: string              # es. "LC"
+      nome: string               # es. "Liceo Classico"
+      nomeSintetico: string      # es. "Classico"
+      tipo: string               # es. "LICEO" | "TECNICO" | "PROFESSIONALE" | "ITP" | "IEFP"
+
+  flags:
+    isClassePrima: boolean
+    isTriennio: boolean
+    isPrimoBiennio: boolean
+    isTerminale: boolean         # true se classe di esito finale (es. 5° anno o 3° IEFP)
+    isArticolata: boolean        # true se classe composta da più indirizzi partner
+
+  # ARTICOLAZIONE STRUTTURALE (Classi Articolate)
+  articolazione:                 # Sempre presente; null se isArticolata = false
+    partner: string | null       # Per classe partner: ID dell'altro partner; per classe parent: null
+    partners: string[] | null    # Per classe parent: ID delle sottoclassi [primo, secondo]; altrimenti null
+    parent:                      # Oggetto parent descrittivo (null se classe non articolata)
+      id: string                 # ID classe parent (es. "5AB-LC-LS")
+      anno: number               # es. 5
+      indirizzi:                 # Array degli indirizzi partner componenti (loop `parent.indirizzi`)
+        - sigla: string
+          nome: string
+          nomeSintetico: string
+          tipo: string
+    materieCondivise: SubjectVM[]            # ✎ SubjectVM arricchiti: ciascuno reca anche docenti[], docentiDescrizione
+    materieSeparatePrimoGruppo: SubjectVM[]  # ✎ idem
+    materieSeparateSecondoGruppo: SubjectVM[]# ✎ idem
+
+  # PROIEZIONE DISAGGREGATA PARTNER
+  partner:                       # Presente solo se isArticolata = true e includiPartnerDettaglio = true
+    primo: SingleClassProjection # Proiezione completa (anagrafica, CDC, studenti, coordinatori) del 1° partner
+    secondo: SingleClassProjection# Proiezione completa del 2° partner
+
+  # ANAGRAFICA DOCENTI E RUOLI SPECIALI (Formato PersonVM §8.1)
+  # Proprietà aggregate calcolate sulle persone presenti (coordinatori.elenco; per i tutor: asl ∪ orientamento).
+  # Se l'elenco è vuoto non vengono esposte (regole §8.1).
+  coordinatori:
+    appellativo: string          # "prof.sse" se tutte F e ≥2; "prof.ssa" se tutte F e 1; altrimenti "prof."
+    articolo: string             # "le" se tutte F e ≥2; "la" se tutte F e 1; altrimenti "i" se ≥2, "il" se 1
+    coordina: string             # "coordinano" se ≥2 persone, "coordina" se 1
+    presiede: string             # "presiedono" se ≥2 persone, "presiede" se 1
+    elenco: PersonVM[]           # Singoli coordinatori (proprietà PersonVM complete, §8.1)
+
+  tutor:
+    appellativo: string          # Idem coordinatori (§8.1), calcolato su asl ∪ orientamento
+    articolo: string             # Idem coordinatori (§8.1)
+    tutor: string                # "tutor" (per ora sempre questo valore)
+    asl: PersonVM[]              # Tutor PCTO/ASL di classe
+    orientamento: PersonVM[]     # Tutor per l'orientamento
+
+  rappresentanti:
+    studenti:
+      - nomeCompleto: string
+        email: string
+    genitori:
+      - nomeCompleto: string     # Nome libero da ALUNNI.RAPPR_GEN (senza email)
+
+  # CONSIGLIO DI CLASSE COMPLETO (item arricchiti, §8.4)
+  consiglioDiClasse: DocenteCdcVM[]
+  # ✎ PARTIZIONI PRECALCOLATE (Principio 3): evita `| where:'tipoArticolazione','...'`
+  consiglioDiClasseComune: DocenteCdcVM[]    # Presente solo se isArticolata = true; docenti tipoArticolazione COMUNE
+  consiglioDiClasseSeparato: DocenteCdcVM[]  # Presente solo se isArticolata = true; docenti SEPARATO_PRIMO o SEPARATO_SECONDO
+
+  # CATALOGO MATERIE DI CLASSE (Tutte le materie attive)
+  materie: SubjectVM[]           # Array piatto di tutte le materie della classe (§8.2), ciascuna recante:
+                                 #   - docenti: PersonVM[] assegnati
+                                 #   - docentiDescrizione: string (✎ "Mario Rossi, Laura Gialli")
+                                 #   - hasItp: boolean (true se la cattedra ha colonna .itp popolata)
+                                 #   - continuita: ContinuitaVM (§8.3) (se includiStorico = true)
+
+  materiePerPrincipale:          # Materie raggruppate per materia principale/fittizia (§8.2)
+    - idFittizio: string         # ID materia base (es. "INTERPRETAZIONE" o "ITA")
+      nome: string               # Nome principale (es. "Esecuzione ed interpretazione" o "Italiano")
+      materie: SubjectVM[]       # Array delle specificità (es. Chitarra, Flauto) o singola materia base
+
+  # SEZIONE ESAME DI STATO (✎ partizioni precalcolate)
+  esame:                         # Presente per classi terminali (oppure vuoto se non vi sono materie esame)
+    hasEsame: boolean            # ✎ true se esame.materie non è vuoto (per {{#hasEsame}}/{{^hasEsame}})
+    materie:
+      - SubjectVM                # Oggetto Materia arricchito con:
+        prova: string            # "PRIMA_PROVA" | "SECONDA_PROVA"
+        docenti: PersonVM[]      # Docenti assegnati alla prova
+        docentiDescrizione: string # ✎ "Mario Rossi, Laura Gialli"
+    docenti:
+      - PersonVM                 # Oggetto Docente arricchito con:
+        prova: string            # "PRIMA_PROVA" | "SECONDA_PROVA"
+        materie: SubjectVM[]     # Materie d'esame insegnate dal docente
+    # ✎ Partizioni per prova (Principio 3): nessun `| where:'prova','PRIMA_PROVA'` nei template
+    materiePrimaProva: SubjectVM[]   # Solo materie con prova = "PRIMA_PROVA" (stesso schema di esame.materie[])
+    materieSecondaProva: SubjectVM[] # Solo materie con prova = "SECONDA_PROVA" (stesso schema)
+    docentiPrimaProva: PersonVM[]    # Solo docenti con prova = "PRIMA_PROVA" (stesso schema di esame.docenti[])
+    docentiSecondaProva: PersonVM[]  # Solo docenti con prova = "SECONDA_PROVA"
+
+  # PROGETTI ED ATTIVITÀ EXTRACURRICOLARI (da Tabella PROGETTI)
+  hasProgetti: boolean           # true se il blocco progetti contiene almeno un elemento
+  progetti: ProgettoVM[]         # Progetti dell'anno scolastico corrente (§8.5)
+
+  # STORICO CLASSE PREGRESSO (da CLASSI.STORICO)
+  storico: ClasseStoricoVM | null # Dati aggregati dei 2 anni precedenti (§8.6) (se includiStorico = true)
+
+  # ANAGRAFICA E PROFILO ALUNNI
+  studenti:
+    listaCompleta: StudentVM[]   # Array di oggetti alunno-nel-contesto (§8.7), ciascuno self-contained:
+                                 #   anagrafica, status, curriculum[], didattica, storico, classe, indirizzo
+
+    statistiche:
+      totale: number
+      conPianiDidattici: number
+      conBes: number
+      conDsa: number
+      ripetenti: number
+      rappresentanti: number
+
+    # ✎ RISTRUTTURATO da mappa a array (Principio 1) — le chiavi dinamiche non sono indirizzabili nei placeholder
+    perSpecificita: SpecificitaAlunniVM[]
+    # Forma: [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome, alunni: [PersonMinVM] } ] } ]
+    # Loop annidati: focus.classe.studenti.perSpecificita → materiaNome | specifiche → nome | alunni → nomeCompleto
+
+  elencoMaterieConPermessi: []   # Invariato: array di colonne per l'espansione orizzontale (MAT_NON_STANDARD.md)
+
+  # ✎ PROIEZIONE SHEETS per `dynamic_columns` (multi-gruppo) — assemblata quando il generatore
+  #   SHEET_CON_MATERIE_E_PERMESSI è attivo (vedi §9.3)
+  sheet:
+    materieColonne:
+      group1: MateriaColumn[]        # Primo gruppo di colonne (accorpamento IRC/ALT + prime materie)
+      group2: MateriaColumn[]        # Secondo gruppo di colonne
+      group3: MateriaColumn[]        # Terzo gruppo di colonne
+      group2Label: string            # Etichetta di colonna strutturale prima di group2
+      group3Label: string            # Etichetta di colonna strutturale prima di group3
+```
+
+---
+
+### 4.2 `focus.alunno`
+
+```yaml
+focus.alunno:
+  anagrafica:
+    nomeCompleto: string
+    email: string
+
+  status:
+    religione: string            # "IRC" | "ALT" | "NO"
+    religioneLabel: string       # ✎ "Insegnamento Religione Cattolica" | "Attività alternativa" | "Non si avvale"
+    isBes: boolean
+    isRipetente: boolean
+    isRappresentante: boolean
+
+  # ✎ RISTRUTTURATO da mappa a array (Principio 1) — stesso schema di focus.classe.studenti.listaCompleta[].curriculum
+  curriculum: CurriculumVM[]     # [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome } ] } ]
+
+  classe:
+    nome: string                 # Nome classe partner se articolata, altrimenti nome classe standard
+    indirizzoSigla: string
+    indirizzoNome: string
+
+  # CDC FILTRATO SUL CURRICULUM E RELIGIONE DELL'ALUNNO (item arricchiti, §8.4)
+  consiglioDiClasseFiltrato: DocenteCdcVM[]
+
+  didattica:
+    carenze:
+      hasCarenze: boolean
+      numero: number
+      dettaglio:
+        - materia: string        # Sigla materia
+          materiaNome: string    # ✎ Nome esteso della materia (per stampa senza catalogo)
+          voto: string           # Valutazione o giudizio sintetico
+    asl:
+      oreCumulate: number
+      oreAnnoCorrente: number
+    piani:
+      hasPiani: boolean
+      hasBes: boolean
+      items:
+        - tipo: string           # Enum TipoPiano (es. "PDP_DSA", "PEI")
+          tipoLabel: string      # ✎ Etichetta leggibile (es. "PDP DSA", "PEI", "PFP")
+          isBes: boolean
+          link: string           # URL Drive del documento firmato/generato
+          parametriGenerazione: object # JSON libero da PIANI.PARAMETRI
+    documenti:
+      hasDocumenti: boolean
+      items:
+        - nome: string
+          link: string
+          tipo: string
+          idGen: string
+          stato: string
+          dataCreazione: string
+      storico:                   # LazyRef caricato se includiStorico = true
+        - anno: string
+          nome: string
+          link: string
+          tipo: string
+
+  # STORICO ANNI PRECEDENTI DELL'ALUNNO (invarato nella forma; piani come record ✎)
+  storico: StudentStoricoVM | null # Dettaglio esiti, bocciature e piani dei 2 anni precedenti (§8.6)
+```
+
+---
+
+### 4.3 `focus.piano`
+
+Invariata. Presente unicamente nelle execution recipe relative a `PIANO_PERSONALIZZATO` (generazione PDP/PEI/PFP).
+
+```yaml
+focus.piano:
+  tipo: string                   # Enum TipoPiano della riga focalizzata (es. "PDP_DSA", "PEI")
+  parametriGenerazione: object   # Oggetto JSON decodificato direttamente da PIANI.PARAMETRI
+```
+
+> **REGOLE DI GENERAZIONE DOCUMENTI PIANI PERSONALIZZATI:** il record `CONF_DOC.ID = PIANI_PERSONALIZZATI` (con `TIPO = PIANO_PERS`) è il generatore unico per tutti i piani. Seleziona il template Drive valutando `focus.piano.tipo` nei 5 rami di `MODELLI`. Il valore `focus.piano.tipo` viene trascritto direttamente in `LOG_DOCS.SOTTOTIPO`.
+
+---
+
+### 4.4 `focus.carenza`
+
+Invariata. Presente unicamente nelle notifiche di carenza/pagellino (`CARENZA_COMPLETO`).
+
+```yaml
+focus.carenza:
+  studente: string               # Email dello studente
+  progressivo: number            # PROGRESSIVO della riga CARENZE
+  data: string                   # Data della rilevazione ("YYYY-MM-DD")
+  classe: string                 # ClasseId al momento della rilevazione
+  hasAssenze: boolean            # Flag assenze elevate
+  note: string                   # Note del consiglio di classe
+```
+
+---
+
+## 5. Sezione `destinatario`
+
+Invariata nella forma. `destinatario.anagrafica` è un `PersonVM` (§8.1) completo, quindi reca anche `appellativoCompleto`/`appellativoCognome`.
+
+```yaml
+destinatario:
+  anagrafica: PersonVM           # Dati anagrafici standardizzati (§8.1) del destinatario
+
+  ruoliAttivi: string[]          # Ruoli esercitati nel contesto (es. ["COORDINATORE", "DOCENTE"])
+
+  flags:
+    isCoordinatore: boolean
+    isTutor: boolean
+    isTutorAsl: boolean
+    isDocenteSostegno: boolean
+    isSupplente: boolean
+
+  contesto:
+    sostituisce: PersonVM | null # Se il destinatario è un supplente, indica il titolare
+    classiCompetenza: string[]   # Array di ClasseId su cui il destinatario ha titolarità
+    materieCompetenza: string[]  # Array di MateriaId insegnate dal destinatario
+
+  comunicazione:
+    salutoIniziale: string       # es. "Gentile Prof.ssa Bianchi," o "Spettabile Genitore,"
+    oggettoCalcolato: string     # Oggetto email finale processato tramite template engine
+    testoContenutoPuro: string   # Testo plain-text senza wrapper HTML (per audit log)
+```
+
+---
+
+## 6. Sezione `render`
+
+Invariata. Presente esclusivamente nella pipeline notifiche email.
+
+```yaml
+render:
+  boxes:
+    "[TIPO_BOX]":
+      id: string                 # ID del box (es. "BOX_CARENZE", "BOX_PCTO")
+      titolo: string             # Titolo dinamico del box
+      html: string               # HTML interno renderizzato dal BoxRenderer
+      isEmpty: boolean           # true se il box non contiene dati da visualizzare
+      visibile: boolean          # true se il box deve essere mostrato nell'email
+
+  body:
+    htmlCompleto: string         # Documento HTML finale (Header + Box Attivi + Footer)
+    htmlSoloContenuto: string    # Solo il blocco div centrale del contenuto
+```
+
+---
+
+## 7. Sezione `tech`
+
+Invariata. Contiene riferimenti ad oggetti complessi di dominio e servizi Google Apps Script.
+**Proprietà non enumerabile:** la sezione `tech` viene dichiarata tramite `Object.defineProperty(cdu, 'tech', { enumerable: false, writable: true })`. Non viene MAI inclusa in `JSON.stringify(cdu)`, prevenendo cicli di serializzazione e log ridondanti.
+
+```yaml
+tech:
+  entita:
+    classe: object               # Istanza della classe di dominio Classe
+    alunno: object               # Istanza della classe di dominio Alunno
+    docente: object              # Istanza della classe di dominio Docente
+    patternEmail: object         # Istanza ConfigurazioneEmail
+    documentoMetadato: object    # Istanza ConfigurazioneDocumento
+  servizi: object[]              # Riferimenti ai servizi di contesto
+  pipeline:
+    statoCorrente: string
+    stepEseguiti: string[]
+    errori: string[]
+    logEsecuzione: string[]
+```
+
+---
+
+## 8. Specifiche dettagliate dei View Model condivisi
+
+### 8.1 Person View Model (`PersonVM`)
+
+Ogni docente, tutor, coordinatore, referente o membro dello staff esposto nel CDU DEVE conformarsi alla struttura seguente. Il builder gestisce la declinazione grammaticale del genere e dei titoli.
+
+```yaml
+PersonVM:
+  nome: string                   # es. "Mario"
+  cognome: string | null         # es. "Rossi" (null per esperti esterni senza cognome separato)
+  email: string | null           # Email RFC 5321 (null per esperti esterni)
+  genere: string | null          # "M" | "F" | null
+  appellativo: string | null     # "Prof." (se M) | "Prof.ssa" (se F) | null
+  articolo: string | null        # "il" (se M) | "la" (se F) | null
+  coordinatore: string | null    # "coordinatore" (se M) | "coordinatrice" (se F) | null
+  nomeCompleto: string           # "Mario Rossi" oppure rag. sociale esperto esterno
+  materia: string | null         # Inserito opzionalmente quando la persona è legata ad una cattedra
+
+  # ✎ STRINGHE PRECOMPOSTE (Principio 4) — mai concatenare nei template
+  appellativoCompleto: string    # "Prof. Mario Rossi" | "Prof.ssa Laura Gialli" | nomeCompleto (per esterni)
+  appellativoCognome: string     # "Prof. Rossi" | "Prof.ssa Gialli" | nomeCompleto (per esterni) — per saluti/formule
+```
+
+> **Regole per le proprietà aggregate dei contenitori di persone.** Sui nodi `coordinatori` e `tutor` le proprietà collettive sono esposte **direttamente** sul nodo (niente `coordinatoriMetadata`/`tutorMetadata`), calcolate sugli elementi presenti (per `coordinatori`: `elenco`; per `tutor`: l'unione `asl ∪ orientamento`) in base a genere e numero. **Se l'elenco è vuoto le proprietà non vengono esposte.**
+> - **Tutte `F` e ≥ 2 persone:** `appellativo` = `"prof.sse"`, `articolo` = `"le"`.
+> - **Tutte `F` e 1 persona:** `appellativo` = `"prof.ssa"`, `articolo` = `"la"`.
+> - **Almeno un `M` o lista mista:** `appellativo` = `"prof."`, `articolo` = `"i"` (≥ 2 persone) o `"il"` (1 persona).
+> - **Verbi (nodo `coordinatori`):** `coordina` = `"coordina"` (1 persona) o `"coordinano"` (≥ 2); `presiede` = `"presiede"` (1 persona) o `"presiedono"` (≥ 2).
+> - **Nodo `tutor`:** oltre ad `appellativo`/`articolo`, `tutor` = `"tutor"` (per ora sempre questo valore).
+
+---
+
+### 8.2 Subject View Model (`SubjectVM`)
+
+Ogni materia esposta nel CDU (in `focus.classe.materie[]`, `consiglioDiClasse[].materie[]`, `articolazione`, `esame`) adotta lo schema unificato seguente. Il resolver di materia applica le regole di **`MATERIE.EVOLUZIONE`** rispetto all'anno di corso della classe (`ANNO`).
+
+```yaml
+SubjectVM:
+  sigla: string                  # Sigla canonica per l'anno corrente (da MATERIE.SIGLA o id)
+  nome: string                   # Nome esteso (da MATERIE.NOME o "PRINCIPALE (SPECIFICA)")
+  nomeSintetico: string          # Nome abbreviato (da MATERIE.SINTESI)
+  colore1: string                # Hex colore primario (da MATERIE.COLORE_1)
+  colore2: string                # Hex colore secondario (da MATERIE.COLORE_2)
+  isMateriaPrimaProva: boolean   # true se la materia è in prima_prova per l'indirizzo in MATERIE.ESAME_CFG
+  isMateriaSecondaProva: boolean # true se la materia è in seconda_prova per l'indirizzo in MATERIE.ESAME_CFG
+  principale: string | null      # Descrizione materia principale (da MATERIE.PRINCIPALE, solo per specificità X.Y)
+  specificita: string | null     # Nome disciplina/strumento (da MATERIE.SPECIFICA, solo per specificità X.Y)
+  isITP: boolean                 # true se la materia è insegnata in un contesto di laboratorio ITP (.itp)
+  hasItp: boolean                # Presente in focus.classe.materie[]: true se esiste colonna .itp popolata
+  evoluzione:                    # Tracciamento storicizzazione sigle (da MATERIE.EVOLUZIONE)
+    siglePrecedenti:
+      - sigla: string            # Sigla usata negli anni precedenti (es. "GST")
+        nome: string | null      # Nome associato alla sigla precedente (es. "Storia e Geografia")
+        anni: number[]           # Anni di corso in cui si usava la sigla (es. [1, 2])
+
+  # CAMPI OPZIONALI DI CONTESTO:
+  docenti: PersonVM[]            # Docenti assegnati alla materia (in focus.classe.materie[], articolazione, esame.materie[])
+  docentiDescrizione: string     # ✎ "Mario Rossi, Laura Gialli" (join precalcolato di docenti.nomeCompleto) — dove docenti è presente
+  continuita: ContinuitaVM       # Storico docenza (in focus.classe.materie[] se includiStorico = true)
+```
+
+> **ITP per-cattedra.** Nei contesti per-docente (`consiglioDiClasse[].materie[]`, `esame.docenti[].materie[]`) `isITP` è `true` SOLO se il docente insegna quella materia in una colonna `.itp`. Il flag aggregato a livello docente (`DocenteCdcVM.isITP`) resta il valore complessivo.
+
+---
+
+### 8.3 Teaching Continuity View Model (`ContinuitaVM`)
+
+Invariata. Presente su ciascuna materia in `focus.classe.materie[].continuita` quando la recipe attiva `includiStorico = true`.
+
+```yaml
+ContinuitaVM:
+  docentiAnniPrecedenti:
+    - annoIndietro: number       # 1 = anno immediatamente precedente, 2 = due anni fa
+      annoScolastico: string     # es. "2024-2025"
+      titolare: PersonVM | null  # Docente titolare principale in quell'anno (od il reconciled EVOLUZIONE)
+      itp: PersonVM | null       # Docente ITP in quell'anno (PRESENTE SOLO SE hasItp = true per la materia)
+
+  continuitaUltimiTreAnni: boolean # true sse lo STESSO titolare (email) ha insegnato nell'anno corrente, -1 e -2
+  continuitaUltimiDueAnni: boolean # true sse lo STESSO titolare (email) ha insegnato nell'anno corrente e -1
+
+  # CAMPI ESCLUSIVI PER MATERIE CON ITP (hasItp = true):
+  continuitaUltimiTreAnniItp: boolean # true sse lo STESSO ITP (email) ha insegnato nell'anno corrente, -1 e -2
+  continuitaUltimiDueAnniItp: boolean # true sse lo STESSO ITP (email) ha insegnato nell'anno corrente e -1
+```
+
+> **Note di calcolo della continuità:** 1) la ricerca risale la catena dei nomi classe storici definiti in `CLASSI.STORICO`; 2) se una materia ha cambiato sigla (es. `GST` → `STO`), il match tra cattedre degli anni precedenti avviene tramite riconciliazione su `MATERIE.EVOLUZIONE`; 3) se `hasItp = false`, i campi `itp` dentro `docentiAnniPrecedenti` e i booleani `*Itp` NON vengono generati.
+
+---
+
+### 8.4 Docente nel Consiglio di Classe (`DocenteCdcVM`)
+
+Ogni elemento di `focus.classe.consiglioDiClasse[]`, `focus.classe.consiglioDiClasseComune[]`, `focus.classe.consiglioDiClasseSeparato[]`, `focus.alunno.consiglioDiClasseFiltrato[]`, e delle proiezioni `partner.primo|secondo.consiglioDiClasse[]`, è un **item self-contained** (Principio 2).
+
+```yaml
+DocenteCdcVM:
+  anagrafica: PersonVM           # Persona standardizzata (§8.1)
+  materie: SubjectVM[]           # Materie insegnate da QUESTO docente in questa classe (con per-subject isITP)
+  materieDescrizione: string     # ✎ Testo pronto: "Italiano, Storia" (join di materie.nomeSintetico) — MAI concatenare
+  materieSigle: string           # ✎ Testo pronto: "ITA, STO" (join di materie.sigla) — per tabelle compatte
+  ruoli:
+    isCoordinatore: boolean
+    isTutorAsl: boolean
+    isTutorOrientamento: boolean
+    descrizione: string[]        # Array di stringhe descrittive: ["Coordinatore", "Tutor ASL", "Docente"]
+  stato:
+    isSupplente: boolean
+    sostituisce: PersonVM | null # Docente titolare sostituito (se supplenza attiva)
+  tipoArticolazione: string | null # "COMUNE" | "SEPARATO_PRIMO" | "SEPARATO_SECONDO" | null
+  gruppoNome: string | null      # ✎ "Gruppo comune" | "Gruppo 1" | "Gruppo 2" (label precalcolata per classi articolate)
+  isITP: boolean                 # Aggregato: true se docente ITP in ALMENO una materia assegnata
+  flags:
+    isNotLast: boolean           # Convenience flag per loop Mustache
+```
+
+---
+
+### 8.5 Project View Model (`ProgettoVM`)
+
+Popolato da `ProgettiProvider` leggendo la tabella `PROGETTI` per la classe focalizzata.
+
+```yaml
+ProgettoVM:
+  tipo: string                   # "ASL" | "ORIENTAMENTO" | "ALTRO"
+  tipoLabel: string              # ✎ "PCTO/ASL" | "Orientamento" | "Altro" (label precalcolata)
+  nome: string                   # Titolo del progetto/percorso
+  referente: PersonVM            # Oggetto Persona standardizzato (§8.1) per il docente o esperto esterno
+  ore: number                    # Monte ore totale del progetto
+  oreAsl: number                 # Ore valide ai fini PCTO/ASL
+  isAsl: boolean                 # Convenience flag: true sse tipo == "ASL"
+```
+
+---
+
+### 8.6 View Model Storici (`ClasseStoricoVM` & `StudentStoricoVM`)
+
+#### Storico Classe (`focus.classe.storico`)
+
+Invariata. Caricata pigramente via `LazyRef` per i 2 anni precedenti quando `includiStorico = true`.
+
+```yaml
+ClasseStoricoVM:
+  statistiche:
+    - annoScolastico: string     # es. "2024-2025"
+      classe: string             # Nome della classe in quell'anno (da CLASSI.STORICO)
+      statistiche:
+        totale: number
+        conPianiDidattici: number
+        conBes: number
+        conDsa: number
+        ripetenti: number
+        rappresentanti: number
+
+  progetti:
+    - annoScolastico: string
+      classe: string
+      progetti: ProgettoVM[]     # Progetti svolti dalla classe in quell'anno scolastico
+```
+
+#### Storico Alunno (`focus.alunno.storico` e `focus.classe.studenti.listaCompleta[].storico`)
+
+```yaml
+StudentStoricoVM:
+  anni:
+    - annoScolastico: string     # es. "2024-2025"
+      classe: string             # Classe frequentata nell'anno
+      esito: string              # "PROMOSSO" | "NON_PROMOSSO" | "RITIRATO" | "SCONOSCIUTO"
+  # ✎ I piani per anno precedente passano da string[] a record {tipo, tipoLabel} (Principio 4)
+  pianiPrimoAnnoPrecedente:
+    - tipo: string               # Enum TipoPiano (es. "PDP_DSA")
+      tipoLabel: string          # Etichetta leggibile (es. "PDP DSA")
+  pianiSecondoAnnoPrecedente:
+    - tipo: string
+      tipoLabel: string
+  bocciature:
+    - annoScolastico: string     # Anno in cui l'alunno non è stato promosso
+      classe: string             # Classe in cui è avvenuta la bocciatura
+  hasBocciature: boolean         # true se l'array bocciature contiene almeno un elemento
+```
+
+---
+
+### 8.7 Studente nel contesto di classe (`StudentVM`)
+
+Ogni elemento di `focus.classe.studenti.listaCompleta[]` è un item **self-contained** (Principio 2): porta con sé classe e indirizzo, così dentro un `tablerow_loop`/`bullet_list` i placeholder sono cortissimi.
+
+```yaml
+StudentVM:
+  anagrafica:
+    nomeCompleto: string
+    email: string
+  classe:
+    nome: string                 # ✎ Nome della classe di appartenenza (copia 1:1 di focus.classe.anagrafica.nome)
+  indirizzo:
+    nome: string                 # ✎ Copia 1:1 di focus.classe.anagrafica.indirizzo.nome (per loop self-contained)
+    nomeSintetico: string        # ✎ Copia 1:1 di focus.classe.anagrafica.indirizzo.nomeSintetico
+  status:
+    isBes: boolean
+    isRipetente: boolean
+    isRappresentante: boolean
+    religione: string            # "IRC" | "ALT" | "NO"
+    religioneLabel: string       # ✎ "Religione cattolica" | "Attività alternativa" | "Non si avvale"
+  # ✎ RISTRUTTURATO da mappa a array (Principio 1)
+  curriculum: CurriculumVM[]     # [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome } ] } ]
+  didattica:
+    carenze:
+      hasCarenze: boolean
+      numero: number
+      dettaglio:
+        - materia: string        # Sigla materia
+          materiaNome: string    # ✎ Nome esteso della materia
+          voto: string           # Valutazione/nota
+    piani:
+      hasPiani: boolean
+      hasBes: boolean
+      items:
+        - tipo: string
+          tipoLabel: string      # ✎ Etichetta leggibile
+          isBes: boolean
+    pcto:
+      oreCumulate: number
+  storico: StudentStoricoVM | null # Storico e bocciature dell'alunno (§8.6) (se includiStorico = true)
+```
+
+---
+
+### 8.8 Curriculum View Model (`CurriculumVM`)
+
+**✎ NUOVO.** Sostituisce la mappa `curriculum["[MateriaId]"]` (chiavi dinamiche non indirizzabili nei placeholder). Stessa forma in `focus.classe.studenti.listaCompleta[].curriculum` e `focus.alunno.curriculum`.
+
+```yaml
+CurriculumVM:
+  materiaId: string              # MateriaId (es. "INTERPRETAZIONE") — per uso tecnico/log, non per discriminare nei template
+  materiaSigla: string           # Sigla canonica (es. "INT") — esposta come dati, mai come chiave
+  materiaNome: string            # Nome esteso della materia (es. "Esecuzione ed interpretazione")
+  specifiche:                    # ✎ Array di record (loop annidato `{{#specifiche}}{{nome}}{{/specifiche}}`)
+    - nome: string               # Valore della specifica (es. "chitarra"); la forma stampabile è `{{nome | capitalize}}`
+```
+
+---
+
+### 8.9 Specificità per indirizzo alunni (`SpecificitaAlunniVM`)
+
+**✎ NUOVO.** Sostituisce la mappa doppia `studenti.perSpecificita["[MateriaId]"]["[specifica]"]` con un array iterabile a tre livelli.
+
+```yaml
+SpecificitaAlunniVM:
+  materiaId: string              # MateriaId (es. "INTERPRETAZIONE")
+  materiaSigla: string           # Sigla canonica
+  materiaNome: string            # Nome esteso (es. "Esecuzione ed interpretazione")
+  specifiche:
+    - nome: string               # Specifica (es. "chitarra")
+      alunni: PersonMinVM[]      # Alunni iscritti a quella specificità
+```
+
+**PersonMinVM** (persona minima per elenchi compatti): `{ nome: string | null, cognome: string | null, nomeCompleto: string, email: string }`.
+
+---
+
+## 9. Linee guida d'uso dei placeholder (catalogo)
+
+Questa sezione è la tavola di traduzione tra "cosa voglio stampare" e placeholder/loop/filtri, esclusivamente su path del CDU. **Nessun valore di dominio è hardcodato.**
+
+### 9.1 Dati scalari (sostituzione piatta)
+
+| Esigenza | Placeholder |
+| :--- | :--- |
+| Nome della classe | `{{focus.classe.anagrafica.nome}}` |
+| Anno di corso | `{{focus.classe.anagrafica.anno}}` |
+| Anno scolastico | `{{focus.classe.anagrafica.annoScolastico}}` |
+| Indirizzo (nome) | `{{focus.classe.anagrafica.indirizzo.nome}}` |
+| Indirizzo (nome sintetico) | `{{focus.classe.anagrafica.indirizzo.nomeSintetico}}` |
+| Data odierna breve / estesa | `{{meta.date.oggi.breve}}` / `{{meta.date.oggi.estesa}}` |
+| Dirigente | `{{istituto.organizzazione.dirigente.nomeCompleto}}` |
+| Nome alunno focalizzato | `{{focus.alunno.anagrafica.nomeCompleto}}` |
+| Tipo piano focalizzato | `{{focus.piano.tipo}}` |
+
+### 9.2 Loop strutturali documenti (DocumentProcessor)
+
+| Esigenza | Loop |
+| :--- | :--- |
+| Elenco puntato docenti del CDC | `{{#bullet_list:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}} — {{materieDescrizione}}{{/bullet_list}}` |
+| Elenco numerato studenti | `{{#number_list:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}{{/number_list}}` |
+| Tabella alunni | `{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}`,`{{status.religioneLabel}}`,`{{anagrafica.email}}` |
+| Tabella materie e docenti | `{{#tablerow_loop:focus.classe.materie}}{{sigla}}`,`{{nome}}`,`{{docentiDescrizione}}` |
+| Materie per principale (gruppi) | `{{#bullet_list:focus.classe.materiePerPrincipale}}{{nome}}: {{#materie}}{{nomeSintetico}}{{/materie}}{{/bullet_list}}` |
+| Progetti | `{{#bullet_list:focus.classe.progetti}}{{tipoLabel}}: {{nome}} ({{referente.appellativoCompleto}}, {{ore}}h){{/bullet_list}}` |
+| Prova prima / seconda | `{{#bullet_list:focus.classe.esame.materiePrimaProva}}{{nome}}: {{docentiDescrizione}}{{/bullet_list}}` |
+| CDC comune / separato (articolate) | `{{#bullet_list:focus.classe.consiglioDiClasseComune}}...{{/bullet_list}}` |
+| Specificità per materia (3 livelli) | `{{#focus.classe.studenti.perSpecificita}}{{materiaNome}}: {{#specifiche}}{{nome}} ({{#alunni}}{{nomeCompleto}};{{/alunni}}){{/specifiche}}{{/focus.classe.studenti.perSpecificita}}` |
+| Curriculum alunno (loop) | `{{#focus.alunno.curriculum}}{{materiaNome}}: {{#specifiche}}{{nome | capitalize}}{{/specifiche}}{{/focus.alunno.curriculum}}` |
+
+### 9.3 Loop Sheets
+
+| Esigenza | Direttiva |
+| :--- | :--- |
+| Righe dinamiche (roster) | `{{dynamic_rows[source=focus.classe.studenti.listaCompleta,value=anagrafica.nomeCompleto]}}` |
+| Colonne materie multi-gruppo | `{{dynamic_columns[source=focus.classe.sheet.materieColonne.group1,value=header,source2=focus.classe.sheet.materieColonne.group2,value2=header,label2=focus.classe.sheet.materieColonne.group2Label,source3=...,label3=...]}}` |
+
+### 9.4 Condizioni (sezioni Mustache)
+
+| Esigenza | Sezione |
+| :--- | :--- |
+| La classe ha progetti | `{{#hasProgetti}} ... {{/hasProgetti}}` |
+| L'alunno ha bocciature | `{{#focus.alunno.storico.hasBocciature}} ... {{/focus.alunno.storico.hasBocciature}}` (guardare anche `{{^}}`) |
+| Materia con ITP | `{{#hasItp}} ... {{/hasItp}}` su un item di `focus.classe.materie` |
+| Carenze presenti | `{{#focus.alunno.didattica.carenze.hasCarenze}} ... {{/focus.alunno.didattica.carenze.hasCarenze}}` |
+
+### 9.5 Filtri pipe: ammessi e vietati
+
+**Ammessi (presentazione/forma):** `uppercase`, `lowercase`, `capitalize`, `date`, `number`, `join`, `map`, `limit`, `skip`, `sort`, `sortBy`, `reverse`, `default`, `fallback`, `truncate`, `split`, `replace`, `urlEncode`, `plus`, `minus`, `pluralize`.
+
+- Esempi leciti: `{{nome | uppercase}}`, `{{focus.classe.coordinatori.elenco | sortBy:'nome'}}`, `{{docenti | map:'nomeCompleto' | join:', '}}`.
+
+**Vietati (valori di dominio):** `where`/`exclude`/`filter` con **valori di dominio** hardcodati come argomento (`where:'tipoArticolazione','COMUNE'`, `where:'prova','PRIMA_PROVA'`, `exclude:'sigla','IRC'`). Questi raggruppamenti sono già precalcolati in array dedicati (Principio 3).
+
+- Eccezione tollerata: `where`/`filter` su **proprietà booleane di shape** (`filter:'isBes',true`, `filter:'isAsl',true`) — il valore `true` è struttura, non dato di dominio.
+
+---
+
+## 10. Esempio Completo JSON di un CDU assemblato
+
+Il seguente esempio illustra il target, con particolare enfasi sui nodi ristrutturati (`curriculum`, `perSpecificita`, partizioni `esame`/`consiglioDiClasse`, stringhe precomposte).
+
+```json
+{
+  "meta": {
+    "timestamp": "2026-03-30T10:00:00.000Z",
+    "idConfigurazione": "VERBALE_CDC",
+    "tipoOperazione": "GENERAZIONE_DOCUMENTO",
+    "idEsecuzione": "EXEC-2026-99812",
+    "date": { "oggi": { "breve": "30/03/2026", "estesa": "30 marzo 2026", "iso": "2026-03-30", "giorno": "30", "mese": "03", "anno": "2026", "ora": "10:00" } },
+    "configurazioneBox": { "boxAttivi": [], "boxVuotiNascosti": [], "ordineVisualizzazione": [] },
+    "parametriInput": {
+      "target": "5AB-LC-LS",
+      "tipoTarget": "classe",
+      "materiaCorrente": null,
+      "opzioni": {
+        "includiStorico": true,
+        "profonditaAnniStorico": 2,
+        "includiSupplenti": true,
+        "includiSpecificita": true,
+        "includiPartnerDettaglio": true
+      }
+    }
+  },
+  "istituto": {
+    "organizzazione": { "annoScolastico": "2025-2026", "dirigente": { "nomeCompleto": "Prof.ssa Maria Bianchi" } },
+    "staff": {
+      "referenteBes": { "nome": "Mario", "cognome": "Rossi", "email": "mario.rossi@scuola.edu.it", "genere": "M", "appellativo": "Prof.", "articolo": "il", "coordinatore": "coordinatore", "nomeCompleto": "Mario Rossi", "materia": null, "appellativoCompleto": "Prof. Mario Rossi", "appellativoCognome": "Prof. Rossi" },
+      "animatoreDigitale": null
+    },
+    "statistiche": { "totaleClassi": 32, "totaleDocenti": 84, "totaleAlunni": 650 }
+  },
+  "focus": {
+    "classe": {
+      "anagrafica": {
+        "nome": "5AB-LC-LS",
+        "anno": 5,
+        "sezione": "AB",
+        "annoScolastico": "2025-2026",
+        "indirizzo": { "sigla": "LC", "nome": "Liceo Classico", "nomeSintetico": "Classico", "tipo": "LICEO" }
+      },
+      "flags": {
+        "isClassePrima": false,
+        "isTriennio": true,
+        "isPrimoBiennio": false,
+        "isTerminale": true,
+        "isArticolata": true
+      },
+      "articolazione": {
+        "partner": null,
+        "partners": ["5A-LC", "5B-LS"],
+        "parent": {
+          "id": "5AB-LC-LS",
+          "anno": 5,
+          "indirizzi": [
+            { "sigla": "LC", "nome": "Liceo Classico", "nomeSintetico": "Classico", "tipo": "LICEO" },
+            { "sigla": "LS", "nome": "Liceo Scientifico", "nomeSintetico": "Scientifico", "tipo": "LICEO" }
+          ]
+        },
+        "materieCondivise": [
+          {
+            "sigla": "ITA",
+            "nome": "Lingua e letteratura italiana",
+            "nomeSintetico": "Italiano",
+            "colore1": "#005A9C",
+            "colore2": "#E6F0FA",
+            "isMateriaPrimaProva": true,
+            "isMateriaSecondaProva": false,
+            "principale": null,
+            "specificita": null,
+            "isITP": false,
+            "hasItp": false,
+            "evoluzione": null,
+            "docenti": [
+              { "nome": "Mario", "cognome": "Rossi", "email": "mario.rossi@scuola.edu.it", "genere": "M", "appellativo": "Prof.", "articolo": "il", "coordinatore": "coordinatore", "nomeCompleto": "Mario Rossi", "materia": null, "appellativoCompleto": "Prof. Mario Rossi", "appellativoCognome": "Prof. Rossi" }
+            ],
+            "docentiDescrizione": "Prof. Mario Rossi"
+          }
+        ],
+        "materieSeparatePrimoGruppo": [
+          {
+            "sigla": "GRE",
+            "nome": "Lingua e cultura greca",
+            "nomeSintetico": "Greco",
+            "colore1": "#4B0082",
+            "colore2": "#E6E6FA",
+            "isMateriaPrimaProva": false,
+            "isMateriaSecondaProva": true,
+            "principale": null,
+            "specificita": null,
+            "isITP": false,
+            "hasItp": false,
+            "evoluzione": null,
+            "docenti": [],
+            "docentiDescrizione": ""
+          }
+        ],
+        "materieSeparateSecondoGruppo": [
+          {
+            "sigla": "MAT",
+            "nome": "Matematica e Fisica",
+            "nomeSintetico": "Matematica",
+            "colore1": "#008000",
+            "colore2": "#E8F8E8",
+            "isMateriaPrimaProva": false,
+            "isMateriaSecondaProva": true,
+            "principale": null,
+            "specificita": null,
+            "isITP": false,
+            "hasItp": false,
+            "evoluzione": null,
+            "docenti": [],
+            "docentiDescrizione": ""
+          }
+        ]
+      },
+      "coordinatori": {
+        "appellativo": "prof.ssa",
+        "articolo": "la",
+        "coordina": "coordina",
+        "presiede": "presiede",
+        "elenco": [
+          {
+            "nome": "Laura",
+            "cognome": "Gialli",
+            "email": "laura.gialli@scuola.edu.it",
+            "genere": "F",
+            "appellativo": "Prof.ssa",
+            "articolo": "la",
+            "coordinatore": "coordinatrice",
+            "nomeCompleto": "Laura Gialli",
+            "materia": "Greco",
+            "appellativoCompleto": "Prof.ssa Laura Gialli",
+            "appellativoCognome": "Prof.ssa Gialli"
+          }
+        ]
+      },
+      "tutor": {
+        "appellativo": "prof.ssa",
+        "articolo": "la",
+        "tutor": "tutor",
+        "asl": [
+          {
+            "nome": "Giulia",
+            "cognome": "Russo",
+            "email": "giulia.russo@scuola.edu.it",
+            "genere": "F",
+            "appellativo": "Prof.ssa",
+            "articolo": "la",
+            "coordinatore": "coordinatrice",
+            "nomeCompleto": "Giulia Russo",
+            "materia": null,
+            "appellativoCompleto": "Prof.ssa Giulia Russo",
+            "appellativoCognome": "Prof.ssa Russo"
+          }
+        ],
+        "orientamento": []
+      },
+      "rappresentanti": {
+        "studenti": [{ "nomeCompleto": "Marco Neri", "email": "marco.neri@alunni.edu.it" }],
+        "genitori": [{ "nomeCompleto": "Giuseppe Neri" }]
+      },
+      "consiglioDiClasse": [
+        {
+          "anagrafica": {
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@scuola.edu.it",
+            "genere": "M",
+            "appellativo": "Prof.",
+            "articolo": "il",
+            "coordinatore": "coordinatore",
+            "nomeCompleto": "Mario Rossi",
+            "materia": null,
+            "appellativoCompleto": "Prof. Mario Rossi",
+            "appellativoCognome": "Prof. Rossi"
+          },
+          "materie": [
+            {
+              "sigla": "ITA",
+              "nome": "Lingua e letteratura italiana",
+              "nomeSintetico": "Italiano",
+              "colore1": "#005A9C",
+              "colore2": "#E6F0FA",
+              "isMateriaPrimaProva": true,
+              "isMateriaSecondaProva": false,
+              "principale": null,
+              "specificita": null,
+              "isITP": false,
+              "hasItp": false,
+              "evoluzione": null
+            }
+          ],
+          "materieDescrizione": "Italiano",
+          "materieSigle": "ITA",
+          "ruoli": { "isCoordinatore": false, "isTutorAsl": false, "isTutorOrientamento": false, "descrizione": ["Docente"] },
+          "stato": { "isSupplente": false, "sostituisce": null },
+          "tipoArticolazione": "COMUNE",
+          "gruppoNome": "Gruppo comune",
+          "isITP": false,
+          "flags": { "isNotLast": true }
+        }
+      ],
+      "consiglioDiClasseComune": [],
+      "consiglioDiClasseSeparato": [],
+      "materie": [
+        {
+          "sigla": "STO",
+          "nome": "Storia",
+          "nomeSintetico": "Storia",
+          "colore1": "#A52A2A",
+          "colore2": "#F5DEB3",
+          "isMateriaPrimaProva": false,
+          "isMateriaSecondaProva": false,
+          "principale": null,
+          "specificita": null,
+          "isITP": false,
+          "hasItp": false,
+          "evoluzione": { "siglePrecedenti": [{ "sigla": "GST", "nome": "Storia e Geografia", "anni": [1, 2] }] },
+          "docenti": [
+            {
+              "nome": "Mario",
+              "cognome": "Rossi",
+              "email": "mario.rossi@scuola.edu.it",
+              "genere": "M",
+              "appellativo": "Prof.",
+              "articolo": "il",
+              "coordinatore": "coordinatore",
+              "nomeCompleto": "Mario Rossi",
+              "materia": null,
+              "appellativoCompleto": "Prof. Mario Rossi",
+              "appellativoCognome": "Prof. Rossi"
+            }
+          ],
+          "docentiDescrizione": "Prof. Mario Rossi",
+          "continuita": {
+            "docentiAnniPrecedenti": [
+              {
+                "annoIndietro": 1,
+                "annoScolastico": "2024-2025",
+                "titolare": {
+                  "nome": "Mario",
+                  "cognome": "Rossi",
+                  "email": "mario.rossi@scuola.edu.it",
+                  "genere": "M",
+                  "appellativo": "Prof.",
+                  "articolo": "il",
+                  "coordinatore": "coordinatore",
+                  "nomeCompleto": "Mario Rossi",
+                  "materia": null,
+                  "appellativoCompleto": "Prof. Mario Rossi",
+                  "appellativoCognome": "Prof. Rossi"
+                }
+              }
+            ],
+            "continuitaUltimiTreAnni": true,
+            "continuitaUltimiDueAnni": true
+          }
+        }
+      ],
+      "materiePerPrincipale": [
+        {
+          "idFittizio": "STO",
+          "nome": "Storia",
+          "materie": [
+            {
+              "sigla": "STO",
+              "nome": "Storia",
+              "nomeSintetico": "Storia",
+              "colore1": "#A52A2A",
+              "colore2": "#F5DEB3",
+              "isMateriaPrimaProva": false,
+              "isMateriaSecondaProva": false,
+              "principale": null,
+              "specificita": null,
+              "isITP": false,
+              "hasItp": false,
+              "evoluzione": null
+            }
+          ]
+        }
+      ],
+      "esame": {
+        "hasEsame": true,
+        "materie": [
+          {
+            "sigla": "ITA",
+            "nome": "Lingua e letteratura italiana",
+            "nomeSintetico": "Italiano",
+            "colore1": "#005A9C",
+            "colore2": "#E6F0FA",
+            "isMateriaPrimaProva": true,
+            "isMateriaSecondaProva": false,
+            "principale": null,
+            "specificita": null,
+            "isITP": false,
+            "hasItp": false,
+            "evoluzione": null,
+            "prova": "PRIMA_PROVA",
+            "docenti": [
+              {
+                "nome": "Mario",
+                "cognome": "Rossi",
+                "email": "mario.rossi@scuola.edu.it",
+                "genere": "M",
+                "appellativo": "Prof.",
+                "articolo": "il",
+                "coordinatore": "coordinatore",
+                "nomeCompleto": "Mario Rossi",
+                "materia": null,
+                "appellativoCompleto": "Prof. Mario Rossi",
+                "appellativoCognome": "Prof. Rossi"
+              }
+            ],
+            "docentiDescrizione": "Prof. Mario Rossi"
+          }
+        ],
+        "docenti": [
+          {
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@scuola.edu.it",
+            "genere": "M",
+            "appellativo": "Prof.",
+            "articolo": "il",
+            "coordinatore": "coordinatore",
+            "nomeCompleto": "Mario Rossi",
+            "materia": null,
+            "appellativoCompleto": "Prof. Mario Rossi",
+            "appellativoCognome": "Prof. Rossi",
+            "prova": "PRIMA_PROVA",
+            "materie": [
+              {
+                "sigla": "ITA",
+                "nome": "Lingua e letteratura italiana",
+                "nomeSintetico": "Italiano",
+                "colore1": "#005A9C",
+                "colore2": "#E6F0FA",
+                "isMateriaPrimaProva": true,
+                "isMateriaSecondaProva": false,
+                "principale": null,
+                "specificita": null,
+                "isITP": false,
+                "hasItp": false,
+                "evoluzione": null
+              }
+            ]
+          }
+        ],
+        "materiePrimaProva": [
+          {
+            "sigla": "ITA",
+            "nome": "Lingua e letteratura italiana",
+            "nomeSintetico": "Italiano",
+            "colore1": "#005A9C",
+            "colore2": "#E6F0FA",
+            "isMateriaPrimaProva": true,
+            "isMateriaSecondaProva": false,
+            "principale": null,
+            "specificita": null,
+            "isITP": false,
+            "hasItp": false,
+            "evoluzione": null,
+            "prova": "PRIMA_PROVA",
+            "docenti": [
+              {
+                "nome": "Mario",
+                "cognome": "Rossi",
+                "email": "mario.rossi@scuola.edu.it",
+                "genere": "M",
+                "appellativo": "Prof.",
+                "articolo": "il",
+                "coordinatore": "coordinatore",
+                "nomeCompleto": "Mario Rossi",
+                "materia": null,
+                "appellativoCompleto": "Prof. Mario Rossi",
+                "appellativoCognome": "Prof. Rossi"
+              }
+            ],
+            "docentiDescrizione": "Prof. Mario Rossi"
+          }
+        ],
+        "materieSecondaProva": [],
+        "docentiPrimaProva": [],
+        "docentiSecondaProva": []
+      },
+      "hasProgetti": true,
+      "progetti": [
+        {
+          "tipo": "ASL",
+          "tipoLabel": "PCTO/ASL",
+          "nome": "PCTO - Tirocinio Biblioteca",
+          "referente": {
+            "nome": "Anna",
+            "cognome": "Ferrari",
+            "email": "anna.ferrari@scuola.edu.it",
+            "genere": "F",
+            "appellativo": "Prof.ssa",
+            "articolo": "la",
+            "coordinatore": "coordinatrice",
+            "nomeCompleto": "Anna Ferrari",
+            "materia": null,
+            "appellativoCompleto": "Prof.ssa Anna Ferrari",
+            "appellativoCognome": "Prof.ssa Ferrari"
+          },
+          "ore": 30,
+          "oreAsl": 30,
+          "isAsl": true
+        }
+      ],
+      "storico": {
+        "statistiche": [
+          {
+            "annoScolastico": "2024-2025",
+            "classe": "4AB-LC-LS",
+            "statistiche": { "totale": 24, "conPianiDidattici": 2, "conBes": 2, "conDsa": 1, "ripetenti": 0, "rappresentanti": 2 }
+          }
+        ],
+        "progetti": [{ "annoScolastico": "2024-2025", "classe": "4AB-LC-LS", "progetti": [] }]
+      },
+      "studenti": {
+        "listaCompleta": [
+          {
+            "anagrafica": { "nomeCompleto": "Marco Neri", "email": "marco.neri@alunni.edu.it" },
+            "classe": { "nome": "5AB-LC-LS" },
+            "indirizzo": { "nome": "Liceo Classico", "nomeSintetico": "Classico" },
+            "status": {
+              "isBes": false,
+              "isRipetente": false,
+              "isRappresentante": true,
+              "religione": "IRC",
+              "religioneLabel": "Religione cattolica"
+            },
+            "curriculum": [
+              {
+                "materiaId": "INTERPRETAZIONE",
+                "materiaSigla": "INT",
+                "materiaNome": "Esecuzione ed interpretazione",
+                "specifiche": [{ "nome": "chitarra" }]
+              }
+            ],
+            "didattica": {
+              "carenze": { "hasCarenze": false, "numero": 0, "dettaglio": [] },
+              "piani": { "hasPiani": false, "hasBes": false, "items": [] },
+              "pcto": { "oreCumulate": 60 }
+            },
+            "storico": {
+              "anni": [{ "annoScolastico": "2024-2025", "classe": "4A-LC", "esito": "PROMOSSO" }],
+              "pianiPrimoAnnoPrecedente": [{ "tipo": "PDP_DSA", "tipoLabel": "PDP DSA" }],
+              "pianiSecondoAnnoPrecedente": [],
+              "bocciature": [],
+              "hasBocciature": false
+            }
+          }
+        ],
+        "statistiche": { "totale": 24, "conPianiDidattici": 2, "conBes": 2, "conDsa": 1, "ripetenti": 0, "rappresentanti": 2 },
+        "perSpecificita": [
+          {
+            "materiaId": "INTERPRETAZIONE",
+            "materiaSigla": "INT",
+            "materiaNome": "Esecuzione ed interpretazione",
+            "specifiche": [
+              {
+                "nome": "chitarra",
+                "alunni": [{ "nome": "Marco", "cognome": "Neri", "nomeCompleto": "Marco Neri", "email": "marco.neri@alunni.edu.it" }]
+              }
+            ]
+          }
+        ]
+      },
+      "elencoMaterieConPermessi": [],
+      "sheet": {
+        "materieColonne": {
+          "group1": [{ "sigla": "REL/ALT", "header": "REL/ALT", "isSpecial": true, "roles": ["IRC", "ALT"] }],
+          "group2": [],
+          "group3": [],
+          "group2Label": "Materie",
+          "group3Label": ""
+        }
+      }
+    }
+  },
+  "destinatario": {
+    "anagrafica": {
+      "nome": "Mario",
+      "cognome": "Rossi",
+      "email": "mario.rossi@scuola.edu.it",
+      "genere": "M",
+      "appellativo": "Prof.",
+      "articolo": "il",
+      "coordinatore": "coordinatore",
+      "nomeCompleto": "Mario Rossi",
+      "materia": null,
+      "appellativoCompleto": "Prof. Mario Rossi",
+      "appellativoCognome": "Prof. Rossi"
+    },
+    "ruoliAttivi": ["DOCENTE"],
+    "flags": {
+      "isCoordinatore": false,
+      "isTutor": false,
+      "isTutorAsl": false,
+      "isDocenteSostegno": false,
+      "isSupplente": false
+    },
+    "contesto": { "sostituisce": null, "classiCompetenza": ["5AB-LC-LS"], "materieCompetenza": ["ITA", "STO"] },
+    "comunicazione": { "salutoIniziale": "Gentile Prof. Rossi,", "oggettoCalcolato": "Convocazione CDC 5AB-LC-LS", "testoContenutoPuro": "" }
+  },
+  "render": { "boxes": {}, "body": { "htmlCompleto": "", "htmlSoloContenuto": "" } }
+}
+```
+
+---
+
+## 11. Regole di validazione (Mapping, Mappers & Divieti)
+
+1. **Array-prima (vincolo strutturale).** Nessuna mappa a chiavi dinamiche nei punti iterabili: `curriculum` e `perSpecificita` sono array (§8.8, §8.9). Qualsiasi tentativo di esporre mappe `{"[MateriaId]": ...}` in questi nodi è un errore di mappatura.
+2. **Self-containment (vincolo placeholder).** Gli item degli array principali (`consiglioDiClasse`, `studenti.listaCompleta`, `materie`, `articolazione.*`) NON devono richiedere navigazione parent né path assoluti lunghi per i dati di contesto più comuni (classe, indirizzo, appellativo).
+3. **Stringhe pronte (vincolo placeholder).** `PersonVM.appellativoCompleto`/`appellativoCognome`, `DocenteCdcVM.materieDescrizione`/`materieSigle`/`gruppoNome`, `SubjectVM.docentiDescrizione`, `ProgettoVM.tipoLabel`, `StudentVM.status.religioneLabel`, `piani.items[].tipoLabel` sono OBBLIGATORI dove previsti: i template non devono concatenare.
+4. **Partizioni precalcolate.** `consiglioDiClasseComune`/`consiglioDiClasseSeparato`, `esame.materiePrimaProva`/`materieSecondaProva`/`docentiPrimaProva`/`docentiSecondaProva` devono essere popolati per ogni recipe che assembla il relativo contesto; i template NON usano `where` con valori di dominio.
+5. **Standardizzazione PersonVM.** Nessun array nel CDU può esporre docenti o soggetti sotto forma di sole stringhe o con forme anagrafiche incomplete: l'uso del builder `PersonVM` (§8.1) è OBBLIGATORIO.
+6. **Standardizzazione SubjectVM.** Ogni materia (sia in forma singola che in array) DEVE essere processata tramite il mapper `SubjectVM` (§8.2) garantendo la risoluzione delle sigle evolutive per l'anno di corso della classe (`ANNO`).
+7. **Assenza di Legacy Mapping.** Qualsiasi tentativo di accedere a vecchie proprietà (es. `studenti.perIndirizzo`, `studenti.indirizziPresenti`, `didattica.storico`, `curriculum["INTERPRETAZIONE"]`, `perSpecificita["INTERPRETAZIONE"]["chitarra"]`) DEVE sollevare un errore a tempo di compilazione/mappatura.
+8. **Budget placeholder.** Violazioni del budget di lunghezza (Principio 6) vanno risolte denormalizzando nel CDU, non allungando i placeholder.

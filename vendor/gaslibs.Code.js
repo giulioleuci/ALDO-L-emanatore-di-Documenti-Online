@@ -26505,7 +26505,7 @@ class _DocumentProcessor {
     }]);
   }
   process(documentId, context) {
-    this.logger.info(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
+    this.logger.debug(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
     let structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     const structuralOps = [];
     for (const table of structure.tables) {
@@ -26603,11 +26603,11 @@ class _DocumentProcessor {
       batchRequests.push(...this._convertOperationToRequests(op));
     }
     if (batchRequests.length > 0) {
-      this.logger.info(`Executing batch update with ${batchRequests.length} requests`);
+      this.logger.debug(`Executing batch update with ${batchRequests.length} requests`);
       this.documentService._executeBatchUpdate(documentId, batchRequests);
-      this.logger.info(`Batch update completed successfully`);
+      this.logger.debug(`Batch update completed successfully`);
     } else {
-      this.logger.info(`No batch operations to execute`);
+      this.logger.debug(`No batch operations to execute`);
     }
   }
 }
@@ -49605,7 +49605,7 @@ class DatabaseConnectionManager {
       this.facade._transaction.savedStates[tableName] = cloneDeep_cloneDeep(table._rowsCache);
     }
     this.facade._inTransaction = true;
-    this._logger.info('Transaction started');
+    this._logger.debug('Transaction started');
     return this.facade;
   }
   commit() {
@@ -49618,7 +49618,7 @@ class DatabaseConnectionManager {
       });
       this._spreadsheetService.flushBatch();
       const duration = Date.now() - this.facade._transaction.startTime;
-      this._logger.info(`Transaction committed successfully (${duration}ms)`);
+      this._logger.debug(`Transaction committed successfully (${duration}ms)`);
       this.facade._transaction = null;
       this.facade._inTransaction = false;
       return this.facade;
@@ -49639,7 +49639,7 @@ class DatabaseConnectionManager {
     try {
       this.facade._performRollback();
       const duration = Date.now() - this.facade._transaction.startTime;
-      this._logger.info(`Transaction rolled back (${duration}ms)`);
+      this._logger.debug(`Transaction rolled back (${duration}ms)`);
       this.facade._transaction = null;
       this.facade._inTransaction = false;
       return this.facade;

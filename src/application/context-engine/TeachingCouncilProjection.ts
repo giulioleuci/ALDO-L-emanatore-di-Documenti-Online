@@ -8,9 +8,12 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { Classe } from '../../domain/entities/Classe';
 import type { Docente } from '../../domain/entities/Docente';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
+import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { GestioneSupplenti, ReligioneScelta } from '../../domain/value-objects/enums';
 import { getClasseEntity } from './techEntities';
 import { attachCduMateriaAssignmentIdentity } from './CduInternalMetadata';
+import { buildPersonVm, type PersonVM } from './mappers/personVmMapper';
+import { buildSubjectVm, type SubjectVM } from './mappers/subjectVmMapper';
 
 export type CollectionProjectionOperation = ProjectionOperation;
 
@@ -206,6 +209,34 @@ function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(
   return result;
 }
 
+function materiaVm(
+  materie: IMateriaRepository,
+  classe: Classe,
+  assignment: FlattenedProjectionAssignment
+): SubjectVM | null {
+  const materia = materie.findByIdCached(MateriaId.of(assignment.slot.materia));
+  if (materia === null) return null;
+  return buildSubjectVm(materia, {
+    indirizzo: IndirizzoId.of(classe.indirizzo),
+    isITP: assignment.slot.kind === 'ITP',
+    specificita: assignment.slot.specifica
+  });
+}
+
+function personVmOf(teacher: ProjectionTeacher): PersonVM {
+  return buildPersonVm({
+    nome: teacher.nome,
+    cognome: teacher.cognome,
+    email: teacher.id,
+    genere: teacher.genere as 'M' | 'F'
+  });
+}
+
+/** Every subject in `materie`, names comma-joined (09 §10) — distinct from `SubjectVM.docentiDescrizione`, which joins people, not subjects. */
+function docentiDescrizioneMaterie(materie: SubjectVM[]): string {
+  return materie.map((m) => m.nomeSintetico).join(', ');
+}
+
 function councilVmStrategy(
   classi: IClasseRepository,
   materie: IMateriaRepository
@@ -240,26 +271,16 @@ function councilVmStrategy(
       const isTutorAsl = tutorAsl.has(rowDocente.id);
       const isTutorOrientamento = tutorOrient.has(rowDocente.id);
       const materieVm = dedupeMaterie(
-        assignments.map((assignment) => ({
-          sigla: assignment.slot.materia,
-          nome:
-            materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
-            assignment.slot.materia,
-          colore: '',
-          specificita: assignment.slot.specifica
-        }))
+        assignments
+          .map((assignment) => materiaVm(materie, classe, assignment))
+          .filter((vm): vm is SubjectVM => vm !== null)
       );
       const tipoArt = tipoArticolazione(classi, classe, assignments);
       return {
-        anagrafica: {
-          nome: rowDocente.nome,
-          cognome: rowDocente.cognome,
-          email: rowDocente.id,
-          genere: rowDocente.genere,
-          appellativo: rowDocente.appellativo
-        },
+        anagrafica: personVmOf(rowDocente),
         materie: materieVm,
-        materieDescrizione: materieVm.map((m) => m.nome).join(', '),
+        materieDescrizione: docentiDescrizioneMaterie(materieVm),
+        materieSigle: materieVm.map((m) => m.sigla).join(', '),
         ruoli: {
           isCoordinatore,
           isTutorAsl,
@@ -268,8 +289,7 @@ function councilVmStrategy(
         },
         stato: {
           isSupplente,
-          sostituisce:
-            sostituisce === null ? null : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
+          sostituisce: sostituisce === null ? null : personVmOf(sostituisce)
         },
         tipoArticolazione: tipoArt,
         gruppoNome: gruppoNome(classi, classe, tipoArt),
@@ -339,7 +359,7 @@ export function attachCouncilProjectionMetadata(cdu: Cdu, assignments: TeachingA
     }
   }
   for (const docente of cdu.focus.classe?.consiglioDiClasse ?? []) {
-    const candidates = [...(candidatesByActor.get(docente.anagrafica.email) ?? [])];
+    const candidates = [...(candidatesByActor.get(docente.anagrafica.email ?? '') ?? [])];
     for (const materia of docente.materie) {
       const index = candidates.findIndex(
         (assignment) =>

@@ -17,17 +17,19 @@ import type { SubjectVM } from './mappers/subjectVmMapper';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
-  anagrafica: { nome: string; cognome: string; email: string; genere: string; appellativo: string };
-  materie: Array<{ sigla: string; nome: string; colore: string; specificita: string | null }>;
+  anagrafica: PersonVM;
+  materie: SubjectVM[];
   /** Every subject in `materie`, names comma-joined (09 §10 — for flat, template-simple display). */
   materieDescrizione: string;
+  /** `materie` sigle, comma-joined, for flat/compact display. */
+  materieSigle: string;
   ruoli: {
     isCoordinatore: boolean;
     isTutorAsl: boolean;
     isTutorOrientamento: boolean;
     descrizione: string[];
   };
-  stato: { isSupplente: boolean; sostituisce: { nome: string; email: string } | null };
+  stato: { isSupplente: boolean; sostituisce: PersonVM | null };
   tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null;
   /** Resolved major name for SEPARATO_PRIMO/SEPARATO_SECONDO; null for COMUNE and non-articulated classes (09 §10). */
   gruppoNome: string | null;
@@ -269,14 +271,7 @@ export interface CduPianoFocus {
 }
 
 export interface CduDestinatario {
-  anagrafica: {
-    nome: string;
-    cognome: string;
-    nomeCompleto: string;
-    email: string;
-    appellativo: string;
-    genere: string;
-  };
+  anagrafica: PersonVM;
   ruoliAttivi: string[];
   flags: {
     isCoordinatore: boolean;
@@ -286,7 +281,7 @@ export interface CduDestinatario {
     isSupplente: boolean;
   };
   contesto: {
-    sostituisce: { nome: string; email: string } | null;
+    sostituisce: PersonVM | null;
     classiCompetenza: string[];
     materieCompetenza: string[];
   };

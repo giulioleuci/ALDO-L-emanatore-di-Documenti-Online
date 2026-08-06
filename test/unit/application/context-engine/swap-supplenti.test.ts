@@ -43,27 +43,23 @@ const rossiSlot = (list: DocenteCdcVM[]) =>
 
 test('SOLO_SUPPLENTI: the titolare VM becomes the chain-resolved supplente (09 §5)', () => {
   const rossi = rossiSlot(cdc(GestioneSupplenti.SOLO_SUPPLENTI));
-  expect(rossi.anagrafica).toEqual({
+  expect(rossi.anagrafica).toMatchObject({
     nome: 'LUCIA',
     cognome: 'BIANCHI',
     email: 'bianchi@school.it',
     genere: 'F',
     appellativo: 'Prof.ssa'
   });
-  expect(rossi.stato).toEqual({
-    isSupplente: true,
-    sostituisce: { nome: 'ROSSI MARIO', email: 'rossi@school.it' }
-  });
+  expect(rossi.stato.isSupplente).toBe(true);
+  expect(rossi.stato.sostituisce).toMatchObject({ nomeCompleto: 'MARIO ROSSI', email: 'rossi@school.it' });
   expect(rossi.materie.map((m) => m.sigla)).toEqual(['MATE']); // subject covered by the supplente
 });
 
 test('ENTRAMBI: the GLF primary actor is projected first with the principal in sostituisce (09 §5)', () => {
   const rossi = rossiSlot(cdc(GestioneSupplenti.ENTRAMBI));
   expect(rossi.anagrafica.email).toBe('bianchi@school.it');
-  expect(rossi.stato).toEqual({
-    isSupplente: true,
-    sostituisce: { nome: 'ROSSI MARIO', email: 'rossi@school.it' }
-  });
+  expect(rossi.stato.isSupplente).toBe(true);
+  expect(rossi.stato.sostituisce).toMatchObject({ nomeCompleto: 'MARIO ROSSI', email: 'rossi@school.it' });
 });
 
 test('default rule (SOLO_TITOLARI): no swap even during an active supplenza', () => {

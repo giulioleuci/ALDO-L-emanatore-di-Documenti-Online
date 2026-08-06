@@ -204,7 +204,7 @@ export class RisolutoreRuoliService {
 
   private cdcFiltrato(ctx: RoleContext): Email[] {
     return (ctx.cdu.focus.alunno?.consiglioDiClasseFiltrato ?? []).map((vm) =>
-      Email.of(vm.anagrafica.email)
+      Email.of(vm.anagrafica.email ?? '')
     );
   }
 

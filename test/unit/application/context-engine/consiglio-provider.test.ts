@@ -63,16 +63,15 @@ test('CDC coordinatore VM: materie, roles and descrizione', () => {
   // rossi (COORD/TUTOR_ASL of 5A) still holds MATE nominally — the point of this
   // test is the role-tagging on the VM, not the cattedra-resolution outcome.
   const rossi = byEmail(cdc('5A', new Date('2025-06-01T09:00:00Z')), 'rossi@school.it');
-  expect(rossi.anagrafica).toEqual({
+  expect(rossi.anagrafica).toMatchObject({
     nome: 'MARIO',
     cognome: 'ROSSI',
     email: 'rossi@school.it',
     genere: 'M',
     appellativo: 'Prof.'
   });
-  expect(rossi.materie).toEqual([
-    { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
-  ]);
+  expect(rossi.materie).toMatchObject([{ sigla: 'MATE', nome: 'Matematica', specificita: null }]);
+  expect(rossi.materieSigle).toBe('MATE');
   expect(rossi.materieDescrizione).toBe('Matematica');
   expect(rossi.gruppoNome).toBeNull();
   expect(rossi.ruoli).toEqual({
@@ -101,8 +100,8 @@ test('CDC of an articulated parent: tipoArticolazione by partner membership (09 
   expect(byEmail(list, 'verdi@school.it').gruppoNome).toBe('Liceo scientifico scienze applicate');
   expect(byEmail(list, 'bianchi@school.it').materieDescrizione).toBe('Fisica');
   expect(byEmail(list, 'verdi@school.it').materieDescrizione).toBe('Fisica');
-  expect(byEmail(list, 'rossi@school.it').materie).toEqual([
-    { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
+  expect(byEmail(list, 'rossi@school.it').materie).toMatchObject([
+    { sigla: 'MATE', nome: 'Matematica', specificita: null }
   ]);
   expect(byEmail(list, 'rossi@school.it').materieDescrizione).toBe('Matematica');
 });
@@ -229,6 +228,41 @@ test('ConsiglioClasseProvider: non-articulated class has no comune/separato spli
   const focusClasse = b.build(params, recipe).focus.classe!;
   expect(focusClasse.consiglioDiClasseComune).toBeUndefined();
   expect(focusClasse.consiglioDiClasseSeparato).toBeUndefined();
+});
+
+test('builds anagrafica as a full PersonVM and materie as SubjectVM with materieSigle (Task 8)', () => {
+  const rossi = byEmail(cdc('5A', new Date('2025-06-01T09:00:00Z')), 'rossi@school.it');
+  expect(rossi.anagrafica.appellativoCompleto).toBe('Prof. MARIO ROSSI');
+  expect(rossi.anagrafica.appellativoCognome).toBe('Prof. ROSSI');
+  expect(rossi.materie[0]).toMatchObject({ sigla: 'MATE', nomeSintetico: 'Matematica' });
+  expect(rossi.materieSigle).toBe('MATE');
+});
+
+test('exposes stato.sostituisce as a PersonVM when a supplente is displayed (Task 8)', () => {
+  // Same rossi->bianchi SUPPLENZE chain (5A,4B / MATERIE:'*') as
+  // email-steps.test.ts's tablesWith4B()/docente4BTarget(), which already
+  // confirms this window+class produces bianchi as SOLO_SUPPLENTI's displayed
+  // docente for 4B/MATE with rossi as the substituted titolare.
+  const tables = fixtureTables();
+  tables.CLASSI!.push({
+    ID: '4B',
+    ANNO: 4,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    MATE: 'rossi@school.it'
+  });
+  const list = cdc(
+    '4B',
+    new Date('2025-11-15T09:00:00Z'),
+    tables,
+    GestioneSupplenti.SOLO_SUPPLENTI
+  );
+  const docente = list.find((d) => d.stato.sostituisce !== null)!;
+  expect(docente.stato.sostituisce?.nomeCompleto).toEqual(expect.any(String));
+  expect(docente.stato.sostituisce?.appellativoCompleto).toEqual(expect.any(String));
 });
 
 test('the council projection delegates grouping and ordering to GLF configuration', () => {

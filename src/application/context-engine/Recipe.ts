@@ -111,6 +111,7 @@ export const RECIPES: Record<string, string[]> = {
     'students',
     'tutor',
     'consiglio',
+    'materie',
     'rappresentanti',
     'statistiche',
     'pianiPersClasse'
@@ -129,6 +130,7 @@ export const RECIPES: Record<string, string[]> = {
     'school',
     'class',
     'consiglio',
+    'materie',
     'pianiPersClasse',
     'pianiPersClasseStorico',
     'documentiClasse'

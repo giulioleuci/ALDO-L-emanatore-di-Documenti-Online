@@ -16,6 +16,7 @@ import type { PersonVM } from './mappers/personVmMapper';
 import type { SubjectVM } from './mappers/subjectVmMapper';
 import type { CurriculumVM } from './mappers/carenzeMapper';
 import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';
+import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMapper';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -184,6 +185,10 @@ export interface CduClasse {
   consiglioDiClasse?: DocenteCdcVM[];
   consiglioDiClasseComune?: DocenteCdcVM[];
   consiglioDiClasseSeparato?: DocenteCdcVM[];
+  /** Flat, deduped subject catalog of the class council (02 §2.8, §4.1). */
+  materie?: SubjectVM[];
+  /** `materie` grouped by base materia id, for composite-specificità display (02 §2.8). */
+  materiePerPrincipale?: MateriaPerPrincipaleVM[];
   /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
   elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
   studenti?: {

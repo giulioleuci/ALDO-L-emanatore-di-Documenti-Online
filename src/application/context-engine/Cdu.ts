@@ -18,6 +18,7 @@ import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';
 import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMapper';
 import type { StudentStoricoVM } from './mappers/storicoMapper';
 import type { ProgettoVM } from './providers/ProgettiProvider';
+import type { ClasseStoricoVM } from './providers/StoricoClasseProvider';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -203,6 +204,8 @@ export interface CduClasse {
   /** PROGETTI assigned to the class (02 §2.10, §4.1). */
   hasProgetti?: boolean;
   progetti?: ProgettoVM[];
+  /** Lazy prior-years history (13 §2/§5), populated only when `includiStorico` is true (02 §2.11, §8.6). */
+  storico?: LazyRef<ClasseStoricoVM>;
   /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
   elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
   studenti?: {

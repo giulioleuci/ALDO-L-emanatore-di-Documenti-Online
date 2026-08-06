@@ -16,6 +16,7 @@ import { CarenzaFocusProvider } from './providers/CarenzaFocusProvider';
 import { RappresentantiProvider } from './providers/RappresentantiProvider';
 import { StatisticheProvider } from './providers/StatisticheProvider';
 import { StoricoProvider } from './providers/StoricoProvider';
+import { StoricoClasseProvider } from './providers/StoricoClasseProvider';
 import { DocumentiStoricoProvider } from './providers/DocumentiStoricoProvider';
 import { PianiPersAlunnoProvider } from './providers/PianiPersAlunnoProvider';
 import { PianiPersAlunnoStoricoProvider } from './providers/PianiPersAlunnoStoricoProvider';
@@ -90,6 +91,7 @@ export class ContextEngineFactory {
       .registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni))
       .registerProvider('rappresentanti', new RappresentantiProvider(classi))
       .registerProvider('statistiche', new StatisticheProvider(classi, docenti, alunni))
+      .registerProvider('storicoClasse', new StoricoClasseProvider(storicoDb, classi))
       .registerProvider('storico', new StoricoProvider(storicoDb))
       .registerProvider('documentiStorico', new DocumentiStoricoProvider(storicoDb))
       .registerProvider('pianiPersAlunno', new PianiPersAlunnoProvider(logDocs))

@@ -3,9 +3,9 @@ import type { Cdu } from '../Cdu';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
-import { TipoPiano } from '../../../domain/value-objects/enums';
 import { getClasseEntity } from '../techEntities';
 import { studentiDellaClasse } from '../studenti';
+import { computeStatisticheAlunni } from '../mappers/statisticheAlunniMapper';
 
 /**
  * Computes aggregate counts not sourced from a single table (09 §11):
@@ -34,26 +34,6 @@ export class StatisticheProvider implements ContextProvider {
     const studenti = cdu.focus.classe?.studenti;
     if (studenti === undefined) return;
     const attivi = studentiDellaClasse(this.classi, getClasseEntity(cdu), true);
-    let conPianiDidattici = 0,
-      conBes = 0,
-      conDsa = 0,
-      ripetenti = 0,
-      rappresentanti = 0;
-    for (const a of attivi) {
-      const piani = this.alunni.getPiani(a);
-      if (piani.length > 0) conPianiDidattici++;
-      if (piani.some((p) => p.isBES())) conBes++;
-      if (piani.some((p) => p.tipo === TipoPiano.PDP_DSA)) conDsa++;
-      if (a.isRipetente()) ripetenti++;
-      if (a.isRappresentante()) rappresentanti++;
-    }
-    studenti.statistiche = {
-      totale: attivi.length,
-      conPianiDidattici,
-      conBes,
-      conDsa,
-      ripetenti,
-      rappresentanti
-    };
+    studenti.statistiche = computeStatisticheAlunni(attivi, this.alunni);
   }
 }

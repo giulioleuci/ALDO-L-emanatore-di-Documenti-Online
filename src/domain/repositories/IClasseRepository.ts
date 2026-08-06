@@ -49,6 +49,8 @@ export interface IClasseRepository {
   isArticolata(classe: Classe): boolean;
   getClassiPartner(classe: Classe): Classe[];
   getClasseParent(classe: Classe): Classe | null;
+  /** Ordered CSV of the class's own historical names, index 0 = immediately-prior year (ref 01, `CLASSI.STORICO`). */
+  getStorico(classe: Classe): ClasseId[];
   getGruppoArticolazione(classe: Classe): Classe[];
   getAllDocentiCDCArticolata(classe: Classe): Docente[];
   getMaterieArticolazione(classe: Classe): {

@@ -86,6 +86,7 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * | consiglio     | focus.classe.consiglioDiClasse                        | tech.entita.classe (class). The council projection reads TUTOR_ASL/TUTOR_ORIENT roles from `ClasseRepository` directly and does not depend on `focus.classe.tutor`. |
  * | rappresentanti| focus.classe.rappresentanti                           | tech.entita.classe (class)                        |
  * | statistiche   | cdu.istituto.statistiche (if school ran), focus.classe.studenti.statistiche (if present) | cdu.istituto (school, guarded — skips if absent); focus.classe.studenti (students, guarded — skips if absent) |
+ * | storicoClasse | focus.classe.storico (LazyRef, only if options.includiStorico) | tech.entita.classe (class) via focus.classe guard |
  * | carenze       | focus.alunno.didattica.carenze                        | tech.entita.alunno (student)                      |
  * | piani         | focus.alunno.didattica.piani, flips focus.alunno.status.isBes | tech.entita.alunno (student); overwrites the `isBes=false` placeholder AlunnoProvider set — MUST run after student |
  * | documenti     | focus.alunno.didattica.documenti                      | tech.entita.alunno (student)                      |
@@ -116,6 +117,7 @@ export const RECIPES: Record<string, string[]> = {
     'progetti',
     'rappresentanti',
     'statistiche',
+    'storicoClasse',
     'pianiPersClasse'
   ],
   ALUNNO_DETTAGLIATO: [

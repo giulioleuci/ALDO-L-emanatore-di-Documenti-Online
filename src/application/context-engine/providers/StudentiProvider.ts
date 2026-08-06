@@ -4,17 +4,16 @@ import type { IClasseRepository } from '../../../domain/repositories/IClasseRepo
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
-import type { Classe } from '../../../domain/entities/Classe';
 import { getClasseEntity } from '../techEntities';
 import { carenzeDettaglioSemplice, curriculumArray } from '../mappers/carenzeMapper';
-import { tipoPianoLabel } from '../mappers/labels';
+import { tipoPianoLabel, religioneLabel } from '../mappers/labels';
 
 /**
- * Populates `focus.classe.studenti` (09 §4/§10). Builds one alunno-in-context
- * view model per student (anagrafica, status incl. isBes from PIANI, curriculum,
- * and per-student didattica: carenze, piani, PCTO). For the parent of an
- * articulated class the roster is aggregated across both partners and also
- * grouped by indirizzo (`perIndirizzo` / `indirizziPresenti`).
+ * Populates `focus.classe.studenti.listaCompleta` (02 §4.1/§8.7). Each item is
+ * self-contained: it carries its own classe/indirizzo (Principle 2) so
+ * templates never navigate back to `focus.classe.anagrafica` inside a loop.
+ * For the parent of an articulated class the roster is the union across both
+ * partner classes — no per-indirizzo grouping (moved to `focus.classe.partner`, 02 §2.5).
  */
 export class StudentiProvider implements ContextProvider {
   constructor(
@@ -29,36 +28,17 @@ export class StudentiProvider implements ContextProvider {
     if (focusClasse === undefined) return;
 
     const config = this.classi.getArticolazione(classe);
-    if (config?.isParent() === true) {
-      const perIndirizzo: Record<string, AlunnoContestoVM[]> = {};
-      const indirizziPresenti: string[] = [];
-      const listaCompleta: AlunnoContestoVM[] = [];
-      for (const partner of this.classi.getClassiPartner(classe)) {
-        const vms = this.classi
-          .getStudenti(partner)
-          .filter((alunno) => alunno.isAttivo())
-          .map((alunno) => this.buildVM(alunno, partner));
-        const sigla = partner.indirizzo;
-        if (!(sigla in perIndirizzo)) {
-          perIndirizzo[sigla] = [];
-          indirizziPresenti.push(sigla);
-        }
-        perIndirizzo[sigla]!.push(...vms);
-        listaCompleta.push(...vms);
-      }
-      focusClasse.studenti = { listaCompleta, perIndirizzo, indirizziPresenti };
-    } else {
-      focusClasse.studenti = {
-        listaCompleta: this.classi
-          .getStudenti(classe)
-          .filter((alunno) => alunno.isAttivo())
-          .map((alunno) => this.buildVM(alunno, classe))
-      };
-    }
+    const sourceClassi = config?.isParent() === true ? this.classi.getClassiPartner(classe) : [classe];
+    const listaCompleta = sourceClassi.flatMap((source) =>
+      this.classi
+        .getStudenti(source)
+        .filter((alunno) => alunno.isAttivo())
+        .map((alunno) => this.buildVM(alunno, focusClasse))
+    );
+    focusClasse.studenti = { listaCompleta };
   }
 
-  private buildVM(alunno: Alunno, classe: Classe): AlunnoContestoVM {
-    const indirizzo = this.classi.getIndirizzo(classe);
+  private buildVM(alunno: Alunno, focusClasse: NonNullable<Cdu['focus']['classe']>): AlunnoContestoVM {
     const dettaglio = carenzeDettaglioSemplice(
       this.alunni.getCarenze(alunno),
       this.materie.findAllSigle(),
@@ -70,19 +50,19 @@ export class StudentiProvider implements ContextProvider {
     const hasBes = pianiItems.some((p) => p.isBes);
     return {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
-      genitori: alunno.getTutors().map((email) => ({ email: email.value })),
+      classe: { nome: focusClasse.anagrafica.nome },
+      indirizzo: {
+        nome: focusClasse.anagrafica.indirizzo.nome,
+        nomeSintetico: focusClasse.anagrafica.indirizzo.nomeSintetico
+      },
       status: {
         isBes: hasBes,
         isRipetente: alunno.isRipetente(),
         isRappresentante: alunno.isRappresentante(),
-        religione: alunno.religione
+        religione: alunno.religione,
+        religioneLabel: religioneLabel(alunno.religione)
       },
       curriculum: curriculumArray(alunno, this.materie),
-      indirizzo: {
-        sigla: classe.indirizzo,
-        nome: indirizzo.nome,
-        nomeSintetico: indirizzo.nomeSintetico
-      },
       didattica: {
         carenze: { hasCarenze: dettaglio.length > 0, numero: dettaglio.length, dettaglio },
         piani: { hasPiani: pianiItems.length > 0, hasBes, items: pianiItems },

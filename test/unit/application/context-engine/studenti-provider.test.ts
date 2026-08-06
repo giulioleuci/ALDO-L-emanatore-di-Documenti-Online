@@ -42,15 +42,19 @@ test('StudentiProvider: listaCompleta contains only active students (02 §4.1)',
   expect(s.listaCompleta.map((a) => a.anagrafica.email)).toEqual(['a1@school.it']);
   expect(s.listaCompleta.some((a) => a.anagrafica.email === 'a2@school.it')).toBe(false);
   expect(s.listaCompleta.some((a) => a.anagrafica.email === 'a3@school.it')).toBe(false);
-  expect(s.perIndirizzo).toBeUndefined();
+  expect(s).not.toHaveProperty('perIndirizzo');
+  expect(s).not.toHaveProperty('indirizziPresenti');
 });
 
-test('StudentiProvider: parent emails are exposed in the class CDU', () => {
+test('StudentiProvider: every student carries self-contained classe/indirizzo/religioneLabel (02 §4.1/§8.7)', () => {
   const cdu = build('5A');
-  const studenti = cdu.focus.classe!.studenti!.listaCompleta;
-  expect(studenti).toHaveLength(1);
-  expect(studenti[0]!.anagrafica.email).toBe('a1@school.it');
-  expect(studenti[0]!.genitori).toEqual([{ email: 'genitore1@x.it' }]);
+  const alunno = cdu.focus.classe!.studenti!.listaCompleta[0]!;
+  expect(alunno.classe).toEqual({ nome: cdu.focus.classe!.anagrafica.nome });
+  expect(alunno.indirizzo).toEqual({
+    nome: cdu.focus.classe!.anagrafica.indirizzo.nome,
+    nomeSintetico: cdu.focus.classe!.anagrafica.indirizzo.nomeSintetico
+  });
+  expect(alunno.status.religioneLabel).toBe('Religione cattolica');
 });
 
 test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)', () => {
@@ -59,8 +63,15 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
   )!;
   expect(a1).toEqual({
     anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
-    genitori: [{ email: 'genitore1@x.it' }],
-    status: { isBes: true, isRipetente: false, isRappresentante: true, religione: 'IRC' },
+    classe: { nome: '5A' },
+    indirizzo: { nome: 'Liceo scientifico', nomeSintetico: 'Scientifico' },
+    status: {
+      isBes: true,
+      isRipetente: false,
+      isRappresentante: true,
+      religione: 'IRC',
+      religioneLabel: 'Religione cattolica'
+    },
     curriculum: [
       {
         materiaId: 'INTERP',
@@ -69,7 +80,6 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
         specifiche: [{ nome: 'CHITARRA' }, { nome: 'PIANO' }]
       }
     ],
-    indirizzo: { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico' },
     didattica: {
       // getCarenze returns rows most-recent first: prog.2 (MATE 5) then prog.1 (MATE 4.5, FISI ...).
       carenze: {
@@ -103,7 +113,7 @@ test('StatisticheProvider: class stats over active students (09 §11, 02 §4.1)'
   });
 });
 
-test('StudentiProvider: articulated parent aggregates + groups by indirizzo (09 §10)', () => {
+test('StudentiProvider: articulated parent aggregates the roster across both partner classes, no perIndirizzo/indirizziPresenti (09 §10)', () => {
   const tables = fixtureTables();
   (tables['ALUNNI'] as Row[]).push(
     {
@@ -137,16 +147,15 @@ test('StudentiProvider: articulated parent aggregates + groups by indirizzo (09 
       CURRICULUM: null
     }
   );
-  const s = build('1F', tables).focus.classe!.studenti!;
+  const cdu = build('1F', tables);
+  const s = cdu.focus.classe!.studenti!;
   expect(s.listaCompleta.map((a) => a.anagrafica.email)).toEqual(['s1@school.it', 's2@school.it']);
-  expect(s.indirizziPresenti).toEqual(['SCIENTIFICO', 'LSSA']);
-  expect(Object.keys(s.perIndirizzo!)).toEqual(['SCIENTIFICO', 'LSSA']);
-  expect(s.perIndirizzo!['SCIENTIFICO']!.map((a) => a.anagrafica.email)).toEqual(['s1@school.it']);
-  expect(s.perIndirizzo!['LSSA']!.map((a) => a.anagrafica.email)).toEqual(['s2@school.it']);
   expect(s.listaCompleta.some((a) => a.anagrafica.email === 's3@school.it')).toBe(false);
+  expect(s).not.toHaveProperty('perIndirizzo');
+  expect(s).not.toHaveProperty('indirizziPresenti');
 });
 
-test('StudentiProvider: each articulated-parent student is tagged with their OWN partner indirizzo (09 §10)', () => {
+test('StudentiProvider: every articulated-parent student is self-contained to the FOCUSED (parent) classe/indirizzo, not their own partner class (09 §10)', () => {
   const tables = fixtureTables();
   (tables['ALUNNI'] as Row[]).push(
     {
@@ -170,17 +179,33 @@ test('StudentiProvider: each articulated-parent student is tagged with their OWN
       CURRICULUM: null
     }
   );
-  const s = build('1F', tables).focus.classe!.studenti!;
+  const cdu = build('1F', tables);
+  const s = cdu.focus.classe!.studenti!;
   const s1 = s.listaCompleta.find((a) => a.anagrafica.email === 's1@school.it')!;
   const s2 = s.listaCompleta.find((a) => a.anagrafica.email === 's2@school.it')!;
-  expect(s1.indirizzo).toEqual({
-    sigla: 'SCIENTIFICO',
-    nome: 'Liceo scientifico',
-    nomeSintetico: 'Scientifico'
+  const focusIndirizzo = {
+    nome: cdu.focus.classe!.anagrafica.indirizzo.nome,
+    nomeSintetico: cdu.focus.classe!.anagrafica.indirizzo.nomeSintetico
+  };
+  expect(s1.classe).toEqual({ nome: '1F' });
+  expect(s2.classe).toEqual({ nome: '1F' });
+  expect(s1.indirizzo).toEqual(focusIndirizzo);
+  expect(s2.indirizzo).toEqual(focusIndirizzo);
+});
+
+test('has no perIndirizzo or indirizziPresenti on the studenti node, even for an articulated parent', () => {
+  const tables = fixtureTables();
+  (tables['ALUNNI'] as Row[]).push({
+    EMAIL: 's1@school.it',
+    COGNOMENOME: 'ALFA UNO',
+    CLASSE: '1F-LSO',
+    RELIGIONE: 'IRC',
+    ATTIVO: true,
+    RIPETENTE: false,
+    RAPPR_STUD: false,
+    CURRICULUM: null
   });
-  expect(s2.indirizzo).toEqual({
-    sigla: 'LSSA',
-    nome: 'Liceo scientifico scienze applicate',
-    nomeSintetico: 'Scienze applicate'
-  });
+  const cdu = build('1F', tables);
+  expect(cdu.focus.classe!.studenti).not.toHaveProperty('perIndirizzo');
+  expect(cdu.focus.classe!.studenti).not.toHaveProperty('indirizziPresenti');
 });

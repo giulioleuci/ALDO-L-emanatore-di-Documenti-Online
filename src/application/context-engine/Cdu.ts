@@ -38,13 +38,25 @@ export interface DocenteCdcVM {
   flags: { isNotLast: boolean };
 }
 
-/** Alunno-in-context view model inside `focus.classe.studenti.listaCompleta` (02 §4.1). */
+/**
+ * Alunno-in-context view model inside `focus.classe.studenti.listaCompleta`
+ * (02 §4.1/§8.7). Self-contained (Principle 2): carries its own `classe`/
+ * `indirizzo` so templates never navigate back to `focus.classe.anagrafica`
+ * inside a loop. For the parent of an articulated class these always reflect
+ * the FOCUSED (parent) class, not each student's own partner class.
+ */
 export interface AlunnoContestoVM {
   anagrafica: { nomeCompleto: string; email: string };
-  genitori: Array<{ email: string }>;
-  status: { isBes: boolean; isRipetente: boolean; isRappresentante: boolean; religione: string };
+  classe: { nome: string };
+  indirizzo: { nome: string; nomeSintetico: string };
+  status: {
+    isBes: boolean;
+    isRipetente: boolean;
+    isRappresentante: boolean;
+    religione: string;
+    religioneLabel: string;
+  };
   curriculum: CurriculumVM[];
-  indirizzo: { sigla: string; nome: string; nomeSintetico: string };
   didattica: {
     carenze: {
       hasCarenze: boolean;
@@ -183,9 +195,6 @@ export interface CduClasse {
       ripetenti: number;
       rappresentanti: number;
     };
-    perIndirizzo?: Record<string, AlunnoContestoVM[]>;
-    indirizziPresenti?: string[];
-    perSpecificita?: Record<string, Record<string, AlunnoContestoVM[]>>;
   };
   didattica?: {
     pianiPersonalizzati: {

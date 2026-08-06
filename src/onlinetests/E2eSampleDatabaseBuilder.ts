@@ -250,7 +250,7 @@ interface ClasseLayout {
   studentRepCount: number;
   /** Last N students (0-indexed within the class) get a free-text RAPPR_GEN name (item 3). */
   parentRepCount: number;
-  /** 0-indexed-within-class overrides of the ReligioneScelta.SI default (item 3). */
+  /** 0-indexed-within-class overrides of the ReligioneScelta.IRC default (item 3). */
   religionExceptions: Array<{ index: number; scelta: ReligioneScelta }>;
 }
 
@@ -542,7 +542,7 @@ export class E2eSampleDatabaseBuilder {
           [COL_ALUNNI.EMAIL]: email,
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: layout.id,
-          [COL_ALUNNI.RELIGIONE]: eccezione?.scelta ?? ReligioneScelta.SI,
+          [COL_ALUNNI.RELIGIONE]: eccezione?.scelta ?? ReligioneScelta.IRC,
           [COL_ALUNNI.CURRICULUM]:
             layout.id !== CLASSE_A
               ? ''
@@ -634,7 +634,7 @@ export class E2eSampleDatabaseBuilder {
           [COL_ALUNNI.EMAIL]: email,
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: isRipetente ? layout.id : classePrecedente(layout.id),
-          [COL_ALUNNI.RELIGIONE]: ReligioneScelta.SI,
+          [COL_ALUNNI.RELIGIONE]: ReligioneScelta.IRC,
           [COL_ALUNNI.CURRICULUM]: '',
           [COL_ALUNNI.ATTIVO]: true,
           // Not yet repeating in 2025-2026 — the repetition is what makes them one THIS year.

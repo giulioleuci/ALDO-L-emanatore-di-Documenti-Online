@@ -35,9 +35,9 @@ export enum TipoIstituto {
   TECNICO = 'TECNICO'
 }
 export enum ReligioneScelta {
-  SI = 'SI',
-  NO = 'NO',
-  ALT = 'ALT'
+  IRC = 'IRC',
+  ALT = 'ALT',
+  NO = 'NO'
 }
 export enum TipoPiano {
   PDP_DSA = 'PDP_DSA',

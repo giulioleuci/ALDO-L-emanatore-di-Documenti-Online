@@ -53,7 +53,7 @@ test('AlunnoProvider: anagrafica/status/curriculum/classe + ASL hours (02 §4.2)
   const a = build('a1@school.it').focus.alunno!;
   expect(a.anagrafica).toEqual({ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' });
   expect(a.status).toEqual({
-    religione: 'SI',
+    religione: 'IRC',
     isBes: true,
     isRipetente: false,
     isRappresentante: true

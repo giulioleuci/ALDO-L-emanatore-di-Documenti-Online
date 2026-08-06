@@ -140,7 +140,7 @@ export function fixtureTables(): Record<string, Row[]> {
         EMAIL: 'a1@school.it',
         COGNOMENOME: 'VERDI ANNA',
         CLASSE: '5A',
-        RELIGIONE: 'SI',
+        RELIGIONE: 'IRC',
         ATTIVO: true,
         RIPETENTE: false,
         RAPPR_STUD: true,

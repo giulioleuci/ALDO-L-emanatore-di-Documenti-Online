@@ -60,7 +60,7 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
   expect(a1).toEqual({
     anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
     genitori: [{ email: 'genitore1@x.it' }],
-    status: { isBes: true, isRipetente: false, isRappresentante: true, religione: 'SI' },
+    status: { isBes: true, isRipetente: false, isRappresentante: true, religione: 'IRC' },
     curriculum: { INTERP: { specifiche: ['CHITARRA', 'PIANO'] } },
     indirizzo: { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico' },
     didattica: {

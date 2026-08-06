@@ -404,7 +404,7 @@ describe('registerRepositoryChecks', () => {
 
     const matrixStudents = rows[TABLE.ALUNNI]!.filter((row) => row[COL_ALUNNI.CLASSE] === CLASSE_A);
     expect(matrixStudents.map((row) => row[COL_ALUNNI.RELIGIONE])).toEqual(
-      expect.arrayContaining(['SI', 'ALT', 'NO'])
+      expect.arrayContaining(['IRC', 'ALT', 'NO'])
     );
     expect(matrixStudents.map((row) => row[COL_ALUNNI.CURRICULUM])).toEqual(
       expect.arrayContaining([

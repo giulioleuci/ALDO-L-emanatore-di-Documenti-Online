@@ -30,7 +30,7 @@ export class Alunno extends AldoEntity {
     this.id = (data[COL_ALUNNI.EMAIL] as string) ?? null;
     this.cognomeNome = (data[COL_ALUNNI.COGNOMENOME] as string) ?? '';
     this.classe = (data[COL_ALUNNI.CLASSE] as string) ?? '';
-    this.religione = (data[COL_ALUNNI.RELIGIONE] as ReligioneScelta) ?? ReligioneScelta.SI;
+    this.religione = (data[COL_ALUNNI.RELIGIONE] as ReligioneScelta) ?? ReligioneScelta.IRC;
     this.attivo = data[COL_ALUNNI.ATTIVO] === true;
     this.ripetente = data[COL_ALUNNI.RIPETENTE] === true;
     this.rappresentante = data[COL_ALUNNI.RAPPR_STUD] === true;

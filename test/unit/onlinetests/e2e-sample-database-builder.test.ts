@@ -441,7 +441,7 @@ test('RELIGIONE is always a valid ReligioneScelta value (SI/NO/ALT), never a boo
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
   const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
   for (const a of alunni) {
-    expect(['SI', 'NO', 'ALT']).toContain(a[COL_ALUNNI.RELIGIONE]);
+    expect(['IRC', 'NO', 'ALT']).toContain(a[COL_ALUNNI.RELIGIONE]);
   }
 });
 

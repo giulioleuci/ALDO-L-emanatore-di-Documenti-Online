@@ -38,7 +38,7 @@ export const studentCouncilFilterOperations: CollectionProjectionOperation[] = [
   {
     type: 'filter',
     expression:
-      '(slot.materia != "IRC" && slot.materia != "ALT") || (slot.materia == "IRC" && studentReligion == "SI") || (slot.materia == "ALT" && studentReligion == "ALT")'
+      '(slot.materia != "IRC" && slot.materia != "ALT") || (slot.materia == "IRC" && studentReligion == "IRC") || (slot.materia == "ALT" && studentReligion == "ALT")'
   },
   {
     type: 'filter',

@@ -61,7 +61,7 @@ export function buildSubjectVm(materia: Materia, opts: BuildSubjectVmOptions = {
   };
 }
 
-/** ✎ Precomputed "Mario Rossi, Laura Gialli" join (02 §8.2, principle P4). */
+/** Precomputed "Mario Rossi, Laura Gialli" join (02 §8.2, principle P4). */
 export function docentiDescrizione(docenti: PersonVM[]): string {
   return docenti.map((d) => d.nomeCompleto).join(', ');
 }

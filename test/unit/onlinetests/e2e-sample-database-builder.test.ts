@@ -435,7 +435,7 @@ test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', ()
   expect(ripetenti.sort()).toEqual([RIPETENTE_1A, RIPETENTE_3C].sort());
 });
 
-test('RELIGIONE is always a valid ReligioneScelta value (SI/NO/ALT), never a boolean (item 3)', () => {
+test('RELIGIONE is always a valid ReligioneScelta value (IRC/NO/ALT), never a boolean (item 3)', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);

@@ -73,7 +73,7 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
         EMAIL: ALUNNO_PARTNER_EMAIL,
         COGNOMENOME: 'Alunno5 Test',
         CLASSE: CLASSE_PARTNER,
-        RELIGIONE: 'SI',
+        RELIGIONE: 'IRC',
         ATTIVO: true,
         RIPETENTE: false,
         RAPPR_STUD: false,

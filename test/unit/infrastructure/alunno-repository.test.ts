@@ -78,7 +78,7 @@ test('findConBES loads students with a BES plan (06 §1)', () => {
 });
 
 test('Alunno specs (07 §1): isSatisfiedBy + toQueryObject', () => {
-  const a1 = Alunno.fromData({ EMAIL: 'a1', CLASSE: '5A', RAPPR_STUD: true, RELIGIONE: 'SI' });
+  const a1 = Alunno.fromData({ EMAIL: 'a1', CLASSE: '5A', RAPPR_STUD: true, RELIGIONE: 'IRC' });
   const a2 = Alunno.fromData({ EMAIL: 'a2', CLASSE: '5A', RIPETENTE: true, RELIGIONE: 'NO' });
   expect(new AlunniInClasseSpec(ClasseId.of('5A')).isSatisfiedBy(a1)).toBe(true);
   expect(new AlunniInClasseSpec(ClasseId.of('3B')).isSatisfiedBy(a1)).toBe(false);

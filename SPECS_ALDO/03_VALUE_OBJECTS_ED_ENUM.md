@@ -14,11 +14,11 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 | Valore | Significato                                 |
 | ------ | ------------------------------------------- |
-| `SI`   | Lo studente si avvale dell'insegnamento IRC |
+| `IRC`  | Lo studente si avvale dell'insegnamento IRC |
 | `NO`   | Lo studente non si avvale dell'IRC          |
 | `ALT`  | Lo studente sceglie un'attività alternativa |
 
-**Default:** `SI` se non specificato.
+**Default:** `IRC` se non specificato.
 
 ### `GestioneArticolazione`
 

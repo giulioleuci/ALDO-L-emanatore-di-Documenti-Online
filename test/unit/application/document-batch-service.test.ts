@@ -78,14 +78,14 @@ function wirePiani(
       EMAIL: 'con-piani@school.it',
       COGNOMENOME: 'CON PIANI',
       CLASSE: '5A',
-      RELIGIONE: 'SI',
+      RELIGIONE: 'IRC',
       ATTIVO: true
     }),
     new Alunno({
       EMAIL: 'senza-piani@school.it',
       COGNOMENOME: 'SENZA PIANI',
       CLASSE: '5A',
-      RELIGIONE: 'SI',
+      RELIGIONE: 'IRC',
       ATTIVO: true
     })
   ];

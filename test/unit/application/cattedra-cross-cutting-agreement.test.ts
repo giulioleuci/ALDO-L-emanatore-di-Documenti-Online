@@ -113,7 +113,7 @@ function matrixTables(): Record<string, Row[]> {
   Object.assign(
     students.find((row) => row.EMAIL === 'a1@school.it')!,
     {
-      RELIGIONE: 'SI',
+      RELIGIONE: 'IRC',
       ATTIVO: true,
       CURRICULUM: JSON.stringify({
         LAB: ['GRUPPO_A'],

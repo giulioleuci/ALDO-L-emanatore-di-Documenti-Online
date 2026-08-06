@@ -143,13 +143,13 @@ export interface CduClasse {
     materieSeparatePrimoGruppo: SubjectVM[];
     materieSeparateSecondoGruppo: SubjectVM[];
   };
-  coordinatori?: Array<{
-    nome: string;
-    email: string;
-    materia: string;
-    appellativo: string;
-    indirizzo?: { nome: string };
-  }>;
+  coordinatori?: {
+    appellativo?: string;
+    articolo?: string;
+    coordina?: string;
+    presiede?: string;
+    elenco: PersonVM[];
+  };
   tutor?: {
     appellativo?: string;
     articolo?: string;

@@ -269,7 +269,7 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
     // COORDINATORI (COORD=rossi, a non-cattedra role) that the
     // rossi->bianchi->verdi supplenza chain still applies correctly to its OWN
     // unrelated context.
-    const coordinatoriNominali = cdu.focus.classe!.coordinatori ?? [];
+    const coordinatoriNominali = cdu.focus.classe!.coordinatori?.elenco ?? [];
     const service = composeRisolutoreRuoli(db, teachingAssignments);
     const coordEmails = service
       .risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })

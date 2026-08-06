@@ -66,11 +66,36 @@ test('ClasseProvider: anagrafica + flags for a standard terminal class (02 §4.1
   expect(c.articolazione).toBeUndefined();
 });
 
-test('ClasseProvider: coordinatori with resolved subject + appellativo', () => {
+test('ClasseProvider: coordinatori as a PersonVM elenco with aggregate declension and verbs (02 §4.1, §8.1)', () => {
   const c = build('5A').focus.classe!;
-  expect(c.coordinatori).toEqual([
-    { nome: 'ROSSI MARIO', email: 'rossi@school.it', materia: 'MATE', appellativo: 'Prof.' }
-  ]);
+  expect(c.coordinatori).toEqual({
+    appellativo: 'prof.',
+    articolo: 'il',
+    coordina: 'coordina',
+    presiede: 'presiede',
+    elenco: [
+      expect.objectContaining({
+        nomeCompleto: 'MARIO ROSSI',
+        email: 'rossi@school.it',
+        materia: 'MATE',
+        appellativo: 'Prof.'
+      })
+    ]
+  });
+});
+
+test('ClasseProvider: coordinatori omits aggregate fields entirely when there is no coordinator', () => {
+  const tables = fixtureTables();
+  (tables.CLASSI!.find((r) => r.ID === '5A')!).COORD = '';
+  const db = new FakeDatabase(tables);
+  const classi = new ClasseRepository(db);
+  const materie = new MateriaRepository(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi, undefined, materie));
+  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const recipe: Recipe = { providers: ['class'], options: makeOptions() };
+  const c = b.build(params, recipe).focus.classe!;
+  expect(c.coordinatori).toEqual({ elenco: [] });
 });
 
 test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI as PersonVM, with aggregate declension (02 §4.1, §8.1)', () => {
@@ -175,7 +200,7 @@ test('RappresentantiProvider: articulated parent merges reps across partners, ta
   });
 });
 
-test('ClasseProvider: articulated parent merges coordinatori across partners, tagged by indirizzo (09 §10)', () => {
+test('ClasseProvider: articulated parent merges coordinatori across partners into one PersonVM elenco (09 §10)', () => {
   const tables = fixtureTables();
   const classi = tables['CLASSI'] as Row[];
   const parent = classi.find((r) => r['ID'] === '1F')!;
@@ -184,20 +209,24 @@ test('ClasseProvider: articulated parent merges coordinatori across partners, ta
   lss['COORD'] = 'verdi@school.it';
 
   const c = build('1F', tables).focus.classe!;
-  expect(c.coordinatori).toEqual([
-    {
-      nome: 'ROSSI MARIO',
-      email: 'rossi@school.it',
-      materia: 'MATE',
-      appellativo: 'Prof.',
-      indirizzo: { nome: 'Liceo scientifico' }
-    },
-    {
-      nome: 'VERDI GIO',
-      email: 'verdi@school.it',
-      materia: 'FISI',
-      appellativo: 'Prof.',
-      indirizzo: { nome: 'Liceo scientifico scienze applicate' }
-    }
-  ]);
+  expect(c.coordinatori).toEqual({
+    appellativo: 'prof.',
+    articolo: 'i',
+    coordina: 'coordinano',
+    presiede: 'presiedono',
+    elenco: [
+      expect.objectContaining({
+        nomeCompleto: 'MARIO ROSSI',
+        email: 'rossi@school.it',
+        materia: 'MATE',
+        appellativo: 'Prof.'
+      }),
+      expect.objectContaining({
+        nomeCompleto: 'GIO VERDI',
+        email: 'verdi@school.it',
+        materia: 'FISI',
+        appellativo: 'Prof.'
+      })
+    ]
+  });
 });

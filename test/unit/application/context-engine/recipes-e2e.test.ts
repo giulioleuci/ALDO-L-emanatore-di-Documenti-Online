@@ -27,7 +27,7 @@ test('CLASSE_COMPLETA on 5A assembles every class section (09 §3)', () => {
   expect(c.rappresentanti?.studenti).toEqual([
     { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
   ]);
-  expect(c.coordinatori?.[0]?.email).toBe('rossi@school.it');
+  expect(c.coordinatori?.elenco[0]?.email).toBe('rossi@school.it');
   // focus.alunno is not part of a class recipe
   expect(cdu.focus.alunno).toBeUndefined();
   // tech never serialized

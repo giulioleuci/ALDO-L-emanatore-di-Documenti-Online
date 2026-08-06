@@ -15,6 +15,8 @@ import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
 import type { SubjectVM } from '../mappers/subjectVmMapper';
 import { buildSubjectVm } from '../mappers/subjectVmMapper';
+import type { PersonVM } from '../mappers/personVmMapper';
+import { buildPersonVmFromDocente, coordinatoriVerbs, declinePersonGroup } from '../mappers/personVmMapper';
 
 /**
  * Populates `focus.classe.anagrafica`, `flags`, `articolazione` and
@@ -94,28 +96,21 @@ export class ClasseProvider implements ContextProvider {
 
   private buildCoordinatori(classe: Classe): NonNullable<CduClasse['coordinatori']> {
     const config = this.classi.getArticolazione(classe);
-    if (config?.isParent() === true) {
-      const result: NonNullable<CduClasse['coordinatori']> = [];
-      for (const source of [classe, ...this.classi.getClassiPartner(classe)]) {
-        const indirizzoNome = this.classi.getIndirizzo(source).nome;
-        for (const d of this.classi.getCoordinatori(source)) {
-          result.push({
-            nome: d.getNomeCompleto(),
-            email: d.id ?? '',
-            materia: this.classi.getMateriaDocente(source, d.id ?? '') ?? '',
-            appellativo: d.getAppellativo(),
-            indirizzo: { nome: indirizzoNome }
-          });
-        }
-      }
-      return result;
-    }
-    return this.classi.getCoordinatori(classe).map((d) => ({
-      nome: d.getNomeCompleto(),
-      email: d.id ?? '',
-      materia: this.classi.getMateriaDocente(classe, d.id ?? '') ?? '',
-      appellativo: d.getAppellativo()
-    }));
+    const sources: Classe[] =
+      config?.isParent() === true ? [classe, ...this.classi.getClassiPartner(classe)] : [classe];
+    // Materia is resolved per-source (not against the parent `classe`): each partner
+    // holds its own MATE/FISI-style column, so a partner-only coordinator's subject
+    // would otherwise resolve to null when looked up against the parent's row.
+    const elenco: PersonVM[] = sources.flatMap((source) =>
+      this.classi
+        .getCoordinatori(source)
+        .map((d) => buildPersonVmFromDocente(d, this.classi.getMateriaDocente(source, d.id ?? '') ?? null))
+    );
+    const declension = declinePersonGroup(elenco);
+    return {
+      ...(declension === undefined ? {} : { ...declension, ...coordinatoriVerbs(elenco.length) }),
+      elenco
+    };
   }
 
   private buildArticolazione(classe: Classe): NonNullable<CduClasse['articolazione']> {

@@ -100,3 +100,10 @@ export function declinePersonGroup(persone: PersonVM[]): PersonGroupDeclension |
   }
   return { appellativo: 'prof.', articolo: persone.length >= 2 ? 'i' : 'il' };
 }
+
+/** "coordina"/"presiede" for 1 person, "coordinano"/"presiedono" for ≥2 (02 §8.1). */
+export function coordinatoriVerbs(count: number): { coordina: string; presiede: string } {
+  return count >= 2
+    ? { coordina: 'coordinano', presiede: 'presiedono' }
+    : { coordina: 'coordina', presiede: 'presiede' };
+}

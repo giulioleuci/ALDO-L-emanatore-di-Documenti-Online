@@ -133,6 +133,28 @@ export function fixtureTables(): Record<string, Row[]> {
         NOME: 'Laboratorio - Gruppo B',
         SINTESI: 'Lab B',
         ESAME_CFG: null
+      },
+      // Composite specificità catalog rows (design 2026-07-30-materie-specifica-catalog):
+      // base + two dotted MATERIA.SPECIFICA rows, seeded here (not only in
+      // teachingSlotFixtureTables) so Task 27's e2e/online checks have this
+      // data available by default.
+      {
+        ID: 'INTERPRET',
+        NOME: 'Esecuzione e interpretazione musicale',
+        SINTESI: 'Interpretazione',
+        ESAME_CFG: null
+      },
+      {
+        ID: 'INTERPRET.CHITARRA',
+        NOME: 'Esecuzione e interpretazione musicale - Chitarra',
+        SINTESI: 'Chitarra',
+        ESAME_CFG: null
+      },
+      {
+        ID: 'INTERPRET.FLAUTO',
+        NOME: 'Esecuzione e interpretazione musicale - Flauto',
+        SINTESI: 'Flauto',
+        ESAME_CFG: null
       }
     ],
     ALUNNI: [
@@ -562,13 +584,15 @@ export function teachingSlotFixtureTables(): Record<string, Row[]> {
     { ID: 'MAT', IS_RELIGIONE_ALT: false },
     { ID: 'INF', IS_RELIGIONE_ALT: false },
     { ID: 'LAB', IS_RELIGIONE_ALT: false },
-    { ID: 'INTERPRET', IS_RELIGIONE_ALT: false },
     // Specifica catalog rows (design 2026-07-30-materie-specifica-catalog):
     // every dotted MATERIE.ID used as a SPECIFICA slot must exist as its own row.
+    // NOTE: 'INTERPRET' and 'INTERPRET.CHITARRA' are NOT re-pushed here — both
+    // are now seeded by the default fixtureTables() MATERIE array (Task 15
+    // Step 9 fix); re-adding them would create duplicate-ID rows. Only this
+    // fixture's own unique addition (PIANOFORTE) stays here.
     { ID: 'LAB.GRUPPO_A', NOME: 'Laboratorio - Gruppo A', IS_RELIGIONE_ALT: false },
     { ID: 'LAB.GRUPPO_B', NOME: 'Laboratorio - Gruppo B', IS_RELIGIONE_ALT: false },
     { ID: 'LAB.GRUPPO.A', NOME: 'Laboratorio - Gruppo.A', IS_RELIGIONE_ALT: false },
-    { ID: 'INTERPRET.CHITARRA', NOME: 'Interpretazione - Chitarra', IS_RELIGIONE_ALT: false },
     { ID: 'INTERPRET.PIANOFORTE', NOME: 'Interpretazione - Pianoforte', IS_RELIGIONE_ALT: false }
   );
   return expanded;

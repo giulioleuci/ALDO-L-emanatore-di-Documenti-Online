@@ -9,3 +9,6 @@ STO,Storia,Storia,#BF360C,#F5DED0,📜,{},{}
 FIL,Filosofia,Filosofia,#4527A0,#E0D6F5,🦉,{},{}
 ING,Lingua e cultura straniera - Inglese,Inglese,#01579B,#D0EAF5,🇬🇧,{},{}
 EDF,Scienze motorie e sportive,Ed. Fisica,#E65100,#FCE0C8,⚽,{},{}
+INTERPRET,Esecuzione e interpretazione musicale,Interpretazione,#6A1B9A,#EDE0F5,🎼,{},{}
+INTERPRET.CHITARRA,Esecuzione e interpretazione musicale - Chitarra,Chitarra,#6A1B9A,#EDE0F5,🎸,{},{}
+INTERPRET.FLAUTO,Esecuzione e interpretazione musicale - Flauto,Flauto,#6A1B9A,#EDE0F5,🎶,{},{}

@@ -76,6 +76,7 @@ test('findSpecifiche returns MATERIE rows whose ID is MATERIA.<anything>', () =>
   const r = new MateriaRepository(new FakeDatabase(teachingSlotFixtureTables()));
   expect(r.findSpecifiche(MateriaId.of('INTERPRET')).map((m) => m.id)).toEqual([
     'INTERPRET.CHITARRA',
+    'INTERPRET.FLAUTO',
     'INTERPRET.PIANOFORTE'
   ]);
 });
@@ -89,7 +90,7 @@ test('findByIdCached + caching (06 §Caching)', () => {
   const db = new FakeDatabase(fixtureTables());
   const r = new MateriaRepository(db);
   expect(r.findByIdCached(MateriaId.of('MATE'))?.sintesi).toBe('Matematica');
-  expect(r.findAllCached()).toHaveLength(7); // MATE, FISI, IRC, ALT, LAB, LAB.GRUPPO_A, LAB.GRUPPO_B
+  expect(r.findAllCached()).toHaveLength(10); // MATE, FISI, IRC, ALT, LAB, LAB.GRUPPO_A, LAB.GRUPPO_B, INTERPRET, INTERPRET.CHITARRA, INTERPRET.FLAUTO
   db.table('MATERIE').insert({ ID: 'STOR', NOME: 'Storia', SINTESI: 'Storia', ESAME_CFG: null });
-  expect(r.findAllCached()).toHaveLength(7); // cache held
+  expect(r.findAllCached()).toHaveLength(10); // cache held
 });

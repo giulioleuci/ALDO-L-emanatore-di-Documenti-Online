@@ -30,6 +30,7 @@ import { ProcessoInvio, StatoEmail } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
+import { buildPersonVm } from '../context-engine/mappers/personVmMapper';
 
 /**
  * NotificaPipeline steps (ref 11) on the PipelineFramework `Step` base, same
@@ -158,31 +159,15 @@ export class BuildCDUStep extends Step {
     const alunno = t.tipoTarget === 'alunno' ? this.alunni.findById(t.target) : null;
     const anagrafica =
       docente !== null
-        ? {
+        ? buildPersonVm({
             nome: docente.nome,
             cognome: docente.cognome,
-            nomeCompleto: docente.getNomeCompleto(),
             email: docente.id ?? '',
-            appellativo: docente.getAppellativo(),
-            genere: String(docente.genere)
-          }
+            genere: docente.genere
+          })
         : t.tipo === 'alunno' && alunno !== null
-          ? {
-              nome: '',
-              cognome: '',
-              nomeCompleto: alunno.cognomeNome,
-              email: alunno.id ?? '',
-              appellativo: '',
-              genere: ''
-            }
-          : {
-              nome: '',
-              cognome: '',
-              nomeCompleto: '',
-              email: t.emails[0] ?? '',
-              appellativo: '',
-              genere: ''
-            };
+          ? buildPersonVm({ nome: alunno.cognomeNome, cognome: null, email: alunno.id ?? '', genere: null })
+          : buildPersonVm({ nome: '', cognome: null, email: t.emails[0] ?? '', genere: null });
 
     return {
       anagrafica,

@@ -360,9 +360,28 @@ test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafi
   expect(cdu.focus.classe?.anagrafica.nome).toBe('5A');
   expect(cdu.focus.classe?.consiglioDiClasse).toBeDefined();
   const d = cdu.destinatario!;
-  expect(d.anagrafica.nomeCompleto).toBe('ROSSI MARIO');
+  // PersonVM.nomeCompleto is "Nome Cognome" (02 §8.1), the reverse order of
+  // Docente.getNomeCompleto()'s "${cognome} ${nome}" — the latter still drives
+  // comunicazione.salutoIniziale below via salutoPerTarget/Docente directly.
+  expect(d.anagrafica.nomeCompleto).toBe('MARIO ROSSI');
   expect(d.anagrafica.appellativo).toBe('Prof.');
   expect(d.comunicazione.salutoIniziale).toBe('Gentile Prof. ROSSI MARIO');
+});
+
+test('BuildCDUStep destinatario.anagrafica is a full PersonVM (Task 9)', () => {
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const d = cdu.destinatario!;
+  expect(d.anagrafica.appellativoCompleto).toBe('Prof. MARIO ROSSI');
+  expect(d.anagrafica.appellativoCognome).toBe('Prof. ROSSI');
+});
+
+test('BuildCDUStep destinatario.contesto.sostituisce stays null when there is no supplenza context (Task 9)', () => {
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.destinatario?.contesto.sostituisce).toBeNull();
 });
 
 test('BuildCDUStep forwards CONF_MAIL.SUPPLENTI as gestioneSupplenti (regression: was silently dropped when includiStorico wiring was added)', () => {

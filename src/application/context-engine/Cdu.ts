@@ -10,13 +10,13 @@
  * and is attached NON-enumerable (never serialized — see 02 §7).
  */
 
-import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
 import type { TipoPiano } from '../../domain/value-objects/enums';
 import type { PersonVM } from './mappers/personVmMapper';
 import type { SubjectVM } from './mappers/subjectVmMapper';
 import type { CurriculumVM } from './mappers/carenzeMapper';
 import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';
 import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMapper';
+import type { StudentStoricoVM } from './mappers/storicoMapper';
 import type { ProgettoVM } from './providers/ProgettiProvider';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
@@ -251,6 +251,7 @@ export interface CduAlunno {
   curriculum: CurriculumVM[];
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
   consiglioDiClasseFiltrato?: DocenteCdcVM[];
+  storico?: LazyRef<StudentStoricoVM>;
   didattica: {
     carenze: {
       dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
@@ -291,8 +292,6 @@ export interface CduAlunno {
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;
     };
-    /** Lazy prior-years history (13 §2/§3), populated only when `includiStorico` is true. */
-    storico?: LazyRef<AnnoAlunnoStorico[]>;
   };
 }
 

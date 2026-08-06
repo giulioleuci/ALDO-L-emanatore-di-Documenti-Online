@@ -22,7 +22,7 @@ test('includiStorico false: provider is a no-op, no LazyRef inserted', () => {
   const cdu = cduWithAlunno('a1@school.it');
   const provider = new StoricoProvider(fakeDatabases());
   provider.provide(cdu, params, { includiStorico: false } as RecipeOptions);
-  expect(cdu.focus.alunno!.didattica.storico).toBeUndefined();
+  expect(cdu.focus.alunno!.storico).toBeUndefined();
 });
 
 test('no student in focus: provider is a no-op even when includiStorico is true', () => {
@@ -36,16 +36,22 @@ test('includiStorico true + student in focus: attaches an unresolved LazyRef (qu
   const cdu = cduWithAlunno('a1@school.it');
   const provider = new StoricoProvider(fakeDatabases());
   provider.provide(cdu, params, { includiStorico: true, profonditaAnniStorico: 2 } as RecipeOptions);
-  const ref = cdu.focus.alunno!.didattica.storico;
+  const ref = cdu.focus.alunno!.storico;
   expect(ref).toBeInstanceOf(LazyRef);
   expect(ref!.isResolved()).toBe(false);
 });
 
-test('reading the LazyRef resolves it against the empty-history fake databases', () => {
+test('reading the LazyRef resolves it against the empty-history fake databases into a StudentStoricoVM', () => {
   const cdu = cduWithAlunno('a1@school.it');
   const provider = new StoricoProvider(fakeDatabases([]));
   provider.provide(cdu, params, { includiStorico: true, profonditaAnniStorico: 1 } as RecipeOptions);
-  const ref = cdu.focus.alunno!.didattica.storico!;
-  expect(ref.get()).toEqual([]);
+  const ref = cdu.focus.alunno!.storico!;
+  expect(ref.get()).toEqual({
+    anni: [],
+    pianiPrimoAnnoPrecedente: [],
+    pianiSecondoAnnoPrecedente: [],
+    bocciature: [],
+    hasBocciature: false
+  });
   expect(ref.isResolved()).toBe(true);
 });

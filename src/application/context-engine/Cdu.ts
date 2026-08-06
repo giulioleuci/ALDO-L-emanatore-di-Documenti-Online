@@ -189,6 +189,16 @@ export interface CduClasse {
   materie?: SubjectVM[];
   /** `materie` grouped by base materia id, for composite-specificità display (02 §2.8). */
   materiePerPrincipale?: MateriaPerPrincipaleVM[];
+  /** Pre-split prima/seconda prova partitions of `materie` (02 §2.9, §4.1) — runs after `materie`. */
+  esame?: {
+    hasEsame: boolean;
+    materie: Array<SubjectVM & { prova: 'PRIMA_PROVA' | 'SECONDA_PROVA' }>;
+    docenti: Array<PersonVM & { prova: 'PRIMA_PROVA' | 'SECONDA_PROVA'; materie: SubjectVM[] }>;
+    materiePrimaProva: SubjectVM[];
+    materieSecondaProva: SubjectVM[];
+    docentiPrimaProva: PersonVM[];
+    docentiSecondaProva: PersonVM[];
+  };
   /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
   elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
   studenti?: {

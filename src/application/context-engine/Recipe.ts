@@ -112,6 +112,8 @@ export const RECIPES: Record<string, string[]> = {
     'tutor',
     'consiglio',
     'materie',
+    'esame',
+    'progetti',
     'rappresentanti',
     'statistiche',
     'pianiPersClasse'

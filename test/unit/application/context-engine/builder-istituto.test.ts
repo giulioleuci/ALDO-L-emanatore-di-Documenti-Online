@@ -65,12 +65,10 @@ test('istituto: SchoolProvider organisation + staff from Master/RUOLI (02 §3, 0
   const cdu = builder().build(params, recipe);
   expect(cdu.istituto?.organizzazione).toEqual({
     annoScolastico: '2025-2026',
-    dirigente: 'prof.ssa MARIA BIANCHI'
+    dirigente: { nomeCompleto: 'prof.ssa MARIA BIANCHI' }
   });
-  expect(cdu.istituto?.staff).toEqual({
-    referenteBes: 'ROSSI MARIO',
-    animatoreDigitale: 'BIANCHI LUCIA'
-  });
+  expect(cdu.istituto?.staff.referenteBes?.nomeCompleto).toBe('MARIO ROSSI');
+  expect(cdu.istituto?.staff.animatoreDigitale?.nomeCompleto).toBe('LUCIA BIANCHI');
 });
 
 test('istituto.statistiche: aggregate counts (09 §11)', () => {

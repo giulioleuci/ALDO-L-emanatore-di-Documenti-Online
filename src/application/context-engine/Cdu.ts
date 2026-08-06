@@ -12,6 +12,7 @@
 
 import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
 import type { TipoPiano } from '../../domain/value-objects/enums';
+import type { PersonVM } from './mappers/personVmMapper';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -109,8 +110,8 @@ export interface RecipeOptionsView {
 }
 
 export interface CduIstituto {
-  organizzazione: { annoScolastico: string; dirigente: string };
-  staff: { referenteBes: string; animatoreDigitale: string };
+  organizzazione: { annoScolastico: string; dirigente: { nomeCompleto: string } };
+  staff: { referenteBes: PersonVM | null; animatoreDigitale: PersonVM | null };
   statistiche?: { totaleClassi: number; totaleDocenti: number; totaleAlunni: number };
 }
 

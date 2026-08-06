@@ -3,15 +3,17 @@ import type { Cdu } from '../Cdu';
 import type { IMasterSheetRepository } from '../../../domain/repositories/IMasterSheetRepository';
 import type { IRuoloSpecialeRepository } from '../../../domain/repositories/IRuoloSpecialeRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
+import type { PersonVM } from '../mappers/personVmMapper';
+import { buildPersonVmFromDocente } from '../mappers/personVmMapper';
 
 /** Conventional RUOLI ids for the two institute-wide staff roles (02 §3). */
 const RUOLO_REFERENTE_BES = 'REF_BES';
 const RUOLO_ANIMATORE_DIGITALE = 'AN_DIG';
 
 /**
- * Populates `cdu.istituto` (09 §4 → SchoolProvider). Organisation data comes from
- * the current-year Master Sheet row; the two staff names are resolved from the
- * RUOLI table (conventional ids above) through the DOCENTI registry.
+ * Populates `cdu.istituto` (02 §3 → SchoolProvider). Organisation data comes from
+ * the current-year Master Sheet row; the two staff roles resolve to a full
+ * PersonVM (or null when unassigned) through the DOCENTI registry.
  */
 export class SchoolProvider implements ContextProvider {
   constructor(
@@ -23,21 +25,24 @@ export class SchoolProvider implements ContextProvider {
   provide(cdu: Cdu): void {
     const cfg = this.master.findConfigAnnoCorrente();
     cdu.istituto = {
-      organizzazione: { annoScolastico: cfg.annoScolasticoRaw, dirigente: cfg.dirigente },
+      organizzazione: {
+        annoScolastico: cfg.annoScolasticoRaw,
+        dirigente: { nomeCompleto: cfg.dirigente }
+      },
       staff: {
-        referenteBes: this.nomeRuolo(RUOLO_REFERENTE_BES),
-        animatoreDigitale: this.nomeRuolo(RUOLO_ANIMATORE_DIGITALE)
+        referenteBes: this.personaRuolo(RUOLO_REFERENTE_BES),
+        animatoreDigitale: this.personaRuolo(RUOLO_ANIMATORE_DIGITALE)
       }
     };
   }
 
-  /** Full name of the first teacher holding `ruoloId`, or '' if unassigned/unknown. */
-  private nomeRuolo(ruoloId: string): string {
+  /** PersonVM of the first teacher holding `ruoloId`, or null if unassigned/unknown. */
+  private personaRuolo(ruoloId: string): PersonVM | null {
     const ruolo = this.ruoli.findAllCached().find((r) => r.id === ruoloId);
-    if (ruolo === undefined) return '';
+    if (ruolo === undefined) return null;
     const emails = ruolo.getEmails();
-    if (emails.length === 0) return '';
+    if (emails.length === 0) return null;
     const docente = this.docenti.findById(emails[0]!.value);
-    return docente === null ? '' : docente.getNomeCompleto();
+    return docente === null ? null : buildPersonVmFromDocente(docente);
   }
 }

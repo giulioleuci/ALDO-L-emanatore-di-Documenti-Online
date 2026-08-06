@@ -18,20 +18,47 @@ function tutorFor(target: string, tables = fixtureTables()) {
   return b.build(params, recipe).focus.classe!.tutor!;
 }
 
-test('standard class: tutor read from its own RUOLI (regression)', () => {
+test('standard class: tutor read from its own RUOLI as PersonVM, single male ASL tutor declines prof./il (regression)', () => {
   const tables = fixtureTables();
   const classe5A = tables.CLASSI!.find((r) => r.ID === '5A')!;
   classe5A.RUOLI = JSON.stringify({ TUTOR_ASL: 'rossi@school.it' });
-  expect(tutorFor('5A', tables).asl).toEqual([{ nome: 'ROSSI MARIO', email: 'rossi@school.it' }]);
+  const tutor = tutorFor('5A', tables);
+  expect(tutor).toEqual({
+    appellativo: 'prof.',
+    articolo: 'il',
+    tutor: 'tutor',
+    asl: [expect.objectContaining({ email: 'rossi@school.it', nomeCompleto: 'MARIO ROSSI' })],
+    orientamento: []
+  });
 });
 
-test('articulated parent: tutor ASL merged across both partner classes', () => {
+test('articulated parent: tutor ASL merged across both partner classes, mixed group declines prof./i', () => {
   const tables = fixtureTables();
   const lso = tables.CLASSI!.find((r) => r.ID === '1F-LSO')!;
   lso.RUOLI = JSON.stringify({ TUTOR_ASL: 'bianchi@school.it' });
   const lss = tables.CLASSI!.find((r) => r.ID === '1F-LSS')!;
   lss.RUOLI = JSON.stringify({ TUTOR_ASL: 'verdi@school.it' });
 
-  const asl = tutorFor('1F', tables).asl;
-  expect(asl.map((t) => t.email).sort()).toEqual(['bianchi@school.it', 'verdi@school.it']);
+  const tutor = tutorFor('1F', tables);
+  expect(tutor.appellativo).toBe('prof.');
+  expect(tutor.articolo).toBe('i');
+  expect(tutor.asl.map((t) => t.email).sort()).toEqual(['bianchi@school.it', 'verdi@school.it']);
+});
+
+test('single female ASL tutor declines prof.ssa/la', () => {
+  const tables = fixtureTables();
+  const classe5A = tables.CLASSI!.find((r) => r.ID === '5A')!;
+  classe5A.RUOLI = JSON.stringify({ TUTOR_ASL: 'bianchi@school.it' });
+  const tutor = tutorFor('5A', tables);
+  expect(tutor.appellativo).toBe('prof.ssa');
+  expect(tutor.articolo).toBe('la');
+  expect(tutor.tutor).toBe('tutor');
+});
+
+test('omits appellativo/articolo/tutor when both asl and orientamento are empty', () => {
+  const tables = fixtureTables();
+  const classe5A = tables.CLASSI!.find((r) => r.ID === '5A')!;
+  classe5A.RUOLI = null;
+  const tutor = tutorFor('5A', tables);
+  expect(tutor).toEqual({ asl: [], orientamento: [] });
 });

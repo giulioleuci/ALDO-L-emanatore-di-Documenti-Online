@@ -79,3 +79,24 @@ export function buildPersonVmFromDocente(docente: Docente, materia: string | nul
     materia
   });
 }
+
+export interface PersonGroupDeclension {
+  appellativo: string;
+  articolo: string;
+}
+
+/**
+ * Aggregate salutation/article over a group of people (02 §8.1, §2.6):
+ * tutte F e ≥2 → prof.sse/le; tutte F e 1 → prof.ssa/la; altrimenti prof./i (≥2) o il (1).
+ * Returns undefined for an empty group — callers must omit the field rather than expose it.
+ */
+export function declinePersonGroup(persone: PersonVM[]): PersonGroupDeclension | undefined {
+  if (persone.length === 0) return undefined;
+  const tutteF = persone.every((p) => p.genere === 'F');
+  if (tutteF) {
+    return persone.length >= 2
+      ? { appellativo: 'prof.sse', articolo: 'le' }
+      : { appellativo: 'prof.ssa', articolo: 'la' };
+  }
+  return { appellativo: 'prof.', articolo: persone.length >= 2 ? 'i' : 'il' };
+}

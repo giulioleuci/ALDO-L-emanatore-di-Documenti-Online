@@ -73,15 +73,14 @@ test('ClasseProvider: coordinatori with resolved subject + appellativo', () => {
   ]);
 });
 
-test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI (02 §4.1)', () => {
+test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI as PersonVM, with aggregate declension (02 §4.1, §8.1)', () => {
   const c = build('5A').focus.classe!;
-  expect(c.tutor).toEqual({
-    asl: [
-      { nome: 'ROSSI MARIO', email: 'rossi@school.it' },
-      { nome: 'BIANCHI LUCIA', email: 'bianchi@school.it' }
-    ],
-    orientamento: []
-  });
+  expect(c.tutor?.appellativo).toBe('prof.');
+  expect(c.tutor?.articolo).toBe('i');
+  expect(c.tutor?.tutor).toBe('tutor');
+  expect(c.tutor?.asl.map((t) => t.email)).toEqual(['rossi@school.it', 'bianchi@school.it']);
+  expect(c.tutor?.asl.map((t) => t.nomeCompleto)).toEqual(['MARIO ROSSI', 'LUCIA BIANCHI']);
+  expect(c.tutor?.orientamento).toEqual([]);
 });
 
 test('RappresentantiProvider: student reps with email, no parent reps in fixtures (02 §4.1)', () => {

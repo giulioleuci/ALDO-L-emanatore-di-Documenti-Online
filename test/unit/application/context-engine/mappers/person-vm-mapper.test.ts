@@ -1,4 +1,8 @@
-import { buildPersonVm, buildPersonVmFromDocente } from '../../../../../src/application/context-engine/mappers/personVmMapper';
+import {
+  buildPersonVm,
+  buildPersonVmFromDocente,
+  declinePersonGroup
+} from '../../../../../src/application/context-engine/mappers/personVmMapper';
 import { Docente } from '../../../../../src/domain/entities/Docente';
 import { Email } from '../../../../../src/domain/value-objects/Email';
 import { Genere } from '../../../../../src/domain/value-objects/enums';
@@ -50,5 +54,29 @@ describe('personVmMapper', () => {
       appellativoCompleto: 'Studio Legale Bianchi',
       appellativoCognome: 'Studio Legale Bianchi'
     });
+  });
+});
+
+describe('declinePersonGroup', () => {
+  it('returns undefined for an empty group', () => {
+    expect(declinePersonGroup([])).toBeUndefined();
+  });
+
+  it('returns prof.ssa/la for a single female', () => {
+    const f = buildPersonVm({ nome: 'Laura', cognome: 'Gialli', email: null, genere: 'F' });
+    expect(declinePersonGroup([f])).toEqual({ appellativo: 'prof.ssa', articolo: 'la' });
+  });
+
+  it('returns prof.sse/le for two or more females', () => {
+    const f1 = buildPersonVm({ nome: 'Laura', cognome: 'Gialli', email: null, genere: 'F' });
+    const f2 = buildPersonVm({ nome: 'Anna', cognome: 'Verdi', email: null, genere: 'F' });
+    expect(declinePersonGroup([f1, f2])).toEqual({ appellativo: 'prof.sse', articolo: 'le' });
+  });
+
+  it('returns prof./il for a single male, prof./i for a mixed or all-male group of 2+', () => {
+    const m = buildPersonVm({ nome: 'Mario', cognome: 'Rossi', email: null, genere: 'M' });
+    const f = buildPersonVm({ nome: 'Laura', cognome: 'Gialli', email: null, genere: 'F' });
+    expect(declinePersonGroup([m])).toEqual({ appellativo: 'prof.', articolo: 'il' });
+    expect(declinePersonGroup([m, f])).toEqual({ appellativo: 'prof.', articolo: 'i' });
   });
 });

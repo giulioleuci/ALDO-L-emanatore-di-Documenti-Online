@@ -151,8 +151,11 @@ export interface CduClasse {
     indirizzo?: { nome: string };
   }>;
   tutor?: {
-    asl: Array<{ nome: string; email: string }>;
-    orientamento: Array<{ nome: string; email: string }>;
+    appellativo?: string;
+    articolo?: string;
+    tutor?: string;
+    asl: PersonVM[];
+    orientamento: PersonVM[];
   };
   rappresentanti?: {
     studenti: Array<{ nomeCompleto: string; email: string; indirizzo?: { nome: string } }>;

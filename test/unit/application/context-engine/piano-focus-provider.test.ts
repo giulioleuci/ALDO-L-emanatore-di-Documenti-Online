@@ -6,6 +6,7 @@ import { PianiProvider } from '../../../../src/application/context-engine/provid
 import { PianoFocusProvider } from '../../../../src/application/context-engine/providers/PianoFocusProvider';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
+import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
@@ -18,7 +19,10 @@ function build(pianoTipo: TipoPiano) {
   const alunni = new AlunnoRepository(db);
   const builder = new ContextBuilder()
     .registerProvider('class', new ClasseProvider(classi, alunni))
-    .registerProvider('student', new AlunnoProvider(alunni, classi, new OreASLRepository(db)))
+    .registerProvider(
+      'student',
+      new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+    )
     .registerProvider('piani', new PianiProvider(alunni))
     .registerProvider('pianoFocus', new PianoFocusProvider());
   const params: BuildParams = {

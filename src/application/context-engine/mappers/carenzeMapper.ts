@@ -1,5 +1,6 @@
 import type { Carenza } from '../../../domain/entities/Carenza';
 import type { Alunno } from '../../../domain/entities/Alunno';
+import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 
 /**
  * Flattens the CARENZE matrix rows into the simple `{ materia, voto }` list the
@@ -26,11 +27,24 @@ export function carenzeDettaglioSemplice(
   return out;
 }
 
-/** Student CURRICULUM as the CDU `{ "[MateriaId]": { specifiche } }` record (02 §4.2). */
-export function curriculumRecord(alunno: Alunno): Record<string, { specifiche: string[] }> {
-  const rec: Record<string, { specifiche: string[] }> = {};
-  for (const [materia, specifiche] of alunno.getCurriculum()) {
-    rec[materia.value] = { specifiche };
+export interface CurriculumVM {
+  materiaId: string;
+  materiaSigla: string;
+  materiaNome: string;
+  specifiche: Array<{ nome: string }>;
+}
+
+/** Student CURRICULUM as an array of CurriculumVM (02 §8.8) — replaces the dynamic-key map. */
+export function curriculumArray(alunno: Alunno, materie: IMateriaRepository): CurriculumVM[] {
+  const out: CurriculumVM[] = [];
+  for (const [materiaId, specifiche] of alunno.getCurriculum()) {
+    const materia = materie.findByIdCached(materiaId);
+    out.push({
+      materiaId: materiaId.value,
+      materiaSigla: materia?.id ?? materiaId.value,
+      materiaNome: materia?.nome ?? materiaId.value,
+      specifiche: specifiche.map((nome) => ({ nome }))
+    });
   }
-  return rec;
+  return out;
 }

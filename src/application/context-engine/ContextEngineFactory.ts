@@ -67,7 +67,7 @@ export class ContextEngineFactory {
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))
       .registerProvider(
         'student',
-        new AlunnoProvider(alunni, classi, oreAsl, teachingAssignments, materie)
+        new AlunnoProvider(alunni, classi, oreAsl, materie, teachingAssignments)
       )
       .registerProvider('tutor', new TutorProvider(classi))
       .registerProvider(

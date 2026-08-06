@@ -34,7 +34,7 @@ function build(target: string, tables = fixtureTables()): Cdu {
     )
   );
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl));
+  b.registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, materie));
   b.registerProvider('carenze', new CarenzeProvider(alunni, materie));
   b.registerProvider('piani', new PianiProvider(alunni));
   const params: BuildParams = {
@@ -58,7 +58,14 @@ test('AlunnoProvider: anagrafica/status/curriculum/classe + ASL hours (02 §4.2)
     isRipetente: false,
     isRappresentante: true
   });
-  expect(a.curriculum).toEqual({ INTERP: { specifiche: ['CHITARRA', 'PIANO'] } });
+  expect(a.curriculum).toEqual([
+    {
+      materiaId: 'INTERP',
+      materiaSigla: 'INTERP',
+      materiaNome: 'INTERP',
+      specifiche: [{ nome: 'CHITARRA' }, { nome: 'PIANO' }]
+    }
+  ]);
   expect(a.classe).toEqual({
     nome: '5A',
     indirizzoSigla: 'SCIENTIFICO',
@@ -71,7 +78,7 @@ test('AlunnoProvider: empty-string CURRICULUM cell (not null) does not crash JSO
   const tables = fixtureTables();
   (tables['ALUNNI'] as Row[]).find((r) => r['EMAIL'] === 'a3@school.it')!['CURRICULUM'] = '';
   const a = build('a3@school.it', tables).focus.alunno!;
-  expect(a.curriculum).toEqual({});
+  expect(a.curriculum).toEqual([]);
 });
 
 test('CarenzeProvider: dettaglio flattened from CARENZE (02 §4.2)', () => {

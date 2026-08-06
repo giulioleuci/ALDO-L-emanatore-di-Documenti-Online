@@ -14,6 +14,7 @@ import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
 import type { TipoPiano } from '../../domain/value-objects/enums';
 import type { PersonVM } from './mappers/personVmMapper';
 import type { SubjectVM } from './mappers/subjectVmMapper';
+import type { CurriculumVM } from './mappers/carenzeMapper';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -42,7 +43,7 @@ export interface AlunnoContestoVM {
   anagrafica: { nomeCompleto: string; email: string };
   genitori: Array<{ email: string }>;
   status: { isBes: boolean; isRipetente: boolean; isRappresentante: boolean; religione: string };
-  curriculum: Record<string, { specifiche: string[] }>;
+  curriculum: CurriculumVM[];
   indirizzo: { sigla: string; nome: string; nomeSintetico: string };
   didattica: {
     carenze: {
@@ -207,7 +208,7 @@ export interface CduClasse {
 export interface CduAlunno {
   anagrafica: { nomeCompleto: string; email: string };
   status: { religione: string; isBes: boolean; isRipetente: boolean; isRappresentante: boolean };
-  curriculum: Record<string, { specifiche: string[] }>;
+  curriculum: CurriculumVM[];
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
   consiglioDiClasseFiltrato?: DocenteCdcVM[];
   didattica: {

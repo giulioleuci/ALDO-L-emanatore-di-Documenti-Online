@@ -14,7 +14,7 @@ import {
 } from '../TeachingCouncilProjection';
 import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
 import { setAlunnoEntity } from '../techEntities';
-import { curriculumRecord } from '../mappers/carenzeMapper';
+import { curriculumArray } from '../mappers/carenzeMapper';
 import { EntityNotFoundError } from '../../../domain/errors/DomainError';
 
 /**
@@ -25,17 +25,16 @@ import { EntityNotFoundError } from '../../../domain/errors/DomainError';
  * filled by their own providers. Stashes the live Alunno entity in tech.entita.
  */
 export class AlunnoProvider implements ContextProvider {
-  private readonly projection: CollectionProjectionInterceptor | undefined;
+  private readonly projection: CollectionProjectionInterceptor;
 
   constructor(
     private readonly alunni: IAlunnoRepository,
     private readonly classi: IClasseRepository,
     private readonly oreAsl: IOreASLRepository,
-    private readonly teachingAssignments?: ITeachingAssignmentResolver,
-    materie?: IMateriaRepository
+    private readonly materie: IMateriaRepository,
+    private readonly teachingAssignments?: ITeachingAssignmentResolver
   ) {
-    this.projection =
-      materie === undefined ? undefined : createTeachingCouncilProjection(classi, materie).alunno;
+    this.projection = createTeachingCouncilProjection(classi, materie).alunno;
   }
 
   provide(cdu: Cdu, params: BuildParams, options: RecipeOptions): void {
@@ -58,7 +57,7 @@ export class AlunnoProvider implements ContextProvider {
         isRipetente: alunno.isRipetente(),
         isRappresentante: alunno.isRappresentante()
       },
-      curriculum: curriculumRecord(alunno),
+      curriculum: curriculumArray(alunno, this.materie),
       classe: {
         nome: classe.nome,
         indirizzoSigla: classe.indirizzo,
@@ -90,7 +89,7 @@ export class AlunnoProvider implements ContextProvider {
     }
 
     cdu.focus.alunno = focusAlunno;
-    if (this.projection !== undefined && focusAlunno.consiglioDiClasseFiltrato !== undefined) {
+    if (focusAlunno.consiglioDiClasseFiltrato !== undefined) {
       this.projection.intercept('student', cdu, cdu, options);
     }
   }

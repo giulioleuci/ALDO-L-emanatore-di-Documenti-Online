@@ -61,7 +61,14 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
     anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
     genitori: [{ email: 'genitore1@x.it' }],
     status: { isBes: true, isRipetente: false, isRappresentante: true, religione: 'IRC' },
-    curriculum: { INTERP: { specifiche: ['CHITARRA', 'PIANO'] } },
+    curriculum: [
+      {
+        materiaId: 'INTERP',
+        materiaSigla: 'INTERP',
+        materiaNome: 'INTERP',
+        specifiche: [{ nome: 'CHITARRA' }, { nome: 'PIANO' }]
+      }
+    ],
     indirizzo: { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico' },
     didattica: {
       // getCarenze returns rows most-recent first: prog.2 (MATE 5) then prog.1 (MATE 4.5, FISI ...).

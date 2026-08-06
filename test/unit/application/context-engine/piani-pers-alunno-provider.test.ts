@@ -11,6 +11,7 @@ import type {
 } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
+import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
@@ -40,7 +41,10 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
   const alunni = new AlunnoRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('student', new AlunnoProvider(alunni, classi, new OreASLRepository(db)));
+  b.registerProvider(
+    'student',
+    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+  );
   b.registerProvider('pianiPersAlunno', new PianiPersAlunnoProvider(new LogDocumentoRepository(db)));
   b.registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(databases));
   const params: BuildParams = { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') };

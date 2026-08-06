@@ -11,6 +11,7 @@ import type {
 } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
+import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
@@ -43,7 +44,10 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
   const alunni = new AlunnoRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('student', new AlunnoProvider(alunni, classi, new OreASLRepository(db)));
+  b.registerProvider(
+    'student',
+    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+  );
   b.registerProvider('documenti', new DocumentiProvider(new LogDocumentoRepository(db)));
   b.registerProvider('documentiStorico', new DocumentiStoricoProvider(databases));
   const params: BuildParams = {

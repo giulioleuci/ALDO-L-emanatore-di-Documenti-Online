@@ -1,10 +1,11 @@
 import {
   carenzeDettaglioSemplice,
-  curriculumRecord
+  curriculumArray
 } from '../../../../../src/application/context-engine/mappers/carenzeMapper';
 import { Carenza } from '../../../../../src/domain/entities/Carenza';
 import { Alunno } from '../../../../../src/domain/entities/Alunno';
-import { COL_ALUNNI } from '../../../../../src/config/schema';
+import { Materia } from '../../../../../src/domain/entities/Materia';
+import { COL_ALUNNI, COL_MATERIE } from '../../../../../src/config/schema';
 
 describe('carenzeDettaglioSemplice', () => {
   test('emits one entry per non-empty subject cell', () => {
@@ -54,20 +55,45 @@ describe('carenzeDettaglioSemplice', () => {
   });
 });
 
-describe('curriculumRecord', () => {
-  test('maps CURRICULUM JSON entries to MateriaId-keyed record', () => {
-    const alunno = new Alunno({
+describe('curriculumArray', () => {
+  test('converts the CURRICULUM map into an array of CurriculumVM, resolving materiaSigla/materiaNome', () => {
+    const alunno = Alunno.fromData({
       [COL_ALUNNI.EMAIL]: 'a1@school.it',
-      [COL_ALUNNI.CURRICULUM]: JSON.stringify({ MATE: ['AVANZATO'], FISI: [] })
+      [COL_ALUNNI.CURRICULUM]: JSON.stringify({ INTERPRET: ['chitarra', 'flauto'] })
     });
-    expect(curriculumRecord(alunno)).toEqual({
-      MATE: { specifiche: ['AVANZATO'] },
-      FISI: { specifiche: [] }
-    });
+    const materie = {
+      findByIdCached: (id: { value: string }) =>
+        id.value === 'INTERPRET'
+          ? Materia.fromData({
+              [COL_MATERIE.ID]: 'INTERPRET',
+              [COL_MATERIE.NOME]: 'Esecuzione ed interpretazione'
+            })
+          : null
+    };
+    const result = curriculumArray(alunno, materie as never);
+    expect(result).toEqual([
+      {
+        materiaId: 'INTERPRET',
+        materiaSigla: 'INTERPRET',
+        materiaNome: 'Esecuzione ed interpretazione',
+        specifiche: [{ nome: 'chitarra' }, { nome: 'flauto' }]
+      }
+    ]);
   });
 
-  test('empty curriculum (no CURRICULUM cell) yields {}', () => {
-    const alunno = new Alunno({ [COL_ALUNNI.EMAIL]: 'a1@school.it' });
-    expect(curriculumRecord(alunno)).toEqual({});
+  test('falls back to the raw sigla for materiaSigla/materiaNome when the materia is unknown', () => {
+    const alunno = Alunno.fromData({
+      [COL_ALUNNI.EMAIL]: 'a1@school.it',
+      [COL_ALUNNI.CURRICULUM]: JSON.stringify({ MATE: ['AVANZATO'] })
+    });
+    const result = curriculumArray(alunno, { findByIdCached: () => null } as never);
+    expect(result).toEqual([
+      { materiaId: 'MATE', materiaSigla: 'MATE', materiaNome: 'MATE', specifiche: [{ nome: 'AVANZATO' }] }
+    ]);
+  });
+
+  test('returns an empty array when CURRICULUM is absent', () => {
+    const alunno = Alunno.fromData({ [COL_ALUNNI.EMAIL]: 'a1@school.it' });
+    expect(curriculumArray(alunno, { findByIdCached: () => null } as never)).toEqual([]);
   });
 });

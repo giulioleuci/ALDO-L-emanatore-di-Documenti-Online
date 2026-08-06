@@ -6,7 +6,7 @@ import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRe
 import type { Alunno } from '../../../domain/entities/Alunno';
 import type { Classe } from '../../../domain/entities/Classe';
 import { getClasseEntity } from '../techEntities';
-import { carenzeDettaglioSemplice, curriculumRecord } from '../mappers/carenzeMapper';
+import { carenzeDettaglioSemplice, curriculumArray } from '../mappers/carenzeMapper';
 
 /**
  * Populates `focus.classe.studenti` (09 §4/§10). Builds one alunno-in-context
@@ -75,7 +75,7 @@ export class StudentiProvider implements ContextProvider {
         isRappresentante: alunno.isRappresentante(),
         religione: alunno.religione
       },
-      curriculum: curriculumRecord(alunno),
+      curriculum: curriculumArray(alunno, this.materie),
       indirizzo: {
         sigla: classe.indirizzo,
         nome: indirizzo.nome,

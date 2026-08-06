@@ -14,6 +14,7 @@ import { getClasseEntity } from './techEntities';
 import { attachCduMateriaAssignmentIdentity } from './CduInternalMetadata';
 import { buildPersonVm, type PersonVM } from './mappers/personVmMapper';
 import { buildSubjectVm, type SubjectVM } from './mappers/subjectVmMapper';
+import type { CurriculumVM } from './mappers/carenzeMapper';
 
 export type CollectionProjectionOperation = ProjectionOperation;
 
@@ -140,18 +141,20 @@ export function prepareCouncilAssignments(
 export function prepareStudentCouncilAssignments(
   assignments: TeachingAssignment[],
   religione: ReligioneScelta,
-  curriculum: Record<string, { specifiche: string[] }>
+  curriculum: CurriculumVM[]
 ): ProjectionAssignment[] {
   return assignments.map((assignment) =>
     assignmentInput(
       assignment,
       String(religione),
-      specificityPattern(curriculum[assignment.slot.materia.value]?.specifiche ?? [])
+      specificityPattern(curriculum, assignment.slot.materia.value)
     )
   );
 }
 
-function specificityPattern(specifiche: string[]): string {
+function specificityPattern(curriculum: CurriculumVM[], materiaId: string): string {
+  const entry = curriculum.find((c) => c.materiaId === materiaId);
+  const specifiche = entry?.specifiche.map((s) => s.nome) ?? [];
   if (specifiche.length === 0) return '(?!)';
   return `^(?:${specifiche.map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`;
 }

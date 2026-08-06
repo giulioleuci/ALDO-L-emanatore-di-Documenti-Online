@@ -148,10 +148,11 @@ export class ClasseProvider implements ContextProvider {
 
   /** Resolves articolazione subject sigle to SubjectVM via MATERIE, silently dropping unknown sigle. */
   private buildMaterieVm(sigle: string[], classe: Classe): SubjectVM[] {
-    if (this.materie === undefined) return [];
+    const materie = this.materie;
+    if (materie === undefined) return [];
     const indirizzo = IndirizzoId.of(classe.indirizzo);
     return sigle
-      .map((sigla) => this.materie!.findByIdCached(MateriaId.of(sigla)))
+      .map((sigla) => materie.findByIdCached(MateriaId.of(sigla)))
       .filter((materia): materia is Materia => materia !== null)
       .map((materia) => buildSubjectVm(materia, { indirizzo }));
   }

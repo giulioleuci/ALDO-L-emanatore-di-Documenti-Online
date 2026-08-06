@@ -15,6 +15,26 @@ import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { fixtureTables } from '../../fixtures/tables';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 import type { MaterieGroups } from '../../../src/application/strategies/SheetMaterieGeneratorStrategy';
+import type { SubjectVM } from '../../../src/application/context-engine/mappers/subjectVmMapper';
+
+/** Minimal SubjectVM fixture for articolazione groups — only `sigla` matters to
+ * buildGroups (headers/colors are resolved separately from MATERIE), other
+ * fields are filled with harmless defaults to satisfy the interface. */
+function subjectVm(sigla: string): SubjectVM {
+  return {
+    sigla,
+    nome: sigla,
+    nomeSintetico: sigla,
+    colore1: '#000000',
+    colore2: '#ffffff',
+    isMateriaPrimaProva: false,
+    isMateriaSecondaProva: false,
+    principale: null,
+    specificita: null,
+    isITP: false,
+    evoluzione: null
+  };
+}
 
 class FakeSpreadsheetService {
   protectCalls: Array<{ range: string; description?: string; editors?: { users?: string[] } }> = [];
@@ -219,9 +239,9 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
       partner: null,
       partners: ['1F-LSO', '1F-LSS'],
       parent: null,
-      materieCondivise: ['MATE'],
-      materieSeparatePrimoGruppo: ['FISI'],
-      materieSeparateSecondoGruppo: ['FISI']
+      materieCondivise: [subjectVm('MATE')],
+      materieSeparatePrimoGruppo: [subjectVm('FISI')],
+      materieSeparateSecondoGruppo: [subjectVm('FISI')]
     };
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const templates = new FakeTemplateEngine();
@@ -248,7 +268,7 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
       partner: null,
       partners: ['1F-LSO', '1F-LSS'],
       parent: null,
-      materieCondivise: ['MATE'],
+      materieCondivise: [subjectVm('MATE')],
       materieSeparatePrimoGruppo: [],
       materieSeparateSecondoGruppo: []
     };
@@ -512,9 +532,9 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       partner: null,
       partners: ['1F-LSO', '1F-LSS'],
       parent: null,
-      materieCondivise: ['MATE'],
-      materieSeparatePrimoGruppo: ['FISI'],
-      materieSeparateSecondoGruppo: ['FISI']
+      materieCondivise: [subjectVm('MATE')],
+      materieSeparatePrimoGruppo: [subjectVm('FISI')],
+      materieSeparateSecondoGruppo: [subjectVm('FISI')]
     };
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const templates = new FakeTemplateEngine();
@@ -556,9 +576,9 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       partner: null,
       partners: ['1F-LSO', '1F-LSS'],
       parent: null,
-      materieCondivise: ['MATE'],
-      materieSeparatePrimoGruppo: ['FISI'],
-      materieSeparateSecondoGruppo: ['FISI']
+      materieCondivise: [subjectVm('MATE')],
+      materieSeparatePrimoGruppo: [subjectVm('FISI')],
+      materieSeparateSecondoGruppo: [subjectVm('FISI')]
     };
     const sheets = new FakeSpreadsheetService(sheetInfo());
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(

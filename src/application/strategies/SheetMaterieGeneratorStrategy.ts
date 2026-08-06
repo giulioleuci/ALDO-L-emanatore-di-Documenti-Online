@@ -155,12 +155,12 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
     if (classe.flags.isArticolata && classe.articolazione !== undefined) {
       const a = classe.articolazione;
       const partners = getCduArticolazionePartners(a) ?? a.partners ?? [];
-      const group1 = this.resolveMateriaColumns(a.materieCondivise.map((id) => this.columnForId(id)));
+      const group1 = this.resolveMateriaColumns(a.materieCondivise.map((m) => this.columnForId(m.sigla)));
       const group2 = this.resolveMateriaColumns(
-        a.materieSeparatePrimoGruppo.map((id) => this.columnForId(id, partners[0]))
+        a.materieSeparatePrimoGruppo.map((m) => this.columnForId(m.sigla, partners[0]))
       );
       const group3 = this.resolveMateriaColumns(
-        a.materieSeparateSecondoGruppo.map((id) => this.columnForId(id, partners[1]))
+        a.materieSeparateSecondoGruppo.map((m) => this.columnForId(m.sigla, partners[1]))
       );
       return {
         group1,

@@ -4,10 +4,17 @@ import type { Cdu, CduClasse } from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
+import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Classe } from '../../../domain/entities/Classe';
+import type { Materia } from '../../../domain/entities/Materia';
+import type { ArticolazioneConfig } from '../../../domain/value-objects/ArticolazioneConfig';
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
+import { MateriaId } from '../../../domain/value-objects/MateriaId';
+import { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
+import type { SubjectVM } from '../mappers/subjectVmMapper';
+import { buildSubjectVm } from '../mappers/subjectVmMapper';
 
 /**
  * Populates `focus.classe.anagrafica`, `flags`, `articolazione` and
@@ -20,7 +27,8 @@ import { EntityNotFoundError, ValidationError } from '../../../domain/errors/Dom
 export class ClasseProvider implements ContextProvider {
   constructor(
     private readonly classi: IClasseRepository,
-    private readonly alunni?: IAlunnoRepository
+    private readonly alunni?: IAlunnoRepository,
+    private readonly materie?: IMateriaRepository
   ) {}
 
   provide(cdu: Cdu, params: BuildParams): void {
@@ -30,12 +38,14 @@ export class ClasseProvider implements ContextProvider {
     const indirizzo = this.classi.getIndirizzo(classe);
     const anno = classe.anno;
     const isArticolata = this.classi.isArticolata(classe);
+    const annoScolastico = cdu.istituto?.organizzazione.annoScolastico ?? '';
 
     const focusClasse: CduClasse = {
       anagrafica: {
         nome: classe.nome,
         anno: anno.value,
         sezione: classe.nome.replace(/^\d+/, ''),
+        annoScolastico,
         indirizzo: {
           nome: indirizzo.nome,
           nomeSintetico: indirizzo.nomeSintetico,
@@ -114,10 +124,35 @@ export class ClasseProvider implements ContextProvider {
     return {
       partner: config?.partner?.value ?? null,
       partners: config?.isParent() === true ? config.partners.map((partner) => partner.value) : null,
-      parent: config?.parent?.value ?? null,
-      materieCondivise: materie?.condivise ?? [],
-      materieSeparatePrimoGruppo: materie?.separatePrimoGruppo ?? [],
-      materieSeparateSecondoGruppo: materie?.separateSecondoGruppo ?? []
+      parent: this.buildParent(config),
+      materieCondivise: this.buildMaterieVm(materie?.condivise ?? [], classe),
+      materieSeparatePrimoGruppo: this.buildMaterieVm(materie?.separatePrimoGruppo ?? [], classe),
+      materieSeparateSecondoGruppo: this.buildMaterieVm(materie?.separateSecondoGruppo ?? [], classe)
     };
+  }
+
+  /** Descriptive parent (id, anno, ordered partner indirizzi) for an articulated partner class. */
+  private buildParent(
+    config: ArticolazioneConfig | null
+  ): NonNullable<CduClasse['articolazione']>['parent'] {
+    const parentId = config?.parent?.value ?? null;
+    if (parentId === null) return null;
+    const parentClasse = this.classi.findById(ClasseId.of(parentId));
+    if (parentClasse === null) return null;
+    const indirizzi = this.classi.orderedPartners(parentClasse).map((partner) => {
+      const ind = this.classi.getIndirizzo(partner);
+      return { sigla: partner.indirizzo, nome: ind.nome, nomeSintetico: ind.nomeSintetico, tipo: ind.tipo };
+    });
+    return { id: parentId, anno: parentClasse.anno.value, indirizzi };
+  }
+
+  /** Resolves articolazione subject sigle to SubjectVM via MATERIE, silently dropping unknown sigle. */
+  private buildMaterieVm(sigle: string[], classe: Classe): SubjectVM[] {
+    if (this.materie === undefined) return [];
+    const indirizzo = IndirizzoId.of(classe.indirizzo);
+    return sigle
+      .map((sigla) => this.materie!.findByIdCached(MateriaId.of(sigla)))
+      .filter((materia): materia is Materia => materia !== null)
+      .map((materia) => buildSubjectVm(materia, { indirizzo }));
   }
 }

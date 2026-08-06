@@ -13,6 +13,7 @@
 import type { AnnoAlunnoStorico } from '../storico/StoricoAlunniService';
 import type { TipoPiano } from '../../domain/value-objects/enums';
 import type { PersonVM } from './mappers/personVmMapper';
+import type { SubjectVM } from './mappers/subjectVmMapper';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -120,6 +121,7 @@ export interface CduClasse {
     nome: string;
     anno: number;
     sezione: string;
+    annoScolastico: string;
     indirizzo: { nome: string; nomeSintetico: string; sigla: string; tipo: string };
   };
   flags: {
@@ -132,10 +134,14 @@ export interface CduClasse {
   articolazione?: {
     partner: string | null;
     partners: string[] | null;
-    parent: string | null;
-    materieCondivise: string[];
-    materieSeparatePrimoGruppo: string[];
-    materieSeparateSecondoGruppo: string[];
+    parent: {
+      id: string;
+      anno: number;
+      indirizzi: Array<{ sigla: string; nome: string; nomeSintetico: string; tipo: string }>;
+    } | null;
+    materieCondivise: SubjectVM[];
+    materieSeparatePrimoGruppo: SubjectVM[];
+    materieSeparateSecondoGruppo: SubjectVM[];
   };
   coordinatori?: Array<{
     nome: string;

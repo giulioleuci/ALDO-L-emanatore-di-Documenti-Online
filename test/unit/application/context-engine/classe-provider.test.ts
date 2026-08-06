@@ -1,4 +1,5 @@
 import { ContextBuilder } from '../../../../src/application/context-engine/ContextBuilder';
+import { SchoolProvider } from '../../../../src/application/context-engine/providers/SchoolProvider';
 import { ClasseProvider } from '../../../../src/application/context-engine/providers/ClasseProvider';
 import { TutorProvider } from '../../../../src/application/context-engine/providers/TutorProvider';
 import { RappresentantiProvider } from '../../../../src/application/context-engine/providers/RappresentantiProvider';
@@ -6,14 +7,27 @@ import { makeOptions } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
 import type { Row } from '../../../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
+import { MasterSheetRepository } from '../../../../src/infrastructure/repositories/MasterSheetRepository';
+import { RuoloSpecialeRepository } from '../../../../src/infrastructure/repositories/RuoloSpecialeRepository';
+import { DocenteRepository } from '../../../../src/infrastructure/repositories/DocenteRepository';
+import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
 function build(target: string, tables = fixtureTables()) {
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
+  const materie = new MateriaRepository(db);
   const b = new ContextBuilder();
-  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'school',
+    new SchoolProvider(
+      new MasterSheetRepository(db),
+      new RuoloSpecialeRepository(db),
+      new DocenteRepository(db)
+    )
+  );
+  b.registerProvider('class', new ClasseProvider(classi, undefined, materie));
   b.registerProvider('tutor', new TutorProvider(classi));
   b.registerProvider('rappresentanti', new RappresentantiProvider(classi));
   const params: BuildParams = {
@@ -22,7 +36,7 @@ function build(target: string, tables = fixtureTables()) {
     now: new Date('2026-07-01T09:00:00Z')
   };
   const recipe: Recipe = {
-    providers: ['class', 'tutor', 'rappresentanti'],
+    providers: ['school', 'class', 'tutor', 'rappresentanti'],
     options: makeOptions()
   };
   return b.build(params, recipe);
@@ -34,6 +48,7 @@ test('ClasseProvider: anagrafica + flags for a standard terminal class (02 §4.1
     nome: '5A',
     anno: 5,
     sezione: 'A',
+    annoScolastico: '2025-2026',
     indirizzo: {
       nome: 'Liceo scientifico',
       nomeSintetico: 'Scientifico',
@@ -80,21 +95,41 @@ test('RappresentantiProvider: student reps with email, no parent reps in fixture
 test('ClasseProvider: articulated parent flags + materie split (02 §4.1, 09 §9)', () => {
   const c = build('1F').focus.classe!;
   expect(c.anagrafica.anno).toBe(1);
+  expect(c.anagrafica.annoScolastico).toBe('2025-2026');
   expect(c.flags.isArticolata).toBe(true);
   expect(c.flags.isClassePrima).toBe(true);
-  expect(c.articolazione).toEqual({
-    partner: null,
-    partners: ['1F-LSO', '1F-LSS'],
-    parent: null,
-    materieCondivise: ['MATE'],
-    materieSeparatePrimoGruppo: ['FISI'],
-    materieSeparateSecondoGruppo: ['FISI']
+  expect(c.articolazione?.partner).toBeNull();
+  expect(c.articolazione?.partners).toEqual(['1F-LSO', '1F-LSS']);
+  expect(c.articolazione?.parent).toBeNull();
+  expect(c.articolazione?.materieCondivise).toHaveLength(1);
+  expect(c.articolazione?.materieCondivise[0]).toMatchObject({ sigla: 'MATE', nome: 'Matematica' });
+  expect(c.articolazione?.materieSeparatePrimoGruppo).toHaveLength(1);
+  expect(c.articolazione?.materieSeparatePrimoGruppo[0]).toMatchObject({
+    sigla: 'FISI',
+    nome: 'Fisica'
+  });
+  expect(c.articolazione?.materieSeparateSecondoGruppo).toHaveLength(1);
+  expect(c.articolazione?.materieSeparateSecondoGruppo[0]).toMatchObject({
+    sigla: 'FISI',
+    nome: 'Fisica'
   });
 });
 
-test('ClasseProvider: articulated partner points to parent + counterpart', () => {
+test('ClasseProvider: articulated partner points to descriptive parent + counterpart (02 §4.1, 09 §9)', () => {
   const c = build('1F-LSO').focus.classe!;
-  expect(c.articolazione?.parent).toBe('1F');
+  expect(c.articolazione?.parent).toEqual({
+    id: '1F',
+    anno: 1,
+    indirizzi: [
+      { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico', tipo: 'LICEO' },
+      {
+        sigla: 'LSSA',
+        nome: 'Liceo scientifico scienze applicate',
+        nomeSintetico: 'Scienze applicate',
+        tipo: 'LICEO'
+      }
+    ]
+  });
   expect(c.articolazione?.partner).toBe('1F-LSS');
   expect(c.articolazione?.partners).toBeNull();
 });

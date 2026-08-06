@@ -63,7 +63,7 @@ export class ContextEngineFactory {
 
     return new ContextBuilder()
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
-      .registerProvider('class', new ClasseProvider(classi, alunni))
+      .registerProvider('class', new ClasseProvider(classi, alunni, materie))
       .registerProvider('students', new StudentiProvider(classi, alunni, materie))
       .registerProvider(
         'student',

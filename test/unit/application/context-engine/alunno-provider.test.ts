@@ -54,6 +54,7 @@ test('AlunnoProvider: anagrafica/status/curriculum/classe + ASL hours (02 §4.2)
   expect(a.anagrafica).toEqual({ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' });
   expect(a.status).toEqual({
     religione: 'IRC',
+    religioneLabel: 'Religione cattolica',
     isBes: true,
     isRipetente: false,
     isRappresentante: true
@@ -119,4 +120,9 @@ test('a non-BES student (PFP): isBes stays false, class resolved for alunno targ
     { tipo: 'PFP', tipoLabel: 'PFP', isBes: false, link: '', parametriGenerazione: {} }
   ]);
   expect(a.classe.nome).toBe('5A');
+});
+
+test('AlunnoProvider: adds religioneLabel to focus.alunno.status (02 §4.2)', () => {
+  const a = build('a1@school.it').focus.alunno!;
+  expect(a.status.religioneLabel).toBe('Religione cattolica');
 });

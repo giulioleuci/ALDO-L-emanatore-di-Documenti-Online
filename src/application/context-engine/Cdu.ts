@@ -220,7 +220,13 @@ export interface CduClasse {
 
 export interface CduAlunno {
   anagrafica: { nomeCompleto: string; email: string };
-  status: { religione: string; isBes: boolean; isRipetente: boolean; isRappresentante: boolean };
+  status: {
+    religione: string;
+    religioneLabel: string;
+    isBes: boolean;
+    isRipetente: boolean;
+    isRappresentante: boolean;
+  };
   curriculum: CurriculumVM[];
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
   consiglioDiClasseFiltrato?: DocenteCdcVM[];

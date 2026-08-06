@@ -15,6 +15,7 @@ import {
 import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
 import { setAlunnoEntity } from '../techEntities';
 import { curriculumArray } from '../mappers/carenzeMapper';
+import { religioneLabel } from '../mappers/labels';
 import { EntityNotFoundError } from '../../../domain/errors/DomainError';
 
 /**
@@ -53,6 +54,7 @@ export class AlunnoProvider implements ContextProvider {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
       status: {
         religione: alunno.religione,
+        religioneLabel: religioneLabel(alunno.religione),
         isBes: false,
         isRipetente: alunno.isRipetente(),
         isRappresentante: alunno.isRappresentante()

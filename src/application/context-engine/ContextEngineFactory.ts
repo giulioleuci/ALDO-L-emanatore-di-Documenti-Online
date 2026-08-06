@@ -7,6 +7,7 @@ import { TutorProvider } from './providers/TutorProvider';
 import { ConsiglioClasseProvider } from './providers/ConsiglioClasseProvider';
 import { MaterieClasseProvider } from './providers/MaterieClasseProvider';
 import { EsameProvider } from './providers/EsameProvider';
+import { ProgettiProvider } from './providers/ProgettiProvider';
 import { CarenzeProvider } from './providers/CarenzeProvider';
 import { PianiProvider } from './providers/PianiProvider';
 import { PianoFocusProvider } from './providers/PianoFocusProvider';
@@ -31,6 +32,7 @@ import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoReposit
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
+import type { ProgettoRepository } from '../../infrastructure/repositories/ProgettoRepository';
 
 export interface ContextEngineDependencies {
   master: IMasterSheetRepository;
@@ -42,6 +44,7 @@ export interface ContextEngineDependencies {
   materie: IMateriaRepository;
   oreAsl: IOreASLRepository;
   logDocs: ILogDocumentoRepository;
+  progetti: ProgettoRepository;
 }
 
 /**
@@ -59,7 +62,8 @@ export class ContextEngineFactory {
     alunni,
     materie,
     oreAsl,
-    logDocs
+    logDocs,
+    progetti
   }: ContextEngineDependencies): ContextBuilder {
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
@@ -78,6 +82,7 @@ export class ContextEngineFactory {
       )
       .registerProvider('materie', new MaterieClasseProvider(materie))
       .registerProvider('esame', new EsameProvider())
+      .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))
       .registerProvider('pianoFocus', new PianoFocusProvider())

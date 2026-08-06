@@ -17,6 +17,7 @@ import type { SubjectVM } from './mappers/subjectVmMapper';
 import type { CurriculumVM } from './mappers/carenzeMapper';
 import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';
 import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMapper';
+import type { ProgettoVM } from './providers/ProgettiProvider';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -199,6 +200,9 @@ export interface CduClasse {
     docentiPrimaProva: PersonVM[];
     docentiSecondaProva: PersonVM[];
   };
+  /** PROGETTI assigned to the class (02 §2.10, §4.1). */
+  hasProgetti?: boolean;
+  progetti?: ProgettoVM[];
   /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
   elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
   studenti?: {

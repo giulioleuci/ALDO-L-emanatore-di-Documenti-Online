@@ -33,6 +33,7 @@ import { OreASLRepository } from '../infrastructure/repositories/OreASLRepositor
 import { DipartimentoRepository } from '../infrastructure/repositories/DipartimentoRepository';
 import { CarenzaRepository } from '../infrastructure/repositories/CarenzaRepository';
 import { ConfigurazioneEmailRepository } from '../infrastructure/repositories/ConfigurazioneEmailRepository';
+import { ProgettoRepository } from '../infrastructure/repositories/ProgettoRepository';
 import { ContextEngineFactory } from '../application/context-engine/ContextEngineFactory';
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositories/ConfigurazioneDocumentoRepository';
@@ -123,6 +124,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('oreAsl', () => new OreASLRepository(deps.db));
   c.register('carenze', () => new CarenzaRepository(deps.db));
   c.register('logDocumenti', () => new LogDocumentoRepository(deps.db));
+  c.register('progetti', () => new ProgettoRepository(deps.db));
   c.register('logEmail', () => new LogEmailRepository(deps.db));
   c.register('configurazioniEmail', () => new ConfigurazioneEmailRepository(deps.db));
   c.register('teachingAssignmentResolver', () => new AldoTeachingAssignmentResolver(deps.db));
@@ -151,7 +153,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       alunni: container.get<AlunnoRepository>('alunni'),
       materie: container.get<MateriaRepository>('materie'),
       oreAsl: container.get<OreASLRepository>('oreAsl'),
-      logDocs: container.get<LogDocumentoRepository>('logDocumenti')
+      logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
+      progetti: container.get<ProgettoRepository>('progetti')
     })
   );
   if (deps.spreadsheets !== undefined) {

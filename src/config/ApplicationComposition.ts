@@ -15,6 +15,7 @@ import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepos
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../infrastructure/repositories/OreASLRepository';
+import { ProgettoRepository } from '../infrastructure/repositories/ProgettoRepository';
 import { RuoloSpecialeRepository } from '../infrastructure/repositories/RuoloSpecialeRepository';
 import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import {
@@ -48,7 +49,8 @@ function contextDependencies(
     alunni: new AlunnoRepository(db),
     materie: new MateriaRepository(db),
     oreAsl: new OreASLRepository(db),
-    logDocs: new LogDocumentoRepository(db)
+    logDocs: new LogDocumentoRepository(db),
+    progetti: new ProgettoRepository(db)
   };
 }
 

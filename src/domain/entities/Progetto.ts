@@ -42,6 +42,11 @@ export class Progetto extends AldoEntity {
     return this.tipo === TipoProgetto.ASL;
   }
 
+  /** ORE — total planned hours (ref 04 §13). */
+  getOre(): number {
+    return this.ore;
+  }
+
   /** ORE_ASL — hours counting toward the ASL total, a subset of ORE (ref 04 §13). */
   getOreASLEffettive(): number {
     return this.oreAsl;

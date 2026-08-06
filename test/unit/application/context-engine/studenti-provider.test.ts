@@ -13,7 +13,11 @@ import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import type { Row } from '../../../../src/infrastructure/db/Database';
 
-function build(target: string, tables = fixtureTables()): Cdu {
+function build(
+  target: string,
+  tables = fixtureTables(),
+  optionOverrides: Parameters<typeof makeOptions>[0] = {}
+): Cdu {
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const materie = new MateriaRepository(db);
@@ -32,7 +36,7 @@ function build(target: string, tables = fixtureTables()): Cdu {
   };
   const recipe: Recipe = {
     providers: ['class', 'students', 'statistiche'],
-    options: makeOptions()
+    options: makeOptions(optionOverrides)
   };
   return b.build(params, recipe);
 }
@@ -208,4 +212,32 @@ test('has no perIndirizzo or indirizziPresenti on the studenti node, even for an
   const cdu = build('1F', tables);
   expect(cdu.focus.classe!.studenti).not.toHaveProperty('perIndirizzo');
   expect(cdu.focus.classe!.studenti).not.toHaveProperty('indirizziPresenti');
+});
+
+test('StudentiProvider: populates perSpecificita only when includiSpecificita is true (02 §2.14/§8.9)', () => {
+  const cdu = build('5A', fixtureTables(), { includiSpecificita: true });
+  expect(cdu.focus.classe!.studenti!.perSpecificita).toEqual([
+    {
+      materiaId: 'INTERP',
+      materiaSigla: 'INTERP',
+      materiaNome: 'INTERP',
+      specifiche: [
+        {
+          nome: 'CHITARRA',
+          alunni: [
+            { nome: null, cognome: null, nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+          ]
+        },
+        {
+          nome: 'PIANO',
+          alunni: [
+            { nome: null, cognome: null, nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+          ]
+        }
+      ]
+    }
+  ]);
+
+  const cdu2 = build('5A', fixtureTables(), { includiSpecificita: false });
+  expect(cdu2.focus.classe!.studenti!.perSpecificita).toBeUndefined();
 });

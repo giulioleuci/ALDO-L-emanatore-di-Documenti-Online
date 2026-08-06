@@ -1,5 +1,6 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, AlunnoContestoVM } from '../Cdu';
+import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
@@ -7,6 +8,7 @@ import type { Alunno } from '../../../domain/entities/Alunno';
 import { getClasseEntity } from '../techEntities';
 import { carenzeDettaglioSemplice, curriculumArray } from '../mappers/carenzeMapper';
 import { tipoPianoLabel, religioneLabel } from '../mappers/labels';
+import { buildPerSpecificita } from '../mappers/specificitaAlunniMapper';
 
 /**
  * Populates `focus.classe.studenti.listaCompleta` (02 §4.1/§8.7). Each item is
@@ -22,7 +24,7 @@ export class StudentiProvider implements ContextProvider {
     private readonly materie: IMateriaRepository
   ) {}
 
-  provide(cdu: Cdu): void {
+  provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
     const classe = getClasseEntity(cdu);
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
@@ -35,7 +37,10 @@ export class StudentiProvider implements ContextProvider {
         .filter((alunno) => alunno.isAttivo())
         .map((alunno) => this.buildVM(alunno, focusClasse))
     );
-    focusClasse.studenti = { listaCompleta };
+    focusClasse.studenti = {
+      listaCompleta,
+      ...(options.includiSpecificita ? { perSpecificita: buildPerSpecificita(listaCompleta) } : {})
+    };
   }
 
   private buildVM(alunno: Alunno, focusClasse: NonNullable<Cdu['focus']['classe']>): AlunnoContestoVM {

@@ -15,6 +15,7 @@ import type { TipoPiano } from '../../domain/value-objects/enums';
 import type { PersonVM } from './mappers/personVmMapper';
 import type { SubjectVM } from './mappers/subjectVmMapper';
 import type { CurriculumVM } from './mappers/carenzeMapper';
+import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -195,6 +196,7 @@ export interface CduClasse {
       ripetenti: number;
       rappresentanti: number;
     };
+    perSpecificita?: SpecificitaAlunniVM[];
   };
   didattica?: {
     pianiPersonalizzati: {

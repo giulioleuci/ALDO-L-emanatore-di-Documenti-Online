@@ -81,7 +81,7 @@ export class ContextEngineFactory {
         'consiglio',
         new ConsiglioClasseProvider(classi, materie, teachingAssignments)
       )
-      .registerProvider('materie', new MaterieClasseProvider(materie))
+      .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
       .registerProvider('esame', new EsameProvider())
       .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))

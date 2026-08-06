@@ -213,8 +213,8 @@ describe('StoricoClassiService (13 §5)', () => {
     const [record] = service.perClasse([ClasseId.of('4A')], 1);
     expect(record!.nomeStorico).toBe('4A');
     expect(record!.docenti.sort((a, b) => a.materia.localeCompare(b.materia))).toEqual([
-      { docenteEmail: 'bianchi@school.it', materia: 'FISI' },
-      { docenteEmail: 'rossi@school.it', materia: 'MATE' }
+      { docenteEmail: 'bianchi@school.it', materia: 'FISI', isItp: false },
+      { docenteEmail: 'rossi@school.it', materia: 'MATE', isItp: false }
     ]);
   });
 

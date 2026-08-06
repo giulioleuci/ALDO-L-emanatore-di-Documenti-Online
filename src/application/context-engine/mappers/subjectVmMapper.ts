@@ -1,6 +1,7 @@
 import type { Materia } from '../../../domain/entities/Materia';
 import type { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import type { PersonVM } from './personVmMapper';
+import type { ContinuitaVM } from './continuitaMapper';
 
 export interface SubjectVmEvoluzione {
   siglePrecedenti: Array<{ sigla: string; nome: string | null; anni: number[] }>;
@@ -21,6 +22,7 @@ export interface SubjectVM {
   evoluzione: SubjectVmEvoluzione | null;
   docenti?: PersonVM[];
   docentiDescrizione?: string;
+  continuita?: ContinuitaVM;
 }
 
 export interface BuildSubjectVmOptions {

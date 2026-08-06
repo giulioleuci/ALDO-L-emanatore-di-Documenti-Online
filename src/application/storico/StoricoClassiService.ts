@@ -6,6 +6,7 @@ import { ClasseId } from '../../domain/value-objects/ClasseId';
 export interface DocenteMateriaStorico {
   docenteEmail: string;
   materia: string;
+  isItp: boolean;
 }
 
 export interface AnnoClasseStorico {
@@ -41,7 +42,7 @@ export class StoricoClassiService {
       if (classe !== null) {
         for (const d of classi.getAllDocentiCDC(classe)) {
           for (const m of classi.getMaterieDelDocente(classe, d.id ?? '')) {
-            docenti.push({ docenteEmail: d.id ?? '', materia: m.sigla });
+            docenti.push({ docenteEmail: d.id ?? '', materia: m.sigla, isItp: m.isItp });
           }
         }
       }

@@ -43,7 +43,7 @@ function tablesWithPartnerStudents(): Record<string, Row[]> {
   return tables;
 }
 
-/** Wires the four reused sub-providers plus PartnerProjectionProvider against one FakeDatabase. */
+/** Wires the reused sub-providers plus PartnerProjectionProvider against one FakeDatabase. */
 function makeHarness(tables: Record<string, Row[]>) {
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
@@ -53,34 +53,38 @@ function makeHarness(tables: Record<string, Row[]>) {
   const classeProvider = new ClasseProvider(classi, alunni, materie);
   const studentiProvider = new StudentiProvider(classi, alunni, materie);
   const tutorProvider = new TutorProvider(classi);
+  // Not reused by PartnerProjectionProvider (fix round 1) -- kept here only to
+  // run the 'consiglio' token on the OUTER cdu, exactly like CLASSE_COMPLETA
+  // does before 'partner', so focus.classe.consiglioDiClasseComune/Separato
+  // are populated for PartnerProjectionProvider to read.
   const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
-  const provider = new PartnerProjectionProvider(
-    classeProvider,
-    studentiProvider,
-    tutorProvider,
-    consiglioProvider
-  );
+  const provider = new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider);
   return { classeProvider, studentiProvider, tutorProvider, consiglioProvider, provider };
 }
 
-/** Builds a real outer Cdu (via ContextBuilder + ClasseProvider only) focused on `target`. */
+/**
+ * Builds a real outer Cdu (via ContextBuilder + ClasseProvider + ConsiglioClasseProvider,
+ * mirroring CLASSE_COMPLETA's 'class' then 'consiglio' ordering) focused on `target`.
+ */
 function buildOuterCdu(
   target: string,
   classeProvider: ClasseProvider,
+  consiglioProvider: ConsiglioClasseProvider,
   now: Date = new Date('2026-07-01T09:00:00Z')
 ): { cdu: Cdu; params: BuildParams } {
   const b = new ContextBuilder();
   b.registerProvider('class', classeProvider);
+  b.registerProvider('consiglio', consiglioProvider);
   const params: BuildParams = { target, tipoTarget: 'classe', now };
-  const recipe: Recipe = { providers: ['class'], options: makeOptions() };
+  const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   return { cdu: b.build(params, recipe), params };
 }
 
 describe('PartnerProjectionProvider', () => {
   it('builds primo/secondo SingleClassProjection only when isArticolata and includiPartnerDettaglio are both true', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('1F', classeProvider);
+    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider);
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: true }));
 
@@ -94,31 +98,36 @@ describe('PartnerProjectionProvider', () => {
     expect(partner.secondo.studenti.listaCompleta.map((a) => a.anagrafica.email)).toEqual([
       's2@school.it'
     ]);
-    // Reused AS-IS from ConsiglioClasseProvider: since a partner classe is itself
-    // isArticolata (its own ARTICOLAZIONE cell is set), resolveConsiglio resolves
-    // at the whole-group level for both partners -- same full roster as the
-    // parent's own consiglio (consiglio-provider.test.ts's cdc('1F') case), not
-    // filtered down to that partner's own subjects. That is the real, observed
-    // behavior of AS-IS reuse against a partner classe id, not something this
-    // provider re-derives.
+    // Fix round 1: derived from the outer cdu's focus.classe.consiglioDiClasseComune
+    // (rossi, MATE shared by both partners) concatenated with the SEPARATO_PRIMO/
+    // SEPARATO_SECONDO subset of focus.classe.consiglioDiClasseSeparato (bianchi on
+    // 1F-LSO/FISI, verdi on 1F-LSS/FISI -- same fixture as
+    // consiglio-provider.test.ts's "CDC of an articulated parent" case). NOT
+    // re-resolved per partner classe id (that would yield the same
+    // comune+separato roster both times, the bug this fix addresses), so primo
+    // and secondo must now be genuinely different.
     expect(partner.primo.consiglioDiClasse.map((d) => d.anagrafica.email).sort()).toEqual([
       'bianchi@school.it',
-      'rossi@school.it',
-      'verdi@school.it'
+      'rossi@school.it'
     ]);
     expect(partner.secondo.consiglioDiClasse.map((d) => d.anagrafica.email).sort()).toEqual([
-      'bianchi@school.it',
       'rossi@school.it',
       'verdi@school.it'
     ]);
+    expect(
+      partner.primo.consiglioDiClasse.some((d) => d.anagrafica.email === 'verdi@school.it')
+    ).toBe(false);
+    expect(
+      partner.secondo.consiglioDiClasse.some((d) => d.anagrafica.email === 'bianchi@school.it')
+    ).toBe(false);
     expect(partner.primo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
     expect(partner.secondo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
   });
 
   it('is omitted when includiPartnerDettaglio is false, even for an articulated class', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('1F', classeProvider);
+    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider);
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: false }));
 
@@ -127,8 +136,8 @@ describe('PartnerProjectionProvider', () => {
 
   it('is omitted for a non-articulated class', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('5A', classeProvider);
+    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('5A', classeProvider, consiglioProvider);
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: true }));
 
@@ -137,8 +146,8 @@ describe('PartnerProjectionProvider', () => {
 
   it('does not mutate or leak the scratch per-partner Cdu into the real outer Cdu', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('1F', classeProvider);
+    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider);
 
     const outerClasseEntityBefore = cdu.tech.entita.classe;
     const outerFocusClasseRef = cdu.focus.classe;

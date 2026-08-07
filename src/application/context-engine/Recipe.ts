@@ -89,7 +89,7 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * | materie       | focus.classe.materie, focus.classe.materiePerPrincipale (+ continuita per subject, only if includiStorico and docenti/storicoDb/classi are all supplied) | focus.classe.consiglioDiClasse (consiglio) — derives the catalog entirely from it, never re-queries teaching assignments |
  * | esame         | focus.classe.esame                                    | focus.classe.materie (materie) — reads isMateriaPrimaProva/isMateriaSecondaProva, already resolved per indirizzo by MaterieClasseProvider/TeachingCouncilProjection |
  * | progetti      | focus.classe.progetti, focus.classe.hasProgetti       | tech.entita.classe (class)                        |
- * | partner       | focus.classe.partner.{primo,secondo} (only if focus.classe.flags.isArticolata AND options.includiPartnerDettaglio) | focus.classe.flags.isArticolata, focus.classe.articolazione.partners (class). Re-runs class/students/tutor/consiglio against a throwaway scratch CDU per partner class id — reads nothing from the outer focus.classe.studenti/consiglioDiClasse/tutor and writes nothing back into them (zero cross-contamination with the main projection) |
+ * | partner       | focus.classe.partner.{primo,secondo} (only if focus.classe.flags.isArticolata AND options.includiPartnerDettaglio) | focus.classe.flags.isArticolata, focus.classe.articolazione.partners (class); focus.classe.consiglioDiClasseComune, focus.classe.consiglioDiClasseSeparato (consiglio) — partitioned by tipoArticolazione into partners[0]=SEPARATO_PRIMO/partners[1]=SEPARATO_SECONDO, NOT re-resolved (ConsiglioClasseProvider.resolveConsiglio returns the whole group's roster for any partner classe id, so re-running it per partner would be a no-op duplication — fix round 1). Re-runs class/students/tutor (not consiglio) against a throwaway scratch CDU per partner class id for anagrafica/studenti/coordinatori — reads nothing from the outer focus.classe.studenti/tutor and writes nothing back into them (zero cross-contamination with the main projection) |
  * | rappresentanti| focus.classe.rappresentanti                           | tech.entita.classe (class)                        |
  * | statistiche   | cdu.istituto.statistiche (if school ran), focus.classe.studenti.statistiche (if present) | cdu.istituto (school, guarded — skips if absent); focus.classe.studenti (students, guarded — skips if absent) |
  * | storicoClasse | focus.classe.storico (LazyRef, only if options.includiStorico) | tech.entita.classe (class) via focus.classe guard |
@@ -105,14 +105,16 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * before `students`/`tutor`/`consiglio`/`materie`/`esame`/`progetti`/`partner`/
  * `rappresentanti`/`statistiche`, `consiglio` before `materie`, and `materie`
  * before `esame` — so all currently-declared orderings are consistent with
- * the table above. `partner` only reads `class`'s output (`focus.classe.flags.
- * isArticolata`/`articolazione.partners`) — its position after `progetti` in
- * `CLASSE_COMPLETA` is not itself a CDU-level ordering dependency, just where
- * this task's slot landed in the token list. A future edit that violates one
- * of the real reads above (e.g. moving `piani` before `student`) will not
- * fail loudly here — it degrades silently or throws a
- * runtime `EntityNotFoundError`/`TypeError` deep inside a provider, not at
- * recipe-definition time. See the standalone-`DependencyResolver`
+ * the table above. `partner` reads `class`'s output (`focus.classe.flags.
+ * isArticolata`/`articolazione.partners`) AND `consiglio`'s output
+ * (`focus.classe.consiglioDiClasseComune`/`consiglioDiClasseSeparato`, fix
+ * round 1) — `CLASSE_COMPLETA` already places `consiglio` before `partner`,
+ * so this is a real, currently-satisfied ordering dependency, not merely
+ * where the token happened to land. A future edit that violates one of the
+ * real reads above (e.g. moving `piani` before `student`, or `partner`
+ * before `consiglio`) will not fail loudly here — it degrades silently or
+ * throws a runtime `EntityNotFoundError`/`TypeError` deep inside a provider,
+ * not at recipe-definition time. See the standalone-`DependencyResolver`
  * investigation note further below for why this isn't currently backed by a
  * structural check.
  */

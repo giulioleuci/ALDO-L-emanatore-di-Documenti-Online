@@ -70,11 +70,16 @@ export class ContextEngineFactory {
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
     // Constructed once and reused both under their own recipe tokens and
-    // inside PartnerProjectionProvider ('partner'), which reruns the exact
-    // same four provider instances against a scratch per-partner CDU (Task
-    // 21) — reusing AS-IS, never re-instantiated, so there is only one
-    // ClasseProvider/StudentiProvider/TutorProvider/ConsiglioClasseProvider
-    // per composition root.
+    // inside PartnerProjectionProvider ('partner'), which reruns the same
+    // three provider instances against a scratch per-partner CDU (Task 21,
+    // fix round 1) — reusing AS-IS, never re-instantiated, so there is only
+    // one ClasseProvider/StudentiProvider/TutorProvider per composition
+    // root. ConsiglioClasseProvider is NOT reused per partner: it resolves
+    // teaching assignments for the whole articulation group regardless of
+    // which partner classe id it is queried with, so PartnerProjectionProvider
+    // instead derives `consiglioDiClasse` from the outer cdu's already-split
+    // `consiglioDiClasseComune`/`consiglioDiClasseSeparato` (written by the
+    // 'consiglio' token, which always runs before 'partner').
     const classeProvider = new ClasseProvider(classi, alunni, materie);
     const studentiProvider = new StudentiProvider(classi, alunni, materie);
     const tutorProvider = new TutorProvider(classi);
@@ -95,7 +100,7 @@ export class ContextEngineFactory {
       .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
       .registerProvider(
         'partner',
-        new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, consiglioProvider)
+        new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider)
       )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))

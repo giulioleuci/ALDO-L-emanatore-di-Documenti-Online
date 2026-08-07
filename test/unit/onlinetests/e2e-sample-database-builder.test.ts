@@ -474,7 +474,7 @@ test('each class gets a distinct 0/1/2 spread of student and parent representati
   expect(parentCounts).toEqual(new Set([0, 1, 2]));
 });
 
-test('each class has at least one NO and/or ALT religion exception alongside the SI majority (item 3)', () => {
+test('each class has at least one NO and/or ALT religion exception alongside the IRC majority (item 3)', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
@@ -482,9 +482,9 @@ test('each class has at least one NO and/or ALT religion exception alongside the
   const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
   for (const id of [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER]) {
     const rows = byClasse(id);
-    const exceptions = rows.filter((a) => a[COL_ALUNNI.RELIGIONE] !== 'SI');
+    const exceptions = rows.filter((a) => a[COL_ALUNNI.RELIGIONE] !== 'IRC');
     expect(exceptions.length).toBeGreaterThan(0);
-    expect(rows.filter((a) => a[COL_ALUNNI.RELIGIONE] === 'SI').length).toBe(
+    expect(rows.filter((a) => a[COL_ALUNNI.RELIGIONE] === 'IRC').length).toBe(
       rows.length - exceptions.length
     );
   }

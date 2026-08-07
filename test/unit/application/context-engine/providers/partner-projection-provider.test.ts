@@ -3,6 +3,7 @@ import { ClasseProvider } from '../../../../../src/application/context-engine/pr
 import { StudentiProvider } from '../../../../../src/application/context-engine/providers/StudentiProvider';
 import { TutorProvider } from '../../../../../src/application/context-engine/providers/TutorProvider';
 import { ConsiglioClasseProvider } from '../../../../../src/application/context-engine/providers/ConsiglioClasseProvider';
+import { SchoolProvider } from '../../../../../src/application/context-engine/providers/SchoolProvider';
 import { ContextBuilder } from '../../../../../src/application/context-engine/ContextBuilder';
 import { makeOptions } from '../../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../../src/application/context-engine/Recipe';
@@ -10,6 +11,9 @@ import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
 import { ClasseRepository } from '../../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../../src/infrastructure/repositories/MateriaRepository';
+import { MasterSheetRepository } from '../../../../../src/infrastructure/repositories/MasterSheetRepository';
+import { RuoloSpecialeRepository } from '../../../../../src/infrastructure/repositories/RuoloSpecialeRepository';
+import { DocenteRepository } from '../../../../../src/infrastructure/repositories/DocenteRepository';
 import { AldoTeachingAssignmentResolver } from '../../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { FakeDatabase } from '../../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../../fixtures/tables';
@@ -58,33 +62,45 @@ function makeHarness(tables: Record<string, Row[]>) {
   // does before 'partner', so focus.classe.consiglioDiClasseComune/Separato
   // are populated for PartnerProjectionProvider to read.
   const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
+  // Runs the 'school' token on the OUTER cdu, exactly like CLASSE_COMPLETA does
+  // before 'class' (fix round 2) -- without it, cdu.istituto is never populated
+  // on the outer cdu, which previously masked PartnerProjectionProvider silently
+  // building scratch CDUs with no istituto at all (annoScolastico always '').
+  const schoolProvider = new SchoolProvider(
+    new MasterSheetRepository(db),
+    new RuoloSpecialeRepository(db),
+    new DocenteRepository(db)
+  );
   const provider = new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider);
-  return { classeProvider, studentiProvider, tutorProvider, consiglioProvider, provider };
+  return { classeProvider, studentiProvider, tutorProvider, consiglioProvider, schoolProvider, provider };
 }
 
 /**
- * Builds a real outer Cdu (via ContextBuilder + ClasseProvider + ConsiglioClasseProvider,
- * mirroring CLASSE_COMPLETA's 'class' then 'consiglio' ordering) focused on `target`.
+ * Builds a real outer Cdu (via ContextBuilder + SchoolProvider + ClasseProvider +
+ * ConsiglioClasseProvider, mirroring CLASSE_COMPLETA's 'school' then 'class' then
+ * 'consiglio' ordering) focused on `target`.
  */
 function buildOuterCdu(
   target: string,
   classeProvider: ClasseProvider,
   consiglioProvider: ConsiglioClasseProvider,
+  schoolProvider: SchoolProvider,
   now: Date = new Date('2026-07-01T09:00:00Z')
 ): { cdu: Cdu; params: BuildParams } {
   const b = new ContextBuilder();
+  b.registerProvider('school', schoolProvider);
   b.registerProvider('class', classeProvider);
   b.registerProvider('consiglio', consiglioProvider);
   const params: BuildParams = { target, tipoTarget: 'classe', now };
-  const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
+  const recipe: Recipe = { providers: ['school', 'class', 'consiglio'], options: makeOptions() };
   return { cdu: b.build(params, recipe), params };
 }
 
 describe('PartnerProjectionProvider', () => {
   it('builds primo/secondo SingleClassProjection only when isArticolata and includiPartnerDettaglio are both true', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider);
+    const { classeProvider, consiglioProvider, schoolProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider, schoolProvider);
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: true }));
 
@@ -122,12 +138,18 @@ describe('PartnerProjectionProvider', () => {
     ).toBe(false);
     expect(partner.primo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
     expect(partner.secondo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
+    // Fix round 2: the scratch Cdu per partner must carry the outer cdu's
+    // istituto through so ClasseProvider's `cdu.istituto?.organizzazione.annoScolastico`
+    // read resolves to the real school year instead of silently falling back to ''.
+    expect(cdu.istituto?.organizzazione.annoScolastico).toBe('2025-2026');
+    expect(partner.primo.anagrafica.annoScolastico).toBe('2025-2026');
+    expect(partner.secondo.anagrafica.annoScolastico).toBe('2025-2026');
   });
 
   it('is omitted when includiPartnerDettaglio is false, even for an articulated class', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider);
+    const { classeProvider, consiglioProvider, schoolProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider, schoolProvider);
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: false }));
 
@@ -136,8 +158,8 @@ describe('PartnerProjectionProvider', () => {
 
   it('is omitted for a non-articulated class', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('5A', classeProvider, consiglioProvider);
+    const { classeProvider, consiglioProvider, schoolProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('5A', classeProvider, consiglioProvider, schoolProvider);
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: true }));
 
@@ -146,8 +168,8 @@ describe('PartnerProjectionProvider', () => {
 
   it('does not mutate or leak the scratch per-partner Cdu into the real outer Cdu', () => {
     const tables = tablesWithPartnerStudents();
-    const { classeProvider, consiglioProvider, provider } = makeHarness(tables);
-    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider);
+    const { classeProvider, consiglioProvider, schoolProvider, provider } = makeHarness(tables);
+    const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider, schoolProvider);
 
     const outerClasseEntityBefore = cdu.tech.entita.classe;
     const outerFocusClasseRef = cdu.focus.classe;

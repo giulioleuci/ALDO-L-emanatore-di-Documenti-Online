@@ -118,13 +118,16 @@ interface MaterieColonneGroups {
 
 /**
  * `SheetMaterieConPermessiGeneratorStrategy` hands its `ITemplateEngine.processSheet` fake the
- * full CDU as an opaque `Record<string, unknown>` — the multi-group column projection now lives
- * at `focus.classe.sheet.materieColonne` (02 §2.17/§4.1, moved off the CDU root by Task 22), not
- * a bare `materieColonne` key.
+ * full CDU as an opaque `Record<string, unknown>`. There are two distinct `materieColonne`
+ * shapes on that context: the printable `focus.classe.sheet.materieColonne` (02 §2.17/§4.1,
+ * moved off the CDU root by Task 22) drops the ACL-only `classeId`/`specificita`/`kind` fields
+ * (final-review fix wave, `SheetMaterieConPermessiGeneratorStrategy.buildGroups`), while the
+ * root-context `materieColonne` key `renderColumns` also sets is the broader internal shape fed
+ * to `dynamic_columns` template rendering and still carries `classeId` per column — this check
+ * needs `classeId` to verify per-partner column ownership, so it reads the root key.
  */
 function materieColonneOf(context: Record<string, unknown>): MaterieColonneGroups {
-  const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
-  return (focus?.classe?.sheet?.materieColonne ?? { group1: [] }) as MaterieColonneGroups;
+  return (context['materieColonne'] ?? { group1: [] }) as MaterieColonneGroups;
 }
 
 interface AssignmentTuple {

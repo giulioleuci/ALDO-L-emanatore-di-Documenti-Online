@@ -621,5 +621,26 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
 
     expect(cdu.focus.classe!.sheet?.materieColonne.group1[0]).toMatchObject({ isSpecial: true });
     expect(cdu.focus.classe!.sheet?.materieColonne.group2Label).toEqual(expect.any(String));
+
+    // Finding 3 fix: group2/group3 come from articolazione columns, which carry
+    // `classeId` (partner class) internally -- confirm it (and `specificita`/`kind`,
+    // never set here but part of the same leak) never reaches the printable
+    // classe.sheet.materieColonne contract (02 §4.1 / Cdu.ts CduClasse['sheet']),
+    // even though buildGroups()'s own internal return value legitimately carries it.
+    const printableColumns = [
+      ...cdu.focus.classe!.sheet!.materieColonne.group1,
+      ...cdu.focus.classe!.sheet!.materieColonne.group2,
+      ...cdu.focus.classe!.sheet!.materieColonne.group3
+    ];
+    expect(printableColumns.length).toBeGreaterThan(0);
+    for (const column of printableColumns) {
+      expect(column).not.toHaveProperty('classeId');
+      expect(column).not.toHaveProperty('specificita');
+      expect(column).not.toHaveProperty('kind');
+      expect(Object.keys(column).sort()).toEqual(
+        [...new Set(['sigla', 'header', ...(column.isSpecial === undefined ? [] : ['isSpecial']), ...(column.roles === undefined ? [] : ['roles'])])].sort()
+      );
+    }
+    expect(JSON.stringify(cdu.focus.classe!.sheet)).not.toContain('classeId');
   });
 });

@@ -78,6 +78,7 @@ export class PartnerProjectionProvider implements ContextProvider {
   ): SingleClassProjection {
     const scratch: Cdu = {
       meta: outerCdu.meta,
+      ...(outerCdu.istituto === undefined ? {} : { istituto: outerCdu.istituto }),
       focus: {},
       tech: { entita: {}, servizi: [], pipeline: { statoCorrente: 'IN_CORSO', stepEseguiti: [], errori: [], logEsecuzione: [] } }
     };

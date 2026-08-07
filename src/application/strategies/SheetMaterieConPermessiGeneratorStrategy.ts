@@ -12,6 +12,37 @@ import type { RisolutoreRuoliService } from '../services/RisolutoreRuoliService'
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 
 /**
+ * Printable projection of one `MateriaColumn` for `classe.sheet.materieColonne`
+ * (02 §4.1) — drops the ACL-only `classeId`/`specificita`/`kind` fields that
+ * `resolveMateriaColumns` (`SheetMaterieGeneratorStrategy`) still carries as
+ * ordinary enumerable properties (only `.kind` is hidden via
+ * `Object.defineProperty`). A narrower TS type on `CduClasse['sheet']` alone
+ * doesn't strip these at runtime/`JSON.stringify` — an object literal copy is
+ * required. `buildGroups()`'s own return value (used for `dynamic_columns`
+ * template rendering) is intentionally left untouched; only what's attached
+ * to `classe.sheet` is narrowed.
+ */
+function toPrintableColumn(column: MateriaColumn): NonNullable<CduClasse['sheet']>['materieColonne']['group1'][number] {
+  const printable: NonNullable<CduClasse['sheet']>['materieColonne']['group1'][number] = {
+    sigla: column.sigla,
+    header: column.header
+  };
+  if (column.isSpecial !== undefined) printable.isSpecial = column.isSpecial;
+  if (column.roles !== undefined) printable.roles = column.roles;
+  return printable;
+}
+
+function toPrintableGroups(groups: MaterieGroups): NonNullable<CduClasse['sheet']>['materieColonne'] {
+  return {
+    group1: groups.group1.map(toPrintableColumn),
+    group2: groups.group2.map(toPrintableColumn),
+    group3: groups.group3.map(toPrintableColumn),
+    ...(groups.group2Label === undefined ? {} : { group2Label: groups.group2Label }),
+    ...(groups.group3Label === undefined ? {} : { group3Label: groups.group3Label })
+  };
+}
+
+/**
  * SHEET_CON_MATERIE_E_PERMESSI generator (10 §9): identical to
  * SheetMaterieGeneratorStrategy plus batch range protection — after
  * `dynamic_columns` expands the subject columns, every subject-holding
@@ -52,7 +83,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     if (consiglio.length === 0) {
       classe.elencoMaterieConPermessi = [];
       const groups = super.buildGroups(classe);
-      classe.sheet = { materieColonne: groups };
+      classe.sheet = { materieColonne: toPrintableGroups(groups) };
       return groups;
     }
     const hasAlt = consiglio.some((docente) =>
@@ -77,7 +108,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
               ...groups.group1
             ]
           };
-    classe.sheet = { materieColonne: finalGroups };
+    classe.sheet = { materieColonne: toPrintableGroups(finalGroups) };
     return finalGroups;
   }
 

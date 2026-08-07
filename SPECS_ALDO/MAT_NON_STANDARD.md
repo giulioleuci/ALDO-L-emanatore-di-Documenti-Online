@@ -39,7 +39,7 @@ La logica di preparazione dell'array DEVE risiedere in un `ViewModelMapper` o in
     Senza ALT, l'oggetto è invece `{ "sigla": "REL", "isSpecial": true, "roles": ["IRC"], "colore": "#E0E0E0" }`: non è lecito esporre né autorizzare ALT per una classe che non la possiede.
 5.  **Output:** L'array risultante viene mappato in `cdu.focus.classe.elencoMaterieConPermessi`.
 
-**Derivazione di `focus.classe.sheet.materieColonne`:** `focus.classe.sheet.materieColonne` (campi `group1`/`group2`/`group3`/`group2Label`/`group3Label`, vedi `02_CDU_STRUTTURA.md` §2.17/§4.1) deriva dalla stessa computazione di `elencoMaterieConPermessi`, tramite `SheetMaterieConPermessiGeneratorStrategy.buildGroups()`: l'elemento speciale `REL/ALT` prodotto da `elencoMaterieConPermessi` viene anteposto a `group1`, sopra ai gruppi base già costruiti da `SheetMaterieGeneratorStrategy.buildGroups()`. `elencoMaterieConPermessi` resta invariato come sorgente grezza; `materieColonne` ne è la proiezione raggruppata, pronta per `dynamic_columns`.
+**Derivazione di `focus.classe.sheet.materieColonne`:** `focus.classe.sheet.materieColonne` (campi `group1`/`group2`/`group3`/`group2Label`/`group3Label`, vedi `02_CDU_STRUTTURA.md` §4.1) deriva dalla stessa computazione di `elencoMaterieConPermessi`, tramite `SheetMaterieConPermessiGeneratorStrategy.buildGroups()`: l'elemento speciale `REL/ALT` prodotto da `elencoMaterieConPermessi` viene anteposto a `group1`, sopra ai gruppi base già costruiti da `SheetMaterieGeneratorStrategy.buildGroups()`. `elencoMaterieConPermessi` resta invariato come sorgente grezza; `materieColonne` ne è la proiezione raggruppata, pronta per `dynamic_columns`.
 
 ### B. Livello L2 — Workspace Template Engine (Espansione)
 

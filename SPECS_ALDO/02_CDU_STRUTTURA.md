@@ -424,23 +424,25 @@ focus.carenza:
 
 Popolata ESCLUSIVAMENTE dal `BuildCDUStep` della pipeline email (`src/application/pipelines/emailSteps.ts`): un CDU costruito per la sola generazione documenti non ha mai `cdu.destinatario`. `destinatario.anagrafica` è un `PersonVM` (§8.1) completo, quindi reca anche `appellativoCompleto`/`appellativoCognome`.
 
+> **STUB NON IMPLEMENTATO:** `BuildCDUStep.buildDestinatario` (`emailSteps.ts:157-196`) valorizza `ruoliAttivi`, `flags.isTutor`, `flags.isTutorAsl`, `flags.isDocenteSostegno`, `flags.isSupplente`, `contesto.sostituisce` e `contesto.materieCompetenza` con il loro valore-zero incondizionato (`[]`/`false`/`null`), indipendentemente dal destinatario reale — non sono ancora calcolati. La FORMA (il tipo, in `CduDestinatario`) è quella reale e già stabile; il VALORE è oggi sempre lo stub, in attesa di un'implementazione futura. Solo `flags.isCoordinatore` (derivato da `conf.processo === ProcessoInvio.PER_COORDINATORE`) e `contesto.classiCompetenza` sono genuinamente calcolati per destinatario.
+
 ```yaml
 destinatario:
   anagrafica: PersonVM           # Dati anagrafici standardizzati (§8.1) del destinatario
 
-  ruoliAttivi: string[]          # Ruoli esercitati nel contesto (es. ["COORDINATORE", "DOCENTE"])
+  ruoliAttivi: string[]          # STUB: sempre [] — non ancora calcolato (vedi nota sopra)
 
   flags:
-    isCoordinatore: boolean
-    isTutor: boolean
-    isTutorAsl: boolean
-    isDocenteSostegno: boolean
-    isSupplente: boolean
+    isCoordinatore: boolean      # Genuinamente calcolato: true se conf.processo === PER_COORDINATORE
+    isTutor: boolean             # STUB: sempre false — non ancora calcolato
+    isTutorAsl: boolean          # STUB: sempre false — non ancora calcolato
+    isDocenteSostegno: boolean   # STUB: sempre false — non ancora calcolato
+    isSupplente: boolean         # STUB: sempre false — non ancora calcolato
 
   contesto:
-    sostituisce: PersonVM | null # Se il destinatario è un supplente, indica il titolare
-    classiCompetenza: string[]   # Array di ClasseId su cui il destinatario ha titolarità
-    materieCompetenza: string[]  # Array di MateriaId insegnate dal destinatario
+    sostituisce: PersonVM | null # STUB: sempre null — non ancora calcolato (non collegato a isSupplente)
+    classiCompetenza: string[]   # Genuinamente calcolato: ClasseId su cui il destinatario ha titolarità
+    materieCompetenza: string[]  # STUB: sempre [] — non ancora calcolato
 
   comunicazione:
     salutoIniziale: string       # es. "Gentile Prof.ssa Bianchi," o "Spettabile Genitore,"
@@ -1336,7 +1338,7 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       "appellativoCompleto": "Prof. Mario Rossi",
       "appellativoCognome": "Prof. Rossi"
     },
-    "ruoliAttivi": ["DOCENTE"],
+    "ruoliAttivi": [],
     "flags": {
       "isCoordinatore": false,
       "isTutor": false,
@@ -1344,7 +1346,7 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       "isDocenteSostegno": false,
       "isSupplente": false
     },
-    "contesto": { "sostituisce": null, "classiCompetenza": ["5AB-LC-LS"], "materieCompetenza": ["ITA", "STO"] },
+    "contesto": { "sostituisce": null, "classiCompetenza": ["5AB-LC-LS"], "materieCompetenza": [] },
     "comunicazione": { "salutoIniziale": "Gentile Prof. Rossi,", "oggettoCalcolato": "Convocazione CDC 5AB-LC-LS", "testoContenutoPuro": "" }
   },
   "render": { "boxes": {}, "body": { "htmlCompleto": "", "htmlSoloContenuto": "" } }

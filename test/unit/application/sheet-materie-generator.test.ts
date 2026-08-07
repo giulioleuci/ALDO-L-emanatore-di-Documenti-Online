@@ -597,4 +597,29 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       sheets.protectCalls.find((request) => request.range === 'Sheet1!F:F')?.editors?.users?.sort()
     ).toEqual(['bianchi@school.it', 'rossi@school.it']);
   });
+
+  test('attaches the rendered column groups onto focus.classe.sheet.materieColonne', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '1F');
+    cdu.focus.classe!.articolazione = {
+      partner: null,
+      partners: ['1F-LSO', '1F-LSS'],
+      parent: null,
+      materieCondivise: [subjectVm('MATE')],
+      materieSeparatePrimoGruppo: [subjectVm('FISI')],
+      materieSeparateSecondoGruppo: [subjectVm('FISI')]
+    };
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      composeRisolutoreRuoli(db)
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    expect(cdu.focus.classe!.sheet?.materieColonne.group1[0]).toMatchObject({ isSpecial: true });
+    expect(cdu.focus.classe!.sheet?.materieColonne.group2Label).toEqual(expect.any(String));
+  });
 });

@@ -51,7 +51,9 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     const consiglio = classe.consiglioDiClasse ?? [];
     if (consiglio.length === 0) {
       classe.elencoMaterieConPermessi = [];
-      return super.buildGroups(classe);
+      const groups = super.buildGroups(classe);
+      classe.sheet = { materieColonne: groups };
+      return groups;
     }
     const hasAlt = consiglio.some((docente) =>
       docente.materie.some((materia) => materia.sigla === 'ALT')
@@ -60,19 +62,23 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     classe.elencoMaterieConPermessi = elenco;
     const special = elenco.find((item) => item.isSpecial);
     const groups = super.buildGroups(classe);
-    if (special === undefined) return groups;
-    return {
-      ...groups,
-      group1: [
-        {
-          sigla: special.sigla,
-          header: special.sigla,
-          isSpecial: true,
-          roles: special.roles
-        },
-        ...groups.group1
-      ]
-    };
+    const finalGroups: MaterieGroups =
+      special === undefined
+        ? groups
+        : {
+            ...groups,
+            group1: [
+              {
+                sigla: special.sigla,
+                header: special.sigla,
+                isSpecial: true,
+                roles: special.roles
+              },
+              ...groups.group1
+            ]
+          };
+    classe.sheet = { materieColonne: finalGroups };
+    return finalGroups;
   }
 
   /**

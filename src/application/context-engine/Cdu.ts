@@ -212,6 +212,23 @@ export interface CduClasse {
   storico?: LazyRef<ClasseStoricoVM>;
   /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
   elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
+  /**
+   * Printable projection of the `materieColonne` groups already computed by
+   * `SheetMaterieGeneratorStrategy.buildGroups`/its `_E_PERMESSI` override —
+   * built on demand by those strategies, not a standard provider output. This
+   * CDU-facing shape is intentionally narrower than the strategy's internal
+   * `MateriaColumn` (drops the ACL-only `classeId`/`specificita`/`kind`
+   * fields from the printable contract).
+   */
+  sheet?: {
+    materieColonne: {
+      group1: Array<{ sigla: string; header: string; isSpecial?: boolean; roles?: string[] }>;
+      group2: Array<{ sigla: string; header: string; isSpecial?: boolean; roles?: string[] }>;
+      group3: Array<{ sigla: string; header: string; isSpecial?: boolean; roles?: string[] }>;
+      group2Label?: string;
+      group3Label?: string;
+    };
+  };
   studenti?: {
     listaCompleta: AlunnoContestoVM[];
     statistiche?: {

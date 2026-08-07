@@ -8,6 +8,7 @@ import { ConsiglioClasseProvider } from './providers/ConsiglioClasseProvider';
 import { MaterieClasseProvider } from './providers/MaterieClasseProvider';
 import { EsameProvider } from './providers/EsameProvider';
 import { ProgettiProvider } from './providers/ProgettiProvider';
+import { PartnerProjectionProvider } from './providers/PartnerProjectionProvider';
 import { CarenzeProvider } from './providers/CarenzeProvider';
 import { PianiProvider } from './providers/PianiProvider';
 import { PianoFocusProvider } from './providers/PianoFocusProvider';
@@ -68,22 +69,34 @@ export class ContextEngineFactory {
   }: ContextEngineDependencies): ContextBuilder {
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
+    // Constructed once and reused both under their own recipe tokens and
+    // inside PartnerProjectionProvider ('partner'), which reruns the exact
+    // same four provider instances against a scratch per-partner CDU (Task
+    // 21) — reusing AS-IS, never re-instantiated, so there is only one
+    // ClasseProvider/StudentiProvider/TutorProvider/ConsiglioClasseProvider
+    // per composition root.
+    const classeProvider = new ClasseProvider(classi, alunni, materie);
+    const studentiProvider = new StudentiProvider(classi, alunni, materie);
+    const tutorProvider = new TutorProvider(classi);
+    const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
+
     return new ContextBuilder()
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
-      .registerProvider('class', new ClasseProvider(classi, alunni, materie))
-      .registerProvider('students', new StudentiProvider(classi, alunni, materie))
+      .registerProvider('class', classeProvider)
+      .registerProvider('students', studentiProvider)
       .registerProvider(
         'student',
         new AlunnoProvider(alunni, classi, oreAsl, materie, teachingAssignments)
       )
-      .registerProvider('tutor', new TutorProvider(classi))
-      .registerProvider(
-        'consiglio',
-        new ConsiglioClasseProvider(classi, materie, teachingAssignments)
-      )
+      .registerProvider('tutor', tutorProvider)
+      .registerProvider('consiglio', consiglioProvider)
       .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
       .registerProvider('esame', new EsameProvider())
       .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
+      .registerProvider(
+        'partner',
+        new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, consiglioProvider)
+      )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))
       .registerProvider('pianoFocus', new PianoFocusProvider())

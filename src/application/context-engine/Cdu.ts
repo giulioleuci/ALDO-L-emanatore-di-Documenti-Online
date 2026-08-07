@@ -19,6 +19,7 @@ import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMappe
 import type { StudentStoricoVM } from './mappers/storicoMapper';
 import type { ProgettoVM } from './providers/ProgettiProvider';
 import type { ClasseStoricoVM } from './providers/StoricoClasseProvider';
+import type { SingleClassProjection } from './providers/PartnerProjectionProvider';
 
 /** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
 export interface DocenteCdcVM {
@@ -129,6 +130,7 @@ export interface RecipeOptionsView {
   includiSupplenti: boolean;
   includiSpecificita: boolean;
   notificaSoloCoordinatori: boolean;
+  includiPartnerDettaglio: boolean;
   gestioneSupplenti: string;
   [key: string]: unknown;
 }
@@ -187,6 +189,8 @@ export interface CduClasse {
   consiglioDiClasse?: DocenteCdcVM[];
   consiglioDiClasseComune?: DocenteCdcVM[];
   consiglioDiClasseSeparato?: DocenteCdcVM[];
+  /** Disaggregated per-partner-class projection for an articulated parent (02 §2.5), only when `includiPartnerDettaglio` is true. */
+  partner?: { primo: SingleClassProjection; secondo: SingleClassProjection };
   /** Flat, deduped subject catalog of the class council (02 §2.8, §4.1). */
   materie?: SubjectVM[];
   /** `materie` grouped by base materia id, for composite-specificità display (02 §2.8). */

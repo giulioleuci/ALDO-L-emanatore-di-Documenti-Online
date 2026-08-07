@@ -14,6 +14,7 @@ export interface RecipeOptions extends Omit<RecipeOptionsView, 'gestioneSupplent
   includiSupplenti: boolean;
   includiSpecificita: boolean;
   notificaSoloCoordinatori: boolean;
+  includiPartnerDettaglio: boolean;
   gestioneSupplenti: GestioneSupplenti;
   [key: string]: unknown;
 }
@@ -52,6 +53,7 @@ export const DEFAULT_OPTIONS: RecipeOptions = {
   includiSupplenti: false,
   includiSpecificita: false,
   notificaSoloCoordinatori: false,
+  includiPartnerDettaglio: false,
   gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI
 };
 
@@ -84,6 +86,10 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * | student       | tech.entita.alunno, focus.alunno.*                    | cdu.istituto.organizzazione.annoScolastico (school, soft dep — silently 0 if absent, used for `didattica.asl.oreAnnoCorrente`) |
  * | tutor         | focus.classe.tutor                                    | tech.entita.classe (class)                        |
  * | consiglio     | focus.classe.consiglioDiClasse                        | tech.entita.classe (class). The council projection reads TUTOR_ASL/TUTOR_ORIENT roles from `ClasseRepository` directly and does not depend on `focus.classe.tutor`. |
+ * | materie       | focus.classe.materie, focus.classe.materiePerPrincipale (+ continuita per subject, only if includiStorico and docenti/storicoDb/classi are all supplied) | focus.classe.consiglioDiClasse (consiglio) — derives the catalog entirely from it, never re-queries teaching assignments |
+ * | esame         | focus.classe.esame                                    | focus.classe.materie (materie) — reads isMateriaPrimaProva/isMateriaSecondaProva, already resolved per indirizzo by MaterieClasseProvider/TeachingCouncilProjection |
+ * | progetti      | focus.classe.progetti, focus.classe.hasProgetti       | tech.entita.classe (class)                        |
+ * | partner       | focus.classe.partner.{primo,secondo} (only if focus.classe.flags.isArticolata AND options.includiPartnerDettaglio) | focus.classe.flags.isArticolata, focus.classe.articolazione.partners (class). Re-runs class/students/tutor/consiglio against a throwaway scratch CDU per partner class id — reads nothing from the outer focus.classe.studenti/consiglioDiClasse/tutor and writes nothing back into them (zero cross-contamination with the main projection) |
  * | rappresentanti| focus.classe.rappresentanti                           | tech.entita.classe (class)                        |
  * | statistiche   | cdu.istituto.statistiche (if school ran), focus.classe.studenti.statistiche (if present) | cdu.istituto (school, guarded — skips if absent); focus.classe.studenti (students, guarded — skips if absent) |
  * | storicoClasse | focus.classe.storico (LazyRef, only if options.includiStorico) | tech.entita.classe (class) via focus.classe guard |
@@ -96,10 +102,15 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  *
  * Every recipe below places `school`/`class` first and, where used, `student`
  * before `carenze`/`piani`/`documenti`/`storico`/`carenzaFocus` and `class`
- * before `students`/`tutor`/`consiglio`/`rappresentanti`/`statistiche` — so
- * all currently-declared orderings are consistent with the table above. A
- * future edit that violates one of these reads (e.g. moving `piani` before
- * `student`) will not fail loudly here — it degrades silently or throws a
+ * before `students`/`tutor`/`consiglio`/`materie`/`esame`/`progetti`/`partner`/
+ * `rappresentanti`/`statistiche`, `consiglio` before `materie`, and `materie`
+ * before `esame` — so all currently-declared orderings are consistent with
+ * the table above. `partner` only reads `class`'s output (`focus.classe.flags.
+ * isArticolata`/`articolazione.partners`) — its position after `progetti` in
+ * `CLASSE_COMPLETA` is not itself a CDU-level ordering dependency, just where
+ * this task's slot landed in the token list. A future edit that violates one
+ * of the real reads above (e.g. moving `piani` before `student`) will not
+ * fail loudly here — it degrades silently or throws a
  * runtime `EntityNotFoundError`/`TypeError` deep inside a provider, not at
  * recipe-definition time. See the standalone-`DependencyResolver`
  * investigation note further below for why this isn't currently backed by a
@@ -115,6 +126,7 @@ export const RECIPES: Record<string, string[]> = {
     'materie',
     'esame',
     'progetti',
+    'partner',
     'rappresentanti',
     'statistiche',
     'storicoClasse',

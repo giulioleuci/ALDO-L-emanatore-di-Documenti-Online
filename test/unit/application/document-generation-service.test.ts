@@ -436,3 +436,80 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
     expect(strategy.cdu?.focus.classe?.flags.isArticolata).toBe(false);
   });
 });
+
+describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  function pushDocenteMateriaConfig(tables: Record<string, Row[]>, id = 'CD_DOCENTE_MATERIA'): void {
+    tables.CONF_DOC!.push({
+      ID: id,
+      TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+      GENERATORE: 'CAPTURING',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Programma_{{focus.materia.sigla}}_{{focus.docente.email}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+  }
+
+  // 5A/MATE resolves to bianchi@school.it, not the nominal CLASSI.MATE holder
+  // rossi@school.it: fixtureTables().VARIAZIONI_CATTEDRA reassigns 5A/MATE
+  // from rossi to bianchi effective 2025-10-01, and `wire()`'s injected `now`
+  // (2026-07-01) is well inside that window, so the 'consiglio' provider
+  // (role-resolved via SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI, ref RoleResolutionLib)
+  // reflects bianchi as 5A's current MATE titolare.
+  test('builds the CDU scoped to the docente/materia focus (5A: MATE -> bianchi@school.it per VARIAZIONI_CATTEDRA) and runs the pipeline', () => {
+    const tables = fixtureTables();
+    pushDocenteMateriaConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    const result = service.generateForClasseDocenteMateria(
+      ClasseId.of('5A'),
+      'bianchi@school.it',
+      'MATE',
+      'CD_DOCENTE_MATERIA'
+    );
+
+    expect(strategy.cdu?.focus.docente?.email).toBe('bianchi@school.it');
+    expect(strategy.cdu?.focus.materia?.sigla).toBe('MATE');
+    expect(result.status).toBe('GENERATO');
+    expect(result.fileName).toBe('Programma_MATE_bianchi@school.it');
+  });
+
+  // The DocenteMateriaFocusProvider PipelineError is thrown during
+  // ContextBuilder.build's provider-assembly step, same as every other
+  // provider error (e.g. ClasseProvider/AlunnoProvider's EntityNotFoundError)
+  // — the ContextEngine library wraps it in a ContextEngineError, so the
+  // observable contract at this integration boundary is the message, not the
+  // original error class (already covered directly at the provider unit level
+  // in docente-materia-focus-provider.test.ts).
+  test('throws when the docente/materia pair is not on the class council', () => {
+    const tables = fixtureTables();
+    pushDocenteMateriaConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    expect(() =>
+      service.generateForClasseDocenteMateria(
+        ClasseId.of('5A'),
+        'ignoto@school.it',
+        'MATE',
+        'CD_DOCENTE_MATERIA'
+      )
+    ).toThrow(/docente ignoto@school\.it non trovato nel consiglio di classe/);
+  });
+});

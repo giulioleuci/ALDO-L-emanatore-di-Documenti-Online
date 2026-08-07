@@ -375,6 +375,8 @@ export interface Cdu {
     alunno?: CduAlunno;
     carenza?: CduCarenzaFocus;
     piano?: CduPianoFocus;
+    docente?: PersonVM;
+    materia?: SubjectVM;
   };
   destinatario?: CduDestinatario;
   render?: {

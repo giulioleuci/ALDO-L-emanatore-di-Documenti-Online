@@ -8,7 +8,7 @@ import type { IConfigurazioneDocumentoRepository } from '../../domain/repositori
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
-import { recipe } from '../context-engine/Recipe';
+import { recipe, type BuildParams } from '../context-engine/Recipe';
 import {
   AnalyzeContextStep,
   CheckDuplicatesStep,
@@ -98,9 +98,32 @@ export class DocumentGenerationService {
   }
 
   /** `jobId` (batch seam, 15 §9): when provided, per-step telemetry is logged via IProcessMonitor. */
-  generateForClasse(
+  generateForClasse(target: ClasseId, confDocId: string, jobId?: string): DocumentGenerationResult {
+    return this.generateForClasseWithRecipe(target, confDocId, 'CLASSE_COMPLETA', {}, jobId);
+  }
+
+  /** One document per (docente, materia) cattedra of the class council — e.g. "programma svolto". */
+  generateForClasseDocenteMateria(
+    target: ClasseId,
+    docenteEmail: string,
+    materiaId: string,
+    confDocId: string,
+    jobId?: string
+  ): DocumentGenerationResult {
+    return this.generateForClasseWithRecipe(
+      target,
+      confDocId,
+      'CLASSE_DOCENTE_MATERIA',
+      { docenteCorrente: docenteEmail, materiaCorrente: materiaId },
+      jobId
+    );
+  }
+
+  private generateForClasseWithRecipe(
     target: ClasseId,
     confDocId: string,
+    cduRecipe: string,
+    extraParams: Partial<BuildParams>,
     jobId?: string
   ): DocumentGenerationResult {
     const startedAt = Date.now();
@@ -125,9 +148,10 @@ export class DocumentGenerationService {
         now: this.now,
         idConfigurazione: confDocId,
         tipoOperazione: 'GENERAZIONE_DOCUMENTO',
-        classiCompetenza
+        classiCompetenza,
+        ...extraParams
       },
-      recipe('CLASSE_COMPLETA')
+      recipe(cduRecipe)
     );
 
     // SheetDBLib transaction boundary (10 §11): every sheet mutation performed

@@ -90,8 +90,21 @@ function cduRecord(ctx: PipelineContext): Record<string, unknown> {
 function isPianoPersonalizzato(ctx: PipelineContext): boolean {
   return confDoc(ctx).tipo === 'PIANO_PERS';
 }
-function sottotipoPiano(ctx: PipelineContext): string {
-  return isPianoPersonalizzato(ctx) ? (cdu(ctx).focus.piano?.tipo ?? '') : '';
+/**
+ * The SOTTOTIPO discriminator used by CheckDuplicatesStep's identity match and
+ * RegisterDocumentStep's LOG_DOCS row (10 §4/§11): the focused plan subtype
+ * for PIANO_PERS, the `materia::docente` cattedra pair for
+ * DOCUMENTO_DOCENTE_MATERIA (one document per teacher/subject on the class
+ * council), empty otherwise.
+ */
+function sottotipo(ctx: PipelineContext): string {
+  if (isPianoPersonalizzato(ctx)) return cdu(ctx).focus.piano?.tipo ?? '';
+  if (String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '') === 'DOCUMENTO_DOCENTE_MATERIA') {
+    const materiaId = cdu(ctx).focus.materia?.sigla ?? '';
+    const docenteEmail = cdu(ctx).focus.docente?.email ?? '';
+    return `${materiaId}::${docenteEmail}`;
+  }
+  return '';
 }
 function nomeCartella(path: string): string {
   const segments = path.split('/').filter((segment) => segment !== '');
@@ -155,7 +168,7 @@ export class CheckDuplicatesStep extends Step {
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
     const tipo = String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '');
     const pianoPersonalizzato = isPianoPersonalizzato(ctx);
-    const sottotipo = sottotipoPiano(ctx);
+    const sottotipoValue = sottotipo(ctx);
     const utenti = pianoPersonalizzato
       ? resolveLogRegistration(
           cfg(ctx)[COL_CONF_DOC.REGISTRA_DOC],
@@ -175,7 +188,7 @@ export class CheckDuplicatesStep extends Step {
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) =>
         String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&
-        String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipo &&
+        String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipoValue &&
         String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
         (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&
         String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
@@ -186,7 +199,7 @@ export class CheckDuplicatesStep extends Step {
       this.setResult(
         ctx,
         'skipReason',
-        `Duplicato: TIPO=${tipo}, SOTTOTIPO=${sottotipo}, ID_GEN=${idGen}, PATH=${path}, NOME=${nome}`
+        `Duplicato: TIPO=${tipo}, SOTTOTIPO=${sottotipoValue}, ID_GEN=${idGen}, PATH=${path}, NOME=${nome}`
       );
     }
   }
@@ -430,7 +443,7 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.ID]: ctx.get<string>('newFileId')!,
       [COL_LOG_DOCS.ID_GEN]: String(cfg(ctx)[COL_CONF_DOC.ID]),
       [COL_LOG_DOCS.TIPO]: String(cfg(ctx)[COL_CONF_DOC.TIPO]),
-      [COL_LOG_DOCS.SOTTOTIPO]: sottotipoPiano(ctx),
+      [COL_LOG_DOCS.SOTTOTIPO]: sottotipo(ctx),
       [COL_LOG_DOCS.NOME]: ctx.get<string>('nomeFile')!,
       [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
       [COL_LOG_DOCS.PATH]: ctx.get<string>('destFolderPath') ?? '',

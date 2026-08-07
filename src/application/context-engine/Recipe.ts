@@ -43,6 +43,8 @@ export interface BuildParams {
   classiCompetenza?: string[];
   /** Selected personalized-plan type for the PIANO_PERSONALIZZATO CDU recipe. */
   pianoTipo?: TipoPiano;
+  /** Docente email scoping a single DOCUMENTO_DOCENTE_MATERIA generation target. */
+  docenteCorrente?: string | null;
 }
 
 export const DEFAULT_OPTIONS: RecipeOptions = {
@@ -133,6 +135,22 @@ export const RECIPES: Record<string, string[]> = {
     'statistiche',
     'storicoClasse',
     'pianiPersClasse'
+  ],
+  CLASSE_DOCENTE_MATERIA: [
+    'school',
+    'class',
+    'students',
+    'tutor',
+    'consiglio',
+    'materie',
+    'esame',
+    'progetti',
+    'partner',
+    'rappresentanti',
+    'statistiche',
+    'storicoClasse',
+    'pianiPersClasse',
+    'docenteMateriaFocus'
   ],
   ALUNNO_DETTAGLIATO: [
     'school',

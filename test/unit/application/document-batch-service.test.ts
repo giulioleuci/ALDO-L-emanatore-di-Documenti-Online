@@ -485,6 +485,147 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   expect(monitor.completed).toHaveLength(1);
 });
 
+function wireDocentiMateria(
+  options: {
+    failFor?: string;
+    monitor?: FakeProcessMonitor;
+    logger?: LoggerService;
+  } = {}
+) {
+  const db = new FakeDatabase(fixtureTables());
+  const generated: Array<{
+    classe: string;
+    docente: string;
+    materia: string;
+    confDocId: string;
+    jobId?: string;
+  }> = [];
+  const documenti = {
+    generateForClasseDocenteMateria: (
+      target: ClasseId,
+      docenteEmail: string,
+      materiaId: string,
+      confDocId: string,
+      jobId?: string
+    ) => {
+      const key = `${target.value}:${materiaId}:${docenteEmail}`;
+      if (key === options.failFor) throw new Error('template non trovato');
+      generated.push({ classe: target.value, docente: docenteEmail, materia: materiaId, confDocId, jobId });
+      return {
+        fileId: `file_${target.value}_${materiaId}`,
+        fileName: `Doc_${target.value}_${materiaId}`,
+        fileLink: `https://docs.google.com/document/d/file_${target.value}_${materiaId}/edit`,
+        status: 'GENERATO',
+        durationMs: 8572
+      };
+    }
+  } as unknown as DocumentGenerationService;
+  const configs = {
+    findById: (id: string) =>
+      new ConfigurazioneDocumento({
+        ID: id,
+        TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+        GENERATORE: 'PROGRAMMA_SVOLTO'
+      })
+  };
+  const service = new DocumentBatchService(
+    new ClasseRepository(db),
+    new AlunnoRepository(db),
+    configs,
+    documenti,
+    options.monitor,
+    options.logger
+  );
+  return { service, generated };
+}
+
+describe('DocumentBatchService.generateDocentiMateria', () => {
+  test('enumerates one target per cattedra across active classes (GESTIONE_ARTICOLAZIONE=COMPLETA excludes partners)', () => {
+    const { service, generated } = wireDocentiMateria();
+    const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' });
+    const checkpoints: BatchCheckpoint[] = [];
+    let step = gen.next();
+    while (!step.done) {
+      checkpoints.push(step.value);
+      step = gen.next();
+    }
+    const result = step.value;
+
+    // Fixture active classes are 5A, 1F, 1F-LSO, 1F-LSS; GESTIONE_ARTICOLAZIONE
+    // defaults to COMPLETA (unset on the fabricated config), so the parent (1F)
+    // is targeted and its partners are excluded — same subset as the CD1 case.
+    // 5A has cattedre MATE->rossi, FISI->bianchi, IRC->bianchi; 1F has only MATE->rossi.
+    expect(generated).toEqual([
+      { classe: '5A', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
+      { classe: '5A', docente: 'bianchi@school.it', materia: 'FISI', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
+      { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
+      { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' }
+    ]);
+    expect(checkpoints).toHaveLength(4);
+    expect(result).toEqual({
+      success: true,
+      totale: 4,
+      processed: [
+        '5A:MATE:rossi@school.it',
+        '5A:FISI:bianchi@school.it',
+        '5A:IRC:bianchi@school.it',
+        '1F:MATE:rossi@school.it'
+      ],
+      errori: []
+    });
+  });
+
+  test('resumes from persisted docenteMateriaTargets without re-querying the consiglio', () => {
+    const { service, generated } = wireDocentiMateria();
+    const gen = service.batchGenerateHandler({
+      confDocId: 'PROGRAMMA_SVOLTO',
+      resumeState: {
+        nextIndex: 2,
+        processed: ['5A:MATE:rossi@school.it', '5A:FISI:bianchi@school.it'],
+        errori: [],
+        docenteMateriaTargets: [
+          { classe: '5A', docenteEmail: 'rossi@school.it', materiaId: 'MATE' },
+          { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'FISI' },
+          { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'IRC' },
+          { classe: '1F', docenteEmail: 'rossi@school.it', materiaId: 'MATE' }
+        ]
+      }
+    });
+    let step = gen.next();
+    while (!step.done) step = gen.next();
+
+    // Only the two targets after nextIndex=2 are (re)generated — proves the
+    // persisted docenteMateriaTargets snapshot is consumed as-is rather than
+    // re-derived from classi.getConsiglioDiClasse on resume.
+    expect(generated).toEqual([
+      { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
+      { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
+    ]);
+    expect(step.value.processed).toEqual([
+      '5A:MATE:rossi@school.it',
+      '5A:FISI:bianchi@school.it',
+      '5A:IRC:bianchi@school.it',
+      '1F:MATE:rossi@school.it'
+    ]);
+  });
+
+  test('a single cattedra failure is isolated: logged in errori, the batch continues (15 §8)', () => {
+    const { service, generated } = wireDocentiMateria({ failFor: '5A:FISI:bianchi@school.it' });
+    const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO' });
+    let step = gen.next();
+    while (!step.done) step = gen.next();
+    const result = step.value;
+
+    expect(generated).toEqual([
+      { classe: '5A', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
+      { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
+      { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
+    ]);
+    expect(result.errori).toEqual(['5A:FISI:bianchi@school.it: template non trovato']);
+    expect(result.success).toBe(false);
+  });
+});
+
 test('registerJobHandlers registers the generator under the job type (JobRunnerLib registry callback)', () => {
   const { service } = wire();
   const registered = new Map<string, unknown>();

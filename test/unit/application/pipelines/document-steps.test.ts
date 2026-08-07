@@ -57,6 +57,23 @@ function buildPianoCdu(db: FakeDatabase, pianoTipo: TipoPiano): Cdu {
   );
 }
 
+function buildDocenteMateriaCdu(
+  db: FakeDatabase,
+  docenteCorrente: string,
+  materiaCorrente: string
+): Cdu {
+  return composeContextBuilder(db).build(
+    {
+      target: '5A',
+      tipoTarget: 'classe',
+      docenteCorrente,
+      materiaCorrente,
+      now: new Date('2026-07-01T09:00:00Z')
+    },
+    recipe('CLASSE_DOCENTE_MATERIA')
+  );
+}
+
 function pianoConfig(): Record<string, unknown> {
   return {
     ...fixtureTables().CONF_DOC[0]!,
@@ -592,6 +609,52 @@ test('RegisterDocumentStep keeps SOTTOTIPO empty for non-plan generators even wi
   new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_1');
   expect(row?.SOTTOTIPO).toBe('');
+});
+
+// 5A/MATE resolves to bianchi@school.it via VARIAZIONI_CATTEDRA (rossi is the
+// nominal CLASSI.MATE holder but was reassigned to bianchi effective
+// 2025-10-01, before this fixed `now`) — same fixture fact relied on by
+// document-generation-service.test.ts's generateForClasseDocenteMateria case.
+test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUMENTO_DOCENTE_MATERIA', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_MATERIA' };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildDocenteMateriaCdu(db, 'bianchi@school.it', 'MATE'));
+  ctx.set('newFileId', 'file_docmat');
+  ctx.set('newFileLink', 'https://drive/file_docmat');
+  ctx.set('nomeFile', 'Programma_MATE');
+  ctx.set('destFolderPath', 'Docs');
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_docmat');
+  expect(row?.SOTTOTIPO).toBe('MATE::bianchi@school.it');
+});
+
+test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_MATERIA identity includes the materia::docente SOTTOTIPO', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+      SOTTOTIPO: 'MATE::bianchi@school.it',
+      PATH: 'Verbali/5',
+      NOME: 'Verbale_5A_01/07/2026',
+      CLASSI: '5A',
+      STATO: 'GENERATO'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_MATERIA' };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildDocenteMateriaCdu(db, 'bianchi@school.it', 'MATE'));
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  expect(ctx.get('shouldGenerate')).toBe(false);
+  expect(String(ctx.get('skipReason'))).toContain('SOTTOTIPO=MATE::bianchi@school.it');
 });
 
 test('critical steps are exactly the rollback points of 10 §8', () => {

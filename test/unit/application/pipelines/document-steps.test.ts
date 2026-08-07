@@ -770,7 +770,37 @@ describe('PrepareInfrastructureStep registration metadata options', () => {
     // CDU whose focus.classe is undefined -> classeNome(ctx) === ''.
     ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PATH_OUT: 'Verbali/Fisso' });
     ctx.set('confDoc', ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!));
-    const minimalCdu: Cdu = { focus: {} };
+    const minimalCdu: Cdu = {
+      meta: {
+        timestamp: '2026-07-01T09:00:00.000Z',
+        idConfigurazione: 'CD1',
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO',
+        idEsecuzione: 'EXEC-test',
+        date: {
+          oggi: {
+            breve: '01/07/2026',
+            estesa: '01 luglio 2026',
+            iso: '2026-07-01',
+            giorno: '01',
+            mese: '07',
+            anno: '2026',
+            ora: '09:00'
+          }
+        },
+        parametriInput: {
+          target: '',
+          tipoTarget: 'classe',
+          materiaCorrente: null,
+          opzioni: {}
+        }
+      },
+      focus: {},
+      tech: {
+        entita: {},
+        servizi: [],
+        pipeline: { statoCorrente: 'IN_CORSO', stepEseguiti: [], errori: [], logEsecuzione: [] }
+      }
+    };
     ctx.set('cdu', minimalCdu);
     ctx.set('shouldGenerate', true);
     const findOrCreateSpy = jest

@@ -235,9 +235,7 @@ export class PrepareInfrastructureStep extends Step {
     this.setResult(ctx, 'destFolderPath', path);
     const progressivo = this.drive.countFilesInFolder(folderId) + 1;
     const cduObj = cdu(ctx);
-    if (cduObj.meta !== undefined) {
-      cduObj.meta.progressivo = progressivo;
-    }
+    cduObj.meta.progressivo = progressivo;
     cduObj.progressivo = progressivo;
   }
 

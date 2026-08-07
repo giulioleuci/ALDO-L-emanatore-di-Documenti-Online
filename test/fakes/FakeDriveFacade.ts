@@ -40,7 +40,7 @@ export class FakeDriveFacade implements IDriveFacade {
   getFileText(fileId: string): string {
     return `text:${fileId}`;
   }
-  countFilesInFolder(folderId: string): number {
+  countFilesInFolder(): number {
     return 0; // fake always returns 0, tests override as needed
   }
 }

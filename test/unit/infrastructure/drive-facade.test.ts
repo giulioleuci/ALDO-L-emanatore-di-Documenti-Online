@@ -244,7 +244,7 @@ describe('DriveServiceFacade — copyFile failure', () => {
 describe('countFilesInFolder', () => {
   it('counts non-trashed, non-folder files via searchFiles', () => {
     const drive = { searchFiles: jest.fn().mockReturnValue([{ id: 'a' }, { id: 'b' }, { id: 'c' }]) };
-    const facade = new DriveServiceFacade(drive as any, {} as any, 'root');
+    const facade = new DriveServiceFacade(drive as never, {} as never, 'root');
 
     const count = facade.countFilesInFolder('folder123');
 

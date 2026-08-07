@@ -8,6 +8,10 @@ import type { IDocenteRepository } from '../../../../../src/domain/repositories/
 import type { IClasseRepository } from '../../../../../src/domain/repositories/IClasseRepository';
 import type { IMateriaRepository } from '../../../../../src/domain/repositories/IMateriaRepository';
 import type { StoricoDatabaseProvider } from '../../../../../src/application/storico/StoricoDatabaseProvider';
+import { DocenteRepository } from '../../../../../src/infrastructure/repositories/DocenteRepository';
+import { FakeDatabase } from '../../../../fakes/FakeDatabase';
+import { ClasseId } from '../../../../../src/domain/value-objects/ClasseId';
+import type { Row } from '../../../../../src/infrastructure/db/Database';
 
 function docenteCdc(nomeCompleto: string, email: string, sigla: string, isITP = false): DocenteCdcVM {
   return {
@@ -69,6 +73,52 @@ describe('MaterieClasseProvider', () => {
       const cdu = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
       provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
       expect(cdu.focus.classe!.materie![0]!.continuita).toBeUndefined();
+    });
+
+    it('wires ruoli.itp end to end: hasItp subject gets a populated itp continuity from the historical cattedra matrix', () => {
+      // Historical year (2A, one year back from current 3A): MATE main = m@x.it,
+      // MATE.itp = l@x.it — the same titolare/ITP pair as the current council.
+      const historicalTables: Record<string, Row[]> = {
+        CLASSI: [
+          {
+            ID: '2A',
+            ANNO: 2,
+            INDIRIZZO: 'SCIENTIFICO',
+            ATTIVA: false,
+            MATE: 'm@x.it',
+            'MATE.itp': 'l@x.it'
+          }
+        ],
+        MATERIE: [{ ID: 'MATE', NOME: 'Matematica' }],
+        DOCENTI: [
+          { EMAIL: 'm@x.it', COGNOME: 'Rossi', NOME: 'Mario', GENERE: 'M' },
+          { EMAIL: 'l@x.it', COGNOME: 'Gialli', NOME: 'Laura', GENERE: 'F' }
+        ]
+      };
+      const docentiConEmail = new DocenteRepository(new FakeDatabase(historicalTables));
+      const classiConStorico: IClasseRepository = {
+        getStorico: () => [ClasseId.of('2A')]
+      } as unknown as IClasseRepository;
+      const storicoDbConItp: StoricoDatabaseProvider = {
+        anniStorici: () => [{ anno: '2024-2025', db: new FakeDatabase(historicalTables) }]
+      };
+
+      const provider = new MaterieClasseProvider(materie, docentiConEmail, storicoDbConItp, classiConStorico);
+      const cdu = cduConClasse([
+        docenteCdc('Mario Rossi', 'm@x.it', 'MATE', false),
+        docenteCdc('Laura Gialli', 'l@x.it', 'MATE', true)
+      ]);
+      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
+
+      const mate = cdu.focus.classe!.materie![0]!;
+      expect(mate.hasItp).toBe(true);
+      const continuita = mate.continuita!;
+      expect(continuita.docentiAnniPrecedenti).toHaveLength(1);
+      const annoMeno1 = continuita.docentiAnniPrecedenti[0]!;
+      expect(annoMeno1.titolare?.nomeCompleto).toBe('Mario Rossi');
+      expect(annoMeno1.itp?.nomeCompleto).toBe('Laura Gialli');
+      expect(continuita.continuitaUltimiDueAnni).toBe(true);
+      expect(continuita.continuitaUltimiDueAnniItp).toBe(true);
     });
   });
 });

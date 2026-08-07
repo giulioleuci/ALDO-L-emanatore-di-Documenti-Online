@@ -10,7 +10,7 @@ export interface ContinuitaVM {
     annoIndietro: number;
     annoScolastico: string;
     titolare: PersonVM | null;
-    itp: PersonVM | null;
+    itp?: PersonVM | null;
   }>;
   continuitaUltimiTreAnni: boolean;
   continuitaUltimiDueAnni: boolean;
@@ -35,10 +35,10 @@ export interface BuildContinuitaInput {
  * `reconcileSigla` (course year = current course year minus years back — a
  * student's cattedra sigla is keyed to the course year it was taught in, not
  * the calendar year) and picks the titolare/ITP docente(s) matching the
- * current subject. `itp` is always present per-year (`null` when the subject
- * has no ITP or none matched that year); only the aggregate top-level
- * `continuitaUltimiTreAnniItp`/`continuitaUltimiDueAnniItp` flags are omitted
- * from the object shape when `hasItp` is false (02 §8.3 note).
+ * current subject. When `hasItp` is false, the `itp` fields inside
+ * `docentiAnniPrecedenti` and the top-level `continuitaUltimiTreAnniItp`/
+ * `continuitaUltimiDueAnniItp` booleans are entirely omitted from the object
+ * shape, not generated as `null`/`false` (02 §8.3 note).
  */
 export function buildContinuita(input: BuildContinuitaInput): ContinuitaVM {
   const docentiAnniPrecedenti = input.anniStorici.map((anno, index) => {
@@ -53,7 +53,7 @@ export function buildContinuita(input: BuildContinuitaInput): ContinuitaVM {
       annoIndietro,
       annoScolastico: anno.anno,
       titolare: resolveDocente(titolareMatch?.docenteEmail, input.docenti),
-      itp: input.hasItp ? resolveDocente(itpMatch?.docenteEmail, input.docenti) : null
+      ...(input.hasItp ? { itp: resolveDocente(itpMatch?.docenteEmail, input.docenti) } : {})
     };
   });
 

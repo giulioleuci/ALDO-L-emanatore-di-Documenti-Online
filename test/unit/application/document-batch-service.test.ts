@@ -556,7 +556,7 @@ function wireDocentiMateria(
         GENERATORE: 'PROGRAMMA_SVOLTO'
       })
   };
-  // Models the real fixture fact this fix (round 1) addresses: 5A's nominal
+  // Models the real fixture fact fix round 1 addresses: 5A's nominal
   // CLASSI.MATE holder is rossi@school.it, but VARIAZIONI_CATTEDRA reassigns
   // it to bianchi@school.it effective 2025-10-01 (see fixtureTables() /
   // docente-materia-focus-provider.test.ts and document-generation-service
@@ -566,15 +566,32 @@ function wireDocentiMateria(
   // DocenteMateriaFocusProvider resolves downstream — that's exactly the
   // divergence Finding 1 flagged.
   const councilByClasse: Record<string, TeachingAssignment[]> = {
-    '5A': [
-      fakeAssignment('MATE', 'bianchi@school.it'),
-      fakeAssignment('FISI', 'bianchi@school.it'),
-      fakeAssignment('IRC', 'bianchi@school.it')
-    ],
+    '5A': [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')],
     '1F': [fakeAssignment('MATE', 'rossi@school.it')]
   };
+  // Separate, options-gated bucket: models a docente who teaches ONLY a
+  // religione-alt materia (IRC's IS_RELIGIONE_ALT=true in fixtureTables()).
+  // AldoTeachingAssignmentResolver.resolveConsiglio skips IS_RELIGIONE_ALT
+  // materie entirely unless called with { includeReligioneAlt: true } (fix
+  // round 2) — this fake reproduces that same gating so a production call
+  // that omits the option makes verdi@school.it/IRC silently vanish from
+  // `generated` here too, exactly like the real regression it caught.
+  const religioneAltByClasse: Record<string, TeachingAssignment[]> = {
+    '5A': [fakeAssignment('IRC', 'verdi@school.it')]
+  };
   const teachingAssignments = {
-    resolveConsiglio: (classe: Classe) => councilByClasse[classe.id ?? ''] ?? [],
+    resolveConsiglio: (
+      classe: Classe,
+      _date: Date,
+      resolveOptions?: { includeReligioneAlt?: boolean }
+    ) => {
+      const base = councilByClasse[classe.id ?? ''] ?? [];
+      const alt =
+        resolveOptions?.includeReligioneAlt === true
+          ? (religioneAltByClasse[classe.id ?? ''] ?? [])
+          : [];
+      return [...base, ...alt];
+    },
     resolveMateria: () => []
   } as unknown as ITeachingAssignmentResolver;
   const service = new DocumentBatchService(
@@ -606,11 +623,13 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     // defaults to COMPLETA (unset on the fabricated config), so the parent (1F)
     // is targeted and its partners are excluded — same subset as the CD1 case.
     // 5A's role-resolved council is MATE->bianchi (substitution, see
-    // wireDocentiMateria's comment), FISI->bianchi, IRC->bianchi; 1F is only MATE->rossi.
+    // wireDocentiMateria's comment), FISI->bianchi, plus the religione-alt-gated
+    // IRC->verdi (only present because resolveConsiglio is called with
+    // includeReligioneAlt: true, fix round 2); 1F is only MATE->rossi.
     expect(generated).toEqual([
       { classe: '5A', docente: 'bianchi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
       { classe: '5A', docente: 'bianchi@school.it', materia: 'FISI', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
-      { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
+      { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
       { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' }
     ]);
     expect(checkpoints).toHaveLength(4);
@@ -620,10 +639,31 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
       processed: [
         '5A:MATE:bianchi@school.it',
         '5A:FISI:bianchi@school.it',
-        '5A:IRC:bianchi@school.it',
+        '5A:IRC:verdi@school.it',
         '1F:MATE:rossi@school.it'
       ],
       errori: []
+    });
+  });
+
+  // Dedicated regression guard for the divergence Finding 1's fix (role-
+  // resolved enumeration) itself introduced (fix round 2): a docente who
+  // teaches ONLY a religione-alt materia (IRC) must still be enumerated as a
+  // batch target — not silently dropped, and not even surfaced as an `errori`
+  // entry, just absent — which is exactly what happens if
+  // resolveConsiglio is called without { includeReligioneAlt: true }.
+  test('enumerates a docente who only teaches a religione-alt materia (IRC) — regression guard for includeReligioneAlt', () => {
+    const { service, generated } = wireDocentiMateria();
+    const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO' });
+    let step = gen.next();
+    while (!step.done) step = gen.next();
+
+    expect(generated).toContainEqual({
+      classe: '5A',
+      docente: 'verdi@school.it',
+      materia: 'IRC',
+      confDocId: 'PROGRAMMA_SVOLTO',
+      jobId: 'PROGRAMMA_SVOLTO'
     });
   });
 
@@ -638,7 +678,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
         docenteMateriaTargets: [
           { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' },
           { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'FISI' },
-          { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'IRC' },
+          { classe: '5A', docenteEmail: 'verdi@school.it', materiaId: 'IRC' },
           { classe: '1F', docenteEmail: 'rossi@school.it', materiaId: 'MATE' }
         ]
       }
@@ -650,13 +690,13 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     // persisted docenteMateriaTargets snapshot is consumed as-is rather than
     // re-derived from teachingAssignments.resolveConsiglio on resume.
     expect(generated).toEqual([
-      { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
+      { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
       { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
     ]);
     expect(step.value.processed).toEqual([
       '5A:MATE:bianchi@school.it',
       '5A:FISI:bianchi@school.it',
-      '5A:IRC:bianchi@school.it',
+      '5A:IRC:verdi@school.it',
       '1F:MATE:rossi@school.it'
     ]);
   });
@@ -670,7 +710,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
 
     expect(generated).toEqual([
       { classe: '5A', docente: 'bianchi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
-      { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
+      { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
       { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
     ]);
     expect(result.errori).toEqual(['5A:FISI:bianchi@school.it: template non trovato']);

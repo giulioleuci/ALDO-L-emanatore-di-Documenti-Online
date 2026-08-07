@@ -222,8 +222,22 @@ export class DocumentBatchService {
         // IClasseRepository.getConsiglioDiClasse nominal cattedre — an active
         // substitution/variation must enumerate the current teacher, same
         // council data DocenteMateriaFocusProvider matches against downstream
-        // (fix round 1: the two previously diverged).
-        const assignments = this.teachingAssignments.resolveConsiglio(classe, this.now);
+        // (fix round 1: the two previously diverged). includeReligioneAlt:
+        // true mirrors resolveCouncilForProjection's call
+        // (TeachingCouncilProjection.ts) — without it, AldoTeachingAssignmentResolver
+        // silently skips IS_RELIGIONE_ALT materie (IRC/attività alternativa)
+        // entirely, so a docente teaching only one of those would never be
+        // enumerated as a batch target at all (fix round 2). routingPolicy is
+        // intentionally NOT passed: it only affects TeachingAssignment.routing
+        // .{primary,cc,bcc} (communication-channel categorization of the SAME
+        // delegation chain — RoleResolutionLib's RoutingResolver/RoutingPolicy,
+        // see GasLibraryFactory/DOCS_LIBS/RoleResolutionLib.md), never
+        // `docenteEffettivo`/`slot`, the only two fields this enumeration
+        // reads — so it has no bearing on which (docente, materia) targets
+        // get generated here.
+        const assignments = this.teachingAssignments.resolveConsiglio(classe, this.now, {
+          includeReligioneAlt: true
+        });
         for (const assignment of assignments) {
           targets.push({
             classe: classe.id ?? '',

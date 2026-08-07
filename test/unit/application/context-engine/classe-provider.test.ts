@@ -116,6 +116,28 @@ test('RappresentantiProvider: student reps with email, no parent reps in fixture
   });
 });
 
+test('RappresentantiProvider: attaches studente.nomeCompleto to each genitore for ordinary classes', () => {
+  const tables = fixtureTables();
+  (tables['ALUNNI'] as Row[]) = [
+    {
+      EMAIL: 'marco@school.it',
+      COGNOMENOME: 'Marco Neri',
+      CLASSE: '5A',
+      RELIGIONE: 'IRC',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: false,
+      RAPPR_GEN: 'Giuseppe Neri',
+      CURRICULUM: null
+    }
+  ];
+  const c = build('5A', tables).focus.classe!;
+  expect(c.rappresentanti).toEqual({
+    studenti: [],
+    genitori: [{ nomeCompleto: 'Giuseppe Neri', studente: { nomeCompleto: 'Marco Neri' } }]
+  });
+});
+
 test('ClasseProvider: articulated parent flags + materie split (02 §4.1, 09 §9)', () => {
   const c = build('1F').focus.classe!;
   expect(c.anagrafica.anno).toBe(1);
@@ -195,7 +217,7 @@ test('RappresentantiProvider: articulated parent merges reps across partners, ta
       }
     ],
     genitori: [
-      { nomeCompleto: 'Tre Genitore', indirizzo: { nome: 'Liceo scientifico scienze applicate' } }
+      { nomeCompleto: 'Tre Genitore', studente: { nomeCompleto: 'DUE REP' }, indirizzo: { nome: 'Liceo scientifico scienze applicate' } }
     ]
   });
 });

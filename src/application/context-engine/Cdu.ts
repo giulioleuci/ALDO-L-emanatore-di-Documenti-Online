@@ -185,7 +185,7 @@ export interface CduClasse {
   };
   rappresentanti?: {
     studenti: Array<{ nomeCompleto: string; email: string; indirizzo?: { nome: string } }>;
-    genitori: Array<{ nomeCompleto: string; indirizzo?: { nome: string } }>;
+    genitori: Array<{ nomeCompleto: string; studente: { nomeCompleto: string }; indirizzo?: { nome: string } }>;
   };
   consiglioDiClasse?: DocenteCdcVM[];
   consiglioDiClasseComune?: DocenteCdcVM[];

@@ -23,7 +23,7 @@ export class RappresentantiProvider implements ContextProvider {
     if (config?.isParent() === true) {
       const studenti: Array<{ nomeCompleto: string; email: string; indirizzo: { nome: string } }> =
         [];
-      const genitori: Array<{ nomeCompleto: string; indirizzo: { nome: string } }> = [];
+      const genitori: Array<{ nomeCompleto: string; studente: { nomeCompleto: string }; indirizzo: { nome: string } }> = [];
       for (const partner of this.classi.getClassiPartner(classe)) {
         const indirizzo = { nome: this.classi.getIndirizzo(partner).nome };
         for (const alunno of this.classi.getStudenti(partner)) {
@@ -32,7 +32,7 @@ export class RappresentantiProvider implements ContextProvider {
           }
           const nomeGenitore = alunno.getRappresentanteGenitore().trim();
           if (nomeGenitore.length > 0) {
-            genitori.push({ nomeCompleto: nomeGenitore, indirizzo });
+            genitori.push({ nomeCompleto: nomeGenitore, studente: { nomeCompleto: alunno.cognomeNome }, indirizzo });
           }
         }
       }
@@ -46,9 +46,11 @@ export class RappresentantiProvider implements ContextProvider {
         .filter((a) => a.isRappresentante())
         .map((a) => ({ nomeCompleto: a.cognomeNome, email: a.email.value })),
       genitori: studenti
-        .map((a) => a.getRappresentanteGenitore().trim())
-        .filter((nome) => nome.length > 0)
-        .map((nome) => ({ nomeCompleto: nome }))
+        .filter((a) => a.getRappresentanteGenitore().trim().length > 0)
+        .map((a) => ({
+          nomeCompleto: a.getRappresentanteGenitore().trim(),
+          studente: { nomeCompleto: a.cognomeNome }
+        }))
     };
   }
 }

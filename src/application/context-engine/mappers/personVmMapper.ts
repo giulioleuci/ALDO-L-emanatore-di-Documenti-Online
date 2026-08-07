@@ -50,8 +50,8 @@ export function buildPersonVm(input: PersonVmInput): PersonVM {
   }
 
   const appellativo = appellativoDiGenere(genere as Genere);
-  const articolo = genere === Genere.M ? 'il' : 'la';
-  const coordinatore = genere === Genere.M ? 'coordinatore' : 'coordinatrice';
+  const articolo = genere === 'M' ? 'il' : 'la';
+  const coordinatore = genere === 'M' ? 'coordinatore' : 'coordinatrice';
   const appellativoCompleto = `${appellativo} ${nomeCompleto}`;
   const appellativoCognome = cognome === null ? nomeCompleto : `${appellativo} ${cognome}`;
 

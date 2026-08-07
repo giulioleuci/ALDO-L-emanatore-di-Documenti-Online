@@ -30,12 +30,21 @@ describe('DocenteMateriaFocusProvider', () => {
     expect(cdu.focus.materia).toEqual({ sigla: 'MAT', nome: 'Matematica' });
   });
 
-  it('throws PipelineError when the docente/materia pair is not found', () => {
+  it('throws PipelineError when the docente is not on the consiglio at all', () => {
     const cdu = cduWithConsiglio();
     const provider = new DocenteMateriaFocusProvider();
 
     expect(() =>
       provider.provide(cdu, { docenteCorrente: 'ignoto@scuola.it', materiaCorrente: 'MAT' } as never)
+    ).toThrow(PipelineError);
+  });
+
+  it('throws PipelineError when the docente is on the consiglio but does not teach the requested materia', () => {
+    const cdu = cduWithConsiglio();
+    const provider = new DocenteMateriaFocusProvider();
+
+    expect(() =>
+      provider.provide(cdu, { docenteCorrente: 'rossi@scuola.it', materiaCorrente: 'ITA' } as never)
     ).toThrow(PipelineError);
   });
 });

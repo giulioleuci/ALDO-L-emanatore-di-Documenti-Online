@@ -6,6 +6,7 @@ import { ConfigurationError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from './DocumentGenerationService';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
+import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 
 /** Job type under which the batch handler is registered in JobRunnerLib. */
 export const JOB_TYPE_GENERAZIONE_DOCUMENTI = 'GENERAZIONE_DOCUMENTI_CLASSI';
@@ -64,6 +65,14 @@ export class DocumentBatchService {
     private readonly alunni: IAlunnoRepository,
     private readonly configs: DocumentConfigLookup,
     private readonly documenti: DocumentGenerationService,
+    /** Role-resolved (SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI) council, used only
+     * by generateDocentiMateria — a raw IClasseRepository.getConsiglioDiClasse
+     * read would enumerate the stale nominal teacher on an active
+     * substitution/cattedra variation, silently skipping the actually-current
+     * one (fix round 1). */
+    private readonly teachingAssignments: ITeachingAssignmentResolver,
+    /** Injected clock for the same role-resolution call — must be deterministic, never the system clock. */
+    private readonly now: Date,
     private readonly monitor?: IProcessMonitor,
     private readonly logger?: LoggerService
   ) {}
@@ -209,12 +218,17 @@ export class DocumentBatchService {
         config.gestioneArticolazione
       );
       for (const classe of attive) {
-        const { cattedre } = this.classi.getConsiglioDiClasse(classe.classeId);
-        for (const cattedra of cattedre) {
+        // Role-resolved (SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI), not the raw
+        // IClasseRepository.getConsiglioDiClasse nominal cattedre — an active
+        // substitution/variation must enumerate the current teacher, same
+        // council data DocenteMateriaFocusProvider matches against downstream
+        // (fix round 1: the two previously diverged).
+        const assignments = this.teachingAssignments.resolveConsiglio(classe, this.now);
+        for (const assignment of assignments) {
           targets.push({
             classe: classe.id ?? '',
-            docenteEmail: cattedra.docente.email.value,
-            materiaId: cattedra.materia.value
+            docenteEmail: assignment.docenteEffettivo.email.value,
+            materiaId: assignment.slot.materia.value
           });
         }
       }

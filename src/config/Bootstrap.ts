@@ -227,6 +227,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         new AlunnoRepository(deps.db),
         new ConfigurazioneDocumentoRepository(deps.db),
         container.get<DocumentGenerationService>('documentGenerationService'),
+        container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
+        deps.now,
         deps.monitor,
         logger
       )

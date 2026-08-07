@@ -18,11 +18,27 @@ import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import type { IClasseRepository } from '../../../src/domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../src/domain/repositories/IAlunnoRepository';
+import type {
+  ITeachingAssignmentResolver,
+  TeachingAssignment
+} from '../../../src/application/ports/ITeachingAssignmentResolver';
+import type { Classe } from '../../../src/domain/entities/Classe';
+import { Docente } from '../../../src/domain/entities/Docente';
+import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 
 // The generator contract is what JobRunnerLib executes: it yields a resumable
 // checkpoint per class and fast-forwards from params.resumeState after a
 // suspension. The trigger/state machinery itself is the library's (tested in
 // the GasLibraryFactory monorepo and online).
+
+/** Injected clock shared by every wire*() factory below — the batch service's role-resolution call must be deterministic, not the system clock. */
+const FIXED_NOW = new Date('2026-07-01T09:00:00Z');
+
+/** Stub resolver for suites that don't exercise generateDocentiMateria (generateClassi/generatePiani never call it). */
+const noopTeachingAssignments = {
+  resolveConsiglio: () => [],
+  resolveMateria: () => []
+} as unknown as ITeachingAssignmentResolver;
 
 function wire(
   options: {
@@ -54,6 +70,8 @@ function wire(
     new AlunnoRepository(db),
     new ConfigurazioneDocumentoRepository(db),
     documenti,
+    noopTeachingAssignments,
+    FIXED_NOW,
     options.monitor,
     options.logger
   );
@@ -133,6 +151,8 @@ function wirePiani(
     alunni as unknown as IAlunnoRepository,
     configs,
     documenti as unknown as DocumentGenerationService,
+    noopTeachingAssignments,
+    FIXED_NOW,
     options.monitor,
     options.logger
   );
@@ -485,6 +505,14 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   expect(monitor.completed).toHaveLength(1);
 });
 
+/** Minimal fake TeachingAssignment — DocumentBatchService.generateDocentiMateria only reads slot.materia/docenteEffettivo.email. */
+function fakeAssignment(materiaId: string, docenteEmail: string): TeachingAssignment {
+  return {
+    slot: { materia: MateriaId.of(materiaId), kind: 'STANDARD', specifica: null },
+    docenteEffettivo: new Docente({ EMAIL: docenteEmail, COGNOME: docenteEmail, NOME: '', GENERE: 'M' })
+  } as unknown as TeachingAssignment;
+}
+
 function wireDocentiMateria(
   options: {
     failFor?: string;
@@ -528,11 +556,34 @@ function wireDocentiMateria(
         GENERATORE: 'PROGRAMMA_SVOLTO'
       })
   };
+  // Models the real fixture fact this fix (round 1) addresses: 5A's nominal
+  // CLASSI.MATE holder is rossi@school.it, but VARIAZIONI_CATTEDRA reassigns
+  // it to bianchi@school.it effective 2025-10-01 (see fixtureTables() /
+  // docente-materia-focus-provider.test.ts and document-generation-service
+  // .test.ts, which independently rely on the same fact for the CDU-recipe
+  // path). Enumerating via role resolution (not the raw CLASSI cattedre) must
+  // surface bianchi as 5A's current MATE titolare, matching what
+  // DocenteMateriaFocusProvider resolves downstream — that's exactly the
+  // divergence Finding 1 flagged.
+  const councilByClasse: Record<string, TeachingAssignment[]> = {
+    '5A': [
+      fakeAssignment('MATE', 'bianchi@school.it'),
+      fakeAssignment('FISI', 'bianchi@school.it'),
+      fakeAssignment('IRC', 'bianchi@school.it')
+    ],
+    '1F': [fakeAssignment('MATE', 'rossi@school.it')]
+  };
+  const teachingAssignments = {
+    resolveConsiglio: (classe: Classe) => councilByClasse[classe.id ?? ''] ?? [],
+    resolveMateria: () => []
+  } as unknown as ITeachingAssignmentResolver;
   const service = new DocumentBatchService(
     new ClasseRepository(db),
     new AlunnoRepository(db),
     configs,
     documenti,
+    teachingAssignments,
+    FIXED_NOW,
     options.monitor,
     options.logger
   );
@@ -554,9 +605,10 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     // Fixture active classes are 5A, 1F, 1F-LSO, 1F-LSS; GESTIONE_ARTICOLAZIONE
     // defaults to COMPLETA (unset on the fabricated config), so the parent (1F)
     // is targeted and its partners are excluded — same subset as the CD1 case.
-    // 5A has cattedre MATE->rossi, FISI->bianchi, IRC->bianchi; 1F has only MATE->rossi.
+    // 5A's role-resolved council is MATE->bianchi (substitution, see
+    // wireDocentiMateria's comment), FISI->bianchi, IRC->bianchi; 1F is only MATE->rossi.
     expect(generated).toEqual([
-      { classe: '5A', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
+      { classe: '5A', docente: 'bianchi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
       { classe: '5A', docente: 'bianchi@school.it', materia: 'FISI', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
       { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
       { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' }
@@ -566,7 +618,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
       success: true,
       totale: 4,
       processed: [
-        '5A:MATE:rossi@school.it',
+        '5A:MATE:bianchi@school.it',
         '5A:FISI:bianchi@school.it',
         '5A:IRC:bianchi@school.it',
         '1F:MATE:rossi@school.it'
@@ -575,16 +627,16 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     });
   });
 
-  test('resumes from persisted docenteMateriaTargets without re-querying the consiglio', () => {
+  test('resumes from persisted docenteMateriaTargets without re-querying the teaching-assignment resolver', () => {
     const { service, generated } = wireDocentiMateria();
     const gen = service.batchGenerateHandler({
       confDocId: 'PROGRAMMA_SVOLTO',
       resumeState: {
         nextIndex: 2,
-        processed: ['5A:MATE:rossi@school.it', '5A:FISI:bianchi@school.it'],
+        processed: ['5A:MATE:bianchi@school.it', '5A:FISI:bianchi@school.it'],
         errori: [],
         docenteMateriaTargets: [
-          { classe: '5A', docenteEmail: 'rossi@school.it', materiaId: 'MATE' },
+          { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' },
           { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'FISI' },
           { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'IRC' },
           { classe: '1F', docenteEmail: 'rossi@school.it', materiaId: 'MATE' }
@@ -596,13 +648,13 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
 
     // Only the two targets after nextIndex=2 are (re)generated — proves the
     // persisted docenteMateriaTargets snapshot is consumed as-is rather than
-    // re-derived from classi.getConsiglioDiClasse on resume.
+    // re-derived from teachingAssignments.resolveConsiglio on resume.
     expect(generated).toEqual([
       { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
       { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
     ]);
     expect(step.value.processed).toEqual([
-      '5A:MATE:rossi@school.it',
+      '5A:MATE:bianchi@school.it',
       '5A:FISI:bianchi@school.it',
       '5A:IRC:bianchi@school.it',
       '1F:MATE:rossi@school.it'
@@ -617,7 +669,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     const result = step.value;
 
     expect(generated).toEqual([
-      { classe: '5A', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
+      { classe: '5A', docente: 'bianchi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
       { classe: '5A', docente: 'bianchi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
       { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
     ]);

@@ -364,6 +364,18 @@ test('PrepareInfrastructureStep logs a pre-existing folder so email boxes can re
   ]);
 });
 
+test('sets cdu.meta.progressivo and the root alias from countFilesInFolder + 1', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const drive = new FakeDriveFacade();
+  jest.spyOn(drive, 'countFilesInFolder').mockReturnValue(3);
+  new PrepareInfrastructureStep(logger, drive, db, new FakeTemplateEngine()).execute(ctx);
+
+  const cduResult = ctx.get<Cdu>('cdu')!;
+  expect(cduResult.meta.progressivo).toBe(4);
+  expect((cduResult as unknown as { progressivo: number }).progressivo).toBe(4);
+});
+
 test('GenerateNameStep resolves FILE_NAME via WorkspaceTemplateEngine (10 §6)', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);

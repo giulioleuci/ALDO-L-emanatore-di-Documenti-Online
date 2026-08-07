@@ -97,6 +97,7 @@ export interface CduMeta {
   idConfigurazione: string;
   tipoOperazione: string;
   idEsecuzione: string;
+  progressivo?: number;
   date: {
     oggi: {
       breve: string;
@@ -367,6 +368,7 @@ export interface CduTech {
 
 export interface Cdu {
   meta: CduMeta;
+  progressivo?: number;
   istituto?: CduIstituto;
   focus: {
     classe?: CduClasse;

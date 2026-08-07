@@ -64,6 +64,7 @@ meta:
   idConfigurazione: string        # ID del record CONF_DOC o CONF_MAIL attivo (es. "VERBALE_CDC", "CDC_NOTIFICA")
   tipoOperazione: string          # "GENERAZIONE_DOCUMENTO" | "INVIO_NOTIFICA"
   idEsecuzione: string            # UUID univoco del job corrente
+  progressivo: number | undefined # Conteggio dei file già presenti nella cartella di destinazione Drive + 1; alias di radice {{progressivo}} per uso fuori dai loop
 
   date:
     oggi:

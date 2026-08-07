@@ -12,6 +12,8 @@ export interface IDriveFacade {
   findFileByName(folderId: string, name: string): string | null;
   /** Full plain text of a Google Doc's body (e.g. no-leftover-placeholder checks, E2E scenario 10). */
   getFileText(fileId: string): string;
+  /** Counts non-trashed files (excluding subfolders) directly inside `folderId`. */
+  countFilesInFolder(folderId: string): number;
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -57,6 +59,11 @@ export class DriveServiceFacade implements IDriveFacade {
     const query = `'${folderId}' in parents and name = '${escapeQuery(name)}' and trashed=false`;
     const found = this.drive.searchFiles(query, { maxResults: 1 })[0];
     return found === undefined ? null : found.id;
+  }
+
+  countFilesInFolder(folderId: string): number {
+    const query = `'${folderId}' in parents and mimeType != '${FOLDER_MIME}' and trashed=false`;
+    return this.drive.searchFiles(query).length;
   }
 
   /** Idempotent path creation: each segment is find-or-create (14 §4 — prevents duplicate folders). */

@@ -233,6 +233,12 @@ export class PrepareInfrastructureStep extends Step {
     const { folderId } = new AlberoCartelle(this.drive, this.db).findOrCreate(path, options);
     this.setResult(ctx, 'destFolderId', folderId);
     this.setResult(ctx, 'destFolderPath', path);
+    const progressivo = this.drive.countFilesInFolder(folderId) + 1;
+    const cduObj = cdu(ctx);
+    if (cduObj.meta !== undefined) {
+      cduObj.meta.progressivo = progressivo;
+    }
+    cduObj.progressivo = progressivo;
   }
 
   protected override _getLogDetails(ctx: PipelineContext): { Folder: string; Path: string; Id: string } {

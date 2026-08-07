@@ -1,6 +1,6 @@
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
 import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
-import { StatoDocumento, ReligioneScelta } from '../domain/value-objects/enums';
+import { StatoDocumento, ReligioneScelta, TipoProgetto } from '../domain/value-objects/enums';
 import {
   TABLE,
   COL_ALUNNI,
@@ -58,11 +58,26 @@ const ASSIGNMENT_COLUMNS_E2E = [
 /**
  * Specifica catalog rows (design 2026-07-30-materie-specifica-catalog): every
  * dotted SPECIFICA column in ASSIGNMENT_COLUMNS_E2E needs its own MATERIE row.
+ * `INTERPRET.FLAUTO` has no ASSIGNMENT_COLUMNS_E2E/curriculum data of its own
+ * (mirrors `test/fixtures/tables.ts`'s Task 15 composite-specificità rows) —
+ * it exists purely so `focus.classe.studenti.perSpecificita`'s INTERPRET
+ * entry has a second, empty `specifiche[]` branch to iterate (02 §8.9/§3.3
+ * `{ "nome": "flauto", "alunni": [] }`), not just the populated CHITARRA one.
  */
-const SPECIFICA_MATERIE_E2E = ['LAB.GRUPPO_A', 'LAB.SEMINARIO_POMERIDIANO', 'INTERPRET.CHITARRA'];
+const SPECIFICA_MATERIE_E2E = [
+  'LAB.GRUPPO_A',
+  'LAB.SEMINARIO_POMERIDIANO',
+  'INTERPRET.CHITARRA',
+  'INTERPRET.FLAUTO'
+];
 export const INDIRIZZO_E2E = 'IND_E2E';
 export const DIPART_E2E = 'DIPART_E2E';
 export const DOCENTE_COUNT = 20;
+/** MATERIE.ESAME_CFG for the E2E indirizzo (02 §2.9/§8.2 `esame.materiePrimaProva`/`materieSecondaProva`) — gives `focus.classe.esame` real content for every E2E class (all share INDIRIZZO_E2E). */
+const ESAME_CFG_E2E: Record<string, string> = {
+  ITA: JSON.stringify({ prima_prova: [INDIRIZZO_E2E] }),
+  MAT: JSON.stringify({ seconda_prova: [INDIRIZZO_E2E] })
+};
 
 /** Name pools for realistic mock data (item 5) — plain constants, not a name generator. */
 const ALUNNO_COGNOMI = [
@@ -290,6 +305,7 @@ export class E2eSampleDatabaseBuilder {
     this.seedCarenze(sample);
     this.seedSupplenzeEVariazioni(sample);
     this.seedPiani(sample);
+    this.seedProgetti(sample);
     this.seedConfDoc(sample, templateIds);
     this.seedConfMail(sample, templateIds);
     this.seedConfImp(sample, templateIds);
@@ -414,7 +430,7 @@ export class E2eSampleDatabaseBuilder {
         [COL_MATERIE.COLORE_1]: '#1565C0',
         [COL_MATERIE.COLORE_2]: '#90CAF9',
         [COL_MATERIE.SIMBOLO]: sigla.charAt(0),
-        [COL_MATERIE.ESAME_CFG]: '',
+        [COL_MATERIE.ESAME_CFG]: ESAME_CFG_E2E[sigla] ?? '',
         [COL_MATERIE.EVOLUZIONE]: '',
         [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
       });
@@ -827,6 +843,31 @@ export class E2eSampleDatabaseBuilder {
     }
   }
 
+  /**
+   * PROGETTI rows for CLASSE_A (02 §2.10/§4.1/§8.5, "genuinely new" node) — gives
+   * `focus.classe.hasProgetti`/`progetti[]` real content: one ASL project (docente referente,
+   * exercises `ProgettoVM.isAsl`/`oreAsl`) and one ORIENTAMENTO project (exercises `tipoLabel`
+   * without an ASL hour count).
+   */
+  private seedProgetti(sample: ISampleSpreadsheet): void {
+    sample.appendRow(TABLE.PROGETTI, {
+      [COL_PROGETTI.CLASSE]: CLASSE_A,
+      [COL_PROGETTI.TIPO]: TipoProgetto.ASL,
+      [COL_PROGETTI.NOME]: 'E2E Stage aziendale',
+      [COL_PROGETTI.REFERENTE]: e2eDocenteEmail(1),
+      [COL_PROGETTI.ORE]: 60,
+      [COL_PROGETTI.ORE_ASL]: 60
+    });
+    sample.appendRow(TABLE.PROGETTI, {
+      [COL_PROGETTI.CLASSE]: CLASSE_A,
+      [COL_PROGETTI.TIPO]: TipoProgetto.ORIENTAMENTO,
+      [COL_PROGETTI.NOME]: 'E2E Open day universita',
+      [COL_PROGETTI.REFERENTE]: e2eDocenteEmail(2),
+      [COL_PROGETTI.ORE]: 8,
+      [COL_PROGETTI.ORE_ASL]: 0
+    });
+  }
+
   private seedConfDoc(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
     const classRegistration = JSON.stringify({
       classi: '{{focus.classe.anagrafica.nome}}',
@@ -1003,7 +1044,10 @@ export class E2eSampleDatabaseBuilder {
       // ClasseProvider.buildCoordinatori per il parent) vanno in UTENTI.
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
         classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
-        utenti: '{{#focus.classe.coordinatori}}{{email}},{{/focus.classe.coordinatori}}',
+        // coordinatori is a { appellativo, articolo, coordina, presiede, elenco: PersonVM[] }
+        // container, not a bare array (02 §2.6) — iterate .elenco.
+        utenti:
+          '{{#focus.classe.coordinatori.elenco}}{{email}},{{/focus.classe.coordinatori.elenco}}',
         materie: ''
       }),
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'

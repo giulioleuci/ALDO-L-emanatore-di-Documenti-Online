@@ -184,9 +184,9 @@ export function registerArticolazioneChecks(
         parentIds.some((id) => id !== CLASSE_C_PARENT) ||
         articolazione === undefined ||
         JSON.stringify(articolazione.partners) !== JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
-        !articolazione.materieCondivise.includes('MAT') ||
-        !articolazione.materieSeparatePrimoGruppo.includes('ITA') ||
-        !articolazione.materieSeparateSecondoGruppo.includes('ITA')
+        !articolazione.materieCondivise.some((materia) => materia.sigla === 'MAT') ||
+        !articolazione.materieSeparatePrimoGruppo.some((materia) => materia.sigla === 'ITA') ||
+        !articolazione.materieSeparateSecondoGruppo.some((materia) => materia.sigla === 'ITA')
       ) {
         throw new ValidationError(
           'Round trip partner-parent o split comune/separato della CDU non valido.'

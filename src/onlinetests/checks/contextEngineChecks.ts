@@ -17,7 +17,7 @@ import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
 } from '../../application/ports/ITeachingAssignmentResolver';
-import { GestioneSupplenti } from '../../domain/value-objects/enums';
+import { GestioneSupplenti, TipoPiano, TipoProgetto } from '../../domain/value-objects/enums';
 import { composeRisolutoreRuoli } from '../../config/ApplicationComposition';
 import { ResolveRecipientsStep } from '../../application/pipelines/emailSteps';
 import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps';
@@ -110,6 +110,23 @@ function emails(values: Iterable<string>): string[] {
   return [...values].sort();
 }
 
+interface MaterieColonneGroups {
+  group1: Array<Record<string, unknown>>;
+  group2?: Array<Record<string, unknown>>;
+  group3?: Array<Record<string, unknown>>;
+}
+
+/**
+ * `SheetMaterieConPermessiGeneratorStrategy` hands its `ITemplateEngine.processSheet` fake the
+ * full CDU as an opaque `Record<string, unknown>` — the multi-group column projection now lives
+ * at `focus.classe.sheet.materieColonne` (02 §2.17/§4.1, moved off the CDU root by Task 22), not
+ * a bare `materieColonne` key.
+ */
+function materieColonneOf(context: Record<string, unknown>): MaterieColonneGroups {
+  const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
+  return (focus?.classe?.sheet?.materieColonne ?? { group1: [] }) as MaterieColonneGroups;
+}
+
 interface AssignmentTuple {
   classeId: string;
   materia: string;
@@ -149,7 +166,7 @@ function assignmentRecipients(assignments: TeachingAssignment[]): string[] {
 }
 
 function councilTuple(
-  docente: { anagrafica: { email: string } },
+  docente: { anagrafica: { email: string | null } },
   materia: { sigla: string; specificita: string | null }
 ): string {
   const identity = getCduMateriaAssignmentIdentity(materia);
@@ -314,11 +331,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     const rendered: SheetColumnLayout[] = [];
     const templates = {
       processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
-        const groups = context['materieColonne'] as {
-          group1: Array<Record<string, unknown>>;
-          group2?: Array<Record<string, unknown>>;
-          group3?: Array<Record<string, unknown>>;
-        };
+        const groups = materieColonneOf(context);
         const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
           (item, index) => ({
             sheetName: 'Sheet1',
@@ -507,11 +520,7 @@ export function registerEffectiveAssignmentConsumerChecks(
           _spreadsheetId: string,
           context: Record<string, unknown>
         ): SheetColumnLayout[] => {
-          const groups = context['materieColonne'] as {
-            group1: Array<Record<string, unknown>>;
-            group2?: Array<Record<string, unknown>>;
-            group3?: Array<Record<string, unknown>>;
-          };
+          const groups = materieColonneOf(context);
           return [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
             (item, index) => {
               const header =
@@ -686,7 +695,7 @@ export function registerEffectiveAssignmentConsumerChecks(
         } as unknown as SpreadsheetService;
         const templates = {
           processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
-            const groups = context['materieColonne'] as { group1: Array<Record<string, unknown>>; group2?: Array<Record<string, unknown>>; group3?: Array<Record<string, unknown>> };
+            const groups = materieColonneOf(context);
             const items = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
             columnItems.push(...items);
             return items.map((item, index) => ({
@@ -760,9 +769,9 @@ export function registerEffectiveAssignmentConsumerChecks(
           recipe('ALUNNO_COMPLETO', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
         );
         const projected =
-          studentCdu.focus.alunno?.consiglioDiClasseFiltrato?.map(
-            (docente) => docente.anagrafica.email
-          ) ?? [];
+          studentCdu.focus.alunno?.consiglioDiClasseFiltrato
+            ?.map((docente) => docente.anagrafica.email)
+            .filter((email): email is string => email !== null) ?? [];
         const roleProjected = roles
           .risolvi('CDC_FILTER_ALUNNO', studentCdu, {
             regolaSupplente: GestioneSupplenti.ENTRAMBI
@@ -783,6 +792,128 @@ export function registerEffectiveAssignmentConsumerChecks(
       }
     );
   }
+
+  // Genuinely-new §9.2 CDU sections (PROMPT_MODIFY_CDU.md action item 5) exercised against this
+  // function's real E2E database/container (unlike `registerContextEngineChecks` below, which
+  // runs against the SMALL `SampleDatabaseBuilder` fixture that has neither CLASSE_A nor
+  // e2eAlunnoEmail rows).
+
+  runner.add(
+    'ContextEngine CDU: focus.alunno.curriculum is an array, not a "[MateriaId]" map (02 §2.13/§8.8)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const studentCdu = contextBuilder.build(
+        { target: e2eAlunnoEmail(1), tipoTarget: 'alunno', now: new Date() },
+        recipe('ALUNNO_COMPLETO')
+      );
+      const curriculum = studentCdu.focus.alunno?.curriculum ?? [];
+      const lab = curriculum.find((entry) => entry.materiaId === 'LAB');
+      if (
+        !Array.isArray(curriculum) ||
+        lab === undefined ||
+        !lab.specifiche.some((specifica) => specifica.nome === 'GRUPPO_A')
+      ) {
+        throw new ValidationError(
+          `Atteso focus.alunno.curriculum array con voce LAB.GRUPPO_A per ${e2eAlunnoEmail(1)}, ricevuto ${JSON.stringify(curriculum)}`
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'ContextEngine CDU: focus.classe.studenti.perSpecificita is a 3-level array (02 §2.14/§8.9)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const specificitaCdu = contextBuilder.build(
+        { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
+        recipe('CLASSE_COMPLETA', { includiSpecificita: true })
+      );
+      const perSpecificita = specificitaCdu.focus.classe?.studenti?.perSpecificita ?? [];
+      const lab = perSpecificita.find((entry) => entry.materiaId === 'LAB');
+      const gruppoA = lab?.specifiche.find((specifica) => specifica.nome === 'GRUPPO_A');
+      const seminario = lab?.specifiche.find(
+        (specifica) => specifica.nome === 'SEMINARIO_POMERIDIANO'
+      );
+      if (
+        lab === undefined ||
+        gruppoA === undefined ||
+        seminario === undefined ||
+        !gruppoA.alunni.some((alunno) => alunno.email === e2eAlunnoEmail(1)) ||
+        !seminario.alunni.some((alunno) => alunno.email === e2eAlunnoEmail(2))
+      ) {
+        throw new ValidationError(
+          `Atteso focus.classe.studenti.perSpecificita con LAB -> GRUPPO_A/${e2eAlunnoEmail(1)} e SEMINARIO_POMERIDIANO/${e2eAlunnoEmail(2)}, ricevuto ${JSON.stringify(perSpecificita)}`
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'ContextEngine CDU: focus.classe.esame prima/seconda prova partitions (02 §2.9/§4.1)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const esameCdu = contextBuilder.build(
+        { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
+        recipe('CLASSE_COMPLETA')
+      );
+      const esame = esameCdu.focus.classe?.esame;
+      const prima = esame?.materiePrimaProva.find((materia) => materia.sigla === 'ITA');
+      const seconda = esame?.materieSecondaProva.find((materia) => materia.sigla === 'MAT');
+      if (
+        esame?.hasEsame !== true ||
+        prima === undefined ||
+        (prima.docentiDescrizione ?? '').trim() === '' ||
+        seconda === undefined ||
+        (seconda.docentiDescrizione ?? '').trim() === ''
+      ) {
+        throw new ValidationError(
+          `Atteso focus.classe.esame.hasEsame=true con ITA in materiePrimaProva e MAT in materieSecondaProva, docentiDescrizione valorizzata, ricevuto ${JSON.stringify(esame)}`
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'ContextEngine CDU: focus.classe.coordinatori.elenco/progetti/religioneLabel/tipoLabel precomposed strings (02 §2.6/§2.10/§2.12/§8.1)',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const classeCdu = contextBuilder.build(
+        { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
+        recipe('CLASSE_COMPLETA')
+      );
+      const focusClasse = classeCdu.focus.classe;
+      const primoCoordinatore = focusClasse?.coordinatori?.elenco[0];
+      const primoProgetto = focusClasse?.progetti?.find(
+        (progetto) => progetto.tipo === TipoProgetto.ASL
+      );
+      const nonAvvale = focusClasse?.studenti?.listaCompleta.find(
+        (studente) => studente.anagrafica.email === e2eAlunnoEmail(1)
+      );
+      const conPiano = focusClasse?.studenti?.listaCompleta.find(
+        (studente) => studente.anagrafica.email === e2eAlunnoEmail(5)
+      );
+      // Cdu.ts's `StudentVM.didattica.piani.items[].tipo` is declared as a loose `string` (not
+      // `TipoPiano`), unlike `ProgettoVM.tipo`'s strongly-typed `TipoProgetto` above — compare
+      // against the enum's string value, not the enum member, to match.
+      const pianoTipoLabel = conPiano?.didattica.piani.items.find(
+        (item) => item.tipo === (TipoPiano.PDP_BES as string)
+      )?.tipoLabel;
+      if (
+        primoCoordinatore === undefined ||
+        primoCoordinatore.appellativoCompleto.trim() === '' ||
+        focusClasse?.hasProgetti !== true ||
+        primoProgetto === undefined ||
+        primoProgetto.tipoLabel !== 'PCTO/ASL' ||
+        primoProgetto.referente.appellativoCompleto.trim() === '' ||
+        nonAvvale?.status.religioneLabel !== 'Non si avvale' ||
+        pianoTipoLabel !== 'PDP BES'
+      ) {
+        throw new ValidationError(
+          `Atteso coordinatori.elenco[0].appellativoCompleto, progetti[ASL].tipoLabel="PCTO/ASL", religioneLabel="Non si avvale" per ${e2eAlunnoEmail(1)} e piani tipoLabel="PDP BES" per ${e2eAlunnoEmail(5)}; ricevuto coordinatore=${JSON.stringify(primoCoordinatore)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.status.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}`
+        );
+      }
+    }
+  );
 }
 
 /**

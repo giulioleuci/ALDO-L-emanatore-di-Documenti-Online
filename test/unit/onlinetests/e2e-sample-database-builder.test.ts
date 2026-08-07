@@ -714,7 +714,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(doc![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(String(doc![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
     classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
-    utenti: '{{#focus.classe.coordinatori}}{{email}},{{/focus.classe.coordinatori}}',
+    utenti: '{{#focus.classe.coordinatori.elenco}}{{email}},{{/focus.classe.coordinatori.elenco}}',
     materie: ''
   });
 

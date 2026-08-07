@@ -130,20 +130,21 @@ function recordingHarness(
       }
       if (configId === CONF_DOC_ARTICOLATA) {
         // Testo rappresentativo di quello REALMENTE reso dal template
-        // DOC_ARTICOLATA_PARAGRAPHS sul fixture e2e: nomi docente in Title Case
-        // (`Docente.getNomeCompleto()` non applica alcuna trasformazione di case e i
-        // pool DOCENTE_COGNOMI/DOCENTE_NOMI_* sono in Title Case), coordinatori resi
-        // "Cognome Nome" e docenti comuni resi "Nome Cognome (materie)". Una fixture
-        // in ALL CAPS mascherava il bug delle asserzioni di scenario 10b.
+        // DOC_ARTICOLATA_PARAGRAPHS sul fixture e2e (post CDU restructuring, 02 §2.6/§2.7/§8.1):
+        // `anagrafica`/coordinatori items are PersonVM, printed via the precomposed
+        // `appellativoCompleto` ("Prof./Prof.ssa ${nome} ${cognome}", nome-first — NOT
+        // `Docente.getNomeCompleto()`'s cognome-first convention). `coordinatori.elenco` items
+        // never carry an `indirizzo` field (ClasseProvider.buildCoordinatori), so no
+        // parenthetical after the coordinatore name, unlike the rappresentanti/studenti loops.
         planTexts[fileId] = [
           'Documento Complesso Classe Articolata — 3C',
           'Docenti comuni a tutta la classe (materie tra parentesi):',
-          'Marco Rossi (Matematica, Matematica)',
+          'Prof. Marco Rossi (Matematica, Matematica)',
           'Elenco studenti (indirizzo tra parentesi):',
           'Ferrari Giulia (Liceo Scientifico (E2E))',
-          'Coordinatori (indirizzo tra parentesi):',
-          'Verdi Alessandro (Liceo Scientifico (E2E))',
-          'Ferrari Elena (Liceo Scientifico (E2E))'
+          'Coordinatori:',
+          'Prof. Alessandro Verdi',
+          'Prof.ssa Elena Ferrari'
         ].join(' ');
       }
       if (configId === CONF_DOC_RIEPILOGO_FIRME_CDC) {

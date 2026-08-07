@@ -91,7 +91,7 @@ test('authors the CDC signature-summary template with a row-loop council table',
       data: [
         ['Docente', 'Materie', 'Firma'],
         [
-          '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}',
+          '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}}',
           '{{materieDescrizione}}',
           '________________'
         ]
@@ -228,11 +228,16 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   const text = documentText(docContent[ids.docComplesso] ?? []);
-  expect(text).toContain("{{#bullet_list:focus.classe.coordinatori | sortBy:'nome'}}");
+  expect(text).toContain("{{#bullet_list:focus.classe.coordinatori.elenco | sortBy:'nome'}}");
   expect(text).toContain(
     "{{#number_list:focus.classe.rappresentanti.studenti | filter:'active',true}}"
   );
   expect(text).toContain('| uppercase');
+  expect(text).toContain('{{#bullet_list:focus.classe.esame.materiePrimaProva}}');
+  expect(text).toContain('{{focus.classe.coordinatori.elenco.0.appellativoCompleto}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.progetti}}');
+  expect(text).toContain('{{status.religioneLabel}}');
+  expect(text).toContain('{{#focus.classe.studenti.perSpecificita}}');
   expect(docContent[ids.docComplesso]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ listType: 'bullet' }),
@@ -261,7 +266,7 @@ test('authors the articulated-class template with 4 flat bullet lists, no nested
   expect(text).toContain('({{gruppoNome}})');
   expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti}}');
   expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori}}');
-  expect(text).toContain('{{#bullet_list:focus.classe.coordinatori}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.coordinatori.elenco}}');
   expect(text).not.toMatch(/\|\s*where/);
   expect(text).not.toMatch(/\|\s*map/);
 });
@@ -273,12 +278,14 @@ test('authors the sheet-with-permessi template with the multi-group dynamic_colu
 
   const text = JSON.stringify(sheetContent[ids.sheetPermessi] ?? []);
   expect(text).toContain('dynamic_columns[');
-  expect(text).toContain('source=materieColonne.group1,value=header');
+  expect(text).toContain('source=focus.classe.sheet.materieColonne.group1,value=header');
   expect(text).toContain(
-    'source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label'
+    'source2=focus.classe.sheet.materieColonne.group2,value2=header,' +
+      'label2=focus.classe.sheet.materieColonne.group2Label'
   );
   expect(text).toContain(
-    'source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label'
+    'source3=focus.classe.sheet.materieColonne.group3,value3=header,' +
+      'label3=focus.classe.sheet.materieColonne.group3Label'
   );
 });
 

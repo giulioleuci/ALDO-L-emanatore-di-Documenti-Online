@@ -512,9 +512,13 @@ export function registerE2eScenarioChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const drive = container.get<IDriveFacade>('drive');
+      // PersonVM.nomeCompleto/appellativoCompleto are nome-first ("${nome} ${cognome}", 02 §8.1)
+      // — not the DOCENTI-cognome-first convention `Docente.getNomeCompleto()` uses elsewhere —
+      // so the expected substrings below match `{{appellativoCompleto}}` in
+      // E2eTemplateProvisioner's DOC_ARTICOLATA_PARAGRAPHS coordinatori bullet.
       for (const [gruppo, coordinatore] of [
-        [CLASSE_C, 'Verdi Alessandro'],
-        [CLASSE_C_PARTNER, 'Ferrari Elena']
+        [CLASSE_C, 'Alessandro Verdi'],
+        [CLASSE_C_PARTNER, 'Elena Ferrari']
       ] as const) {
         const { fileId, status } = documents.generateForClasse(
           ClasseId.of(gruppo),

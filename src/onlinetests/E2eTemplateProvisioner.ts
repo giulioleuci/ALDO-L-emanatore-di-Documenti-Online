@@ -62,12 +62,12 @@ const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Data: {{meta.date.oggi.breve}}',
   'Composizione del Consiglio di Classe:',
   {
-    text: '{{#bullet_list:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}}{{/bullet_list}}',
     listType: 'bullet'
   },
   'Coordinatori:',
   {
-    text: '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{materia}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.coordinatori.elenco}}{{appellativoCompleto}} ({{materia}}){{/bullet_list}}',
     listType: 'bullet'
   },
   'Piani personalizzati generati:',
@@ -87,7 +87,12 @@ function pianoParagraphs(tipo: string): string[] {
     'Classe: {{focus.alunno.classe.nome}}',
     'Data: {{meta.date.oggi.breve}}',
     'Tipo piano: {{focus.piano.tipo}}',
-    'Note: {{focus.piano.parametriGenerazione.note}}'
+    'Note: {{focus.piano.parametriGenerazione.note}}',
+    // Looped focus.alunno.curriculum (§2.13, array not a map, PROMPT_MODIFY_CDU.md action item
+    // 5): curriculumArray() is unconditional (no recipe option gate), so this shows real content
+    // for students with a CURRICULUM cell (CARENZA_ALUNNO_1 / e2eAlunnoEmail(1) on PDP_DSA and
+    // PDP_STRANIERI) and renders as an empty, residue-free section for everyone else.
+    'Curriculum: {{#focus.alunno.curriculum}}{{materiaNome}}: {{#specifiche}}{{nome}}{{/specifiche}}{{/focus.alunno.curriculum}}'
   ];
 }
 
@@ -173,25 +178,56 @@ function aslImportUpdates(): SheetValueUpdate[] {
 /**
  * Exercises bullet/number lists, tablerow/tablecol loops, and pipe filters (sortBy/filter/
  * uppercase) against real CDU paths (`SPECS_ALDO/02_CDU_STRUTTURA.md` §4.1) already confirmed
- * elsewhere in this file: `focus.classe.coordinatori` (VERBALE_PARAGRAPHS), `focus.classe.
+ * elsewhere in this file: `focus.classe.coordinatori.elenco` (VERBALE_PARAGRAPHS), `focus.classe.
  * rappresentanti.studenti` (RIEPILOGO_PARAGRAPHS), `focus.classe.studenti.listaCompleta`
  * (RIEPILOGO_TABLES), and `focus.classe.consiglioDiClasse` (VERBALE_PARAGRAPHS, also in
  * production via `SheetMaterieGeneratorStrategy.buildGroups`). `sortBy`/`filter` are piped
  * directly onto each loop directive's own source expression (`{{#loop:path | filter:args}}`);
  * whether that composition actually renders is only provable by a live online run — this test
  * only asserts the authored template string, matching every other test in this file.
+ *
+ * Also exercises the genuinely-new §9.2 sections (PROMPT_MODIFY_CDU.md action item 5):
+ * `esame.materiePrimaProva`, `coordinatori.elenco.0.appellativoCompleto` (dot-index addressing,
+ * already proven by `{{materie.0.sigla}}` in DOC_COMPLESSO_TABLES below), `progetti`, and
+ * `status.religioneLabel`. `focus.classe.studenti.perSpecificita` is included too for template
+ * syntax coverage even though `DocumentGenerationService.generateForClasse` always builds
+ * `CLASSE_COMPLETA` with default options (`includiSpecificita: false`, ref `Recipe.ts`), so this
+ * particular section renders empty (falsy Mustache section, no residue) against a real generated
+ * document — its real 3-level content is asserted directly against a `ContextBuilder.build()`
+ * call with `includiSpecificita: true` in `contextEngineChecks.ts` instead.
  */
 const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Report Complesso — {{focus.classe.anagrafica.nome}}',
   'Coordinatori, ordinati per nome (elenco puntato, con filtro sortBy sul source del loop):',
   {
-    text: "{{#bullet_list:focus.classe.coordinatori | sortBy:'nome'}}{{nome | uppercase}} — {{materia}}{{/bullet_list}}",
+    text: "{{#bullet_list:focus.classe.coordinatori.elenco | sortBy:'nome'}}{{nomeCompleto | uppercase}} — {{materia}}{{/bullet_list}}",
     listType: 'bullet'
   },
   'Rappresentanti degli studenti (elenco numerato, con filtro active sul source del loop):',
   {
     text: "{{#number_list:focus.classe.rappresentanti.studenti | filter:'active',true}}{{nomeCompleto}}{{/number_list}}",
     listType: 'number'
+  },
+  "Materie di prima prova d'esame:",
+  {
+    text: '{{#bullet_list:focus.classe.esame.materiePrimaProva}}{{nome}}: {{docentiDescrizione}}{{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Coordinatore principale: {{focus.classe.coordinatori.elenco.0.appellativoCompleto}}',
+  'Progetti extracurricolari:',
+  {
+    text: '{{#bullet_list:focus.classe.progetti}}{{tipoLabel}}: {{nome}} ({{referente.appellativoCompleto}}, {{ore}}h){{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Alunni e situazione religione:',
+  {
+    text: '{{#bullet_list:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}} — {{status.religioneLabel}}{{/bullet_list}}',
+    listType: 'bullet'
+  },
+  'Specificità per materia (3 livelli; vuoto salvo includiSpecificita, ref classCdu online check):',
+  {
+    text: '{{#focus.classe.studenti.perSpecificita}}{{materiaNome}}: {{#specifiche}}{{nome}} ({{#alunni}}{{nomeCompleto}};{{/alunni}}){{/specifiche}}{{/focus.classe.studenti.perSpecificita}}',
+    listType: 'bullet'
   }
 ];
 
@@ -228,7 +264,7 @@ const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   },
   'Docenti comuni a tutta la classe (materie tra parentesi):',
   {
-    text: '{{#bullet_list:focus.classe.consiglioDiClasseComune}}{{anagrafica.nome}} {{anagrafica.cognome}} ({{materieDescrizione}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.consiglioDiClasseComune}}{{anagrafica.appellativoCompleto}} ({{materieDescrizione}}){{/bullet_list}}',
     listType: 'bullet'
   },
   'Docenti per indirizzo (materie e indirizzo tra parentesi):',
@@ -246,9 +282,13 @@ const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
     text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
     listType: 'bullet'
   },
-  'Coordinatori (indirizzo tra parentesi):',
+  // No `(indirizzo)` parenthetical here (unlike the rappresentanti/studenti loops above):
+  // ClasseProvider.buildCoordinatori never attaches an `indirizzo` field to PersonVM items —
+  // even when a partner's coordinatori are folded together for a parent articulated class —
+  // so there is no CDU-backed value to print.
+  'Coordinatori:',
   {
-    text: '{{#bullet_list:focus.classe.coordinatori}}{{nome}} ({{indirizzo.nome}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.coordinatori.elenco}}{{appellativoCompleto}}{{/bullet_list}}',
     listType: 'bullet'
   }
 ];
@@ -269,7 +309,7 @@ const CDC_RIEPILOGO_TABLES: E2eDocumentTable[] = [
     data: [
       ['Docente', 'Materie', 'Firma'],
       [
-        '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.nome}} {{anagrafica.cognome}}',
+        '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}}',
         '{{materieDescrizione}}',
         '________________'
       ]
@@ -282,8 +322,10 @@ const CDC_RIEPILOGO_TABLES: E2eDocumentTable[] = [
  * Single header cell carrying the whole multi-group `{{dynamic_columns[...]}}` placeholder
  * (`WorkspaceTemplateEngine_docs.md` "Sintassi multi-gruppo"): 3 sequential column groups,
  * groups 2/3 each preceded by a structural label column (`label2`/`label3`), resolved against
- * a `materieColonne.group1/2/3` (+ `group2Label`/`group3Label`) context shape — the
- * SHEET_CON_MATERIE_E_PERMESSI generator's per-subject column layout for scenario C.
+ * `focus.classe.sheet.materieColonne.group1/2/3` (+ `group2Label`/`group3Label`) — Task 22
+ * attached the multi-group projection under `focus.classe.sheet`, not a bare `materieColonne`
+ * root (02 §2.17/§9.3) — the SHEET_CON_MATERIE_E_PERMESSI generator's per-subject column layout
+ * for scenario C.
  */
 function sheetPermessiUpdates(): SheetValueUpdate[] {
   return [
@@ -292,9 +334,11 @@ function sheetPermessiUpdates(): SheetValueUpdate[] {
       values: [
         [
           '{{dynamic_columns[' +
-            'source=materieColonne.group1,value=header,' +
-            'source2=materieColonne.group2,value2=header,label2=materieColonne.group2Label,' +
-            'source3=materieColonne.group3,value3=header,label3=materieColonne.group3Label' +
+            'source=focus.classe.sheet.materieColonne.group1,value=header,' +
+            'source2=focus.classe.sheet.materieColonne.group2,value2=header,' +
+            'label2=focus.classe.sheet.materieColonne.group2Label,' +
+            'source3=focus.classe.sheet.materieColonne.group3,value3=header,' +
+            'label3=focus.classe.sheet.materieColonne.group3Label' +
             ']}}'
         ]
       ]

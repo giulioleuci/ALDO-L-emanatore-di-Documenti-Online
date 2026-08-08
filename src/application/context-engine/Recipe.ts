@@ -31,7 +31,7 @@ export interface Recipe {
  */
 export interface BuildParams {
   target: string;
-  tipoTarget: 'classe' | 'alunno';
+  tipoTarget: 'classe' | 'alunno' | 'dipartimento';
   now: Date;
   idConfigurazione?: string;
   tipoOperazione?: string;
@@ -201,7 +201,9 @@ export const RECIPES: Record<string, string[]> = {
     'pianiPersAlunno',
     'pianiPersAlunnoStorico'
   ],
-  CARENZA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'carenzaFocus']
+  CARENZA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'carenzaFocus'],
+  /** Department-scoped recipe (11 §11 new) — a dipartimento has no class dimension, so this activates only 'school' + 'dipartimentoFocus'. */
+  DIPARTIMENTO_COMPLETO: ['school', 'dipartimentoFocus']
 };
 
 /**

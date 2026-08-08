@@ -1,5 +1,6 @@
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
+import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { TipoPiano } from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
@@ -73,6 +74,8 @@ export class DocumentBatchService {
     private readonly teachingAssignments: ITeachingAssignmentResolver,
     /** Injected clock for the same role-resolution call — must be deterministic, never the system clock. */
     private readonly now: Date,
+    /** Enumerates DIPART rows for the DIPARTIMENTO batch axis (generateDipartimenti). */
+    private readonly dipartimenti: IDipartimentoRepository,
     private readonly monitor?: IProcessMonitor,
     private readonly logger?: LoggerService
   ) {}
@@ -99,6 +102,9 @@ export class DocumentBatchService {
     }
     if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
       return yield* this.generateDocentiMateria(config, confDocId, jobId, resume, processed, errori);
+    }
+    if (config.tipo === 'DIPARTIMENTO') {
+      return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
     }
 
     return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
@@ -316,6 +322,58 @@ export class DocumentBatchService {
       `${processed.length} documenti docente/materia elaborati, ${errori.length} errori`
     );
     return { success, totale: targets.length, processed, errori };
+  }
+
+  /** One document per department (e.g. "verbale di dipartimento") — no gestioneArticolazione, a department has no class dimension. */
+  private *generateDipartimenti(
+    confDocId: string,
+    jobId: string,
+    resume: BatchResumeState | null,
+    processed: string[],
+    errori: string[]
+  ): Generator<BatchCheckpoint, BatchResult, void> {
+    const tutti = this.dipartimenti.findAll();
+    if (resume === null) {
+      this.monitor?.registerJob(jobId);
+      this.monitor?.startJob(jobId);
+    }
+    this.logger?.logBatchStart(tutti.length);
+
+    for (let i = resume?.nextIndex ?? 0; i < tutti.length; i++) {
+      const dipartimento = tutti[i]!;
+      const id = dipartimento.id ?? '?';
+      this.logger?.logItemStart(i + 1, tutti.length, 'Target', id, 'DOCUMENT');
+      let message = `Generazione documento dipartimento ${id}`;
+      const itemStartedAt = Date.now();
+      try {
+        const result = this.documenti.generateForDipartimento(id, confDocId, jobId);
+        const name = result.fileName ?? id;
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < tutti.length]
+        });
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errori.push(`${id}: ${reason}`);
+        this.logger?.logSummary('Document failed', Math.max(0, Date.now() - itemStartedAt), `${id}: ${reason}`, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < tutti.length]
+        });
+        message = `Errore: ${reason} (dipartimento ${id})`;
+      }
+      processed.push(id);
+      const percentage = ((i + 1) / tutti.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, message);
+      yield { percentage, nextIndex: i + 1, processed: processed.slice(), errori: errori.slice() };
+    }
+
+    const success = errori.length === 0;
+    this.monitor?.completeJob(jobId, `${processed.length} dipartimenti elaborati, ${errori.length} errori`);
+    return { success, totale: tutti.length, processed, errori };
   }
 
   private *generateClassi(

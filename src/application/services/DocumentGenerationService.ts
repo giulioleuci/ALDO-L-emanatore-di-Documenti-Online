@@ -177,6 +177,55 @@ export class DocumentGenerationService {
     return this.resultFromContext(ctx, startedAt);
   }
 
+  /**
+   * One document per department (e.g. "verbale di dipartimento") — DIPARTIMENTO_COMPLETO
+   * recipe, tipoTarget 'dipartimento'. A department has no class dimension, so this
+   * doesn't reuse {@link generateForClasseWithRecipe} (no classiCompetenza/articolazione
+   * resolution needed).
+   */
+  generateForDipartimento(
+    dipartimentoId: string,
+    confDocId: string,
+    jobId?: string
+  ): DocumentGenerationResult {
+    const startedAt = Date.now();
+    const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
+    if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
+    const config = ConfigurazioneDocumento.fromData(row);
+    if (!this.strategyRegistry.has(config.generatore)) {
+      throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
+    }
+
+    const cdu = this.contextBuilder.build(
+      {
+        target: dipartimentoId,
+        tipoTarget: 'dipartimento',
+        now: this.now,
+        idConfigurazione: confDocId,
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+      },
+      recipe('DIPARTIMENTO_COMPLETO')
+    );
+
+    this.db.beginTransaction();
+    let ctx: PipelineContext;
+    try {
+      ctx = this.buildPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+    } catch (e) {
+      this.db.rollback();
+      throw e;
+    }
+
+    const critical = ctx.getFlag<string>('criticalError');
+    if (critical !== null) {
+      this.db.rollback();
+      throw new PipelineError(critical);
+    }
+    this.db.commit();
+
+    return this.resultFromContext(ctx, startedAt);
+  }
+
   /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
   generateForAlunno(
     target: string,

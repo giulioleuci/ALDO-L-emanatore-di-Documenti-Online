@@ -116,7 +116,7 @@ export interface CduMeta {
   };
   parametriInput: {
     target: string;
-    tipoTarget: 'classe' | 'alunno';
+    tipoTarget: 'classe' | 'alunno' | 'dipartimento';
     materiaCorrente: string | null;
     opzioni: RecipeOptionsView;
   };
@@ -320,6 +320,38 @@ export interface CduAlunno {
   };
 }
 
+/**
+ * `focus.dipartimento` — anagrafica/capo/materie/docenti of a DIPART row plus
+ * its LOG_DOCS aggregation (11 §11 new, department-scoped batch generation).
+ * `materie` is a light `{ sigla }` projection, not the full `SubjectVM`: a
+ * `MateriaId` alone doesn't carry a `SubjectVM`'s other fields (`nome`,
+ * `colore1`, etc.) without a lookup against `IMateriaRepository`, and nothing
+ * in this extension's templates needs more than the sigla. `didattica.
+ * documenti.items` mirrors `DocumentiClasseProvider`'s output shape exactly
+ * (`{ id?, nome, link, tipo, idGen, stato, dataCreazione }`), filtered by
+ * materia overlap instead of `findByClasse` since a department has no class
+ * dimension.
+ */
+export interface CduDipartimentoFocus {
+  anagrafica: { id: string; nome: string };
+  capo: PersonVM | null;
+  materie: Array<{ sigla: string }>;
+  docenti: PersonVM[];
+  didattica: {
+    documenti: {
+      items: Array<{
+        id?: string | undefined;
+        nome: string;
+        link: string;
+        tipo: string;
+        idGen: string;
+        stato: string;
+        dataCreazione: string;
+      }>;
+    };
+  };
+}
+
 export interface CduCarenzaFocus {
   studente: string;
   progressivo: number;
@@ -373,6 +405,7 @@ export interface Cdu {
   focus: {
     classe?: CduClasse;
     alunno?: CduAlunno;
+    dipartimento?: CduDipartimentoFocus;
     carenza?: CduCarenzaFocus;
     piano?: CduPianoFocus;
     docente?: PersonVM;

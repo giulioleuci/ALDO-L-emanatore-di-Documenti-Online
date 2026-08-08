@@ -154,7 +154,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       materie: container.get<MateriaRepository>('materie'),
       oreAsl: container.get<OreASLRepository>('oreAsl'),
       logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
-      progetti: container.get<ProgettoRepository>('progetti')
+      progetti: container.get<ProgettoRepository>('progetti'),
+      dipartimenti: container.get<DipartimentoRepository>('dipartimenti')
     })
   );
   if (deps.spreadsheets !== undefined) {
@@ -229,6 +230,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         container.get<DocumentGenerationService>('documentGenerationService'),
         container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
         deps.now,
+        container.get<DipartimentoRepository>('dipartimenti'),
         deps.monitor,
         logger
       )

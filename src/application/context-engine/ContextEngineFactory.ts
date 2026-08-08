@@ -25,6 +25,7 @@ import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
 import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import { DocenteMateriaFocusProvider } from './providers/DocenteMateriaFocusProvider';
+import { DipartimentoProvider } from './providers/DipartimentoProvider';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
@@ -36,6 +37,7 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ProgettoRepository } from '../../infrastructure/repositories/ProgettoRepository';
+import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 
 export interface ContextEngineDependencies {
   master: IMasterSheetRepository;
@@ -48,6 +50,7 @@ export interface ContextEngineDependencies {
   oreAsl: IOreASLRepository;
   logDocs: ILogDocumentoRepository;
   progetti: ProgettoRepository;
+  dipartimenti: IDipartimentoRepository;
 }
 
 /**
@@ -66,7 +69,8 @@ export class ContextEngineFactory {
     materie,
     oreAsl,
     logDocs,
-    progetti
+    progetti,
+    dipartimenti
   }: ContextEngineDependencies): ContextBuilder {
     const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
 
@@ -118,6 +122,7 @@ export class ContextEngineFactory {
       .registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(storicoDb))
       .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni))
       .registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(storicoDb))
-      .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs));
+      .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs))
+      .registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, logDocs));
   }
 }

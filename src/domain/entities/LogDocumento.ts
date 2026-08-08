@@ -71,6 +71,9 @@ export class LogDocumento extends AldoEntity {
   containsClasse(classeId: string): boolean {
     return csv(this.raw[COL_LOG_DOCS.CLASSI]).includes(classeId);
   }
+  containsMateria(materiaId: string): boolean {
+    return csv(this.raw[COL_LOG_DOCS.MATERIE]).includes(materiaId);
+  }
   containsUtente(email: string): boolean {
     return csv(this.raw[COL_LOG_DOCS.UTENTI]).includes(email);
   }

@@ -50,7 +50,8 @@ function contextDependencies(
     materie: new MateriaRepository(db),
     oreAsl: new OreASLRepository(db),
     logDocs: new LogDocumentoRepository(db),
-    progetti: new ProgettoRepository(db)
+    progetti: new ProgettoRepository(db),
+    dipartimenti: new DipartimentoRepository(db)
   };
 }
 

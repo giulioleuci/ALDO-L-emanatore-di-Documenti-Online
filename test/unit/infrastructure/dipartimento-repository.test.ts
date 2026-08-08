@@ -46,6 +46,12 @@ test('MateriePerDipartimentoSpec filters materie of a department (07 §4)', () =
   expect(spec.toQueryObject()).toBeNull();
 });
 
+test('findAll returns every DIPART row as a Dipartimento', () => {
+  const r = repo();
+  const all = r.findAll();
+  expect(all.map((d) => d.id)).toEqual(['SCIENTIFICO_DIP', 'LETTERE']);
+});
+
 test('findById (base) + caching', () => {
   const db = new FakeDatabase(fixtureTables());
   const r = new DipartimentoRepository(db);

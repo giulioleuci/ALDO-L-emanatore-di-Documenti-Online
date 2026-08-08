@@ -18,6 +18,8 @@ import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import type { IClasseRepository } from '../../../src/domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../src/domain/repositories/IAlunnoRepository';
+import type { IDipartimentoRepository } from '../../../src/domain/repositories/IDipartimentoRepository';
+import { Dipartimento } from '../../../src/domain/entities/Dipartimento';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -39,6 +41,12 @@ const noopTeachingAssignments = {
   resolveConsiglio: () => [],
   resolveMateria: () => []
 } as unknown as ITeachingAssignmentResolver;
+
+/** Stub repository for suites that don't exercise generateDipartimenti (generateClassi/generatePiani/generateDocentiMateria never call it). */
+const noopDipartimenti = {
+  findAll: () => [],
+  findByMateria: () => null
+} as unknown as IDipartimentoRepository;
 
 function wire(
   options: {
@@ -72,6 +80,7 @@ function wire(
     documenti,
     noopTeachingAssignments,
     FIXED_NOW,
+    noopDipartimenti,
     options.monitor,
     options.logger
   );
@@ -153,6 +162,7 @@ function wirePiani(
     documenti as unknown as DocumentGenerationService,
     noopTeachingAssignments,
     FIXED_NOW,
+    noopDipartimenti,
     options.monitor,
     options.logger
   );
@@ -601,6 +611,7 @@ function wireDocentiMateria(
     documenti,
     teachingAssignments,
     FIXED_NOW,
+    noopDipartimenti,
     options.monitor,
     options.logger
   );
@@ -715,6 +726,114 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     ]);
     expect(result.errori).toEqual(['5A:FISI:bianchi@school.it: template non trovato']);
     expect(result.success).toBe(false);
+  });
+});
+
+/** Drains a batch generator to completion, returning every yielded checkpoint plus the final result. */
+function drain<T, R>(gen: Generator<T, R, void>): { checkpoints: T[]; result: R } {
+  const checkpoints: T[] = [];
+  let step = gen.next();
+  while (!step.done) {
+    checkpoints.push(step.value);
+    step = gen.next();
+  }
+  return { checkpoints, result: step.value };
+}
+
+function fakeDipartimento(id: string): Dipartimento {
+  return Dipartimento.fromData({ ID: id, NOME: id, CAPO: '', MATERIE: '' });
+}
+
+function wireDipartimenti(
+  options: {
+    failFor?: string;
+    monitor?: FakeProcessMonitor;
+    logger?: LoggerService;
+  } = {}
+) {
+  const dipartimenti = {
+    findAll: () => [fakeDipartimento('LETTERE'), fakeDipartimento('SCIENZE')],
+    findByMateria: () => null
+  } as unknown as IDipartimentoRepository;
+  const generated: Array<{ dipartimentoId: string; confDocId: string; jobId?: string }> = [];
+  const documenti = {
+    generateForDipartimento: (dipartimentoId: string, confDocId: string, jobId?: string) => {
+      if (dipartimentoId === options.failFor) throw new Error('template non trovato');
+      generated.push({ dipartimentoId, confDocId, jobId });
+      return {
+        fileId: `file_${dipartimentoId}`,
+        fileName: `Verbale_${dipartimentoId}`,
+        fileLink: `https://docs.google.com/document/d/file_${dipartimentoId}/edit`,
+        status: 'GENERATO',
+        durationMs: 8572
+      };
+    }
+  } as unknown as DocumentGenerationService;
+  const configs = {
+    findById: (id: string) =>
+      new ConfigurazioneDocumento({ ID: id, TIPO: 'DIPARTIMENTO', GENERATORE: 'VERBALE_DIPARTIMENTO' })
+  };
+  const service = new DocumentBatchService(
+    {} as unknown as IClasseRepository,
+    {} as unknown as IAlunnoRepository,
+    configs,
+    documenti,
+    noopTeachingAssignments,
+    FIXED_NOW,
+    dipartimenti,
+    options.monitor,
+    options.logger
+  );
+  return { service, generated };
+}
+
+describe('DocumentBatchService.generateDipartimenti', () => {
+  test('enumerates one target per DIPART row (no gestioneArticolazione)', () => {
+    const { service, generated } = wireDipartimenti();
+
+    const { checkpoints, result } = drain(
+      service.batchGenerateHandler({ confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' })
+    );
+
+    expect(generated).toEqual([
+      { dipartimentoId: 'LETTERE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' },
+      { dipartimentoId: 'SCIENZE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' }
+    ]);
+    expect(checkpoints).toHaveLength(2);
+    expect(result).toEqual({
+      success: true,
+      totale: 2,
+      processed: ['LETTERE', 'SCIENZE'],
+      errori: []
+    });
+  });
+
+  test('a single department failure is isolated: logged in errori, the batch continues (15 §8)', () => {
+    const { service, generated } = wireDipartimenti({ failFor: 'SCIENZE' });
+
+    const { result } = drain(service.batchGenerateHandler({ confDocId: 'VERBALE_DIPARTIMENTO' }));
+
+    expect(generated).toEqual([
+      { dipartimentoId: 'LETTERE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'VERBALE_DIPARTIMENTO' }
+    ]);
+    expect(result.errori).toEqual(['SCIENZE: template non trovato']);
+    expect(result.success).toBe(false);
+  });
+
+  test('resumes from persisted nextIndex without re-listing already-processed departments', () => {
+    const { service, generated } = wireDipartimenti();
+
+    const { result } = drain(
+      service.batchGenerateHandler({
+        confDocId: 'VERBALE_DIPARTIMENTO',
+        resumeState: { nextIndex: 1, processed: ['LETTERE'], errori: [] }
+      })
+    );
+
+    expect(generated).toEqual([
+      { dipartimentoId: 'SCIENZE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'VERBALE_DIPARTIMENTO' }
+    ]);
+    expect(result.processed).toEqual(['LETTERE', 'SCIENZE']);
   });
 });
 

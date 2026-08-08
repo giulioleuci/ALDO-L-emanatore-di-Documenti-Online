@@ -513,3 +513,76 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
     ).toThrow(/docente ignoto@school\.it non trovato nel consiglio di classe/);
   });
 });
+
+describe('DocumentGenerationService.generateForDipartimento', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  function pushDipartimentoConfig(tables: Record<string, Row[]>, id = 'CD_DIPARTIMENTO'): void {
+    tables.CONF_DOC!.push({
+      ID: id,
+      TIPO: 'DIPARTIMENTO',
+      GENERATORE: 'CAPTURING',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Verbale_{{focus.dipartimento.anagrafica.nome}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+  }
+
+  // fixtureTables().DIPART has SCIENTIFICO_DIP (CAPO rossi@school.it, MATERIE
+  // MATE,FISI); DOCENTI rossi/bianchi both belong to it (see
+  // test/fixtures/tables.ts) so DipartimentoProvider.findByDipartimento
+  // surfaces both as `focus.dipartimento.docenti`.
+  test('builds the CDU with the DIPARTIMENTO_COMPLETO recipe and tipoTarget dipartimento, and runs the pipeline', () => {
+    const tables = fixtureTables();
+    pushDipartimentoConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    const result = service.generateForDipartimento('SCIENTIFICO_DIP', 'CD_DIPARTIMENTO');
+
+    expect(strategy.cdu?.meta.parametriInput.target).toBe('SCIENTIFICO_DIP');
+    expect(strategy.cdu?.meta.parametriInput.tipoTarget).toBe('dipartimento');
+    expect(strategy.cdu?.focus.dipartimento?.anagrafica).toEqual({
+      id: 'SCIENTIFICO_DIP',
+      nome: 'Dipartimento scientifico'
+    });
+    expect(strategy.cdu?.focus.dipartimento?.capo).toEqual(
+      expect.objectContaining({ email: 'rossi@school.it' })
+    );
+    expect(strategy.cdu?.focus.dipartimento?.docenti).toHaveLength(2);
+    expect(result.status).toBe('GENERATO');
+    expect(result.fileName).toBe('Verbale_Dipartimento scientifico');
+  });
+
+  test('throws when the department is not found', () => {
+    const tables = fixtureTables();
+    pushDipartimentoConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    expect(() => service.generateForDipartimento('IGNOTO', 'CD_DIPARTIMENTO')).toThrow(
+      /Dipartimento IGNOTO non trovato/
+    );
+  });
+
+  test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
+    const { service } = wire();
+    expect(() => service.generateForDipartimento('SCIENTIFICO_DIP', 'MISSING_ID')).toThrow(
+      PipelineError
+    );
+  });
+});

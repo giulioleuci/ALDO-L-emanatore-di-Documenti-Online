@@ -1,4 +1,5 @@
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import { AldoTeachingResolutionConfig } from '../../../src/infrastructure/role-resolution/AldoTeachingResolutionConfig';
 import type { TeachingAssignment } from '../../../src/application/ports/ITeachingAssignmentResolver';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
@@ -50,6 +51,21 @@ function byColumn(assignments: TeachingAssignment[], column: string): TeachingAs
   if (assignment === undefined) throw new Error(`Assegnazione ${column} assente`);
   return assignment;
 }
+
+test('getMaterie() derives distinct base ids even when a family has no bare MATERIE row', () => {
+  const tables = freshTables();
+  tables.MATERIE = (tables.MATERIE ?? []).filter((row) => row.ID !== 'MATE');
+  tables.MATERIE.push(
+    { ID: 'MATE.AVANZATO', NOME: 'Matematica (Avanzato)', IS_RELIGIONE_ALT: false },
+    { ID: 'MATE.BASE', NOME: 'Matematica (Base)', IS_RELIGIONE_ALT: false }
+  );
+  const config = new AldoTeachingResolutionConfig(new FakeDatabase(tables));
+
+  const materie = config.getMaterie();
+
+  expect(materie.some((entry) => entry.materia.value === 'MATE')).toBe(true);
+  expect(materie.some((entry) => entry.materia.value === 'MATE.AVANZATO')).toBe(false);
+});
 
 test('resolves MAIN, ITP, arbitrary SPECIFICA, IRC, and ALT through GLF mappings', () => {
   const tables = freshTables();

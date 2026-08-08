@@ -259,20 +259,21 @@ export class AldoTeachingResolutionConfig {
   }
 
   getMaterie(): Array<{ materia: MateriaId; isReligioneAlt: boolean }> {
-    const materie: Array<{ materia: MateriaId; isReligioneAlt: boolean }> = [];
+    const baseIds = new Map<string, boolean>();
     for (const row of this.database.tables[TABLE.MATERIE]!.getAllRows()) {
       const id = row[COL_MATERIE.ID];
-      // Specifica catalog rows (design 2026-07-30-materie-specifica-catalog):
-      // a dotted MATERIE.ID is a slot-suffix catalog entry, not its own
-      // resolvable subject — resolution walks it via the base materia's slots.
-      if (typeof id === 'string' && id !== '' && !id.includes('.')) {
-        materie.push({
-          materia: MateriaId.of(id),
-          isReligioneAlt: row[COL_MATERIE.IS_RELIGIONE_ALT] === true
-        });
+      if (typeof id !== 'string' || id === '') continue;
+      const dot = id.indexOf('.');
+      const baseId = dot === -1 ? id : id.slice(0, dot);
+      if (!baseIds.has(baseId)) baseIds.set(baseId, false);
+      if (dot === -1 && row[COL_MATERIE.IS_RELIGIONE_ALT] === true) {
+        baseIds.set(baseId, true);
       }
     }
-    return materie;
+    return Array.from(baseIds.entries()).map(([id, isReligioneAlt]) => ({
+      materia: MateriaId.of(id),
+      isReligioneAlt
+    }));
   }
 
   private resolutionClasses(classe: Classe): Classe[] {

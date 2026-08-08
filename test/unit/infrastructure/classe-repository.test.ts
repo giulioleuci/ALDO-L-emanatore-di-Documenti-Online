@@ -79,6 +79,19 @@ test('getTeachingSlots enumerates every populated subject slot and preserves arb
   });
 });
 
+test('getTeachingSlots() still resolves a specifica column when the family has no bare MATERIE row', () => {
+  const tables = teachingSlotFixtureTables();
+  tables.MATERIE = (tables.MATERIE ?? []).filter((row) => row.ID !== 'INTERPRET');
+  const r = new ClasseRepository(new FakeDatabase(tables));
+  const classe = r.findById(ClasseId.of('5A'))!;
+
+  const slots = r.getTeachingSlots(classe);
+
+  expect(
+    slots.some((slot) => slot.materia.value === 'INTERPRET' && slot.specifica === 'CHITARRA')
+  ).toBe(true);
+});
+
 test('getTeachingSlots throws MateriaNotFoundError when a SPECIFICA slot has no matching MATERIE row', () => {
   const tables = teachingSlotFixtureTables();
   const classe5A = tables.CLASSI!.find((row) => row.ID === '5A')!;

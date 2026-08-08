@@ -63,11 +63,10 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       const id = row[COL_MATERIE.ID];
       if (typeof id !== 'string' || id.length === 0) continue;
       this.materieIds.add(id);
-      // Specifica catalog rows (design 2026-07-30-materie-specifica-catalog):
-      // a dotted MATERIE.ID is a catalog entry for a slot suffix, not a
-      // cattedra-matrix column of its own — don't register it as a base subject.
-      if (!id.includes('.')) {
-        this.materieColumns.set(id, { main: id, itp: `${id}.itp` });
+      const dot = id.indexOf('.');
+      const baseId = dot === -1 ? id : id.slice(0, dot);
+      if (!this.materieColumns.has(baseId)) {
+        this.materieColumns.set(baseId, { main: baseId, itp: `${baseId}.itp` });
       }
     }
   }

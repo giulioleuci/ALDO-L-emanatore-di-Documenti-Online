@@ -181,25 +181,26 @@ export class CheckDuplicatesStep extends Step {
       String(cfg(ctx)[COL_CONF_DOC.PATH_OUT] ?? ''),
       cduRecord(ctx)
     );
-    const nome = this.templates.processString(
-      String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? ''),
-      cduRecord(ctx)
-    );
+    // NOME is intentionally excluded from the identity match: it can embed
+    // {{progressivo}}, a folder-file-count that mechanically advances between
+    // runs, so a rendered-name comparison can never recognize a rerun of the
+    // same document as a duplicate (SPECS_ALDO/01_SCHEMA_DATABASE.md,
+    // CONF_DOC.DUPLICAZIONE). Distinguishable instances of a document type
+    // (e.g. one verbale per meeting) get their own CONF_DOC.ID instead.
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) =>
         String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&
         String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipoValue &&
         String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
         (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&
-        String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
-        String(r[COL_LOG_DOCS.NOME] ?? '') === nome
+        String(r[COL_LOG_DOCS.PATH] ?? '') === path
     );
     if (existing) {
       this.setResult(ctx, 'shouldGenerate', false);
       this.setResult(
         ctx,
         'skipReason',
-        `Duplicato: TIPO=${tipo}, SOTTOTIPO=${sottotipoValue}, ID_GEN=${idGen}, PATH=${path}, NOME=${nome}`
+        `Duplicato: TIPO=${tipo}, SOTTOTIPO=${sottotipoValue}, ID_GEN=${idGen}, PATH=${path}, NOME=${String(existing[COL_LOG_DOCS.NOME] ?? '')}`
       );
     }
   }

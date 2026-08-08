@@ -778,7 +778,7 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
     expect(logDetails(result)).toBe('Duplicates allowed');
   });
 
-  test('NEGATA allows a document when only its generated name differs', () => {
+  test('NEGATA blocks a document whose NOME differs but TIPO/SOTTOTIPO/ID_GEN/PATH match (identity excludes NOME)', () => {
     const tables = fixtureTables();
     tables.LOG_DOCS = [
       {
@@ -799,7 +799,34 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
       DUPLICAZIONE: DuplicazioneDocumento.NEGATA
     });
     new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
-    expect(ctx.get('shouldGenerate')).toBe(true);
+    expect(ctx.get('shouldGenerate')).toBe(false);
+  });
+
+  test('NEGATA recognizes a duplicate even when {{progressivo}} makes the rendered name differ from the stored NOME', () => {
+    const tables = fixtureTables();
+    tables.LOG_DOCS = [
+      {
+        ID: 'old',
+        ID_GEN: 'CD1',
+        TIPO: 'VERBALE',
+        SOTTOTIPO: '',
+        PATH: 'Verbali/5',
+        NOME: 'Verbale_1', // stored with a progressivo baked in from a prior run
+        CLASSI: '5A',
+        STATO: 'GENERATO'
+      }
+    ];
+    const db = new FakeDatabase(tables);
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      FILE_NAME: 'Verbale_{{progressivo}}', // today's render would produce e.g. "Verbale_2" (unresolved/different number)
+      DUPLICAZIONE: DuplicazioneDocumento.NEGATA
+    });
+
+    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+
+    expect(ctx.get('shouldGenerate')).toBe(false);
   });
 });
 

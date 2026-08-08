@@ -305,6 +305,77 @@ test('role/date check rejects a final holder that is not assigned to ITA', () =>
   ).toThrow(/titolare finale ITA/);
 });
 
+function validLabSeminar(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    sigla: 'LAB.SEMINARIO_POMERIDIANO',
+    principale: 'Laboratorio',
+    specificita: 'Seminario pomeridiano',
+    ...overrides
+  };
+}
+
+function substitutionContainer(
+  substituteMateria: Record<string, unknown>,
+  restoredHolderMateria: Record<string, unknown>
+): ServiceContainer {
+  const during = classCdu([
+    {
+      anagrafica: { email: 'e2edocente18@onlinetest.aldo.local' },
+      materie: [substituteMateria]
+    },
+    {
+      anagrafica: { email: 'e2edocente16@onlinetest.aldo.local' },
+      materie: [{ sigla: 'ITA', specificita: null }]
+    }
+  ]);
+  const after = classCdu([
+    {
+      anagrafica: { email: 'e2edocente4@onlinetest.aldo.local' },
+      materie: [restoredHolderMateria]
+    }
+  ]);
+  return {
+    get<T>(key: string): T {
+      if (key === 'contextBuilder') {
+        return {
+          build: (params: { now: Date }) => (params.now.getDate() === 5 ? during : after)
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+}
+
+test('role/date check accepts valid composite LAB catalog rows for substitute and restored holder', () => {
+  const container = substitutionContainer(validLabSeminar(), validLabSeminar());
+
+  expect(() =>
+    runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
+  ).not.toThrow();
+});
+
+test.each([
+  ['substitute', 'sigla', 'LAB'],
+  ['substitute', 'principale', 'Laboratorio errato'],
+  ['substitute', 'specificita', 'Seminario Pomeridiano'],
+  ['restored holder', 'sigla', 'LAB'],
+  ['restored holder', 'principale', 'Laboratorio errato'],
+  ['restored holder', 'specificita', 'Seminario Pomeridiano']
+])(
+  'role/date check rejects a corrupted %s LAB catalog %s',
+  (holder, field, value) => {
+    const corrupted = validLabSeminar({ [field]: value });
+    const container =
+      holder === 'substitute'
+        ? substitutionContainer(corrupted, validLabSeminar())
+        : substitutionContainer(validLabSeminar(), corrupted);
+
+    expect(() =>
+      runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
+    ).toThrow(/attesi supplente LAB\.SEMINARIO_POMERIDIANO/);
+  }
+);
+
 test('role/date check rejects the obsolete split LAB seminar representation', () => {
   const during = classCdu([
     {

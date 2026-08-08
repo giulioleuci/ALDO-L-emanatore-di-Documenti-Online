@@ -23,6 +23,7 @@ import {
   CONF_MAIL_CONDOTTA,
   CONF_MAIL_VERBALE,
   INDIRIZZO_E2E,
+  INDIRIZZO_E2E_CLASSICO,
   PIANO_DOPPIO_STUDENTE,
   e2eDocenteEmail,
   type E2eSampleDatabase
@@ -337,4 +338,79 @@ export function registerArticolazioneChecks(
       }
     }
   });
+
+  runner.add(
+    'Articolazione CDU: roster comune/separato per indirizzo, scoping parent vs partner',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+      const parentCdu = classCdu(contextBuilder, CLASSE_C_PARENT);
+      const parentClasse = parentCdu.focus.classe;
+      const comune = parentClasse?.consiglioDiClasseComune ?? [];
+      const separato = parentClasse?.consiglioDiClasseSeparato ?? [];
+      const primo = separato.filter((docente) => docente.tipoArticolazione === 'SEPARATO_PRIMO');
+      const secondo = separato.filter(
+        (docente) => docente.tipoArticolazione === 'SEPARATO_SECONDO'
+      );
+
+      const comuneEmails = comune.map((docente) => docente.anagrafica.email).sort();
+      const primoEmails = primo.map((docente) => docente.anagrafica.email).sort();
+      const secondoEmails = secondo.map((docente) => docente.anagrafica.email).sort();
+
+      if (
+        JSON.stringify(comuneEmails) !== JSON.stringify([e2eDocenteEmail(1)]) ||
+        JSON.stringify(primoEmails) !==
+          JSON.stringify([e2eDocenteEmail(2), e2eDocenteEmail(3), e2eDocenteEmail(4)].sort()) ||
+        JSON.stringify(secondoEmails) !==
+          JSON.stringify([e2eDocenteEmail(6), e2eDocenteEmail(7), e2eDocenteEmail(8)].sort())
+      ) {
+        throw new ValidationError(
+          `Roster comune/separato del parent ${CLASSE_C_PARENT} non coerente: comune=${comuneEmails.join(',')} primo=${primoEmails.join(',')} secondo=${secondoEmails.join(',')}`
+        );
+      }
+
+      if (primo.some((docente) => docente.gruppoNome !== 'Liceo Scientifico (E2E)')) {
+        throw new ValidationError(
+          `Gruppo SEPARATO_PRIMO del parent ${CLASSE_C_PARENT} non risolve a ${INDIRIZZO_E2E} (Liceo Scientifico E2E).`
+        );
+      }
+      if (secondo.some((docente) => docente.gruppoNome !== 'Liceo Classico (E2E)')) {
+        throw new ValidationError(
+          `Gruppo SEPARATO_SECONDO del parent ${CLASSE_C_PARENT} non risolve a ${INDIRIZZO_E2E_CLASSICO} (Liceo Classico E2E).`
+        );
+      }
+
+      const primaryCdu = classCdu(contextBuilder, CLASSE_C);
+      const primaryEmails = (primaryCdu.focus.classe?.consiglioDiClasse ?? [])
+        .map((docente) => docente.anagrafica.email)
+        .sort();
+      const expectedPrimary = [
+        e2eDocenteEmail(1),
+        e2eDocenteEmail(2),
+        e2eDocenteEmail(3),
+        e2eDocenteEmail(4)
+      ].sort();
+      if (JSON.stringify(primaryEmails) !== JSON.stringify(expectedPrimary)) {
+        throw new ValidationError(
+          `${CLASSE_C} (partner target diretto) espone ${primaryEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${primaryEmails.join(',')}`
+        );
+      }
+
+      const partnerCdu = classCdu(contextBuilder, CLASSE_C_PARTNER);
+      const partnerEmails = (partnerCdu.focus.classe?.consiglioDiClasse ?? [])
+        .map((docente) => docente.anagrafica.email)
+        .sort();
+      const expectedPartner = [
+        e2eDocenteEmail(1),
+        e2eDocenteEmail(6),
+        e2eDocenteEmail(7),
+        e2eDocenteEmail(8)
+      ].sort();
+      if (JSON.stringify(partnerEmails) !== JSON.stringify(expectedPartner)) {
+        throw new ValidationError(
+          `${CLASSE_C_PARTNER} (partner target diretto) espone ${partnerEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${partnerEmails.join(',')}`
+        );
+      }
+    }
+  );
 }

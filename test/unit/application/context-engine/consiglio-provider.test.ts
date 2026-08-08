@@ -112,6 +112,7 @@ test('materiaVm resolves the composite specifica row directly, not the base subj
   expect(specifica).toMatchObject({
     sigla: 'MATE.AVANZATO',
     nome: 'Matematica (Avanzato)',
+    nomeSintetico: 'Mat. Avanzata',
     principale: 'Matematica',
     specificita: 'Avanzato'
   });

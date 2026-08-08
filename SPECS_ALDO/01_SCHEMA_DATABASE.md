@@ -339,6 +339,10 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 > `ID_GEN=PIANI_PERSONALIZZATI`, `TIPO=PIANO_PERS` e
 > `SOTTOTIPO=focus.piano.tipo`.
 
+> **Altri `CONF_DOC.TIPO` riservati (asse di batch).** Oltre a `PIANO_PERS`, altri due valori di `TIPO` sono riservati perché pilotano l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`):
+> - `DOCUMENTO_DOCENTE_MATERIA`: un documento per ciascuna coppia (docente, materia) del consiglio di classe risolto per ruolo (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), su tutte le classi attive — non un documento per classe. Popola `focus.docente`/`focus.materia` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia::docenteEmail` (vedi sotto).
+> - `DIPARTIMENTO`: un documento per ciascuna riga `DIPART`, senza asse classe (un dipartimento non ha classi). Popola `focus.dipartimento` (02 §4.6).
+
 **Azioni POST_PROCESSO supportate:**
 
 | Tipo                  | Effetto                                                            |
@@ -357,7 +361,7 @@ Motore di configurazione per le notifiche email. Ogni record è un pattern di co
 | --------------- | ------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ID`            | String  | ✅  | Codice pattern (es. `CDC_OTTOBRE`)                                                                                                                                                                |
 | `OGGETTO`       | String  | —   | Oggetto email (supporta placeholder `{{...}}`)                                                                                                                                                    |
-| `PROCESSO`      | String  | —   | Iteratore destinatari: `PER_COORDINATORE`, `PER_DOCENTE`, `PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`, `PER_CARENZA_GENITORI_E_COORD` |
+| `PROCESSO`      | String  | —   | Iteratore destinatari: `PER_COORDINATORE`, `PER_DOCENTE`, `PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`, `PER_CARENZA_GENITORI_E_COORD`, `PER_CAPO_DIPARTIMENTO`, `PER_DIPARTIMENTO` |
 | `BOX_CFG`       | JSON    | —   | Array di BoxConfig per i contenuti dinamici dell'email                                                                                                                                            |
 | `TESTO`         | String  | —   | HTML opzionale inserito prima dei box; supporta placeholder `{{...}}` risolti tramite `WorkspaceTemplateEngine`                                                                                   |
 | `SUPPLENTI`     | String  | —   | Routing supplenze: `SOLO_TITOLARI`, `SOLO_SUPPLENTI`, `ENTRAMBI`                                                                                                                                  |
@@ -395,7 +399,7 @@ Audit trail immutabile (append-only) di ogni documento generato. Lega l'ID fisic
 | `ID`         | String       | ✅  | —           | ID Drive del file generato                                                                                                                                                     |
 | `ID_GEN`     | String       | —   | CONF_DOC.ID | Tipo di configurazione usata                                                                                                                                                   |
 | `TIPO`       | String       | —   | —           | Tipo del documento; valore derivato da `CONF_DOC.TIPO` (campo categoriale, non PK di `CONF_DOC`)                                                                               |
-| `SOTTOTIPO`  | String       | —   | —           | Specializzazione del documento. Per `TIPO=PIANO_PERS` è obbligatoriamente il `PIANI.TIPO` focalizzato (es. `PDP_BES`, `PEI`) e discrimina piani generati dallo stesso `ID_GEN` |
+| `SOTTOTIPO`  | String       | —   | —           | Specializzazione del documento. Per `TIPO=PIANO_PERS` è obbligatoriamente il `PIANI.TIPO` focalizzato (es. `PDP_BES`, `PEI`) e discrimina piani generati dallo stesso `ID_GEN`. Per `TIPO=DOCUMENTO_DOCENTE_MATERIA` è `materia::docenteEmail` (es. `MATE::rossi@school.it`), la coppia sigla materia + email docente della cattedra; discrimina i documenti generati per lo stesso `ID_GEN` sulla stessa classe (vedi `sottotipo()` in `documentSteps.ts`) |
 | `NOME`       | String       | —   | —           | Nome del file                                                                                                                                                                  |
 | `STATO`      | String       | —   | —           | Enum                                                                                                                                                                           |
 | `NOTIFICATO` | String       | —   | —           | Timestamp della notifica agli interessati                                                                                                                                      |

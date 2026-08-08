@@ -219,6 +219,14 @@ export class DocumentBatchService {
     let targets: DocenteMateriaBatchTarget[];
     if (resume === null) {
       targets = [];
+      // DocenteMateriaBatchTarget is only (classe, docenteEmail, materiaId) —
+      // TeachingSlot is (materia, kind, specifica). Slots differing only by
+      // kind/specifica (e.g. STANDARD+ITP on the same lab subject, or two
+      // articolata specificità) collapse to a single target here by design:
+      // extending the batch axis to carry kind/specifica is out of scope for
+      // this fix; dedup keeps the first match, mirroring
+      // DocenteMateriaFocusProvider's own first-match `materie.find` semantics.
+      const seen = new Set<string>();
       const attive = this.classi.filterPerGestioneArticolazione(
         this.classi.findAttive(),
         config.gestioneArticolazione
@@ -245,11 +253,15 @@ export class DocumentBatchService {
           includeReligioneAlt: true
         });
         for (const assignment of assignments) {
-          targets.push({
-            classe: classe.id ?? '',
-            docenteEmail: assignment.docenteEffettivo.email.value,
-            materiaId: assignment.slot.materia.value
-          });
+          const classeId = classe.id ?? '';
+          const docenteEmail = assignment.docenteEffettivo.email.value;
+          const materiaId = assignment.slot.materia.value;
+          const key = `${classeId}:${materiaId}:${docenteEmail}`;
+          if (seen.has(key)) {
+            continue;
+          }
+          seen.add(key);
+          targets.push({ classe: classeId, docenteEmail, materiaId });
         }
       }
     } else {

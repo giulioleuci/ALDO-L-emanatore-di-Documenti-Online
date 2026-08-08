@@ -45,7 +45,7 @@ Il CDU è articolato in sei sezioni di primo livello:
 | :--- | :--- |
 | **`meta`** | Dati tecnici dell'operazione: timestamp, ID esecuzione, date formattate, configurazione box e parametri di input. |
 | **`istituto`** | Dati globali dell'istituzione scolastica: dirigenti, ruoli di staff e statistiche d'istituto. |
-| **`focus`** | Il cuore dei dati di business oggetto dell'operazione: classe focalizzata (`focus.classe`), eventuale alunno (`focus.alunno`), singolo piano personalizzato (`focus.piano`), singola carenza (`focus.carenza`). |
+| **`focus`** | Il cuore dei dati di business oggetto dell'operazione: classe focalizzata (`focus.classe`), eventuale alunno (`focus.alunno`), singolo piano personalizzato (`focus.piano`), singola carenza (`focus.carenza`), coppia docente/materia di una singola cattedra (`focus.docente`/`focus.materia`), dipartimento focalizzato (`focus.dipartimento`). |
 | **`destinatario`** | Dati anagrafici, ruoli, permessi e saluti specifici per il destinatario. Popolata ESCLUSIVAMENTE dalla pipeline email (`BuildCDUStep`); assente in un CDU costruito per la sola generazione documenti. |
 | **`render`** | HTML pre-renderizzato dei box di testo dinamici (utilizzato unicamente nella pipeline email). |
 | **`tech`** | Riferimenti agli oggetti vivi di dominio e servizi (non serializzati, protetti tramite `enumerable: false`). |
@@ -65,6 +65,20 @@ meta:
   tipoOperazione: string          # "GENERAZIONE_DOCUMENTO" | "INVIO_NOTIFICA"
   idEsecuzione: string            # UUID univoco del job corrente
   progressivo: number | undefined # Conteggio dei file già presenti nella cartella di destinazione Drive + 1; alias di radice {{progressivo}} per uso fuori dai loop
+
+  # ATTENZIONE — `meta.progressivo`/l'alias di radice `{{progressivo}}` sono
+  # risolti SOLO in `PrepareInfrastructureStep`, cioè DOPO che `CheckDuplicatesStep`
+  # ha già renderizzato `FILE_NAME` per il confronto di identità con `LOG_DOCS.NOME`
+  # (l'ordine della pipeline è CheckDuplicatesStep -> PrepareInfrastructureStep ->
+  # GenerateNameStep). Di conseguenza:
+  # - è valido nel CORPO del template documento e nei campi valorizzati al
+  #   momento di `REGISTRA_DOC`;
+  # - NON è valido in `PATH_OUT` (chicken-and-egg: il conteggio si deriva dalla
+  #   cartella di destinazione già risolta, che `PATH_OUT` sta ancora costruendo);
+  # - se usato in `FILE_NAME`, VANIFICA il confronto di identità di
+  #   `CheckDuplicatesStep`: con `DUPLICAZIONE=NEGATA` le riesecuzioni non
+  #   verranno bloccate e creeranno ulteriori file numerati anziché essere
+  #   rifiutate come duplicati.
 
   date:
     oggi:
@@ -203,6 +217,8 @@ focus.classe:
         indirizzo: { nome: string }   # SOLO per una classe PARENT articolata: indirizzo del partner di provenienza
     genitori:
       - nomeCompleto: string     # Nome libero da ALUNNI.RAPPR_GEN (senza email)
+        studente: { nomeCompleto: string }   # OBBLIGATORIO: nome dell'alunno rappresentato — distingue quale
+                                              #   figlio è rappresentato quando una famiglia ha più figli in classi diverse
         indirizzo: { nome: string }   # SOLO per una classe PARENT articolata: indirizzo del partner di provenienza
     # Per una classe parent, studenti/genitori sono aggregati sui due partner e ciascun item porta
     # il proprio indirizzo di provenienza; per classi non articolate o partner, `indirizzo` è assente.
@@ -417,6 +433,47 @@ focus.carenza:
   classe: string                 # ClasseId al momento della rilevazione
   hasAssenze: boolean            # Flag assenze elevate
   note: string                   # Note del consiglio di classe
+```
+
+---
+
+### 4.5 `focus.docente` / `focus.materia`
+
+Presenti unicamente nelle recipe `DOCUMENTO_DOCENTE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteMateriaFocusProvider`). Scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
+
+```yaml
+focus.docente: PersonVM          # §8.1 — anagrafica completa del docente della cattedra (docenteCdc.anagrafica)
+focus.materia: SubjectVM         # §8.2 — materia della cattedra (docenteCdc.materie[], primo match su sigla)
+```
+
+> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`), ma sia l'enumerazione batch (`DocumentBatchService.generateDocentiMateria`) sia questo provider trattano solo la coppia (classe, materia, docente): due cattedre che differiscono solo per `kind`/`specifica` (es. STANDARD+ITP sulla stessa materia di laboratorio) collassano in un solo documento, per scelta di scope — non è un bug.
+
+---
+
+### 4.6 `focus.dipartimento`
+
+Presente unicamente nelle recipe `DIPARTIMENTO` (generazione batch per dipartimento, es. "verbale di dipartimento" — un dipartimento non ha una dimensione classe). Interfaccia `CduDipartimentoFocus`.
+
+```yaml
+focus.dipartimento:
+  anagrafica:
+    id: string                   # DIPART.ID
+    nome: string                 # DIPART.NOME
+  capo: PersonVM | null          # §8.1 — anagrafica del capo dipartimento (DIPART.CAPO), null se non assegnato
+  materie:
+    - sigla: string               # Proiezione leggera (solo sigla) delle materie afferenti al dipartimento (DIPART.MATERIE)
+  docenti: PersonVM[]             # §8.1 — docenti afferenti al dipartimento
+  didattica:
+    documenti:
+      items:                      # Stessa forma di DocumentiClasseProvider, filtrata per overlap di materia
+                                   #   anziché per classe (un dipartimento non ha classi)
+        - id: string | undefined
+          nome: string
+          link: string
+          tipo: string
+          idGen: string
+          stato: string
+          dataCreazione: string
 ```
 
 ---
@@ -1017,7 +1074,7 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       },
       "rappresentanti": {
         "studenti": [{ "nomeCompleto": "Marco Neri", "email": "marco.neri@alunni.edu.it", "indirizzo": { "nome": "Liceo Classico" } }],
-        "genitori": [{ "nomeCompleto": "Giuseppe Neri", "indirizzo": { "nome": "Liceo Classico" } }]
+        "genitori": [{ "nomeCompleto": "Giuseppe Neri", "studente": { "nomeCompleto": "Marco Neri" }, "indirizzo": { "nome": "Liceo Classico" } }]
       },
       "consiglioDiClasse": [
         {

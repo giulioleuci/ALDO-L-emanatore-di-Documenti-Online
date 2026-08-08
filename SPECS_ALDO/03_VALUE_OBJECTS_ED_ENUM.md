@@ -100,6 +100,8 @@ Per i documenti `PIANO_PERS`, la corrispondenza richiede inoltre lo stesso stude
 | `PER_CARENZA_GENITORI`          | Un'email per riga CARENZE non notificata, ai soli genitori/tutori |
 | `PER_CARENZA_GENITORI_E_ALUNNO` | Come sopra, TO genitori + alunno (un'unica email condivisa)       |
 | `PER_CARENZA_GENITORI_E_COORD`  | Come `PER_CARENZA_GENITORI`, con il coordinatore di classe in CC  |
+| `PER_CAPO_DIPARTIMENTO`         | Un'email per dipartimento con un `CAPO` assegnato, indirizzata al solo capo |
+| `PER_DIPARTIMENTO`              | Un'email per dipartimento, a tutti i docenti afferenti            |
 
 Le tre varianti `PER_CARENZA_GENITORI*` condividono la stessa iterazione su `CARENZE` non notificate
 e possono usare solo i box `carenze`/`note`/`assenze`.
@@ -561,7 +563,7 @@ La chiave `regolaSupplente` controlla come le supplenze influenzano l'assegnazio
 
 ```json
 {
-  "TIPO_BOX": "carenze | documenti | cartelle | note | assenze | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
+  "TIPO_BOX": "carenze | documenti | documenti_dipartimento | cartelle | note | assenze | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
   "TITOLO": "string (opzionale; se assente usa il titolo di default del tipo)",
   "ORDINE": 1,
   "ALLEGA": "boolean (default false; solo true autorizza l'invio Gmail dei file della sorgente)",

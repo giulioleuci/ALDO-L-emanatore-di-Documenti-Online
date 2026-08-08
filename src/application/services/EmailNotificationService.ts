@@ -449,6 +449,7 @@ export class EmailNotificationService {
         tipo: 'capo_dipartimento' as const,
         tipoTarget: 'dipartimento' as const,
         target: dipartimento.id ?? '',
+        docenteEmail: capo.value,
         emails: [capo.value],
         classiCompetenza: []
       }));

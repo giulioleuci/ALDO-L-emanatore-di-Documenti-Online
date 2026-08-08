@@ -523,11 +523,29 @@ function fakeAssignment(materiaId: string, docenteEmail: string): TeachingAssign
   } as unknown as TeachingAssignment;
 }
 
+/** Same as fakeAssignment but with an explicit kind/specifica — Finding 1: two
+ * slots differing ONLY on this third TeachingSlot dimension must collapse to
+ * one DocenteMateriaBatchTarget (classe, materiaId, docenteEmail is 2-D). */
+function fakeAssignmentWithSlot(
+  materiaId: string,
+  docenteEmail: string,
+  kind: 'MAIN' | 'ITP' | 'SPECIFICA',
+  specifica: string | null
+): TeachingAssignment {
+  return {
+    slot: { materia: MateriaId.of(materiaId), kind, specifica },
+    docenteEffettivo: new Docente({ EMAIL: docenteEmail, COGNOME: docenteEmail, NOME: '', GENERE: 'M' })
+  } as unknown as TeachingAssignment;
+}
+
 function wireDocentiMateria(
   options: {
     failFor?: string;
     monitor?: FakeProcessMonitor;
     logger?: LoggerService;
+    /** Extra base-council assignments merged in per classe id — used to model
+     * same-(materia,docente) slots that differ only by kind/specifica (Finding 1). */
+    extraCouncilByClasse?: Record<string, TeachingAssignment[]>;
   } = {}
 ) {
   const db = new FakeDatabase(fixtureTables());
@@ -576,8 +594,12 @@ function wireDocentiMateria(
   // DocenteMateriaFocusProvider resolves downstream — that's exactly the
   // divergence Finding 1 flagged.
   const councilByClasse: Record<string, TeachingAssignment[]> = {
-    '5A': [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')],
-    '1F': [fakeAssignment('MATE', 'rossi@school.it')]
+    '5A': [
+      fakeAssignment('MATE', 'bianchi@school.it'),
+      fakeAssignment('FISI', 'bianchi@school.it'),
+      ...(options.extraCouncilByClasse?.['5A'] ?? [])
+    ],
+    '1F': [fakeAssignment('MATE', 'rossi@school.it'), ...(options.extraCouncilByClasse?.['1F'] ?? [])]
   };
   // Separate, options-gated bucket: models a docente who teaches ONLY a
   // religione-alt materia (IRC's IS_RELIGIONE_ALT=true in fixtureTables()).
@@ -726,6 +748,34 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     ]);
     expect(result.errori).toEqual(['5A:FISI:bianchi@school.it: template non trovato']);
     expect(result.success).toBe(false);
+  });
+
+  // Finding 1 (final review fix wave): TeachingSlot is 3-D (materia, kind,
+  // specifica) but DocenteMateriaBatchTarget is 2-D (classe, materiaId,
+  // docenteEmail). A docente holding two slots on the same materia that
+  // differ only by kind (STANDARD+ITP on a lab subject) or specifica must
+  // collapse to exactly ONE target, not two byte-identical ones.
+  test('two TeachingAssignments for the same (classe, materia, docente) differing only by kind/specifica collapse to one target', () => {
+    const { service, generated } = wireDocentiMateria({
+      extraCouncilByClasse: {
+        '1F': [fakeAssignmentWithSlot('MATE', 'rossi@school.it', 'ITP', null)]
+      }
+    });
+    const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' });
+    let step = gen.next();
+    while (!step.done) step = gen.next();
+    const result = step.value;
+
+    const oneFTargets = generated.filter((g) => g.classe === '1F' && g.materia === 'MATE');
+    expect(oneFTargets).toHaveLength(1);
+    expect(oneFTargets[0]).toEqual({
+      classe: '1F',
+      docente: 'rossi@school.it',
+      materia: 'MATE',
+      confDocId: 'PROGRAMMA_SVOLTO',
+      jobId: 'job1'
+    });
+    expect(result.processed.filter((id) => id === '1F:MATE:rossi@school.it')).toHaveLength(1);
   });
 });
 

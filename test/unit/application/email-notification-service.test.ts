@@ -526,6 +526,28 @@ test('sendPattern PER_CDC sends one email per class with supervisore BCC (11 §2
   expect(db.tables['LOG_MAIL']!.getAllRows()).toHaveLength(2);
 });
 
+// Finding 2/5 (final review fix wave): end-to-end regression guard. Before the
+// Finding 2 fix, targetsPerCapoDipartimento never set docenteEmail, so
+// BuildCDUStep.buildDestinatario resolved `docente: null` and
+// salutoPerTarget's 'capo_dipartimento' case fell into the generic
+// 'Gentili Destinatari' arm instead of the personalized "Gentile Prof. ..."
+// greeting the case was written for. Only observable at the assembled-email
+// (rendered htmlBody) level — enumerateTargets/box-rendering tests in
+// isolation don't exercise buildDestinatario at all.
+test('sendPattern PER_CAPO_DIPARTIMENTO renders a personalized greeting for the capo, not the generic fallback (Finding 2)', () => {
+  const { service, gmail } = wire([mailRow('DIP_CAPO', { PROCESSO: 'PER_CAPO_DIPARTIMENTO' })]);
+  const result = service.sendPattern('DIP_CAPO');
+
+  // Only SCIENTIFICO_DIP has a CAPO (rossi@school.it); LETTERE's CAPO is empty.
+  expect(result.targets).toBe(1);
+  expect(result.sent).toBe(1);
+  expect(result.errors).toEqual([]);
+  expect(gmail.sent).toHaveLength(1);
+  expect(gmail.sent[0]!.to).toEqual(['rossi@school.it']);
+  expect(gmail.sent[0]!.htmlBody).toContain('Gentile Prof. ROSSI MARIO,');
+  expect(gmail.sent[0]!.htmlBody).not.toContain('Gentili Destinatari');
+});
+
 test.each([
   ['VERBALE', 'Verbale scrutinio 5A e 1F'],
   ['CONDOTTA', 'Riepilogo condotta 5A e 1F']

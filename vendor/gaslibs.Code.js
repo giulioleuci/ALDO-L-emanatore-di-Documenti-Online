@@ -25759,13 +25759,12 @@ class DocumentProcessorTagScanner {
 
 
 
-
   _analyzeConditionalSections(textMatches, context) {
     const RESERVED_PREFIXES = ['tablerow_loop:', 'tablecol_loop:', 'bullet_list:', 'number_list:'];
     const openRe = /^{{([#^])([^}]+)}}\s*$/;
     const closeRe = /^{{\/([^}]+)}}\s*$/;
-    const operations = [];
     const stack = [];
+    const roots = [];
     for (const textMatch of textMatches) {
       if (textMatch.type !== 'TEXT' && textMatch.type !== 'TABLE_TEXT') {
         continue;
@@ -25780,8 +25779,9 @@ class DocumentProcessorTagScanner {
         stack.push({
           symbol: openMatch[1],
           expr,
-          elementIndex: textMatch.elementIndex,
-          length: text.length
+          openIndex: textMatch.elementIndex,
+          openLength: text.length,
+          children: []
         });
         continue;
       }
@@ -25795,32 +25795,71 @@ class DocumentProcessorTagScanner {
         continue;
       }
       stack.pop();
-      const dummyToken = ['name', top.expr];
-      const value = this.facade.mustache._lookupValue(dummyToken, new _MustacheContext(context));
-      const isTruthy = Boolean(value) && !(Array.isArray(value) && value.length === 0);
-      const showContent = top.symbol === '#' ? isTruthy : !isTruthy;
-      const openIndex = top.elementIndex;
-      const openLength = top.length;
-      const closeIndex = textMatch.elementIndex;
-      const closeLength = text.length;
-      if (showContent) {
-        operations.push({
-          type: 'conditionalDelete',
-          index: openIndex,
-          length: openLength
-        });
-        operations.push({
-          type: 'conditionalDelete',
-          index: closeIndex,
-          length: closeLength
-        });
+      top.closeIndex = textMatch.elementIndex;
+      top.closeLength = text.length;
+      if (stack.length > 0) {
+        stack[stack.length - 1].children.push(top);
       } else {
-        operations.push({
-          type: 'conditionalDelete',
-          index: openIndex,
-          length: closeIndex + closeLength - openIndex
-        });
+        roots.push(top);
       }
+    }
+    const operations = [];
+    for (const root of roots) {
+      operations.push(...this._resolveConditionalSectionNode(root, context));
+    }
+    return operations;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _resolveConditionalSectionNode(node, context) {
+    const dummyToken = ['name', node.expr];
+    const value = this.facade.mustache._lookupValue(dummyToken, new _MustacheContext(context));
+    const isTruthy = Boolean(value) && !(Array.isArray(value) && value.length === 0);
+    const showContent = node.symbol === '#' ? isTruthy : !isTruthy;
+    if (!showContent) {
+      return [{
+        type: 'conditionalDelete',
+        index: node.openIndex,
+        length: node.closeIndex + node.closeLength - node.openIndex,
+        kind: 'section'
+      }];
+    }
+    const operations = [{
+      type: 'conditionalDelete',
+      index: node.openIndex,
+      length: node.openLength,
+      kind: 'marker'
+    }, {
+      type: 'conditionalDelete',
+      index: node.closeIndex,
+      length: node.closeLength,
+      kind: 'marker'
+    }];
+    for (const child of node.children) {
+      operations.push(...this._resolveConditionalSectionNode(child, context));
     }
     return operations;
   }
@@ -26614,11 +26653,58 @@ class _DocumentProcessor {
       methods: ['_executeRowLoopOperation', '_executeColumnLoopOperation', '_executeListLoopOperation', '_retextParagraph', '_convertOperationToRequests', '_createTextSubstitutionRequests', '_createDeleteRowRequests', '_createDeleteRangeRequests', '_executeTableInsertOperation', '_flushDocumentChanges']
     }]);
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _computeFalsyConditionalRanges(currentStructure, context) {
+    return this._analyzeConditionalSections(currentStructure.textMatches, context).filter(op => op.kind === 'section').map(op => [op.index, op.index + op.length]);
+  }
+
+
+
+
+
+
+
+
+  _isInsideAnyRange(ranges, index) {
+    return ranges.some(([start, end]) => index >= start && index < end);
+  }
   process(documentId, context) {
     this.logger.info(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
     let structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     const structuralOps = [];
+
+
+
+
+
+
+    let falsyRanges = this._computeFalsyConditionalRanges(structure, context);
     for (const table of structure.tables) {
+      if (this._isInsideAnyRange(falsyRanges, table.index)) {
+        continue;
+      }
       structuralOps.push(...this._analyzeColumnLoops(table, context));
       structuralOps.push(...this._analyzeRowLoops(table, context));
     }
@@ -26653,14 +26739,23 @@ class _DocumentProcessor {
 
 
 
-    const tableInsertOps = this._analyzeTableInsertions(structure.textMatches, context);
+
+
+
+    falsyRanges = this._computeFalsyConditionalRanges(structure, context);
+    const tableInsertCandidates = structure.textMatches.filter(tm => !this._isInsideAnyRange(falsyRanges, tm.elementIndex));
+    const tableInsertOps = this._analyzeTableInsertions(tableInsertCandidates, context);
     if (tableInsertOps.length > 0) {
       for (const op of tableInsertOps) {
         this._executeTableInsertOperation(documentId, op);
       }
       structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     }
-    const remainingTextMatches = structure.textMatches.filter(tm => tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex));
+
+
+
+    falsyRanges = this._computeFalsyConditionalRanges(structure, context);
+    const remainingTextMatches = structure.textMatches.filter(tm => (tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex)) && !this._isInsideAnyRange(falsyRanges, tm.elementIndex));
     const listLoopOps = this._analyzeListLoops(remainingTextMatches, context);
 
 
@@ -26696,8 +26791,28 @@ class _DocumentProcessor {
 
 
 
-    const batchOps = [];
+
+    const conditionalOps = this._analyzeConditionalSections(structure.textMatches, context);
+    falsyRanges = conditionalOps.filter(op => op.kind === 'section').map(op => [op.index, op.index + op.length]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const batchOps = [...conditionalOps];
     for (const table of structure.tables) {
+      if (this._isInsideAnyRange(falsyRanges, table.index)) {
+        continue;
+      }
       const rowOps = this._analyzeRowLoops(table, context);
       for (const op of rowOps) {
         if (op.type === 'deleteRow') {
@@ -26705,18 +26820,6 @@ class _DocumentProcessor {
         }
       }
     }
-
-
-
-
-
-
-
-
-
-
-    const conditionalOps = this._analyzeConditionalSections(structure.textMatches, context);
-    batchOps.push(...conditionalOps);
     const conditionalRanges = conditionalOps.map(op => [op.index, op.index + op.length]);
     const finalTextMatches = structure.textMatches.filter(tm => (tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex)) && !renderedElementIndices.has(tm.elementIndex) && !conditionalRanges.some(([start, end]) => tm.elementIndex >= start && tm.elementIndex < end));
     batchOps.push(...this._analyzeTextSubstitutions(finalTextMatches, context));

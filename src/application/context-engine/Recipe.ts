@@ -12,7 +12,6 @@ export interface RecipeOptions extends Omit<RecipeOptionsView, 'gestioneSupplent
   profonditaAnniAsl: number;
   profonditaAnniDocumenti: number;
   includiSupplenti: boolean;
-  includiSpecificita: boolean;
   notificaSoloCoordinatori: boolean;
   includiPartnerDettaglio: boolean;
   gestioneSupplenti: GestioneSupplenti;
@@ -53,7 +52,6 @@ export const DEFAULT_OPTIONS: RecipeOptions = {
   profonditaAnniAsl: 0,
   profonditaAnniDocumenti: 0,
   includiSupplenti: false,
-  includiSpecificita: false,
   notificaSoloCoordinatori: false,
   includiPartnerDettaglio: false,
   gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI

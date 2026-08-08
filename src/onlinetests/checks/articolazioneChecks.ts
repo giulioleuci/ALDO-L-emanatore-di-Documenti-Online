@@ -57,7 +57,6 @@ function classCdu(contextBuilder: ContextBuilder, target: string, now = new Date
     { target, tipoTarget: 'classe', now },
     recipe('CLASSE_COMPLETA', {
       includiSupplenti: true,
-      includiSpecificita: true,
       gestioneSupplenti: GestioneSupplenti.ENTRAMBI
     })
   );

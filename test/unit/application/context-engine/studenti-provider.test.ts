@@ -214,8 +214,8 @@ test('has no perIndirizzo or indirizziPresenti on the studenti node, even for an
   expect(cdu.focus.classe!.studenti).not.toHaveProperty('indirizziPresenti');
 });
 
-test('StudentiProvider: populates perSpecificita only when includiSpecificita is true (02 §2.14/§8.9)', () => {
-  const cdu = build('5A', fixtureTables(), { includiSpecificita: true });
+test('StudentiProvider: always populates perSpecificita for a class CDU (02 §2.14/§8.9)', () => {
+  const cdu = build('5A', fixtureTables());
   expect(cdu.focus.classe!.studenti!.perSpecificita).toEqual([
     {
       materiaId: 'INTERP',
@@ -238,6 +238,5 @@ test('StudentiProvider: populates perSpecificita only when includiSpecificita is
     }
   ]);
 
-  const cdu2 = build('5A', fixtureTables(), { includiSpecificita: false });
-  expect(cdu2.focus.classe!.studenti!.perSpecificita).toBeUndefined();
+  expect(build('1F').focus.classe!.studenti!.perSpecificita).toEqual([]);
 });

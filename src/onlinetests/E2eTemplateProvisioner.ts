@@ -190,11 +190,8 @@ function aslImportUpdates(): SheetValueUpdate[] {
  * `esame.materiePrimaProva`, `coordinatori.elenco.0.appellativoCompleto` (dot-index addressing,
  * already proven by `{{materie.0.sigla}}` in DOC_COMPLESSO_TABLES below), `progetti`, and
  * `status.religioneLabel`. `focus.classe.studenti.perSpecificita` is included too for template
- * syntax coverage even though `DocumentGenerationService.generateForClasse` always builds
- * `CLASSE_COMPLETA` with default options (`includiSpecificita: false`, ref `Recipe.ts`), so this
- * particular section renders empty (falsy Mustache section, no residue) against a real generated
- * document — its real 3-level content is asserted directly against a `ContextBuilder.build()`
- * call with `includiSpecificita: true` in `contextEngineChecks.ts` instead.
+ * syntax coverage; its real 3-level content is asserted directly against a
+ * `ContextBuilder.build()` call in `contextEngineChecks.ts`.
  */
 const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Report Complesso — {{focus.classe.anagrafica.nome}}',
@@ -224,7 +221,7 @@ const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
     text: '{{#bullet_list:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}} — {{status.religioneLabel}}{{/bullet_list}}',
     listType: 'bullet'
   },
-  'Specificità per materia (3 livelli; vuoto salvo includiSpecificita, ref classCdu online check):',
+  'Specificità per materia (3 livelli; ref classCdu online check):',
   {
     text: '{{#focus.classe.studenti.perSpecificita}}{{materiaNome}}: {{#specifiche}}{{nome}} ({{#alunni}}{{nomeCompleto}};{{/alunni}}){{/specifiche}}{{/focus.classe.studenti.perSpecificita}}',
     listType: 'bullet'

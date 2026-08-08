@@ -1,6 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, AlunnoContestoVM } from '../Cdu';
-import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
@@ -24,7 +23,7 @@ export class StudentiProvider implements ContextProvider {
     private readonly materie: IMateriaRepository
   ) {}
 
-  provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
+  provide(cdu: Cdu): void {
     const classe = getClasseEntity(cdu);
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
@@ -39,7 +38,7 @@ export class StudentiProvider implements ContextProvider {
     );
     focusClasse.studenti = {
       listaCompleta,
-      ...(options.includiSpecificita ? { perSpecificita: buildPerSpecificita(listaCompleta) } : {})
+      perSpecificita: buildPerSpecificita(listaCompleta)
     };
   }
 

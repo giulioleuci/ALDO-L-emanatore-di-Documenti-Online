@@ -105,7 +105,6 @@ meta:
       profonditaAnniAsl: number
       profonditaAnniDocumenti: number
       includiSupplenti: boolean
-      includiSpecificita: boolean       # abilita focus.classe.studenti.perSpecificita (vedi §4.1)
       notificaSoloCoordinatori: boolean
       includiPartnerDettaglio: boolean  # abilita focus.classe.partner (vedi §4.1)
       gestioneSupplenti: string         # "SOLO_TITOLARI" | "SOLO_SUPPLENTI" | "ENTRAMBI" (GestioneSupplenti)
@@ -286,7 +285,7 @@ focus.classe:
       rappresentanti: number
 
     # Array (Principio 1) — le chiavi dinamiche non sono indirizzabili nei placeholder
-    perSpecificita: SpecificitaAlunniVM[]   # presente SOLO se opzioni.includiSpecificita = true
+    perSpecificita: SpecificitaAlunniVM[]   # sempre presente; [] se non esistono specificità
     # Forma: [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome, alunni: [PersonMinVM] } ] } ]
     # Loop annidati: focus.classe.studenti.perSpecificita → materiaNome | specifiche → nome | alunni → nomeCompleto
     # PersonMinVM.nome/cognome sono SEMPRE null qui (l'alunno-nel-contesto di provenienza porta solo
@@ -942,7 +941,6 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
         "profonditaAnniAsl": 2,
         "profonditaAnniDocumenti": 2,
         "includiSupplenti": true,
-        "includiSpecificita": true,
         "notificaSoloCoordinatori": false,
         "includiPartnerDettaglio": true,
         "gestioneSupplenti": "ENTRAMBI"

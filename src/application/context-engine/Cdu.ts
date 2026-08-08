@@ -129,7 +129,6 @@ export interface RecipeOptionsView {
   profonditaAnniAsl: number;
   profonditaAnniDocumenti: number;
   includiSupplenti: boolean;
-  includiSpecificita: boolean;
   notificaSoloCoordinatori: boolean;
   includiPartnerDettaglio: boolean;
   gestioneSupplenti: string;
@@ -240,7 +239,7 @@ export interface CduClasse {
       ripetenti: number;
       rappresentanti: number;
     };
-    perSpecificita?: SpecificitaAlunniVM[];
+    perSpecificita: SpecificitaAlunniVM[];
   };
   didattica?: {
     pianiPersonalizzati: {

@@ -846,7 +846,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     () => {
       const specificitaCdu = contextBuilder.build(
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
-        recipe('CLASSE_COMPLETA', { includiSpecificita: true })
+        recipe('CLASSE_COMPLETA')
       );
       const perSpecificita = specificitaCdu.focus.classe?.studenti?.perSpecificita ?? [];
       const lab = perSpecificita.find((entry) => entry.materiaId === 'LAB');

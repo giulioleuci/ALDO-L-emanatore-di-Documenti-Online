@@ -14,6 +14,7 @@ import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepos
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
+import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
@@ -53,6 +54,7 @@ export interface EmailNotificationDeps {
   expressionEngine: IExpressionEngine;
   docenti: IDocenteRepository;
   alunni: IAlunnoRepository;
+  dipartimenti: IDipartimentoRepository;
   classi: IClasseRepository;
   carenze: ICarenzaRepository;
   confMail: IConfigurazioneEmailRepository;
@@ -289,6 +291,14 @@ export class EmailNotificationService {
             ...(cc.length > 0 ? { cc } : {})
           };
         });
+      // GESTIONE_ARTICOLAZIONE is inert for these two processes by construction
+      // (02 §2): a dipartimento has no class dimension, so
+      // targetsPerCapoDipartimento/targetsPerDipartimento never call
+      // classiEntryPoint/filterPerGestioneArticolazione — same as PER_ALUNNO above.
+      case ProcessoInvio.PER_CAPO_DIPARTIMENTO:
+        return this.targetsPerCapoDipartimento();
+      case ProcessoInvio.PER_DIPARTIMENTO:
+        return this.targetsPerDipartimento();
     }
   }
 
@@ -424,6 +434,37 @@ export class EmailNotificationService {
       target: classe.id ?? '',
       emails: this.cdcEmails(classe, gestioneSupplenti),
       classiCompetenza: this.classiCompetenza(classe)
+    }));
+  }
+
+  /** One email per dipartimento with a CAPO, addressed to the capo alone (11 §3 new). */
+  private targetsPerCapoDipartimento(): EmailTarget[] {
+    return this.deps.dipartimenti
+      .findAll()
+      .flatMap((dipartimento) => {
+        const capo = dipartimento.getCapoEmail();
+        return capo === null ? [] : [{ dipartimento, capo }];
+      })
+      .map(({ dipartimento, capo }) => ({
+        tipo: 'capo_dipartimento' as const,
+        tipoTarget: 'dipartimento' as const,
+        target: dipartimento.id ?? '',
+        emails: [capo.value],
+        classiCompetenza: []
+      }));
+  }
+
+  /** One email per dipartimento, addressed to all of its afferent docenti (11 §3 new). */
+  private targetsPerDipartimento(): EmailTarget[] {
+    return this.deps.dipartimenti.findAll().map((dipartimento) => ({
+      tipo: 'dipartimento' as const,
+      tipoTarget: 'dipartimento' as const,
+      target: dipartimento.id ?? '',
+      emails: this.deps.docenti
+        .findByDipartimento(dipartimento.dipartimentoId)
+        .map((d) => d.id ?? '')
+        .filter((e) => e !== ''),
+      classiCompetenza: []
     }));
   }
 

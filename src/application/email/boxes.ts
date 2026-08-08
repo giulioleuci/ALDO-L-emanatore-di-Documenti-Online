@@ -323,6 +323,12 @@ export function createBoxComposer(
     (d) => (d as { items: unknown[] }).items.length === 0
   );
   simple(
+    'documenti_dipartimento',
+    'Documenti di Dipartimento',
+    (ctx) => ctx.get('boxdata.documentiDipartimento', { items: [] }),
+    (d) => (d as { items: unknown[] }).items.length === 0
+  );
+  simple(
     'cartelle',
     'Cartelle',
     (ctx) => ctx.get('boxdata.cartelle', { items: [], storicoRef: undefined }),
@@ -376,6 +382,7 @@ export function createBoxComposer(
       templates: {
         carenze: (data) => renderCarenzeBox(data),
         documenti: (data, options) => renderDocumentiBox(data, options, templates),
+        documenti_dipartimento: (data, options) => renderDocumentiBox(data, options, templates),
         cartelle: (data, options) => renderDocumentiBox(data, options, templates),
         piani_pers_da_inviare: (data, options) => renderPianiPersBox(data, options, templates),
         piani_pers_inviati: (data, options) => renderPianiPersBox(data, options, templates),
@@ -394,6 +401,7 @@ export function createBoxComposer(
 const DEFAULT_TITLES: Record<string, string> = {
   carenze: 'Carenze rilevate',
   documenti: 'Documenti',
+  documenti_dipartimento: 'Documenti di Dipartimento',
   cartelle: 'Cartelle',
   note: 'Note',
   assenze: 'Assenze',
@@ -444,10 +452,21 @@ function aggregaDati(
             };
           };
         };
+        dipartimento?: {
+          didattica?: {
+            documenti?: {
+              items?: DocumentoItem[];
+              storico?: LazyRef<DocumentoStoricoConTipo[]>;
+            };
+          };
+        };
       }
     | undefined;
   const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
-  const documenti = focus?.classe?.didattica?.documenti ?? focus?.alunno?.didattica?.documenti;
+  const documenti =
+    focus?.classe?.didattica?.documenti ??
+    focus?.alunno?.didattica?.documenti ??
+    focus?.dipartimento?.didattica?.documenti;
   const items = documenti?.items ?? [];
   const storicoRef = documenti?.storico;
   // FILTRO_TIPO/FILTRO_STATO (11 §11): the 'documenti' TIPO_BOX config scopes the
@@ -467,6 +486,7 @@ function aggregaDati(
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
     documenti: { items: documentiFiltrati, storicoRef },
+    documentiDipartimento: { items: focus?.dipartimento?.didattica?.documenti?.items ?? [] },
     cartelle: {
       items:
         realCartelle !== null

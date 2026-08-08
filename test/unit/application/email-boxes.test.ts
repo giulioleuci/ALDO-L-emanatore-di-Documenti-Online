@@ -229,6 +229,63 @@ test('documenti/cartelle boxes fall back to focus.classe.didattica.documenti whe
   expect(out.boxes['cartelle']!.html).toContain('Cartella 5A');
 });
 
+test('documenti_dipartimento box is hidden when focus.dipartimento has no documents', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu: Record<string, unknown> = {
+    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    focus: {
+      dipartimento: {
+        didattica: { documenti: { items: [] } }
+      }
+    }
+  };
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'documenti_dipartimento' }]),
+    cdu,
+    materie(),
+    templates
+  );
+  expect(out.boxes['documenti_dipartimento']!.isEmpty).toBe(true);
+  expect(out.boxes['documenti_dipartimento']!.visibile).toBe(false);
+});
+
+test('documenti_dipartimento box shows items from focus.dipartimento.didattica.documenti', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu: Record<string, unknown> = {
+    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    focus: {
+      dipartimento: {
+        didattica: {
+          documenti: {
+            items: [
+              {
+                nome: 'Verbale',
+                link: 'https://drive/verbale-dip',
+                tipo: 'VERBALE_DIPARTIMENTO',
+                idGen: 'VD',
+                stato: 'GENERATO',
+                dataCreazione: '01/01/2026'
+              }
+            ]
+          }
+        }
+      }
+    }
+  };
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'documenti_dipartimento' }]),
+    cdu,
+    materie(),
+    templates
+  );
+  expect(out.boxes['documenti_dipartimento']!.isEmpty).toBe(false);
+  expect(out.boxes['documenti_dipartimento']!.html).toContain('Verbale');
+});
+
 test('note + assenze boxes read focus.carenza (11 §11)', () => {
   const out = render([{ TIPO_BOX: 'note' }, { TIPO_BOX: 'assenze' }]);
   expect(out.boxes['note']!.html).toContain('Studio discontinuo');

@@ -22,6 +22,7 @@ import {
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
 import { AlunnoRepository } from '../../../src/infrastructure/repositories/AlunnoRepository';
+import { DipartimentoRepository } from '../../../src/infrastructure/repositories/DipartimentoRepository';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { CarenzaRepository } from '../../../src/infrastructure/repositories/CarenzaRepository';
 import { ConfigurazioneEmailRepository } from '../../../src/infrastructure/repositories/ConfigurazioneEmailRepository';
@@ -109,6 +110,7 @@ function fullDeps(
     expressionEngine: new ExpressionEngineFacade(),
     docenti: new DocenteRepository(db),
     alunni: new AlunnoRepository(db),
+    dipartimenti: new DipartimentoRepository(db),
     classi: new ClasseRepository(db),
     carenze: new CarenzaRepository(db),
     confMail: new ConfigurazioneEmailRepository(db),
@@ -485,6 +487,30 @@ test('PER_CARENZA_GENITORI_E_COORD: parents in To, class coordinatore in Cc', ()
   expect(a1.tipo).toBe('genitori');
   expect(a1.emails).toEqual(['genitore1@x.it']);
   expect(a1.cc).toEqual(['rossi@school.it']); // 5A coordinatore (fixture)
+});
+
+test('PER_CAPO_DIPARTIMENTO: one target per dipartimento with a capo (LETTERE has none, skipped)', () => {
+  const { service } = wire();
+  const targets = service.enumerateTargets(conf('PER_CAPO_DIPARTIMENTO'));
+  expect(targets).toHaveLength(1); // SCIENTIFICO_DIP has CAPO=rossi; LETTERE's CAPO is empty (fixture)
+  expect(targets[0]!).toMatchObject({
+    tipo: 'capo_dipartimento',
+    tipoTarget: 'dipartimento',
+    target: 'SCIENTIFICO_DIP',
+    emails: ['rossi@school.it']
+  });
+});
+
+test('PER_DIPARTIMENTO: one target per dipartimento with all its docenti', () => {
+  const { service } = wire();
+  const targets = service.enumerateTargets(conf('PER_DIPARTIMENTO'));
+  expect(targets).toHaveLength(2); // SCIENTIFICO_DIP + LETTERE (fixture)
+  const scientifico = targets.find((t) => t.target === 'SCIENTIFICO_DIP')!;
+  expect(scientifico.tipo).toBe('dipartimento');
+  expect(scientifico.tipoTarget).toBe('dipartimento');
+  expect(scientifico.emails.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  const lettere = targets.find((t) => t.target === 'LETTERE')!;
+  expect(lettere.emails).toEqual(['verdi@school.it']);
 });
 
 // --- sendPattern end-to-end orchestration ---

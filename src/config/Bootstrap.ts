@@ -248,6 +248,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         expressionEngine: deps.expressionEngine,
         docenti: container.get<DocenteRepository>('docenti'),
         alunni: container.get<AlunnoRepository>('alunni'),
+        dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
         classi: container.get<ClasseRepository>('classi'),
         carenze: container.get<CarenzaRepository>('carenze'),
         confMail: container.get<ConfigurazioneEmailRepository>('configurazioniEmail'),

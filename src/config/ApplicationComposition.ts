@@ -112,6 +112,7 @@ export function composeEmailNotificationService(
     expressionEngine: new ExpressionEngineFacade(),
     docenti: new DocenteRepository(db),
     alunni: new AlunnoRepository(db),
+    dipartimenti: new DipartimentoRepository(db),
     classi: new ClasseRepository(db),
     carenze: new CarenzaRepository(db),
     confMail: new ConfigurazioneEmailRepository(db),

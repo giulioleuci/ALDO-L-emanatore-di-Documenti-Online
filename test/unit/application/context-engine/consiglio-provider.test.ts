@@ -230,6 +230,103 @@ test('ConsiglioClasseProvider: non-articulated class has no comune/separato spli
   expect(focusClasse.consiglioDiClasseSeparato).toBeUndefined();
 });
 
+test('ConsiglioClasseProvider: partner-target build scopes consiglio to comune + own branch only', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = {
+    target: '1F-LSO',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
+  const recipe: Recipe = {
+    providers: ['class', 'consiglio'],
+    options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
+  };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+
+  expect(focusClasse.consiglioDiClasse!.map((d) => d.anagrafica.email).sort()).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it'
+  ]);
+  expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
+    'rossi@school.it'
+  ]);
+  expect(focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email)).toEqual([
+    'bianchi@school.it'
+  ]);
+});
+
+test('ConsiglioClasseProvider: the other partner target scopes to its own branch, not the sibling', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = {
+    target: '1F-LSS',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
+  const recipe: Recipe = {
+    providers: ['class', 'consiglio'],
+    options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
+  };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+
+  expect(focusClasse.consiglioDiClasse!.map((d) => d.anagrafica.email).sort()).toEqual([
+    'rossi@school.it',
+    'verdi@school.it'
+  ]);
+  expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
+    'rossi@school.it'
+  ]);
+  expect(focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email)).toEqual([
+    'verdi@school.it'
+  ]);
+});
+
+test('ConsiglioClasseProvider: parent-target build keeps the full comune/separato split unscoped', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = {
+    target: '1F',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
+  const recipe: Recipe = {
+    providers: ['class', 'consiglio'],
+    options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
+  };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+
+  expect(focusClasse.consiglioDiClasse!.map((d) => d.anagrafica.email).sort()).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it',
+    'verdi@school.it'
+  ]);
+  expect(
+    focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()
+  ).toEqual(['bianchi@school.it', 'verdi@school.it']);
+});
+
 test('builds anagrafica as a full PersonVM and materie as SubjectVM with materieSigle (Task 8)', () => {
   const rossi = byEmail(cdc('5A', new Date('2025-06-01T09:00:00Z')), 'rossi@school.it');
   expect(rossi.anagrafica.appellativoCompleto).toBe('Prof. MARIO ROSSI');

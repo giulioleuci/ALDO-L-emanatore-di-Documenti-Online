@@ -46,14 +46,24 @@ export class ConsiglioClasseProvider implements ContextProvider {
 
     if (this.classi.isArticolata(classe)) {
       const consiglio: DocenteCdcVM[] = focusClasse.consiglioDiClasse ?? [];
-      focusClasse.consiglioDiClasseComune = consiglio.filter(
-        (docente) => docente.tipoArticolazione === 'COMUNE'
-      );
-      focusClasse.consiglioDiClasseSeparato = consiglio.filter(
+      const comune = consiglio.filter((docente) => docente.tipoArticolazione === 'COMUNE');
+      const separato = consiglio.filter(
         (docente) =>
           docente.tipoArticolazione === 'SEPARATO_PRIMO' ||
           docente.tipoArticolazione === 'SEPARATO_SECONDO'
       );
+
+      const config = this.classi.getArticolazione(classe);
+      if (config !== null && !config.isParent()) {
+        const partners = this.classi.orderedPartners(classe);
+        const ownBranch = partners[0]?.id === classe.id ? 'SEPARATO_PRIMO' : 'SEPARATO_SECONDO';
+        const ownSeparato = separato.filter((docente) => docente.tipoArticolazione === ownBranch);
+        focusClasse.consiglioDiClasseSeparato = ownSeparato;
+        focusClasse.consiglioDiClasse = [...comune, ...ownSeparato] as never;
+      } else {
+        focusClasse.consiglioDiClasseSeparato = separato;
+      }
+      focusClasse.consiglioDiClasseComune = comune;
     }
   }
 }

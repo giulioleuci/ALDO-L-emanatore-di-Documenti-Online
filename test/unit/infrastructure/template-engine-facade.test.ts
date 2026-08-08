@@ -9,6 +9,20 @@ describe('TemplateEngineFacade — failure branches', () => {
     );
   });
 
+  it('processDocument passes the exact same context object reference through unescaped (booleans/conditionals must survive raw, unlike processStringEscaped)', () => {
+    const context = { focus: { classe: { isArticolata: true } } };
+    let capturedContext: Record<string, unknown> | undefined;
+    const processDocument = jest.fn((_fileId: string, ctx: Record<string, unknown>) => {
+      capturedContext = ctx;
+      return true;
+    });
+    const service = { processDocument };
+    const facade = new TemplateEngineFacade(service as never);
+    facade.processDocument('FILE1', context);
+    expect(processDocument).toHaveBeenCalledWith('FILE1', context);
+    expect(capturedContext).toBe(context);
+  });
+
   it('processSheet throws when result.success is false', () => {
     const service = { processSheet: jest.fn().mockReturnValue({ success: false, layouts: [] }) };
     const facade = new TemplateEngineFacade(service as never);

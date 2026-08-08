@@ -25740,6 +25740,90 @@ class DocumentProcessorTagScanner {
     }
     return operations;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _analyzeConditionalSections(textMatches, context) {
+    const RESERVED_PREFIXES = ['tablerow_loop:', 'tablecol_loop:', 'bullet_list:', 'number_list:'];
+    const openRe = /^{{([#^])([^}]+)}}\s*$/;
+    const closeRe = /^{{\/([^}]+)}}\s*$/;
+    const operations = [];
+    const stack = [];
+    for (const textMatch of textMatches) {
+      if (textMatch.type !== 'TEXT' && textMatch.type !== 'TABLE_TEXT') {
+        continue;
+      }
+      const text = textMatch.text || '';
+      const openMatch = text.match(openRe);
+      if (openMatch) {
+        const expr = openMatch[2].trim();
+        if (RESERVED_PREFIXES.some(prefix => expr.startsWith(prefix))) {
+          continue;
+        }
+        stack.push({
+          symbol: openMatch[1],
+          expr,
+          elementIndex: textMatch.elementIndex,
+          length: text.length
+        });
+        continue;
+      }
+      const closeMatch = text.match(closeRe);
+      if (!closeMatch || stack.length === 0) {
+        continue;
+      }
+      const closeExpr = closeMatch[1].trim();
+      const top = stack[stack.length - 1];
+      if (closeExpr !== top.expr) {
+        continue;
+      }
+      stack.pop();
+      const dummyToken = ['name', top.expr];
+      const value = this.facade.mustache._lookupValue(dummyToken, new _MustacheContext(context));
+      const isTruthy = Boolean(value) && !(Array.isArray(value) && value.length === 0);
+      const showContent = top.symbol === '#' ? isTruthy : !isTruthy;
+      const openIndex = top.elementIndex;
+      const openLength = top.length;
+      const closeIndex = textMatch.elementIndex;
+      const closeLength = text.length;
+      if (showContent) {
+        operations.push({
+          type: 'conditionalDelete',
+          index: openIndex,
+          length: openLength
+        });
+        operations.push({
+          type: 'conditionalDelete',
+          index: closeIndex,
+          length: closeLength
+        });
+      } else {
+        operations.push({
+          type: 'conditionalDelete',
+          index: openIndex,
+          length: closeIndex + closeLength - openIndex
+        });
+      }
+    }
+    return operations;
+  }
   _analyzeTextSubstitutions(textMatches, context) {
     const operations = [];
     const seenIndices = new Set();
@@ -26198,6 +26282,8 @@ class DocumentProcessorInjector {
 
       case 'deleteRow':
         return this.facade._createDeleteRowRequests(op);
+      case 'conditionalDelete':
+        return this.facade._createDeleteRangeRequests(op);
       case 'listLoop':
         return [];
 
@@ -26281,6 +26367,30 @@ class DocumentProcessorInjector {
       }
     }
     return requests;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _createDeleteRangeRequests(op) {
+    return [{
+      deleteContentRange: {
+        range: {
+          startIndex: op.index,
+          endIndex: op.index + op.length
+        }
+      }
+    }];
   }
   _createDeleteRowRequests(op) {
     return [{
@@ -26495,17 +26605,17 @@ class _DocumentProcessor {
 
     Delegation.delegateMethods(this, [{
       manager: this._tagScanner,
-      methods: ['_analyzeColumnLoops', '_analyzeRowLoops', '_analyzeListLoops', '_analyzeTextSubstitutions', '_analyzeTableInsertions', '_parseTableParams', '_parseExpression', '_parseFilterArgs', '_parseArgValue']
+      methods: ['_analyzeColumnLoops', '_analyzeRowLoops', '_analyzeListLoops', '_analyzeTextSubstitutions', '_analyzeTableInsertions', '_analyzeConditionalSections', '_parseTableParams', '_parseExpression', '_parseFilterArgs', '_parseArgValue']
     }, {
       manager: this._valueResolver,
       methods: ['_applyFilters', '_sortByProperty', '_getNestedProperty']
     }, {
       manager: this._injector,
-      methods: ['_executeRowLoopOperation', '_executeColumnLoopOperation', '_executeListLoopOperation', '_retextParagraph', '_convertOperationToRequests', '_createTextSubstitutionRequests', '_createDeleteRowRequests', '_executeTableInsertOperation', '_flushDocumentChanges']
+      methods: ['_executeRowLoopOperation', '_executeColumnLoopOperation', '_executeListLoopOperation', '_retextParagraph', '_convertOperationToRequests', '_createTextSubstitutionRequests', '_createDeleteRowRequests', '_createDeleteRangeRequests', '_executeTableInsertOperation', '_flushDocumentChanges']
     }]);
   }
   process(documentId, context) {
-    this.logger.debug(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
+    this.logger.info(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
     let structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     const structuralOps = [];
     for (const table of structure.tables) {
@@ -26595,7 +26705,20 @@ class _DocumentProcessor {
         }
       }
     }
-    const finalTextMatches = structure.textMatches.filter(tm => (tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex)) && !renderedElementIndices.has(tm.elementIndex));
+
+
+
+
+
+
+
+
+
+
+    const conditionalOps = this._analyzeConditionalSections(structure.textMatches, context);
+    batchOps.push(...conditionalOps);
+    const conditionalRanges = conditionalOps.map(op => [op.index, op.index + op.length]);
+    const finalTextMatches = structure.textMatches.filter(tm => (tm.type !== 'TABLE_TEXT' || !processedTableIndices.has(tm.tableIndex)) && !renderedElementIndices.has(tm.elementIndex) && !conditionalRanges.some(([start, end]) => tm.elementIndex >= start && tm.elementIndex < end));
     batchOps.push(...this._analyzeTextSubstitutions(finalTextMatches, context));
     batchOps.sort((a, b) => b.index - a.index);
     const batchRequests = [];
@@ -26603,11 +26726,11 @@ class _DocumentProcessor {
       batchRequests.push(...this._convertOperationToRequests(op));
     }
     if (batchRequests.length > 0) {
-      this.logger.debug(`Executing batch update with ${batchRequests.length} requests`);
+      this.logger.info(`Executing batch update with ${batchRequests.length} requests`);
       this.documentService._executeBatchUpdate(documentId, batchRequests);
-      this.logger.debug(`Batch update completed successfully`);
+      this.logger.info(`Batch update completed successfully`);
     } else {
-      this.logger.debug(`No batch operations to execute`);
+      this.logger.info(`No batch operations to execute`);
     }
   }
 }
@@ -49605,7 +49728,7 @@ class DatabaseConnectionManager {
       this.facade._transaction.savedStates[tableName] = cloneDeep_cloneDeep(table._rowsCache);
     }
     this.facade._inTransaction = true;
-    this._logger.debug('Transaction started');
+    this._logger.info('Transaction started');
     return this.facade;
   }
   commit() {
@@ -49618,7 +49741,7 @@ class DatabaseConnectionManager {
       });
       this._spreadsheetService.flushBatch();
       const duration = Date.now() - this.facade._transaction.startTime;
-      this._logger.debug(`Transaction committed successfully (${duration}ms)`);
+      this._logger.info(`Transaction committed successfully (${duration}ms)`);
       this.facade._transaction = null;
       this.facade._inTransaction = false;
       return this.facade;
@@ -49639,7 +49762,7 @@ class DatabaseConnectionManager {
     try {
       this.facade._performRollback();
       const duration = Date.now() - this.facade._transaction.startTime;
-      this._logger.debug(`Transaction rolled back (${duration}ms)`);
+      this._logger.info(`Transaction rolled back (${duration}ms)`);
       this.facade._transaction = null;
       this.facade._inTransaction = false;
       return this.facade;

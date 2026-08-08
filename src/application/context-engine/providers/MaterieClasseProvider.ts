@@ -42,7 +42,7 @@ export class MaterieClasseProvider implements ContextProvider {
     const { materie, ruoli } = this.buildCatalog(consiglio);
     focusClasse.materie = materie;
     if (this.materie !== undefined) {
-      focusClasse.materiePerPrincipale = buildMateriePerPrincipale(materie, this.materie);
+      focusClasse.materiePerPrincipale = buildMateriePerPrincipale(materie);
     }
     this.attachContinuita(cdu, materie, ruoli, options);
   }

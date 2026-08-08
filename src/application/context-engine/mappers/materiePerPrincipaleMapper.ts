@@ -1,6 +1,4 @@
 import type { SubjectVM } from './subjectVmMapper';
-import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
-import { MateriaId } from '../../../domain/value-objects/MateriaId';
 
 export interface MateriaPerPrincipaleVM {
   idFittizio: string;
@@ -20,8 +18,7 @@ function baseSigla(sigla: string): string {
  * subject stays a single-item group under its own id.
  */
 export function buildMateriePerPrincipale(
-  materie: SubjectVM[],
-  materiaRepo: IMateriaRepository
+  materie: SubjectVM[]
 ): MateriaPerPrincipaleVM[] {
   const byBase = new Map<string, SubjectVM[]>();
   for (const materia of materie) {
@@ -32,9 +29,7 @@ export function buildMateriePerPrincipale(
   }
   return Array.from(byBase.entries()).map(([idFittizio, group]) => {
     const isComposite = group.length > 1 || group[0]!.sigla !== idFittizio;
-    const nome = isComposite
-      ? (materiaRepo.findByIdCached(MateriaId.of(idFittizio))?.nome ?? idFittizio)
-      : group[0]!.nome;
+    const nome = isComposite ? (group[0]!.principale ?? idFittizio) : group[0]!.nome;
     return { idFittizio, nome, materie: group };
   });
 }

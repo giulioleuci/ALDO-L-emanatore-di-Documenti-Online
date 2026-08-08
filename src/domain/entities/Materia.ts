@@ -13,6 +13,8 @@ export interface MateriaData {
   [COL_MATERIE.ESAME_CFG]?: string | null;
   [COL_MATERIE.EVOLUZIONE]?: string | null;
   [COL_MATERIE.IS_RELIGIONE_ALT]?: boolean;
+  [COL_MATERIE.PRINCIPALE]?: string;
+  [COL_MATERIE.SPECIFICITA]?: string;
   [key: string]: unknown;
 }
 
@@ -21,19 +23,21 @@ const DEFAULT_COLORE_1 = '#ddd';
 
 /** MATERIE entity (PK = ID). Subject-catalogue lookup (ref 01, 04). */
 export class Materia extends AldoEntity {
-  public readonly nome: string;
   public readonly sintesi: string;
   public readonly colore1: string;
   public readonly colore2: string;
   public readonly simbolo: string;
   public readonly isReligioneAlt: boolean;
+  public readonly principale: string | null;
+  public readonly specificita: string | null;
+  private readonly rawNome: string;
   private readonly esameCfgRaw: string | null;
   private readonly evoluzioneRaw: string | null;
 
   constructor(data: MateriaData = {}) {
     super(data);
     this.id = data[COL_MATERIE.ID] ?? null;
-    this.nome = data[COL_MATERIE.NOME] ?? '';
+    this.rawNome = data[COL_MATERIE.NOME] ?? '';
     this.sintesi = data[COL_MATERIE.SINTESI] ?? '';
     const c1 = data[COL_MATERIE.COLORE_1];
     this.colore1 = typeof c1 === 'string' && c1.trim() !== '' ? c1 : DEFAULT_COLORE_1;
@@ -42,10 +46,23 @@ export class Materia extends AldoEntity {
     const sym = data[COL_MATERIE.SIMBOLO];
     this.simbolo = typeof sym === 'string' ? sym : '';
     this.isReligioneAlt = data[COL_MATERIE.IS_RELIGIONE_ALT] === true;
+    const principale = data[COL_MATERIE.PRINCIPALE];
+    this.principale = typeof principale === 'string' && principale !== '' ? principale : null;
+    const specificita = data[COL_MATERIE.SPECIFICITA];
+    this.specificita = typeof specificita === 'string' && specificita !== '' ? specificita : null;
     const raw = data[COL_MATERIE.ESAME_CFG];
     this.esameCfgRaw = typeof raw === 'string' ? raw : null;
     const evo = data[COL_MATERIE.EVOLUZIONE];
     this.evoluzioneRaw = typeof evo === 'string' ? evo : null;
+  }
+
+  /** Raw `NOME` cell if set; else `"PRINCIPALE (SPECIFICITA)"` when both are present; else empty. */
+  get nome(): string {
+    if (this.rawNome !== '') return this.rawNome;
+    if (this.principale !== null && this.specificita !== null) {
+      return `${this.principale} (${this.specificita})`;
+    }
+    return '';
   }
 
   get materiaId(): MateriaId {
@@ -74,14 +91,16 @@ export class Materia extends AldoEntity {
   override toData(): EntityData {
     return {
       [COL_MATERIE.ID]: this.id,
-      [COL_MATERIE.NOME]: this.nome,
+      [COL_MATERIE.NOME]: this.rawNome,
       [COL_MATERIE.SINTESI]: this.sintesi,
       [COL_MATERIE.COLORE_1]: this.colore1,
       [COL_MATERIE.COLORE_2]: this.colore2,
       [COL_MATERIE.SIMBOLO]: this.simbolo,
       [COL_MATERIE.ESAME_CFG]: this.esameCfgRaw,
       [COL_MATERIE.EVOLUZIONE]: this.evoluzioneRaw,
-      [COL_MATERIE.IS_RELIGIONE_ALT]: this.isReligioneAlt
+      [COL_MATERIE.IS_RELIGIONE_ALT]: this.isReligioneAlt,
+      [COL_MATERIE.PRINCIPALE]: this.principale ?? '',
+      [COL_MATERIE.SPECIFICITA]: this.specificita ?? ''
     };
   }
 

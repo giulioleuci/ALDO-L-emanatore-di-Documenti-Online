@@ -123,7 +123,7 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 
 Catalogo delle discipline. I codici univoci (`ID`) sono usati come nomi di colonne dinamiche nelle tabelle CLASSI e CARENZE. Lookup table stabile. Ogni colonna dinamica `[MATERIA]` delle tabelle CLASSI e CARENZE DEVE corrispondere a un `ID` presente in questa tabella.
 
-`ID` può essere una sigla semplice (`MATE`) oppure un composito `[MATERIA].[SPECIFICA]` (es. `INTERPRET.CHITARRA`) che cataloga una specifica indirizzata da uno slot `CLASSI`/`CARENZE` con suffisso dinamico (`MAT_NON_STANDARD.md` §3). Una riga con `ID` composito usa le stesse colonne di una riga base (nessuna colonna aggiuntiva); `IS_RELIGIONE_ALT` non ha senso per una riga specifica (IRC/ALT non hanno specifiche) ed è sempre `false`/assente, senza enforcement a livello DB. **Invariante:** se esiste una riga `MATERIE` con `ID` composito, la parte `[MATERIA]` DEVE esistere anche come riga `MATERIE` propria (sigla semplice).
+`ID` può essere una sigla semplice (`MATE`) oppure un composito `[MATERIA].[SPECIFICA]` (es. `INTERPRET.CHITARRA`) che cataloga una specifica indirizzata da uno slot `CLASSI`/`CARENZE` con suffisso dinamico (`MAT_NON_STANDARD.md` §3). `IS_RELIGIONE_ALT` non ha senso per una riga specifica (IRC/ALT non hanno specifiche) ed è sempre `false`/assente, senza enforcement a livello DB.
 
 | Colonna            | Tipo    | PK  | Vincoli                   | Descrizione                                                                                                                                                                                                                                          |
 | ------------------ | ------- | --- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -136,6 +136,15 @@ Catalogo delle discipline. I codici univoci (`ID`) sono usati come nomi di colon
 | `ESAME_CFG`        | JSON    | —   | —                         | Prima/seconda prova per indirizzo: `{"prima_prova":["LC"],"seconda_prova":["LS"]}`                                                                                                                                                                   |
 | `EVOLUZIONE`       | JSON    | —   | —                         | Evoluzione delle relazioni tra materie negli anni, ad esempio per accorpamento o sdoppiamenti o cambi di nome negli anni di corso. Es. `GST - Storia e Geografia` (1°-2° anno) diventa `STO - Storia` (3°-4°-5° anno): `{"GST":[1,2],"STO":[3,4,5]}` |
 | `IS_RELIGIONE_ALT` | Boolean | —   | —                         | `true` per le righe IRC/ALT: esclude questa materia dal fan-out generico di `ITeachingAssignmentResolver.resolveConsiglio` salvo richiesta esplicita (evita che appaia in ogni enumerazione di cattedra dove prima non compariva)                      |
+| `PRINCIPALE`       | String  | —   | —                         | Nome della materia principale/famiglia (es. `Interpretazione ed esecuzione`); vuoto per righe non specifiche                                                                                                                                            |
+| `SPECIFICITA`      | String  | —   | —                         | Nome descrittivo della specificità (es. `Chitarra`); vuoto per righe non specifiche                                                                                                                                                                  |
+
+Una riga composita (`ID` nel formato `BASE.SPECIFICA`) DEVE avere `PRINCIPALE`
+non vuoto: le famiglie che si diramano in specificità non sono mai
+rappresentate da una riga bare della sola famiglia — ogni riga reale di tale
+famiglia porta il proprio `PRINCIPALE`+`SPECIFICITA`. `NOME`, se vuoto, viene
+ricostruito in lettura come `"${PRINCIPALE} (${SPECIFICITA})"` quando entrambi
+sono presenti.
 
 ---
 

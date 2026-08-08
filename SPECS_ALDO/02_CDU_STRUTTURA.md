@@ -600,8 +600,8 @@ SubjectVM:
   colore2: string                # Hex colore secondario (da MATERIE.COLORE_2)
   isMateriaPrimaProva: boolean   # true se la materia è in prima_prova per l'indirizzo in MATERIE.ESAME_CFG
   isMateriaSecondaProva: boolean # true se la materia è in seconda_prova per l'indirizzo in MATERIE.ESAME_CFG
-  principale: string | null      # Descrizione materia principale, solo per specificità X.Y (assente altrove: null)
-  specificita: string | null     # Nome disciplina/strumento, solo per specificità X.Y (assente altrove: null)
+  principale: string | null      # Descrizione materia principale, solo per specificità X.Y (assente altrove: null); da MATERIE.PRINCIPALE direttamente, non da lookup della materia base
+  specificita: string | null     # Nome disciplina/strumento, solo per specificità X.Y (assente altrove: null); da MATERIE.SPECIFICITA direttamente, non da lookup della materia base
   isITP: boolean                 # true se la materia è insegnata in un contesto di laboratorio ITP (.itp)
   hasItp: boolean                # opzionale — presente in focus.classe.materie[]: true se esiste colonna .itp popolata
   evoluzione:                    # Tracciamento storicizzazione sigle (da MATERIE.EVOLUZIONE), null se nessuna

@@ -217,12 +217,19 @@ function materiaVm(
   classe: Classe,
   assignment: FlattenedProjectionAssignment
 ): SubjectVM | null {
-  const materia = materie.findByIdCached(MateriaId.of(assignment.slot.materia));
+  const baseId = MateriaId.of(assignment.slot.materia);
+  const specifica = assignment.slot.specifica;
+  const materia =
+    specifica === null
+      ? materie.findByIdCached(baseId)
+      : (materie.findSpecifiche(baseId).find((m) => m.id === `${baseId.value}.${specifica}`) ??
+        null);
   if (materia === null) return null;
   return buildSubjectVm(materia, {
     indirizzo: IndirizzoId.of(classe.indirizzo),
     isITP: assignment.slot.kind === 'ITP',
-    specificita: assignment.slot.specifica
+    principale: materia.principale,
+    specificita: materia.specificita
   });
 }
 

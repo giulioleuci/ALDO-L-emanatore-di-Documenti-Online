@@ -85,6 +85,38 @@ test('CDC coordinatore VM: materie, roles and descrizione', () => {
   expect(rossi.isITP).toBe(false);
 });
 
+test('materiaVm resolves the composite specifica row directly, not the base subject', () => {
+  const tables = fixtureTables();
+  tables.DOCENTI!.push({
+    EMAIL: 'avanzato@school.test',
+    COGNOME: 'AVANZATO',
+    NOME: 'ANNA',
+    GENERE: 'F',
+    DIPART: 'SCIENTIFICO_DIP',
+    ITP: false
+  });
+  tables.MATERIE!.push({
+    ID: 'MATE.AVANZATO',
+    NOME: '',
+    PRINCIPALE: 'Matematica',
+    SPECIFICITA: 'Avanzato',
+    SINTESI: 'Mat. Avanzata'
+  });
+  const classe5A = tables.CLASSI!.find((r) => r.ID === '5A')!;
+  classe5A['MATE.AVANZATO'] = 'avanzato@school.test';
+
+  const list = cdc('5A', new Date('2026-07-01T09:00:00Z'), tables);
+  const docente = byEmail(list, 'avanzato@school.test');
+  const specifica = docente.materie.find((m) => m.specificita === 'Avanzato');
+
+  expect(specifica).toMatchObject({
+    sigla: 'MATE.AVANZATO',
+    nome: 'Matematica (Avanzato)',
+    principale: 'Matematica',
+    specificita: 'Avanzato'
+  });
+});
+
 test('CDC of an articulated parent: tipoArticolazione by partner membership (09 §9)', () => {
   const list = cdc('1F');
   expect(list.map((d) => d.anagrafica.email)).toEqual([

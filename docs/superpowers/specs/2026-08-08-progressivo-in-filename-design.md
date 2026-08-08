@@ -4,7 +4,7 @@
 
 `meta.progressivo` (root alias `{{progressivo}}`) is the count of files already
 present in the destination Drive folder + 1, computed by
-`PrepareInfrastructureStep`. Today the document-generation pipeline runs:
+`PrepareInfrastructureStep`. The document-generation pipeline runs:
 
 ```
 AnalyzeContext -> CheckDuplicates -> PrepareInfrastructure -> GenerateName -> ...
@@ -12,124 +12,132 @@ AnalyzeContext -> CheckDuplicates -> PrepareInfrastructure -> GenerateName -> ..
 
 `CheckDuplicatesStep` renders `CONF_DOC.FILE_NAME` (to build the identity key
 compared against `LOG_DOCS.NOME`) *before* `PrepareInfrastructureStep` sets
-`progressivo`. If a `FILE_NAME` template uses `{{progressivo}}`, the value is
-unresolved at that point, so the identity key computed by `CheckDuplicatesStep`
-never matches the `NOME` actually stored in `LOG_DOCS` by a prior run (which
-*did* have `progressivo` resolved, since `GenerateNameStep` runs after
-`PrepareInfrastructureStep`). Net effect: `DUPLICAZIONE=NEGATA` never blocks a
-rerun once `FILE_NAME` contains `{{progressivo}}` — reruns silently produce new
-numbered files instead of being rejected as duplicates.
+`progressivo`. If `FILE_NAME` uses `{{progressivo}}`, the value is unresolved
+at that point, so the identity key `CheckDuplicatesStep` computes never
+matches the `NOME` actually stored by a prior run (whose `GenerateNameStep`
+ran *after* `progressivo` was set).
 
-This blocks a legitimate use case: a document type like class-council minutes
-("verbale n.1", "verbale n.2", ...) where the sequential number must be baked
-into the file name, but reruns of the *same* generation (retry, crash
-recovery) must still be recognized as duplicates and skipped, not produce
-"verbale n.3" for a meeting that already has "verbale n.2".
+### Why reordering the pipeline (rejected alternative) doesn't fix it
+
+An earlier version of this design proposed swapping `PrepareInfrastructureStep`
+before `CheckDuplicatesStep` so `progressivo` resolves before the identity
+render. Traced through concrete numbers, this doesn't work:
+
+`progressivo = countFilesInFolder(folderId) + 1` is a strictly-increasing
+counter tied to actual folder contents. Any completed prior run already left
+its file in that folder, so by the time a second run checks, the folder
+count — and therefore `progressivo` — has already advanced past the number
+baked into the previous run's `NOME`. Example: run 1 renders "Verbale_1",
+creates the file, folder now has 1 file; run 2 (an accidental retrigger)
+computes `progressivo=2`, renders "Verbale_2", and the identity match against
+`LOG_DOCS.NOME='Verbale_1'` fails — not recognized as a duplicate, regardless
+of step order. Literal `NOME` string comparison is fundamentally incompatible
+with an auto-incrementing placeholder inside it.
 
 ## Goal
 
-Make `{{progressivo}}` resolve correctly wherever `FILE_NAME` is rendered,
-including inside `CheckDuplicatesStep`'s identity check, without duplicating
-the folder-resolution/counting logic and without changing what "identity"
-means (still a straight `NOME` string comparison against `LOG_DOCS`).
+Let `FILE_NAME` use `{{progressivo}}` for cosmetic sequential numbering while
+keeping `DUPLICAZIONE=NEGATA` able to recognize a rerun of the same logical
+document as a duplicate.
 
-Out of scope: `PATH_OUT` remains unable to use `{{progressivo}}` — the count is
-derived from the already-resolved destination folder, which `PATH_OUT` is
-still constructing (chicken-and-egg, unchanged by this design).
+## Approach: drop `NOME` from the duplicate-identity match
 
-## Approach: reorder the pipeline
+`CheckDuplicatesStep`'s identity query currently matches on `TIPO` +
+`SOTTOTIPO` + `ID_GEN` + (`UTENTI` when `PIANO_PERS`) + `PATH` + `NOME`. Drop
+`NOME` from the predicate. Identity becomes `TIPO` + `SOTTOTIPO` + `ID_GEN` +
+(`UTENTI` when `PIANO_PERS`) + `PATH`.
 
-Swap the order of `PrepareInfrastructureStep` and `CheckDuplicatesStep`:
+This requires an operational rule, confirmed with the user: **a document type
+whose instances must be individually distinguishable (e.g. one set of class-
+council minutes per meeting) gets one distinct `CONF_DOC.ID` per instance**,
+not one shared row reused across occasions. `ID_GEN` (== `CONF_DOC.ID`) is
+already part of the identity tuple, so under this model it alone
+differentiates occasions — `NOME`/`{{progressivo}}` no longer needs to.
 
-```
-AnalyzeContext -> PrepareInfrastructure -> CheckDuplicates -> GenerateName -> ...
-```
+### Why this is safe for existing identity cases
 
-`PrepareInfrastructureStep` resolves/creates the destination folder and sets
-`cdu.meta.progressivo` (+ root alias) before `CheckDuplicatesStep` renders
-`FILE_NAME`. Both `CheckDuplicatesStep`'s identity render and
-`GenerateNameStep`'s render now see the same resolved `progressivo`, so a
-rerun against unchanged folder contents produces the same `NOME` both times,
-and the existing `LOG_DOCS.NOME` comparison keeps working unmodified.
+- **`PIANO_PERS`**: identity already includes `UTENTI` (the student's email),
+  which alone uniquely pins the document to one student for a given
+  `SOTTOTIPO` (`PIANI.TIPO`). `NOME` (the student's display name) was always
+  redundant here.
+- **`DOCUMENTO_DOCENTE_MATERIA`**: identity already includes `SOTTOTIPO`
+  (`materiaId::docenteEmail`), which uniquely pins the subject/teacher pair.
+  `PATH` additionally varies per class where applicable. `NOME` was redundant.
+- **`VERBALE`-style types (the motivating case)**: today `PATH_OUT`
+  (`Verbali/{{anno}}`) and `TIPO`/`SOTTOTIPO`/`ID_GEN` are identical across
+  every meeting for the same class when one `CONF_DOC` row is reused —
+  `NOME` (via `{{meta.date.oggi.breve}}`) was the *only* thing distinguishing
+  meetings. Under the one-`CONF_DOC`-row-per-meeting model, `ID_GEN` takes
+  over that role, so dropping `NOME` from the compare stays correct instead
+  of causing every subsequent meeting to be wrongly flagged as a duplicate of
+  the first.
 
-No new step, no new field, no change to the identity-match logic itself in
-`CheckDuplicatesStep._executeLogic` — only the position of the two classes in
-`DocumentGenerationService.buildPipeline` changes, plus the numbered-step
-comments in `documentSteps.ts` (10 §4/§5 references) and the CDU spec.
+### Behavior change (explicit, confirmed with user)
 
-### Why this is safe
+This changes dedup semantics **project-wide**, not just for one document
+type: any two `LOG_DOCS` rows sharing `TIPO`/`SOTTOTIPO`/`ID_GEN`/`PATH`
+(/`UTENTI` for `PIANO_PERS`) now count as the same document regardless of
+their rendered file name. `NOME` becomes purely a display/audit field, never
+part of identity. Document types that need distinguishable instances beyond
+what `SOTTOTIPO`/`UTENTI`/`PATH` already capture must use one `CONF_DOC` row
+per instance.
 
-- `PrepareInfrastructureStep`'s `shouldExecuteCondition` is `generateGate`
-  (`shouldGenerate === true`), which is still true at this point (only
-  `AnalyzeContextStep` has run) — behavior unchanged for the non-duplicate
-  path.
-- `PrepareInfrastructureStep` has no `requiredKeys` depending on anything
-  `CheckDuplicatesStep` sets. `CheckDuplicatesStep` has no `requiredKeys`
-  depending on anything `PrepareInfrastructureStep` sets beyond the CDU
-  mutation it needs to read.
-- `AlberoCartelle.findOrCreate` is already idempotent against a pre-existing
-  folder (covered by the existing "logs a pre-existing folder" test) — running
-  it unconditionally (even for a request that turns out to be a duplicate)
-  does not corrupt `LOG_FOLD` state.
-- `CRITICAL_STEPS` (rollback-on-error set) is a `Set`, unaffected by member
-  order; `PrepareInfrastructure` stays in it.
+### What does NOT change
 
-### Trade-off (accepted)
-
-Today, a duplicate is detected by `CheckDuplicatesStep` *before* any Drive
-call for folder resolution — a rejected duplicate costs nothing extra. After
-the reorder, `PrepareInfrastructureStep` always runs first, so every
-generation attempt — including ones later found to be duplicates — resolves
-(or creates) the destination folder, writes/touches its `LOG_FOLD` row, and
-issues one `countFilesInFolder` Drive call. This is a minor, bounded API-call
-cost (folder already exists after the first real generation, so subsequent
-`findOrCreate` calls are cheap lookups), not a correctness issue. No other
-approach avoids this cost without duplicating folder/count logic into
-`CheckDuplicatesStep` (rejected during brainstorming — see conversation).
+- Pipeline step order (`AnalyzeContext -> CheckDuplicates ->
+  PrepareInfrastructure -> GenerateName -> ...`) stays as-is. No reorder
+  needed — `{{progressivo}}` in the actual generated `FILE_NAME` already
+  resolves correctly today, since `GenerateNameStep` already runs after
+  `PrepareInfrastructureStep`. The only broken piece was the identity check,
+  now fixed by removing its dependency on `NOME` entirely.
+- No new DB columns, no new CONF_DOC fields.
+- `PATH_OUT` still cannot use `{{progressivo}}` (folder must be resolved
+  before its contents can be counted) — unchanged, unrelated constraint.
 
 ## Changes
 
-1. **`src/application/services/DocumentGenerationService.ts`** —
-   `buildPipeline`: swap `.addStep(new CheckDuplicatesStep(...))` and
-   `.addStep(new PrepareInfrastructureStep(...))` order.
-2. **`src/application/pipelines/documentSteps.ts`** — update the "Step N (10
-   §X)" doc comments on `CheckDuplicatesStep` and `PrepareInfrastructureStep`
-   to reflect the new order (PrepareInfrastructure becomes §4-5, CheckDuplicates
-   becomes §6, or whatever numbering keeps them monotonic — exact renumbering
-   deferred to implementation, must stay consistent with `SPECS_ALDO/`
-   references it points to).
+1. **`src/application/pipelines/documentSteps.ts`** —
+   `CheckDuplicatesStep._executeLogic`: remove the `FILE_NAME` render and the
+   `nome` local; drop `String(r[COL_LOG_DOCS.NOME] ?? '') === nome` from the
+   `existing` predicate. Update the `skipReason` message (currently
+   interpolates the freshly-rendered `nome`) to use the matched row's stored
+   `NOME` (`existing[COL_LOG_DOCS.NOME]`) instead, for informative logging
+   only — not part of the match.
+2. **`SPECS_ALDO/01_SCHEMA_DATABASE.md`** — `CONF_DOC.DUPLICAZIONE` row
+   (line 325): clarify exactly which fields make up "l'identità già
+   generata" (`TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`, `+UTENTI` for
+   `PIANO_PERS`) and state explicitly that `NOME`/`FILE_NAME` is NOT part of
+   the identity match. Add the operational rule: distinguishable instances of
+   a document type need distinct `CONF_DOC.ID` rows.
 3. **`SPECS_ALDO/02_CDU_STRUTTURA.md`** — rewrite the `ATTENZIONE` block under
-   `meta.progressivo` (lines 69-81): remove the claim that `{{progressivo}}`
-   in `FILE_NAME` defeats `CheckDuplicatesStep`'s identity check (no longer
-   true); keep the `PATH_OUT` chicken-and-egg constraint; note the new
-   pipeline order (`PrepareInfrastructureStep -> CheckDuplicatesStep ->
-   GenerateNameStep`) and the accepted trade-off (folder touched even for
-   later-detected duplicates).
-4. **`test/unit/application/pipelines/document-steps.test.ts`** — no required
-   changes to individual step unit tests (each step is still tested in
-   isolation by constructing `ctx` directly), but add a regression test
-   proving the end-to-end scenario: a `FILE_NAME` containing `{{progressivo}}`
-   is correctly recognized as a duplicate on the second run when
-   `DUPLICAZIONE=NEGATA`.
-5. **Any `DocumentGenerationService` integration/pipeline-order test** (e.g. a
-   test asserting `buildPipeline`'s step sequence, if one exists) — update
-   expected order.
+   `meta.progressivo` (lines 69-81): remove the now-false claim that
+   `{{progressivo}}` in `FILE_NAME` defeats `CheckDuplicatesStep`'s identity
+   check (identity no longer depends on `NOME` at all). Keep the `PATH_OUT`
+   chicken-and-egg constraint (still true, unrelated). State that
+   `{{progressivo}}` is valid in `FILE_NAME` and in the document body/
+   `REGISTRA_DOC` fields, same as before.
+4. **`test/unit/application/pipelines/document-steps.test.ts`** —
+   - `'NEGATA allows a document when only its generated name differs'`:
+     invert the expectation to `shouldGenerate === false` (this is exactly
+     the behavior change), rename the test to describe the new rule.
+   - `'publishes the duplicate identity when generation is stopped'`: verify
+     the `skipReason` message still reads sensibly without `NOME=` from the
+     freshly-rendered candidate (using the stored row's `NOME` instead —
+     coincidentally unchanged text for this fixture, since the fixture's
+     stored `NOME` already equals what the candidate render would have
+     produced).
+   - Add a regression test: `FILE_NAME` containing `{{progressivo}}`,
+     `DUPLICAZIONE=NEGATA`, a `LOG_DOCS` row matching on
+     `TIPO`/`SOTTOTIPO`/`ID_GEN`/`PATH` but with a `NOME` reflecting a
+     *different* `progressivo` value than what today's render would produce
+     — assert `shouldGenerate === false` (correctly recognized as a
+     duplicate despite the numeric mismatch in `NOME`).
 
 ## Testing
 
-- New test: build the real pipeline (via `DocumentGenerationService` or by
-  directly composing `PrepareInfrastructureStep` → `CheckDuplicatesStep` →
-  `GenerateNameStep` against a shared `ctx`/fake Drive/DB) with
-  `FILE_NAME: 'Verbale_{{progressivo}}'`, run it twice against the same fake
-  folder + `LOG_DOCS`/`LOG_FOLD` state, assert: run 1 generates (`shouldGenerate
-  === true`, file created, progressivo baked into stored `NOME`); run 2 against
-  the same fixture state (as if replaying with the resulting `LOG_DOCS` row
-  present) is recognized as a duplicate (`shouldGenerate === false`).
-- Existing test `'sets cdu.meta.progressivo and the root alias from
-  countFilesInFolder + 1'` and `'GenerateNameStep resolves FILE_NAME via
-  WorkspaceTemplateEngine'` keep passing unmodified (they construct steps
-  directly, order-independent).
-- Existing test `'critical steps are exactly the rollback points of 10 §8'`
-  unaffected (Set membership, not order).
+- New regression test as above (the actual motivating scenario).
+- Existing `CheckDuplicatesStep` PIANO_PERS and DOCUMENTO_DOCENTE_MATERIA
+  identity tests keep passing unmodified (their fixtures already match on
+  `UTENTI`/`SOTTOTIPO`, `NOME` was never load-bearing there).
 - Run `npm test`, `npm run test:integration`, `npm run typecheck`, `npm run
   lint` after the change.

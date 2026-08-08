@@ -67,18 +67,23 @@ meta:
   progressivo: number | undefined # Conteggio dei file già presenti nella cartella di destinazione Drive + 1; alias di radice {{progressivo}} per uso fuori dai loop
 
   # ATTENZIONE — `meta.progressivo`/l'alias di radice `{{progressivo}}` sono
-  # risolti SOLO in `PrepareInfrastructureStep`, cioè DOPO che `CheckDuplicatesStep`
-  # ha già renderizzato `FILE_NAME` per il confronto di identità con `LOG_DOCS.NOME`
-  # (l'ordine della pipeline è CheckDuplicatesStep -> PrepareInfrastructureStep ->
-  # GenerateNameStep). Di conseguenza:
-  # - è valido nel CORPO del template documento e nei campi valorizzati al
-  #   momento di `REGISTRA_DOC`;
+  # risolti SOLO in `PrepareInfrastructureStep` (conteggio dei file già
+  # presenti nella cartella di destinazione + 1). Di conseguenza:
+  # - è valido nel CORPO del template documento, in `FILE_NAME` e nei campi
+  #   valorizzati al momento di `REGISTRA_DOC` (tutti renderizzati DOPO
+  #   `PrepareInfrastructureStep`);
   # - NON è valido in `PATH_OUT` (chicken-and-egg: il conteggio si deriva dalla
-  #   cartella di destinazione già risolta, che `PATH_OUT` sta ancora costruendo);
-  # - se usato in `FILE_NAME`, VANIFICA il confronto di identità di
-  #   `CheckDuplicatesStep`: con `DUPLICAZIONE=NEGATA` le riesecuzioni non
-  #   verranno bloccate e creeranno ulteriori file numerati anziché essere
-  #   rifiutate come duplicati.
+  #   cartella di destinazione già risolta, che `PATH_OUT` sta ancora costruendo).
+  #
+  # `CheckDuplicatesStep` (che gira PRIMA di `PrepareInfrastructureStep`) NON
+  # dipende da `progressivo`: il confronto di identità con `LOG_DOCS` usa solo
+  # `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH` (+`UTENTI` per `PIANO_PERS`) — `NOME`
+  # non ne fa mai parte (01 §CONF_DOC.DUPLICAZIONE). Usare `{{progressivo}}` in
+  # `FILE_NAME` è quindi sicuro con `DUPLICAZIONE=NEGATA`: NON vanifica il
+  # confronto di identità. Un tipo documento le cui istanze devono restare
+  # distinguibili tra loro (es. un verbale per riunione) richiede comunque un
+  # `CONF_DOC.ID` distinto per istanza, perché `ID_GEN` è quel che le
+  # differenzia — non `FILE_NAME`.
 
   date:
     oggi:

@@ -155,8 +155,8 @@ function recordingHarness(
       if (configId === CONF_DOC_COMPLESSO && classe.value === '1A') {
         planTexts[fileId] = [
           'Report Complesso — 1A',
-          'Laboratorio: GRUPPO_A (Giulia Ferrari;)',
-          'Interpretazione ed esecuzione: Chitarra (Giulia Ferrari;)'
+          'LAB: GRUPPO_A (Giulia Ferrari;)',
+          'INTERPRET: CHITARRA (Giulia Ferrari;)'
         ].join(' ');
       }
       return { fileId, status: 'CREATED' };
@@ -796,7 +796,7 @@ test('scenario 10: generates the complex doc for every class and checks for left
         const drive = {
           getFileText: (fileId: string) =>
             driveTexts[fileId] ??
-            'Report Complesso — 1A Laboratorio: GRUPPO_A (Giulia Ferrari;) Interpretazione ed esecuzione: Chitarra (Giulia Ferrari;)'
+            'Report Complesso — 1A LAB: GRUPPO_A (Giulia Ferrari;) INTERPRET: CHITARRA (Giulia Ferrari;)'
         } as unknown as IDriveFacade;
         return drive as unknown as T;
       }
@@ -829,7 +829,29 @@ test('scenario 10: rejects the 1A complex document when rendered specificita are
 
   const scenario10 = runner.report().results.find((result) => result.name.includes('scenario 10'));
   expect(scenario10).toMatchObject({ status: 'fail' });
-  expect(scenario10?.message).toMatch(/specificita|Laboratorio|Interpretazione/i);
+  expect(scenario10?.message).toMatch(/specificita|LAB|INTERPRET/i);
+});
+
+test('scenario 10: rejects descriptive labels instead of the contractual specificita codes', () => {
+  const harness = recordingHarness();
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'drive') {
+        return {
+          getFileText: () =>
+            'Report Complesso — 1A Laboratorio: GRUPPO_A (Giulia Ferrari;) Interpretazione ed esecuzione: Chitarra (Giulia Ferrari;)'
+        } as unknown as T;
+      }
+      return harness.container.get<T>(key);
+    }
+  } as ServiceContainer;
+
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario10 = runner.report().results.find((result) => result.name.includes('scenario 10'));
+  expect(scenario10).toMatchObject({ status: 'fail' });
+  expect(scenario10?.message).toMatch(/LAB|INTERPRET/);
 });
 
 test('scenario 10: fails when the generated doc still has an unresolved {{...}} placeholder', () => {

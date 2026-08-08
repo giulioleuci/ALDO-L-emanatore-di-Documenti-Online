@@ -504,8 +504,8 @@ export function registerE2eScenarioChecks(
         }
         if (classe === '1A') {
           for (const expected of [
-            'Laboratorio: GRUPPO_A (',
-            'Interpretazione ed esecuzione: Chitarra ('
+            'LAB: GRUPPO_A (',
+            'INTERPRET: CHITARRA ('
           ]) {
             if (!text.includes(expected)) {
               throw new ValidationError(

@@ -189,10 +189,10 @@ function aslImportUpdates(): SheetValueUpdate[] {
  * Also exercises the genuinely-new §9.2 sections (PROMPT_MODIFY_CDU.md action item 5):
  * `esame.materiePrimaProva`, `coordinatori.elenco.0.appellativoCompleto` (dot-index addressing,
  * already proven by `{{materie.0.sigla}}` in DOC_COMPLESSO_TABLES below), `progetti`, and
- * `status.religioneLabel`. `focus.classe.studenti.perSpecificita` is included too for template
- * syntax coverage; its real 3-level content is asserted directly against a
- * `ContextBuilder.build()` call in `contextEngineChecks.ts`.
+ * `status.religioneLabel`.
  */
+// Il ramo perSpecificita è un array CDU standard: il documento complesso
+// prova rendering Mustache a tre livelli su una generazione normale.
 const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Report Complesso — {{focus.classe.anagrafica.nome}}',
   'Coordinatori, ordinati per nome (elenco puntato, con filtro sortBy sul source del loop):',
@@ -221,7 +221,7 @@ const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
     text: '{{#bullet_list:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}} — {{status.religioneLabel}}{{/bullet_list}}',
     listType: 'bullet'
   },
-  'Specificità per materia (3 livelli; ref classCdu online check):',
+  'Specificità per materia (sempre disponibile nel CDU classe; 3 livelli):',
   {
     text: '{{#focus.classe.studenti.perSpecificita}}{{materiaNome}}: {{#specifiche}}{{nome}} ({{#alunni}}{{nomeCompleto}};{{/alunni}}){{/specifiche}}{{/focus.classe.studenti.perSpecificita}}',
     listType: 'bullet'

@@ -502,6 +502,23 @@ export function registerE2eScenarioChecks(
             `Documento complesso per ${classe}: placeholder non risolto trovato nel testo generato`
           );
         }
+        if (classe === '1A') {
+          for (const expected of [
+            'Laboratorio: GRUPPO_A (',
+            'Interpretazione ed esecuzione: Chitarra ('
+          ]) {
+            if (!text.includes(expected)) {
+              throw new ValidationError(
+                `Documento complesso per 1A: specificita renderizzata mancante "${expected}"`
+              );
+            }
+          }
+          if (text.includes('{{#focus.classe.studenti.perSpecificita}}')) {
+            throw new ValidationError(
+              'Documento complesso per 1A: loop perSpecificita non risolto nel testo generato'
+            );
+          }
+        }
       }
       assertPersistedLinks(CONF_DOC_COMPLESSO, 'Documento complesso');
     }

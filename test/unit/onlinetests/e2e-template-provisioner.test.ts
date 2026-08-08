@@ -237,6 +237,7 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   expect(text).toContain('{{focus.classe.coordinatori.elenco.0.appellativoCompleto}}');
   expect(text).toContain('{{#bullet_list:focus.classe.progetti}}');
   expect(text).toContain('{{status.religioneLabel}}');
+  expect(text).toContain('Specificità per materia (sempre disponibile nel CDU classe; 3 livelli):');
   expect(text).toContain('{{#focus.classe.studenti.perSpecificita}}');
   expect(docContent[ids.docComplesso]).toEqual(
     expect.arrayContaining([

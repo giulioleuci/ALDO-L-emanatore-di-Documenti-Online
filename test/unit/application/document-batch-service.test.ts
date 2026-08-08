@@ -750,6 +750,47 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     expect(result.success).toBe(false);
   });
 
+  test('generateDocentiMateria targets the composite materiaId for a specifica cattedra', () => {
+    const { service, generated } = wireDocentiMateria({
+      extraCouncilByClasse: {
+        '5A': [fakeAssignmentWithSlot('INTERPRET', 'bianchi@school.it', 'SPECIFICA', 'CHITARRA')]
+      }
+    });
+
+    const { result } = drain(
+      service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' })
+    );
+
+    expect(generated).toContainEqual({
+      classe: '5A',
+      docente: 'bianchi@school.it',
+      materia: 'INTERPRET.CHITARRA',
+      confDocId: 'PROGRAMMA_SVOLTO',
+      jobId: 'job1'
+    });
+    expect(result.processed).toContain('5A:INTERPRET.CHITARRA:bianchi@school.it');
+  });
+
+  test('generateDocentiMateria produces two separate targets for a docente holding two specifics of the same family', () => {
+    const { service, generated } = wireDocentiMateria({
+      extraCouncilByClasse: {
+        '5A': [
+          fakeAssignmentWithSlot('INTERPRET', 'bianchi@school.it', 'SPECIFICA', 'CHITARRA'),
+          fakeAssignmentWithSlot('INTERPRET', 'bianchi@school.it', 'SPECIFICA', 'FLAUTO')
+        ]
+      }
+    });
+
+    drain(service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' }));
+
+    const materiaIds = generated
+      .filter((target) => target.classe === '5A' && target.docente === 'bianchi@school.it')
+      .map((target) => target.materia)
+      .filter((materiaId) => materiaId.startsWith('INTERPRET.'))
+      .sort();
+    expect(materiaIds).toEqual(['INTERPRET.CHITARRA', 'INTERPRET.FLAUTO']);
+  });
+
   // Finding 1 (final review fix wave): TeachingSlot is 3-D (materia, kind,
   // specifica) but DocenteMateriaBatchTarget is 2-D (classe, materiaId,
   // docenteEmail). A docente holding two slots on the same materia that

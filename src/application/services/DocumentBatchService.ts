@@ -219,12 +219,14 @@ export class DocumentBatchService {
     let targets: DocenteMateriaBatchTarget[];
     if (resume === null) {
       targets = [];
-      // DocenteMateriaBatchTarget is only (classe, docenteEmail, materiaId) —
-      // TeachingSlot is (materia, kind, specifica). Slots differing only by
-      // kind/specifica (e.g. STANDARD+ITP on the same lab subject, or two
-      // articolata specificità) collapse to a single target here by design:
-      // extending the batch axis to carry kind/specifica is out of scope for
-      // this fix; dedup keeps the first match, mirroring
+      // DocenteMateriaBatchTarget is (classe, docenteEmail, materiaId), where
+      // materiaId is specifica-qualified (BASE.SPECIFICA) when the slot has a
+      // specifica — mirroring SheetMaterieGeneratorStrategy.catalogId(). A
+      // docente teaching two specifics of the same family (e.g. INTERPRET.CHITARRA
+      // and INTERPRET.FLAUTO) now gets two separate targets, one per composite id.
+      // Slots differing only by *kind* (STANDARD vs ITP on the same materiaId)
+      // still collapse to one target here by design — extending the batch axis
+      // to carry kind is out of scope; dedup keeps the first match, mirroring
       // DocenteMateriaFocusProvider's own first-match `materie.find` semantics.
       const seen = new Set<string>();
       const attive = this.classi.filterPerGestioneArticolazione(
@@ -255,7 +257,10 @@ export class DocumentBatchService {
         for (const assignment of assignments) {
           const classeId = classe.id ?? '';
           const docenteEmail = assignment.docenteEffettivo.email.value;
-          const materiaId = assignment.slot.materia.value;
+          const materiaId =
+            assignment.slot.specifica === null
+              ? assignment.slot.materia.value
+              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
           const key = `${classeId}:${materiaId}:${docenteEmail}`;
           if (seen.has(key)) {
             continue;

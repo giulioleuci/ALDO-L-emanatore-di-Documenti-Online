@@ -1,0 +1,1510 @@
+Log esecuzione
+09:20:35	Notifica	Esecuzione avviata
+09:20:41	Informazioni	======================================================================
+09:20:41	Informazioni	🚀 [INIT] AVVIO JOB: e2e_scenarios (Tipo: E2E_SCENARIO_SUITE)
+09:20:41	Informazioni	======================================================================
+09:22:14	Informazioni	[INFO] Previous MASTER_SPREADSHEET_ID before e2e-scenario override: 1Ly71QGb8zMF7tNJeKmF4DsZMMc-DXLef5LfLtFtX-CU
+09:22:16	Informazioni	[INFO] [ImportEngine] Initialized successfully
+09:22:16	Informazioni	[INFO] [ImportEngine] Registering custom source strategy: CERCA_CARTELLE_CLASSE
+09:22:16	Informazioni	[INFO] [SourceStrategyFactory] Registered strategy: CERCA_CARTELLE_CLASSE
+09:22:16	Informazioni	[INFO] [ImportEngine] Registering custom source strategy: CERCA_DOCUMENTI
+09:22:16	Informazioni	[INFO] [SourceStrategyFactory] Registered strategy: CERCA_DOCUMENTI
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: MAIN MAT
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: ITP INF
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: SPECIFICA LAB.GRUPPO_A
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: SPECIFICA LAB.SEMINARIO_POMERIDIANO
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: SPECIFICA INTERPRET.CHITARRA
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: MAIN IRC
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: MAIN ALT
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: MAIN ITA
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 0ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: articulated parent retains assignments owned by both partners
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 44ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE) resolves both of the anchor's own STO cattedre
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 21ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment matrix: .SPECIFICA-targeted MATERIE entry on a SUPPLENZE row overrides just that slot
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 16ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 254ms)
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment consumers: rendered sheet header REL/ALT
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 39ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment consumers: rendered sheet header REL without ALT
+09:22:17	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 68ms)
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 120ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment consumers: full CDU council
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 3ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment consumers: role recipients
+09:22:17	Informazioni	[TEST:END] PASS | Duration: 31ms
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	TEST EXECUTION SUMMARY
+09:22:17	Informazioni	TOTAL: 1
+09:22:17	Informazioni	PASSED: 1
+09:22:17	Informazioni	FAILED: 0
+09:22:17	Informazioni	SKIPPED: 0
+09:22:17	Informazioni	═══════════════════════════════════════════════
+09:22:17	Informazioni	Running 1 tests matching filter: NONE
+09:22:17	Informazioni	[TEST:START] Effective assignment consumers: email recipients
+09:22:18	Informazioni	[TEST:END] PASS | Duration: 159ms
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	TEST EXECUTION SUMMARY
+09:22:18	Informazioni	TOTAL: 1
+09:22:18	Informazioni	PASSED: 1
+09:22:18	Informazioni	FAILED: 0
+09:22:18	Informazioni	SKIPPED: 0
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	Running 1 tests matching filter: NONE
+09:22:18	Informazioni	[TEST:START] Effective assignment consumers: document ACL recipients
+09:22:18	Informazioni	[TEST:END] PASS | Duration: 16ms
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	TEST EXECUTION SUMMARY
+09:22:18	Informazioni	TOTAL: 1
+09:22:18	Informazioni	PASSED: 1
+09:22:18	Informazioni	FAILED: 0
+09:22:18	Informazioni	SKIPPED: 0
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	Running 1 tests matching filter: NONE
+09:22:18	Informazioni	[TEST:START] Effective assignment consumers: spreadsheet column ACL recipients
+09:22:18	Informazioni	[TEST:END] PASS | Duration: 36ms
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	TEST EXECUTION SUMMARY
+09:22:18	Informazioni	TOTAL: 1
+09:22:18	Informazioni	PASSED: 1
+09:22:18	Informazioni	FAILED: 0
+09:22:18	Informazioni	SKIPPED: 0
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	Running 1 tests matching filter: NONE
+09:22:18	Informazioni	[TEST:START] Effective assignment consumers: REL/ALT combined recipients
+09:22:18	Informazioni	[TEST:END] PASS | Duration: 4ms
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	TEST EXECUTION SUMMARY
+09:22:18	Informazioni	TOTAL: 1
+09:22:18	Informazioni	PASSED: 1
+09:22:18	Informazioni	FAILED: 0
+09:22:18	Informazioni	SKIPPED: 0
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	Running 1 tests matching filter: NONE
+09:22:18	Informazioni	[TEST:START] Effective assignment consumers: full CDU council 3C-S
+09:22:18	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 59ms)
+09:22:18	Informazioni	[TEST:END] PASS | Duration: 390ms
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	TEST EXECUTION SUMMARY
+09:22:18	Informazioni	TOTAL: 1
+09:22:18	Informazioni	PASSED: 1
+09:22:18	Informazioni	FAILED: 0
+09:22:18	Informazioni	SKIPPED: 0
+09:22:18	Informazioni	═══════════════════════════════════════════════
+09:22:18	Informazioni	Running 1 tests matching filter: NONE
+09:22:18	Informazioni	[TEST:START] Effective assignment consumers: full CDU council 3C-C
+09:22:18	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 87ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 320ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] Effective assignment consumers: student-filtered CDU council e2ealunno1@onlinetest.aldo.local
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 24ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 29ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] Effective assignment consumers: student-filtered CDU council e2ealunno2@onlinetest.aldo.local
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 60ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 64ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] Effective assignment consumers: student-filtered CDU council e2ealunno4@onlinetest.aldo.local
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 20ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 37ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] ContextEngine CDU: focus.alunno.curriculum is an array, not a "[MateriaId]" map (02 §2.13/§8.8)
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 22ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 34ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] ContextEngine CDU: focus.classe.studenti.perSpecificita is a 3-level array (02 §2.14/§8.9)
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 38ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 50ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] ContextEngine CDU: focus.classe.esame prima/seconda prova partitions (02 §2.9/§4.1)
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 83ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 95ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] ContextEngine CDU: focus.classe.coordinatori.elenco/progetti/religioneLabel/tipoLabel precomposed strings (02 §2.6/§2.10/§2.12/§8.1)
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 36ms)
+09:22:19	Informazioni	[TEST:END] PASS | Duration: 39ms
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	TEST EXECUTION SUMMARY
+09:22:19	Informazioni	TOTAL: 1
+09:22:19	Informazioni	PASSED: 1
+09:22:19	Informazioni	FAILED: 0
+09:22:19	Informazioni	SKIPPED: 0
+09:22:19	Informazioni	═══════════════════════════════════════════════
+09:22:19	Informazioni	Running 1 tests matching filter: NONE
+09:22:19	Informazioni	[TEST:START] E2E scenario 3: piani personalizzati con modello condizionale, dedupe e storico per sottotipo
+09:22:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 17ms)
+09:22:19	Informazioni	[INFO] Transaction started
+09:22:19	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:19	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:19	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 2ms)
+09:22:21	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 1908ms)
+09:22:21	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PDP_DSA_Rossi Marco (EXECUTED in 0ms)
+09:22:21	Informazioni	  │    ├─ ✅ [SelectTemplate] 1_ppkYbIHZ4o9IfPW0S3WRWfobQledOYRml1Yu74je1w (EXECUTED in 0ms)
+09:22:23	Informazioni	  │    ├─ ✅ [CloneTemplate] 10W9W-y6_AI4zaRNb0zokp0eDehkL9rSJaS3AdTue5_E (EXECUTED in 2083ms)
+09:22:23	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 10W9W-y6_AI4zaRNb0zokp0eDehkL9rSJaS3AdTue5_E
+09:22:24	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:24	Informazioni	[INFO] Executing batch update with 12 requests on document 10W9W-y6_AI4zaRNb0zokp0eDehkL9rSJaS3AdTue5_E
+09:22:24	Informazioni	[INFO] Batch update completed successfully
+09:22:24	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 629ms)
+09:22:24	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:24	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:22:24	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:24	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 4644ms)
+09:22:25	Informazioni	[INFO] Transaction committed successfully (5621ms)
+09:22:25	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 23ms)
+09:22:25	Informazioni	[INFO] Transaction started
+09:22:25	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:25	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:25	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:25	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 165ms)
+09:22:25	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PDP_BES_Bianchi Andrea (EXECUTED in 0ms)
+09:22:25	Informazioni	  │    ├─ ✅ [SelectTemplate] 1rBC_3R71rJkOp8wLRiTALVldfs8g0sfzuOV3imRaoCg (EXECUTED in 1ms)
+09:22:27	Informazioni	  │    ├─ ✅ [CloneTemplate] 1seky852Yhfk2gAFcKUEOlvVVsR-z3TdFKeGld8_pnmo (EXECUTED in 2244ms)
+09:22:27	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1seky852Yhfk2gAFcKUEOlvVVsR-z3TdFKeGld8_pnmo
+09:22:28	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:28	Informazioni	[INFO] Executing batch update with 12 requests on document 1seky852Yhfk2gAFcKUEOlvVVsR-z3TdFKeGld8_pnmo
+09:22:28	Informazioni	[INFO] Batch update completed successfully
+09:22:28	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 682ms)
+09:22:28	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:28	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:22:28	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:28	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 3114ms)
+09:22:28	Informazioni	[INFO] Transaction committed successfully (3537ms)
+09:22:28	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 40ms)
+09:22:28	Informazioni	[INFO] Transaction started
+09:22:28	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:28	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:28	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:29	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 178ms)
+09:22:29	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PDP_BES_Ricci Luca (EXECUTED in 0ms)
+09:22:29	Informazioni	  │    ├─ ✅ [SelectTemplate] 1rBC_3R71rJkOp8wLRiTALVldfs8g0sfzuOV3imRaoCg (EXECUTED in 2ms)
+09:22:30	Informazioni	  │    ├─ ✅ [CloneTemplate] 1WyTIxK2Tb1x58MA5f51jZX1OdY1D0iW_7IjowAgS1kA (EXECUTED in 1873ms)
+09:22:30	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1WyTIxK2Tb1x58MA5f51jZX1OdY1D0iW_7IjowAgS1kA
+09:22:31	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:31	Informazioni	[INFO] Executing batch update with 12 requests on document 1WyTIxK2Tb1x58MA5f51jZX1OdY1D0iW_7IjowAgS1kA
+09:22:31	Informazioni	[INFO] Batch update completed successfully
+09:22:31	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 637ms)
+09:22:31	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:31	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:22:31	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:31	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 2720ms)
+09:22:31	Informazioni	[INFO] Transaction committed successfully (3111ms)
+09:22:31	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 18ms)
+09:22:31	Informazioni	[INFO] Transaction started
+09:22:31	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:31	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:31	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:32	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 186ms)
+09:22:32	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PDP_BES_Ricci Martina (EXECUTED in 4ms)
+09:22:32	Informazioni	  │    ├─ ✅ [SelectTemplate] 1rBC_3R71rJkOp8wLRiTALVldfs8g0sfzuOV3imRaoCg (EXECUTED in 0ms)
+09:22:34	Informazioni	  │    ├─ ✅ [CloneTemplate] 12KVeKb0SCx4dE1_c5W_0yk6O7n9HixEH2_O6JjD9_V4 (EXECUTED in 2051ms)
+09:22:34	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 12KVeKb0SCx4dE1_c5W_0yk6O7n9HixEH2_O6JjD9_V4
+09:22:34	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:34	Informazioni	[INFO] Executing batch update with 12 requests on document 12KVeKb0SCx4dE1_c5W_0yk6O7n9HixEH2_O6JjD9_V4
+09:22:34	Informazioni	[INFO] Batch update completed successfully
+09:22:34	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 690ms)
+09:22:34	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:34	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:22:34	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:34	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 2952ms)
+09:22:35	Informazioni	[INFO] Transaction committed successfully (3425ms)
+09:22:35	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 192ms)
+09:22:35	Informazioni	[INFO] Transaction started
+09:22:35	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:35	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:35	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:35	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 193ms)
+09:22:35	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PDP_STRANIERI_Rossi Marco (EXECUTED in 0ms)
+09:22:35	Informazioni	  │    ├─ ✅ [SelectTemplate] 1HEASRRKkf1g6Ym-Ps9OVTQhLSH79UiVO9OZfkJZQQHg (EXECUTED in 0ms)
+09:22:38	Informazioni	  │    ├─ ✅ [CloneTemplate] 1s9P-_6_kuIrzh-apN41jtdWYTdS6B1FC5Wv4mQqT1zw (EXECUTED in 2200ms)
+09:22:38	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1s9P-_6_kuIrzh-apN41jtdWYTdS6B1FC5Wv4mQqT1zw
+09:22:38	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:38	Informazioni	[INFO] Executing batch update with 12 requests on document 1s9P-_6_kuIrzh-apN41jtdWYTdS6B1FC5Wv4mQqT1zw
+09:22:38	Informazioni	[INFO] Batch update completed successfully
+09:22:38	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 641ms)
+09:22:38	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:38	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:22:38	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:38	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 3082ms)
+09:22:39	Informazioni	[INFO] Transaction committed successfully (4170ms)
+09:22:39	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 22ms)
+09:22:39	Informazioni	[INFO] Transaction started
+09:22:39	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:39	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:39	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:39	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 178ms)
+09:22:39	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PEI_Ricci Martina (EXECUTED in 0ms)
+09:22:39	Informazioni	  │    ├─ ✅ [SelectTemplate] 1B3jOAxUyignzGiS-fYVrK8nXOj-kYvTFcD0SGiibFW0 (EXECUTED in 0ms)
+09:22:42	Informazioni	  │    ├─ ✅ [CloneTemplate] 1Jm7CiJvIeApbplANHQAKnDSuW5flpPBzZg9pfUWZOFo (EXECUTED in 2109ms)
+09:22:42	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1Jm7CiJvIeApbplANHQAKnDSuW5flpPBzZg9pfUWZOFo
+09:22:42	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:42	Informazioni	[INFO] Executing batch update with 12 requests on document 1Jm7CiJvIeApbplANHQAKnDSuW5flpPBzZg9pfUWZOFo
+09:22:42	Informazioni	[INFO] Batch update completed successfully
+09:22:42	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 589ms)
+09:22:42	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:42	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:22:42	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:42	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 2896ms)
+09:22:43	Informazioni	[INFO] Transaction committed successfully (3517ms)
+09:22:43	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 25ms)
+09:22:43	Informazioni	[INFO] Transaction started
+09:22:43	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:43	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:43	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:43	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: DOCUMENTI PERS; Path: _ALDO_E2E_OUTPUT/DOCUMENTI PERS; Id: 1oufw1bQh9lwsP_2FXXlCgBFmrYtzUPz9 (EXECUTED in 184ms)
+09:22:43	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Piano_PFP_Conti Sara (EXECUTED in 0ms)
+09:22:43	Informazioni	  │    ├─ ✅ [SelectTemplate] 1Fybua20MCzIRfgreOCH0mapmUr9HuZY1CAC5eKYpN4g (EXECUTED in 8ms)
+09:22:45	Informazioni	  │    ├─ ✅ [CloneTemplate] 1cvsaLozKDXCU55hZ19pRDfk_Z96_TAen3j8yYbJTR5g (EXECUTED in 2113ms)
+09:22:45	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1cvsaLozKDXCU55hZ19pRDfk_Z96_TAen3j8yYbJTR5g
+09:22:46	Informazioni	[INFO] Executing batch update with 12 requests
+09:22:46	Informazioni	[INFO] Executing batch update with 12 requests on document 1cvsaLozKDXCU55hZ19pRDfk_Z96_TAen3j8yYbJTR5g
+09:22:46	Informazioni	[INFO] Batch update completed successfully
+09:22:46	Informazioni	  │    ├─ ✅ [RenderTemplate] DOC_PERSONALIZZATO (EXECUTED in 732ms)
+09:22:46	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:46	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:22:46	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:46	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 3063ms)
+09:22:46	Informazioni	[INFO] Transaction committed successfully (3510ms)
+09:22:47	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 59ms)
+09:22:47	Informazioni	[INFO] Transaction started
+09:22:47	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:47	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:47	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PDP_DSA, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PDP_DSA_Rossi Marco (EXECUTED in 0ms)
+09:22:47	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:47	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 19ms)
+09:22:47	Informazioni	[INFO] Transaction committed successfully (161ms)
+09:22:47	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 39ms)
+09:22:47	Informazioni	[INFO] Transaction started
+09:22:47	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:47	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:47	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PDP_BES, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PDP_BES_Bianchi Andrea (EXECUTED in 0ms)
+09:22:47	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:47	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 19ms)
+09:22:47	Informazioni	[INFO] Transaction committed successfully (162ms)
+09:22:47	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 74ms)
+09:22:47	Informazioni	[INFO] Transaction started
+09:22:47	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:47	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:47	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PDP_BES, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PDP_BES_Ricci Luca (EXECUTED in 1ms)
+09:22:47	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:47	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 38ms)
+09:22:47	Informazioni	[INFO] Transaction committed successfully (187ms)
+09:22:47	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 56ms)
+09:22:47	Informazioni	[INFO] Transaction started
+09:22:47	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:47	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:47	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PDP_BES, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PDP_BES_Ricci Martina (EXECUTED in 1ms)
+09:22:47	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:47	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:47	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 37ms)
+09:22:47	Informazioni	[INFO] Transaction committed successfully (182ms)
+09:22:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 76ms)
+09:22:48	Informazioni	[INFO] Transaction started
+09:22:48	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:48	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:48	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PDP_STRANIERI, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PDP_STRANIERI_Rossi Marco (EXECUTED in 1ms)
+09:22:48	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:48	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 14ms)
+09:22:48	Informazioni	[INFO] Transaction committed successfully (158ms)
+09:22:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 8ms)
+09:22:48	Informazioni	[INFO] Transaction started
+09:22:48	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:48	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:48	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PEI, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PEI_Ricci Martina (EXECUTED in 0ms)
+09:22:48	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:48	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 16ms)
+09:22:48	Informazioni	[INFO] Transaction committed successfully (335ms)
+09:22:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 8 providers executed, 0 skipped, 0 failed (COMPLETED in 6ms)
+09:22:48	Informazioni	[INFO] Transaction started
+09:22:48	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:48	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:48	Informazioni	  │    ├─ ✅ [CheckDuplicates] Duplicato: TIPO=PIANO_PERS, SOTTOTIPO=PFP, ID_GEN=PIANI_PERSONALIZZATI, PATH=_ALDO_E2E_OUTPUT/DOCUMENTI PERS, NOME=E2E_Piano_PFP_Conti Sara (EXECUTED in 0ms)
+09:22:48	Informazioni	  │    ├─ ⚠️ [PrepareInfrastructure] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [GenerateName] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [SelectTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [CloneTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [RenderTemplate] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    ├─ ⚠️ [RegisterDocument] condition not met (SKIPPED)
+09:22:48	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:22:48	Informazioni	  └─ ⏹️ Pipeline completed: 2 executed, 8 skipped, 0 failed (COMPLETED in 12ms)
+09:22:48	Informazioni	[INFO] Transaction committed successfully (156ms)
+09:22:48	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:22:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 27ms)
+09:22:48	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 1A; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 30ms)
+09:22:48	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:22:50	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 1701ms)
+09:22:50	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Piani personalizzati; Attachments: 0 (EXECUTED in 6ms)
+09:22:50	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente1@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:22:50	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:22:50	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 291ms)
+09:22:51	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 285ms
+09:22:51	Informazioni	  │         ├─ [INFO] Updated 84 cells across 6 rows
+09:22:51	Informazioni	  │    └─ ✅ [PostProcessEmail] Actions: INSERISCI_TIMESTAMP; Updated: 6 (EXECUTED in 542ms)
+09:22:51	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 0 skipped, 0 failed (COMPLETED in 2875ms)
+09:22:51	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:22:51	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 36ms)
+09:22:51	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C-S; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 40ms)
+09:22:51	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:22:52	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 474ms)
+09:22:52	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Piani personalizzati; Attachments: 0 (EXECUTED in 2ms)
+09:22:52	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente3@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:22:52	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:22:52	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 302ms)
+09:22:52	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 201ms
+09:22:53	Informazioni	  │         ├─ [INFO] Updated 14 cells across 1 rows
+09:22:53	Informazioni	  │    └─ ✅ [PostProcessEmail] Actions: INSERISCI_TIMESTAMP; Updated: 1 (EXECUTED in 398ms)
+09:22:53	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 0 skipped, 0 failed (COMPLETED in 1436ms)
+09:22:53	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:22:53	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 47ms)
+09:22:53	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C-C; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 56ms)
+09:22:53	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:22:53	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 0 (EXECUTED in 2ms)
+09:22:53	Informazioni	  │    ├─ ⚠️ [ComposeEmail] condition not met (SKIPPED)
+09:22:53	Informazioni	  │    ├─ ⚠️ [ResolveRecipients] condition not met (SKIPPED)
+09:22:53	Informazioni	  │    ├─ ⚠️ [SendEmail] condition not met (SKIPPED)
+09:22:53	Informazioni	  │    ├─ ⚠️ [LogEmail] condition not met (SKIPPED)
+09:22:53	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:22:53	Informazioni	  └─ ⏹️ Pipeline completed: 3 executed, 5 skipped, 0 failed (COMPLETED in 104ms)
+09:22:53	Informazioni	[TEST:END] PASS | Duration: 33604ms
+09:22:53	Informazioni	═══════════════════════════════════════════════
+09:22:53	Informazioni	TEST EXECUTION SUMMARY
+09:22:53	Informazioni	TOTAL: 1
+09:22:53	Informazioni	PASSED: 1
+09:22:53	Informazioni	FAILED: 0
+09:22:53	Informazioni	SKIPPED: 0
+09:22:53	Informazioni	═══════════════════════════════════════════════
+09:22:53	Informazioni	Running 1 tests matching filter: NONE
+09:22:53	Informazioni	[TEST:START] E2E scenario 1: genera verbale consiglio di classe (tutte le classi)
+09:22:53	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 63ms)
+09:22:53	Informazioni	[INFO] Transaction started
+09:22:53	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:22:53	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:22:53	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:22:55	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: 1A; Path: _ALDO_E2E_OUTPUT/VERBALI/1A; Id: 1bTa79QSMcG9zJ5PYE9Lbm119H7fmhXTu (EXECUTED in 2391ms)
+09:22:55	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Verbale_1A (EXECUTED in 2ms)
+09:22:55	Informazioni	  │    ├─ ✅ [SelectTemplate] 1OnVLWhAKAlCTUdlnNtXnEwjddBozCdfF9zojgfZdxdg (EXECUTED in 1ms)
+09:22:57	Informazioni	  │    ├─ ✅ [CloneTemplate] 1sNxmaDTWVh4FCfOlRHna9Ozk4pfR4EiS8lnaO8BmhPg (EXECUTED in 2254ms)
+09:22:57	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1sNxmaDTWVh4FCfOlRHna9Ozk4pfR4EiS8lnaO8BmhPg
+09:22:58	Informazioni	[INFO] Executing list loop: 3 items at paragraph 454
+09:22:58	Informazioni	[INFO] Executing list loop: 1 items at paragraph 320
+09:22:58	Informazioni	[INFO] Executing list loop: 8 items at paragraph 208
+09:22:58	Informazioni	[INFO] Executing batch update with 4 requests
+09:22:58	Informazioni	[INFO] Executing batch update with 4 requests on document 1sNxmaDTWVh4FCfOlRHna9Ozk4pfR4EiS8lnaO8BmhPg
+09:22:59	Informazioni	[INFO] Batch update completed successfully
+09:22:59	Informazioni	  │    ├─ ✅ [RenderTemplate] VERBALE_CDC (EXECUTED in 1241ms)
+09:22:59	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:22:59	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:22:59	Informazioni	  │    └─ ✅ [PostProcess] Actions: AGGIORNA_STATO_DOC, AGGIORNA_STATO_DOC; Updated: 3 (EXECUTED in 5ms)
+09:22:59	Informazioni	  └─ ⏹️ Pipeline completed: 9 executed, 1 skipped, 0 failed (COMPLETED in 5931ms)
+09:22:59	Informazioni	[INFO] Updated 42 cells across 3 rows
+09:23:00	Informazioni	[INFO] Transaction committed successfully (6989ms)
+09:23:00	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 30ms)
+09:23:00	Informazioni	[INFO] Transaction started
+09:23:00	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:00	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:00	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 1ms)
+09:23:01	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: 2B; Path: _ALDO_E2E_OUTPUT/VERBALI/2B; Id: 12jKmpb6MoRurvkcM9m1RYDvG2-cqlPFs (EXECUTED in 1587ms)
+09:23:01	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Verbale_2B (EXECUTED in 0ms)
+09:23:01	Informazioni	  │    ├─ ✅ [SelectTemplate] 1OnVLWhAKAlCTUdlnNtXnEwjddBozCdfF9zojgfZdxdg (EXECUTED in 0ms)
+09:23:03	Informazioni	  │    ├─ ✅ [CloneTemplate] 13JSGPbpTdnrzbscttwiyqCvgEYxh9xRW3zUY_W94ea0 (EXECUTED in 2061ms)
+09:23:03	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 13JSGPbpTdnrzbscttwiyqCvgEYxh9xRW3zUY_W94ea0
+09:23:04	Informazioni	[INFO] Executing list loop: 3 items at paragraph 454
+09:23:04	Informazioni	[INFO] Executing list loop: 1 items at paragraph 320
+09:23:04	Informazioni	[INFO] Executing list loop: 4 items at paragraph 208
+09:23:04	Informazioni	[INFO] Executing batch update with 4 requests
+09:23:04	Informazioni	[INFO] Executing batch update with 4 requests on document 13JSGPbpTdnrzbscttwiyqCvgEYxh9xRW3zUY_W94ea0
+09:23:04	Informazioni	[INFO] Batch update completed successfully
+09:23:04	Informazioni	  │    ├─ ✅ [RenderTemplate] VERBALE_CDC (EXECUTED in 1054ms)
+09:23:04	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:04	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:23:04	Informazioni	  │    └─ ✅ [PostProcess] Actions: AGGIORNA_STATO_DOC, AGGIORNA_STATO_DOC; Updated: 3 (EXECUTED in 1ms)
+09:23:04	Informazioni	  └─ ⏹️ Pipeline completed: 9 executed, 1 skipped, 0 failed (COMPLETED in 4721ms)
+09:23:05	Informazioni	[INFO] Updated 42 cells across 3 rows
+09:23:06	Informazioni	[INFO] Transaction committed successfully (5808ms)
+09:23:06	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 89ms)
+09:23:06	Informazioni	[INFO] Transaction started
+09:23:06	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:06	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:06	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:23:07	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: 3C; Path: _ALDO_E2E_OUTPUT/VERBALI/3C; Id: 1U80vtJU-KQ13iNGIYY8ggSaydvNq9nuZ (EXECUTED in 1751ms)
+09:23:07	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Verbale_3C (EXECUTED in 0ms)
+09:23:07	Informazioni	  │    ├─ ✅ [SelectTemplate] 1OnVLWhAKAlCTUdlnNtXnEwjddBozCdfF9zojgfZdxdg (EXECUTED in 0ms)
+09:23:10	Informazioni	  │    ├─ ✅ [CloneTemplate] 1AM4632TLQmOpoy4Cpy5BCnxKXSFqJ6MDH8_-Alkk55E (EXECUTED in 2260ms)
+09:23:10	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1AM4632TLQmOpoy4Cpy5BCnxKXSFqJ6MDH8_-Alkk55E
+09:23:10	Informazioni	[INFO] Executing list loop: 1 items at paragraph 454
+09:23:10	Informazioni	[INFO] Executing list loop: 2 items at paragraph 320
+09:23:10	Informazioni	[INFO] Executing list loop: 7 items at paragraph 208
+09:23:11	Informazioni	[INFO] Executing batch update with 4 requests
+09:23:11	Informazioni	[INFO] Executing batch update with 4 requests on document 1AM4632TLQmOpoy4Cpy5BCnxKXSFqJ6MDH8_-Alkk55E
+09:23:11	Informazioni	[INFO] Batch update completed successfully
+09:23:11	Informazioni	  │    ├─ ✅ [RenderTemplate] VERBALE_CDC (EXECUTED in 1456ms)
+09:23:11	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:11	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:23:11	Informazioni	  │    └─ ✅ [PostProcess] Actions: AGGIORNA_STATO_DOC, AGGIORNA_STATO_DOC; Updated: 1 (EXECUTED in 0ms)
+09:23:11	Informazioni	  └─ ⏹️ Pipeline completed: 9 executed, 1 skipped, 0 failed (COMPLETED in 5493ms)
+09:23:12	Informazioni	[INFO] Updated 14 cells across 1 rows
+09:23:12	Informazioni	[INFO] Transaction committed successfully (6576ms)
+09:23:12	Informazioni	[TEST:END] PASS | Duration: 19580ms
+09:23:12	Informazioni	═══════════════════════════════════════════════
+09:23:12	Informazioni	TEST EXECUTION SUMMARY
+09:23:12	Informazioni	TOTAL: 1
+09:23:12	Informazioni	PASSED: 1
+09:23:12	Informazioni	FAILED: 0
+09:23:12	Informazioni	SKIPPED: 0
+09:23:12	Informazioni	═══════════════════════════════════════════════
+09:23:12	Informazioni	Running 1 tests matching filter: NONE
+09:23:12	Informazioni	[TEST:START] E2E scenario 2: genera foglio valutazione condotta (tutte le classi)
+09:23:12	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 112ms)
+09:23:12	Informazioni	[INFO] Transaction started
+09:23:12	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:12	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:12	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:23:14	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: CONDOTTA; Path: _ALDO_E2E_OUTPUT/CONDOTTA; Id: 13Kx8oxXzRBZCb5DOPE794Ax8-qI9gg2l (EXECUTED in 1853ms)
+09:23:14	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Condotta_1A (EXECUTED in 0ms)
+09:23:14	Informazioni	  │    ├─ ✅ [SelectTemplate] 1vnuQA9rIp2gWYMwoiiCdS_6Jc4gCwodRsCEO7Mxbap8 (EXECUTED in 1ms)
+09:23:16	Informazioni	  │    ├─ ✅ [CloneTemplate] 1sHTvSg_hyUq_SiMXHuBLsaMK667CPehPyC3pqv_JYds (EXECUTED in 2234ms)
+09:23:17	Informazioni	[INFO] Updated 20 cells across 20 rows
+09:23:17	Informazioni	  │    ├─ ✅ [RenderTemplate] FOGLIO_GENERICO (EXECUTED in 777ms)
+09:23:17	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:17	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 15ms
+09:23:17	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:23:17	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 4954ms)
+09:23:18	Informazioni	[INFO] Transaction committed successfully (5641ms)
+09:23:18	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 92ms)
+09:23:18	Informazioni	[INFO] Transaction started
+09:23:18	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:18	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:18	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 1ms)
+09:23:18	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: CONDOTTA; Path: _ALDO_E2E_OUTPUT/CONDOTTA; Id: 13Kx8oxXzRBZCb5DOPE794Ax8-qI9gg2l (EXECUTED in 170ms)
+09:23:18	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Condotta_2B (EXECUTED in 0ms)
+09:23:18	Informazioni	  │    ├─ ✅ [SelectTemplate] 1vnuQA9rIp2gWYMwoiiCdS_6Jc4gCwodRsCEO7Mxbap8 (EXECUTED in 0ms)
+09:23:20	Informazioni	  │    ├─ ✅ [CloneTemplate] 1cliEu9_2srs3Nz_QNrN_29c1u9lbV5mk3UxmBMKFxNw (EXECUTED in 1999ms)
+09:23:21	Informazioni	[INFO] Updated 20 cells across 20 rows
+09:23:21	Informazioni	  │    ├─ ✅ [RenderTemplate] FOGLIO_GENERICO (EXECUTED in 715ms)
+09:23:21	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:21	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:23:21	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:23:21	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 2902ms)
+09:23:21	Informazioni	[INFO] Transaction committed successfully (3341ms)
+09:23:22	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 200ms)
+09:23:22	Informazioni	[INFO] Transaction started
+09:23:22	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:22	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:22	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 1ms)
+09:23:22	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: CONDOTTA; Path: _ALDO_E2E_OUTPUT/CONDOTTA; Id: 13Kx8oxXzRBZCb5DOPE794Ax8-qI9gg2l (EXECUTED in 165ms)
+09:23:22	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Condotta_3C (EXECUTED in 0ms)
+09:23:22	Informazioni	  │    ├─ ✅ [SelectTemplate] 1vnuQA9rIp2gWYMwoiiCdS_6Jc4gCwodRsCEO7Mxbap8 (EXECUTED in 0ms)
+09:23:24	Informazioni	  │    ├─ ✅ [CloneTemplate] 1RT8C191XYUnUHj4-2sPOao44wyWaiwVUQi9BPvtxK-s (EXECUTED in 2278ms)
+09:23:25	Informazioni	[INFO] Updated 20 cells across 20 rows
+09:23:25	Informazioni	  │    ├─ ✅ [RenderTemplate] FOGLIO_GENERICO (EXECUTED in 668ms)
+09:23:25	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:25	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:23:25	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:23:25	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 3132ms)
+09:23:25	Informazioni	[INFO] Transaction committed successfully (3539ms)
+09:23:25	Informazioni	[TEST:END] PASS | Duration: 12957ms
+09:23:25	Informazioni	═══════════════════════════════════════════════
+09:23:25	Informazioni	TEST EXECUTION SUMMARY
+09:23:25	Informazioni	TOTAL: 1
+09:23:25	Informazioni	PASSED: 1
+09:23:25	Informazioni	FAILED: 0
+09:23:25	Informazioni	SKIPPED: 0
+09:23:25	Informazioni	═══════════════════════════════════════════════
+09:23:25	Informazioni	Running 1 tests matching filter: NONE
+09:23:25	Informazioni	[TEST:START] E2E scenario 8: genera riepilogo classe (tutte le classi)
+09:23:25	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 59ms)
+09:23:25	Informazioni	[INFO] Transaction started
+09:23:25	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:25	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:25	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:23:27	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: RIEPILOGHI; Path: _ALDO_E2E_OUTPUT/RIEPILOGHI; Id: 1gb-r2mX1drFzr04e4-r3T8TsmRtaGPEx (EXECUTED in 1229ms)
+09:23:27	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Riepilogo_1A (EXECUTED in 0ms)
+09:23:27	Informazioni	  │    ├─ ✅ [SelectTemplate] 1nw_ZwRHDFRmFDKx-w5cxZDkMj3SziMkga90wCbOlvxc (EXECUTED in 1ms)
+09:23:29	Informazioni	  │    ├─ ✅ [CloneTemplate] 1t2GXbWc-tFydlTbWGBbR4-nQj2jc2OjSjscJ4XOMWeY (EXECUTED in 2066ms)
+09:23:29	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1t2GXbWc-tFydlTbWGBbR4-nQj2jc2OjSjscJ4XOMWeY
+09:23:29	Informazioni	[INFO] Executing row loop: 20 items at table 0, row 1
+09:23:32	Informazioni	[INFO] Executing list loop: 0 items at paragraph 283
+09:23:32	Informazioni	[INFO] Executing list loop: 0 items at paragraph 168
+09:23:33	Informazioni	[INFO] Executing batch update with 4 requests
+09:23:33	Informazioni	[INFO] Executing batch update with 4 requests on document 1t2GXbWc-tFydlTbWGBbR4-nQj2jc2OjSjscJ4XOMWeY
+09:23:34	Informazioni	[INFO] Batch update completed successfully
+09:23:34	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 5037ms)
+09:23:34	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:34	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:23:34	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:23:34	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 8348ms)
+09:23:34	Informazioni	[INFO] Transaction committed successfully (9029ms)
+09:23:34	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 126ms)
+09:23:34	Informazioni	[INFO] Transaction started
+09:23:34	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:34	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:34	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:23:35	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: RIEPILOGHI; Path: _ALDO_E2E_OUTPUT/RIEPILOGHI; Id: 1gb-r2mX1drFzr04e4-r3T8TsmRtaGPEx (EXECUTED in 176ms)
+09:23:35	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Riepilogo_2B (EXECUTED in 1ms)
+09:23:35	Informazioni	  │    ├─ ✅ [SelectTemplate] 1nw_ZwRHDFRmFDKx-w5cxZDkMj3SziMkga90wCbOlvxc (EXECUTED in 0ms)
+09:23:37	Informazioni	  │    ├─ ✅ [CloneTemplate] 152ItXdxBHegYlFtl3D_lswhhjMU6N35PFp1YX1MTQt8 (EXECUTED in 1905ms)
+09:23:37	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 152ItXdxBHegYlFtl3D_lswhhjMU6N35PFp1YX1MTQt8
+09:23:37	Informazioni	[INFO] Executing row loop: 20 items at table 0, row 1
+09:23:40	Informazioni	[INFO] Executing list loop: 1 items at paragraph 283
+09:23:40	Informazioni	[INFO] Executing list loop: 1 items at paragraph 168
+09:23:42	Informazioni	[INFO] Executing batch update with 4 requests
+09:23:42	Informazioni	[INFO] Executing batch update with 4 requests on document 152ItXdxBHegYlFtl3D_lswhhjMU6N35PFp1YX1MTQt8
+09:23:42	Informazioni	[INFO] Batch update completed successfully
+09:23:42	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 5733ms)
+09:23:42	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:42	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:23:42	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:23:42	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 7832ms)
+09:23:43	Informazioni	[INFO] Transaction committed successfully (8367ms)
+09:23:43	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 116ms)
+09:23:43	Informazioni	[INFO] Transaction started
+09:23:43	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:43	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:43	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:23:43	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: RIEPILOGHI; Path: _ALDO_E2E_OUTPUT/RIEPILOGHI; Id: 1gb-r2mX1drFzr04e4-r3T8TsmRtaGPEx (EXECUTED in 182ms)
+09:23:43	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Riepilogo_3C (EXECUTED in 0ms)
+09:23:43	Informazioni	  │    ├─ ✅ [SelectTemplate] 1nw_ZwRHDFRmFDKx-w5cxZDkMj3SziMkga90wCbOlvxc (EXECUTED in 0ms)
+09:23:45	Informazioni	  │    ├─ ✅ [CloneTemplate] 1QzwZcRrSEyoUtgjYy2YjCi6GLqMIM9jc8Kdj-4U6EmI (EXECUTED in 1860ms)
+09:23:45	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1QzwZcRrSEyoUtgjYy2YjCi6GLqMIM9jc8Kdj-4U6EmI
+09:23:46	Informazioni	[INFO] Executing row loop: 20 items at table 0, row 1
+09:23:49	Informazioni	[INFO] Executing list loop: 3 items at paragraph 283
+09:23:49	Informazioni	[INFO] Executing list loop: 3 items at paragraph 168
+09:23:50	Informazioni	[INFO] Executing batch update with 4 requests
+09:23:50	Informazioni	[INFO] Executing batch update with 4 requests on document 1QzwZcRrSEyoUtgjYy2YjCi6GLqMIM9jc8Kdj-4U6EmI
+09:23:51	Informazioni	[INFO] Batch update completed successfully
+09:23:51	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 5720ms)
+09:23:51	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:23:51	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:23:51	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:23:51	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 7794ms)
+09:23:51	Informazioni	[INFO] Transaction committed successfully (8410ms)
+09:23:51	Informazioni	[TEST:END] PASS | Duration: 26150ms
+09:23:51	Informazioni	═══════════════════════════════════════════════
+09:23:51	Informazioni	TEST EXECUTION SUMMARY
+09:23:51	Informazioni	TOTAL: 1
+09:23:51	Informazioni	PASSED: 1
+09:23:51	Informazioni	FAILED: 0
+09:23:51	Informazioni	SKIPPED: 0
+09:23:51	Informazioni	═══════════════════════════════════════════════
+09:23:51	Informazioni	Running 1 tests matching filter: NONE
+09:23:51	Informazioni	[TEST:START] E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)
+09:23:51	Informazioni	======================================================================
+09:23:51	Informazioni	🚀 [INIT] AVVIO JOB: import_E2E_IMPORT_ASL (Tipo: IMPORT)
+09:23:51	Informazioni	======================================================================
+09:23:51	Informazioni	[INFO] [ImportEngine] Starting import: E2E_IMPORT_ASL
+09:23:51	Informazioni	[INFO] [ImportEngine] Configuration validated: {"name":"E2E_IMPORT_ASL","sourceType":"SheetById","targetTable":"ASL","conflictResolution":"OVERWRITE","hasMapping":false,"hasCalculated":false,"hasNormalization":false}
+09:23:52	Informazioni	[INFO] [ProcessMonitorService] Job registered: imp_E2E_IMPORT_ASL
+09:23:52	Informazioni	[INFO] [ProcessMonitorService] Job started: imp_E2E_IMPORT_ASL
+09:23:52	Informazioni	[INFO] [ImportEngine] Phase 1: EXTRACT
+09:23:52	Informazioni	[INFO] [SourceStrategy] Extracting data with config:
+09:23:52	Informazioni	[INFO] [SheetByIdStrategy] Getting sheet info for spreadsheet: 1iSK8m-bVw9nrRnDeIpJV_-Q8VXpAxJkZKuB6DFeMi7o
+09:23:52	Informazioni	[INFO] [SheetByIdStrategy] Reading from sheet: Foglio1
+09:23:52	Informazioni	[INFO] [SheetByIdStrategy] Extracted 4 rows from sheet
+09:23:52	Informazioni	[INFO] [SourceStrategy] Successfully extracted 4 rows
+09:23:52	Informazioni	[INFO] [ImportEngine] Extracted 4 rows
+09:23:53	Informazioni	[INFO] [ImportEngine] Phase 2: TRANSFORM
+09:23:53	Informazioni	[INFO] [Transformer] Transforming 4 rows
+09:23:53	Informazioni	[INFO] [Transformer] Successfully transformed 4 rows
+09:23:53	Informazioni	[INFO] [ImportEngine] Transformed 4 rows
+09:23:53	Informazioni	[INFO] [ImportEngine] Phase 3: LOAD
+09:23:53	Informazioni	[INFO] [Loader] Loading 4 rows into table "ASL" using strategy "OVERWRITE"
+09:23:53	Informazioni	[INFO] [Loader] Bulk inserted 4 rows
+09:23:53	Informazioni	[INFO] [Loader] Saving changes to database...
+09:23:53	Informazioni	[INFO] [Loader] Load complete: {"success":true,"inserted":4,"updated":0,"skipped":0,"deleted":0,"total":4}
+09:23:53	Informazioni	[INFO] [ImportEngine] Load complete: {"success":true,"inserted":4,"updated":0,"skipped":0,"deleted":0,"total":4}
+09:23:54	Informazioni	[INFO] [ProcessMonitorService] Job completed: imp_E2E_IMPORT_ASL
+09:23:54	Informazioni	[INFO] [ImportEngine] Import completed successfully in 2316ms
+09:23:54	Informazioni	======================================================================
+09:23:54	Informazioni	🏁 [COMPLETED] Job 'import_E2E_IMPORT_ASL' completed successfully (0 errors)
+09:23:54	Informazioni	======================================================================
+09:23:54	Informazioni	[TEST:END] PASS | Duration: 2327ms
+09:23:54	Informazioni	═══════════════════════════════════════════════
+09:23:54	Informazioni	TEST EXECUTION SUMMARY
+09:23:54	Informazioni	TOTAL: 1
+09:23:54	Informazioni	PASSED: 1
+09:23:54	Informazioni	FAILED: 0
+09:23:54	Informazioni	SKIPPED: 0
+09:23:54	Informazioni	═══════════════════════════════════════════════
+09:23:54	Informazioni	Running 1 tests matching filter: NONE
+09:23:54	Informazioni	[TEST:START] E2E scenario 10: genera documento complesso (placeholder loops/filtri, tutte le classi)
+09:23:54	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 48ms)
+09:23:54	Informazioni	[INFO] Transaction started
+09:23:54	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:23:54	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:23:54	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:23:55	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: ESEMPI_COMPLESSI; Path: _ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI; Id: 1CYMpY9RWrrV-dT3tbpUmL3zeW_P_5gx- (EXECUTED in 1565ms)
+09:23:55	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Complesso_1A (EXECUTED in 0ms)
+09:23:55	Informazioni	  │    ├─ ✅ [SelectTemplate] 1GI0y-8kMzQPEXF3fr-9U3-IfwZjG9mXrY2IY7Aeq3t8 (EXECUTED in 0ms)
+09:23:58	Informazioni	  │    ├─ ✅ [CloneTemplate] 1ZjmglePBboeJ1noy8MZY-eFj_qzQIXk2ZrEHu5ExTmI (EXECUTED in 2432ms)
+09:23:58	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1ZjmglePBboeJ1noy8MZY-eFj_qzQIXk2ZrEHu5ExTmI
+09:23:58	Informazioni	[INFO] Executing row loop: 20 items at table 0, row 1
+09:24:00	Informazioni	[INFO] Executing column loop: 8 items at table 1, column 0
+09:24:01	Informazioni	[INFO] Executing list loop: 20 items at paragraph 863
+09:24:02	Informazioni	[INFO] Executing list loop: 2 items at paragraph 708
+09:24:02	Informazioni	[INFO] Executing list loop: 1 items at paragraph 495
+09:24:02	Informazioni	[INFO] Executing list loop: 0 items at paragraph 354
+09:24:02	Informazioni	[INFO] Executing list loop: 1 items at paragraph 142
+09:24:03	Informazioni	[INFO] Executing batch update with 6 requests
+09:24:03	Informazioni	[INFO] Executing batch update with 6 requests on document 1ZjmglePBboeJ1noy8MZY-eFj_qzQIXk2ZrEHu5ExTmI
+09:24:03	Informazioni	[INFO] Batch update completed successfully
+09:24:03	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 5300ms)
+09:24:03	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:24:03	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:24:03	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:24:03	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 9330ms)
+09:24:04	Informazioni	[INFO] Transaction committed successfully (10597ms)
+09:24:05	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 30ms)
+09:24:05	Informazioni	[INFO] Transaction started
+09:24:05	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:24:05	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:24:05	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:24:05	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: ESEMPI_COMPLESSI; Path: _ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI; Id: 1CYMpY9RWrrV-dT3tbpUmL3zeW_P_5gx- (EXECUTED in 166ms)
+09:24:05	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Complesso_2B (EXECUTED in 0ms)
+09:24:05	Informazioni	  │    ├─ ✅ [SelectTemplate] 1GI0y-8kMzQPEXF3fr-9U3-IfwZjG9mXrY2IY7Aeq3t8 (EXECUTED in 0ms)
+09:24:07	Informazioni	  │    ├─ ✅ [CloneTemplate] 16uSKj5vXlwwZwWiHuMIesphzNlyBF4mcEEuMVfhRpYo (EXECUTED in 1931ms)
+09:24:07	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 16uSKj5vXlwwZwWiHuMIesphzNlyBF4mcEEuMVfhRpYo
+09:24:07	Informazioni	[INFO] Executing row loop: 20 items at table 0, row 1
+09:24:08	Informazioni	[INFO] Executing column loop: 4 items at table 1, column 0
+09:24:09	Informazioni	[INFO] Executing list loop: 20 items at paragraph 863
+09:24:10	Informazioni	[INFO] Executing list loop: 0 items at paragraph 708
+09:24:10	Informazioni	[INFO] Executing list loop: 1 items at paragraph 495
+09:24:10	Informazioni	[INFO] Executing list loop: 1 items at paragraph 354
+09:24:10	Informazioni	[INFO] Executing list loop: 1 items at paragraph 142
+09:24:11	Informazioni	[INFO] Executing batch update with 6 requests
+09:24:11	Informazioni	[INFO] Executing batch update with 6 requests on document 16uSKj5vXlwwZwWiHuMIesphzNlyBF4mcEEuMVfhRpYo
+09:24:11	Informazioni	[INFO] Batch update completed successfully
+09:24:11	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 4100ms)
+09:24:11	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:24:11	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:24:11	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:24:11	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 6223ms)
+09:24:11	Informazioni	[INFO] Transaction committed successfully (6598ms)
+09:24:11	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 170ms)
+09:24:11	Informazioni	[INFO] Transaction started
+09:24:11	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:24:11	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:24:11	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 1ms)
+09:24:12	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: ESEMPI_COMPLESSI; Path: _ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI; Id: 1CYMpY9RWrrV-dT3tbpUmL3zeW_P_5gx- (EXECUTED in 155ms)
+09:24:12	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Complesso_3C (EXECUTED in 0ms)
+09:24:12	Informazioni	  │    ├─ ✅ [SelectTemplate] 1GI0y-8kMzQPEXF3fr-9U3-IfwZjG9mXrY2IY7Aeq3t8 (EXECUTED in 0ms)
+09:24:13	Informazioni	  │    ├─ ✅ [CloneTemplate] 1VCLKDMK-FctoVh3PVMireOqE4KVuJA6DKyRGeZYyKEw (EXECUTED in 1908ms)
+09:24:13	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1VCLKDMK-FctoVh3PVMireOqE4KVuJA6DKyRGeZYyKEw
+09:24:14	Informazioni	[INFO] Executing row loop: 20 items at table 0, row 1
+09:24:15	Informazioni	[INFO] Executing column loop: 7 items at table 1, column 0
+09:24:16	Informazioni	[INFO] Executing list loop: 20 items at paragraph 863
+09:24:17	Informazioni	[INFO] Executing list loop: 0 items at paragraph 708
+09:24:17	Informazioni	[INFO] Executing list loop: 1 items at paragraph 495
+09:24:17	Informazioni	[INFO] Executing list loop: 3 items at paragraph 354
+09:24:17	Informazioni	[INFO] Executing list loop: 2 items at paragraph 142
+09:24:18	Informazioni	[INFO] Executing batch update with 6 requests
+09:24:18	Informazioni	[INFO] Executing batch update with 6 requests on document 1VCLKDMK-FctoVh3PVMireOqE4KVuJA6DKyRGeZYyKEw
+09:24:18	Informazioni	[INFO] Batch update completed successfully
+09:24:18	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 4661ms)
+09:24:18	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:24:18	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:24:18	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:24:18	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 6760ms)
+09:24:19	Informazioni	[INFO] Transaction committed successfully (7120ms)
+09:24:19	Informazioni	[TEST:END] PASS | Duration: 24877ms
+09:24:19	Informazioni	═══════════════════════════════════════════════
+09:24:19	Informazioni	TEST EXECUTION SUMMARY
+09:24:19	Informazioni	TOTAL: 1
+09:24:19	Informazioni	PASSED: 1
+09:24:19	Informazioni	FAILED: 0
+09:24:19	Informazioni	SKIPPED: 0
+09:24:19	Informazioni	═══════════════════════════════════════════════
+09:24:19	Informazioni	Running 1 tests matching filter: NONE
+09:24:19	Informazioni	[TEST:START] E2E scenario 10b: genera documento complesso classe articolata (3C)
+09:24:19	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 44ms)
+09:24:19	Informazioni	[INFO] Transaction started
+09:24:19	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:24:19	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:24:19	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 1ms)
+09:24:20	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: ARTICOLATA; Path: _ALDO_E2E_OUTPUT/ARTICOLATA; Id: 14t_32A2kQzkmo2_SgHViiO84p0USPN9z (EXECUTED in 1272ms)
+09:24:20	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Articolata_3C-S (EXECUTED in 0ms)
+09:24:20	Informazioni	  │    ├─ ✅ [SelectTemplate] 1Mounkw3B4CugZL7xDu7JaBg6qZnx1_RQovSHk5qaQBQ (EXECUTED in 0ms)
+09:24:22	Informazioni	  │    ├─ ✅ [CloneTemplate] 1W21KO0BnsP9WIFm4LCT2-xSL26CcvUW1NIkTQvnklwk (EXECUTED in 2106ms)
+09:24:22	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1W21KO0BnsP9WIFm4LCT2-xSL26CcvUW1NIkTQvnklwk
+09:24:23	Informazioni	[INFO] Executing list loop: 1 items at paragraph 966
+09:24:23	Informazioni	[INFO] Executing list loop: 1 items at paragraph 845
+09:24:23	Informazioni	[INFO] Executing list loop: 2 items at paragraph 683
+09:24:23	Informazioni	[INFO] Executing list loop: 6 items at paragraph 515
+09:24:23	Informazioni	[INFO] Executing list loop: 1 items at paragraph 327
+09:24:23	Informazioni	[INFO] Executing list loop: 8 items at paragraph 117
+09:24:23	Informazioni	[INFO] Executing batch update with 2 requests
+09:24:23	Informazioni	[INFO] Executing batch update with 2 requests on document 1W21KO0BnsP9WIFm4LCT2-xSL26CcvUW1NIkTQvnklwk
+09:24:24	Informazioni	[INFO] Batch update completed successfully
+09:24:24	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 1722ms)
+09:24:24	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:24:24	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:24:24	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:24:24	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 5116ms)
+09:24:24	Informazioni	[INFO] Transaction committed successfully (5827ms)
+09:24:25	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 57ms)
+09:24:25	Informazioni	[INFO] Transaction started
+09:24:25	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:24:25	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:24:25	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:24:25	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: ARTICOLATA; Path: _ALDO_E2E_OUTPUT/ARTICOLATA; Id: 14t_32A2kQzkmo2_SgHViiO84p0USPN9z (EXECUTED in 160ms)
+09:24:25	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Articolata_3C-C (EXECUTED in 0ms)
+09:24:25	Informazioni	  │    ├─ ✅ [SelectTemplate] 1Mounkw3B4CugZL7xDu7JaBg6qZnx1_RQovSHk5qaQBQ (EXECUTED in 0ms)
+09:24:27	Informazioni	  │    ├─ ✅ [CloneTemplate] 1OosEJ3Ae6FQNh1UusD5QcVruRYBhsz3zxz5QFOLfsgY (EXECUTED in 1976ms)
+09:24:27	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1OosEJ3Ae6FQNh1UusD5QcVruRYBhsz3zxz5QFOLfsgY
+09:24:27	Informazioni	[INFO] Executing list loop: 1 items at paragraph 966
+09:24:27	Informazioni	[INFO] Executing list loop: 2 items at paragraph 845
+09:24:27	Informazioni	[INFO] Executing list loop: 1 items at paragraph 683
+09:24:27	Informazioni	[INFO] Executing list loop: 6 items at paragraph 515
+09:24:28	Informazioni	[INFO] Executing list loop: 1 items at paragraph 327
+09:24:28	Informazioni	[INFO] Executing list loop: 12 items at paragraph 117
+09:24:29	Informazioni	[INFO] Executing batch update with 2 requests
+09:24:29	Informazioni	[INFO] Executing batch update with 2 requests on document 1OosEJ3Ae6FQNh1UusD5QcVruRYBhsz3zxz5QFOLfsgY
+09:24:29	Informazioni	[INFO] Batch update completed successfully
+09:24:29	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 1964ms)
+09:24:29	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:24:29	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:24:29	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:24:29	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 4123ms)
+09:24:29	Informazioni	[INFO] Transaction committed successfully (4599ms)
+09:24:29	Informazioni	[TEST:END] PASS | Duration: 10716ms
+09:24:29	Informazioni	═══════════════════════════════════════════════
+09:24:29	Informazioni	TEST EXECUTION SUMMARY
+09:24:29	Informazioni	TOTAL: 1
+09:24:29	Informazioni	PASSED: 1
+09:24:29	Informazioni	FAILED: 0
+09:24:29	Informazioni	SKIPPED: 0
+09:24:29	Informazioni	═══════════════════════════════════════════════
+09:24:29	Informazioni	Running 1 tests matching filter: NONE
+09:24:29	Informazioni	[TEST:START] E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA
+09:24:29	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 93ms)
+09:24:29	Informazioni	[INFO] Transaction started
+09:24:29	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:24:29	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:24:29	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:24:31	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: RIEPILOGHI_FIRME_CDC; Path: _ALDO_E2E_OUTPUT/RIEPILOGHI_FIRME_CDC; Id: 1S6SWMpZWBnkuVcvo4yh9DSNHnmkjCIbz (EXECUTED in 1333ms)
+09:24:31	Informazioni	  │    ├─ ✅ [GenerateName] E2E_RiepilogoFirmeCdc_1A (EXECUTED in 0ms)
+09:24:31	Informazioni	  │    ├─ ✅ [SelectTemplate] 1PCAABqY8J-Y2AIirPOgAtGaf72QiHXbxg1aY1VR3poU (EXECUTED in 0ms)
+09:24:33	Informazioni	  │    ├─ ✅ [CloneTemplate] 11So_8c38lx5apGiZeXBxjAIq5Ewhl9CRYlTYyxn7x5Y (EXECUTED in 2084ms)
+09:24:33	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 11So_8c38lx5apGiZeXBxjAIq5Ewhl9CRYlTYyxn7x5Y
+09:24:33	Informazioni	[INFO] Executing row loop: 8 items at table 0, row 1
+09:24:35	Informazioni	[INFO] Executing batch update with 6 requests
+09:24:35	Informazioni	[INFO] Executing batch update with 6 requests on document 11So_8c38lx5apGiZeXBxjAIq5Ewhl9CRYlTYyxn7x5Y
+09:24:35	Informazioni	[INFO] Batch update completed successfully
+09:24:35	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 1854ms)
+09:24:35	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:24:35	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:24:35	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:24:35	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 5306ms)
+09:24:35	Informazioni	[INFO] Transaction committed successfully (6006ms)
+09:24:36	Informazioni	[ERROR:STACK] ValidationError: Riepilogo firme CDC per 1A non contiene il consiglio renderizzato atteso
+    at Object.fn (OnlineTests:179933:23)
+    at EnhancedTestRunner._runTest (Code:50279:26)
+    at EnhancedTestRunner.run (Code:50263:30)
+    at TestRunner.add (OnlineTests:148857:83)
+    at registerE2eScenarioChecks (OnlineTests:179908:12)
+    at executeE2eScenarios (OnlineTests:187835:5)
+    at runReportedSuite (OnlineTests:187730:51)
+    at runE2eScenarios (OnlineTests:187847:12)
+    at __GS_INTERNAL_top_function_call__.gs:1:8
+09:24:36	Informazioni	[TEST:END] FAIL | Duration: 6182ms
+09:24:36	Informazioni	═══════════════════════════════════════════════
+09:24:36	Informazioni	TEST EXECUTION SUMMARY
+09:24:36	Informazioni	TOTAL: 1
+09:24:36	Informazioni	PASSED: 0
+09:24:36	Informazioni	FAILED: 1
+09:24:36	Informazioni	SKIPPED: 0
+09:24:36	Informazioni	═══════════════════════════════════════════════
+09:24:36	Informazioni	FAILED TESTS:
+09:24:36	Informazioni	- E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA: Riepilogo firme CDC per 1A non contiene il consiglio renderizzato atteso
+09:24:36	Informazioni	Running 1 tests matching filter: NONE
+09:24:36	Informazioni	[TEST:START] E2E scenario 11: verifica protezione colonne materie (SHEET_CON_MATERIE_E_PERMESSI)
+09:24:36	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 137ms)
+09:24:36	Informazioni	[INFO] Transaction started
+09:24:36	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:24:36	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:24:36	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:24:37	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: PIANI_PERS; Path: _ALDO_E2E_OUTPUT/PIANI_PERS; Id: 1neFb9jLk128XH1WkyPCqnzmjnwgiOU9Z (EXECUTED in 1307ms)
+09:24:37	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Permessi_1A (EXECUTED in 0ms)
+09:24:37	Informazioni	  │    ├─ ✅ [SelectTemplate] 1wd6z9HrTcj8WEPY0RM28bw46r-rfQCJ5AYUtd5NRWLk (EXECUTED in 0ms)
+09:24:39	Informazioni	  │    ├─ ✅ [CloneTemplate] 1tJmqhNqPG2Y4UzsO-sRtXjxAEgSlT39lXHnO3aFN88s (EXECUTED in 2106ms)
+09:24:40	Informazioni	[INFO] Updated 9 cells across 1 rows
+09:24:43	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente12@onlinetest.aldo.local".
+09:24:48	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente12@onlinetest.aldo.local".
+09:24:49	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:24:49	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente12@onlinetest.aldo.local".
+09:24:51	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:24:56	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:24:56	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:24:56	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:24:59	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:04	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:04	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:04	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:06	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:25:10	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:25:11	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:11	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:25:13	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente16@onlinetest.aldo.local".
+09:25:17	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente16@onlinetest.aldo.local".
+09:25:18	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:18	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente16@onlinetest.aldo.local".
+09:25:21	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:25	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:25	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:25	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:27	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:32	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:32	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:32	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:34	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente10@onlinetest.aldo.local".
+09:25:39	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente10@onlinetest.aldo.local".
+09:25:39	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:39	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente10@onlinetest.aldo.local".
+09:25:42	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:25:46	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:25:46	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:46	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:25:46	Informazioni	  │    │    ├─ [INFO] Successfully created 0 protected range(s)
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!A:A non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente12@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!B:B non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!C:C non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!D:D non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!E:E non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente16@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!F:F non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!G:G non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!H:H non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente10@onlinetest.aldo.local".
+09:25:46	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!I:I non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:25:46	Informazioni	  │    ├─ ✅ [RenderTemplate] SHEET_CON_MATERIE_E_PERMESSI (EXECUTED in 67034ms)
+09:25:46	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:25:46	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:25:46	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:25:46	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 70463ms)
+09:25:47	Informazioni	[INFO] Transaction committed successfully (71314ms)
+09:25:47	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 90ms)
+09:25:47	Informazioni	[INFO] Transaction started
+09:25:47	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:25:47	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:25:47	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:25:47	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: PIANI_PERS; Path: _ALDO_E2E_OUTPUT/PIANI_PERS; Id: 1neFb9jLk128XH1WkyPCqnzmjnwgiOU9Z (EXECUTED in 156ms)
+09:25:47	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Permessi_2B (EXECUTED in 0ms)
+09:25:47	Informazioni	  │    ├─ ✅ [SelectTemplate] 1wd6z9HrTcj8WEPY0RM28bw46r-rfQCJ5AYUtd5NRWLk (EXECUTED in 0ms)
+09:25:50	Informazioni	  │    ├─ ✅ [CloneTemplate] 1VaE5xTkMX0Vh81k0V6VWFvYbYhpT-PRdjKS-2WtYLCI (EXECUTED in 2423ms)
+09:25:51	Informazioni	[INFO] Updated 5 cells across 1 rows
+09:25:54	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:25:59	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:25:59	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:25:59	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:26:02	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente7@onlinetest.aldo.local".
+09:26:07	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente7@onlinetest.aldo.local".
+09:26:07	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:07	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente7@onlinetest.aldo.local".
+09:26:10	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente6@onlinetest.aldo.local".
+09:26:14	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente6@onlinetest.aldo.local".
+09:26:14	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:14	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente6@onlinetest.aldo.local".
+09:26:18	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:26:22	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:26:22	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:22	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:26:25	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente8@onlinetest.aldo.local".
+09:26:29	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente8@onlinetest.aldo.local".
+09:26:29	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:30	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente8@onlinetest.aldo.local".
+09:26:30	Informazioni	  │    │    ├─ [INFO] Successfully created 0 protected range(s)
+09:26:30	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!A:A non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:26:30	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!B:B non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente7@onlinetest.aldo.local".
+09:26:30	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!C:C non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente6@onlinetest.aldo.local".
+09:26:30	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!D:D non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente5@onlinetest.aldo.local".
+09:26:30	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!E:E non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente8@onlinetest.aldo.local".
+09:26:30	Informazioni	  │    ├─ ✅ [RenderTemplate] SHEET_CON_MATERIE_E_PERMESSI (EXECUTED in 39650ms)
+09:26:30	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:26:30	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:26:30	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:26:30	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 42251ms)
+09:26:30	Informazioni	[INFO] Transaction committed successfully (42906ms)
+09:26:31	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 190ms)
+09:26:31	Informazioni	[INFO] Transaction started
+09:26:31	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:26:31	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:26:31	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:26:31	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: PIANI_PERS; Path: _ALDO_E2E_OUTPUT/PIANI_PERS; Id: 1neFb9jLk128XH1WkyPCqnzmjnwgiOU9Z (EXECUTED in 216ms)
+09:26:31	Informazioni	  │    ├─ ✅ [GenerateName] E2E_Permessi_3C (EXECUTED in 0ms)
+09:26:31	Informazioni	  │    ├─ ✅ [SelectTemplate] 1wd6z9HrTcj8WEPY0RM28bw46r-rfQCJ5AYUtd5NRWLk (EXECUTED in 0ms)
+09:26:33	Informazioni	  │    ├─ ✅ [CloneTemplate] 1EUGHsrQOze5oCcBRytW-Zx0LLcnnssOrHx3iv-EMalQ (EXECUTED in 1981ms)
+09:26:34	Informazioni	[INFO] Updated 10 cells across 1 rows
+09:26:37	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:26:41	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:26:41	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:41	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:26:44	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:26:49	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:26:49	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:49	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:26:52	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:26:56	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:26:56	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:26:56	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:26:59	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:04	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:04	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:27:04	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:07	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:27:12	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:27:12	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:27:12	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:27:14	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:27:19	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:27:19	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:27:19	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:27:22	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 1 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:27	Informazioni	  │    │    ├─ [WARN] [Operation] Retry attempt 2 after error: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:27	Informazioni	  │    │    ├─ [ERROR] [FAILURE] Operation: API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "[EMAIL_REDACTED]".
+09:27:27	Informazioni	  │    │    ├─ [ERROR] [Operation] Operation failed after 3 attempt(s): API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:27	Informazioni	  │    │    ├─ [INFO] Successfully created 1 protected range(s)
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!B:B non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente1@onlinetest.aldo.local".
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!D:D non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!E:E non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!F:F non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!H:H non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente2@onlinetest.aldo.local".
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!I:I non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente3@onlinetest.aldo.local".
+09:27:27	Informazioni	[WARN] SHEET_CON_MATERIE_E_PERMESSI: protezione Foglio1!J:J non applicata — API call to sheets.spreadsheets.batchUpdate failed with error: Invalid requests[0].addProtectedRange: Utente non valido: "e2edocente4@onlinetest.aldo.local".
+09:27:27	Informazioni	  │    ├─ ✅ [RenderTemplate] SHEET_CON_MATERIE_E_PERMESSI (EXECUTED in 54048ms)
+09:27:27	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:27:27	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 2ms
+09:27:27	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:27:27	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 56266ms)
+09:27:27	Informazioni	[INFO] Transaction committed successfully (56884ms)
+09:27:28	Informazioni	[TEST:END] PASS | Duration: 171908ms
+09:27:28	Informazioni	═══════════════════════════════════════════════
+09:27:28	Informazioni	TEST EXECUTION SUMMARY
+09:27:28	Informazioni	TOTAL: 1
+09:27:28	Informazioni	PASSED: 1
+09:27:28	Informazioni	FAILED: 0
+09:27:28	Informazioni	SKIPPED: 0
+09:27:28	Informazioni	═══════════════════════════════════════════════
+09:27:28	Informazioni	Running 1 tests matching filter: NONE
+09:27:28	Informazioni	[TEST:START] E2E prerequisite: genera piano di lavoro per gli invii ai coordinatori
+09:27:28	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 37ms)
+09:27:28	Informazioni	[INFO] Transaction started
+09:27:28	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:27:28	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:27:28	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 1ms)
+09:27:29	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: PIANI_LAVORO; Path: _ALDO_E2E_OUTPUT/PIANI_LAVORO; Id: 1H_6xRTLhdA84-q5fqaPUrqKS2HqXkLtN (EXECUTED in 1319ms)
+09:27:29	Informazioni	  │    ├─ ✅ [GenerateName] E2E_PianoLavoro_1A (EXECUTED in 0ms)
+09:27:29	Informazioni	  │    ├─ ✅ [SelectTemplate] 1gK2IobgZPk5_aZPH2ivuh20Y6LY1jE2a-7s2KHtjcJI (EXECUTED in 0ms)
+09:27:31	Informazioni	  │    ├─ ✅ [CloneTemplate] 1fnrHB_NEe1TDuosiGFFZaYKlPFeyawiOgWA077sQ6ro (EXECUTED in 2213ms)
+09:27:31	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1fnrHB_NEe1TDuosiGFFZaYKlPFeyawiOgWA077sQ6ro
+09:27:31	Informazioni	[INFO] Executing batch update with 6 requests
+09:27:31	Informazioni	[INFO] Executing batch update with 6 requests on document 1fnrHB_NEe1TDuosiGFFZaYKlPFeyawiOgWA077sQ6ro
+09:27:32	Informazioni	[INFO] Batch update completed successfully
+09:27:32	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 499ms)
+09:27:32	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:27:32	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:27:32	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:27:32	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 4048ms)
+09:27:33	Informazioni	[INFO] Transaction committed successfully (5640ms)
+09:27:33	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 35ms)
+09:27:33	Informazioni	[INFO] Transaction started
+09:27:33	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:27:33	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:27:33	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:27:33	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: PIANI_LAVORO; Path: _ALDO_E2E_OUTPUT/PIANI_LAVORO; Id: 1H_6xRTLhdA84-q5fqaPUrqKS2HqXkLtN (EXECUTED in 177ms)
+09:27:33	Informazioni	  │    ├─ ✅ [GenerateName] E2E_PianoLavoro_2B (EXECUTED in 0ms)
+09:27:33	Informazioni	  │    ├─ ✅ [SelectTemplate] 1gK2IobgZPk5_aZPH2ivuh20Y6LY1jE2a-7s2KHtjcJI (EXECUTED in 0ms)
+09:27:35	Informazioni	  │    ├─ ✅ [CloneTemplate] 1US1yWPMXmlgpcOTXsEP73toWNfQRW0ks0Bn5TZZEOuo (EXECUTED in 1796ms)
+09:27:35	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1US1yWPMXmlgpcOTXsEP73toWNfQRW0ks0Bn5TZZEOuo
+09:27:36	Informazioni	[INFO] Executing batch update with 6 requests
+09:27:36	Informazioni	[INFO] Executing batch update with 6 requests on document 1US1yWPMXmlgpcOTXsEP73toWNfQRW0ks0Bn5TZZEOuo
+09:27:36	Informazioni	[INFO] Batch update completed successfully
+09:27:36	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 675ms)
+09:27:36	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:27:36	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 0ms
+09:27:36	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:27:36	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 2662ms)
+09:27:36	Informazioni	[INFO] Transaction committed successfully (3154ms)
+09:27:36	Informazioni	  ├─ ⚙️ Context Assembly completed: 13 providers executed, 0 skipped, 0 failed (COMPLETED in 78ms)
+09:27:36	Informazioni	[INFO] Transaction started
+09:27:36	Informazioni	  ├─ 🛠️ [DocumentoPipeline] Processing (10 steps)
+09:27:36	Informazioni	  │    ├─ ✅ [AnalyzeContext] Generate: true (EXECUTED in 0ms)
+09:27:36	Informazioni	  │    ├─ ✅ [CheckDuplicates] No duplicate found (EXECUTED in 0ms)
+09:27:37	Informazioni	  │    ├─ ✅ [PrepareInfrastructure] Folder: PIANI_LAVORO; Path: _ALDO_E2E_OUTPUT/PIANI_LAVORO; Id: 1H_6xRTLhdA84-q5fqaPUrqKS2HqXkLtN (EXECUTED in 164ms)
+09:27:37	Informazioni	  │    ├─ ✅ [GenerateName] E2E_PianoLavoro_3C (EXECUTED in 0ms)
+09:27:37	Informazioni	  │    ├─ ✅ [SelectTemplate] 1gK2IobgZPk5_aZPH2ivuh20Y6LY1jE2a-7s2KHtjcJI (EXECUTED in 0ms)
+09:27:39	Informazioni	  │    ├─ ✅ [CloneTemplate] 1F2swWZu64w6j_vawKdDOkHK3eC_MCZCMUOMhR2HHqRQ (EXECUTED in 1885ms)
+09:27:39	Informazioni	[INFO] Starting document processing with Reverse-Order Strategy for document: 1F2swWZu64w6j_vawKdDOkHK3eC_MCZCMUOMhR2HHqRQ
+09:27:39	Informazioni	[INFO] Executing batch update with 6 requests
+09:27:39	Informazioni	[INFO] Executing batch update with 6 requests on document 1F2swWZu64w6j_vawKdDOkHK3eC_MCZCMUOMhR2HHqRQ
+09:27:39	Informazioni	[INFO] Batch update completed successfully
+09:27:39	Informazioni	  │    ├─ ✅ [RenderTemplate] DOCUMENTO_GENERICO (EXECUTED in 572ms)
+09:27:39	Informazioni	  │    ├─ ⚠️ [ApplyPermissions] condition not met (SKIPPED)
+09:27:39	Informazioni	  │    ├─ ✅ [RegisterDocument] EXECUTED in 1ms
+09:27:39	Informazioni	  │    └─ ⚠️ [PostProcess] condition not met (SKIPPED)
+09:27:39	Informazioni	  └─ ⏹️ Pipeline completed: 8 executed, 2 skipped, 0 failed (COMPLETED in 2647ms)
+09:27:40	Informazioni	[INFO] Transaction committed successfully (3339ms)
+09:27:40	Informazioni	[TEST:END] PASS | Duration: 12297ms
+09:27:40	Informazioni	═══════════════════════════════════════════════
+09:27:40	Informazioni	TEST EXECUTION SUMMARY
+09:27:40	Informazioni	TOTAL: 1
+09:27:40	Informazioni	PASSED: 1
+09:27:40	Informazioni	FAILED: 0
+09:27:40	Informazioni	SKIPPED: 0
+09:27:40	Informazioni	═══════════════════════════════════════════════
+09:27:40	Informazioni	Running 1 tests matching filter: NONE
+09:27:40	Informazioni	[TEST:START] E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)
+09:27:40	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:40	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 24ms)
+09:27:40	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 1A; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 37ms)
+09:27:40	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:40	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 2 (EXECUTED in 6ms)
+09:27:40	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Piano di lavoro e verbali riunioni; Attachments: 0 (EXECUTED in 1ms)
+09:27:40	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente1@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:40	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:40	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 313ms)
+09:27:41	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 300ms
+09:27:41	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:41	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 671ms)
+09:27:41	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:41	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 45ms)
+09:27:41	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C-S; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 48ms)
+09:27:41	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:41	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 2ms)
+09:27:41	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Piano di lavoro e verbali riunioni; Attachments: 0 (EXECUTED in 1ms)
+09:27:41	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente3@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:41	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:41	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 266ms)
+09:27:41	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 177ms
+09:27:41	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:41	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 504ms)
+09:27:41	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:41	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 42ms)
+09:27:41	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C-C; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 45ms)
+09:27:41	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:41	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 2ms)
+09:27:41	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Piano di lavoro e verbali riunioni; Attachments: 0 (EXECUTED in 3ms)
+09:27:41	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente4@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:41	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:41	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 264ms)
+09:27:42	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 243ms
+09:27:42	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:42	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 569ms)
+09:27:42	Informazioni	[ERROR:STACK] ValidationError: LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata
+    at Object.fn (OnlineTests:180040:23)
+    at EnhancedTestRunner._runTest (Code:50279:26)
+    at EnhancedTestRunner.run (Code:50263:30)
+    at TestRunner.add (OnlineTests:148857:83)
+    at registerE2eScenarioChecks (OnlineTests:179997:12)
+    at executeE2eScenarios (OnlineTests:187835:5)
+    at runReportedSuite (OnlineTests:187730:51)
+    at runE2eScenarios (OnlineTests:187847:12)
+    at __GS_INTERNAL_top_function_call__.gs:1:8
+09:27:42	Informazioni	[TEST:END] FAIL | Duration: 1752ms
+09:27:42	Informazioni	═══════════════════════════════════════════════
+09:27:42	Informazioni	TEST EXECUTION SUMMARY
+09:27:42	Informazioni	TOTAL: 1
+09:27:42	Informazioni	PASSED: 0
+09:27:42	Informazioni	FAILED: 1
+09:27:42	Informazioni	SKIPPED: 0
+09:27:42	Informazioni	═══════════════════════════════════════════════
+09:27:42	Informazioni	FAILED TESTS:
+09:27:42	Informazioni	- E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE): LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata
+09:27:42	Informazioni	Running 1 tests matching filter: NONE
+09:27:42	Informazioni	[TEST:START] E2E scenario 13: invia allegato statico non rappresentato da box (TEST_MODE)
+09:27:42	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:42	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 22ms)
+09:27:42	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 1A; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 24ms)
+09:27:42	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:42	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 0 (EXECUTED in 0ms)
+09:27:42	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Allegato statico di prova; Attachments: 1 (EXECUTED in 128ms)
+09:27:42	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente2@onlinetest.aldo.local, e2edocente12@onlinetest.aldo.local, e2edocente4@onlinetest.aldo.local, e2edocente7@onlinetest.aldo.local, e2edocente16@onlinetest.aldo.local, e2edocente5@onlinetest.aldo.local, e2edocente18@onlinetest.aldo.local, e2edocente3@onlinetest.aldo.local, e2edocente10@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:43	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:43	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 1022ms)
+09:27:43	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 236ms
+09:27:43	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:43	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 1424ms)
+09:27:43	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:43	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 14ms)
+09:27:43	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 2B; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 19ms)
+09:27:43	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:43	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 0 (EXECUTED in 0ms)
+09:27:43	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Allegato statico di prova; Attachments: 1 (EXECUTED in 134ms)
+09:27:43	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente7@onlinetest.aldo.local, e2edocente6@onlinetest.aldo.local, e2edocente5@onlinetest.aldo.local, e2edocente8@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:46	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:46	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 2601ms)
+09:27:46	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 191ms
+09:27:46	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:46	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 2969ms)
+09:27:46	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:46	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 41ms)
+09:27:46	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 43ms)
+09:27:46	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:46	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 0 (EXECUTED in 1ms)
+09:27:46	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Allegato statico di prova; Attachments: 1 (EXECUTED in 129ms)
+09:27:46	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente2@onlinetest.aldo.local, e2edocente4@onlinetest.aldo.local, e2edocente7@onlinetest.aldo.local, e2edocente6@onlinetest.aldo.local, e2edocente1@onlinetest.aldo.local, e2edocente8@onlinetest.aldo.local, e2edocente3@onlinetest.aldo.local; Cc: [] (EXECUTED in 1ms)
+09:27:47	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:47	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 600ms)
+09:27:47	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 203ms
+09:27:47	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:47	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 989ms)
+09:27:47	Informazioni	[TEST:END] PASS | Duration: 5418ms
+09:27:47	Informazioni	═══════════════════════════════════════════════
+09:27:47	Informazioni	TEST EXECUTION SUMMARY
+09:27:47	Informazioni	TOTAL: 1
+09:27:47	Informazioni	PASSED: 1
+09:27:47	Informazioni	FAILED: 0
+09:27:47	Informazioni	SKIPPED: 0
+09:27:47	Informazioni	═══════════════════════════════════════════════
+09:27:47	Informazioni	Running 1 tests matching filter: NONE
+09:27:47	Informazioni	[TEST:START] E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)
+09:27:47	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:47	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 22ms)
+09:27:47	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 1A; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 24ms)
+09:27:47	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:47	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 1ms)
+09:27:47	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Verbale del consiglio di classe; Attachments: 0 (EXECUTED in 3ms)
+09:27:47	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente1@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:47	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:47	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 337ms)
+09:27:48	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 166ms
+09:27:48	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 544ms)
+09:27:48	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 28ms)
+09:27:48	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C-S; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 31ms)
+09:27:48	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:48	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 0 (EXECUTED in 0ms)
+09:27:48	Informazioni	  │    ├─ ⚠️ [ComposeEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    ├─ ⚠️ [ResolveRecipients] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    ├─ ⚠️ [SendEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    ├─ ⚠️ [LogEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  └─ ⏹️ Pipeline completed: 3 executed, 5 skipped, 0 failed (COMPLETED in 40ms)
+09:27:48	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 29ms)
+09:27:48	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C-C; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 32ms)
+09:27:48	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:48	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 0 (EXECUTED in 1ms)
+09:27:48	Informazioni	  │    ├─ ⚠️ [ComposeEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    ├─ ⚠️ [ResolveRecipients] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    ├─ ⚠️ [SendEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    ├─ ⚠️ [LogEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:48	Informazioni	  └─ ⏹️ Pipeline completed: 3 executed, 5 skipped, 0 failed (COMPLETED in 41ms)
+09:27:48	Informazioni	[ERROR:STACK] ValidationError: Invio verbale fallito: targets=3, sent=1, skipped=2, errors=none
+    at Object.fn (OnlineTests:180126:19)
+    at EnhancedTestRunner._runTest (Code:50279:26)
+    at EnhancedTestRunner.run (Code:50263:30)
+    at TestRunner.add (OnlineTests:148857:83)
+    at registerE2eScenarioChecks (OnlineTests:180110:12)
+    at executeE2eScenarios (OnlineTests:187835:5)
+    at runReportedSuite (OnlineTests:187730:51)
+    at runE2eScenarios (OnlineTests:187847:12)
+    at __GS_INTERNAL_top_function_call__.gs:1:8
+09:27:48	Informazioni	[TEST:END] FAIL | Duration: 634ms
+09:27:48	Informazioni	═══════════════════════════════════════════════
+09:27:48	Informazioni	TEST EXECUTION SUMMARY
+09:27:48	Informazioni	TOTAL: 1
+09:27:48	Informazioni	PASSED: 0
+09:27:48	Informazioni	FAILED: 1
+09:27:48	Informazioni	SKIPPED: 0
+09:27:48	Informazioni	═══════════════════════════════════════════════
+09:27:48	Informazioni	FAILED TESTS:
+09:27:48	Informazioni	- E2E scenario 4: invia verbale ai coordinatori (TEST_MODE): Invio verbale fallito: targets=3, sent=1, skipped=2, errors=none
+09:27:48	Informazioni	Running 1 tests matching filter: NONE
+09:27:48	Informazioni	[TEST:START] E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)
+09:27:48	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:48	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 22ms)
+09:27:48	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 1A; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 24ms)
+09:27:48	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:48	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 2ms)
+09:27:48	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Scheda condotta 1A; Attachments: 0 (EXECUTED in 2ms)
+09:27:48	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente2@onlinetest.aldo.local, e2edocente12@onlinetest.aldo.local, e2edocente4@onlinetest.aldo.local, e2edocente7@onlinetest.aldo.local, e2edocente16@onlinetest.aldo.local, e2edocente5@onlinetest.aldo.local, e2edocente18@onlinetest.aldo.local, e2edocente3@onlinetest.aldo.local, e2edocente10@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:48	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:48	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 544ms)
+09:27:49	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 254ms
+09:27:49	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:49	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 840ms)
+09:27:49	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:49	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 16ms)
+09:27:49	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 2B; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 17ms)
+09:27:49	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:49	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 1ms)
+09:27:49	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Scheda condotta 2B; Attachments: 0 (EXECUTED in 1ms)
+09:27:49	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente7@onlinetest.aldo.local, e2edocente6@onlinetest.aldo.local, e2edocente5@onlinetest.aldo.local, e2edocente8@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:51	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:51	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 2256ms)
+09:27:51	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 227ms
+09:27:51	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:51	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 2516ms)
+09:27:51	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:51	Informazioni	  ├─ ⚙️ Context Assembly completed: 7 providers executed, 0 skipped, 0 failed (COMPLETED in 66ms)
+09:27:51	Informazioni	  │    ├─ ✅ [BuildCDU] Target: 3C; TargetType: classe; Recipe: DOCENTE_COMPLETO; Context: Built (EXECUTED in 69ms)
+09:27:51	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:51	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 1 (EXECUTED in 1ms)
+09:27:51	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Scheda condotta 3C; Attachments: 0 (EXECUTED in 3ms)
+09:27:51	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: e2edocente2@onlinetest.aldo.local, e2edocente4@onlinetest.aldo.local, e2edocente7@onlinetest.aldo.local, e2edocente6@onlinetest.aldo.local, e2edocente1@onlinetest.aldo.local, e2edocente8@onlinetest.aldo.local, e2edocente3@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:51	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:51	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 270ms)
+09:27:52	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 167ms
+09:27:52	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:52	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 546ms)
+09:27:52	Informazioni	[TEST:END] PASS | Duration: 3937ms
+09:27:52	Informazioni	═══════════════════════════════════════════════
+09:27:52	Informazioni	TEST EXECUTION SUMMARY
+09:27:52	Informazioni	TOTAL: 1
+09:27:52	Informazioni	PASSED: 1
+09:27:52	Informazioni	FAILED: 0
+09:27:52	Informazioni	SKIPPED: 0
+09:27:52	Informazioni	═══════════════════════════════════════════════
+09:27:52	Informazioni	Running 1 tests matching filter: NONE
+09:27:52	Informazioni	[TEST:START] E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)
+09:27:52	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:52	Informazioni	  ├─ ⚙️ Context Assembly completed: 6 providers executed, 0 skipped, 0 failed (COMPLETED in 17ms)
+09:27:52	Informazioni	  │    ├─ ✅ [BuildCDU] Target: e2ealunno1@onlinetest.aldo.local; TargetType: alunno; Recipe: CARENZA_COMPLETO; Context: Built (EXECUTED in 19ms)
+09:27:52	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:52	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 2 (EXECUTED in 2ms)
+09:27:52	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Comunicazione carenza; Attachments: 0 (EXECUTED in 0ms)
+09:27:52	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: tutor1@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:52	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:52	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 578ms)
+09:27:52	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 182ms
+09:27:52	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:52	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 795ms)
+09:27:52	Informazioni	  ├─ 🛠️ [NotificaPipeline] Processing (8 steps)
+09:27:52	Informazioni	  ├─ ⚙️ Context Assembly completed: 6 providers executed, 0 skipped, 0 failed (COMPLETED in 8ms)
+09:27:52	Informazioni	  │    ├─ ✅ [BuildCDU] Target: e2ealunno21@onlinetest.aldo.local; TargetType: alunno; Recipe: CARENZA_COMPLETO; Context: Built (EXECUTED in 12ms)
+09:27:52	Informazioni	  │    ├─ ✅ [ValutaCondizioniInvio] Send: true; Reason: No condition configured (EXECUTED in 0ms)
+09:27:52	Informazioni	  │    ├─ ✅ [RenderBoxes] Boxes: 2 (EXECUTED in 1ms)
+09:27:52	Informazioni	  │    ├─ ✅ [ComposeEmail] Subject: [E2E] Comunicazione carenza; Attachments: 0 (EXECUTED in 0ms)
+09:27:52	Informazioni	  │    ├─ ✅ [ResolveRecipients] To: tutor21@onlinetest.aldo.local; Cc: [] (EXECUTED in 0ms)
+09:27:53	Informazioni	  │    │    ├─ [INFO] Email sent successfully to leuci.giulio@pietroaldi.com
+09:27:53	Informazioni	  │    ├─ ✅ [SendEmail] Sent: 1; Recipients: leuci.giulio@pietroaldi.com (EXECUTED in 269ms)
+09:27:53	Informazioni	  │    ├─ ✅ [LogEmail] EXECUTED in 233ms
+09:27:53	Informazioni	  │    └─ ⚠️ [PostProcessEmail] condition not met (SKIPPED)
+09:27:53	Informazioni	  └─ ⏹️ Pipeline completed: 7 executed, 1 skipped, 0 failed (COMPLETED in 537ms)
+09:27:53	Informazioni	[TEST:END] PASS | Duration: 1338ms
+09:27:53	Informazioni	═══════════════════════════════════════════════
+09:27:53	Informazioni	TEST EXECUTION SUMMARY
+09:27:53	Informazioni	TOTAL: 1
+09:27:53	Informazioni	PASSED: 1
+09:27:53	Informazioni	FAILED: 0
+09:27:53	Informazioni	SKIPPED: 0
+09:27:53	Informazioni	═══════════════════════════════════════════════
+09:27:53	Informazioni	🧪 Online test report: {
+09:27:53	Informazioni	  "passed": 40,
+09:27:53	Informazioni	  "failed": 3
+09:27:53	Informazioni	} (COMPLETED in 336449ms)
+09:27:53	Informazioni	======================================================================
+09:27:53	Informazioni	❌ [FAILED] Job 'e2e_scenarios' failed (40 passed, 3 failed)
+09:27:53	Informazioni	======================================================================
+09:27:54	Notifica	Esecuzione completata

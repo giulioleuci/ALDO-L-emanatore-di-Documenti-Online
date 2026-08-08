@@ -71,9 +71,10 @@ const SPECIFICA_MATERIE_E2E = [
   'INTERPRET.FLAUTO'
 ];
 export const INDIRIZZO_E2E = 'IND_E2E';
+export const INDIRIZZO_E2E_CLASSICO = 'IND_E2E_CLASSICO';
 export const DIPART_E2E = 'DIPART_E2E';
 export const DOCENTE_COUNT = 20;
-/** MATERIE.ESAME_CFG for the E2E indirizzo (02 §2.9/§8.2 `esame.materiePrimaProva`/`materieSecondaProva`) — gives `focus.classe.esame` real content for every E2E class (all share INDIRIZZO_E2E). */
+/** MATERIE.ESAME_CFG for the scientific E2E indirizzo (02 §2.9/§8.2 `esame.materiePrimaProva`/`materieSecondaProva`). */
 const ESAME_CFG_E2E: Record<string, string> = {
   ITA: JSON.stringify({ prima_prova: [INDIRIZZO_E2E] }),
   MAT: JSON.stringify({ seconda_prova: [INDIRIZZO_E2E] })
@@ -376,7 +377,7 @@ export class E2eSampleDatabaseBuilder {
       {
         id: CLASSE_C_PARTNER,
         count: 12,
-        coordIndex: 4,
+        coordIndex: 7,
         articolazione: JSON.stringify({
           parent: CLASSE_C_PARENT,
           partner: CLASSE_C,
@@ -397,6 +398,12 @@ export class E2eSampleDatabaseBuilder {
       [COL_INDIRIZZI.ID]: INDIRIZZO_E2E,
       [COL_INDIRIZZI.NOME]: 'Liceo Scientifico (E2E)',
       [COL_INDIRIZZI.NOME_SINTETICO]: 'SCI',
+      [COL_INDIRIZZI.TIPO]: 'Liceo'
+    });
+    sample.appendRow(TABLE.INDIRIZZI, {
+      [COL_INDIRIZZI.ID]: INDIRIZZO_E2E_CLASSICO,
+      [COL_INDIRIZZI.NOME]: 'Liceo Classico (E2E)',
+      [COL_INDIRIZZI.NOME_SINTETICO]: 'CLA',
       [COL_INDIRIZZI.TIPO]: 'Liceo'
     });
   }
@@ -497,7 +504,8 @@ export class E2eSampleDatabaseBuilder {
       const row: Record<string, unknown> = {
         [COL_CLASSI.ID]: layout.id,
         [COL_CLASSI.ANNO]: 3,
-        [COL_CLASSI.INDIRIZZO]: INDIRIZZO_E2E,
+        [COL_CLASSI.INDIRIZZO]:
+          layout.id === CLASSE_C_PARTNER ? INDIRIZZO_E2E_CLASSICO : INDIRIZZO_E2E,
         [COL_CLASSI.ARTICOLAZIONE]: layout.articolazione,
         [COL_CLASSI.RUOLI]: '',
         [COL_CLASSI.ATTIVA]: true,

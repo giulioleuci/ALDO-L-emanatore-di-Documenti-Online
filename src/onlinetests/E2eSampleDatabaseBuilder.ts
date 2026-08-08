@@ -42,8 +42,6 @@ export const MATERIE_E2E = ['MAT', 'ITA', 'ING', 'STO'];
 export const ASSIGNMENT_MATERIE_E2E = [
   ...MATERIE_E2E,
   'INF',
-  'LAB',
-  'INTERPRET',
   'IRC',
   'ALT'
 ] as const;
@@ -146,6 +144,7 @@ export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export const CONF_DOC_COMPLESSO = 'E2E_DOC_COMPLESSO';
 export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';
 export const CONF_DOC_RIEPILOGO_FIRME_CDC = 'E2E_RIEPILOGO_FIRME_CDC';
+export const CONF_DOC_DOCENTE_MATERIA = 'E2E_DOCENTE_MATERIA';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
 export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
@@ -424,8 +423,6 @@ export class E2eSampleDatabaseBuilder {
       ING: 'Inglese',
       STO: 'Storia',
       INF: 'Informatica',
-      LAB: 'Laboratorio',
-      INTERPRET: 'Interpretazione musicale',
       IRC: 'Religione cattolica',
       ALT: 'Attività alternativa'
     };
@@ -442,17 +439,49 @@ export class E2eSampleDatabaseBuilder {
         [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
       });
     });
+    const specifiche: Record<
+      string,
+      { principale: string; specificita: string; nome: string; sintesi: string }
+    > = {
+      'LAB.GRUPPO_A': {
+        principale: 'Laboratorio',
+        specificita: 'Gruppo A',
+        nome: '',
+        sintesi: 'Lab. Gruppo A'
+      },
+      'LAB.SEMINARIO_POMERIDIANO': {
+        principale: 'Laboratorio',
+        specificita: 'Seminario pomeridiano',
+        nome: '',
+        sintesi: 'Lab. Seminario'
+      },
+      'INTERPRET.CHITARRA': {
+        principale: 'Interpretazione ed esecuzione',
+        specificita: 'Chitarra',
+        nome: '',
+        sintesi: 'Interpretazione (Chitarra)'
+      },
+      'INTERPRET.FLAUTO': {
+        principale: 'Interpretazione ed esecuzione',
+        specificita: 'Flauto',
+        nome: 'Interpretazione ed esecuzione — indirizzo flauto',
+        sintesi: 'Interpretazione (Flauto)'
+      }
+    };
     SPECIFICA_MATERIE_E2E.forEach((id) => {
+      const spec = specifiche[id]!;
       sample.appendRow(TABLE.MATERIE, {
         [COL_MATERIE.ID]: id,
-        [COL_MATERIE.NOME]: id,
-        [COL_MATERIE.SINTESI]: id,
+        [COL_MATERIE.NOME]: spec.nome,
+        [COL_MATERIE.SINTESI]: spec.sintesi,
         [COL_MATERIE.COLORE_1]: '#1565C0',
         [COL_MATERIE.COLORE_2]: '#90CAF9',
         [COL_MATERIE.SIMBOLO]: id.charAt(0),
         [COL_MATERIE.ESAME_CFG]: '',
         [COL_MATERIE.EVOLUZIONE]: '',
-        [COL_MATERIE.IS_RELIGIONE_ALT]: false
+        [COL_MATERIE.IS_RELIGIONE_ALT]: false,
+        [COL_MATERIE.PRINCIPALE]: spec.principale,
+        [COL_MATERIE.SPECIFICITA]: spec.specificita
       });
     });
   }
@@ -1012,6 +1041,28 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_MATERIA,
+      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA',
+      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
+      [COL_CONF_DOC.FILE_NAME]:
+        'E2E_DocenteMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCENTI_MATERIE',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '{{focus.docente.email}}',
+        materie: '{{focus.materia.sigla}}'
+      }),
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
     });
     sample.appendRow(TABLE.CONF_DOC, {

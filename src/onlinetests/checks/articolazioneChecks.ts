@@ -2,6 +2,7 @@ import type { ServiceContainer } from '../../config/ServiceContainer';
 import { COL_CONF_DOC, COL_LOG_DOCS, TABLE } from '../../config/schema';
 import { ContextBuilder } from '../../application/context-engine/ContextBuilder';
 import { recipe } from '../../application/context-engine/Recipe';
+import { DocumentBatchService } from '../../application/services/DocumentBatchService';
 import type { EmailNotificationService } from '../../application/services/EmailNotificationService';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ValidationError } from '../../domain/errors/DomainError';
@@ -17,6 +18,7 @@ import {
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
   CONF_DOC_ARTICOLATA,
+  CONF_DOC_DOCENTE_MATERIA,
   CONF_DOC_PIANI,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
@@ -126,6 +128,73 @@ export function registerArticolazioneChecks(
       ) {
         throw new ValidationError(
           'Risoluzione CDU articolazione: attesi supplente LAB.SEMINARIO_POMERIDIANO, titolare dopo il confine e titolare finale ITA.'
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'Articolazione CDU: cattedra INTERPRET.CHITARRA risolve alla riga composita, non alla materia base',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+      const cdu = classCdu(contextBuilder, CLASSE_A);
+      const consiglio = cdu.focus.classe?.consiglioDiClasse ?? [];
+      const docente5 = consiglio.find(
+        (docente) => docente.anagrafica.email === e2eDocenteEmail(5)
+      );
+      const chitarra = docente5?.materie.find((materia) => materia.sigla === 'INTERPRET.CHITARRA');
+      if (
+        docente5 === undefined ||
+        chitarra === undefined ||
+        chitarra.principale !== 'Interpretazione ed esecuzione' ||
+        chitarra.specificita !== 'Chitarra' ||
+        chitarra.nome !== 'Interpretazione ed esecuzione (Chitarra)'
+      ) {
+        throw new ValidationError(
+          `Cattedra INTERPRET.CHITARRA di ${e2eDocenteEmail(5)} non risolta alla riga composita: ${JSON.stringify(chitarra)}`
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'Articolazione CDU: batch DOCUMENTO_DOCENTE_MATERIA registra INTERPRET.CHITARRA composita',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const db = container.get<TableDatabase>('db');
+      const config = documentConfig(db, CONF_DOC_DOCENTE_MATERIA);
+      if (config.tipo !== 'DOCUMENTO_DOCENTE_MATERIA') {
+        throw new ValidationError(
+          `CONF_DOC ${CONF_DOC_DOCENTE_MATERIA} non ha TIPO DOCUMENTO_DOCENTE_MATERIA.`
+        );
+      }
+      const batch = container.get<DocumentBatchService>('documentBatchService');
+      const handler = batch.batchGenerateHandler({
+        confDocId: CONF_DOC_DOCENTE_MATERIA,
+        jobId: 'E2E_DOCENTE_MATERIA_ARTICOLAZIONE'
+      });
+      let next = handler.next();
+      while (!next.done) next = handler.next();
+
+      const docente = e2eDocenteEmail(5);
+      const materia = 'INTERPRET.CHITARRA';
+      const row = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .find(
+          (candidate) =>
+            candidate[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_MATERIA &&
+            candidate[COL_LOG_DOCS.CLASSI] === CLASSE_A &&
+            candidate[COL_LOG_DOCS.UTENTI] === docente
+        );
+      if (
+        row === undefined ||
+        row[COL_LOG_DOCS.MATERIE] !== materia ||
+        row[COL_LOG_DOCS.SOTTOTIPO] !== `${materia}::${docente}`
+      ) {
+        throw new ValidationError(
+          `Batch DOCUMENTO_DOCENTE_MATERIA per ${docente}/${CLASSE_A} non registra la chiave composita ${materia}: ${JSON.stringify(row)}`
         );
       }
     }

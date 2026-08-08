@@ -175,8 +175,11 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
       for (const m of d.materie) {
         const identity = getCduMateriaAssignmentIdentity(m);
         const column: MateriaColumnInput = {
-          sigla: m.sigla,
-          ...(m.specificita === null ? {} : { specificita: m.specificita }),
+          // SubjectVM now exposes a specifica catalog row through its composite
+          // ID (e.g. LAB.GRUPPO_A); `specificita` is its display label, not the
+          // technical CLASSI-column token. Split the catalog ID back into the
+          // base MateriaId and token before querying findSpecifiche().
+          ...this.columnForId(m.sigla),
           ...(identity?.kind === 'SPECIFICA' ? { kind: identity.kind } : {})
         };
         columns.set(`${column.sigla}.${column.specificita ?? ''}`, column);

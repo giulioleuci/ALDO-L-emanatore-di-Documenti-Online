@@ -59,7 +59,7 @@ test('CDCFilterAlunno: religione ALT excludes IRC (no ALT teacher configured)', 
   expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
 });
 
-test('Task 6 filters arbitrary specificities from curriculum and preserves the accepted specificity', () => {
+test('Task 6 filters arbitrary specificities into their accepted composite catalog rows', () => {
   const tables = teachingSlotFixtureTables();
   const alunno = tables.ALUNNI!.find((row) => row.EMAIL === 'a1@school.it')!;
   alunno.CURRICULUM = JSON.stringify({
@@ -104,8 +104,8 @@ test('Task 6 filters arbitrary specificities from curriculum and preserves the a
       .map((materia) => [materia.sigla, materia.specificita])
   ).toEqual(
     expect.arrayContaining([
-      ['LAB', 'GRUPPO_A'],
-      ['INTERPRET', 'CHITARRA']
+      ['LAB.GRUPPO_A', null],
+      ['INTERPRET.CHITARRA', null]
     ])
   );
 });

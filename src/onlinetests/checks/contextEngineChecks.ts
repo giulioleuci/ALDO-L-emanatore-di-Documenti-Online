@@ -143,7 +143,9 @@ function unique(values: string[]): string[] {
 }
 
 function tupleKey(tuple: AssignmentTuple): string {
-  return [tuple.classeId, tuple.materia, tuple.kind, tuple.specifica ?? 'null', tuple.actor].join('|');
+  const catalogId =
+    tuple.specifica === null ? tuple.materia : `${tuple.materia}.${tuple.specifica}`;
+  return [tuple.classeId, catalogId, tuple.kind, tuple.specifica ?? 'null', tuple.actor].join('|');
 }
 
 function assignmentTuples(assignments: TeachingAssignment[]): AssignmentTuple[] {
@@ -173,11 +175,14 @@ function councilTuple(
   materia: { sigla: string; specificita: string | null }
 ): string {
   const identity = getCduMateriaAssignmentIdentity(materia);
+  const separator = materia.sigla.indexOf('.');
+  const specifica =
+    separator === -1 ? (materia.specificita ?? 'null') : materia.sigla.slice(separator + 1);
   return [
     identity?.classeId ?? 'missing',
     materia.sigla,
     identity?.kind ?? 'missing',
-    materia.specificita ?? 'null',
+    specifica,
     docente.anagrafica.email
   ].join('|');
 }
@@ -626,7 +631,19 @@ export function registerEffectiveAssignmentConsumerChecks(
           { target: classeId, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
           recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
         );
-        assertCouncilTuples(`full CDU council ${classeId}`, partnerAssignments, partnerCdu);
+        const materieComuni = new Set(
+          (partnerCdu.focus.classe?.articolazione?.materieCondivise ?? []).map(
+            (materia) => materia.sigla
+          )
+        );
+        const cduScopedAssignments = partnerAssignments.filter((assignment) => {
+          const catalogId =
+            assignment.slot.specifica === null
+              ? assignment.slot.materia.value
+              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
+          return assignment.classeId.value === classeId || materieComuni.has(catalogId);
+        });
+        assertCouncilTuples(`full CDU council ${classeId}`, cduScopedAssignments, partnerCdu);
         assertSameRecipients(
           `role recipients ${classeId}`,
           assignmentRecipients(partnerAssignments),

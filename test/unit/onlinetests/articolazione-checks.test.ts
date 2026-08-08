@@ -142,6 +142,14 @@ test('registers the articulation checks only for a TEST_MODE sample', () => {
       artifactUrl: sample.sampleSpreadsheetUrl
     },
     {
+      name: 'Articolazione CDU: cattedra INTERPRET.CHITARRA risolve alla riga composita, non alla materia base',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    },
+    {
+      name: 'Articolazione CDU: batch DOCUMENTO_DOCENTE_MATERIA registra INTERPRET.CHITARRA composita',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    },
+    {
       name: 'Articolazione CDU: serializzabilita, CdC unico, materie e indirizzo',
       artifactUrl: sample.sampleSpreadsheetUrl
     },
@@ -163,6 +171,10 @@ test('registers the articulation checks only for a TEST_MODE sample', () => {
     },
     {
       name: 'Articolazione CDU: piano duale renderizzato',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    },
+    {
+      name: 'Articolazione CDU: roster comune/separato per indirizzo, scoping parent vs partner',
       artifactUrl: sample.sampleSpreadsheetUrl
     }
   ]);
@@ -279,6 +291,86 @@ test('role/date check rejects a final holder that is not assigned to ITA', () =>
   expect(() =>
     runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
   ).toThrow(/titolare finale ITA/);
+});
+
+test('INTERPRET.CHITARRA check rejects a base-only materia resolution', () => {
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'contextBuilder') {
+        return {
+          build: () =>
+            classCdu([
+              {
+                anagrafica: { email: 'e2edocente5@onlinetest.aldo.local' },
+                materie: [
+                  {
+                    sigla: 'INTERPRET',
+                    principale: 'Interpretazione ed esecuzione',
+                    specificita: 'Chitarra',
+                    nome: 'Interpretazione ed esecuzione (Chitarra)'
+                  }
+                ]
+              }
+            ])
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() =>
+    runCheck(
+      container,
+      'Articolazione CDU: cattedra INTERPRET.CHITARRA risolve alla riga composita, non alla materia base'
+    )
+  ).toThrow(/non risolta alla riga composita/);
+});
+
+test('DOCUMENTO_DOCENTE_MATERIA check rejects a base materia LOG_DOCS key', () => {
+  const rows: Array<Record<string, unknown>> = [
+    {
+      [COL_LOG_DOCS.ID_GEN]: 'E2E_DOCENTE_MATERIA',
+      [COL_LOG_DOCS.CLASSI]: CLASSE_A,
+      [COL_LOG_DOCS.UTENTI]: 'e2edocente5@onlinetest.aldo.local',
+      [COL_LOG_DOCS.MATERIE]: 'INTERPRET',
+      [COL_LOG_DOCS.SOTTOTIPO]: 'INTERPRET::e2edocente5@onlinetest.aldo.local'
+    }
+  ];
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentBatchService') {
+        return {
+          *batchGenerateHandler() {
+            yield { percentage: 100 };
+            return { success: true, totale: 1, processed: [], errori: [] };
+          }
+        } as T;
+      }
+      if (key === 'db') {
+        return {
+          table: (name: string) =>
+            name === TABLE.CONF_DOC
+              ? {
+                  findAll: () => [
+                    {
+                      [COL_CONF_DOC.ID]: 'E2E_DOCENTE_MATERIA',
+                      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA'
+                    }
+                  ]
+                }
+              : { findAll: () => rows }
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() =>
+    runCheck(
+      container,
+      'Articolazione CDU: batch DOCUMENTO_DOCENTE_MATERIA registra INTERPRET.CHITARRA composita'
+    )
+  ).toThrow(/non registra la chiave composita/);
 });
 
 test('serializability check converts a cyclic CDU failure into ValidationError diagnostics', () => {

@@ -6,6 +6,7 @@ import {
   CLASSE_C,
   CLASSE_C_PARTNER,
   MATERIE_E2E,
+  ASSIGNMENT_MATERIE_E2E,
   TIPI_PIANO,
   PIANO_STUDENTE,
   RIPETENTE_1A,
@@ -17,6 +18,7 @@ import {
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
   CONF_DOC_ARTICOLATA,
+  CONF_DOC_DOCENTE_MATERIA,
   CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_VERBALE,
   CONF_MAIL_PIANI,
@@ -43,7 +45,8 @@ import {
   COL_LOG_DOCS,
   COL_LOG_FOLD,
   COL_PIANI,
-  COL_CONF_IMP
+  COL_CONF_IMP,
+  COL_MATERIE
 } from '../../../src/config/schema';
 
 class RecordingSpreadsheet implements ISampleSpreadsheet {
@@ -184,6 +187,40 @@ test('seeds exactly 20 DOCENTI rows', () => {
   );
 });
 
+test('seeds specifica-only LAB and INTERPRET catalog rows with PRINCIPALE/SPECIFICITA display data', () => {
+  const { spreadsheets, sheets, master } = factory();
+  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+
+  const materie = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.MATERIE]!;
+  expect(materie.map((row) => row[COL_MATERIE.ID])).toEqual(
+    expect.arrayContaining([...ASSIGNMENT_MATERIE_E2E])
+  );
+  expect(materie.some((row) => row[COL_MATERIE.ID] === 'LAB')).toBe(false);
+  expect(materie.some((row) => row[COL_MATERIE.ID] === 'INTERPRET')).toBe(false);
+
+  expect(materie.find((row) => row[COL_MATERIE.ID] === 'LAB.GRUPPO_A')).toEqual(
+    expect.objectContaining({
+      [COL_MATERIE.NOME]: '',
+      [COL_MATERIE.PRINCIPALE]: 'Laboratorio',
+      [COL_MATERIE.SPECIFICITA]: 'Gruppo A'
+    })
+  );
+  expect(materie.find((row) => row[COL_MATERIE.ID] === 'INTERPRET.CHITARRA')).toEqual(
+    expect.objectContaining({
+      [COL_MATERIE.NOME]: '',
+      [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione',
+      [COL_MATERIE.SPECIFICITA]: 'Chitarra'
+    })
+  );
+  expect(materie.find((row) => row[COL_MATERIE.ID] === 'INTERPRET.FLAUTO')).toEqual(
+    expect.objectContaining({
+      [COL_MATERIE.NOME]: 'Interpretazione ed esecuzione — indirizzo flauto',
+      [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione',
+      [COL_MATERIE.SPECIFICITA]: 'Flauto'
+    })
+  );
+});
+
 test('seeds exactly 2 CARENZE rows, for the two designated students only', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
@@ -251,7 +288,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(9);
+  expect(confDoc).toHaveLength(10);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'
@@ -293,6 +330,13 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(sheetPermessi[COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
   expect(JSON.parse(sheetPermessi[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_sheet_permessi'
+  });
+  const docenteMateria = confDoc.find((c) => c[COL_CONF_DOC.ID] === CONF_DOC_DOCENTE_MATERIA)!;
+  expect(docenteMateria[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_DOCENTE_MATERIA');
+  expect(JSON.parse(String(docenteMateria[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+    classi: '{{focus.classe.anagrafica.nome}}',
+    utenti: '{{focus.docente.email}}',
+    materie: '{{focus.materia.sigla}}'
   });
   const piani = confDoc.filter((c) => c[COL_CONF_DOC.TIPO] === 'PIANO_PERS');
   expect(piani).toHaveLength(1);

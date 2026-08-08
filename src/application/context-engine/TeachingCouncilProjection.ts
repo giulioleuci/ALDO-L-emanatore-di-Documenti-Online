@@ -372,9 +372,13 @@ export function attachCouncilProjectionMetadata(cdu: Cdu, assignments: TeachingA
     const candidates = [...(candidatesByActor.get(docente.anagrafica.email ?? '') ?? [])];
     for (const materia of docente.materie) {
       const index = candidates.findIndex(
-        (assignment) =>
-          assignment.slot.materia.value === materia.sigla &&
-          assignment.slot.specifica === materia.specificita
+        (assignment) => {
+          const catalogId =
+            assignment.slot.specifica === null
+              ? assignment.slot.materia.value
+              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
+          return catalogId === materia.sigla;
+        }
       );
       const assignment = index === -1 ? undefined : candidates.splice(index, 1)[0];
       if (assignment !== undefined) {

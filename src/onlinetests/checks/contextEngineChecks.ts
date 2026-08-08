@@ -97,13 +97,13 @@ const EXPECTED_STUDENT_COUNCILS = [
  */
 const EXPECTED_ARTICULATED_COLUMNS = [
   { header: 'REL', classeId: null, subjects: ['IRC'] },
-  { header: 'MAT', classeId: null, subjects: ['MAT'] },
-  { header: 'ITA', classeId: CLASSE_C, subjects: ['ITA'] },
-  { header: 'ING', classeId: CLASSE_C, subjects: ['ING'] },
-  { header: 'STO', classeId: CLASSE_C, subjects: ['STO'] },
-  { header: 'ITA', classeId: CLASSE_C_PARTNER, subjects: ['ITA'] },
-  { header: 'ING', classeId: CLASSE_C_PARTNER, subjects: ['ING'] },
-  { header: 'STO', classeId: CLASSE_C_PARTNER, subjects: ['STO'] }
+  { header: 'Matematica', classeId: null, subjects: ['MAT'] },
+  { header: 'Italiano', classeId: CLASSE_C, subjects: ['ITA'] },
+  { header: 'Inglese', classeId: CLASSE_C, subjects: ['ING'] },
+  { header: 'Storia', classeId: CLASSE_C, subjects: ['STO'] },
+  { header: 'Italiano', classeId: CLASSE_C_PARTNER, subjects: ['ITA'] },
+  { header: 'Inglese', classeId: CLASSE_C_PARTNER, subjects: ['ING'] },
+  { header: 'Storia', classeId: CLASSE_C_PARTNER, subjects: ['STO'] }
 ] as const;
 
 function emails(values: Iterable<string>): string[] {

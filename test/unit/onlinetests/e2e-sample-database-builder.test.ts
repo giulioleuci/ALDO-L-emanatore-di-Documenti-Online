@@ -262,7 +262,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     materie: 'MATE'
   });
   expect(JSON.parse(String(verbale[COL_CONF_DOC.REGISTRA_FOLD]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}}',
+    classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
     utenti: '',
     materie: 'MATE'
   });

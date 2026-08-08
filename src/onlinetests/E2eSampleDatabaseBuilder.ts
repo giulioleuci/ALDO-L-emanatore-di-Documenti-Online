@@ -426,7 +426,7 @@ export class E2eSampleDatabaseBuilder {
       sample.appendRow(TABLE.MATERIE, {
         [COL_MATERIE.ID]: sigla,
         [COL_MATERIE.NOME]: nomi[sigla],
-        [COL_MATERIE.SINTESI]: sigla,
+        [COL_MATERIE.SINTESI]: nomi[sigla],
         [COL_MATERIE.COLORE_1]: '#1565C0',
         [COL_MATERIE.COLORE_2]: '#90CAF9',
         [COL_MATERIE.SIMBOLO]: sigla.charAt(0),
@@ -910,8 +910,13 @@ export class E2eSampleDatabaseBuilder {
         utenti: '',
         materie: 'MATE'
       }),
+      // Come il REGISTRA_DOC del piano di lavoro sopra, la cartella del verbale
+      // deve risultare raggiungibile anche quando interrogata con classiCompetenza
+      // =[partner] (il box "cartelle" di CONF_MAIL_LAVORO instrada ogni
+      // coordinatore di partner separatamente via cartellePerClasse); il join
+      // gestisce con grazia il caso "non articolata" (log-registration.test.ts).
       [COL_CONF_DOC.REGISTRA_FOLD]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
+        classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
         utenti: '',
         materie: 'MATE'
       })

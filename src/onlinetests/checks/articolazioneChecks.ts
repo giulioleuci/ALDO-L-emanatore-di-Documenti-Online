@@ -114,11 +114,17 @@ export function registerArticolazioneChecks(
       if (
         seminar === undefined ||
         !seminar.materie.some(
-          (materia) => materia.sigla === 'LAB' && materia.specificita === 'SEMINARIO_POMERIDIANO'
+          (materia) =>
+            materia.sigla === 'LAB.SEMINARIO_POMERIDIANO' &&
+            materia.principale === 'Laboratorio' &&
+            materia.specificita === 'Seminario pomeridiano'
         ) ||
         original === undefined ||
         !original.materie.some(
-          (materia) => materia.sigla === 'LAB' && materia.specificita === 'SEMINARIO_POMERIDIANO'
+          (materia) =>
+            materia.sigla === 'LAB.SEMINARIO_POMERIDIANO' &&
+            materia.principale === 'Laboratorio' &&
+            materia.specificita === 'Seminario pomeridiano'
         ) ||
         replacementAfterBoundary !== undefined ||
         finalHolder === undefined ||

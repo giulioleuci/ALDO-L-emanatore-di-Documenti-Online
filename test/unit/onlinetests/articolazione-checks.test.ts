@@ -267,14 +267,26 @@ test('role/date check rejects a final holder that is not assigned to ITA', () =>
   const during = classCdu([
     {
       anagrafica: { email: 'e2edocente18@onlinetest.aldo.local' },
-      materie: [{ sigla: 'LAB', specificita: 'SEMINARIO_POMERIDIANO' }]
+      materie: [
+        {
+          sigla: 'LAB.SEMINARIO_POMERIDIANO',
+          principale: 'Laboratorio',
+          specificita: 'Seminario pomeridiano'
+        }
+      ]
     },
     { anagrafica: { email: 'e2edocente16@onlinetest.aldo.local' }, materie: [{ sigla: 'MAT' }] }
   ]);
   const after = classCdu([
     {
       anagrafica: { email: 'e2edocente4@onlinetest.aldo.local' },
-      materie: [{ sigla: 'LAB', specificita: 'SEMINARIO_POMERIDIANO' }]
+      materie: [
+        {
+          sigla: 'LAB.SEMINARIO_POMERIDIANO',
+          principale: 'Laboratorio',
+          specificita: 'Seminario pomeridiano'
+        }
+      ]
     }
   ]);
   const container = {
@@ -291,6 +303,39 @@ test('role/date check rejects a final holder that is not assigned to ITA', () =>
   expect(() =>
     runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
   ).toThrow(/titolare finale ITA/);
+});
+
+test('role/date check rejects the obsolete split LAB seminar representation', () => {
+  const during = classCdu([
+    {
+      anagrafica: { email: 'e2edocente18@onlinetest.aldo.local' },
+      materie: [{ sigla: 'LAB', principale: null, specificita: 'SEMINARIO_POMERIDIANO' }]
+    },
+    {
+      anagrafica: { email: 'e2edocente16@onlinetest.aldo.local' },
+      materie: [{ sigla: 'ITA', specificita: null }]
+    }
+  ]);
+  const after = classCdu([
+    {
+      anagrafica: { email: 'e2edocente4@onlinetest.aldo.local' },
+      materie: [{ sigla: 'LAB', principale: null, specificita: 'SEMINARIO_POMERIDIANO' }]
+    }
+  ]);
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'contextBuilder') {
+        return {
+          build: (params: { now: Date }) => (params.now.getDate() === 5 ? during : after)
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() =>
+    runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
+  ).toThrow(/attesi supplente LAB\.SEMINARIO_POMERIDIANO/);
 });
 
 test('INTERPRET.CHITARRA check rejects a base-only materia resolution', () => {

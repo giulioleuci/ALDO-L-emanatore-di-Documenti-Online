@@ -672,6 +672,34 @@ test('piani_pers_da_inviare: exposes the readable label to row templates without
   expect(html).not.toContain('PEI a1 anno scorso');
 });
 
+test('piani_pers_da_inviare: keeps current plans visible when historical lookup fails', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord(
+    [
+      {
+        nome: 'PDP corrente', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
+        tipoLabel: 'PDP (BES)', idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+      }
+    ],
+    new LazyRef(() => {
+      throw new Error('storico non disponibile');
+    })
+  );
+
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'piani_pers_da_inviare', arricchisciConStorico: true }]),
+    cdu,
+    materie(),
+    templates
+  );
+
+  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP corrente');
+  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP (BES)');
+});
+
 test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in the default-template (historical) path', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);

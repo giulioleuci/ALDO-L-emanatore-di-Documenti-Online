@@ -238,7 +238,13 @@ function renderPianiPersBox(
     return wrapUl(righe);
   }
 
-  const storico = storicoRef?.get() ?? [];
+  let storico: DocumentoStoricoConTipo[] = [];
+  try {
+    storico = storicoRef?.get() ?? [];
+  } catch {
+    // A missing/unavailable prior-year database must not suppress current plans.
+    storico = [];
+  }
   const righe = items
     .map((corrente) => {
       const storicoCorrente = storico

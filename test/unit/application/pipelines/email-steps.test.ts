@@ -1369,6 +1369,29 @@ test('LogEmailStep stores a stable logical target id beside post-routing recipie
   expect(allegati.logicalTargetId).toBe('genitori:a1@school.it:1');
 });
 
+test('logs logicalTargetId for a test-mode delivery', () => {
+  const w = wire({}, {
+    ...docenteTarget(),
+    docenteEmail: 'docente@school.it',
+    emails: ['docente@school.it']
+  });
+  const registraInvio = jest.fn();
+  const logMail = { registraInvio } as unknown as LogEmailRepository;
+  w.ctx.set('shouldSend', true);
+  w.ctx.set('sentTo', ['tester@school.it']);
+  w.ctx.set('sendErrors', []);
+  w.ctx.set('corpoHtml', '<p>x</p>');
+  w.ctx.set('testEmail', 'tester@school.it');
+
+  new LogEmailStep(logger, logMail).execute(w.ctx);
+
+  expect(registraInvio).toHaveBeenCalledWith(
+    expect.any(String), expect.any(Array), expect.anything(), expect.any(String),
+    expect.objectContaining({ logicalTargetId: 'docente:docente@school.it', testMode: true }),
+    undefined
+  );
+});
+
 test('PostProcessEmailStep stamps CARENZE.NOTIFICATO only after a successful send (11 §10)', () => {
   const post = JSON.stringify([
     {

@@ -627,6 +627,22 @@ test('sendPattern skips a target already SUCCESS-logged for this pattern, and st
   expect(gmail.sent).toHaveLength(targets.length - 1);
 });
 
+test('does not block real delivery from a SUCCESS test-mode audit record', () => {
+  const { db, service } = wire([mailRow('MAIL_1', { PROCESSO: 'PER_COORDINATORE' })]);
+  const target = service.enumerateTargets(conf('PER_COORDINATORE'))[0]!;
+  new LogEmailRepository(db).registraInvio(
+    'MAIL_1',
+    target.emails.map((email) => Email.of(email)),
+    StatoEmail.SUCCESS,
+    '<p>preview</p>',
+    { logicalTargetId: emailTargetId(target), testMode: true }
+  );
+
+  service.disableTestMode();
+
+  expect(service.sendPattern('MAIL_1').sent).toBe(1);
+});
+
 test('sendPattern aborts before delivery when LOG_MAIL history lookup fails', () => {
   const { db, gmail } = wire([mailRow('GUARD_REPOSITORY_ERROR')]);
   const logMail = new LogEmailRepository(db);

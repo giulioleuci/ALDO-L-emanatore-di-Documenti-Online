@@ -251,7 +251,9 @@ export class EmailNotificationService {
       const ids = new Set<string>();
       for (const log of this.deps.logMail.findByPattern(patternId)) {
         if (log.stato !== StatoEmail.SUCCESS) continue;
-        const logicalTargetId = log.getAllegati()['logicalTargetId'];
+        const allegati = log.getAllegati();
+        if (allegati['testMode'] === true) continue;
+        const logicalTargetId = allegati['logicalTargetId'];
         if (typeof logicalTargetId === 'string' && logicalTargetId.length > 0) {
           ids.add(logicalTargetId);
         }

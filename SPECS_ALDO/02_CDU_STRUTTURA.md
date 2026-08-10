@@ -83,8 +83,9 @@ meta:
   # §CONF_DOC.DUPLICAZIONE). Usare `{{progressivo}}` in `FILE_NAME` è quindi
   # sicuro con `DUPLICAZIONE=NEGATA`: NON vanifica il confronto di identità.
   # Un tipo documento le cui istanze devono restare distinguibili tra loro (es.
-  # un verbale per riunione) richiede comunque un `CONF_DOC.ID` distinto per
-  # istanza, perché `ID_GEN` è quel che le differenzia — non `FILE_NAME`.
+  # un verbale per riunione) richiede un `CONF_DOC.ID` distinto per istanza solo
+  # quando tutti i componenti dell'identità, incluso il nome normalizzato,
+  # sarebbero altrimenti uguali.
 
   date:
     oggi:

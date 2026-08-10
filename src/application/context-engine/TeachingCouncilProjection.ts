@@ -1,4 +1,4 @@
-import type { Cdu, DocenteCdcVM } from './Cdu';
+import type { Cdu, DocenteCdcVM, SupplenzaAggregataVM } from './Cdu';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -12,7 +12,7 @@ import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { GestioneSupplenti, ReligioneScelta } from '../../domain/value-objects/enums';
 import { getClasseEntity } from './techEntities';
 import { attachCduMateriaAssignmentIdentity } from './CduInternalMetadata';
-import { buildPersonVm, type PersonVM } from './mappers/personVmMapper';
+import { buildPersonVm, buildPersonVmFromDocente, type PersonVM } from './mappers/personVmMapper';
 import { buildSubjectVm, type SubjectVM } from './mappers/subjectVmMapper';
 import type { CurriculumVM } from './mappers/carenzeMapper';
 
@@ -212,13 +212,13 @@ function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(
   return result;
 }
 
-function materiaVm(
+function materiaVmFromSlot(
   materie: IMateriaRepository,
   classe: Classe,
-  assignment: FlattenedProjectionAssignment
+  slot: { materia: string; kind: string; specifica: string | null }
 ): SubjectVM | null {
-  const baseId = MateriaId.of(assignment.slot.materia);
-  const specifica = assignment.slot.specifica;
+  const baseId = MateriaId.of(slot.materia);
+  const specifica = slot.specifica;
   const materia =
     specifica === null
       ? materie.findByIdCached(baseId)
@@ -227,10 +227,75 @@ function materiaVm(
   if (materia === null) return null;
   return buildSubjectVm(materia, {
     indirizzo: IndirizzoId.of(classe.indirizzo),
-    isITP: assignment.slot.kind === 'ITP',
+    isITP: slot.kind === 'ITP',
     principale: materia.principale,
     specificita: materia.specificita
   });
+}
+
+function materiaVm(
+  materie: IMateriaRepository,
+  classe: Classe,
+  assignment: FlattenedProjectionAssignment
+): SubjectVM | null {
+  return materiaVmFromSlot(materie, classe, assignment.slot);
+}
+
+/**
+ * Aggregates the class's active supplenze per (supplente, titolare) pair from
+ * the raw teaching assignments (02 §4.1/§8.12). Always reflects the actual
+ * delegations (`docenteEffettivo !== titolare`), independent of the routing
+ * policy — so it is populated even under SOLO_TITOLARI where the council VM
+ * hides the swap. Materie are deduped by `sigla + specifica` and sorted by
+ * supplente, then titolare, nomeCompleto.
+ */
+export function buildSupplenzeAggregate(
+  assignments: TeachingAssignment[],
+  materie: IMateriaRepository,
+  classe: Classe
+): SupplenzaAggregataVM[] {
+  const byPair = new Map<
+    string,
+    {
+      supplente: Docente;
+      titolare: Docente;
+      slots: Array<{ materia: string; kind: string; specifica: string | null }>;
+    }
+  >();
+  for (const assignment of assignments) {
+    if (assignment.docenteEffettivo.id === null || assignment.titolare.id === null) continue;
+    if (assignment.docenteEffettivo.id === assignment.titolare.id) continue;
+    const key = `${assignment.docenteEffettivo.id}|${assignment.titolare.id}`;
+    const pair = byPair.get(key) ?? {
+      supplente: assignment.docenteEffettivo,
+      titolare: assignment.titolare,
+      slots: []
+    };
+    pair.slots.push({
+      materia: assignment.slot.materia.value,
+      kind: assignment.slot.kind,
+      specifica: assignment.slot.specifica
+    });
+    byPair.set(key, pair);
+  }
+  const items = [...byPair.values()].map(({ supplente, titolare, slots }) => ({
+    supplente: buildPersonVmFromDocente(supplente),
+    titolare: buildPersonVmFromDocente(titolare),
+    dettaglioMaterie: dedupeMaterie(
+      slots
+        .map((slot) => materiaVmFromSlot(materie, classe, slot))
+        .filter((vm): vm is SubjectVM => vm !== null)
+    )
+  }));
+  items.sort((a, b) => {
+    const bySupplente = (a.supplente.nomeCompleto ?? '').localeCompare(
+      b.supplente.nomeCompleto ?? ''
+    );
+    return bySupplente !== 0
+      ? bySupplente
+      : (a.titolare.nomeCompleto ?? '').localeCompare(b.titolare.nomeCompleto ?? '');
+  });
+  return items;
 }
 
 function personVmOf(teacher: ProjectionTeacher): PersonVM {
@@ -403,15 +468,13 @@ export function attachCouncilProjectionMetadata(cdu: Cdu, assignments: TeachingA
   for (const docente of cdu.focus.classe?.consiglioDiClasse ?? []) {
     const candidates = [...(candidatesByActor.get(docente.anagrafica.email ?? '') ?? [])];
     for (const materia of docente.materie) {
-      const index = candidates.findIndex(
-        (assignment) => {
-          const catalogId =
-            assignment.slot.specifica === null
-              ? assignment.slot.materia.value
-              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
-          return catalogId === materia.sigla;
-        }
-      );
+      const index = candidates.findIndex((assignment) => {
+        const catalogId =
+          assignment.slot.specifica === null
+            ? assignment.slot.materia.value
+            : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
+        return catalogId === materia.sigla;
+      });
       const assignment = index === -1 ? undefined : candidates.splice(index, 1)[0];
       if (assignment !== undefined) {
         attachCduMateriaAssignmentIdentity(materia, {

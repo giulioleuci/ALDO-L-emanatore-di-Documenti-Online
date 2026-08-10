@@ -51,7 +51,10 @@ test('SOLO_SUPPLENTI: the titolare VM becomes the chain-resolved supplente (09 Â
     appellativo: 'Prof.ssa'
   });
   expect(rossi.stato.isSupplente).toBe(true);
-  expect(rossi.stato.sostituisce).toMatchObject({ nomeCompleto: 'MARIO ROSSI', email: 'rossi@school.it' });
+  expect(rossi.stato.sostituisce).toMatchObject({
+    nomeCompleto: 'MARIO ROSSI',
+    email: 'rossi@school.it'
+  });
   expect(rossi.materie.map((m) => m.sigla)).toEqual(['MATE']); // subject covered by the supplente
 });
 
@@ -59,7 +62,10 @@ test('ENTRAMBI: the GLF primary actor is projected first with the principal in s
   const rossi = rossiSlot(cdc(GestioneSupplenti.ENTRAMBI));
   expect(rossi.anagrafica.email).toBe('bianchi@school.it');
   expect(rossi.stato.isSupplente).toBe(true);
-  expect(rossi.stato.sostituisce).toMatchObject({ nomeCompleto: 'MARIO ROSSI', email: 'rossi@school.it' });
+  expect(rossi.stato.sostituisce).toMatchObject({
+    nomeCompleto: 'MARIO ROSSI',
+    email: 'rossi@school.it'
+  });
 });
 
 test('default rule (SOLO_TITOLARI): no swap even during an active supplenza', () => {
@@ -72,4 +78,58 @@ test('SOLO_SUPPLENTI outside the supplenza window: no swap', () => {
   const rossi = rossiSlot(cdc(GestioneSupplenti.SOLO_SUPPLENTI, new Date('2026-07-01T09:00:00Z')));
   expect(rossi.anagrafica.email).toBe('rossi@school.it');
   expect(rossi.stato.isSupplente).toBe(false);
+});
+
+test('focus.classe.supplenze aggregates active delegations even under the default SOLO_TITOLARI routing', () => {
+  const cdu = composeContextBuilder(new FakeDatabase(tablesWith4B())).build(
+    { target: '4B', tipoTarget: 'classe', now: duringSupplenza },
+    recipe('CLASSE_COMPLETA')
+  );
+  const supplenze = cdu.focus.classe!.supplenze!;
+  expect(supplenze).toHaveLength(1);
+  expect(supplenze[0]!.supplente).toMatchObject({
+    nome: 'LUCIA',
+    cognome: 'BIANCHI',
+    email: 'bianchi@school.it',
+    genere: 'F',
+    nomeCompleto: 'LUCIA BIANCHI',
+    appellativoCompleto: 'Prof.ssa LUCIA BIANCHI'
+  });
+  expect(supplenze[0]!.titolare).toMatchObject({
+    nome: 'MARIO',
+    cognome: 'ROSSI',
+    email: 'rossi@school.it',
+    nomeCompleto: 'MARIO ROSSI'
+  });
+  expect(supplenze[0]!.dettaglioMaterie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(supplenze[0]!.dettaglioMaterie[0]!.nomeSintetico).toBe('Matematica');
+});
+
+test('supplenze merges every covered slot into one (supplente, titolare) item with base SubjectVM entries', () => {
+  const t = tablesWith4B();
+  (t['CLASSI'] as Row[]).find((r) => r['ID'] === '4B')!['FISI'] = 'rossi@school.it';
+  const cdu = composeContextBuilder(new FakeDatabase(t)).build(
+    { target: '4B', tipoTarget: 'classe', now: duringSupplenza },
+    recipe('CLASSE_COMPLETA')
+  );
+  const item = cdu.focus.classe!.supplenze![0]!;
+  expect(cdu.focus.classe!.supplenze).toHaveLength(1);
+  expect(item.dettaglioMaterie.map((m) => m.sigla).sort()).toEqual(['FISI', 'MATE']);
+  expect(item.dettaglioMaterie[0]!.docenti).toBeUndefined();
+});
+
+test('supplenze is [] when no delegation is active', () => {
+  const cdu = composeContextBuilder(new FakeDatabase(tablesWith4B())).build(
+    { target: '4B', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') },
+    recipe('CLASSE_COMPLETA')
+  );
+  expect(cdu.focus.classe!.supplenze).toEqual([]);
+});
+
+test('supplenze is populated in the DOCENTE_COMPLETO recipe too', () => {
+  const cdu = composeContextBuilder(new FakeDatabase(tablesWith4B())).build(
+    { target: '4B', tipoTarget: 'classe', now: duringSupplenza },
+    recipe('DOCENTE_COMPLETO')
+  );
+  expect(cdu.focus.classe!.supplenze).toHaveLength(1);
 });

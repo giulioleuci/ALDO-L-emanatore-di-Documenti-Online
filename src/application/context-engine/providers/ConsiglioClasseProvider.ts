@@ -6,6 +6,7 @@ import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRe
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
 import {
   attachCouncilProjectionMetadata,
+  buildSupplenzeAggregate,
   createTeachingCouncilProjection,
   prepareCouncilAssignments,
   resolveCouncilForProjection
@@ -24,10 +25,10 @@ export class ConsiglioClasseProvider implements ContextProvider {
 
   constructor(
     private readonly classi: IClasseRepository,
-    materie: IMateriaRepository,
+    private readonly materie: IMateriaRepository,
     private readonly teachingAssignments: ITeachingAssignmentResolver
   ) {
-    this.projection = createTeachingCouncilProjection(classi, materie).consiglio;
+    this.projection = createTeachingCouncilProjection(classi, this.materie).consiglio;
   }
 
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
@@ -41,6 +42,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
       options.gestioneSupplenti
     );
     focusClasse.consiglioDiClasse = prepareCouncilAssignments(assignments) as never;
+    focusClasse.supplenze = buildSupplenzeAggregate(assignments, this.materie, classe);
     this.projection.intercept('consiglio', cdu, cdu, options);
     attachCouncilProjectionMetadata(cdu, assignments);
 

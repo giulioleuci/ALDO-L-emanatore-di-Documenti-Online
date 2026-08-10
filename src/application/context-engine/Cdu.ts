@@ -93,6 +93,21 @@ export interface PianoPersonalizzatoItem {
   studente?: { nomeCompleto: string; email: string };
 }
 
+/**
+ * One aggregated active supplenza row of `focus.classe.supplenze` (02 §4.1/§8.12):
+ * one item per (supplente, titolare) pair, materie combined. Populated from the
+ * raw teaching assignments, so it reflects actual delegations regardless of the
+ * `gestioneSupplenti` routing policy.
+ */
+export interface SupplenzaAggregataVM {
+  /** Docente effettivamente attivo (chain-resolved supplente, §8.1). */
+  supplente: PersonVM;
+  /** Titolare sostituito (`assignment.titolare`, §8.1). */
+  titolare: PersonVM;
+  /** Materie coperte — base SubjectVM (§8.2), no `docenti`/`continuita` fields. */
+  dettaglioMaterie: SubjectVM[];
+}
+
 export interface CduMeta {
   timestamp: string;
   idConfigurazione: string;
@@ -190,6 +205,8 @@ export interface CduClasse {
   consiglioDiClasse?: DocenteCdcVM[];
   consiglioDiClasseComune?: DocenteCdcVM[];
   consiglioDiClasseSeparato?: DocenteCdcVM[];
+  /** Active supplenze aggregated per (supplente, titolare) pair (02 §4.1/§8.12) — always set when the `consiglio` provider runs (`[]` if none). */
+  supplenze?: SupplenzaAggregataVM[];
   /** Disaggregated per-partner-class projection for an articulated parent (02 §2.5), only when `includiPartnerDettaglio` is true. */
   partner?: { primo: SingleClassProjection; secondo: SingleClassProjection };
   /** Flat, deduped subject catalog of the class council (02 §2.8, §4.1). */
@@ -248,6 +265,14 @@ export interface CduClasse {
       storico?: LazyRef<
         import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
       >;
+      /** Precomputed partition of `items` with stato !== VERBALIZZATO (02 §4.1) — templates MUST NOT filter on `stato`. */
+      nonVerbalizzati?: {
+        isPresenteLista: boolean;
+        elenco: Array<{
+          studente: { nomeCompleto: string; email: string };
+          tipoLabel: string;
+        }>;
+      };
     };
     /** Class-wide LOG_DOCS aggregation (mirrors `CduAlunno.didattica.documenti`, 11 §11 new). */
     documenti?: {

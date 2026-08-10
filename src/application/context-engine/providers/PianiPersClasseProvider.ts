@@ -5,7 +5,7 @@ import type { IClasseRepository } from '../../../domain/repositories/IClasseRepo
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
-import { TipoPiano } from '../../../domain/value-objects/enums';
+import { StatoDocumento, TipoPiano } from '../../../domain/value-objects/enums';
 import { tipoPianoLabel } from '../mappers/labels';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
@@ -53,10 +53,22 @@ export class PianiPersClasseProvider implements ContextProvider {
           };
         });
     });
+    const nonVerbalizzati = {
+      isPresenteLista: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
+      elenco: items
+        .filter((item) => item.stato !== StatoDocumento.VERBALIZZATO)
+        .map((item) => ({
+          studente: {
+            nomeCompleto: item.studente?.nomeCompleto ?? '',
+            email: item.studente?.email ?? ''
+          },
+          tipoLabel: item.tipoLabel
+        }))
+    };
     if (cdu.focus.classe.didattica === undefined) {
-      cdu.focus.classe.didattica = { pianiPersonalizzati: { items } };
+      cdu.focus.classe.didattica = { pianiPersonalizzati: { items, nonVerbalizzati } };
     } else {
-      cdu.focus.classe.didattica.pianiPersonalizzati = { items };
+      cdu.focus.classe.didattica.pianiPersonalizzati = { items, nonVerbalizzati };
     }
   }
 }

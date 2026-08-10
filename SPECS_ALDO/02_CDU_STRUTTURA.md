@@ -240,6 +240,12 @@ focus.classe:
   consiglioDiClasseComune: DocenteCdcVM[]    # Docenti con tipoArticolazione COMUNE
   consiglioDiClasseSeparato: DocenteCdcVM[]  # Docenti con tipoArticolazione SEPARATO_PRIMO o SEPARATO_SECONDO
 
+  # SUPPLENZE ATTIVE DI CLASSE (aggregate per coppia supplente/titolare — §8.12)
+  # Sempre presente quando il provider `consiglio` gira; [] se nessuna supplenza attiva.
+  # Riflette le delegazioni reali (docenteEffettivo != titolare) anche con
+  # gestioneSupplenti = SOLO_TITOLARI, dove consiglioDiClasse[].stato.isSupplente resta false.
+  supplenze: SupplenzaAggregataVM[]
+
   # CATALOGO MATERIE DI CLASSE (Tutte le materie attive)
   materie: SubjectVM[]           # Array piatto di tutte le materie della classe (§8.2), ciascuna recante:
                                   #   - docenti: PersonVM[] assegnati
@@ -331,6 +337,12 @@ focus.classe:
   didattica:
     pianiPersonalizzati:
       items: PianoPersonalizzatoItem[]   # §8.11 — ogni item porta `studente: {nomeCompleto, email}`
+      nonVerbalizzati:                   # Partizione precalcolata (Principio 3): stato != VERBALIZZATO.
+                                         #   Vietato filtrare su `stato` nei template (where:'stato',...).
+        isPresenteLista: boolean         # true sse elenco non vuoto (per {{#isPresenteLista}}/{{^}})
+        elenco:
+          - studente: { nomeCompleto: string, email: string }  # stesso shape di PianoPersonalizzatoItem.studente
+            tipoLabel: string            # es. "PDP (DSA)" — da tipoPianoLabel()
       storico: LazyRef<DocumentoStoricoConTipo[]>  # opzionale, solo se opzioni.includiStorico = true
     documenti:
       items:
@@ -869,6 +881,27 @@ PianoPersonalizzatoItem:
 
 ---
 
+### 8.12 Supplenza aggregata di classe (`SupplenzaAggregataVM`)
+
+Riga di `focus.classe.supplenze[]` (§4.1), costruita da `ConsiglioClasseProvider`
+sugli stessi `TeachingAssignment[]` del consiglio di classe: un item per coppia
+(supplente, titolare), con le materie coperte combinate e deduplicate per
+`sigla + specifica`. Sempre popolata (anche con `gestioneSupplenti =
+SOLO_TITOLARI`): riflette le delegazioni reali, non il routing email.
+
+```yaml
+SupplenzaAggregataVM:
+  supplente: PersonVM            # §8.1 — docente effettivamente attivo (docenteEffettivo)
+  titolare: PersonVM             # §8.1 — titolare sostituito (assignment.titolare)
+  dettaglioMaterie: SubjectVM[]  # §8.2 — materie coperte; forma BASE (niente docenti/continuita)
+```
+
+> In una catena di supplenze A→B→C il supplente è C (ultimo effettivo); gli
+> intermedi sono omessi. L'ordinamento è per `supplente.nomeCompleto`, poi
+> `titolare.nomeCompleto`.
+
+---
+
 ## 9. Linee guida d'uso dei placeholder (catalogo)
 
 Questa sezione è la tavola di traduzione tra "cosa voglio stampare" e placeholder/loop/filtri, esclusivamente su path del CDU. **Nessun valore di dominio è hardcodato.**
@@ -902,6 +935,8 @@ Questa sezione è la tavola di traduzione tra "cosa voglio stampare" e placehold
 | Specificità per materia (3 livelli) | `{{#focus.classe.studenti.perSpecificita}}{{materiaNome}}: {{#specifiche}}{{nome}} ({{#alunni}}{{nomeCompleto}};{{/alunni}}){{/specifiche}}{{/focus.classe.studenti.perSpecificita}}` |
 | Curriculum alunno (loop) | `{{#focus.alunno.curriculum}}{{materiaNome}}: {{#specifiche}}{{nome \| capitalize}}{{/specifiche}}{{/focus.alunno.curriculum}}` |
 | Piani personalizzati di classe | `{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.items}}{{studente.nomeCompleto}} — {{sottotipo}}{{/bullet_list}}` |
+| Supplenze attive della classe | `{{#bullet_list:focus.classe.supplenze}}{{supplente.appellativoCompleto}} sostituisce {{titolare.appellativoCompleto}} ({{dettaglioMaterie \| map:'nomeSintetico' \| join:', '}}){{/bullet_list}}` |
+| Piani non verbalizzati | `{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.elenco}}{{studente.nomeCompleto}} — {{tipoLabel}}{{/bullet_list}}` |
 
 ### 9.3 Loop Sheets
 
@@ -918,6 +953,8 @@ Questa sezione è la tavola di traduzione tra "cosa voglio stampare" e placehold
 | L'alunno ha bocciature | `{{#focus.alunno.storico.hasBocciature}} ... {{/focus.alunno.storico.hasBocciature}}` (guardare anche `{{^}}`) — richiede che il provider storico abbia già `.get()`-ato il `LazyRef` a monte (§8.6) |
 | Materia con ITP | `{{#hasItp}} ... {{/hasItp}}` su un item di `focus.classe.materie` |
 | Carenze presenti | `{{#focus.alunno.didattica.carenze.hasCarenze}} ... {{/focus.alunno.didattica.carenze.hasCarenze}}` |
+| La classe ha supplenze attive | `{{#focus.classe.supplenze}} ... {{/focus.classe.supplenze}}` (sezione Mustache su array; guardare anche `{{^}}`) |
+| Ci sono piani non verbalizzati | `{{#focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.isPresenteLista}} ... {{/focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.isPresenteLista}}` |
 
 ### 9.5 Filtri pipe: ammessi e vietati
 
@@ -1129,6 +1166,51 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       ],
       "consiglioDiClasseComune": [],
       "consiglioDiClasseSeparato": [],
+      "supplenze": [
+        {
+          "supplente": {
+            "nome": "LUCIA",
+            "cognome": "BIANCHI",
+            "email": "bianchi@scuola.edu.it",
+            "genere": "F",
+            "appellativo": "Prof.ssa",
+            "articolo": "la",
+            "coordinatore": "coordinatrice",
+            "nomeCompleto": "LUCIA BIANCHI",
+            "materia": null,
+            "appellativoCompleto": "Prof.ssa LUCIA BIANCHI",
+            "appellativoCognome": "Prof.ssa BIANCHI"
+          },
+          "titolare": {
+            "nome": "MARIO",
+            "cognome": "ROSSI",
+            "email": "rossi@scuola.edu.it",
+            "genere": "M",
+            "appellativo": "Prof.",
+            "articolo": "il",
+            "coordinatore": "coordinatore",
+            "nomeCompleto": "MARIO ROSSI",
+            "materia": null,
+            "appellativoCompleto": "Prof. MARIO ROSSI",
+            "appellativoCognome": "Prof. ROSSI"
+          },
+          "dettaglioMaterie": [
+            {
+              "sigla": "MATE",
+              "nome": "Matematica",
+              "nomeSintetico": "Matematica",
+              "colore1": "#1E88E5",
+              "colore2": "#E3F2FD",
+              "isMateriaPrimaProva": false,
+              "isMateriaSecondaProva": false,
+              "principale": null,
+              "specificita": null,
+              "isITP": false,
+              "evoluzione": null
+            }
+          ]
+        }
+      ],
       "materie": [
         {
           "sigla": "STO",
@@ -1388,7 +1470,10 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
         }
       },
       "didattica": {
-        "pianiPersonalizzati": { "items": [] },
+        "pianiPersonalizzati": {
+          "items": [],
+          "nonVerbalizzati": { "isPresenteLista": false, "elenco": [] }
+        },
         "documenti": { "items": [], "hasDocumenti": false }
       }
     }
@@ -1435,3 +1520,4 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
 7. **Assenza di mapping legacy.** Qualsiasi tentativo di accedere a proprietà non presenti in questo documento (es. `studenti.perIndirizzo`, `studenti.indirizziPresenti`, `curriculum["INTERPRETAZIONE"]`, `perSpecificita["INTERPRETAZIONE"]["chitarra"]`) DEVE sollevare un errore a tempo di compilazione/mappatura.
 8. **Budget placeholder.** Violazioni del budget di lunghezza (Principio 6) vanno risolte denormalizzando nel CDU, non allungando i placeholder.
 9. **LazyRef non serializzato direttamente.** `focus.classe.storico`, `focus.alunno.storico`, `*.didattica.documenti.storico`, `*.didattica.pianiPersonalizzati.storico` sono `LazyRef<T>` (CoreUtilsLib): il consumatore (box renderer o step) DEVE chiamare `.get()` prima di leggerne le proprietà; nessun placeholder può assumere che il nodo sia già un valore piatto senza che qualcosa a monte lo abbia materializzato.
+10. **Partizioni precalcolate di stato.** `focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati` è l'UNICA via per accedere ai piani non verbalizzati: i template NON usano `where`/`filter` su `stato` (violazione di Principio 3). `focus.classe.supplenze` espone le supplenze come `PersonVM` (§8.1) con `dettaglioMaterie` in forma `SubjectVM` base (§8.2) — nessuna stringa anagrafica grezza né proiezione materia ad hoc.

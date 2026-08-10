@@ -191,6 +191,20 @@ Genera un elenco puntato nativo in Google Docs per ogni elemento dell'array indi
 {{/bullet_list}}
 ```
 
+**Elenco puntato delle supplenze attive:**
+```mustache
+{{#bullet_list:focus.classe.supplenze}}
+{{supplente.appellativoCompleto}} sostituisce {{titolare.appellativoCompleto}} ({{dettaglioMaterie | map:'nomeSintetico' | join:', '}})
+{{/bullet_list}}
+```
+
+**Elenco puntato dei piani non verbalizzati:**
+```mustache
+{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.elenco}}
+{{studente.nomeCompleto}} — {{tipoLabel}}
+{{/bullet_list}}
+```
+
 #### B. Elenco Numerato (`{{#number_list:...}}`)
 
 Genera un elenco numerato progressivo nativo in Google Docs.
@@ -350,6 +364,7 @@ Nello sviluppo di SGSA / ALDO si applicano vincoli stringenti derivati dalle spe
    - Il CDU espone già le forme testuali pronte (`appellativoCompleto`, `materieDescrizione`, `religioneLabel`, `tipoLabel`). I template non devono concatenare stringhe.
 4. **Partizioni Precalcolate**:
    - I raggruppamenti per il dominio (es. `consiglioDiClasseComune`, `consiglioDiClasseSeparato`, `esame.materiePrimaProva`) sono precalcolati dal `ContextEngine` nel CDU.
+   - La partizione `pianiPersonalizzati.nonVerbalizzati` (stato ≠ verbalizzato) è precalcolata nel CDU: i template non devono filtrare su `stato`.
 
 ### 7.2 Budget di Lunghezza dei Placeholder (Principio 6)
 

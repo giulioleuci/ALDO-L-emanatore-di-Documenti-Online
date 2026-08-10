@@ -19,12 +19,10 @@ import type {
 } from '../../application/ports/ITeachingAssignmentResolver';
 import { GestioneSupplenti, TipoPiano, TipoProgetto } from '../../domain/value-objects/enums';
 import { composeRisolutoreRuoli } from '../../config/ApplicationComposition';
-import { ResolveRecipientsStep } from '../../application/pipelines/emailSteps';
+import { resolveEffectiveDocenti } from '../../application/context-engine/TeachingCouncilProjection';
 import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps';
-import { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
-import { DocenteRepository } from '../../infrastructure/repositories/DocenteRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
@@ -406,19 +404,14 @@ export function registerEffectiveAssignmentConsumerChecks(
     'Effective assignment consumers: email recipients',
     sample.sampleSpreadsheetUrl,
     () => {
-      const confMail = ConfigurazioneEmail.fromData({
-        ID: 'MATRIX_EMAIL',
-        OGGETTO: 'Matrix',
-        PROCESSO: 'PER_DOCENTE',
-        BOX_CFG: null,
-        TESTO: '',
-        SUPPLENTI: 'ENTRAMBI',
-        NOREPLY: false,
-        COLORE_HEADER: '',
-        CONDIZIONE: null,
-        POST_PROCESSO: null,
-        ALLEGATI: '[]'
-      });
+      // Titolare/supplente content-mismatch fix: PER_DOCENTE now splits a
+      // titolare's cattedra into one EmailTarget per actor at enumeration time
+      // (EmailNotificationService.expandDocenteActors) and ResolveRecipientsStep
+      // freshness-rechecks only the single actor a target's content was built
+      // for, rather than fanning a shared content build out to several
+      // recipients. `resolveEffectiveDocenti` is the function both call sites
+      // share, so it is what this consumer check must exercise to agree with
+      // the CDC/role/document/sheet consumers below.
       const actual = new Set<string>();
       const principals = new Set(
         assignments.flatMap((assignment) =>
@@ -426,27 +419,14 @@ export function registerEffectiveAssignmentConsumerChecks(
         )
       );
       for (const principal of principals) {
-        const ctx = new PipelineContext();
-        ctx.set('shouldSend', true);
-        ctx.set('now', ASSIGNMENT_MATRIX_DATE_E2E);
-        ctx.set('confMail', confMail);
-        ctx.set('emailTarget', {
-          tipo: 'docente',
-          tipoTarget: 'classe',
-          target: CLASSE_A,
-          docenteEmail: principal,
-          emails: [principal],
-          classiCompetenza: [CLASSE_A],
-          teachingAssignmentTarget: true
-        });
-        new ResolveRecipientsStep(
-          new LoggerService(),
-          new DocenteRepository(db),
-          classi,
-          resolver
-        ).execute(ctx);
-        for (const destination of ctx.get<Array<{ emails: string[] }>>('destinatariFinali') ?? []) {
-          for (const email of destination.emails) actual.add(email);
+        for (const actor of resolveEffectiveDocenti(
+          resolver,
+          [classe],
+          principal,
+          ASSIGNMENT_MATRIX_DATE_E2E,
+          GestioneSupplenti.ENTRAMBI
+        )) {
+          actual.add(actor);
         }
       }
       assertSameRecipients('email recipients', expected, emails(actual), assignments);
@@ -461,6 +441,9 @@ export function registerEffectiveAssignmentConsumerChecks(
       const drive = {
         setPermission: (_fileId: string, email: string): void => {
           permissions.push(email);
+        },
+        setPermissions: (grants: Array<{ email: string }>): void => {
+          permissions.push(...grants.map((g) => g.email));
         }
       } as unknown as IDriveFacade;
       const row = {
@@ -660,24 +643,20 @@ export function registerEffectiveAssignmentConsumerChecks(
             assignment.titolare.id === null ? [] : [assignment.titolare.id]
           )
         );
-        const confMail = ConfigurazioneEmail.fromData({
-          ID: 'MATRIX_PARTNER_EMAIL', OGGETTO: 'Matrix', PROCESSO: 'PER_DOCENTE', BOX_CFG: null,
-          TESTO: '', SUPPLENTI: 'ENTRAMBI', NOREPLY: false, COLORE_HEADER: '', CONDIZIONE: null,
-          POST_PROCESSO: null, ALLEGATI: '[]'
-        });
+        // Titolare/supplente content-mismatch fix: see the sibling "email
+        // recipients" check above — `resolveEffectiveDocenti` is the shared
+        // resolution both EmailNotificationService.expandDocenteActors and
+        // ResolveRecipientsStep now delegate to.
         for (const principal of principals) {
-          const ctx = new PipelineContext();
-          ctx.set('shouldSend', true);
-          ctx.set('now', ASSIGNMENT_MATRIX_DATE_E2E);
-          ctx.set('confMail', confMail);
-          ctx.set('emailTarget', {
-            tipo: 'docente', tipoTarget: 'classe', target: classeId, docenteEmail: principal,
-            emails: [principal], classiCompetenza: [classeId], teachingAssignmentTarget: true
-          });
-          new ResolveRecipientsStep(new LoggerService(), new DocenteRepository(db), classi, resolver).execute(ctx);
-          for (const destination of ctx.get<Array<{ emails: string[] }>>('destinatariFinali') ?? []) {
-            emailRecipients.push(...destination.emails);
-          }
+          emailRecipients.push(
+            ...resolveEffectiveDocenti(
+              resolver,
+              [partner],
+              principal,
+              ASSIGNMENT_MATRIX_DATE_E2E,
+              GestioneSupplenti.ENTRAMBI
+            )
+          );
         }
         assertSameRecipients(`email recipients ${classeId}`, expectedRecipients, emailRecipients, partnerAssignments);
 
@@ -685,6 +664,9 @@ export function registerEffectiveAssignmentConsumerChecks(
         const drive = {
           setPermission: (_fileId: string, email: string): void => {
             permissions.push(email);
+          },
+          setPermissions: (grants: Array<{ email: string }>): void => {
+            permissions.push(...grants.map((g) => g.email));
           }
         } as unknown as IDriveFacade;
         const row = {

@@ -384,6 +384,22 @@ test('BuildCDUStep destinatario.contesto.sostituisce stays null when there is no
   expect(cdu.destinatario?.contesto.sostituisce).toBeNull();
 });
 
+test('BuildCDUStep destinatario matches the resolved supplente and records sostituisce when the target was split off a titolare (titolare/supplente content-mismatch fix)', () => {
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_SUPPLENTI' },
+    { ...docente4BTarget(), docenteEmail: 'bianchi@school.it', titolareEmail: 'rossi@school.it' },
+    tablesWith4B()
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const d = cdu.destinatario!;
+  // The physical recipient is bianchi (the supplente) — content/greeting must
+  // address bianchi, not rossi (the nominal titolare this target was split from).
+  expect(d.anagrafica.email).toBe('bianchi@school.it');
+  expect(d.comunicazione.salutoIniziale).toContain('BIANCHI');
+  expect(d.contesto.sostituisce?.email).toBe('rossi@school.it');
+});
+
 test('BuildCDUStep forwards CONF_MAIL.SUPPLENTI as gestioneSupplenti (regression: was silently dropped when includiStorico wiring was added)', () => {
   const w = wire(
     { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_SUPPLENTI' },
@@ -950,7 +966,14 @@ test('PER_COORDINATORE stays on its declared recipient and never assignment-rout
   expect(resolveConsiglio).not.toHaveBeenCalled();
 });
 
-test('PER_DOCENTE routes only assignments owned by its principal logical target', () => {
+// Titolare/supplente content-mismatch fix: a single content build must never
+// fan out to multiple distinct final actors — each actor now gets its own
+// EmailTarget (split at enumeration, EmailNotificationService.expandDocenteActors),
+// and ResolveRecipientsStep freshness-rechecks only the one actor that target's
+// content was built for. These two tests replace the old
+// 'PER_DOCENTE routes only assignments owned by its principal logical target',
+// which asserted the pre-fix behaviour of one shared content sent to both actors.
+test('PER_DOCENTE routes a target to its own actor only, even when the titolare it was split from currently has several active actors', () => {
   const w = wire(
     { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' },
     {
@@ -958,6 +981,7 @@ test('PER_DOCENTE routes only assignments owned by its principal logical target'
       tipoTarget: 'classe',
       target: '5A',
       docenteEmail: 'bianchi@school.it',
+      titolareEmail: 'bianchi@school.it',
       emails: ['bianchi@school.it'],
       classiCompetenza: ['5A'],
       teachingAssignmentTarget: true
@@ -996,10 +1020,59 @@ test('PER_DOCENTE routes only assignments owned by its principal logical target'
     teachingAssignments
   ).execute(w.ctx);
 
-  expect(w.ctx.get('destinatariFinali')).toEqual([
-    { emails: ['bianchi@school.it'] },
-    { emails: ['verdi@school.it'] }
-  ]);
+  // Only bianchi — the actor this specific target's content was built for —
+  // not verdi, who belongs to a sibling split target of its own.
+  expect(w.ctx.get('destinatariFinali')).toEqual([{ emails: ['bianchi@school.it'] }]);
+});
+
+test('PER_DOCENTE routes a split sibling target to its own (different) actor when both remain active', () => {
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '5A',
+      docenteEmail: 'verdi@school.it',
+      titolareEmail: 'bianchi@school.it',
+      emails: ['verdi@school.it'],
+      classiCompetenza: ['5A'],
+      teachingAssignmentTarget: true
+    }
+  );
+  w.ctx.set('shouldSend', true);
+  const rossi = Docente.fromData({ EMAIL: 'rossi@school.it', COGNOME: 'ROSSI' });
+  const bianchi = Docente.fromData({ EMAIL: 'bianchi@school.it', COGNOME: 'BIANCHI' });
+  const verdi = Docente.fromData({ EMAIL: 'verdi@school.it', COGNOME: 'VERDI' });
+  const assignment = (
+    titolare: Docente,
+    effettivo: Docente,
+    primary: Docente[]
+  ): TeachingAssignment => ({
+    slot: { materia: MateriaId.of('MATE'), kind: 'MAIN', specifica: null },
+    classeId: ClasseId.of('5A'),
+    titolareNominale: titolare,
+    titolare,
+    docenteEffettivo: effettivo,
+    delegationChain: [],
+    routing: { primary, cc: [], bcc: [] },
+    trace: []
+  });
+  const teachingAssignments = {
+    resolveMateria: jest.fn(),
+    resolveConsiglio: jest.fn(() => [
+      assignment(rossi, bianchi, [rossi, bianchi]),
+      assignment(bianchi, verdi, [bianchi, verdi])
+    ])
+  } as unknown as ITeachingAssignmentResolver;
+
+  new ResolveRecipientsStep(
+    logger,
+    w.docenti,
+    new ClasseRepository(w.db),
+    teachingAssignments
+  ).execute(w.ctx);
+
+  expect(w.ctx.get('destinatariFinali')).toEqual([{ emails: ['verdi@school.it'] }]);
 });
 
 test('genitori/cdc targets are single multi-TO destinations not subject to SUPPLENTI (11 §7/§12)', () => {
@@ -1573,18 +1646,18 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     expect(resolve(w)).toEqual([{ emails: ['ghost@school.it'] }]);
   });
 
-  test('ResolveRecipientsStep falls back to "" for titolare.id when the docente lookup returns a Docente with no id', () => {
+  test('ResolveRecipientsStep falls back to the raw target emails when its actor no longer exists in DocenteRepository (titolare/supplente content-mismatch fix: routing now matches on the target\'s own docenteEmail/titolareEmail rather than a re-looked-up id)', () => {
     const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_TITOLARI' }, docenteTarget());
     buildStep(w).execute(w.ctx);
     w.ctx.set('shouldSend', true);
-    const docentiStub = { findById: () => Docente.fromData({}) } as unknown as DocenteRepository;
+    const docentiStub = { findById: () => null } as unknown as DocenteRepository;
     new ResolveRecipientsStep(
       logger,
       docentiStub,
       new ClasseRepository(w.db),
       new AldoTeachingAssignmentResolver(w.db)
     ).execute(w.ctx);
-    expect(w.ctx.get('destinatariFinali')).toEqual([]);
+    expect(w.ctx.get('destinatariFinali')).toEqual([{ emails: ['rossi@school.it'] }]);
   });
 
   test('ENTRAMBI does not assignment-route a coordinator with multiple competence classes', () => {

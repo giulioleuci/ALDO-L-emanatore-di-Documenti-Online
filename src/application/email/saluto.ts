@@ -11,7 +11,7 @@ export interface EmailTarget {
   tipoTarget: 'classe' | 'alunno' | 'dipartimento';
   /** ClasseId value or alunno email — the CDU build entry point. */
   target: string;
-  /** For docente targets: the titolare being addressed. */
+  /** For docente targets: the actor this target's content is built for (titolare, or the resolved supplente/effettivo). */
   docenteEmail?: string;
   /**
    * True only for PER_DOCENTE targets enumerated from PRINCIPAL_ONLY teaching
@@ -19,6 +19,15 @@ export interface EmailTarget {
    * declared recipients and must not be assignment-routed.
    */
   teachingAssignmentTarget?: true;
+  /**
+   * Set only when `docenteEmail` is NOT the nominal titolare (a PER_DOCENTE
+   * target split off a cattedra whose GESTIONE_SUPPLENTI policy resolved to a
+   * different actor, e.g. the supplente under SOLO_SUPPLENTI/ENTRAMBI). Lets
+   * BuildCDUStep populate `contesto.sostituisce` and ResolveRecipientsStep
+   * freshness-recheck this specific actor against the titolare's cattedra
+   * instead of re-deriving multiple recipients from one shared content build.
+   */
+  titolareEmail?: string;
   /** Raw candidate emails (docente / CdC docenti / alunno / tutors). */
   emails: string[];
   /** For coordinatore multi-classe: every coordinated class id (11 §12). */

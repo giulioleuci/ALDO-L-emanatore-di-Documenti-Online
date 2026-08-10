@@ -203,7 +203,46 @@ test('PER_DOCENTE: one target per docente with at least one active class (articu
   expect(emails).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
 });
 
-test('PER_DOCENTE enumerates titular targets once and defers ENTRAMBI routing to ResolveRecipientsStep', () => {
+function tablesWith4B(): Record<string, Row[]> {
+  const t = fixtureTables();
+  (t['CLASSI'] as Row[]).push({
+    ID: '4B',
+    ANNO: 4,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    MATE: 'rossi@school.it'
+  });
+  return t;
+}
+
+test('PER_DOCENTE + SOLO_SUPPLENTI enumerates the actual supplente, not the titolare, when a SUPPLENZA is active (titolare/supplente content-mismatch fix)', () => {
+  const db = new FakeDatabase(tablesWith4B());
+  const gmail = new FakeGmailFacade();
+  // NOW is inside the rossi->bianchi SUPPLENZE window on class 4B (see swap-supplenti.test.ts).
+  const service = new EmailNotificationService(
+    fullDeps(db, gmail, { now: new Date('2025-11-15T09:00:00Z') })
+  );
+
+  const targets = service.enumerateTargets(
+    conf('PER_DOCENTE', { SUPPLENTI: 'SOLO_SUPPLENTI' })
+  );
+  // rossi's cattedra (spanning 1F's group + 4B) splits: one target keeps
+  // rossi for the subjects he still nominally/effectively holds, another is
+  // split off for bianchi specifically because 4B/MATE is under an active
+  // SUPPLENZA. Identify the split-off target unambiguously via titolareEmail
+  // rather than classiCompetenza, since both siblings share that full list.
+  const bianchiSplit = targets.find(
+    (target) => target.docenteEmail === 'bianchi@school.it' && target.titolareEmail === 'rossi@school.it'
+  )!;
+
+  expect(bianchiSplit).toBeDefined();
+  expect(bianchiSplit.classiCompetenza).toContain('4B');
+});
+
+test('PER_DOCENTE + ENTRAMBI splits a titolare cattedra into one target per active actor, each carrying the titolare for content/freshness (titolare/supplente content-mismatch fix)', () => {
   const { db, gmail } = wire();
   const titolare = Docente.fromData({
     EMAIL: 'rossi@school.it',
@@ -247,15 +286,31 @@ test('PER_DOCENTE enumerates titular targets once and defers ENTRAMBI routing to
     conf('PER_DOCENTE', { SUPPLENTI: 'ENTRAMBI' })
   );
 
-  expect(targets.map((target) => target.docenteEmail)).toEqual([
+  // Grouping still keys on the titolare (PRINCIPAL_ONLY pass, unchanged), but
+  // ENTRAMBI's active substitution now expands that one cattedra into two
+  // personalized targets instead of deferring the fan-out to a shared send.
+  expect(targets.map((target) => target.docenteEmail).sort()).toEqual([
+    'bianchi@school.it',
     'rossi@school.it'
   ]);
+  const bianchiTarget = targets.find((target) => target.docenteEmail === 'bianchi@school.it')!;
+  const rossiTarget = targets.find((target) => target.docenteEmail === 'rossi@school.it')!;
+  expect(bianchiTarget.titolareEmail).toBe('rossi@school.it');
+  expect(rossiTarget.titolareEmail).toBeUndefined();
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.any(Classe),
     NOW,
     expect.objectContaining({
       includeReligioneAlt: true,
       routingPolicy: RoutingPolicy.PRINCIPAL_ONLY
+    })
+  );
+  expect(resolveConsiglio).toHaveBeenCalledWith(
+    expect.any(Classe),
+    NOW,
+    expect.objectContaining({
+      includeReligioneAlt: true,
+      routingPolicy: RoutingPolicy.BOTH_EQUAL
     })
   );
 });

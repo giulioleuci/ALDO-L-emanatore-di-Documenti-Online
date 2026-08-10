@@ -1,8 +1,21 @@
+/** One {targetId, email, permesso} grant to apply in a batch (see {@link IDriveFacade.setPermissions}). */
+export interface PermissionGrant {
+  targetId: string;
+  email: string;
+  permesso: string;
+}
+
 export interface IDriveFacade {
   findFolderByPath(path: string): string | null;
   createFolder(path: string): string;
   copyFile(templateId: string, name: string, folderId: string): string;
   setPermission(fileId: string, email: string, permesso: string): void;
+  /**
+   * Batched grant application: one `shareWithUsers` call per distinct `permesso`
+   * (Drive v3 role), covering every targetId/email pair requesting that role,
+   * instead of one call per pair (10 §10 doc-generation pipeline perf).
+   */
+  setPermissions(grants: PermissionGrant[]): void;
   deleteFile(fileId: string): void;
   /** Native Drive Blob for the file, e.g. for email attachments (11 §13). */
   getFileBlob(fileId: string): unknown;
@@ -96,6 +109,24 @@ export class DriveServiceFacade implements IDriveFacade {
   setPermission(fileId: string, email: string, permesso: string): void {
     const role = ROLE_MAP[permesso] ?? 'reader';
     this.permissions.shareWithUsers([fileId], [{ type: 'user', role, email }], {});
+  }
+
+  setPermissions(grants: PermissionGrant[]): void {
+    const byPermesso = new Map<string, { targetIds: Set<string>; emails: Set<string> }>();
+    for (const { targetId, email, permesso } of grants) {
+      const group = byPermesso.get(permesso) ?? { targetIds: new Set(), emails: new Set() };
+      group.targetIds.add(targetId);
+      group.emails.add(email);
+      byPermesso.set(permesso, group);
+    }
+    for (const [permesso, { targetIds, emails }] of byPermesso) {
+      const role = ROLE_MAP[permesso] ?? 'reader';
+      this.permissions.shareWithUsers(
+        [...targetIds],
+        [...emails].map((email) => ({ type: 'user', role, email })),
+        {}
+      );
+    }
   }
 
   deleteFile(fileId: string): void {

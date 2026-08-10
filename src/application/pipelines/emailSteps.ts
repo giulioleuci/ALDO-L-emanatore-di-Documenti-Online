@@ -29,7 +29,7 @@ import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
-import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
+import { resolveEffectiveDocenti } from '../context-engine/TeachingCouncilProjection';
 import { buildPersonVm } from '../context-engine/mappers/personVmMapper';
 
 /**
@@ -158,6 +158,7 @@ export class BuildCDUStep extends Step {
 
   private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget): CduDestinatario {
     const docente = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
+    const titolare = t.titolareEmail !== undefined ? this.docenti.findById(t.titolareEmail) : null;
     const alunno = t.tipoTarget === 'alunno' ? this.alunni.findById(t.target) : null;
     const anagrafica =
       docente !== null
@@ -182,7 +183,15 @@ export class BuildCDUStep extends Step {
         isSupplente: false
       },
       contesto: {
-        sostituisce: null,
+        sostituisce:
+          titolare !== null
+            ? buildPersonVm({
+                nome: titolare.nome,
+                cognome: titolare.cognome,
+                email: titolare.id ?? '',
+                genere: titolare.genere
+              })
+            : null,
         classiCompetenza:
           t.classiCompetenza.length > 0
             ? t.classiCompetenza
@@ -401,8 +410,6 @@ export class ComposeEmailStep extends Step {
 
 /** Step 5 (11 §7): teaching-assignment routing for PER_DOCENTE; every other process is declared passthrough. */
 export class ResolveRecipientsStep extends Step {
-  private readonly projector = new CollectionProjector({ logger: new LoggerService() });
-
   constructor(
     logger: LoggerService,
     private readonly docenti: IDocenteRepository,
@@ -426,37 +433,43 @@ export class ResolveRecipientsStep extends Step {
       this.setResult(ctx, 'destinatariFinali', [dest] satisfies Destinazione[]);
       return;
     }
-    const titolare = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
-    if (titolare === null) {
+    const actorEmail = t.docenteEmail;
+    if (actorEmail === undefined || this.docenti.findById(actorEmail) === null) {
       this.setResult(ctx, 'destinatariFinali', [{ emails: t.emails }] satisfies Destinazione[]);
       return;
     }
-    const titolareEmail = titolare.id ?? '';
+    // Non-split targets match/route by their own actor as the nominal
+    // titolare (unchanged pre-fix contract); split targets (titolareEmail
+    // set, `emailTargetId` §11.7) carry the real titolare separately so this
+    // freshness recheck stays scoped to the actor `BuildCDUStep` already
+    // built content for (11 §7 fix — see CORRECT_EMAIL_SUBSTITUTION.md).
+    const nominalTitolareEmail = t.titolareEmail ?? actorEmail;
     const classeIds = t.classiCompetenza.length > 0 ? t.classiCompetenza : [t.target];
-    const assignments = classeIds.flatMap((classeId) => {
+    const classeEntities = classeIds.flatMap((classeId) => {
       const classe = this.classi.findById(ClasseId.of(classeId));
-      if (classe === null) return [];
-      return this.teachingAssignments
-        .resolveConsiglio(classe, now(ctx), {
-          includeReligioneAlt: true,
-          routingPolicy: routingPolicyByGestioneSupplenti[confMail(ctx).supplenti]
-        })
-        .filter((assignment) => assignment.titolare.id === titolareEmail);
+      return classe === null ? [] : [classe];
     });
-    const routingRows = assignments.map((assignment) => ({
-      routing: {
-        primary: assignment.routing.primary.flatMap((docente) =>
-          docente.id === null ? [] : [{ id: docente.id }]
-        )
-      }
-    }));
-    const routed = this.projector.project(routingRows, [
-      { type: 'flatMap', path: 'routing.primary' },
-      { type: 'distinctBy', keys: ['id'] }
-    ]).value as Array<{ id: string }>;
-    const finali = routed.map((actor) => actor.id);
-    if (finali.length === 0 && titolareEmail !== '') {
-      finali.push(titolareEmail);
+    const actors = resolveEffectiveDocenti(
+      this.teachingAssignments,
+      classeEntities,
+      nominalTitolareEmail,
+      now(ctx),
+      confMail(ctx).supplenti
+    );
+    let finali: string[];
+    if (actors.includes(actorEmail)) {
+      finali = [actorEmail];
+    } else if (actors.length === 0 && t.titolareEmail === undefined) {
+      // The cattedra no longer resolves at all (e.g. reassigned since
+      // enumeration) — best-effort fall back to this target's own actor
+      // rather than silently dropping it.
+      finali = [actorEmail];
+    } else {
+      // This actor is no longer among the currently-routed actors for its
+      // titolare (substitution ended/changed since enumeration, or — for a
+      // split sibling — a fellow actor now covers it instead): skip rather
+      // than send content built for someone who is no longer the recipient.
+      finali = [];
     }
     this.setResult(
       ctx,

@@ -11,11 +11,9 @@ import { teachingSlotFixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import type { TeachingAssignment } from '../../../src/application/ports/ITeachingAssignmentResolver';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
-import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
-import { ResolveRecipientsStep } from '../../../src/application/pipelines/emailSteps';
+import { resolveEffectiveDocenti } from '../../../src/application/context-engine/TeachingCouncilProjection';
 import { ApplyPermissionsStep } from '../../../src/application/pipelines/documentSteps';
-import { ConfigurazioneEmail } from '../../../src/domain/entities/ConfigurazioneEmail';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../../src/application/strategies/SheetMaterieConPermessiGeneratorStrategy';
@@ -341,12 +339,16 @@ describe('complete effective-assignment acceptance matrix', () => {
         .map((email) => email.value)
     );
 
-    const emailConfig = ConfigurazioneEmail.fromData({
-      ...matrixTables().CONF_MAIL![0]!,
-      ID: 'MATRIX_EMAIL',
-      PROCESSO: 'PER_DOCENTE',
-      SUPPLENTI: 'ENTRAMBI'
-    });
+    // Titolare/supplente content-mismatch fix: PER_DOCENTE now splits a
+    // titolare's cattedra into one EmailTarget per actor at enumeration time
+    // (EmailNotificationService.expandDocenteActors), and ResolveRecipientsStep
+    // freshness-rechecks only the single actor each split target was built
+    // for — it no longer fans a shared content build out to several
+    // recipients itself. `resolveEffectiveDocenti` is the one function both
+    // call sites share, so exercising it here (rather than driving
+    // ResolveRecipientsStep with one shared target per principal, which would
+    // now legitimately yield only that principal) is what proves the email
+    // consumer still agrees with the CDC/role/document/sheet consumers below.
     const emailRecipients = new Set<string>();
     const principals = new Set(
       assignments.flatMap((assignment) =>
@@ -354,27 +356,14 @@ describe('complete effective-assignment acceptance matrix', () => {
       )
     );
     for (const principal of principals) {
-      const ctx = new PipelineContext();
-      ctx.set('shouldSend', true);
-      ctx.set('now', MATRIX_DATE);
-      ctx.set('confMail', emailConfig);
-      ctx.set('emailTarget', {
-        tipo: 'docente',
-        tipoTarget: 'classe',
-        target: '5A',
-        docenteEmail: principal,
-        emails: [principal],
-        classiCompetenza: ['5A'],
-        teachingAssignmentTarget: true
-      });
-      new ResolveRecipientsStep(
-        new LoggerService(),
-        new DocenteRepository(db),
-        classi,
-        assignmentsResolver
-      ).execute(ctx);
-      for (const destination of ctx.get<Array<{ emails: string[] }>>('destinatariFinali') ?? []) {
-        for (const email of destination.emails) emailRecipients.add(email);
+      for (const actor of resolveEffectiveDocenti(
+        assignmentsResolver,
+        [classe],
+        principal,
+        MATRIX_DATE,
+        GestioneSupplenti.ENTRAMBI
+      )) {
+        emailRecipients.add(actor);
       }
     }
 

@@ -156,6 +156,12 @@ test('registraPermanente redacts the recipient email in the error log on permane
   expect(errorCalls.some((msg) => msg.includes('@'))).toBe(false);
 });
 
+// Titolare/supplente content-mismatch fix: PER_DOCENTE now enumerates and
+// logs the actual actor (verdi, the supplente) rather than the nominal
+// titolare (bianchi) once GESTIONE_SUPPLENTI resolves to a substitute — the
+// logged logicalTargetId and the composed content both key off verdi, not
+// bianchi (previously the content was built for bianchi's identity even
+// though the send itself already went to verdi).
 test('retry uses the logged logical PER_DOCENTE target when a substitute also owns a chair', () => {
   const tables = fixtureTables();
   for (const classe of tables.CLASSI!) {
@@ -191,7 +197,7 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
       DATA: '2026-06-30T10:00:00.000Z',
       STATO: 'ERROR',
       ALLEGATI: JSON.stringify({
-        logicalTargetId: 'docente:bianchi@school.it'
+        logicalTargetId: 'docente:verdi@school.it'
       }),
       ERRORE: 'quota'
     }
@@ -218,8 +224,10 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
   expect(result).toEqual({ retried: 1, permanent: 0 });
   expect(gmail.sent).toHaveLength(1);
   expect(gmail.sent[0]!.to).toEqual(['verdi@school.it']);
-  expect(gmail.sent[0]!.htmlBody).toContain('BIANCHI LUCIA');
-  expect(gmail.sent[0]!.htmlBody).not.toContain('VERDI GIO');
+  // Content now addresses the actual recipient (verdi), not the titolare
+  // (bianchi) it was split from — the mismatch this fix removes.
+  expect(gmail.sent[0]!.htmlBody).toContain('VERDI GIO');
+  expect(gmail.sent[0]!.htmlBody).not.toContain('BIANCHI LUCIA');
 });
 
 test('retryHandler yields one checkpoint per failed-group batch and resumes from checkpoint', () => {

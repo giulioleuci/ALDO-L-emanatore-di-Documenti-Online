@@ -172,6 +172,34 @@ test('setPermission maps PermessoACL to the Drive v3 role and shares via Permiss
   );
 });
 
+test('setPermissions groups grants by permesso into one shareWithUsers call per Drive role, merging targets and deduping emails', () => {
+  const { drive, perms } = fakeDrive();
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  facade.setPermissions([
+    { targetId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' },
+    { targetId: 'folder_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }, // same email+role on 2nd target: still one call
+    { targetId: 'folder_1', email: 'bianchi@school.it', permesso: 'LETTURA' }
+  ]);
+  expect(perms.shareWithUsers).toHaveBeenCalledTimes(2);
+  expect(perms.shareWithUsers).toHaveBeenCalledWith(
+    ['file_1', 'folder_1'],
+    [{ type: 'user', role: 'writer', email: 'rossi@school.it' }],
+    {}
+  );
+  expect(perms.shareWithUsers).toHaveBeenCalledWith(
+    ['folder_1'],
+    [{ type: 'user', role: 'reader', email: 'bianchi@school.it' }],
+    {}
+  );
+});
+
+test('setPermissions is a no-op when there is nothing to grant', () => {
+  const { drive, perms } = fakeDrive();
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  facade.setPermissions([]);
+  expect(perms.shareWithUsers).not.toHaveBeenCalled();
+});
+
 test('deleteFile trashes (not permanent delete) via deleteFiles', () => {
   const { drive, perms } = fakeDrive();
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);

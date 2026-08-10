@@ -730,6 +730,9 @@ test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §1
   // and NOW=2026-07-01 is well after); FISI nominal holder is also bianchi -> CDC
   // (routed through CattedraResolver, 10 §14) has one distinct effective teacher.
   expect(folderAcls).toEqual(['bianchi@school.it']);
+  // File+folder ACLs (2 distinct roles here) collapse into a single setPermissions
+  // batch call, not one Drive round-trip per role/email pair.
+  expect(drive.setPermissionsCallCount).toBe(1);
 });
 
 test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {

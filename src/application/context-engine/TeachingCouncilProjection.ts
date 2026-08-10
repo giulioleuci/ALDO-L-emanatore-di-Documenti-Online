@@ -354,6 +354,38 @@ export function resolveCouncilForProjection(
 }
 
 /**
+ * The distinct actor ids currently entitled to receive a PER_DOCENTE-style
+ * cattedra communication for `titolareEmail`, under `gestioneSupplenti` — the
+ * single routing decision shared by target enumeration (which actor(s) get a
+ * personalized send) and send-time freshness recheck (is a given actor still
+ * one of them). Only assignments this titolare nominally owns are considered,
+ * so a docente who is merely someone else's supplente elsewhere is excluded.
+ */
+export function resolveEffectiveDocenti(
+  resolver: ITeachingAssignmentResolver,
+  classi: Classe[],
+  titolareEmail: string,
+  date: Date,
+  gestioneSupplenti: GestioneSupplenti
+): string[] {
+  const assignments = classi.flatMap((classe) =>
+    resolveCouncilForProjection(resolver, classe, date, gestioneSupplenti).filter(
+      (assignment) => assignment.titolare.id === titolareEmail
+    )
+  );
+  const seen = new Set<string>();
+  const actors: string[] = [];
+  for (const assignment of assignments) {
+    for (const docente of assignment.routing.primary) {
+      if (docente.id === null || seen.has(docente.id)) continue;
+      seen.add(docente.id);
+      actors.push(docente.id);
+    }
+  }
+  return actors;
+}
+
+/**
  * The GLF projector materializes fresh VM objects, so assignment identity is
  * attached only after interception. This remains internal metadata: templates
  * and serialized CDU data retain the canonical four-field materia shape.

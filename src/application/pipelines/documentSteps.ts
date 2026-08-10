@@ -1,5 +1,5 @@
 import type { Cdu } from '../context-engine/Cdu';
-import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import type { IDriveFacade, PermissionGrant } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
@@ -371,6 +371,7 @@ export class ApplyPermissionsStep extends Step {
   protected _executeLogic(ctx: PipelineContext): void {
     const perms = JSON.parse(String(cfg(ctx)[COL_CONF_DOC.PERMESSI])) as PermessiConfig;
     const cduObj = cdu(ctx);
+    const grants: PermissionGrant[] = [];
     // Supplenza routing is applied separately for file and folder (14 §1.2).
     const fileId = ctx.get<string>('newFileId');
     if (fileId !== null) {
@@ -379,7 +380,8 @@ export class ApplyPermissionsStep extends Step {
         perms.file ?? [],
         fileId,
         cduObj,
-        parseRegola(perms.regolaSupplente?.file)
+        parseRegola(perms.regolaSupplente?.file),
+        grants
       );
     }
     const folderId = ctx.get<string>('destFolderId');
@@ -389,9 +391,13 @@ export class ApplyPermissionsStep extends Step {
         perms.folder ?? [],
         folderId,
         cduObj,
-        parseRegola(perms.regolaSupplente?.folder)
+        parseRegola(perms.regolaSupplente?.folder),
+        grants
       );
     }
+    // One shareWithUsers call per Drive role (10 §10 doc-generation perf) instead
+    // of one per targetId/email pair.
+    this.drive.setPermissions(grants);
   }
 
   private applica(
@@ -399,11 +405,12 @@ export class ApplyPermissionsStep extends Step {
     acl: AclEntry[],
     targetId: string,
     cduObj: Cdu,
-    regola: GestioneSupplenti
+    regola: GestioneSupplenti,
+    grants: PermissionGrant[]
   ): void {
     for (const { ruolo, permesso } of acl) {
       for (const email of this.roles.risolvi(ruolo, cduObj, { regolaSupplente: regola })) {
-        this.drive.setPermission(targetId, email.value, permesso);
+        grants.push({ targetId, email: email.value, permesso });
         const key = permesso === 'SCRITTURA' ? 'permissionEditors' : 'permissionViewers';
         const collected = ctx.get<string[]>(key) ?? [];
         if (!collected.includes(email.value)) {

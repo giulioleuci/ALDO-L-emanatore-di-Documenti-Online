@@ -36,7 +36,11 @@ import {
   GestioneSupplenti,
   ProcessoInvio
 } from '../../domain/value-objects/enums';
-import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
+import {
+  routingPolicyByGestioneSupplenti,
+  resolveEffectiveDocenti
+} from '../context-engine/TeachingCouncilProjection';
+import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { AggregatoreDati } from './AggregatoreDati';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
@@ -252,7 +256,7 @@ export class EmailNotificationService {
       case ProcessoInvio.PER_COORDINATORE:
         return this.targetsPerCoordinatore(conf.gestioneArticolazione);
       case ProcessoInvio.PER_DOCENTE:
-        return this.targetsPerDocente(conf.gestioneArticolazione);
+        return this.targetsPerDocente(conf.supplenti, conf.gestioneArticolazione);
       case ProcessoInvio.PER_CDC:
         return this.targetsPerCdc(conf.supplenti, conf.gestioneArticolazione);
       case ProcessoInvio.PER_ALUNNO:
@@ -404,7 +408,10 @@ export class EmailNotificationService {
     }));
   }
 
-  private targetsPerDocente(gestione: GestioneArticolazione): EmailTarget[] {
+  private targetsPerDocente(
+    gestioneSupplenti: GestioneSupplenti,
+    gestione: GestioneArticolazione
+  ): EmailTarget[] {
     const perDocente = new Map<string, string[]>();
     for (const classe of this.classiEntryPoint(gestione)) {
       for (const email of this.cdcEmails(classe)) {
@@ -413,15 +420,46 @@ export class EmailNotificationService {
         perDocente.set(email, classi);
       }
     }
-    return [...perDocente.entries()].map(([email, classi]) => ({
+    return [...perDocente.entries()].flatMap(([titolareEmail, classi]) =>
+      this.expandDocenteActors(titolareEmail, classi, gestioneSupplenti)
+    );
+  }
+
+  /**
+   * Splits a titolare-keyed cattedra into one EmailTarget per actor currently
+   * entitled to receive it under `gestioneSupplenti` (SOLO_TITOLARI never
+   * splits; SOLO_SUPPLENTI/ENTRAMBI can resolve to the supplente, the
+   * titolare, or — for ENTRAMBI during an active substitution — both, each
+   * getting its own personalized content build rather than one shared email).
+   */
+  private expandDocenteActors(
+    titolareEmail: string,
+    classi: string[],
+    gestioneSupplenti: GestioneSupplenti
+  ): EmailTarget[] {
+    const buildTarget = (email: string): EmailTarget => ({
       tipo: 'docente' as const,
       tipoTarget: 'classe' as const,
       target: classi[0]!,
       docenteEmail: email,
       emails: [email],
       classiCompetenza: classi,
-      teachingAssignmentTarget: true
-    }));
+      teachingAssignmentTarget: true,
+      ...(email !== titolareEmail ? { titolareEmail } : {})
+    });
+    if (gestioneSupplenti === GestioneSupplenti.SOLO_TITOLARI) return [buildTarget(titolareEmail)];
+    const classeEntities = classi.flatMap((id) => {
+      const classe = this.deps.classi.findById(ClasseId.of(id));
+      return classe === null ? [] : [classe];
+    });
+    const actors = resolveEffectiveDocenti(
+      this.deps.teachingAssignments,
+      classeEntities,
+      titolareEmail,
+      this.deps.now,
+      gestioneSupplenti
+    );
+    return actors.length === 0 ? [buildTarget(titolareEmail)] : actors.map(buildTarget);
   }
 
   private targetsPerCdc(

@@ -84,6 +84,7 @@ export interface PianoPersonalizzatoItem {
   link: string;
   tipo: string;
   sottotipo: string;
+  tipoLabel: string;
   idGen: string;
   stato: string;
   dataCreazione: string;

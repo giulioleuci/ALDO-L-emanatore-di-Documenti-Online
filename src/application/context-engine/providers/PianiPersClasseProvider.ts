@@ -5,6 +5,8 @@ import type { IClasseRepository } from '../../../domain/repositories/IClasseRepo
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
+import { TipoPiano } from '../../../domain/value-objects/enums';
+import { tipoPianoLabel } from '../mappers/labels';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
 
@@ -42,6 +44,7 @@ export class PianiPersClasseProvider implements ContextProvider {
             link: l.getLink(),
             tipo: l.tipo,
             sottotipo: l.getSottotipo(),
+            tipoLabel: tipoPianoLabel(l.getSottotipo() as TipoPiano),
             idGen: l.idGen,
             stato: l.getStato(),
             dataCreazione: l.getDataCreazione(),

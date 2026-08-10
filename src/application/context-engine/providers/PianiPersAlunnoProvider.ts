@@ -1,6 +1,8 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
+import { TipoPiano } from '../../../domain/value-objects/enums';
+import { tipoPianoLabel } from '../mappers/labels';
 import { getAlunnoEntity } from '../techEntities';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
@@ -28,6 +30,7 @@ export class PianiPersAlunnoProvider implements ContextProvider {
         link: l.getLink(),
         tipo: l.tipo,
         sottotipo: l.getSottotipo(),
+        tipoLabel: tipoPianoLabel(l.getSottotipo() as TipoPiano),
         idGen: l.idGen,
         stato: l.getStato(),
         dataCreazione: l.getDataCreazione(),

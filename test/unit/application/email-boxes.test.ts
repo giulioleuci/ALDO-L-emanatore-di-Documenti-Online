@@ -586,17 +586,17 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI',
+        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', tipoLabel: 'PEI',
         idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
+        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: 'PDP (BES)',
         idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', notificato: true,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PDP a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
+        nome: 'PDP a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: 'PDP (BES)',
         idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', notificato: false,
         studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
       }
@@ -631,13 +631,54 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   expect(pdpRow).not.toContain('http://d/old-pdp'); // same subtype, different student
 });
 
-test('piani_pers_da_inviare: escapes hostile sottotipo/studente.nomeCompleto in the default-template (historical) path', () => {
+test('piani_pers_da_inviare: exposes the readable label to row templates without changing historical subtype matching', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: '<script>alert(1)</script>',
+        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
+        tipoLabel: 'PDP (BES)', idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+      }
+    ],
+    new LazyRef(() => [
+      {
+        anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old-pdp',
+        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+      },
+      {
+        anno: '2025-2026', nome: 'PEI a1 anno scorso', link: 'http://d/old-pei',
+        tipo: 'PIANO_PERS', sottotipo: 'PEI', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+      }
+    ])
+  );
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'piani_pers_da_inviare',
+        arricchisciConStorico: true,
+        configArricchimento: { templateRiga: '<li>{{corrente.tipoLabel}} {{#storico}}{{nome}}{{/storico}}</li>' }
+      }
+    ]),
+    cdu,
+    materie(),
+    templates
+  );
+  const html = out.boxes['piani_pers_da_inviare']!.html;
+  expect(html).toContain('PDP (BES)');
+  expect(html).toContain('PDP a1 anno scorso');
+  expect(html).not.toContain('PEI a1 anno scorso');
+});
+
+test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in the default-template (historical) path', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord(
+    [
+      {
+        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: '<script>alert(1)</script>',
         idGen: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
         studente: { nomeCompleto: '<img src=x onerror=alert(1)>', email: 'a1@school.it' }
       }
@@ -664,17 +705,17 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI',
+        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', tipoLabel: 'PEI',
         idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
+        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: 'PDP (BES)',
         idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', notificato: true,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PEI a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PEI',
+        nome: 'PEI a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PEI', tipoLabel: 'PEI',
         idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', notificato: true,
         studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
       }
@@ -689,6 +730,7 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
   );
   const html = out.boxes['piani_pers_inviati']!.html;
   expect(html).toContain('PDP a1');
+  expect(html).toContain('PDP (BES)');
   expect(html).toContain('PEI a2');
   expect(html).not.toContain('PEI a1'); // NOTIFICATO absent, excluded
   expect(html).not.toContain('Si invia anche');

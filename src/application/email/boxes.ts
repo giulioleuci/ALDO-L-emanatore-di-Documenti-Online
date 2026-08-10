@@ -41,13 +41,14 @@ interface PianoPersonalizzatoRow {
   nome: string;
   link: string;
   sottotipo: string;
+  tipoLabel: string;
   idGen: string;
   notificato: boolean;
   studente?: { nomeCompleto: string; email: string };
 }
 
 const DEFAULT_PIANI_PERS_TEMPLATE =
-  '<li>{{corrente.sottotipo}}{{#corrente.studente.nomeCompleto}} — {{corrente.studente.nomeCompleto}}{{/corrente.studente.nomeCompleto}}: ' +
+  '<li>{{corrente.tipoLabel}}{{#corrente.studente.nomeCompleto}} — {{corrente.studente.nomeCompleto}}{{/corrente.studente.nomeCompleto}}: ' +
   '<a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>' +
   '{{#storico}} — Si invia anche il link al piano dell\'anno precedente: ' +
   '<a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}}){{/storico}}</li>';
@@ -231,7 +232,7 @@ function renderPianiPersBox(
         const nome = escapeHtml(d.nome);
         const href = escapeHtml(safeUrl(d.link));
         const chi = d.studente !== undefined ? ` — ${escapeHtml(d.studente.nomeCompleto)}` : '';
-        return `<li>${escapeHtml(d.sottotipo)}${chi}: <a href="${href}" target="_blank">${nome}</a></li>`;
+        return `<li>${escapeHtml(d.tipoLabel)}${chi}: <a href="${href}" target="_blank">${nome}</a></li>`;
       })
       .join('');
     return wrapUl(righe);
@@ -253,6 +254,7 @@ function renderPianiPersBox(
           nome: escapeHtml(corrente.nome),
           link: escapeHtml(safeUrl(corrente.link)),
           sottotipo: escapeHtml(corrente.sottotipo),
+          tipoLabel: escapeHtml(corrente.tipoLabel),
           ...(corrente.studente !== undefined
             ? {
                 studente: {

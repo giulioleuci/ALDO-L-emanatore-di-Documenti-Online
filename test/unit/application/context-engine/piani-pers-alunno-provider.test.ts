@@ -82,6 +82,7 @@ test('PianiPersAlunnoProvider: filters LOG_DOCS to TIPO=PIANO_PERS only, tags no
       link: 'http://d/1',
       tipo: 'PIANO_PERS',
       sottotipo: 'PDP_DSA',
+      tipoLabel: 'PDP (DSA)',
       idGen: 'PDP_BES',
       stato: 'GENERATO',
       dataCreazione: '2026-03-01',

@@ -90,6 +90,7 @@ test('PianiPersClasseProvider: aggregates PIANO_PERS docs across the class, tags
   const items = cdu.focus.classe!.didattica!.pianiPersonalizzati.items;
   expect(items).toHaveLength(2);
   const a1Item = items.find((i) => i.idGen === 'PDP_BES')!;
+  expect(a1Item.tipoLabel).toBe('PDP (DSA)');
   expect(a1Item.studente).toEqual({ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' });
   expect(a1Item.notificato).toBe(false);
   const a2Item = items.find((i) => i.idGen === 'PEI_DOC')!;

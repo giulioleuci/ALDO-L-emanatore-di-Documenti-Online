@@ -856,6 +856,7 @@ PianoPersonalizzatoItem:
   link: string
   tipo: string                   # sempre "PIANO_PERS" qui
   sottotipo: string              # es. "PDP_DSA", "PEI" — il sottotipo effettivo del piano
+  tipoLabel: string              # es. "PDP (DSA)", "PEI" — etichetta leggibile derivata da sottotipo
   idGen: string
   stato: string
   dataCreazione: string

@@ -455,7 +455,7 @@ Audit trail di ogni email inviata dal sistema.
 | `DESTINATARI` | String (CSV) | ✅         | —            | Email dei destinatari effettivi                  |
 | `DATA`        | String       | ✅         | —            | Timestamp dell'invio                             |
 | `STATO`       | String       | —          | —            | Enum                                             |
-| `ALLEGATI`    | JSON         | —          | —            | Riferimenti della mail: `{"docs":["DriveFileId"],"folders":["DriveFolderId"],"attach":["DriveFileUrl"],"logicalTargetId":"...","testMode":false}`; `docs`/`folders` sono gli asset collegati nel corpo HTML, `attach` conserva i link ai file inviati come allegati reali. `logicalTargetId` è sempre presente; le preview registrano `testMode:true` e sono escluse dal duplicate-history lookup |
+| `ALLEGATI`    | JSON         | —          | —            | Riferimenti della mail reale: `{"docs":["DriveFileId"],"folders":["DriveFolderId"],"attach":["DriveFileUrl"],"logicalTargetId":"..."}`; `docs`/`folders` sono gli asset collegati nel corpo HTML, `attach` conserva i link ai file inviati come allegati reali. `logicalTargetId` è sempre presente; `testMode` è un marker opzionale, assente per gli invii reali. Le preview registrano la stessa forma con `"testMode":true` e sono escluse dal duplicate-history lookup |
 | `ERRORE`      | String       | —          | —            | Dettaglio dell'errore (se STATO = ERROR)         |
 | `TESTO`       | String       | —          | —            | Corpo email in chiaro (HTML→testo, troncato)     |
 

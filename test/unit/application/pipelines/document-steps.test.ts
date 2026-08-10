@@ -329,6 +329,32 @@ test('CheckDuplicatesStep compares a filename with progressivo masked only for d
   expect(differentNameCtx.get('shouldGenerate')).toBe(true);
 });
 
+test('CheckDuplicatesStep renders a Mustache section spanning the progressivo slot', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Output',
+      NOME: 'Doc-7'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: '{{#flag}}Doc-{{progressivo}}{{/flag}}',
+    PATH_OUT: 'Output'
+  });
+  ctx.set('cdu', { ...buildCdu(db), flag: true });
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+
+  expect(ctx.get('shouldGenerate')).toBe(false);
+});
+
 test('CheckDuplicatesStep keeps a literal _PROGRESSIVO_PH_ filename fragment static', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [

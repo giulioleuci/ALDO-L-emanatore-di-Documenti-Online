@@ -446,13 +446,13 @@ L'ordine del CSV in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREG
   "docs": ["DriveFileId", ...],
   "folders": ["DriveFolderId", ...],
   "attach": ["DriveFileUrl", ...],
-  "logicalTargetId": "...",
-  "testMode": false
+  "logicalTargetId": "..."
 }
 ```
 
-`ALLEGATI.logicalTargetId` è sempre presente; le preview includono `testMode:true`
-e sono escluse dal duplicate-history lookup.
+`ALLEGATI.logicalTargetId` è sempre presente. `testMode` è un marker opzionale,
+assente per gli invii reali; le preview includono `"testMode":true` e sono escluse
+dal duplicate-history lookup.
 
 | Metodo                           | Comportamento                               |
 | -------------------------------- | ------------------------------------------- |

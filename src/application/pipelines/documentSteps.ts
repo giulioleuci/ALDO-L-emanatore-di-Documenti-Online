@@ -184,12 +184,20 @@ export class CheckDuplicatesStep extends Step {
       String(cfg(ctx)[COL_CONF_DOC.PATH_OUT] ?? ''),
       cduRecord(ctx)
     );
+    const fileNameTemplate = String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? '');
+    const templateContext = cduRecord(ctx);
+    const collisionSource = `${fileNameTemplate}\n${JSON.stringify(templateContext)}`;
+    let progressivoMarker = '_PROGRESSIVO_PH_';
+    while (collisionSource.includes(progressivoMarker)) {
+      progressivoMarker = `_${progressivoMarker}`;
+    }
+    const renderedName = this.templates.processString(
+      fileNameTemplate.split('{{progressivo}}').join(progressivoMarker),
+      templateContext
+    );
     const namePattern = new RegExp(
-      `^${String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? '')
-        .split('{{progressivo}}')
-        .map((fragment) =>
-          escapeRegExp(this.templates.processString(fragment, cduRecord(ctx)))
-        )
+      `^${escapeRegExp(renderedName)
+        .split(escapeRegExp(progressivoMarker))
         .join('\\d+')}$`
     );
     const existing = this.db.table(TABLE.LOG_DOCS).find(

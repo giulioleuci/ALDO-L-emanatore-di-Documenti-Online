@@ -110,6 +110,9 @@ function nomeCartella(path: string): string {
   const segments = path.split('/').filter((segment) => segment !== '');
   return segments[segments.length - 1] ?? '';
 }
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1): the cloned
@@ -181,19 +184,27 @@ export class CheckDuplicatesStep extends Step {
       String(cfg(ctx)[COL_CONF_DOC.PATH_OUT] ?? ''),
       cduRecord(ctx)
     );
-    // NOME is intentionally excluded from the identity match: it can embed
-    // {{progressivo}}, a folder-file-count that mechanically advances between
-    // runs, so a rendered-name comparison can never recognize a rerun of the
-    // same document as a duplicate (SPECS_ALDO/01_SCHEMA_DATABASE.md,
-    // CONF_DOC.DUPLICAZIONE). Distinguishable instances of a document type
-    // (e.g. one verbale per meeting) get their own CONF_DOC.ID instead.
+    const stableName = this.templates.processString(
+      String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? '').replace(
+        /\{\{progressivo\}\}/g,
+        '_PROGRESSIVO_PH_'
+      ),
+      cduRecord(ctx)
+    );
+    const namePattern = new RegExp(
+      `^${stableName
+        .split('_PROGRESSIVO_PH_')
+        .map(escapeRegExp)
+        .join('\\d+')}$`
+    );
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) =>
         String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&
         String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipoValue &&
         String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
         (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&
-        String(r[COL_LOG_DOCS.PATH] ?? '') === path
+        String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
+        namePattern.test(String(r[COL_LOG_DOCS.NOME] ?? ''))
     );
     if (existing) {
       this.setResult(ctx, 'shouldGenerate', false);

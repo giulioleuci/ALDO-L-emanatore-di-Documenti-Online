@@ -133,6 +133,21 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     expect(second.durationMs).toEqual(expect.any(Number));
   });
 
+  test('generates one document per class in a shared folder and skips the same class retry', () => {
+    const tables = fixtureTables();
+    tables.CLASSI.push({ ...tables.CLASSI[0]!, ID: '4B', ANNO: 4 });
+    tables.CONF_DOC[0] = {
+      ...tables.CONF_DOC[0]!,
+      FILE_NAME: 'E2E_{{focus.classe.anagrafica.nome}}_{{progressivo}}',
+      PATH_OUT: 'Output'
+    };
+    const { service } = wire(tables);
+
+    expect(service.generateForClasse(ClasseId.of('5A'), 'CD1').status).toBe('GENERATO');
+    expect(service.generateForClasse(ClasseId.of('4B'), 'CD1').status).toBe('GENERATO');
+    expect(service.generateForClasse(ClasseId.of('5A'), 'CD1').status).toBe('SKIPPED');
+  });
+
   test("returns status 'GENERATO' from pipeline context when LOG_DOCS cannot be read back", () => {
     const db = new LogDocsNeverFoundDatabase(fixtureTables());
     const { service } = wire(fixtureTables(), { db });

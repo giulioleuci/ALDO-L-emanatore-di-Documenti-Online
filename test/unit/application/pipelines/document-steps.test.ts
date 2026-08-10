@@ -295,6 +295,40 @@ test('CheckDuplicatesStep: NEGATA closes the gate only for a matching full docum
   expect(String(ctx.get('skipReason'))).toContain('TIPO=VERBALE');
 });
 
+test('CheckDuplicatesStep compares a filename with progressivo masked only for duplicate detection', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Output',
+      NOME: 'E2E_5A_7'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'E2E_{{focus.classe.anagrafica.nome}}_{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+
+  expect(ctx.get('shouldGenerate')).toBe(false);
+
+  const differentNameCtx = baseCtx(db);
+  differentNameCtx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'E2E_4B_{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(differentNameCtx);
+  expect(differentNameCtx.get('shouldGenerate')).toBe(true);
+});
+
 test('CheckDuplicatesStep: PIANO_PERS identity includes focused subtype and configured student', () => {
   const tables = fixtureTables();
   tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });
@@ -781,7 +815,7 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
     expect(logDetails(result)).toBe('Duplicates allowed');
   });
 
-  test('NEGATA blocks a document whose NOME differs but TIPO/SOTTOTIPO/ID_GEN/PATH match (identity excludes NOME)', () => {
+  test('NEGATA allows a document whose NOME differs despite matching TIPO/SOTTOTIPO/ID_GEN/PATH', () => {
     const tables = fixtureTables();
     tables.LOG_DOCS = [
       {
@@ -802,7 +836,7 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
       DUPLICAZIONE: DuplicazioneDocumento.NEGATA
     });
     new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
-    expect(ctx.get('shouldGenerate')).toBe(false);
+    expect(ctx.get('shouldGenerate')).toBe(true);
   });
 
   test('NEGATA recognizes a duplicate even when {{progressivo}} makes the rendered name differ from the stored NOME', () => {

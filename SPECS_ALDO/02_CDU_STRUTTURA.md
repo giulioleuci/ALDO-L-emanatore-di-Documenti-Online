@@ -76,14 +76,15 @@ meta:
   #   cartella di destinazione già risolta, che `PATH_OUT` sta ancora costruendo).
   #
   # `CheckDuplicatesStep` (che gira PRIMA di `PrepareInfrastructureStep`) NON
-  # dipende da `progressivo`: il confronto di identità con `LOG_DOCS` usa solo
-  # `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH` (+`UTENTI` per `PIANO_PERS`) — `NOME`
-  # non ne fa mai parte (01 §CONF_DOC.DUPLICAZIONE). Usare `{{progressivo}}` in
-  # `FILE_NAME` è quindi sicuro con `DUPLICAZIONE=NEGATA`: NON vanifica il
-  # confronto di identità. Un tipo documento le cui istanze devono restare
-  # distinguibili tra loro (es. un verbale per riunione) richiede comunque un
-  # `CONF_DOC.ID` distinto per istanza, perché `ID_GEN` è quel che le
-  # differenzia — non `FILE_NAME`.
+  # dipende dal valore risolto di `progressivo`: il confronto di identità con
+  # `LOG_DOCS` è `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`
+  # (+`UTENTI` per `PIANO_PERS`), dove `NOME_NORMALIZZATO` rende `FILE_NAME`
+  # sostituendo solo `{{progressivo}}` con `_PROGRESSIVO_PH_` (01
+  # §CONF_DOC.DUPLICAZIONE). Usare `{{progressivo}}` in `FILE_NAME` è quindi
+  # sicuro con `DUPLICAZIONE=NEGATA`: NON vanifica il confronto di identità.
+  # Un tipo documento le cui istanze devono restare distinguibili tra loro (es.
+  # un verbale per riunione) richiede comunque un `CONF_DOC.ID` distinto per
+  # istanza, perché `ID_GEN` è quel che le differenzia — non `FILE_NAME`.
 
   date:
     oggi:

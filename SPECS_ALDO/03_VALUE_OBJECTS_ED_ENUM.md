@@ -49,7 +49,7 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 | Valore     | Significato                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------- |
-| `NEGATA`   | Default. Blocca la generazione se esiste lo stesso `TIPO`, `SOTTOTIPO`, `ID_GEN`, `PATH`, `NOME`. |
+| `NEGATA`   | Default. Blocca la generazione se esiste la stessa identità `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`, dove `NOME_NORMALIZZATO` rende `FILE_NAME` sostituendo solo `{{progressivo}}` con `_PROGRESSIVO_PH_`. |
 | `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                         |
 
 Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).
@@ -445,9 +445,14 @@ L'ordine del CSV in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREG
 {
   "docs": ["DriveFileId", ...],
   "folders": ["DriveFolderId", ...],
-  "attach": ["DriveFileUrl", ...]
+  "attach": ["DriveFileUrl", ...],
+  "logicalTargetId": "...",
+  "testMode": false
 }
 ```
+
+`ALLEGATI.logicalTargetId` è sempre presente; le preview includono `testMode:true`
+e sono escluse dal duplicate-history lookup.
 
 | Metodo                           | Comportamento                               |
 | -------------------------------- | ------------------------------------------- |

@@ -77,9 +77,11 @@ function sheetTable(rows: Row[]) {
 }
 
 function mockDatabaseServiceWith(tables: Record<string, ReturnType<typeof sheetTable>>) {
-  (global as unknown as { DatabaseService: unknown }).DatabaseService = jest
+  const databaseService = jest
     .fn()
     .mockImplementation(() => ({ tables }));
+  (global as unknown as { DatabaseService: unknown }).DatabaseService = databaseService;
+  return databaseService;
 }
 
 function masterWithYear(annoScolasticoRaw: string): MasterSheetRepository {
@@ -256,7 +258,7 @@ test('reads historical documents from the minimal CLASSI/ALUNNI/LOG_DOCS databas
       }
     ])
   };
-  mockDatabaseServiceWith(tables);
+  const databaseService = mockDatabaseServiceWith(tables);
   const utilsSpy = jest.spyOn(ServiceFactory, 'getUtils').mockReturnValue({});
   const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
     getScriptCache: () => ({})
@@ -265,6 +267,13 @@ test('reads historical documents from the minimal CLASSI/ALUNNI/LOG_DOCS databas
   try {
     const provider = new MasterStoricoDatabaseProvider(masterWithYear('2025-2026'), logger);
     const result = new StoricoDocumentiService(provider).perAlunnoConTipo('a1@school.it');
+    const historicalDatabase = databaseService.mock.results[0]!.value as {
+      tables: Record<string, unknown>;
+    };
+
+    expect(Object.keys(historicalDatabase.tables).sort()).toEqual(
+      [TABLE.CLASSI, TABLE.ALUNNI, TABLE.LOG_DOCS].sort()
+    );
 
     expect(result).toEqual([
       expect.objectContaining({

@@ -86,7 +86,7 @@ Expected: FAIL with `Cannot read properties of undefined (reading 'setPrimaryKey
 - Modify: `src/config/ApplicationComposition.ts`
 - Modify: `src/application/services/AggregatoreDati.ts`
 - Modify: `src/application/services/ReportService.ts`
-- Modify constructor call sites in the 14 affected files under `test/unit/` reported by graph search for `new LogDocumentoRepository`.
+- Modify constructor call sites in the 13 affected files under `test/unit/` reported by graph search for `new LogDocumentoRepository`.
 
 **Interfaces:**
 - Consumes: ambient `LazyRef<T>` with `constructor(factory: () => T)` and `get(): T`.

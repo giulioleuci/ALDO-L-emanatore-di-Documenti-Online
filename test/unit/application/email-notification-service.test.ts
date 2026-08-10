@@ -33,13 +33,15 @@ import { MateriaRepository } from '../../../src/infrastructure/repositories/Mate
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
+import { Email } from '../../../src/domain/value-objects/Email';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
 } from '../../../src/application/ports/ITeachingAssignmentResolver';
-import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
+import { GestioneArticolazione, StatoEmail } from '../../../src/domain/value-objects/enums';
+import { emailTargetId } from '../../../src/application/email/saluto';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -579,6 +581,26 @@ test('sendPattern PER_CDC sends one email per class with supervisore BCC (11 §2
   expect(gmail.sent).toHaveLength(2);
   for (const s of gmail.sent) expect(s.bcc).toEqual(['super@school.it']);
   expect(db.tables['LOG_MAIL']!.getAllRows()).toHaveLength(2);
+});
+
+test('sendPattern skips a target already SUCCESS-logged for this pattern, and still sends the rest', () => {
+  const { db, gmail, service } = wire([mailRow('DEDUPE_TEST', { PROCESSO: 'PER_CDC' })]);
+  const targets = service.enumerateTargets(conf('PER_CDC'));
+  expect(targets.length).toBeGreaterThan(0);
+  const alreadySentTarget = targets[0]!;
+  new LogEmailRepository(db).registraInvio(
+    'DEDUPE_TEST',
+    alreadySentTarget.emails.map((e) => Email.of(e)),
+    StatoEmail.SUCCESS,
+    '<p>x</p>',
+    { logicalTargetId: emailTargetId(alreadySentTarget) }
+  );
+
+  const result = service.sendPattern('DEDUPE_TEST');
+
+  expect(result.skipped).toBeGreaterThanOrEqual(1);
+  expect(result.targets).toBe(targets.length);
+  expect(gmail.sent).toHaveLength(targets.length - 1);
 });
 
 // Finding 2/5 (final review fix wave): end-to-end regression guard. Before the

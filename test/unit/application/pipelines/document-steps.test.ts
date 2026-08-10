@@ -329,6 +329,72 @@ test('CheckDuplicatesStep compares a filename with progressivo masked only for d
   expect(differentNameCtx.get('shouldGenerate')).toBe(true);
 });
 
+test('CheckDuplicatesStep keeps a literal _PROGRESSIVO_PH_ filename fragment static', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Output',
+      NOME: 'Literal-_PROGRESSIVO_PH_-7'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'Literal-_PROGRESSIVO_PH_-{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  expect(ctx.get('shouldGenerate')).toBe(false);
+
+  const differentLiteralCtx = baseCtx(db);
+  differentLiteralCtx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'Literal-123-{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(differentLiteralCtx);
+  expect(differentLiteralCtx.get('shouldGenerate')).toBe(true);
+});
+
+test('CheckDuplicatesStep matches regex punctuation in filename text literally', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Output',
+      NOME: 'A[5].(final)+?-7'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'A[5].(final)+?-{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  expect(ctx.get('shouldGenerate')).toBe(false);
+
+  const punctuationMismatchCtx = baseCtx(db);
+  punctuationMismatchCtx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'A5.final-{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(punctuationMismatchCtx);
+  expect(punctuationMismatchCtx.get('shouldGenerate')).toBe(true);
+});
+
 test('CheckDuplicatesStep: PIANO_PERS identity includes focused subtype and configured student', () => {
   const tables = fixtureTables();
   tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });

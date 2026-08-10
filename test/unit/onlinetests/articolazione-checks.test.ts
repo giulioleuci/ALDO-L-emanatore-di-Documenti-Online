@@ -113,7 +113,7 @@ function persistedArtifactContainer(): {
       if (fileId.startsWith('cdc-')) {
         return `Riepilogo firme del Consiglio di Classe ${fileId.slice(4)} Matematica`;
       }
-      const tipo = fileId.slice('piano-'.length);
+      const tipo = fileId.slice('piano-'.length) as TipoPiano;
       return `Tipo piano: ${tipo === TipoPiano.PDP_BES ? 'PDP (BES)' : tipo}\nNote: Piano E2E ${tipo}`;
     }
   };

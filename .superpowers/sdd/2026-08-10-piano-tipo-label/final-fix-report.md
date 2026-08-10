@@ -56,3 +56,37 @@ Result: exit 0; 147 suites passed, 1,298 tests passed, 0 snapshots; 9.927 s.
 - No changes were made to `focus.piano.tipo`, `LOG_DOCS.SOTTOTIPO`, `MODELLI` selection conditions, routing, technical model assertions, or prior-year technical filename fragments.
 - The pre-existing untracked `docs/superpowers/plans/2026-08-10-piano-tipo-label.md` is intentionally excluded from this fix commit.
 - No setup change was needed solely to reach the assertion; the existing recording and persisted-artifact harnesses exercise the checks directly.
+
+## Post-commit lint remediation
+
+Final verification found a test-fixture-only lint regression at `test/unit/onlinetests/articolazione-checks.test.ts:117`: `fileId.slice('piano-'.length)` inferred `string`, which was then compared to `TipoPiano.PDP_BES` and violated `@typescript-eslint/no-unsafe-enum-comparison`.
+
+RED command:
+
+```text
+npm run lint
+```
+
+RED result: exit 1 with one error:
+
+```text
+117:29  error  The two values in this comparison do not have a shared enum type  @typescript-eslint/no-unsafe-enum-comparison
+```
+
+Root cause: the fixture creates its non-CDC file IDs exclusively from `[TipoPiano.PEI, TipoPiano.PDP_BES]`, but slicing the ID loses that static enum provenance.  The minimal fix types the derived local as `TipoPiano`; runtime behavior and production source are unchanged.
+
+Verification commands and results:
+
+```text
+npx jest --config jest.config.cjs test/unit/onlinetests/articolazione-checks.test.ts
+# exit 0 — 1 suite, 19 tests passed
+
+npm run lint
+# exit 0
+
+npm run typecheck
+# exit 0
+
+npm test
+# exit 0 — 147 suites, 1,298 tests passed
+```

@@ -188,6 +188,8 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
     COLORE_HEADER: '',
     CONDIZIONE: null,
     POST_PROCESSO: null,
+    DUPLICAZIONE: 'NEGATA',
+    GESTIONE_ARTICOLAZIONE: 'COMPLETA',
     ALLEGATI: '[]'
   });
   tables.LOG_MAIL = [

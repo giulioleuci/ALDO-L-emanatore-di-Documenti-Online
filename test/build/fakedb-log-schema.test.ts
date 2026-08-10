@@ -87,3 +87,27 @@ test('FAKEDB represents all personalized plans with one conditional PIANI_PERSON
     utenti: '{{focus.alunno.anagrafica.email}}'
   });
 });
+
+test('FAKEDB CONF_MAIL rows expose the complete deployment schema with safe duplicate defaults', () => {
+  expect(header('CONF_MAIL.csv')).toEqual([
+    'ID',
+    'OGGETTO',
+    'PROCESSO',
+    'BOX_CFG',
+    'TESTO',
+    'SUPPLENTI',
+    'NOREPLY',
+    'COLORE_HEADER',
+    'CONDIZIONE',
+    'POST_PROCESSO',
+    'ALLEGATI',
+    'GESTIONE_ARTICOLAZIONE',
+    'DUPLICAZIONE'
+  ]);
+
+  for (const row of csvRecords('CONF_MAIL.csv')) {
+    expect(JSON.parse(row['ALLEGATI']!)).toEqual([]);
+    expect(row['GESTIONE_ARTICOLAZIONE']).toBe('COMPLETA');
+    expect(row['DUPLICAZIONE']).toBe('NEGATA');
+  }
+});

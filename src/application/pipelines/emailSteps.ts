@@ -240,15 +240,12 @@ export class ValutaCondizioniInvioStep extends Step {
   }
 }
 
-/** Step 3 (new): CONF_MAIL.DUPLICAZIONE-gated guard against re-sending to a target already SUCCESS-logged for this pattern. */
+/** Step 3 (11 §4): in-memory guard against re-sending a SUCCESS-logged logical target. */
 export class CheckAlreadySentStep extends Step {
-  constructor(
-    logger: LoggerService,
-    private readonly logMail: ILogEmailRepository
-  ) {
+  constructor(logger: LoggerService) {
     super('CheckAlreadySent', logger, {
       shouldExecuteCondition: sendGate,
-      requiredKeys: ['config', 'emailTarget']
+      requiredKeys: ['config', 'emailTarget', 'successfulLogicalTargetIds']
     });
   }
 
@@ -260,14 +257,8 @@ export class CheckAlreadySentStep extends Step {
 
     const patternId = String(cfg(ctx)[COL_CONF_MAIL.ID]);
     const logicalTargetId = emailTargetId(target(ctx));
-    const alreadySent = this.logMail
-      .findByPattern(patternId)
-      .some(
-        (log) =>
-          log.stato === StatoEmail.SUCCESS &&
-          log.getAllegati()['logicalTargetId'] === logicalTargetId
-      );
-    if (alreadySent) {
+    const successfulLogicalTargetIds = ctx.get<Set<string>>('successfulLogicalTargetIds')!;
+    if (successfulLogicalTargetIds.has(logicalTargetId)) {
       this.setResult(ctx, 'shouldSend', false);
       this.setResult(
         ctx,
@@ -286,7 +277,7 @@ export class CheckAlreadySentStep extends Step {
   }
 }
 
-/** Step 3 (11 §5): BOX_CFG → ContentComposer; populates cdu.render.boxes and resolves OGGETTO. */
+/** Step 4 (11 §5): BOX_CFG → ContentComposer; populates cdu.render.boxes and resolves OGGETTO. */
 export class RenderBoxesStep extends Step {
   private readonly composer: ContentComposer;
   constructor(
@@ -341,7 +332,7 @@ export class RenderBoxesStep extends Step {
   }
 }
 
-/** Step 4 (11 §6): msgstart + header + saluto + TESTO + boxes + footer + msgend. */
+/** Step 5 (11 §6): msgstart + header + saluto + TESTO + boxes + footer + msgend. */
 export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
@@ -454,7 +445,7 @@ export class ComposeEmailStep extends Step {
   }
 }
 
-/** Step 5 (11 §7): teaching-assignment routing for PER_DOCENTE; every other process is declared passthrough. */
+/** Step 6 (11 §7): teaching-assignment routing for PER_DOCENTE; every other process is declared passthrough. */
 export class ResolveRecipientsStep extends Step {
   constructor(
     logger: LoggerService,
@@ -533,7 +524,7 @@ export class ResolveRecipientsStep extends Step {
   }
 }
 
-/** Step 6 (11 §8): physical send; supervisore BCC hardcoded (11 §6); failures collected, never thrown. */
+/** Step 7 (11 §8): physical send; supervisore BCC hardcoded (11 §6); failures collected, never thrown. */
 export class SendEmailStep extends Step {
   constructor(
     logger: LoggerService,
@@ -615,7 +606,7 @@ export class SendEmailStep extends Step {
   }
 }
 
-/** Step 7 (11 §9): LOG_MAIL audit record (composite PK PATTERN+DESTINATARI+DATA; repo saves). */
+/** Step 8 (11 §9): LOG_MAIL audit record (composite PK PATTERN+DESTINATARI+DATA; repo saves). */
 export class LogEmailStep extends Step {
   constructor(
     logger: LoggerService,
@@ -656,7 +647,7 @@ export class LogEmailStep extends Step {
   }
 }
 
-/** Step 8 (11 §10): POST_PROCESSO actions, only when at least one send succeeded; explicit save(). */
+/** Step 9 (11 §10): POST_PROCESSO actions, only when at least one send succeeded; explicit save(). */
 export class PostProcessEmailStep extends Step {
   constructor(
     logger: LoggerService,

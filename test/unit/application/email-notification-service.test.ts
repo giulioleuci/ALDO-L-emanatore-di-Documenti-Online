@@ -89,6 +89,8 @@ function mailRow(id: string, overrides: Record<string, unknown> = {}): Row {
     COLORE_HEADER: '',
     CONDIZIONE: null,
     POST_PROCESSO: null,
+    DUPLICAZIONE: 'NEGATA',
+    GESTIONE_ARTICOLAZIONE: 'COMPLETA',
     ALLEGATI: '[]',
     ...overrides
   };
@@ -623,6 +625,167 @@ test('sendPattern skips a target already SUCCESS-logged for this pattern, and st
   expect(result.skipped).toBeGreaterThanOrEqual(1);
   expect(result.targets).toBe(targets.length);
   expect(gmail.sent).toHaveLength(targets.length - 1);
+});
+
+test('sendPattern aborts before delivery when LOG_MAIL history lookup fails', () => {
+  const { db, gmail } = wire([mailRow('GUARD_REPOSITORY_ERROR')]);
+  const logMail = new LogEmailRepository(db);
+  jest.spyOn(logMail, 'findByPattern').mockImplementation(() => {
+    throw new Error('history unavailable');
+  });
+  const service = new EmailNotificationService(fullDeps(db, gmail, { logMail }));
+
+  expect(() => service.sendPattern('GUARD_REPOSITORY_ERROR')).toThrow(
+    'Controllo duplicati LOG_MAIL fallito per GUARD_REPOSITORY_ERROR: history unavailable'
+  );
+  expect(gmail.sent).toHaveLength(0);
+});
+
+test('sendPattern aborts before delivery when a successful historical ALLEGATI cell is malformed', () => {
+  const { db, gmail, service } = wire([mailRow('GUARD_MALFORMED_HISTORY')]);
+  db.tables['LOG_MAIL']!.insertRow({
+    PATTERN: 'GUARD_MALFORMED_HISTORY',
+    DESTINATARI: 'prior@school.it',
+    DATA: '2026-06-30T08:00:00.000Z',
+    STATO: 'SUCCESS',
+    ALLEGATI: '{not-json',
+    ERRORE: '',
+    TESTO: 'prior send'
+  });
+
+  expect(() => service.sendPattern('GUARD_MALFORMED_HISTORY')).toThrow(
+    'Controllo duplicati LOG_MAIL fallito per GUARD_MALFORMED_HISTORY'
+  );
+  expect(gmail.sent).toHaveLength(0);
+});
+
+test('sendPattern ignores malformed ALLEGATI on ERROR history because failed sends remain retryable', () => {
+  const { db, gmail, service } = wire([mailRow('GUARD_MALFORMED_ERROR_HISTORY')]);
+  db.tables['LOG_MAIL']!.insertRow({
+    PATTERN: 'GUARD_MALFORMED_ERROR_HISTORY',
+    DESTINATARI: 'prior@school.it',
+    DATA: '2026-06-30T08:00:00.000Z',
+    STATO: 'ERROR',
+    ALLEGATI: '{not-json',
+    ERRORE: 'prior failure',
+    TESTO: 'prior attempt'
+  });
+
+  const result = service.sendPattern('GUARD_MALFORMED_ERROR_HISTORY');
+
+  expect(result.sent).toBe(result.targets);
+  expect(gmail.sent).toHaveLength(result.targets);
+});
+
+test('sendPattern materializes successful history once for a batch of many targets', () => {
+  const tables = fixtureTables();
+  tables['CLASSI'] = Array.from({ length: 30 }, (_, index) => ({
+    ID: `SCALE_${String(index + 1).padStart(2, '0')}`,
+    ANNO: (index % 5) + 1,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    MATE: 'rossi@school.it'
+  }));
+  tables['CONF_MAIL'] = [...tables['CONF_MAIL']!, mailRow('GUARD_SCALE')];
+  const db = new FakeDatabase(tables);
+  const gmail = new FakeGmailFacade();
+  const logMail = new LogEmailRepository(db);
+  const findByPattern = jest.spyOn(logMail, 'findByPattern');
+  const service = new EmailNotificationService(fullDeps(db, gmail, { logMail }));
+
+  const result = service.sendPattern('GUARD_SCALE');
+
+  expect(result.targets).toBe(30);
+  expect(result.sent).toBe(30);
+  expect(findByPattern).toHaveBeenCalledTimes(1);
+});
+
+test('sendToTarget reuses one history snapshot within a job and remembers its real SUCCESS', () => {
+  const { db, gmail } = wire([mailRow('GUARD_JOB_REUSE')]);
+  const logMail = new LogEmailRepository(db);
+  const findByPattern = jest.spyOn(logMail, 'findByPattern');
+  const service = new EmailNotificationService(fullDeps(db, gmail, { logMail }));
+  const target = {
+    tipo: 'cdc' as const,
+    tipoTarget: 'classe' as const,
+    target: '5A',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['5A']
+  };
+
+  const first = service.sendToTarget('GUARD_JOB_REUSE', target, 'job-reuse');
+  const second = service.sendToTarget('GUARD_JOB_REUSE', target, 'job-reuse');
+
+  expect(first.sent).toBe(1);
+  expect(second.skipped).toBe(true);
+  expect(gmail.sent).toHaveLength(1);
+  expect(findByPattern).toHaveBeenCalledTimes(1);
+});
+
+test('sendToTarget rebuilds the history snapshot for a different job', () => {
+  const { db, gmail } = wire([mailRow('GUARD_JOB_REBUILD')]);
+  const logMail = new LogEmailRepository(db);
+  const findByPattern = jest.spyOn(logMail, 'findByPattern');
+  const service = new EmailNotificationService(fullDeps(db, gmail, { logMail }));
+
+  service.sendToTarget(
+    'GUARD_JOB_REBUILD',
+    {
+      tipo: 'cdc',
+      tipoTarget: 'classe',
+      target: '5A',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['5A']
+    },
+    'job-one'
+  );
+  service.sendToTarget(
+    'GUARD_JOB_REBUILD',
+    {
+      tipo: 'cdc',
+      tipoTarget: 'classe',
+      target: '1F',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['1F']
+    },
+    'job-two'
+  );
+
+  expect(gmail.sent).toHaveLength(2);
+  expect(findByPattern).toHaveBeenCalledTimes(2);
+});
+
+test('sendToTarget does not remember test-mode SUCCESS as delivery to the real target', () => {
+  const { db, gmail } = wire([mailRow('GUARD_TEST_MODE')]);
+  const logMail = new LogEmailRepository(db);
+  const findByPattern = jest.spyOn(logMail, 'findByPattern');
+  const service = new EmailNotificationService(fullDeps(db, gmail, { logMail }));
+  const target = {
+    tipo: 'cdc' as const,
+    tipoTarget: 'classe' as const,
+    target: '5A',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['5A']
+  };
+
+  service.enableTestMode('tester@school.it');
+  const firstPreview = service.sendToTarget('GUARD_TEST_MODE', target, 'job-preview');
+  const secondPreview = service.sendToTarget('GUARD_TEST_MODE', target, 'job-preview');
+  service.disableTestMode();
+  const realSend = service.sendToTarget('GUARD_TEST_MODE', target, 'job-preview');
+
+  expect(firstPreview.sent).toBe(1);
+  expect(secondPreview.sent).toBe(1);
+  expect(realSend.sent).toBe(1);
+  expect(gmail.sent.map((sent) => sent.to)).toEqual([
+    ['tester@school.it'],
+    ['tester@school.it'],
+    ['rossi@school.it']
+  ]);
+  expect(findByPattern).toHaveBeenCalledTimes(1);
 });
 
 // Finding 2/5 (final review fix wave): end-to-end regression guard. Before the

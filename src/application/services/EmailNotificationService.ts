@@ -1,4 +1,4 @@
-import type { IDatabase } from '../../infrastructure/db/Database';
+import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
@@ -33,9 +33,11 @@ import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocu
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { TABLE, COL_CONF_MAIL } from '../../config/schema';
 import {
+  DuplicazioneDocumento,
   GestioneArticolazione,
   GestioneSupplenti,
-  ProcessoInvio
+  ProcessoInvio,
+  StatoEmail
 } from '../../domain/value-objects/enums';
 import {
   routingPolicyByGestioneSupplenti,
@@ -102,7 +104,7 @@ export interface EmailTargetResult {
 
 /**
  * Email-notification application service (ref 11, 12): enumerates the logical
- * recipients dictated by CONF_MAIL.PROCESSO (11 §3/§12) and runs the 8-step
+ * recipients dictated by CONF_MAIL.PROCESSO (11 §3/§12) and runs the 9-step
  * NotificaPipeline once per target. Entirely data-driven: behaviour comes from
  * the CONF_MAIL record, never from code branches per pattern.
  */
@@ -114,6 +116,9 @@ export class EmailNotificationService {
   private readonly projector = new CollectionProjector({ logger: new LoggerService() });
   private cachedPipeline: Pipeline | undefined;
   private cachedPipelineJobId: string | undefined;
+  private cachedSuccessfulLogicalTargetIds:
+    | { patternId: string; jobId: string; ids: Set<string> }
+    | undefined;
 
   constructor(deps: EmailNotificationDeps) {
     const { logger, monitor, ...rest } = deps;
@@ -156,14 +161,17 @@ export class EmailNotificationService {
     }
 
     const result: SendPatternResult = { targets: targets.length, sent: 0, skipped: 0, errors: [] };
+    const successfulLogicalTargetIds = this.loadSuccessfulLogicalTargetIds(patternId, row);
     for (const target of targets) {
       const ctx = this.getPipeline().execute({
         config: row,
         confMail: conf,
         emailTarget: target,
         now: this.deps.now,
-        testEmail: this.testEmail
+        testEmail: this.testEmail,
+        successfulLogicalTargetIds
       });
+      this.rememberSuccessfulDelivery(ctx, target, successfulLogicalTargetIds);
       if (ctx.get('shouldSend') === false) {
         result.skipped += 1; // silent skip (11 §4)
         continue;
@@ -189,13 +197,20 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     conf.getAllegati();
+    const successfulLogicalTargetIds = this.getSuccessfulLogicalTargetIdsForJob(
+      patternId,
+      row,
+      jobId
+    );
     const ctx = this.getPipeline(jobId).execute({
       config: row,
       confMail: conf,
       emailTarget: target,
       now: this.deps.now,
-      testEmail: this.testEmail
+      testEmail: this.testEmail,
+      successfulLogicalTargetIds
     });
+    this.rememberSuccessfulDelivery(ctx, target, successfulLogicalTargetIds);
     if (ctx.get('shouldSend') === false) {
       return {
         sent: 0,
@@ -223,6 +238,60 @@ export class EmailNotificationService {
     return conf;
   }
 
+  /** Materializes the durable SUCCESS identities once, before any delivery can start. */
+  private loadSuccessfulLogicalTargetIds(patternId: string, row: Row): Set<string> {
+    if (
+      String(row[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA) ===
+      'PERMESSA'
+    ) {
+      return new Set<string>();
+    }
+
+    try {
+      const ids = new Set<string>();
+      for (const log of this.deps.logMail.findByPattern(patternId)) {
+        if (log.stato !== StatoEmail.SUCCESS) continue;
+        const logicalTargetId = log.getAllegati()['logicalTargetId'];
+        if (typeof logicalTargetId === 'string' && logicalTargetId.length > 0) {
+          ids.add(logicalTargetId);
+        }
+      }
+      return ids;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new PipelineError(
+        `Controllo duplicati LOG_MAIL fallito per ${patternId}: ${detail}`
+      );
+    }
+  }
+
+  /** A batch job reuses one history snapshot; calls without a job id get a fresh preflight. */
+  private getSuccessfulLogicalTargetIdsForJob(
+    patternId: string,
+    row: Row,
+    jobId?: string
+  ): Set<string> {
+    if (jobId === undefined) return this.loadSuccessfulLogicalTargetIds(patternId, row);
+    const cached = this.cachedSuccessfulLogicalTargetIds;
+    if (cached === undefined || cached.patternId !== patternId || cached.jobId !== jobId) {
+      const ids = this.loadSuccessfulLogicalTargetIds(patternId, row);
+      this.cachedSuccessfulLogicalTargetIds = { patternId, jobId, ids };
+      return ids;
+    }
+    return cached.ids;
+  }
+
+  /** Keeps same-job duplicate targets blocked only after a real, durably SUCCESS-logged send. */
+  private rememberSuccessfulDelivery(
+    ctx: PipelineContext,
+    target: EmailTarget,
+    successfulLogicalTargetIds: Set<string>
+  ): void {
+    if (this.testEmail === null && ctx.get('logStato') === StatoEmail.SUCCESS) {
+      successfulLogicalTargetIds.add(emailTargetId(target));
+    }
+  }
+
   /** Reuses one Pipeline (and its Steps) across every target of a batch run — see plan doc for the safety argument. */
   private getPipeline(jobId?: string): Pipeline {
     if (this.cachedPipeline === undefined || this.cachedPipelineJobId !== jobId) {
@@ -232,7 +301,7 @@ export class EmailNotificationService {
     return this.cachedPipeline;
   }
 
-  /** The 8 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */
+  /** The 9 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */
   private buildPipeline(jobId?: string): Pipeline {
     const d = this.deps;
     const pipeline = new Pipeline(this.logger, null, {
@@ -242,7 +311,7 @@ export class EmailNotificationService {
     })
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
-      .addStep(new CheckAlreadySentStep(this.logger, d.logMail))
+      .addStep(new CheckAlreadySentStep(this.logger))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
       .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
       .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.classi, d.teachingAssignments))

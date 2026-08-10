@@ -40,8 +40,6 @@ import type {
 } from '../../../../src/application/ports/ITeachingAssignmentResolver';
 import { MateriaId } from '../../../../src/domain/value-objects/MateriaId';
 import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
-import { Email } from '../../../../src/domain/value-objects/Email';
-import { StatoEmail } from '../../../../src/domain/value-objects/enums';
 import { emailTargetId } from '../../../../src/application/email/saluto';
 
 const logger = new LoggerService();
@@ -1808,80 +1806,43 @@ describe('CheckAlreadySentStep', () => {
     return { db, ctx };
   }
 
-  test('no matching LOG_MAIL row leaves shouldSend true', () => {
-    const { db, ctx } = ctxAfterCondizioni();
-    const result = new CheckAlreadySentStep(logger, new LogEmailRepository(db)).execute(ctx);
+  test('an empty successful-identity set leaves shouldSend true', () => {
+    const { ctx } = ctxAfterCondizioni();
+    ctx.set('successfulLogicalTargetIds', new Set<string>());
+
+    const result = new CheckAlreadySentStep(logger).execute(ctx);
+
     expect(ctx.get('shouldSend')).toBe(true);
     expect(logDetails(result)).toBe('Not already sent');
   });
 
-  test('a prior SUCCESS row with matching pattern + logical target id blocks the resend', () => {
+  test('a matching successful logical target id blocks the resend', () => {
     const target = docenteTarget();
-    const { db, ctx } = ctxAfterCondizioni({}, target);
-    const logMail = new LogEmailRepository(db);
-    logMail.registraInvio(
-      'TEST_PATTERN',
-      [Email.of('rossi@school.it')],
-      StatoEmail.SUCCESS,
-      '<p>x</p>',
-      { logicalTargetId: emailTargetId(target) }
-    );
+    const { ctx } = ctxAfterCondizioni({}, target);
+    ctx.set('successfulLogicalTargetIds', new Set([emailTargetId(target)]));
 
-    const result = new CheckAlreadySentStep(logger, logMail).execute(ctx);
+    const result = new CheckAlreadySentStep(logger).execute(ctx);
 
     expect(ctx.get('shouldSend')).toBe(false);
     expect(ctx.get('skipReason')).toContain('TEST_PATTERN');
     expect(logDetails(result)).toBe(ctx.get('skipReason'));
   });
 
-  test('a prior ERROR row for the same identity does not block the resend', () => {
-    const target = docenteTarget();
-    const { db, ctx } = ctxAfterCondizioni({}, target);
-    const logMail = new LogEmailRepository(db);
-    logMail.registraInvio(
-      'TEST_PATTERN',
-      [Email.of('rossi@school.it')],
-      StatoEmail.ERROR,
-      '<p>x</p>',
-      { logicalTargetId: emailTargetId(target) },
-      'errore di invio'
-    );
+  test('a different successful logical target id does not block the resend', () => {
+    const { ctx } = ctxAfterCondizioni();
+    ctx.set('successfulLogicalTargetIds', new Set(['docente:someone.else@school.it']));
 
-    new CheckAlreadySentStep(logger, logMail).execute(ctx);
+    new CheckAlreadySentStep(logger).execute(ctx);
 
     expect(ctx.get('shouldSend')).toBe(true);
   });
 
-  test('a matching pattern but different logical target id does not block the resend', () => {
+  test('DUPLICAZIONE PERMESSA bypasses a matching successful identity', () => {
     const target = docenteTarget();
-    const { db, ctx } = ctxAfterCondizioni({}, target);
-    const logMail = new LogEmailRepository(db);
-    logMail.registraInvio(
-      'TEST_PATTERN',
-      [Email.of('someone.else@school.it')],
-      StatoEmail.SUCCESS,
-      '<p>x</p>',
-      { logicalTargetId: 'docente:someone.else@school.it' }
-    );
+    const { ctx } = ctxAfterCondizioni({ DUPLICAZIONE: 'PERMESSA' }, target);
+    ctx.set('successfulLogicalTargetIds', new Set([emailTargetId(target)]));
 
-    new CheckAlreadySentStep(logger, logMail).execute(ctx);
-
-    expect(ctx.get('shouldSend')).toBe(true);
-  });
-
-  test('DUPLICAZIONE PERMESSA bypasses the check even with a matching SUCCESS row', () => {
-    const target = docenteTarget();
-    const { db, ctx } = ctxAfterCondizioni({ DUPLICAZIONE: 'PERMESSA' }, target);
-    const logMail = new LogEmailRepository(db);
-    logMail.registraInvio(
-      'TEST_PATTERN',
-      [Email.of('rossi@school.it')],
-      StatoEmail.SUCCESS,
-      '<p>x</p>',
-      { logicalTargetId: emailTargetId(target) }
-    );
-
-    const result = new CheckAlreadySentStep(logger, logMail).execute(ctx);
+    const result = new CheckAlreadySentStep(logger).execute(ctx);
 
     expect(ctx.get('shouldSend')).toBe(true);
     expect(logDetails(result)).toBe('Duplicates allowed');

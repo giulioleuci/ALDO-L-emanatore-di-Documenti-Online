@@ -114,6 +114,8 @@ test('email routing: PER_DOCENTE targets and delivers to the 2-hop chain final h
       COLORE_HEADER: '',
       CONDIZIONE: null,
       POST_PROCESSO: null,
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     }
   ];

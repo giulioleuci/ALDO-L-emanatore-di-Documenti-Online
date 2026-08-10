@@ -4,7 +4,7 @@ import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFaca
 import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade';
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import { SessionActiveUserFacade } from '../infrastructure/facades/ActiveUserFacade';
-import { initAldo } from '../config/Bootstrap';
+import { initAldo, resetAldo } from '../config/Bootstrap';
 import { TABLE } from '../config/schema';
 import { ConfigurationError } from '../domain/errors/DomainError';
 import type { MasterConfig } from '../domain/entities/MasterConfig';
@@ -264,6 +264,7 @@ export interface E2eTestDeps {
   drive: IDriveFacade;
   clock: () => Date;
   properties: IPropertiesFacade;
+  resetAldo: () => void;
   initAldo: (now?: Date, props?: IPropertiesFacade) => ServiceContainer;
   log: (message: string) => void;
 }
@@ -312,6 +313,7 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
       ServiceFactory.getDocumentService(),
       ServiceFactory.getSpreadsheetService()
     );
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
   const log =
     overrides.log ?? ((message: string): void => ServiceFactory.getLogger().info(message));
@@ -326,6 +328,7 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   log(`Previous MASTER_SPREADSHEET_ID before e2e-scenario override: ${masterSpreadsheetId}`);
   properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
 
+  resetAldoFn();
   const container = initAldoFn(clock(), properties);
   container
     .get<ContextBuilder>('contextBuilder')

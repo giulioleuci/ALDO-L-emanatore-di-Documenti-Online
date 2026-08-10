@@ -444,6 +444,29 @@ describe('executeArticolazioneScenarios', () => {
 });
 
 describe('executeE2eScenarios', () => {
+  it('drops the cached ALDO container before initializing a newly provisioned E2E database', () => {
+    const lifecycle: string[] = [];
+
+    executeE2eScenarios({
+      properties: fakeProperties('bound-master-id'),
+      spreadsheetFactory: fakeSpreadsheetFactory(),
+      drive: new FakeDriveFacade(),
+      artifactFactory: {
+        createDocument: jest.fn((name: string) => `doc_${name}`),
+        createSheet: jest.fn((name: string) => `sheet_${name}`)
+      },
+      clock: () => NOW,
+      resetAldo: () => lifecycle.push('reset'),
+      initAldo: () => {
+        lifecycle.push('init');
+        return buildFakeContainer();
+      },
+      log: jest.fn()
+    });
+
+    expect(lifecycle.slice(0, 2)).toEqual(['reset', 'init']);
+  });
+
   it('uses its bound MASTER when no master property is registered yet', () => {
     const setMasterSpreadsheetId = jest.fn();
     const properties: IPropertiesFacade = {

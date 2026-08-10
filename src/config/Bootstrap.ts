@@ -123,7 +123,10 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('dipartimenti', () => new DipartimentoRepository(deps.db));
   c.register('oreAsl', () => new OreASLRepository(deps.db));
   c.register('carenze', () => new CarenzaRepository(deps.db));
-  c.register('logDocumenti', () => new LogDocumentoRepository(deps.db));
+  c.register(
+    'logDocumenti',
+    (container) => new LogDocumentoRepository(deps.db, container.get<ClasseRepository>('classi'))
+  );
   c.register('progetti', () => new ProgettoRepository(deps.db));
   c.register('logEmail', () => new LogEmailRepository(deps.db));
   c.register('configurazioniEmail', () => new ConfigurazioneEmailRepository(deps.db));
@@ -479,7 +482,10 @@ export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): Ser
   );
   importEngine.registerCustomSource(
     'CERCA_DOCUMENTI',
-    createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheetService)
+    createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheetService
+    )
   );
 
   const driveFacade = new DriveServiceFacade(

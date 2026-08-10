@@ -40,16 +40,17 @@ function contextDependencies(
   master: IMasterSheetRepository,
   teachingAssignments: ITeachingAssignmentResolver
 ): ContextEngineDependencies {
+  const classi = new ClasseRepository(db);
   return {
     master,
     teachingAssignments,
     ruoli: new RuoloSpecialeRepository(db),
     docenti: new DocenteRepository(db),
-    classi: new ClasseRepository(db),
+    classi,
     alunni: new AlunnoRepository(db),
     materie: new MateriaRepository(db),
     oreAsl: new OreASLRepository(db),
-    logDocs: new LogDocumentoRepository(db),
+    logDocs: new LogDocumentoRepository(db, classi),
     progetti: new ProgettoRepository(db),
     dipartimenti: new DipartimentoRepository(db)
   };
@@ -102,6 +103,7 @@ export function composeEmailNotificationService(
   monitor?: IProcessMonitor,
   master: IMasterSheetRepository = new MasterSheetRepository(db)
 ): EmailNotificationService {
+  const classi = new ClasseRepository(db);
   const base: EmailNotificationDeps = {
     db,
     gmail,
@@ -113,11 +115,11 @@ export function composeEmailNotificationService(
     docenti: new DocenteRepository(db),
     alunni: new AlunnoRepository(db),
     dipartimenti: new DipartimentoRepository(db),
-    classi: new ClasseRepository(db),
+    classi,
     carenze: new CarenzaRepository(db),
     confMail: new ConfigurazioneEmailRepository(db),
     logMail: new LogEmailRepository(db),
-    logDocs: new LogDocumentoRepository(db),
+    logDocs: new LogDocumentoRepository(db, classi),
     master,
     materie: new MateriaRepository(db),
     aggregatoreDati: new AggregatoreDati(db),

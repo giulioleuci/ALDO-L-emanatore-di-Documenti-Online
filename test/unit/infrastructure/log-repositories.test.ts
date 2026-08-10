@@ -1,6 +1,7 @@
 import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { LogCartellaRepository } from '../../../src/infrastructure/repositories/LogCartellaRepository';
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
+import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { Classe } from '../../../src/domain/entities/Classe';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
@@ -11,6 +12,7 @@ const classe5A = Classe.fromData({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI' });
 
 function docsDb() {
   return new FakeDatabase({
+    CLASSI: [{ ID: '5A', ANNO: 5, INDIRIZZO: 'SCI' }],
     LOG_DOCS: [
       {
         ID: 'f1',
@@ -36,7 +38,8 @@ function docsDb() {
 }
 
 test('LOG_DOCS: CONTAINS queries + stato + non-notificati (06 §17)', () => {
-  const r = new LogDocumentoRepository(docsDb());
+  const db = docsDb();
+  const r = new LogDocumentoRepository(db, new ClasseRepository(db));
   expect(
     r
       .findByClasse(classe5A)
@@ -49,7 +52,8 @@ test('LOG_DOCS: CONTAINS queries + stato + non-notificati (06 §17)', () => {
 });
 
 test('LogDocumento.cambiaStato / notifica mark dirty; getLink', () => {
-  const r = new LogDocumentoRepository(docsDb());
+  const db = docsDb();
+  const r = new LogDocumentoRepository(db, new ClasseRepository(db));
   const f1 = r.findByStato(StatoDocumento.GENERATO)[0]!;
   expect(f1.getLink()).toBe('http://d/f1');
   f1.cambiaStato(StatoDocumento.VERBALIZZATO);
@@ -61,7 +65,7 @@ test('LogDocumento.cambiaStato / notifica mark dirty; getLink', () => {
 
 test('registraDocumento appends a GENERATO row (06 §17)', () => {
   const db = new FakeDatabase({ LOG_DOCS: [] });
-  const r = new LogDocumentoRepository(db);
+  const r = new LogDocumentoRepository(db, new ClasseRepository(db));
   const log = r.registraDocumento('drive_99', 'CD1', 'Nuovo', 'Verbali/5', 'http://d/99', {
     classe: ClasseId.of('5A')
   });
@@ -69,6 +73,47 @@ test('registraDocumento appends a GENERATO row (06 §17)', () => {
   const row = db.table('LOG_DOCS').find((x) => x.ID === 'drive_99');
   expect(row?.CLASSI).toBe('5A');
   expect(db.saved).toBe(1);
+});
+
+test('LOG_DOCS exposes a parent-owned document to its direct partner only', () => {
+  const db = new FakeDatabase({
+    CLASSI: [
+      {
+        ID: '3C',
+        ANNO: 3,
+        INDIRIZZO: 'SCI',
+        ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' })
+      },
+      {
+        ID: '3C-S',
+        ANNO: 3,
+        INDIRIZZO: 'SCI',
+        ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-C' })
+      },
+      {
+        ID: '3C-C',
+        ANNO: 3,
+        INDIRIZZO: 'CLA',
+        ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-S' })
+      }
+    ],
+    LOG_DOCS: [
+      { ID: 'parent-doc', ID_GEN: 'VERBALE', CLASSI: '3C', STATO: 'GENERATO', UTENTI: '' },
+      { ID: 'sibling-doc', ID_GEN: 'PROGRAMMA', CLASSI: '3C-S', STATO: 'GENERATO', UTENTI: '' }
+    ]
+  });
+  const classi = new ClasseRepository(db);
+  const docs = new LogDocumentoRepository(db, classi);
+  const parent = classi.findById(ClasseId.of('3C'))!;
+  const scientifico = classi.findById(ClasseId.of('3C-S'))!;
+  const classico = classi.findById(ClasseId.of('3C-C'))!;
+
+  expect(docs.findByClasse(scientifico).map((doc) => doc.id)).toEqual([
+    'parent-doc',
+    'sibling-doc'
+  ]);
+  expect(docs.findByClasse(classico).map((doc) => doc.id)).toEqual(['parent-doc']);
+  expect(docs.findByClasse(parent).map((doc) => doc.id)).toEqual(['parent-doc']);
 });
 
 test('LOG_FOLD: findByClasse / findByTipo + registraCartella (06 §18)', () => {

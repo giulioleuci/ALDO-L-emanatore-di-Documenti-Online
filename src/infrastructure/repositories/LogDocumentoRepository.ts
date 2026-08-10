@@ -1,6 +1,7 @@
 import { LogDocumento } from '../../domain/entities/LogDocumento';
 import { StatoDocumento } from '../../domain/value-objects/enums';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
+import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Email } from '../../domain/value-objects/Email';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -25,7 +26,10 @@ export class LogDocumentoRepository
   extends Repository<LogDocumento>
   implements ILogDocumentoRepository
 {
-  constructor(database: RepositoryDatabase) {
+  constructor(
+    database: RepositoryDatabase,
+    private readonly classi: IClasseRepository
+  ) {
     super(database, TABLE.LOG_DOCS, LogDocumento);
     // O-1) hot-lookup index for findByStato (ref ALDO_GLF_AUDIT_RESULTS.md D-2). LOG_DOCS
     // has no Specification here (direct entity-field predicate), so this bypasses
@@ -35,7 +39,12 @@ export class LogDocumentoRepository
   }
 
   findByClasse(classe: Classe): LogDocumento[] {
-    return this.findAll().filter((l) => l.containsClasse(classe.id ?? ''));
+    const classIds = new Set([classe.id ?? '']);
+    const parentId = this.classi.getClasseParent(classe)?.id;
+    if (parentId !== null && parentId !== undefined) classIds.add(parentId);
+    return this.findAll().filter((documento) =>
+      [...classIds].some((classId) => documento.containsClasse(classId))
+    );
   }
 
   findByUtente(email: Email): LogDocumento[] {

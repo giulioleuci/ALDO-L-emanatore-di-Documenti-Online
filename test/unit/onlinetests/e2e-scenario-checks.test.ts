@@ -144,8 +144,7 @@ function recordingHarness(
           'Elenco studenti (indirizzo tra parentesi):',
           'Ferrari Giulia (Liceo Scientifico (E2E))',
           'Coordinatori:',
-          'Prof. Alessandro Verdi',
-          'Prof.ssa Elena Ferrari'
+          classe.value === CLASSE_C ? 'Prof. Alessandro Verdi' : 'Prof. Paolo Fontana'
         ].join(' ');
       }
       if (configId === CONF_DOC_RIEPILOGO_FIRME_CDC) {
@@ -743,6 +742,21 @@ test('scenario 4 fails if the minutes email gains an implicit PDF without ALLEGA
   const scenario4 = runner.report().results.find((result) => result.name.includes('scenario 4'));
   expect(scenario4?.status).toBe('fail');
   expect(scenario4?.message).toMatch(/attach|PDF|ALLEGA/i);
+});
+
+test('scenario 4 rejects partial verbale delivery when articulated targets are skipped', () => {
+  const harness = recordingHarness((patternId) =>
+    patternId === CONF_MAIL_VERBALE
+      ? { targets: 3, sent: 1, skipped: 2, errors: [] }
+      : { targets: patternId === CONF_MAIL_CARENZA ? 2 : 1, sent: 1, skipped: 0, errors: [] }
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario4 = runner.report().results.find((result) => result.name.includes('scenario 4'));
+  expect(scenario4).toMatchObject({ status: 'fail' });
+  expect(scenario4?.message).toMatch(/targets=3, sent=1, skipped=2/);
 });
 
 test('scenario 4 rejects an ARTICOLATA mail target set that retains the parent class', () => {

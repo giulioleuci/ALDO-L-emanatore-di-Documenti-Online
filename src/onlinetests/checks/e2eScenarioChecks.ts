@@ -535,7 +535,7 @@ export function registerE2eScenarioChecks(
       // E2eTemplateProvisioner's DOC_ARTICOLATA_PARAGRAPHS coordinatori bullet.
       for (const [gruppo, coordinatore] of [
         [CLASSE_C, 'Alessandro Verdi'],
-        [CLASSE_C_PARTNER, 'Elena Ferrari']
+        [CLASSE_C_PARTNER, 'Paolo Fontana']
       ] as const) {
         const { fileId, status } = documents.generateForClasse(
           ClasseId.of(gruppo),

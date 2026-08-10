@@ -18,6 +18,7 @@ import type { IDipartimentoRepository } from '../../domain/repositories/IDiparti
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
+  CheckAlreadySentStep,
   RenderBoxesStep,
   ComposeEmailStep,
   ResolveRecipientsStep,
@@ -230,6 +231,7 @@ export class EmailNotificationService {
     })
       .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
+      .addStep(new CheckAlreadySentStep(this.logger, d.logMail))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
       .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
       .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.classi, d.teachingAssignments))

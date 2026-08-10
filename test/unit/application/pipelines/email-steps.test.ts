@@ -1,6 +1,7 @@
 import {
   BuildCDUStep,
   ValutaCondizioniInvioStep,
+  CheckAlreadySentStep,
   RenderBoxesStep,
   ComposeEmailStep,
   ResolveRecipientsStep,
@@ -39,6 +40,9 @@ import type {
 } from '../../../../src/application/ports/ITeachingAssignmentResolver';
 import { MateriaId } from '../../../../src/domain/value-objects/MateriaId';
 import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
+import { Email } from '../../../../src/domain/value-objects/Email';
+import { StatoEmail } from '../../../../src/domain/value-objects/enums';
+import { emailTargetId } from '../../../../src/application/email/saluto';
 
 const logger = new LoggerService();
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window
@@ -1791,5 +1795,95 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const savedBefore = w.db.saved;
     new PostProcessEmailStep(logger, w.db, w.templates).execute(w.ctx);
     expect(w.db.saved).toBe(savedBefore); // gated off: (undefined ?? 0) > 0 is false
+  });
+});
+
+describe('CheckAlreadySentStep', () => {
+  // docenteTarget() (declared earlier in this file) needs PROCESSO: 'PER_DOCENTE' —
+  // see the existing usages at email-steps.test.ts:357/372/381 for the same pairing.
+  function ctxAfterCondizioni(overrides: Partial<Record<string, unknown>> = {}, target: EmailTarget = docenteTarget()) {
+    const { db, ctx, docenti, alunni } = wire({ PROCESSO: 'PER_DOCENTE', ...overrides }, target);
+    new BuildCDUStep(logger, composeContextBuilder(db, new MasterSheetRepository(db), new AldoTeachingAssignmentResolver(db)), docenti, alunni).execute(ctx);
+    new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(ctx);
+    return { db, ctx };
+  }
+
+  test('no matching LOG_MAIL row leaves shouldSend true', () => {
+    const { db, ctx } = ctxAfterCondizioni();
+    const result = new CheckAlreadySentStep(logger, new LogEmailRepository(db)).execute(ctx);
+    expect(ctx.get('shouldSend')).toBe(true);
+    expect(logDetails(result)).toBe('Not already sent');
+  });
+
+  test('a prior SUCCESS row with matching pattern + logical target id blocks the resend', () => {
+    const target = docenteTarget();
+    const { db, ctx } = ctxAfterCondizioni({}, target);
+    const logMail = new LogEmailRepository(db);
+    logMail.registraInvio(
+      'TEST_PATTERN',
+      [Email.of('rossi@school.it')],
+      StatoEmail.SUCCESS,
+      '<p>x</p>',
+      { logicalTargetId: emailTargetId(target) }
+    );
+
+    const result = new CheckAlreadySentStep(logger, logMail).execute(ctx);
+
+    expect(ctx.get('shouldSend')).toBe(false);
+    expect(ctx.get('skipReason')).toContain('TEST_PATTERN');
+    expect(logDetails(result)).toBe(ctx.get('skipReason'));
+  });
+
+  test('a prior ERROR row for the same identity does not block the resend', () => {
+    const target = docenteTarget();
+    const { db, ctx } = ctxAfterCondizioni({}, target);
+    const logMail = new LogEmailRepository(db);
+    logMail.registraInvio(
+      'TEST_PATTERN',
+      [Email.of('rossi@school.it')],
+      StatoEmail.ERROR,
+      '<p>x</p>',
+      { logicalTargetId: emailTargetId(target) },
+      'errore di invio'
+    );
+
+    new CheckAlreadySentStep(logger, logMail).execute(ctx);
+
+    expect(ctx.get('shouldSend')).toBe(true);
+  });
+
+  test('a matching pattern but different logical target id does not block the resend', () => {
+    const target = docenteTarget();
+    const { db, ctx } = ctxAfterCondizioni({}, target);
+    const logMail = new LogEmailRepository(db);
+    logMail.registraInvio(
+      'TEST_PATTERN',
+      [Email.of('someone.else@school.it')],
+      StatoEmail.SUCCESS,
+      '<p>x</p>',
+      { logicalTargetId: 'docente:someone.else@school.it' }
+    );
+
+    new CheckAlreadySentStep(logger, logMail).execute(ctx);
+
+    expect(ctx.get('shouldSend')).toBe(true);
+  });
+
+  test('DUPLICAZIONE PERMESSA bypasses the check even with a matching SUCCESS row', () => {
+    const target = docenteTarget();
+    const { db, ctx } = ctxAfterCondizioni({ DUPLICAZIONE: 'PERMESSA' }, target);
+    const logMail = new LogEmailRepository(db);
+    logMail.registraInvio(
+      'TEST_PATTERN',
+      [Email.of('rossi@school.it')],
+      StatoEmail.SUCCESS,
+      '<p>x</p>',
+      { logicalTargetId: emailTargetId(target) }
+    );
+
+    const result = new CheckAlreadySentStep(logger, logMail).execute(ctx);
+
+    expect(ctx.get('shouldSend')).toBe(true);
+    expect(logDetails(result)).toBe('Duplicates allowed');
   });
 });

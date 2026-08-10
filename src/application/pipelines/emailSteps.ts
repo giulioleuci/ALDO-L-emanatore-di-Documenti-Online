@@ -26,7 +26,7 @@ import { salutoPerTarget } from '../email/saluto';
 import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../email/boxes';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
 import { COL_CONF_MAIL } from '../../config/schema';
-import { ProcessoInvio, StatoEmail } from '../../domain/value-objects/enums';
+import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
 import { resolveEffectiveDocenti } from '../context-engine/TeachingCouncilProjection';
@@ -237,6 +237,52 @@ export class ValutaCondizioniInvioStep extends Step {
             ? 'Condition met'
             : 'Condition not met'
     };
+  }
+}
+
+/** Step 3 (new): CONF_MAIL.DUPLICAZIONE-gated guard against re-sending to a target already SUCCESS-logged for this pattern. */
+export class CheckAlreadySentStep extends Step {
+  constructor(
+    logger: LoggerService,
+    private readonly logMail: ILogEmailRepository
+  ) {
+    super('CheckAlreadySent', logger, {
+      shouldExecuteCondition: sendGate,
+      requiredKeys: ['config', 'emailTarget']
+    });
+  }
+
+  protected _executeLogic(ctx: PipelineContext): void {
+    const duplicazione = String(
+      cfg(ctx)[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA
+    );
+    if (duplicazione === 'PERMESSA') return;
+
+    const patternId = String(cfg(ctx)[COL_CONF_MAIL.ID]);
+    const logicalTargetId = emailTargetId(target(ctx));
+    const alreadySent = this.logMail
+      .findByPattern(patternId)
+      .some(
+        (log) =>
+          log.stato === StatoEmail.SUCCESS &&
+          log.getAllegati()['logicalTargetId'] === logicalTargetId
+      );
+    if (alreadySent) {
+      this.setResult(ctx, 'shouldSend', false);
+      this.setResult(
+        ctx,
+        'skipReason',
+        `Già inviato: PATTERN=${patternId}, TARGET=${logicalTargetId}`
+      );
+    }
+  }
+
+  protected override _getLogDetails(ctx: PipelineContext): string {
+    return ctx.get('shouldSend') === false
+      ? String(ctx.get('skipReason') ?? '')
+      : String(cfg(ctx)[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA) === 'PERMESSA'
+        ? 'Duplicates allowed'
+        : 'Not already sent';
   }
 }
 

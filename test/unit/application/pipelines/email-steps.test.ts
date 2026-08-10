@@ -208,7 +208,12 @@ describe('email pipeline operational log details', () => {
       w.ctx
     );
 
-    expect(logDetails(rendered)).toEqual({ Boxes: 0 });
+    expect(logDetails(rendered)).toEqual({
+      Boxes: 0,
+      PianiCdu: 0,
+      PianiDaNotificare: 0,
+      PianiNotificati: 0
+    });
   });
 
   test('publishes every rendered box in the operational count', () => {
@@ -226,7 +231,61 @@ describe('email pipeline operational log details', () => {
       w.ctx
     );
 
-    expect(logDetails(rendered)).toEqual({ Boxes: 3 });
+    expect(logDetails(rendered)).toEqual({
+      Boxes: 3,
+      PianiCdu: 0,
+      PianiDaNotificare: 0,
+      PianiNotificati: 0
+    });
+  });
+
+  test('publishes CDU personalized-plan counts split by notification state', () => {
+    const tables = fixtureTables();
+    (tables['LOG_DOCS'] as Row[]).push(
+      {
+        ID: 'piano-nuovo',
+        ID_GEN: 'PIANI_PERSONALIZZATI',
+        TIPO: 'PIANO_PERS',
+        SOTTOTIPO: 'PDP_DSA',
+        NOME: 'PDP da notificare',
+        STATO: 'GENERATO',
+        NOTIFICATO: '',
+        CLASSI: '5A',
+        UTENTI: 'a1@school.it'
+      },
+      {
+        ID: 'piano-notificato',
+        ID_GEN: 'PIANI_PERSONALIZZATI',
+        TIPO: 'PIANO_PERS',
+        SOTTOTIPO: 'PEI',
+        NOME: 'PEI notificato',
+        STATO: 'GENERATO',
+        NOTIFICATO: '2025-11-14T09:00:00.000Z',
+        CLASSI: '5A',
+        UTENTI: 'a1@school.it'
+      }
+    );
+    const w = wire(
+      {
+        PROCESSO: 'PER_COORDINATORE',
+        BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', arricchisciConStorico: false }])
+      },
+      docenteTarget(),
+      tables
+    );
+    buildStep(w).execute(w.ctx);
+    new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+
+    const rendered = new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(
+      w.ctx
+    );
+
+    expect(logDetails(rendered)).toEqual({
+      Boxes: 1,
+      PianiCdu: 2,
+      PianiDaNotificare: 1,
+      PianiNotificati: 1
+    });
   });
 
   test('publishes the subject and attachment count without the composed HTML body', () => {

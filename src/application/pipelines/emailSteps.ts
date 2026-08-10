@@ -327,8 +327,23 @@ export class RenderBoxesStep extends Step {
     this.setResult(ctx, 'oggettoRisolto', oggetto);
   }
 
-  protected override _getLogDetails(ctx: PipelineContext): { Boxes: number } {
-    return { Boxes: (ctx.get<string[]>('boxHtmlOrdered') ?? []).length };
+  protected override _getLogDetails(ctx: PipelineContext): {
+    Boxes: number;
+    PianiCdu: number;
+    PianiDaNotificare: number;
+    PianiNotificati: number;
+  } {
+    const built = cdu(ctx);
+    const piani =
+      built.focus.classe?.didattica?.pianiPersonalizzati.items ??
+      built.focus.alunno?.didattica.pianiPersonalizzati?.items ??
+      [];
+    return {
+      Boxes: (ctx.get<string[]>('boxHtmlOrdered') ?? []).length,
+      PianiCdu: piani.length,
+      PianiDaNotificare: piani.filter((piano) => !piano.notificato).length,
+      PianiNotificati: piani.filter((piano) => piano.notificato).length
+    };
   }
 }
 

@@ -11,6 +11,7 @@ import type {
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
+import { TABLE } from '../../../src/config/schema';
 import { Materia } from '../../../src/domain/entities/Materia';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
@@ -277,5 +278,47 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
     expect(provider.anniStorici(0)).toEqual([]);
     expect(provider.anniStorici(-3)).toEqual([]);
     expect(findAnniStorici).not.toHaveBeenCalled();
+  });
+
+  it('waits for the essential tables when opening a just-created historical database', () => {
+    const originalDatabaseService = (global as unknown as { DatabaseService: unknown })
+      .DatabaseService;
+    const table = {
+      getAllRows: jest.fn().mockReturnValue([]),
+      getByPK: jest.fn().mockReturnValue(null),
+      createIndex: jest.fn(),
+      defineVirtualColumn: jest.fn(),
+      setPrimaryKey: jest.fn()
+    };
+    const databaseService = jest.fn().mockImplementation(() => ({
+      tables: new Proxy({}, { get: () => table })
+    }));
+    (global as unknown as { DatabaseService: unknown }).DatabaseService = databaseService;
+    const utilsSpy = jest.spyOn(ServiceFactory, 'getUtils').mockReturnValue({});
+    const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
+      getScriptCache: () => ({})
+    });
+    const master = {
+      findAnniStorici: jest.fn().mockReturnValue([
+        { idSpreadsheet: 'STORICO_APPENA_CREATO', annoScolasticoRaw: '2025-2026' }
+      ])
+    } as unknown as MasterSheetRepository;
+
+    try {
+      new MasterStoricoDatabaseProvider(master, new LoggerService()).anniStorici(1);
+
+      expect(databaseService).toHaveBeenCalledWith(
+        'STORICO_APPENA_CREATO',
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        null,
+        { verifyTables: [TABLE.CLASSI, TABLE.LOG_DOCS] }
+      );
+    } finally {
+      cacheSpy.mockRestore();
+      utilsSpy.mockRestore();
+      (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
+    }
   });
 });

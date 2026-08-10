@@ -3,6 +3,7 @@ import { SheetDbAdapter } from '../../infrastructure/db/SheetDbAdapter';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
+import { TABLE } from '../../config/schema';
 
 /** A prior school year and its (lazily opened) database. */
 export interface AnnoStorico {
@@ -41,7 +42,9 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
           config.idSpreadsheet,
           this.logger,
           ServiceFactory.getUtils(),
-          ServiceFactory.getCacheService().getScriptCache()
+          ServiceFactory.getCacheService().getScriptCache(),
+          null,
+          { verifyTables: [TABLE.CLASSI, TABLE.LOG_DOCS] }
         )
       );
       return {

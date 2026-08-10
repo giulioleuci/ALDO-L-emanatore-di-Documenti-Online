@@ -1128,7 +1128,7 @@ export class E2eSampleDatabaseBuilder {
         }))
       ),
       [COL_CONF_DOC.FILE_NAME]:
-        'E2E_Piano_{{focus.piano.tipo}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+        'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -1223,7 +1223,7 @@ export class E2eSampleDatabaseBuilder {
           arricchisciConStorico: true,
           configArricchimento: {
             templateRiga:
-              '<li><strong>{{corrente.sottotipo}}</strong> — {{corrente.studente.nomeCompleto}}: <a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
+              '<li><strong>{{corrente.tipoLabel}}</strong> — {{corrente.studente.nomeCompleto}}: <a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
           }
         },
         { TIPO_BOX: 'piani_pers_inviati' }

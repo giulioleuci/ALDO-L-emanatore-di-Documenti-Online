@@ -200,7 +200,8 @@ test('authors real CDU-path placeholder content into newly-created templates, no
     expect(pianoParagraphs.length).toBeGreaterThan(0);
     const pianoText = documentText(pianoParagraphs);
     expect(pianoText).toContain('{{focus.alunno.anagrafica.nomeCompleto}}');
-    expect(pianoText).toContain('{{focus.piano.tipo}}');
+    expect(pianoText).toContain('{{focus.piano.tipoLabel}}');
+    expect(pianoText).not.toContain('{{focus.piano.tipo}}');
     expect(pianoText).toContain('{{focus.piano.parametriGenerazione.note}}');
     expect(pianoText).toContain(`Modello E2E ${tipo}`);
   }

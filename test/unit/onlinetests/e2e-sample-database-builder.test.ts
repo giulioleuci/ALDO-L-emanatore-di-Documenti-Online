@@ -344,7 +344,8 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(piano[COL_CONF_DOC.ID]).toBe(CONF_DOC_PIANI);
   expect(piano[COL_CONF_DOC.GENERATORE]).toBe('DOC_PERSONALIZZATO');
   expect(piano[COL_CONF_DOC.PARAMETRI]).toBe('');
-  expect(String(piano[COL_CONF_DOC.FILE_NAME])).toContain('{{focus.piano.tipo}}');
+  expect(String(piano[COL_CONF_DOC.FILE_NAME])).toContain('{{focus.piano.tipoLabel}}');
+  expect(String(piano[COL_CONF_DOC.FILE_NAME])).not.toContain('{{focus.piano.tipo}}');
   expect(JSON.parse(String(piano[COL_CONF_DOC.MODELLI]))).toEqual([
     { condizione: '{{focus.piano.tipo}} == "PDP_DSA"', templateId: 'tmpl_pdp_dsa' },
     { condizione: '{{focus.piano.tipo}} == "PDP_BES"', templateId: 'tmpl_pdp_bes' },
@@ -776,7 +777,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(String(mail![COL_CONF_MAIL.TESTO])).not.toMatch(/in allegato/i);
 });
 
-test('E2E personalized-plan email template keeps a Drive link for every current plan', () => {
+test('E2E personalized-plan email template uses the readable label for every current plan', () => {
   const { spreadsheets, sheets, master } = factory();
   new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
 
@@ -788,7 +789,8 @@ test('E2E personalized-plan email template keeps a Drive link for every current 
   }>;
   const template = boxes.find((box) => box.TIPO_BOX === 'piani_pers_da_inviare')!
     .configArricchimento?.templateRiga;
-  expect(template).toContain('<strong>{{corrente.sottotipo}}</strong>');
+  expect(template).toContain('<strong>{{corrente.tipoLabel}}</strong>');
+  expect(template).not.toContain('{{corrente.sottotipo}}');
   expect(template).toContain('{{corrente.studente.nomeCompleto}}');
   expect(template).toContain('<a href="{{corrente.link}}"');
   expect(template).not.toContain('E2E_CURRENT=');

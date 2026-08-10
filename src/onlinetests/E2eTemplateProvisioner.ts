@@ -86,7 +86,7 @@ function pianoParagraphs(tipo: string): string[] {
     'Studente: {{focus.alunno.anagrafica.nomeCompleto}}',
     'Classe: {{focus.alunno.classe.nome}}',
     'Data: {{meta.date.oggi.breve}}',
-    'Tipo piano: {{focus.piano.tipo}}',
+    'Tipo piano: {{focus.piano.tipoLabel}}',
     'Note: {{focus.piano.parametriGenerazione.note}}',
     // Looped focus.alunno.curriculum (§2.13, array not a map, PROMPT_MODIFY_CDU.md action item
     // 5): curriculumArray() is unconditional (no recipe option gate), so this shows real content

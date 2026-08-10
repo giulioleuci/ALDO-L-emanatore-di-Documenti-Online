@@ -490,6 +490,50 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
     expect(result.fileName).toBe('Programma_MATE_bianchi@school.it');
   });
 
+  test('reuses the same Pipeline instance for one jobId and rebuilds it when the jobId changes', () => {
+    const tables = fixtureTables();
+    pushDocenteMateriaConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const seen: Pipeline[] = [];
+    const originalBuildPipeline = (
+      service as unknown as { buildPipeline: (jobId?: string) => Pipeline }
+    ).buildPipeline.bind(service);
+    (service as unknown as { buildPipeline: (jobId?: string) => Pipeline }).buildPipeline = (
+      jobId?: string
+    ) => {
+      const pipeline = originalBuildPipeline(jobId);
+      seen.push(pipeline);
+      return pipeline;
+    };
+
+    service.generateForClasseDocenteMateria(
+      ClasseId.of('5A'),
+      'bianchi@school.it',
+      'MATE',
+      'CD_DOCENTE_MATERIA',
+      'job-1'
+    );
+    service.generateForClasseDocenteMateria(
+      ClasseId.of('5A'),
+      'bianchi@school.it',
+      'MATE',
+      'CD_DOCENTE_MATERIA',
+      'job-1'
+    );
+
+    expect(seen).toHaveLength(1);
+
+    service.generateForClasseDocenteMateria(
+      ClasseId.of('5A'),
+      'bianchi@school.it',
+      'MATE',
+      'CD_DOCENTE_MATERIA',
+      'job-2'
+    );
+    expect(seen).toHaveLength(2);
+  });
+
   // The DocenteMateriaFocusProvider PipelineError is thrown during
   // ContextBuilder.build's provider-assembly step, same as every other
   // provider error (e.g. ClasseProvider/AlunnoProvider's EntityNotFoundError)

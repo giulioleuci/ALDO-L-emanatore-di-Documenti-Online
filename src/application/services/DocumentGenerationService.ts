@@ -81,6 +81,8 @@ export class DocumentGenerationService {
   private readonly now: Date;
   private readonly monitor: IProcessMonitor | undefined;
   private readonly logger: LoggerService;
+  private cachedPipeline: Pipeline | undefined;
+  private cachedPipelineJobId: string | undefined;
 
   constructor(deps: DocumentGenerationDeps) {
     this.db = deps.db;
@@ -161,7 +163,7 @@ export class DocumentGenerationService {
     this.db.beginTransaction();
     let ctx: PipelineContext;
     try {
-      ctx = this.buildPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
     } catch (e) {
       this.db.rollback();
       throw e;
@@ -210,7 +212,7 @@ export class DocumentGenerationService {
     this.db.beginTransaction();
     let ctx: PipelineContext;
     try {
-      ctx = this.buildPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
     } catch (e) {
       this.db.rollback();
       throw e;
@@ -286,7 +288,7 @@ export class DocumentGenerationService {
     this.db.beginTransaction();
     let ctx: PipelineContext;
     try {
-      ctx = this.buildPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
     } catch (e) {
       this.db.rollback();
       throw e;
@@ -311,6 +313,15 @@ export class DocumentGenerationService {
       status: ctx.get<string>('documentStatus') ?? (fileId === null ? 'SKIPPED' : 'GENERATO'),
       durationMs: Math.max(0, Date.now() - startedAt)
     };
+  }
+
+  /** Reuses one Pipeline (and its Steps) across every document of a batch run — see plan doc for the safety argument. */
+  private getPipeline(jobId?: string): Pipeline {
+    if (this.cachedPipeline === undefined || this.cachedPipelineJobId !== jobId) {
+      this.cachedPipeline = this.buildPipeline(jobId);
+      this.cachedPipelineJobId = jobId;
+    }
+    return this.cachedPipeline;
   }
 
   /**

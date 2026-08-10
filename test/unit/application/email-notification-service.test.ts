@@ -583,6 +583,28 @@ test('sendPattern PER_CDC sends one email per class with supervisore BCC (11 §2
   expect(db.tables['LOG_MAIL']!.getAllRows()).toHaveLength(2);
 });
 
+test('sendPattern reuses the same Pipeline instance across all targets in one call', () => {
+  const { service } = wire([mailRow('REUSE_TEST', { PROCESSO: 'PER_CDC' })]);
+  const targets = service.enumerateTargets(conf('PER_CDC'));
+  expect(targets.length).toBeGreaterThan(1); // needs 2+ targets to prove reuse, not just "built once"
+
+  const seen: Pipeline[] = [];
+  const originalBuildPipeline = (
+    service as unknown as { buildPipeline: (jobId?: string) => Pipeline }
+  ).buildPipeline.bind(service);
+  (service as unknown as { buildPipeline: (jobId?: string) => Pipeline }).buildPipeline = (
+    jobId?: string
+  ) => {
+    const p = originalBuildPipeline(jobId);
+    seen.push(p);
+    return p;
+  };
+
+  service.sendPattern('REUSE_TEST');
+
+  expect(seen).toHaveLength(1);
+});
+
 test('sendPattern skips a target already SUCCESS-logged for this pattern, and still sends the rest', () => {
   const { db, gmail, service } = wire([mailRow('DEDUPE_TEST', { PROCESSO: 'PER_CDC' })]);
   const targets = service.enumerateTargets(conf('PER_CDC'));

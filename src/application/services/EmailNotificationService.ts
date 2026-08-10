@@ -112,6 +112,8 @@ export class EmailNotificationService {
   private readonly logger: LoggerService;
   private testEmail: string | null = null;
   private readonly projector = new CollectionProjector({ logger: new LoggerService() });
+  private cachedPipeline: Pipeline | undefined;
+  private cachedPipelineJobId: string | undefined;
 
   constructor(deps: EmailNotificationDeps) {
     const { logger, monitor, ...rest } = deps;
@@ -155,7 +157,7 @@ export class EmailNotificationService {
 
     const result: SendPatternResult = { targets: targets.length, sent: 0, skipped: 0, errors: [] };
     for (const target of targets) {
-      const ctx = this.buildPipeline().execute({
+      const ctx = this.getPipeline().execute({
         config: row,
         confMail: conf,
         emailTarget: target,
@@ -187,7 +189,7 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     conf.getAllegati();
-    const ctx = this.buildPipeline(jobId).execute({
+    const ctx = this.getPipeline(jobId).execute({
       config: row,
       confMail: conf,
       emailTarget: target,
@@ -219,6 +221,15 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     return conf;
+  }
+
+  /** Reuses one Pipeline (and its Steps) across every target of a batch run — see plan doc for the safety argument. */
+  private getPipeline(jobId?: string): Pipeline {
+    if (this.cachedPipeline === undefined || this.cachedPipelineJobId !== jobId) {
+      this.cachedPipeline = this.buildPipeline(jobId);
+      this.cachedPipelineJobId = jobId;
+    }
+    return this.cachedPipeline;
   }
 
   /** The 8 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */

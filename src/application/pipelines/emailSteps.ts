@@ -627,11 +627,18 @@ export class LogEmailStep extends Step {
     const errors = ctx.get<string[]>('sendErrors') ?? [];
     const stato = errors.length > 0 ? StatoEmail.ERROR : StatoEmail.SUCCESS;
     const destinatari = (ctx.get<string[]>('sentTo') ?? []).map((e) => Email.of(e));
+    // A test-mode preview redirects delivery to the tester (SendEmailStep) but
+    // this step still logs it for audit purposes; the real target's
+    // logicalTargetId must NOT be recorded here, or CheckAlreadySentStep would
+    // later mistake a preview send for an actual delivery to that target and
+    // block a genuine resend once test mode is disabled.
+    const testEmail = ctx.get<string>('testEmail');
+    const isTestSend = testEmail !== null && testEmail !== undefined;
     const allegatiInfo = {
       docs: ctx.get<string[]>('documentIds') ?? [],
       folders: ctx.get<string[]>('cartelleFolderIds') ?? [],
       attach: ctx.get<string[]>('allegatiLinks') ?? [],
-      logicalTargetId: emailTargetId(target(ctx))
+      ...(isTestSend ? {} : { logicalTargetId: emailTargetId(target(ctx)) })
     };
     this.logMail.registraInvio(
       String(cfg(ctx)[COL_CONF_MAIL.ID]),

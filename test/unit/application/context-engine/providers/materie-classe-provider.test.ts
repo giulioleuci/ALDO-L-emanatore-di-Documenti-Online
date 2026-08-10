@@ -164,7 +164,7 @@ describe('MaterieClasseProvider', () => {
           {
             anno: '2024-2025',
             db,
-            logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+            logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
           }
         ]
       };

@@ -50,7 +50,7 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
       return {
         anno: config.annoScolasticoRaw,
         db,
-        logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+        logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
       };
     });
   }

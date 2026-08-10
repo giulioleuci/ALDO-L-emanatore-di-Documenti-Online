@@ -39,7 +39,7 @@ function docsDb() {
 
 test('LOG_DOCS: CONTAINS queries + stato + non-notificati (06 §17)', () => {
   const db = docsDb();
-  const r = new LogDocumentoRepository(db, new ClasseRepository(db));
+  const r = new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)));
   expect(
     r
       .findByClasse(classe5A)
@@ -53,7 +53,7 @@ test('LOG_DOCS: CONTAINS queries + stato + non-notificati (06 §17)', () => {
 
 test('LogDocumento.cambiaStato / notifica mark dirty; getLink', () => {
   const db = docsDb();
-  const r = new LogDocumentoRepository(db, new ClasseRepository(db));
+  const r = new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)));
   const f1 = r.findByStato(StatoDocumento.GENERATO)[0]!;
   expect(f1.getLink()).toBe('http://d/f1');
   f1.cambiaStato(StatoDocumento.VERBALIZZATO);
@@ -65,7 +65,7 @@ test('LogDocumento.cambiaStato / notifica mark dirty; getLink', () => {
 
 test('registraDocumento appends a GENERATO row (06 §17)', () => {
   const db = new FakeDatabase({ LOG_DOCS: [] });
-  const r = new LogDocumentoRepository(db, new ClasseRepository(db));
+  const r = new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)));
   const log = r.registraDocumento('drive_99', 'CD1', 'Nuovo', 'Verbali/5', 'http://d/99', {
     classe: ClasseId.of('5A')
   });
@@ -103,7 +103,7 @@ test('LOG_DOCS exposes a parent-owned document to its direct partner only', () =
     ]
   });
   const classi = new ClasseRepository(db);
-  const docs = new LogDocumentoRepository(db, classi);
+  const docs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const parent = classi.findById(ClasseId.of('3C'))!;
   const scientifico = classi.findById(ClasseId.of('3C-S'))!;
   const classico = classi.findById(ClasseId.of('3C-C'))!;

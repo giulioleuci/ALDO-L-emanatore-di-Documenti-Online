@@ -70,7 +70,7 @@ function build(
   const db = new FakeDatabase(tablesWithClassePiani());
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
-  const logDocs = new LogDocumentoRepository(db, classi);
+  const logDocs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni));
@@ -134,7 +134,7 @@ test('PianiPersClasseStoricoProvider: resolves prior-year docs per distinct stud
   const anno: AnnoStorico = {
     anno: '2025-2026',
     db,
-    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
   };
   const databases: StoricoDatabaseProvider = { anniStorici: () => [anno] };
   const cdu = build(

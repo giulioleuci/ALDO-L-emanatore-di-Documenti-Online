@@ -28,7 +28,7 @@ export class LogDocumentoRepository
 {
   constructor(
     database: RepositoryDatabase,
-    private readonly classi: IClasseRepository
+    private readonly classi: LazyRef<IClasseRepository>
   ) {
     super(database, TABLE.LOG_DOCS, LogDocumento);
     // O-1) hot-lookup index for findByStato (ref ALDO_GLF_AUDIT_RESULTS.md D-2). LOG_DOCS
@@ -40,7 +40,7 @@ export class LogDocumentoRepository
 
   findByClasse(classe: Classe): LogDocumento[] {
     const classIds = new Set([classe.id ?? '']);
-    const parentId = this.classi.getClasseParent(classe)?.id;
+    const parentId = this.classi.get().getClasseParent(classe)?.id;
     if (parentId !== null && parentId !== undefined) classIds.add(parentId);
     return this.findAll().filter((documento) =>
       [...classIds].some((classId) => documento.containsClasse(classId))

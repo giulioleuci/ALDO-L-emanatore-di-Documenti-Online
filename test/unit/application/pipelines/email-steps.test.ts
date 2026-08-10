@@ -160,7 +160,7 @@ function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveF
   new ComposeEmailStep(
     logger,
     w.templates,
-    new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+    new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
     drive
   ).execute(w.ctx);
   return drive;
@@ -295,7 +295,7 @@ describe('email pipeline operational log details', () => {
     const composed = new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+      new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
       new FakeDriveFacade()
     ).execute(w.ctx);
 
@@ -760,7 +760,7 @@ test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TE
   new ComposeEmailStep(
     logger,
     w.templates,
-    new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+    new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
     new FakeDriveFacade()
   ).execute(w.ctx);
   const html = w.ctx.get<string>('corpoHtml')!;
@@ -803,7 +803,7 @@ test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI file without a box o
   new ComposeEmailStep(
     logger,
     w.templates,
-    new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+    new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
     drive
   ).execute(w.ctx);
 
@@ -1625,7 +1625,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+      new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
       new FakeDriveFacade()
     ).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
@@ -1644,7 +1644,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+      new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
       new FakeDriveFacade()
     ).execute(w.ctx);
     expect(w.ctx.get('allegati')).toEqual([]);
@@ -1714,7 +1714,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+      new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
       new FakeDriveFacade()
     ).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
@@ -1730,7 +1730,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+      new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
       new FakeDriveFacade()
     ).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;

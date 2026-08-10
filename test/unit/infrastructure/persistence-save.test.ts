@@ -12,7 +12,7 @@ import { StatoDocumento } from '../../../src/domain/value-objects/enums';
  */
 function repo() {
   const db = new FakeDatabase({ LOG_DOCS: [] });
-  return { db, r: new LogDocumentoRepository(db, new ClasseRepository(db)) };
+  return { db, r: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))) };
 }
 
 test('cambiaStato persists through Repository.save() update path (06 §17)', () => {

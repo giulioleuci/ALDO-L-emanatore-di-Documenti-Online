@@ -120,7 +120,7 @@ function fullDeps(
     carenze: new CarenzaRepository(db),
     confMail: new ConfigurazioneEmailRepository(db),
     logMail: new LogEmailRepository(db),
-    logDocs: new LogDocumentoRepository(db, classi),
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => classi)),
     master,
     materie: new MateriaRepository(db),
     teachingAssignments,

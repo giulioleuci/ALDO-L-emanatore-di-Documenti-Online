@@ -98,7 +98,7 @@ test('includiStorico true: attaches an unresolved LazyRef (query not run yet)', 
   const anno: AnnoStorico = {
     anno: '2024-2025',
     db,
-    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
   };
   const databases = fakeStoricoProvider([anno]);
   const cdu = build(
@@ -116,7 +116,7 @@ test("builds ClasseStoricoVM.statistiche/progetti per historical year, using CLA
   const anno: AnnoStorico = {
     anno: '2024-2025',
     db,
-    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
   };
   const databases = fakeStoricoProvider([anno]);
   const cdu = build(

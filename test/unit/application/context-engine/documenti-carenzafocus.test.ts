@@ -30,7 +30,10 @@ function build(
     'student',
     new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
   );
-  b.registerProvider('documenti', new DocumentiProvider(new LogDocumentoRepository(db, classi)));
+  b.registerProvider(
+    'documenti',
+    new DocumentiProvider(new LogDocumentoRepository(db, new LazyRef(() => classi)))
+  );
   b.registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni));
   const full: BuildParams = {
     target,

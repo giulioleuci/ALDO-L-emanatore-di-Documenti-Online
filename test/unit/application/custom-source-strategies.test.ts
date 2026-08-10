@@ -195,7 +195,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
       sheet_doc2: [['NOME'], ['Neri']]
     });
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' });
@@ -209,7 +209,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', stato: 'GENERATO' });
@@ -219,7 +219,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
   test('missing idGen throws (config validation)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       fakeSpreadsheets({})
     );
     expect(() => new Strategy(logger).extract({})).toThrow();
@@ -229,7 +229,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ other_doc: [['NOME'], ['Gialli']] });
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     // other_doc has idGen CD1/tipo VERBALE — only it matches this tipo filter.
@@ -241,7 +241,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     // sheet_doc2 shares idGen/tipo with sheet_doc1 but has STATO ARCHIVIATO, not GENERATO.
@@ -268,7 +268,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tables);
     const spreadsheets = fakeSpreadsheets({ sheet_doc3: [['NOME'], ['Blu']] });
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     const rows = new Strategy(logger).extract({ idGen: 'CD_NOCLASSE' });
@@ -280,7 +280,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO' });
@@ -304,7 +304,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ sheet_doc4: [['NOME'], ['Rosa']] });
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
       spreadsheets
     );
     // fakeSpreadsheets' single fixed tab is always named 'Sheet1'; passing it explicitly

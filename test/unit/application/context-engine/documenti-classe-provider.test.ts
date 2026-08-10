@@ -57,7 +57,7 @@ function build(classiCompetenza?: string[]) {
   const db = new FakeDatabase(tablesWithClasseDocs());
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
-  const logDocs = new LogDocumentoRepository(db, classi);
+  const logDocs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs));

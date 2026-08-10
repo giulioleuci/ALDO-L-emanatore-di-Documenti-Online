@@ -50,7 +50,7 @@ function contextDependencies(
     alunni: new AlunnoRepository(db),
     materie: new MateriaRepository(db),
     oreAsl: new OreASLRepository(db),
-    logDocs: new LogDocumentoRepository(db, classi),
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => classi)),
     progetti: new ProgettoRepository(db),
     dipartimenti: new DipartimentoRepository(db)
   };
@@ -119,7 +119,7 @@ export function composeEmailNotificationService(
     carenze: new CarenzaRepository(db),
     confMail: new ConfigurazioneEmailRepository(db),
     logMail: new LogEmailRepository(db),
-    logDocs: new LogDocumentoRepository(db, classi),
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => classi)),
     master,
     materie: new MateriaRepository(db),
     aggregatoreDati: new AggregatoreDati(db),

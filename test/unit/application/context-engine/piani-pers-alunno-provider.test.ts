@@ -61,7 +61,7 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
   );
   b.registerProvider(
     'pianiPersAlunno',
-    new PianiPersAlunnoProvider(new LogDocumentoRepository(db, classi))
+    new PianiPersAlunnoProvider(new LogDocumentoRepository(db, new LazyRef(() => classi)))
   );
   b.registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(databases));
   const params: BuildParams = {
@@ -122,7 +122,7 @@ test('PianiPersAlunnoStoricoProvider: includiStorico true attaches an unresolved
   const anno: AnnoStorico = {
     anno: '2025-2026',
     db,
-    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
   };
   const databases: StoricoDatabaseProvider = { anniStorici: () => [anno] };
   const cdu = build(

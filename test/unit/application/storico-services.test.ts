@@ -55,7 +55,11 @@ test('reconcileSigla returns the original sigla when no MATERIA declares it', ()
 
 function annoStorico(anno: string, tables: Record<string, Row[]>): AnnoStorico {
   const db = new FakeDatabase(tables);
-  return { anno, db, logDocs: new LogDocumentoRepository(db, new ClasseRepository(db)) };
+  return {
+    anno,
+    db,
+    logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
+  };
 }
 
 function fakeProvider(anni: AnnoStorico[]): StoricoDatabaseProvider {

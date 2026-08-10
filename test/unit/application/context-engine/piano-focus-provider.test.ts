@@ -12,6 +12,7 @@ import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import { PipelineError } from '../../../../src/domain/errors/DomainError';
 import { TipoPiano } from '../../../../src/domain/value-objects/enums';
+import { tipoPianoLabel } from '../../../../src/application/context-engine/mappers/labels';
 
 function build(pianoTipo: TipoPiano) {
   const db = new FakeDatabase(fixtureTables());
@@ -43,11 +44,22 @@ test('exposes the selected student plan as serializable focus.piano data', () =>
 
   expect(cdu.focus.piano).toEqual({
     tipo: TipoPiano.PEI,
+    tipoLabel: 'PEI',
     isBes: true,
     parametriGenerazione: { gravita: 'media' }
   });
   expect(JSON.stringify(cdu)).toContain('"piano"');
   expect(JSON.stringify(cdu)).not.toContain('"entita"');
+});
+
+test.each([
+  [TipoPiano.PDP_DSA, 'PDP (DSA)'],
+  [TipoPiano.PDP_BES, 'PDP (BES)'],
+  [TipoPiano.PDP_STRANIERI, 'PDP (STRANIERI)'],
+  [TipoPiano.PEI, 'PEI'],
+  [TipoPiano.PFP, 'PFP']
+])('returns the approved readable label for %s', (tipo, expectedLabel) => {
+  expect(tipoPianoLabel(tipo)).toBe(expectedLabel);
 });
 
 test('throws PipelineError when the selected plan belongs to another student', () => {

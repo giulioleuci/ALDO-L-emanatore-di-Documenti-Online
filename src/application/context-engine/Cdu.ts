@@ -363,6 +363,7 @@ export interface CduCarenzaFocus {
 /** The selected personalized plan, available only during plan generation. */
 export interface CduPianoFocus {
   tipo: TipoPiano;
+  tipoLabel: string;
   isBes: boolean;
   parametriGenerazione: Record<string, unknown>;
 }

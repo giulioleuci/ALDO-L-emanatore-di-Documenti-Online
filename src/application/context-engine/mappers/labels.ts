@@ -1,9 +1,9 @@
 import { TipoPiano, ReligioneScelta, TipoProgetto } from '../../../domain/value-objects/enums';
 
 export const TIPO_PIANO_LABELS: Record<TipoPiano, string> = {
-  [TipoPiano.PDP_DSA]: 'PDP DSA',
-  [TipoPiano.PDP_BES]: 'PDP BES',
-  [TipoPiano.PDP_STRANIERI]: 'PDP Stranieri',
+  [TipoPiano.PDP_DSA]: 'PDP (DSA)',
+  [TipoPiano.PDP_BES]: 'PDP (BES)',
+  [TipoPiano.PDP_STRANIERI]: 'PDP (STRANIERI)',
   [TipoPiano.PEI]: 'PEI',
   [TipoPiano.PFP]: 'PFP'
 };

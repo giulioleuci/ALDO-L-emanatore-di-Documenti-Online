@@ -12,7 +12,7 @@ describe('buildStudentStoricoVm', () => {
       { annoScolastico: '2024-2025', classe: '4A-LC', esito: 'NON_PROMOSSO' },
       { annoScolastico: '2023-2024', classe: '4A-LC', esito: 'PROMOSSO' }
     ]);
-    expect(vm.pianiPrimoAnnoPrecedente).toEqual([{ tipo: 'PDP_DSA', tipoLabel: 'PDP DSA' }]);
+    expect(vm.pianiPrimoAnnoPrecedente).toEqual([{ tipo: 'PDP_DSA', tipoLabel: 'PDP (DSA)' }]);
     expect(vm.pianiSecondoAnnoPrecedente).toEqual([]);
     expect(vm.bocciature).toEqual([{ annoScolastico: '2024-2025', classe: '4A-LC' }]);
     expect(vm.hasBocciature).toBe(true);

@@ -2,6 +2,7 @@ import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import { PipelineError } from '../../../domain/errors/DomainError';
+import { tipoPianoLabel } from '../mappers/labels';
 
 /**
  * Selects the requested plan from the plans already loaded for the focused
@@ -20,6 +21,7 @@ export class PianoFocusProvider implements ContextProvider {
 
     cdu.focus.piano = {
       tipo: piano.tipo as import('../../../domain/value-objects/enums').TipoPiano,
+      tipoLabel: tipoPianoLabel(piano.tipo as import('../../../domain/value-objects/enums').TipoPiano),
       isBes: piano.isBes,
       parametriGenerazione: piano.parametriGenerazione
     };

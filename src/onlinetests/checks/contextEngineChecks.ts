@@ -908,10 +908,10 @@ export function registerEffectiveAssignmentConsumerChecks(
         primoProgetto.tipoLabel !== 'PCTO/ASL' ||
         primoProgetto.referente.appellativoCompleto.trim() === '' ||
         nonAvvale?.status.religioneLabel !== 'Non si avvale' ||
-        pianoTipoLabel !== 'PDP BES'
+        pianoTipoLabel !== 'PDP (BES)'
       ) {
         throw new ValidationError(
-          `Atteso coordinatori.elenco[0].appellativoCompleto, progetti[ASL].tipoLabel="PCTO/ASL", religioneLabel="Non si avvale" per ${e2eAlunnoEmail(1)} e piani tipoLabel="PDP BES" per ${e2eAlunnoEmail(5)}; ricevuto coordinatore=${JSON.stringify(primoCoordinatore)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.status.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}`
+          `Atteso coordinatori.elenco[0].appellativoCompleto, progetti[ASL].tipoLabel="PCTO/ASL", religioneLabel="Non si avvale" per ${e2eAlunnoEmail(1)} e piani tipoLabel="PDP (BES)" per ${e2eAlunnoEmail(5)}; ricevuto coordinatore=${JSON.stringify(primoCoordinatore)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.status.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}`
         );
       }
     }

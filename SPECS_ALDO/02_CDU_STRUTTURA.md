@@ -422,12 +422,13 @@ Presente unicamente nelle execution recipe relative a `PIANO_PERSONALIZZATO` (ge
 
 ```yaml
 focus.piano:
-  tipo: string                   # Enum TipoPiano della riga focalizzata (es. "PDP_DSA", "PEI")
+  tipo: string                   # Enum tecnico TipoPiano della riga focalizzata (es. "PDP_DSA", "PEI"); usato per routing/log e trascritto in LOG_DOCS.SOTTOTIPO
+  tipoLabel: string              # Etichetta leggibile per presentazione: "PDP (DSA)", "PDP (BES)", "PDP (STRANIERI)", "PEI" o "PFP"
   isBes: boolean                 # Copiato dal piano PIANI corrispondente (isBES())
   parametriGenerazione: object   # Oggetto JSON decodificato direttamente da PIANI.PARAMETRI
 ```
 
-> **REGOLE DI GENERAZIONE DOCUMENTI PIANI PERSONALIZZATI:** il record `CONF_DOC.ID = PIANI_PERSONALIZZATI` (con `TIPO = PIANO_PERS`) è il generatore unico per tutti i piani. Seleziona il template Drive valutando `focus.piano.tipo` nei 5 rami di `MODELLI`. Il valore `focus.piano.tipo` viene trascritto direttamente in `LOG_DOCS.SOTTOTIPO`.
+> **REGOLE DI GENERAZIONE DOCUMENTI PIANI PERSONALIZZATI:** il record `CONF_DOC.ID = PIANI_PERSONALIZZATI` (con `TIPO = PIANO_PERS`) è il generatore unico per tutti i piani. Seleziona il template Drive valutando l'enum tecnico `focus.piano.tipo` nei 5 rami di `MODELLI`. Il valore `focus.piano.tipo` viene trascritto direttamente in `LOG_DOCS.SOTTOTIPO`; `focus.piano.tipoLabel` è riservato alla presentazione.
 
 ---
 

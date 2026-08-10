@@ -3,7 +3,7 @@ import { TipoPiano, ReligioneScelta, TipoProgetto } from '../../../../../src/dom
 
 describe('labels', () => {
   it('maps every TipoPiano to a readable label', () => {
-    expect(tipoPianoLabel(TipoPiano.PDP_DSA)).toBe('PDP DSA');
+    expect(tipoPianoLabel(TipoPiano.PDP_DSA)).toBe('PDP (DSA)');
     expect(tipoPianoLabel(TipoPiano.PEI)).toBe('PEI');
     expect(tipoPianoLabel(TipoPiano.PFP)).toBe('PFP');
   });

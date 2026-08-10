@@ -58,11 +58,13 @@ export class AggregatoreDati {
       .filter((d) => this.matchesDoc(d, filtri));
   }
 
-  /** LOG_DOCS whose CLASSI contains the class, with optional tipo/stato filters (14 §2). */
+  /** LOG_DOCS visible to the class, with optional tipo/stato filters (14 §2). */
   getDocumentiPerClasse(classeId: string, filtri: DocumentoFiltri = {}): LogDocumento[] {
-    return this.allDocumenti()
-      .filter((d) => d.containsClasse(classeId))
-      .filter((d) => this.matchesDoc(d, filtri));
+    const classe = this.classi.findById(ClasseId.of(classeId));
+    if (classe === null) return [];
+    return this.logDocs
+      .findByClasse(classe)
+      .filter((documento) => this.matchesDoc(documento, filtri));
   }
 
   /** LOG_FOLD whose CLASSI contains the class (14 §2). */

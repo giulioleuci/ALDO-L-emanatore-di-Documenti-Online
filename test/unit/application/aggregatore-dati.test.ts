@@ -4,6 +4,7 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import { LogCartellaRepository } from '../../../src/infrastructure/repositories/LogCartellaRepository';
+import type { LogDocumento } from '../../../src/domain/entities/LogDocumento';
 
 function aggregatore(tables: Record<string, Row[]> = fixtureTables()): AggregatoreDati {
   return new AggregatoreDati(new FakeDatabase(tables));
@@ -67,6 +68,43 @@ test('getDocumentiPerClasse and getCartellePerClasse filter by CSV contains (14 
   const agg = aggregatore(tables);
   expect(agg.getDocumentiPerClasse('5A').map((d) => d.id)).toEqual(['d1']);
   expect(agg.getCartellePerClasse('5A').map((f) => f.id ?? '')).toEqual(['f1']);
+});
+
+test('documentiPerClasse exposes parent-owned documents to a partner without rewriting CLASSI', () => {
+  const tables = fixtureTables();
+  tables.CLASSI = [
+    {
+      ID: '3C',
+      ANNO: 3,
+      INDIRIZZO: 'SCI',
+      ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' })
+    },
+    {
+      ID: '3C-S',
+      ANNO: 3,
+      INDIRIZZO: 'SCI',
+      ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-C' })
+    }
+  ];
+  tables.LOG_DOCS = [
+    {
+      ID: 'verbale-parent',
+      ID_GEN: 'VERBALE',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      CLASSI: '3C',
+      UTENTI: ''
+    }
+  ];
+  const agg = aggregatore(tables);
+
+  expect(agg.getDocumentiPerClasse('3C-S').map((doc) => doc.id)).toEqual(['verbale-parent']);
+  expect(
+    (agg.perMetodo('documentiPerClasse', { classeId: '3C-S' }, logger) as LogDocumento[]).map(
+      (doc) => doc.id
+    )
+  ).toEqual(['verbale-parent']);
+  expect(tables.LOG_DOCS[0]!.CLASSI).toBe('3C');
 });
 
 test('getEmailCoordinatori reads CLASSI.COORD (14 §2)', () => {

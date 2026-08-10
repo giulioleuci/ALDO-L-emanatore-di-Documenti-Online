@@ -40,7 +40,7 @@ export class AggregatoreDati {
   constructor(database: RepositoryDatabase) {
     this.classi = new ClasseRepository(database);
     this.carenze = new CarenzaRepository(database);
-    this.logDocs = new LogDocumentoRepository(database);
+    this.logDocs = new LogDocumentoRepository(database, this.classi);
     this.logFold = new LogCartellaRepository(database);
   }
 

@@ -1,6 +1,4 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
-import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
-import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import { Email } from '../../domain/value-objects/Email';
 
 export interface DocumentoStorico {
@@ -46,8 +44,7 @@ export class StoricoDocumentiService {
 
   private tutti(alunnoEmail: string, profondita: number): DocumentoStoricoConTipo[] {
     const out: DocumentoStoricoConTipo[] = [];
-    for (const { anno, db } of this.provider.anniStorici(profondita)) {
-      const logDocs: ILogDocumentoRepository = new LogDocumentoRepository(db);
+    for (const { anno, logDocs } of this.provider.anniStorici(profondita)) {
       for (const doc of logDocs.findByUtente(Email.of(alunnoEmail))) {
         out.push({
           anno,

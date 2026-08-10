@@ -9,6 +9,8 @@ import type {
   AnnoStorico
 } from '../../../src/application/storico/StoricoDatabaseProvider';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
+import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { Materia } from '../../../src/domain/entities/Materia';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
@@ -51,7 +53,8 @@ test('reconcileSigla returns the original sigla when no MATERIA declares it', ()
 // --- Fake historical provider over two prior years ---
 
 function annoStorico(anno: string, tables: Record<string, Row[]>): AnnoStorico {
-  return { anno, db: new FakeDatabase(tables) };
+  const db = new FakeDatabase(tables);
+  return { anno, db, logDocs: new LogDocumentoRepository(db, new ClasseRepository(db)) };
 }
 
 function fakeProvider(anni: AnnoStorico[]): StoricoDatabaseProvider {

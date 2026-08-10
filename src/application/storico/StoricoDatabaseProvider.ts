@@ -1,10 +1,14 @@
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import { SheetDbAdapter } from '../../infrastructure/db/SheetDbAdapter';
+import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
+import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 
 /** A prior school year and its (lazily opened) database. */
 export interface AnnoStorico {
   anno: string;
   db: RepositoryDatabase;
+  logDocs: ILogDocumentoRepository;
 }
 
 /**
@@ -31,16 +35,20 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
 
   anniStorici(profondita: number): AnnoStorico[] {
     if (profondita <= 0) return [];
-    return this.master.findAnniStorici(profondita).map((config) => ({
-      anno: config.annoScolasticoRaw,
-      db: new SheetDbAdapter(
+    return this.master.findAnniStorici(profondita).map((config) => {
+      const db = new SheetDbAdapter(
         new DatabaseService(
           config.idSpreadsheet,
           this.logger,
           ServiceFactory.getUtils(),
           ServiceFactory.getCacheService().getScriptCache()
         )
-      )
-    }));
+      );
+      return {
+        anno: config.annoScolasticoRaw,
+        db,
+        logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+      };
+    });
   }
 }

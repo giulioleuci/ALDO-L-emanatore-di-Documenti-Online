@@ -78,7 +78,7 @@ export class ReportService {
     this.alunni = new AlunnoRepository(database);
     this.carenze = new CarenzaRepository(database);
     this.asl = new OreASLRepository(database);
-    this.logDocs = new LogDocumentoRepository(database);
+    this.logDocs = new LogDocumentoRepository(database, this.classi);
   }
 
   getStatisticheClasse(classeId: ClasseId): StatisticheClasse {

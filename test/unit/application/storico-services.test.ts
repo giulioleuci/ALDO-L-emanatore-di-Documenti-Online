@@ -62,6 +62,32 @@ function fakeProvider(anni: AnnoStorico[]): StoricoDatabaseProvider {
   return { anniStorici: (profondita) => anni.slice(0, profondita) };
 }
 
+function sheetTable(rows: Row[]) {
+  return {
+    getAllRows: jest.fn().mockReturnValue(rows),
+    getByPK: jest.fn().mockReturnValue(null),
+    createIndex: jest.fn(),
+    defineVirtualColumn: jest.fn(),
+    setPrimaryKey: jest.fn()
+  };
+}
+
+function mockDatabaseServiceWith(tables: Record<string, ReturnType<typeof sheetTable>>) {
+  (global as unknown as { DatabaseService: unknown }).DatabaseService = jest
+    .fn()
+    .mockImplementation(() => ({ tables }));
+}
+
+function masterWithYear(annoScolasticoRaw: string): MasterSheetRepository {
+  return {
+    findAnniStorici: jest
+      .fn()
+      .mockReturnValue([{ idSpreadsheet: 'STORICO_MINIMO', annoScolasticoRaw }])
+  } as unknown as MasterSheetRepository;
+}
+
+const logger = new LoggerService();
+
 function annoPrecedente(): Record<string, Row[]> {
   const tables = fixtureTables();
   // a1 was in 4A last year, promoted to 5A this year (CAMBIO 4A->5A).
@@ -205,6 +231,50 @@ test('StoricoDocumentiService.perAlunnoConTipo returns every prior-year document
     { anno: '2025-2026', nome: '', link: '', tipo: 'PDP', sottotipo: '', idGen: 'CD_PDP' }
   ]);
   expect(service.perAlunnoConTipo('nope@school.it', 1)).toEqual([]);
+});
+
+test('reads historical documents from the minimal CLASSI/ALUNNI/LOG_DOCS database', () => {
+  const originalDatabaseService = (global as unknown as { DatabaseService: unknown })
+    .DatabaseService;
+  const tables = {
+    [TABLE.CLASSI]: sheetTable([{ ID: '4A' }]),
+    [TABLE.ALUNNI]: sheetTable([{ EMAIL: 'a1@school.it', CLASSE: '4A' }]),
+    [TABLE.LOG_DOCS]: sheetTable([
+      {
+        ID: 'old-plan',
+        ID_GEN: 'PIANI_PERSONALIZZATI',
+        TIPO: 'PIANO_PERS',
+        SOTTOTIPO: 'PDP_BES',
+        NOME: 'PDP anno precedente',
+        LINK: 'https://drive/old-plan',
+        UTENTI: 'a1@school.it',
+        STATO: 'GENERATO'
+      }
+    ])
+  };
+  mockDatabaseServiceWith(tables);
+  const utilsSpy = jest.spyOn(ServiceFactory, 'getUtils').mockReturnValue({});
+  const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
+    getScriptCache: () => ({})
+  });
+
+  try {
+    const provider = new MasterStoricoDatabaseProvider(masterWithYear('2025-2026'), logger);
+    const result = new StoricoDocumentiService(provider).perAlunnoConTipo('a1@school.it');
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        anno: '2025-2026',
+        nome: 'PDP anno precedente',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES'
+      })
+    ]);
+  } finally {
+    cacheSpy.mockRestore();
+    utilsSpy.mockRestore();
+    (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
+  }
 });
 
 // --- StoricoClassiService ---

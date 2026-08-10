@@ -282,6 +282,7 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_HEADER: '',
         CONDIZIONE: null,
         POST_PROCESSO: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
         [COL_CONF_MAIL.ALLEGATI]: '[]'
       },
@@ -296,6 +297,7 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_HEADER: '#ff0000',
         CONDIZIONE: 'carenze > 0',
         POST_PROCESSO: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
         [COL_CONF_MAIL.ALLEGATI]: '[]'
       },
@@ -312,6 +314,7 @@ export function fixtureTables(): Record<string, Row[]> {
         CONDIZIONE: null,
         POST_PROCESSO:
           '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]',
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
         [COL_CONF_MAIL.ALLEGATI]: '[]'
       }

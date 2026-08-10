@@ -1167,6 +1167,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
@@ -1186,6 +1187,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
@@ -1207,6 +1209,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
@@ -1249,6 +1252,7 @@ export class E2eSampleDatabaseBuilder {
           }
         }
       ]),
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
@@ -1270,6 +1274,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
@@ -1284,6 +1289,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
       [COL_CONF_MAIL.POST_PROCESSO]: null,
+      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_MAIL.ALLEGATI]: JSON.stringify([templateIds.staticAttachment])
     });

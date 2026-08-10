@@ -124,6 +124,7 @@ function sampleSeedTables(
             COLORE_HEADER: '#1565C0',
             CONDIZIONE: '',
             POST_PROCESSO: null,
+            [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
             [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
             [COL_CONF_MAIL.ALLEGATI]: '[]'
           }

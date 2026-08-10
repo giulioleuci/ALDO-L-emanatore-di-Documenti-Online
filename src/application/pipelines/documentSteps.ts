@@ -114,6 +114,16 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+const PROGRESSIVO_MARKER_MAX_ATTEMPTS = 16;
+const PROGRESSIVO_PROBE = '1';
+
+function randomProgressivoMarker(): string {
+  const randomPart = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
+    .toString(36)
+    .toUpperCase();
+  return `ALDOPROGRESSIVO${randomPart}`;
+}
+
 /**
  * Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1): the cloned
  * artifact is still a live Drive file at this point in the pipeline regardless
@@ -158,7 +168,8 @@ export class CheckDuplicatesStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly db: IDatabase,
-    private readonly templates: ITemplateEngine
+    private readonly templates: ITemplateEngine,
+    private readonly markerSupplier: () => string = randomProgressivoMarker
   ) {
     super('CheckDuplicates', logger, { shouldExecuteCondition: generateGate });
   }
@@ -186,20 +197,37 @@ export class CheckDuplicatesStep extends Step {
     );
     const fileNameTemplate = String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? '');
     const templateContext = cduRecord(ctx);
-    const collisionSource = `${fileNameTemplate}\n${JSON.stringify(templateContext)}`;
-    let progressivoMarker = '_PROGRESSIVO_PH_';
-    while (collisionSource.includes(progressivoMarker)) {
-      progressivoMarker = `_${progressivoMarker}`;
+    let namePattern: RegExp;
+    if (fileNameTemplate.includes('{{progressivo}}')) {
+      const renderContext = { ...templateContext, progressivo: PROGRESSIVO_PROBE };
+      const collisionSource = this.templates.processString(fileNameTemplate, renderContext);
+      let progressivoMarker: string | null = null;
+      for (let attempt = 0; attempt < PROGRESSIVO_MARKER_MAX_ATTEMPTS; attempt += 1) {
+        const candidate = this.markerSupplier();
+        if (/^[A-Za-z0-9]+$/.test(candidate) && !collisionSource.includes(candidate)) {
+          progressivoMarker = candidate;
+          break;
+        }
+      }
+      if (progressivoMarker === null) {
+        throw new PipelineError(
+          `Impossibile selezionare un marker progressivo senza collisioni dopo ${PROGRESSIVO_MARKER_MAX_ATTEMPTS} tentativi`
+        );
+      }
+      const renderedName = this.templates.processString(
+        fileNameTemplate.split('{{progressivo}}').join(progressivoMarker),
+        renderContext
+      );
+      namePattern = new RegExp(
+        `^${escapeRegExp(renderedName)
+          .split(escapeRegExp(progressivoMarker))
+          .join('\\d+')}$`
+      );
+    } else {
+      namePattern = new RegExp(
+        `^${escapeRegExp(this.templates.processString(fileNameTemplate, templateContext))}$`
+      );
     }
-    const renderedName = this.templates.processString(
-      fileNameTemplate.split('{{progressivo}}').join(progressivoMarker),
-      templateContext
-    );
-    const namePattern = new RegExp(
-      `^${escapeRegExp(renderedName)
-        .split(escapeRegExp(progressivoMarker))
-        .join('\\d+')}$`
-    );
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) =>
         String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&

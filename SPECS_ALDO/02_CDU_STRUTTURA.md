@@ -78,10 +78,14 @@ meta:
   # `CheckDuplicatesStep` (che gira PRIMA di `PrepareInfrastructureStep`) NON
   # dipende dal valore risolto di `progressivo`: il confronto di identità con
   # `LOG_DOCS` è `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`
-  # (+`UTENTI` per `PIANO_PERS`), dove `NOME_NORMALIZZATO` rende `FILE_NAME`
-  # sostituendo solo `{{progressivo}}` con `_PROGRESSIVO_PH_` (01
-  # §CONF_DOC.DUPLICAZIONE). Usare `{{progressivo}}` in `FILE_NAME` è quindi
-  # sicuro con `DUPLICAZIONE=NEGATA`: NON vanifica il confronto di identità.
+  # (+`UTENTI` per `PIANO_PERS`). Per calcolare `NOME_NORMALIZZATO`, ogni
+  # controllo genera un marker alfanumerico temporaneo, verifica che non compaia
+  # nel `FILE_NAME` completo reso con lo stesso CDU e un valore-sonda non vuoto
+  # per `progressivo`, sostituisce con il marker solo i token esatti
+  # `{{progressivo}}`, rende il template completo e tratta solo quel marker come
+  # sequenza numerica (01 §CONF_DOC.DUPLICAZIONE). Il marker non è persistito.
+  # Usare `{{progressivo}}` in `FILE_NAME` è quindi sicuro con
+  # `DUPLICAZIONE=NEGATA`: NON vanifica il confronto di identità.
   # Un tipo documento le cui istanze devono restare distinguibili tra loro (es.
   # un verbale per riunione) richiede un `CONF_DOC.ID` distinto per istanza solo
   # quando tutti i componenti dell'identità, incluso il nome normalizzato,

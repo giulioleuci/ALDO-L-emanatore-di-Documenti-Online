@@ -355,6 +355,52 @@ test('CheckDuplicatesStep renders a Mustache section spanning the progressivo sl
   expect(ctx.get('shouldGenerate')).toBe(false);
 });
 
+test('CheckDuplicatesStep retries a marker assembled only after Mustache rendering', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Output',
+      NOME: '_PROGRESSIVO_PH_-7'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: '_PRO{{#flag}}GRESSIVO{{/flag}}_PH_-{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+  ctx.set('cdu', { ...buildCdu(db), flag: true });
+  const markerSupplier = jest
+    .fn<() => string>()
+    .mockReturnValueOnce('PROGRESSIVO')
+    .mockReturnValueOnce('SAFE123');
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine(), markerSupplier).execute(ctx);
+
+  expect(ctx.get('shouldGenerate')).toBe(false);
+  expect(markerSupplier).toHaveBeenCalledTimes(2);
+});
+
+test('CheckDuplicatesStep fails meaningfully when every generated marker collides', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: '{{#progressivo}}COL{{/progressivo}}LISION-{{progressivo}}',
+    PATH_OUT: 'Output'
+  });
+  const markerSupplier = jest.fn<() => string>().mockReturnValue('COLLISION');
+
+  expect(() =>
+    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine(), markerSupplier).execute(ctx)
+  ).toThrow('Impossibile selezionare un marker progressivo senza collisioni dopo 16 tentativi');
+});
+
 test('CheckDuplicatesStep keeps a literal _PROGRESSIVO_PH_ filename fragment static', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [

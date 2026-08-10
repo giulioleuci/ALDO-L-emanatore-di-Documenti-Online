@@ -49,7 +49,7 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 | Valore     | Significato                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------- |
-| `NEGATA`   | Default. Blocca la generazione se esiste la stessa identità `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`, dove `NOME_NORMALIZZATO` rende `FILE_NAME` sostituendo solo `{{progressivo}}` con `_PROGRESSIVO_PH_`. |
+| `NEGATA`   | Default. Blocca la generazione se esiste la stessa identità `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`. Per calcolare `NOME_NORMALIZZATO`, ogni controllo sceglie un marker alfanumerico temporaneo assente dal `FILE_NAME` completo reso con lo stesso CDU e un valore-sonda non vuoto per `progressivo`, sostituisce solo i token esatti `{{progressivo}}`, rende il template completo e tratta solo il marker scelto come sequenza numerica. Il marker non è persistito. |
 | `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                         |
 
 Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).

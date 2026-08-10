@@ -9,6 +9,7 @@ import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import type { TestRunner } from '../OnlineTestReport';
 import {
@@ -407,7 +408,10 @@ export function registerArticolazioneChecks(
     }
     for (const { tipo, fileId } of persisted) {
       const text = drive.getFileText(fileId);
-      if (!text.includes(`Tipo piano: ${tipo}`) || !text.includes(`Note: Piano E2E ${tipo}`)) {
+      if (
+        !text.includes(`Tipo piano: ${tipoPianoLabel(tipo)}`) ||
+        !text.includes(`Note: Piano E2E ${tipo}`)
+      ) {
         throw new ValidationError(`Piano duale: output renderizzato non coerente per ${tipo}.`);
       }
     }

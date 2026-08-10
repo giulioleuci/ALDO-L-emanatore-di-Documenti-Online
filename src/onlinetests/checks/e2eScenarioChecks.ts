@@ -10,6 +10,7 @@ import type { DocumentGenerationService } from '../../application/services/Docum
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
 import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
 import { TipoPiano } from '../../domain/value-objects/enums';
 import {
@@ -271,7 +272,7 @@ export function registerE2eScenarioChecks(
         const text = drive.getFileText(fileId);
         for (const expected of [
           `Modello E2E ${tipo}`,
-          `Tipo piano: ${tipo}`,
+          `Tipo piano: ${tipoPianoLabel(tipo)}`,
           `Note: Piano E2E ${tipo}`
         ]) {
           if (!text.includes(expected)) {
@@ -344,11 +345,11 @@ export function registerE2eScenarioChecks(
       }
       const correctHistory = [
         "PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026",
-        "PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026"
+        "PDP (BES) — Ricci Martina: E2E_Piano_PDP (BES)_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026"
       ];
       const crossedHistory = [
         "PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026",
-        "PDP_BES — Ricci Martina: E2E_Piano_PDP_BES_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026"
+        "PDP (BES) — Ricci Martina: E2E_Piano_PDP (BES)_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026"
       ];
       if (
         correctHistory.some((fragment) => !emailText.includes(fragment)) ||

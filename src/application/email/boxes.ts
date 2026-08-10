@@ -211,7 +211,8 @@ function renderDocumentiBox(
 function renderPianiPersBox(
   data: unknown,
   options: { config: Record<string, unknown> },
-  templates: ITemplateEngine
+  templates: ITemplateEngine,
+  logger: LoggerService
 ): string {
   const { items, storicoRef, defaultTemplate } = data as {
     items: PianoPersonalizzatoRow[];
@@ -241,8 +242,10 @@ function renderPianiPersBox(
   let storico: DocumentoStoricoConTipo[] = [];
   try {
     storico = storicoRef?.get() ?? [];
-  } catch {
+  } catch (err) {
     // A missing/unavailable prior-year database must not suppress current plans.
+    const message = err instanceof Error ? err.message : String(err);
+    logger.warn(`Piani personalizzati: storico non disponibile (${message})`);
     storico = [];
   }
   const righe = items
@@ -392,8 +395,9 @@ export function createBoxComposer(
         documenti: (data, options) => renderDocumentiBox(data, options, templates),
         documenti_dipartimento: (data, options) => renderDocumentiBox(data, options, templates),
         cartelle: (data, options) => renderDocumentiBox(data, options, templates),
-        piani_pers_da_inviare: (data, options) => renderPianiPersBox(data, options, templates),
-        piani_pers_inviati: (data, options) => renderPianiPersBox(data, options, templates),
+        piani_pers_da_inviare: (data, options) =>
+          renderPianiPersBox(data, options, templates, logger),
+        piani_pers_inviati: (data, options) => renderPianiPersBox(data, options, templates, logger),
         note: (data) => renderNoteBox(data),
         assenze: () => renderAssenzeBox(),
         testo_dinamico: (data, options) =>

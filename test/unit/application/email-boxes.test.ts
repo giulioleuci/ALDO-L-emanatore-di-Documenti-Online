@@ -675,6 +675,7 @@ test('piani_pers_da_inviare: exposes the readable label to row templates without
 test('piani_pers_da_inviare: keeps current plans visible when historical lookup fails', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
+  const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
   const cdu = pianiPersCduRecord(
     [
       {
@@ -698,6 +699,10 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
 
   expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP corrente');
   expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP (BES)');
+  expect(warn).toHaveBeenCalledWith(
+    expect.stringContaining('Piani personalizzati: storico non disponibile')
+  );
+  warn.mockRestore();
 });
 
 test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in the default-template (historical) path', () => {

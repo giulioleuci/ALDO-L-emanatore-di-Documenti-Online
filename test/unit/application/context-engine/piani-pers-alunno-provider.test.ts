@@ -22,14 +22,28 @@ function tablesWithPiani(): Record<string, Row[]> {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push(
     {
-      ID: 'doc_pdp_1', ID_GEN: 'PDP_BES', TIPO: 'PIANO_PERS', SOTTOTIPO: 'PDP_DSA',
-      NOME: 'PDP a1', STATO: 'GENERATO', NOTIFICATO: '', LINK: 'http://d/1',
-      UTENTI: 'a1@school.it', DATA_CREAZ: '2026-03-01'
+      ID: 'doc_pdp_1',
+      ID_GEN: 'PDP_BES',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_DSA',
+      NOME: 'PDP a1',
+      STATO: 'GENERATO',
+      NOTIFICATO: '',
+      LINK: 'http://d/1',
+      UTENTI: 'a1@school.it',
+      DATA_CREAZ: '2026-03-01'
     },
     {
-      ID: 'doc_verbale_1', ID_GEN: 'VERBALE_CDC', TIPO: 'VERBALE', SOTTOTIPO: '',
-      NOME: 'Verbale', STATO: 'GENERATO', NOTIFICATO: '', LINK: 'http://d/v',
-      UTENTI: 'a1@school.it', DATA_CREAZ: '2026-03-01'
+      ID: 'doc_verbale_1',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      NOME: 'Verbale',
+      STATO: 'GENERATO',
+      NOTIFICATO: '',
+      LINK: 'http://d/v',
+      UTENTI: 'a1@school.it',
+      DATA_CREAZ: '2026-03-01'
     }
   );
   return t;
@@ -45,9 +59,16 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
     'student',
     new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
   );
-  b.registerProvider('pianiPersAlunno', new PianiPersAlunnoProvider(new LogDocumentoRepository(db)));
+  b.registerProvider(
+    'pianiPersAlunno',
+    new PianiPersAlunnoProvider(new LogDocumentoRepository(db, classi))
+  );
   b.registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(databases));
-  const params: BuildParams = { target: 'a1@school.it', tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = {
+    target: 'a1@school.it',
+    tipoTarget: 'alunno',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
   const recipe: Recipe = { providers, options };
   return b.build(params, recipe);
 }
@@ -57,15 +78,26 @@ test('PianiPersAlunnoProvider: filters LOG_DOCS to TIPO=PIANO_PERS only, tags no
   expect(cdu.focus.alunno!.didattica.pianiPersonalizzati!.items).toEqual([
     {
       id: 'doc_pdp_1',
-      nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_DSA',
-      idGen: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false
+      nome: 'PDP a1',
+      link: 'http://d/1',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_DSA',
+      idGen: 'PDP_BES',
+      stato: 'GENERATO',
+      dataCreazione: '2026-03-01',
+      notificato: false
     }
   ]);
 });
 
 test('PianiPersAlunnoStoricoProvider: includiStorico false ⇒ no storico key', () => {
   let opened = false;
-  const databases: StoricoDatabaseProvider = { anniStorici: () => { opened = true; return []; } };
+  const databases: StoricoDatabaseProvider = {
+    anniStorici: () => {
+      opened = true;
+      return [];
+    }
+  };
   const cdu = build(['class', 'student', 'pianiPersAlunno', 'pianiPersAlunnoStorico'], databases);
   expect(cdu.focus.alunno!.didattica.pianiPersonalizzati!.storico).toBeUndefined();
   expect(opened).toBe(false);
@@ -74,11 +106,23 @@ test('PianiPersAlunnoStoricoProvider: includiStorico false ⇒ no storico key', 
 test('PianiPersAlunnoStoricoProvider: includiStorico true attaches an unresolved LazyRef with separate family, subtype and generator fields', () => {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push({
-    ID: 'old_pdp', ID_GEN: 'PDP_BES', TIPO: 'PIANO_PERS', SOTTOTIPO: 'PDP_DSA',
-    NOME: 'PDP a1 anno scorso', STATO: 'GENERATO', NOTIFICATO: '', LINK: 'http://d/old',
-    UTENTI: 'a1@school.it', DATA_CREAZ: '2025-03-01'
+    ID: 'old_pdp',
+    ID_GEN: 'PDP_BES',
+    TIPO: 'PIANO_PERS',
+    SOTTOTIPO: 'PDP_DSA',
+    NOME: 'PDP a1 anno scorso',
+    STATO: 'GENERATO',
+    NOTIFICATO: '',
+    LINK: 'http://d/old',
+    UTENTI: 'a1@school.it',
+    DATA_CREAZ: '2025-03-01'
   });
-  const anno: AnnoStorico = { anno: '2025-2026', db: new FakeDatabase(t) };
+  const db = new FakeDatabase(t);
+  const anno: AnnoStorico = {
+    anno: '2025-2026',
+    db,
+    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+  };
   const databases: StoricoDatabaseProvider = { anniStorici: () => [anno] };
   const cdu = build(
     ['class', 'student', 'pianiPersAlunno', 'pianiPersAlunnoStorico'],

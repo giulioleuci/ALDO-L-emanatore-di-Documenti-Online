@@ -194,7 +194,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
       sheet_doc1: [['NOME'], ['Verdi']],
       sheet_doc2: [['NOME'], ['Neri']]
     });
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' });
     expect(rows).toEqual([
       { NOME: 'Verdi', _CLASSE: '5A' },
@@ -205,7 +208,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
   test('optional stato filter narrows the search', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', stato: 'GENERATO' });
     expect(rows).toEqual([{ NOME: 'Verdi', _CLASSE: '5A' }]);
   });
@@ -213,7 +219,7 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
   test('missing idGen throws (config validation)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const Strategy = createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db),
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
       fakeSpreadsheets({})
     );
     expect(() => new Strategy(logger).extract({})).toThrow();
@@ -222,7 +228,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
   test('optional tipo filter narrows the search, skipping documents whose tipo does not match', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ other_doc: [['NOME'], ['Gialli']] });
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     // other_doc has idGen CD1/tipo VERBALE — only it matches this tipo filter.
     const rows = new Strategy(logger).extract({ idGen: 'CD1', tipo: 'VERBALE' });
     expect(rows).toEqual([{ NOME: 'Gialli', _CLASSE: '5A' }]);
@@ -231,7 +240,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
   test('a document failing either the tipo or stato filter is excluded even when idGen matches', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     // sheet_doc2 shares idGen/tipo with sheet_doc1 but has STATO ARCHIVIATO, not GENERATO.
     const rows = new Strategy(logger).extract({
       idGen: 'CD_GRIGLIE',
@@ -255,7 +267,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     ];
     const db = new FakeDatabase(tables);
     const spreadsheets = fakeSpreadsheets({ sheet_doc3: [['NOME'], ['Blu']] });
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     const rows = new Strategy(logger).extract({ idGen: 'CD_NOCLASSE' });
     expect(rows).toEqual([{ NOME: 'Blu', _CLASSE: '' }]);
   });
@@ -264,7 +279,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO' });
     // No explicit tabName/range supplied -> SheetByIdStrategy falls back to sheet1's own name/range.
     expect(getRangesSpy).toHaveBeenCalledWith('sheet_doc1', 'Sheet1!A1:E10');
@@ -285,7 +303,10 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tables);
     const spreadsheets = fakeSpreadsheets({ sheet_doc4: [['NOME'], ['Rosa']] });
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
-    const Strategy = createCercaDocumentiStrategy(new LogDocumentoRepository(db), spreadsheets);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new ClasseRepository(db)),
+      spreadsheets
+    );
     // fakeSpreadsheets' single fixed tab is always named 'Sheet1'; passing it explicitly
     // together with an explicit range still proves both options are threaded through
     // (as opposed to the default-range test above, which supplies neither).

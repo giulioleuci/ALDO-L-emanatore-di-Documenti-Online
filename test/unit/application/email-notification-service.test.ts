@@ -104,6 +104,7 @@ function fullDeps(
 ): EmailNotificationDeps {
   const master = new MasterSheetRepository(db);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const classi = new ClasseRepository(db);
   return {
     db,
     gmail,
@@ -115,11 +116,11 @@ function fullDeps(
     docenti: new DocenteRepository(db),
     alunni: new AlunnoRepository(db),
     dipartimenti: new DipartimentoRepository(db),
-    classi: new ClasseRepository(db),
+    classi,
     carenze: new CarenzaRepository(db),
     confMail: new ConfigurazioneEmailRepository(db),
     logMail: new LogEmailRepository(db),
-    logDocs: new LogDocumentoRepository(db),
+    logDocs: new LogDocumentoRepository(db, classi),
     master,
     materie: new MateriaRepository(db),
     teachingAssignments,
@@ -149,9 +150,7 @@ function assignmentFor(titolare: Docente): TeachingAssignment {
   };
 }
 
-function teachingResolverFor(
-  assignments: TeachingAssignment[]
-): ITeachingAssignmentResolver {
+function teachingResolverFor(assignments: TeachingAssignment[]): ITeachingAssignmentResolver {
   return {
     resolveMateria: () => assignments,
     resolveConsiglio: () => assignments
@@ -193,7 +192,9 @@ test('PER_COORDINATORE routes a parent without coordinatore to its partners', ()
   const service = new EmailNotificationService(fullDeps(db, gmail, { classi: classiStub }));
 
   const targets = service.enumerateTargets(conf('PER_COORDINATORE'));
-  const scientificoTarget = targets.find((target) => target.docenteEmail === 'scientifico@school.it')!;
+  const scientificoTarget = targets.find(
+    (target) => target.docenteEmail === 'scientifico@school.it'
+  )!;
   const classicoTarget = targets.find((target) => target.docenteEmail === 'classico@school.it')!;
 
   expect(scientificoTarget.classiCompetenza).toEqual(['3C-S']);
@@ -230,16 +231,15 @@ test('PER_DOCENTE + SOLO_SUPPLENTI enumerates the actual supplente, not the tito
     fullDeps(db, gmail, { now: new Date('2025-11-15T09:00:00Z') })
   );
 
-  const targets = service.enumerateTargets(
-    conf('PER_DOCENTE', { SUPPLENTI: 'SOLO_SUPPLENTI' })
-  );
+  const targets = service.enumerateTargets(conf('PER_DOCENTE', { SUPPLENTI: 'SOLO_SUPPLENTI' }));
   // rossi's cattedra (spanning 1F's group + 4B) splits: one target keeps
   // rossi for the subjects he still nominally/effectively holds, another is
   // split off for bianchi specifically because 4B/MATE is under an active
   // SUPPLENZA. Identify the split-off target unambiguously via titolareEmail
   // rather than classiCompetenza, since both siblings share that full list.
   const bianchiSplit = targets.find(
-    (target) => target.docenteEmail === 'bianchi@school.it' && target.titolareEmail === 'rossi@school.it'
+    (target) =>
+      target.docenteEmail === 'bianchi@school.it' && target.titolareEmail === 'rossi@school.it'
   )!;
 
   expect(bianchiSplit).toBeDefined();
@@ -282,13 +282,9 @@ test('PER_DOCENTE + ENTRAMBI splits a titolare cattedra into one target per acti
     resolveMateria: () => [],
     resolveConsiglio
   };
-  const service = new EmailNotificationService(
-    fullDeps(db, gmail, { teachingAssignments })
-  );
+  const service = new EmailNotificationService(fullDeps(db, gmail, { teachingAssignments }));
 
-  const targets = service.enumerateTargets(
-    conf('PER_DOCENTE', { SUPPLENTI: 'ENTRAMBI' })
-  );
+  const targets = service.enumerateTargets(conf('PER_DOCENTE', { SUPPLENTI: 'ENTRAMBI' }));
 
   // Grouping still keys on the titolare (PRINCIPAL_ONLY pass, unchanged), but
   // ENTRAMBI's active substitution now expands that one cattedra into two
@@ -373,13 +369,9 @@ test('PER_CDC applies CONF_MAIL.SUPPLENTI through the shared resolver', () => {
     })
   );
 
-  const targets = service.enumerateTargets(
-    conf('PER_CDC', { SUPPLENTI: 'SOLO_SUPPLENTI' })
-  );
+  const targets = service.enumerateTargets(conf('PER_CDC', { SUPPLENTI: 'SOLO_SUPPLENTI' }));
 
-  expect(targets.every((target) => target.emails[0] === 'bianchi@school.it')).toBe(
-    true
-  );
+  expect(targets.every((target) => target.emails[0] === 'bianchi@school.it')).toBe(true);
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.any(Classe),
     NOW,
@@ -481,7 +473,9 @@ test('targetsPerCdc honors CONF_MAIL.GESTIONE_ARTICOLAZIONE=ARTICOLATA: partners
     fullDeps(db, gmail, { classi: classiStub, teachingAssignments })
   );
 
-  const targets = service.enumerateTargets(conf('PER_CDC', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' }));
+  const targets = service.enumerateTargets(
+    conf('PER_CDC', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' })
+  );
 
   expect(targets).toEqual([
     {
@@ -936,23 +930,22 @@ test('sendToTarget sends no attachments when the static configuration is empty',
 });
 
 test('sendToTarget returns the subject, operational recipients, and measured duration from the pipeline context', () => {
-  const { service } = wire([
-    mailRow('TARGET_RESULT', { OGGETTO: 'Convocazione consiglio' })
-  ]);
-  const nowSpy = jest
-    .spyOn(Date, 'now')
-    .mockReturnValueOnce(1000)
-    .mockReturnValue(1230);
+  const { service } = wire([mailRow('TARGET_RESULT', { OGGETTO: 'Convocazione consiglio' })]);
+  const nowSpy = jest.spyOn(Date, 'now').mockReturnValueOnce(1000).mockReturnValue(1230);
 
   try {
     expect(
-      service.sendToTarget('TARGET_RESULT', {
-        tipo: 'cdc',
-        tipoTarget: 'classe',
-        target: '5A',
-        emails: ['docente@example.edu'],
-        classiCompetenza: ['5A']
-      }, 'job')
+      service.sendToTarget(
+        'TARGET_RESULT',
+        {
+          tipo: 'cdc',
+          tipoTarget: 'classe',
+          target: '5A',
+          emails: ['docente@example.edu'],
+          classiCompetenza: ['5A']
+        },
+        'job'
+      )
     ).toEqual({
       sent: 1,
       errors: [],

@@ -1,4 +1,6 @@
 import { MaterieClasseProvider } from '../../../../../src/application/context-engine/providers/MaterieClasseProvider';
+import { ClasseRepository } from '../../../../../src/infrastructure/repositories/ClasseRepository';
+import { LogDocumentoRepository } from '../../../../../src/infrastructure/repositories/LogDocumentoRepository';
 import type { Cdu, DocenteCdcVM } from '../../../../../src/application/context-engine/Cdu';
 import { makeOptions } from '../../../../../src/application/context-engine/Recipe';
 import type { BuildParams } from '../../../../../src/application/context-engine/Recipe';
@@ -13,13 +15,49 @@ import { FakeDatabase } from '../../../../fakes/FakeDatabase';
 import { ClasseId } from '../../../../../src/domain/value-objects/ClasseId';
 import type { Row } from '../../../../../src/infrastructure/db/Database';
 
-function docenteCdc(nomeCompleto: string, email: string, sigla: string, isITP = false): DocenteCdcVM {
+function docenteCdc(
+  nomeCompleto: string,
+  email: string,
+  sigla: string,
+  isITP = false
+): DocenteCdcVM {
   return {
-    anagrafica: { nome: '', cognome: '', email, genere: 'M', appellativo: 'Prof.', articolo: 'il', coordinatore: 'coordinatore', nomeCompleto, materia: null, appellativoCompleto: `Prof. ${nomeCompleto}`, appellativoCognome: `Prof. ${nomeCompleto}` },
-    materie: [{ sigla, nome: sigla, nomeSintetico: sigla, colore1: '', colore2: '', isMateriaPrimaProva: false, isMateriaSecondaProva: false, principale: null, specificita: null, isITP, evoluzione: null }],
+    anagrafica: {
+      nome: '',
+      cognome: '',
+      email,
+      genere: 'M',
+      appellativo: 'Prof.',
+      articolo: 'il',
+      coordinatore: 'coordinatore',
+      nomeCompleto,
+      materia: null,
+      appellativoCompleto: `Prof. ${nomeCompleto}`,
+      appellativoCognome: `Prof. ${nomeCompleto}`
+    },
+    materie: [
+      {
+        sigla,
+        nome: sigla,
+        nomeSintetico: sigla,
+        colore1: '',
+        colore2: '',
+        isMateriaPrimaProva: false,
+        isMateriaSecondaProva: false,
+        principale: null,
+        specificita: null,
+        isITP,
+        evoluzione: null
+      }
+    ],
     materieDescrizione: sigla,
     materieSigle: sigla,
-    ruoli: { isCoordinatore: false, isTutorAsl: false, isTutorOrientamento: false, descrizione: [] },
+    ruoli: {
+      isCoordinatore: false,
+      isTutorAsl: false,
+      isTutorOrientamento: false,
+      descrizione: []
+    },
     stato: { isSupplente: false, sostituisce: null },
     tipoArticolazione: null,
     gruppoNome: null,
@@ -28,7 +66,11 @@ function docenteCdc(nomeCompleto: string, email: string, sigla: string, isITP = 
   };
 }
 
-const params: BuildParams = { target: '3A', tipoTarget: 'classe', now: new Date('2026-08-06T09:00:00Z') };
+const params: BuildParams = {
+  target: '3A',
+  tipoTarget: 'classe',
+  now: new Date('2026-08-06T09:00:00Z')
+};
 
 function cduConClasse(consiglio: DocenteCdcVM[]): Cdu {
   const classe = Classe.fromData({ ID: '3A', ANNO: 3, INDIRIZZO: 'SCIENTIFICO' });
@@ -40,7 +82,16 @@ function cduConClasse(consiglio: DocenteCdcVM[]): Cdu {
 
 describe('MaterieClasseProvider', () => {
   it('groups the class council into a flat, deduped subject catalog with docentiDescrizione/hasItp', () => {
-    const cdu = { focus: { classe: { consiglioDiClasse: [docenteCdc('Mario Rossi', 'm@x.it', 'ITA'), docenteCdc('Laura Gialli', 'l@x.it', 'ITA', true)] } } } as unknown as Cdu;
+    const cdu = {
+      focus: {
+        classe: {
+          consiglioDiClasse: [
+            docenteCdc('Mario Rossi', 'm@x.it', 'ITA'),
+            docenteCdc('Laura Gialli', 'l@x.it', 'ITA', true)
+          ]
+        }
+      }
+    } as unknown as Cdu;
     new MaterieClasseProvider().provide(cdu, params, makeOptions());
     expect(cdu.focus.classe!.materie).toHaveLength(1);
     const ita = cdu.focus.classe!.materie![0]!;
@@ -60,7 +111,11 @@ describe('MaterieClasseProvider', () => {
     it('attaches continuita to each subject only when includiStorico is true', () => {
       const provider = new MaterieClasseProvider(materie, docenti, storicoDb, classi);
       const cdu = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
-      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 2 }));
+      provider.provide(
+        cdu,
+        params,
+        makeOptions({ includiStorico: true, profonditaAnniStorico: 2 })
+      );
       expect(cdu.focus.classe!.materie![0]!.continuita).toBeDefined();
 
       const cdu2 = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
@@ -71,7 +126,11 @@ describe('MaterieClasseProvider', () => {
     it('does not attach continuita when a required dependency is missing, even with includiStorico true', () => {
       const provider = new MaterieClasseProvider(materie); // docenti/storicoDb/classi absent
       const cdu = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
-      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
+      provider.provide(
+        cdu,
+        params,
+        makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
+      );
       expect(cdu.focus.classe!.materie![0]!.continuita).toBeUndefined();
     });
 
@@ -99,16 +158,32 @@ describe('MaterieClasseProvider', () => {
       const classiConStorico: IClasseRepository = {
         getStorico: () => [ClasseId.of('2A')]
       } as unknown as IClasseRepository;
+      const db = new FakeDatabase(historicalTables);
       const storicoDbConItp: StoricoDatabaseProvider = {
-        anniStorici: () => [{ anno: '2024-2025', db: new FakeDatabase(historicalTables) }]
+        anniStorici: () => [
+          {
+            anno: '2024-2025',
+            db,
+            logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+          }
+        ]
       };
 
-      const provider = new MaterieClasseProvider(materie, docentiConEmail, storicoDbConItp, classiConStorico);
+      const provider = new MaterieClasseProvider(
+        materie,
+        docentiConEmail,
+        storicoDbConItp,
+        classiConStorico
+      );
       const cdu = cduConClasse([
         docenteCdc('Mario Rossi', 'm@x.it', 'MATE', false),
         docenteCdc('Laura Gialli', 'l@x.it', 'MATE', true)
       ]);
-      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
+      provider.provide(
+        cdu,
+        params,
+        makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
+      );
 
       const mate = cdu.focus.classe!.materie![0]!;
       expect(mate.hasItp).toBe(true);

@@ -1,4 +1,6 @@
 import { StoricoClasseProvider } from '../../../../../src/application/context-engine/providers/StoricoClasseProvider';
+import { ClasseRepository } from '../../../../../src/infrastructure/repositories/ClasseRepository';
+import { LogDocumentoRepository } from '../../../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { ClasseProvider } from '../../../../../src/application/context-engine/providers/ClasseProvider';
 import { ContextBuilder } from '../../../../../src/application/context-engine/ContextBuilder';
 import { makeOptions } from '../../../../../src/application/context-engine/Recipe';
@@ -46,7 +48,14 @@ function historicalTables(): Record<string, Row[]> {
       }
     ],
     PROGETTI: [
-      { CLASSE: '4A', TIPO: 'ASL', NOME: 'Stage vecchio', REFERENTE: 'esterno@x.it', ORE: 40, ORE_ASL: 30 }
+      {
+        CLASSE: '4A',
+        TIPO: 'ASL',
+        NOME: 'Stage vecchio',
+        REFERENTE: 'esterno@x.it',
+        ORE: 40,
+        ORE_ASL: 30
+      }
     ]
   };
 }
@@ -62,7 +71,11 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider('storicoClasse', new StoricoClasseProvider(databases, classi));
-  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = {
+    target: '5A',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
   const recipe: Recipe = { providers, options };
   return b.build(params, recipe);
 }
@@ -81,7 +94,12 @@ test('includiStorico false: provider is a no-op, no historical database opened',
 });
 
 test('includiStorico true: attaches an unresolved LazyRef (query not run yet)', () => {
-  const anno: AnnoStorico = { anno: '2024-2025', db: new FakeDatabase(historicalTables()) };
+  const db = new FakeDatabase(historicalTables());
+  const anno: AnnoStorico = {
+    anno: '2024-2025',
+    db,
+    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+  };
   const databases = fakeStoricoProvider([anno]);
   const cdu = build(
     ['class', 'storicoClasse'],
@@ -93,25 +111,27 @@ test('includiStorico true: attaches an unresolved LazyRef (query not run yet)', 
   expect(ref.isResolved()).toBe(false);
 });
 
-test(
-  "builds ClasseStoricoVM.statistiche/progetti per historical year, using CLASSI.STORICO to resolve each year's class name",
-  () => {
-    const anno: AnnoStorico = { anno: '2024-2025', db: new FakeDatabase(historicalTables()) };
-    const databases = fakeStoricoProvider([anno]);
-    const cdu = build(
-      ['class', 'storicoClasse'],
-      databases,
-      makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
-    );
-    const storico = cdu.focus.classe!.storico!.get();
-    expect(storico.statistiche).toHaveLength(1);
-    expect(storico.statistiche[0]!.annoScolastico).toBe('2024-2025');
-    expect(storico.statistiche[0]!.classe).toBe('4A');
-    expect(storico.statistiche[0]!.statistiche.totale).toBe(2);
-    expect(storico.progetti).toHaveLength(1);
-    expect(storico.progetti[0]!.annoScolastico).toBe('2024-2025');
-    expect(storico.progetti[0]!.classe).toBe('4A');
-    expect(storico.progetti[0]!.progetti).toHaveLength(1);
-    expect(storico.progetti[0]!.progetti[0]!.nome).toBe('Stage vecchio');
-  }
-);
+test("builds ClasseStoricoVM.statistiche/progetti per historical year, using CLASSI.STORICO to resolve each year's class name", () => {
+  const db = new FakeDatabase(historicalTables());
+  const anno: AnnoStorico = {
+    anno: '2024-2025',
+    db,
+    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+  };
+  const databases = fakeStoricoProvider([anno]);
+  const cdu = build(
+    ['class', 'storicoClasse'],
+    databases,
+    makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
+  );
+  const storico = cdu.focus.classe!.storico!.get();
+  expect(storico.statistiche).toHaveLength(1);
+  expect(storico.statistiche[0]!.annoScolastico).toBe('2024-2025');
+  expect(storico.statistiche[0]!.classe).toBe('4A');
+  expect(storico.statistiche[0]!.statistiche.totale).toBe(2);
+  expect(storico.progetti).toHaveLength(1);
+  expect(storico.progetti[0]!.annoScolastico).toBe('2024-2025');
+  expect(storico.progetti[0]!.classe).toBe('4A');
+  expect(storico.progetti[0]!.progetti).toHaveLength(1);
+  expect(storico.progetti[0]!.progetti[0]!.nome).toBe('Stage vecchio');
+});

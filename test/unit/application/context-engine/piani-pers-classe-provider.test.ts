@@ -4,7 +4,10 @@ import { ClasseProvider } from '../../../../src/application/context-engine/provi
 import { ContextBuilder } from '../../../../src/application/context-engine/ContextBuilder';
 import { makeOptions } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
-import type { StoricoDatabaseProvider, AnnoStorico } from '../../../../src/application/storico/StoricoDatabaseProvider';
+import type {
+  StoricoDatabaseProvider,
+  AnnoStorico
+} from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
@@ -16,35 +19,66 @@ function tablesWithClassePiani(): Record<string, Row[]> {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push(
     {
-      ID: 'doc_pdp_a1', ID_GEN: 'PDP_BES', TIPO: 'PIANO_PERS', SOTTOTIPO: 'PDP_DSA',
-      NOME: 'PDP a1', STATO: 'GENERATO', NOTIFICATO: '', LINK: 'http://d/a1',
-      CLASSI: '5A', UTENTI: 'a1@school.it', DATA_CREAZ: '2026-03-01'
+      ID: 'doc_pdp_a1',
+      ID_GEN: 'PDP_BES',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_DSA',
+      NOME: 'PDP a1',
+      STATO: 'GENERATO',
+      NOTIFICATO: '',
+      LINK: 'http://d/a1',
+      CLASSI: '5A',
+      UTENTI: 'a1@school.it',
+      DATA_CREAZ: '2026-03-01'
     },
     {
-      ID: 'doc_pei_a2', ID_GEN: 'PEI_DOC', TIPO: 'PIANO_PERS', SOTTOTIPO: 'PEI',
-      NOME: 'PEI a2', STATO: 'GENERATO', NOTIFICATO: '2026-04-01T00:00:00.000Z', LINK: 'http://d/a2',
-      CLASSI: '5A', UTENTI: 'a2@school.it', DATA_CREAZ: '2026-03-02'
+      ID: 'doc_pei_a2',
+      ID_GEN: 'PEI_DOC',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PEI',
+      NOME: 'PEI a2',
+      STATO: 'GENERATO',
+      NOTIFICATO: '2026-04-01T00:00:00.000Z',
+      LINK: 'http://d/a2',
+      CLASSI: '5A',
+      UTENTI: 'a2@school.it',
+      DATA_CREAZ: '2026-03-02'
     },
     {
-      ID: 'doc_verbale', ID_GEN: 'VERBALE_CDC', TIPO: 'VERBALE', SOTTOTIPO: '',
-      NOME: 'Verbale', STATO: 'GENERATO', NOTIFICATO: '', LINK: 'http://d/v',
-      CLASSI: '5A', UTENTI: '', DATA_CREAZ: '2026-03-01'
+      ID: 'doc_verbale',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      NOME: 'Verbale',
+      STATO: 'GENERATO',
+      NOTIFICATO: '',
+      LINK: 'http://d/v',
+      CLASSI: '5A',
+      UTENTI: '',
+      DATA_CREAZ: '2026-03-01'
     }
   );
   return t;
 }
 
-function build(providers: string[], databases: StoricoDatabaseProvider, classiCompetenza?: string[], options = makeOptions()) {
+function build(
+  providers: string[],
+  databases: StoricoDatabaseProvider,
+  classiCompetenza?: string[],
+  options = makeOptions()
+) {
   const db = new FakeDatabase(tablesWithClassePiani());
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
-  const logDocs = new LogDocumentoRepository(db);
+  const logDocs = new LogDocumentoRepository(db, classi);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni));
   b.registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(databases));
   const params: BuildParams = {
-    target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z'),
+    target: '5A',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z'),
     ...(classiCompetenza !== undefined ? { classiCompetenza } : {})
   };
   const recipe: Recipe = { providers, options };
@@ -70,7 +104,12 @@ test('PianiPersClasseProvider: falls back to params.target when classiCompetenza
 
 test('PianiPersClasseStoricoProvider: includiStorico false ⇒ no storico key', () => {
   let opened = false;
-  const databases: StoricoDatabaseProvider = { anniStorici: () => { opened = true; return []; } };
+  const databases: StoricoDatabaseProvider = {
+    anniStorici: () => {
+      opened = true;
+      return [];
+    }
+  };
   const cdu = build(['class', 'pianiPersClasse', 'pianiPersClasseStorico'], databases);
   expect(cdu.focus.classe!.didattica!.pianiPersonalizzati.storico).toBeUndefined();
   expect(opened).toBe(false);
@@ -79,11 +118,23 @@ test('PianiPersClasseStoricoProvider: includiStorico false ⇒ no storico key', 
 test('PianiPersClasseStoricoProvider: resolves prior-year docs per distinct student in the current-year list', () => {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push({
-    ID: 'old_pdp_a1', ID_GEN: 'PDP_BES', TIPO: 'PIANO_PERS', SOTTOTIPO: 'PDP_DSA',
-    NOME: 'PDP a1 anno scorso', STATO: 'GENERATO', NOTIFICATO: '', LINK: 'http://d/old',
-    UTENTI: 'a1@school.it', DATA_CREAZ: '2025-03-01'
+    ID: 'old_pdp_a1',
+    ID_GEN: 'PDP_BES',
+    TIPO: 'PIANO_PERS',
+    SOTTOTIPO: 'PDP_DSA',
+    NOME: 'PDP a1 anno scorso',
+    STATO: 'GENERATO',
+    NOTIFICATO: '',
+    LINK: 'http://d/old',
+    UTENTI: 'a1@school.it',
+    DATA_CREAZ: '2025-03-01'
   });
-  const anno: AnnoStorico = { anno: '2025-2026', db: new FakeDatabase(t) };
+  const db = new FakeDatabase(t);
+  const anno: AnnoStorico = {
+    anno: '2025-2026',
+    db,
+    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+  };
   const databases: StoricoDatabaseProvider = { anniStorici: () => [anno] };
   const cdu = build(
     ['class', 'pianiPersClasse', 'pianiPersClasseStorico'],

@@ -160,7 +160,7 @@ function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveF
   new ComposeEmailStep(
     logger,
     w.templates,
-    new LogDocumentoRepository(w.db),
+    new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
     drive
   ).execute(w.ctx);
   return drive;
@@ -175,7 +175,9 @@ describe('email pipeline operational log details', () => {
     const w = wire({ CONDIZIONE: '{{focus.alunno.didattica.carenze.numero}} > 99' });
 
     const built = buildStep(w).execute(w.ctx);
-    const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+    const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(
+      w.ctx
+    );
 
     expect(logDetails(built)).toEqual({
       Target: 'a1@school.it',
@@ -190,7 +192,9 @@ describe('email pipeline operational log details', () => {
     const w = wire({ CONDIZIONE: 'true' });
     buildStep(w).execute(w.ctx);
 
-    const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+    const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(
+      w.ctx
+    );
 
     expect(logDetails(decision)).toEqual({ Send: true, Reason: 'Condition met' });
   });
@@ -232,7 +236,7 @@ describe('email pipeline operational log details', () => {
     const composed = new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db),
+      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
       new FakeDriveFacade()
     ).execute(w.ctx);
 
@@ -241,14 +245,17 @@ describe('email pipeline operational log details', () => {
   });
 
   test('publishes the resolved To and Cc operational addresses', () => {
-    const w = wire({}, {
-      tipo: 'genitori',
-      tipoTarget: 'alunno',
-      target: 'a1@school.it',
-      emails: ['docente@example.edu'],
-      cc: ['segreteria@example.edu'],
-      classiCompetenza: []
-    });
+    const w = wire(
+      {},
+      {
+        tipo: 'genitori',
+        tipoTarget: 'alunno',
+        target: 'a1@school.it',
+        emails: ['docente@example.edu'],
+        cc: ['segreteria@example.edu'],
+        classiCompetenza: []
+      }
+    );
     w.ctx.set('shouldSend', true);
 
     const recipients = new ResolveRecipientsStep(
@@ -282,7 +289,9 @@ describe('email pipeline operational log details', () => {
   test('publishes Bcc/test routing and send errors without rendering the email body', () => {
     const w = wire({ OGGETTO: 'Convocazione consiglio' });
     runThroughCompose(w);
-    w.ctx.set('destinatariFinali', [{ emails: ['broken@example.edu'], cc: ['segreteria@example.edu'] }]);
+    w.ctx.set('destinatariFinali', [
+      { emails: ['broken@example.edu'], cc: ['segreteria@example.edu'] }
+    ]);
     const gmail = new FakeGmailFacade();
     gmail.failFor.add('tester@example.edu');
     w.ctx.set('testEmail', 'tester@example.edu');
@@ -462,7 +471,10 @@ test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchis
 
 test('BuildCDUStep enables includiStorico by default for piani_pers_da_inviare even with no explicit key', () => {
   const w = wire(
-    { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }]) },
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }])
+    },
     docenteTarget()
   );
   buildStep(w).execute(w.ctx);
@@ -472,7 +484,10 @@ test('BuildCDUStep enables includiStorico by default for piani_pers_da_inviare e
 
 test('BuildCDUStep leaves includiStorico false when no box wants historical data', () => {
   const w = wire(
-    { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>hi</p>' }]) },
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>hi</p>' }])
+    },
     docenteTarget()
   );
   buildStep(w).execute(w.ctx);
@@ -560,7 +575,10 @@ test('RenderBoxesStep: one visible non-empty carenze text box without links keep
 
 test('RenderBoxesStep: all rendered boxes empty or invisible suppress delivery', () => {
   const w = wire(
-    { PROCESSO: 'PER_COORDINATORE', BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }]) },
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare' }])
+    },
     docenteTarget()
   );
 
@@ -683,7 +701,7 @@ test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TE
   new ComposeEmailStep(
     logger,
     w.templates,
-    new LogDocumentoRepository(w.db),
+    new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
     new FakeDriveFacade()
   ).execute(w.ctx);
   const html = w.ctx.get<string>('corpoHtml')!;
@@ -723,7 +741,12 @@ test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI file without a box o
   const drive = new FakeDriveFacade();
   const getFileBlob = jest.spyOn(drive, 'getFileBlob');
 
-  new ComposeEmailStep(logger, w.templates, new LogDocumentoRepository(w.db), drive).execute(w.ctx);
+  new ComposeEmailStep(
+    logger,
+    w.templates,
+    new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
+    drive
+  ).execute(w.ctx);
 
   expect(w.ctx.get('allegatiIds')).toEqual(['static id/1?']);
   expect(w.ctx.get('allegati')).toEqual(['blob:static id/1?']);
@@ -962,9 +985,7 @@ test('PER_COORDINATORE stays on its declared recipient and never assignment-rout
     teachingAssignments
   ).execute(w.ctx);
 
-  expect(w.ctx.get('destinatariFinali')).toEqual([
-    { emails: ['rossi@school.it'] }
-  ]);
+  expect(w.ctx.get('destinatariFinali')).toEqual([{ emails: ['rossi@school.it'] }]);
   expect(resolveConsiglio).not.toHaveBeenCalled();
 });
 
@@ -1085,14 +1106,17 @@ test('genitori/cdc targets are single multi-TO destinations not subject to SUPPL
 });
 
 test('ResolveRecipientsStep passes EmailTarget.cc through for non-docente targets', () => {
-  const w = wire({}, {
-    tipo: 'genitori',
-    tipoTarget: 'alunno',
-    target: 'a1@school.it',
-    emails: ['genitore1@x.it'],
-    cc: ['coord@x.it'],
-    classiCompetenza: []
-  });
+  const w = wire(
+    {},
+    {
+      tipo: 'genitori',
+      tipoTarget: 'alunno',
+      target: 'a1@school.it',
+      emails: ['genitore1@x.it'],
+      cc: ['coord@x.it'],
+      classiCompetenza: []
+    }
+  );
   buildStep(w).execute(w.ctx);
   w.ctx.set('shouldSend', true);
   expect(resolve(w)).toEqual([{ emails: ['genitore1@x.it'], cc: ['coord@x.it'] }]);
@@ -1370,11 +1394,14 @@ test('LogEmailStep stores a stable logical target id beside post-routing recipie
 });
 
 test('logs logicalTargetId for a test-mode delivery', () => {
-  const w = wire({}, {
-    ...docenteTarget(),
-    docenteEmail: 'docente@school.it',
-    emails: ['docente@school.it']
-  });
+  const w = wire(
+    {},
+    {
+      ...docenteTarget(),
+      docenteEmail: 'docente@school.it',
+      emails: ['docente@school.it']
+    }
+  );
   const registraInvio = jest.fn();
   const logMail = { registraInvio } as unknown as LogEmailRepository;
   w.ctx.set('shouldSend', true);
@@ -1386,7 +1413,10 @@ test('logs logicalTargetId for a test-mode delivery', () => {
   new LogEmailStep(logger, logMail).execute(w.ctx);
 
   expect(registraInvio).toHaveBeenCalledWith(
-    expect.any(String), expect.any(Array), expect.anything(), expect.any(String),
+    expect.any(String),
+    expect.any(Array),
+    expect.anything(),
+    expect.any(String),
     expect.objectContaining({ logicalTargetId: 'docente:docente@school.it', testMode: true }),
     undefined
   );
@@ -1456,9 +1486,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
   test('BuildCDUStep falls back to "" for docente.id when the injected docente lookup returns a Docente with no id', () => {
     const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
     const docentiStub = { findById: () => Docente.fromData({}) } as unknown as DocenteRepository;
-    new BuildCDUStep(logger, composeContextBuilder(w.db), docentiStub, w.alunni).execute(
-      w.ctx
-    );
+    new BuildCDUStep(logger, composeContextBuilder(w.db), docentiStub, w.alunni).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
     expect(cdu.destinatario?.anagrafica.email).toBe('');
   });
@@ -1477,9 +1505,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const alunniStub = {
       findById: () => Alunno.fromData({ ATTIVO: true })
     } as unknown as AlunnoRepository;
-    new BuildCDUStep(logger, composeContextBuilder(w.db), w.docenti, alunniStub).execute(
-      w.ctx
-    );
+    new BuildCDUStep(logger, composeContextBuilder(w.db), w.docenti, alunniStub).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
     expect(cdu.destinatario?.anagrafica.email).toBe('');
   });
@@ -1540,7 +1566,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db),
+      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
       new FakeDriveFacade()
     ).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
@@ -1559,7 +1585,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db),
+      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
       new FakeDriveFacade()
     ).execute(w.ctx);
     expect(w.ctx.get('allegati')).toEqual([]);
@@ -1629,7 +1655,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db),
+      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
       new FakeDriveFacade()
     ).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
@@ -1645,7 +1671,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new ComposeEmailStep(
       logger,
       w.templates,
-      new LogDocumentoRepository(w.db),
+      new LogDocumentoRepository(w.db, new ClasseRepository(w.db)),
       new FakeDriveFacade()
     ).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
@@ -1671,7 +1697,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     expect(resolve(w)).toEqual([{ emails: ['ghost@school.it'] }]);
   });
 
-  test('ResolveRecipientsStep falls back to the raw target emails when its actor no longer exists in DocenteRepository (titolare/supplente content-mismatch fix: routing now matches on the target\'s own docenteEmail/titolareEmail rather than a re-looked-up id)', () => {
+  test("ResolveRecipientsStep falls back to the raw target emails when its actor no longer exists in DocenteRepository (titolare/supplente content-mismatch fix: routing now matches on the target's own docenteEmail/titolareEmail rather than a re-looked-up id)", () => {
     const w = wire({ PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'SOLO_TITOLARI' }, docenteTarget());
     buildStep(w).execute(w.ctx);
     w.ctx.set('shouldSend', true);
@@ -1791,7 +1817,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     expect(w.db.saved).toBe(savedBefore); // no explicit save — step was gated off
   });
 
-  test('PostProcessEmailStep is skipped when POST_PROCESSO is an empty string (regression: blank Sheets cells round-trip as \'\', not null)', () => {
+  test("PostProcessEmailStep is skipped when POST_PROCESSO is an empty string (regression: blank Sheets cells round-trip as '', not null)", () => {
     const w = wire({ POST_PROCESSO: '' });
     runThroughCompose(w);
     w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
@@ -1822,9 +1848,21 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
 describe('CheckAlreadySentStep', () => {
   // docenteTarget() (declared earlier in this file) needs PROCESSO: 'PER_DOCENTE' —
   // see the existing usages at email-steps.test.ts:357/372/381 for the same pairing.
-  function ctxAfterCondizioni(overrides: Partial<Record<string, unknown>> = {}, target: EmailTarget = docenteTarget()) {
+  function ctxAfterCondizioni(
+    overrides: Partial<Record<string, unknown>> = {},
+    target: EmailTarget = docenteTarget()
+  ) {
     const { db, ctx, docenti, alunni } = wire({ PROCESSO: 'PER_DOCENTE', ...overrides }, target);
-    new BuildCDUStep(logger, composeContextBuilder(db, new MasterSheetRepository(db), new AldoTeachingAssignmentResolver(db)), docenti, alunni).execute(ctx);
+    new BuildCDUStep(
+      logger,
+      composeContextBuilder(
+        db,
+        new MasterSheetRepository(db),
+        new AldoTeachingAssignmentResolver(db)
+      ),
+      docenti,
+      alunni
+    ).execute(ctx);
     new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(ctx);
     return { db, ctx };
   }

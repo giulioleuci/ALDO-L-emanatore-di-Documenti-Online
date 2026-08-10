@@ -1,4 +1,5 @@
 import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
+import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { StatoDocumento } from '../../../src/domain/value-objects/enums';
@@ -11,7 +12,7 @@ import { StatoDocumento } from '../../../src/domain/value-objects/enums';
  */
 function repo() {
   const db = new FakeDatabase({ LOG_DOCS: [] });
-  return { db, r: new LogDocumentoRepository(db) };
+  return { db, r: new LogDocumentoRepository(db, new ClasseRepository(db)) };
 }
 
 test('cambiaStato persists through Repository.save() update path (06 §17)', () => {

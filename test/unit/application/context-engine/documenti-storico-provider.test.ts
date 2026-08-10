@@ -48,7 +48,7 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
     'student',
     new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
   );
-  b.registerProvider('documenti', new DocumentiProvider(new LogDocumentoRepository(db)));
+  b.registerProvider('documenti', new DocumentiProvider(new LogDocumentoRepository(db, classi)));
   b.registerProvider('documentiStorico', new DocumentiStoricoProvider(databases));
   const params: BuildParams = {
     target: 'a1@school.it',
@@ -86,7 +86,12 @@ test('DocumentiStoricoProvider: includiStorico false ⇒ no storico key, no hist
 });
 
 test('DocumentiStoricoProvider: includiStorico true attaches an unresolved LazyRef (13 §2)', () => {
-  const anno: AnnoStorico = { anno: '2025-2026', db: new FakeDatabase(fixtureTables()) };
+  const db = new FakeDatabase(fixtureTables());
+  const anno: AnnoStorico = {
+    anno: '2025-2026',
+    db,
+    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+  };
   const databases = fakeStoricoProvider([anno]);
   const cdu = build(
     ['class', 'student', 'documenti', 'documentiStorico'],
@@ -111,7 +116,12 @@ test('DocumentiStoricoProvider: resolving the LazyRef keeps family, subtype and 
     UTENTI: 'a1@school.it',
     DATA_CREAZ: '2025-03-01'
   });
-  const anno: AnnoStorico = { anno: '2025-2026', db: new FakeDatabase(t) };
+  const db = new FakeDatabase(t);
+  const anno: AnnoStorico = {
+    anno: '2025-2026',
+    db,
+    logDocs: new LogDocumentoRepository(db, new ClasseRepository(db))
+  };
   const databases = fakeStoricoProvider([anno]);
   const cdu = build(
     ['class', 'student', 'documenti', 'documentiStorico'],

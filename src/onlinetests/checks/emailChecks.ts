@@ -1,4 +1,4 @@
-import type { EmailDb, EmailNotificationService } from '../../application/services/EmailNotificationService';
+import type { EmailDb } from '../../application/services/EmailNotificationService';
 import { avviaInvioNotificheDataDriven, creaJobRunner } from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
 import { COL_LOG_MAIL, TABLE } from '../../config/schema';
@@ -55,20 +55,15 @@ export function registerEmailChecks(
     return;
   }
 
-  const email = container.get<EmailNotificationService>('emailNotificationService');
   const db = container.get<EmailDb>('db');
   const runInTestMode = (patternId: string): void => {
-    email.enableTestMode(safeEmail);
-    try {
-      avviaInvioNotificheDataDriven(
-        container,
-        patternId,
-        creaJobRunner(),
-        AMPLE_EMAIL_BATCH_BUDGET_MS
-      );
-    } finally {
-      email.disableTestMode();
-    }
+    avviaInvioNotificheDataDriven(
+      container,
+      patternId,
+      creaJobRunner(),
+      AMPLE_EMAIL_BATCH_BUDGET_MS,
+      safeEmail
+    );
   };
   const rowsFor = (patternId: string): LogMailRow[] =>
     db
@@ -91,11 +86,7 @@ export function registerEmailChecks(
       }
 
       const verbaleRows = rowsFor(CONF_MAIL_VERBALE).filter((row) => isTestModeRow(row));
-      if (!verbaleRows.some((row) => hasRegisteredAttachment(row))) {
-        throw new ValidationError(
-          'Invio verbale: LOG_MAIL.ALLEGATI non contiene docs, folders o allegati registrati'
-        );
-      }
+      assertVerbaleArtifacts(verbaleRows);
     }
   );
 
@@ -169,11 +160,19 @@ function assertSafeSuccessfulRows(patternId: string, rows: LogMailRow[], safeEma
   }
 }
 
-function hasRegisteredAttachment(row: LogMailRow): boolean {
-  const attachments = attachmentsFor(row);
-  return [attachments.docs, attachments.folders, attachments.attach].some(
-    (value) => Array.isArray(value) && value.length > 0
-  );
+function assertVerbaleArtifacts(rows: LogMailRow[]): void {
+  for (const row of rows) {
+    const attachments = attachmentsFor(row);
+    if (
+      !isNonEmptyStringList(attachments.docs) ||
+      !isNonEmptyStringList(attachments.folders) ||
+      !isEmptyStringList(attachments.attach)
+    ) {
+      throw new ValidationError(
+        'Invio verbale: ogni LOG_MAIL testMode deve registrare documenti e cartelle linkati, senza file allegati'
+      );
+    }
+  }
 }
 
 function attachmentsFor(row: LogMailRow): LoggedAttachments {
@@ -193,4 +192,16 @@ function stringValue(value: unknown): string {
 
 function isLoggedAttachments(value: unknown): value is LoggedAttachments {
   return typeof value === 'object' && value !== null;
+}
+
+function isNonEmptyStringList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => typeof item === 'string' && item.trim() !== '')
+  );
+}
+
+function isEmptyStringList(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 0;
 }

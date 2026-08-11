@@ -127,11 +127,20 @@ export class EmailBatchService {
 
   /** JobRunnerLib handler: one checkpoint per chunk of targets. */
   *batchSendHandler(
-    params: JobHandlerParams & { patternId?: string; chunkSize?: number; jobId?: string }
+    params: JobHandlerParams & {
+      patternId?: string;
+      chunkSize?: number;
+      jobId?: string;
+      testRecipient?: string;
+    }
   ): Generator<EmailBatchCheckpoint, EmailBatchResult, void> {
     const patternId = String(params.patternId ?? '');
     const jobId = String(params.jobId ?? patternId);
     const chunkSize = Number(params.chunkSize ?? EMAIL_CHUNK_SIZE);
+    const testRecipient =
+      typeof params.testRecipient === 'string' && params.testRecipient.trim() !== ''
+        ? params.testRecipient
+        : undefined;
     const resume = (params.resumeState ?? null) as EmailBatchResumeState | null;
     const targets = this.email.enumerateTargets(this.email.getConfigurazione(patternId));
 
@@ -173,19 +182,14 @@ export class EmailBatchService {
       for (; i < fine; i++) {
         const target = targets[i]!;
         const targetHeader = target.emails.join(',') || target.target;
-        this.logger?.logItemStart(
-          i + 1,
-          targets.length,
-          'Target',
-          targetHeader,
-          'EMAIL'
-        );
-        const esito = this.email.sendToTarget(patternId, target, jobId);
+        this.logger?.logItemStart(i + 1, targets.length, 'Target', targetHeader, 'EMAIL');
+        const esito = this.email.sendToTarget(patternId, target, jobId, testRecipient);
         sent += esito.sent;
         errors.push(...esito.errors);
         const recipients = esito.recipients.length > 0 ? esito.recipients : target.emails;
         const subject = esito.subject === '' ? patternId : esito.subject;
-        const outcome = esito.sent > 0 ? 'Email sent' : esito.skipped ? 'Email skipped' : 'Email failed';
+        const outcome =
+          esito.sent > 0 ? 'Email sent' : esito.skipped ? 'Email skipped' : 'Email failed';
         const detail = `${subject} -> ${recipients.join(',')}`;
         progressDetail = detail;
         this.logger?.logSummary(outcome, esito.durationMs, detail, {
@@ -251,7 +255,8 @@ export class EmailBatchService {
     jobName: string,
     patternId: string,
     forceRestart = false,
-    maxDurationMs?: number
+    maxDurationMs?: number,
+    testRecipient?: string
   ): unknown {
     if (forceRestart) {
       this.clearPersistedResume(patternId);
@@ -260,7 +265,12 @@ export class EmailBatchService {
     return runner.run(
       jobName,
       JOB_TYPE_INVIO_EMAIL,
-      { patternId, jobId: jobName, ...(resumeState === null ? {} : { resumeState }) },
+      {
+        patternId,
+        jobId: jobName,
+        ...(resumeState === null ? {} : { resumeState }),
+        ...(testRecipient === undefined ? {} : { testRecipient })
+      },
       (queue) => this.registerJobHandlers(queue),
       forceRestart,
       maxDurationMs

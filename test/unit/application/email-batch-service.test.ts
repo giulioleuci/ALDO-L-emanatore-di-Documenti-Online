@@ -32,8 +32,10 @@ function wire(
     new AldoTeachingAssignmentResolver(db)
   );
   const service = new EmailBatchService(notification, monitor, properties, logger);
-  return { gmail, service };
+  return { gmail, notification, service };
 }
+
+const ONLINE_TEST_SAFE_EMAIL = 'sgsa-onlinetests@onlinetest.aldo.local';
 
 test('emits structured email batch/items', () => {
   const lines: string[] = [];
@@ -170,6 +172,86 @@ test('resume restarts from resumeState.nextIndex without resending (JobRunnerLib
   expect(gmail.sent).toHaveLength(1); // only the second target
   expect(result.processed).toEqual(['5A', '1F']);
   expect(result.sent).toBe(2); // cumulative
+});
+
+test('a persisted safe recipient override survives a quota suspension and a fresh-container resume', () => {
+  // This models initAldo() having already enabled MASTER.TEST_MODE to the
+  // Master owner before the online scenario pins this particular JobRunner job.
+  const first = wire();
+  first.notification.enableTestMode('master-owner@onlinetest.aldo.local');
+  first.gmail.remainingQuota = 1;
+  const { result } = drain(
+    first.service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 2,
+      jobId: 'mail_CDC_OTTOBRE',
+      testRecipient: ONLINE_TEST_SAFE_EMAIL,
+      resumeState: null
+    })
+  );
+  expect(first.gmail.sent.map((sent) => sent.to)).toEqual([[ONLINE_TEST_SAFE_EMAIL]]);
+
+  // A trigger calls initAldo() again, producing a fresh service whose normal
+  // TEST_MODE recipient is the Master owner. Persisted JobRunner params must
+  // still pin the resumed delivery to the online-test mailbox.
+  const resumed = wire();
+  resumed.notification.enableTestMode('master-owner@onlinetest.aldo.local');
+  drain(
+    resumed.service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 2,
+      jobId: 'mail_CDC_OTTOBRE',
+      testRecipient: ONLINE_TEST_SAFE_EMAIL,
+      resumeState: {
+        nextIndex: 1,
+        processed: ['5A'],
+        sent: result.sent,
+        errors: result.errors
+      }
+    })
+  );
+  expect(resumed.gmail.sent.map((sent) => sent.to)).toEqual([[ONLINE_TEST_SAFE_EMAIL]]);
+
+  // The per-job override must not clear or replace the container's preexisting
+  // MASTER.TEST_MODE setting after the batch returns.
+  resumed.notification.sendPattern('CDC_OTTOBRE');
+  expect(
+    resumed.gmail.sent.slice(1).every((sent) => sent.to[0] === 'master-owner@onlinetest.aldo.local')
+  ).toBe(true);
+});
+
+test('start persists the safe recipient override in JobRunner params for a future trigger resume', () => {
+  const { service } = wire();
+  const { runner, calls } = fakeRunner();
+
+  service.start(
+    runner,
+    'mail_CDC_OTTOBRE',
+    'CDC_OTTOBRE',
+    false,
+    undefined,
+    ONLINE_TEST_SAFE_EMAIL
+  );
+
+  expect(calls[0]?.params).toMatchObject({
+    patternId: 'CDC_OTTOBRE',
+    testRecipient: ONLINE_TEST_SAFE_EMAIL
+  });
+});
+
+test('a completed non-test batch is rerunnable without resending durable SUCCESS logical targets', () => {
+  const { gmail, service } = wire();
+
+  const first = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
+  );
+  const second = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
+  );
+
+  expect(first.result.sent).toBe(2);
+  expect(second.result.sent).toBe(0);
+  expect(gmail.sent).toHaveLength(2);
 });
 
 test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {

@@ -117,8 +117,7 @@ export class EmailNotificationService {
   private cachedPipeline: Pipeline | undefined;
   private cachedPipelineJobId: string | undefined;
   private cachedSuccessfulLogicalTargetIds:
-    | { patternId: string; jobId: string; ids: Set<string> }
-    | undefined;
+    { patternId: string; jobId: string; ids: Set<string> } | undefined;
 
   constructor(deps: EmailNotificationDeps) {
     const { logger, monitor, ...rest } = deps;
@@ -171,7 +170,7 @@ export class EmailNotificationService {
         testEmail: this.testEmail,
         successfulLogicalTargetIds
       });
-      this.rememberSuccessfulDelivery(ctx, target, successfulLogicalTargetIds);
+      this.rememberSuccessfulDelivery(ctx, target, successfulLogicalTargetIds, this.testEmail);
       if (ctx.get('shouldSend') === false) {
         result.skipped += 1; // silent skip (11 §4)
         continue;
@@ -189,7 +188,8 @@ export class EmailNotificationService {
   sendToTarget(
     patternId: string,
     target: EmailTarget,
-    jobId?: string
+    jobId?: string,
+    testRecipient?: string
   ): EmailTargetResult {
     const startedAt = Date.now();
     const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);
@@ -202,15 +202,16 @@ export class EmailNotificationService {
       row,
       jobId
     );
+    const activeTestRecipient = testRecipient ?? this.testEmail;
     const ctx = this.getPipeline(jobId).execute({
       config: row,
       confMail: conf,
       emailTarget: target,
       now: this.deps.now,
-      testEmail: this.testEmail,
+      testEmail: activeTestRecipient,
       successfulLogicalTargetIds
     });
-    this.rememberSuccessfulDelivery(ctx, target, successfulLogicalTargetIds);
+    this.rememberSuccessfulDelivery(ctx, target, successfulLogicalTargetIds, activeTestRecipient);
     if (ctx.get('shouldSend') === false) {
       return {
         sent: 0,
@@ -240,10 +241,7 @@ export class EmailNotificationService {
 
   /** Materializes the durable SUCCESS identities once, before any delivery can start. */
   private loadSuccessfulLogicalTargetIds(patternId: string, row: Row): Set<string> {
-    if (
-      String(row[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA) ===
-      'PERMESSA'
-    ) {
+    if (String(row[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA) === 'PERMESSA') {
       return new Set<string>();
     }
 
@@ -261,9 +259,7 @@ export class EmailNotificationService {
       return ids;
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      throw new PipelineError(
-        `Controllo duplicati LOG_MAIL fallito per ${patternId}: ${detail}`
-      );
+      throw new PipelineError(`Controllo duplicati LOG_MAIL fallito per ${patternId}: ${detail}`);
     }
   }
 
@@ -287,9 +283,10 @@ export class EmailNotificationService {
   private rememberSuccessfulDelivery(
     ctx: PipelineContext,
     target: EmailTarget,
-    successfulLogicalTargetIds: Set<string>
+    successfulLogicalTargetIds: Set<string>,
+    testRecipient: string | null
   ): void {
-    if (this.testEmail === null && ctx.get('logStato') === StatoEmail.SUCCESS) {
+    if (testRecipient === null && ctx.get('logStato') === StatoEmail.SUCCESS) {
       successfulLogicalTargetIds.add(emailTargetId(target));
     }
   }

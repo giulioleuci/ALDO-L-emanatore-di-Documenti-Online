@@ -12,6 +12,7 @@ jest.mock('../../../src/config/Bootstrap', () => ({
 interface CapturedCheck {
   name: string;
   artifactUrl: string | undefined;
+  error?: Error;
 }
 
 class ImmediateRunner {
@@ -20,8 +21,14 @@ class ImmediateRunner {
   add(name: string, artifactUrl: string | undefined, callback: () => void): void {
     try {
       callback();
-    } catch {
+    } catch (error) {
       // TestRunner records failed callbacks instead of propagating them.
+      this.checks.push({
+        name,
+        artifactUrl,
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      return;
     }
     this.checks.push({ name, artifactUrl });
   }
@@ -35,21 +42,17 @@ const sample = {
 describe('registerEmailChecks', () => {
   afterEach(() => jest.clearAllMocks());
 
-  it('enables safe test mode before every batch launch and disables it after the run', () => {
-    const events: string[] = [];
+  it('persists the safe recipient override with every batch launch without mutating the container test mode', () => {
+    const launches: Array<{ patternId: string; testRecipient: unknown }> = [];
     const rows: Record<string, unknown>[] = [];
-    const email = {
-      enableTestMode: jest.fn(() => events.push('enable')),
-      disableTestMode: jest.fn(() => events.push('disable'))
-    };
     const db = { table: jest.fn(() => ({ findAll: () => rows })) };
     const container = {
-      get: jest.fn((key: string) => (key === 'emailNotificationService' ? email : db))
+      get: jest.fn(() => db)
     } as unknown as ServiceContainer;
     jest
       .mocked(avviaInvioNotificheDataDriven)
-      .mockImplementation((_container, patternId) => {
-        events.push(`start:${patternId}`);
+      .mockImplementation((_container, patternId, _runner, _budget, testRecipient) => {
+        launches.push({ patternId, testRecipient });
         rows.push({
           [COL_LOG_MAIL.PATTERN]: patternId,
           [COL_LOG_MAIL.DESTINATARI]: EMAIL_TEST_SAFE,
@@ -57,7 +60,9 @@ describe('registerEmailChecks', () => {
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
             testMode: true,
             logicalTargetId: `target:${patternId}`,
-            docs: ['document-id']
+            docs: ['document-id'],
+            folders: ['folder-id'],
+            attach: []
           })
         });
       });
@@ -65,14 +70,9 @@ describe('registerEmailChecks', () => {
     const runner = new ImmediateRunner();
     registerEmailChecks(runner as never, container, sample, EMAIL_TEST_SAFE);
 
-    const launches = events
-      .map((event, index) => ({ event, index }))
-      .filter(({ event }) => event.startsWith('start:'));
     expect(launches).not.toHaveLength(0);
-    for (const { index } of launches) {
-      expect(events[index - 1]).toBe('enable');
-      expect(events[index + 1]).toBe('disable');
-    }
+    expect(launches.every((launch) => launch.testRecipient === EMAIL_TEST_SAFE)).toBe(true);
+    expect(launches.map((launch) => launch.patternId)).toContain('E2E_MAIL_PIANI');
     expect(runner.checks.map((check) => check.name)).toEqual([
       expect.stringContaining('email.invio'),
       expect.stringContaining('email.sicurezza'),
@@ -84,7 +84,12 @@ describe('registerEmailChecks', () => {
     const runner = new ImmediateRunner();
     const container = { get: jest.fn() } as unknown as ServiceContainer;
 
-    registerEmailChecks(runner as never, container, { ...sample, testMode: false }, EMAIL_TEST_SAFE);
+    registerEmailChecks(
+      runner as never,
+      container,
+      { ...sample, testMode: false },
+      EMAIL_TEST_SAFE
+    );
 
     expect(avviaInvioNotificheDataDriven).not.toHaveBeenCalled();
     expect(runner.checks[0]?.name).toContain('MASTER.TEST_MODE guard');
@@ -99,5 +104,32 @@ describe('registerEmailChecks', () => {
 
     expect(avviaInvioNotificheDataDriven).not.toHaveBeenCalled();
     expect(runner.checks[0]?.name).toContain('safe recipient guard');
+  });
+
+  it('rejects verbale logs that lack the persisted document and folder evidence', () => {
+    const rows: Record<string, unknown>[] = [];
+    const db = { table: jest.fn(() => ({ findAll: () => rows })) };
+    const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
+    jest.mocked(avviaInvioNotificheDataDriven).mockImplementation((_container, patternId) => {
+      rows.push({
+        [COL_LOG_MAIL.PATTERN]: patternId,
+        [COL_LOG_MAIL.DESTINATARI]: EMAIL_TEST_SAFE,
+        [COL_LOG_MAIL.STATO]: 'SUCCESS',
+        [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+          testMode: true,
+          logicalTargetId: `target:${patternId}`,
+          docs: ['verbale-id'],
+          folders: patternId === 'E2E_MAIL_VERBALE' ? [] : ['folder-id'],
+          attach: []
+        })
+      });
+    });
+
+    const runner = new ImmediateRunner();
+    registerEmailChecks(runner as never, container, sample, EMAIL_TEST_SAFE);
+
+    expect(runner.checks[0]?.error?.message).toContain(
+      'ogni LOG_MAIL testMode deve registrare documenti e cartelle'
+    );
   });
 });

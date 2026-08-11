@@ -5,11 +5,9 @@ import { ValidationError } from '../../../src/domain/errors/DomainError';
 import type { ContextBuilder } from '../../../src/application/context-engine/ContextBuilder';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {
+  ALL_CLASSI,
   CLASSE_A,
-  CLASSE_B,
   CLASSE_C,
-  CLASSE_C_PARENT,
-  CLASSE_C_PARTNER,
   CONF_DOC_PIANI,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
   PIANO_DOPPIO_STUDENTE
@@ -20,6 +18,21 @@ interface RegisteredCheck {
   name: string;
   artifactUrl: string | undefined;
 }
+
+const COMPLETE_TARGETS = ['1A', '2A', '4A', '1B', '2B', '5B', '3C', '4D', '5E'];
+const ARTICULATED_TARGETS = [
+  '1A',
+  '2A',
+  '4A',
+  '1B',
+  '2B',
+  '5B-S',
+  '5B-C',
+  '3C-S',
+  '3C-C',
+  '4D',
+  '5E'
+];
 
 class RecordingRunner {
   readonly checks: RegisteredCheck[] = [];
@@ -72,7 +85,7 @@ function persistedArtifactContainer(): {
   rows: Array<Record<string, unknown>>;
 } {
   const rows: Array<Record<string, unknown>> = [
-    ...[CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((classe) => ({
+    ...ARTICULATED_TARGETS.map((classe) => ({
       [COL_LOG_DOCS.ID]: `cdc-${classe}`,
       [COL_LOG_DOCS.ID_GEN]: CONF_DOC_RIEPILOGO_FIRME_CDC,
       [COL_LOG_DOCS.CLASSI]: classe,
@@ -103,10 +116,12 @@ function persistedArtifactContainer(): {
     }
   };
   const classi = {
-    findAttive: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id })),
-    filterPerGestioneArticolazione: () =>
-      [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => ({ id }))
+    findAttive: () => ALL_CLASSI.map((id) => ({ id })),
+    filterPerGestioneArticolazione: (
+      _classi: Array<{ id: string }>,
+      gestione: string
+    ) =>
+      (gestione === 'ARTICOLATA' ? ARTICULATED_TARGETS : COMPLETE_TARGETS).map((id) => ({ id }))
   };
   const drive = {
     getFileText(fileId: string) {

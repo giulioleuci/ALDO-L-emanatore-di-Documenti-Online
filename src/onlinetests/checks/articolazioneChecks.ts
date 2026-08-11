@@ -13,8 +13,8 @@ import { tipoPianoLabel } from '../../application/context-engine/mappers/labels'
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import type { TestRunner } from '../OnlineTestReport';
 import {
+  ALL_CLASSI,
   CLASSE_A,
-  CLASSE_B,
   CLASSE_C,
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
@@ -36,8 +36,15 @@ interface TableDatabase {
   table(name: string): { findAll(): Array<Record<string, unknown>> };
 }
 
-const COMPLETA_TARGETS = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT];
-const ARTICOLATA_TARGETS = [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER];
+const ARTICULATION_PARENTS = new Set<string>([CLASSE_C_PARENT, '5B']);
+const ARTICULATION_PARTNERS = new Set<string>([
+  CLASSE_C,
+  CLASSE_C_PARTNER,
+  '5B-S',
+  '5B-C'
+]);
+const COMPLETA_TARGETS = ALL_CLASSI.filter((id) => !ARTICULATION_PARTNERS.has(id));
+const ARTICOLATA_TARGETS = ALL_CLASSI.filter((id) => !ARTICULATION_PARENTS.has(id));
 
 function ids(values: Iterable<string>): string[] {
   return [...values].sort();

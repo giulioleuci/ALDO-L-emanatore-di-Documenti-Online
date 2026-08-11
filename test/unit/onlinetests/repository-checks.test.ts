@@ -28,6 +28,7 @@ import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/Expr
 import { fixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import {
+  ALL_CLASSI,
   SharedTestDatabaseBuilder,
   CLASSE_A,
   CLASSE_C_PARENT,
@@ -36,6 +37,8 @@ import {
   e2eAlunnoEmail,
   e2eDocenteEmail
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
@@ -261,6 +264,42 @@ function sampleFixture(): SampleDatabase {
 }
 
 describe('registerRepositoryChecks', () => {
+  it('filters every class built by SharedTestDatabaseBuilder through the real articulation repository', () => {
+    const { spreadsheets, sheets, master } = e2eRecordingFactory();
+    new SharedTestDatabaseBuilder(
+      spreadsheets,
+      new FakeDriveFacade(),
+      testArtifactFactory()
+    ).build(E2E_TEMPLATE_IDS, master);
+    const db = new FakeDatabase(sheets.get('_ALDO_E2E_SAMPLE')!.rows as Record<string, Row[]>);
+    const classi = new ClasseRepository(db);
+    const active = classi.findAttive();
+
+    expect(active.map((classe) => classe.id)).toEqual(ALL_CLASSI);
+    expect(
+      classi
+        .filterPerGestioneArticolazione(active, GestioneArticolazione.COMPLETA)
+        .map((classe) => classe.id)
+    ).toEqual(['1A', '2A', '4A', '1B', '2B', '5B', '3C', '4D', '5E']);
+    expect(
+      classi
+        .filterPerGestioneArticolazione(active, GestioneArticolazione.ARTICOLATA)
+        .map((classe) => classe.id)
+    ).toEqual([
+      '1A',
+      '2A',
+      '4A',
+      '1B',
+      '2B',
+      '5B-S',
+      '5B-C',
+      '3C-S',
+      '3C-C',
+      '4D',
+      '5E'
+    ]);
+  });
+
   it('registers passing online matrix checks across the resolver and all assignment consumers', () => {
     const { spreadsheets, sheets, master } = e2eRecordingFactory();
     const sample = new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(

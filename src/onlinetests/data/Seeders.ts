@@ -54,11 +54,11 @@ const ASL_FOLDER_TYPE = 'E2E_ASL_CARTELLE';
 const ASL_ELIGIBLE_CLASSES = ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C'] as const;
 const ASL_STUDENT_BY_CLASS: Record<(typeof ASL_ELIGIBLE_CLASSES)[number], string> = {
   '3C': e2eAlunnoEmail(138),
-  '3C-S': e2eAlunnoEmail(155),
-  '3C-C': e2eAlunnoEmail(172),
-  '5B': e2eAlunnoEmail(87),
-  '5B-S': e2eAlunnoEmail(104),
-  '5B-C': e2eAlunnoEmail(121)
+  '3C-S': e2eAlunnoEmail(43),
+  '3C-C': e2eAlunnoEmail(51),
+  '5B': e2eAlunnoEmail(127),
+  '5B-S': e2eAlunnoEmail(139),
+  '5B-C': e2eAlunnoEmail(161)
 };
 const CONF_DOC_CERCA_DOCUMENTI_SOURCE = 'E2E_DOC_SOURCE_IMPORT';
 
@@ -71,6 +71,7 @@ export interface SeededPriorDatabase {
   anno: string;
   id: string;
   url: string;
+  spreadsheet: ISampleSpreadsheet;
 }
 
 export function seedAnniPrecedenti(
@@ -93,7 +94,7 @@ export function seedAnniPrecedenti(
       [COL_MASTER.SUPERVISORE_EMAIL]: EMAIL_TEST_SAFE,
       [COL_MASTER.TEST_MODE]: true
     });
-    seeded.push({ anno, id: prior.id, url: prior.getUrl() });
+    seeded.push({ anno, id: prior.id, url: prior.getUrl(), spreadsheet: prior });
   }
   return seeded;
 }
@@ -232,7 +233,8 @@ export function seedLogFold(
   sample: ISampleSpreadsheet,
   drive: IDriveFacade,
   artifacts: IArtifactFactory
-): void {
+): SeededLogFold[] {
+  const seeded: SeededLogFold[] = [];
   for (let index = 0; index < ASL_ELIGIBLE_CLASSES.length; index += 1) {
     const classe = ASL_ELIGIBLE_CLASSES[index]!;
     const folderPath = `_ALDO_E2E_ROOT/ASL/${classe}`;
@@ -257,6 +259,7 @@ export function seedLogFold(
       [COL_LOG_FOLD.UTENTI]: '',
       [COL_LOG_FOLD.MATERIE]: ''
     });
+    seeded.push({ classe, folderId, url: `https://drive.google.com/drive/folders/${folderId}` });
     sample.appendRow(TABLE.ASL, {
       [COL_ASL.STUDENTE]: knownStudent,
       [COL_ASL.ANNO]: '2026-2027',
@@ -276,6 +279,13 @@ export function seedLogFold(
     [COL_ASL.ANNO]: '2026-2027',
     [COL_ASL.ORE]: 99
   });
+  return seeded;
+}
+
+export interface SeededLogFold {
+  classe: string;
+  folderId: string;
+  url: string;
 }
 
 function aslHeaderUpdates(): SheetValueUpdate[] {

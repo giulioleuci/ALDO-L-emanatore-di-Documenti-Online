@@ -7,12 +7,25 @@ import type {
 } from '../../../src/onlinetests/E2eTemplateProvisioner';
 import {
   SharedTestDatabaseBuilder,
+  CARENZA_ALUNNO_2,
+  CLASSE_A,
+  CLASSE_B,
+  CLASSE_C,
+  CLASSE_C_PARTNER,
+  CONF_DOC_PIANI,
+  PDP_BES_3C,
+  PIANO_DOPPIO_STUDENTE,
+  RIPETENTE_1A,
+  RIPETENTE_3C,
+  e2eAlunnoEmail,
+  e2eDocenteEmail,
   type E2eTemplateIds
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {
   ALL_CLASSI,
   ANNI_PRECEDENTI,
   CLASS_ADDRESS_BY_CLASS,
+  CLASS_LAYOUTS,
   MATERIE_PER_INDIRIZZO,
   STUDENT_TOTALE,
   CONF_DOC_JOBRUNNER
@@ -24,6 +37,7 @@ import {
   COL_CONF_DOC,
   COL_CONF_MAIL,
   COL_LOG_FOLD,
+  COL_LOG_DOCS,
   COL_MASTER,
   COL_SUPPLENZE,
   TABLE
@@ -141,7 +155,10 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   expect(result.priorSampleSpreadsheetId).toBe(sheets.get(priorNames[0]!)!.id);
   expect(result.priorSampleSpreadsheetId2).toBe(sheets.get(priorNames[1]!)!.id);
   expect(result.jobRunnerDocConfigId).toBe(CONF_DOC_JOBRUNNER);
-  expect(result.logFoldFolderUrl).toBe(result.sampleFolderUrl);
+  expect(result.logFoldFolderUrl).not.toBe(result.sampleFolderUrl);
+  expect(sample.rows[TABLE.LOG_FOLD].map((row) => row[COL_LOG_FOLD.LINK])).toContain(
+    result.logFoldFolderUrl
+  );
 
   const boundarySubstitutions = sample.rows[TABLE.SUPPLENZE].filter(
     (row) => row[COL_SUPPLENZE.DAL] === '2026-09-01'
@@ -160,4 +177,92 @@ test('builds the shared extended dataset through every migrated seeder', () => {
 
   const currentStudents = sample.rows[TABLE.ALUNNI].map((row) => row[COL_ALUNNI.EMAIL]);
   expect(new Set(currentStudents).size).toBe(STUDENT_TOTALE);
+});
+
+test('preserves the legacy focal identities, coordinators, representatives, and import roster', () => {
+  const { spreadsheets, sheets } = recordingFactory();
+  const master = new RecordingSpreadsheet('bound-master');
+  new SharedTestDatabaseBuilder(
+    spreadsheets,
+    new FakeDriveFacade(),
+    recordingArtifacts()
+  ).build(TEMPLATE_IDS, master);
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const classOf = (email: string): unknown =>
+    sample.rows[TABLE.ALUNNI].find((row) => row[COL_ALUNNI.EMAIL] === email)?.[
+      COL_ALUNNI.CLASSE
+    ];
+  expect(classOf(e2eAlunnoEmail(1))).toBe(CLASSE_A);
+  expect(classOf(e2eAlunnoEmail(21))).toBe(CLASSE_B);
+  expect(classOf(e2eAlunnoEmail(41))).toBe(CLASSE_C);
+  expect(classOf(e2eAlunnoEmail(43))).toBe(CLASSE_C);
+  expect(classOf(e2eAlunnoEmail(44))).toBe(CLASSE_C);
+  expect(classOf(e2eAlunnoEmail(51))).toBe(CLASSE_C_PARTNER);
+  expect(classOf(e2eAlunnoEmail(52))).toBe(CLASSE_C_PARTNER);
+  expect(classOf(e2eAlunnoEmail(138))).toBe('3C');
+  expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(21));
+  expect(PDP_BES_3C).toBe(e2eAlunnoEmail(41));
+  expect(RIPETENTE_1A).toBe(e2eAlunnoEmail(2));
+  expect(RIPETENTE_3C).toBe(e2eAlunnoEmail(41));
+
+  const classRow = (id: string) =>
+    sample.rows[TABLE.CLASSI].find((row) => row[COL_CLASSI.ID] === id)!;
+  expect(classRow(CLASSE_A)[COL_CLASSI.COORD]).toBe(e2eDocenteEmail(1));
+  expect(classRow(CLASSE_B)[COL_CLASSI.COORD]).toBe(e2eDocenteEmail(1));
+  expect(classRow(CLASSE_C)[COL_CLASSI.COORD]).toBe(e2eDocenteEmail(3));
+  expect(classRow(CLASSE_C_PARTNER)[COL_CLASSI.COORD]).toBe(e2eDocenteEmail(7));
+
+  const representativeCounts = (id: string): [number, number] => {
+    const rows = sample.rows[TABLE.ALUNNI].filter((row) => row[COL_ALUNNI.CLASSE] === id);
+    return [
+      rows.filter((row) => row[COL_ALUNNI.RAPPR_STUD] === true).length,
+      rows.filter((row) => {
+        const representative = row[COL_ALUNNI.RAPPR_GEN];
+        return typeof representative === 'string' && representative.trim() !== '';
+      }).length
+    ];
+  };
+  expect(representativeCounts(CLASSE_A)).toEqual([0, 0]);
+  expect(representativeCounts(CLASSE_B)).toEqual([1, 1]);
+  expect(representativeCounts(CLASSE_C)).toEqual([2, 1]);
+  expect(representativeCounts(CLASSE_C_PARTNER)).toEqual([1, 2]);
+  expect(CLASS_LAYOUTS.reduce((total, layout) => total + layout.count, 0)).toBe(STUDENT_TOTALE);
+});
+
+test('composes Task 4 history with the legacy promoted/repeater roster and dual plan documents', () => {
+  const { spreadsheets, sheets } = recordingFactory();
+  const master = new RecordingSpreadsheet('bound-master');
+  new SharedTestDatabaseBuilder(
+    spreadsheets,
+    new FakeDriveFacade(),
+    recordingArtifacts()
+  ).build(TEMPLATE_IDS, master);
+
+  const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
+  const priorClassOf = (email: string): unknown =>
+    prior.rows[TABLE.ALUNNI].find((row) => row[COL_ALUNNI.EMAIL] === email)?.[COL_ALUNNI.CLASSE];
+  expect(priorClassOf(RIPETENTE_1A)).toBe(CLASSE_A);
+  expect(priorClassOf(e2eAlunnoEmail(21))).toBe('1B');
+  expect(priorClassOf(RIPETENTE_3C)).toBe(CLASSE_C);
+  expect(priorClassOf(e2eAlunnoEmail(42))).toBe('2C-S');
+  expect(priorClassOf(e2eAlunnoEmail(49))).toBe('2C-C');
+
+  const dualHistory = prior.rows[TABLE.LOG_DOCS].filter(
+    (row) =>
+      row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI &&
+      row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE
+  );
+  expect(dualHistory).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        [COL_LOG_DOCS.SOTTOTIPO]: 'PEI',
+        [COL_LOG_DOCS.NOME]: 'E2E_Piano_PEI_2025_2026'
+      }),
+      expect.objectContaining({
+        [COL_LOG_DOCS.SOTTOTIPO]: 'PDP_BES',
+        [COL_LOG_DOCS.NOME]: 'E2E_Piano_PDP_BES_2025_2026'
+      })
+    ])
+  );
 });

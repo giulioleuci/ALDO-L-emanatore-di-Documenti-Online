@@ -46,10 +46,7 @@ const EXPECTED_STUDENT_COUNCILS = [
       e2eDocenteEmail(3),
       e2eDocenteEmail(4),
       e2eDocenteEmail(10),
-      e2eDocenteEmail(11),
-      e2eDocenteEmail(7),
-      e2eDocenteEmail(8),
-      e2eDocenteEmail(9)
+      e2eDocenteEmail(11)
     ]
   },
   {
@@ -65,10 +62,7 @@ const EXPECTED_STUDENT_COUNCILS = [
       e2eDocenteEmail(4),
       e2eDocenteEmail(10),
       e2eDocenteEmail(11),
-      e2eDocenteEmail(12),
-      e2eDocenteEmail(7),
-      e2eDocenteEmail(8),
-      e2eDocenteEmail(9)
+      e2eDocenteEmail(12)
     ]
   },
   {
@@ -86,9 +80,7 @@ const EXPECTED_STUDENT_COUNCILS = [
       e2eDocenteEmail(7),
       e2eDocenteEmail(10),
       e2eDocenteEmail(11),
-      e2eDocenteEmail(14),
-      e2eDocenteEmail(8),
-      e2eDocenteEmail(9)
+      e2eDocenteEmail(14)
     ]
   }
 ] as const;

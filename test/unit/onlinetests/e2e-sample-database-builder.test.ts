@@ -228,7 +228,7 @@ test('seeds exactly 2 CARENZE rows, for the two designated students only', () =>
     [CARENZA_ALUNNO_1, CARENZA_ALUNNO_2].sort()
   );
   expect(CARENZA_ALUNNO_1).toBe(e2eAlunnoEmail(1));
-  expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(70));
+  expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(21));
 
   const row1 = carenze.find((c) => c[COL_CARENZE.STUDENTE] === CARENZA_ALUNNO_1)!;
   const row2 = carenze.find((c) => c[COL_CARENZE.STUDENTE] === CARENZA_ALUNNO_2)!;
@@ -371,7 +371,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(COL_LOG_FOLD).not.toHaveProperty('MATERIA');
 });
 
-test('uses coordinators declared by the shared class layouts', () => {
+test('preserves focal coordinator aggregation while using the shared class layouts', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
   new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
@@ -380,8 +380,9 @@ test('uses coordinators declared by the shared class layouts', () => {
   const coordOf = (id: string): unknown =>
     classi.find((c) => c[COL_CLASSI.ID] === id)![COL_CLASSI.COORD];
   expect(coordOf(CLASSE_A)).toBe(e2eDocenteEmail(1));
-  expect(coordOf(CLASSE_B)).toBe(e2eDocenteEmail(4));
-  expect(coordOf(CLASSE_C)).not.toBe(e2eDocenteEmail(1));
+  expect(coordOf(CLASSE_B)).toBe(e2eDocenteEmail(1));
+  expect(coordOf(CLASSE_C)).toBe(e2eDocenteEmail(3));
+  expect(coordOf(CLASSE_C_PARTNER)).toBe(e2eDocenteEmail(7));
 });
 
 test('seeds the legacy and dedicated CONF_MAIL rows with safe attachment metadata', () => {
@@ -576,14 +577,22 @@ test('prior-year (2025-2026) roster contains the historical promotion and withdr
   const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
 
   const classi = prior.rows[TABLE.CLASSI]!.map((c) => c[COL_CLASSI.ID]);
-  expect(classi).toEqual(['2C']);
+  expect(classi).toEqual(expect.arrayContaining(['2C', '1A', '1B', '2C-S', '2C-C', '3C-S']));
 
   const alunni = prior.rows[TABLE.ALUNNI]!;
-  expect(alunni.map((row) => row[COL_ALUNNI.EMAIL])).toEqual([
-    e2eAlunnoEmail(138),
-    e2eAlunnoEmail(139)
-  ]);
-  expect(alunni.map((row) => row[COL_ALUNNI.ATTIVO])).toEqual([true, false]);
+  expect(alunni.map((row) => row[COL_ALUNNI.EMAIL])).toEqual(
+    expect.arrayContaining([e2eAlunnoEmail(138), e2eAlunnoEmail(139)])
+  );
+  expect(
+    alunni.find((row) => row[COL_ALUNNI.EMAIL] === e2eAlunnoEmail(138))?.[
+      COL_ALUNNI.ATTIVO
+    ]
+  ).toBe(true);
+  expect(
+    alunni.find((row) => row[COL_ALUNNI.EMAIL] === e2eAlunnoEmail(139))?.[
+      COL_ALUNNI.ATTIVO
+    ]
+  ).toBe(false);
 });
 
 test('seeds one student with both PEI and PDP_BES plans', () => {
@@ -610,13 +619,15 @@ test('prior-year historical document row is linked to the promoted student', () 
   new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
   const logDocs = prior.rows[TABLE.LOG_DOCS]!;
-  expect(logDocs).toHaveLength(1);
-  expect(logDocs[0]).toEqual(
+  expect(logDocs).toHaveLength(3);
+  expect(logDocs).toEqual(
+    expect.arrayContaining([
     expect.objectContaining({
       [COL_LOG_DOCS.UTENTI]: e2eAlunnoEmail(138),
       [COL_LOG_DOCS.CLASSI]: '2C',
       [COL_LOG_DOCS.SOTTOTIPO]: 'PDP_BES'
     })
+    ])
   );
 });
 

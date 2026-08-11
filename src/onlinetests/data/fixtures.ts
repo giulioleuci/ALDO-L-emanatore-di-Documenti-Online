@@ -40,6 +40,7 @@ export const CLASS_ADDRESS_BY_CLASS: Record<string, string> = {
 
 export interface FixtureClasseLayout {
   id: string;
+  studentStart: number;
   count: number;
   coordIndex: number;
   articolazione: string;
@@ -50,16 +51,19 @@ export interface FixtureClasseLayout {
 
 const layout = (
   id: string,
+  studentStart: number,
   count: number,
   coordIndex: number,
   articolazione = '{}',
+  representativeCounts: { studenti: number; genitori: number } = { studenti: 2, genitori: 2 },
 ): FixtureClasseLayout => ({
   id,
+  studentStart,
   count,
   coordIndex,
   articolazione,
-  studentRepCount: 2,
-  parentRepCount: 2,
+  studentRepCount: representativeCounts.studenti,
+  parentRepCount: representativeCounts.genitori,
   religionExceptions:
     id === '1A'
       ? [
@@ -77,19 +81,27 @@ const layout = (
 });
 
 export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
-  layout('1A', 18, 1),
-  layout('2A', 17, 2),
-  layout('4A', 17, 3),
-  layout('1B', 17, 1),
-  layout('2B', 17, 4),
-  layout('5B', 17, 5),
-  layout('5B-S', 17, 5, '{"parent":"5B","partner":"5B-C"}'),
-  layout('5B-C', 17, 5, '{"parent":"5B","partner":"5B-S"}'),
-  layout('3C', 17, 6),
-  layout('3C-S', 17, 6, '{"parent":"3C","partner":"3C-C"}'),
-  layout('3C-C', 17, 6, '{"parent":"3C","partner":"3C-S"}'),
-  layout('4D', 16, 7),
-  layout('5E', 16, 8),
+  // Stable focal ranges are deliberately non-negotiable: online import and
+  // personalized-plan checks address these exact student identities.
+  layout('1A', 1, 20, 1, '{}', { studenti: 0, genitori: 0 }),
+  layout('2A', 61, 22, 2),
+  layout('4A', 83, 22, 3),
+  layout('1B', 105, 22, 1),
+  layout('2B', 21, 20, 1, '{}', { studenti: 1, genitori: 1 }),
+  layout('5B', 127, 11, 5),
+  layout('5B-S', 139, 22, 5, '{"parent":"5B","partner":"5B-C"}'),
+  layout('5B-C', 161, 22, 5, '{"parent":"5B","partner":"5B-S"}'),
+  layout('3C', 138, 1, 6, '{}', { studenti: 0, genitori: 0 }),
+  layout('3C-S', 41, 8, 3, '{"parent":"3C","partner":"3C-C"}', {
+    studenti: 2,
+    genitori: 1,
+  }),
+  layout('3C-C', 49, 12, 7, '{"parent":"3C","partner":"3C-S"}', {
+    studenti: 1,
+    genitori: 2,
+  }),
+  layout('4D', 183, 19, 7),
+  layout('5E', 202, 19, 8),
 ];
 
 export const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];

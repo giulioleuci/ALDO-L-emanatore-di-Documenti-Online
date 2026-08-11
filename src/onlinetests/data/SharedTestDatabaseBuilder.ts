@@ -1,7 +1,12 @@
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from '../SampleDatabaseBuilder';
 import type { IArtifactFactory } from '../E2eTemplateProvisioner';
-import { StatoDocumento, ReligioneScelta, TipoProgetto } from '../../domain/value-objects/enums';
+import {
+  StatoDocumento,
+  ReligioneScelta,
+  TipoPiano,
+  TipoProgetto
+} from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import {
   TABLE,
@@ -158,7 +163,7 @@ export const CONF_MAIL_STATIC_ALLEGATO = 'E2E_MAIL_STATIC_ALLEGATO';
 export const CONF_IMP_ASL = 'E2E_IMPORT_ASL';
 
 export const CARENZA_ALUNNO_1 = e2eAlunnoEmail(1);
-export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(70);
+export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(21);
 
 /**
  * Repeaters (RIPETENTE=true this year): stay in the SAME class both years
@@ -168,10 +173,10 @@ export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(70);
  * exception.
  */
 export const RIPETENTE_1A = e2eAlunnoEmail(2);
-export const RIPETENTE_3C = e2eAlunnoEmail(138);
+export const RIPETENTE_3C = e2eAlunnoEmail(41);
 
 /** Additional 2026-2027 PDP_BES case for 3C. */
-export const PDP_BES_3C = e2eAlunnoEmail(139);
+export const PDP_BES_3C = e2eAlunnoEmail(41);
 /** Same student deliberately owns two plan subtypes, exercising composite plan identity. */
 export const PIANO_DOPPIO_STUDENTE = e2eAlunnoEmail(25);
 
@@ -194,7 +199,7 @@ export interface SharedTestDatabase {
   sampleSpreadsheetId: string;
   sampleSpreadsheetUrl: string;
   sampleFolderUrl: string;
-  /** 2025-2026 database (CLASSI/ALUNNI/LOG_DOCS only) feeding the storico scenarios. */
+  /** 2025-2026 database with all nine historical-provider tables and legacy focal rows. */
   priorSampleSpreadsheetId: string;
   priorSampleSpreadsheetUrl: string;
   priorSampleSpreadsheetId2: string;
@@ -266,12 +271,16 @@ export class SharedTestDatabaseBuilder {
     this.seedConfImp(sample, templateIds);
     const masterTestMode = true;
     this.seedMaster(master, sample.id, folderId, masterTestMode);
-    seedLogFold(sample, this.drive, this.artifacts);
+    const logFolders = seedLogFold(sample, this.drive, this.artifacts);
     seedConfDedicated(sample, templateIds);
     const [prior, prior2] = seedAnniPrecedenti(master, this.spreadsheets, folderId);
-    if (prior === undefined || prior2 === undefined) {
-      throw new ConfigurationError(`Expected ${ANNI_PRECEDENTI.length} prior databases`);
+    const logFold = logFolders[0];
+    if (prior === undefined || prior2 === undefined || logFold === undefined) {
+      throw new ConfigurationError(
+        `Expected ${ANNI_PRECEDENTI.length} prior databases and at least one LOG_FOLD folder`
+      );
     }
+    this.seedLegacyFocalHistory(prior.spreadsheet, layouts);
 
     return {
       masterSpreadsheetId: master.id,
@@ -282,7 +291,7 @@ export class SharedTestDatabaseBuilder {
       priorSampleSpreadsheetUrl: prior.url,
       priorSampleSpreadsheetId2: prior2.id,
       priorSampleSpreadsheetUrl2: prior2.url,
-      logFoldFolderUrl: sampleFolderUrl,
+      logFoldFolderUrl: logFold.url,
       jobRunnerDocConfigId: CONF_DOC_JOBRUNNER,
       masterTestMode,
       staticAttachmentFileId: templateIds.staticAttachment
@@ -447,14 +456,61 @@ export class SharedTestDatabaseBuilder {
         const docenteIndex = ((classIndex * materie.length + materiaIndex) % DOCENTE_COUNT) + 1;
         row[sigla] = e2eDocenteEmail(docenteIndex);
       });
+      if (layout.id === CLASSE_A) {
+        Object.assign(row, {
+          MAT: e2eDocenteEmail(1),
+          ITA: e2eDocenteEmail(2),
+          ING: e2eDocenteEmail(3),
+          STO: e2eDocenteEmail(4),
+          GRECO: e2eDocenteEmail(3),
+          LATINO: e2eDocenteEmail(2),
+          FILOSOFIA: e2eDocenteEmail(3)
+        });
+      }
+      if (layout.id === CLASSE_B) {
+        Object.assign(row, {
+          MAT: e2eDocenteEmail(5),
+          ITA: e2eDocenteEmail(6),
+          ING: e2eDocenteEmail(7),
+          STO: e2eDocenteEmail(8),
+          IRC: e2eDocenteEmail(5),
+          ALT: e2eDocenteEmail(6),
+          PSICOLOGIA: e2eDocenteEmail(5),
+          SCIUMANE: e2eDocenteEmail(6),
+          DIRECON: e2eDocenteEmail(7)
+        });
+      }
+      if (layout.id === CLASSE_C) {
+        Object.assign(row, {
+          MAT: e2eDocenteEmail(1),
+          ITA: e2eDocenteEmail(2),
+          ING: e2eDocenteEmail(3),
+          STO: e2eDocenteEmail(4),
+          IRC: e2eDocenteEmail(2),
+          ALT: e2eDocenteEmail(3),
+          SCIENZE: e2eDocenteEmail(2),
+          FISICA: e2eDocenteEmail(3),
+          INF: e2eDocenteEmail(4)
+        });
+      }
+      if (layout.id === CLASSE_C_PARTNER) {
+        Object.assign(row, {
+          MAT: e2eDocenteEmail(1),
+          ITA: e2eDocenteEmail(6),
+          ING: e2eDocenteEmail(7),
+          STO: e2eDocenteEmail(8),
+          IRC: e2eDocenteEmail(6),
+          ALT: e2eDocenteEmail(7),
+          GRECO: e2eDocenteEmail(6),
+          LATINO: e2eDocenteEmail(7),
+          FILOSOFIA: e2eDocenteEmail(8)
+        });
+      }
       if ([CLASSE_C, CLASSE_C_PARTNER].includes(layout.id)) {
         row.MAT = e2eDocenteEmail(1);
       }
       if (layout.id === CLASSE_B || layout.id === CLASSE_C_PARTNER) {
         row.STO = e2eDocenteEmail(8);
-      }
-      if (layout.id === CLASSE_C) {
-        row.SCIENZE = e2eDocenteEmail(20);
       }
       if (layout.id === CLASSE_A) {
         Object.assign(row, {
@@ -485,11 +541,11 @@ export class SharedTestDatabaseBuilder {
     return JSON.stringify({ ...parsed, partners: null });
   }
 
-  /** Realistic Italian full names (item 5), deterministic per counter — cognome/nome pool sizes are coprime (17/13) so none of the 60 students repeat. */
+  /** 220 deterministic students; explicit layout starts preserve the legacy focal identities. */
   private seedAlunni(sample: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
-    let counter = 1;
     for (const layout of layouts) {
       for (let n = 0; n < layout.count; n++) {
+        const counter = layout.studentStart + n;
         const email = e2eAlunnoEmail(counter);
         const cognome = ALUNNO_COGNOMI[(counter - 1) % ALUNNO_COGNOMI.length]!;
         const nome = ALUNNO_NOMI[(counter - 1) % ALUNNO_NOMI.length]!;
@@ -521,8 +577,101 @@ export class SharedTestDatabaseBuilder {
           [COL_ALUNNI.TUTOR_2]: '',
           [COL_ALUNNI.NOTE]: ''
         });
-        counter += 1;
       }
+    }
+  }
+
+  /** Adds the original focal 2025-2026 seams after Task 4's broader historical rows. */
+  private seedLegacyFocalHistory(prior: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
+    const focal = [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map((id) => {
+      const layout = layouts.find((candidate) => candidate.id === id);
+      if (layout === undefined) throw new ConfigurationError(`Missing focal layout ${id}`);
+      return layout;
+    });
+    this.seedLegacyFocalClasses(prior, focal);
+    this.seedLegacyFocalStudents(prior, focal);
+    this.seedLegacyFocalPlans(prior);
+  }
+
+  private seedLegacyFocalClasses(prior: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
+    const rows = layouts.map((layout, focalIndex) => ({
+      id: layout.id === CLASSE_A ? CLASSE_A : classePrecedente(layout.id),
+      layout,
+      focalIndex
+    }));
+    const scientifico = layouts.find((layout) => layout.id === CLASSE_C);
+    if (scientifico === undefined) throw new ConfigurationError(`Missing focal layout ${CLASSE_C}`);
+    rows.push({ id: CLASSE_C, layout: scientifico, focalIndex: 2 });
+
+    for (const { id, layout, focalIndex } of rows) {
+      const row: Record<string, unknown> = {
+        [COL_CLASSI.ID]: id,
+        [COL_CLASSI.ANNO]: Number(id.charAt(0)),
+        [COL_CLASSI.INDIRIZZO]:
+          layout.id === CLASSE_C_PARTNER ? INDIRIZZO_E2E_CLASSICO : INDIRIZZO_E2E,
+        [COL_CLASSI.ARTICOLAZIONE]: '',
+        [COL_CLASSI.RUOLI]: '',
+        [COL_CLASSI.ATTIVA]: true,
+        [COL_CLASSI.COORD]: e2eDocenteEmail(layout.coordIndex),
+        [COL_CLASSI.IRC]: '',
+        [COL_CLASSI.ALT]: '',
+        [COL_CLASSI.SEZ]: id.replace(/[0-9-]/g, '') || 'A',
+        [COL_CLASSI.TERMINALE]: false,
+        [COL_CLASSI.STORICO]: ''
+      };
+      MATERIE_E2E.forEach((sigla, materiaIndex) => {
+        row[sigla] = e2eDocenteEmail(((focalIndex * MATERIE_E2E.length + materiaIndex) % 8) + 1);
+      });
+      if (layout.id === CLASSE_C_PARTNER) row.MAT = e2eDocenteEmail(1);
+      prior.appendRow(TABLE.CLASSI, row);
+    }
+  }
+
+  private seedLegacyFocalStudents(prior: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
+    for (const layout of layouts) {
+      for (let offset = 0; offset < layout.count; offset += 1) {
+        const counter = layout.studentStart + offset;
+        const email = e2eAlunnoEmail(counter);
+        const isRipetente = email === RIPETENTE_1A || email === RIPETENTE_3C;
+        if (layout.id === CLASSE_A && !isRipetente) continue;
+        const cognome = ALUNNO_COGNOMI[(counter - 1) % ALUNNO_COGNOMI.length]!;
+        const nome = ALUNNO_NOMI[(counter - 1) % ALUNNO_NOMI.length]!;
+        prior.appendRow(TABLE.ALUNNI, {
+          [COL_ALUNNI.EMAIL]: email,
+          [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
+          [COL_ALUNNI.CLASSE]: isRipetente ? layout.id : classePrecedente(layout.id),
+          [COL_ALUNNI.RELIGIONE]: ReligioneScelta.IRC,
+          [COL_ALUNNI.CURRICULUM]: '',
+          [COL_ALUNNI.ATTIVO]: true,
+          [COL_ALUNNI.RIPETENTE]: false,
+          [COL_ALUNNI.RAPPR_STUD]: false,
+          [COL_ALUNNI.RAPPR_GEN]: '',
+          [COL_ALUNNI.TUTOR_1]: `tutor${counter}@onlinetest.aldo.local`,
+          [COL_ALUNNI.TUTOR_2]: '',
+          [COL_ALUNNI.NOTE]: ''
+        });
+      }
+    }
+  }
+
+  private seedLegacyFocalPlans(prior: ISampleSpreadsheet): void {
+    for (const tipo of [TipoPiano.PEI, TipoPiano.PDP_BES]) {
+      prior.appendRow(TABLE.LOG_DOCS, {
+        [COL_LOG_DOCS.ID]: `E2E_FAKE_LOGDOC_${tipo}_2025_2026`,
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
+        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
+        [COL_LOG_DOCS.NOME]: `E2E_Piano_${tipo}_2025_2026`,
+        [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
+        [COL_LOG_DOCS.NOTIFICATO]: '2025-11-15T09:00:00.000Z',
+        [COL_LOG_DOCS.PATH]: '_ALDO_E2E_OUTPUT',
+        [COL_LOG_DOCS.LINK]: `https://drive.google.com/file/d/E2E_FAKE_${tipo}_2025_2026/edit`,
+        [COL_LOG_DOCS.CLASSI]: classePrecedente(CLASSE_B),
+        [COL_LOG_DOCS.UTENTI]: PIANO_DOPPIO_STUDENTE,
+        [COL_LOG_DOCS.MATERIE]: '',
+        [COL_LOG_DOCS.DATA_CREAZ]: '2025-11-10T09:00:00.000Z',
+        [COL_LOG_DOCS.ID_ORIG]: ''
+      });
     }
   }
 

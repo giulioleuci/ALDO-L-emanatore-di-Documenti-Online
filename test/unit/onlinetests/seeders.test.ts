@@ -121,10 +121,10 @@ function recordingArtifacts(): {
 
 function currentClassOf(email: string): string | undefined {
   const index = Number(email.match(/e2ealunno(\d+)@/)?.[1]);
-  let firstStudent = 1;
   for (const layout of CLASS_LAYOUTS) {
-    if (index >= firstStudent && index < firstStudent + layout.count) return layout.id;
-    firstStudent += layout.count;
+    if (index >= layout.studentStart && index < layout.studentStart + layout.count) {
+      return layout.id;
+    }
   }
   return undefined;
 }

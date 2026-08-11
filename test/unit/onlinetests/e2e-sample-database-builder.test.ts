@@ -105,6 +105,12 @@ const TEMPLATE_IDS = {
   sheetPermessi: 'tmpl_sheet_permessi',
   pianoLavoro: 'tmpl_piano_lavoro',
   staticAttachment: 'real_static_attachment_id',
+  tabelleImportate: 'tmpl_tabelle_importate',
+  tabellaSorgenteDati: 'tmpl_tabella_sorgente_dati',
+  tabellaSorgenteVuota: 'tmpl_tabella_sorgente_vuota',
+  storico: 'tmpl_storico',
+  dotted: 'tmpl_dotted',
+  storicoEmail: 'tmpl_storico_email',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',
@@ -113,6 +119,19 @@ const TEMPLATE_IDS = {
     PFP: 'tmpl_pfp'
   }
 };
+
+test('the shared-builder template-ID fixture covers every required provisioned artifact', () => {
+  expect(TEMPLATE_IDS).toEqual(
+    expect.objectContaining({
+      tabelleImportate: 'tmpl_tabelle_importate',
+      tabellaSorgenteDati: 'tmpl_tabella_sorgente_dati',
+      tabellaSorgenteVuota: 'tmpl_tabella_sorgente_vuota',
+      storico: 'tmpl_storico',
+      dotted: 'tmpl_dotted',
+      storicoEmail: 'tmpl_storico_email'
+    })
+  );
+});
 
 function expectCompleteRows(
   rows: Record<string, unknown>[],

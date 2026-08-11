@@ -107,6 +107,12 @@ const TEMPLATE_IDS: E2eTemplateIds = {
   sheetPermessi: 'tmpl_sheet_permessi',
   pianoLavoro: 'tmpl_piano_lavoro',
   staticAttachment: 'tmpl_attachment',
+  tabelleImportate: 'tmpl_tabelle_importate',
+  tabellaSorgenteDati: 'tmpl_tabella_sorgente_dati',
+  tabellaSorgenteVuota: 'tmpl_tabella_sorgente_vuota',
+  storico: 'tmpl_storico',
+  dotted: 'tmpl_dotted',
+  storicoEmail: 'tmpl_storico_email',
   piani: {
     PDP_DSA: 'tmpl_pdp_dsa',
     PDP_BES: 'tmpl_pdp_bes',

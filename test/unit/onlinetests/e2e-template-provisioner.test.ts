@@ -130,6 +130,9 @@ test('authors the history, dotted/ITP, and history-email templates against canon
   expect(storico).toContain('{{#focus.alunno.storico.anni}}');
   expect(storico).toContain('{{#focus.classe.storico.statistiche}}');
   expect(storico).toContain('{{statistiche.totale}}');
+  expect(storico).toContain(
+    '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
+  );
 
   const dotted = documentText(docContent[ids.dotted] ?? []);
   expect(dotted).toContain('{{#bullet_list:focus.classe.materie}}');
@@ -141,7 +144,9 @@ test('authors the history, dotted/ITP, and history-email templates against canon
 
   const storicoEmail = documentText(docContent[ids.storicoEmail] ?? []);
   expect(storicoEmail).toContain('{{focus.classe.anagrafica.nome}}');
-  expect(storicoEmail).toContain('{{#focus.classe.storico.progetti}}');
+  expect(storicoEmail).toContain(
+    '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
+  );
 });
 
 test('reuses all dedicated Task-6 artifacts without re-authoring content', () => {

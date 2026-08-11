@@ -410,7 +410,7 @@ const STORICO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   '{{#focus.alunno.storico.bocciature}}Bocciatura {{annoScolastico}} — {{classe}}{{/focus.alunno.storico.bocciature}}',
   'Storico della classe {{focus.classe.anagrafica.nome}}',
   '{{#focus.classe.storico.statistiche}}{{annoScolastico}} — {{classe}}: {{statistiche.totale}} alunni{{/focus.classe.storico.statistiche}}',
-  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{nome}}{{/focus.classe.storico.progetti}}'
+  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
 ];
 
 /** `focus.classe.materie` is the canonical SubjectVM catalog (02 §4.1/§8.2), including
@@ -426,7 +426,7 @@ const DOTTED_PARAGRAPHS: E2eDocumentParagraphInput[] = [
 const STORICO_EMAIL_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Allegato storico per la classe {{focus.classe.anagrafica.nome}}',
   '{{#focus.classe.storico.statistiche}}{{annoScolastico}} — {{classe}}: {{statistiche.totale}} alunni{{/focus.classe.storico.statistiche}}',
-  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{nome}}{{/focus.classe.storico.progetti}}'
+  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
 ];
 
 /**

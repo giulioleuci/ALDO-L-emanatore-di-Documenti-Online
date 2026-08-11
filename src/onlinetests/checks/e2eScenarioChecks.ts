@@ -504,10 +504,7 @@ export function registerE2eScenarioChecks(
           );
         }
         if (classe === '1A') {
-          for (const expected of [
-            'LAB: GRUPPO_A (',
-            'INTERPRET: CHITARRA ('
-          ]) {
+          for (const expected of ['LAB: GRUPPO_A (', 'INTERPRET: CHITARRA (']) {
             if (!text.includes(expected)) {
               throw new ValidationError(
                 `Documento complesso per 1A: specificita renderizzata mancante "${expected}"`
@@ -782,6 +779,57 @@ export function registerE2eScenarioChecks(
       }
     }
   );
+}
+
+export type E2eDocumentScenarioScope = 'standard' | 'articolati';
+
+interface CapturedScenarioCheck {
+  name: string;
+  artifactUrl: string | undefined;
+  callback: () => void;
+}
+
+const STANDARD_DOCUMENT_SCENARIO_NAMES = new Set([
+  'E2E scenario 3: piani personalizzati con modello condizionale, dedupe e storico per sottotipo',
+  'E2E scenario 1: genera verbale consiglio di classe (tutte le classi)',
+  'E2E scenario 2: genera foglio valutazione condotta (tutte le classi)',
+  'E2E scenario 8: genera riepilogo classe (tutte le classi)',
+  'E2E scenario 10: genera documento complesso (placeholder loops/filtri, tutte le classi)',
+  'E2E scenario 11: verifica protezione colonne materie (SHEET_CON_MATERIE_E_PERMESSI)',
+  'E2E prerequisite: genera piano di lavoro per gli invii ai coordinatori'
+]);
+
+const ARTICOLATI_DOCUMENT_SCENARIO_NAMES = new Set([
+  'E2E scenario 10b: genera documento complesso classe articolata (3C)',
+  'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA'
+]);
+
+/**
+ * Replays the existing green document callbacks under a narrower scenario boundary.
+ * The legacy registrar remains the source of truth until its unrelated mail/import
+ * scenarios are migrated to their dedicated groups.
+ */
+export function registerE2eDocumentScenarioChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: SharedTestDatabase & { testMode: boolean },
+  scope: E2eDocumentScenarioScope
+): void {
+  const captured: CapturedScenarioCheck[] = [];
+  const captureRunner = {
+    add(name: string, artifactUrl: string | undefined, callback: () => void): void {
+      captured.push({ name, artifactUrl, callback });
+    }
+  };
+  registerE2eScenarioChecks(captureRunner as TestRunner, container, sample);
+
+  const allowed =
+    scope === 'standard' ? STANDARD_DOCUMENT_SCENARIO_NAMES : ARTICOLATI_DOCUMENT_SCENARIO_NAMES;
+  for (const check of captured) {
+    if (check.name === 'E2E scenarios: MASTER.TEST_MODE guard' || allowed.has(check.name)) {
+      runner.add(check.name, check.artifactUrl, check.callback);
+    }
+  }
 }
 
 function csvContains(raw: unknown, value: string): boolean {

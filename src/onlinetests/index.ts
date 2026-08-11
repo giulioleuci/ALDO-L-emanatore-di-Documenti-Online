@@ -1,7 +1,10 @@
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { initAldo, resetAldo } from '../config/Bootstrap';
 import type { ServiceContainer } from '../config/ServiceContainer';
+import { TABLE } from '../config/schema';
 import { ConfigurationError } from '../domain/errors/DomainError';
+import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
+import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
 import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade';
 import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
@@ -9,16 +12,13 @@ import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFaca
 import { e2eActiveRepresentativesInterceptor } from './E2eActiveRepresentativesInterceptor';
 import { GasArtifactFactory } from './GasArtifactFactory';
 import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
-import {
-  E2eTemplateProvisioner,
-  type IArtifactFactory
-} from './E2eTemplateProvisioner';
+import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { registerArticolazioneChecks } from './checks/articolazioneChecks';
+import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
 import {
   registerContextEngineChecks,
   registerEffectiveAssignmentConsumerChecks
 } from './checks/contextEngineChecks';
-import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
 import { registerPipelineChecks } from './checks/pipelineChecks';
 import {
   registerEffectiveAssignmentMatrixChecks,
@@ -90,7 +90,8 @@ export interface FullOnlineTestDeps extends E2eTestDeps {
 const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerRepositoryChecks(runner, container, sample);
   registerContextEngineChecks(runner, container, sample);
-  registerE2eScenarioChecks(runner, container, sample);
+  registerDocumentiChecks(runner, container, sample, 'standard');
+  registerDocumentiChecks(runner, container, sample, 'articolati');
 };
 
 const registerLegacyEmailChecks: RegisterEmailChecks = (runner, container, sample, safeEmail) => {
@@ -104,11 +105,15 @@ const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, contai
 
 function registerPendingChecks(group: string): RegisterSharedChecks {
   return (runner, _container, sample) => {
-    runner.add(`Aggregate scenario pending migration: ${group}`, sample.sampleSpreadsheetUrl, () => {
-      throw new ConfigurationError(
-        `Aggregate online-test group "${group}" has not been migrated yet.`
-      );
-    });
+    runner.add(
+      `Aggregate scenario pending migration: ${group}`,
+      sample.sampleSpreadsheetUrl,
+      () => {
+        throw new ConfigurationError(
+          `Aggregate online-test group "${group}" has not been migrated yet.`
+        );
+      }
+    );
   };
 }
 
@@ -127,6 +132,25 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
 };
 
 const E2E_ROOT_FOLDER_NAME = '_ALDO_E2E_ROOT';
+
+function readCurrentMasterConfig(masterId: string): {
+  idSpreadsheet: string;
+  idCartellaRoot: string;
+  testMode: boolean;
+} {
+  const logger = ServiceFactory.getLogger();
+  const masterDb = new SheetDbAdapter(
+    new DatabaseService(
+      masterId,
+      logger,
+      ServiceFactory.getUtils(),
+      ServiceFactory.getCacheService().getScriptCache(),
+      null,
+      { verifyTables: [TABLE.MASTER] }
+    )
+  );
+  return new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
+}
 
 function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
   return testContext.getOrCreateNamedFolder(E2E_ROOT_FOLDER_NAME) as GoogleAppsScript.Drive.Folder;
@@ -174,11 +198,11 @@ export function executeCreaDatiMockDrive(
   const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
     templateFolderId
   );
-  const sample = new SharedTestDatabaseBuilder(
-    spreadsheetFactory,
-    drive,
-    artifactFactory
-  ).build(templateIds, master, { force });
+  const sample = new SharedTestDatabaseBuilder(spreadsheetFactory, drive, artifactFactory).build(
+    templateIds,
+    master,
+    { force }
+  );
 
   properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
   return sample;
@@ -275,30 +299,132 @@ export function creaDatiMockDrive(): SharedTestDatabase {
   return executeCreaDatiMockDrive();
 }
 
+function executePersistedDocumentiChecks(
+  scope: DocumentiCheckScope,
+  overrides: Partial<E2eTestDeps>
+): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
+
+  const sample: FullOnlineTestSample = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: '',
+    priorSampleSpreadsheetUrl: '',
+    priorSampleSpreadsheetId2: '',
+    priorSampleSpreadsheetUrl2: '',
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: '',
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: '',
+    testMode: master.testMode
+  };
+  const runner = new TestRunner();
+  registerDocumentiChecks(runner, container, sample, scope);
+  return runner.report();
+}
+
+export function executeDocumentiStandard(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedDocumentiChecks('standard', overrides);
+}
+
+export function executeDocumentiArticolati(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedDocumentiChecks('articolati', overrides);
+}
+
 function nonImplementato(): never {
   throw new ConfigurationError('non implementato');
 }
 
 // Dedicated launchers are implemented by the subsequent scenario tasks.
-export function testDocumentiStandard(): OnlineTestReport { return nonImplementato(); }
-export function testDocumentiArticolati(): OnlineTestReport { return nonImplementato(); }
-export function testDocumentiTabelleImportate(): OnlineTestReport { return nonImplementato(); }
-export function testDuplicazioneDocumenti(): OnlineTestReport { return nonImplementato(); }
-export function testInvioEmail(): OnlineTestReport { return nonImplementato(); }
-export function testEmailSicurezza(): OnlineTestReport { return nonImplementato(); }
-export function testJobRunnerDocGen(): OnlineTestReport { return nonImplementato(); }
-export function testJobRunnerEmail(): OnlineTestReport { return nonImplementato(); }
-export function testJobRunnerTriggerReale(): OnlineTestReport { return nonImplementato(); }
-export function testImportFileSingolo(): OnlineTestReport { return nonImplementato(); }
-export function testImportCartelleClasse(): OnlineTestReport { return nonImplementato(); }
-export function testImportCercaDocumenti(): OnlineTestReport { return nonImplementato(); }
-export function testImportChunked(): OnlineTestReport { return nonImplementato(); }
-export function testRecuperoStoricoAlunno(): OnlineTestReport { return nonImplementato(); }
-export function testRecuperoStoricoClasse(): OnlineTestReport { return nonImplementato(); }
-export function testRecuperoStoricoDocumenti(): OnlineTestReport { return nonImplementato(); }
-export function testArticolazione(): OnlineTestReport { return nonImplementato(); }
-export function testITPeMateriePuntate(): OnlineTestReport { return nonImplementato(); }
-export function testSupplenzeERuoli(): OnlineTestReport { return nonImplementato(); }
-export function testACLReali(): OnlineTestReport { return nonImplementato(); }
-export function testCacheIsolamento(): OnlineTestReport { return nonImplementato(); }
-export function testPermessiAttivi(): OnlineTestReport { return nonImplementato(); }
+export function testDocumentiStandard(): OnlineTestReport {
+  return runReportedSuite(
+    'documenti_standard',
+    'DOC_SCENARIO',
+    executeDocumentiStandard,
+    ServiceFactory.getLogger()
+  );
+}
+export function testDocumentiArticolati(): OnlineTestReport {
+  return runReportedSuite(
+    'documenti_articolati',
+    'DOC_SCENARIO',
+    executeDocumentiArticolati,
+    ServiceFactory.getLogger()
+  );
+}
+export function testDocumentiTabelleImportate(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testDuplicazioneDocumenti(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testInvioEmail(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testEmailSicurezza(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testJobRunnerDocGen(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testJobRunnerEmail(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testJobRunnerTriggerReale(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testImportFileSingolo(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testImportCartelleClasse(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testImportCercaDocumenti(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testImportChunked(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testRecuperoStoricoAlunno(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testRecuperoStoricoClasse(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testRecuperoStoricoDocumenti(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testArticolazione(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testITPeMateriePuntate(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testSupplenzeERuoli(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testACLReali(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testCacheIsolamento(): OnlineTestReport {
+  return nonImplementato();
+}
+export function testPermessiAttivi(): OnlineTestReport {
+  return nonImplementato();
+}

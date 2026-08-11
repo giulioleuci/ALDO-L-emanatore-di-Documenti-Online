@@ -353,7 +353,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.TIPO]: 'E2E_TABELLE',
     [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE',
     [COL_CONF_DOC.CONDIZIONE]: '',
-    [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
+    [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.tabelleImportate }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_Tabelle_{{focus.classe.anagrafica.nome}}',
     [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/TABELLE_IMPORTATE',
     [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',

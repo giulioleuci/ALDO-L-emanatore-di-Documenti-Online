@@ -38,7 +38,7 @@ export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGene
   override render(fileId: string, cdu: Cdu): void {
     for (const placeholder of this.tables.findTablePlaceholders(fileId)) {
       const data = this.readSheetAsStrings(placeholder.sheetFileId);
-      if (data.length > 0) {
+      if (data.length > 1) {
         this.tables.insertTableAtMarker(fileId, placeholder.marker, data, { headerRow: true });
       }
       this.tables.removeText(fileId, placeholder.marker);

@@ -153,4 +153,22 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     expect(tables.insertedAtMarker).toEqual([]);
     expect(tables.removed).toEqual([{ fileId: 'doc3', marker: '{{TABELLA:sheet_missing}}' }]);
   });
+
+  test('a source containing only the header removes its marker without inserting a bogus table', () => {
+    const marker = '{{TABELLA:sheet_header_only}}';
+    const tables = new FakeDocumentTableFacade([{ marker, sheetFileId: 'sheet_header_only' }]);
+    const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 1, 2), {
+      'Sheet1!A1:B1': [['Nome', 'Valore']]
+    });
+    const strategy = new DocumentoConTabelleImportateGeneratorStrategy(
+      new FakeTemplateEngine(),
+      sheets,
+      tables
+    );
+
+    strategy.render('doc-header-only', fakeCdu());
+
+    expect(tables.insertedAtMarker).toEqual([]);
+    expect(tables.removed).toEqual([{ fileId: 'doc-header-only', marker }]);
+  });
 });

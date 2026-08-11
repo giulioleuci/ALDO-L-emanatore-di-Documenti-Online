@@ -74,6 +74,12 @@ test('registers only the articulated document scenarios in the articulated suite
   ]);
 });
 
+test('registers only the imported-table document check in its dedicated suite', () => {
+  const names = register('tabelle-importate').map((check) => check.name);
+
+  expect(names).toEqual(['documenti.tabelleImportate::generazione e contenuto']);
+});
+
 test('registers one TEST_MODE guard when the aggregate document scope is unsafe', () => {
   const runner = new RecordingRunner();
   const container = { get: () => ({}) } as ServiceContainer;

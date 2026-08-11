@@ -228,6 +228,15 @@ test('seeds dedicated document, import, and mail configurations with unique outp
     ]
   ).toBe('GDOC');
   expect(
+    JSON.parse(
+      String(
+        sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.ID] === CONF_DOC_TABELLE)![
+          COL_CONF_DOC.MODELLI
+        ]
+      )
+    )
+  ).toEqual({ templateId: TEMPLATE_IDS.tabelleImportate });
+  expect(
     sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.TIPO] === 'E2E_IMPORT_SOURCE')![
       COL_CONF_DOC.GENERATORE
     ]

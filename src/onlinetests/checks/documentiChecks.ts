@@ -1,18 +1,22 @@
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
+import { avviaGenerazioneDataDriven, creaJobRunner } from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
 import { COL_LOG_DOCS, TABLE } from '../../config/schema';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { CONF_DOC_COMPLESSO, type SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
+import { CONF_DOC_TABELLE } from '../data/fixtures';
 import {
   registerE2eDocumentScenarioChecks,
   type E2eDocumentScenarioScope
 } from './e2eScenarioChecks';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
-export type DocumentiCheckScope = E2eDocumentScenarioScope | 'all';
+export type DocumentiCheckScope = E2eDocumentScenarioScope | 'tabelle-importate' | 'all';
+
+const AMPLE_DOCUMENT_GENERATION_BUDGET_MS = 5 * 60 * 1000;
 
 /**
  * Registers document-only checks by replaying the proven legacy callbacks, then
@@ -33,9 +37,13 @@ export function registerDocumentiChecks(
     return;
   }
 
-  const scopes: E2eDocumentScenarioScope[] = scope === 'all' ? ['standard', 'articolati'] : [scope];
+  const scopes: E2eDocumentScenarioScope[] =
+    scope === 'all' ? ['standard', 'articolati'] : scope === 'tabelle-importate' ? [] : [scope];
   for (const documentScope of scopes) {
     registerE2eDocumentScenarioChecks(runner, container, sample, documentScope);
+  }
+  if (scope === 'tabelle-importate' || scope === 'all') {
+    registerTabelleImportateCheck(runner, container, sample);
   }
   if (!scopes.includes('standard')) return;
 
@@ -85,4 +93,98 @@ export function registerDocumentiChecks(
       }
     }
   );
+}
+
+function registerTabelleImportateCheck(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: SharedTestDatabase & { testMode: boolean }
+): void {
+  runner.add(
+    groupName('documenti.tabelleImportate', 'generazione e contenuto'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const db = container.get<EmailDb>('db');
+      const drive = container.get<IDriveFacade>('drive');
+      const rowsForClass = (): Record<string, unknown>[] =>
+        db
+          .table(TABLE.LOG_DOCS)
+          .findAll()
+          .filter(
+            (row) =>
+              row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_TABELLE && row[COL_LOG_DOCS.CLASSI] === '1A'
+          );
+
+      avviaGenerazioneDataDriven(
+        container,
+        CONF_DOC_TABELLE,
+        creaJobRunner(),
+        AMPLE_DOCUMENT_GENERATION_BUDGET_MS
+      );
+
+      const firstRunRows = rowsForClass();
+      if (firstRunRows.length !== 1) {
+        throw new ValidationError(
+          `Tabelle importate: attesa una riga LOG_DOCS per 1A, ricevute ${firstRunRows.length}`
+        );
+      }
+      const persisted = firstRunRows[0]!;
+      const fileId = nonBlankString(persisted[COL_LOG_DOCS.ID]);
+      const link = nonBlankString(persisted[COL_LOG_DOCS.LINK]);
+      if (
+        fileId === '' ||
+        link === '' ||
+        persisted[COL_LOG_DOCS.TIPO] !== 'E2E_TABELLE' ||
+        persisted[COL_LOG_DOCS.CLASSI] !== '1A'
+      ) {
+        throw new ValidationError('Tabelle importate: LOG_DOCS privo di ID, link, classe o tipo attesi');
+      }
+
+      const text = drive.getFileText(fileId);
+      const expectedFragments = [
+        'Tabelle importate per la classe 1A',
+        'Nome',
+        'Valore',
+        'Prima riga',
+        'Seconda riga',
+        'Testo dopo la tabella con dati',
+        'Testo dopo la tabella vuota'
+      ];
+      if (expectedFragments.some((fragment) => !text.includes(fragment))) {
+        throw new ValidationError(
+          'Tabelle importate: contenuto CDU o righe della sorgente dati mancanti nel documento'
+        );
+      }
+      if (
+        /\{\{TABELLA:[^}]+\}\}/.test(text) ||
+        /\{\{[^}]*\}\}/.test(text) ||
+        countOccurrences(text, 'Nome') !== 1 ||
+        countOccurrences(text, 'Valore') !== 1
+      ) {
+        throw new ValidationError(
+          'Tabelle importate: marker irrisolto, Mustache residuo o tabella da sorgente solo-intestazione presente'
+        );
+      }
+
+      avviaGenerazioneDataDriven(
+        container,
+        CONF_DOC_TABELLE,
+        creaJobRunner(),
+        AMPLE_DOCUMENT_GENERATION_BUDGET_MS
+      );
+      if (rowsForClass().length !== firstRunRows.length) {
+        throw new ValidationError(
+          'Tabelle importate: DUPLICAZIONE=NEGATA ha creato una riga LOG_DOCS duplicata'
+        );
+      }
+    }
+  );
+}
+
+function countOccurrences(text: string, fragment: string): number {
+  return text.split(fragment).length - 1;
+}
+
+function nonBlankString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }

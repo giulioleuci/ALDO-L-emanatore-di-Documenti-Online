@@ -356,6 +356,12 @@ export function executeDocumentiArticolati(overrides: Partial<E2eTestDeps> = {})
   return executePersistedDocumentiChecks('articolati', overrides);
 }
 
+export function executeDocumentiTabelleImportate(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedDocumentiChecks('tabelle-importate', overrides);
+}
+
 function nonImplementato(): never {
   throw new ConfigurationError('non implementato');
 }
@@ -378,7 +384,12 @@ export function testDocumentiArticolati(): OnlineTestReport {
   );
 }
 export function testDocumentiTabelleImportate(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'documenti_tabelle_importate',
+    'DOC_SCENARIO',
+    executeDocumentiTabelleImportate,
+    ServiceFactory.getLogger()
+  );
 }
 export function testDuplicazioneDocumenti(): OnlineTestReport {
   return nonImplementato();

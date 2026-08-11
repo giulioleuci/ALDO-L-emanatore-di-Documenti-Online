@@ -7,14 +7,14 @@
 
 ## Implementazione
 
-- Nuovi fixture `IGNORE`, `TIMESTAMP`, `ATTIVO=false`, `hasHeaders=false` e quattro misconfiguration (fileId, folderTipo, idGen, strategia).
-- Sorgenti E2E dedicate per timestamp e no-header; la sorgente standard include una ghost row.
-- `registerImportChecks` copre OVERWRITE/ghost, IGNORE, fallback TIMESTAMP su target senza timestamp, no-header con mapping esplicito, skip disabilitato e pre-mutation failure per misconfig.
-- Aggiunti `executeImportFileSingolo`, `executeImportPolicy`, `testImportFileSingolo` e `testImportPolicy`; l'aggregato usa i check import reali.
+- Nuovi fixture `IGNORE`, due casi `TIMESTAMP` (conflitto e fallback), `ATTIVO=false`, `hasHeaders=false` e quattro misconfiguration (fileId, folderTipo, idGen, strategia).
+- Sorgenti E2E dedicate per timestamp CARENZE e no-header; la sorgente standard include una ghost row leggibile con la sola `DATA_MODIFICA` valorizzata.
+- `registerImportChecks` copre OVERWRITE/ghost, IGNORE, TIMESTAMP più nuovo/più vecchio, fallback TIMESTAMP su target senza timestamp, no-header con mapping esplicito, skip disabilitato e pre-mutation failure per misconfig.
+- Aggiunto `executeImportFileSingolo`/`testImportFileSingolo`; le policy sono invocabili dal launcher già approvato `testImportCercaDocumenti`, senza introdurre `testImportPolicy`.
 
 ## TDD e verifica
 
-- Red/green verificato per il forwarding FILE_SINGOLO e per le ricette/check policy.
-- Test mirati: 80 test, 6 suite passanti.
+- Red/green verificato per il forwarding FILE_SINGOLO, le ricette/check policy e la ghost row materializzata.
+- Test mirati: 62 test, 6 suite passanti (verifica dopo il follow-up P1).
 - `npm run typecheck` e `npm run lint` passati.
 - La prima suite completa ha rivelato un'aspettativa legacy obsoleta; il test è stato aggiornato per il nuovo adapter. Verifica finale: `npm test` (157 suite/1358 test), `npm run typecheck` e `npm run lint` passati.

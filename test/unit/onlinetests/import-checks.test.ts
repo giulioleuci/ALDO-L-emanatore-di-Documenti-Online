@@ -1,6 +1,6 @@
 import { avviaImportazioneDataDriven } from '../../../src/config/Bootstrap';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
-import { COL_ASL, TABLE } from '../../../src/config/schema';
+import { COL_ASL, COL_CARENZE, TABLE } from '../../../src/config/schema';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import { registerImportChecks } from '../../../src/onlinetests/checks/importChecks';
 import { CONF_IMP_ASL } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
@@ -34,8 +34,22 @@ class ImmediateRunner {
 
 test('runs FILE_SINGOLO policies through the synchronous launcher and verifies their visible effects', () => {
   const rows: Array<Record<string, unknown>> = [];
+  const carenze = [
+    {
+      [COL_CARENZE.STUDENTE]: 'e2ealunno1@onlinetest.aldo.local',
+      [COL_CARENZE.NOTE]: 'target precedente',
+      [COL_CARENZE.DATA_MODIFICA]: '2026-07-01'
+    },
+    {
+      [COL_CARENZE.STUDENTE]: 'e2ealunno21@onlinetest.aldo.local',
+      [COL_CARENZE.NOTE]: 'Carenza E2E di prova',
+      [COL_CARENZE.DATA_MODIFICA]: '2026-07-03'
+    }
+  ];
   const snapshot = () => JSON.stringify(rows);
-  const get = jest.fn(() => ({ table: () => ({ findAll: () => rows }) }));
+  const get = jest.fn(() => ({
+    table: (name: string) => ({ findAll: () => (name === TABLE.CARENZE ? carenze : rows) })
+  }));
   const container = {
     get
   } as unknown as ServiceContainer;
@@ -50,6 +64,10 @@ test('runs FILE_SINGOLO policies through the synchronous launcher and verifies t
       case CONF_IMP_IGNORE:
         return { inseriti: 0, aggiornati: 0, saltati: 1, ghost: 0, errori: [] };
       case CONF_IMP_TIMESTAMP:
+        carenze[0]![COL_CARENZE.NOTE] = 'Sorgente timestamp più recente';
+        carenze[0]![COL_CARENZE.DATA_MODIFICA] = '2026-07-02';
+        return { inseriti: 0, aggiornati: 1, saltati: 1, ghost: 0, errori: [] };
+      case 'E2E_IMP_TIMESTAMP_FALLBACK':
         rows[0]![COL_ASL.ORE] = 999;
         return { inseriti: 0, aggiornati: 1, saltati: 0, ghost: 0, errori: [] };
       case CONF_IMP_NOHEADER:
@@ -83,12 +101,13 @@ test('runs FILE_SINGOLO policies through the synchronous launcher and verifies t
     testMode: true
   } as never);
 
-  expect(runner.checks).toHaveLength(6);
+  expect(runner.checks).toHaveLength(7);
   expect(runner.checks.every((check) => check.error === undefined)).toBe(true);
   expect(jest.mocked(avviaImportazioneDataDriven).mock.calls.map(([, id]) => id)).toEqual([
     CONF_IMP_ASL,
     CONF_IMP_IGNORE,
     CONF_IMP_TIMESTAMP,
+    'E2E_IMP_TIMESTAMP_FALLBACK',
     CONF_IMP_NOHEADER,
     CONF_IMP_DISABLED,
     CONF_IMP_MISSING_FILE,

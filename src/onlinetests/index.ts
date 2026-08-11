@@ -446,10 +446,6 @@ export function executeImportFileSingolo(overrides: Partial<E2eTestDeps> = {}): 
   return executePersistedImportChecks(registerImportFileSingoloChecks, overrides);
 }
 
-export function executeImportPolicy(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
-  return executePersistedImportChecks(registerImportPolicyChecks, overrides);
-}
-
 function executePersistedJobRunnerChecks(
   scope: 'documenti' | 'email' | 'trigger-reale',
   overrides: Partial<E2eTestDeps> = {}
@@ -592,19 +588,16 @@ export function testImportFileSingolo(): OnlineTestReport {
     ServiceFactory.getLogger()
   );
 }
-export function testImportPolicy(): OnlineTestReport {
-  return runReportedSuite(
-    'import_policy',
-    'IMPORT_SCENARIO',
-    executeImportPolicy,
-    ServiceFactory.getLogger()
-  );
-}
 export function testImportCartelleClasse(): OnlineTestReport {
   return nonImplementato();
 }
 export function testImportCercaDocumenti(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'import_cerca_documenti',
+    'IMPORT_SCENARIO',
+    () => executePersistedImportChecks(registerImportPolicyChecks),
+    ServiceFactory.getLogger()
+  );
 }
 export function testImportChunked(): OnlineTestReport {
   return nonImplementato();

@@ -1,6 +1,6 @@
 import { avviaImportazioneDataDriven } from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import { COL_ASL, TABLE } from '../../config/schema';
+import { COL_ASL, COL_CARENZE, TABLE } from '../../config/schema';
 import { ConfigurationError, ValidationError } from '../../domain/errors/DomainError';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import { CONF_IMP_ASL } from '../data/SharedTestDatabaseBuilder';
@@ -13,7 +13,8 @@ import {
   CONF_IMP_MISSING_FOLDER,
   CONF_IMP_MISSING_IDGEN,
   CONF_IMP_NOHEADER,
-  CONF_IMP_TIMESTAMP
+  CONF_IMP_TIMESTAMP,
+  CONF_IMP_TIMESTAMP_FALLBACK
 } from '../data/fixtures';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
@@ -53,6 +54,7 @@ export function registerImportChecks(
 ): void {
   const db = container.get<EmailDb>('db');
   const readAsl = (): AslRow[] => db.table(TABLE.ASL).findAll();
+  const readCarenze = (): AslRow[] => db.table(TABLE.CARENZE).findAll();
 
   if (scope !== 'policy')
     runner.add(
@@ -99,23 +101,58 @@ export function registerImportChecks(
 
   if (scope !== 'file-singolo')
     runner.add(
+      groupName('import.policy', 'TIMESTAMP aggiorna solo il conflitto con sorgente più recente'),
+      sample.sampleSpreadsheetUrl,
+      () => {
+        const result = avviaImportazioneDataDriven(container, CONF_IMP_TIMESTAMP);
+        assertSuccessful(result, 'TIMESTAMP');
+        if (result.aggiornati !== 1 || result.saltati !== 1) {
+          throw new ValidationError(
+            `TIMESTAMP: attesi aggiornati=1 e saltati=1, ricevuti aggiornati=${result.aggiornati}, saltati=${result.saltati}`
+          );
+        }
+        const recent = findAslRow(
+          readCarenze(),
+          'e2ealunno1@onlinetest.aldo.local',
+          'TIMESTAMP recente'
+        );
+        const older = findAslRow(
+          readCarenze(),
+          'e2ealunno21@onlinetest.aldo.local',
+          'TIMESTAMP vecchia'
+        );
+        if (recent[COL_CARENZE.NOTE] !== 'Sorgente timestamp più recente') {
+          throw new ValidationError(
+            'TIMESTAMP: il record con sorgente più recente non è stato aggiornato'
+          );
+        }
+        if (older[COL_CARENZE.NOTE] !== 'Carenza E2E di prova') {
+          throw new ValidationError(
+            'TIMESTAMP: il record con sorgente più vecchia non doveva essere aggiornato'
+          );
+        }
+      }
+    );
+
+  if (scope !== 'file-singolo')
+    runner.add(
       groupName('import.policy', 'TIMESTAMP degrada a OVERWRITE senza colonna target'),
       sample.sampleSpreadsheetUrl,
       () => {
         if (readAsl().some((row) => Object.prototype.hasOwnProperty.call(row, 'DATA_MODIFICA'))) {
           throw new ValidationError(
-            'TIMESTAMP: ASL non deve avere una colonna DATA_MODIFICA nel fixture'
+            'TIMESTAMP fallback: ASL non deve avere una colonna DATA_MODIFICA nel fixture'
           );
         }
-        const result = avviaImportazioneDataDriven(container, CONF_IMP_TIMESTAMP);
-        assertSuccessful(result, 'TIMESTAMP');
+        const result = avviaImportazioneDataDriven(container, CONF_IMP_TIMESTAMP_FALLBACK);
+        assertSuccessful(result, 'TIMESTAMP fallback');
         if (result.inseriti + result.aggiornati !== 1) {
           throw new ValidationError(
-            `TIMESTAMP: attesa una riga dal fallback OVERWRITE, ricevute inseriti=${result.inseriti}, aggiornati=${result.aggiornati}`
+            `TIMESTAMP fallback: attesa una riga dal fallback OVERWRITE, ricevute inseriti=${result.inseriti}, aggiornati=${result.aggiornati}`
           );
         }
         assertOre(
-          findAslRow(readAsl(), 'e2ealunno43@onlinetest.aldo.local', 'TIMESTAMP'),
+          findAslRow(readAsl(), 'e2ealunno43@onlinetest.aldo.local', 'TIMESTAMP fallback'),
           999,
           'TIMESTAMP fallback OVERWRITE'
         );

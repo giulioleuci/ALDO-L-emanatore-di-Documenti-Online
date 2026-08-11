@@ -41,6 +41,7 @@ const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
 const NAME_ASL_IMPORT_POLICY = 'E2E ASL Import Policy Source';
 const NAME_ASL_IMPORT_NOHEADER = 'E2E ASL Import No Header Source';
+const NAME_CARENZE_IMPORT_TIMESTAMP = 'E2E Carenze Import Timestamp Source';
 // v3 forces provisioning to materialize the table/link interoperability fixture
 // instead of silently reusing the v2 document that predates this online assertion.
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v3';
@@ -178,11 +179,13 @@ const ASL_IMPORT_ROWS: Array<[string, number]> = [
 ];
 
 function aslImportUpdates(): SheetValueUpdate[] {
-  const updates: SheetValueUpdate[] = [{ range: 'A1:C1', values: [['STUDENTE', 'ANNO', 'ORE']] }];
+  const updates: SheetValueUpdate[] = [
+    { range: 'A1:D1', values: [['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']] }
+  ];
   ASL_IMPORT_ROWS.forEach(([email, ore], i) => {
     updates.push({ range: `A${2 + i}:C${2 + i}`, values: [[email, ASL_IMPORT_ANNO, ore]] });
   });
-  updates.push({ range: 'A6:C6', values: [['', '', '']] });
+  updates.push({ range: 'A6:D6', values: [['', '', '', '2026-08-10T09:00:00Z']] });
   return updates;
 }
 
@@ -198,6 +201,49 @@ function aslImportPolicyUpdates(): SheetValueUpdate[] {
 
 function aslImportNoHeaderUpdates(): SheetValueUpdate[] {
   return [{ range: 'A1:C1', values: [[e2eAlunnoEmail(52), ASL_IMPORT_ANNO, 77]] }];
+}
+
+function carenzeImportTimestampUpdates(): SheetValueUpdate[] {
+  return [
+    {
+      range: 'A1:I3',
+      values: [
+        [
+          'STUDENTE',
+          'PROGRESSIVO',
+          'CLASSE',
+          'DATA',
+          'NOTIFICATO',
+          'ASSENZE',
+          'NOTE',
+          'DATA_MODIFICA',
+          'MAT'
+        ],
+        [
+          e2eAlunnoEmail(1),
+          1,
+          '1A',
+          '2026-07-01',
+          false,
+          false,
+          'Sorgente timestamp più recente',
+          '2026-07-02',
+          4
+        ],
+        [
+          e2eAlunnoEmail(21),
+          1,
+          '2B',
+          '2026-07-01',
+          false,
+          false,
+          'Sorgente timestamp più vecchia',
+          '2026-06-30',
+          4
+        ]
+      ]
+    }
+  ];
 }
 
 /**
@@ -482,6 +528,11 @@ export class E2eTemplateProvisioner {
       NAME_ASL_IMPORT_NOHEADER,
       aslImportNoHeaderUpdates()
     );
+    const carenzeImportTimestampSheet = this.findOrCreateSheet(
+      folderId,
+      NAME_CARENZE_IMPORT_TIMESTAMP,
+      carenzeImportTimestampUpdates()
+    );
     const docComplesso = this.findOrCreateDoc(
       folderId,
       NAME_DOC_COMPLESSO,
@@ -544,6 +595,7 @@ export class E2eTemplateProvisioner {
       aslImportSheet,
       aslImportPolicySheet,
       aslImportNoHeaderSheet,
+      carenzeImportTimestampSheet,
       docComplesso,
       docArticolata,
       cdcRiepilogo,

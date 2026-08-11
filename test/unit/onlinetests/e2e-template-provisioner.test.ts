@@ -59,10 +59,11 @@ test('creates all 21 E2E artifacts, including the dedicated table, history, and 
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(23);
-  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(7);
+  expect(created).toHaveLength(24);
+  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(8);
   expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(16);
   expect(ids.verbale).toMatch(/^doc_/);
+  expect((ids as unknown as Record<string, string>).carenzeImportTimestampSheet).toMatch(/^sheet_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
   expect(ids.staticAttachment).toMatch(/^doc_/);
@@ -119,6 +120,18 @@ test('authors table-import markers with their source IDs, surrounding CDU conten
   expect(sheetContent[ids.tabellaSorgenteVuota]).toEqual([
     { range: 'A1:B1', values: [['Nome', 'Valore']] }
   ]);
+});
+
+test('materializes a readable ghost record with only DATA_MODIFICA populated', () => {
+  const { artifacts, sheetContent } = fakeArtifacts();
+  const ids = new E2eTemplateProvisioner(artifacts, new FakeDriveFacade()).provision('FOLDER_1');
+
+  expect(sheetContent[ids.aslImportSheet]).toEqual(
+    expect.arrayContaining([
+      { range: 'A1:D1', values: [['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']] },
+      { range: 'A6:D6', values: [['', '', '', '2026-08-10T09:00:00Z']] }
+    ])
+  );
 });
 
 test('authors the history, dotted/ITP, and history-email templates against canonical CDU paths', () => {
@@ -227,7 +240,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(22); // every other artifact, including the import-policy fixtures, is still created
+  expect(created).toHaveLength(23); // every other artifact, including the import-policy fixtures, is still created
 });
 
 test('reuses the real static attachment artifact by its fixed name', () => {

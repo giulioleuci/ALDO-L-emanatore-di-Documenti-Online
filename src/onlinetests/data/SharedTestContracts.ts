@@ -7,6 +7,7 @@ export interface E2eTemplateIds {
   aslImportSheet: string;
   aslImportPolicySheet: string;
   aslImportNoHeaderSheet: string;
+  carenzeImportTimestampSheet: string;
   docComplesso: string;
   docArticolata: string;
   cdcRiepilogo: string;

@@ -20,6 +20,7 @@ import {
   CONF_IMP_MISSING_IDGEN,
   CONF_IMP_NOHEADER,
   CONF_IMP_TIMESTAMP,
+  CONF_IMP_TIMESTAMP_FALLBACK,
   CONF_MAIL_JOBRUNNER,
   CONF_MAIL_STORICO,
   EMAIL_TEST_SAFE
@@ -420,6 +421,19 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
   });
   sample.appendRow(TABLE.CONF_IMP, {
     [COL_CONF_IMP.ID]: CONF_IMP_TIMESTAMP,
+    [COL_CONF_IMP.TARGET]: TABLE.CARENZE,
+    [COL_CONF_IMP.CONFIG]: JSON.stringify({
+      searchStrategy: 'FILE_SINGOLO',
+      fileId: templateIds.carenzeImportTimestampSheet,
+      hasHeaders: true,
+      key: 'STUDENTE',
+      conflictResolution: 'TIMESTAMP',
+      timestampColumn: 'DATA_MODIFICA'
+    }),
+    [COL_CONF_IMP.ATTIVO]: true
+  });
+  sample.appendRow(TABLE.CONF_IMP, {
+    [COL_CONF_IMP.ID]: CONF_IMP_TIMESTAMP_FALLBACK,
     [COL_CONF_IMP.TARGET]: TABLE.ASL,
     [COL_CONF_IMP.CONFIG]: JSON.stringify({
       searchStrategy: 'FILE_SINGOLO',

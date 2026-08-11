@@ -898,7 +898,7 @@ test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUD
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const rows = sample.rows[TABLE.CONF_IMP]!;
-  expect(rows).toHaveLength(12);
+  expect(rows).toHaveLength(13);
   const row = rows.find((candidate) => candidate[COL_CONF_IMP.ID] === 'E2E_IMPORT_ASL')!;
   expect(row[COL_CONF_IMP.TARGET]).toBe(TABLE.ASL);
   expect(row[COL_CONF_IMP.ATTIVO]).toBe(true);

@@ -101,6 +101,7 @@ const TEMPLATE_IDS: E2eTemplateIds = {
   aslImportSheet: 'tmpl_asl_import',
   aslImportPolicySheet: 'tmpl_asl_import_policy',
   aslImportNoHeaderSheet: 'tmpl_asl_import_noheader',
+  carenzeImportTimestampSheet: 'tmpl_carenze_import_timestamp',
   docComplesso: 'tmpl_doc_complesso',
   docArticolata: 'tmpl_doc_articolata',
   cdcRiepilogo: 'tmpl_cdc_riepilogo',
@@ -150,7 +151,7 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   expect(sample.rows[TABLE.CONF_DOC]).toEqual(
     expect.arrayContaining([expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER })])
   );
-  expect(sample.rows[TABLE.CONF_IMP]).toHaveLength(12);
+  expect(sample.rows[TABLE.CONF_IMP]).toHaveLength(13);
 
   const priorNames = ANNI_PRECEDENTI.map((anno) => `_ALDO_E2E_PRIOR_${anno}`);
   expect(priorNames.every((name) => sheets.has(name))).toBe(true);

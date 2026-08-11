@@ -91,6 +91,7 @@ const TEMPLATE_IDS: E2eTemplateIds = {
   aslImportSheet: 'tmpl_asl_import',
   aslImportPolicySheet: 'tmpl_asl_import_policy',
   aslImportNoHeaderSheet: 'tmpl_asl_import_noheader',
+  carenzeImportTimestampSheet: 'tmpl_carenze_import_timestamp',
   docComplesso: 'tmpl_doc_complesso',
   docArticolata: 'tmpl_doc_articolata',
   cdcRiepilogo: 'tmpl_cdc_riepilogo',
@@ -306,6 +307,7 @@ test('maps every dedicated import configuration through the real recipe mapper',
     CONF_IMP_CHUNKED,
     'E2E_IMP_IGNORE',
     'E2E_IMP_TIMESTAMP',
+    'E2E_IMP_TIMESTAMP_FALLBACK',
     'E2E_IMP_NOHEADER'
   ]);
   const recipes = sample.rows[TABLE.CONF_IMP]
@@ -318,10 +320,12 @@ test('maps every dedicated import configuration through the real recipe mapper',
     'STUDENTE',
     'STUDENTE',
     'STUDENTE',
+    'STUDENTE',
     'STUDENTE'
   ]);
   expect(recipes.map((recipe) => recipe.source.type)).toEqual([
     'CERCA_CARTELLE_CLASSE',
+    'SheetById',
     'SheetById',
     'SheetById',
     'SheetById',

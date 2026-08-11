@@ -1,0 +1,190 @@
+import type {
+  ISampleSpreadsheet,
+  ISampleSpreadsheetFactory
+} from '../../../src/onlinetests/SampleDatabaseBuilder';
+import type { E2eTemplateIds } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import type { IArtifactFactory, SheetValueUpdate } from '../../../src/onlinetests/E2eTemplateProvisioner';
+import {
+  seedAnniPrecedenti,
+  seedConfDedicated,
+  seedLogFold
+} from '../../../src/onlinetests/data/Seeders';
+import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
+import {
+  COL_CONF_DOC,
+  COL_CONF_IMP,
+  COL_CONF_MAIL,
+  COL_LOG_FOLD,
+  COL_MASTER,
+  TABLE
+} from '../../../src/config/schema';
+import {
+  ANNI_PRECEDENTI,
+  CONF_DOC_JOBRUNNER,
+  CONF_DOC_TABELLE,
+  CONF_IMP_ASL_CARTELLE,
+  CONF_IMP_CERCA_DOCUMENTI,
+  CONF_IMP_CHUNKED,
+  CONF_MAIL_JOBRUNNER,
+  CONF_MAIL_STORICO
+} from '../../../src/onlinetests/data/fixtures';
+
+class RecordingSpreadsheet implements ISampleSpreadsheet {
+  public readonly rows: Record<string, Record<string, unknown>[]> = {};
+  public readonly headers: Record<string, string[]> = {};
+
+  constructor(public readonly id: string) {}
+
+  addSheet(name: string, headerRow: string[]): void {
+    this.headers[name] = headerRow;
+    this.rows[name] = [];
+  }
+
+  appendRow(sheetName: string, row: Record<string, unknown>): void {
+    (this.rows[sheetName] ??= []).push(row);
+  }
+
+  getUrl(): string {
+    return `https://example.test/${this.id}`;
+  }
+}
+
+function spreadsheetFactory(): {
+  factory: ISampleSpreadsheetFactory;
+  sheets: Map<string, RecordingSpreadsheet>;
+} {
+  const sheets = new Map<string, RecordingSpreadsheet>();
+  return {
+    sheets,
+    factory: {
+      createSpreadsheet(name: string): ISampleSpreadsheet {
+        const sheet = new RecordingSpreadsheet(`id_${name}`);
+        sheets.set(name, sheet);
+        return sheet;
+      },
+      openExistingSpreadsheet(): ISampleSpreadsheet {
+        throw new Error('not used by seeders');
+      }
+    }
+  };
+}
+
+const TEMPLATE_IDS: E2eTemplateIds = {
+  verbale: 'tmpl_verbale',
+  condotta: 'tmpl_condotta',
+  riepilogo: 'tmpl_riepilogo',
+  aslImportSheet: 'tmpl_asl_import',
+  docComplesso: 'tmpl_doc_complesso',
+  docArticolata: 'tmpl_doc_articolata',
+  cdcRiepilogo: 'tmpl_cdc_riepilogo',
+  sheetPermessi: 'tmpl_sheet_permessi',
+  pianoLavoro: 'tmpl_piano_lavoro',
+  staticAttachment: 'tmpl_attachment',
+  piani: {
+    PDP_DSA: 'tmpl_pdp_dsa',
+    PDP_BES: 'tmpl_pdp_bes',
+    PDP_STRANIERI: 'tmpl_pdp_stranieri',
+    PEI: 'tmpl_pei',
+    PFP: 'tmpl_pfp'
+  }
+};
+
+function recordingArtifacts(): {
+  artifacts: IArtifactFactory;
+  sheets: Array<{ name: string; folderId: string; updates: SheetValueUpdate[] }>;
+} {
+  const sheets: Array<{ name: string; folderId: string; updates: SheetValueUpdate[] }> = [];
+  return {
+    sheets,
+    artifacts: {
+      createDocument(): string {
+        throw new Error('not used by seeders');
+      },
+      createSheet(name: string, folderId: string, updates: SheetValueUpdate[] = []): string {
+        sheets.push({ name, folderId, updates });
+        return `artifact_${sheets.length}`;
+      }
+    }
+  };
+}
+
+test('seeds two prior databases with every historical-provider table and master registrations', () => {
+  const { factory, sheets } = spreadsheetFactory();
+  const master = new RecordingSpreadsheet('master');
+
+  seedAnniPrecedenti(master, factory, 'root-folder');
+
+  const historicalTables = [
+    TABLE.CLASSI,
+    TABLE.ALUNNI,
+    TABLE.DOCENTI,
+    TABLE.MATERIE,
+    TABLE.CARENZE,
+    TABLE.PIANI,
+    TABLE.MOV_ALUNNI,
+    TABLE.PROGETTI,
+    TABLE.LOG_DOCS
+  ];
+  expect(sheets.size).toBe(ANNI_PRECEDENTI.length);
+  for (const anno of ANNI_PRECEDENTI) {
+    const prior = sheets.get(`_ALDO_E2E_PRIOR_${anno}`)!;
+    expect(Object.keys(prior.headers).sort()).toEqual([...historicalTables].sort());
+    expect(prior.rows[TABLE.MOV_ALUNNI]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ TIPO: 'RITIRATO' })])
+    );
+  }
+  expect(master.rows[TABLE.MASTER].map((row) => row[COL_MASTER.ANNO_SCOLASTICO])).toEqual(
+    ANNI_PRECEDENTI
+  );
+  expect(master.rows[TABLE.MASTER].every((row) => row[COL_MASTER.TEST_MODE] === true)).toBe(true);
+});
+
+test('seeds one ASL folder record and real sheets for each eligible class only', () => {
+  const drive = new FakeDriveFacade();
+  const sample = new RecordingSpreadsheet('sample');
+  const { artifacts, sheets } = recordingArtifacts();
+
+  seedLogFold(sample, drive, artifacts);
+
+  const loggedClasses = sample.rows[TABLE.LOG_FOLD].map((row) => row[COL_LOG_FOLD.CLASSI]);
+  expect(loggedClasses).toEqual(['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C']);
+  expect(loggedClasses).not.toContain('2B');
+  expect(sheets.filter((sheet) => sheet.name.endsWith('_DATI'))).toHaveLength(6);
+  expect(sheets.filter((sheet) => sheet.name.endsWith('_HEADER_ONLY'))).toHaveLength(6);
+  expect(sheets.find((sheet) => sheet.name === 'ASL_3C_12_ORE_DATI')!.updates).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ range: 'A1:C1', values: [['STUDENTE', 'ANNO', 'ORE']] }),
+      expect.objectContaining({ range: 'A2:C4' })
+    ])
+  );
+  expect(drive.deleted).toHaveLength(7);
+});
+
+test('seeds dedicated document, import, and mail configurations with unique output paths', () => {
+  const sample = new RecordingSpreadsheet('sample');
+
+  seedConfDedicated(sample, TEMPLATE_IDS);
+
+  expect(sample.rows[TABLE.CONF_DOC]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER, [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA' }),
+      expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_TABELLE, [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE' })
+    ])
+  );
+  expect(sample.rows[TABLE.CONF_IMP]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_ASL_CARTELLE, [COL_CONF_IMP.ATTIVO]: true }),
+      expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_CERCA_DOCUMENTI, [COL_CONF_IMP.ATTIVO]: true }),
+      expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_CHUNKED, [COL_CONF_IMP.ATTIVO]: true })
+    ])
+  );
+  const mailRows = sample.rows[TABLE.CONF_MAIL];
+  expect(mailRows.map((row) => row[COL_CONF_MAIL.ID])).toEqual([
+    CONF_MAIL_JOBRUNNER,
+    CONF_MAIL_STORICO
+  ]);
+  const paths = mailRows.map(
+    (row) => (JSON.parse(String(row[COL_CONF_MAIL.BOX_CFG])) as Array<{ PATH_OUT: string }>)[0]!.PATH_OUT
+  );
+  expect(new Set(paths).size).toBe(paths.length);
+});

@@ -24,7 +24,8 @@ import {
 import { registerPipelineChecks } from './checks/pipelineChecks';
 import {
   SharedTestDatabaseBuilder,
-  type E2eTemplateIds
+  type E2eTemplateIds,
+  type SharedTestDatabase
 } from './data/SharedTestDatabaseBuilder';
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { GasArtifactFactory } from './GasArtifactFactory';
@@ -261,6 +262,7 @@ export interface E2eTestDeps {
   spreadsheetFactory: ISampleSpreadsheetFactory;
   artifactFactory: IArtifactFactory;
   drive: IDriveFacade;
+  activeMasterSpreadsheetId: () => string;
   clock: () => Date;
   properties: IPropertiesFacade;
   resetAldo: () => void;
@@ -345,6 +347,58 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   return runner.report();
 }
 
+/**
+ * Provisions the persistent shared E2E fixture without running checks. The fixture uses the
+ * existing test-only master pointer on ordinary runs; setting `ALDO_E2E_FORCE_REBUILD=true`
+ * selects the currently-bound master and creates a separate named sample rebuild instead.
+ */
+export function executeCreaDatiMockDrive(
+  overrides: Partial<E2eTestDeps> = {}
+): SharedTestDatabase {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const force = properties.get('ALDO_E2E_FORCE_REBUILD') === 'true';
+  const activeMasterSpreadsheetId =
+    overrides.activeMasterSpreadsheetId ??
+    (() => ServiceFactory.getSpreadsheetService().getActiveStandard().getId());
+  const configuredMasterSpreadsheetId = properties
+    .get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)
+    ?.trim();
+  const masterSpreadsheetId =
+    force || configuredMasterSpreadsheetId === undefined || configuredMasterSpreadsheetId === ''
+      ? activeMasterSpreadsheetId()
+      : configuredMasterSpreadsheetId;
+  const rootFolder = overrides.drive === undefined ? mintE2eRootFolder() : null;
+  const drive =
+    overrides.drive ??
+    new DriveServiceFacade(
+      ServiceFactory.getDriveService(),
+      ServiceFactory.getPermissionService(),
+      (rootFolder as NonNullable<typeof rootFolder>).getId()
+    );
+  const spreadsheetFactory =
+    overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
+  const artifactFactory =
+    overrides.artifactFactory ??
+    new GasArtifactFactory(
+      ServiceFactory.getDocumentService(),
+      ServiceFactory.getSpreadsheetService()
+    );
+
+  const master = spreadsheetFactory.openExistingSpreadsheet(masterSpreadsheetId);
+  const templateFolderId = drive.createFolder('_ALDO_E2E_TEMPLATES');
+  const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
+    templateFolderId
+  );
+  const sample = new SharedTestDatabaseBuilder(
+    spreadsheetFactory,
+    drive,
+    artifactFactory
+  ).build(templateIds, master, { force });
+
+  properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
+  return sample;
+}
+
 /** GAS Run-dropdown entry point: defaults run with no setup. */
 export function runE2eScenarios(
   execute: () => OnlineTestReport = executeE2eScenarios,
@@ -363,7 +417,7 @@ function nonImplementato(): never {
 }
 
 export function creaDatiMockDrive(): unknown {
-  return nonImplementato();
+  return executeCreaDatiMockDrive();
 }
 
 export function testDocumentiStandard(): OnlineTestReport {

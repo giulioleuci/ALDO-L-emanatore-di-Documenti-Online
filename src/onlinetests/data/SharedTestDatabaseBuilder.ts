@@ -243,8 +243,7 @@ export class SharedTestDatabaseBuilder {
     master: ISampleSpreadsheet,
     options: { force?: boolean } = {}
   ): SharedTestDatabase {
-    void options.force;
-    const baseName = '_ALDO_E2E';
+    const baseName = options.force ? '_ALDO_E2E_FORCE_REBUILD' : '_ALDO_E2E';
     const folderId = this.drive.createFolder(baseName);
     const sampleFolderUrl = `https://drive.google.com/drive/folders/${folderId}`;
 

@@ -34,8 +34,9 @@ describe('online build mode', () => {
 
     const mapPath = resolve(distDir, 'gas-source-map.json');
     expect(existsSync(mapPath)).toBe(true);
-    const map = JSON.parse(readFileSync(mapPath, 'utf8')) as unknown[];
+    const map = JSON.parse(readFileSync(mapPath, 'utf8')) as Array<{ file: string }>;
     expect(map.length).toBeGreaterThan(0);
+    expect(map.some((entry) => entry.file === 'EntryPointOnlineTests.gs')).toBe(true);
 
     const claspignore = readFileSync(resolve(distDir, '.claspignore'), 'utf8');
     expect(claspignore).toContain('gas-source-map.json');

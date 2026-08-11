@@ -227,7 +227,8 @@ function classePrecedente(classeId: string): string {
   return `${Number(m[1]) - 1}${m[2]}`;
 }
 
-const HEADERS: Record<string, string[]> = {
+/** Canonical E2E table headers, including dynamic class and carenza columns. */
+export const HEADERS: Record<string, string[]> = {
   [TABLE.ALUNNI]: Object.values(COL_ALUNNI),
   [TABLE.DOCENTI]: Object.values(COL_DOCENTI),
   [TABLE.CLASSI]: [...Object.values(COL_CLASSI), ...ASSIGNMENT_COLUMNS_E2E],

@@ -2,7 +2,11 @@ import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
-import type { E2eTemplateIds } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import {
+  e2eAlunnoEmail,
+  HEADERS,
+  type E2eTemplateIds
+} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
 import type { IArtifactFactory, SheetValueUpdate } from '../../../src/onlinetests/E2eTemplateProvisioner';
 import {
   seedAnniPrecedenti,
@@ -14,6 +18,7 @@ import {
   COL_CONF_DOC,
   COL_CONF_IMP,
   COL_CONF_MAIL,
+  COL_ASL,
   COL_LOG_FOLD,
   COL_MASTER,
   TABLE
@@ -28,6 +33,8 @@ import {
   CONF_MAIL_JOBRUNNER,
   CONF_MAIL_STORICO
 } from '../../../src/onlinetests/data/fixtures';
+import { ConfigurazioneImport } from '../../../src/domain/entities/ConfigurazioneImport';
+import { toLibraryRecipe } from '../../../src/application/import/ImportRecipeMapper';
 
 class RecordingSpreadsheet implements ISampleSpreadsheet {
   public readonly rows: Record<string, Record<string, unknown>[]> = {};
@@ -129,8 +136,16 @@ test('seeds two prior databases with every historical-provider table and master 
   for (const anno of ANNI_PRECEDENTI) {
     const prior = sheets.get(`_ALDO_E2E_PRIOR_${anno}`)!;
     expect(Object.keys(prior.headers).sort()).toEqual([...historicalTables].sort());
+    for (const table of historicalTables) {
+      expect(prior.headers[table]).toEqual(HEADERS[table]);
+    }
+    expect(prior.rows[TABLE.ALUNNI].map((row) => row.EMAIL)).toEqual(
+      expect.arrayContaining([e2eAlunnoEmail(41), e2eAlunnoEmail(42)])
+    );
     expect(prior.rows[TABLE.MOV_ALUNNI]).toEqual(
-      expect.arrayContaining([expect.objectContaining({ TIPO: 'RITIRATO' })])
+      expect.arrayContaining([
+        expect.objectContaining({ TIPO: 'RITIRATO', STUDENTE: e2eAlunnoEmail(42) })
+      ])
     );
   }
   expect(master.rows[TABLE.MASTER].map((row) => row[COL_MASTER.ANNO_SCOLASTICO])).toEqual(
@@ -157,6 +172,17 @@ test('seeds one ASL folder record and real sheets for each eligible class only',
       expect.objectContaining({ range: 'A2:C4' })
     ])
   );
+  for (const classe of ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C']) {
+    const source = sheets.find((sheet) => sheet.name.includes(`ASL_${classe}_`) && sheet.name.endsWith('_DATI'))!;
+    const rows = source.updates.find((update) => update.range.startsWith('A2:'))!.values;
+    const knownStudent = String(rows[0]![0]);
+    expect(knownStudent).toMatch(/^e2ealunno\d+@onlinetest\.aldo\.local$/);
+    expect(rows).toEqual(expect.arrayContaining([expect.arrayContaining(['sconosciuto@onlinetest.aldo.local'])]));
+    expect(rows.filter((row) => row[0] === knownStudent)).toHaveLength(2);
+    expect(sample.rows[TABLE.ASL]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ [COL_ASL.STUDENTE]: knownStudent })])
+    );
+  }
   expect(drive.deleted).toHaveLength(7);
 });
 
@@ -171,6 +197,16 @@ test('seeds dedicated document, import, and mail configurations with unique outp
       expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_TABELLE, [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE' })
     ])
   );
+  expect(
+    sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.ID] === CONF_DOC_TABELLE)![
+      COL_CONF_DOC.FORMATO
+    ]
+  ).toBe('GDOC');
+  expect(
+    sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.TIPO] === 'E2E_IMPORT_SOURCE')![
+      COL_CONF_DOC.FORMATO
+    ]
+  ).toBe('GSHEET');
   expect(sample.rows[TABLE.CONF_IMP]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_ASL_CARTELLE, [COL_CONF_IMP.ATTIVO]: true }),
@@ -187,4 +223,20 @@ test('seeds dedicated document, import, and mail configurations with unique outp
     (row) => (JSON.parse(String(row[COL_CONF_MAIL.BOX_CFG])) as Array<{ PATH_OUT: string }>)[0]!.PATH_OUT
   );
   expect(new Set(paths).size).toBe(paths.length);
+});
+
+test('maps every dedicated import configuration through the real recipe mapper', () => {
+  const sample = new RecordingSpreadsheet('sample');
+  seedConfDedicated(sample, TEMPLATE_IDS);
+
+  const recipes = sample.rows[TABLE.CONF_IMP].map((row) =>
+    toLibraryRecipe(ConfigurazioneImport.fromData(row))
+  );
+
+  expect(recipes.map((recipe) => recipe.load.conflictKey)).toEqual(['STUDENTE', 'STUDENTE', 'STUDENTE']);
+  expect(recipes.map((recipe) => recipe.source.type)).toEqual([
+    'CERCA_CARTELLE_CLASSE',
+    'CERCA_DOCUMENTI',
+    'SheetById'
+  ]);
 });

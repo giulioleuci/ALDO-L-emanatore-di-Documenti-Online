@@ -3,7 +3,7 @@ import type {
   ISampleSpreadsheetFactory
 } from '../SampleDatabaseBuilder';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
-import type { E2eTemplateIds } from '../E2eSampleDatabaseBuilder';
+import { e2eAlunnoEmail, HEADERS, type E2eTemplateIds } from '../E2eSampleDatabaseBuilder';
 import type { IArtifactFactory, SheetValueUpdate } from '../E2eTemplateProvisioner';
 import {
   ANNI_PRECEDENTI,
@@ -48,20 +48,17 @@ const HISTORICAL_TABLES = [
   TABLE.LOG_DOCS
 ] as const;
 
-const HISTORICAL_HEADERS: Record<(typeof HISTORICAL_TABLES)[number], string[]> = {
-  [TABLE.CLASSI]: Object.values(COL_CLASSI),
-  [TABLE.ALUNNI]: Object.values(COL_ALUNNI),
-  [TABLE.DOCENTI]: Object.values(COL_DOCENTI),
-  [TABLE.MATERIE]: Object.values(COL_MATERIE),
-  [TABLE.CARENZE]: Object.values(COL_CARENZE),
-  [TABLE.PIANI]: Object.values(COL_PIANI),
-  [TABLE.MOV_ALUNNI]: Object.values(COL_MOV_ALUNNI),
-  [TABLE.PROGETTI]: Object.values(COL_PROGETTI),
-  [TABLE.LOG_DOCS]: Object.values(COL_LOG_DOCS)
-};
-
 const ASL_FOLDER_TYPE = 'E2E_ASL_CARTELLE';
 const ASL_ELIGIBLE_CLASSES = ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C'] as const;
+const ASL_STUDENT_BY_CLASS: Record<(typeof ASL_ELIGIBLE_CLASSES)[number], string> = {
+  '3C': e2eAlunnoEmail(41),
+  '3C-S': e2eAlunnoEmail(43),
+  '3C-C': e2eAlunnoEmail(49),
+  '5B': e2eAlunnoEmail(61),
+  '5B-S': e2eAlunnoEmail(78),
+  '5B-C': e2eAlunnoEmail(95)
+};
+const CONF_DOC_CERCA_DOCUMENTI_SOURCE = 'E2E_DOC_SOURCE_IMPORT';
 
 /**
  * Creates both prior-year databases through the existing spreadsheet factory.
@@ -76,7 +73,7 @@ export function seedAnniPrecedenti(
   for (const anno of ANNI_PRECEDENTI) {
     const prior = spreadsheets.createSpreadsheet(`_ALDO_E2E_PRIOR_${anno}`);
     for (const table of HISTORICAL_TABLES) {
-      prior.addSheet(table, HISTORICAL_HEADERS[table]);
+      prior.addSheet(table, HEADERS[table]!);
     }
     seedStorico(prior, anno);
     master.appendRow(TABLE.MASTER, {
@@ -93,8 +90,8 @@ export function seedAnniPrecedenti(
 /** Seeds every table read by the historical CDU providers for one school year. */
 export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
   const classe = anno === ANNI_PRECEDENTI[0] ? '2C' : '1C';
-  const alunno = `storico.${anno.replace('-', '.')}@onlinetest.aldo.local`;
-  const ritirato = `ritirato.${anno.replace('-', '.')}@onlinetest.aldo.local`;
+  const alunno = e2eAlunnoEmail(41);
+  const ritirato = e2eAlunnoEmail(42);
   const docente = `docente.storico.${anno.replace('-', '.')}@onlinetest.aldo.local`;
 
   prior.appendRow(TABLE.CLASSI, {
@@ -124,6 +121,20 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_ALUNNI.TUTOR_1]: EMAIL_TEST_SAFE,
     [COL_ALUNNI.TUTOR_2]: '',
     [COL_ALUNNI.NOTE]: 'promosso'
+  });
+  prior.appendRow(TABLE.ALUNNI, {
+    [COL_ALUNNI.EMAIL]: ritirato,
+    [COL_ALUNNI.COGNOMENOME]: `Alunno Ritirato ${anno}`,
+    [COL_ALUNNI.CLASSE]: classe,
+    [COL_ALUNNI.RELIGIONE]: 'IRC',
+    [COL_ALUNNI.CURRICULUM]: '',
+    [COL_ALUNNI.ATTIVO]: false,
+    [COL_ALUNNI.RIPETENTE]: false,
+    [COL_ALUNNI.RAPPR_STUD]: false,
+    [COL_ALUNNI.RAPPR_GEN]: '',
+    [COL_ALUNNI.TUTOR_1]: EMAIL_TEST_SAFE,
+    [COL_ALUNNI.TUTOR_2]: '',
+    [COL_ALUNNI.NOTE]: 'ritirato'
   });
   prior.appendRow(TABLE.DOCENTI, {
     [COL_DOCENTI.EMAIL]: docente,
@@ -216,10 +227,11 @@ export function seedLogFold(
     const folderPath = `_ALDO_E2E_ROOT/ASL/${classe}`;
     const folderId = drive.createFolder(folderPath);
     const ore = 12 + index * 7;
+    const knownStudent = ASL_STUDENT_BY_CLASS[classe];
     artifacts.createSheet(
       `ASL_${classe}_${ore}_ORE_DATI`,
       folderId,
-      aslDataUpdates(classe, ore, index === 0)
+      aslDataUpdates(knownStudent, ore)
     );
     artifacts.createSheet(`ASL_${classe}_HEADER_ONLY`, folderId, aslHeaderUpdates());
     const decoy = artifacts.createSheet(`ASL_${classe}_TRASHED`, folderId, aslHeaderUpdates());
@@ -235,7 +247,7 @@ export function seedLogFold(
       [COL_LOG_FOLD.MATERIE]: ''
     });
     sample.appendRow(TABLE.ASL, {
-      [COL_ASL.STUDENTE]: `duplicato.${classe}@onlinetest.aldo.local`,
+      [COL_ASL.STUDENTE]: knownStudent,
       [COL_ASL.ANNO]: '2026-2027',
       [COL_ASL.ORE]: ore
     });
@@ -245,7 +257,7 @@ export function seedLogFold(
   const nonEligibleDecoy = artifacts.createSheet(
     'ASL_2B_NON_ELEGGIBILE_TRASHED',
     nonEligibleFolder,
-    aslDataUpdates('2B', 99, true)
+    aslDataUpdates(e2eAlunnoEmail(21), 99)
   );
   drive.deleteFile(nonEligibleDecoy);
   sample.appendRow(TABLE.ASL, {
@@ -259,13 +271,12 @@ function aslHeaderUpdates(): SheetValueUpdate[] {
   return [{ range: 'A1:C1', values: [['STUDENTE', 'ANNO', 'ORE']] }];
 }
 
-function aslDataUpdates(classe: string, ore: number, includeUnknown: boolean): SheetValueUpdate[] {
-  const email = `asl.${classe.toLowerCase()}@onlinetest.aldo.local`;
+function aslDataUpdates(knownStudent: string, ore: number): SheetValueUpdate[] {
   const rows: unknown[][] = [
-    [email, '2026-2027', ore],
-    [email, '2026-2027', ore + 1]
+    [knownStudent, '2026-2027', ore],
+    [knownStudent, '2026-2027', ore + 1],
+    ['sconosciuto@onlinetest.aldo.local', '2026-2027', ore + 2]
   ];
-  if (includeUnknown) rows.push(['sconosciuto@onlinetest.aldo.local', '2026-2027', ore + 2]);
   return [
     ...aslHeaderUpdates(),
     { range: `A2:C${rows.length + 1}`, values: rows }
@@ -291,6 +302,27 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
       classi: '{{focus.classe.anagrafica.nome}}',
       utenti: '{{focus.alunno.anagrafica.email}}',
+      materie: ''
+    }),
+    [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+  });
+  sample.appendRow(TABLE.CONF_DOC, {
+    [COL_CONF_DOC.ID]: CONF_DOC_CERCA_DOCUMENTI_SOURCE,
+    [COL_CONF_DOC.TIPO]: 'E2E_IMPORT_SOURCE',
+    [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+    [COL_CONF_DOC.CONDIZIONE]: '',
+    [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.aslImportSheet }),
+    [COL_CONF_DOC.FILE_NAME]: 'E2E_ImportSource_{{focus.classe.anagrafica.nome}}',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/IMPORT_SOURCE',
+    [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+    [COL_CONF_DOC.PERMESSI]: '',
+    [COL_CONF_DOC.POST_PROCESSO]: null,
+    [COL_CONF_DOC.PARAMETRI]: '',
+    [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+    [COL_CONF_DOC.FORMATO]: 'GSHEET',
+    [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '',
       materie: ''
     }),
     [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
@@ -324,7 +356,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       searchStrategy: 'CERCA_CARTELLE_CLASSE',
       folderTipo: ASL_FOLDER_TYPE,
       hasHeaders: true,
-      key: ['STUDENTE', 'ANNO'],
+      key: 'STUDENTE',
       conflictResolution: 'OVERWRITE'
     }),
     [COL_CONF_IMP.ATTIVO]: true
@@ -334,10 +366,10 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_IMP.TARGET]: TABLE.ASL,
     [COL_CONF_IMP.CONFIG]: JSON.stringify({
       searchStrategy: 'CERCA_DOCUMENTI',
-      idGen: CONF_DOC_TABELLE,
-      tipo: 'E2E_TABELLE',
+      idGen: CONF_DOC_CERCA_DOCUMENTI_SOURCE,
+      tipo: 'E2E_IMPORT_SOURCE',
       hasHeaders: true,
-      key: ['STUDENTE', 'ANNO'],
+      key: 'STUDENTE',
       conflictResolution: 'OVERWRITE'
     }),
     [COL_CONF_IMP.ATTIVO]: true
@@ -349,7 +381,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       searchStrategy: 'FILE_SINGOLO',
       fileId: templateIds.aslImportSheet,
       hasHeaders: true,
-      key: ['STUDENTE', 'ANNO'],
+      key: 'STUDENTE',
       conflictResolution: 'OVERWRITE'
     }),
     [COL_CONF_IMP.ATTIVO]: true

@@ -1,5 +1,5 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import type { TestRunner } from '../OnlineTestReport';
+import type { TestRunner } from '../report/OnlineTestReport';
 import type { SampleDatabase } from '../SampleDatabaseBuilder';
 import type { ContextBuilder } from '../../application/context-engine/ContextBuilder';
 import { recipe } from '../../application/context-engine/Recipe';

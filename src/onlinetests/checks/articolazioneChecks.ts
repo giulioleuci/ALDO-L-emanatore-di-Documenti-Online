@@ -11,7 +11,7 @@ import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
-import type { TestRunner } from '../OnlineTestReport';
+import type { TestRunner } from '../report/OnlineTestReport';
 import {
   ALL_CLASSI,
   CLASSE_A,

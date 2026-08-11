@@ -1,5 +1,5 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
-import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
+import { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 import { registerContextEngineChecks } from '../../../src/onlinetests/checks/contextEngineChecks';
 import type { SampleDatabase } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {

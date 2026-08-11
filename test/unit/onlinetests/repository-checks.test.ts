@@ -1,5 +1,5 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
-import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
+import { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 import {
   registerEffectiveAssignmentMatrixChecks,
   registerRepositoryChecks

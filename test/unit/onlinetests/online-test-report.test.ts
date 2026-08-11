@@ -1,4 +1,12 @@
-import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
+import { TestRunner, groupName } from '../../../src/onlinetests/report/OnlineTestReport';
+
+describe('groupName', () => {
+  it('prefixes a check description with its group', () => {
+    expect(groupName('documenti.standard', 'template interop')).toBe(
+      'documenti.standard::template interop'
+    );
+  });
+});
 
 describe('TestRunner', () => {
   it('records a pass result when fn does not throw', () => {

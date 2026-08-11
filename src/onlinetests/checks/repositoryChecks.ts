@@ -1,5 +1,5 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import type { TestRunner } from '../OnlineTestReport';
+import type { TestRunner } from '../report/OnlineTestReport';
 import type { SampleDatabase } from '../SampleDatabaseBuilder';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';

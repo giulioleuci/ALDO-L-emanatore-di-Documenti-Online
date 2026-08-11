@@ -10,7 +10,7 @@ import { ConfigurationError } from '../domain/errors/DomainError';
 import type { MasterConfig } from '../domain/entities/MasterConfig';
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
-import { TestRunner, type OnlineTestReport } from './OnlineTestReport';
+import { TestRunner, type OnlineTestReport } from './report/OnlineTestReport';
 import { SampleDatabaseBuilder, type ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
 import {

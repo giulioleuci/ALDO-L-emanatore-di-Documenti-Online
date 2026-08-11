@@ -14,6 +14,11 @@ export interface OnlineTestReport {
   results: OnlineTestResult[];
 }
 
+/** Convenzione: ogni check registra nome come "<gruppo>::<descrizione>" per il report aggregato. */
+export function groupName(group: string, description: string): string {
+  return `${group}::${description}`;
+}
+
 /**
  * Accumulates online-test results into ALDO's own {@link OnlineTestReport} shape (design spec §2:
  * one result per check, each optionally carrying an `artifactUrl` pointer into the sample DB/Drive

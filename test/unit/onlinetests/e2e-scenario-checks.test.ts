@@ -2,7 +2,7 @@ import {
   registerE2eScenarioChecks,
   verifyProtectedRangeScenario
 } from '../../../src/onlinetests/checks/e2eScenarioChecks';
-import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
+import { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {

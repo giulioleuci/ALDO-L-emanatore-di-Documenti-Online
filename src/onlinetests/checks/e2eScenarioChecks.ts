@@ -1,5 +1,5 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import type { TestRunner } from '../OnlineTestReport';
+import type { TestRunner } from '../report/OnlineTestReport';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type {

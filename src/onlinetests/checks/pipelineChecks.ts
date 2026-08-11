@@ -1,5 +1,5 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import type { TestRunner } from '../OnlineTestReport';
+import type { TestRunner } from '../report/OnlineTestReport';
 import type { SampleDatabase } from '../SampleDatabaseBuilder';
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailNotificationService } from '../../application/services/EmailNotificationService';

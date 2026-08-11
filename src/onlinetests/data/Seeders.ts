@@ -51,12 +51,12 @@ const HISTORICAL_TABLES = [
 const ASL_FOLDER_TYPE = 'E2E_ASL_CARTELLE';
 const ASL_ELIGIBLE_CLASSES = ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C'] as const;
 const ASL_STUDENT_BY_CLASS: Record<(typeof ASL_ELIGIBLE_CLASSES)[number], string> = {
-  '3C': e2eAlunnoEmail(41),
-  '3C-S': e2eAlunnoEmail(43),
-  '3C-C': e2eAlunnoEmail(49),
-  '5B': e2eAlunnoEmail(61),
-  '5B-S': e2eAlunnoEmail(78),
-  '5B-C': e2eAlunnoEmail(95)
+  '3C': e2eAlunnoEmail(138),
+  '3C-S': e2eAlunnoEmail(155),
+  '3C-C': e2eAlunnoEmail(172),
+  '5B': e2eAlunnoEmail(87),
+  '5B-S': e2eAlunnoEmail(104),
+  '5B-C': e2eAlunnoEmail(121)
 };
 const CONF_DOC_CERCA_DOCUMENTI_SOURCE = 'E2E_DOC_SOURCE_IMPORT';
 
@@ -90,8 +90,8 @@ export function seedAnniPrecedenti(
 /** Seeds every table read by the historical CDU providers for one school year. */
 export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
   const classe = anno === ANNI_PRECEDENTI[0] ? '2C' : '1C';
-  const alunno = e2eAlunnoEmail(41);
-  const ritirato = e2eAlunnoEmail(42);
+  const alunno = e2eAlunnoEmail(138);
+  const ritirato = e2eAlunnoEmail(139);
   const docente = `docente.storico.${anno.replace('-', '.')}@onlinetest.aldo.local`;
 
   prior.appendRow(TABLE.CLASSI, {
@@ -309,7 +309,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
   sample.appendRow(TABLE.CONF_DOC, {
     [COL_CONF_DOC.ID]: CONF_DOC_CERCA_DOCUMENTI_SOURCE,
     [COL_CONF_DOC.TIPO]: 'E2E_IMPORT_SOURCE',
-    [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+    [COL_CONF_DOC.GENERATORE]: 'FOGLIO_GENERICO',
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.aslImportSheet }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_ImportSource_{{focus.classe.anagrafica.nome}}',

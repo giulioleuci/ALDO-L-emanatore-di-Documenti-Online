@@ -31,10 +31,14 @@ import {
   CONF_IMP_CERCA_DOCUMENTI,
   CONF_IMP_CHUNKED,
   CONF_MAIL_JOBRUNNER,
-  CONF_MAIL_STORICO
+  CONF_MAIL_STORICO,
+  CLASS_LAYOUTS
 } from '../../../src/onlinetests/data/fixtures';
 import { ConfigurazioneImport } from '../../../src/domain/entities/ConfigurazioneImport';
 import { toLibraryRecipe } from '../../../src/application/import/ImportRecipeMapper';
+import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
+import type { Cdu } from '../../../src/application/context-engine/Cdu';
+import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 
 class RecordingSpreadsheet implements ISampleSpreadsheet {
   public readonly rows: Record<string, Record<string, unknown>[]> = {};
@@ -115,6 +119,16 @@ function recordingArtifacts(): {
   };
 }
 
+function currentClassOf(email: string): string | undefined {
+  const index = Number(email.match(/e2ealunno(\d+)@/)?.[1]);
+  let firstStudent = 1;
+  for (const layout of CLASS_LAYOUTS) {
+    if (index >= firstStudent && index < firstStudent + layout.count) return layout.id;
+    firstStudent += layout.count;
+  }
+  return undefined;
+}
+
 test('seeds two prior databases with every historical-provider table and master registrations', () => {
   const { factory, sheets } = spreadsheetFactory();
   const master = new RecordingSpreadsheet('master');
@@ -140,14 +154,18 @@ test('seeds two prior databases with every historical-provider table and master 
       expect(prior.headers[table]).toEqual(HEADERS[table]);
     }
     expect(prior.rows[TABLE.ALUNNI].map((row) => row.EMAIL)).toEqual(
-      expect.arrayContaining([e2eAlunnoEmail(41), e2eAlunnoEmail(42)])
+      expect.arrayContaining([e2eAlunnoEmail(138), e2eAlunnoEmail(139)])
     );
+    expect(
+      prior.rows[TABLE.ALUNNI].find((row) => row.EMAIL === e2eAlunnoEmail(138))!.CLASSE
+    ).toBe(anno === '2025-2026' ? '2C' : '1C');
     expect(prior.rows[TABLE.MOV_ALUNNI]).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ TIPO: 'RITIRATO', STUDENTE: e2eAlunnoEmail(42) })
+        expect.objectContaining({ TIPO: 'RITIRATO', STUDENTE: e2eAlunnoEmail(139) })
       ])
     );
   }
+  expect(currentClassOf(e2eAlunnoEmail(138))).toBe('3C');
   expect(master.rows[TABLE.MASTER].map((row) => row[COL_MASTER.ANNO_SCOLASTICO])).toEqual(
     ANNI_PRECEDENTI
   );
@@ -177,6 +195,7 @@ test('seeds one ASL folder record and real sheets for each eligible class only',
     const rows = source.updates.find((update) => update.range.startsWith('A2:'))!.values;
     const knownStudent = String(rows[0]![0]);
     expect(knownStudent).toMatch(/^e2ealunno\d+@onlinetest\.aldo\.local$/);
+    expect(currentClassOf(knownStudent)).toBe(classe);
     expect(rows).toEqual(expect.arrayContaining([expect.arrayContaining(['sconosciuto@onlinetest.aldo.local'])]));
     expect(rows.filter((row) => row[0] === knownStudent)).toHaveLength(2);
     expect(sample.rows[TABLE.ASL]).toEqual(
@@ -204,9 +223,19 @@ test('seeds dedicated document, import, and mail configurations with unique outp
   ).toBe('GDOC');
   expect(
     sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.TIPO] === 'E2E_IMPORT_SOURCE')![
+      COL_CONF_DOC.GENERATORE
+    ]
+  ).toBe('FOGLIO_GENERICO');
+  expect(
+    sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.TIPO] === 'E2E_IMPORT_SOURCE')![
       COL_CONF_DOC.FORMATO
     ]
   ).toBe('GSHEET');
+  const templates = new FakeTemplateEngine();
+  new FoglioGenericoGeneratorStrategy(templates).render('generated-import-source', {} as Cdu);
+  expect(templates.renderedSheets).toEqual([
+    expect.objectContaining({ sheetId: 'generated-import-source' })
+  ]);
   expect(sample.rows[TABLE.CONF_IMP]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_ASL_CARTELLE, [COL_CONF_IMP.ATTIVO]: true }),

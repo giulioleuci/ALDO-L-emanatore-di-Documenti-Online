@@ -19,10 +19,13 @@ export const CLASSI_CLASSICO = ['1A', '2A', '4A'] as const;
 export const CLASSI_SCIENZE_UMANE = ['1B', '2B', '5B', '5B-S', '5B-C'] as const;
 export const CLASSI_SCIENTIFICO = ['3C', '3C-S', '3C-C', '4D', '5E'] as const;
 
-export const CLASS_LAYOUTS: Record<string, string> = {
+/** Address lookup kept separate from the seeder-compatible class layouts. */
+export const CLASS_ADDRESS_BY_CLASS: Record<string, string> = {
   '1A': INDIRIZZO_CLASSICO,
   '2A': INDIRIZZO_CLASSICO,
   '4A': INDIRIZZO_CLASSICO,
+  // The brief has no distinct scienze-umane identifier; retain the declared
+  // compatibility identifier until the domain schema introduces one.
   '1B': INDIRIZZO_SCIENTIFICO_APPLICATE,
   '2B': INDIRIZZO_SCIENTIFICO_APPLICATE,
   '5B': INDIRIZZO_SCIENTIFICO_APPLICATE,
@@ -34,6 +37,47 @@ export const CLASS_LAYOUTS: Record<string, string> = {
   '4D': INDIRIZZO_SCIENTIFICO,
   '5E': INDIRIZZO_SCIENTIFICO,
 };
+
+export interface FixtureClasseLayout {
+  id: string;
+  count: number;
+  coordIndex: number;
+  articolazione: string;
+  studentRepCount: number;
+  parentRepCount: number;
+  religionExceptions: Array<{ index: number; scelta: string }>;
+}
+
+const layout = (
+  id: string,
+  count: number,
+  coordIndex: number,
+  articolazione = '{}',
+): FixtureClasseLayout => ({
+  id,
+  count,
+  coordIndex,
+  articolazione,
+  studentRepCount: 2,
+  parentRepCount: 2,
+  religionExceptions: [],
+});
+
+export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
+  layout('1A', 18, 1),
+  layout('2A', 17, 2),
+  layout('4A', 17, 3),
+  layout('1B', 17, 1),
+  layout('2B', 17, 4),
+  layout('5B', 17, 5),
+  layout('5B-S', 17, 5, '{"parent":"5B","partner":"5B-C"}'),
+  layout('5B-C', 17, 5, '{"parent":"5B","partner":"5B-S"}'),
+  layout('3C', 17, 6),
+  layout('3C-S', 17, 6, '{"parent":"3C","partner":"3C-C"}'),
+  layout('3C-C', 17, 6, '{"parent":"3C","partner":"3C-S"}'),
+  layout('4D', 17, 7),
+  layout('5E', 17, 8),
+];
 
 export const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];
 export const MATERIE_CLASSICO = [...MATERIE_BASE, 'GRECO', 'LATINO', 'FILOSOFIA'];

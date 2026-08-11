@@ -13,7 +13,24 @@ describe('online-test shared fixture dataset', () => {
   it('contains the required classes and articulated sections', () => {
     expect(ALL_CLASSI.length).toBeGreaterThanOrEqual(10);
     expect(ALL_CLASSI.filter((classe) => classe.includes('-')).length).toBeGreaterThanOrEqual(2);
-    expect(Object.keys(CLASS_LAYOUTS)).toHaveLength(ALL_CLASSI.length);
+    expect(CLASS_LAYOUTS).toHaveLength(ALL_CLASSI.length);
+    expect(CLASS_LAYOUTS.map((layout) => layout.id).sort()).toEqual([...ALL_CLASSI].sort());
+  });
+
+  it('provides every field consumed by the online database seeder', () => {
+    for (const layout of CLASS_LAYOUTS) {
+      expect(layout).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          count: expect.any(Number),
+          coordIndex: expect.any(Number),
+          articolazione: expect.any(String),
+          studentRepCount: expect.any(Number),
+          parentRepCount: expect.any(Number),
+          religionExceptions: expect.any(Array),
+        }),
+      );
+    }
   });
 
   it('contains at least 200 students and eight subjects for every address', () => {

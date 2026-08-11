@@ -99,7 +99,9 @@ test('duplicate-policy checks assert real artifact counts alongside their LOG_DO
   const documents = {
     generateForPiano: (_student: string, _piano: string, idGen: string) => {
       const permitted = idGen === permittedId;
-      if (!permitted && rows.some((row) => row.ID_GEN === idGen)) return { fileId: 'file-1' };
+      if (!permitted && rows.some((row) => row.ID_GEN === idGen)) {
+        return { fileId: null, status: 'SKIPPED' };
+      }
       const path = permitted
         ? '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI'
         : '_ALDO_E2E_OUTPUT/DOCUMENTI PERS';
@@ -111,7 +113,7 @@ test('duplicate-policy checks assert real artifact counts alongside their LOG_DO
         ID: fileId,
         NOME: 'E2E_DuplicazionePermessa_Test'
       });
-      return { fileId };
+      return { fileId, status: 'GENERATO' };
     }
   };
   const container = {
@@ -132,13 +134,55 @@ test('duplicate-policy checks assert real artifact counts alongside their LOG_DO
 
   runner.callbacks.get('documenti.duplicazione::NEGATA non duplica su Drive')!();
   runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')!();
+  runner.callbacks.get('documenti.duplicazione::NEGATA non duplica su Drive')!();
+  runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')!();
 
   expect(fileCounts.get('_ALDO_E2E_OUTPUT/DOCUMENTI PERS')).toBe(1);
-  expect(fileCounts.get('_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI')).toBe(2);
+  expect(fileCounts.get('_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI')).toBe(4);
   expect(rows.filter((row) => row.ID_GEN === permittedId).map((row) => row.ID)).toEqual([
     'file-2',
-    'file-3'
+    'file-3',
+    'file-4',
+    'file-5'
   ]);
+});
+
+test('duplicate-policy checks reject persisted filenames with leading or trailing whitespace', () => {
+  const runner = new RecordingRunner();
+  const rows: Record<string, unknown>[] = [];
+  let nextFile = 1;
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentGenerationService') {
+        return {
+          generateForPiano: (_student: string, _piano: string, idGen: string) => {
+            const fileId = `file-${nextFile++}`;
+            rows.push({
+              ID_GEN: idGen,
+              UTENTI: 'e2ealunno42@onlinetest.aldo.local',
+              ID: fileId,
+              NOME: ' E2E_DuplicazionePermessa_Test '
+            });
+            return { fileId, status: 'GENERATO' };
+          }
+        } as T;
+      }
+      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
+      if (key === 'drive') {
+        return {
+          createFolder: (path: string) => path,
+          countFilesInFolder: () => rows.length
+        } as T;
+      }
+      return {} as T;
+    }
+  } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, sample, 'duplicazione');
+
+  expect(
+    runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')
+  ).toThrow(/normalizzate/);
 });
 
 test('registers one TEST_MODE guard when the aggregate document scope is unsafe', () => {

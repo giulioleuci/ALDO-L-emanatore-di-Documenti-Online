@@ -26,7 +26,20 @@
 
 ## Verification
 
-- `npm test` — 154 suites / 1,333 tests passed.
+- `npm test` — 154 suites / 1,334 tests passed.
 - `npm run typecheck` — passed.
 - `npm run lint` — passed.
 - `git diff --check` — passed.
+
+## Review follow-up
+
+- The persisted launcher is rerunnable: each check snapshots matching
+  `LOG_DOCS.ID` values and destination-folder file counts before the run. The
+  `NEGATA` branch verifies its first attempt's delta separately from its
+  `SKIPPED` retry; on later launcher runs both attempts can correctly produce
+  zero deltas. The `PERMESSA` branch requires exactly two new file IDs and two
+  new log rows for that invocation, regardless of older rows.
+- Filename validation now inspects raw `LOG_DOCS.NOME` values before any local
+  trimming. A regression check proves leading/trailing whitespace is rejected.
+- Regression verification: `documentiChecks.test.ts` now covers both a second
+  execution of the same callbacks and a whitespace-padded persisted filename.

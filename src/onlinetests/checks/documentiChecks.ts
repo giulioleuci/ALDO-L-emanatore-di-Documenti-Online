@@ -215,16 +215,38 @@ function registerDuplicazioneDocumentiChecks(
     () => {
       const path = '_ALDO_E2E_OUTPUT/DOCUMENTI PERS';
       const folderId = drive.createFolder(path);
-      const before = drive.countFilesInFolder(folderId);
+      const filesBefore = drive.countFilesInFolder(folderId);
+      const rowsBefore = logRowsFor(db, CONF_DOC_PIANI, student);
+      const idsBefore = logIds(rowsBefore);
 
-      documents.generateForPiano(student, piano, CONF_DOC_PIANI);
-      documents.generateForPiano(student, piano, CONF_DOC_PIANI);
+      const first = documents.generateForPiano(student, piano, CONF_DOC_PIANI);
+      const filesAfterFirst = drive.countFilesInFolder(folderId);
+      const rowsAfterFirst = logRowsFor(db, CONF_DOC_PIANI, student);
+      const firstRunRows = rowsAddedAfter(rowsAfterFirst, idsBefore);
+      const idsAfterFirst = logIds(rowsAfterFirst);
 
-      const rows = logRowsFor(db, CONF_DOC_PIANI, student);
-      const after = drive.countFilesInFolder(folderId);
-      if (after !== before + 1 || rows.length !== 1) {
+      const retry = documents.generateForPiano(student, piano, CONF_DOC_PIANI);
+      const filesAfterRetry = drive.countFilesInFolder(folderId);
+      const rowsAfterRetry = logRowsFor(db, CONF_DOC_PIANI, student);
+      const retryRows = rowsAddedAfter(rowsAfterRetry, idsAfterFirst);
+      const firstRunGenerated = first.fileId !== null;
+      const expectedFirstRunDelta = firstRunGenerated ? 1 : 0;
+      if (
+        (firstRunGenerated &&
+          (filesAfterFirst - filesBefore !== 1 ||
+            firstRunRows.length !== 1 ||
+            firstRunRows[0]?.[COL_LOG_DOCS.ID] !== first.fileId)) ||
+        (!firstRunGenerated &&
+          (first.status !== 'SKIPPED' ||
+            filesAfterFirst !== filesBefore ||
+            firstRunRows.length !== 0)) ||
+        retry.status !== 'SKIPPED' ||
+        retry.fileId !== null ||
+        filesAfterRetry !== filesAfterFirst ||
+        retryRows.length !== 0
+      ) {
         throw new ValidationError(
-          `DUPLICAZIONE=NEGATA: atteso 1 file e 1 riga LOG_DOCS aggiuntivi, ricevuti file ${before}->${after}, righe=${rows.length}`
+          `DUPLICAZIONE=NEGATA: atteso delta ${expectedFirstRunDelta} al primo tentativo e retry SKIPPED senza nuovi file/LOG_DOCS; ricevuti file ${filesBefore}->${filesAfterFirst}->${filesAfterRetry}, righe nuove ${firstRunRows.length}->${retryRows.length}`
         );
       }
     }
@@ -236,25 +258,36 @@ function registerDuplicazioneDocumentiChecks(
     () => {
       const path = '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI';
       const folderId = drive.createFolder(path);
-      const before = drive.countFilesInFolder(folderId);
+      const filesBefore = drive.countFilesInFolder(folderId);
+      const rowsBefore = logRowsFor(db, CONF_DOC_DUPLICAZIONE_PERMESSA, student);
+      const idsBefore = logIds(rowsBefore);
 
       const first = documents.generateForPiano(student, piano, CONF_DOC_DUPLICAZIONE_PERMESSA);
       const second = documents.generateForPiano(student, piano, CONF_DOC_DUPLICAZIONE_PERMESSA);
-      const rows = logRowsFor(db, CONF_DOC_DUPLICAZIONE_PERMESSA, student);
-      const ids = rows.map((row) => nonBlankString(row[COL_LOG_DOCS.ID]));
-      const names = rows.map((row) => nonBlankString(row[COL_LOG_DOCS.NOME]));
-      const after = drive.countFilesInFolder(folderId);
+      const rowsAfter = logRowsFor(db, CONF_DOC_DUPLICAZIONE_PERMESSA, student);
+      const runRows = rowsAddedAfter(rowsAfter, idsBefore);
+      const ids = runRows.map((row) => nonBlankString(row[COL_LOG_DOCS.ID]));
+      const rawNames = runRows.map((row) => row[COL_LOG_DOCS.NOME]);
+      const filesAfter = drive.countFilesInFolder(folderId);
 
       if (
         first.fileId === null ||
         second.fileId === null ||
-        after !== before + 2 ||
-        rows.length !== 2 ||
+        filesAfter - filesBefore !== 2 ||
+        runRows.length !== 2 ||
         new Set(ids).size !== 2 ||
-        names.some((name) => name === '' || name !== name.trim() || /\{\{[^}]*\}\}/.test(name))
+        !ids.includes(first.fileId) ||
+        !ids.includes(second.fileId) ||
+        rawNames.some(
+          (name) =>
+            typeof name !== 'string' ||
+            name.trim() === '' ||
+            name !== name.trim() ||
+            /\{\{[^}]*\}\}/.test(name)
+        )
       ) {
         throw new ValidationError(
-          `DUPLICAZIONE=PERMESSA: attesi 2 file distinti e 2 righe LOG_DOCS normalizzate, ricevuti file ${before}->${after}, righe=${rows.length}`
+          `DUPLICAZIONE=PERMESSA: attesi 2 file distinti e 2 righe LOG_DOCS normalizzate nel run, ricevuti file ${filesBefore}->${filesAfter}, righe nuove=${runRows.length}`
         );
       }
     }
@@ -269,6 +302,17 @@ function logRowsFor(db: EmailDb, idGen: string, student: string): Record<string,
       (row) =>
         row[COL_LOG_DOCS.ID_GEN] === idGen && String(row[COL_LOG_DOCS.UTENTI] ?? '') === student
     );
+}
+
+function logIds(rows: Record<string, unknown>[]): Set<string> {
+  return new Set(rows.map((row) => nonBlankString(row[COL_LOG_DOCS.ID])));
+}
+
+function rowsAddedAfter(
+  rows: Record<string, unknown>[],
+  idsBefore: Set<string>
+): Record<string, unknown>[] {
+  return rows.filter((row) => !idsBefore.has(nonBlankString(row[COL_LOG_DOCS.ID])));
 }
 
 function countOccurrences(text: string, fragment: string): number {

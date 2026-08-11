@@ -110,7 +110,8 @@ async function main() {
     info(
       `OnlineTests.js: ALDO online GAS test suite, separate file, unminified structure, comments stripped`
     );
-    info(`gas-source-map.json: Line-level map from both output files back to original src/**/*.ts`);
+    info(`EntryPointOnlineTests.gs: readable GAS launchers, kept separate from OnlineTests.js`);
+    info(`gas-source-map.json: Line-level map from all online output files back to original src/**/*.ts`);
     info(`Offline tests: Will run after build (unit + integration), as a pre-push sanity gate`);
   } else if (mode === 'testoffline') {
     info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
@@ -167,14 +168,16 @@ async function main() {
     process.exit(1);
   }
 
-  // Webpack always builds all three entries (core, entrypoints, onlinetests —
-  // see webpack.config.cjs), regardless of build mode. OnlineTests.js is only
-  // a deliverable in --mode=online; for every other mode, discard it here so
-  // dist/ output shape is unaffected (production/testing/testoffline stay
-  // byte-identical-shape to before the online mode was added).
+  // Webpack builds the core and entrypoint entries for every mode, and adds the
+  // online test suite and its readable launcher entry only for --mode=online.
+  // The online artifacts are deliverables only in that mode; for every other
+  // mode discard them so dist/ output shape is unaffected.
   if (mode !== 'online') {
     fs.rmSync(path.join(distDir, 'OnlineTests.js'), { force: true });
     fs.rmSync(path.join(distDir, 'OnlineTests.js.map'), { force: true });
+    fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.js'), { force: true });
+    fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.js.map'), { force: true });
+    fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.gs'), { force: true });
   }
 
   step(4, TOTAL_STEPS, 'Composing GAS deployment file(s)...');
@@ -327,6 +330,20 @@ async function main() {
         'Wrote dist/OnlineTests.js (unminified structure, comments stripped, kept separate from Code.js)'
       );
       // OnlineTests.js.map is likewise kept on disk for the gas-source-map.json step.
+
+      const onlineEntrypointsBundle = path.join(distDir, 'EntryPointOnlineTests.js');
+      if (!fs.existsSync(onlineEntrypointsBundle)) {
+        fail('dist/EntryPointOnlineTests.js was not produced by Webpack');
+        process.exit(1);
+      }
+      // Launcher leggibili con commenti conservati; keep its map temporarily so
+      // gas-source-map.json can index it in step 9, then delete both .js/.map.
+      fs.copyFileSync(
+        onlineEntrypointsBundle,
+        path.join(distDir, 'EntryPointOnlineTests.gs')
+      );
+      fs.rmSync(onlineEntrypointsBundle, { force: true });
+      ok('Wrote dist/EntryPointOnlineTests.gs (readable launchers, kept separate)');
     } else {
       const entrypoints = fs.readFileSync(entryPointsBundle, 'utf8');
       fs.writeFileSync(codeJsPath, prelude + '\n;\n' + core + '\n;\n' + entrypoints, 'utf8');
@@ -473,6 +490,7 @@ async function main() {
   let patchCount = 0;
   let codePatchCount = 0;
   let onlineTestsPatchCount = 0;
+  let onlineEntrypointsPatchCount = 0;
   let warningCount = 0;
 
   {
@@ -486,6 +504,7 @@ async function main() {
   // pushed into the same Apps Script project in online mode), so it needs the
   // exact same compatibility patches applied — not just Code.js.
   let onlineTestsPatchedCode = null;
+  let onlineEntrypointsPatchedCode = null;
   if (mode === 'online') {
     const onlineTestsBundle = path.join(distDir, 'OnlineTests.js');
     const result = applyGasV8CompatPatches(
@@ -495,6 +514,15 @@ async function main() {
     onlineTestsPatchedCode = result.code;
     onlineTestsPatchCount = result.patchCount;
     patchCount += result.patchCount;
+
+    const onlineEntrypointsBundle = path.join(distDir, 'EntryPointOnlineTests.gs');
+    const entrypointsResult = applyGasV8CompatPatches(
+      fs.readFileSync(onlineEntrypointsBundle, 'utf8'),
+      'EntryPointOnlineTests.gs'
+    );
+    onlineEntrypointsPatchedCode = entrypointsResult.code;
+    onlineEntrypointsPatchCount = entrypointsResult.patchCount;
+    patchCount += entrypointsResult.patchCount;
   }
 
   const scanPatterns = [
@@ -588,6 +616,32 @@ async function main() {
       ok('OnlineTests.js: no GAS V8 compatibility issues detected');
     }
     warningCount += onlineTestsWarnings;
+
+    const onlineEntrypointsBundle = path.join(distDir, 'EntryPointOnlineTests.gs');
+    if (onlineEntrypointsPatchCount > 0) {
+      fs.writeFileSync(onlineEntrypointsBundle, onlineEntrypointsPatchedCode, 'utf8');
+      ok(
+        `Wrote patched EntryPointOnlineTests.gs (${onlineEntrypointsPatchCount} fix(es) applied)`
+      );
+    } else {
+      ok('No patches needed — EntryPointOnlineTests.gs unchanged');
+    }
+
+    let onlineEntrypointsWarnings = 0;
+    for (const { label, regex, reason } of scanPatterns) {
+      const matches = onlineEntrypointsPatchedCode.match(regex);
+      if (matches) {
+        warn(
+          `EntryPointOnlineTests.gs: found ${matches.length} instance(s) of ${c.bold}${label}${c.reset}`
+        );
+        info(`  Reason: ${reason}`);
+        onlineEntrypointsWarnings += matches.length;
+      }
+    }
+    if (onlineEntrypointsWarnings === 0) {
+      ok('EntryPointOnlineTests.gs: no GAS V8 compatibility issues detected');
+    }
+    warningCount += onlineEntrypointsWarnings;
   }
 
   if (mode === 'production') {
@@ -975,6 +1029,12 @@ gas-source-map.json
       0,
       onlineTestsTerserConsumer
     );
+    await indexMap(
+      'EntryPointOnlineTests.gs',
+      path.join(distDir, 'EntryPointOnlineTests.js.map'),
+      0,
+      null
+    );
 
     if (coreTerserConsumer) coreTerserConsumer.destroy();
     if (entrypointsTerserConsumer) entrypointsTerserConsumer.destroy();
@@ -992,7 +1052,8 @@ gas-source-map.json
     for (const p of [
       path.join(distDir, 'aldo-core.js.map'),
       path.join(distDir, 'EntryPoints.js.map'),
-      path.join(distDir, 'OnlineTests.js.map')
+      path.join(distDir, 'OnlineTests.js.map'),
+      path.join(distDir, 'EntryPointOnlineTests.js.map')
     ]) {
       fs.rmSync(p, { force: true });
     }
@@ -1019,8 +1080,13 @@ gas-source-map.json
   info(`Output directory: dist/`);
   info(`GAS patches:      ${patchCount > 0 ? `${patchCount} applied` : 'none needed'}`);
   info(
-    `Source maps:      Code.js.map (if present) + source-map-index.json (excluded from CLASP push)`
+    mode === 'online'
+      ? `Source maps:      gas-source-map.json + source-map-index.json (excluded from CLASP push)`
+      : `Source maps:      Code.js.map (if present) + source-map-index.json (excluded from CLASP push)`
   );
+  if (mode === 'online') {
+    info(`Online launcher:  EntryPointOnlineTests.gs (readable, separate from OnlineTests.js)`);
+  }
   if (warningCount > 0) {
     info(`Warnings:         ${c.yellow}${warningCount}${c.reset}`);
   }

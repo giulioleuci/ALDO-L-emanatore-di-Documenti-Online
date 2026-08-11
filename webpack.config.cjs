@@ -129,9 +129,15 @@ module.exports = (env) => {
     optimization: { minimize: false }
   };
 
+  const onlineEntrypointsConfig = makeEntrypointsConfig(
+    'entrypoints-onlinetests',
+    './src/onlinetests/entrypoints/EntryPointOnlineTests.ts',
+    'EntryPointOnlineTests.js'
+  );
+
   const configs = [coreConfig, ...entrypointsConfigs];
   if (online) {
-    configs.push(onlinetestsConfig);
+    configs.push(onlinetestsConfig, onlineEntrypointsConfig);
   }
   return configs;
 };

@@ -16,11 +16,11 @@ import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProv
 import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
 import { registerE2eLegacyScenarioChecks } from './checks/e2eScenarioChecks';
+import { registerEmailChecks } from './checks/emailChecks';
 import {
   registerContextEngineChecks,
   registerEffectiveAssignmentConsumerChecks
 } from './checks/contextEngineChecks';
-import { registerPipelineChecks } from './checks/pipelineChecks';
 import {
   registerEffectiveAssignmentMatrixChecks,
   registerRepositoryChecks
@@ -98,11 +98,6 @@ const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, 
   registerDocumentiChecks(runner, container, sample, 'all');
 };
 
-const registerLegacyEmailChecks: RegisterEmailChecks = (runner, container, sample, safeEmail) => {
-  registerPipelineChecks(runner, container, sample, safeEmail);
-  registerE2eLegacyScenarioChecks(runner, container, sample, 'email');
-};
-
 const registerLegacyImportChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerE2eLegacyScenarioChecks(runner, container, sample, 'import');
 };
@@ -128,7 +123,7 @@ function registerPendingChecks(group: string): RegisterSharedChecks {
 
 const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   documenti: registerLegacyDocumentiChecks,
-  email: registerLegacyEmailChecks,
+  email: registerEmailChecks,
   jobRunner: registerPendingChecks('jobrunner'),
   import: registerLegacyImportChecks,
   storico: registerPendingChecks('storico'),
@@ -368,6 +363,45 @@ export function executeDuplicazioneDocumenti(
   return executePersistedDocumentiChecks('duplicazione', overrides);
 }
 
+function executePersistedEmailChecks(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
+
+  const sample: FullOnlineTestSample = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: '',
+    priorSampleSpreadsheetUrl: '',
+    priorSampleSpreadsheetId2: '',
+    priorSampleSpreadsheetUrl2: '',
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: '',
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: '',
+    testMode: master.testMode
+  };
+  const runner = new TestRunner();
+  registerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+  return runner.report();
+}
+
 function nonImplementato(): never {
   throw new ConfigurationError('non implementato');
 }
@@ -406,10 +440,20 @@ export function testDuplicazioneDocumenti(): OnlineTestReport {
   );
 }
 export function testInvioEmail(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'email_invio',
+    'EMAIL_SCENARIO',
+    executePersistedEmailChecks,
+    ServiceFactory.getLogger()
+  );
 }
 export function testEmailSicurezza(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'email_sicurezza',
+    'EMAIL_SCENARIO',
+    executePersistedEmailChecks,
+    ServiceFactory.getLogger()
+  );
 }
 export function testJobRunnerDocGen(): OnlineTestReport {
   return nonImplementato();

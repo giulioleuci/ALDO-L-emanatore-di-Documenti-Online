@@ -19,17 +19,13 @@ describe('online-test shared fixture dataset', () => {
 
   it('provides every field consumed by the online database seeder', () => {
     for (const layout of CLASS_LAYOUTS) {
-      expect(layout).toEqual(
-        expect.objectContaining({
-          id: expect.any(String),
-          count: expect.any(Number),
-          coordIndex: expect.any(Number),
-          articolazione: expect.any(String),
-          studentRepCount: expect.any(Number),
-          parentRepCount: expect.any(Number),
-          religionExceptions: expect.any(Array),
-        }),
-      );
+      expect(typeof layout.id).toBe('string');
+      expect(typeof layout.count).toBe('number');
+      expect(typeof layout.coordIndex).toBe('number');
+      expect(typeof layout.articolazione).toBe('string');
+      expect(typeof layout.studentRepCount).toBe('number');
+      expect(typeof layout.parentRepCount).toBe('number');
+      expect(Array.isArray(layout.religionExceptions)).toBe(true);
     }
   });
 

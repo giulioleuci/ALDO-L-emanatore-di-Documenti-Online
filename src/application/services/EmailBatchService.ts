@@ -74,6 +74,15 @@ export class EmailBatchService {
     return `EMAIL_BATCH_RESUME_${patternId}`;
   }
 
+  /**
+   * Test-recipient override survives a JobRunner trigger resume through the
+   * same ScriptProperties-backed batch state seam as quota checkpoints.
+   * JobRunnerLib intentionally does not round-trip arbitrary `run()` params.
+   */
+  private static testRecipientKey(patternId: string): string {
+    return `EMAIL_BATCH_TEST_RECIPIENT_${patternId}`;
+  }
+
   /** Reads the pattern-scoped quota-suspend checkpoint, if any (see class docstring). */
   private loadPersistedResume(patternId: string): EmailBatchResumeState | null {
     const raw = this.properties?.get(EmailBatchService.resumeKey(patternId));
@@ -93,6 +102,19 @@ export class EmailBatchService {
   /** Clears the pattern-scoped quota-suspend checkpoint once a run reaches the end of the target list. */
   private clearPersistedResume(patternId: string): void {
     this.properties?.set(EmailBatchService.resumeKey(patternId), '');
+  }
+
+  private loadPersistedTestRecipient(patternId: string): string | undefined {
+    const value = this.properties?.get(EmailBatchService.testRecipientKey(patternId))?.trim();
+    return value === undefined || value === '' ? undefined : value;
+  }
+
+  private savePersistedTestRecipient(patternId: string, recipient: string): void {
+    this.properties?.set(EmailBatchService.testRecipientKey(patternId), recipient);
+  }
+
+  private clearPersistedTestRecipient(patternId: string): void {
+    this.properties?.set(EmailBatchService.testRecipientKey(patternId), '');
   }
 
   /**
@@ -131,16 +153,12 @@ export class EmailBatchService {
       patternId?: string;
       chunkSize?: number;
       jobId?: string;
-      testRecipient?: string;
     }
   ): Generator<EmailBatchCheckpoint, EmailBatchResult, void> {
     const patternId = String(params.patternId ?? '');
     const jobId = String(params.jobId ?? patternId);
     const chunkSize = Number(params.chunkSize ?? EMAIL_CHUNK_SIZE);
-    const testRecipient =
-      typeof params.testRecipient === 'string' && params.testRecipient.trim() !== ''
-        ? params.testRecipient
-        : undefined;
+    const testRecipient = this.loadPersistedTestRecipient(patternId);
     const resume = (params.resumeState ?? null) as EmailBatchResumeState | null;
     const targets = this.email.enumerateTargets(this.email.getConfigurazione(patternId));
 
@@ -232,6 +250,7 @@ export class EmailBatchService {
     const success = errors.length === 0;
     this.monitor?.completeJob(jobId, `${sent} email inviate, ${errors.length} errori`);
     this.clearPersistedResume(patternId);
+    this.clearPersistedTestRecipient(patternId);
     return { success, totale: targets.length, processed, sent, errors };
   }
 
@@ -260,7 +279,10 @@ export class EmailBatchService {
   ): unknown {
     if (forceRestart) {
       this.clearPersistedResume(patternId);
+      this.clearPersistedTestRecipient(patternId);
     }
+    if (testRecipient === undefined) this.clearPersistedTestRecipient(patternId);
+    else this.savePersistedTestRecipient(patternId, testRecipient);
     const resumeState = forceRestart ? null : this.loadPersistedResume(patternId);
     return runner.run(
       jobName,
@@ -268,8 +290,7 @@ export class EmailBatchService {
       {
         patternId,
         jobId: jobName,
-        ...(resumeState === null ? {} : { resumeState }),
-        ...(testRecipient === undefined ? {} : { testRecipient })
+        ...(resumeState === null ? {} : { resumeState })
       },
       (queue) => this.registerJobHandlers(queue),
       forceRestart,

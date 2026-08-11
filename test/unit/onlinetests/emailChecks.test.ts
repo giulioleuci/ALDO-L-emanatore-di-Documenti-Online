@@ -1,7 +1,7 @@
 import { avviaInvioNotificheDataDriven } from '../../../src/config/Bootstrap';
 import { registerEmailChecks } from '../../../src/onlinetests/checks/emailChecks';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
-import { COL_LOG_MAIL } from '../../../src/config/schema';
+import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL, TABLE } from '../../../src/config/schema';
 import { EMAIL_TEST_SAFE } from '../../../src/onlinetests/data/fixtures';
 
 jest.mock('../../../src/config/Bootstrap', () => ({
@@ -39,13 +39,48 @@ const sample = {
   testMode: true
 } as const;
 
+function databaseFor(
+  mailRows: Record<string, unknown>[],
+  documentRows: Record<string, unknown>[] = [],
+  folderRows: Record<string, unknown>[] = []
+) {
+  return {
+    table: jest.fn((table: string) => ({
+      findAll: () =>
+        table === TABLE.LOG_MAIL
+          ? mailRows
+          : table === TABLE.LOG_DOCS
+            ? documentRows
+            : table === TABLE.LOG_FOLD
+              ? folderRows
+              : []
+    }))
+  };
+}
+
 describe('registerEmailChecks', () => {
   afterEach(() => jest.clearAllMocks());
 
   it('persists the safe recipient override with every batch launch without mutating the container test mode', () => {
     const launches: Array<{ patternId: string; testRecipient: unknown }> = [];
     const rows: Record<string, unknown>[] = [];
-    const db = { table: jest.fn(() => ({ findAll: () => rows })) };
+    const db = databaseFor(
+      rows,
+      [
+        {
+          [COL_LOG_DOCS.ID]: 'document-id',
+          [COL_LOG_DOCS.ID_GEN]: 'E2E_VERBALE',
+          [COL_LOG_DOCS.TIPO]: 'VERBALE',
+          [COL_LOG_DOCS.LINK]: 'https://drive.example/document-id'
+        }
+      ],
+      [
+        {
+          [COL_LOG_FOLD.ID]: 'folder-id',
+          [COL_LOG_FOLD.LINK]: 'https://drive.example/folder-id'
+        }
+      ]
+    );
     const container = {
       get: jest.fn(() => db)
     } as unknown as ServiceContainer;
@@ -106,9 +141,25 @@ describe('registerEmailChecks', () => {
     expect(runner.checks[0]?.name).toContain('safe recipient guard');
   });
 
-  it('rejects verbale logs that lack the persisted document and folder evidence', () => {
+  it('rejects verbale logs whose document and folder IDs do not resolve to the expected persisted artifacts', () => {
     const rows: Record<string, unknown>[] = [];
-    const db = { table: jest.fn(() => ({ findAll: () => rows })) };
+    const db = databaseFor(
+      rows,
+      [
+        {
+          [COL_LOG_DOCS.ID]: 'expected-document-id',
+          [COL_LOG_DOCS.ID_GEN]: 'E2E_VERBALE',
+          [COL_LOG_DOCS.TIPO]: 'VERBALE',
+          [COL_LOG_DOCS.LINK]: 'https://drive.example/expected-document-id'
+        }
+      ],
+      [
+        {
+          [COL_LOG_FOLD.ID]: 'folder-id',
+          [COL_LOG_FOLD.LINK]: 'https://drive.example/folder-id'
+        }
+      ]
+    );
     const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
     jest.mocked(avviaInvioNotificheDataDriven).mockImplementation((_container, patternId) => {
       rows.push({
@@ -118,8 +169,8 @@ describe('registerEmailChecks', () => {
         [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
           testMode: true,
           logicalTargetId: `target:${patternId}`,
-          docs: ['verbale-id'],
-          folders: patternId === 'E2E_MAIL_VERBALE' ? [] : ['folder-id'],
+          docs: [patternId === 'E2E_MAIL_VERBALE' ? 'wrong-document-id' : 'expected-document-id'],
+          folders: ['folder-id'],
           attach: []
         })
       });
@@ -129,7 +180,7 @@ describe('registerEmailChecks', () => {
     registerEmailChecks(runner as never, container, sample, EMAIL_TEST_SAFE);
 
     expect(runner.checks[0]?.error?.message).toContain(
-      'ogni LOG_MAIL testMode deve registrare documenti e cartelle'
+      'non corrispondono ai VERBALE/LOG_FOLD persistiti'
     );
   });
 });

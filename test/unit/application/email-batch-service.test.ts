@@ -19,9 +19,9 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 function wire(
   monitor?: FakeProcessMonitor,
   properties?: IPropertiesFacade,
-  logger?: LoggerService
+  logger?: LoggerService,
+  db: FakeDatabase = new FakeDatabase(fixtureTables())
 ) {
-  const db = new FakeDatabase(fixtureTables());
   const gmail = new FakeGmailFacade();
   const notification = composeEmailNotificationService(
     db,
@@ -32,7 +32,7 @@ function wire(
     new AldoTeachingAssignmentResolver(db)
   );
   const service = new EmailBatchService(notification, monitor, properties, logger);
-  return { gmail, notification, service };
+  return { db, gmail, notification, service };
 }
 
 const ONLINE_TEST_SAFE_EMAIL = 'sgsa-onlinetests@onlinetest.aldo.local';
@@ -177,15 +177,24 @@ test('resume restarts from resumeState.nextIndex without resending (JobRunnerLib
 test('a persisted safe recipient override survives a quota suspension and a fresh-container resume', () => {
   // This models initAldo() having already enabled MASTER.TEST_MODE to the
   // Master owner before the online scenario pins this particular JobRunner job.
-  const first = wire();
+  const properties = new FakePropertiesFacade();
+  const first = wire(undefined, properties);
   first.notification.enableTestMode('master-owner@onlinetest.aldo.local');
   first.gmail.remainingQuota = 1;
+  const initialRun = fakeRunner();
+  first.service.start(
+    initialRun.runner,
+    'mail_CDC_OTTOBRE',
+    'CDC_OTTOBRE',
+    false,
+    undefined,
+    ONLINE_TEST_SAFE_EMAIL
+  );
   const { result } = drain(
     first.service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 2,
       jobId: 'mail_CDC_OTTOBRE',
-      testRecipient: ONLINE_TEST_SAFE_EMAIL,
       resumeState: null
     })
   );
@@ -194,14 +203,13 @@ test('a persisted safe recipient override survives a quota suspension and a fres
   // A trigger calls initAldo() again, producing a fresh service whose normal
   // TEST_MODE recipient is the Master owner. Persisted JobRunner params must
   // still pin the resumed delivery to the online-test mailbox.
-  const resumed = wire();
+  const resumed = wire(undefined, properties);
   resumed.notification.enableTestMode('master-owner@onlinetest.aldo.local');
   drain(
     resumed.service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 2,
       jobId: 'mail_CDC_OTTOBRE',
-      testRecipient: ONLINE_TEST_SAFE_EMAIL,
       resumeState: {
         nextIndex: 1,
         processed: ['5A'],
@@ -220,8 +228,9 @@ test('a persisted safe recipient override survives a quota suspension and a fres
   ).toBe(true);
 });
 
-test('start persists the safe recipient override in JobRunner params for a future trigger resume', () => {
-  const { service } = wire();
+test('start stores the safe recipient in EmailBatchService persisted state, not arbitrary JobRunner params', () => {
+  const properties = new FakePropertiesFacade();
+  const { service } = wire(undefined, properties);
   const { runner, calls } = fakeRunner();
 
   service.start(
@@ -234,24 +243,27 @@ test('start persists the safe recipient override in JobRunner params for a futur
   );
 
   expect(calls[0]?.params).toMatchObject({
-    patternId: 'CDC_OTTOBRE',
-    testRecipient: ONLINE_TEST_SAFE_EMAIL
+    patternId: 'CDC_OTTOBRE'
   });
+  expect(calls[0]?.params).not.toHaveProperty('testRecipient');
+  expect(properties.get('EMAIL_BATCH_TEST_RECIPIENT_CDC_OTTOBRE')).toBe(ONLINE_TEST_SAFE_EMAIL);
 });
 
 test('a completed non-test batch is rerunnable without resending durable SUCCESS logical targets', () => {
-  const { gmail, service } = wire();
+  const first = wire();
 
-  const first = drain(
-    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
+  const firstRun = drain(
+    first.service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
   );
-  const second = drain(
-    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
+  const fresh = wire(undefined, undefined, undefined, first.db);
+  const secondRun = drain(
+    fresh.service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
   );
 
-  expect(first.result.sent).toBe(2);
-  expect(second.result.sent).toBe(0);
-  expect(gmail.sent).toHaveLength(2);
+  expect(firstRun.result.sent).toBe(2);
+  expect(secondRun.result.sent).toBe(0);
+  expect(first.gmail.sent).toHaveLength(2);
+  expect(fresh.gmail.sent).toHaveLength(0);
 });
 
 test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {

@@ -1,12 +1,13 @@
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import { avviaInvioNotificheDataDriven, creaJobRunner } from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import { COL_LOG_MAIL, TABLE } from '../../config/schema';
+import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL, TABLE } from '../../config/schema';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { StatoEmail } from '../../domain/value-objects/enums';
 import {
   CONF_MAIL_PIANI,
   CONF_MAIL_VERBALE,
+  CONF_DOC_VERBALE,
   type SharedTestDatabase
 } from '../data/SharedTestDatabaseBuilder';
 import { CONF_MAIL_STORICO } from '../data/fixtures';
@@ -86,7 +87,11 @@ export function registerEmailChecks(
       }
 
       const verbaleRows = rowsFor(CONF_MAIL_VERBALE).filter((row) => isTestModeRow(row));
-      assertVerbaleArtifacts(verbaleRows);
+      assertVerbaleArtifacts(
+        verbaleRows,
+        db.table(TABLE.LOG_DOCS).findAll(),
+        db.table(TABLE.LOG_FOLD).findAll()
+      );
     }
   );
 
@@ -160,16 +165,22 @@ function assertSafeSuccessfulRows(patternId: string, rows: LogMailRow[], safeEma
   }
 }
 
-function assertVerbaleArtifacts(rows: LogMailRow[]): void {
+function assertVerbaleArtifacts(
+  rows: LogMailRow[],
+  documents: LogMailRow[],
+  folders: LogMailRow[]
+): void {
   for (const row of rows) {
     const attachments = attachmentsFor(row);
     if (
       !isNonEmptyStringList(attachments.docs) ||
       !isNonEmptyStringList(attachments.folders) ||
-      !isEmptyStringList(attachments.attach)
+      !isEmptyStringList(attachments.attach) ||
+      !attachments.docs.every((id) => isPersistedVerbale(id, documents)) ||
+      !attachments.folders.every((id) => isPersistedFolder(id, folders))
     ) {
       throw new ValidationError(
-        'Invio verbale: ogni LOG_MAIL testMode deve registrare documenti e cartelle linkati, senza file allegati'
+        'Invio verbale: gli artefatti LOG_MAIL non corrispondono ai VERBALE/LOG_FOLD persistiti'
       );
     }
   }
@@ -204,4 +215,21 @@ function isNonEmptyStringList(value: unknown): value is string[] {
 
 function isEmptyStringList(value: unknown): boolean {
   return Array.isArray(value) && value.length === 0;
+}
+
+function isPersistedVerbale(id: string, documents: LogMailRow[]): boolean {
+  return documents.some(
+    (document) =>
+      document[COL_LOG_DOCS.ID] === id &&
+      document[COL_LOG_DOCS.ID_GEN] === CONF_DOC_VERBALE &&
+      document[COL_LOG_DOCS.TIPO] === 'VERBALE' &&
+      stringValue(document[COL_LOG_DOCS.LINK]).trim() !== ''
+  );
+}
+
+function isPersistedFolder(id: string, folders: LogMailRow[]): boolean {
+  return folders.some(
+    (folder) =>
+      folder[COL_LOG_FOLD.ID] === id && stringValue(folder[COL_LOG_FOLD.LINK]).trim() !== ''
+  );
 }

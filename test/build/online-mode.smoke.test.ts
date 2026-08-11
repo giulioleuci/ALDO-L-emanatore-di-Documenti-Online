@@ -85,4 +85,38 @@ describe('online build mode', () => {
       expect((launcher as () => unknown).length).toBe(0);
     }
   }, 120_000);
+
+  it('routes every deployed GAS wrapper through the OnlineTests bridge', () => {
+    execSync('node scripts/build-and-prepare.cjs --mode=online', {
+      cwd: resolve(__dirname, '../..'),
+      stdio: 'pipe'
+    });
+
+    const distDir = resolve(__dirname, '../../dist');
+    const gasLibraryJs = readFileSync(resolve(__dirname, '../../vendor/gaslibs.Code.js'), 'utf8');
+    const onlineTestsJs = readFileSync(resolve(distDir, 'OnlineTests.js'), 'utf8');
+    const entryPointOnlineTestsGs = readFileSync(
+      resolve(distDir, 'EntryPointOnlineTests.gs'),
+      'utf8'
+    );
+    const gasGlobal: Record<string, unknown> = {};
+
+    runInNewContext(gasLibraryJs, gasGlobal);
+    runInNewContext(onlineTestsJs, gasGlobal);
+
+    const bridge = gasGlobal.__ALDO_ONLINE_TESTS_LAUNCHERS__;
+    expect(bridge).toEqual(expect.any(Object));
+    if (bridge === undefined || bridge === null) return;
+
+    const launchers = bridge as Record<string, () => unknown>;
+    for (const launcherName of scenarioLauncherNames) {
+      launchers[launcherName] = (): string => launcherName;
+    }
+
+    runInNewContext(entryPointOnlineTestsGs, gasGlobal);
+
+    for (const launcherName of scenarioLauncherNames) {
+      expect((gasGlobal[launcherName] as () => unknown)()).toBe(launcherName);
+    }
+  }, 120_000);
 });

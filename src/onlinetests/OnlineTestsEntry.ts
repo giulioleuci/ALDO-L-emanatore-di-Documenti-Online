@@ -26,8 +26,41 @@ import {
   testSupplenzeERuoli
 } from './index';
 
+/**
+ * Captures implementation references before EntryPointOnlineTests.gs replaces
+ * their shared GAS global names with readable zero-argument wrappers.
+ */
+const aldoOnlineTestsLaunchers = {
+  creaDatiMockDrive,
+  testDocumentiStandard,
+  testDocumentiArticolati,
+  testDocumentiTabelleImportate,
+  testDuplicazioneDocumenti,
+  testInvioEmail,
+  testEmailSicurezza,
+  testJobRunnerDocGen,
+  testJobRunnerEmail,
+  testJobRunnerTriggerReale,
+  testImportFileSingolo,
+  testImportCartelleClasse,
+  testImportCercaDocumenti,
+  testImportChunked,
+  testRecuperoStoricoAlunno,
+  testRecuperoStoricoClasse,
+  testRecuperoStoricoDocumenti,
+  testArticolazione,
+  testITPeMateriePuntate,
+  testSupplenzeERuoli,
+  testACLReali,
+  testCacheIsolamento,
+  testPermessiAttivi,
+  runFullOnlineTests,
+  dumpOnlineCoverage
+};
+
 /** Espone solo launcher zero-arg GAS. Vedi design 2026-08-10 Sez. 2. */
 const gasGlobal = globalThis as typeof globalThis & {
+  __ALDO_ONLINE_TESTS_LAUNCHERS__: typeof aldoOnlineTestsLaunchers;
   creaDatiMockDrive: typeof creaDatiMockDrive;
   testDocumentiStandard: typeof testDocumentiStandard;
   testDocumentiArticolati: typeof testDocumentiArticolati;
@@ -55,6 +88,7 @@ const gasGlobal = globalThis as typeof globalThis & {
   dumpOnlineCoverage: typeof dumpOnlineCoverage;
 };
 
+gasGlobal.__ALDO_ONLINE_TESTS_LAUNCHERS__ = aldoOnlineTestsLaunchers;
 gasGlobal.creaDatiMockDrive = () => creaDatiMockDrive();
 gasGlobal.testDocumentiStandard = testDocumentiStandard;
 gasGlobal.testDocumentiArticolati = testDocumentiArticolati;

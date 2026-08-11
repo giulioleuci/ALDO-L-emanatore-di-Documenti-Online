@@ -11,5 +11,11 @@ export interface E2eTemplateIds {
   sheetPermessi: string;
   pianoLavoro: string;
   staticAttachment: string;
+  tabelleImportate: string;
+  tabellaSorgenteDati: string;
+  tabellaSorgenteVuota: string;
+  storico: string;
+  dotted: string;
+  storicoEmail: string;
   piani: Record<(typeof TIPI_PIANO)[number], string>;
 }

@@ -1,9 +1,5 @@
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
-import {
-  TIPI_PIANO,
-  type E2eTemplateIds,
-  e2eAlunnoEmail
-} from './data/SharedTestDatabaseBuilder';
+import { TIPI_PIANO, type E2eTemplateIds, e2eAlunnoEmail } from './data/SharedTestDatabaseBuilder';
 
 /** A single Sheets range write, relative to the artifact's own default tab (sheet-name-agnostic — the
  * factory resolves the actual, possibly locale-dependent, tab name at creation time). */
@@ -49,6 +45,12 @@ const NAME_CDC_RIEPILOGO = 'E2E CDC Riepilogo Firme Template';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
 const NAME_PIANO_LAVORO = 'E2E Piano Lavoro Template';
 const NAME_STATIC_ATTACHMENT = 'E2E Static Attachment Fixture';
+const NAME_DOC_TABELLE = 'E2E Doc Tabelle Importate Template';
+const NAME_TABELLA_SORGENTE_DATI = 'E2E Tabella Sorgente Dati';
+const NAME_TABELLA_SORGENTE_VUOTA = 'E2E Tabella Sorgente Vuota';
+const NAME_DOC_STORICO = 'E2E Storico Template';
+const NAME_DOC_DOTTED = 'E2E Dotted ITP Template';
+const NAME_DOC_STORICO_EMAIL = 'E2E Storico Email Template';
 function namePiano(tipo: string): string {
   return `E2E Piano ${tipo} Template v2`;
 }
@@ -360,6 +362,73 @@ const STATIC_ATTACHMENT_PARAGRAPHS = [
   'Questo documento è allegato tramite CONF_MAIL.ALLEGATI senza essere rappresentato da un box.'
 ];
 
+const TABELLE_IMPORTATE_TABLES: E2eDocumentTable[] = [
+  {
+    data: [
+      ['Colonna', 'Valore'],
+      ['A', 'Uno'],
+      ['B', 'Due']
+    ],
+    options: { headerRow: true }
+  },
+  { data: [['Colonna', 'Valore']], options: { headerRow: true } }
+];
+
+function tabelleImportateParagraphs(
+  tabellaSorgenteDati: string,
+  tabellaSorgenteVuota: string
+): E2eDocumentParagraphInput[] {
+  return [
+    'Tabelle importate per la classe {{focus.classe.anagrafica.nome}}',
+    `{{TABELLA:${tabellaSorgenteDati}}}`,
+    'Testo dopo la tabella con dati',
+    `{{TABELLA:${tabellaSorgenteVuota}}}`,
+    'Testo dopo la tabella vuota'
+  ];
+}
+
+function tabellaSorgenteDatiUpdates(): SheetValueUpdate[] {
+  return [
+    {
+      range: 'A1:B3',
+      values: [
+        ['Nome', 'Valore'],
+        ['Prima riga', '1'],
+        ['Seconda riga', '2']
+      ]
+    }
+  ];
+}
+
+function tabellaSorgenteVuotaUpdates(): SheetValueUpdate[] {
+  return [{ range: 'A1:B1', values: [['Nome', 'Valore']] }];
+}
+
+const STORICO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
+  'Storico dell’alunno {{focus.alunno.anagrafica.nomeCompleto}}',
+  '{{#focus.alunno.storico.anni}}{{annoScolastico}} — {{classe}}: {{esito}}{{/focus.alunno.storico.anni}}',
+  '{{#focus.alunno.storico.bocciature}}Bocciatura {{annoScolastico}} — {{classe}}{{/focus.alunno.storico.bocciature}}',
+  'Storico della classe {{focus.classe.anagrafica.nome}}',
+  '{{#focus.classe.storico.statistiche}}{{annoScolastico}} — {{classe}}: {{statistiche.totale}} alunni{{/focus.classe.storico.statistiche}}',
+  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{nome}}{{/focus.classe.storico.progetti}}'
+];
+
+/** `focus.classe.materie` is the canonical SubjectVM catalog (02 §4.1/§8.2), including
+ * dotted `specificita`, `hasItp`, and the preformatted assigned-teacher description. */
+const DOTTED_PARAGRAPHS: E2eDocumentParagraphInput[] = [
+  'Materie dotted e ITP della classe {{focus.classe.anagrafica.nome}}',
+  {
+    text: '{{#bullet_list:focus.classe.materie}}{{sigla}} — {{nome}} ({{specificita}}); {{#hasItp}}ITP presente; {{/hasItp}}{{docentiDescrizione}}{{/bullet_list}}',
+    listType: 'bullet'
+  }
+];
+
+const STORICO_EMAIL_PARAGRAPHS: E2eDocumentParagraphInput[] = [
+  'Allegato storico per la classe {{focus.classe.anagrafica.nome}}',
+  '{{#focus.classe.storico.statistiche}}{{annoScolastico}} — {{classe}}: {{statistiche.totale}} alunni{{/focus.classe.storico.statistiche}}',
+  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{nome}}{{/focus.classe.storico.progetti}}'
+];
+
 /**
  * Idempotently finds-or-creates the real Drive templates and static attachment used by the
  * e2e scenarios (design spec `2026-07-21-testonline-mock-db-e2e-design.md`, "Template
@@ -411,6 +480,29 @@ export class E2eTemplateProvisioner {
       NAME_STATIC_ATTACHMENT,
       STATIC_ATTACHMENT_PARAGRAPHS
     );
+    const tabellaSorgenteDati = this.findOrCreateSheet(
+      folderId,
+      NAME_TABELLA_SORGENTE_DATI,
+      tabellaSorgenteDatiUpdates()
+    );
+    const tabellaSorgenteVuota = this.findOrCreateSheet(
+      folderId,
+      NAME_TABELLA_SORGENTE_VUOTA,
+      tabellaSorgenteVuotaUpdates()
+    );
+    const tabelleImportate = this.findOrCreateDoc(
+      folderId,
+      NAME_DOC_TABELLE,
+      tabelleImportateParagraphs(tabellaSorgenteDati, tabellaSorgenteVuota),
+      TABELLE_IMPORTATE_TABLES
+    );
+    const storico = this.findOrCreateDoc(folderId, NAME_DOC_STORICO, STORICO_PARAGRAPHS);
+    const dotted = this.findOrCreateDoc(folderId, NAME_DOC_DOTTED, DOTTED_PARAGRAPHS);
+    const storicoEmail = this.findOrCreateDoc(
+      folderId,
+      NAME_DOC_STORICO_EMAIL,
+      STORICO_EMAIL_PARAGRAPHS
+    );
     const piani = {} as E2eTemplateIds['piani'];
     for (const tipo of TIPI_PIANO) {
       piani[tipo] = this.findOrCreateDoc(folderId, namePiano(tipo), pianoParagraphs(tipo));
@@ -426,6 +518,12 @@ export class E2eTemplateProvisioner {
       sheetPermessi,
       pianoLavoro,
       staticAttachment,
+      tabelleImportate,
+      tabellaSorgenteDati,
+      tabellaSorgenteVuota,
+      storico,
+      dotted,
+      storicoEmail,
       piani
     };
   }

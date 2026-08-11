@@ -54,14 +54,14 @@ function documentText(paragraphs: E2eDocumentParagraphInput[]): string {
     .join('\n');
 }
 
-test('creates all 15 E2E artifacts, including the CDC signature-summary template', () => {
+test('creates all 21 E2E artifacts, including the dedicated table, history, and dotted/ITP templates', () => {
   const { artifacts, created } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(15);
-  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(3);
-  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(12);
+  expect(created).toHaveLength(21);
+  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(5);
+  expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(16);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
   expect(ids.riepilogo).toMatch(/^doc_/);
@@ -73,9 +73,111 @@ test('creates all 15 E2E artifacts, including the CDC signature-summary template
   expect(created).toContain('doc:E2E Doc Articolata Template');
   expect(ids).toHaveProperty('cdcRiepilogo', expect.stringMatching(/^doc_/));
   expect(created).toContain('doc:E2E CDC Riepilogo Firme Template');
+  expect(ids.tabelleImportate).toMatch(/^doc_/);
+  expect(ids.tabellaSorgenteDati).toMatch(/^sheet_/);
+  expect(ids.tabellaSorgenteVuota).toMatch(/^sheet_/);
+  expect(ids.storico).toMatch(/^doc_/);
+  expect(ids.dotted).toMatch(/^doc_/);
+  expect(ids.storicoEmail).toMatch(/^doc_/);
   for (const tipo of TIPI_PIANO) {
     expect(ids.piani[tipo]).toMatch(/^doc_/);
   }
+});
+
+test('authors table-import markers with their source IDs, surrounding CDU content, and literal source-sheet rows', () => {
+  const { artifacts, docContent, docTables, sheetContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  const text = documentText(docContent[ids.tabelleImportate] ?? []);
+  expect(text).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(text).toContain(`{{TABELLA:${ids.tabellaSorgenteDati}}}`);
+  expect(text).toContain(`{{TABELLA:${ids.tabellaSorgenteVuota}}}`);
+  expect(text).toContain('Testo dopo la tabella con dati');
+  expect(text).toContain('Testo dopo la tabella vuota');
+  expect(docTables[ids.tabelleImportate]).toEqual([
+    {
+      data: [
+        ['Colonna', 'Valore'],
+        ['A', 'Uno'],
+        ['B', 'Due']
+      ],
+      options: { headerRow: true }
+    },
+    { data: [['Colonna', 'Valore']], options: { headerRow: true } }
+  ]);
+  expect(sheetContent[ids.tabellaSorgenteDati]).toEqual([
+    {
+      range: 'A1:B3',
+      values: [
+        ['Nome', 'Valore'],
+        ['Prima riga', '1'],
+        ['Seconda riga', '2']
+      ]
+    }
+  ]);
+  expect(sheetContent[ids.tabellaSorgenteVuota]).toEqual([
+    { range: 'A1:B1', values: [['Nome', 'Valore']] }
+  ]);
+});
+
+test('authors the history, dotted/ITP, and history-email templates against canonical CDU paths', () => {
+  const { artifacts, docContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  const storico = documentText(docContent[ids.storico] ?? []);
+  expect(storico).toContain('{{#focus.alunno.storico.anni}}');
+  expect(storico).toContain('{{#focus.classe.storico.statistiche}}');
+  expect(storico).toContain('{{statistiche.totale}}');
+
+  const dotted = documentText(docContent[ids.dotted] ?? []);
+  expect(dotted).toContain('{{#bullet_list:focus.classe.materie}}');
+  expect(dotted).toContain('{{sigla}}');
+  expect(dotted).toContain('{{specificita}}');
+  expect(dotted).toContain('{{#hasItp}}');
+  expect(dotted).toContain('{{docentiDescrizione}}');
+  expect(dotted).not.toContain('focus.classe.didattica.assegnazioni');
+
+  const storicoEmail = documentText(docContent[ids.storicoEmail] ?? []);
+  expect(storicoEmail).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(storicoEmail).toContain('{{#focus.classe.storico.progetti}}');
+});
+
+test('reuses all dedicated Task-6 artifacts without re-authoring content', () => {
+  const { artifacts, created, docContent, sheetContent } = fakeArtifacts();
+  const drive = new FakeDriveFacade();
+  const existing = {
+    tabelleImportate: 'existing_table_doc',
+    tabellaSorgenteDati: 'existing_data_sheet',
+    tabellaSorgenteVuota: 'existing_empty_sheet',
+    storico: 'existing_history_doc',
+    dotted: 'existing_dotted_doc',
+    storicoEmail: 'existing_history_email_doc'
+  };
+  drive.files.set('FOLDER_1::E2E Doc Tabelle Importate Template', existing.tabelleImportate);
+  drive.files.set('FOLDER_1::E2E Tabella Sorgente Dati', existing.tabellaSorgenteDati);
+  drive.files.set('FOLDER_1::E2E Tabella Sorgente Vuota', existing.tabellaSorgenteVuota);
+  drive.files.set('FOLDER_1::E2E Storico Template', existing.storico);
+  drive.files.set('FOLDER_1::E2E Dotted ITP Template', existing.dotted);
+  drive.files.set('FOLDER_1::E2E Storico Email Template', existing.storicoEmail);
+
+  const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
+
+  expect(ids).toMatchObject(existing);
+  expect(created).not.toEqual(
+    expect.arrayContaining([
+      'doc:E2E Doc Tabelle Importate Template',
+      'sheet:E2E Tabella Sorgente Dati',
+      'sheet:E2E Tabella Sorgente Vuota',
+      'doc:E2E Storico Template',
+      'doc:E2E Dotted ITP Template',
+      'doc:E2E Storico Email Template'
+    ])
+  );
+  expect(docContent).not.toHaveProperty(existing.tabelleImportate);
+  expect(docContent).not.toHaveProperty(existing.storico);
+  expect(sheetContent).not.toHaveProperty(existing.tabellaSorgenteDati);
 });
 
 test('authors the CDC signature-summary template with a row-loop council table', () => {
@@ -120,7 +222,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(14); // cdc riepilogo + static attachment + condotta + riepilogo + asl import + doc complesso + doc articolata + sheet permessi + piano lavoro + 5 piani still created
+  expect(created).toHaveLength(20); // every other artifact, including the six dedicated Task-6 fixtures, is still created
 });
 
 test('reuses the real static attachment artifact by its fixed name', () => {

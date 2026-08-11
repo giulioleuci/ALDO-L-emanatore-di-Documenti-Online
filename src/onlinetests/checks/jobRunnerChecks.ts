@@ -16,6 +16,8 @@ import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
 const MS_TINY = 50;
 const MS_AMPIO = 25 * 60 * 1000;
+const POLL_INTERVAL_MS = 10 * 1000;
+const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const JOB_STATE_COMPLETED = 'completed';
 const JOB_STATE_NOT_STARTED = 'not_started';
 const SAFE_EMAIL_DOMAIN = '@onlinetest.aldo.local';
@@ -49,6 +51,17 @@ interface LoggedMailMetadata {
   logicalTargetId?: unknown;
 }
 
+interface SleepCapableUtils {
+  sleep(milliseconds: number): void;
+}
+
+export interface JobRunnerTriggerRealeDeps {
+  sleep?: (milliseconds: number) => void;
+  now?: () => number;
+  pollIntervalMs?: number;
+  pollTimeoutMs?: number;
+}
+
 export function registerJobRunnerChecks(
   runner: TestRunner,
   container: ServiceContainer,
@@ -57,6 +70,23 @@ export function registerJobRunnerChecks(
 ): void {
   registerJobRunnerDocGenChecks(runner, container, sample);
   registerJobRunnerEmailChecks(runner, container, sample, safeEmail);
+}
+
+/**
+ * Optional live-GAS check for the one-time resume trigger. It is deliberately not registered by
+ * {@link registerJobRunnerChecks}: polling can take five minutes and must be launched manually.
+ */
+export function registerJobRunnerTriggerRealeCheck(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: SharedTestDatabase & { testMode: boolean },
+  deps: JobRunnerTriggerRealeDeps = {}
+): void {
+  runner.add(
+    groupName('jobrunner.triggerReale', 'resume via contesto trigger'),
+    sample.sampleSpreadsheetUrl,
+    () => checkTriggerReale(container, sample, deps)
+  );
 }
 
 export function registerJobRunnerDocGenChecks(
@@ -241,6 +271,71 @@ export function registerJobRunnerEmailChecks(
 function scopedRows(readRows: () => LogRow[]): () => LogRow[] {
   const baselineCount = readRows().length;
   return () => readRows().slice(baselineCount);
+}
+
+function checkTriggerReale(
+  container: ServiceContainer,
+  _sample: SharedTestDatabase & { testMode: boolean },
+  deps: JobRunnerTriggerRealeDeps
+): void {
+  // `avviaGenerazioneDataDriven` owns the job-name convention (`gen_<CONF_DOC>`).
+  // Keeping it aligned is essential: the one-time trigger resolves this exact persisted job.
+  const jobName = `gen_${CONF_DOC_JOBRUNNER}`;
+  const jobRunner = creaJobRunner() as JobRunnerControl;
+  const properties = new ScriptPropertiesFacade();
+  const db = container.get<EmailDb>('db');
+  const rowsForRun = scopedRows(() =>
+    db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_JOBRUNNER)
+  );
+  const utils = ServiceFactory.getUtils() as unknown as SleepCapableUtils;
+  const sleep = deps.sleep ?? ((milliseconds: number) => utils.sleep(milliseconds));
+  const now = deps.now ?? (() => Date.now());
+  const pollIntervalMs = deps.pollIntervalMs ?? POLL_INTERVAL_MS;
+  const pollTimeoutMs = deps.pollTimeoutMs ?? POLL_TIMEOUT_MS;
+
+  try {
+    const result = avviaGenerazioneDataDriven(
+      container,
+      CONF_DOC_JOBRUNNER,
+      jobRunner,
+      MS_TINY
+    );
+    if (result !== null) {
+      throw new ValidationError('JobRunner trigger reale: attesa sospensione con esito null');
+    }
+
+    assertSuspended(jobRunner, jobName);
+    const checkpoint = readCheckpoint(properties, jobName);
+    const expectedTargets = planTargetIds(checkpoint);
+    const triggerId = assertTriggerProperties(properties, jobName);
+    const startedAt = now();
+    let status = jobRunner.getStatus(jobName);
+
+    while (status.state === 'to_resume' && now() - startedAt < pollTimeoutMs) {
+      sleep(pollIntervalMs);
+      status = jobRunner.getStatus(jobName);
+    }
+
+    if (status.state === 'to_resume') {
+      jobRunner.cancelJob(jobName);
+      throw new ValidationError('Il trigger one-time non è scattato nel timeout');
+    }
+    if (status.state !== JOB_STATE_COMPLETED || status.completed !== true) {
+      throw new ValidationError(
+        `JobRunner trigger reale: stato atteso ${JOB_STATE_COMPLETED}, trovato ${status.state}`
+      );
+    }
+
+    assertDocumentRows(rowsForRun(), expectedTargets, expectedTargets.length);
+    if (properties.get(`job_for_trigger_${triggerId}`) !== null) {
+      throw new ValidationError('JobRunner trigger reale: contesto trigger non rimosso al completamento');
+    }
+  } finally {
+    cancelIfStillSuspended(jobRunner, jobName);
+  }
 }
 
 function assertSuspended(jobRunner: JobRunnerControl, jobName: string): JobStatus {

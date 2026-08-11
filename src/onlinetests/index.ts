@@ -20,7 +20,8 @@ import { registerEmailChecks } from './checks/emailChecks';
 import {
   registerJobRunnerChecks,
   registerJobRunnerDocGenChecks,
-  registerJobRunnerEmailChecks
+  registerJobRunnerEmailChecks,
+  registerJobRunnerTriggerRealeCheck
 } from './checks/jobRunnerChecks';
 import {
   registerContextEngineChecks,
@@ -406,7 +407,7 @@ function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): Onli
 }
 
 function executePersistedJobRunnerChecks(
-  scope: 'documenti' | 'email',
+  scope: 'documenti' | 'email' | 'trigger-reale',
   overrides: Partial<E2eTestDeps> = {}
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
@@ -442,7 +443,8 @@ function executePersistedJobRunnerChecks(
   };
   const runner = new TestRunner();
   if (scope === 'documenti') registerJobRunnerDocGenChecks(runner, container, sample);
-  else registerJobRunnerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+  else if (scope === 'email') registerJobRunnerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+  else registerJobRunnerTriggerRealeCheck(runner, container, sample);
   return runner.report();
 }
 
@@ -452,6 +454,13 @@ export function executeJobRunnerDocGen(overrides: Partial<E2eTestDeps> = {}): On
 
 export function executeJobRunnerEmail(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   return executePersistedJobRunnerChecks('email', overrides);
+}
+
+/** Optional live-GAS launcher. It is intentionally excluded from executeFullOnlineTests. */
+export function executeJobRunnerTriggerReale(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedJobRunnerChecks('trigger-reale', overrides);
 }
 
 function nonImplementato(): never {
@@ -519,8 +528,16 @@ export function testJobRunnerEmail(
 ): OnlineTestReport {
   return runReportedSuite('jobrunner_email', 'JOBRUNNER_EMAIL_SCENARIO', execute, logger);
 }
-export function testJobRunnerTriggerReale(): OnlineTestReport {
-  return nonImplementato();
+export function testJobRunnerTriggerReale(
+  execute: () => OnlineTestReport = executeJobRunnerTriggerReale,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite(
+    'jobrunner_trigger_reale',
+    'JOBRUNNER_REAL_TRIGGER_SCENARIO',
+    execute,
+    logger
+  );
 }
 export function testImportFileSingolo(): OnlineTestReport {
   return nonImplementato();

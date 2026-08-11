@@ -9,7 +9,8 @@ import { COL_LOG_DOCS, COL_LOG_MAIL, TABLE } from '../../../src/config/schema';
 import {
   registerJobRunnerChecks,
   registerJobRunnerDocGenChecks,
-  registerJobRunnerEmailChecks
+  registerJobRunnerEmailChecks,
+  registerJobRunnerTriggerRealeCheck
 } from '../../../src/onlinetests/checks/jobRunnerChecks';
 import {
   CONF_DOC_JOBRUNNER,
@@ -283,6 +284,59 @@ describe('JobRunner online checks', () => {
     expect(runner.checks[2]?.error?.message).toContain(
       'resetJob non ha pulito trigger, checkpoint o stato'
     );
+  });
+
+  it('polls the isolated real-trigger check until completion and verifies trigger context cleanup', () => {
+    jest.mocked(creaJobRunner).mockReset().mockReturnValue(docRunner as never);
+    const runner = new ImmediateRunner();
+    let now = 0;
+    const sleep = jest.fn((milliseconds: number) => {
+      now += milliseconds;
+      docRows.push({
+        [COL_LOG_DOCS.ID]: 'doc-2',
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_JOBRUNNER,
+        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.SOTTOTIPO]: 'PEI',
+        [COL_LOG_DOCS.CLASSI]: '5B',
+        [COL_LOG_DOCS.UTENTI]: 'student-2@onlinetest.aldo.local',
+        [COL_LOG_DOCS.MATERIE]: ''
+      });
+      propertyValues.delete(`job_for_trigger_trigger-doc`);
+      docRunner.setStatus({ state: 'completed', completed: true, percentage: 100 });
+    });
+
+    registerJobRunnerTriggerRealeCheck(runner as never, container, sample as never, {
+      sleep,
+      now: () => now,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 30
+    });
+
+    expect(runner.checks).toEqual([
+      { name: 'jobrunner.triggerReale::resume via contesto trigger' }
+    ]);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleep).toHaveBeenCalledWith(10);
+    expect(docRunner.cancelJob).not.toHaveBeenCalled();
+  });
+
+  it('cancels the isolated real-trigger job when polling reaches the timeout', () => {
+    jest.mocked(creaJobRunner).mockReset().mockReturnValue(docRunner as never);
+    const runner = new ImmediateRunner();
+    let now = 0;
+
+    registerJobRunnerTriggerRealeCheck(runner as never, container, sample as never, {
+      sleep: (milliseconds) => {
+        now += milliseconds;
+      },
+      now: () => now,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 20
+    });
+
+    expect(runner.checks[0]?.error?.message).toContain('trigger one-time non è scattato');
+    expect(docRunner.cancelJob).toHaveBeenCalledTimes(1);
+    expect(docRunner.cancelJob).toHaveBeenCalledWith(docJobName);
   });
 });
 

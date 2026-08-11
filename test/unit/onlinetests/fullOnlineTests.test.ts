@@ -1,6 +1,7 @@
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import {
   executeFullOnlineTests,
+  testJobRunnerTriggerReale,
   type FullOnlineTestDeps,
   type FullOnlineTestSample
 } from '../../../src/onlinetests';
@@ -224,5 +225,30 @@ describe('executeFullOnlineTests', () => {
       'Aggregate scenario pending migration: permessi'
     ]);
     expect(report.results.some((result) => result.name.includes('trigger reale'))).toBe(false);
+  });
+
+  it('launches the optional real-trigger suite separately from the aggregate suite', () => {
+    const report = {
+      suite: 'aldo-online-tests' as const,
+      startedAt: '2026-08-11T09:00:00.000Z',
+      finishedAt: '2026-08-11T09:00:01.000Z',
+      passed: 1,
+      failed: 0,
+      results: []
+    };
+    const execute = jest.fn(() => report);
+    const logJobStart = jest.fn();
+    const logger = {
+      logJobStart,
+      logSummary: jest.fn(),
+      logJobEnd: jest.fn()
+    } as unknown as LoggerService;
+
+    expect(testJobRunnerTriggerReale(execute, logger)).toBe(report);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(logJobStart).toHaveBeenCalledWith(
+      'jobrunner_trigger_reale',
+      'JOBRUNNER_REAL_TRIGGER_SCENARIO'
+    );
   });
 });

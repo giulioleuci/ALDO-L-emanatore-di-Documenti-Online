@@ -13,6 +13,17 @@ import {
   E2eTemplateProvisioner,
   type IArtifactFactory
 } from './E2eTemplateProvisioner';
+import { registerArticolazioneChecks } from './checks/articolazioneChecks';
+import {
+  registerContextEngineChecks,
+  registerEffectiveAssignmentConsumerChecks
+} from './checks/contextEngineChecks';
+import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
+import { registerPipelineChecks } from './checks/pipelineChecks';
+import {
+  registerEffectiveAssignmentMatrixChecks,
+  registerRepositoryChecks
+} from './checks/repositoryChecks';
 import { TestRunner, type OnlineTestReport } from './report/OnlineTestReport';
 import type { ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import {
@@ -76,21 +87,43 @@ export interface FullOnlineTestDeps extends E2eTestDeps {
   registrations: Partial<FullOnlineTestRegistrations>;
 }
 
-const noOpChecks: RegisterSharedChecks = () => undefined;
-const noOpEmailChecks: RegisterEmailChecks = () => undefined;
+const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, sample) => {
+  registerRepositoryChecks(runner, container, sample);
+  registerContextEngineChecks(runner, container, sample);
+  registerE2eScenarioChecks(runner, container, sample);
+};
+
+const registerLegacyEmailChecks: RegisterEmailChecks = (runner, container, sample, safeEmail) => {
+  registerPipelineChecks(runner, container, sample, safeEmail);
+};
+
+const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, container, sample) => {
+  registerEffectiveAssignmentMatrixChecks(runner, container, sample);
+  registerEffectiveAssignmentConsumerChecks(runner, container, sample);
+};
+
+function registerPendingChecks(group: string): RegisterSharedChecks {
+  return (runner, _container, sample) => {
+    runner.add(`Aggregate scenario pending migration: ${group}`, sample.sampleSpreadsheetUrl, () => {
+      throw new ConfigurationError(
+        `Aggregate online-test group "${group}" has not been migrated yet.`
+      );
+    });
+  };
+}
 
 const futureScenarioRegistrations: FullOnlineTestRegistrations = {
-  documenti: noOpChecks,
-  email: noOpEmailChecks,
-  jobRunner: noOpChecks,
-  import: noOpChecks,
-  storico: noOpChecks,
-  articolazione: noOpChecks,
-  itpDotted: noOpChecks,
-  supplenzeRuoli: noOpChecks,
-  aclReali: noOpChecks,
-  cacheIsolamento: noOpChecks,
-  permessi: noOpChecks
+  documenti: registerLegacyDocumentiChecks,
+  email: registerLegacyEmailChecks,
+  jobRunner: registerPendingChecks('jobrunner'),
+  import: registerPendingChecks('import'),
+  storico: registerPendingChecks('storico'),
+  articolazione: registerArticolazioneChecks,
+  itpDotted: registerPendingChecks('itp-dotted'),
+  supplenzeRuoli: registerLegacySupplenzeRuoliChecks,
+  aclReali: registerPendingChecks('acl-reali'),
+  cacheIsolamento: registerPendingChecks('cache-isolamento'),
+  permessi: registerPendingChecks('permessi')
 };
 
 const E2E_ROOT_FOLDER_NAME = '_ALDO_E2E_ROOT';

@@ -8,6 +8,7 @@ import { HEADERS } from './SharedTestHeaders';
 import type { IArtifactFactory, SheetValueUpdate } from '../E2eTemplateProvisioner';
 import {
   ANNI_PRECEDENTI,
+  CONF_DOC_DUPLICAZIONE_PERMESSA,
   CONF_DOC_JOBRUNNER,
   CONF_DOC_STORICO,
   CONF_DOC_TABELLE,
@@ -306,6 +307,27 @@ function aslDataUpdates(knownStudent: string, ore: number): SheetValueUpdate[] {
 
 /** Adds document, import, and email configurations unique to the extended E2E dataset. */
 export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
+  sample.appendRow(TABLE.CONF_DOC, {
+    [COL_CONF_DOC.ID]: CONF_DOC_DUPLICAZIONE_PERMESSA,
+    [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
+    [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+    [COL_CONF_DOC.CONDIZIONE]: '',
+    [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
+    [COL_CONF_DOC.FILE_NAME]: 'E2E_DuplicazionePermessa_{{focus.alunno.anagrafica.nomeCompleto}}',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI',
+    [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
+    [COL_CONF_DOC.PERMESSI]: '',
+    [COL_CONF_DOC.POST_PROCESSO]: null,
+    [COL_CONF_DOC.PARAMETRI]: '',
+    [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+    [COL_CONF_DOC.FORMATO]: 'GDOC',
+    [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '{{focus.alunno.anagrafica.email}}',
+      materie: ''
+    }),
+    [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+  });
   sample.appendRow(TABLE.CONF_DOC, {
     [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER,
     [COL_CONF_DOC.TIPO]: 'PIANO_PERS',

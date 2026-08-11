@@ -25,6 +25,7 @@ import {
 } from '../../../src/config/schema';
 import {
   ANNI_PRECEDENTI,
+  CONF_DOC_DUPLICAZIONE_PERMESSA,
   CONF_DOC_JOBRUNNER,
   CONF_DOC_TABELLE,
   CONF_IMP_ASL_CARTELLE,
@@ -219,6 +220,10 @@ test('seeds dedicated document, import, and mail configurations with unique outp
   expect(sample.rows[TABLE.CONF_DOC]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER, [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA' }),
+      expect.objectContaining({
+        [COL_CONF_DOC.ID]: CONF_DOC_DUPLICAZIONE_PERMESSA,
+        [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA'
+      }),
       expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_TABELLE, [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE' })
     ])
   );

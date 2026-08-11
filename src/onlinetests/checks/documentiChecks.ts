@@ -5,16 +5,23 @@ import type { ServiceContainer } from '../../config/ServiceContainer';
 import { COL_LOG_DOCS, TABLE } from '../../config/schema';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
+import { TipoPiano } from '../../domain/value-objects/enums';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
-import { CONF_DOC_COMPLESSO, type SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
-import { CONF_DOC_TABELLE } from '../data/fixtures';
+import {
+  CONF_DOC_COMPLESSO,
+  CONF_DOC_PIANI,
+  PDP_BES_3C,
+  type SharedTestDatabase
+} from '../data/SharedTestDatabaseBuilder';
+import { CONF_DOC_DUPLICAZIONE_PERMESSA, CONF_DOC_TABELLE } from '../data/fixtures';
 import {
   registerE2eDocumentScenarioChecks,
   type E2eDocumentScenarioScope
 } from './e2eScenarioChecks';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
-export type DocumentiCheckScope = E2eDocumentScenarioScope | 'tabelle-importate' | 'all';
+export type DocumentiCheckScope =
+  E2eDocumentScenarioScope | 'tabelle-importate' | 'duplicazione' | 'all';
 
 const AMPLE_DOCUMENT_GENERATION_BUDGET_MS = 5 * 60 * 1000;
 
@@ -37,8 +44,16 @@ export function registerDocumentiChecks(
     return;
   }
 
+  if (scope === 'duplicazione' || scope === 'all') {
+    registerDuplicazioneDocumentiChecks(runner, container, sample);
+  }
+
   const scopes: E2eDocumentScenarioScope[] =
-    scope === 'all' ? ['standard', 'articolati'] : scope === 'tabelle-importate' ? [] : [scope];
+    scope === 'all'
+      ? ['standard', 'articolati']
+      : scope === 'tabelle-importate' || scope === 'duplicazione'
+        ? []
+        : [scope];
   for (const documentScope of scopes) {
     registerE2eDocumentScenarioChecks(runner, container, sample, documentScope);
   }
@@ -137,7 +152,9 @@ function registerTabelleImportateCheck(
         persisted[COL_LOG_DOCS.TIPO] !== 'E2E_TABELLE' ||
         persisted[COL_LOG_DOCS.CLASSI] !== '1A'
       ) {
-        throw new ValidationError('Tabelle importate: LOG_DOCS privo di ID, link, classe o tipo attesi');
+        throw new ValidationError(
+          'Tabelle importate: LOG_DOCS privo di ID, link, classe o tipo attesi'
+        );
       }
 
       const text = drive.getFileText(fileId);
@@ -179,6 +196,79 @@ function registerTabelleImportateCheck(
       }
     }
   );
+}
+
+function registerDuplicazioneDocumentiChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: SharedTestDatabase & { testMode: boolean }
+): void {
+  const documents = container.get<DocumentGenerationService>('documentGenerationService');
+  const db = container.get<EmailDb>('db');
+  const drive = container.get<IDriveFacade>('drive');
+  const student = PDP_BES_3C;
+  const piano = TipoPiano.PDP_BES;
+
+  runner.add(
+    groupName('documenti.duplicazione', 'NEGATA non duplica su Drive'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const path = '_ALDO_E2E_OUTPUT/DOCUMENTI PERS';
+      const folderId = drive.createFolder(path);
+      const before = drive.countFilesInFolder(folderId);
+
+      documents.generateForPiano(student, piano, CONF_DOC_PIANI);
+      documents.generateForPiano(student, piano, CONF_DOC_PIANI);
+
+      const rows = logRowsFor(db, CONF_DOC_PIANI, student);
+      const after = drive.countFilesInFolder(folderId);
+      if (after !== before + 1 || rows.length !== 1) {
+        throw new ValidationError(
+          `DUPLICAZIONE=NEGATA: atteso 1 file e 1 riga LOG_DOCS aggiuntivi, ricevuti file ${before}->${after}, righe=${rows.length}`
+        );
+      }
+    }
+  );
+
+  runner.add(
+    groupName('documenti.duplicazione', 'PERMESSA crea copie distinte'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const path = '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI';
+      const folderId = drive.createFolder(path);
+      const before = drive.countFilesInFolder(folderId);
+
+      const first = documents.generateForPiano(student, piano, CONF_DOC_DUPLICAZIONE_PERMESSA);
+      const second = documents.generateForPiano(student, piano, CONF_DOC_DUPLICAZIONE_PERMESSA);
+      const rows = logRowsFor(db, CONF_DOC_DUPLICAZIONE_PERMESSA, student);
+      const ids = rows.map((row) => nonBlankString(row[COL_LOG_DOCS.ID]));
+      const names = rows.map((row) => nonBlankString(row[COL_LOG_DOCS.NOME]));
+      const after = drive.countFilesInFolder(folderId);
+
+      if (
+        first.fileId === null ||
+        second.fileId === null ||
+        after !== before + 2 ||
+        rows.length !== 2 ||
+        new Set(ids).size !== 2 ||
+        names.some((name) => name === '' || name !== name.trim() || /\{\{[^}]*\}\}/.test(name))
+      ) {
+        throw new ValidationError(
+          `DUPLICAZIONE=PERMESSA: attesi 2 file distinti e 2 righe LOG_DOCS normalizzate, ricevuti file ${before}->${after}, righe=${rows.length}`
+        );
+      }
+    }
+  );
+}
+
+function logRowsFor(db: EmailDb, idGen: string, student: string): Record<string, unknown>[] {
+  return db
+    .table(TABLE.LOG_DOCS)
+    .findAll()
+    .filter(
+      (row) =>
+        row[COL_LOG_DOCS.ID_GEN] === idGen && String(row[COL_LOG_DOCS.UTENTI] ?? '') === student
+    );
 }
 
 function countOccurrences(text: string, fragment: string): number {

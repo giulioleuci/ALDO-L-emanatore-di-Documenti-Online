@@ -362,6 +362,12 @@ export function executeDocumentiTabelleImportate(
   return executePersistedDocumentiChecks('tabelle-importate', overrides);
 }
 
+export function executeDuplicazioneDocumenti(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedDocumentiChecks('duplicazione', overrides);
+}
+
 function nonImplementato(): never {
   throw new ConfigurationError('non implementato');
 }
@@ -392,7 +398,12 @@ export function testDocumentiTabelleImportate(): OnlineTestReport {
   );
 }
 export function testDuplicazioneDocumenti(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'documenti_duplicazione',
+    'DOC_SCENARIO',
+    executeDuplicazioneDocumenti,
+    ServiceFactory.getLogger()
+  );
 }
 export function testInvioEmail(): OnlineTestReport {
   return nonImplementato();

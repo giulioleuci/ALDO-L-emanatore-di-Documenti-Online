@@ -1,5 +1,5 @@
 import {
-  E2eSampleDatabaseBuilder,
+  SharedTestDatabaseBuilder,
   CLASSE_A,
   CLASSE_B,
   CLASSE_C_PARENT,
@@ -26,13 +26,18 @@ import {
   e2eAlunnoEmail,
   e2eDocenteEmail,
   CARENZA_ALUNNO_1,
-  CARENZA_ALUNNO_2
-} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+  CARENZA_ALUNNO_2,
+  ALL_CLASSI,
+  CLASS_LAYOUTS,
+  STUDENT_TOTALE,
+  ANNI_PRECEDENTI
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
+import { testArtifactFactory } from './testArtifactFactory';
 import {
   TABLE,
   COL_CLASSI,
@@ -128,28 +133,22 @@ function expectRegistrationJson(value: unknown): void {
   }
 }
 
-test('seeds an articulated parent with two populated partners and exactly 60 partner-enrolled students', () => {
+test('seeds all shared classes, articulated groups, and exactly STUDENT_TOTALE students', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  const result = new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const classi = sample.rows[TABLE.CLASSI]!;
   const headers = sample.headers[TABLE.CLASSI]!;
   expect(headers.filter((header) => header === COL_CLASSI.IRC)).toHaveLength(1);
   expect(headers.filter((header) => header === COL_CLASSI.ALT)).toHaveLength(1);
-  expect(classi.map((c) => c[COL_CLASSI.ID])).toEqual([
-    CLASSE_A,
-    CLASSE_B,
-    CLASSE_C_PARENT,
-    CLASSE_C,
-    CLASSE_C_PARTNER
-  ]);
+  expect(classi.map((c) => c[COL_CLASSI.ID])).toEqual(ALL_CLASSI);
   const parent = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARENT)!;
   const partnerScientifico = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C)!;
   const partnerClassico = classi.find((row) => row[COL_CLASSI.ID] === CLASSE_C_PARTNER)!;
   expect(parent[COL_CLASSI.ID]).toBe('3C');
-  expect(parent[COL_CLASSI.COORD]).toBe('');
+  expect(parent[COL_CLASSI.COORD]).toBe(e2eDocenteEmail(6));
   expect(partnerScientifico[COL_CLASSI.ID]).toBe('3C-S');
   expect(partnerClassico[COL_CLASSI.ID]).toBe('3C-C');
   expect(
@@ -167,19 +166,16 @@ test('seeds an articulated parent with two populated partners and exactly 60 par
   });
 
   const alunni = sample.rows[TABLE.ALUNNI]!;
-  expect(alunni).toHaveLength(60);
+  expect(alunni).toHaveLength(STUDENT_TOTALE);
   const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id).length;
-  expect(byClasse(CLASSE_A)).toBe(20);
-  expect(byClasse(CLASSE_B)).toBe(20);
-  expect(byClasse(CLASSE_C)).toBe(8);
-  expect(byClasse(CLASSE_C_PARTNER)).toBe(12);
+  for (const layout of CLASS_LAYOUTS) expect(byClasse(layout.id)).toBe(layout.count);
   expect(result.sampleSpreadsheetId).toBe(sample.id);
 });
 
 test('seeds exactly 20 DOCENTI rows', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   expect(sample.rows[TABLE.DOCENTI]).toHaveLength(20);
   expect(sample.rows[TABLE.DOCENTI]!.map((d) => d[COL_DOCENTI.EMAIL])).toEqual(
@@ -189,7 +185,7 @@ test('seeds exactly 20 DOCENTI rows', () => {
 
 test('seeds specifica-only LAB and INTERPRET catalog rows with PRINCIPALE/SPECIFICITA display data', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const materie = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.MATERIE]!;
   expect(materie.map((row) => row[COL_MATERIE.ID])).toEqual(
@@ -224,7 +220,7 @@ test('seeds specifica-only LAB and INTERPRET catalog rows with PRINCIPALE/SPECIF
 test('seeds exactly 2 CARENZE rows, for the two designated students only', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const carenze = sample.rows[TABLE.CARENZE]!;
   expect(carenze).toHaveLength(2);
@@ -232,7 +228,7 @@ test('seeds exactly 2 CARENZE rows, for the two designated students only', () =>
     [CARENZA_ALUNNO_1, CARENZA_ALUNNO_2].sort()
   );
   expect(CARENZA_ALUNNO_1).toBe(e2eAlunnoEmail(1));
-  expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(21));
+  expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(70));
 
   const row1 = carenze.find((c) => c[COL_CARENZE.STUDENTE] === CARENZA_ALUNNO_1)!;
   const row2 = carenze.find((c) => c[COL_CARENZE.STUDENTE] === CARENZA_ALUNNO_2)!;
@@ -247,14 +243,14 @@ test('seeds exactly 2 CARENZE rows, for the two designated students only', () =>
 test('MASTER row ANNO_SCOLASTICO uses the canonical YYYY-YYYY dash format (01 §schema), not a slash', () => {
   const { spreadsheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   expect(master.rows[TABLE.MASTER]![0]![COL_MASTER.ANNO_SCOLASTICO]).toBe('2026-2027');
 });
 
 test('MASTER row has TEST_MODE = true, matching the returned masterTestMode', () => {
   const { spreadsheets, master } = factory();
   const drive = new FakeDriveFacade();
-  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  const result = new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   expect(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]).toBe(true);
   expect(result.masterTestMode).toBe(true);
   expect(result.masterTestMode).toBe(master.rows[TABLE.MASTER]![0]![COL_MASTER.TEST_MODE]);
@@ -264,15 +260,15 @@ test('bound master is reused for canonical current and historical registrations'
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
 
-  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  const result = new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   expect(result.masterSpreadsheetId).toBe('bound-master-id');
   expect(sheets.get('_ALDO_E2E_MASTER')).toBeUndefined();
   expect(master.headers[TABLE.MASTER]).toEqual(Object.values(COL_MASTER));
-  expect(master.rows[TABLE.MASTER]).toHaveLength(2);
+  expect(master.rows[TABLE.MASTER]).toHaveLength(3);
   expect(master.rows[TABLE.MASTER]!.map((row) => row[COL_MASTER.ANNO_SCOLASTICO])).toEqual([
     '2026-2027',
-    '2025-2026'
+    ...ANNI_PRECEDENTI
   ]);
   expect(master.rows[TABLE.MASTER]![0]![COL_MASTER.ID_SPREADSHEET]).toBe(
     result.sampleSpreadsheetId
@@ -280,15 +276,18 @@ test('bound master is reused for canonical current and historical registrations'
   expect(master.rows[TABLE.MASTER]![1]![COL_MASTER.ID_SPREADSHEET]).toBe(
     result.priorSampleSpreadsheetId
   );
+  expect(master.rows[TABLE.MASTER]![2]![COL_MASTER.ID_SPREADSHEET]).toBe(
+    result.priorSampleSpreadsheetId2
+  );
 });
 
 test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and student registration', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(10);
+  expect(confDoc).toHaveLength(13);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'
@@ -338,7 +337,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     utenti: '{{focus.docente.email}}',
     materie: '{{focus.materia.sigla}}'
   });
-  const piani = confDoc.filter((c) => c[COL_CONF_DOC.TIPO] === 'PIANO_PERS');
+  const piani = confDoc.filter((c) => c[COL_CONF_DOC.ID] === CONF_DOC_PIANI);
   expect(piani).toHaveLength(1);
   const piano = piani[0]!;
   expect(piano[COL_CONF_DOC.ID]).toBe(CONF_DOC_PIANI);
@@ -372,29 +371,31 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(COL_LOG_FOLD).not.toHaveProperty('MATERIA');
 });
 
-test('1A and 2B share the same coordinatore, so coordinatore-aggregated emails cover both classes (not one email per class)', () => {
+test('uses coordinators declared by the shared class layouts', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const classi = sample.rows[TABLE.CLASSI]!;
   const coordOf = (id: string): unknown =>
     classi.find((c) => c[COL_CLASSI.ID] === id)![COL_CLASSI.COORD];
   expect(coordOf(CLASSE_A)).toBe(e2eDocenteEmail(1));
-  expect(coordOf(CLASSE_B)).toBe(e2eDocenteEmail(1));
+  expect(coordOf(CLASSE_B)).toBe(e2eDocenteEmail(4));
   expect(coordOf(CLASSE_C)).not.toBe(e2eDocenteEmail(1));
 });
 
-test('seeds 6 CONF_MAIL rows: five normal patterns with explicit empty ALLEGATI plus one static attachment fixture', () => {
+test('seeds the legacy and dedicated CONF_MAIL rows with safe attachment metadata', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  const result = new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
-  expect(confMail).toHaveLength(6);
+  expect(confMail).toHaveLength(8);
   expect(confMail.map((c) => c[COL_CONF_MAIL.PROCESSO]).sort()).toEqual(
     [
       'PER_CARENZA_GENITORI',
+      'PER_CDC',
+      'PER_CDC',
       'PER_CDC',
       'PER_CDC',
       'PER_COORDINATORE',
@@ -418,7 +419,7 @@ test('seeds 6 CONF_MAIL rows: five normal patterns with explicit empty ALLEGATI 
 test('does not emit the obsolete REGISTRA_UTENTI column in CONF_DOC rows', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const confDoc = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.CONF_DOC]!;
 
   expect(COL_CONF_DOC).not.toHaveProperty('REGISTRA_UTENTI');
@@ -430,7 +431,7 @@ test('does not emit the obsolete REGISTRA_UTENTI column in CONF_DOC rows', () =>
 test('VERBALE and CONDOTTA emails configure documenti/cartelle boxes (so generated documents actually show up as links)', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
   for (const id of ['E2E_MAIL_VERBALE', 'E2E_MAIL_CONDOTTA']) {
@@ -443,7 +444,7 @@ test('VERBALE and CONDOTTA emails configure documenti/cartelle boxes (so generat
 test('PIANI_PERS POST_PROCESSO criterion matches on the full classiCompetenza list (join filter), not just the target class', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const piani = sample.rows[TABLE.CONF_MAIL]!.find(
     (c) => c[COL_CONF_MAIL.ID] === 'E2E_MAIL_PIANI'
@@ -458,7 +459,7 @@ test('PIANI_PERS POST_PROCESSO criterion matches on the full classiCompetenza li
 
 test('the observable coordinator verbale email targets articulated partners instead of their parent', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const row = sheets
     .get('_ALDO_E2E_SAMPLE')!
@@ -471,7 +472,7 @@ test('the observable coordinator verbale email targets articulated partners inst
 test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const alunni = sample.rows[TABLE.ALUNNI]!;
   const ripetenti = alunni
@@ -483,17 +484,17 @@ test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', ()
 test('RELIGIONE is always a valid ReligioneScelta value (IRC/NO/ALT), never a boolean (item 3)', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
   for (const a of alunni) {
     expect(['IRC', 'NO', 'ALT']).toContain(a[COL_ALUNNI.RELIGIONE]);
   }
 });
 
-test('each class gets a distinct 0/1/2 spread of student and parent representatives (item 3)', () => {
+test('each class uses the representative counts declared by CLASS_LAYOUTS', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
   const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
   const studentReps = (id: string) =>
@@ -503,26 +504,16 @@ test('each class gets a distinct 0/1/2 spread of student and parent representati
       (a) => ((a[COL_ALUNNI.RAPPR_GEN] as string | undefined) ?? '').trim() !== ''
     ).length;
 
-  expect(studentReps(CLASSE_A)).toBe(0);
-  expect(parentReps(CLASSE_A)).toBe(0);
-  expect(studentReps(CLASSE_B)).toBe(1);
-  expect(parentReps(CLASSE_B)).toBe(1);
-  expect(studentReps(CLASSE_C)).toBe(2);
-  expect(parentReps(CLASSE_C)).toBe(1);
-  expect(studentReps(CLASSE_C_PARTNER)).toBe(1);
-  expect(parentReps(CLASSE_C_PARTNER)).toBe(2);
-
-  // 0/1/2 is covered somewhere across the 4 classes for each dimension.
-  const studentCounts = new Set([CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map(studentReps));
-  const parentCounts = new Set([CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].map(parentReps));
-  expect(studentCounts).toEqual(new Set([0, 1, 2]));
-  expect(parentCounts).toEqual(new Set([0, 1, 2]));
+  for (const layout of CLASS_LAYOUTS) {
+    expect(studentReps(layout.id)).toBe(layout.studentRepCount);
+    expect(parentReps(layout.id)).toBe(layout.parentRepCount);
+  }
 });
 
 test('each class has at least one NO and/or ALT religion exception alongside the IRC majority (item 3)', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
   const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
   for (const id of [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER]) {
@@ -541,10 +532,10 @@ test('each class has at least one NO and/or ALT religion exception alongside the
 test('PIANI gets one row per (tipo, studente) while CONF_DOC keeps one plan recipe', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const piani = sample.rows[TABLE.CONF_DOC]!.filter(
-    (c) => c[COL_CONF_DOC.GENERATORE] === 'DOC_PERSONALIZZATO'
+    (c) => c[COL_CONF_DOC.ID] === CONF_DOC_PIANI
   );
   expect(piani).toHaveLength(1);
   const pianiRows = sample.rows[TABLE.PIANI]!;
@@ -558,45 +549,47 @@ test('PIANI gets one row per (tipo, studente) while CONF_DOC keeps one plan reci
   ).toEqual([e2eAlunnoEmail(5), PDP_BES_3C, PIANO_DOPPIO_STUDENTE].sort());
 });
 
-test('creates a second (prior-year) sample spreadsheet and a second, later MASTER row for 2025-2026', () => {
+test('creates both prior-year databases and later MASTER rows in descending order', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  const result = new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
-  const prior = sheets.get('_ALDO_E2E_SAMPLE_PRIOR')!;
+  const result = new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
+  const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
+  const prior2 = sheets.get('_ALDO_E2E_PRIOR_2024-2025')!;
   expect(result.priorSampleSpreadsheetId).toBe(prior.id);
   expect(result.priorSampleSpreadsheetUrl).toBe(prior.getUrl());
 
   const rows = master.rows[TABLE.MASTER]!;
-  expect(rows).toHaveLength(2);
+  expect(result.priorSampleSpreadsheetId2).toBe(prior2.id);
+  expect(result.priorSampleSpreadsheetUrl2).toBe(prior2.getUrl());
+  expect(rows).toHaveLength(3);
   // MasterSheetRepository requires descending order: current year first.
   expect(rows[0]![COL_MASTER.ANNO_SCOLASTICO]).toBe('2026-2027');
   expect(rows[1]![COL_MASTER.ANNO_SCOLASTICO]).toBe('2025-2026');
+  expect(rows[2]![COL_MASTER.ANNO_SCOLASTICO]).toBe('2024-2025');
   expect(rows[1]![COL_MASTER.ID_SPREADSHEET]).toBe(prior.id);
 });
 
-test('prior-year (2025-2026) roster: 1A/3C-S hold only their repeater, 2B/3C partners promote to 1B/2C partners', () => {
+test('prior-year (2025-2026) roster contains the historical promotion and withdrawal fixtures', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
-  const prior = sheets.get('_ALDO_E2E_SAMPLE_PRIOR')!;
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
+  const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
 
   const classi = prior.rows[TABLE.CLASSI]!.map((c) => c[COL_CLASSI.ID]);
-  expect(classi.sort()).toEqual(['1A', '1B', '2C-S', '2C-C', '3C-S'].sort());
+  expect(classi).toEqual(['2C']);
 
   const alunni = prior.rows[TABLE.ALUNNI]!;
-  const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
-  expect(byClasse('1A').map((a) => a[COL_ALUNNI.EMAIL])).toEqual([RIPETENTE_1A]);
-  expect(byClasse('3C-S').map((a) => a[COL_ALUNNI.EMAIL])).toEqual([RIPETENTE_3C]);
-  expect(byClasse('1B')).toHaveLength(20);
-  expect(byClasse('2C-S')).toHaveLength(7); // 8 CLASSE_C students minus the repeater
-  expect(byClasse('2C-C')).toHaveLength(12);
-  expect(alunni).toHaveLength(1 + 1 + 20 + 7 + 12);
+  expect(alunni.map((row) => row[COL_ALUNNI.EMAIL])).toEqual([
+    e2eAlunnoEmail(138),
+    e2eAlunnoEmail(139)
+  ]);
+  expect(alunni.map((row) => row[COL_ALUNNI.ATTIVO])).toEqual([true, false]);
 });
 
 test('seeds one student with both PEI and PDP_BES plans', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const rows = sample.rows[TABLE.PIANI]!.filter(
     (row) => row[COL_PIANI.STUDENTE] === PIANO_DOPPIO_STUDENTE
@@ -611,41 +604,25 @@ test('seeds one student with both PEI and PDP_BES plans', () => {
   ).toEqual(expect.arrayContaining([{ note: 'Piano E2E PEI' }, { note: 'Piano E2E PDP_BES' }]));
 });
 
-test('prior-year personalized-plan rows share one generator ID and remain distinguished by SOTTOTIPO', () => {
+test('prior-year historical document row is linked to the promoted student', () => {
   const { spreadsheets, sheets, master } = factory();
   const drive = new FakeDriveFacade();
-  new E2eSampleDatabaseBuilder(spreadsheets, drive).build(TEMPLATE_IDS, master);
-  const prior = sheets.get('_ALDO_E2E_SAMPLE_PRIOR')!;
+  new SharedTestDatabaseBuilder(spreadsheets, drive, testArtifactFactory()).build(TEMPLATE_IDS, master);
+  const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
   const logDocs = prior.rows[TABLE.LOG_DOCS]!;
-  expect(logDocs).toHaveLength(2);
-
-  const rowsForDualStudent = logDocs.filter(
-    (row) => row[COL_LOG_DOCS.UTENTI] === PIANO_DOPPIO_STUDENTE
+  expect(logDocs).toHaveLength(1);
+  expect(logDocs[0]).toEqual(
+    expect.objectContaining({
+      [COL_LOG_DOCS.UTENTI]: e2eAlunnoEmail(138),
+      [COL_LOG_DOCS.CLASSI]: '2C',
+      [COL_LOG_DOCS.SOTTOTIPO]: 'PDP_BES'
+    })
   );
-  expect(rowsForDualStudent).toHaveLength(2);
-  expect(rowsForDualStudent.map((row) => row[COL_LOG_DOCS.SOTTOTIPO]).sort()).toEqual([
-    'PDP_BES',
-    'PEI'
-  ]);
-  expect(new Set(logDocs.map((row) => row[COL_LOG_DOCS.ID_GEN]))).toEqual(
-    new Set([CONF_DOC_PIANI])
-  );
-
-  const pei = rowsForDualStudent.find((r) => r[COL_LOG_DOCS.SOTTOTIPO] === 'PEI')!;
-  expect(pei[COL_LOG_DOCS.ID_GEN]).toBe(CONF_DOC_PIANI);
-  expect(pei[COL_LOG_DOCS.TIPO]).toBe('PIANO_PERS');
-  expect(pei[COL_LOG_DOCS.SOTTOTIPO]).toBe('PEI');
-  expect(pei[COL_LOG_DOCS.CLASSI]).toBe('1B');
-
-  const bes = rowsForDualStudent.find((r) => r[COL_LOG_DOCS.SOTTOTIPO] === 'PDP_BES')!;
-  expect(bes[COL_LOG_DOCS.ID_GEN]).toBe(CONF_DOC_PIANI);
-  expect(bes[COL_LOG_DOCS.SOTTOTIPO]).toBe('PDP_BES');
-  expect(bes[COL_LOG_DOCS.CLASSI]).toBe('1B');
 });
 
 test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENERICO generator)', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO');
@@ -658,7 +635,7 @@ test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENER
 
 test('seeds the CONF_DOC row for the articulated-class complex document', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find(
     (r) => r[COL_CONF_DOC.ID] === CONF_DOC_ARTICOLATA
@@ -673,7 +650,7 @@ test('seeds the CONF_DOC row for the articulated-class complex document', () => 
 
 test('seeds an articulated generic CDC signature-summary document with registration metadata', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.CONF_DOC]!;
   const row = rows.find((candidate) => candidate[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO_FIRME_CDC');
@@ -696,7 +673,7 @@ test('seeds an articulated generic CDC signature-summary document with registrat
 
 test('seeds a CONF_DOC row using the SHEET_CON_MATERIE_E_PERMESSI generator', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_SHEET_PERMESSI');
@@ -707,7 +684,7 @@ test('seeds a CONF_DOC row using the SHEET_CON_MATERIE_E_PERMESSI generator', ()
 
 test('CONF_DOC_VERBALE PATH_OUT is per-class, so each class gets its own LOG_FOLD-tracked destination folder', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const verbale = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_VERBALE')!;
@@ -716,7 +693,7 @@ test('CONF_DOC_VERBALE PATH_OUT is per-class, so each class gets its own LOG_FOL
 
 test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans through AGGIORNA_STATO_DOC', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const verbale = sample.rows[TABLE.CONF_DOC]!.find(
@@ -751,7 +728,7 @@ test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans 
 
 test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti + cartelle real-folder boxes)', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const doc = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === CONF_DOC_PIANO_LAVORO);
@@ -779,7 +756,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
 
 test('E2E personalized-plan email template uses the readable label for every current plan', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === CONF_MAIL_PIANI)!;
@@ -799,12 +776,12 @@ test('E2E personalized-plan email template uses the readable label for every cur
 
 test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {
   const { spreadsheets, sheets, master } = factory();
-  new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const rows = sample.rows[TABLE.CONF_IMP]!;
-  expect(rows).toHaveLength(1);
-  const row = rows[0]!;
+  expect(rows).toHaveLength(4);
+  const row = rows.find((candidate) => candidate[COL_CONF_IMP.ID] === 'E2E_IMPORT_ASL')!;
   expect(row[COL_CONF_IMP.TARGET]).toBe(TABLE.ASL);
   expect(row[COL_CONF_IMP.ATTIVO]).toBe(true);
   const config = JSON.parse(String(row[COL_CONF_IMP.CONFIG])) as Record<string, unknown>;

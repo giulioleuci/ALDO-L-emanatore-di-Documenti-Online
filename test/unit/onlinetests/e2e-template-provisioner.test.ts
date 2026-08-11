@@ -6,7 +6,7 @@ import {
   type SheetValueUpdate
 } from '../../../src/onlinetests/E2eTemplateProvisioner';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
-import { TIPI_PIANO } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import { TIPI_PIANO } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 
 function fakeArtifacts(): {
   artifacts: IArtifactFactory;

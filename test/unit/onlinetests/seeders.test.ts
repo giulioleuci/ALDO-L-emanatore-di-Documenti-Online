@@ -6,7 +6,7 @@ import {
   e2eAlunnoEmail,
   HEADERS,
   type E2eTemplateIds
-} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { IArtifactFactory, SheetValueUpdate } from '../../../src/onlinetests/E2eTemplateProvisioner';
 import {
   seedAnniPrecedenti,

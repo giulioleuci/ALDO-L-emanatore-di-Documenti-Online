@@ -33,7 +33,7 @@ export const CLASS_ADDRESS_BY_CLASS: Record<string, string> = {
   '5B-C': INDIRIZZO_SCIENTIFICO_APPLICATE,
   '3C': INDIRIZZO_SCIENTIFICO,
   '3C-S': INDIRIZZO_SCIENTIFICO,
-  '3C-C': INDIRIZZO_SCIENTIFICO,
+  '3C-C': INDIRIZZO_CLASSICO,
   '4D': INDIRIZZO_SCIENTIFICO,
   '5E': INDIRIZZO_SCIENTIFICO,
 };
@@ -60,7 +60,20 @@ const layout = (
   articolazione,
   studentRepCount: 2,
   parentRepCount: 2,
-  religionExceptions: [],
+  religionExceptions:
+    id === '1A'
+      ? [
+          { index: 0, scelta: 'NO' },
+          { index: 3, scelta: 'ALT' },
+        ]
+      : id === '2B'
+        ? [{ index: 0, scelta: 'NO' }]
+        : id === '3C-S'
+          ? [{ index: 2, scelta: 'ALT' }]
+          : [
+              { index: 0, scelta: 'NO' },
+              { index: 1, scelta: 'ALT' },
+            ],
 });
 
 export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
@@ -75,14 +88,14 @@ export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
   layout('3C', 17, 6),
   layout('3C-S', 17, 6, '{"parent":"3C","partner":"3C-C"}'),
   layout('3C-C', 17, 6, '{"parent":"3C","partner":"3C-S"}'),
-  layout('4D', 17, 7),
-  layout('5E', 17, 8),
+  layout('4D', 16, 7),
+  layout('5E', 16, 8),
 ];
 
 export const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];
 export const MATERIE_CLASSICO = [...MATERIE_BASE, 'GRECO', 'LATINO', 'FILOSOFIA'];
-export const MATERIE_SCIENZE_UMANE = [...MATERIE_BASE, 'PSICOLOGIA', 'SCIENZE_UMANE', 'DIRITTO_ECONOMIA'];
-export const MATERIE_SCIENTIFICO = [...MATERIE_BASE, 'SCIENZE', 'FISICA', 'INFORMATICA'];
+export const MATERIE_SCIENZE_UMANE = [...MATERIE_BASE, 'PSICOLOGIA', 'SCIUMANE', 'DIRECON'];
+export const MATERIE_SCIENTIFICO = [...MATERIE_BASE, 'SCIENZE', 'FISICA', 'INF'];
 export const MATERIE_PUNTATE = ['LAB.GRUPPO_A', 'LAB.SEMINARIO_POMERIDIANO', 'INTERPRET.CHITARRA', 'INTERPRET.FLAUTO'];
 
 export const MATERIE_PER_INDIRIZZO = {
@@ -116,6 +129,14 @@ export const TEMPLATE_CERCA_DOCUMENTI = 'TEMPLATE_CERCA_DOCUMENTI';
 export const TEMPLATE_CHUNKED = 'TEMPLATE_CHUNKED';
 
 export const EMAIL_TEST_SAFE = 'sgsa-onlinetests@onlinetest.aldo.local';
+
+export function e2eDocenteEmail(i: number): string {
+  return `e2edocente${i}@onlinetest.aldo.local`;
+}
+
+export function e2eAlunnoEmail(i: number): string {
+  return `e2ealunno${i}@onlinetest.aldo.local`;
+}
 
 /** date deterministiche (MISSING_TESTS: niente valori dipendenti da clock) */
 export const ASSIGNMENT_DATE = new Date('2026-07-15T09:00:00Z');

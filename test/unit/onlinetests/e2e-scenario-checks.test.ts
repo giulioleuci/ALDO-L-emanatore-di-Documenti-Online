@@ -4,7 +4,7 @@ import {
 } from '../../../src/onlinetests/checks/e2eScenarioChecks';
 import { TestRunner } from '../../../src/onlinetests/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
-import type { E2eSampleDatabase } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {
   CONF_IMP_ASL,
   CONF_MAIL_CARENZA,
@@ -25,7 +25,7 @@ import {
   CLASSE_C,
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER
-} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type {
   EmailDb,
@@ -39,7 +39,7 @@ import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL } from '../../../src/config/schema';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 
-const sample: E2eSampleDatabase & { testMode: boolean } = {
+const sample: SharedTestDatabase & { testMode: boolean } = {
   masterSpreadsheetId: 'm',
   sampleSpreadsheetId: 's',
   sampleSpreadsheetUrl: 'https://example.test/s',

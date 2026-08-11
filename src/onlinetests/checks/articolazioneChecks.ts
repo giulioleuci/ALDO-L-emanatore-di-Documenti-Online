@@ -29,8 +29,8 @@ import {
   INDIRIZZO_E2E_CLASSICO,
   PIANO_DOPPIO_STUDENTE,
   e2eDocenteEmail,
-  type E2eSampleDatabase
-} from '../E2eSampleDatabaseBuilder';
+  type SharedTestDatabase
+} from '../data/SharedTestDatabaseBuilder';
 
 interface TableDatabase {
   table(name: string): { findAll(): Array<Record<string, unknown>> };
@@ -82,7 +82,7 @@ function documentConfig(db: TableDatabase, id: string): ConfigurazioneDocumento 
 export function registerArticolazioneChecks(
   runner: TestRunner,
   container: ServiceContainer,
-  sample: E2eSampleDatabase & { testMode: boolean }
+  sample: SharedTestDatabase & { testMode: boolean }
 ): void {
   if (!sample.testMode) {
     runner.add('Articolazione CDU: MASTER.TEST_MODE guard', sample.sampleSpreadsheetUrl, () => {

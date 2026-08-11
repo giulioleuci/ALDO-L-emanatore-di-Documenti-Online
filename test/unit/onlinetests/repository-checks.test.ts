@@ -21,20 +21,21 @@ import {
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
+import { testArtifactFactory } from './testArtifactFactory';
 import { FakeGmailFacade } from '../../fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { fixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import {
-  E2eSampleDatabaseBuilder,
+  SharedTestDatabaseBuilder,
   CLASSE_A,
   CLASSE_C_PARENT,
   CLASSE_C,
   CLASSE_C_PARTNER,
   e2eAlunnoEmail,
   e2eDocenteEmail
-} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
@@ -262,7 +263,7 @@ function sampleFixture(): SampleDatabase {
 describe('registerRepositoryChecks', () => {
   it('registers passing online matrix checks across the resolver and all assignment consumers', () => {
     const { spreadsheets, sheets, master } = e2eRecordingFactory();
-    const sample = new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(
+    const sample = new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
       E2E_TEMPLATE_IDS,
       master
     );
@@ -306,7 +307,7 @@ describe('registerRepositoryChecks', () => {
         expect.stringContaining(`full CDU council ${CLASSE_C}`),
         expect.stringContaining(`full CDU council ${CLASSE_C_PARTNER}`),
         expect.stringContaining('rendered sheet header REL/ALT'),
-        expect.stringContaining('rendered sheet header REL without ALT')
+        expect.stringContaining('rendered articulated sheet header REL/ALT')
       ])
     );
     expect(report.results.filter((result) => result.status === 'fail')).toEqual([]);
@@ -314,7 +315,7 @@ describe('registerRepositoryChecks', () => {
 
   it('seeds the online effective-assignment matrix including arbitrary specificities, religion routing, and articulated partners', () => {
     const { spreadsheets, sheets, master } = e2eRecordingFactory();
-    new E2eSampleDatabaseBuilder(spreadsheets, new FakeDriveFacade()).build(
+    new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
       E2E_TEMPLATE_IDS,
       master
     );
@@ -416,9 +417,10 @@ describe('registerRepositoryChecks', () => {
 
   it('reports slot diagnostics when a student-filtered council diverges from the hand-derived matrix', () => {
     const { spreadsheets, sheets, master } = e2eRecordingFactory();
-    const sample = new E2eSampleDatabaseBuilder(
+    const sample = new SharedTestDatabaseBuilder(
       spreadsheets,
-      new FakeDriveFacade()
+      new FakeDriveFacade(),
+      testArtifactFactory()
     ).build(E2E_TEMPLATE_IDS, master);
     const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows;
     const student = rows[TABLE.ALUNNI]!.find(

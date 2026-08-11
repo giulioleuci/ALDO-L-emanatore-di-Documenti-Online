@@ -3,7 +3,7 @@ import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import { COL_CONF_DOC, COL_LOG_DOCS, TABLE } from '../../../src/config/schema';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 import type { ContextBuilder } from '../../../src/application/context-engine/ContextBuilder';
-import type { E2eSampleDatabase } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {
   CLASSE_A,
   CLASSE_B,
@@ -13,7 +13,7 @@ import {
   CONF_DOC_PIANI,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
   PIANO_DOPPIO_STUDENTE
-} from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
 
 interface RegisteredCheck {
@@ -55,7 +55,7 @@ function classCdu(council: Array<Record<string, unknown>>): ReturnType<ContextBu
   } as unknown as ReturnType<ContextBuilder['build']>;
 }
 
-const sample: E2eSampleDatabase & { testMode: boolean } = {
+const sample: SharedTestDatabase & { testMode: boolean } = {
   masterSpreadsheetId: 'master',
   sampleSpreadsheetId: 'sample',
   sampleSpreadsheetUrl: 'https://example.test/sample',

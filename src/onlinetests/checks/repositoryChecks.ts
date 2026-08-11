@@ -23,7 +23,7 @@ import {
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
   e2eDocenteEmail
-} from '../E2eSampleDatabaseBuilder';
+} from '../data/SharedTestDatabaseBuilder';
 
 interface AssignmentMatrixSample {
   sampleSpreadsheetUrl: string;

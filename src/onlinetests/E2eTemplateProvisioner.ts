@@ -1,5 +1,9 @@
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
-import { TIPI_PIANO, type E2eTemplateIds, e2eAlunnoEmail } from './E2eSampleDatabaseBuilder';
+import {
+  TIPI_PIANO,
+  type E2eTemplateIds,
+  e2eAlunnoEmail
+} from './data/SharedTestDatabaseBuilder';
 
 /** A single Sheets range write, relative to the artifact's own default tab (sheet-name-agnostic — the
  * factory resolves the actual, possibly locale-dependent, tab name at creation time). */
@@ -127,7 +131,7 @@ const RIEPILOGO_TABLES: E2eDocumentTable[] = [
   }
 ];
 
-/** Roster rows generous enough for the ~20-student classes `E2eSampleDatabaseBuilder` seeds. */
+/** Roster rows generous enough for the shared builder's student classes. */
 const CONDOTTA_ROSTER_ROWS = 30;
 
 /**
@@ -158,7 +162,7 @@ function condottaUpdates(): SheetValueUpdate[] {
   return updates;
 }
 
-/** School year matching E2eSampleDatabaseBuilder's seedMaster ANNO_SCOLASTICO (3rd-year students only, design spec "fixture-only scoping"). */
+/** School year matching SharedTestDatabaseBuilder's current MASTER registration. */
 const ASL_IMPORT_ANNO = '2026-2027';
 const ASL_IMPORT_ROWS: Array<[string, number]> = [
   [e2eAlunnoEmail(43), 40],

@@ -12,7 +12,7 @@ import {
   CLASSE_C_PARTNER,
   e2eAlunnoEmail,
   e2eDocenteEmail
-} from '../E2eSampleDatabaseBuilder';
+} from '../data/SharedTestDatabaseBuilder';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -46,7 +46,10 @@ const EXPECTED_STUDENT_COUNCILS = [
       e2eDocenteEmail(3),
       e2eDocenteEmail(4),
       e2eDocenteEmail(10),
-      e2eDocenteEmail(11)
+      e2eDocenteEmail(11),
+      e2eDocenteEmail(7),
+      e2eDocenteEmail(8),
+      e2eDocenteEmail(9)
     ]
   },
   {
@@ -62,7 +65,10 @@ const EXPECTED_STUDENT_COUNCILS = [
       e2eDocenteEmail(4),
       e2eDocenteEmail(10),
       e2eDocenteEmail(11),
-      e2eDocenteEmail(12)
+      e2eDocenteEmail(12),
+      e2eDocenteEmail(7),
+      e2eDocenteEmail(8),
+      e2eDocenteEmail(9)
     ]
   },
   {
@@ -80,7 +86,9 @@ const EXPECTED_STUDENT_COUNCILS = [
       e2eDocenteEmail(7),
       e2eDocenteEmail(10),
       e2eDocenteEmail(11),
-      e2eDocenteEmail(14)
+      e2eDocenteEmail(14),
+      e2eDocenteEmail(8),
+      e2eDocenteEmail(9)
     ]
   }
 ] as const;
@@ -88,20 +96,26 @@ const EXPECTED_STUDENT_COUNCILS = [
 /**
  * Fixed from the articulated E2E fixture, deliberately independent of rendered items.
  * MAT is a **condivisa** column (`classeId: null`, one column for the whole group):
- * `E2eSampleDatabaseBuilder.seedClassi` pins 3C-C's MAT to 3C-S's own MAT holder
+ * `SharedTestDatabaseBuilder.seedClassi` pins 3C-C's MAT to 3C-S's own MAT holder
  * (e2edocente1), so `ClasseRepository.getMaterieArticolazione` classifies it as shared
  * and the generator emits a single ungrouped column for it — unlike ITA/ING/STO, which
  * have disjoint holders per partner and therefore get one column each per classe.
  */
 const EXPECTED_ARTICULATED_COLUMNS = [
-  { header: 'REL', classeId: null, subjects: ['IRC'] },
+  { header: 'REL/ALT', classeId: null, subjects: ['IRC', 'ALT'] },
   { header: 'Matematica', classeId: null, subjects: ['MAT'] },
   { header: 'Italiano', classeId: CLASSE_C, subjects: ['ITA'] },
   { header: 'Inglese', classeId: CLASSE_C, subjects: ['ING'] },
   { header: 'Storia', classeId: CLASSE_C, subjects: ['STO'] },
+  { header: 'Scienze', classeId: CLASSE_C, subjects: ['SCIENZE'] },
+  { header: 'Fisica', classeId: CLASSE_C, subjects: ['FISICA'] },
+  { header: 'Informatica', classeId: CLASSE_C, subjects: ['INF'] },
   { header: 'Italiano', classeId: CLASSE_C_PARTNER, subjects: ['ITA'] },
   { header: 'Inglese', classeId: CLASSE_C_PARTNER, subjects: ['ING'] },
-  { header: 'Storia', classeId: CLASSE_C_PARTNER, subjects: ['STO'] }
+  { header: 'Storia', classeId: CLASSE_C_PARTNER, subjects: ['STO'] },
+  { header: 'Greco', classeId: CLASSE_C_PARTNER, subjects: ['GRECO'] },
+  { header: 'Latino', classeId: CLASSE_C_PARTNER, subjects: ['LATINO'] },
+  { header: 'Filosofia', classeId: CLASSE_C_PARTNER, subjects: ['FILOSOFIA'] }
 ] as const;
 
 function emails(values: Iterable<string>): string[] {
@@ -285,7 +299,7 @@ function assertSameRecipients(
   actual: string[],
   assignments: TeachingAssignment[]
 ): void {
-  const normalized = emails(actual);
+  const normalized = emails(unique(actual));
   if (JSON.stringify(expected) !== JSON.stringify(normalized)) {
     throw new ValidationError(consumerDiagnostic(consumer, expected, normalized, assignments));
   }
@@ -370,14 +384,14 @@ export function registerEffectiveAssignmentConsumerChecks(
     }
   });
 
-  runner.add('Effective assignment consumers: rendered sheet header REL without ALT', sample.sampleSpreadsheetUrl, () => {
+  runner.add('Effective assignment consumers: rendered articulated sheet header REL/ALT', sample.sampleSpreadsheetUrl, () => {
     const noAltCdu = contextBuilder.build(
       { target: CLASSE_C, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
       recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
     );
     const headers = renderedSheetHeaders(noAltCdu);
-    if (headers[0] !== 'REL') {
-      throw new ValidationError(`expected rendered REL header, actual=${JSON.stringify(headers)}`);
+    if (headers[0] !== 'REL/ALT') {
+      throw new ValidationError(`expected rendered REL/ALT header, actual=${JSON.stringify(headers)}`);
     }
   });
 

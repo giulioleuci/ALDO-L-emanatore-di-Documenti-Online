@@ -1,6 +1,8 @@
-import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
-import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
-import { StatoDocumento, ReligioneScelta, TipoProgetto } from '../domain/value-objects/enums';
+import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from '../SampleDatabaseBuilder';
+import type { IArtifactFactory } from '../E2eTemplateProvisioner';
+import { StatoDocumento, ReligioneScelta, TipoProgetto } from '../../domain/value-objects/enums';
+import { ConfigurationError } from '../../domain/errors/DomainError';
 import {
   TABLE,
   COL_ALUNNI,
@@ -9,22 +11,42 @@ import {
   COL_MATERIE,
   COL_INDIRIZZI,
   COL_DIPART,
-  COL_RUOLI,
   COL_PIANI,
   COL_CARENZE,
   COL_PROGETTI,
-  COL_MOV_ALUNNI,
-  COL_ASL,
   COL_SUPPLENZE,
   COL_VARIAZIONI_CATTEDRA,
   COL_CONF_DOC,
   COL_CONF_MAIL,
   COL_CONF_IMP,
   COL_LOG_DOCS,
-  COL_LOG_FOLD,
-  COL_LOG_MAIL,
   COL_MASTER
-} from '../config/schema';
+} from '../../config/schema';
+import {
+  ALL_CLASSI,
+  ANNI_PRECEDENTI,
+  CLASS_ADDRESS_BY_CLASS,
+  CLASS_LAYOUTS,
+  INDIRIZZI,
+  INDIRIZZO_CLASSICO,
+  INDIRIZZO_SCIENTIFICO,
+  INDIRIZZO_SCIENTIFICO_APPLICATE,
+  MATERIE_PER_INDIRIZZO,
+  MATERIE_PUNTATE,
+  SUPPLENZA_FINE,
+  SUPPLENZA_INIZIO,
+  CONF_DOC_JOBRUNNER,
+  e2eAlunnoEmail,
+  e2eDocenteEmail,
+  type FixtureClasseLayout
+} from './fixtures';
+import { seedAnniPrecedenti, seedConfDedicated, seedLogFold } from './Seeders';
+import { TIPI_PIANO, type E2eTemplateIds } from './SharedTestContracts';
+import { ASSIGNMENT_MATERIE_E2E, HEADERS, MATERIE_E2E } from './SharedTestHeaders';
+
+export * from './fixtures';
+export * from './SharedTestContracts';
+export * from './SharedTestHeaders';
 
 export const CLASSE_A = '1A';
 export const CLASSE_B = '2B';
@@ -38,21 +60,7 @@ export const CLASSE_C_PARTNER = '3C-C';
  * target for the articulated group.
  */
 export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT];
-export const MATERIE_E2E = ['MAT', 'ITA', 'ING', 'STO'];
-export const ASSIGNMENT_MATERIE_E2E = [
-  ...MATERIE_E2E,
-  'INF',
-  'IRC',
-  'ALT'
-] as const;
 export const ASSIGNMENT_MATRIX_DATE_E2E = new Date('2026-07-15T09:00:00Z');
-const ASSIGNMENT_COLUMNS_E2E = [
-  ...MATERIE_E2E,
-  'INF.itp',
-  'LAB.GRUPPO_A',
-  'LAB.SEMINARIO_POMERIDIANO',
-  'INTERPRET.CHITARRA'
-];
 /**
  * Specifica catalog rows (design 2026-07-30-materie-specifica-catalog): every
  * dotted SPECIFICA column in ASSIGNMENT_COLUMNS_E2E needs its own MATERIE row.
@@ -62,20 +70,15 @@ const ASSIGNMENT_COLUMNS_E2E = [
  * entry has a second, empty `specifiche[]` branch to iterate (02 §8.9/§3.3
  * `{ "nome": "flauto", "alunni": [] }`), not just the populated CHITARRA one.
  */
-const SPECIFICA_MATERIE_E2E = [
-  'LAB.GRUPPO_A',
-  'LAB.SEMINARIO_POMERIDIANO',
-  'INTERPRET.CHITARRA',
-  'INTERPRET.FLAUTO'
-];
-export const INDIRIZZO_E2E = 'IND_E2E';
-export const INDIRIZZO_E2E_CLASSICO = 'IND_E2E_CLASSICO';
+const SPECIFICA_MATERIE_E2E = MATERIE_PUNTATE;
+export const INDIRIZZO_E2E = INDIRIZZO_SCIENTIFICO;
+export const INDIRIZZO_E2E_CLASSICO = INDIRIZZO_CLASSICO;
 export const DIPART_E2E = 'DIPART_E2E';
 export const DOCENTE_COUNT = 20;
 /** MATERIE.ESAME_CFG for the scientific E2E indirizzo (02 §2.9/§8.2 `esame.materiePrimaProva`/`materieSecondaProva`). */
 const ESAME_CFG_E2E: Record<string, string> = {
-  ITA: JSON.stringify({ prima_prova: [INDIRIZZO_E2E] }),
-  MAT: JSON.stringify({ seconda_prova: [INDIRIZZO_E2E] })
+  ITA: JSON.stringify({ prima_prova: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] }),
+  MAT: JSON.stringify({ seconda_prova: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] })
 };
 
 /** Name pools for realistic mock data (item 5) — plain constants, not a name generator. */
@@ -136,8 +139,6 @@ function parentRepName(counter: number): string {
   return `${cognome} ${nome}`;
 }
 
-export const TIPI_PIANO = ['PDP_DSA', 'PDP_BES', 'PDP_STRANIERI', 'PEI', 'PFP'] as const;
-
 export const CONF_DOC_VERBALE = 'E2E_VERBALE';
 export const CONF_DOC_CONDOTTA = 'E2E_CONDOTTA';
 export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
@@ -156,14 +157,8 @@ export const CONF_MAIL_LAVORO = 'E2E_MAIL_LAVORO';
 export const CONF_MAIL_STATIC_ALLEGATO = 'E2E_MAIL_STATIC_ALLEGATO';
 export const CONF_IMP_ASL = 'E2E_IMPORT_ASL';
 
-export function e2eDocenteEmail(i: number): string {
-  return `e2edocente${i}@onlinetest.aldo.local`;
-}
-export function e2eAlunnoEmail(i: number): string {
-  return `e2ealunno${i}@onlinetest.aldo.local`;
-}
 export const CARENZA_ALUNNO_1 = e2eAlunnoEmail(1);
-export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(21);
+export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(70);
 
 /**
  * Repeaters (RIPETENTE=true this year): stay in the SAME class both years
@@ -173,10 +168,10 @@ export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(21);
  * exception.
  */
 export const RIPETENTE_1A = e2eAlunnoEmail(2);
-export const RIPETENTE_3C = e2eAlunnoEmail(41);
+export const RIPETENTE_3C = e2eAlunnoEmail(138);
 
 /** Additional 2026-2027 PDP_BES case for 3C. */
-export const PDP_BES_3C = e2eAlunnoEmail(42);
+export const PDP_BES_3C = e2eAlunnoEmail(139);
 /** Same student deliberately owns two plan subtypes, exercising composite plan identity. */
 export const PIANO_DOPPIO_STUDENTE = e2eAlunnoEmail(25);
 
@@ -194,21 +189,7 @@ export const PIANO_STUDENTE: Record<(typeof TIPI_PIANO)[number], string[]> = {
   PFP: [e2eAlunnoEmail(30)]
 };
 
-export interface E2eTemplateIds {
-  verbale: string;
-  condotta: string;
-  riepilogo: string;
-  aslImportSheet: string;
-  docComplesso: string;
-  docArticolata: string;
-  cdcRiepilogo: string;
-  sheetPermessi: string;
-  pianoLavoro: string;
-  staticAttachment: string;
-  piani: Record<(typeof TIPI_PIANO)[number], string>;
-}
-
-export interface E2eSampleDatabase {
+export interface SharedTestDatabase {
   masterSpreadsheetId: string;
   sampleSpreadsheetId: string;
   sampleSpreadsheetUrl: string;
@@ -216,6 +197,10 @@ export interface E2eSampleDatabase {
   /** 2025-2026 database (CLASSI/ALUNNI/LOG_DOCS only) feeding the storico scenarios. */
   priorSampleSpreadsheetId: string;
   priorSampleSpreadsheetUrl: string;
+  priorSampleSpreadsheetId2: string;
+  priorSampleSpreadsheetUrl2: string;
+  logFoldFolderUrl: string;
+  jobRunnerDocConfigId: string;
   masterTestMode: boolean;
   staticAttachmentFileId: string;
 }
@@ -227,64 +212,33 @@ function classePrecedente(classeId: string): string {
   return `${Number(m[1]) - 1}${m[2]}`;
 }
 
-/** Canonical E2E table headers, including dynamic class and carenza columns. */
-export const HEADERS: Record<string, string[]> = {
-  [TABLE.ALUNNI]: Object.values(COL_ALUNNI),
-  [TABLE.DOCENTI]: Object.values(COL_DOCENTI),
-  [TABLE.CLASSI]: [...Object.values(COL_CLASSI), ...ASSIGNMENT_COLUMNS_E2E],
-  [TABLE.MATERIE]: Object.values(COL_MATERIE),
-  [TABLE.INDIRIZZI]: Object.values(COL_INDIRIZZI),
-  [TABLE.DIPART]: Object.values(COL_DIPART),
-  [TABLE.RUOLI]: Object.values(COL_RUOLI),
-  [TABLE.PIANI]: Object.values(COL_PIANI),
-  [TABLE.CARENZE]: [...Object.values(COL_CARENZE), ...MATERIE_E2E],
-  [TABLE.PROGETTI]: Object.values(COL_PROGETTI),
-  [TABLE.MOV_ALUNNI]: Object.values(COL_MOV_ALUNNI),
-  [TABLE.ASL]: Object.values(COL_ASL),
-  [TABLE.SUPPLENZE]: Object.values(COL_SUPPLENZE),
-  [TABLE.VARIAZIONI_CATTEDRA]: Object.values(COL_VARIAZIONI_CATTEDRA),
-  [TABLE.CONF_DOC]: Object.values(COL_CONF_DOC),
-  [TABLE.CONF_MAIL]: Object.values(COL_CONF_MAIL),
-  [TABLE.CONF_IMP]: Object.values(COL_CONF_IMP),
-  [TABLE.LOG_DOCS]: Object.values(COL_LOG_DOCS),
-  [TABLE.LOG_FOLD]: Object.values(COL_LOG_FOLD),
-  [TABLE.LOG_MAIL]: Object.values(COL_LOG_MAIL)
-};
-
 /**
  * Class layout: id, alunni count, coordinatore index (1-based into e2eDocenteEmail),
  * articolazione JSON. 1A and 2B deliberately share coordIndex 1 so the
  * coordinatore-aggregated email scenarios (VERBALE/PIANI) exercise real
  * multi-class aggregation into a single email instead of one email per class.
  */
-interface ClasseLayout {
-  id: string;
-  count: number;
-  coordIndex: number;
-  articolazione: string;
-  /** First N students (0-indexed within the class) get RAPPR_STUD=true (item 3). */
-  studentRepCount: number;
-  /** Last N students (0-indexed within the class) get a free-text RAPPR_GEN name (item 3). */
-  parentRepCount: number;
-  /** 0-indexed-within-class overrides of the ReligioneScelta.IRC default (item 3). */
-  religionExceptions: Array<{ index: number; scelta: ReligioneScelta }>;
-}
+type ClasseLayout = FixtureClasseLayout;
 
 /**
- * Builds a persistent, larger sample SGSA database for the 7 e2e scenarios (design spec
- * `2026-07-21-testonline-mock-db-e2e-design.md`): 3 classi (~20 alunni each, one articolata
- * split 8+12), 20 docenti, exactly 2 CARENZE rows, MASTER.TEST_MODE=true, and CONF_DOC/CONF_MAIL
- * rows for all 7 scenarios. Deliberately separate from `SampleDatabaseBuilder` (which stays
- * small, for the existing smoke-test checks) — different fixed Drive artifact names so both
- * coexist without collision, same reuse-by-fixed-name idempotency.
+ * Builds the persistent shared SGSA dataset: 13 classes, 220 students, two articulated
+ * groups, 20 teachers, exactly two CARENZE rows, MASTER.TEST_MODE=true, and every online-test
+ * configuration. It remains separate from the small smoke-test `SampleDatabaseBuilder` and
+ * uses fixed Drive artifact names so repeated runs reuse the same external structure.
  */
-export class E2eSampleDatabaseBuilder {
+export class SharedTestDatabaseBuilder {
   constructor(
     private readonly spreadsheets: ISampleSpreadsheetFactory,
-    private readonly drive: IDriveFacade
+    private readonly drive: IDriveFacade,
+    private readonly artifacts: IArtifactFactory
   ) {}
 
-  build(templateIds: E2eTemplateIds, master: ISampleSpreadsheet): E2eSampleDatabase {
+  build(
+    templateIds: E2eTemplateIds,
+    master: ISampleSpreadsheet,
+    options: { force?: boolean } = {}
+  ): SharedTestDatabase {
+    void options.force;
     const baseName = '_ALDO_E2E';
     const folderId = this.drive.createFolder(baseName);
     const sampleFolderUrl = `https://drive.google.com/drive/folders/${folderId}`;
@@ -310,21 +264,14 @@ export class E2eSampleDatabaseBuilder {
     this.seedConfDoc(sample, templateIds);
     this.seedConfMail(sample, templateIds);
     this.seedConfImp(sample, templateIds);
-
-    // Previous school year (2025-2026): CLASSI/ALUNNI/LOG_DOCS only — the only
-    // tables StoricoClassiService/StoricoDocumentiService ever read from a
-    // historical database (13 §4/§5), so CARENZE/SUPPLENZE/CONF_DOC/CONF_MAIL/
-    // PIANI would be dead weight here.
-    const prior = this.spreadsheets.createSpreadsheet(`${baseName}_SAMPLE_PRIOR`);
-    for (const table of [TABLE.CLASSI, TABLE.ALUNNI, TABLE.LOG_DOCS]) {
-      prior.addSheet(table, HEADERS[table]!);
-    }
-    this.seedClassiAnnoPrecedente(prior, layouts);
-    this.seedAlunniAnnoPrecedente(prior, layouts);
-    this.seedPianiPersStorico(prior);
-
     const masterTestMode = true;
-    this.seedMaster(master, sample.id, folderId, masterTestMode, prior.id);
+    this.seedMaster(master, sample.id, folderId, masterTestMode);
+    seedLogFold(sample, this.drive, this.artifacts);
+    seedConfDedicated(sample, templateIds);
+    const [prior, prior2] = seedAnniPrecedenti(master, this.spreadsheets, folderId);
+    if (prior === undefined || prior2 === undefined) {
+      throw new ConfigurationError(`Expected ${ANNI_PRECEDENTI.length} prior databases`);
+    }
 
     return {
       masterSpreadsheetId: master.id,
@@ -332,80 +279,44 @@ export class E2eSampleDatabaseBuilder {
       sampleSpreadsheetUrl: sample.getUrl(),
       sampleFolderUrl,
       priorSampleSpreadsheetId: prior.id,
-      priorSampleSpreadsheetUrl: prior.getUrl(),
+      priorSampleSpreadsheetUrl: prior.url,
+      priorSampleSpreadsheetId2: prior2.id,
+      priorSampleSpreadsheetUrl2: prior2.url,
+      logFoldFolderUrl: sampleFolderUrl,
+      jobRunnerDocConfigId: CONF_DOC_JOBRUNNER,
       masterTestMode,
       staticAttachmentFileId: templateIds.staticAttachment
     };
   }
 
   private classLayouts(): ClasseLayout[] {
-    return [
-      {
-        id: CLASSE_A,
-        count: 20,
-        coordIndex: 1,
-        articolazione: '',
-        studentRepCount: 0,
-        parentRepCount: 0,
-        religionExceptions: [
-          { index: 0, scelta: ReligioneScelta.NO },
-          { index: 3, scelta: ReligioneScelta.ALT }
-        ]
-      },
-      {
-        id: CLASSE_B,
-        count: 20,
-        coordIndex: 1,
-        articolazione: '',
-        studentRepCount: 1,
-        parentRepCount: 1,
-        religionExceptions: [{ index: 0, scelta: ReligioneScelta.NO }]
-      },
-      {
-        id: CLASSE_C,
-        count: 8,
-        coordIndex: 3,
-        articolazione: JSON.stringify({
-          parent: CLASSE_C_PARENT,
-          partner: CLASSE_C_PARTNER,
-          partners: null
-        }),
-        studentRepCount: 2,
-        parentRepCount: 1,
-        religionExceptions: [{ index: 2, scelta: ReligioneScelta.ALT }]
-      },
-      {
-        id: CLASSE_C_PARTNER,
-        count: 12,
-        coordIndex: 7,
-        articolazione: JSON.stringify({
-          parent: CLASSE_C_PARENT,
-          partner: CLASSE_C,
-          partners: null
-        }),
-        studentRepCount: 1,
-        parentRepCount: 2,
-        religionExceptions: [
-          { index: 0, scelta: ReligioneScelta.NO },
-          { index: 1, scelta: ReligioneScelta.ALT }
-        ]
+    return ALL_CLASSI.map((id) => {
+      const layout = CLASS_LAYOUTS.find((candidate) => candidate.id === id);
+      if (layout === undefined) {
+        throw new ConfigurationError(`Missing shared class layout for ${id}`);
       }
-    ];
+      return layout;
+    });
   }
 
   private seedIndirizzi(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.INDIRIZZI, {
-      [COL_INDIRIZZI.ID]: INDIRIZZO_E2E,
-      [COL_INDIRIZZI.NOME]: 'Liceo Scientifico (E2E)',
-      [COL_INDIRIZZI.NOME_SINTETICO]: 'SCI',
-      [COL_INDIRIZZI.TIPO]: 'Liceo'
-    });
-    sample.appendRow(TABLE.INDIRIZZI, {
-      [COL_INDIRIZZI.ID]: INDIRIZZO_E2E_CLASSICO,
-      [COL_INDIRIZZI.NOME]: 'Liceo Classico (E2E)',
-      [COL_INDIRIZZI.NOME_SINTETICO]: 'CLA',
-      [COL_INDIRIZZI.TIPO]: 'Liceo'
-    });
+    const labels: Record<string, { nome: string; sintesi: string }> = {
+      [INDIRIZZO_CLASSICO]: { nome: 'Liceo Classico (E2E)', sintesi: 'CLA' },
+      [INDIRIZZO_SCIENTIFICO]: { nome: 'Liceo Scientifico (E2E)', sintesi: 'SCI' },
+      [INDIRIZZO_SCIENTIFICO_APPLICATE]: {
+        nome: 'Liceo Scienze Umane (E2E)',
+        sintesi: 'SUM'
+      }
+    };
+    for (const id of INDIRIZZI) {
+      const label = labels[id]!;
+      sample.appendRow(TABLE.INDIRIZZI, {
+        [COL_INDIRIZZI.ID]: id,
+        [COL_INDIRIZZI.NOME]: label.nome,
+        [COL_INDIRIZZI.NOME_SINTETICO]: label.sintesi,
+        [COL_INDIRIZZI.TIPO]: 'Liceo'
+      });
+    }
   }
 
   private seedDipart(sample: ISampleSpreadsheet): void {
@@ -425,7 +336,15 @@ export class E2eSampleDatabaseBuilder {
       STO: 'Storia',
       INF: 'Informatica',
       IRC: 'Religione cattolica',
-      ALT: 'Attività alternativa'
+      ALT: 'Attività alternativa',
+      GRECO: 'Greco',
+      LATINO: 'Latino',
+      FILOSOFIA: 'Filosofia',
+      PSICOLOGIA: 'Psicologia',
+      SCIUMANE: 'Scienze umane',
+      DIRECON: 'Diritto ed economia',
+      SCIENZE: 'Scienze',
+      FISICA: 'Fisica'
     };
     ASSIGNMENT_MATERIE_E2E.forEach((sigla) => {
       sample.appendRow(TABLE.MATERIE, {
@@ -502,41 +421,15 @@ export class E2eSampleDatabaseBuilder {
     }
   }
 
-  /**
-   * 5 CLASSI rows (2 plain + 1 articulated parent + 2 populated partners).
-   * Non-parent rows retain deterministic round-robin assignments over the
-   * first 8 docenti; the parent resolves the union of its partners. Single
-   * exception: 3C-C's MAT is pinned to 3C-S's own MAT holder so the articulated
-   * group has one genuinely shared (COMUNE) cattedra — see the inline comment.
-   */
+  /** All shared classes with the complete address-specific assignment matrix. */
   private seedClassi(sample: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
     layouts.forEach((layout, classIndex) => {
-      if (layout.id === CLASSE_C) {
-        sample.appendRow(TABLE.CLASSI, {
-          [COL_CLASSI.ID]: CLASSE_C_PARENT,
-          [COL_CLASSI.ANNO]: 3,
-          [COL_CLASSI.INDIRIZZO]: INDIRIZZO_E2E,
-          [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
-            parent: null,
-            partner: null,
-            partners: `${CLASSE_C},${CLASSE_C_PARTNER}`
-          }),
-          [COL_CLASSI.RUOLI]: '',
-          [COL_CLASSI.ATTIVA]: true,
-          [COL_CLASSI.COORD]: '',
-          [COL_CLASSI.IRC]: '',
-          [COL_CLASSI.ALT]: '',
-          [COL_CLASSI.SEZ]: 'C',
-          [COL_CLASSI.TERMINALE]: false,
-          [COL_CLASSI.STORICO]: ''
-        });
-      }
+      const indirizzo = CLASS_ADDRESS_BY_CLASS[layout.id]!;
       const row: Record<string, unknown> = {
         [COL_CLASSI.ID]: layout.id,
-        [COL_CLASSI.ANNO]: 3,
-        [COL_CLASSI.INDIRIZZO]:
-          layout.id === CLASSE_C_PARTNER ? INDIRIZZO_E2E_CLASSICO : INDIRIZZO_E2E,
-        [COL_CLASSI.ARTICOLAZIONE]: layout.articolazione,
+        [COL_CLASSI.ANNO]: Number(layout.id.charAt(0)),
+        [COL_CLASSI.INDIRIZZO]: indirizzo,
+        [COL_CLASSI.ARTICOLAZIONE]: this.articolazione(layout),
         [COL_CLASSI.RUOLI]: '',
         [COL_CLASSI.ATTIVA]: true,
         [COL_CLASSI.COORD]: e2eDocenteEmail(layout.coordIndex),
@@ -548,24 +441,20 @@ export class E2eSampleDatabaseBuilder {
         // CLASSI.STORICO) — 1A is an entry class with no 2025-2026 identity.
         [COL_CLASSI.STORICO]: layout.id === CLASSE_A ? '' : classePrecedente(layout.id)
       };
-      MATERIE_E2E.forEach((sigla, materiaIndex) => {
-        const docenteIndex = ((classIndex * MATERIE_E2E.length + materiaIndex) % 8) + 1;
+      const materie =
+        MATERIE_PER_INDIRIZZO[indirizzo as keyof typeof MATERIE_PER_INDIRIZZO];
+      materie.forEach((sigla, materiaIndex) => {
+        const docenteIndex = ((classIndex * materie.length + materiaIndex) % DOCENTE_COUNT) + 1;
         row[sigla] = e2eDocenteEmail(docenteIndex);
       });
-      if (layout.id === CLASSE_C_PARTNER) {
-        // Cattedra COMUNE al gruppo articolato 3C (override mirato del round-robin,
-        // che altrimenti darebbe insiemi di docenti DISGIUNTI alle due partner —
-        // docenti 1-4 a 3C-S, 5-8 a 3C-C — rendendo `tipoArticolazione` mai
-        // `'COMUNE'` e `focus.classe.consiglioDiClasseComune` strutturalmente vuoto).
-        // docente1 tiene già MAT in 3C-S (classIndex 2, materiaIndex 0): pinnando qui
-        // la stessa materia allo stesso docente si ottiene un docente realmente
-        // condiviso da tutto il gruppo, come in una vera classe articolata (alcune
-        // cattedre comuni, le altre separate per indirizzo). Le restanti materie di
-        // 3C-C restano sui docenti 6/7/8, quindi lo split SEPARATO_PRIMO/SECONDO
-        // continua a essere esercitato. STO/3C-C NON va toccata: docente8 vi tiene
-        // l'unica altra sua cattedra STO, su cui poggia il caso SUPPLENZE
-        // "restriction-by-omission" (vedi `seedSupplenzeEVariazioni`).
-        row[MATERIE_E2E[0]!] = e2eDocenteEmail(1);
+      if ([CLASSE_C, CLASSE_C_PARTNER].includes(layout.id)) {
+        row.MAT = e2eDocenteEmail(1);
+      }
+      if (layout.id === CLASSE_B || layout.id === CLASSE_C_PARTNER) {
+        row.STO = e2eDocenteEmail(8);
+      }
+      if (layout.id === CLASSE_C) {
+        row.SCIENZE = e2eDocenteEmail(20);
       }
       if (layout.id === CLASSE_A) {
         Object.assign(row, {
@@ -577,8 +466,23 @@ export class E2eSampleDatabaseBuilder {
           [COL_CLASSI.ALT]: e2eDocenteEmail(7)
         });
       }
+      if (layout.id === '4A') {
+        row['INTERPRET.CHITARRA'] = e2eDocenteEmail(11);
+      }
       sample.appendRow(TABLE.CLASSI, row);
     });
+  }
+
+  private articolazione(layout: ClasseLayout): string {
+    if (layout.id === '3C') {
+      return JSON.stringify({ parent: null, partner: null, partners: '3C-S,3C-C' });
+    }
+    if (layout.id === '5B') {
+      return JSON.stringify({ parent: null, partner: null, partners: '5B-S,5B-C' });
+    }
+    if (layout.articolazione === '{}') return '';
+    const parsed = JSON.parse(layout.articolazione) as { parent: string; partner: string };
+    return JSON.stringify({ ...parsed, partners: null });
   }
 
   /** Realistic Italian full names (item 5), deterministic per counter — cognome/nome pool sizes are coprime (17/13) so none of the 60 students repeat. */
@@ -619,126 +523,6 @@ export class E2eSampleDatabaseBuilder {
         });
         counter += 1;
       }
-    }
-  }
-
-  /**
-   * Previous-year (2025-2026) CLASSI rows: each class becomes its anno-1 name
-   * (2B→1B, 3C-S→2C-S, 3C-C→2C-C), reusing the same coordinatore/cattedra
-   * assignment as the current year (same teachers, one year earlier). 1A and
-   * 3C-S additionally get a same-name row for their repeater (item
-   * "repeaters") — the only reason 1A (normally an entry class with no
-   * prior-year identity) has any 2025-2026 presence at all.
-   */
-  private seedClassiAnnoPrecedente(prior: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
-    const classeCIndex = layouts.findIndex((l) => l.id === CLASSE_C);
-    const rows = layouts.map((layout, classIndex) => ({
-      id: layout.id === CLASSE_A ? CLASSE_A : classePrecedente(layout.id),
-      layout,
-      classIndex
-    }));
-    // The 3C-S repeater needs a same-name row, distinct from 2C-S (the promoted majority).
-    rows.push({ id: CLASSE_C, layout: layouts[classeCIndex]!, classIndex: classeCIndex });
-
-    for (const { id, layout, classIndex } of rows) {
-      const row: Record<string, unknown> = {
-        [COL_CLASSI.ID]: id,
-        [COL_CLASSI.ANNO]: 3,
-        [COL_CLASSI.INDIRIZZO]: INDIRIZZO_E2E,
-        // Not carried over: current-year articolazione partner names (3C-S/3C-C)
-        // don't apply verbatim to the promoted prior-year pair, and neither
-        // storico service reads it.
-        [COL_CLASSI.ARTICOLAZIONE]: '',
-        [COL_CLASSI.RUOLI]: '',
-        [COL_CLASSI.ATTIVA]: true,
-        [COL_CLASSI.COORD]: e2eDocenteEmail(layout.coordIndex),
-        [COL_CLASSI.IRC]: '',
-        [COL_CLASSI.ALT]: '',
-        [COL_CLASSI.SEZ]: id.replace(/[0-9-]/g, '') || 'A',
-        [COL_CLASSI.TERMINALE]: false,
-        [COL_CLASSI.STORICO]: ''
-      };
-      MATERIE_E2E.forEach((sigla, materiaIndex) => {
-        const docenteIndex = ((classIndex * MATERIE_E2E.length + materiaIndex) % 8) + 1;
-        row[sigla] = e2eDocenteEmail(docenteIndex);
-      });
-      prior.appendRow(TABLE.CLASSI, row);
-    }
-  }
-
-  /**
-   * Previous-year (2025-2026) ALUNNI rows: the promoted roster of each class
-   * (same email/name, one class down) — 1A's genuine freshmen (this year's
-   * newcomers) have no 2025-2026 row at all, only its repeater does, staying
-   * in 1A both years (matching `seedClassiAnnoPrecedente`'s same-name rows).
-   */
-  private seedAlunniAnnoPrecedente(prior: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
-    let counter = 1;
-    for (const layout of layouts) {
-      for (let n = 0; n < layout.count; n++) {
-        const email = e2eAlunnoEmail(counter);
-        const isRipetente = email === RIPETENTE_1A || email === RIPETENTE_3C;
-        if (layout.id === CLASSE_A && !isRipetente) {
-          counter += 1;
-          continue;
-        }
-        const cognome = ALUNNO_COGNOMI[(counter - 1) % ALUNNO_COGNOMI.length]!;
-        const nome = ALUNNO_NOMI[(counter - 1) % ALUNNO_NOMI.length]!;
-        prior.appendRow(TABLE.ALUNNI, {
-          [COL_ALUNNI.EMAIL]: email,
-          [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
-          [COL_ALUNNI.CLASSE]: isRipetente ? layout.id : classePrecedente(layout.id),
-          [COL_ALUNNI.RELIGIONE]: ReligioneScelta.IRC,
-          [COL_ALUNNI.CURRICULUM]: '',
-          [COL_ALUNNI.ATTIVO]: true,
-          // Not yet repeating in 2025-2026 — the repetition is what makes them one THIS year.
-          [COL_ALUNNI.RIPETENTE]: false,
-          [COL_ALUNNI.RAPPR_STUD]: false,
-          [COL_ALUNNI.RAPPR_GEN]: '',
-          [COL_ALUNNI.TUTOR_1]: `tutor${counter}@onlinetest.aldo.local`,
-          [COL_ALUNNI.TUTOR_2]: '',
-          [COL_ALUNNI.NOTE]: ''
-        });
-        counter += 1;
-      }
-    }
-  }
-
-  /**
-   * Prior-year (2025-2026) rows use the stable personalized-plan generator ID.
-   * The dual-plan student has both PEI and PDP_BES history so the email scenario
-   * proves that SOTTOTIPO, not ID_GEN alone, isolates historical associations.
-   */
-  private seedPianiPersStorico(prior: ISampleSpreadsheet): void {
-    const rows: Array<{ tipo: string; studente: string; classe: string }> = [
-      {
-        tipo: 'PEI',
-        studente: PIANO_DOPPIO_STUDENTE,
-        classe: classePrecedente(CLASSE_B)
-      },
-      {
-        tipo: 'PDP_BES',
-        studente: PIANO_DOPPIO_STUDENTE,
-        classe: classePrecedente(CLASSE_B)
-      }
-    ];
-    for (const { tipo, studente, classe } of rows) {
-      prior.appendRow(TABLE.LOG_DOCS, {
-        [COL_LOG_DOCS.ID]: `E2E_FAKE_LOGDOC_${tipo}_2025_2026`,
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
-        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
-        [COL_LOG_DOCS.NOME]: `E2E_Piano_${tipo}_2025_2026`,
-        [COL_LOG_DOCS.STATO]: StatoDocumento.GENERATO,
-        [COL_LOG_DOCS.NOTIFICATO]: '2025-11-15T09:00:00.000Z',
-        [COL_LOG_DOCS.PATH]: '_ALDO_E2E_OUTPUT',
-        [COL_LOG_DOCS.LINK]: `https://drive.google.com/file/d/E2E_FAKE_${tipo}_2025_2026/edit`,
-        [COL_LOG_DOCS.CLASSI]: classe,
-        [COL_LOG_DOCS.UTENTI]: studente,
-        [COL_LOG_DOCS.MATERIE]: '',
-        [COL_LOG_DOCS.DATA_CREAZ]: '2025-11-10T09:00:00.000Z',
-        [COL_LOG_DOCS.ID_ORIG]: ''
-      });
     }
   }
 
@@ -865,6 +649,31 @@ export class E2eSampleDatabaseBuilder {
       [COL_SUPPLENZE.AL]: '2026-08-10',
       [COL_SUPPLENZE.CLASSI]: CLASSE_A,
       [COL_SUPPLENZE.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO'
+    });
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(20),
+      [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
+      [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
+      [COL_SUPPLENZE.CLASSI]: '4A',
+      [COL_SUPPLENZE.MATERIE]: 'MAT'
+    });
+    // Same holder and window, but a different real cattedra: resolving 4A/MAT
+    // must never leak the overlapping 2B/ING substitution into the focus.
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
+      [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
+      [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
+      [COL_SUPPLENZE.CLASSI]: CLASSE_B,
+      [COL_SUPPLENZE.MATERIE]: 'ING'
+    });
+    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
+      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO',
+      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(4),
+      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(20),
+      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-10-16'
     });
   }
 
@@ -1163,7 +972,7 @@ export class E2eSampleDatabaseBuilder {
         { TIPO_BOX: 'cartelle' }
       ]),
       [COL_CONF_MAIL.TESTO]: '<p>In allegato il verbale del consiglio di classe.</p>',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
@@ -1183,7 +992,7 @@ export class E2eSampleDatabaseBuilder {
         { TIPO_BOX: 'cartelle' }
       ]),
       [COL_CONF_MAIL.TESTO]: '<p>In allegato la scheda di valutazione condotta.</p>',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_SUPPLENTI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
@@ -1205,7 +1014,7 @@ export class E2eSampleDatabaseBuilder {
       ]),
       [COL_CONF_MAIL.TESTO]:
         '<p>Comunichiamo una carenza rilevata per il/la vostro/a figlio/a.</p>',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
       [COL_CONF_MAIL.CONDIZIONE]: '',
@@ -1230,7 +1039,7 @@ export class E2eSampleDatabaseBuilder {
         { TIPO_BOX: 'piani_pers_inviati' }
       ]),
       [COL_CONF_MAIL.TESTO]: '<p>Piani personalizzati nuovi e già notificati.</p>',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
@@ -1270,7 +1079,7 @@ export class E2eSampleDatabaseBuilder {
       ]),
       [COL_CONF_MAIL.TESTO]:
         '<p>Il piano di lavoro e la cartella dei verbali delle riunioni sono collegati di seguito.</p>',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
@@ -1285,7 +1094,7 @@ export class E2eSampleDatabaseBuilder {
       [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
       [COL_CONF_MAIL.BOX_CFG]: '[]',
       [COL_CONF_MAIL.TESTO]: '<p>Messaggio con allegato statico di prova.</p>',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
+      [COL_CONF_MAIL.SUPPLENTI]: 'ENTRAMBI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
       [COL_CONF_MAIL.CONDIZIONE]: '',
@@ -1314,23 +1123,11 @@ export class E2eSampleDatabaseBuilder {
     master: ISampleSpreadsheet,
     sampleSpreadsheetId: string,
     folderId: string,
-    testMode: boolean,
-    priorSampleSpreadsheetId: string
+    testMode: boolean
   ): void {
     master.appendRow(TABLE.MASTER, {
       [COL_MASTER.ANNO_SCOLASTICO]: '2026-2027',
       [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
-      [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
-      [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente E2E',
-      [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local',
-      [COL_MASTER.TEST_MODE]: testMode
-    });
-    // Historical row (13 §1): MUST come after the current year's — the sheet
-    // stays in descending-year order (MasterSheetRepository.ts: "first row is
-    // always the current year, no computation").
-    master.appendRow(TABLE.MASTER, {
-      [COL_MASTER.ANNO_SCOLASTICO]: '2025-2026',
-      [COL_MASTER.ID_SPREADSHEET]: priorSampleSpreadsheetId,
       [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
       [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente E2E',
       [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local',

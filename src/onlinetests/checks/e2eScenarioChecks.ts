@@ -39,8 +39,8 @@ import {
   PIANO_DOPPIO_STUDENTE,
   PDP_BES_3C,
   e2eDocenteEmail,
-  type E2eSampleDatabase
-} from '../E2eSampleDatabaseBuilder';
+  type SharedTestDatabase
+} from '../data/SharedTestDatabaseBuilder';
 
 function emailDiagnostics(result: SendPatternResult): string {
   return [
@@ -106,7 +106,7 @@ export function verifyProtectedRangeScenario(
 export function registerE2eScenarioChecks(
   runner: TestRunner,
   container: ServiceContainer,
-  sample: E2eSampleDatabase & { testMode: boolean }
+  sample: SharedTestDatabase & { testMode: boolean }
 ): void {
   if (!sample.testMode) {
     runner.add('E2E scenarios: MASTER.TEST_MODE guard', sample.sampleSpreadsheetUrl, () => {

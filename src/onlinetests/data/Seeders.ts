@@ -3,7 +3,8 @@ import type {
   ISampleSpreadsheetFactory
 } from '../SampleDatabaseBuilder';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
-import { e2eAlunnoEmail, HEADERS, type E2eTemplateIds } from '../E2eSampleDatabaseBuilder';
+import type { E2eTemplateIds } from './SharedTestContracts';
+import { HEADERS } from './SharedTestHeaders';
 import type { IArtifactFactory, SheetValueUpdate } from '../E2eTemplateProvisioner';
 import {
   ANNI_PRECEDENTI,
@@ -17,6 +18,7 @@ import {
   CONF_MAIL_STORICO,
   EMAIL_TEST_SAFE
 } from './fixtures';
+import { e2eAlunnoEmail } from './fixtures';
 import {
   COL_ALUNNI,
   COL_ASL,
@@ -65,11 +67,18 @@ const CONF_DOC_CERCA_DOCUMENTI_SOURCE = 'E2E_DOC_SOURCE_IMPORT';
  * A spreadsheet handle cannot create sibling spreadsheets, so the factory is
  * deliberately explicit rather than hidden behind an unsafe cast.
  */
+export interface SeededPriorDatabase {
+  anno: string;
+  id: string;
+  url: string;
+}
+
 export function seedAnniPrecedenti(
   master: ISampleSpreadsheet,
   spreadsheets: ISampleSpreadsheetFactory,
   rootFolderId: string
-): void {
+): SeededPriorDatabase[] {
+  const seeded: SeededPriorDatabase[] = [];
   for (const anno of ANNI_PRECEDENTI) {
     const prior = spreadsheets.createSpreadsheet(`_ALDO_E2E_PRIOR_${anno}`);
     for (const table of HISTORICAL_TABLES) {
@@ -84,7 +93,9 @@ export function seedAnniPrecedenti(
       [COL_MASTER.SUPERVISORE_EMAIL]: EMAIL_TEST_SAFE,
       [COL_MASTER.TEST_MODE]: true
     });
+    seeded.push({ anno, id: prior.id, url: prior.getUrl() });
   }
+  return seeded;
 }
 
 /** Seeds every table read by the historical CDU providers for one school year. */

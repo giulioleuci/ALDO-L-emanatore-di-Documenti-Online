@@ -22,7 +22,10 @@ import {
   registerEffectiveAssignmentConsumerChecks
 } from './checks/contextEngineChecks';
 import { registerPipelineChecks } from './checks/pipelineChecks';
-import { E2eSampleDatabaseBuilder, type E2eTemplateIds } from './E2eSampleDatabaseBuilder';
+import {
+  SharedTestDatabaseBuilder,
+  type E2eTemplateIds
+} from './data/SharedTestDatabaseBuilder';
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { GasArtifactFactory } from './GasArtifactFactory';
 import { registerE2eScenarioChecks } from './checks/e2eScenarioChecks';
@@ -113,6 +116,10 @@ export function executeArticolazioneScenarios(
     sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
     priorSampleSpreadsheetId: '',
     priorSampleSpreadsheetUrl: '',
+    priorSampleSpreadsheetId2: '',
+    priorSampleSpreadsheetUrl2: '',
+    logFoldFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    jobRunnerDocConfigId: '',
     masterTestMode: master.testMode,
     staticAttachmentFileId: '',
     testMode: master.testMode
@@ -315,7 +322,11 @@ export function executeE2eScenarios(overrides: Partial<E2eTestDeps> = {}): Onlin
   const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
     templateFolderId
   );
-  const sample = new E2eSampleDatabaseBuilder(spreadsheetFactory, drive).build(templateIds, master);
+  const sample = new SharedTestDatabaseBuilder(
+    spreadsheetFactory,
+    drive,
+    artifactFactory
+  ).build(templateIds, master);
 
   log(`Previous MASTER_SPREADSHEET_ID before e2e-scenario override: ${masterSpreadsheetId}`);
   properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);

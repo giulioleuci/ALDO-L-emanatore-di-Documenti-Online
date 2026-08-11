@@ -8,7 +8,7 @@ import {
   runOnlineTests
 } from '../../../src/onlinetests/index';
 import { PROP_ONLINETEST_MASTER_SPREADSHEET_ID } from '../../../src/onlinetests';
-import { E2eSampleDatabaseBuilder } from '../../../src/onlinetests/E2eSampleDatabaseBuilder';
+import { SharedTestDatabaseBuilder } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {
   CLASSE_BASE,
   CLASSE_PARTNER,
@@ -402,7 +402,7 @@ describe('executeOnlineTests', () => {
 describe('executeArticolazioneScenarios', () => {
   it('rejects a missing MASTER pointer before ALDO initialization or E2E provisioning', () => {
     const initAldo = jest.fn();
-    const build = jest.spyOn(E2eSampleDatabaseBuilder.prototype, 'build');
+    const build = jest.spyOn(SharedTestDatabaseBuilder.prototype, 'build');
 
     expect(() =>
       executeArticolazioneScenarios({
@@ -421,7 +421,7 @@ describe('executeArticolazioneScenarios', () => {
 
   it('rejects a MASTER that is not a test database before ALDO initialization or E2E provisioning', () => {
     const initAldo = jest.fn();
-    const build = jest.spyOn(E2eSampleDatabaseBuilder.prototype, 'build');
+    const build = jest.spyOn(SharedTestDatabaseBuilder.prototype, 'build');
 
     expect(() =>
       executeArticolazioneScenarios({
@@ -531,7 +531,8 @@ describe('executeE2eScenarios', () => {
     );
     expect(spreadsheetFactory.createSpreadsheet.mock.calls.map(([name]) => name)).toEqual([
       '_ALDO_E2E_SAMPLE',
-      '_ALDO_E2E_SAMPLE_PRIOR'
+      '_ALDO_E2E_PRIOR_2025-2026',
+      '_ALDO_E2E_PRIOR_2024-2025'
     ]);
   });
 });

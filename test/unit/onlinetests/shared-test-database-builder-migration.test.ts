@@ -196,15 +196,17 @@ test('preserves the legacy focal identities, coordinators, representatives, and 
   expect(classOf(e2eAlunnoEmail(1))).toBe(CLASSE_A);
   expect(classOf(e2eAlunnoEmail(21))).toBe(CLASSE_B);
   expect(classOf(e2eAlunnoEmail(41))).toBe(CLASSE_C);
+  expect(classOf(e2eAlunnoEmail(42))).toBe(CLASSE_C);
   expect(classOf(e2eAlunnoEmail(43))).toBe(CLASSE_C);
   expect(classOf(e2eAlunnoEmail(44))).toBe(CLASSE_C);
   expect(classOf(e2eAlunnoEmail(51))).toBe(CLASSE_C_PARTNER);
   expect(classOf(e2eAlunnoEmail(52))).toBe(CLASSE_C_PARTNER);
   expect(classOf(e2eAlunnoEmail(138))).toBe('3C');
   expect(CARENZA_ALUNNO_2).toBe(e2eAlunnoEmail(21));
-  expect(PDP_BES_3C).toBe(e2eAlunnoEmail(41));
+  expect(PDP_BES_3C).toBe(e2eAlunnoEmail(42));
   expect(RIPETENTE_1A).toBe(e2eAlunnoEmail(2));
   expect(RIPETENTE_3C).toBe(e2eAlunnoEmail(41));
+  expect(PDP_BES_3C).not.toBe(RIPETENTE_3C);
 
   const classRow = (id: string) =>
     sample.rows[TABLE.CLASSI].find((row) => row[COL_CLASSI.ID] === id)!;

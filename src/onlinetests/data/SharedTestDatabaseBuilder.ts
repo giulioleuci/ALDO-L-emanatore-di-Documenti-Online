@@ -175,8 +175,8 @@ export const CARENZA_ALUNNO_2 = e2eAlunnoEmail(21);
 export const RIPETENTE_1A = e2eAlunnoEmail(2);
 export const RIPETENTE_3C = e2eAlunnoEmail(41);
 
-/** Additional 2026-2027 PDP_BES case for 3C. */
-export const PDP_BES_3C = e2eAlunnoEmail(41);
+/** Distinct 2026-2027 PDP_BES case for articulated 3C-S; not the repeater seam. */
+export const PDP_BES_3C = e2eAlunnoEmail(42);
 /** Same student deliberately owns two plan subtypes, exercising composite plan identity. */
 export const PIANO_DOPPIO_STUDENTE = e2eAlunnoEmail(25);
 

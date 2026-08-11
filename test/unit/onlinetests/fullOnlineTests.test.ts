@@ -18,6 +18,7 @@ import {
 } from '../../../src/onlinetests/checks/contextEngineChecks';
 import { registerPipelineChecks } from '../../../src/onlinetests/checks/pipelineChecks';
 import { registerDocumentiChecks } from '../../../src/onlinetests/checks/documentiChecks';
+import { registerE2eLegacyScenarioChecks } from '../../../src/onlinetests/checks/e2eScenarioChecks';
 import { registerArticolazioneChecks } from '../../../src/onlinetests/checks/articolazioneChecks';
 
 jest.mock('../../../src/onlinetests/checks/repositoryChecks', () => ({
@@ -33,6 +34,9 @@ jest.mock('../../../src/onlinetests/checks/pipelineChecks', () => ({
 }));
 jest.mock('../../../src/onlinetests/checks/documentiChecks', () => ({
   registerDocumentiChecks: jest.fn()
+}));
+jest.mock('../../../src/onlinetests/checks/e2eScenarioChecks', () => ({
+  registerE2eLegacyScenarioChecks: jest.fn()
 }));
 jest.mock('../../../src/onlinetests/checks/articolazioneChecks', () => ({
   registerArticolazioneChecks: jest.fn()
@@ -139,19 +143,21 @@ describe('executeFullOnlineTests', () => {
       );
     const repository = registerExisting('repository');
     const context = registerExisting('context');
-    const documentiStandard = registerExisting('documenti.standard');
-    const documentiArticolati = registerExisting('documenti.articolati');
+    const documenti = registerExisting('documenti');
     const pipeline = registerExisting('email');
+    const legacyEmail = registerExisting('legacy.email');
+    const legacyImport = registerExisting('legacy.import');
     const articolazione = registerExisting('articolazione');
     const assignmentMatrix = registerExisting('supplenze.matrix');
     const assignmentConsumer = registerExisting('supplenze.consumer');
     jest.mocked(registerRepositoryChecks).mockImplementation(repository);
     jest.mocked(registerContextEngineChecks).mockImplementation(context);
-    jest
-      .mocked(registerDocumentiChecks)
-      .mockImplementationOnce(documentiStandard)
-      .mockImplementationOnce(documentiArticolati);
+    jest.mocked(registerDocumentiChecks).mockImplementation(documenti);
     jest.mocked(registerPipelineChecks).mockImplementation(pipeline);
+    jest
+      .mocked(registerE2eLegacyScenarioChecks)
+      .mockImplementationOnce(legacyEmail)
+      .mockImplementationOnce(legacyImport);
     jest.mocked(registerArticolazioneChecks).mockImplementation(articolazione);
     jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
     jest.mocked(registerEffectiveAssignmentConsumerChecks).mockImplementation(assignmentConsumer);
@@ -177,9 +183,10 @@ describe('executeFullOnlineTests', () => {
       'interceptor',
       'repository',
       'context',
-      'documenti.standard',
-      'documenti.articolati',
+      'documenti',
       'email',
+      'legacy.email',
+      'legacy.import',
       'articolazione',
       'supplenze.matrix',
       'supplenze.consumer'
@@ -195,11 +202,11 @@ describe('executeFullOnlineTests', () => {
     expect(report.results.map((result) => result.name)).toEqual([
       'repository',
       'context',
-      'documenti.standard',
-      'documenti.articolati',
+      'documenti',
       'email',
+      'legacy.email',
       'Aggregate scenario pending migration: jobrunner',
-      'Aggregate scenario pending migration: import',
+      'legacy.import',
       'Aggregate scenario pending migration: storico',
       'articolazione',
       'Aggregate scenario pending migration: itp-dotted',

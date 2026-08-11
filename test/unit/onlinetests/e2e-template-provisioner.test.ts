@@ -68,7 +68,7 @@ test('creates all 21 E2E artifacts, including the dedicated table, history, and 
   expect(ids.staticAttachment).toMatch(/^doc_/);
   expect(created).toContain('doc:E2E Static Attachment Fixture');
   expect(created).toContain('doc:E2E Riepilogo Template v4');
-  expect(created).toContain('doc:E2E Doc Complesso Template v2');
+  expect(created).toContain('doc:E2E Doc Complesso Template v3');
   expect(ids.docArticolata).toMatch(/^doc_/);
   expect(created).toContain('doc:E2E Doc Articolata Template');
   expect(ids).toHaveProperty('cdcRiepilogo', expect.stringMatching(/^doc_/));

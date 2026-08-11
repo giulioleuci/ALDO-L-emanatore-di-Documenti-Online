@@ -1,4 +1,5 @@
 import {
+  registerE2eLegacyScenarioChecks,
   registerE2eScenarioChecks,
   verifyProtectedRangeScenario
 } from '../../../src/onlinetests/checks/e2eScenarioChecks';
@@ -148,8 +149,7 @@ function recordingHarness(
         ].join(' ');
       }
       if (configId === CONF_DOC_RIEPILOGO_FIRME_CDC) {
-        planTexts[fileId] =
-          `Riepilogo firme del Consiglio di Classe ${classe.value} Matematica`;
+        planTexts[fileId] = `Riepilogo firme del Consiglio di Classe ${classe.value} Matematica`;
       }
       if (configId === CONF_DOC_COMPLESSO && classe.value === '1A') {
         planTexts[fileId] = [
@@ -419,7 +419,7 @@ test('protected range scenario does not swallow generation errors in test mode',
   expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(rejection);
 });
 
-test('protected range scenario: test mode requires rendered headers despite structured protection failures', () => {
+test('protected range scenario: test mode rejects structured protection failures after rendered headers', () => {
   const protectionResult = {
     spreadsheetId: 'rendered-sheet',
     protectedCount: 0,
@@ -447,7 +447,9 @@ test('protected range scenario: test mode requires rendered headers despite stru
     }
   } as unknown as DocumentGenerationService;
 
-  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).not.toThrow();
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
+    /nessun range protetto/
+  );
   expect(protectionResult.failures).toHaveLength(1);
 });
 
@@ -891,22 +893,23 @@ test('scenario 10: fails when the generated doc still has an unresolved {{...}} 
 
 test('scenario 11: passes when every generated sheet has protected ranges with non-empty editors', () => {
   const harness = recordingHarness();
+  const getProtectedRanges = jest.fn(() => [
+    {
+      id: 'p1',
+      range: {},
+      description: '',
+      editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
+      sheetId: 0,
+      sheetName: 'Sheet1',
+      warningOnly: false
+    }
+  ]);
   const container = {
     get<T>(key: string): T {
       if (key === 'spreadsheets') {
         return {
           getRanges: () => [['MAT', 'ALT', 'Docente']],
-          getProtectedRanges: () => [
-            {
-              id: 'p1',
-              range: {},
-              description: '',
-              editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
-              sheetId: 0,
-              sheetName: 'Sheet1',
-              warningOnly: false
-            }
-          ]
+          getProtectedRanges
         } as unknown as T;
       }
       return harness.container.get<T>(key);
@@ -918,9 +921,10 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
   expect(scenario11).toMatchObject({ status: 'pass' });
+  expect(getProtectedRanges).toHaveBeenCalled();
 });
 
-test('scenario 11: allows missing protected ranges as test-mode diagnostics after rendering', () => {
+test('scenario 11: rejects missing protected ranges in TEST_MODE after rendering', () => {
   const harness = recordingHarness();
   const container = {
     get<T>(key: string): T {
@@ -938,7 +942,28 @@ test('scenario 11: allows missing protected ranges as test-mode diagnostics afte
   registerE2eScenarioChecks(runner, container, sample);
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
-  expect(scenario11?.status).toBe('pass');
+  expect(scenario11?.status).toBe('fail');
+  expect(scenario11?.message).toMatch(/nessun range protetto/i);
+});
+
+test('legacy email and import adapters retain their existing E2E callbacks without document duplication', () => {
+  const harness = recordingHarness();
+  const emailNames: string[] = [];
+  const importNames: string[] = [];
+  const emailRunner = { add: (name: string) => emailNames.push(name) };
+  const importRunner = { add: (name: string) => importNames.push(name) };
+
+  registerE2eLegacyScenarioChecks(emailRunner as never, harness.container, sample, 'email');
+  registerE2eLegacyScenarioChecks(importRunner as never, harness.container, sample, 'import');
+
+  expect(emailNames).toEqual([
+    'E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)',
+    'E2E scenario 13: invia allegato statico non rappresentato da box (TEST_MODE)',
+    'E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)',
+    'E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)',
+    'E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)'
+  ]);
+  expect(importNames).toEqual(['E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)']);
 });
 
 test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.ALLEGATI', () => {

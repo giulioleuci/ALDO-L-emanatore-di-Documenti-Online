@@ -12,9 +12,10 @@ interface RegisteredCheck {
 
 class RecordingRunner {
   readonly checks: RegisteredCheck[] = [];
+  readonly callbacks = new Map<string, () => void>();
 
   add(name: string, artifactUrl: string | undefined, callback: () => void): void {
-    void callback;
+    this.callbacks.set(name, callback);
     this.checks.push({ name, artifactUrl });
   }
 }
@@ -71,4 +72,55 @@ test('registers only the articulated document scenarios in the articulated suite
     'E2E scenario 10b: genera documento complesso classe articolata (3C)',
     'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA'
   ]);
+});
+
+test('registers one TEST_MODE guard when the aggregate document scope is unsafe', () => {
+  const runner = new RecordingRunner();
+  const container = { get: () => ({}) } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, { ...sample, testMode: false }, 'all');
+
+  expect(runner.checks).toEqual([
+    {
+      name: 'E2E scenarios: MASTER.TEST_MODE guard',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    }
+  ]);
+});
+
+test('rejects interop output without a rendered table cell and template link', () => {
+  const runner = new RecordingRunner();
+  const documentGenerationService = { generateForClasse: () => ({ fileId: 'complesso-1A' }) };
+  const db = {
+    table: () => ({
+      findAll: () => [
+        {
+          ID_GEN: 'E2E_DOC_COMPLESSO',
+          CLASSI: '1A',
+          ID: 'complesso-1A',
+          LINK: 'https://drive.google.com/open?id=complesso-1A'
+        }
+      ]
+    })
+  };
+  const drive = {
+    getFileText: () =>
+      'Report Complesso — 1A Coordinatori, ordinati per nome Rappresentanti degli studenti Specificità per materia e2ealunno1@onlinetest.aldo.local'
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentGenerationService') return documentGenerationService as T;
+      if (key === 'db') return db as T;
+      if (key === 'drive') return drive as T;
+      return {} as T;
+    }
+  } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, sample, 'standard');
+
+  const callback = runner.callbacks.get(
+    'documenti.standard::template interop unicode, liste, tabelle e link'
+  );
+  expect(callback).toBeDefined();
+  expect(callback).toThrow(/tabella|link/i);
 });

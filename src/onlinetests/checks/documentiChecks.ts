@@ -12,7 +12,7 @@ import {
 } from './e2eScenarioChecks';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
-export type DocumentiCheckScope = E2eDocumentScenarioScope;
+export type DocumentiCheckScope = E2eDocumentScenarioScope | 'all';
 
 /**
  * Registers document-only checks by replaying the proven legacy callbacks, then
@@ -24,8 +24,20 @@ export function registerDocumentiChecks(
   sample: SharedTestDatabase & { testMode: boolean },
   scope: DocumentiCheckScope = 'standard'
 ): void {
-  registerE2eDocumentScenarioChecks(runner, container, sample, scope);
-  if (scope !== 'standard' || !sample.testMode) return;
+  if (!sample.testMode) {
+    runner.add('E2E scenarios: MASTER.TEST_MODE guard', sample.sampleSpreadsheetUrl, () => {
+      throw new ValidationError(
+        'E2E scenario checks refuse to run: sample MASTER.TEST_MODE is not true (would risk sending real emails).'
+      );
+    });
+    return;
+  }
+
+  const scopes: E2eDocumentScenarioScope[] = scope === 'all' ? ['standard', 'articolati'] : [scope];
+  for (const documentScope of scopes) {
+    registerE2eDocumentScenarioChecks(runner, container, sample, documentScope);
+  }
+  if (!scopes.includes('standard')) return;
 
   runner.add(
     groupName('documenti.standard', 'template interop unicode, liste, tabelle e link'),
@@ -58,7 +70,10 @@ export function registerDocumentiChecks(
         'Coordinatori, ordinati per nome',
         'Rappresentanti degli studenti',
         'Specificità per materia',
-        'e2ealunno'
+        'Alunno',
+        'Email',
+        'e2ealunno1@onlinetest.aldo.local',
+        'https://www.example.com/aldo-e2e'
       ];
       if (
         expectedFragments.some((fragment) => !text.includes(fragment)) ||

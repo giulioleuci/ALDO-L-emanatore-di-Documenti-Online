@@ -423,12 +423,16 @@ export function resetAldo(): void {
  * GAS-backed facades. Lazy and cached per execution; NEVER called by onOpen
  * (15 §2).
  */
-export function initAldo(now: Date = new Date(), props?: IPropertiesFacade): ServiceContainer {
+export function initAldo(
+  now: Date = new Date(),
+  props?: IPropertiesFacade,
+  masterSpreadsheetId?: string
+): ServiceContainer {
   if (runtime !== null) return runtime;
   const logger = ServiceFactory.getLogger();
   const properties = props ?? new ScriptPropertiesFacade();
   const spreadsheetService = ServiceFactory.getSpreadsheetService();
-  const masterId = spreadsheetService.getActiveStandard().getId();
+  const masterId = masterSpreadsheetId ?? spreadsheetService.getActiveStandard().getId();
   const utils = ServiceFactory.getUtils();
   const cache = ServiceFactory.getCacheService().getScriptCache();
   const masterDb = new SheetDbAdapter(

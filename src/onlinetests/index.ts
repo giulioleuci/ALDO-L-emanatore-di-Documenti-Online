@@ -15,6 +15,7 @@ import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
+import { registerE2eLegacyScenarioChecks } from './checks/e2eScenarioChecks';
 import {
   registerContextEngineChecks,
   registerEffectiveAssignmentConsumerChecks
@@ -44,7 +45,11 @@ export interface E2eTestDeps {
   clock: () => Date;
   properties: IPropertiesFacade;
   resetAldo: () => void;
-  initAldo: (now?: Date, props?: IPropertiesFacade) => ServiceContainer;
+  initAldo: (
+    now?: Date,
+    props?: IPropertiesFacade,
+    masterSpreadsheetId?: string
+  ) => ServiceContainer;
   log: (message: string) => void;
 }
 
@@ -90,12 +95,16 @@ export interface FullOnlineTestDeps extends E2eTestDeps {
 const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerRepositoryChecks(runner, container, sample);
   registerContextEngineChecks(runner, container, sample);
-  registerDocumentiChecks(runner, container, sample, 'standard');
-  registerDocumentiChecks(runner, container, sample, 'articolati');
+  registerDocumentiChecks(runner, container, sample, 'all');
 };
 
 const registerLegacyEmailChecks: RegisterEmailChecks = (runner, container, sample, safeEmail) => {
   registerPipelineChecks(runner, container, sample, safeEmail);
+  registerE2eLegacyScenarioChecks(runner, container, sample, 'email');
+};
+
+const registerLegacyImportChecks: RegisterSharedChecks = (runner, container, sample) => {
+  registerE2eLegacyScenarioChecks(runner, container, sample, 'import');
 };
 
 const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, container, sample) => {
@@ -121,7 +130,7 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   documenti: registerLegacyDocumentiChecks,
   email: registerLegacyEmailChecks,
   jobRunner: registerPendingChecks('jobrunner'),
-  import: registerPendingChecks('import'),
+  import: registerLegacyImportChecks,
   storico: registerPendingChecks('storico'),
   articolazione: registerArticolazioneChecks,
   itpDotted: registerPendingChecks('itp-dotted'),
@@ -314,7 +323,7 @@ function executePersistedDocumentiChecks(
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);

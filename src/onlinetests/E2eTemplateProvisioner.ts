@@ -39,7 +39,9 @@ const NAME_VERBALE = 'E2E Verbale Template v2';
 const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
-const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v2';
+// v3 forces provisioning to materialize the table/link interoperability fixture
+// instead of silently reusing the v2 document that predates this online assertion.
+const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v3';
 const NAME_DOC_ARTICOLATA = 'E2E Doc Articolata Template';
 const NAME_CDC_RIEPILOGO = 'E2E CDC Riepilogo Firme Template';
 const NAME_SHEET_PERMESSI = 'E2E Sheet Permessi Template';
@@ -201,6 +203,7 @@ function aslImportUpdates(): SheetValueUpdate[] {
 // prova rendering Mustache a tre livelli su una generazione normale.
 const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Report Complesso — {{focus.classe.anagrafica.nome}}',
+  'Link di interoperabilità: https://www.example.com/aldo-e2e',
   'Coordinatori, ordinati per nome (elenco puntato, con filtro sortBy sul source del loop):',
   {
     text: "{{#bullet_list:focus.classe.coordinatori.elenco | sortBy:'nome'}}{{nomeCompleto | uppercase}} — {{materia}}{{/bullet_list}}",

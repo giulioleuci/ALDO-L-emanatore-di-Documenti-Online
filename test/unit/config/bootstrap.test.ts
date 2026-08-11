@@ -420,6 +420,39 @@ describe('initAldo — singleton reuse + missing master id', () => {
     }
   });
 
+  test('opens an explicitly selected Master database for a persisted online-test fixture', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const restoreFactory = mockServiceFactory('ACTIVE_MASTER_ID');
+    const fakeMaster = { idSpreadsheet: 'ss1', idCartellaRoot: 'root1' } as never;
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue(fakeMaster);
+    try {
+      const props = { get: jest.fn(), set: jest.fn() };
+      (
+        initAldo as unknown as (
+          now: Date,
+          properties: typeof props,
+          masterSpreadsheetId: string
+        ) => unknown
+      )(new Date('2026-01-01'), props, 'PERSISTED_E2E_MASTER_ID');
+
+      expect(restoreDb.databaseService).toHaveBeenNthCalledWith(
+        1,
+        'PERSISTED_E2E_MASTER_ID',
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        null,
+        expect.objectContaining({ verifyTables: ['MASTER'] })
+      );
+    } finally {
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
+  });
+
   test('returns the same ServiceContainer instance on a second call (singleton)', () => {
     const restoreDb = mockDatabaseServiceGlobal();
     const restoreFactory = mockServiceFactory();

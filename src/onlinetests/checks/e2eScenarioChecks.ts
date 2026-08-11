@@ -80,7 +80,6 @@ export function verifyProtectedRangeScenario(
           `Sheet permessi per ${classe}: placeholder residuo nelle intestazioni`
         );
       }
-      continue;
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
     if (protections.length === 0) {
@@ -782,6 +781,7 @@ export function registerE2eScenarioChecks(
 }
 
 export type E2eDocumentScenarioScope = 'standard' | 'articolati';
+export type LegacyE2eScenarioScope = 'email' | 'import';
 
 interface CapturedScenarioCheck {
   name: string;
@@ -804,6 +804,42 @@ const ARTICOLATI_DOCUMENT_SCENARIO_NAMES = new Set([
   'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA'
 ]);
 
+const EMAIL_SCENARIO_NAMES = new Set([
+  'E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)',
+  'E2E scenario 13: invia allegato statico non rappresentato da box (TEST_MODE)',
+  'E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)',
+  'E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)',
+  'E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)'
+]);
+
+const IMPORT_SCENARIO_NAMES = new Set([
+  'E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)'
+]);
+
+function captureExistingScenarioChecks(
+  container: ServiceContainer,
+  sample: SharedTestDatabase & { testMode: boolean }
+): CapturedScenarioCheck[] {
+  const captured: CapturedScenarioCheck[] = [];
+  const captureRunner = {
+    add(name: string, artifactUrl: string | undefined, callback: () => void): void {
+      captured.push({ name, artifactUrl, callback });
+    }
+  };
+  registerE2eScenarioChecks(captureRunner as TestRunner, container, sample);
+  return captured;
+}
+
+function replayNamedChecks(
+  runner: TestRunner,
+  checks: CapturedScenarioCheck[],
+  allowed: Set<string>
+): void {
+  for (const check of checks) {
+    if (allowed.has(check.name)) runner.add(check.name, check.artifactUrl, check.callback);
+  }
+}
+
 /**
  * Replays the existing green document callbacks under a narrower scenario boundary.
  * The legacy registrar remains the source of truth until its unrelated mail/import
@@ -815,21 +851,20 @@ export function registerE2eDocumentScenarioChecks(
   sample: SharedTestDatabase & { testMode: boolean },
   scope: E2eDocumentScenarioScope
 ): void {
-  const captured: CapturedScenarioCheck[] = [];
-  const captureRunner = {
-    add(name: string, artifactUrl: string | undefined, callback: () => void): void {
-      captured.push({ name, artifactUrl, callback });
-    }
-  };
-  registerE2eScenarioChecks(captureRunner as TestRunner, container, sample);
-
   const allowed =
     scope === 'standard' ? STANDARD_DOCUMENT_SCENARIO_NAMES : ARTICOLATI_DOCUMENT_SCENARIO_NAMES;
-  for (const check of captured) {
-    if (check.name === 'E2E scenarios: MASTER.TEST_MODE guard' || allowed.has(check.name)) {
-      runner.add(check.name, check.artifactUrl, check.callback);
-    }
-  }
+  replayNamedChecks(runner, captureExistingScenarioChecks(container, sample), allowed);
+}
+
+/** Replays legacy E2E checks into their actual transitional aggregate group. */
+export function registerE2eLegacyScenarioChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: SharedTestDatabase & { testMode: boolean },
+  scope: LegacyE2eScenarioScope
+): void {
+  const allowed = scope === 'email' ? EMAIL_SCENARIO_NAMES : IMPORT_SCENARIO_NAMES;
+  replayNamedChecks(runner, captureExistingScenarioChecks(container, sample), allowed);
 }
 
 function csvContains(raw: unknown, value: string): boolean {

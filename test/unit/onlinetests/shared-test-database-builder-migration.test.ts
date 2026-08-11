@@ -2,9 +2,7 @@ import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
-import type {
-  IArtifactFactory
-} from '../../../src/onlinetests/E2eTemplateProvisioner';
+import type { IArtifactFactory } from '../../../src/onlinetests/E2eTemplateProvisioner';
 import {
   SharedTestDatabaseBuilder,
   CARENZA_ALUNNO_2,
@@ -101,6 +99,8 @@ const TEMPLATE_IDS: E2eTemplateIds = {
   condotta: 'tmpl_condotta',
   riepilogo: 'tmpl_riepilogo',
   aslImportSheet: 'tmpl_asl_import',
+  aslImportPolicySheet: 'tmpl_asl_import_policy',
+  aslImportNoHeaderSheet: 'tmpl_asl_import_noheader',
   docComplesso: 'tmpl_doc_complesso',
   docArticolata: 'tmpl_doc_articolata',
   cdcRiepilogo: 'tmpl_cdc_riepilogo',
@@ -144,13 +144,13 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   }
 
   expect(sample.rows[TABLE.LOG_FOLD]).toHaveLength(6);
-  expect(sample.rows[TABLE.LOG_FOLD].every((row) => String(row[COL_LOG_FOLD.LINK]).includes('/folders/'))).toBe(true);
+  expect(
+    sample.rows[TABLE.LOG_FOLD].every((row) => String(row[COL_LOG_FOLD.LINK]).includes('/folders/'))
+  ).toBe(true);
   expect(sample.rows[TABLE.CONF_DOC]).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER })
-    ])
+    expect.arrayContaining([expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER })])
   );
-  expect(sample.rows[TABLE.CONF_IMP]).toHaveLength(4);
+  expect(sample.rows[TABLE.CONF_IMP]).toHaveLength(12);
 
   const priorNames = ANNI_PRECEDENTI.map((anno) => `_ALDO_E2E_PRIOR_${anno}`);
   expect(priorNames.every((name) => sheets.has(name))).toBe(true);
@@ -188,17 +188,14 @@ test('builds the shared extended dataset through every migrated seeder', () => {
 test('preserves the legacy focal identities, coordinators, representatives, and import roster', () => {
   const { spreadsheets, sheets } = recordingFactory();
   const master = new RecordingSpreadsheet('bound-master');
-  new SharedTestDatabaseBuilder(
-    spreadsheets,
-    new FakeDriveFacade(),
-    recordingArtifacts()
-  ).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), recordingArtifacts()).build(
+    TEMPLATE_IDS,
+    master
+  );
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const classOf = (email: string): unknown =>
-    sample.rows[TABLE.ALUNNI].find((row) => row[COL_ALUNNI.EMAIL] === email)?.[
-      COL_ALUNNI.CLASSE
-    ];
+    sample.rows[TABLE.ALUNNI].find((row) => row[COL_ALUNNI.EMAIL] === email)?.[COL_ALUNNI.CLASSE];
   expect(classOf(e2eAlunnoEmail(1))).toBe(CLASSE_A);
   expect(classOf(e2eAlunnoEmail(21))).toBe(CLASSE_B);
   expect(classOf(e2eAlunnoEmail(41))).toBe(CLASSE_C);
@@ -241,11 +238,10 @@ test('preserves the legacy focal identities, coordinators, representatives, and 
 test('composes Task 4 history with the legacy promoted/repeater roster and dual plan documents', () => {
   const { spreadsheets, sheets } = recordingFactory();
   const master = new RecordingSpreadsheet('bound-master');
-  new SharedTestDatabaseBuilder(
-    spreadsheets,
-    new FakeDriveFacade(),
-    recordingArtifacts()
-  ).build(TEMPLATE_IDS, master);
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), recordingArtifacts()).build(
+    TEMPLATE_IDS,
+    master
+  );
 
   const prior = sheets.get('_ALDO_E2E_PRIOR_2025-2026')!;
   const priorClassOf = (email: string): unknown =>

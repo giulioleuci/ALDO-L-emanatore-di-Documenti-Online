@@ -6,13 +6,23 @@ export const INDIRIZZO_SCIENTIFICO_APPLICATE = 'IND_SCIENTIFICO_APPLICATE';
 export const INDIRIZZI = [
   INDIRIZZO_CLASSICO,
   INDIRIZZO_SCIENTIFICO,
-  INDIRIZZO_SCIENTIFICO_APPLICATE,
+  INDIRIZZO_SCIENTIFICO_APPLICATE
 ] as const;
 
 export const ALL_CLASSI = [
-  '1A', '2A', '4A',
-  '1B', '2B', '5B', '5B-S', '5B-C',
-  '3C', '3C-S', '3C-C', '4D', '5E',
+  '1A',
+  '2A',
+  '4A',
+  '1B',
+  '2B',
+  '5B',
+  '5B-S',
+  '5B-C',
+  '3C',
+  '3C-S',
+  '3C-C',
+  '4D',
+  '5E'
 ] as const;
 
 export const CLASSI_CLASSICO = ['1A', '2A', '4A'] as const;
@@ -35,7 +45,7 @@ export const CLASS_ADDRESS_BY_CLASS: Record<string, string> = {
   '3C-S': INDIRIZZO_SCIENTIFICO,
   '3C-C': INDIRIZZO_CLASSICO,
   '4D': INDIRIZZO_SCIENTIFICO,
-  '5E': INDIRIZZO_SCIENTIFICO,
+  '5E': INDIRIZZO_SCIENTIFICO
 };
 
 export interface FixtureClasseLayout {
@@ -55,7 +65,7 @@ const layout = (
   count: number,
   coordIndex: number,
   articolazione = '{}',
-  representativeCounts: { studenti: number; genitori: number } = { studenti: 2, genitori: 2 },
+  representativeCounts: { studenti: number; genitori: number } = { studenti: 2, genitori: 2 }
 ): FixtureClasseLayout => ({
   id,
   studentStart,
@@ -68,7 +78,7 @@ const layout = (
     id === '1A'
       ? [
           { index: 0, scelta: 'NO' },
-          { index: 3, scelta: 'ALT' },
+          { index: 3, scelta: 'ALT' }
         ]
       : id === '2B'
         ? [{ index: 0, scelta: 'NO' }]
@@ -76,8 +86,8 @@ const layout = (
           ? [{ index: 2, scelta: 'ALT' }]
           : [
               { index: 0, scelta: 'NO' },
-              { index: 1, scelta: 'ALT' },
-            ],
+              { index: 1, scelta: 'ALT' }
+            ]
 });
 
 export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
@@ -94,26 +104,31 @@ export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
   layout('3C', 138, 1, 6, '{}', { studenti: 0, genitori: 0 }),
   layout('3C-S', 41, 8, 3, '{"parent":"3C","partner":"3C-C"}', {
     studenti: 2,
-    genitori: 1,
+    genitori: 1
   }),
   layout('3C-C', 49, 12, 7, '{"parent":"3C","partner":"3C-S"}', {
     studenti: 1,
-    genitori: 2,
+    genitori: 2
   }),
   layout('4D', 183, 19, 7),
-  layout('5E', 202, 19, 8),
+  layout('5E', 202, 19, 8)
 ];
 
 export const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];
 export const MATERIE_CLASSICO = [...MATERIE_BASE, 'GRECO', 'LATINO', 'FILOSOFIA'];
 export const MATERIE_SCIENZE_UMANE = [...MATERIE_BASE, 'PSICOLOGIA', 'SCIUMANE', 'DIRECON'];
 export const MATERIE_SCIENTIFICO = [...MATERIE_BASE, 'SCIENZE', 'FISICA', 'INF'];
-export const MATERIE_PUNTATE = ['LAB.GRUPPO_A', 'LAB.SEMINARIO_POMERIDIANO', 'INTERPRET.CHITARRA', 'INTERPRET.FLAUTO'];
+export const MATERIE_PUNTATE = [
+  'LAB.GRUPPO_A',
+  'LAB.SEMINARIO_POMERIDIANO',
+  'INTERPRET.CHITARRA',
+  'INTERPRET.FLAUTO'
+];
 
 export const MATERIE_PER_INDIRIZZO = {
   [INDIRIZZO_CLASSICO]: MATERIE_CLASSICO,
   [INDIRIZZO_SCIENTIFICO]: MATERIE_SCIENTIFICO,
-  [INDIRIZZO_SCIENTIFICO_APPLICATE]: MATERIE_SCIENZE_UMANE,
+  [INDIRIZZO_SCIENTIFICO_APPLICATE]: MATERIE_SCIENZE_UMANE
 } as const;
 
 export const STUDENT_TOTALE = 220;
@@ -129,6 +144,14 @@ export const CONF_DOC_DOTTED = 'E2E_DOC_DOTTED';
 export const CONF_IMP_ASL_CARTELLE = 'E2E_IMP_ASL_CARTELLE';
 export const CONF_IMP_CERCA_DOCUMENTI = 'E2E_IMP_CERCA_DOCUMENTI';
 export const CONF_IMP_CHUNKED = 'E2E_IMP_CHUNKED';
+export const CONF_IMP_IGNORE = 'E2E_IMP_IGNORE';
+export const CONF_IMP_TIMESTAMP = 'E2E_IMP_TIMESTAMP';
+export const CONF_IMP_DISABLED = 'E2E_IMP_DISABLED';
+export const CONF_IMP_NOHEADER = 'E2E_IMP_NOHEADER';
+export const CONF_IMP_MISSING_FILE = 'E2E_IMP_MISSING_FILE';
+export const CONF_IMP_MISSING_FOLDER = 'E2E_IMP_MISSING_FOLDER';
+export const CONF_IMP_MISSING_IDGEN = 'E2E_IMP_MISSING_IDGEN';
+export const CONF_IMP_BAD_STRATEGY = 'E2E_IMP_BAD_STRATEGY';
 export const CONF_MAIL_JOBRUNNER = 'E2E_MAIL_JOBRUNNER';
 export const CONF_MAIL_STORICO = 'E2E_MAIL_STORICO';
 

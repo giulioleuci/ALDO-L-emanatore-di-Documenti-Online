@@ -49,7 +49,11 @@ export class GasArtifactFactory implements IArtifactFactory {
   }
 
   createSheet(name: string, folderId: string, updates: SheetValueUpdate[] = []): string {
-    const spreadsheet = this.spreadsheets.createSpreadsheet(name, { destinationFolder: folderId });
+    const spreadsheet = this.spreadsheets.createSpreadsheet(name, {
+      destinationFolder: folderId,
+      // The policy fixture addresses the default tab explicitly; make that name deterministic.
+      locale: 'en_US'
+    });
     if (updates.length === 0) return spreadsheet.spreadsheetId;
     // `sheets[0]` is the create call's own auto-generated default tab (real API response —
     // ref types/gaslibs/index.d.ts `createSpreadsheet` doc — not a second, racy schema read).

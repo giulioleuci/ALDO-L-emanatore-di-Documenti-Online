@@ -43,7 +43,15 @@ function buildSource(
           `CONF_IMP ${conf.id ?? '?'}: CONFIG.fileId obbligatorio per FILE_SINGOLO`
         );
       }
-      return { type: 'SheetById', config: { sheetId: cfg.fileId } };
+      return {
+        type: 'SheetById',
+        config: {
+          sheetId: cfg.fileId,
+          tabName: cfg.tabName,
+          range: cfg.range,
+          hasHeaders: cfg.hasHeaders
+        }
+      };
     }
     case 'CERCA_CARTELLE_CLASSE': {
       if (cfg.folderTipo === undefined || cfg.folderTipo.trim() === '') {

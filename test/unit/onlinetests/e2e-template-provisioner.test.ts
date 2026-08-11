@@ -59,8 +59,8 @@ test('creates all 21 E2E artifacts, including the dedicated table, history, and 
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  expect(created).toHaveLength(21);
-  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(5);
+  expect(created).toHaveLength(23);
+  expect(created.filter((c) => c.startsWith('sheet:'))).toHaveLength(7);
   expect(created.filter((c) => c.startsWith('doc:'))).toHaveLength(16);
   expect(ids.verbale).toMatch(/^doc_/);
   expect(ids.condotta).toMatch(/^sheet_/);
@@ -227,7 +227,7 @@ test('reuses an existing template by name instead of recreating it', () => {
 
   expect(ids.verbale).toBe('existing_verbale_id');
   expect(created.some((c) => c.includes('Verbale'))).toBe(false);
-  expect(created).toHaveLength(20); // every other artifact, including the six dedicated Task-6 fixtures, is still created
+  expect(created).toHaveLength(22); // every other artifact, including the import-policy fixtures, is still created
 });
 
 test('reuses the real static attachment artifact by its fixed name', () => {

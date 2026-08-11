@@ -5,6 +5,8 @@ export interface E2eTemplateIds {
   condotta: string;
   riepilogo: string;
   aslImportSheet: string;
+  aslImportPolicySheet: string;
+  aslImportNoHeaderSheet: string;
   docComplesso: string;
   docArticolata: string;
   cdcRiepilogo: string;

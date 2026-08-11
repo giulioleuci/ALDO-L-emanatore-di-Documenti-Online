@@ -30,6 +30,30 @@ describe('toLibraryRecipe (12 §3): ALDO CONF_IMP.CONFIG vocabulary -> GasDataIm
     });
   });
 
+  test('FILE_SINGOLO preserves explicit tab, range and no-header extraction options', () => {
+    const recipe = toLibraryRecipe(
+      conf({
+        searchStrategy: 'FILE_SINGOLO',
+        fileId: 'sheet123',
+        tabName: 'Import senza intestazioni',
+        range: 'A2:C10',
+        hasHeaders: false,
+        key: 'STUDENTE',
+        conflictResolution: 'OVERWRITE'
+      })
+    );
+
+    expect(recipe.source).toEqual({
+      type: 'SheetById',
+      config: {
+        sheetId: 'sheet123',
+        tabName: 'Import senza intestazioni',
+        range: 'A2:C10',
+        hasHeaders: false
+      }
+    });
+  });
+
   test('OVERWRITE maps straight through', () => {
     const recipe = toLibraryRecipe(
       conf({

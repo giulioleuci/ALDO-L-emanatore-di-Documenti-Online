@@ -1,7 +1,4 @@
-import type {
-  ISampleSpreadsheet,
-  ISampleSpreadsheetFactory
-} from '../SampleDatabaseBuilder';
+import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from '../SampleDatabaseBuilder';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { E2eTemplateIds } from './SharedTestContracts';
 import { HEADERS } from './SharedTestHeaders';
@@ -13,8 +10,16 @@ import {
   CONF_DOC_STORICO,
   CONF_DOC_TABELLE,
   CONF_IMP_ASL_CARTELLE,
+  CONF_IMP_BAD_STRATEGY,
   CONF_IMP_CERCA_DOCUMENTI,
   CONF_IMP_CHUNKED,
+  CONF_IMP_DISABLED,
+  CONF_IMP_IGNORE,
+  CONF_IMP_MISSING_FILE,
+  CONF_IMP_MISSING_FOLDER,
+  CONF_IMP_MISSING_IDGEN,
+  CONF_IMP_NOHEADER,
+  CONF_IMP_TIMESTAMP,
   CONF_MAIL_JOBRUNNER,
   CONF_MAIL_STORICO,
   EMAIL_TEST_SAFE
@@ -299,10 +304,7 @@ function aslDataUpdates(knownStudent: string, ore: number): SheetValueUpdate[] {
     [knownStudent, '2026-2027', ore + 1],
     ['sconosciuto@onlinetest.aldo.local', '2026-2027', ore + 2]
   ];
-  return [
-    ...aslHeaderUpdates(),
-    { range: `A2:C${rows.length + 1}`, values: rows }
-  ];
+  return [...aslHeaderUpdates(), { range: `A2:C${rows.length + 1}`, values: rows }];
 }
 
 /** Adds document, import, and email configurations unique to the extended E2E dataset. */
@@ -404,6 +406,74 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     }),
     [COL_CONF_IMP.ATTIVO]: true
   });
+  sample.appendRow(TABLE.CONF_IMP, {
+    [COL_CONF_IMP.ID]: CONF_IMP_IGNORE,
+    [COL_CONF_IMP.TARGET]: TABLE.ASL,
+    [COL_CONF_IMP.CONFIG]: JSON.stringify({
+      searchStrategy: 'FILE_SINGOLO',
+      fileId: templateIds.aslImportPolicySheet,
+      hasHeaders: true,
+      key: 'STUDENTE',
+      conflictResolution: 'IGNORE'
+    }),
+    [COL_CONF_IMP.ATTIVO]: true
+  });
+  sample.appendRow(TABLE.CONF_IMP, {
+    [COL_CONF_IMP.ID]: CONF_IMP_TIMESTAMP,
+    [COL_CONF_IMP.TARGET]: TABLE.ASL,
+    [COL_CONF_IMP.CONFIG]: JSON.stringify({
+      searchStrategy: 'FILE_SINGOLO',
+      fileId: templateIds.aslImportPolicySheet,
+      hasHeaders: true,
+      key: 'STUDENTE',
+      conflictResolution: 'TIMESTAMP',
+      timestampColumn: 'DATA_MODIFICA'
+    }),
+    [COL_CONF_IMP.ATTIVO]: true
+  });
+  sample.appendRow(TABLE.CONF_IMP, {
+    [COL_CONF_IMP.ID]: CONF_IMP_DISABLED,
+    [COL_CONF_IMP.TARGET]: TABLE.ASL,
+    [COL_CONF_IMP.CONFIG]: JSON.stringify({
+      searchStrategy: 'FILE_SINGOLO',
+      fileId: '',
+      key: 'STUDENTE',
+      conflictResolution: 'OVERWRITE'
+    }),
+    [COL_CONF_IMP.ATTIVO]: false
+  });
+  sample.appendRow(TABLE.CONF_IMP, {
+    [COL_CONF_IMP.ID]: CONF_IMP_NOHEADER,
+    [COL_CONF_IMP.TARGET]: TABLE.ASL,
+    [COL_CONF_IMP.CONFIG]: JSON.stringify({
+      searchStrategy: 'FILE_SINGOLO',
+      fileId: templateIds.aslImportNoHeaderSheet,
+      tabName: 'Sheet1',
+      range: 'A1:C1',
+      hasHeaders: false,
+      map: { Col_0: 'STUDENTE', Col_1: 'ANNO', Col_2: 'ORE' },
+      key: 'STUDENTE',
+      conflictResolution: 'OVERWRITE'
+    }),
+    [COL_CONF_IMP.ATTIVO]: true
+  });
+  for (const [id, config] of [
+    [CONF_IMP_MISSING_FILE, { searchStrategy: 'FILE_SINGOLO' }],
+    [CONF_IMP_MISSING_FOLDER, { searchStrategy: 'CERCA_CARTELLE_CLASSE' }],
+    [CONF_IMP_MISSING_IDGEN, { searchStrategy: 'CERCA_DOCUMENTI' }],
+    [CONF_IMP_BAD_STRATEGY, { searchStrategy: 'BAD_STRATEGY' }]
+  ] as const) {
+    sample.appendRow(TABLE.CONF_IMP, {
+      [COL_CONF_IMP.ID]: id,
+      [COL_CONF_IMP.TARGET]: TABLE.ASL,
+      [COL_CONF_IMP.CONFIG]: JSON.stringify({
+        ...config,
+        key: 'STUDENTE',
+        conflictResolution: 'OVERWRITE'
+      }),
+      [COL_CONF_IMP.ATTIVO]: true
+    });
+  }
   sample.appendRow(TABLE.CONF_IMP, {
     [COL_CONF_IMP.ID]: CONF_IMP_CERCA_DOCUMENTI,
     [COL_CONF_IMP.TARGET]: TABLE.ASL,

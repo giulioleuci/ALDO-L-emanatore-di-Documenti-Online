@@ -39,6 +39,8 @@ const NAME_VERBALE = 'E2E Verbale Template v2';
 const NAME_CONDOTTA = 'E2E Condotta Template';
 const NAME_RIEPILOGO = 'E2E Riepilogo Template v4';
 const NAME_ASL_IMPORT = 'E2E ASL Import Source';
+const NAME_ASL_IMPORT_POLICY = 'E2E ASL Import Policy Source';
+const NAME_ASL_IMPORT_NOHEADER = 'E2E ASL Import No Header Source';
 // v3 forces provisioning to materialize the table/link interoperability fixture
 // instead of silently reusing the v2 document that predates this online assertion.
 const NAME_DOC_COMPLESSO = 'E2E Doc Complesso Template v3';
@@ -180,7 +182,22 @@ function aslImportUpdates(): SheetValueUpdate[] {
   ASL_IMPORT_ROWS.forEach(([email, ore], i) => {
     updates.push({ range: `A${2 + i}:C${2 + i}`, values: [[email, ASL_IMPORT_ANNO, ore]] });
   });
+  updates.push({ range: 'A6:C6', values: [['', '', '']] });
   return updates;
+}
+
+function aslImportPolicyUpdates(): SheetValueUpdate[] {
+  return [
+    { range: 'A1:D1', values: [['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']] },
+    {
+      range: 'A2:D2',
+      values: [[e2eAlunnoEmail(43), ASL_IMPORT_ANNO, 999, '2026-08-10T09:00:00Z']]
+    }
+  ];
+}
+
+function aslImportNoHeaderUpdates(): SheetValueUpdate[] {
+  return [{ range: 'A1:C1', values: [[e2eAlunnoEmail(52), ASL_IMPORT_ANNO, 77]] }];
 }
 
 /**
@@ -455,6 +472,16 @@ export class E2eTemplateProvisioner {
       RIEPILOGO_TABLES
     );
     const aslImportSheet = this.findOrCreateSheet(folderId, NAME_ASL_IMPORT, aslImportUpdates());
+    const aslImportPolicySheet = this.findOrCreateSheet(
+      folderId,
+      NAME_ASL_IMPORT_POLICY,
+      aslImportPolicyUpdates()
+    );
+    const aslImportNoHeaderSheet = this.findOrCreateSheet(
+      folderId,
+      NAME_ASL_IMPORT_NOHEADER,
+      aslImportNoHeaderUpdates()
+    );
     const docComplesso = this.findOrCreateDoc(
       folderId,
       NAME_DOC_COMPLESSO,
@@ -515,6 +542,8 @@ export class E2eTemplateProvisioner {
       condotta,
       riepilogo,
       aslImportSheet,
+      aslImportPolicySheet,
+      aslImportNoHeaderSheet,
       docComplesso,
       docArticolata,
       cdcRiepilogo,

@@ -7,7 +7,10 @@ import {
   HEADERS,
   type E2eTemplateIds
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
-import type { IArtifactFactory, SheetValueUpdate } from '../../../src/onlinetests/E2eTemplateProvisioner';
+import type {
+  IArtifactFactory,
+  SheetValueUpdate
+} from '../../../src/onlinetests/E2eTemplateProvisioner';
 import {
   seedAnniPrecedenti,
   seedConfDedicated,
@@ -86,6 +89,8 @@ const TEMPLATE_IDS: E2eTemplateIds = {
   condotta: 'tmpl_condotta',
   riepilogo: 'tmpl_riepilogo',
   aslImportSheet: 'tmpl_asl_import',
+  aslImportPolicySheet: 'tmpl_asl_import_policy',
+  aslImportNoHeaderSheet: 'tmpl_asl_import_noheader',
   docComplesso: 'tmpl_doc_complesso',
   docArticolata: 'tmpl_doc_articolata',
   cdcRiepilogo: 'tmpl_cdc_riepilogo',
@@ -163,9 +168,9 @@ test('seeds two prior databases with every historical-provider table and master 
     expect(prior.rows[TABLE.ALUNNI].map((row) => row.EMAIL)).toEqual(
       expect.arrayContaining([e2eAlunnoEmail(138), e2eAlunnoEmail(139)])
     );
-    expect(
-      prior.rows[TABLE.ALUNNI].find((row) => row.EMAIL === e2eAlunnoEmail(138))!.CLASSE
-    ).toBe(anno === '2025-2026' ? '2C' : '1C');
+    expect(prior.rows[TABLE.ALUNNI].find((row) => row.EMAIL === e2eAlunnoEmail(138))!.CLASSE).toBe(
+      anno === '2025-2026' ? '2C' : '1C'
+    );
     expect(prior.rows[TABLE.MOV_ALUNNI]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ TIPO: 'RITIRATO', STUDENTE: e2eAlunnoEmail(139) })
@@ -198,12 +203,16 @@ test('seeds one ASL folder record and real sheets for each eligible class only',
     ])
   );
   for (const classe of ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C']) {
-    const source = sheets.find((sheet) => sheet.name.includes(`ASL_${classe}_`) && sheet.name.endsWith('_DATI'))!;
+    const source = sheets.find(
+      (sheet) => sheet.name.includes(`ASL_${classe}_`) && sheet.name.endsWith('_DATI')
+    )!;
     const rows = source.updates.find((update) => update.range.startsWith('A2:'))!.values;
     const knownStudent = String(rows[0]![0]);
     expect(knownStudent).toMatch(/^e2ealunno\d+@onlinetest\.aldo\.local$/);
     expect(currentClassOf(knownStudent)).toBe(classe);
-    expect(rows).toEqual(expect.arrayContaining([expect.arrayContaining(['sconosciuto@onlinetest.aldo.local'])]));
+    expect(rows).toEqual(
+      expect.arrayContaining([expect.arrayContaining(['sconosciuto@onlinetest.aldo.local'])])
+    );
     expect(rows.filter((row) => row[0] === knownStudent)).toHaveLength(2);
     expect(sample.rows[TABLE.ASL]).toEqual(
       expect.arrayContaining([expect.objectContaining({ [COL_ASL.STUDENTE]: knownStudent })])
@@ -219,12 +228,18 @@ test('seeds dedicated document, import, and mail configurations with unique outp
 
   expect(sample.rows[TABLE.CONF_DOC]).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER, [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA' }),
+      expect.objectContaining({
+        [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER,
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA'
+      }),
       expect.objectContaining({
         [COL_CONF_DOC.ID]: CONF_DOC_DUPLICAZIONE_PERMESSA,
         [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA'
       }),
-      expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_TABELLE, [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE' })
+      expect.objectContaining({
+        [COL_CONF_DOC.ID]: CONF_DOC_TABELLE,
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE'
+      })
     ])
   );
   expect(
@@ -258,8 +273,14 @@ test('seeds dedicated document, import, and mail configurations with unique outp
   ]);
   expect(sample.rows[TABLE.CONF_IMP]).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_ASL_CARTELLE, [COL_CONF_IMP.ATTIVO]: true }),
-      expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_CERCA_DOCUMENTI, [COL_CONF_IMP.ATTIVO]: true }),
+      expect.objectContaining({
+        [COL_CONF_IMP.ID]: CONF_IMP_ASL_CARTELLE,
+        [COL_CONF_IMP.ATTIVO]: true
+      }),
+      expect.objectContaining({
+        [COL_CONF_IMP.ID]: CONF_IMP_CERCA_DOCUMENTI,
+        [COL_CONF_IMP.ATTIVO]: true
+      }),
       expect.objectContaining({ [COL_CONF_IMP.ID]: CONF_IMP_CHUNKED, [COL_CONF_IMP.ATTIVO]: true })
     ])
   );
@@ -269,7 +290,8 @@ test('seeds dedicated document, import, and mail configurations with unique outp
     CONF_MAIL_STORICO
   ]);
   const paths = mailRows.map(
-    (row) => (JSON.parse(String(row[COL_CONF_MAIL.BOX_CFG])) as Array<{ PATH_OUT: string }>)[0]!.PATH_OUT
+    (row) =>
+      (JSON.parse(String(row[COL_CONF_MAIL.BOX_CFG])) as Array<{ PATH_OUT: string }>)[0]!.PATH_OUT
   );
   expect(new Set(paths).size).toBe(paths.length);
 });
@@ -278,14 +300,73 @@ test('maps every dedicated import configuration through the real recipe mapper',
   const sample = new RecordingSpreadsheet('sample');
   seedConfDedicated(sample, TEMPLATE_IDS);
 
-  const recipes = sample.rows[TABLE.CONF_IMP].map((row) =>
-    toLibraryRecipe(ConfigurazioneImport.fromData(row))
-  );
+  const validIds = new Set([
+    CONF_IMP_ASL_CARTELLE,
+    CONF_IMP_CERCA_DOCUMENTI,
+    CONF_IMP_CHUNKED,
+    'E2E_IMP_IGNORE',
+    'E2E_IMP_TIMESTAMP',
+    'E2E_IMP_NOHEADER'
+  ]);
+  const recipes = sample.rows[TABLE.CONF_IMP]
+    .filter((row) => validIds.has(String(row[COL_CONF_IMP.ID])))
+    .map((row) => toLibraryRecipe(ConfigurazioneImport.fromData(row)));
 
-  expect(recipes.map((recipe) => recipe.load.conflictKey)).toEqual(['STUDENTE', 'STUDENTE', 'STUDENTE']);
+  expect(recipes.map((recipe) => recipe.load.conflictKey)).toEqual([
+    'STUDENTE',
+    'STUDENTE',
+    'STUDENTE',
+    'STUDENTE',
+    'STUDENTE',
+    'STUDENTE'
+  ]);
   expect(recipes.map((recipe) => recipe.source.type)).toEqual([
     'CERCA_CARTELLE_CLASSE',
+    'SheetById',
+    'SheetById',
+    'SheetById',
     'CERCA_DOCUMENTI',
     'SheetById'
   ]);
+});
+
+test('seeds FILE_SINGOLO import policies with the supported single STUDENTE key', () => {
+  const sample = new RecordingSpreadsheet('sample');
+  seedConfDedicated(sample, TEMPLATE_IDS);
+
+  const configs = new Map(
+    sample.rows[TABLE.CONF_IMP].map((row) => [
+      String(row[COL_CONF_IMP.ID]),
+      JSON.parse(String(row[COL_CONF_IMP.CONFIG])) as Record<string, unknown>
+    ])
+  );
+
+  expect(configs.get('E2E_IMP_IGNORE')).toMatchObject({
+    searchStrategy: 'FILE_SINGOLO',
+    key: 'STUDENTE',
+    conflictResolution: 'IGNORE'
+  });
+  expect(configs.get('E2E_IMP_TIMESTAMP')).toMatchObject({
+    searchStrategy: 'FILE_SINGOLO',
+    key: 'STUDENTE',
+    conflictResolution: 'TIMESTAMP',
+    timestampColumn: 'DATA_MODIFICA'
+  });
+  expect(configs.get('E2E_IMP_DISABLED')).toMatchObject({
+    searchStrategy: 'FILE_SINGOLO',
+    key: 'STUDENTE'
+  });
+  expect(
+    sample.rows[TABLE.CONF_IMP].find((row) => row[COL_CONF_IMP.ID] === 'E2E_IMP_DISABLED')?.[
+      COL_CONF_IMP.ATTIVO
+    ]
+  ).toBe(false);
+  expect(configs.get('E2E_IMP_NOHEADER')).toMatchObject({
+    searchStrategy: 'FILE_SINGOLO',
+    key: 'STUDENTE',
+    hasHeaders: false,
+    tabName: 'Sheet1',
+    range: 'A1:C1',
+    map: { Col_0: 'STUDENTE', Col_1: 'ANNO', Col_2: 'ORE' }
+  });
 });

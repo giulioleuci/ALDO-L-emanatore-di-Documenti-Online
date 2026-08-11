@@ -15,8 +15,12 @@ import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
-import { registerE2eLegacyScenarioChecks } from './checks/e2eScenarioChecks';
 import { registerEmailChecks } from './checks/emailChecks';
+import {
+  registerImportChecks,
+  registerImportFileSingoloChecks,
+  registerImportPolicyChecks
+} from './checks/importChecks';
 import {
   registerJobRunnerChecks,
   registerJobRunnerDocGenChecks,
@@ -104,10 +108,6 @@ const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, 
   registerDocumentiChecks(runner, container, sample, 'all');
 };
 
-const registerLegacyImportChecks: RegisterSharedChecks = (runner, container, sample) => {
-  registerE2eLegacyScenarioChecks(runner, container, sample, 'import');
-};
-
 const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerEffectiveAssignmentMatrixChecks(runner, container, sample);
   registerEffectiveAssignmentConsumerChecks(runner, container, sample);
@@ -131,7 +131,7 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   documenti: registerLegacyDocumentiChecks,
   email: registerEmailChecks,
   jobRunner: registerJobRunnerChecks,
-  import: registerLegacyImportChecks,
+  import: registerImportChecks,
   storico: registerPendingChecks('storico'),
   articolazione: registerArticolazioneChecks,
   itpDotted: registerPendingChecks('itp-dotted'),
@@ -406,6 +406,50 @@ function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): Onli
   return runner.report();
 }
 
+function executePersistedImportChecks(
+  register: RegisterSharedChecks,
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const sample: FullOnlineTestSample = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: '',
+    priorSampleSpreadsheetUrl: '',
+    priorSampleSpreadsheetId2: '',
+    priorSampleSpreadsheetUrl2: '',
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: '',
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: '',
+    testMode: master.testMode
+  };
+  const runner = new TestRunner();
+  register(runner, container, sample);
+  return runner.report();
+}
+
+export function executeImportFileSingolo(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedImportChecks(registerImportFileSingoloChecks, overrides);
+}
+
+export function executeImportPolicy(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedImportChecks(registerImportPolicyChecks, overrides);
+}
+
 function executePersistedJobRunnerChecks(
   scope: 'documenti' | 'email' | 'trigger-reale',
   overrides: Partial<E2eTestDeps> = {}
@@ -443,7 +487,8 @@ function executePersistedJobRunnerChecks(
   };
   const runner = new TestRunner();
   if (scope === 'documenti') registerJobRunnerDocGenChecks(runner, container, sample);
-  else if (scope === 'email') registerJobRunnerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+  else if (scope === 'email')
+    registerJobRunnerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
   else registerJobRunnerTriggerRealeCheck(runner, container, sample);
   return runner.report();
 }
@@ -540,7 +585,20 @@ export function testJobRunnerTriggerReale(
   );
 }
 export function testImportFileSingolo(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'import_file_singolo',
+    'IMPORT_SCENARIO',
+    executeImportFileSingolo,
+    ServiceFactory.getLogger()
+  );
+}
+export function testImportPolicy(): OnlineTestReport {
+  return runReportedSuite(
+    'import_policy',
+    'IMPORT_SCENARIO',
+    executeImportPolicy,
+    ServiceFactory.getLogger()
+  );
 }
 export function testImportCartelleClasse(): OnlineTestReport {
   return nonImplementato();

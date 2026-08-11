@@ -138,4 +138,18 @@ describe('executeCreaDatiMockDrive', () => {
     });
     expect(deps.spreadsheetFactory.openedIds).toEqual(['master:active']);
   });
+
+  it('honors an explicit force request from the aggregate runner even without the property switch', () => {
+    const props = properties({ [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master:persisted' });
+    const deps = {
+      ...dependencies(props),
+      activeMasterSpreadsheetId: () => 'master:active'
+    };
+
+    const sample = executeCreaDatiMockDrive(deps, true);
+
+    expect(sample).toMatchObject({ masterSpreadsheetId: 'master:active' });
+    expect(sample.sampleSpreadsheetId).toMatch(/^sheet:_ALDO_E2E_FORCE_/);
+    expect(deps.spreadsheetFactory.openedIds).toEqual(['master:active']);
+  });
 });

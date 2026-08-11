@@ -7,7 +7,7 @@
 - Polls a suspended document-generation JobRunner for up to five minutes at ten-second intervals.
 - On timeout, calls `cancelJob` before reporting failure; `finally` also cancels any still-suspended job.
 - Verifies completed status, full duplicate-free `LOG_DOCS`, and removal of the `job_for_trigger_<id>` context property.
-- Uses the documented `CoreUtilsLib` sleep service through `ServiceFactory`; deterministic unit tests inject fake time and sleep.
+- Uses the typed `GoogleApiWrapper` utilities facade through `ServiceFactory.getUtilitiesService().sleep`; deterministic tests cover both injected and default sleep paths.
 
 ## Verification
 
@@ -15,6 +15,8 @@
 - `npm run typecheck` — passed.
 - `npm run lint` — passed.
 - Graph bypass query found no direct native GAS-global calls from `src/`.
+
+The follow-up review regression test verifies the default polling dependency invokes `getUtilitiesService().sleep`, rather than relying on a cast of the unrelated `getUtils()` service.
 
 ## Manual live-GAS verification
 

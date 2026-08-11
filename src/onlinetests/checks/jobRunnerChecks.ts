@@ -51,10 +51,6 @@ interface LoggedMailMetadata {
   logicalTargetId?: unknown;
 }
 
-interface SleepCapableUtils {
-  sleep(milliseconds: number): void;
-}
-
 export interface JobRunnerTriggerRealeDeps {
   sleep?: (milliseconds: number) => void;
   now?: () => number;
@@ -290,8 +286,8 @@ function checkTriggerReale(
       .findAll()
       .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_JOBRUNNER)
   );
-  const utils = ServiceFactory.getUtils() as unknown as SleepCapableUtils;
-  const sleep = deps.sleep ?? ((milliseconds: number) => utils.sleep(milliseconds));
+  const sleep =
+    deps.sleep ?? ((milliseconds: number) => ServiceFactory.getUtilitiesService().sleep(milliseconds));
   const now = deps.now ?? (() => Date.now());
   const pollIntervalMs = deps.pollIntervalMs ?? POLL_INTERVAL_MS;
   const pollTimeoutMs = deps.pollTimeoutMs ?? POLL_TIMEOUT_MS;

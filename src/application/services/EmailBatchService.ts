@@ -10,6 +10,12 @@ export const EMAIL_CHUNK_SIZE = 100;
 
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
 export interface EmailBatchResumeState {
+  /** Batch identity retained by JobRunnerLib for trigger resumes, which drop run() parameters. */
+  patternId?: string;
+  jobId?: string;
+  chunkSize?: number;
+  /** Test-only delivery pin retained with the batch identity on a trigger resume. */
+  testRecipient?: string;
   nextIndex: number;
   processed: string[];
   sent: number;
@@ -60,6 +66,13 @@ export interface EmailBatchResult {
  * instead of restarting the whole batch. The persisted checkpoint is cleared
  * once a run for that pattern completes the target list (successfully or
  * with errors) so a later, unrelated invocation never seeds stale state.
+ *
+ * Normal JobRunnerLib trigger resumes receive only the persisted yielded
+ * `resumeState`, not the initial `run()` parameters. Every checkpoint
+ * therefore carries the pattern/job identity, chunk configuration, and any
+ * test-recipient pin required to reconstruct the same batch in a fresh
+ * container. This is part of JobRunnerLib's supported resume-state contract,
+ * not a parallel job-parameter store.
  */
 export class EmailBatchService {
   constructor(
@@ -127,6 +140,8 @@ export class EmailBatchService {
   private suspendForQuota(
     patternId: string,
     jobId: string,
+    chunkSize: number,
+    testRecipient: string | undefined,
     nextIndex: number,
     total: number,
     processed: string[],
@@ -137,6 +152,10 @@ export class EmailBatchService {
       'quota Gmail esaurita — sospeso: il riavvio (stesso pattern) riprende automaticamente da dove interrotto, senza reinviare ai destinatari già processati'
     );
     const resumeState: EmailBatchResumeState = {
+      patternId,
+      jobId,
+      chunkSize,
+      ...(testRecipient === undefined ? {} : { testRecipient }),
       nextIndex,
       processed: processed.slice(),
       sent,
@@ -155,11 +174,11 @@ export class EmailBatchService {
       jobId?: string;
     }
   ): Generator<EmailBatchCheckpoint, EmailBatchResult, void> {
-    const patternId = String(params.patternId ?? '');
-    const jobId = String(params.jobId ?? patternId);
-    const chunkSize = Number(params.chunkSize ?? EMAIL_CHUNK_SIZE);
-    const testRecipient = this.loadPersistedTestRecipient(patternId);
     const resume = (params.resumeState ?? null) as EmailBatchResumeState | null;
+    const patternId = String(params.patternId ?? resume?.patternId ?? '');
+    const jobId = String(params.jobId ?? resume?.jobId ?? patternId);
+    const chunkSize = Number(params.chunkSize ?? resume?.chunkSize ?? EMAIL_CHUNK_SIZE);
+    const testRecipient = resume?.testRecipient ?? this.loadPersistedTestRecipient(patternId);
     const targets = this.email.enumerateTargets(this.email.getConfigurazione(patternId));
 
     const processed = resume === null ? [] : resume.processed.slice();
@@ -179,6 +198,8 @@ export class EmailBatchService {
         const checkpoint = this.suspendForQuota(
           patternId,
           jobId,
+          chunkSize,
+          testRecipient,
           i,
           targets.length,
           processed,
@@ -223,6 +244,8 @@ export class EmailBatchService {
         const checkpoint = this.suspendForQuota(
           patternId,
           jobId,
+          chunkSize,
+          testRecipient,
           i,
           targets.length,
           processed,
@@ -239,6 +262,10 @@ export class EmailBatchService {
         `${processed.length}/${targets.length} destinatari elaborati: ${progressDetail}`
       );
       yield {
+        patternId,
+        jobId,
+        chunkSize,
+        ...(testRecipient === undefined ? {} : { testRecipient }),
         percentage,
         nextIndex: i,
         processed: processed.slice(),

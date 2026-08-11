@@ -174,7 +174,7 @@ test('resume restarts from resumeState.nextIndex without resending (JobRunnerLib
   expect(result.sent).toBe(2); // cumulative
 });
 
-test('a persisted safe recipient override survives a quota suspension and a fresh-container resume', () => {
+test('a JobRunner resume state recovers pattern and safe recipient in a fresh container without handler injections', () => {
   // This models initAldo() having already enabled MASTER.TEST_MODE to the
   // Master owner before the online scenario pins this particular JobRunner job.
   const properties = new FakePropertiesFacade();
@@ -190,7 +190,7 @@ test('a persisted safe recipient override survives a quota suspension and a fres
     undefined,
     ONLINE_TEST_SAFE_EMAIL
   );
-  const { result } = drain(
+  const firstRun = drain(
     first.service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 2,
@@ -199,23 +199,20 @@ test('a persisted safe recipient override survives a quota suspension and a fres
     })
   );
   expect(first.gmail.sent.map((sent) => sent.to)).toEqual([[ONLINE_TEST_SAFE_EMAIL]]);
+  expect(firstRun.checkpoints).toHaveLength(1);
+  // The resumed handler must take the override from JobRunnerLib's saved
+  // checkpoint, rather than depending on an auxiliary property lookup.
+  properties.set('EMAIL_BATCH_TEST_RECIPIENT_CDC_OTTOBRE', '');
 
   // A trigger calls initAldo() again, producing a fresh service whose normal
-  // TEST_MODE recipient is the Master owner. Persisted JobRunner params must
-  // still pin the resumed delivery to the online-test mailbox.
+  // TEST_MODE recipient is the Master owner. JobRunnerLib invokes its handler
+  // with only the persisted resumeState: no original pattern/job params and no
+  // recipient override survive its trigger-resume boundary.
   const resumed = wire(undefined, properties);
   resumed.notification.enableTestMode('master-owner@onlinetest.aldo.local');
   drain(
     resumed.service.batchSendHandler({
-      patternId: 'CDC_OTTOBRE',
-      chunkSize: 2,
-      jobId: 'mail_CDC_OTTOBRE',
-      resumeState: {
-        nextIndex: 1,
-        processed: ['5A'],
-        sent: result.sent,
-        errors: result.errors
-      }
+      resumeState: firstRun.checkpoints[0]
     })
   );
   expect(resumed.gmail.sent.map((sent) => sent.to)).toEqual([[ONLINE_TEST_SAFE_EMAIL]]);

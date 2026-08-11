@@ -238,10 +238,6 @@ export function runOnlineTests(
   return runReportedSuite('online_tests', 'ONLINE_TEST_SUITE', execute, logger);
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-(globalThis as any).runOnlineTests = runOnlineTests;
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-
 /**
  * GAS Run-dropdown entry point for the online-coverage spike (docs/superpowers/specs/
  * 2026-07-26-test-completion-coverage-index-design.md §3.5): logs whatever istanbul coverage map
@@ -253,10 +249,6 @@ export function dumpOnlineCoverage(): void {
   const coverage = (globalThis as { __coverage__?: unknown }).__coverage__ ?? {};
   ServiceFactory.getLogger().info(JSON.stringify(coverage));
 }
-
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-(globalThis as any).dumpOnlineCoverage = dumpOnlineCoverage;
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 
 export interface E2eTestDeps {
   spreadsheetFactory: ISampleSpreadsheetFactory;
@@ -350,11 +342,107 @@ export function runE2eScenarios(
   return runReportedSuite('e2e_scenarios', 'E2E_SCENARIO_SUITE', execute, logger);
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-(globalThis as any).runE2eScenarios = runE2eScenarios;
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-
 /** GAS Run-dropdown entry point for the already-provisioned articulation fixture. */
 export function runArticolazioneScenarios(): void {
   executeArticolazioneScenarios();
+}
+
+function nonImplementato(): never {
+  throw new ConfigurationError('non implementato');
+}
+
+export function creaDatiMockDrive(): unknown {
+  return nonImplementato();
+}
+
+export function testDocumentiStandard(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testDocumentiArticolati(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testDocumentiTabelleImportate(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testDuplicazioneDocumenti(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testInvioEmail(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testEmailSicurezza(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testJobRunnerDocGen(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testJobRunnerEmail(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testJobRunnerTriggerReale(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testImportFileSingolo(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testImportCartelleClasse(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testImportCercaDocumenti(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testImportChunked(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testRecuperoStoricoAlunno(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testRecuperoStoricoClasse(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testRecuperoStoricoDocumenti(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testArticolazione(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testITPeMateriePuntate(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testSupplenzeERuoli(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testACLReali(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testCacheIsolamento(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function testPermessiAttivi(): OnlineTestReport {
+  return nonImplementato();
+}
+
+export function runFullOnlineTests(): OnlineTestReport {
+  return nonImplementato();
 }

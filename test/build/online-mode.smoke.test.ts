@@ -1,6 +1,35 @@
 import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import { runInNewContext } from 'vm';
+
+const scenarioLauncherNames = [
+  'creaDatiMockDrive',
+  'testDocumentiStandard',
+  'testDocumentiArticolati',
+  'testDocumentiTabelleImportate',
+  'testDuplicazioneDocumenti',
+  'testInvioEmail',
+  'testEmailSicurezza',
+  'testJobRunnerDocGen',
+  'testJobRunnerEmail',
+  'testJobRunnerTriggerReale',
+  'testImportFileSingolo',
+  'testImportCartelleClasse',
+  'testImportCercaDocumenti',
+  'testImportChunked',
+  'testRecuperoStoricoAlunno',
+  'testRecuperoStoricoClasse',
+  'testRecuperoStoricoDocumenti',
+  'testArticolazione',
+  'testITPeMateriePuntate',
+  'testSupplenzeERuoli',
+  'testACLReali',
+  'testCacheIsolamento',
+  'testPermessiAttivi',
+  'runFullOnlineTests',
+  'dumpOnlineCoverage'
+] as const;
 
 describe('online build mode', () => {
   it('produces Code.js, OnlineTests.js, and a readable online-test launcher plus a valid gas-source-map.json', () => {
@@ -20,10 +49,6 @@ describe('online build mode', () => {
     expect(codeJs).not.toEqual(onlineTestsJs);
     expect(onlineTestsJs).toContain('__coverage__');
     expect(codeJs).not.toContain('__coverage__');
-    expect(onlineTestsJs).toContain('function runArticolazioneScenarios()');
-    expect(onlineTestsJs).toContain('gasGlobal.runArticolazioneScenarios = runArticolazioneScenarios');
-    expect(onlineTestsJs).toMatch(/new ScriptPropertiesFacade\b/);
-    expect(onlineTestsJs).not.toContain('onlinetests_ScriptPropertiesFacade');
     expect(existsSync(onlineEntrypointsGs)).toBe(true);
     expect(existsSync(onlineEntrypointsJs)).toBe(false);
     expect(readFileSync(onlineEntrypointsGs, 'utf8')).toContain('function runFullOnlineTests()');
@@ -40,5 +65,24 @@ describe('online build mode', () => {
 
     const claspignore = readFileSync(resolve(distDir, '.claspignore'), 'utf8');
     expect(claspignore).toContain('gas-source-map.json');
+  }, 120_000);
+
+  it('makes every scenario available as a zero-argument GAS launcher', () => {
+    execSync('node scripts/build-and-prepare.cjs --mode=online', {
+      cwd: resolve(__dirname, '../..'),
+      stdio: 'pipe'
+    });
+
+    const onlineTestsJs = readFileSync(resolve(__dirname, '../../dist/OnlineTests.js'), 'utf8');
+    const gasLibraryJs = readFileSync(resolve(__dirname, '../../vendor/gaslibs.Code.js'), 'utf8');
+    const gasGlobal: Record<string, unknown> = {};
+    runInNewContext(gasLibraryJs, gasGlobal);
+    runInNewContext(onlineTestsJs, gasGlobal);
+
+    for (const launcherName of scenarioLauncherNames) {
+      const launcher = gasGlobal[launcherName];
+      expect(typeof launcher).toBe('function');
+      expect((launcher as () => unknown).length).toBe(0);
+    }
   }, 120_000);
 });

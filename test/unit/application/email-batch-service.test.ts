@@ -246,6 +246,36 @@ test('start stores the safe recipient in EmailBatchService persisted state, not 
   expect(properties.get('EMAIL_BATCH_TEST_RECIPIENT_CDC_OTTOBRE')).toBe(ONLINE_TEST_SAFE_EMAIL);
 });
 
+test('start keeps the production chunk default implicit when no override is supplied', () => {
+  const { service } = wire();
+  const { runner, calls } = fakeRunner();
+
+  service.start(runner, 'mail_CDC_OTTOBRE', 'CDC_OTTOBRE');
+
+  expect(calls[0]?.params).not.toHaveProperty('chunkSize');
+});
+
+test('start forwards an explicit chunk size through JobRunner params for deterministic checkpoints', () => {
+  const { service } = wire();
+  const { runner, calls } = fakeRunner();
+
+  service.start(
+    runner,
+    'mail_CDC_OTTOBRE',
+    'CDC_OTTOBRE',
+    false,
+    undefined,
+    ONLINE_TEST_SAFE_EMAIL,
+    1
+  );
+
+  expect(calls[0]?.params).toMatchObject({
+    patternId: 'CDC_OTTOBRE',
+    jobId: 'mail_CDC_OTTOBRE',
+    chunkSize: 1
+  });
+});
+
 test('a completed non-test batch is rerunnable without resending durable SUCCESS logical targets', () => {
   const first = wire();
 

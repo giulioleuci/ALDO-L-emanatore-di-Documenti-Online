@@ -323,11 +323,12 @@ export function avviaInvioNotificheDataDriven(
   patternId: string,
   runner: JobRunnerService,
   maxDurationMs?: number,
-  testRecipient?: string
+  testRecipient?: string,
+  chunkSize?: number
 ): unknown {
   return c
     .get<EmailBatchService>('emailBatchService')
-    .start(runner, `mail_${patternId}`, patternId, false, maxDurationMs, testRecipient);
+    .start(runner, `mail_${patternId}`, patternId, false, maxDurationMs, testRecipient, chunkSize);
 }
 
 /** Data-driven launcher (15 §4): scheduled retry of failed LOG_MAIL sends (11 §16). */

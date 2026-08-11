@@ -18,6 +18,11 @@ import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/docu
 import { registerE2eLegacyScenarioChecks } from './checks/e2eScenarioChecks';
 import { registerEmailChecks } from './checks/emailChecks';
 import {
+  registerJobRunnerChecks,
+  registerJobRunnerDocGenChecks,
+  registerJobRunnerEmailChecks
+} from './checks/jobRunnerChecks';
+import {
   registerContextEngineChecks,
   registerEffectiveAssignmentConsumerChecks
 } from './checks/contextEngineChecks';
@@ -32,7 +37,7 @@ import {
   type E2eTemplateIds,
   type SharedTestDatabase
 } from './data/SharedTestDatabaseBuilder';
-import { EMAIL_TEST_SAFE } from './data/fixtures';
+import { CONF_DOC_JOBRUNNER, EMAIL_TEST_SAFE } from './data/fixtures';
 
 /** Test-only fixture pointer; production startup always uses its bound spreadsheet. */
 export const PROP_ONLINETEST_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
@@ -75,7 +80,7 @@ type RegisterEmailChecks = (
 export interface FullOnlineTestRegistrations {
   documenti: RegisterSharedChecks;
   email: RegisterEmailChecks;
-  jobRunner: RegisterSharedChecks;
+  jobRunner: RegisterEmailChecks;
   import: RegisterSharedChecks;
   storico: RegisterSharedChecks;
   articolazione: RegisterSharedChecks;
@@ -124,7 +129,7 @@ function registerPendingChecks(group: string): RegisterSharedChecks {
 const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   documenti: registerLegacyDocumentiChecks,
   email: registerEmailChecks,
-  jobRunner: registerPendingChecks('jobrunner'),
+  jobRunner: registerJobRunnerChecks,
   import: registerLegacyImportChecks,
   storico: registerPendingChecks('storico'),
   articolazione: registerArticolazioneChecks,
@@ -238,7 +243,7 @@ export function executeFullOnlineTests(
   const testSample: FullOnlineTestSample = { ...sample, testMode: sample.masterTestMode };
   registrations.documenti(runner, container, testSample);
   registrations.email(runner, container, testSample, EMAIL_TEST_SAFE);
-  registrations.jobRunner(runner, container, testSample);
+  registrations.jobRunner(runner, container, testSample, EMAIL_TEST_SAFE);
   registrations.import(runner, container, testSample);
   registrations.storico(runner, container, testSample);
   registrations.articolazione(runner, container, testSample);
@@ -363,9 +368,7 @@ export function executeDuplicazioneDocumenti(
   return executePersistedDocumentiChecks('duplicazione', overrides);
 }
 
-function executePersistedEmailChecks(
-  overrides: Partial<E2eTestDeps> = {}
-): OnlineTestReport {
+function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
   if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
@@ -400,6 +403,55 @@ function executePersistedEmailChecks(
   const runner = new TestRunner();
   registerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
   return runner.report();
+}
+
+function executePersistedJobRunnerChecks(
+  scope: 'documenti' | 'email',
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
+
+  const sample: FullOnlineTestSample = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: '',
+    priorSampleSpreadsheetUrl: '',
+    priorSampleSpreadsheetId2: '',
+    priorSampleSpreadsheetUrl2: '',
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: CONF_DOC_JOBRUNNER,
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: '',
+    testMode: master.testMode
+  };
+  const runner = new TestRunner();
+  if (scope === 'documenti') registerJobRunnerDocGenChecks(runner, container, sample);
+  else registerJobRunnerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+  return runner.report();
+}
+
+export function executeJobRunnerDocGen(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedJobRunnerChecks('documenti', overrides);
+}
+
+export function executeJobRunnerEmail(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedJobRunnerChecks('email', overrides);
 }
 
 function nonImplementato(): never {
@@ -455,11 +507,17 @@ export function testEmailSicurezza(): OnlineTestReport {
     ServiceFactory.getLogger()
   );
 }
-export function testJobRunnerDocGen(): OnlineTestReport {
-  return nonImplementato();
+export function testJobRunnerDocGen(
+  execute: () => OnlineTestReport = executeJobRunnerDocGen,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('jobrunner_documenti', 'JOBRUNNER_DOC_SCENARIO', execute, logger);
 }
-export function testJobRunnerEmail(): OnlineTestReport {
-  return nonImplementato();
+export function testJobRunnerEmail(
+  execute: () => OnlineTestReport = executeJobRunnerEmail,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('jobrunner_email', 'JOBRUNNER_EMAIL_SCENARIO', execute, logger);
 }
 export function testJobRunnerTriggerReale(): OnlineTestReport {
   return nonImplementato();

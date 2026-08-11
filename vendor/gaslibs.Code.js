@@ -18875,7 +18875,7 @@ class DocumentBatchUpdateHandler {
       };
     }
     try {
-      this._logger.debug(`Executing batch update with ${requests.length} requests on document ${documentId}`);
+      this._logger.info(`Executing batch update with ${requests.length} requests on document ${documentId}`);
       const executeUpdate = () => {
         return Docs.Documents.batchUpdate({
           requests: requests
@@ -19196,7 +19196,7 @@ class SpreadsheetRangeManager {
       spreadsheetId,
       rangeCount: data.length
     }, 3);
-    this._logger.debug(`Updated ${result.totalUpdatedCells} cells across ${result.totalUpdatedRows} rows`);
+    this._logger.info(`Updated ${result.totalUpdatedCells} cells across ${result.totalUpdatedRows} rows`);
     return {
       totalUpdatedCells: result.totalUpdatedCells,
       totalUpdatedRows: result.totalUpdatedRows,
@@ -26691,7 +26691,7 @@ class _DocumentProcessor {
     return ranges.some(([start, end]) => index >= start && index < end);
   }
   process(documentId, context) {
-    this.logger.debug(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
+    this.logger.info(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
     let structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     const structuralOps = [];
 
@@ -26829,9 +26829,9 @@ class _DocumentProcessor {
       batchRequests.push(...this._convertOperationToRequests(op));
     }
     if (batchRequests.length > 0) {
-      this.logger.debug(`Executing batch update with ${batchRequests.length} requests`);
+      this.logger.info(`Executing batch update with ${batchRequests.length} requests`);
       this.documentService._executeBatchUpdate(documentId, batchRequests);
-      this.logger.debug(`Batch update completed successfully`);
+      this.logger.info(`Batch update completed successfully`);
     } else {
       this.logger.info(`No batch operations to execute`);
     }
@@ -49831,7 +49831,7 @@ class DatabaseConnectionManager {
       this.facade._transaction.savedStates[tableName] = cloneDeep_cloneDeep(table._rowsCache);
     }
     this.facade._inTransaction = true;
-    this._logger.debug('Transaction started');
+    this._logger.info('Transaction started');
     return this.facade;
   }
   commit() {
@@ -49844,7 +49844,7 @@ class DatabaseConnectionManager {
       });
       this._spreadsheetService.flushBatch();
       const duration = Date.now() - this.facade._transaction.startTime;
-      this._logger.debug(`Transaction committed successfully (${duration}ms)`);
+      this._logger.info(`Transaction committed successfully (${duration}ms)`);
       this.facade._transaction = null;
       this.facade._inTransaction = false;
       return this.facade;
@@ -54794,13 +54794,17 @@ class JobRunnerStateManager {
 
 
 
+
 function* withTimeout(generator, maxDuration, startTime) {
   let next = generator.next();
   while (!next.done) {
+
+
+
+    yield next.value;
     if (new Date().getTime() - startTime >= maxDuration) {
       throw new TimeoutException(`Timeout of ${maxDuration}ms exceeded`);
     }
-    yield next.value;
     next = generator.next();
   }
 

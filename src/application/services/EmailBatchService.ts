@@ -302,7 +302,8 @@ export class EmailBatchService {
     patternId: string,
     forceRestart = false,
     maxDurationMs?: number,
-    testRecipient?: string
+    testRecipient?: string,
+    chunkSize?: number
   ): unknown {
     if (forceRestart) {
       this.clearPersistedResume(patternId);
@@ -317,6 +318,7 @@ export class EmailBatchService {
       {
         patternId,
         jobId: jobName,
+        ...(chunkSize === undefined ? {} : { chunkSize }),
         ...(resumeState === null ? {} : { resumeState })
       },
       (queue) => this.registerJobHandlers(queue),

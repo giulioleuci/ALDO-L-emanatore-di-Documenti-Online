@@ -1,4 +1,9 @@
-import { dumpOnlineCoverage, runFullOnlineTests } from '../../../src/onlinetests';
+import {
+  dumpOnlineCoverage,
+  runFullOnlineTests,
+  testJobRunnerDocGen,
+  testJobRunnerEmail
+} from '../../../src/onlinetests';
 
 function report(failed = 0) {
   return {
@@ -25,6 +30,17 @@ describe('runFullOnlineTests', () => {
   });
 });
 
+describe('JobRunner scenario launchers', () => {
+  it.each([
+    ['doc', testJobRunnerDocGen],
+    ['email', testJobRunnerEmail]
+  ])('reports the %s three-check scenario through the normal job logger', (_name, launch) => {
+    const expected = report();
+
+    expect(launch(() => expected, new LoggerService())).toBe(expected);
+  });
+});
+
 describe('dumpOnlineCoverage', () => {
   afterEach(() => {
     delete (globalThis as { __coverage__?: unknown }).__coverage__;
@@ -32,9 +48,7 @@ describe('dumpOnlineCoverage', () => {
 
   it('logs the Istanbul coverage map when instrumentation populated it', () => {
     const info = jest.fn();
-    const loggerSpy = jest
-      .spyOn(ServiceFactory, 'getLogger')
-      .mockReturnValue({ info } as never);
+    const loggerSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ info } as never);
     (globalThis as { __coverage__?: unknown }).__coverage__ = { 'src/foo.ts': { s: { '0': 1 } } };
 
     dumpOnlineCoverage();
@@ -45,9 +59,7 @@ describe('dumpOnlineCoverage', () => {
 
   it('logs an empty object when the bundle was not instrumented', () => {
     const info = jest.fn();
-    const loggerSpy = jest
-      .spyOn(ServiceFactory, 'getLogger')
-      .mockReturnValue({ info } as never);
+    const loggerSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ info } as never);
 
     dumpOnlineCoverage();
 

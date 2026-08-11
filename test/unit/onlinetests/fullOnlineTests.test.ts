@@ -20,6 +20,7 @@ import { registerEmailChecks } from '../../../src/onlinetests/checks/emailChecks
 import { registerDocumentiChecks } from '../../../src/onlinetests/checks/documentiChecks';
 import { registerE2eLegacyScenarioChecks } from '../../../src/onlinetests/checks/e2eScenarioChecks';
 import { registerArticolazioneChecks } from '../../../src/onlinetests/checks/articolazioneChecks';
+import { registerJobRunnerChecks } from '../../../src/onlinetests/checks/jobRunnerChecks';
 
 jest.mock('../../../src/onlinetests/checks/repositoryChecks', () => ({
   registerRepositoryChecks: jest.fn(),
@@ -40,6 +41,9 @@ jest.mock('../../../src/onlinetests/checks/e2eScenarioChecks', () => ({
 }));
 jest.mock('../../../src/onlinetests/checks/articolazioneChecks', () => ({
   registerArticolazioneChecks: jest.fn()
+}));
+jest.mock('../../../src/onlinetests/checks/jobRunnerChecks', () => ({
+  registerJobRunnerChecks: jest.fn()
 }));
 
 const sample: SharedTestDatabase = {
@@ -145,6 +149,7 @@ describe('executeFullOnlineTests', () => {
     const context = registerExisting('context');
     const documenti = registerExisting('documenti');
     const email = registerExisting('email');
+    const jobRunner = registerExisting('jobrunner');
     const legacyImport = registerExisting('legacy.import');
     const articolazione = registerExisting('articolazione');
     const assignmentMatrix = registerExisting('supplenze.matrix');
@@ -153,6 +158,7 @@ describe('executeFullOnlineTests', () => {
     jest.mocked(registerContextEngineChecks).mockImplementation(context);
     jest.mocked(registerDocumentiChecks).mockImplementation(documenti);
     jest.mocked(registerEmailChecks).mockImplementation(email);
+    jest.mocked(registerJobRunnerChecks).mockImplementation(jobRunner);
     jest.mocked(registerE2eLegacyScenarioChecks).mockImplementationOnce(legacyImport);
     jest.mocked(registerArticolazioneChecks).mockImplementation(articolazione);
     jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
@@ -181,12 +187,19 @@ describe('executeFullOnlineTests', () => {
       'context',
       'documenti',
       'email',
+      'jobrunner',
       'legacy.import',
       'articolazione',
       'supplenze.matrix',
       'supplenze.consumer'
     ]);
     expect(registerEmailChecks).toHaveBeenCalledWith(
+      expect.anything(),
+      container,
+      expect.objectContaining({ testMode: true }),
+      EMAIL_TEST_SAFE
+    );
+    expect(registerJobRunnerChecks).toHaveBeenCalledWith(
       expect.anything(),
       container,
       expect.objectContaining({ testMode: true }),
@@ -199,7 +212,7 @@ describe('executeFullOnlineTests', () => {
       'context',
       'documenti',
       'email',
-      'Aggregate scenario pending migration: jobrunner',
+      'jobrunner',
       'legacy.import',
       'Aggregate scenario pending migration: storico',
       'articolazione',

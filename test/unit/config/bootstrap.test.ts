@@ -196,6 +196,24 @@ test('avviaInvioNotificheDataDriven starts the email batch job (15 §4/§6)', ()
     jobType: JOB_TYPE_INVIO_EMAIL,
     params: { patternId: 'CDC_OTTOBRE' }
   });
+  expect(calls[0]!.params).not.toHaveProperty('chunkSize');
+});
+
+test('avviaInvioNotificheDataDriven forwards an explicit checkpoint chunk size', () => {
+  const { runner, calls } = fakeRunner();
+  avviaInvioNotificheDataDriven(
+    container(),
+    'CDC_OTTOBRE',
+    runner,
+    50,
+    'safe@onlinetest.aldo.local',
+    1
+  );
+  expect(calls[0]).toMatchObject({
+    jobName: 'mail_CDC_OTTOBRE',
+    params: { patternId: 'CDC_OTTOBRE', chunkSize: 1 },
+    maxDurationMs: 50
+  });
 });
 
 test('avviaRetryEmailDataDriven passes its execution limit to JobRunnerLib', () => {

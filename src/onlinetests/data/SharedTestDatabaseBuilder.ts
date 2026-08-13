@@ -66,6 +66,13 @@ export const CLASSE_C_PARTNER = '3C-C';
  */
 export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT];
 export const ASSIGNMENT_MATRIX_DATE_E2E = new Date('2026-07-15T09:00:00Z');
+
+/** Minimal persisted fixture descriptor used only by the Script Cache isolation callback. */
+export interface CacheIsolationFixture {
+  masterSpreadsheetId: string;
+  sampleSpreadsheetId: string;
+  sampleSpreadsheetUrl: string;
+}
 /**
  * Specifica catalog rows (design 2026-07-30-materie-specifica-catalog): every
  * dotted SPECIFICA column in ASSIGNMENT_COLUMNS_E2E needs its own MATERIE row.
@@ -295,6 +302,46 @@ export class SharedTestDatabaseBuilder {
       jobRunnerDocConfigId: CONF_DOC_JOBRUNNER,
       masterTestMode,
       staticAttachmentFileId: templateIds.staticAttachment
+    };
+  }
+
+  /**
+   * Builds a second valid MASTER/current-year pair that intentionally has no class `1A`.
+   * It shares the same GAS Script Cache as the normal fixture, so a row-key missing the
+   * spreadsheet identifier becomes externally observable as a false hit.
+   */
+  buildCacheIsolationFixture(
+    templateIds: E2eTemplateIds,
+    master: ISampleSpreadsheet
+  ): CacheIsolationFixture {
+    const baseName = '_ALDO_E2E_CACHE_ISOLATED';
+    const folderId = this.drive.createFolder(baseName);
+    const sample = this.spreadsheets.createSpreadsheet(`${baseName}_SAMPLE`);
+    for (const [table, headerRow] of Object.entries(HEADERS)) {
+      sample.addSheet(table, headerRow);
+    }
+    master.addSheet(TABLE.MASTER, Object.values(COL_MASTER));
+
+    const layouts = this.classLayouts().filter((layout) => layout.id !== CLASSE_A);
+    this.seedIndirizzi(sample);
+    this.seedDipart(sample);
+    this.seedMaterie(sample);
+    this.seedDocenti(sample);
+    this.seedClassi(sample, layouts);
+    this.seedAlunni(sample, layouts);
+    this.seedCarenze(sample);
+    this.seedSupplenzeEVariazioni(sample);
+    this.seedPiani(sample);
+    this.seedProgetti(sample);
+    this.seedConfDoc(sample, templateIds);
+    this.seedConfMail(sample, templateIds);
+    this.seedConfImp(sample, templateIds);
+    this.seedMaster(master, sample.id, folderId, true);
+
+    return {
+      masterSpreadsheetId: master.id,
+      sampleSpreadsheetId: sample.id,
+      sampleSpreadsheetUrl: sample.getUrl()
     };
   }
 

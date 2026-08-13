@@ -37,6 +37,25 @@ describe('TestRunner', () => {
     ]);
   });
 
+  it('records a documented skipped result without counting it as passed or failed', () => {
+    const runner = new TestRunner();
+    runner.skip('check-skipped', 'https://drive.google.com/x', 'SKIPPED: policy Workspace');
+
+    expect(runner.report()).toMatchObject({
+      passed: 0,
+      failed: 0,
+      skipped: 1,
+      results: [
+        {
+          name: 'check-skipped',
+          status: 'skipped',
+          message: 'SKIPPED: policy Workspace',
+          artifactUrl: 'https://drive.google.com/x'
+        }
+      ]
+    });
+  });
+
   it('never throws out of add() even when fn throws a non-Error value', () => {
     const runner = new TestRunner();
     expect(() =>

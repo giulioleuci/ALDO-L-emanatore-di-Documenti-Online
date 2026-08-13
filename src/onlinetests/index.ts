@@ -17,6 +17,11 @@ import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { registerItpDottedChecks } from './checks/itpDottedChecks';
 import { registerSupplenzeRuoliChecks } from './checks/supplenzeRuoliChecks';
 import { registerAclRealiChecks } from './checks/aclRealiChecks';
+import {
+  registerCacheIsolamentoChecks,
+  type CacheIsolationDeps
+} from './checks/cacheIsolamentoChecks';
+import { registerPermessiChecks } from './checks/permessiChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
 import { registerEmailChecks } from './checks/emailChecks';
 import {
@@ -53,6 +58,9 @@ import { CONF_DOC_JOBRUNNER, EMAIL_TEST_SAFE } from './data/fixtures';
 
 /** Test-only fixture pointer; production startup always uses its bound spreadsheet. */
 export const PROP_ONLINETEST_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
+/** Master fixture dedicated to proving Script Cache keys stay spreadsheet-scoped. */
+export const PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID =
+  'CACHE_ISOLATED_MASTER_SPREADSHEET_ID';
 
 export interface E2eTestDeps {
   spreadsheetFactory: ISampleSpreadsheetFactory;
@@ -139,29 +147,11 @@ const registerImportCercaDocumentiLauncherChecks: RegisterSharedChecks = (
 };
 
 /** Keeps the full effective-assignment matrix/consumer coverage and appends Task 22 cases. */
-const registerSupplenzeRuoliScenarioChecks: RegisterSharedChecks = (
-  runner,
-  container,
-  sample
-) => {
+const registerSupplenzeRuoliScenarioChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerEffectiveAssignmentMatrixChecks(runner, container, sample);
   registerEffectiveAssignmentConsumerChecks(runner, container, sample);
   registerSupplenzeRuoliChecks(runner, container, sample);
 };
-
-function registerPendingChecks(group: string): RegisterSharedChecks {
-  return (runner, _container, sample) => {
-    runner.add(
-      `Aggregate scenario pending migration: ${group}`,
-      sample.sampleSpreadsheetUrl,
-      () => {
-        throw new ConfigurationError(
-          `Aggregate online-test group "${group}" has not been migrated yet.`
-        );
-      }
-    );
-  };
-}
 
 const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   documenti: registerLegacyDocumentiChecks,
@@ -173,8 +163,14 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   itpDotted: registerItpDottedChecks,
   supplenzeRuoli: registerSupplenzeRuoliScenarioChecks,
   aclReali: registerAclRealiChecks,
-  cacheIsolamento: registerPendingChecks('cache-isolamento'),
-  permessi: registerPendingChecks('permessi')
+  // The aggregate gets an explicit non-applicability record; dedicated launcher opens 2 masters.
+  cacheIsolamento: (runner, _container, sample) =>
+    runner.skip(
+      'cache.isolamento::secondo fixture non riusa righe cached',
+      sample.sampleSpreadsheetUrl,
+      'SKIPPED: esegui testCacheIsolamento con fixture isolata configurata.'
+    ),
+  permessi: registerPermessiChecks
 };
 
 const E2E_ROOT_FOLDER_NAME = '_ALDO_E2E_ROOT';
@@ -263,8 +259,20 @@ export function executeCreaDatiMockDrive(
     master,
     { force }
   );
+  const cacheIsolationMaster = spreadsheetFactory.createSpreadsheet(
+    '_ALDO_E2E_CACHE_ISOLATED_MASTER'
+  );
+  const cacheIsolation = new SharedTestDatabaseBuilder(
+    spreadsheetFactory,
+    drive,
+    artifactFactory
+  ).buildCacheIsolationFixture(templateIds, cacheIsolationMaster);
 
   properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
+  properties.set(
+    PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
+    cacheIsolation.masterSpreadsheetId
+  );
   return sample;
 }
 
@@ -506,14 +514,74 @@ export function executeImportChunked(overrides: Partial<E2eTestDeps> = {}): Onli
   return executePersistedImportChecks(registerImportChunkedChecks, overrides);
 }
 
-export function executeSupplenzeERuoli(
-  overrides: Partial<E2eTestDeps> = {}
-): OnlineTestReport {
+export function executeSupplenzeERuoli(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   return executePersistedImportChecks(registerSupplenzeRuoliChecks, overrides);
 }
 
 export function executeACLReali(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   return executePersistedImportChecks(registerAclRealiChecks, overrides);
+}
+
+function cacheIsolationDeps(
+  properties: IPropertiesFacade,
+  overrides: Partial<E2eTestDeps>
+): CacheIsolationDeps {
+  const secondMasterSpreadsheetId = properties
+    .get(PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID)
+    ?.trim();
+  if (secondMasterSpreadsheetId === undefined || secondMasterSpreadsheetId === '') {
+    throw new ConfigurationError(
+      'Fixture cache isolata non disponibile: riesegui creaDatiMockDrive per configurarla.'
+    );
+  }
+  return {
+    initAldo: overrides.initAldo ?? initAldo,
+    resetAldo: overrides.resetAldo ?? resetAldo,
+    properties,
+    clock: overrides.clock ?? (() => new Date()),
+    secondMasterSpreadsheetId
+  };
+}
+
+/** Runs two persisted masters through one Script Cache and rejects cross-fixture row reuse. */
+export function executeCacheIsolamento(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? (() => new Date());
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const runner = new TestRunner();
+  registerCacheIsolamentoChecks(
+    runner,
+    container,
+    {
+      masterSpreadsheetId,
+      sampleSpreadsheetId: master.idSpreadsheet,
+      sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+      sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+      priorSampleSpreadsheetId: '',
+      priorSampleSpreadsheetUrl: '',
+      priorSampleSpreadsheetId2: '',
+      priorSampleSpreadsheetUrl2: '',
+      logFoldFolderUrl: '',
+      jobRunnerDocConfigId: '',
+      masterTestMode: master.testMode,
+      staticAttachmentFileId: ''
+    },
+    cacheIsolationDeps(properties, overrides)
+  );
+  return runner.report();
+}
+
+/** Active-user ACL evidence. Unavailable Workspace identity/read-back is reported as SKIPPED. */
+export function executePermessiAttivi(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedImportChecks(registerPermessiChecks, overrides);
 }
 
 function executePersistedStoricoChecks(
@@ -714,11 +782,7 @@ export function executeJobRunnerTriggerReale(
   return executePersistedJobRunnerChecks('trigger-reale', overrides);
 }
 
-function nonImplementato(): never {
-  throw new ConfigurationError('non implementato');
-}
-
-// Dedicated launchers are implemented by the subsequent scenario tasks.
+// Dedicated launchers.
 export function testDocumentiStandard(): OnlineTestReport {
   return runReportedSuite(
     'documenti_standard',
@@ -864,9 +928,15 @@ export function testACLReali(
 ): OnlineTestReport {
   return runReportedSuite('acl_reali', 'ACL_REALI_SCENARIO', execute, logger);
 }
-export function testCacheIsolamento(): OnlineTestReport {
-  return nonImplementato();
+export function testCacheIsolamento(
+  execute: () => OnlineTestReport = executeCacheIsolamento,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('cache_isolamento', 'CACHE_ISOLAMENTO_SCENARIO', execute, logger);
 }
-export function testPermessiAttivi(): OnlineTestReport {
-  return nonImplementato();
+export function testPermessiAttivi(
+  execute: () => OnlineTestReport = executePermessiAttivi,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('permessi_attivi', 'PERMESSI_ATTIVI_SCENARIO', execute, logger);
 }

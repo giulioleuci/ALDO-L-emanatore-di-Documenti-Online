@@ -1,11 +1,14 @@
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import {
   executeFullOnlineTests,
+  testCacheIsolamento,
   testJobRunnerTriggerReale,
+  testPermessiAttivi,
   type FullOnlineTestDeps,
   type FullOnlineTestSample
 } from '../../../src/onlinetests';
 import type { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
+import type { OnlineTestReport } from '../../../src/onlinetests/report/OnlineTestReport';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import { EMAIL_TEST_SAFE } from '../../../src/onlinetests/data/fixtures';
@@ -29,6 +32,8 @@ import { registerArticolazioneChecks } from '../../../src/onlinetests/checks/art
 import { registerJobRunnerChecks } from '../../../src/onlinetests/checks/jobRunnerChecks';
 import { registerSupplenzeRuoliChecks } from '../../../src/onlinetests/checks/supplenzeRuoliChecks';
 import { registerAclRealiChecks } from '../../../src/onlinetests/checks/aclRealiChecks';
+import { registerCacheIsolamentoChecks } from '../../../src/onlinetests/checks/cacheIsolamentoChecks';
+import { registerPermessiChecks } from '../../../src/onlinetests/checks/permessiChecks';
 
 jest.mock('../../../src/onlinetests/checks/repositoryChecks', () => ({
   registerRepositoryChecks: jest.fn(),
@@ -61,6 +66,12 @@ jest.mock('../../../src/onlinetests/checks/supplenzeRuoliChecks', () => ({
 }));
 jest.mock('../../../src/onlinetests/checks/aclRealiChecks', () => ({
   registerAclRealiChecks: jest.fn()
+}));
+jest.mock('../../../src/onlinetests/checks/cacheIsolamentoChecks', () => ({
+  registerCacheIsolamentoChecks: jest.fn()
+}));
+jest.mock('../../../src/onlinetests/checks/permessiChecks', () => ({
+  registerPermessiChecks: jest.fn()
 }));
 
 const sample: SharedTestDatabase = {
@@ -176,6 +187,8 @@ describe('executeFullOnlineTests', () => {
     const acl = registerExisting('acl');
     const assignmentMatrix = registerExisting('supplenze.matrix');
     const assignmentConsumer = registerExisting('supplenze.consumer');
+    const cache = registerExisting('cache');
+    const permessi = registerExisting('permessi');
     jest.mocked(registerRepositoryChecks).mockImplementation(repository);
     jest.mocked(registerContextEngineChecks).mockImplementation(context);
     jest.mocked(registerDocumentiChecks).mockImplementation(documenti);
@@ -194,6 +207,8 @@ describe('executeFullOnlineTests', () => {
     jest.mocked(registerAclRealiChecks).mockImplementation(acl);
     jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
     jest.mocked(registerEffectiveAssignmentConsumerChecks).mockImplementation(assignmentConsumer);
+    jest.mocked(registerCacheIsolamentoChecks).mockImplementation(cache as never);
+    jest.mocked(registerPermessiChecks).mockImplementation(permessi as never);
 
     const report = executeFullOnlineTests({
       properties: properties(),
@@ -227,7 +242,8 @@ describe('executeFullOnlineTests', () => {
       'supplenze.matrix',
       'supplenze.consumer',
       'supplenze',
-      'acl'
+      'acl',
+      'permessi'
     ]);
     expect(registerEmailChecks).toHaveBeenCalledWith(
       expect.anything(),
@@ -271,8 +287,8 @@ describe('executeFullOnlineTests', () => {
       'supplenze.consumer',
       'supplenze',
       'acl',
-      'Aggregate scenario pending migration: cache-isolamento',
-      'Aggregate scenario pending migration: permessi'
+      'cache.isolamento::secondo fixture non riusa righe cached',
+      'permessi'
     ]);
     expect(report.results.some((result) => result.name.includes('trigger reale'))).toBe(false);
   });
@@ -299,6 +315,48 @@ describe('executeFullOnlineTests', () => {
     expect(logJobStart).toHaveBeenCalledWith(
       'jobrunner_trigger_reale',
       'JOBRUNNER_REAL_TRIGGER_SCENARIO'
+    );
+  });
+
+  function expectReportedLauncher(
+    launcher: (execute: () => OnlineTestReport, logger: LoggerService) => OnlineTestReport,
+    jobName: string,
+    jobType: string
+  ): void {
+    const report = {
+      suite: 'aldo-online-tests' as const,
+      startedAt: '2026-08-11T09:00:00.000Z',
+      finishedAt: '2026-08-11T09:00:01.000Z',
+      passed: 1,
+      failed: 0,
+      skipped: 0,
+      results: []
+    };
+    const execute = jest.fn(() => report);
+    const logJobStart = jest.fn();
+    const logger = {
+      logJobStart,
+      logSummary: jest.fn(),
+      logJobEnd: jest.fn()
+    } as unknown as LoggerService;
+
+    expect(launcher(execute, logger)).toBe(report);
+    expect(logJobStart).toHaveBeenCalledWith(jobName, jobType);
+  }
+
+  it('runs cache-isolation launcher through job reporting', () => {
+    expectReportedLauncher(
+      (execute, logger) => testCacheIsolamento(execute, logger),
+      'cache_isolamento',
+      'CACHE_ISOLAMENTO_SCENARIO'
+    );
+  });
+
+  it('runs active-permissions launcher through job reporting', () => {
+    expectReportedLauncher(
+      (execute, logger) => testPermessiAttivi(execute, logger),
+      'permessi_attivi',
+      'PERMESSI_ATTIVI_SCENARIO'
     );
   });
 });

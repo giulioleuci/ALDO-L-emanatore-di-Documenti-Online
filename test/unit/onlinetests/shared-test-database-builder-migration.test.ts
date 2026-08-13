@@ -201,6 +201,26 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   expect(classe4A['INTERPRET.FLAUTO']).toBe(e2eDocenteEmail(6));
 });
 
+test('builds dedicated cache-isolation fixture with a current master whose database lacks 1A', () => {
+  const { spreadsheets, sheets } = recordingFactory();
+  const master = new RecordingSpreadsheet('cache-isolation-master');
+  const result = new SharedTestDatabaseBuilder(
+    spreadsheets,
+    new FakeDriveFacade(),
+    recordingArtifacts()
+  ).buildCacheIsolationFixture(TEMPLATE_IDS, master);
+
+  const isolated = sheets.get('_ALDO_E2E_CACHE_ISOLATED_SAMPLE')!;
+  expect(master.rows[TABLE.MASTER]).toEqual([
+    expect.objectContaining({ [COL_MASTER.ID_SPREADSHEET]: result.sampleSpreadsheetId })
+  ]);
+  expect(isolated.rows[TABLE.CLASSI].map((row) => row[COL_CLASSI.ID])).not.toContain(CLASSE_A);
+  expect(isolated.rows[TABLE.CLASSI].map((row) => row[COL_CLASSI.ID])).toContain(CLASSE_B);
+  expect(Object.keys(isolated.headers)).toEqual(
+    expect.arrayContaining(Object.values(TABLE).filter((table) => table !== TABLE.MASTER))
+  );
+});
+
 test('preserves the legacy focal identities, coordinators, representatives, and import roster', () => {
   const { spreadsheets, sheets } = recordingFactory();
   const master = new RecordingSpreadsheet('bound-master');

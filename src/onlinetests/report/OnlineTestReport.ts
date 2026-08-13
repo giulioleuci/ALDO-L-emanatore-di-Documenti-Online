@@ -1,6 +1,6 @@
 export interface OnlineTestResult {
   name: string;
-  status: 'pass' | 'fail';
+  status: 'pass' | 'fail' | 'skipped';
   message?: string;
   artifactUrl?: string;
 }
@@ -11,6 +11,7 @@ export interface OnlineTestReport {
   finishedAt: string;
   passed: number;
   failed: number;
+  skipped: number;
   results: OnlineTestResult[];
 }
 
@@ -52,14 +53,25 @@ export class TestRunner {
     }
   }
 
+  /** Records a non-applicable online check without treating absent Workspace evidence as pass. */
+  skip(name: string, artifactUrl: string | undefined, reason: string): void {
+    this.results.push(
+      artifactUrl !== undefined
+        ? { name, status: 'skipped', message: reason, artifactUrl }
+        : { name, status: 'skipped', message: reason }
+    );
+  }
+
   report(): OnlineTestReport {
     const passed = this.results.filter((r) => r.status === 'pass').length;
+    const skipped = this.results.filter((r) => r.status === 'skipped').length;
     return {
       suite: 'aldo-online-tests',
       startedAt: this.startedAt,
       finishedAt: new Date().toISOString(),
       passed,
-      failed: this.results.length - passed,
+      failed: this.results.length - passed - skipped,
+      skipped,
       results: this.results
     };
   }

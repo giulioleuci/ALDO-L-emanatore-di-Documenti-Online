@@ -1,5 +1,6 @@
 import {
   executeCreaDatiMockDrive,
+  PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
   PROP_ONLINETEST_MASTER_SPREADSHEET_ID
 } from '../../../src/onlinetests';
 import type { E2eTestDeps } from '../../../src/onlinetests';
@@ -56,7 +57,9 @@ function reusableSpreadsheetFactory(): ISampleSpreadsheetFactory & {
   };
 }
 
-function properties(initial: Record<string, string>): IPropertiesFacade & { values: Record<string, string> } {
+function properties(
+  initial: Record<string, string>
+): IPropertiesFacade & { values: Record<string, string> } {
   const values = { ...initial };
   return {
     values,
@@ -113,7 +116,11 @@ describe('executeCreaDatiMockDrive', () => {
       masterSpreadsheetId: 'master:active',
       sampleSpreadsheetId: first.sampleSpreadsheetId
     });
-    expect(props.values).toEqual({ [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master:active' });
+    expect(props.values).toEqual({
+      [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master:active',
+      [PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID]:
+        'sheet:_ALDO_E2E_CACHE_ISOLATED_MASTER'
+    });
     expect(deps.spreadsheetFactory.openedIds).toEqual(['master:active', 'master:active']);
     expect(deps.spreadsheetFactory.createdIds).toEqual(createdAfterFirst);
   });
@@ -134,6 +141,8 @@ describe('executeCreaDatiMockDrive', () => {
     expect(sample.sampleSpreadsheetId).toMatch(/^sheet:_ALDO_E2E_FORCE_/);
     expect(props.values).toEqual({
       [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master:active',
+      [PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID]:
+        'sheet:_ALDO_E2E_CACHE_ISOLATED_MASTER',
       ALDO_E2E_FORCE_REBUILD: 'true'
     });
     expect(deps.spreadsheetFactory.openedIds).toEqual(['master:active']);

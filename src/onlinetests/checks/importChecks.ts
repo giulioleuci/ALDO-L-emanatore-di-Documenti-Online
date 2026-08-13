@@ -529,9 +529,8 @@ const ASL_IMPORT_SHEET_STUDENTS: Array<[string, number]> = [
  * - a matching `idGen`/`TIPO` but pointing at a genuine non-spreadsheet
  *   Drive file (`sample.staticAttachmentFileId`, a real provisioned Doc
  *   template — no new Drive artifact needed) — this one *passes* the filter
- *   and reaches `readSheetRows`, which now fails per-document
- *   (`createCercaDocumentiStrategy`'s try/catch, added alongside this task)
- *   and is skipped without aborting the rest of the batch.
+ *   but is skipped by `createCercaDocumentiStrategy`'s strict Drive MIME
+ *   preflight before any sheet read.
  *
  * Both sentinel `_CLASSE` values must never appear in the imported ASL rows,
  * and the import must still succeed with the two eligible sheets' rows

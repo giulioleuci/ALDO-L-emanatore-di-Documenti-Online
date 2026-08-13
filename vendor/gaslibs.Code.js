@@ -16533,6 +16533,7 @@ class DriveMetadataService {
     const isSingleId = !Array.isArray(fileIds);
     const idsArray = isSingleId ? [fileIds] : fileIds;
     const fields = options.fields || 'id,name,mimeType,parents,modifiedTime,createdTime,webViewLink,size,owners';
+    const requiredFields = options.strict === true ? fields.split(',').map(field => field.trim()) : [];
 
 
     const cacheResults = {};
@@ -16542,7 +16543,12 @@ class DriveMetadataService {
       const cached = this._cache.get(cacheKey);
       if (cached) {
         try {
-          cacheResults[fileId] = JSON.parse(cached);
+          const cachedMetadata = JSON.parse(cached);
+          if (requiredFields.every(field => Object.prototype.hasOwnProperty.call(cachedMetadata, field))) {
+            cacheResults[fileId] = cachedMetadata;
+          } else {
+            uncachedIds.push(fileId);
+          }
         } catch (_e) {
           uncachedIds.push(fileId);
         }

@@ -2,7 +2,7 @@
 
 ## Stato
 
-Completato e committed: `b15e640 feat(onlinetests): articolazione sul dataset condiviso`.
+Completato e committed: `dcd11d7 feat(onlinetests): articolazione sul dataset condiviso`.
 
 ## Discovery e vincoli
 

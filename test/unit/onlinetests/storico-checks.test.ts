@@ -58,8 +58,18 @@ test('scopes storico launchers and keeps rendering under documenti', () => {
 test('student assertion requires two distinctive years, outcomes and plans', () => {
   const storico = {
     anni: [
-      { annoScolastico: '2025-2026', classe: '2C', esito: 'PROMOSSO' },
-      { annoScolastico: '2024-2025', classe: '1C', esito: 'NON_PROMOSSO' }
+      {
+        annoScolastico: '2025-2026',
+        classe: '2C',
+        esito: 'PROMOSSO',
+        carenze: [{ materiaSigla: 'STO', valore: '4' }]
+      },
+      {
+        annoScolastico: '2024-2025',
+        classe: '1C',
+        esito: 'NON_PROMOSSO',
+        carenze: [{ materiaSigla: 'STO', valore: '5' }]
+      }
     ],
     pianiPrimoAnnoPrecedente: [{ tipo: 'PDP_BES', tipoLabel: 'PDP BES' }],
     pianiSecondoAnnoPrecedente: [{ tipo: 'PDP_BES', tipoLabel: 'PDP BES' }],
@@ -71,6 +81,15 @@ test('student assertion requires two distinctive years, outcomes and plans', () 
   expect(() => assertAlunnoStorico({ ...storico, anni: storico.anni.slice(0, 1) })).toThrow(
     /due anni/
   );
+  expect(() =>
+    assertAlunnoStorico({
+      ...storico,
+      anni: [
+        { ...storico.anni[0], carenze: [{ materiaSigla: 'GST', valore: '4' }] },
+        storico.anni[1]
+      ]
+    })
+  ).toThrow(/GST.*STO|riconciliata/i);
 });
 
 test('class assertion distinguishes real and fallback referees plus ITP omission', () => {

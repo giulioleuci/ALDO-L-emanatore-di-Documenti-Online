@@ -82,6 +82,19 @@ export function assertAlunnoStorico(value: unknown): void {
   if (!signatures.includes('2024-2025:1C:NON_PROMOSSO')) {
     fail('anno non promosso 2024-2025/1C mancante');
   }
+  for (const [annoScolastico, valore] of [
+    ['2025-2026', '4'],
+    ['2024-2025', '5']
+  ] as const) {
+    const anno = anni.find((candidate) => candidate.annoScolastico === annoScolastico);
+    const carenze = asArray(anno?.carenze, `carenze ${annoScolastico}`);
+    if (
+      carenze.some((carenza) => carenza.materiaSigla === 'GST') ||
+      !carenze.some((carenza) => carenza.materiaSigla === 'STO' && carenza.valore === valore)
+    ) {
+      fail(`carenza GST non riconciliata in STO per ${annoScolastico}`);
+    }
+  }
   if (storico.hasBocciature !== true) fail('hasBocciature deve essere true');
   const bocciature = asArray(storico.bocciature, 'focus.alunno.storico.bocciature');
   if (!bocciature.some((b) => b.annoScolastico === '2024-2025' && b.classe === '1C')) {
@@ -244,9 +257,8 @@ export function registerStoricoChecks(
           profonditaAnniStorico: 0,
           profonditaAnniDocumenti: 0
         });
-        const depthZeroStorico = asRecord(materializeStudentHistory(depthZero), 'storico depth 0');
-        if (asArray(depthZeroStorico.anni, 'storico depth 0.anni').length !== 0) {
-          fail('depth 0 deve produrre anni vuoti');
+        if (depthZero.focus.alunno?.storico !== undefined) {
+          fail('depth 0 deve lasciare focus.alunno.storico assente');
         }
         const unknown = asRecord(
           materializeStudentHistory(

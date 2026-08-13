@@ -1,5 +1,6 @@
 import {
   dumpOnlineCoverage,
+  historicalSpreadsheetUrls,
   runFullOnlineTests,
   testJobRunnerDocGen,
   testJobRunnerEmail,
@@ -7,6 +8,15 @@ import {
   testRecuperoStoricoClasse,
   testRecuperoStoricoDocumenti
 } from '../../../src/onlinetests';
+
+test('maps persisted historical configs to useful spreadsheet artifact URLs', () => {
+  expect(
+    historicalSpreadsheetUrls([{ idSpreadsheet: 'prior-one' }, { idSpreadsheet: 'prior-two' }])
+  ).toEqual([
+    'https://docs.google.com/spreadsheets/d/prior-one',
+    'https://docs.google.com/spreadsheets/d/prior-two'
+  ]);
+});
 
 function report(failed = 0) {
   return {

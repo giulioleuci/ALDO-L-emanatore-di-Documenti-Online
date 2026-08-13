@@ -43,7 +43,7 @@ export const HEADERS: Record<string, string[]> = {
   [TABLE.DIPART]: Object.values(COL_DIPART),
   [TABLE.RUOLI]: Object.values(COL_RUOLI),
   [TABLE.PIANI]: Object.values(COL_PIANI),
-  [TABLE.CARENZE]: [...Object.values(COL_CARENZE), ...MATERIE_E2E],
+  [TABLE.CARENZE]: [...Object.values(COL_CARENZE), ...MATERIE_E2E, 'GST'],
   [TABLE.PROGETTI]: Object.values(COL_PROGETTI),
   [TABLE.MOV_ALUNNI]: Object.values(COL_MOV_ALUNNI),
   [TABLE.ASL]: Object.values(COL_ASL),

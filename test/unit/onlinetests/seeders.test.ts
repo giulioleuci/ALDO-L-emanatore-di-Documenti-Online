@@ -192,6 +192,14 @@ test('seeds two prior databases with every historical-provider table and master 
     expect(prior.rows[TABLE.PROGETTI]).toEqual(
       expect.arrayContaining([expect.objectContaining({ REFERENTE: `Esperto Esterno ${anno}` })])
     );
+    expect(prior.rows[TABLE.CARENZE]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          STUDENTE: e2eAlunnoEmail(138),
+          GST: anno === '2025-2026' ? 4 : 5
+        })
+      ])
+    );
   }
   expect(currentClassOf(e2eAlunnoEmail(138))).toBe('3C');
   expect(master.rows[TABLE.MASTER].map((row) => row[COL_MASTER.ANNO_SCOLASTICO])).toEqual(

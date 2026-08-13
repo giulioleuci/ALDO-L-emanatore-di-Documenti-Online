@@ -174,6 +174,8 @@ function readCurrentMasterConfig(masterId: string): {
   idSpreadsheet: string;
   idCartellaRoot: string;
   testMode: boolean;
+  historicalSpreadsheetIds: string[];
+  historicalSpreadsheetUrls: string[];
 } {
   const logger = ServiceFactory.getLogger();
   const masterDb = new SheetDbAdapter(
@@ -186,7 +188,19 @@ function readCurrentMasterConfig(masterId: string): {
       { verifyTables: [TABLE.MASTER] }
     )
   );
-  return new MasterSheetRepository(masterDb).findConfigAnnoCorrente();
+  const repository = new MasterSheetRepository(masterDb);
+  const current = repository.findConfigAnnoCorrente();
+  const historical = repository.findAnniStorici(2);
+  return {
+    ...current,
+    historicalSpreadsheetIds: historical.map((config) => config.idSpreadsheet),
+    historicalSpreadsheetUrls: historicalSpreadsheetUrls(historical)
+  };
+}
+
+/** Stable artifact links for persisted historical MASTER rows. */
+export function historicalSpreadsheetUrls(configs: Array<{ idSpreadsheet: string }>): string[] {
+  return configs.map((config) => `https://docs.google.com/spreadsheets/d/${config.idSpreadsheet}`);
 }
 
 function mintE2eRootFolder(): GoogleAppsScript.Drive.Folder {
@@ -507,10 +521,10 @@ function executePersistedStoricoChecks(
     sampleSpreadsheetId: master.idSpreadsheet,
     sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
     sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
-    priorSampleSpreadsheetId: '',
-    priorSampleSpreadsheetUrl: '',
-    priorSampleSpreadsheetId2: '',
-    priorSampleSpreadsheetUrl2: '',
+    priorSampleSpreadsheetId: master.historicalSpreadsheetIds[0] ?? '',
+    priorSampleSpreadsheetUrl: master.historicalSpreadsheetUrls[0] ?? '',
+    priorSampleSpreadsheetId2: master.historicalSpreadsheetIds[1] ?? '',
+    priorSampleSpreadsheetUrl2: master.historicalSpreadsheetUrls[1] ?? '',
     logFoldFolderUrl: '',
     jobRunnerDocConfigId: '',
     masterTestMode: master.testMode,

@@ -45,7 +45,13 @@ test('ALUNNO_DETTAGLIATO on a1 assembles the full student focus; storico is skip
   expect(a.didattica.asl).toEqual({ oreCumulate: 100, oreAnnoCorrente: 60 });
   expect(a.didattica.carenze.numero).toBe(3);
   expect(a.didattica.piani.items).toEqual([
-    { tipo: 'PEI', tipoLabel: 'PEI', isBes: true, link: '', parametriGenerazione: { gravita: 'media' } }
+    {
+      tipo: 'PEI',
+      tipoLabel: 'PEI',
+      isBes: true,
+      link: '',
+      parametriGenerazione: { gravita: 'media' }
+    }
   ]);
   expect(a.didattica.documenti).toEqual({ hasDocumenti: false, items: [] });
   // includiStorico defaults to false → StoricoProvider is a no-op, no LazyRef.
@@ -53,9 +59,12 @@ test('ALUNNO_DETTAGLIATO on a1 assembles the full student focus; storico is skip
   expect(a.storico).toBeUndefined();
 });
 
-test('includiStorico:true attaches a LazyRef without opening any historical database (09 §8, 13 §2)', () => {
+test('includiStorico:true with positive depth attaches a LazyRef without opening any historical database (09 §8, 13 §2)', () => {
   const params: BuildParams = { target: 'a1@school.it', tipoTarget: 'alunno', now };
-  const cdu = factory().build(params, recipe('ALUNNO_DETTAGLIATO', { includiStorico: true }));
+  const cdu = factory().build(
+    params,
+    recipe('ALUNNO_DETTAGLIATO', { includiStorico: true, profonditaAnniStorico: 1 })
+  );
   const storico = cdu.focus.alunno!.storico!;
   expect(storico).toBeDefined();
   expect(storico.isResolved()).toBe(false); // nothing queried yet — lazy by construction

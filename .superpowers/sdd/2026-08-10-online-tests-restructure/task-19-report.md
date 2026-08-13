@@ -66,3 +66,32 @@ GREEN finale:
 - `test/unit/onlinetests/{storico-checks,index,seeders,e2e-sample-database-builder,fullOnlineTests}.test.ts`
 
 Le quattro eliminazioni preesistenti sotto `ESTENSIONI_ALDO/` e il worktree annidato `GasLibraryFactory` non sono stati toccati né inclusi.
+
+## Fix round 1 — review
+
+### Verifica tecnica
+
+- Il finding carenze era confermato: `StoricoAlunniService.perAlunno()` calcolava già `CarenzaStorica[]` con `reconcileSigla`, ma `buildStudentStoricoVm()` eliminava quel dato dal CDU.
+- Il finding depth 0 era confermato: `StoricoProvider` collegava un `LazyRef` anche con `profonditaAnniStorico=0`; materializzandolo si otteneva uno storico vuoto invece del path assente richiesto.
+- I launcher persistiti avevano gli URL dei due spreadsheet storici vuoti nonostante `MasterSheetRepository.findAnniStorici(2)` rendesse disponibili gli ID.
+
+### RED
+
+Cinque suite focalizzate hanno fallito nei punti attesi:
+
+- mapper senza `anni[].carenze`;
+- provider con `focus.alunno.storico` presente a depth 0;
+- assertion online che accettava ancora GST non riconciliata;
+- fixture senza valore dinamico `CARENZE.GST`;
+- helper URL storico persistito assente.
+
+### GREEN e modifiche
+
+- Contratto CDU canonico esteso in `SPECS_ALDO/02_CDU_STRUTTURA.md` §8.6 con `focus.alunno.storico.anni[].carenze[{materiaSigla,valore}]`.
+- `buildStudentStoricoVm` conserva una copia delle carenze già riconciliate dal service.
+- Fixture storica: colonna dinamica `GST`, valori distintivi 4/5 nei due anni, evoluzione canonica già presente su STO; check reale richiede solo `STO` e rifiuta residui `GST`.
+- `StoricoProvider` non monta il path quando profondità ≤ 0; check online verifica assenza esatta, senza materializzare.
+- Launcher persistiti ricavano ID/URL dei due storici dalle righe MASTER; i report ora puntano ai fogli storici reali.
+- Focused RED→GREEN: 5 suite / 25 test pass.
+- Verifica finale mirata + downstream: 10 suite / 86 test pass; typecheck e lint pass.
+- Il comando full-unit `npm test -- --runInBand` ha terminato due volte senza summary Jest né exit code osservabile dal runner; nessun fallimento è stato stampato. La selezione completa dei test storico, builder, aggregate runner e launcher è passata esplicitamente come sopra.

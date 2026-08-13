@@ -214,7 +214,8 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_CARENZE.NOTIFICATO]: '',
     [COL_CARENZE.ASSENZE]: 2,
     [COL_CARENZE.NOTE]: 'Carenza storica',
-    [COL_CARENZE.DATA_MODIFICA]: `${anno.slice(0, 4)}-06-11`
+    [COL_CARENZE.DATA_MODIFICA]: `${anno.slice(0, 4)}-06-11`,
+    GST: anno === ANNI_PRECEDENTI[0] ? 4 : 5
   });
   prior.appendRow(TABLE.PIANI, {
     [COL_PIANI.STUDENTE]: alunno,

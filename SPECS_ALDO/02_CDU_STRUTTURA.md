@@ -752,6 +752,9 @@ StudentStoricoVM:
     - annoScolastico: string     # es. "2024-2025"
       classe: string             # Classe frequentata nell'anno
       esito: string              # "PROMOSSO" | "NON_PROMOSSO" | "RITIRATO" | "SCONOSCIUTO"
+      carenze:                   # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
+        - materiaSigla: string
+          valore: string
   pianiPrimoAnnoPrecedente:
     - tipo: string               # Enum TipoPiano (es. "PDP_DSA")
       tipoLabel: string          # Etichetta leggibile (es. "PDP DSA")

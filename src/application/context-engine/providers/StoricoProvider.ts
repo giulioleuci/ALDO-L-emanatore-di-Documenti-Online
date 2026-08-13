@@ -16,7 +16,7 @@ export class StoricoProvider implements ContextProvider {
   constructor(private readonly databases: StoricoDatabaseProvider) {}
 
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
-    if (!options.includiStorico) return;
+    if (!options.includiStorico || options.profonditaAnniStorico <= 0) return;
     const alunno = cdu.focus.alunno;
     if (alunno === undefined) return;
     const email = alunno.anagrafica.email;

@@ -16,6 +16,7 @@ import { fixtureTables } from '../../fixtures/tables';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 import type { MaterieGroups } from '../../../src/application/strategies/SheetMaterieGeneratorStrategy';
 import type { SubjectVM } from '../../../src/application/context-engine/mappers/subjectVmMapper';
+import { GestioneSupplenti } from '../../../src/domain/value-objects/enums';
 
 /** Minimal SubjectVM fixture for articolazione groups — only `sigla` matters to
  * buildGroups (headers/colors are resolved separately from MATERIE), other
@@ -83,11 +84,13 @@ class FakeSpreadsheetService {
 class RecordingRisolutoreRuoliService extends RisolutoreRuoliService {
   readonly subjectCduVariants: Cdu[] = [];
   readonly roleCalls: string[] = [];
+  readonly calls: Array<Parameters<RisolutoreRuoliService['risolvi']>> = [];
 
   override risolvi(
     ...args: Parameters<RisolutoreRuoliService['risolvi']>
   ): ReturnType<RisolutoreRuoliService['risolvi']> {
     const [ruolo, cdu] = args;
+    this.calls.push(args);
     this.roleCalls.push(ruolo);
     if (ruolo === 'DOCENTE_MATERIA') this.subjectCduVariants.push(cdu);
     return super.risolvi(...args);
@@ -505,6 +508,39 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       expect(JSON.stringify(variant)).not.toContain('tech');
     }
     expect(cdu.meta.parametriInput.materiaCorrente).toBeNull();
+  });
+
+  test('uses PARAMETRI.gestioneSupplenti for protected-range teacher routing', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '5A');
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const roles = new RecordingRisolutoreRuoliService(
+      composeRisolutoreRuoliDependencies(db)
+    );
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      roles
+    );
+
+    strategy.render(
+      'file_1',
+      cdu,
+      confDoc('SHEET_CON_MATERIE_E_PERMESSI', {
+        gestioneSupplenti: 'SOLO_SUPPLENTI'
+      })
+    );
+
+    const routed = roles.calls.filter(([role]) =>
+      ['DOCENTE_MATERIA', 'DOCENTI_IRC_ALT'].includes(role)
+    );
+    expect(routed.length).toBeGreaterThan(0);
+    expect(
+      routed.every(
+        ([, , options]) => options?.regolaSupplente === GestioneSupplenti.SOLO_SUPPLENTI
+      )
+    ).toBe(true);
   });
 
   test('a class with no CDC subjects protects nothing (no protectRanges call)', () => {

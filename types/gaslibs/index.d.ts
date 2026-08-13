@@ -388,6 +388,16 @@ declare global {
     mimeType: string;
     parents?: string[];
   }
+  interface DrivePermissionEvidence {
+    id?: string;
+    type?: string;
+    role?: string;
+    emailAddress?: string;
+    domain?: string;
+    deleted?: boolean;
+    displayName?: string;
+    permissionDetails?: unknown[];
+  }
   class DriveService {
     // DriveFileManager
     deleteFiles(
@@ -412,6 +422,9 @@ declare global {
       fileIds: string[],
       options?: { fields?: string; strict?: boolean }
     ): Record<string, DriveFileMetadata | null>;
+    /** Uncached, paginated Drive permission evidence. Failures propagate after wrapper retries. */
+    getPermissions(fileIds: string): DrivePermissionEvidence[];
+    getPermissions(fileIds: string[]): Record<string, DrivePermissionEvidence[]>;
     searchFiles(
       query: string,
       options?: { maxResults?: number; orderBy?: string }

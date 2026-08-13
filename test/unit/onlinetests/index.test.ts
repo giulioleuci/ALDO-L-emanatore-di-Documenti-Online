@@ -4,6 +4,8 @@ import {
   runFullOnlineTests,
   testArticolazione,
   testITPeMateriePuntate,
+  testSupplenzeERuoli,
+  testACLReali,
   testJobRunnerDocGen,
   testJobRunnerEmail,
   testRecuperoStoricoAlunno,
@@ -81,6 +83,17 @@ describe('ITP/dotted scenario launcher', () => {
     const expected = report();
 
     expect(testITPeMateriePuntate(() => expected, new LoggerService())).toBe(expected);
+  });
+});
+
+describe('supplenze and real ACL scenario launchers', () => {
+  it.each([
+    ['supplenze', testSupplenzeERuoli],
+    ['ACL', testACLReali]
+  ])('reports %s checks through the normal job logger', (_name, launch) => {
+    const expected = report();
+
+    expect(launch(() => expected, new LoggerService())).toBe(expected);
   });
 });
 

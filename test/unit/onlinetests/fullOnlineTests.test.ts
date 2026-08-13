@@ -9,14 +9,8 @@ import type { TestRunner } from '../../../src/onlinetests/report/OnlineTestRepor
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import { EMAIL_TEST_SAFE } from '../../../src/onlinetests/data/fixtures';
-import {
-  registerEffectiveAssignmentMatrixChecks,
-  registerRepositoryChecks
-} from '../../../src/onlinetests/checks/repositoryChecks';
-import {
-  registerContextEngineChecks,
-  registerEffectiveAssignmentConsumerChecks
-} from '../../../src/onlinetests/checks/contextEngineChecks';
+import { registerRepositoryChecks } from '../../../src/onlinetests/checks/repositoryChecks';
+import { registerContextEngineChecks } from '../../../src/onlinetests/checks/contextEngineChecks';
 import { registerEmailChecks } from '../../../src/onlinetests/checks/emailChecks';
 import { registerDocumentiChecks } from '../../../src/onlinetests/checks/documentiChecks';
 import {
@@ -27,14 +21,14 @@ import {
 } from '../../../src/onlinetests/checks/importChecks';
 import { registerArticolazioneChecks } from '../../../src/onlinetests/checks/articolazioneChecks';
 import { registerJobRunnerChecks } from '../../../src/onlinetests/checks/jobRunnerChecks';
+import { registerSupplenzeRuoliChecks } from '../../../src/onlinetests/checks/supplenzeRuoliChecks';
+import { registerAclRealiChecks } from '../../../src/onlinetests/checks/aclRealiChecks';
 
 jest.mock('../../../src/onlinetests/checks/repositoryChecks', () => ({
-  registerRepositoryChecks: jest.fn(),
-  registerEffectiveAssignmentMatrixChecks: jest.fn()
+  registerRepositoryChecks: jest.fn()
 }));
 jest.mock('../../../src/onlinetests/checks/contextEngineChecks', () => ({
-  registerContextEngineChecks: jest.fn(),
-  registerEffectiveAssignmentConsumerChecks: jest.fn()
+  registerContextEngineChecks: jest.fn()
 }));
 jest.mock('../../../src/onlinetests/checks/emailChecks', () => ({
   registerEmailChecks: jest.fn()
@@ -53,6 +47,12 @@ jest.mock('../../../src/onlinetests/checks/articolazioneChecks', () => ({
 }));
 jest.mock('../../../src/onlinetests/checks/jobRunnerChecks', () => ({
   registerJobRunnerChecks: jest.fn()
+}));
+jest.mock('../../../src/onlinetests/checks/supplenzeRuoliChecks', () => ({
+  registerSupplenzeRuoliChecks: jest.fn()
+}));
+jest.mock('../../../src/onlinetests/checks/aclRealiChecks', () => ({
+  registerAclRealiChecks: jest.fn()
 }));
 
 const sample: SharedTestDatabase = {
@@ -164,8 +164,8 @@ describe('executeFullOnlineTests', () => {
     const importCercaDocumentiChecks = registerExisting('import.cercaDocumenti');
     const importChunkedChecks = registerExisting('import.chunked');
     const articolazione = registerExisting('articolazione');
-    const assignmentMatrix = registerExisting('supplenze.matrix');
-    const assignmentConsumer = registerExisting('supplenze.consumer');
+    const supplenze = registerExisting('supplenze');
+    const acl = registerExisting('acl');
     jest.mocked(registerRepositoryChecks).mockImplementation(repository);
     jest.mocked(registerContextEngineChecks).mockImplementation(context);
     jest.mocked(registerDocumentiChecks).mockImplementation(documenti);
@@ -180,8 +180,8 @@ describe('executeFullOnlineTests', () => {
       .mockImplementationOnce(importCercaDocumentiChecks);
     jest.mocked(registerImportChunkedChecks).mockImplementationOnce(importChunkedChecks);
     jest.mocked(registerArticolazioneChecks).mockImplementation(articolazione);
-    jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
-    jest.mocked(registerEffectiveAssignmentConsumerChecks).mockImplementation(assignmentConsumer);
+    jest.mocked(registerSupplenzeRuoliChecks).mockImplementation(supplenze);
+    jest.mocked(registerAclRealiChecks).mockImplementation(acl);
 
     const report = executeFullOnlineTests({
       properties: properties(),
@@ -212,8 +212,8 @@ describe('executeFullOnlineTests', () => {
       'import.cercaDocumenti',
       'import.chunked',
       'articolazione',
-      'supplenze.matrix',
-      'supplenze.consumer'
+      'supplenze',
+      'acl'
     ]);
     expect(registerEmailChecks).toHaveBeenCalledWith(
       expect.anything(),
@@ -253,9 +253,8 @@ describe('executeFullOnlineTests', () => {
       'itpDotted::isolamento sostituzione e variazione',
       'itpDotted::continuita titolare/ITP e campi assenti',
       'itpDotted::CONF_DOC_DOTTED renderizzato',
-      'supplenze.matrix',
-      'supplenze.consumer',
-      'Aggregate scenario pending migration: acl-reali',
+      'supplenze',
+      'acl',
       'Aggregate scenario pending migration: cache-isolamento',
       'Aggregate scenario pending migration: permessi'
     ]);

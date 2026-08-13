@@ -10,6 +10,22 @@ import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepos
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { RisolutoreRuoliService } from '../services/RisolutoreRuoliService';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
+import { ConfigurationError } from '../../domain/errors/DomainError';
+
+function protectionGestioneSupplenti(config: ConfigurazioneDocumento): GestioneSupplenti {
+  const raw = config.getParametri().gestioneSupplenti;
+  if (raw === undefined || raw === null || raw === '') return GestioneSupplenti.ENTRAMBI;
+  if (
+    raw === GestioneSupplenti.SOLO_TITOLARI ||
+    raw === GestioneSupplenti.SOLO_SUPPLENTI ||
+    raw === GestioneSupplenti.ENTRAMBI
+  ) {
+    return raw;
+  }
+  throw new ConfigurationError(
+    `SHEET_CON_MATERIE_E_PERMESSI: PARAMETRI.gestioneSupplenti non valido: ${JSON.stringify(raw)}`
+  );
+}
 
 /**
  * Printable projection of one `MateriaColumn` for `classe.sheet.materieColonne`
@@ -75,7 +91,13 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
 
   override render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
     const { sheetName, layout } = this.renderColumns(fileId, cdu, config);
-    this.protectColumns(fileId, cdu, sheetName, layout);
+    this.protectColumns(
+      fileId,
+      cdu,
+      sheetName,
+      layout,
+      protectionGestioneSupplenti(config)
+    );
   }
 
   protected override buildGroups(classe: CduClasse): MaterieGroups {
@@ -123,7 +145,8 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     fileId: string,
     cdu: Cdu,
     sheetName: string,
-    layout: SheetColumnLayout[]
+    layout: SheetColumnLayout[],
+    gestioneSupplenti: GestioneSupplenti
   ): void {
     const hasDataColumn = layout.some((c) => !c.isLabel);
     if (!hasDataColumn) return;
@@ -137,10 +160,10 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
         const docenti = item.isSpecial
           ? this.roles
               .risolvi('DOCENTI_IRC_ALT', cdu, {
-                regolaSupplente: GestioneSupplenti.ENTRAMBI
+                regolaSupplente: gestioneSupplenti
               })
               .map((email) => email.value)
-          : this.resolveDocentiMateria(cdu, item);
+          : this.resolveDocentiMateria(cdu, item, gestioneSupplenti);
         const col = columnIndexToLetters(column.column - 1);
         const editors = this.projector.project(
           [...docenti, ...coordinatori].map((value) => ({ value })),
@@ -163,7 +186,11 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   }
 
   /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */
-  private resolveDocentiMateria(cdu: Cdu, item: MateriaColumn): string[] {
+  private resolveDocentiMateria(
+    cdu: Cdu,
+    item: MateriaColumn,
+    gestioneSupplenti: GestioneSupplenti
+  ): string[] {
     const sigla = item.sigla;
     const variant: Cdu = {
       ...cdu,
@@ -177,7 +204,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     });
     return this.roles
       .risolvi('DOCENTE_MATERIA', variant, {
-        regolaSupplente: GestioneSupplenti.ENTRAMBI,
+        regolaSupplente: gestioneSupplenti,
         ...(item.classeId === undefined ? {} : { classeId: item.classeId }),
         ...(item.specificita === undefined ? {} : { specifica: item.specificita }),
         ...(item.kind === undefined ? {} : { kind: item.kind })

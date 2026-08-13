@@ -15,6 +15,8 @@ import { GasSampleSpreadsheetFactory } from './GasSampleSpreadsheetFactory';
 import { E2eTemplateProvisioner, type IArtifactFactory } from './E2eTemplateProvisioner';
 import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { registerItpDottedChecks } from './checks/itpDottedChecks';
+import { registerSupplenzeRuoliChecks } from './checks/supplenzeRuoliChecks';
+import { registerAclRealiChecks } from './checks/aclRealiChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
 import { registerEmailChecks } from './checks/emailChecks';
 import {
@@ -31,14 +33,8 @@ import {
   registerJobRunnerEmailChecks,
   registerJobRunnerTriggerRealeCheck
 } from './checks/jobRunnerChecks';
-import {
-  registerContextEngineChecks,
-  registerEffectiveAssignmentConsumerChecks
-} from './checks/contextEngineChecks';
-import {
-  registerEffectiveAssignmentMatrixChecks,
-  registerRepositoryChecks
-} from './checks/repositoryChecks';
+import { registerContextEngineChecks } from './checks/contextEngineChecks';
+import { registerRepositoryChecks } from './checks/repositoryChecks';
 import { registerStoricoChecks, type StoricoCheckScope } from './checks/storicoChecks';
 import { TestRunner, type OnlineTestReport } from './report/OnlineTestReport';
 import type { ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
@@ -136,11 +132,6 @@ const registerImportCercaDocumentiLauncherChecks: RegisterSharedChecks = (
   registerImportCercaDocumentiChecks(runner, container, sample);
 };
 
-const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, container, sample) => {
-  registerEffectiveAssignmentMatrixChecks(runner, container, sample);
-  registerEffectiveAssignmentConsumerChecks(runner, container, sample);
-};
-
 function registerPendingChecks(group: string): RegisterSharedChecks {
   return (runner, _container, sample) => {
     runner.add(
@@ -163,8 +154,8 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   storico: registerStoricoChecks,
   articolazione: registerArticolazioneChecks,
   itpDotted: registerItpDottedChecks,
-  supplenzeRuoli: registerLegacySupplenzeRuoliChecks,
-  aclReali: registerPendingChecks('acl-reali'),
+  supplenzeRuoli: registerSupplenzeRuoliChecks,
+  aclReali: registerAclRealiChecks,
   cacheIsolamento: registerPendingChecks('cache-isolamento'),
   permessi: registerPendingChecks('permessi')
 };
@@ -496,6 +487,16 @@ export function executeImportCartelleClasse(
 
 export function executeImportChunked(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
   return executePersistedImportChecks(registerImportChunkedChecks, overrides);
+}
+
+export function executeSupplenzeERuoli(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedImportChecks(registerSupplenzeRuoliChecks, overrides);
+}
+
+export function executeACLReali(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedImportChecks(registerAclRealiChecks, overrides);
 }
 
 function executePersistedStoricoChecks(
@@ -834,11 +835,17 @@ export function testITPeMateriePuntate(
 ): OnlineTestReport {
   return runReportedSuite('itp_dotted', 'ITP_DOTTED_SCENARIO', execute, logger);
 }
-export function testSupplenzeERuoli(): OnlineTestReport {
-  return nonImplementato();
+export function testSupplenzeERuoli(
+  execute: () => OnlineTestReport = executeSupplenzeERuoli,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('supplenze_ruoli', 'SUPPLENZE_RUOLI_SCENARIO', execute, logger);
 }
-export function testACLReali(): OnlineTestReport {
-  return nonImplementato();
+export function testACLReali(
+  execute: () => OnlineTestReport = executeACLReali,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('acl_reali', 'ACL_REALI_SCENARIO', execute, logger);
 }
 export function testCacheIsolamento(): OnlineTestReport {
   return nonImplementato();

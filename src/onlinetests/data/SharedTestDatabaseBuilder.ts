@@ -152,6 +152,7 @@ export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';
 export const CONF_DOC_RIEPILOGO_FIRME_CDC = 'E2E_RIEPILOGO_FIRME_CDC';
 export const CONF_DOC_DOCENTE_MATERIA = 'E2E_DOCENTE_MATERIA';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
+export const CONF_DOC_ACL_REALI = 'E2E_ACL_REALI';
 export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
 export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
 export const CONF_MAIL_VERBALE = 'E2E_MAIL_VERBALE';
@@ -836,6 +837,16 @@ export class SharedTestDatabaseBuilder {
       [COL_SUPPLENZE.CLASSI]: CLASSE_B,
       [COL_SUPPLENZE.MATERIE]: 'ING'
     });
+    // Degenerate substitution: same principal/substitute identity. Every
+    // consumer must deduplicate the actor instead of emitting two recipients.
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(19),
+      [COL_SUPPLENZE.DAL]: '2026-11-01',
+      [COL_SUPPLENZE.AL]: '2026-11-10',
+      [COL_SUPPLENZE.CLASSI]: '4A',
+      [COL_SUPPLENZE.MATERIE]: 'MAT'
+    });
     sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
       [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
       [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO',
@@ -1055,6 +1066,27 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
       [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GSHEET',
+      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+    });
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_ACL_REALI,
+      [COL_CONF_DOC.TIPO]: 'ACL_REALI',
+      [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
+      [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_ACL_Reali_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ACL_REALI',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
+      [COL_CONF_DOC.PERMESSI]: JSON.stringify({
+        file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }],
+        folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }],
+        regolaSupplente: { file: 'ENTRAMBI', folder: 'ENTRAMBI' }
+      }),
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ gestioneSupplenti: 'ENTRAMBI' }),
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',

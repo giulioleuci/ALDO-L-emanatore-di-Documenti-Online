@@ -26,7 +26,11 @@ import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
 import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
-import { DuplicazioneDocumento, TipoPiano } from '../../../../src/domain/value-objects/enums';
+import {
+  DuplicazioneDocumento,
+  GestioneSupplenti,
+  TipoPiano
+} from '../../../../src/domain/value-objects/enums';
 
 const logger = new LoggerService();
 const engine = new ExpressionEngineFacade();
@@ -1133,8 +1137,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
   test.each([
     ['SOLO_SUPPLENTI', ['rossi@school.it']],
     ['ENTRAMBI', ['rossi@school.it']],
-    [undefined, ['rossi@school.it']],
-    ['QUALCOSA_DI_IGNOTO', ['rossi@school.it']]
+    [undefined, ['rossi@school.it']]
   ])(
     'regolaSupplente.file=%p maps to the GestioneSupplenti routing that resolves to %p',
     (regolaFile, expected) => {
@@ -1160,6 +1163,54 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
       expect(fileEmails).toEqual(expected);
     }
   );
+
+  test('rejects an unknown CONF_DOC.PERMESSI.regolaSupplente value', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      PERMESSI: JSON.stringify({
+        file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }],
+        regolaSupplente: { file: 'QUALCOSA_DI_IGNOTO' }
+      })
+    });
+    ctx.set('newFileId', 'file_1');
+
+    expect(() =>
+      new ApplyPermissionsStep(
+        logger,
+        new FakeDriveFacade(),
+        composeRisolutoreRuoli(db)
+      ).execute(ctx)
+    ).toThrow(/regolaSupplente non valida/);
+  });
+
+  test('missing regolaSupplente defaults ACL routing to ENTRAMBI', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      PERMESSI: JSON.stringify({
+        file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }]
+      })
+    });
+    ctx.set('newFileId', 'file_1');
+    const seen: Array<GestioneSupplenti | undefined> = [];
+    const roles = {
+      risolvi: (
+        _ruolo: string,
+        _cdu: unknown,
+        options?: { regolaSupplente?: GestioneSupplenti }
+      ) => {
+        seen.push(options?.regolaSupplente);
+        return [];
+      }
+    };
+
+    new ApplyPermissionsStep(logger, new FakeDriveFacade(), roles).execute(ctx);
+
+    expect(seen).toEqual([GestioneSupplenti.ENTRAMBI]);
+  });
 
   test('calls applica for both file and folder when both ids are present, using their respective regolaSupplente', () => {
     const db = new FakeDatabase(fixtureTables());

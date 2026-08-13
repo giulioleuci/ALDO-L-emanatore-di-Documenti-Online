@@ -14,7 +14,7 @@ import {
   GestioneSupplenti,
   FormatoOutput
 } from '../../domain/value-objects/enums';
-import { PipelineError } from '../../domain/errors/DomainError';
+import { ConfigurationError, PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 import { resolveLogRegistration } from './logRegistration';
@@ -40,13 +40,16 @@ interface PermessiConfig {
 }
 
 function parseRegola(raw: string | undefined): GestioneSupplenti {
+  if (raw === undefined || raw === '') return GestioneSupplenti.ENTRAMBI;
   switch (raw) {
+    case 'SOLO_TITOLARI':
+      return GestioneSupplenti.SOLO_TITOLARI;
     case 'SOLO_SUPPLENTI':
       return GestioneSupplenti.SOLO_SUPPLENTI;
     case 'ENTRAMBI':
       return GestioneSupplenti.ENTRAMBI;
     default:
-      return GestioneSupplenti.SOLO_TITOLARI;
+      throw new ConfigurationError(`CONF_DOC.PERMESSI.regolaSupplente non valida: ${raw}`);
   }
 }
 

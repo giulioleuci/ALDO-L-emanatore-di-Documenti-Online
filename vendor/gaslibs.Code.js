@@ -11,7 +11,7 @@ function exampleUsage() {
 } (() => { 
  	var __webpack_modules__ = ({
 
- 67
+ 129
 (module, exports, __webpack_require__) {
 
  module = __webpack_require__.nmd(module);
@@ -9459,7 +9459,7 @@ class ValidationUtils {
   }
 }
 
-var he = __webpack_require__(67);
+var he = __webpack_require__(129);
 ;
 
 
@@ -16589,6 +16589,37 @@ class DriveMetadataService {
 
 
 
+
+  getPermissions(fileIds) {
+    const isSingleId = !Array.isArray(fileIds);
+    const ids = isSingleId ? [fileIds] : fileIds;
+    const results = {};
+    ids.forEach(fileId => {
+      const permissions = [];
+      let pageToken = null;
+      do {
+        const options = {
+          fields: 'nextPageToken,permissions(id,type,role,emailAddress,domain,deleted,displayName,permissionDetails)',
+          pageSize: 100,
+          supportsAllDrives: true
+        };
+        if (pageToken) options.pageToken = pageToken;
+        const page = this._exceptionService.executeWithRetry(() => Drive.Permissions.list(fileId, options), {}, 3);
+        if (Array.isArray(page.permissions)) permissions.push(...page.permissions);
+        pageToken = page.nextPageToken || null;
+      } while (pageToken);
+      results[fileId] = permissions;
+    });
+    return isSingleId ? results[fileIds] : results;
+  }
+
+
+
+
+
+
+
+
   getFileOwnerEmail(fileId) {
     const metadata = this.getFiles(fileId);
     const owners = metadata && metadata.owners;
@@ -16720,7 +16751,7 @@ class DriveService extends GoogleService {
     });
 
 
-    const metadataMethods = ['updateMetadata', 'getFiles', 'searchFiles', 'getFileOwnerEmail'];
+    const metadataMethods = ['updateMetadata', 'getFiles', 'getPermissions', 'searchFiles', 'getFileOwnerEmail'];
     metadataMethods.forEach(m => {
       this[m] = this.metadataService[m].bind(this.metadataService);
     });

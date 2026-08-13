@@ -17,6 +17,7 @@ import { registerArticolazioneChecks } from './checks/articolazioneChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
 import { registerEmailChecks } from './checks/emailChecks';
 import {
+  registerImportCartelleClasseChecks,
   registerImportChecks,
   registerImportFileSingoloChecks,
   registerImportPolicyChecks
@@ -108,6 +109,12 @@ const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, 
   registerDocumentiChecks(runner, container, sample, 'all');
 };
 
+/** Composes the two independent CONF_IMP scenario groups into the aggregate 'import' bucket. */
+const registerLegacyImportChecks: RegisterSharedChecks = (runner, container, sample) => {
+  registerImportChecks(runner, container, sample);
+  registerImportCartelleClasseChecks(runner, container, sample);
+};
+
 const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerEffectiveAssignmentMatrixChecks(runner, container, sample);
   registerEffectiveAssignmentConsumerChecks(runner, container, sample);
@@ -131,7 +138,7 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   documenti: registerLegacyDocumentiChecks,
   email: registerEmailChecks,
   jobRunner: registerJobRunnerChecks,
-  import: registerImportChecks,
+  import: registerLegacyImportChecks,
   storico: registerPendingChecks('storico'),
   articolazione: registerArticolazioneChecks,
   itpDotted: registerPendingChecks('itp-dotted'),
@@ -446,6 +453,12 @@ export function executeImportFileSingolo(overrides: Partial<E2eTestDeps> = {}): 
   return executePersistedImportChecks(registerImportFileSingoloChecks, overrides);
 }
 
+export function executeImportCartelleClasse(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedImportChecks(registerImportCartelleClasseChecks, overrides);
+}
+
 function executePersistedJobRunnerChecks(
   scope: 'documenti' | 'email' | 'trigger-reale',
   overrides: Partial<E2eTestDeps> = {}
@@ -589,7 +602,12 @@ export function testImportFileSingolo(): OnlineTestReport {
   );
 }
 export function testImportCartelleClasse(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'import_cartelle_classe',
+    'IMPORT_SCENARIO',
+    executeImportCartelleClasse,
+    ServiceFactory.getLogger()
+  );
 }
 export function testImportCercaDocumenti(): OnlineTestReport {
   return runReportedSuite(

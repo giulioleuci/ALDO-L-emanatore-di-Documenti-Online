@@ -19,7 +19,10 @@ import {
 } from '../../../src/onlinetests/checks/contextEngineChecks';
 import { registerEmailChecks } from '../../../src/onlinetests/checks/emailChecks';
 import { registerDocumentiChecks } from '../../../src/onlinetests/checks/documentiChecks';
-import { registerImportChecks } from '../../../src/onlinetests/checks/importChecks';
+import {
+  registerImportCartelleClasseChecks,
+  registerImportChecks
+} from '../../../src/onlinetests/checks/importChecks';
 import { registerArticolazioneChecks } from '../../../src/onlinetests/checks/articolazioneChecks';
 import { registerJobRunnerChecks } from '../../../src/onlinetests/checks/jobRunnerChecks';
 
@@ -38,7 +41,8 @@ jest.mock('../../../src/onlinetests/checks/documentiChecks', () => ({
   registerDocumentiChecks: jest.fn()
 }));
 jest.mock('../../../src/onlinetests/checks/importChecks', () => ({
-  registerImportChecks: jest.fn()
+  registerImportChecks: jest.fn(),
+  registerImportCartelleClasseChecks: jest.fn()
 }));
 jest.mock('../../../src/onlinetests/checks/articolazioneChecks', () => ({
   registerArticolazioneChecks: jest.fn()
@@ -152,6 +156,7 @@ describe('executeFullOnlineTests', () => {
     const email = registerExisting('email');
     const jobRunner = registerExisting('jobrunner');
     const importChecks = registerExisting('import');
+    const importCartelleClasseChecks = registerExisting('import.cartelleClasse');
     const articolazione = registerExisting('articolazione');
     const assignmentMatrix = registerExisting('supplenze.matrix');
     const assignmentConsumer = registerExisting('supplenze.consumer');
@@ -161,6 +166,7 @@ describe('executeFullOnlineTests', () => {
     jest.mocked(registerEmailChecks).mockImplementation(email);
     jest.mocked(registerJobRunnerChecks).mockImplementation(jobRunner);
     jest.mocked(registerImportChecks).mockImplementationOnce(importChecks);
+    jest.mocked(registerImportCartelleClasseChecks).mockImplementationOnce(importCartelleClasseChecks);
     jest.mocked(registerArticolazioneChecks).mockImplementation(articolazione);
     jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
     jest.mocked(registerEffectiveAssignmentConsumerChecks).mockImplementation(assignmentConsumer);
@@ -190,6 +196,7 @@ describe('executeFullOnlineTests', () => {
       'email',
       'jobrunner',
       'import',
+      'import.cartelleClasse',
       'articolazione',
       'supplenze.matrix',
       'supplenze.consumer'
@@ -215,6 +222,7 @@ describe('executeFullOnlineTests', () => {
       'email',
       'jobrunner',
       'import',
+      'import.cartelleClasse',
       'Aggregate scenario pending migration: storico',
       'articolazione',
       'Aggregate scenario pending migration: itp-dotted',

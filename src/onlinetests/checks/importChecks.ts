@@ -1,11 +1,12 @@
 import { avviaImportazioneDataDriven } from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import { COL_ASL, COL_CARENZE, TABLE } from '../../config/schema';
+import { COL_ASL, COL_CARENZE, COL_CONF_IMP, COL_LOG_FOLD, TABLE } from '../../config/schema';
 import { ConfigurationError, ValidationError } from '../../domain/errors/DomainError';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import { CONF_IMP_ASL } from '../data/SharedTestDatabaseBuilder';
 import type { SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
 import {
+  CONF_IMP_ASL_CARTELLE,
   CONF_IMP_BAD_STRATEGY,
   CONF_IMP_DISABLED,
   CONF_IMP_IGNORE,
@@ -17,6 +18,13 @@ import {
   CONF_IMP_TIMESTAMP_FALLBACK
 } from '../data/fixtures';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
+
+/** Literal seeded by `Seeders.ts#aslDataUpdates` for the unknown-student filler row. */
+const STUDENTE_SCONOSCIUTO_CARTELLE = 'sconosciuto@onlinetest.aldo.local';
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
 
 type ImportSample = SharedTestDatabase & { testMode: boolean };
 type AslRow = Record<string, unknown>;
@@ -236,4 +244,235 @@ export function registerImportPolicyChecks(
   sample: ImportSample
 ): void {
   registerImportChecks(runner, container, sample, 'policy');
+}
+
+/** Reads `CONF_IMP.CONFIG.folderTipo` for a CERCA_CARTELLE_CLASSE recipe from the live CONF_IMP table. */
+function readCartelleClasseFolderTipo(
+  confImpRows: AslRow[],
+  configId: string,
+  label: string
+): string {
+  const conf = confImpRows.find((row) => row[COL_CONF_IMP.ID] === configId);
+  if (conf === undefined) {
+    throw new ValidationError(`${label}: CONF_IMP ${configId} non trovato`);
+  }
+  let parsed: { folderTipo?: unknown };
+  try {
+    parsed = JSON.parse(String(conf[COL_CONF_IMP.CONFIG])) as { folderTipo?: unknown };
+  } catch {
+    throw new ValidationError(`${label}: CONFIG di ${configId} non è JSON valido`);
+  }
+  const folderTipo = parsed.folderTipo;
+  if (typeof folderTipo !== 'string' || folderTipo === '') {
+    throw new ValidationError(`${label}: CONFIG.folderTipo mancante per ${configId}`);
+  }
+  return folderTipo;
+}
+
+/** Derives the eligible-class list from live LOG_FOLD rows instead of duplicating the seeder's class list. */
+function readEligibleClasses(logFoldRows: AslRow[], folderTipo: string, label: string): string[] {
+  const classes = new Set<string>();
+  for (const row of logFoldRows) {
+    if (row[COL_LOG_FOLD.TIPO] !== folderTipo) continue;
+    const classe = stringValue(row[COL_LOG_FOLD.CLASSI]).trim();
+    if (classe !== '') classes.add(classe);
+  }
+  if (classes.size === 0) {
+    throw new ValidationError(
+      `${label}: nessuna cartella LOG_FOLD eleggibile per tipo ${folderTipo}`
+    );
+  }
+  return [...classes];
+}
+
+/**
+ * Validates one class's 3 seeded rows (ref `Seeders.ts#aslDataUpdates`): exactly one known
+ * student with 2 consecutive-ORE rows, plus 1 `sconosciuto` row whose ORE follows them.
+ * Returns the known student's email so the caller can check cross-class distinctness.
+ */
+function assertClassRowShape(classe: string, rows: AslRow[], label: string): string {
+  if (rows.length !== 3) {
+    throw new ValidationError(
+      `${label}: classe ${classe} attese 3 righe importate, ricevute ${rows.length}`
+    );
+  }
+  const byStudente = new Map<string, AslRow[]>();
+  for (const row of rows) {
+    const studente = String(row[COL_ASL.STUDENTE]);
+    const bucket = byStudente.get(studente) ?? [];
+    bucket.push(row);
+    byStudente.set(studente, bucket);
+  }
+  const sconosciuto = byStudente.get(STUDENTE_SCONOSCIUTO_CARTELLE) ?? [];
+  if (sconosciuto.length !== 1) {
+    throw new ValidationError(
+      `${label}: classe ${classe} attesa 1 riga sconosciuto, ricevute ${sconosciuto.length}`
+    );
+  }
+  const knownEntries = [...byStudente.entries()].filter(
+    ([studente]) => studente !== STUDENTE_SCONOSCIUTO_CARTELLE
+  );
+  if (knownEntries.length !== 1 || knownEntries[0]![1].length !== 2) {
+    throw new ValidationError(
+      `${label}: classe ${classe} attesi esattamente 2 record per un unico studente noto`
+    );
+  }
+  const [knownStudente, knownRows] = knownEntries[0]!;
+  const oreNote = knownRows.map((row) => Number(row[COL_ASL.ORE])).sort((a, b) => a - b);
+  if (oreNote[1] !== oreNote[0]! + 1) {
+    throw new ValidationError(
+      `${label}: classe ${classe} ORE studente noto non consecutive (${oreNote.join(',')})`
+    );
+  }
+  const oreSconosciuto = Number(sconosciuto[0]![COL_ASL.ORE]);
+  if (oreSconosciuto !== oreNote[1] + 1) {
+    throw new ValidationError(
+      `${label}: classe ${classe} ORE riga sconosciuto attesa ${oreNote[1] + 1}, ricevuta ${oreSconosciuto}`
+    );
+  }
+  return knownStudente;
+}
+
+/** Deterministic content fingerprint for the ASL table, used to prove OVERWRITE idempotency. */
+function snapshotAslRows(rows: AslRow[]): string {
+  const normalized = rows
+    .map((row) => ({
+      classe: stringValue(row['_CLASSE']),
+      studente: String(row[COL_ASL.STUDENTE]),
+      ore: Number(row[COL_ASL.ORE])
+    }))
+    .sort(
+      (a, b) =>
+        a.classe.localeCompare(b.classe) ||
+        a.studente.localeCompare(b.studente) ||
+        a.ore - b.ore
+    );
+  return JSON.stringify(normalized);
+}
+
+/**
+ * Full-shape assertion for one CERCA_CARTELLE_CLASSE run: row count matches exactly 3 rows per
+ * eligible class (no more — a regression guard against the `2B_DECOY` folder or any trashed file
+ * leaking in, since neither has a live LOG_FOLD row for the strategy to discover), every row's
+ * `_CLASSE` is one of the eligible classes, no row carries the decoy/baseline ORE=99 sentinel, and
+ * each eligible class has the exact per-class shape from `assertClassRowShape`.
+ */
+function assertCercaCartelleClasseRun(rows: AslRow[], eligibleClasses: string[], label: string): void {
+  if (rows.length !== eligibleClasses.length * 3) {
+    throw new ValidationError(
+      `${label}: attese ${eligibleClasses.length * 3} righe (3 per classe eleggibile), ricevute ${rows.length}`
+    );
+  }
+  if (rows.some((row) => Number(row[COL_ASL.ORE]) === 99)) {
+    throw new ValidationError(
+      `${label}: rilevata riga con ORE=99 (segnale del decoy 2B_DECOY o della riga baseline)`
+    );
+  }
+  const eligibleSet = new Set(eligibleClasses);
+  const grouped = new Map<string, AslRow[]>();
+  for (const row of rows) {
+    const classe = stringValue(row['_CLASSE']);
+    if (!eligibleSet.has(classe)) {
+      throw new ValidationError(`${label}: riga con _CLASSE inattesa "${classe}"`);
+    }
+    const bucket = grouped.get(classe) ?? [];
+    bucket.push(row);
+    grouped.set(classe, bucket);
+  }
+  if (grouped.size !== eligibleClasses.length) {
+    throw new ValidationError(
+      `${label}: attese righe per ${eligibleClasses.length} classi eleggibili, ricevute per ${grouped.size}`
+    );
+  }
+  const knownStudents: string[] = [];
+  for (const classe of eligibleClasses) {
+    knownStudents.push(assertClassRowShape(classe, grouped.get(classe) ?? [], label));
+  }
+  if (new Set(knownStudents).size !== eligibleClasses.length) {
+    throw new ValidationError(`${label}: studenti noti non distinti tra le classi eleggibili`);
+  }
+}
+
+/**
+ * Live acceptance checks for CERCA_CARTELLE_CLASSE (12 §3): reads only the eligible classes'
+ * LOG_FOLD-registered folders (never the `2B_DECOY` folder, which has no LOG_FOLD row, or any
+ * trashed decoy file), tags every row with `_CLASSE`, and OVERWRITEs the ASL target. Kept as its
+ * own register function (rather than folded into `registerImportChecks`'s scope union) because it
+ * targets a distinct CONF_IMP recipe with no overlap with the FILE_SINGOLO/policy scopes above;
+ * `index.ts` composes it alongside `registerImportChecks` for the aggregate 'import' group.
+ */
+export function registerImportCartelleClasseChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: ImportSample
+): void {
+  const db = container.get<EmailDb>('db');
+  const readAsl = (): AslRow[] => db.table(TABLE.ASL).findAll();
+  const readLogFold = (): AslRow[] => db.table(TABLE.LOG_FOLD).findAll();
+  const readConfImp = (): AslRow[] => db.table(TABLE.CONF_IMP).findAll();
+
+  runner.add(
+    groupName(
+      'import.cartelleClasse',
+      'CERCA_CARTELLE_CLASSE: solo cartelle eleggibili, _CLASSE, contatori e idempotenza OVERWRITE'
+    ),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const folderTipo = readCartelleClasseFolderTipo(
+        readConfImp(),
+        CONF_IMP_ASL_CARTELLE,
+        'CERCA_CARTELLE_CLASSE'
+      );
+      const eligibleClasses = readEligibleClasses(
+        readLogFold(),
+        folderTipo,
+        'CERCA_CARTELLE_CLASSE'
+      );
+      const expectedRows = eligibleClasses.length * 3;
+
+      const first = avviaImportazioneDataDriven(container, CONF_IMP_ASL_CARTELLE);
+      assertSuccessful(first, 'CERCA_CARTELLE_CLASSE prima esecuzione');
+      if (
+        first.inseriti !== expectedRows ||
+        first.aggiornati !== 0 ||
+        first.saltati !== 0 ||
+        first.ghost !== 0
+      ) {
+        throw new ValidationError(
+          `CERCA_CARTELLE_CLASSE prima esecuzione: attesi inseriti=${expectedRows}, aggiornati=0, saltati=0, ghost=0; ricevuti inseriti=${first.inseriti}, aggiornati=${first.aggiornati}, saltati=${first.saltati}, ghost=${first.ghost}`
+        );
+      }
+      const firstRows = readAsl();
+      assertCercaCartelleClasseRun(
+        firstRows,
+        eligibleClasses,
+        'CERCA_CARTELLE_CLASSE prima esecuzione'
+      );
+      const firstSnapshot = snapshotAslRows(firstRows);
+
+      const second = avviaImportazioneDataDriven(container, CONF_IMP_ASL_CARTELLE);
+      assertSuccessful(second, 'CERCA_CARTELLE_CLASSE seconda esecuzione (idempotenza OVERWRITE)');
+      if (
+        second.inseriti !== expectedRows ||
+        second.aggiornati !== 0 ||
+        second.saltati !== 0 ||
+        second.ghost !== 0
+      ) {
+        throw new ValidationError(
+          `CERCA_CARTELLE_CLASSE seconda esecuzione: attesi contatori invariati (inseriti=${expectedRows}, aggiornati=0, saltati=0, ghost=0); ricevuti inseriti=${second.inseriti}, aggiornati=${second.aggiornati}, saltati=${second.saltati}, ghost=${second.ghost}`
+        );
+      }
+      const secondRows = readAsl();
+      if (secondRows.length !== firstRows.length) {
+        throw new ValidationError(
+          `CERCA_CARTELLE_CLASSE idempotenza: righe cresciute da ${firstRows.length} a ${secondRows.length} dopo la seconda OVERWRITE`
+        );
+      }
+      if (snapshotAslRows(secondRows) !== firstSnapshot) {
+        throw new ValidationError(
+          'CERCA_CARTELLE_CLASSE idempotenza: il contenuto ASL è cambiato tra due esecuzioni OVERWRITE consecutive'
+        );
+      }
+    }
+  );
 }

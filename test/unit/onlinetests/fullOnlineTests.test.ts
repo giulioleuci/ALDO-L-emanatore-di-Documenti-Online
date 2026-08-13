@@ -1,6 +1,7 @@
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import {
   executeFullOnlineTests,
+  PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
   testCacheIsolamento,
   testJobRunnerTriggerReale,
   testPermessiAttivi,
@@ -90,7 +91,11 @@ const sample: SharedTestDatabase = {
 };
 
 function properties(): IPropertiesFacade {
-  return { get: () => null, set: () => undefined };
+  return {
+    get: (key: string) =>
+      key === PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID ? 'cache-master' : null,
+    set: () => undefined
+  };
 }
 
 describe('executeFullOnlineTests', () => {
@@ -243,6 +248,7 @@ describe('executeFullOnlineTests', () => {
       'supplenze.consumer',
       'supplenze',
       'acl',
+      'cache',
       'permessi'
     ]);
     expect(registerEmailChecks).toHaveBeenCalledWith(
@@ -257,6 +263,10 @@ describe('executeFullOnlineTests', () => {
       expect.objectContaining({ testMode: true }),
       EMAIL_TEST_SAFE
     );
+    const cacheCall = jest.mocked(registerCacheIsolamentoChecks).mock.calls[0];
+    expect(cacheCall?.[1]).toBe(container);
+    expect(cacheCall?.[2]).toMatchObject({ testMode: true });
+    expect(cacheCall?.[3].secondMasterSpreadsheetId).toBe('cache-master');
     expect(report.passed).toBeGreaterThan(0);
     expect(report.failed).toBeGreaterThan(0);
     expect(report.results.map((result) => result.name)).toEqual([
@@ -287,7 +297,7 @@ describe('executeFullOnlineTests', () => {
       'supplenze.consumer',
       'supplenze',
       'acl',
-      'cache.isolamento::secondo fixture non riusa righe cached',
+      'cache',
       'permessi'
     ]);
     expect(report.results.some((result) => result.name.includes('trigger reale'))).toBe(false);

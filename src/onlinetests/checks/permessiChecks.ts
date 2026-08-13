@@ -6,7 +6,7 @@ import {
 } from '../../infrastructure/facades/ActiveUserFacade';
 import type { DrivePermissionEvidence } from './aclRealiChecks';
 import type { SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
-import { groupName, type TestRunner } from '../report/OnlineTestReport';
+import { groupName, skippedOutcome, type TestRunner } from '../report/OnlineTestReport';
 
 export interface PermessiChecksDeps {
   activeUser: IActiveUserFacade;
@@ -21,16 +21,18 @@ function realDeps(): PermessiChecksDeps {
   };
 }
 
-function directUserPermissions(
-  permissions: DrivePermissionEvidence[],
-  email: string
-): DrivePermissionEvidence[] {
-  return permissions.filter(
-    (permission) =>
-      permission.deleted !== true &&
-      permission.type === 'user' &&
-      permission.emailAddress?.trim().toLowerCase() === email.toLowerCase() &&
-      permission.role !== undefined
+function livePermissions(permissions: DrivePermissionEvidence[]): DrivePermissionEvidence[] {
+  return permissions.filter((permission) => permission.deleted !== true);
+}
+
+function isIndirectWorkspacePermission(permission: DrivePermissionEvidence): boolean {
+  return permission.type === 'group' || permission.type === 'domain';
+}
+
+function isActiveUser(permission: DrivePermissionEvidence, email: string): boolean {
+  return (
+    permission.type === 'user' &&
+    permission.emailAddress?.trim().toLowerCase() === email.toLowerCase()
   );
 }
 
@@ -63,22 +65,27 @@ export function registerPermessiChecks(
     return;
   }
 
-  // This read is intentionally outside a fail-soft catch: auth/quota/network errors prove no ACL
-  // evidence was obtained and must surface as test failures instead of a false-green skip.
-  const permissions = deps.readPermissions(sample.sampleSpreadsheetId);
-  if (directUserPermissions(permissions, email).length === 0) {
-    runner.skip(
-      name,
-      sample.sampleSpreadsheetUrl,
-      'SKIPPED: ACL leggibile solo come group/domain; accesso individuale non attribuibile.'
-    );
-    return;
-  }
-
   runner.add(name, sample.sampleSpreadsheetUrl, () => {
-    const direct = directUserPermissions(permissions, email);
-    if (direct.length === 0) {
-      throw new ValidationError(`ACL utente attivo ${email} assente dal file test-mode.`);
+    // Strict lookup is deliberately inside TestRunner: operational failures become a failed
+    // report result and never escape registration or turn into a policy skip.
+    const permissions = livePermissions(deps.readPermissions(sample.sampleSpreadsheetId));
+    if (permissions.length > 0 && permissions.every(isIndirectWorkspacePermission)) {
+      return skippedOutcome(
+        'SKIPPED: ACL leggibile solo come group/domain; accesso individuale non attribuibile.'
+      );
     }
+    const unexpected = permissions.filter((permission) => !isActiveUser(permission, email));
+    if (permissions.length === 0 || unexpected.length > 0) {
+      const principals = unexpected
+        .map(
+          (permission) =>
+            `${permission.type ?? 'unknown'}:${permission.emailAddress ?? permission.domain ?? '*'}`
+        )
+        .join(',');
+      throw new ValidationError(
+        `ACL utente attivo ${email} non esatta: inattesi=${principals || '-'} totale=${permissions.length}.`
+      );
+    }
+    return undefined;
   });
 }

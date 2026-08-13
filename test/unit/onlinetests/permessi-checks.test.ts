@@ -4,6 +4,7 @@ import {
 } from '../../../src/onlinetests/checks/permessiChecks';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 
 class RecordingRunner {
   readonly checks: Array<{ name: string; artifactUrl: string | undefined; callback: () => void }> =
@@ -34,7 +35,7 @@ const sample: SharedTestDatabase = {
   staticAttachmentFileId: 'attachment'
 };
 
-test('reads active Workspace user and persisted Drive ACL without faking a pass', () => {
+test('accepts only active user as persisted direct ACL principal', () => {
   const runner = new RecordingRunner();
   const deps: PermessiChecksDeps = {
     activeUser: { getEmail: () => 'preside@example.test' },
@@ -72,12 +73,41 @@ test('records documented SKIPPED when read-back cannot attribute a group/domain 
 
   registerPermessiChecks(runner as never, {} as ServiceContainer, sample, deps);
 
-  expect(runner.checks).toEqual([]);
-  expect(runner.skipped[0]?.reason).toMatch(/^SKIPPED:.*group\/domain/i);
+  expect(runner.checks).toHaveLength(1);
+  expect(runner.checks[0]!.callback()).toMatchObject({ status: 'skipped' });
 });
 
-test('does not turn Drive quota/auth/read-back errors into a skip', () => {
-  const runner = new RecordingRunner();
+test.each([
+  { permissions: [{ type: 'user', role: 'reader', emailAddress: 'other@example.test' }] },
+  { permissions: [{ type: 'anyone', role: 'reader' }] },
+  {
+    permissions: [
+      { type: 'user', role: 'owner', emailAddress: 'preside@example.test' },
+      { type: 'user', role: 'reader', emailAddress: 'other@example.test' }
+    ]
+  }
+])('fails exact active-user ACL check on unexpected direct principal %#', ({ permissions }) => {
+  const runner = new TestRunner();
+  registerPermessiChecks(runner, {} as ServiceContainer, sample, {
+    activeUser: { getEmail: () => 'preside@example.test' },
+    readPermissions: () => permissions
+  });
+
+  expect(runner.report()).toMatchObject({ passed: 0, failed: 1, skipped: 0 });
+});
+
+test('fails when ACL is empty instead of treating absence as Workspace-policy skip', () => {
+  const runner = new TestRunner();
+  registerPermessiChecks(runner, {} as ServiceContainer, sample, {
+    activeUser: { getEmail: () => 'preside@example.test' },
+    readPermissions: () => []
+  });
+
+  expect(runner.report()).toMatchObject({ passed: 0, failed: 1, skipped: 0 });
+});
+
+test('records Drive quota/auth/read-back error as failed report result', () => {
+  const runner = new TestRunner();
   const failure = new Error('Service invoked too many times');
   const deps: PermessiChecksDeps = {
     activeUser: { getEmail: () => 'preside@example.test' },
@@ -86,8 +116,11 @@ test('does not turn Drive quota/auth/read-back errors into a skip', () => {
     }
   };
 
-  expect(() =>
-    registerPermessiChecks(runner as never, {} as ServiceContainer, sample, deps)
-  ).toThrow(failure);
-  expect(runner.skipped).toEqual([]);
+  expect(() => registerPermessiChecks(runner, {} as ServiceContainer, sample, deps)).not.toThrow();
+  expect(runner.report()).toMatchObject({
+    passed: 0,
+    failed: 1,
+    skipped: 0,
+    results: [expect.objectContaining({ message: failure.message })]
+  });
 });

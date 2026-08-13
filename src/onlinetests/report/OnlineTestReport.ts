@@ -15,6 +15,16 @@ export interface OnlineTestReport {
   results: OnlineTestResult[];
 }
 
+/** A check may be non-applicable only after examining real runtime evidence. */
+export interface OnlineTestSkippedOutcome {
+  status: 'skipped';
+  message: string;
+}
+
+export function skippedOutcome(message: string): OnlineTestSkippedOutcome {
+  return { status: 'skipped', message };
+}
+
 /** Convenzione: ogni check registra nome come "<gruppo>::<descrizione>" per il report aggregato. */
 export function groupName(group: string, description: string): string {
   return `${group}::${description}`;
@@ -35,10 +45,22 @@ export class TestRunner {
   private readonly startedAt = new Date().toISOString();
   private readonly results: OnlineTestResult[] = [];
 
-  add(name: string, artifactUrl: string | undefined, fn: () => void): void {
+  add(
+    name: string,
+    artifactUrl: string | undefined,
+    fn: () => void | OnlineTestSkippedOutcome
+  ): void {
     const runner = new EnhancedTestRunner();
-    runner.register(name, fn);
+    let skipped: OnlineTestSkippedOutcome | undefined;
+    runner.register(name, () => {
+      const result = fn();
+      if (result?.status === 'skipped') skipped = result;
+    });
     const { failed, errors } = runner.run();
+    if (skipped !== undefined) {
+      this.skip(name, artifactUrl, skipped.message);
+      return;
+    }
     if (failed > 0) {
       const message = errors[0]?.message ?? 'Unknown error';
       this.results.push(

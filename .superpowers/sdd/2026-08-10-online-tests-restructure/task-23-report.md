@@ -21,3 +21,11 @@
 1. Run `creaDatiMockDrive` to provision/update both fixture properties.
 2. Run `testCacheIsolamento`: must pass only if no cached shared `1A` leaks into isolated fixture.
 3. Run `testPermessiAttivi`: passes with direct active-user ACL; reports `SKIPPED` with reason when Workspace policy hides identity or only group/domain attribution is available; operational Drive errors fail visibly.
+
+## Review fix round 1
+
+- Aggregate `runFullOnlineTests` now invokes real `registerCacheIsolamentoChecks` with the persisted isolated master ID. The callback still restores the shared container in `finally`; no aggregate fake skip remains.
+- Active-user ACL is exact: empty evidence, another direct user, `anyone`, or any extra direct principal fails. `SKIPPED` is reserved for an ACL consisting exclusively of group/domain evidence, where Workspace cannot attribute membership to the active user.
+- Strict Drive permission read-back now occurs inside the registered runner callback. Quota, auth, and network errors therefore become a normal failed `OnlineTestReport` result rather than escaping registration and discarding accumulated results.
+- Added callback outcome support to `TestRunner` so policy gating determined by real read-back records a documented skipped result.
+- RED/GREEN: focused 6 suites / 28 tests; full 163 suites / 1424 tests; lint, typecheck, diff check, and `build:online` (5 integration suites / 14 tests) pass. No clasp, push, or live GAS run.

@@ -93,6 +93,13 @@ type RegisterEmailChecks = (
   safeEmail: string
 ) => void;
 
+type RegisterCacheIsolationChecks = (
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: FullOnlineTestSample,
+  deps: CacheIsolationDeps
+) => void;
+
 /**
  * Registration seams for the aggregate runner. They deliberately remain no-op defaults until
  * their corresponding scenario task supplies the real `register*Checks` implementation.
@@ -107,7 +114,7 @@ export interface FullOnlineTestRegistrations {
   itpDotted: RegisterSharedChecks;
   supplenzeRuoli: RegisterSharedChecks;
   aclReali: RegisterSharedChecks;
-  cacheIsolamento: RegisterSharedChecks;
+  cacheIsolamento: RegisterCacheIsolationChecks;
   permessi: RegisterSharedChecks;
 }
 
@@ -163,13 +170,7 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   itpDotted: registerItpDottedChecks,
   supplenzeRuoli: registerSupplenzeRuoliScenarioChecks,
   aclReali: registerAclRealiChecks,
-  // The aggregate gets an explicit non-applicability record; dedicated launcher opens 2 masters.
-  cacheIsolamento: (runner, _container, sample) =>
-    runner.skip(
-      'cache.isolamento::secondo fixture non riusa righe cached',
-      sample.sampleSpreadsheetUrl,
-      'SKIPPED: esegui testCacheIsolamento con fixture isolata configurata.'
-    ),
+  cacheIsolamento: registerCacheIsolamentoChecks,
   permessi: registerPermessiChecks
 };
 
@@ -309,7 +310,12 @@ export function executeFullOnlineTests(
   registrations.itpDotted(runner, container, testSample);
   registrations.supplenzeRuoli(runner, container, testSample);
   registrations.aclReali(runner, container, testSample);
-  registrations.cacheIsolamento(runner, container, testSample);
+  registrations.cacheIsolamento(
+    runner,
+    container,
+    testSample,
+    cacheIsolationDeps(properties, overrides)
+  );
   registrations.permessi(runner, container, testSample);
   return runner.report();
 }

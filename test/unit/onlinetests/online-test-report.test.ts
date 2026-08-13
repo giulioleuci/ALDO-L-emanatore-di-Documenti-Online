@@ -1,4 +1,8 @@
-import { TestRunner, groupName } from '../../../src/onlinetests/report/OnlineTestReport';
+import {
+  skippedOutcome,
+  TestRunner,
+  groupName
+} from '../../../src/onlinetests/report/OnlineTestReport';
 
 describe('groupName', () => {
   it('prefixes a check description with its group', () => {
@@ -53,6 +57,18 @@ describe('TestRunner', () => {
           artifactUrl: 'https://drive.google.com/x'
         }
       ]
+    });
+  });
+
+  it('records a policy skip returned after real callback work', () => {
+    const runner = new TestRunner();
+    runner.add('check-policy', undefined, () => skippedOutcome('SKIPPED: group-only ACL'));
+
+    expect(runner.report()).toMatchObject({
+      passed: 0,
+      failed: 0,
+      skipped: 1,
+      results: [expect.objectContaining({ status: 'skipped', message: 'SKIPPED: group-only ACL' })]
     });
   });
 

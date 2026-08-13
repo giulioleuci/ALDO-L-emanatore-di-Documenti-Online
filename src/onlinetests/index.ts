@@ -536,6 +536,48 @@ function executePersistedStoricoChecks(
   return runner.report();
 }
 
+function executePersistedArticolazioneChecks(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  if (master.historicalSpreadsheetIds.length < 2) {
+    throw new ConfigurationError(
+      'Dataset online incompleto: servono due database storici; riesegui creaDatiMockDrive.'
+    );
+  }
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
+  const sample: SharedTestDatabase = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: master.historicalSpreadsheetIds[0]!,
+    priorSampleSpreadsheetUrl: master.historicalSpreadsheetUrls[0]!,
+    priorSampleSpreadsheetId2: master.historicalSpreadsheetIds[1]!,
+    priorSampleSpreadsheetUrl2: master.historicalSpreadsheetUrls[1]!,
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: '',
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: ''
+  };
+  const runner = new TestRunner();
+  registerArticolazioneChecks(runner, container, sample);
+  return runner.report();
+}
+
 export function executeRecuperoStoricoAlunno(
   overrides: Partial<E2eTestDeps> = {}
 ): OnlineTestReport {
@@ -738,8 +780,11 @@ export function testRecuperoStoricoDocumenti(
 ): OnlineTestReport {
   return runReportedSuite('storico_documenti', 'STORICO_DOCUMENTI_SCENARIO', execute, logger);
 }
-export function testArticolazione(): OnlineTestReport {
-  return nonImplementato();
+export function testArticolazione(
+  execute: () => OnlineTestReport = executePersistedArticolazioneChecks,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('articolazione', 'ARTICOLAZIONE_SCENARIO', execute, logger);
 }
 export function testITPeMateriePuntate(): OnlineTestReport {
   return nonImplementato();

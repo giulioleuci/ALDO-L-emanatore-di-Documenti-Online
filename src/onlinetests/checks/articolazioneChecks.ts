@@ -60,12 +60,17 @@ function assertSameTargets(label: string, actual: Iterable<string>, expected: st
   }
 }
 
-function classCdu(contextBuilder: ContextBuilder, target: string, now = new Date('2026-07-15')) {
+function classCdu(
+  contextBuilder: ContextBuilder,
+  target: string,
+  now = new Date('2026-07-15'),
+  gestioneSupplenti = GestioneSupplenti.ENTRAMBI
+) {
   return contextBuilder.build(
     { target, tipoTarget: 'classe', now },
     recipe('CLASSE_COMPLETA', {
       includiSupplenti: true,
-      gestioneSupplenti: GestioneSupplenti.ENTRAMBI
+      gestioneSupplenti
     })
   );
 }
@@ -89,9 +94,9 @@ function documentConfig(db: TableDatabase, id: string): ConfigurazioneDocumento 
 export function registerArticolazioneChecks(
   runner: TestRunner,
   container: ServiceContainer,
-  sample: SharedTestDatabase & { testMode: boolean }
+  sample: SharedTestDatabase
 ): void {
-  if (!sample.testMode) {
+  if (!sample.masterTestMode) {
     runner.add('Articolazione CDU: MASTER.TEST_MODE guard', sample.sampleSpreadsheetUrl, () => {
       throw new ValidationError(
         'Articolazione CDU checks refuse to run: sample MASTER.TEST_MODE is not true.'
@@ -141,6 +146,84 @@ export function registerArticolazioneChecks(
       ) {
         throw new ValidationError(
           'Risoluzione CDU articolazione: attesi supplente LAB.SEMINARIO_POMERIDIANO, titolare dopo il confine e titolare finale ITA.'
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'Articolazione CDU: sovrapposizioni su classi diverse non filtrano la cattedra focale',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+      const atBoundary = new Date('2026-09-01');
+      const classe4A = classCdu(contextBuilder, '4A', atBoundary);
+      const classe2B = classCdu(contextBuilder, '2B', atBoundary);
+      const council4A = classe4A.focus.classe?.consiglioDiClasse ?? [];
+      const council2B = classe2B.focus.classe?.consiglioDiClasse ?? [];
+      const hasMateria = (council: typeof council4A, email: string, materia: string): boolean =>
+        council.some(
+          (docente) =>
+            docente.anagrafica.email === email &&
+            docente.materie.some((candidate) => candidate.sigla === materia)
+        );
+
+      if (
+        !hasMateria(council4A, e2eDocenteEmail(20), 'MAT') ||
+        hasMateria(council4A, e2eDocenteEmail(18), 'ING') ||
+        !hasMateria(council2B, e2eDocenteEmail(18), 'ING') ||
+        hasMateria(council2B, e2eDocenteEmail(20), 'MAT')
+      ) {
+        throw new ValidationError(
+          'Risoluzione sovrapposizione: 4A/MAT e 2B/ING hanno contaminato la cattedra dell altra classe.'
+        );
+      }
+    }
+  );
+
+  runner.add(
+    'Articolazione CDU: visibilita supplenze SOLO_TITOLARI, SOLO_SUPPLENTI, ENTRAMBI',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+      const duringSubstitution = new Date('2026-08-05');
+      const titolari = classCdu(
+        contextBuilder,
+        CLASSE_A,
+        duringSubstitution,
+        GestioneSupplenti.SOLO_TITOLARI
+      );
+      const supplenti = classCdu(
+        contextBuilder,
+        CLASSE_A,
+        duringSubstitution,
+        GestioneSupplenti.SOLO_SUPPLENTI
+      );
+      const entrambi = classCdu(
+        contextBuilder,
+        CLASSE_A,
+        duringSubstitution,
+        GestioneSupplenti.ENTRAMBI
+      );
+      const hasLab = (cdu: ReturnType<ContextBuilder['build']>, email: string): boolean =>
+        (cdu.focus.classe?.consiglioDiClasse ?? []).some(
+          (docente) =>
+            docente.anagrafica.email === email &&
+            docente.materie.some((materia) => materia.sigla === 'LAB.SEMINARIO_POMERIDIANO')
+        );
+      const titolare = e2eDocenteEmail(4);
+      const supplente = e2eDocenteEmail(18);
+
+      if (
+        !hasLab(titolari, titolare) ||
+        hasLab(titolari, supplente) ||
+        hasLab(supplenti, titolare) ||
+        !hasLab(supplenti, supplente) ||
+        !hasLab(entrambi, titolare) ||
+        !hasLab(entrambi, supplente)
+      ) {
+        throw new ValidationError(
+          'Visibilita supplenze incoerente per SOLO_TITOLARI, SOLO_SUPPLENTI o ENTRAMBI.'
         );
       }
     }

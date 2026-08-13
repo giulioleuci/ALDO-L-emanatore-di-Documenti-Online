@@ -10,7 +10,8 @@ import {
   CLASSE_C,
   CONF_DOC_PIANI,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
-  PIANO_DOPPIO_STUDENTE
+  PIANO_DOPPIO_STUDENTE,
+  e2eDocenteEmail
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
 
@@ -157,6 +158,14 @@ test('registers the articulation checks only for a TEST_MODE sample', () => {
       artifactUrl: sample.sampleSpreadsheetUrl
     },
     {
+      name: 'Articolazione CDU: sovrapposizioni su classi diverse non filtrano la cattedra focale',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    },
+    {
+      name: 'Articolazione CDU: visibilita supplenze SOLO_TITOLARI, SOLO_SUPPLENTI, ENTRAMBI',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    },
+    {
       name: 'Articolazione CDU: cattedra INTERPRET.CHITARRA risolve alla riga composita, non alla materia base',
       artifactUrl: sample.sampleSpreadsheetUrl
     },
@@ -200,7 +209,7 @@ test('registers only a TEST_MODE guard failure for an unsafe sample', () => {
 
   registerArticolazioneChecks(runner as never, {} as ServiceContainer, {
     ...sample,
-    testMode: false
+    masterTestMode: false
   });
 
   expect(runner.checks).toEqual([
@@ -422,6 +431,68 @@ test('role/date check rejects the obsolete split LAB seminar representation', ()
   expect(() =>
     runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
   ).toThrow(/attesi supplente LAB\.SEMINARIO_POMERIDIANO/);
+});
+
+test('overlap check rejects a substitute from another class leaking into the focal council', () => {
+  const replacement = e2eDocenteEmail(20);
+  const leakedReplacement = e2eDocenteEmail(18);
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'contextBuilder') {
+        return {
+          build: (params: { target: string }) =>
+            classCdu([
+              {
+                anagrafica: {
+                  email: params.target === '4A' ? leakedReplacement : replacement
+                },
+                materie: [{ sigla: params.target === '4A' ? 'MAT' : 'ING' }]
+              }
+            ])
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() =>
+    runCheck(
+      container,
+      'Articolazione CDU: sovrapposizioni su classi diverse non filtrano la cattedra focale'
+    )
+  ).toThrow(/sovrapposizione/);
+});
+
+test('visibility check rejects SOLO_TITOLARI that exposes the substitute', () => {
+  const holder = e2eDocenteEmail(4);
+  const substitute = e2eDocenteEmail(18);
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'contextBuilder') {
+        return {
+          build: () =>
+            classCdu([
+              {
+                anagrafica: { email: holder },
+                materie: [validLabSeminar()]
+              },
+              {
+                anagrafica: { email: substitute },
+                materie: [validLabSeminar()]
+              }
+            ])
+        } as T;
+      }
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  expect(() =>
+    runCheck(
+      container,
+      'Articolazione CDU: visibilita supplenze SOLO_TITOLARI, SOLO_SUPPLENTI, ENTRAMBI'
+    )
+  ).toThrow(/SOLO_TITOLARI/);
 });
 
 test('INTERPRET.CHITARRA check rejects a base-only materia resolution', () => {

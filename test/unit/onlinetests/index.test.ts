@@ -2,6 +2,7 @@ import {
   dumpOnlineCoverage,
   historicalSpreadsheetUrls,
   runFullOnlineTests,
+  testArticolazione,
   testJobRunnerDocGen,
   testJobRunnerEmail,
   testRecuperoStoricoAlunno,
@@ -63,6 +64,14 @@ describe('storico scenario launchers', () => {
     const expected = report();
 
     expect(launch(() => expected, new LoggerService())).toBe(expected);
+  });
+});
+
+describe('articolazione scenario launcher', () => {
+  it('reports articulated checks through the normal job logger', () => {
+    const expected = report();
+
+    expect(testArticolazione(() => expected, new LoggerService())).toBe(expected);
   });
 });
 

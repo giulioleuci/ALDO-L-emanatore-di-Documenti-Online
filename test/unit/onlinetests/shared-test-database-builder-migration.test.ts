@@ -26,7 +26,8 @@ import {
   CLASS_LAYOUTS,
   MATERIE_PER_INDIRIZZO,
   STUDENT_TOTALE,
-  CONF_DOC_JOBRUNNER
+  CONF_DOC_JOBRUNNER,
+  CONF_DOC_DOTTED
 } from '../../../src/onlinetests/data/fixtures';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import {
@@ -149,7 +150,13 @@ test('builds the shared extended dataset through every migrated seeder', () => {
     sample.rows[TABLE.LOG_FOLD].every((row) => String(row[COL_LOG_FOLD.LINK]).includes('/folders/'))
   ).toBe(true);
   expect(sample.rows[TABLE.CONF_DOC]).toEqual(
-    expect.arrayContaining([expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER })])
+    expect.arrayContaining([
+      expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER }),
+      expect.objectContaining({
+        [COL_CONF_DOC.ID]: CONF_DOC_DOTTED,
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: TEMPLATE_IDS.dotted })
+      })
+    ])
   );
   expect(sample.rows[TABLE.CONF_IMP]).toHaveLength(13);
 
@@ -184,6 +191,14 @@ test('builds the shared extended dataset through every migrated seeder', () => {
 
   const currentStudents = sample.rows[TABLE.ALUNNI].map((row) => row[COL_ALUNNI.EMAIL]);
   expect(new Set(currentStudents).size).toBe(STUDENT_TOTALE);
+
+  const classe4A = sample.rows[TABLE.CLASSI].find((row) => row[COL_CLASSI.ID] === '4A')!;
+  expect(sample.headers[TABLE.CLASSI]).toContain('INTERPRET.CHITARRA.itp');
+  expect(classe4A['LAB.GRUPPO_A']).toBe(e2eDocenteEmail(3));
+  expect(classe4A['LAB.SEMINARIO_POMERIDIANO']).toBe(e2eDocenteEmail(4));
+  expect(classe4A['INTERPRET.CHITARRA']).toBe(e2eDocenteEmail(5));
+  expect(classe4A['INTERPRET.CHITARRA.itp']).toBe(e2eDocenteEmail(11));
+  expect(classe4A['INTERPRET.FLAUTO']).toBe(e2eDocenteEmail(6));
 });
 
 test('preserves the legacy focal identities, coordinators, representatives, and import roster', () => {

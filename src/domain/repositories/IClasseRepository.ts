@@ -5,6 +5,7 @@ import type { Alunno } from '../entities/Alunno';
 import type { Indirizzo } from '../entities/Indirizzo';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { MateriaId } from '../value-objects/MateriaId';
+import type { MateriaSpecificaId } from '../value-objects/MateriaSpecificaId';
 import type { ArticolazioneConfig } from '../value-objects/ArticolazioneConfig';
 import type { GestioneArticolazione } from '../value-objects/enums';
 
@@ -28,7 +29,7 @@ export interface IClasseRepository {
 
   // --- Cattedra matrix / roles (ref 06 §3) ---
   getDocentiPerMateria(classe: Classe, materia: MateriaId): Docente[];
-  getITPPerMateria(classe: Classe, materia: MateriaId): Docente[];
+  getITPPerMateria(classe: Classe, materia: MateriaId | MateriaSpecificaId): Docente[];
   getTeachingSlots(classe: Classe): TeachingSlotDescriptor[];
   /** Classes where the docente holds any teaching slot (MAIN/ITP/SPECIFICA), across all subjects. */
   findByDocenteAssegnato(docenteEmail: string): Classe[];

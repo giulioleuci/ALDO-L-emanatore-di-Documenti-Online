@@ -3,6 +3,7 @@ import {
   historicalSpreadsheetUrls,
   runFullOnlineTests,
   testArticolazione,
+  testITPeMateriePuntate,
   testJobRunnerDocGen,
   testJobRunnerEmail,
   testRecuperoStoricoAlunno,
@@ -72,6 +73,14 @@ describe('articolazione scenario launcher', () => {
     const expected = report();
 
     expect(testArticolazione(() => expected, new LoggerService())).toBe(expected);
+  });
+});
+
+describe('ITP/dotted scenario launcher', () => {
+  it('reports ITP/dotted checks through the normal job logger', () => {
+    const expected = report();
+
+    expect(testITPeMateriePuntate(() => expected, new LoggerService())).toBe(expected);
   });
 });
 

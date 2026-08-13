@@ -30,6 +30,7 @@ import {
   ANNI_PRECEDENTI,
   CONF_DOC_DUPLICAZIONE_PERMESSA,
   CONF_DOC_JOBRUNNER,
+  CONF_DOC_DOTTED,
   CONF_DOC_TABELLE,
   CONF_IMP_ASL_CARTELLE,
   CONF_IMP_CERCA_DOCUMENTI,
@@ -267,6 +268,11 @@ test('seeds dedicated document, import, and mail configurations with unique outp
       expect.objectContaining({
         [COL_CONF_DOC.ID]: 'E2E_DOC_STORICO',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: TEMPLATE_IDS.storico })
+      }),
+      expect.objectContaining({
+        [COL_CONF_DOC.ID]: CONF_DOC_DOTTED,
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: TEMPLATE_IDS.dotted })
       })
     ])
   );

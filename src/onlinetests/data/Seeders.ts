@@ -8,6 +8,7 @@ import {
   CONF_DOC_CERCA_DOCUMENTI_SOURCE,
   CONF_DOC_DUPLICAZIONE_PERMESSA,
   CONF_DOC_JOBRUNNER,
+  CONF_DOC_DOTTED,
   CONF_DOC_STORICO,
   CONF_DOC_TABELLE,
   CONF_IMP_ASL_CARTELLE,
@@ -387,6 +388,30 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
     [COL_CONF_DOC.FORMATO]: 'GDOC',
     [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+    [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+  });
+  sample.appendRow(TABLE.CONF_DOC, {
+    [COL_CONF_DOC.ID]: CONF_DOC_DOTTED,
+    [COL_CONF_DOC.TIPO]: 'E2E_DOTTED',
+    [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+    [COL_CONF_DOC.CONDIZIONE]: '',
+    [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.dotted }),
+    [COL_CONF_DOC.FILE_NAME]: 'E2E_Dotted_{{focus.classe.anagrafica.nome}}',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/DOTTED',
+    [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+    [COL_CONF_DOC.PERMESSI]: '',
+    [COL_CONF_DOC.POST_PROCESSO]: null,
+    [COL_CONF_DOC.PARAMETRI]: JSON.stringify({
+      includiStorico: true,
+      profonditaAnniStorico: 2
+    }),
+    [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+    [COL_CONF_DOC.FORMATO]: 'GDOC',
+    [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+      classi: '{{focus.classe.anagrafica.nome}}',
+      utenti: '',
+      materie: '{{#focus.classe.materie}}{{sigla}},{{/focus.classe.materie}}'
+    }),
     [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
   });
   sample.appendRow(TABLE.CONF_DOC, {

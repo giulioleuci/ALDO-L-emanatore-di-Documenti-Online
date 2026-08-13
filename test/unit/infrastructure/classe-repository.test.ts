@@ -5,6 +5,7 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables, teachingSlotFixtureTables } from '../../../test/fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
+import { MateriaSpecificaId } from '../../../src/domain/value-objects/MateriaSpecificaId';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import {
   EntityNotFoundError,
@@ -79,6 +80,42 @@ test('getTeachingSlots enumerates every populated subject slot and preserves arb
   });
 });
 
+test('getTeachingSlots preserves ITP ownership for a dotted specifica column', () => {
+  const tables = teachingSlotFixtureTables();
+  const classe5A = tables.CLASSI!.find((row) => row.ID === '5A')!;
+  classe5A['INTERPRET.CHITARRA.itp'] = 'itp@school.test';
+  const r = new ClasseRepository(new FakeDatabase(tables));
+  const classe = r.findById(ClasseId.of('5A'))!;
+
+  expect(r.getTeachingSlots(classe)).toContainEqual({
+    column: 'INTERPRET.CHITARRA.itp',
+    materia: MateriaId.of('INTERPRET'),
+    kind: 'ITP',
+    specifica: 'CHITARRA',
+    actorEmails: ['itp@school.test']
+  });
+});
+
+test('getITPPerMateria resolves only the dotted specifica ITP column', () => {
+  const tables = teachingSlotFixtureTables();
+  const classe5A = tables.CLASSI!.find((row) => row.ID === '5A')!;
+  classe5A['INTERPRET.CHITARRA.itp'] = 'itp@school.test';
+  classe5A['INTERPRET.FLAUTO.itp'] = 'specific-a@school.test';
+  tables.MATERIE!.push({
+    ID: 'INTERPRET.FLAUTO',
+    NOME: 'Interpretazione - Flauto',
+    IS_RELIGIONE_ALT: false
+  });
+  const r = new ClasseRepository(new FakeDatabase(tables));
+  const classe = r.findById(ClasseId.of('5A'))!;
+
+  expect(
+    r
+      .getITPPerMateria(classe, MateriaSpecificaId.of('INTERPRET.CHITARRA'))
+      .map((docente) => docente.id)
+  ).toEqual(['itp@school.test']);
+});
+
 test('getTeachingSlots() still resolves a specifica column when the family has no bare MATERIE row', () => {
   const tables = teachingSlotFixtureTables();
   tables.MATERIE = (tables.MATERIE ?? []).filter((row) => row.ID !== 'INTERPRET');
@@ -110,7 +147,11 @@ test('getConsiglioDiClasse derives cattedre from teacher columns (05/06)', () =>
   // legitimately reports it alongside the ordinary subjects.
   const cdc = repo().getConsiglioDiClasse(ClasseId.of('5A'));
   const pairs = cdc.cattedre.map((k) => `${k.materia.value}:${k.docente.email.value}`).sort();
-  expect(pairs).toEqual(['FISI:bianchi@school.it', 'IRC:bianchi@school.it', 'MATE:rossi@school.it']);
+  expect(pairs).toEqual([
+    'FISI:bianchi@school.it',
+    'IRC:bianchi@school.it',
+    'MATE:rossi@school.it'
+  ]);
 });
 
 test('getAlunniAttivi applies AlunniAttiviSpec', () => {
@@ -203,12 +244,12 @@ describe('findByDocenteAssegnato', () => {
   test('a docente holding MATE in several classes is found in all of them', () => {
     const r = repo();
 
-    expect(r.findByDocenteAssegnato('rossi@school.it').map((c) => c.id).sort()).toEqual([
-      '1F',
-      '1F-LSO',
-      '1F-LSS',
-      '5A'
-    ]);
+    expect(
+      r
+        .findByDocenteAssegnato('rossi@school.it')
+        .map((c) => c.id)
+        .sort()
+    ).toEqual(['1F', '1F-LSO', '1F-LSS', '5A']);
   });
 
   test('a docente with no teaching slot anywhere yields []', () => {

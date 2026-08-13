@@ -13,6 +13,7 @@ import { IndirizzoRepository } from './IndirizzoRepository';
 import { AlunnoRepository } from './AlunnoRepository';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
+import { MateriaSpecificaId } from '../../domain/value-objects/MateriaSpecificaId';
 import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { ArticolazioneConfig } from '../../domain/value-objects/ArticolazioneConfig';
 import { GestioneArticolazione } from '../../domain/value-objects/enums';
@@ -104,11 +105,13 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return this.loadDocenti(this.rowOf(classe)[cols.main]);
   }
 
-  getITPPerMateria(classe: Classe, materia: MateriaId): Docente[] {
-    const cols = this.materieColumns.get(materia.value);
+  getITPPerMateria(classe: Classe, materia: MateriaId | MateriaSpecificaId): Docente[] {
+    const baseMateria = materia instanceof MateriaSpecificaId ? materia.materia() : materia;
+    const cols = this.materieColumns.get(baseMateria.value);
     if (cols === undefined)
       throw new MateriaNotFoundError(`Materia ${materia.value} non nella matrice cattedre`);
-    return this.loadDocenti(this.rowOf(classe)[cols.itp]);
+    const column = materia instanceof MateriaSpecificaId ? `${materia.value}.itp` : cols.itp;
+    return this.loadDocenti(this.rowOf(classe)[column]);
   }
 
   getTeachingSlots(classe: Classe): TeachingSlotDescriptor[] {
@@ -138,13 +141,15 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       add(itp, 'ITP', null);
       for (const column of Object.keys(row)) {
         if (column.startsWith(prefix) && column !== itp) {
-          const specifica = column.slice(prefix.length);
-          if (!this.materieIds.has(column)) {
+          const isSpecificaItp = column.endsWith('.itp');
+          const catalogColumn = isSpecificaItp ? column.slice(0, -'.itp'.length) : column;
+          const specifica = catalogColumn.slice(prefix.length);
+          if (!this.materieIds.has(catalogColumn)) {
             throw new MateriaNotFoundError(
-              `Specifica ${column} non registrata in MATERIE (materia ${materia})`
+              `Specifica ${catalogColumn} non registrata in MATERIE (materia ${materia})`
             );
           }
-          add(column, 'SPECIFICA', specifica);
+          add(column, isSpecificaItp ? 'ITP' : 'SPECIFICA', specifica);
         }
       }
     }

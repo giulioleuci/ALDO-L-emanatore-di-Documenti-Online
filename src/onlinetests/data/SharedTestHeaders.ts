@@ -30,7 +30,8 @@ export const ASSIGNMENT_MATERIE_E2E = Array.from(
 const ASSIGNMENT_COLUMNS_E2E = [
   ...ASSIGNMENT_MATERIE_E2E.filter((materia) => materia !== 'IRC' && materia !== 'ALT'),
   'INF.itp',
-  ...MATERIE_PUNTATE
+  ...MATERIE_PUNTATE,
+  'INTERPRET.CHITARRA.itp'
 ];
 
 /** Canonical E2E table headers, including dynamic class and carenza columns. */

@@ -172,8 +172,12 @@ describe('executeFullOnlineTests', () => {
     jest.mocked(registerEmailChecks).mockImplementation(email);
     jest.mocked(registerJobRunnerChecks).mockImplementation(jobRunner);
     jest.mocked(registerImportChecks).mockImplementationOnce(importChecks);
-    jest.mocked(registerImportCartelleClasseChecks).mockImplementationOnce(importCartelleClasseChecks);
-    jest.mocked(registerImportCercaDocumentiChecks).mockImplementationOnce(importCercaDocumentiChecks);
+    jest
+      .mocked(registerImportCartelleClasseChecks)
+      .mockImplementationOnce(importCartelleClasseChecks);
+    jest
+      .mocked(registerImportCercaDocumentiChecks)
+      .mockImplementationOnce(importCercaDocumentiChecks);
     jest.mocked(registerImportChunkedChecks).mockImplementationOnce(importChunkedChecks);
     jest.mocked(registerArticolazioneChecks).mockImplementation(articolazione);
     jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
@@ -242,7 +246,13 @@ describe('executeFullOnlineTests', () => {
       'storico.documenti::ID_GEN, famiglia, sottotipo e isolamento PEI/PDP',
       'storico.render::template documento e mail senza placeholder',
       'articolazione',
-      'Aggregate scenario pending migration: itp-dotted',
+      'itpDotted::getITPPerMateria specifica',
+      'itpDotted::identita assegnazioni, ruoli e ownership',
+      'itpDotted::nomi sintetizzati ed espliciti',
+      'itpDotted::CDU materia e tuple docenti',
+      'itpDotted::isolamento sostituzione e variazione',
+      'itpDotted::continuita titolare/ITP e campi assenti',
+      'itpDotted::CONF_DOC_DOTTED renderizzato',
       'supplenze.matrix',
       'supplenze.consumer',
       'Aggregate scenario pending migration: acl-reali',

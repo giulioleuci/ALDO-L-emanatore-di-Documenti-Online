@@ -536,7 +536,13 @@ export class SharedTestDatabaseBuilder {
         });
       }
       if (layout.id === '4A') {
-        row['INTERPRET.CHITARRA'] = e2eDocenteEmail(11);
+        Object.assign(row, {
+          'LAB.GRUPPO_A': e2eDocenteEmail(3),
+          'LAB.SEMINARIO_POMERIDIANO': e2eDocenteEmail(4),
+          'INTERPRET.CHITARRA': e2eDocenteEmail(5),
+          'INTERPRET.CHITARRA.itp': e2eDocenteEmail(11),
+          'INTERPRET.FLAUTO': e2eDocenteEmail(6)
+        });
       }
       sample.appendRow(TABLE.CLASSI, row);
     });

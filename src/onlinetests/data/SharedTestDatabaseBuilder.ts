@@ -363,7 +363,8 @@ export class SharedTestDatabaseBuilder {
         [COL_MATERIE.COLORE_2]: '#90CAF9',
         [COL_MATERIE.SIMBOLO]: sigla.charAt(0),
         [COL_MATERIE.ESAME_CFG]: ESAME_CFG_E2E[sigla] ?? '',
-        [COL_MATERIE.EVOLUZIONE]: '',
+        [COL_MATERIE.EVOLUZIONE]:
+          sigla === 'STO' ? JSON.stringify({ GST: [1, 2], STO: [3, 4, 5] }) : '',
         [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
       });
     });
@@ -447,10 +448,14 @@ export class SharedTestDatabaseBuilder {
         [COL_CLASSI.TERMINALE]: false,
         // Prior-year name (StoricoClassiService.perClasse, `01_SCHEMA_DATABASE.md`
         // CLASSI.STORICO) — 1A is an entry class with no 2025-2026 identity.
-        [COL_CLASSI.STORICO]: layout.id === CLASSE_A ? '' : classePrecedente(layout.id)
+        [COL_CLASSI.STORICO]:
+          layout.id === CLASSE_A
+            ? ''
+            : layout.id === CLASSE_C_PARENT
+              ? '2C,1C'
+              : classePrecedente(layout.id)
       };
-      const materie =
-        MATERIE_PER_INDIRIZZO[indirizzo as keyof typeof MATERIE_PER_INDIRIZZO];
+      const materie = MATERIE_PER_INDIRIZZO[indirizzo as keyof typeof MATERIE_PER_INDIRIZZO];
       materie.forEach((sigla, materiaIndex) => {
         const docenteIndex = ((classIndex * materie.length + materiaIndex) % DOCENTE_COUNT) + 1;
         row[sigla] = e2eDocenteEmail(docenteIndex);
@@ -489,7 +494,16 @@ export class SharedTestDatabaseBuilder {
           ALT: e2eDocenteEmail(3),
           SCIENZE: e2eDocenteEmail(2),
           FISICA: e2eDocenteEmail(3),
-          INF: e2eDocenteEmail(4)
+          INF: e2eDocenteEmail(4),
+          'INF.itp': e2eDocenteEmail(2)
+        });
+      }
+      if (layout.id === CLASSE_C_PARENT) {
+        Object.assign(row, {
+          MAT: e2eDocenteEmail(1),
+          STO: e2eDocenteEmail(4),
+          INF: e2eDocenteEmail(4),
+          'INF.itp': e2eDocenteEmail(2)
         });
       }
       if (layout.id === CLASSE_C_PARTNER) {

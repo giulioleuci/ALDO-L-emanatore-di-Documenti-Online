@@ -176,7 +176,8 @@ export const RECIPES: Record<string, string[]> = {
     'carenze',
     'piani',
     'pianiPersAlunno',
-    'pianiPersAlunnoStorico'
+    'pianiPersAlunnoStorico',
+    'storico'
   ],
   PIANO_PERSONALIZZATO: [
     'school',

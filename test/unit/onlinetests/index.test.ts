@@ -2,7 +2,10 @@ import {
   dumpOnlineCoverage,
   runFullOnlineTests,
   testJobRunnerDocGen,
-  testJobRunnerEmail
+  testJobRunnerEmail,
+  testRecuperoStoricoAlunno,
+  testRecuperoStoricoClasse,
+  testRecuperoStoricoDocumenti
 } from '../../../src/onlinetests';
 
 function report(failed = 0) {
@@ -35,6 +38,18 @@ describe('JobRunner scenario launchers', () => {
     ['doc', testJobRunnerDocGen],
     ['email', testJobRunnerEmail]
   ])('reports the %s three-check scenario through the normal job logger', (_name, launch) => {
+    const expected = report();
+
+    expect(launch(() => expected, new LoggerService())).toBe(expected);
+  });
+});
+
+describe('storico scenario launchers', () => {
+  it.each([
+    ['alunno', testRecuperoStoricoAlunno],
+    ['classe', testRecuperoStoricoClasse],
+    ['documenti', testRecuperoStoricoDocumenti]
+  ])('reports the scoped %s scenario through the normal job logger', (_name, launch) => {
     const expected = report();
 
     expect(launch(() => expected, new LoggerService())).toBe(expected);

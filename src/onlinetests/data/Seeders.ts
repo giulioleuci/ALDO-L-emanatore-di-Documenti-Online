@@ -26,7 +26,7 @@ import {
   CONF_MAIL_STORICO,
   EMAIL_TEST_SAFE
 } from './fixtures';
-import { e2eAlunnoEmail } from './fixtures';
+import { e2eAlunnoEmail, e2eDocenteEmail } from './fixtures';
 import {
   COL_ALUNNI,
   COL_ASL,
@@ -124,7 +124,11 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_CLASSI.ALT]: '',
     [COL_CLASSI.SEZ]: 'C',
     [COL_CLASSI.TERMINALE]: false,
-    [COL_CLASSI.STORICO]: ''
+    [COL_CLASSI.STORICO]: '',
+    MAT: e2eDocenteEmail(1),
+    GST: e2eDocenteEmail(4),
+    INF: e2eDocenteEmail(4),
+    'INF.itp': anno === ANNI_PRECEDENTI[0] ? e2eDocenteEmail(11) : ''
   });
   prior.appendRow(TABLE.ALUNNI, {
     [COL_ALUNNI.EMAIL]: alunno,
@@ -162,6 +166,20 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_DOCENTI.DIPART]: 'DIPART_STORICO',
     [COL_DOCENTI.ITP]: false
   });
+  for (const [index, isItp] of [
+    [1, false],
+    [4, false],
+    ...(anno === ANNI_PRECEDENTI[0] ? ([[11, true]] as Array<[number, boolean]>) : [])
+  ] as Array<[number, boolean]>) {
+    prior.appendRow(TABLE.DOCENTI, {
+      [COL_DOCENTI.EMAIL]: e2eDocenteEmail(index),
+      [COL_DOCENTI.COGNOME]: `Continuita${index}`,
+      [COL_DOCENTI.NOME]: 'Docente',
+      [COL_DOCENTI.GENERE]: index % 2 === 0 ? 'F' : 'M',
+      [COL_DOCENTI.DIPART]: 'DIPART_STORICO',
+      [COL_DOCENTI.ITP]: isItp
+    });
+  }
   prior.appendRow(TABLE.MATERIE, {
     [COL_MATERIE.ID]: 'GST',
     [COL_MATERIE.NOME]: 'Geostoria',
@@ -170,7 +188,20 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_MATERIE.COLORE_2]: '#90CAF9',
     [COL_MATERIE.SIMBOLO]: 'G',
     [COL_MATERIE.ESAME_CFG]: '',
-    [COL_MATERIE.EVOLUZIONE]: 'STO',
+    [COL_MATERIE.EVOLUZIONE]: '',
+    [COL_MATERIE.IS_RELIGIONE_ALT]: false,
+    [COL_MATERIE.PRINCIPALE]: '',
+    [COL_MATERIE.SPECIFICITA]: ''
+  });
+  prior.appendRow(TABLE.MATERIE, {
+    [COL_MATERIE.ID]: 'STO',
+    [COL_MATERIE.NOME]: 'Storia',
+    [COL_MATERIE.SINTESI]: 'STO',
+    [COL_MATERIE.COLORE_1]: '#1565C0',
+    [COL_MATERIE.COLORE_2]: '#90CAF9',
+    [COL_MATERIE.SIMBOLO]: 'S',
+    [COL_MATERIE.ESAME_CFG]: '',
+    [COL_MATERIE.EVOLUZIONE]: JSON.stringify({ GST: [1, 2], STO: [3, 4, 5] }),
     [COL_MATERIE.IS_RELIGIONE_ALT]: false,
     [COL_MATERIE.PRINCIPALE]: '',
     [COL_MATERIE.SPECIFICITA]: ''
@@ -192,10 +223,17 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
   });
   prior.appendRow(TABLE.MOV_ALUNNI, {
     [COL_MOV_ALUNNI.STUDENTE]: ritirato,
-    [COL_MOV_ALUNNI.TIPO]: 'RITIRATO',
+    [COL_MOV_ALUNNI.TIPO]: 'OUT',
     [COL_MOV_ALUNNI.DATA]: `${anno.slice(0, 4)}-02-01`,
     [COL_MOV_ALUNNI.DA]: classe,
     [COL_MOV_ALUNNI.A]: ''
+  });
+  prior.appendRow(TABLE.MOV_ALUNNI, {
+    [COL_MOV_ALUNNI.STUDENTE]: alunno,
+    [COL_MOV_ALUNNI.TIPO]: 'CAMBIO',
+    [COL_MOV_ALUNNI.DATA]: `${anno.slice(0, 4)}-06-30`,
+    [COL_MOV_ALUNNI.DA]: classe,
+    [COL_MOV_ALUNNI.A]: anno === ANNI_PRECEDENTI[0] ? '3C' : '1C'
   });
   prior.appendRow(TABLE.PROGETTI, {
     [COL_PROGETTI.CLASSE]: classe,
@@ -209,7 +247,7 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_PROGETTI.CLASSE]: classe,
     [COL_PROGETTI.TIPO]: 'ORIENTAMENTO',
     [COL_PROGETTI.NOME]: `Orientamento storico ${anno}`,
-    [COL_PROGETTI.REFERENTE]: '',
+    [COL_PROGETTI.REFERENTE]: `Esperto Esterno ${anno}`,
     [COL_PROGETTI.ORE]: 8,
     [COL_PROGETTI.ORE_ASL]: 0
   });
@@ -229,6 +267,26 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_LOG_DOCS.DATA_CREAZ]: `${anno.slice(0, 4)}-06-15T09:00:00.000Z`,
     [COL_LOG_DOCS.ID_ORIG]: ''
   });
+  if (anno === ANNI_PRECEDENTI[1]) {
+    for (const sottotipo of ['PEI', 'PDP_BES']) {
+      prior.appendRow(TABLE.LOG_DOCS, {
+        [COL_LOG_DOCS.ID]: `E2E_FAKE_LOGDOC_${sottotipo}_2024_2025`,
+        [COL_LOG_DOCS.ID_GEN]: 'PIANI_PERSONALIZZATI',
+        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.SOTTOTIPO]: sottotipo,
+        [COL_LOG_DOCS.NOME]: `E2E Piano ${sottotipo} storico 2024-2025`,
+        [COL_LOG_DOCS.STATO]: 'GENERATO',
+        [COL_LOG_DOCS.NOTIFICATO]: '',
+        [COL_LOG_DOCS.PATH]: '_ALDO_E2E_ROOT/STORICO/2024-2025',
+        [COL_LOG_DOCS.LINK]: `https://drive.google.com/file/d/E2E_FAKE_${sottotipo}_2024_2025/edit`,
+        [COL_LOG_DOCS.CLASSI]: '1B',
+        [COL_LOG_DOCS.UTENTI]: e2eAlunnoEmail(25),
+        [COL_LOG_DOCS.MATERIE]: '',
+        [COL_LOG_DOCS.DATA_CREAZ]: '2024-11-10T09:00:00.000Z',
+        [COL_LOG_DOCS.ID_ORIG]: ''
+      });
+    }
+  }
 }
 
 /**
@@ -309,6 +367,27 @@ function aslDataUpdates(knownStudent: string, ore: number): SheetValueUpdate[] {
 
 /** Adds document, import, and email configurations unique to the extended E2E dataset. */
 export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
+  sample.appendRow(TABLE.CONF_DOC, {
+    [COL_CONF_DOC.ID]: CONF_DOC_STORICO,
+    [COL_CONF_DOC.TIPO]: 'E2E_STORICO',
+    [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+    [COL_CONF_DOC.CONDIZIONE]: '',
+    [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.storico }),
+    [COL_CONF_DOC.FILE_NAME]: 'E2E_Storico_{{focus.alunno.anagrafica.nomeCompleto}}',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/STORICO',
+    [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
+    [COL_CONF_DOC.PERMESSI]: '',
+    [COL_CONF_DOC.POST_PROCESSO]: null,
+    [COL_CONF_DOC.PARAMETRI]: JSON.stringify({
+      includiStorico: true,
+      profonditaAnniStorico: 2,
+      profonditaAnniDocumenti: 2
+    }),
+    [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+    [COL_CONF_DOC.FORMATO]: 'GDOC',
+    [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+    [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+  });
   sample.appendRow(TABLE.CONF_DOC, {
     [COL_CONF_DOC.ID]: CONF_DOC_DUPLICAZIONE_PERMESSA,
     [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
@@ -524,7 +603,10 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         { TIPO_BOX: 'documenti', PATH_OUT: path, destinatari: [EMAIL_TEST_SAFE] }
       ]),
-      [COL_CONF_MAIL.TESTO]: `<p>Scenario ${subject}: ${EMAIL_TEST_SAFE}</p>`,
+      [COL_CONF_MAIL.TESTO]:
+        id === CONF_MAIL_STORICO
+          ? '<p>Storico {{focus.classe.anagrafica.nome}}</p><p>{{#focus.classe.storico.statistiche}}{{annoScolastico}} {{classe}} {{statistiche.totale}}; {{/focus.classe.storico.statistiche}}</p><p>{{#focus.alunno.storico.anni}}{{annoScolastico}} {{classe}} {{esito}}; {{/focus.alunno.storico.anni}}</p>'
+          : `<p>Scenario ${subject}: ${EMAIL_TEST_SAFE}</p>`,
       [COL_CONF_MAIL.SUPPLENTI]: false,
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',

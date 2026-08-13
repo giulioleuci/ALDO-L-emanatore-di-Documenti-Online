@@ -38,6 +38,7 @@ import {
   registerEffectiveAssignmentMatrixChecks,
   registerRepositoryChecks
 } from './checks/repositoryChecks';
+import { registerStoricoChecks, type StoricoCheckScope } from './checks/storicoChecks';
 import { TestRunner, type OnlineTestReport } from './report/OnlineTestReport';
 import type { ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import {
@@ -158,7 +159,7 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   email: registerEmailChecks,
   jobRunner: registerJobRunnerChecks,
   import: registerLegacyImportChecks,
-  storico: registerPendingChecks('storico'),
+  storico: registerStoricoChecks,
   articolazione: registerArticolazioneChecks,
   itpDotted: registerPendingChecks('itp-dotted'),
   supplenzeRuoli: registerLegacySupplenzeRuoliChecks,
@@ -482,6 +483,63 @@ export function executeImportChunked(overrides: Partial<E2eTestDeps> = {}): Onli
   return executePersistedImportChecks(registerImportChunkedChecks, overrides);
 }
 
+function executePersistedStoricoChecks(
+  scope: StoricoCheckScope,
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
+  const sample: FullOnlineTestSample = {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: '',
+    priorSampleSpreadsheetUrl: '',
+    priorSampleSpreadsheetId2: '',
+    priorSampleSpreadsheetUrl2: '',
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: '',
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: '',
+    testMode: master.testMode
+  };
+  const runner = new TestRunner();
+  registerStoricoChecks(runner, container, sample, scope);
+  return runner.report();
+}
+
+export function executeRecuperoStoricoAlunno(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedStoricoChecks('alunno', overrides);
+}
+
+export function executeRecuperoStoricoClasse(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedStoricoChecks('classe', overrides);
+}
+
+export function executeRecuperoStoricoDocumenti(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedStoricoChecks('documenti', overrides);
+}
+
 function executePersistedJobRunnerChecks(
   scope: 'documenti' | 'email' | 'trigger-reale',
   overrides: Partial<E2eTestDeps> = {}
@@ -648,14 +706,23 @@ export function testImportChunked(): OnlineTestReport {
     ServiceFactory.getLogger()
   );
 }
-export function testRecuperoStoricoAlunno(): OnlineTestReport {
-  return nonImplementato();
+export function testRecuperoStoricoAlunno(
+  execute: () => OnlineTestReport = executeRecuperoStoricoAlunno,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('storico_alunno', 'STORICO_ALUNNO_SCENARIO', execute, logger);
 }
-export function testRecuperoStoricoClasse(): OnlineTestReport {
-  return nonImplementato();
+export function testRecuperoStoricoClasse(
+  execute: () => OnlineTestReport = executeRecuperoStoricoClasse,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('storico_classe', 'STORICO_CLASSE_SCENARIO', execute, logger);
 }
-export function testRecuperoStoricoDocumenti(): OnlineTestReport {
-  return nonImplementato();
+export function testRecuperoStoricoDocumenti(
+  execute: () => OnlineTestReport = executeRecuperoStoricoDocumenti,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('storico_documenti', 'STORICO_DOCUMENTI_SCENARIO', execute, logger);
 }
 export function testArticolazione(): OnlineTestReport {
   return nonImplementato();

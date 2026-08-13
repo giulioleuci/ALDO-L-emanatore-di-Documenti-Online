@@ -174,8 +174,23 @@ test('seeds two prior databases with every historical-provider table and master 
     );
     expect(prior.rows[TABLE.MOV_ALUNNI]).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ TIPO: 'RITIRATO', STUDENTE: e2eAlunnoEmail(139) })
+        expect.objectContaining({ TIPO: 'OUT', STUDENTE: e2eAlunnoEmail(139) }),
+        expect.objectContaining({
+          TIPO: 'CAMBIO',
+          STUDENTE: e2eAlunnoEmail(138),
+          DA: anno === '2025-2026' ? '2C' : '1C',
+          A: anno === '2025-2026' ? '3C' : '1C'
+        })
       ])
+    );
+    expect(prior.rows[TABLE.CLASSI][0]).toEqual(
+      expect.objectContaining({
+        GST: 'e2edocente4@onlinetest.aldo.local',
+        INF: 'e2edocente4@onlinetest.aldo.local'
+      })
+    );
+    expect(prior.rows[TABLE.PROGETTI]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ REFERENTE: `Esperto Esterno ${anno}` })])
     );
   }
   expect(currentClassOf(e2eAlunnoEmail(138))).toBe('3C');
@@ -240,6 +255,10 @@ test('seeds dedicated document, import, and mail configurations with unique outp
       expect.objectContaining({
         [COL_CONF_DOC.ID]: CONF_DOC_TABELLE,
         [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE'
+      }),
+      expect.objectContaining({
+        [COL_CONF_DOC.ID]: 'E2E_DOC_STORICO',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: TEMPLATE_IDS.storico })
       })
     ])
   );

@@ -328,7 +328,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   );
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(14);
+  expect(confDoc).toHaveLength(15);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'

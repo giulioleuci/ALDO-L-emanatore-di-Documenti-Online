@@ -1,7 +1,8 @@
 import {
   assertExactDrivePermissionPrincipals,
   assertProtectedRangePrincipals,
-  registerAclRealiChecks
+  registerAclRealiChecks,
+  type DrivePermissionExpectation
 } from '../../../src/onlinetests/checks/aclRealiChecks';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
@@ -54,7 +55,9 @@ test('Drive ACL assertion ignores owner but rejects unexpected non-owner princip
   ];
 
   expect(() =>
-    assertExactDrivePermissionPrincipals('file', permissions, ['expected@example.test'])
+    assertExactDrivePermissionPrincipals('file', permissions, [
+      { type: 'user', principal: 'expected@example.test', role: 'writer' }
+    ])
   ).toThrow(/unexpected@example\.test/);
 });
 
@@ -66,8 +69,47 @@ test('Drive ACL assertion accepts exact non-owner principals and deduplicates AP
   ];
 
   expect(() =>
-    assertExactDrivePermissionPrincipals('file', permissions, ['writer@example.test'])
+    assertExactDrivePermissionPrincipals('file', permissions, [
+      { type: 'user', principal: 'writer@example.test', role: 'writer' }
+    ])
   ).not.toThrow();
+});
+
+test.each([
+  [{ type: 'domain', role: 'reader', domain: 'example.test' }, /domain:example\.test/],
+  [{ type: 'anyone', role: 'reader' }, /anyone/]
+])('Drive ACL assertion rejects unexpected non-email principal %#', (extra, expectedError) => {
+  const expected: DrivePermissionExpectation[] = [
+    { type: 'user', principal: 'writer@example.test', role: 'writer' }
+  ];
+
+  expect(() =>
+    assertExactDrivePermissionPrincipals(
+      'file',
+      [{ type: 'user', role: 'writer', emailAddress: 'writer@example.test' }, extra],
+      expected
+    )
+  ).toThrow(expectedError);
+});
+
+test('Drive ACL assertion preserves principal type and rejects a group where a user is expected', () => {
+  expect(() =>
+    assertExactDrivePermissionPrincipals(
+      'file',
+      [{ type: 'group', role: 'writer', emailAddress: 'writer@example.test' }],
+      [{ type: 'user', principal: 'writer@example.test', role: 'writer' }]
+    )
+  ).toThrow(/group:writer@example\.test/);
+});
+
+test('Drive ACL assertion rejects an unexpected permission role', () => {
+  expect(() =>
+    assertExactDrivePermissionPrincipals(
+      'folder',
+      [{ type: 'user', role: 'writer', emailAddress: 'reader@example.test' }],
+      [{ type: 'user', principal: 'reader@example.test', role: 'reader' }]
+    )
+  ).toThrow(/writer/);
 });
 
 test('protected-range assertion rejects missing editor and an unprotected expected subject', () => {

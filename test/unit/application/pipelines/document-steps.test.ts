@@ -1185,7 +1185,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     ).toThrow(/regolaSupplente non valida/);
   });
 
-  test('missing regolaSupplente defaults ACL routing to ENTRAMBI', () => {
+  test('missing regolaSupplente preserves Drive ACL default SOLO_TITOLARI', () => {
     const db = new FakeDatabase(fixtureTables());
     const ctx = baseCtx(db);
     ctx.set('config', {
@@ -1209,7 +1209,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
 
     new ApplyPermissionsStep(logger, new FakeDriveFacade(), roles).execute(ctx);
 
-    expect(seen).toEqual([GestioneSupplenti.ENTRAMBI]);
+    expect(seen).toEqual([GestioneSupplenti.SOLO_TITOLARI]);
   });
 
   test('calls applica for both file and folder when both ids are present, using their respective regolaSupplente', () => {

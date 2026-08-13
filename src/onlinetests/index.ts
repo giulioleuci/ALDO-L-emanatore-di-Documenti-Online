@@ -33,8 +33,14 @@ import {
   registerJobRunnerEmailChecks,
   registerJobRunnerTriggerRealeCheck
 } from './checks/jobRunnerChecks';
-import { registerContextEngineChecks } from './checks/contextEngineChecks';
-import { registerRepositoryChecks } from './checks/repositoryChecks';
+import {
+  registerContextEngineChecks,
+  registerEffectiveAssignmentConsumerChecks
+} from './checks/contextEngineChecks';
+import {
+  registerEffectiveAssignmentMatrixChecks,
+  registerRepositoryChecks
+} from './checks/repositoryChecks';
 import { registerStoricoChecks, type StoricoCheckScope } from './checks/storicoChecks';
 import { TestRunner, type OnlineTestReport } from './report/OnlineTestReport';
 import type { ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
@@ -132,6 +138,17 @@ const registerImportCercaDocumentiLauncherChecks: RegisterSharedChecks = (
   registerImportCercaDocumentiChecks(runner, container, sample);
 };
 
+/** Keeps the full effective-assignment matrix/consumer coverage and appends Task 22 cases. */
+const registerSupplenzeRuoliScenarioChecks: RegisterSharedChecks = (
+  runner,
+  container,
+  sample
+) => {
+  registerEffectiveAssignmentMatrixChecks(runner, container, sample);
+  registerEffectiveAssignmentConsumerChecks(runner, container, sample);
+  registerSupplenzeRuoliChecks(runner, container, sample);
+};
+
 function registerPendingChecks(group: string): RegisterSharedChecks {
   return (runner, _container, sample) => {
     runner.add(
@@ -154,7 +171,7 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   storico: registerStoricoChecks,
   articolazione: registerArticolazioneChecks,
   itpDotted: registerItpDottedChecks,
-  supplenzeRuoli: registerSupplenzeRuoliChecks,
+  supplenzeRuoli: registerSupplenzeRuoliScenarioChecks,
   aclReali: registerAclRealiChecks,
   cacheIsolamento: registerPendingChecks('cache-isolamento'),
   permessi: registerPendingChecks('permessi')

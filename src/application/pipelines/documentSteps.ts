@@ -40,7 +40,7 @@ interface PermessiConfig {
 }
 
 function parseRegola(raw: string | undefined): GestioneSupplenti {
-  if (raw === undefined || raw === '') return GestioneSupplenti.ENTRAMBI;
+  if (raw === undefined || raw === '') return GestioneSupplenti.SOLO_TITOLARI;
   switch (raw) {
     case 'SOLO_TITOLARI':
       return GestioneSupplenti.SOLO_TITOLARI;

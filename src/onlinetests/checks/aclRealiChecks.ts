@@ -14,10 +14,18 @@ import {
 } from '../data/SharedTestDatabaseBuilder';
 
 export interface DrivePermissionEvidence {
+  id?: string;
   type?: string;
   role?: string;
   emailAddress?: string;
+  domain?: string;
   deleted?: boolean;
+}
+
+export interface DrivePermissionExpectation {
+  type: 'user' | 'group' | 'domain' | 'anyone';
+  principal: string;
+  role: string;
 }
 
 export interface ProtectedRangeEvidence {
@@ -44,14 +52,35 @@ function assertExact(label: string, actualValues: string[], expectedValues: stri
 export function assertExactDrivePermissionPrincipals(
   label: string,
   permissions: DrivePermissionEvidence[],
-  expected: string[]
+  expected: DrivePermissionExpectation[]
 ): void {
   const actual = permissions.flatMap((permission) =>
-    permission.deleted === true || permission.role === 'owner' || permission.emailAddress === undefined
+    permission.deleted === true || permission.role === 'owner'
       ? []
-      : [permission.emailAddress]
+      : [permissionEvidenceKey(permission)]
   );
-  assertExact(`${label} Drive ACL`, actual, expected);
+  assertExact(`${label} Drive ACL`, actual, expected.map(expectationKey));
+}
+
+function permissionEvidenceKey(permission: DrivePermissionEvidence): string {
+  const type = permission.type ?? 'unknown';
+  const principal =
+    type === 'user' || type === 'group'
+      ? (permission.emailAddress ?? '<missing-email>')
+      : type === 'domain'
+        ? (permission.domain ?? '<missing-domain>')
+        : type === 'anyone'
+          ? '*'
+          : (permission.emailAddress ?? permission.domain ?? permission.id ?? '<missing-principal>');
+  return `${type}:${principal}|${permission.role ?? '<missing-role>'}`;
+}
+
+function expectationKey(expectation: DrivePermissionExpectation): string {
+  return `${expectation.type}:${expectation.principal}|${expectation.role}`;
+}
+
+function userExpectations(emails: string[], role: string): DrivePermissionExpectation[] {
+  return emails.map((principal) => ({ type: 'user', principal, role }));
 }
 
 export function assertProtectedRangePrincipals(
@@ -135,16 +164,22 @@ export function registerAclRealiChecks(
     assertExactDrivePermissionPrincipals(
       'file',
       filePermissions,
-      roles
-        .risolvi('CDC', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
-        .map((email) => email.value)
+      userExpectations(
+        roles
+          .risolvi('CDC', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+          .map((email) => email.value),
+        'writer'
+      )
     );
     assertExactDrivePermissionPrincipals(
       'folder',
       folderPermissions,
-      roles
-        .risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
-        .map((email) => email.value)
+      userExpectations(
+        roles
+          .risolvi('COORDINATORI', cdu, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+          .map((email) => email.value),
+        'reader'
+      )
     );
   });
 

@@ -36,3 +36,13 @@ Tipi ALDO aggiornati per il nuovo contratto. Vendor costruito da clone temporane
 - `git diff --check`: PASS.
 
 Per istruzione utente non eseguiti `clasp`, push o callback GAS live. Esecuzione reale e debugging console restano differiti all'output GAS fornito dall'utente.
+
+## Review fix round 1
+
+- ACL Drive confrontate come evidenze tipizzate `tipo:principale|ruolo`: user/group conservati distinti, domain e anyone non vengono piu scartati, ruoli inattesi falliscono il check.
+- Callback reale verifica `writer` sul file e `reader` sulla cartella, coerenti con `CONF_DOC_ACL_REALI`.
+- Aggregate supplenze compone coverage preesistente matrix + consumer e nuovi check Task 22; nessun caso legacy perso.
+- Default Drive `CONF_DOC.PERMESSI.regolaSupplente` ripristinato a `SOLO_TITOLARI`; valori espliciti restano supportati. Default protected ranges resta `ENTRAMBI`.
+- RED mirato confermato sui tre difetti; GREEN: 70 test mirati.
+- Gate finali: typecheck e lint PASS; 161 suite / 1410 unit test PASS; build online offline-only PASS; 5 suite / 14 integration test PASS.
+- Nessun `clasp`, push o test GAS live.

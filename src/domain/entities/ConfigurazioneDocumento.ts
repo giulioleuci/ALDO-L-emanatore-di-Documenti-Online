@@ -21,6 +21,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
   private readonly modelliRaw: string | null;
   private readonly condizioneRaw: string;
   private readonly parametriRaw: string | null;
+  private readonly permessiRaw: string | null;
 
   constructor(data: ConfigurazioneDocumentoData = {}) {
     super(data);
@@ -48,6 +49,10 @@ export class ConfigurazioneDocumento extends AldoEntity {
       typeof data[COL_CONF_DOC.PARAMETRI] === 'string'
         ? (data[COL_CONF_DOC.PARAMETRI] as string)
         : null;
+    this.permessiRaw =
+      typeof data[COL_CONF_DOC.PERMESSI] === 'string'
+        ? (data[COL_CONF_DOC.PERMESSI] as string)
+        : null;
   }
 
   getCondizione(): string | null {
@@ -68,6 +73,13 @@ export class ConfigurazioneDocumento extends AldoEntity {
     return this.parametriRaw === null || this.parametriRaw.trim() === ''
       ? {}
       : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
+  }
+
+  /** Parsed CONF_DOC.PERMESSI; an unset Sheets cell is an empty configuration. */
+  getPermessi(): Record<string, unknown> {
+    return this.permessiRaw === null || this.permessiRaw.trim() === ''
+      ? {}
+      : (JSON.parse(this.permessiRaw) as Record<string, unknown>);
   }
 
   /** Reserved PARAMETRI.overwrite flag — skips the duplicate check (ref 01, 10 Step 2). */
@@ -99,7 +111,8 @@ export class ConfigurazioneDocumento extends AldoEntity {
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: this.gestioneArticolazione,
       [COL_CONF_DOC.MODELLI]: this.modelliRaw,
       [COL_CONF_DOC.CONDIZIONE]: this.condizioneRaw,
-      [COL_CONF_DOC.PARAMETRI]: this.parametriRaw
+      [COL_CONF_DOC.PARAMETRI]: this.parametriRaw,
+      [COL_CONF_DOC.PERMESSI]: this.permessiRaw
     };
   }
 

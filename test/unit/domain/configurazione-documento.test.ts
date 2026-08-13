@@ -34,3 +34,20 @@ describe('ConfigurazioneDocumento.gestioneArticolazione', () => {
     ).toBe('ARTICOLATA');
   });
 });
+
+describe('ConfigurazioneDocumento.PERMESSI', () => {
+  test('parses the declared permission configuration', () => {
+    const permessi = {
+      file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }],
+      regolaSupplente: { file: 'SOLO_SUPPLENTI' }
+    };
+
+    expect(
+      config({ [COL_CONF_DOC.PERMESSI]: JSON.stringify(permessi) }).getPermessi()
+    ).toEqual(permessi);
+  });
+
+  test.each([null, ''])('returns an empty object for an unset Sheets value %p', (raw) => {
+    expect(config({ [COL_CONF_DOC.PERMESSI]: raw }).getPermessi()).toEqual({});
+  });
+});

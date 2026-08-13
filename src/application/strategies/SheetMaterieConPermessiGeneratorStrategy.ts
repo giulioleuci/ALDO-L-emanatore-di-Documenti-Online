@@ -13,7 +13,12 @@ import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 
 function protectionGestioneSupplenti(config: ConfigurazioneDocumento): GestioneSupplenti {
-  const raw = config.getParametri().gestioneSupplenti;
+  const permissions = config.getPermessi();
+  const routing = permissions.regolaSupplente;
+  const raw =
+    typeof routing === 'object' && routing !== null
+      ? (routing as Record<string, unknown>).file
+      : undefined;
   if (raw === undefined || raw === null || raw === '') return GestioneSupplenti.ENTRAMBI;
   if (
     raw === GestioneSupplenti.SOLO_TITOLARI ||
@@ -23,7 +28,7 @@ function protectionGestioneSupplenti(config: ConfigurazioneDocumento): GestioneS
     return raw;
   }
   throw new ConfigurationError(
-    `SHEET_CON_MATERIE_E_PERMESSI: PARAMETRI.gestioneSupplenti non valido: ${JSON.stringify(raw)}`
+    `SHEET_CON_MATERIE_E_PERMESSI: PERMESSI.regolaSupplente.file non valido: ${JSON.stringify(raw)}`
   );
 }
 

@@ -46,3 +46,14 @@ Per istruzione utente non eseguiti `clasp`, push o callback GAS live. Esecuzione
 - RED mirato confermato sui tre difetti; GREEN: 70 test mirati.
 - Gate finali: typecheck e lint PASS; 161 suite / 1410 unit test PASS; build online offline-only PASS; 5 suite / 14 integration test PASS.
 - Nessun `clasp`, push o test GAS live.
+
+## Final review fix
+
+- Routing protected ranges unificato sulla configurazione approvata `CONF_DOC.PERMESSI.regolaSupplente.file`: le protezioni sono ACL interne al file generato, quindi consumano la regola `file` gia prevista dal parser Drive.
+- Rimosso il consumo dell'alias non documentato `CONF_DOC.PARAMETRI.gestioneSupplenti`; fixture reale usa `PERMESSI`, con `PARAMETRI` vuoto.
+- Check consumer usa valori conflittuali (`PERMESSI=SOLO_SUPPLENTI`, `PARAMETRI=SOLO_TITOLARI`) e prova che `PERMESSI` prevale.
+- Aggiunto accessor `ConfigurazioneDocumento.getPermessi()` con semantica Sheets blank-safe.
+- Default protected ranges senza regola resta `ENTRAMBI`; default Drive ACL resta separatamente `SOLO_TITOLARI`.
+- RED mirato confermato: strategia seguiva ancora `PARAMETRI` e accessor mancava. GREEN mirato: 32 test iniziali; typecheck/lint PASS; full unit PASS prima di modifiche concorrenti (163 suite / 1428 test).
+- Primo `build:online` finale interrotto solo da tre nuovi test non verdi su `ClasseRepository`/ITP puntato, modifiche concorrenti fuori Task 22. Nessun file concorrente modificato o incluso nel commit Task 22.
+- Nessun `clasp`, push o test GAS live.

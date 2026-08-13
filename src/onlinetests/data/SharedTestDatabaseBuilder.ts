@@ -1133,7 +1133,7 @@ export class SharedTestDatabaseBuilder {
         regolaSupplente: { file: 'ENTRAMBI', folder: 'ENTRAMBI' }
       }),
       [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ gestioneSupplenti: 'ENTRAMBI' }),
+      [COL_CONF_DOC.PARAMETRI]: '',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
       [COL_CONF_DOC.REGISTRA_DOC]: '{}',

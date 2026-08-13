@@ -195,8 +195,9 @@ function visibilitySnapshot(
     ID: 'E2E_VISIBILITY_SHEET',
     GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
     FORMATO: 'GSHEET',
-    PERMESSI: null,
-    PARAMETRI: JSON.stringify({ gestioneSupplenti: mode })
+    PERMESSI: JSON.stringify({ regolaSupplente: { file: mode } }),
+    // Deliberately conflicting legacy/undocumented key: PERMESSI must win.
+    PARAMETRI: JSON.stringify({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   });
   new SheetMaterieConPermessiGeneratorStrategy(
     sheets,

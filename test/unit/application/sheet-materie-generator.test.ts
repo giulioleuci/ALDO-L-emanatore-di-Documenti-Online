@@ -103,7 +103,8 @@ function sheetInfo(name = 'Sheet1', rowCount = 20, columnCount = 10): Spreadshee
 
 function confDoc(
   generatore: string,
-  parametri: Record<string, unknown> | null = null
+  parametri: Record<string, unknown> | null = null,
+  permessi: Record<string, unknown> | null = null
 ): ConfigurazioneDocumento {
   return ConfigurazioneDocumento.fromData({
     ID: 'CD_MAT',
@@ -114,7 +115,7 @@ function confDoc(
     FILE_NAME: 'x',
     PATH_OUT: 'x',
     DUPLICAZIONE: 'NEGATA',
-    PERMESSI: null,
+    PERMESSI: permessi === null ? null : JSON.stringify(permessi),
     POST_PROCESSO: null,
     PARAMETRI: parametri === null ? null : JSON.stringify(parametri),
     GESTIONE_ARTICOLAZIONE: 'COMPLETA',
@@ -510,7 +511,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     expect(cdu.meta.parametriInput.materiaCorrente).toBeNull();
   });
 
-  test('uses PARAMETRI.gestioneSupplenti for protected-range teacher routing', () => {
+  test('uses PERMESSI.regolaSupplente.file for protected ranges even when PARAMETRI conflicts', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
@@ -528,7 +529,9 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       'file_1',
       cdu,
       confDoc('SHEET_CON_MATERIE_E_PERMESSI', {
-        gestioneSupplenti: 'SOLO_SUPPLENTI'
+        gestioneSupplenti: 'SOLO_TITOLARI'
+      }, {
+        regolaSupplente: { file: 'SOLO_SUPPLENTI' }
       })
     );
 
@@ -540,6 +543,30 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       routed.every(
         ([, , options]) => options?.regolaSupplente === GestioneSupplenti.SOLO_SUPPLENTI
       )
+    ).toBe(true);
+  });
+
+  test('defaults protected-range routing to ENTRAMBI when PERMESSI.regolaSupplente is absent', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '5A');
+    const roles = new RecordingRisolutoreRuoliService(
+      composeRisolutoreRuoliDependencies(db)
+    );
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      new FakeSpreadsheetService(sheetInfo()),
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      roles
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    const routed = roles.calls.filter(([role]) =>
+      ['DOCENTE_MATERIA', 'DOCENTI_IRC_ALT'].includes(role)
+    );
+    expect(routed.length).toBeGreaterThan(0);
+    expect(
+      routed.every(([, , options]) => options?.regolaSupplente === GestioneSupplenti.ENTRAMBI)
     ).toBe(true);
   });
 

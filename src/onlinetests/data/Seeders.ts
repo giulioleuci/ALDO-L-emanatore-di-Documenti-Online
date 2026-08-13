@@ -5,6 +5,7 @@ import { HEADERS } from './SharedTestHeaders';
 import type { IArtifactFactory, SheetValueUpdate } from '../E2eTemplateProvisioner';
 import {
   ANNI_PRECEDENTI,
+  CONF_DOC_CERCA_DOCUMENTI_SOURCE,
   CONF_DOC_DUPLICAZIONE_PERMESSA,
   CONF_DOC_JOBRUNNER,
   CONF_DOC_STORICO,
@@ -67,8 +68,6 @@ const ASL_STUDENT_BY_CLASS: Record<(typeof ASL_ELIGIBLE_CLASSES)[number], string
   '5B-S': e2eAlunnoEmail(139),
   '5B-C': e2eAlunnoEmail(161)
 };
-const CONF_DOC_CERCA_DOCUMENTI_SOURCE = 'E2E_DOC_SOURCE_IMPORT';
-
 /**
  * Creates both prior-year databases through the existing spreadsheet factory.
  * A spreadsheet handle cannot create sibling spreadsheets, so the factory is

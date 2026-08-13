@@ -1,13 +1,23 @@
-import { avviaImportazioneDataDriven } from '../../config/Bootstrap';
+import {
+  avviaImportazioneChunkedDataDriven,
+  avviaImportazioneDataDriven,
+  creaJobRunner,
+  riprendiJobSospeso
+} from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import { COL_ASL, COL_CARENZE, COL_CONF_IMP, COL_LOG_FOLD, TABLE } from '../../config/schema';
+import { COL_ASL, COL_CARENZE, COL_CONF_IMP, COL_LOG_DOCS, COL_LOG_FOLD, TABLE } from '../../config/schema';
 import { ConfigurationError, ValidationError } from '../../domain/errors/DomainError';
+import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
+import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { CONF_IMP_ASL } from '../data/SharedTestDatabaseBuilder';
 import type { SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
 import {
+  CONF_DOC_CERCA_DOCUMENTI_SOURCE,
   CONF_IMP_ASL_CARTELLE,
   CONF_IMP_BAD_STRATEGY,
+  CONF_IMP_CERCA_DOCUMENTI,
+  CONF_IMP_CHUNKED,
   CONF_IMP_DISABLED,
   CONF_IMP_IGNORE,
   CONF_IMP_MISSING_FILE,
@@ -15,7 +25,8 @@ import {
   CONF_IMP_MISSING_IDGEN,
   CONF_IMP_NOHEADER,
   CONF_IMP_TIMESTAMP,
-  CONF_IMP_TIMESTAMP_FALLBACK
+  CONF_IMP_TIMESTAMP_FALLBACK,
+  e2eAlunnoEmail
 } from '../data/fixtures';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
@@ -475,4 +486,254 @@ export function registerImportCartelleClasseChecks(
       }
     }
   );
+}
+
+/**
+ * The two classes CERCA_DOCUMENTI generates its eligible source sheets for
+ * (real `FOGLIO_GENERICO` documents via `CONF_DOC_CERCA_DOCUMENTI_SOURCE`,
+ * whose Drive template — `Seeders.ts#aslImportUpdates` — has no `{{...}}`
+ * markers, so both copies carry byte-identical STUDENTE/ORE content; only
+ * their LOG_DOCS `CLASSI` tag differs).
+ */
+const CERCA_DOCUMENTI_CLASSE_A = '1A';
+const CERCA_DOCUMENTI_CLASSE_B = '2A';
+/** Sentinel `_CLASSE`/`TIPO` for the manually-appended, filter-excluded LOG_DOCS row below. */
+const CERCA_DOCUMENTI_EXCLUDED_CLASSE = 'ZZ_ESCLUSA_TIPO';
+const CERCA_DOCUMENTI_EXCLUDED_TIPO = 'E2E_IMPORT_SOURCE_ALTRO_TIPO';
+const CERCA_DOCUMENTI_EXCLUDED_DOC_ID = 'E2E_CERCA_DOCUMENTI_ESCLUSO_TIPO';
+/** Static content of `Seeders.ts#aslImportUpdates` (ref ASL_IMPORT_ROWS), reused identically by both generated sheets. */
+const ASL_IMPORT_SHEET_STUDENTS: Array<[string, number]> = [
+  [e2eAlunnoEmail(43), 40],
+  [e2eAlunnoEmail(44), 55],
+  [e2eAlunnoEmail(51), 60],
+  [e2eAlunnoEmail(52), 35]
+];
+
+/**
+ * Live acceptance checks for CERCA_DOCUMENTI (12 §3): real generation of the
+ * two eligible source sheets through `DocumentGenerationService.generateForClasse`
+ * (the only path that produces genuine `LOG_DOCS` rows for
+ * `CONF_DOC_CERCA_DOCUMENTI_SOURCE` — DUPLICAZIONE=NEGATA keeps a rerun
+ * idempotent, no new file on a second launcher execution), then the real
+ * `CONF_IMP_CERCA_DOCUMENTI` import against them.
+ *
+ * A third LOG_DOCS row with a mismatched `TIPO` is appended directly (not
+ * via real generation — `Seeders.ts`-style direct `insert`, matched against
+ * `find` first so a rerun does not fight the table's `ID` primary key) to
+ * prove the strategy's `idGen`+`tipo` filter (`CustomSourceStrategies.ts`
+ * `createCercaDocumentiStrategy`) excludes it before it is ever read as a
+ * sheet — its sentinel `_CLASSE` must never appear in the imported ASL rows.
+ *
+ * **Known gap, not covered here (traced, not guessed):** the brief also
+ * asked for a same-idGen/same-tipo LOG_DOCS row pointing at a *non-sheet*
+ * Drive file, expecting the strategy to "fail-soft" and skip only that
+ * document. Tracing `createCercaDocumentiStrategy`'s per-document loop
+ * (no `try`/`catch`) through `SourceStrategy.extract()` (GasDataImporter,
+ * `SourceStrategy.js`) shows `extract()` wraps the *entire* `_extractData()`
+ * call in one `try`/`catch` — any single document's read failure aborts
+ * extraction for every document in the batch, not just the bad one; the
+ * failing document is never isolated per-item. A real non-sheet artifact
+ * would therefore make this whole check fail (zero rows imported), the
+ * opposite of "excluded". Implementing that sub-case for real needs a
+ * `CustomSourceStrategies.ts` change (wrap each `readSheetRows` call in its
+ * own try/catch, log+skip on failure — mirroring
+ * `createCercaCartelleClasseStrategy`'s existing "a class with no matching
+ * folder contributes nothing, not an error" fail-soft precedent), which is
+ * outside this task's file scope (`importChecks.ts`/`index.ts` only). Flagged
+ * for the controller rather than faked here.
+ */
+export function registerImportCercaDocumentiChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: ImportSample
+): void {
+  const db = container.get<EmailDb>('db');
+  const readAsl = (): AslRow[] => db.table(TABLE.ASL).findAll();
+
+  runner.add(
+    groupName(
+      'import.cercaDocumenti',
+      'filtro per idGen/tipo su 2 fogli generati e _CLASSE per record'
+    ),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const documents = container.get<DocumentGenerationService>('documentGenerationService');
+      const logDocsForSource = (): AslRow[] =>
+        db
+          .table(TABLE.LOG_DOCS)
+          .findAll()
+          .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_CERCA_DOCUMENTI_SOURCE);
+
+      const resolveSourceFileId = (classe: string): string => {
+        const generated = documents.generateForClasse(
+          ClasseId.of(classe),
+          CONF_DOC_CERCA_DOCUMENTI_SOURCE
+        );
+        if (generated.fileId !== null && generated.fileId !== '') return generated.fileId;
+        // DUPLICAZIONE=NEGATA: a rerun reports SKIPPED with fileId=null; the real file/LOG_DOCS
+        // row from a prior run still exists — resolve it instead of failing.
+        const existing = logDocsForSource().find((row) => row[COL_LOG_DOCS.CLASSI] === classe);
+        const existingId = existing === undefined ? '' : stringValue(existing[COL_LOG_DOCS.ID]);
+        if (existingId === '') {
+          throw new ValidationError(
+            `CERCA_DOCUMENTI: nessun file sorgente generato o preesistente per la classe ${classe}`
+          );
+        }
+        return existingId;
+      };
+
+      resolveSourceFileId(CERCA_DOCUMENTI_CLASSE_A);
+      resolveSourceFileId(CERCA_DOCUMENTI_CLASSE_B);
+
+      // Excluded by TIPO before ever being read as a sheet (12 §3 filter) — idempotent insert.
+      if (
+        db
+          .table(TABLE.LOG_DOCS)
+          .find((row) => row[COL_LOG_DOCS.ID] === CERCA_DOCUMENTI_EXCLUDED_DOC_ID) === null
+      ) {
+        db.table(TABLE.LOG_DOCS).insert({
+          [COL_LOG_DOCS.ID]: CERCA_DOCUMENTI_EXCLUDED_DOC_ID,
+          [COL_LOG_DOCS.ID_GEN]: CONF_DOC_CERCA_DOCUMENTI_SOURCE,
+          [COL_LOG_DOCS.TIPO]: CERCA_DOCUMENTI_EXCLUDED_TIPO,
+          [COL_LOG_DOCS.SOTTOTIPO]: '',
+          [COL_LOG_DOCS.NOME]: 'E2E CERCA_DOCUMENTI escluso per tipo',
+          [COL_LOG_DOCS.STATO]: 'GENERATO',
+          [COL_LOG_DOCS.NOTIFICATO]: '',
+          [COL_LOG_DOCS.PATH]: '',
+          [COL_LOG_DOCS.LINK]: '',
+          [COL_LOG_DOCS.CLASSI]: CERCA_DOCUMENTI_EXCLUDED_CLASSE,
+          [COL_LOG_DOCS.UTENTI]: '',
+          [COL_LOG_DOCS.MATERIE]: '',
+          [COL_LOG_DOCS.DATA_CREAZ]: '2026-08-10T09:00:00.000Z',
+          [COL_LOG_DOCS.ID_ORIG]: ''
+        });
+      }
+
+      const result = avviaImportazioneDataDriven(container, CONF_IMP_CERCA_DOCUMENTI);
+      assertSuccessful(result, 'CERCA_DOCUMENTI');
+      if (result.inseriti + result.aggiornati === 0) {
+        throw new ValidationError('CERCA_DOCUMENTI: nessuna riga inserita o aggiornata');
+      }
+
+      const rows = readAsl();
+      const eligibleClassi = new Set([CERCA_DOCUMENTI_CLASSE_A, CERCA_DOCUMENTI_CLASSE_B]);
+      for (const [studente, ore] of ASL_IMPORT_SHEET_STUDENTS) {
+        const row = findAslRow(rows, studente, 'CERCA_DOCUMENTI');
+        assertOre(row, ore, 'CERCA_DOCUMENTI');
+        const classe = stringValue(row['_CLASSE']);
+        if (!eligibleClassi.has(classe)) {
+          throw new ValidationError(
+            `CERCA_DOCUMENTI: _CLASSE inattesa "${classe}" per ${studente} (attese ${[...eligibleClassi].join('/')})`
+          );
+        }
+      }
+      if (rows.some((row) => stringValue(row['_CLASSE']) === CERCA_DOCUMENTI_EXCLUDED_CLASSE)) {
+        throw new ValidationError(
+          'CERCA_DOCUMENTI: trovata una riga con _CLASSE del documento escluso per TIPO — il filtro idGen/tipo non lo ha escluso'
+        );
+      }
+    }
+  );
+}
+
+const MS_TINY = 50;
+const MS_AMPIO = 25 * 60 * 1000;
+const JOB_STATE_TO_RESUME = 'to_resume';
+const JOB_STATE_COMPLETED = 'completed';
+const JOB_STATE_NOT_STARTED = 'not_started';
+
+interface ImportJobStatus {
+  state: string;
+  completed?: boolean;
+}
+
+interface JobRunnerControl extends JobRunnerService {
+  getStatus(jobName: string): ImportJobStatus;
+  resetJob(jobName: string): unknown;
+  cancelJob(jobName: string): unknown;
+}
+
+/**
+ * Live acceptance checks for the chunked/resumable import path (15 §4, essential #4):
+ * `avviaImportazioneChunkedDataDriven` drives GasDataImporter's checkpointed
+ * EXTRACT/LOAD state machine through JobRunnerLib. A tiny `MS_TINY` budget
+ * forces suspension after the EXTRACT stage yields (before the buffered rows
+ * are LOADed — see `ImportService.executeImportChunked`'s docstring on the
+ * EXTRACT->LOAD->[EXTRACT|DONE] cycle), then `riprendiJobSospeso` resumes
+ * and completes the LOAD against the same target as `CONF_IMP_ASL`
+ * (`CONF_IMP_CHUNKED` reuses `templateIds.aslImportSheet`, ref Seeders.ts).
+ */
+export function registerImportChunkedChecks(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: ImportSample
+): void {
+  const db = container.get<EmailDb>('db');
+  const readAsl = (): AslRow[] => db.table(TABLE.ASL).findAll();
+  const jobName = `imp_chunked_${CONF_IMP_CHUNKED}`;
+  const jobRunner = creaJobRunner() as JobRunnerControl;
+
+  try {
+    runner.add(
+      groupName('import.chunked', 'sospensione to_resume su budget minimo'),
+      sample.sampleSpreadsheetUrl,
+      () => {
+        const result = avviaImportazioneChunkedDataDriven(
+          container,
+          CONF_IMP_CHUNKED,
+          jobRunner,
+          MS_TINY
+        );
+        if (result !== null) {
+          throw new ValidationError('Import chunked: attesa sospensione con esito null');
+        }
+        const status = jobRunner.getStatus(jobName);
+        if (status.state !== JOB_STATE_TO_RESUME || status.completed !== false) {
+          throw new ValidationError(
+            `Import chunked: atteso stato ${JOB_STATE_TO_RESUME}/completed=false, trovato ${status.state}/${String(status.completed)}`
+          );
+        }
+      }
+    );
+
+    runner.add(
+      groupName('import.chunked', 'resume completa senza duplicati'),
+      sample.sampleSpreadsheetUrl,
+      () => {
+        riprendiJobSospeso(container, jobRunner, jobName, MS_AMPIO);
+        const status = jobRunner.getStatus(jobName);
+        if (status.state !== JOB_STATE_COMPLETED || status.completed !== true) {
+          throw new ValidationError(
+            `Import chunked: atteso stato ${JOB_STATE_COMPLETED}/completed=true dopo la ripresa, trovato ${status.state}/${String(status.completed)}`
+          );
+        }
+        const rows = readAsl();
+        const studenti = rows.map((row) => stringValue(row[COL_ASL.STUDENTE]));
+        if (new Set(studenti).size !== studenti.length) {
+          throw new ValidationError(
+            'Import chunked: righe ASL con STUDENTE duplicato dopo la ripresa'
+          );
+        }
+        for (const [studente, ore] of ASL_IMPORT_SHEET_STUDENTS) {
+          assertOre(findAslRow(rows, studente, 'Import chunked'), ore, 'Import chunked');
+        }
+      }
+    );
+
+    runner.add(
+      groupName('import.chunked', 'resetJob azzera lo stato del job'),
+      sample.sampleSpreadsheetUrl,
+      () => {
+        jobRunner.resetJob(jobName);
+        const status = jobRunner.getStatus(jobName);
+        if (status.state !== JOB_STATE_NOT_STARTED) {
+          throw new ValidationError(
+            `Import chunked: resetJob non ha azzerato lo stato (${status.state})`
+          );
+        }
+      }
+    );
+  } finally {
+    if (jobRunner.getStatus(jobName).state === JOB_STATE_TO_RESUME) jobRunner.cancelJob(jobName);
+  }
 }

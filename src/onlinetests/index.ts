@@ -18,7 +18,9 @@ import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/docu
 import { registerEmailChecks } from './checks/emailChecks';
 import {
   registerImportCartelleClasseChecks,
+  registerImportCercaDocumentiChecks,
   registerImportChecks,
+  registerImportChunkedChecks,
   registerImportFileSingoloChecks,
   registerImportPolicyChecks
 } from './checks/importChecks';
@@ -109,10 +111,27 @@ const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, 
   registerDocumentiChecks(runner, container, sample, 'all');
 };
 
-/** Composes the two independent CONF_IMP scenario groups into the aggregate 'import' bucket. */
+/** Composes the four independent CONF_IMP scenario groups into the aggregate 'import' bucket. */
 const registerLegacyImportChecks: RegisterSharedChecks = (runner, container, sample) => {
   registerImportChecks(runner, container, sample);
   registerImportCartelleClasseChecks(runner, container, sample);
+  registerImportCercaDocumentiChecks(runner, container, sample);
+  registerImportChunkedChecks(runner, container, sample);
+};
+
+/**
+ * Composes the existing import-policy checks (Task 16 pre-flight decision:
+ * conflict-policy coverage lives under `testImportCercaDocumenti`, no
+ * separate `testImportPolicy` launcher) with the real CERCA_DOCUMENTI
+ * strategy checks (Task 18) for the standalone launcher below.
+ */
+const registerImportCercaDocumentiLauncherChecks: RegisterSharedChecks = (
+  runner,
+  container,
+  sample
+) => {
+  registerImportPolicyChecks(runner, container, sample);
+  registerImportCercaDocumentiChecks(runner, container, sample);
 };
 
 const registerLegacySupplenzeRuoliChecks: RegisterSharedChecks = (runner, container, sample) => {
@@ -459,6 +478,10 @@ export function executeImportCartelleClasse(
   return executePersistedImportChecks(registerImportCartelleClasseChecks, overrides);
 }
 
+export function executeImportChunked(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  return executePersistedImportChecks(registerImportChunkedChecks, overrides);
+}
+
 function executePersistedJobRunnerChecks(
   scope: 'documenti' | 'email' | 'trigger-reale',
   overrides: Partial<E2eTestDeps> = {}
@@ -613,12 +636,17 @@ export function testImportCercaDocumenti(): OnlineTestReport {
   return runReportedSuite(
     'import_cerca_documenti',
     'IMPORT_SCENARIO',
-    () => executePersistedImportChecks(registerImportPolicyChecks),
+    () => executePersistedImportChecks(registerImportCercaDocumentiLauncherChecks),
     ServiceFactory.getLogger()
   );
 }
 export function testImportChunked(): OnlineTestReport {
-  return nonImplementato();
+  return runReportedSuite(
+    'import_chunked',
+    'IMPORT_SCENARIO',
+    executeImportChunked,
+    ServiceFactory.getLogger()
+  );
 }
 export function testRecuperoStoricoAlunno(): OnlineTestReport {
   return nonImplementato();

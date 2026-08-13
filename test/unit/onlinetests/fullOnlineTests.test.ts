@@ -21,7 +21,9 @@ import { registerEmailChecks } from '../../../src/onlinetests/checks/emailChecks
 import { registerDocumentiChecks } from '../../../src/onlinetests/checks/documentiChecks';
 import {
   registerImportCartelleClasseChecks,
-  registerImportChecks
+  registerImportCercaDocumentiChecks,
+  registerImportChecks,
+  registerImportChunkedChecks
 } from '../../../src/onlinetests/checks/importChecks';
 import { registerArticolazioneChecks } from '../../../src/onlinetests/checks/articolazioneChecks';
 import { registerJobRunnerChecks } from '../../../src/onlinetests/checks/jobRunnerChecks';
@@ -42,7 +44,9 @@ jest.mock('../../../src/onlinetests/checks/documentiChecks', () => ({
 }));
 jest.mock('../../../src/onlinetests/checks/importChecks', () => ({
   registerImportChecks: jest.fn(),
-  registerImportCartelleClasseChecks: jest.fn()
+  registerImportCartelleClasseChecks: jest.fn(),
+  registerImportCercaDocumentiChecks: jest.fn(),
+  registerImportChunkedChecks: jest.fn()
 }));
 jest.mock('../../../src/onlinetests/checks/articolazioneChecks', () => ({
   registerArticolazioneChecks: jest.fn()
@@ -157,6 +161,8 @@ describe('executeFullOnlineTests', () => {
     const jobRunner = registerExisting('jobrunner');
     const importChecks = registerExisting('import');
     const importCartelleClasseChecks = registerExisting('import.cartelleClasse');
+    const importCercaDocumentiChecks = registerExisting('import.cercaDocumenti');
+    const importChunkedChecks = registerExisting('import.chunked');
     const articolazione = registerExisting('articolazione');
     const assignmentMatrix = registerExisting('supplenze.matrix');
     const assignmentConsumer = registerExisting('supplenze.consumer');
@@ -167,6 +173,8 @@ describe('executeFullOnlineTests', () => {
     jest.mocked(registerJobRunnerChecks).mockImplementation(jobRunner);
     jest.mocked(registerImportChecks).mockImplementationOnce(importChecks);
     jest.mocked(registerImportCartelleClasseChecks).mockImplementationOnce(importCartelleClasseChecks);
+    jest.mocked(registerImportCercaDocumentiChecks).mockImplementationOnce(importCercaDocumentiChecks);
+    jest.mocked(registerImportChunkedChecks).mockImplementationOnce(importChunkedChecks);
     jest.mocked(registerArticolazioneChecks).mockImplementation(articolazione);
     jest.mocked(registerEffectiveAssignmentMatrixChecks).mockImplementation(assignmentMatrix);
     jest.mocked(registerEffectiveAssignmentConsumerChecks).mockImplementation(assignmentConsumer);
@@ -197,6 +205,8 @@ describe('executeFullOnlineTests', () => {
       'jobrunner',
       'import',
       'import.cartelleClasse',
+      'import.cercaDocumenti',
+      'import.chunked',
       'articolazione',
       'supplenze.matrix',
       'supplenze.consumer'
@@ -223,6 +233,8 @@ describe('executeFullOnlineTests', () => {
       'jobrunner',
       'import',
       'import.cartelleClasse',
+      'import.cercaDocumenti',
+      'import.chunked',
       'Aggregate scenario pending migration: storico',
       'articolazione',
       'Aggregate scenario pending migration: itp-dotted',

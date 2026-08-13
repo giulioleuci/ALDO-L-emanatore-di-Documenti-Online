@@ -47,6 +47,16 @@ function fakeDrive(byFolderId: Record<string, Array<{ id: string; name: string }
   } as unknown as DriveService;
 }
 
+/** A DriveService double returning explicit metadata for CERCA_DOCUMENTI preflight checks. */
+function fakeDocumentMetadata(
+  byFileId: Record<string, { id: string; mimeType: string }> = {}
+): DriveService {
+  return {
+    getFiles: (fileId: string) =>
+      byFileId[fileId] ?? { id: fileId, mimeType: 'application/vnd.google-apps.spreadsheet' }
+  } as unknown as DriveService;
+}
+
 function tablesWithFolders(): Record<string, Row[]> {
   const tables = fixtureTables();
   tables.LOG_FOLD = [
@@ -196,7 +206,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     });
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' });
     expect(rows).toEqual([
@@ -210,7 +221,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', stato: 'GENERATO' });
     expect(rows).toEqual([{ NOME: 'Verdi', _CLASSE: '5A' }]);
@@ -220,7 +232,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const db = new FakeDatabase(tablesWithDocs());
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      fakeSpreadsheets({})
+      fakeSpreadsheets({}),
+      fakeDocumentMetadata()
     );
     expect(() => new Strategy(logger).extract({})).toThrow();
   });
@@ -230,7 +243,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ other_doc: [['NOME'], ['Gialli']] });
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     // other_doc has idGen CD1/tipo VERBALE — only it matches this tipo filter.
     const rows = new Strategy(logger).extract({ idGen: 'CD1', tipo: 'VERBALE' });
@@ -242,7 +256,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     // sheet_doc2 shares idGen/tipo with sheet_doc1 but has STATO ARCHIVIATO, not GENERATO.
     const rows = new Strategy(logger).extract({
@@ -269,7 +284,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const spreadsheets = fakeSpreadsheets({ sheet_doc3: [['NOME'], ['Blu']] });
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     const rows = new Strategy(logger).extract({ idGen: 'CD_NOCLASSE' });
     expect(rows).toEqual([{ NOME: 'Blu', _CLASSE: '' }]);
@@ -281,7 +297,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     new Strategy(logger).extract({ idGen: 'CD_GRIGLIE', tipo: 'GRIGLIA', stato: 'GENERATO' });
     // No explicit tabName/range supplied -> SheetByIdStrategy falls back to sheet1's own name/range.
@@ -305,7 +322,8 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     const getRangesSpy = jest.spyOn(spreadsheets, 'getRanges');
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata()
     );
     // fakeSpreadsheets' single fixed tab is always named 'Sheet1'; passing it explicitly
     // together with an explicit range still proves both options are threaded through
@@ -314,21 +332,63 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     expect(getRangesSpy).toHaveBeenCalledWith('sheet_doc4', 'Sheet1!A1:B2');
   });
 
-  test('a document that fails to read as a sheet is skipped, not fatal — the rest of the batch still comes through', () => {
+  test('a confirmed non-spreadsheet document is skipped with a warning while valid documents continue', () => {
     const db = new FakeDatabase(tablesWithDocs());
-    // sheet_doc2 intentionally absent from the map: fakeSpreadsheets' getSheetInfo returns []
-    // for an unknown sheetId, which SheetByIdStrategy turns into a NO_SHEETS_FOUND SourceError —
-    // simulating a LOG_DOCS entry pointing at a non-spreadsheet/inaccessible Drive file.
-    const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
+    const spreadsheets = fakeSpreadsheets({
+      sheet_doc1: [['NOME'], ['Verdi']],
+      sheet_doc2: [['NOME'], ['Neri']]
+    });
     const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const Strategy = createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheets
+      spreadsheets,
+      fakeDocumentMetadata({
+        sheet_doc1: { id: 'sheet_doc1', mimeType: 'application/vnd.google-apps.spreadsheet' },
+        sheet_doc2: { id: 'sheet_doc2', mimeType: 'application/pdf' }
+      })
     );
-    // Both sheet_doc1 (5A) and sheet_doc2 (3B) match idGen CD_GRIGLIE.
     const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' });
     expect(rows).toEqual([{ NOME: 'Verdi', _CLASSE: '5A' }]);
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('sheet_doc2'));
     warnSpy.mockRestore();
+  });
+
+  test('a strict Drive metadata failure propagates instead of being treated as a non-spreadsheet file', () => {
+    const db = new FakeDatabase(tablesWithDocs());
+    const driveError = new Error('Drive quota exceeded');
+    const getFiles = jest.fn(() => {
+      throw driveError;
+    });
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
+      fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']], sheet_doc2: [['NOME'], ['Neri']] }),
+      { getFiles } as unknown as DriveService
+    );
+
+    expect(() => new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' })).toThrow('Drive quota exceeded');
+    expect(getFiles).toHaveBeenCalledWith('sheet_doc1', { fields: 'id,mimeType', strict: true });
+  });
+
+  test('a spreadsheet read quota error propagates instead of being skipped', () => {
+    const db = new FakeDatabase(tablesWithDocs());
+    const spreadsheets = fakeSpreadsheets({
+      sheet_doc1: [['NOME'], ['Verdi']],
+      sheet_doc2: [['NOME'], ['Neri']]
+    });
+    jest.spyOn(spreadsheets, 'getRanges').mockImplementation(() => {
+      throw new Error('Spreadsheet quota exceeded');
+    });
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
+      spreadsheets,
+      fakeDocumentMetadata({
+        sheet_doc1: { id: 'sheet_doc1', mimeType: 'application/vnd.google-apps.spreadsheet' },
+        sheet_doc2: { id: 'sheet_doc2', mimeType: 'application/vnd.google-apps.spreadsheet' }
+      })
+    );
+
+    expect(() => new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' })).toThrow(
+      'Spreadsheet quota exceeded'
+    );
   });
 });

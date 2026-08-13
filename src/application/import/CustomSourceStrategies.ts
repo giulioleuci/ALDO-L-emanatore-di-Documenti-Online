@@ -77,22 +77,14 @@ export function createCercaCartelleClasseStrategy(
 /**
  * CERCA_DOCUMENTI (12 §3): searches `LOG_DOCS` for records matching
  * `config.idGen` (required) and the optional `config.tipo`/`config.stato`
- * filters, reads every row from each matching document (assumed to be a
- * Google Sheet) and tags each with `_CLASSE` from the log record's CLASSI.
- *
- * Each matching document is read independently: a document that fails to
- * read as a sheet (e.g. its LOG_DOCS entry points at a non-spreadsheet Drive
- * file, or the file is otherwise inaccessible) simply contributes nothing
- * and is skipped — not an error — the same fail-soft contract
- * `createCercaCartelleClasseStrategy` already applies to a class with no
- * matching folder. Without this per-document isolation, `SourceStrategy
- * .extract()` (GasDataImporter) would let one bad document abort extraction
- * for every document in the batch, since it wraps the *entire*
- * `_extractData()` call in a single try/catch.
+ * filters. It preflights each document with strict Drive metadata: confirmed
+ * non-spreadsheets are skipped with a warning; metadata and spreadsheet-read
+ * failures propagate. Spreadsheet rows retain `_CLASSE` from LOG_DOCS.CLASSI.
  */
 export function createCercaDocumentiStrategy(
   logDocs: ILogDocumentoRepository,
-  sheets: SpreadsheetService
+  sheets: SpreadsheetService,
+  drive: DriveService
 ): new (logger?: LoggerService) => SourceStrategy {
   return class CercaDocumentiStrategy extends SourceStrategy {
     protected _extractData(config: Record<string, unknown>): Record<string, unknown>[] {
@@ -116,16 +108,15 @@ export function createCercaDocumentiStrategy(
       const out: Record<string, unknown>[] = [];
       for (const doc of documenti) {
         const classe = doc.getClassi()[0] ?? '';
-        let rows: Record<string, unknown>[];
-        try {
-          rows = readSheetRows(this.logger, sheets, doc.id ?? '', readOptions);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+        const documentId = doc.id ?? '';
+        const metadata = drive.getFiles(documentId, { fields: 'id,mimeType', strict: true });
+        if (metadata.mimeType !== SPREADSHEET_MIME) {
           this.logger.warn(
-            `CERCA_DOCUMENTI: documento ${doc.id ?? '(id mancante)'} non leggibile come foglio, saltato (${message})`
+            `CERCA_DOCUMENTI: documento ${documentId || '(id mancante)'} non e un foglio, saltato`
           );
           continue;
         }
+        const rows = readSheetRows(this.logger, sheets, documentId, readOptions);
         for (const row of rows) {
           out.push({ ...row, _CLASSE: classe });
         }

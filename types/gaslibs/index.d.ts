@@ -407,10 +407,11 @@ declare global {
       options?: Record<string, unknown>
     ): unknown;
     // DriveMetadataService
+    getFiles(fileIds: string, options?: { fields?: string; strict?: boolean }): DriveFileMetadata;
     getFiles(
-      fileIds: string | string[],
-      options?: { fields?: string }
-    ): DriveFileMetadata | Record<string, DriveFileMetadata | null>;
+      fileIds: string[],
+      options?: { fields?: string; strict?: boolean }
+    ): Record<string, DriveFileMetadata | null>;
     searchFiles(
       query: string,
       options?: { maxResults?: number; orderBy?: string }

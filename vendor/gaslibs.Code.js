@@ -16528,6 +16528,7 @@ class DriveMetadataService {
 
 
 
+
   getFiles(fileIds, options = {}) {
     const isSingleId = !Array.isArray(fileIds);
     const idsArray = isSingleId ? [fileIds] : fileIds;
@@ -16565,6 +16566,9 @@ class DriveMetadataService {
         const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'get');
         this._cache.put(cacheKey, JSON.stringify(fileMetadata), this._cacheExpirationTime);
       } catch (error) {
+        if (options.strict === true) {
+          throw error;
+        }
         cacheResults[fileId] = null;
         this._logger.warn(`Failed to get file ${fileId}: ${error.message}`);
       }

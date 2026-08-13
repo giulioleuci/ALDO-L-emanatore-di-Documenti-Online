@@ -494,7 +494,8 @@ export function initAldo(
     'CERCA_DOCUMENTI',
     createCercaDocumentiStrategy(
       new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheetService
+      spreadsheetService,
+      driveService
     )
   );
 

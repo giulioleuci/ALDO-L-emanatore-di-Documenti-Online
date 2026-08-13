@@ -1,7 +1,7 @@
 # Design: ristrutturazione degli online test (OnlineTests.gs + EntryPointOnlineTests)
 
 Date: 2026-08-10
-Status: approved (pending user review of this doc)
+Status: offline implemented; GAS validation pending user-provided console output.
 
 ## Obiettivo
 

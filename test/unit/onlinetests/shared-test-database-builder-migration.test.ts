@@ -199,6 +199,32 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   expect(classe4A['INTERPRET.CHITARRA']).toBe(e2eDocenteEmail(5));
   expect(classe4A['INTERPRET.CHITARRA.itp']).toBe(e2eDocenteEmail(11));
   expect(classe4A['INTERPRET.FLAUTO']).toBe(e2eDocenteEmail(6));
+  expect(classe4A[COL_CLASSI.STORICO]).toBe('3A,2A');
+
+  const dottedHistory = [
+    {
+      sheet: sheets.get(priorNames[0]!)!,
+      classe: '3A',
+      main: e2eDocenteEmail(5),
+      itp: e2eDocenteEmail(11)
+    },
+    {
+      sheet: sheets.get(priorNames[1]!)!,
+      classe: '2A',
+      main: e2eDocenteEmail(12),
+      itp: e2eDocenteEmail(13)
+    }
+  ];
+  for (const expected of dottedHistory) {
+    expect(
+      expected.sheet.rows[TABLE.CLASSI].find((row) => row[COL_CLASSI.ID] === expected.classe)
+    ).toEqual(
+      expect.objectContaining({
+        'INTERPRET.CHITARRA': expected.main,
+        'INTERPRET.CHITARRA.itp': expected.itp
+      })
+    );
+  }
 });
 
 test('builds dedicated cache-isolation fixture with a current master whose database lacks 1A', () => {

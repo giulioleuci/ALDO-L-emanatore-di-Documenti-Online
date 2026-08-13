@@ -497,11 +497,13 @@ export class SharedTestDatabaseBuilder {
         // Prior-year name (StoricoClassiService.perClasse, `01_SCHEMA_DATABASE.md`
         // CLASSI.STORICO) — 1A is an entry class with no 2025-2026 identity.
         [COL_CLASSI.STORICO]:
-          layout.id === CLASSE_A
-            ? ''
-            : layout.id === CLASSE_C_PARENT
-              ? '2C,1C'
-              : classePrecedente(layout.id)
+          layout.id === '4A'
+            ? '3A,2A'
+            : layout.id === CLASSE_A
+              ? ''
+              : layout.id === CLASSE_C_PARENT
+                ? '2C,1C'
+                : classePrecedente(layout.id)
       };
       const materie = MATERIE_PER_INDIRIZZO[indirizzo as keyof typeof MATERIE_PER_INDIRIZZO];
       materie.forEach((sigla, materiaIndex) => {

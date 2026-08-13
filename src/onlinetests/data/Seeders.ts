@@ -109,6 +109,9 @@ export function seedAnniPrecedenti(
 /** Seeds every table read by the historical CDU providers for one school year. */
 export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
   const classe = anno === ANNI_PRECEDENTI[0] ? '2C' : '1C';
+  const dottedClasse = anno === ANNI_PRECEDENTI[0] ? '3A' : '2A';
+  const dottedMain = anno === ANNI_PRECEDENTI[0] ? 5 : 12;
+  const dottedItp = anno === ANNI_PRECEDENTI[0] ? 11 : 13;
   const alunno = e2eAlunnoEmail(138);
   const ritirato = e2eAlunnoEmail(139);
   const docente = `docente.storico.${anno.replace('-', '.')}@onlinetest.aldo.local`;
@@ -130,6 +133,22 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     GST: e2eDocenteEmail(4),
     INF: e2eDocenteEmail(4),
     'INF.itp': anno === ANNI_PRECEDENTI[0] ? e2eDocenteEmail(11) : ''
+  });
+  prior.appendRow(TABLE.CLASSI, {
+    [COL_CLASSI.ID]: dottedClasse,
+    [COL_CLASSI.ANNO]: Number(dottedClasse.charAt(0)),
+    [COL_CLASSI.INDIRIZZO]: 'IND_CLASSICO',
+    [COL_CLASSI.ARTICOLAZIONE]: '',
+    [COL_CLASSI.RUOLI]: '',
+    [COL_CLASSI.ATTIVA]: true,
+    [COL_CLASSI.COORD]: e2eDocenteEmail(dottedMain),
+    [COL_CLASSI.IRC]: '',
+    [COL_CLASSI.ALT]: '',
+    [COL_CLASSI.SEZ]: 'A',
+    [COL_CLASSI.TERMINALE]: false,
+    [COL_CLASSI.STORICO]: '',
+    'INTERPRET.CHITARRA': e2eDocenteEmail(dottedMain),
+    'INTERPRET.CHITARRA.itp': e2eDocenteEmail(dottedItp)
   });
   prior.appendRow(TABLE.ALUNNI, {
     [COL_ALUNNI.EMAIL]: alunno,
@@ -167,11 +186,14 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_DOCENTI.DIPART]: 'DIPART_STORICO',
     [COL_DOCENTI.ITP]: false
   });
-  for (const [index, isItp] of [
+  const historicalTeachers = new Map<number, boolean>([
     [1, false],
     [4, false],
-    ...(anno === ANNI_PRECEDENTI[0] ? ([[11, true]] as Array<[number, boolean]>) : [])
-  ] as Array<[number, boolean]>) {
+    [dottedMain, false],
+    [dottedItp, true]
+  ]);
+  if (anno === ANNI_PRECEDENTI[0]) historicalTeachers.set(11, true);
+  for (const [index, isItp] of historicalTeachers) {
     prior.appendRow(TABLE.DOCENTI, {
       [COL_DOCENTI.EMAIL]: e2eDocenteEmail(index),
       [COL_DOCENTI.COGNOME]: `Continuita${index}`,
@@ -193,6 +215,19 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_MATERIE.IS_RELIGIONE_ALT]: false,
     [COL_MATERIE.PRINCIPALE]: '',
     [COL_MATERIE.SPECIFICITA]: ''
+  });
+  prior.appendRow(TABLE.MATERIE, {
+    [COL_MATERIE.ID]: 'INTERPRET.CHITARRA',
+    [COL_MATERIE.NOME]: '',
+    [COL_MATERIE.SINTESI]: 'Interpretazione (Chitarra)',
+    [COL_MATERIE.COLORE_1]: '#1565C0',
+    [COL_MATERIE.COLORE_2]: '#90CAF9',
+    [COL_MATERIE.SIMBOLO]: 'I',
+    [COL_MATERIE.ESAME_CFG]: '',
+    [COL_MATERIE.EVOLUZIONE]: '',
+    [COL_MATERIE.IS_RELIGIONE_ALT]: false,
+    [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione',
+    [COL_MATERIE.SPECIFICITA]: 'Chitarra'
   });
   prior.appendRow(TABLE.MATERIE, {
     [COL_MATERIE.ID]: 'STO',

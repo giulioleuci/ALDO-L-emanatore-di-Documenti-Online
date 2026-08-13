@@ -294,6 +294,11 @@ export function registerItpDottedChecks(
       const continuitaInf = inf?.continuita;
       const continuitaMat = mat?.continuita;
       const infYears = continuitaInf?.docentiAnniPrecedenti ?? [];
+      const dotted = classCdu(contextBuilder, FOCAL_CLASS).focus.classe?.materie?.find(
+        (materia) => materia.sigla === DOTTED_ID
+      );
+      const dottedContinuity = dotted?.continuita;
+      const dottedYears = dottedContinuity?.docentiAnniPrecedenti ?? [];
       const matHasItpKeys =
         continuitaMat !== undefined &&
         ('continuitaUltimiDueAnniItp' in continuitaMat ||
@@ -307,6 +312,15 @@ export function registerItpDottedChecks(
         continuitaInf.continuitaUltimiTreAnniItp !== false ||
         infYears[0]?.itp?.email !== e2eDocenteEmail(11) ||
         infYears[1]?.itp !== null ||
+        dotted?.hasItp !== true ||
+        dottedContinuity?.continuitaUltimiDueAnni !== true ||
+        dottedContinuity.continuitaUltimiTreAnni !== false ||
+        dottedContinuity.continuitaUltimiDueAnniItp !== true ||
+        dottedContinuity.continuitaUltimiTreAnniItp !== false ||
+        dottedYears[0]?.titolare?.email !== e2eDocenteEmail(5) ||
+        dottedYears[0]?.itp?.email !== e2eDocenteEmail(11) ||
+        dottedYears[1]?.titolare?.email !== e2eDocenteEmail(12) ||
+        dottedYears[1]?.itp?.email !== e2eDocenteEmail(13) ||
         mat?.hasItp !== false ||
         matHasItpKeys
       ) {

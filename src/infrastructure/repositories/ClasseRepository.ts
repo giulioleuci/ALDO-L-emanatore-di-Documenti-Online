@@ -163,13 +163,11 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     );
   }
 
-  /** All teachers of the class council: every main + itp column, deduped, sorted by surname. */
+  /** All teachers of the class council across base and specifica slots, deduped and sorted. */
   getAllDocentiCDC(classe: Classe): Docente[] {
-    const row = this.rowOf(classe);
     const emails = new Set<string>();
-    for (const cols of this.materieColumns.values()) {
-      for (const e of this.csvEmails(row[cols.main])) emails.add(e);
-      for (const e of this.csvEmails(row[cols.itp])) emails.add(e);
+    for (const slot of this.getTeachingSlots(classe)) {
+      for (const email of slot.actorEmails) emails.add(email);
     }
     return this.loadDocentiFromEmails(emails).sort((a, b) => a.cognome.localeCompare(b.cognome));
   }
@@ -396,28 +394,28 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     classe: Classe,
     docenteEmail: string
   ): Array<{ sigla: string; isItp: boolean }> {
-    const row = this.rowOf(classe);
     const out: Array<{ sigla: string; isItp: boolean }> = [];
-    for (const [sigla, cols] of this.materieColumns) {
-      if (this.csvEmails(row[cols.main]).includes(docenteEmail)) out.push({ sigla, isItp: false });
-      else if (this.csvEmails(row[cols.itp]).includes(docenteEmail))
-        out.push({ sigla, isItp: true });
+    const indexBySigla = new Map<string, number>();
+    for (const slot of this.getTeachingSlots(classe)) {
+      if (!slot.actorEmails.includes(docenteEmail)) continue;
+      const sigla =
+        slot.specifica === null ? slot.materia.value : `${slot.materia.value}.${slot.specifica}`;
+      // Preserve legacy role precedence: MAIN precedes base ITP, and a
+      // specifica owner precedes its matching specifica ITP for the same actor.
+      const existingIndex = indexBySigla.get(sigla);
+      if (existingIndex === undefined) {
+        indexBySigla.set(sigla, out.length);
+        out.push({ sigla, isItp: slot.kind === 'ITP' });
+      } else if (slot.kind !== 'ITP') {
+        out[existingIndex] = { sigla, isItp: false };
+      }
     }
     return out;
   }
 
   /** First subject (sigla) the teacher holds in this class (main or itp column), or null. */
   getMateriaDocente(classe: Classe, docenteEmail: string): string | null {
-    const row = this.rowOf(classe);
-    for (const [sigla, cols] of this.materieColumns) {
-      if (
-        this.csvEmails(row[cols.main]).includes(docenteEmail) ||
-        this.csvEmails(row[cols.itp]).includes(docenteEmail)
-      ) {
-        return sigla;
-      }
-    }
-    return null;
+    return this.getMaterieDelDocente(classe, docenteEmail)[0]?.sigla ?? null;
   }
 
   private emailSet(docenti: Docente[]): Set<string> {

@@ -116,6 +116,61 @@ test('getITPPerMateria resolves only the dotted specifica ITP column', () => {
   ).toEqual(['itp@school.test']);
 });
 
+function repositoryWithDottedItp(): { repository: ClasseRepository; classe: Classe } {
+  const tables = teachingSlotFixtureTables();
+  const classe5A = tables.CLASSI!.find((row) => row.ID === '5A')!;
+  classe5A['INTERPRET.CHITARRA.itp'] = 'dotted-itp@school.test';
+  tables.DOCENTI!.push({
+    EMAIL: 'dotted-itp@school.test',
+    COGNOME: 'DOTTEDITP',
+    NOME: 'TEACHER',
+    GENERE: 'F',
+    DIPART: 'SCIENTIFICO_DIP',
+    ITP: true
+  });
+  const repository = new ClasseRepository(new FakeDatabase(tables));
+  return { repository, classe: repository.findById(ClasseId.of('5A'))! };
+}
+
+test('getAllDocentiCDC includes dotted subject teachers and their specific ITP', () => {
+  const { repository, classe } = repositoryWithDottedItp();
+
+  expect(repository.getAllDocentiCDC(classe).map((docente) => docente.id)).toEqual(
+    expect.arrayContaining(['guitar@school.test', 'dotted-itp@school.test'])
+  );
+});
+
+test('getMaterieDelDocente preserves composite identity and role for dotted subject slots', () => {
+  const { repository, classe } = repositoryWithDottedItp();
+
+  expect(repository.getMaterieDelDocente(classe, 'guitar@school.test')).toEqual([
+    { sigla: 'INTERPRET.CHITARRA', isItp: false }
+  ]);
+  expect(repository.getMaterieDelDocente(classe, 'dotted-itp@school.test')).toEqual([
+    { sigla: 'INTERPRET.CHITARRA', isItp: true }
+  ]);
+});
+
+test('getMateriaDocente returns the composite identity for a dotted specifica ITP', () => {
+  const { repository, classe } = repositoryWithDottedItp();
+
+  expect(repository.getMateriaDocente(classe, 'dotted-itp@school.test')).toBe('INTERPRET.CHITARRA');
+});
+
+test('getMaterieDelDocente preserves non-ITP precedence when one actor owns both dotted roles', () => {
+  const tables = teachingSlotFixtureTables();
+  tables.CLASSI = tables.CLASSI!.map((row) =>
+    row.ID === '5A' ? { 'INTERPRET.CHITARRA.itp': 'guitar@school.test', ...row } : row
+  );
+  const repository = new ClasseRepository(new FakeDatabase(tables));
+  const classe = repository.findById(ClasseId.of('5A'))!;
+
+  expect(repository.getMaterieDelDocente(classe, 'guitar@school.test')).toContainEqual({
+    sigla: 'INTERPRET.CHITARRA',
+    isItp: false
+  });
+});
+
 test('getTeachingSlots() still resolves a specifica column when the family has no bare MATERIE row', () => {
   const tables = teachingSlotFixtureTables();
   tables.MATERIE = (tables.MATERIE ?? []).filter((row) => row.ID !== 'INTERPRET');

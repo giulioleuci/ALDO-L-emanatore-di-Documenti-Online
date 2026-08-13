@@ -314,6 +314,7 @@ test('registerImportCercaDocumentiChecks generates 2 real sheets, appends the ex
   const runner = new ImmediateRunner();
   registerImportCercaDocumentiChecks(runner as never, container, {
     sampleSpreadsheetUrl: 'https://example.test/sample',
+    staticAttachmentFileId: 'attachment_doc_1',
     testMode: true
   } as never);
 
@@ -328,23 +329,28 @@ test('registerImportCercaDocumentiChecks generates 2 real sheets, appends the ex
     (row) => row[COL_LOG_DOCS.TIPO] === 'E2E_IMPORT_SOURCE_ALTRO_TIPO'
   );
   expect(excludedRows).toHaveLength(1);
+  const nonSheetRows = logDocsRows.filter((row) => row[COL_LOG_DOCS.ID] === 'attachment_doc_1');
+  expect(nonSheetRows).toHaveLength(1);
+  expect(nonSheetRows[0]?.[COL_LOG_DOCS.TIPO]).toBe('E2E_IMPORT_SOURCE');
   expect(jest.mocked(avviaImportazioneDataDriven)).toHaveBeenCalledWith(
     container,
     CONF_IMP_CERCA_DOCUMENTI
   );
 
-  // Rerun: DUPLICAZIONE=NEGATA reports SKIPPED (fileId=null); the excluded row's insert must
-  // stay idempotent (no duplicate appended) since it is looked up by ID before inserting.
+  // Rerun: DUPLICAZIONE=NEGATA reports SKIPPED (fileId=null); both manually-appended rows must
+  // stay idempotent (no duplicates appended) since they are looked up by ID before inserting.
   generateForClasse.mockImplementation(() => ({ fileId: null, status: 'SKIPPED' }));
   const runner2 = new ImmediateRunner();
   registerImportCercaDocumentiChecks(runner2 as never, container, {
     sampleSpreadsheetUrl: 'https://example.test/sample',
+    staticAttachmentFileId: 'attachment_doc_1',
     testMode: true
   } as never);
   expect(runner2.checks[0]?.error).toBeUndefined();
   expect(
     logDocsRows.filter((row) => row[COL_LOG_DOCS.TIPO] === 'E2E_IMPORT_SOURCE_ALTRO_TIPO')
   ).toHaveLength(1);
+  expect(logDocsRows.filter((row) => row[COL_LOG_DOCS.ID] === 'attachment_doc_1')).toHaveLength(1);
 });
 
 test('registerImportCercaDocumentiChecks fails when the excluded-tipo document leaks into the imported rows', () => {
@@ -370,11 +376,43 @@ test('registerImportCercaDocumentiChecks fails when the excluded-tipo document l
   const runner = new ImmediateRunner();
   registerImportCercaDocumentiChecks(runner as never, container, {
     sampleSpreadsheetUrl: 'https://example.test/sample',
+    staticAttachmentFileId: 'attachment_doc_1',
     testMode: true
   } as never);
 
   expect(runner.checks).toHaveLength(1);
   expect(runner.checks[0]?.error?.message).toMatch(/escluso per TIPO/);
+});
+
+test('registerImportCercaDocumentiChecks fails when the non-sheet document leaks into the imported rows', () => {
+  const aslRows: Array<Record<string, unknown>> = [];
+  const logDocsRows: Array<Record<string, unknown>> = [];
+  const { container } = cercaDocumentiContainer(aslRows, logDocsRows);
+
+  jest.mocked(avviaImportazioneDataDriven).mockImplementation((_c, id) => {
+    if (id !== CONF_IMP_CERCA_DOCUMENTI) throw new Error(`unexpected import ${id}`);
+    aslRows.splice(
+      0,
+      aslRows.length,
+      ...CERCA_DOCUMENTI_STUDENTS.map(([studente, ore]) => ({
+        [COL_ASL.STUDENTE]: studente,
+        [COL_ASL.ORE]: ore,
+        _CLASSE: '2A'
+      })),
+      { [COL_ASL.STUDENTE]: 'leaked@onlinetest.aldo.local', [COL_ASL.ORE]: 1, _CLASSE: 'ZZ_NON_FOGLIO' }
+    );
+    return { inseriti: 5, aggiornati: 0, saltati: 0, ghost: 0, errori: [] };
+  });
+
+  const runner = new ImmediateRunner();
+  registerImportCercaDocumentiChecks(runner as never, container, {
+    sampleSpreadsheetUrl: 'https://example.test/sample',
+    staticAttachmentFileId: 'attachment_doc_1',
+    testMode: true
+  } as never);
+
+  expect(runner.checks).toHaveLength(1);
+  expect(runner.checks[0]?.error?.message).toMatch(/documento non-foglio/);
 });
 
 function chunkedContainer(aslRows: Array<Record<string, unknown>>): {

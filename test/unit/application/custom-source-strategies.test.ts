@@ -313,4 +313,22 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
     new Strategy(logger).extract({ idGen: 'CD_RANGE', tabName: 'Sheet1', range: 'A1:B2' });
     expect(getRangesSpy).toHaveBeenCalledWith('sheet_doc4', 'Sheet1!A1:B2');
   });
+
+  test('a document that fails to read as a sheet is skipped, not fatal — the rest of the batch still comes through', () => {
+    const db = new FakeDatabase(tablesWithDocs());
+    // sheet_doc2 intentionally absent from the map: fakeSpreadsheets' getSheetInfo returns []
+    // for an unknown sheetId, which SheetByIdStrategy turns into a NO_SHEETS_FOUND SourceError —
+    // simulating a LOG_DOCS entry pointing at a non-spreadsheet/inaccessible Drive file.
+    const spreadsheets = fakeSpreadsheets({ sheet_doc1: [['NOME'], ['Verdi']] });
+    const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const Strategy = createCercaDocumentiStrategy(
+      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
+      spreadsheets
+    );
+    // Both sheet_doc1 (5A) and sheet_doc2 (3B) match idGen CD_GRIGLIE.
+    const rows = new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' });
+    expect(rows).toEqual([{ NOME: 'Verdi', _CLASSE: '5A' }]);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('sheet_doc2'));
+    warnSpy.mockRestore();
+  });
 });

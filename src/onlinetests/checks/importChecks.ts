@@ -501,6 +501,8 @@ const CERCA_DOCUMENTI_CLASSE_B = '2A';
 const CERCA_DOCUMENTI_EXCLUDED_CLASSE = 'ZZ_ESCLUSA_TIPO';
 const CERCA_DOCUMENTI_EXCLUDED_TIPO = 'E2E_IMPORT_SOURCE_ALTRO_TIPO';
 const CERCA_DOCUMENTI_EXCLUDED_DOC_ID = 'E2E_CERCA_DOCUMENTI_ESCLUSO_TIPO';
+/** Sentinel `_CLASSE` for the manually-appended, same-idGen/same-tipo LOG_DOCS row pointing at a real non-sheet file. */
+const CERCA_DOCUMENTI_NON_SHEET_CLASSE = 'ZZ_NON_FOGLIO';
 /** Static content of `Seeders.ts#aslImportUpdates` (ref ASL_IMPORT_ROWS), reused identically by both generated sheets. */
 const ASL_IMPORT_SHEET_STUDENTS: Array<[string, number]> = [
   [e2eAlunnoEmail(43), 40],
@@ -517,30 +519,24 @@ const ASL_IMPORT_SHEET_STUDENTS: Array<[string, number]> = [
  * idempotent, no new file on a second launcher execution), then the real
  * `CONF_IMP_CERCA_DOCUMENTI` import against them.
  *
- * A third LOG_DOCS row with a mismatched `TIPO` is appended directly (not
- * via real generation — `Seeders.ts`-style direct `insert`, matched against
- * `find` first so a rerun does not fight the table's `ID` primary key) to
- * prove the strategy's `idGen`+`tipo` filter (`CustomSourceStrategies.ts`
- * `createCercaDocumentiStrategy`) excludes it before it is ever read as a
- * sheet — its sentinel `_CLASSE` must never appear in the imported ASL rows.
+ * Two more LOG_DOCS rows are appended directly (not via real generation —
+ * `Seeders.ts`-style direct `insert`, each matched against `find` first so a
+ * rerun does not fight the table's `ID` primary key), exercising the two
+ * distinct ways CERCA_DOCUMENTI excludes a document:
+ * - a mismatched `TIPO` (same `idGen`) — excluded by the strategy's
+ *   `idGen`+`tipo` filter (`CustomSourceStrategies.ts`
+ *   `createCercaDocumentiStrategy`) before the document is ever read;
+ * - a matching `idGen`/`TIPO` but pointing at a genuine non-spreadsheet
+ *   Drive file (`sample.staticAttachmentFileId`, a real provisioned Doc
+ *   template — no new Drive artifact needed) — this one *passes* the filter
+ *   and reaches `readSheetRows`, which now fails per-document
+ *   (`createCercaDocumentiStrategy`'s try/catch, added alongside this task)
+ *   and is skipped without aborting the rest of the batch.
  *
- * **Known gap, not covered here (traced, not guessed):** the brief also
- * asked for a same-idGen/same-tipo LOG_DOCS row pointing at a *non-sheet*
- * Drive file, expecting the strategy to "fail-soft" and skip only that
- * document. Tracing `createCercaDocumentiStrategy`'s per-document loop
- * (no `try`/`catch`) through `SourceStrategy.extract()` (GasDataImporter,
- * `SourceStrategy.js`) shows `extract()` wraps the *entire* `_extractData()`
- * call in one `try`/`catch` — any single document's read failure aborts
- * extraction for every document in the batch, not just the bad one; the
- * failing document is never isolated per-item. A real non-sheet artifact
- * would therefore make this whole check fail (zero rows imported), the
- * opposite of "excluded". Implementing that sub-case for real needs a
- * `CustomSourceStrategies.ts` change (wrap each `readSheetRows` call in its
- * own try/catch, log+skip on failure — mirroring
- * `createCercaCartelleClasseStrategy`'s existing "a class with no matching
- * folder contributes nothing, not an error" fail-soft precedent), which is
- * outside this task's file scope (`importChecks.ts`/`index.ts` only). Flagged
- * for the controller rather than faked here.
+ * Both sentinel `_CLASSE` values must never appear in the imported ASL rows,
+ * and the import must still succeed with the two eligible sheets' rows
+ * intact — proving both exclusion paths for real through the live
+ * `avviaImportazioneDataDriven` path, not a mock.
  */
 export function registerImportCercaDocumentiChecks(
   runner: TestRunner,
@@ -609,6 +605,31 @@ export function registerImportCercaDocumentiChecks(
         });
       }
 
+      // Matches idGen+tipo (passes the filter) but points at a real non-sheet Drive file —
+      // proves the per-document fail-soft skip, not just the tipo filter above.
+      if (
+        db
+          .table(TABLE.LOG_DOCS)
+          .find((row) => row[COL_LOG_DOCS.ID] === sample.staticAttachmentFileId) === null
+      ) {
+        db.table(TABLE.LOG_DOCS).insert({
+          [COL_LOG_DOCS.ID]: sample.staticAttachmentFileId,
+          [COL_LOG_DOCS.ID_GEN]: CONF_DOC_CERCA_DOCUMENTI_SOURCE,
+          [COL_LOG_DOCS.TIPO]: 'E2E_IMPORT_SOURCE',
+          [COL_LOG_DOCS.SOTTOTIPO]: '',
+          [COL_LOG_DOCS.NOME]: 'E2E CERCA_DOCUMENTI escluso per file non-foglio',
+          [COL_LOG_DOCS.STATO]: 'GENERATO',
+          [COL_LOG_DOCS.NOTIFICATO]: '',
+          [COL_LOG_DOCS.PATH]: '',
+          [COL_LOG_DOCS.LINK]: '',
+          [COL_LOG_DOCS.CLASSI]: CERCA_DOCUMENTI_NON_SHEET_CLASSE,
+          [COL_LOG_DOCS.UTENTI]: '',
+          [COL_LOG_DOCS.MATERIE]: '',
+          [COL_LOG_DOCS.DATA_CREAZ]: '2026-08-10T09:00:00.000Z',
+          [COL_LOG_DOCS.ID_ORIG]: ''
+        });
+      }
+
       const result = avviaImportazioneDataDriven(container, CONF_IMP_CERCA_DOCUMENTI);
       assertSuccessful(result, 'CERCA_DOCUMENTI');
       if (result.inseriti + result.aggiornati === 0) {
@@ -630,6 +651,11 @@ export function registerImportCercaDocumentiChecks(
       if (rows.some((row) => stringValue(row['_CLASSE']) === CERCA_DOCUMENTI_EXCLUDED_CLASSE)) {
         throw new ValidationError(
           'CERCA_DOCUMENTI: trovata una riga con _CLASSE del documento escluso per TIPO — il filtro idGen/tipo non lo ha escluso'
+        );
+      }
+      if (rows.some((row) => stringValue(row['_CLASSE']) === CERCA_DOCUMENTI_NON_SHEET_CLASSE)) {
+        throw new ValidationError(
+          'CERCA_DOCUMENTI: trovata una riga dal documento non-foglio — lo skip per-documento non ha funzionato'
         );
       }
     }

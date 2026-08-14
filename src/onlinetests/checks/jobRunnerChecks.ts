@@ -108,6 +108,11 @@ export function registerJobRunnerDocGenChecks(
       groupName('jobrunner.docGen', 'sospensione to_resume + trigger'),
       sample.sampleSpreadsheetUrl,
       () => {
+        // Fixed job name reused across every online-test run: without this,
+        // leftover ScriptProperties state from a prior interrupted run (job
+        // existed, so JobQueue.execute's first-run guard skips
+        // stateManager.saveType) leaves resume() unable to determine the job type.
+        jobRunner.resetJob(jobName);
         const result = avviaGenerazioneDataDriven(
           container,
           CONF_DOC_JOBRUNNER,
@@ -199,6 +204,9 @@ export function registerJobRunnerEmailChecks(
       groupName('jobrunner.email', 'sospensione to_resume + trigger'),
       sample.sampleSpreadsheetUrl,
       () => {
+        // See registerJobRunnerDocGenChecks: clear stale leftover state before
+        // starting, or resume() can't determine the job type.
+        jobRunner.resetJob(jobName);
         const result = avviaInvioNotificheDataDriven(
           container,
           CONF_MAIL_JOBRUNNER,

@@ -158,10 +158,18 @@ export class AldoTeachingResolutionConfig {
       ),
       'VAR'
     );
+    // Self-referential SUPPLENZE rows (TITOLARE === SUPPLENTE) are a no-op
+    // substitution in the data — RoleResolutionLib's Delegation rejects
+    // principal === delegate outright, so they're dropped here rather than
+    // handed to a general-purpose library that has no business tolerating
+    // degenerate school-data entry.
+    const supplenzeRows = database.tables[TABLE.SUPPLENZE]!.getAllRows().filter(
+      (row) => stringColumn(row, COL_SUPPLENZE.TITOLARE) !== stringColumn(row, COL_SUPPLENZE.SUPPLENTE)
+    );
     this.delegationRows = this.withAdapterIds(
       expandRows(
         this.classi,
-        database.tables[TABLE.SUPPLENZE]!.getAllRows(),
+        supplenzeRows,
         COL_SUPPLENZE.TITOLARE,
         COL_SUPPLENZE.CLASSI,
         COL_SUPPLENZE.MATERIE

@@ -226,7 +226,9 @@ describe('JobRunner online checks', () => {
   });
 
   it('records all three doc checks and cancels a still-suspended job when reset itself fails', () => {
-    docRunner.resetJob.mockImplementation(() => {
+    // The first check now resets stale state before starting (registerJobRunnerDocGenChecks) —
+    // that call must succeed; only the deliberate reset in the third check should fail.
+    docRunner.resetJob.mockImplementationOnce(() => undefined).mockImplementation(() => {
       throw new Error('reset unavailable');
     });
     jest.mocked(riprendiJobSospeso).mockImplementation(() => {

@@ -118,9 +118,9 @@ export interface FullOnlineTestRegistrations {
   permessi: RegisterSharedChecks;
 }
 
-/** Injectable seams beyond provisioning, kept separate from the real-GAS defaults. */
+/** Injectable seams beyond reading the persisted dataset, kept separate from the real-GAS defaults. */
 export interface FullOnlineTestDeps extends E2eTestDeps {
-  provision: (overrides: Partial<E2eTestDeps>, force: boolean) => SharedTestDatabase;
+  readSample: (properties: IPropertiesFacade) => SharedTestDatabase;
   registrations: Partial<FullOnlineTestRegistrations>;
 }
 
@@ -278,23 +278,52 @@ export function executeCreaDatiMockDrive(
 }
 
 /**
- * Builds one freshly-provisioned E2E dataset and registers scenario groups in their stable
- * execution order. Injection keeps the composition testable without touching real GAS services.
+ * Reads the E2E dataset provisioned by a prior `creaDatiMockDrive` run and registers scenario
+ * groups in their stable execution order. Never re-provisions: `creaDatiMockDrive` is a long,
+ * expensive step kept as its own launcher precisely so the full suite can be re-run cheaply
+ * against the same fixture. Injection keeps the composition testable without touching real GAS
+ * services.
  */
+function readPersistedFullOnlineTestSample(properties: IPropertiesFacade): SharedTestDatabase {
+  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
+  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
+    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
+  }
+  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  if (master.historicalSpreadsheetIds.length < 2) {
+    throw new ConfigurationError(
+      'Dataset online incompleto: servono due database storici; riesegui creaDatiMockDrive.'
+    );
+  }
+  return {
+    masterSpreadsheetId,
+    sampleSpreadsheetId: master.idSpreadsheet,
+    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
+    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
+    priorSampleSpreadsheetId: master.historicalSpreadsheetIds[0]!,
+    priorSampleSpreadsheetUrl: master.historicalSpreadsheetUrls[0]!,
+    priorSampleSpreadsheetId2: master.historicalSpreadsheetIds[1]!,
+    priorSampleSpreadsheetUrl2: master.historicalSpreadsheetUrls[1]!,
+    logFoldFolderUrl: '',
+    jobRunnerDocConfigId: CONF_DOC_JOBRUNNER,
+    masterTestMode: master.testMode,
+    staticAttachmentFileId: ''
+  };
+}
+
 export function executeFullOnlineTests(
   overrides: Partial<FullOnlineTestDeps> = {}
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const provision = overrides.provision ?? executeCreaDatiMockDrive;
-  // A full suite must never inherit an old dataset: it is both a freshness and isolation boundary.
-  const sample = provision(overrides, true);
+  const readSample = overrides.readSample ?? readPersistedFullOnlineTestSample;
+  const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
   const clock = overrides.clock ?? ((): Date => new Date());
   const registrations = { ...futureScenarioRegistrations, ...overrides.registrations };
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties);
+  const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);

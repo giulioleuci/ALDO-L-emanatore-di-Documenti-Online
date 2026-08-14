@@ -1,6 +1,7 @@
 import type { IDatabase, IReadableTable, Row, IndexedLookup } from './Database';
 import { createSelect, type EqualityQueryBuilder } from './Database';
 import { TABLE, COL_CARENZE, COL_LOG_MAIL } from '../../config/schema';
+import { ConfigurationError } from '../../domain/errors/DomainError';
 
 /**
  * Adapter binding SheetDBLib's DatabaseService (L2) to ALDO's ports: the
@@ -54,18 +55,28 @@ class SheetTableAdapter implements IReadableTable {
   private readonly singlePk: string | undefined;
 
   constructor(
-    private readonly table: SheetTableService,
-    tableName: string
+    private readonly table: SheetTableService | undefined,
+    private readonly tableName: string
   ) {
     this.composite = COMPOSITE_PK[tableName];
     if (this.composite !== undefined) {
       const parts = this.composite;
-      this.table.defineVirtualColumn(VIRTUAL_PK, (row) => parts.map((c) => cell(row[c])).join(SEP));
-      this.table.setPrimaryKey(VIRTUAL_PK);
+      this.table?.defineVirtualColumn(VIRTUAL_PK, (row) => parts.map((c) => cell(row[c])).join(SEP));
+      this.table?.setPrimaryKey(VIRTUAL_PK);
     } else {
       this.singlePk = SINGLE_PK[tableName];
-      if (this.singlePk !== undefined) this.table.setPrimaryKey(this.singlePk);
+      if (this.singlePk !== undefined) this.table?.setPrimaryKey(this.singlePk);
     }
+  }
+
+  /** Throws with an actionable message instead of a raw "reading 'x' of undefined". */
+  private required(): SheetTableService {
+    if (this.table === undefined) {
+      throw new ConfigurationError(
+        `Tabella "${this.tableName}" non trovata nel foglio — impossibile scrivere.`
+      );
+    }
+    return this.table;
   }
 
   /** The library key value identifying `row` (composite synthetic or single column). */
@@ -76,13 +87,13 @@ class SheetTableAdapter implements IReadableTable {
 
   // --- IReadableTable (pipeline port) ---
   findAll(): Row[] {
-    return this.table.getAllRows().map(stripVirtual);
+    return this.table === undefined ? [] : this.table.getAllRows().map(stripVirtual);
   }
   find(predicate: (row: Row) => boolean): Row | null {
     return this.findAll().find(predicate) ?? null;
   }
   insert(row: Row): void {
-    this.table.insertRow(row);
+    this.required().insertRow(row);
   }
 
   // --- RepositoryDatabase seam (DomainRepositoryLib) ---
@@ -90,14 +101,15 @@ class SheetTableAdapter implements IReadableTable {
     return this.findAll();
   }
   getByPK(id: string): Row | null {
+    if (this.table === undefined) return null;
     const row = this.table.getByPK(id);
     return row === null ? null : stripVirtual(row);
   }
   insertRow(row: Row): Row {
-    return stripVirtual(this.table.insertRow(row));
+    return stripVirtual(this.required().insertRow(row));
   }
   updateRowById(id: string, row: Row): void {
-    this.table.updateRowById(id, row);
+    this.required().updateRowById(id, row);
   }
   /**
    * Composite-key write: replace the single row matching ALL `match` columns
@@ -107,17 +119,18 @@ class SheetTableAdapter implements IReadableTable {
    * row via `getByPK` in O(1) instead of a linear scan (ref REPORT_GLF.md A3).
    */
   updateRowWhere(match: Row, row: Row): void {
+    const table = this.required();
     const keys = Object.keys(match);
     const hit = this.isExactKeyMatch(keys)
-      ? (this.table.getByPK(this.keyOf(match)) ?? undefined)
-      : this.table.getAllRows().find((r) => keys.every((k) => String(r[k]) === String(match[k])));
+      ? (table.getByPK(this.keyOf(match)) ?? undefined)
+      : table.getAllRows().find((r) => keys.every((k) => String(r[k]) === String(match[k])));
     if (hit === undefined) {
-      this.table.insertRow(row);
+      table.insertRow(row);
       return;
     }
     const key =
       this.composite !== undefined ? cell(hit[VIRTUAL_PK]) : this.keyOf(stripVirtual(hit));
-    this.table.updateRowById(key, row);
+    table.updateRowById(key, row);
   }
 
   /** True when `matchKeys` is exactly this table's declared PK column set. */
@@ -127,13 +140,19 @@ class SheetTableAdapter implements IReadableTable {
     return declared.every((c) => matchKeys.includes(c));
   }
 
-  /** O(1) hot-lookup index on a physical column (ref REPORT_GLF.md A2). */
+  /**
+   * O(1) hot-lookup index on a physical column (ref REPORT_GLF.md A2). No-op
+   * when the underlying sheet doesn't exist (e.g. a historical/prior-year
+   * database predating this table) — findAll/getAllRows already degrade to
+   * empty for that case, so there's nothing to index.
+   */
   createIndex(columnName: string): void {
-    this.table.createIndex(columnName);
+    this.table?.createIndex(columnName);
   }
 
   /** Exact-match lookup via a previously built index; null if none exists for `columnName`. */
   indexedLookup(columnName: string, value: unknown): Row[] | null {
+    if (this.table === undefined) return null;
     const hits = this.table._indexedLookup(columnName, value);
     return hits === null ? null : hits.map(stripVirtual);
   }
@@ -169,7 +188,7 @@ export class SheetDbAdapter implements IDatabase {
   private adapterFor(name: string): SheetTableAdapter {
     let adapter = this.cache.get(name);
     if (adapter === undefined) {
-      adapter = new SheetTableAdapter(this.service.tables[name]!, name);
+      adapter = new SheetTableAdapter(this.service.tables[name], name);
       this.cache.set(name, adapter);
     }
     return adapter;

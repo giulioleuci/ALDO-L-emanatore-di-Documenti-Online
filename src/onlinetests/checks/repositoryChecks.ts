@@ -7,23 +7,28 @@ import type { ITeachingAssignmentResolver } from '../../application/ports/ITeach
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ValidationError } from '../../domain/errors/DomainError';
 import {
-  CLASSE_BASE,
-  CLASSE_PARTNER,
-  DOCENTE_1,
-  DOCENTE_2,
-  DOCENTE_3,
-  MATERIA_1,
-  ALUNNO_PARTNER_EMAIL
-} from '../SampleDatabaseBuilder';
-import {
   ASSIGNMENT_MATRIX_DATE_E2E,
   CLASSE_A,
   CLASSE_B,
   CLASSE_C,
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
-  e2eDocenteEmail
+  e2eDocenteEmail,
+  e2eAlunnoEmail
 } from '../data/SharedTestDatabaseBuilder';
+
+// The priority-chain scenario mirrors the retired SampleDatabaseBuilder's
+// docente1/2/3 case 1:1 — see SharedTestDatabaseBuilder.seedSupplenzeEVariazioni:
+// CLASSE_A/MAT, SUPPLENZE TITOLARE=docente1/SUPPLENTE=docente9 (2026-07-01..10),
+// VARIAZIONI_CATTEDRA TITOLARE=docente1/NUOVO_TITOLARE=docente10 (dal 2026-07-05).
+const CLASSE_BASE = CLASSE_A;
+const MATERIA_1 = 'MAT';
+const DOCENTE_1 = e2eDocenteEmail(1);
+const DOCENTE_2 = e2eDocenteEmail(9);
+const DOCENTE_3 = e2eDocenteEmail(10);
+// First student of the 3C-C (CLASSE_C_PARTNER) layout — see fixtures.ts CLASS_LAYOUTS.
+const CLASSE_PARTNER = CLASSE_C_PARTNER;
+const ALUNNO_PARTNER_EMAIL = e2eAlunnoEmail(49);
 
 interface AssignmentMatrixSample {
   sampleSpreadsheetUrl: string;

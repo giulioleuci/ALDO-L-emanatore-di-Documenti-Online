@@ -109,6 +109,9 @@ export function createCercaDocumentiStrategy(
       for (const doc of documenti) {
         const classe = doc.getClassi()[0] ?? '';
         const documentId = doc.id ?? '';
+        this.logger.debug(
+          `CERCA_DOCUMENTI: verifico documento ${documentId || '(id mancante)'} (idGen=${idGen}, tipo=${doc.tipo}, classe=${classe})`
+        );
         const metadata = drive.getFiles(documentId, { fields: 'id,mimeType', strict: true });
         if (metadata.mimeType !== SPREADSHEET_MIME) {
           this.logger.warn(

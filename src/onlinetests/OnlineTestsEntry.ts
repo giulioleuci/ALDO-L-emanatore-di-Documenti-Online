@@ -89,7 +89,7 @@ const gasGlobal = globalThis as typeof globalThis & {
 };
 
 gasGlobal.__ALDO_ONLINE_TESTS_LAUNCHERS__ = aldoOnlineTestsLaunchers;
-gasGlobal.creaDatiMockDrive = () => creaDatiMockDrive();
+gasGlobal.creaDatiMockDrive = creaDatiMockDrive;
 gasGlobal.testDocumentiStandard = testDocumentiStandard;
 gasGlobal.testDocumentiArticolati = testDocumentiArticolati;
 gasGlobal.testDocumentiTabelleImportate = testDocumentiTabelleImportate;

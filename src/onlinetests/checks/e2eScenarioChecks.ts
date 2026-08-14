@@ -1,5 +1,9 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import type { TestRunner } from '../report/OnlineTestReport';
+import {
+  skippedOutcome,
+  type OnlineTestSkippedOutcome,
+  type TestRunner
+} from '../report/OnlineTestReport';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type {
@@ -51,11 +55,26 @@ function emailDiagnostics(result: SendPatternResult): string {
   ].join(', ');
 }
 
+/**
+ * Verifies SHEET_CON_MATERIE_E_PERMESSI end to end: the sheet is generated, its
+ * dynamic headers are rendered, and each column is protected with its own editors.
+ *
+ * TEST_MODE caveat (see `docs/superpowers/plans/2026-08-03-best-effort-sheet-protections.md`):
+ * the shared fixture addresses everybody with `@onlinetest.aldo.local`, which is not a
+ * real Workspace domain, so the live Sheets API rejects every
+ * `addProtectedRange` whose editors are fixture teachers with
+ * `Invalid requests[0].addProtectedRange: Utente non valido: "…"`. `protectRanges`
+ * runs best-effort (`onError: 'continue'`), so generation still succeeds and no
+ * protection survives. That is an environment limit, not an ALDO defect: the check
+ * reports SKIPPED rather than passing silently or failing on Google's rejection.
+ * Outside TEST_MODE (real accounts) the assertions stay strict.
+ */
 export function verifyProtectedRangeScenario(
   documents: DocumentGenerationService,
   spreadsheets: SpreadsheetService,
   testMode: boolean
-): void {
+): void | OnlineTestSkippedOutcome {
+  const unverifiable: string[] = [];
   for (const classe of ALL_CLASSI_E2E) {
     const { fileId, status } = documents.generateForClasse(
       ClasseId.of(classe),
@@ -83,7 +102,11 @@ export function verifyProtectedRangeScenario(
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
     if (protections.length === 0) {
-      throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
+      if (!testMode) {
+        throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
+      }
+      unverifiable.push(classe);
+      continue;
     }
     for (const p of protections) {
       if ((p.editors.users ?? []).length === 0) {
@@ -92,6 +115,11 @@ export function verifyProtectedRangeScenario(
         );
       }
     }
+  }
+  if (unverifiable.length > 0) {
+    return skippedOutcome(
+      `Sheet permessi: nessun range protetto per ${unverifiable.join(', ')} — gli editor del fixture (@onlinetest.aldo.local) non sono account Google validi e l'API Sheets rifiuta addProtectedRange ("Utente non valido"). Sheet generato e intestazioni renderizzate verificati.`
+    );
   }
 }
 
@@ -124,6 +152,25 @@ export function registerE2eScenarioChecks(
       emailService = container.get<EmailNotificationService>('emailNotificationService');
     }
     return emailService;
+  };
+
+  /**
+   * `LOG_DOCS.ID` of an already-registered `CONF_DOC_PIANI` plan, or `null` when
+   * none exists. Used when `CheckDuplicates` SKIPs a generation because an
+   * earlier check in the same suite run already produced that exact plan.
+   */
+  const persistedPlanFileId = (studente: string, tipo: string): string | null => {
+    const row = db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .find(
+        (candidate) =>
+          candidate[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI &&
+          candidate[COL_LOG_DOCS.UTENTI] === studente &&
+          candidate[COL_LOG_DOCS.SOTTOTIPO] === tipo
+      );
+    const fileId = String(row?.[COL_LOG_DOCS.ID] ?? '').trim();
+    return fileId === '' ? null : fileId;
   };
 
   const assertNoAttachedFiles = (patternId: string, label: string): void => {
@@ -220,12 +267,19 @@ export function registerE2eScenarioChecks(
             tipo as TipoPiano,
             CONF_DOC_PIANI
           );
-          if (fileId === null) {
+          // `documenti.duplicazione::NEGATA` owns the same dedupe identity
+          // (PDP_BES_3C + PDP_BES + CONF_DOC_PIANI) and is registered earlier in
+          // `registerDocumentiChecks`, so it legitimately generates that plan
+          // first: CheckDuplicates then SKIPs this call. What this scenario
+          // asserts is the persisted end state, not who created the file — so
+          // reuse the already-registered document instead of failing.
+          const persistedId = fileId ?? persistedPlanFileId(studente, tipo);
+          if (persistedId === null) {
             throw new ValidationError(
               `Generazione piano ${tipo} per ${studente} non ha prodotto un fileId (status=${status})`
             );
           }
-          generated.set(`${studente}::${tipo}`, fileId);
+          generated.set(`${studente}::${tipo}`, persistedId);
         }
       }
 
@@ -635,7 +689,7 @@ export function registerE2eScenarioChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
-      verifyProtectedRangeScenario(documents, spreadsheets, sample.testMode);
+      return verifyProtectedRangeScenario(documents, spreadsheets, sample.testMode);
     }
   );
 
@@ -786,7 +840,7 @@ export type LegacyE2eScenarioScope = 'email' | 'import';
 interface CapturedScenarioCheck {
   name: string;
   artifactUrl: string | undefined;
-  callback: () => void;
+  callback: () => void | OnlineTestSkippedOutcome;
 }
 
 const STANDARD_DOCUMENT_SCENARIO_NAMES = new Set([
@@ -822,7 +876,11 @@ function captureExistingScenarioChecks(
 ): CapturedScenarioCheck[] {
   const captured: CapturedScenarioCheck[] = [];
   const captureRunner = {
-    add(name: string, artifactUrl: string | undefined, callback: () => void): void {
+    add(
+      name: string,
+      artifactUrl: string | undefined,
+      callback: () => void | OnlineTestSkippedOutcome
+    ): void {
       captured.push({ name, artifactUrl, callback });
     }
   };

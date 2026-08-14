@@ -25,6 +25,11 @@ export type DocumentiCheckScope =
 
 const AMPLE_DOCUMENT_GENERATION_BUDGET_MS = 5 * 60 * 1000;
 
+/** JobRunnerLib control surface used to clear leftover state before a fixed-name job run. */
+interface JobRunnerControl extends JobRunnerService {
+  resetJob(jobName: string): unknown;
+}
+
 /**
  * Registers document-only checks by replaying the proven legacy callbacks, then
  * adds the cross-template rendering assertion that needs a real Drive artifact.
@@ -130,10 +135,18 @@ function registerTabelleImportateCheck(
               row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_TABELLE && row[COL_LOG_DOCS.CLASSI] === '1A'
           );
 
+      // Fixed job name reused across every online-test run: a run killed by the
+      // GAS execution limit leaves `job` = RUNNING with a fresh `lock_timestamp`
+      // in ScriptProperties, and JobStateManager.tryAcquireRunning then refuses
+      // for a full hour — JobQueue.execute returns null (logged as SUSPENDED) and
+      // nothing is generated. Same guard registerJobRunnerDocGenChecks uses.
+      const jobRunner = creaJobRunner() as JobRunnerControl;
+      jobRunner.resetJob(`gen_${CONF_DOC_TABELLE}`);
+
       avviaGenerazioneDataDriven(
         container,
         CONF_DOC_TABELLE,
-        creaJobRunner(),
+        jobRunner,
         AMPLE_DOCUMENT_GENERATION_BUDGET_MS
       );
 
@@ -167,7 +180,11 @@ function registerTabelleImportateCheck(
         'Testo dopo la tabella con dati',
         'Testo dopo la tabella vuota'
       ];
-      if (expectedFragments.some((fragment) => !text.includes(fragment))) {
+      const missingFragments = expectedFragments.filter((fragment) => !text.includes(fragment));
+      if (missingFragments.length > 0) {
+        new LoggerService().warn(
+          `Tabelle importate: frammenti mancanti nel documento ${fileId}: ${missingFragments.join(', ')}`
+        );
         throw new ValidationError(
           'Tabelle importate: contenuto CDU o righe della sorgente dati mancanti nel documento'
         );
@@ -183,10 +200,12 @@ function registerTabelleImportateCheck(
         );
       }
 
+      // No reset here on purpose: the first run left the job COMPLETED, and this
+      // second launch must prove DUPLICAZIONE=NEGATA dedupes, not restart state.
       avviaGenerazioneDataDriven(
         container,
         CONF_DOC_TABELLE,
-        creaJobRunner(),
+        jobRunner,
         AMPLE_DOCUMENT_GENERATION_BUDGET_MS
       );
       if (rowsForClass().length !== firstRunRows.length) {
@@ -256,7 +275,7 @@ function registerDuplicazioneDocumentiChecks(
     groupName('documenti.duplicazione', 'PERMESSA crea copie distinte'),
     sample.sampleSpreadsheetUrl,
     () => {
-      const path = '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI';
+      const path = '_ALDO_E2E_OUTPUT/DUPLICAZIONE_DOCUMENTI';
       const folderId = drive.createFolder(path);
       const filesBefore = drive.countFilesInFolder(folderId);
       const rowsBefore = logRowsFor(db, CONF_DOC_DUPLICAZIONE_PERMESSA, student);

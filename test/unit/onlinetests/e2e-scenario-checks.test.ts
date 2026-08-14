@@ -86,6 +86,7 @@ function recordingHarness(
   generatedConfigIds: () => string[];
   classGenerationTargets: (configId: string) => string[];
   planRows: () => Array<Record<string, unknown>>;
+  seedExistingPlan: (studente: string, tipo: TipoPiano, nome: string) => void;
 } {
   const events: string[] = [];
   const rows: Array<Record<string, unknown>> = [];
@@ -170,7 +171,9 @@ function recordingHarness(
           row[COL_LOG_DOCS.UTENTI] === studente
       );
       if (existing !== undefined) {
-        return { fileId: String(existing[COL_LOG_DOCS.ID]), status: 'SKIPPED_DUPLICATE' };
+        // Matches the real service: CheckDuplicates leaves `newFileId` unset, so
+        // `resultFromContext` reports SKIPPED with a null fileId.
+        return { fileId: null, status: 'SKIPPED' };
       }
       const fileId = `${studente}-${tipo}`;
       rows.push({
@@ -329,7 +332,26 @@ function recordingHarness(
     emailResolutions: () => emailResolutions,
     generatedConfigIds: () => generatedConfigIds,
     classGenerationTargets: (configId) => classGenerationTargets.get(configId) ?? [],
-    planRows: () => rows.filter((row) => row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS')
+    planRows: () => rows.filter((row) => row[COL_LOG_DOCS.TIPO] === 'PIANO_PERS'),
+    seedExistingPlan: (studente, tipo, nome) => {
+      const fileId = `${studente}-${tipo}`;
+      rows.push({
+        [COL_LOG_DOCS.ID]: fileId,
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
+        [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+        [COL_LOG_DOCS.SOTTOTIPO]: tipo,
+        [COL_LOG_DOCS.STATO]: 'GENERATO',
+        [COL_LOG_DOCS.CLASSI]: '1A',
+        [COL_LOG_DOCS.UTENTI]: studente,
+        [COL_LOG_DOCS.NOME]: nome,
+        [COL_LOG_DOCS.LINK]: `https://example.test/${studente}/${tipo}`
+      });
+      planTexts[fileId] = [
+        `Modello E2E ${tipo}`,
+        `Tipo piano: ${tipo === TipoPiano.PDP_BES ? 'PDP (BES)' : tipo}`,
+        `Note: Piano E2E ${tipo}`
+      ].join('\n');
+    }
   };
 }
 
@@ -419,7 +441,7 @@ test('protected range scenario does not swallow generation errors in test mode',
   expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(rejection);
 });
 
-test('protected range scenario: test mode rejects structured protection failures after rendered headers', () => {
+test('protected range scenario: test mode reports SKIPPED when mock editors block every protection', () => {
   const protectionResult = {
     spreadsheetId: 'rendered-sheet',
     protectedCount: 0,
@@ -447,10 +469,34 @@ test('protected range scenario: test mode rejects structured protection failures
     }
   } as unknown as DocumentGenerationService;
 
-  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
-    /nessun range protetto/
-  );
+  const outcome = verifyProtectedRangeScenario(documents, spreadsheets, true);
+  expect(outcome?.status).toBe('skipped');
+  expect(outcome?.message).toContain('Utente non valido');
   expect(protectionResult.failures).toHaveLength(1);
+});
+
+test('protected range scenario: test mode still verifies protections that the API did accept', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'protected-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['MAT', 'ALT', 'Docente']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: {},
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: [] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
+    /senza editors/
+  );
 });
 
 test('protected range scenario rejects residual header placeholders in test mode', () => {
@@ -537,6 +583,22 @@ test('scenario 3 uses one config to render, deduplicate, send, and subtype-isola
   expect(dualRows).toHaveLength(2);
   expect(dualRows.map((row) => row[COL_LOG_DOCS.SOTTOTIPO]).sort()).toEqual(['PDP_BES', 'PEI']);
   expect(dualRows.every((row) => row[COL_LOG_DOCS.NOTIFICATO] !== undefined)).toBe(true);
+});
+
+test('scenario 3 reuses a plan an earlier check already generated (CheckDuplicates SKIPPED)', () => {
+  const harness = recordingHarness();
+  // `documenti.duplicazione::NEGATA` is registered before the E2E scenarios and
+  // owns the same dedupe identity, so this plan already exists when scenario 3 runs.
+  harness.seedExistingPlan(PDP_BES_3C, TipoPiano.PDP_BES, 'E2E_Piano_PDP (BES)_Ricci Luca');
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
+  expect(scenario3).toMatchObject({ status: 'pass' });
+  expect(
+    harness.planRows().filter((row) => row[COL_LOG_DOCS.UTENTI] === PDP_BES_3C)
+  ).toHaveLength(1);
 });
 
 test('scenario 3 accepts historical-plan lines separated by HTML-to-text newlines', () => {
@@ -924,7 +986,7 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
   expect(getProtectedRanges).toHaveBeenCalled();
 });
 
-test('scenario 11: rejects missing protected ranges in TEST_MODE after rendering', () => {
+test('scenario 11: reports SKIPPED (not pass) when TEST_MODE mock editors leave no protection', () => {
   const harness = recordingHarness();
   const container = {
     get<T>(key: string): T {
@@ -942,7 +1004,7 @@ test('scenario 11: rejects missing protected ranges in TEST_MODE after rendering
   registerE2eScenarioChecks(runner, container, sample);
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
-  expect(scenario11?.status).toBe('fail');
+  expect(scenario11?.status).toBe('skipped');
   expect(scenario11?.message).toMatch(/nessun range protetto/i);
 });
 

@@ -5,7 +5,7 @@ Status: proposto, in attesa di review utente.
 
 ## Obiettivo
 
-`runFullOnlineTests` (alias operativo dell'utente: "runAllOnlineTests") supera
+`runFullOnlineTests` supera
 il limite di 30 minuti per esecuzione GAS dell'account Workspace in uso: nel
 run osservato ha generato ~100 documenti Drive prima del timeout, coprendo gli
 11 gruppi di check registrati in `futureScenarioRegistrations`

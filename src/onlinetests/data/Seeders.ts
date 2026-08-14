@@ -296,7 +296,7 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_LOG_DOCS.NOME]: `Piano storico ${anno}`,
     [COL_LOG_DOCS.STATO]: 'GENERATO',
     [COL_LOG_DOCS.NOTIFICATO]: '',
-    [COL_LOG_DOCS.PATH]: `_ALDO_E2E_ROOT/STORICO/${anno}`,
+    [COL_LOG_DOCS.PATH]: `_ALDO_E2E_OUTPUT/STORICO/${anno}`,
     [COL_LOG_DOCS.LINK]: `https://drive.google.com/file/d/LOG_STORICO_${anno}/edit`,
     [COL_LOG_DOCS.CLASSI]: classe,
     [COL_LOG_DOCS.UTENTI]: alunno,
@@ -314,7 +314,7 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
         [COL_LOG_DOCS.NOME]: `E2E Piano ${sottotipo} storico 2024-2025`,
         [COL_LOG_DOCS.STATO]: 'GENERATO',
         [COL_LOG_DOCS.NOTIFICATO]: '',
-        [COL_LOG_DOCS.PATH]: '_ALDO_E2E_ROOT/STORICO/2024-2025',
+        [COL_LOG_DOCS.PATH]: '_ALDO_E2E_OUTPUT/STORICO/2024-2025',
         [COL_LOG_DOCS.LINK]: `https://drive.google.com/file/d/E2E_FAKE_${sottotipo}_2024_2025/edit`,
         [COL_LOG_DOCS.CLASSI]: '1B',
         [COL_LOG_DOCS.UTENTI]: e2eAlunnoEmail(25),
@@ -338,7 +338,7 @@ export function seedLogFold(
   const seeded: SeededLogFold[] = [];
   for (let index = 0; index < ASL_ELIGIBLE_CLASSES.length; index += 1) {
     const classe = ASL_ELIGIBLE_CLASSES[index]!;
-    const folderPath = `_ALDO_E2E_ROOT/ASL/${classe}`;
+    const folderPath = `_ALDO_E2E_ASL/${classe}`;
     const folderId = drive.createFolder(folderPath);
     const ore = 12 + index * 7;
     const knownStudent = ASL_STUDENT_BY_CLASS[classe];
@@ -368,7 +368,7 @@ export function seedLogFold(
     });
   }
 
-  const nonEligibleFolder = drive.createFolder('_ALDO_E2E_ROOT/ASL/2B_DECOY');
+  const nonEligibleFolder = drive.createFolder('_ALDO_E2E_ASL/2B_DECOY');
   const nonEligibleDecoy = artifacts.createSheet(
     'ASL_2B_NON_ELEGGIBILE_TRASHED',
     nonEligibleFolder,
@@ -411,7 +411,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.storico }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_Storico_{{focus.alunno.anagrafica.nomeCompleto}}',
-    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/STORICO',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/STORICO',
     [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
     [COL_CONF_DOC.PERMESSI]: '',
     [COL_CONF_DOC.POST_PROCESSO]: null,
@@ -432,7 +432,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.dotted }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_Dotted_{{focus.classe.anagrafica.nome}}',
-    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/DOTTED',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOTTED',
     [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
     [COL_CONF_DOC.PERMESSI]: '',
     [COL_CONF_DOC.POST_PROCESSO]: null,
@@ -456,7 +456,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_DuplicazionePermessa_{{focus.alunno.anagrafica.nomeCompleto}}',
-    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DUPLICAZIONE_DOCUMENTI',
     [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
     [COL_CONF_DOC.PERMESSI]: '',
     [COL_CONF_DOC.POST_PROCESSO]: null,
@@ -477,7 +477,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_JobRunner_{{focus.alunno.anagrafica.nomeCompleto}}',
-    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/JOBRUNNER_DOC',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/JOBRUNNER_DOC',
     [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
     [COL_CONF_DOC.PERMESSI]: '',
     [COL_CONF_DOC.POST_PROCESSO]: null,
@@ -498,7 +498,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.aslImportSheet }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_ImportSource_{{focus.classe.anagrafica.nome}}',
-    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/IMPORT_SOURCE',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/IMPORT_SOURCE',
     [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
     [COL_CONF_DOC.PERMESSI]: '',
     [COL_CONF_DOC.POST_PROCESSO]: null,
@@ -519,7 +519,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     [COL_CONF_DOC.CONDIZIONE]: '',
     [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.tabelleImportate }),
     [COL_CONF_DOC.FILE_NAME]: 'E2E_Tabelle_{{focus.classe.anagrafica.nome}}',
-    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_ROOT/OUTPUT/TABELLE_IMPORTATE',
+    [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/TABELLE_IMPORTATE',
     [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
     [COL_CONF_DOC.PERMESSI]: '',
     [COL_CONF_DOC.POST_PROCESSO]: null,
@@ -654,8 +654,8 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
   });
 
   for (const [id, path, subject] of [
-    [CONF_MAIL_JOBRUNNER, '_ALDO_E2E_ROOT/OUTPUT/MAIL_JOBRUNNER', 'JobRunner'],
-    [CONF_MAIL_STORICO, '_ALDO_E2E_ROOT/OUTPUT/MAIL_STORICO', 'Storico']
+    [CONF_MAIL_JOBRUNNER, '_ALDO_E2E_OUTPUT/MAIL_JOBRUNNER', 'JobRunner'],
+    [CONF_MAIL_STORICO, '_ALDO_E2E_OUTPUT/MAIL_STORICO', 'Storico']
   ] as const) {
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: id,

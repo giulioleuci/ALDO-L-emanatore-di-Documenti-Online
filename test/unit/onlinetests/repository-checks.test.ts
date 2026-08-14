@@ -7,16 +7,10 @@ import {
 import { registerEffectiveAssignmentConsumerChecks } from '../../../src/onlinetests/checks/contextEngineChecks';
 import type { SampleDatabase } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
-  CLASSE_BASE,
-  CLASSE_PARTNER,
-  DOCENTE_1,
-  DOCENTE_2,
-  DOCENTE_3,
   MATERIA_1,
   INDIRIZZO_1,
   DIPART_1,
-  alunnoEmail,
-  ALUNNO_PARTNER_EMAIL
+  alunnoEmail
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
@@ -53,6 +47,18 @@ import {
 } from '../../../src/config/schema';
 
 const NOW = new Date('2026-07-12T09:00:00Z');
+
+// Mirrors repositoryChecks.ts's own CLASSE_BASE/DOCENTE_1/2/3/CLASSE_PARTNER/
+// ALUNNO_PARTNER_EMAIL mapping (SharedTestDatabaseBuilder identities, not the
+// retired SampleDatabaseBuilder ones) — this fixture is otherwise fully
+// self-contained (hand-rolled FakeDatabase, no SharedTestDatabaseBuilder
+// content), so only the literal values need to line up.
+const CLASSE_BASE = CLASSE_A;
+const CLASSE_PARTNER = CLASSE_C_PARTNER;
+const DOCENTE_1 = e2eDocenteEmail(1);
+const DOCENTE_2 = e2eDocenteEmail(9);
+const DOCENTE_3 = e2eDocenteEmail(10);
+const ALUNNO_PARTNER_EMAIL = e2eAlunnoEmail(49);
 
 class RecordingSpreadsheet implements ISampleSpreadsheet {
   readonly rows: Record<string, Record<string, unknown>[]> = {};

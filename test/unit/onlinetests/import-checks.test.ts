@@ -446,9 +446,15 @@ function fakeJobRunnerControl(initialState: string): {
 test('registerImportChunkedChecks suspends at to_resume, resumes without duplicates, and resets job state', () => {
   const aslRows: Array<Record<string, unknown>> = [];
   const { container } = chunkedContainer(aslRows);
-  const { jobRunner, setState } = fakeJobRunnerControl('to_resume');
+  // registerImportChunkedChecks now resets job state before starting, so the
+  // mock must model the same not_started -> to_resume transition the real
+  // avviaImportazioneChunkedDataDriven produces (run then suspend).
+  const { jobRunner, setState } = fakeJobRunnerControl('not_started');
   jest.mocked(creaJobRunner).mockReturnValue(jobRunner as never);
-  jest.mocked(avviaImportazioneChunkedDataDriven).mockImplementation(() => null);
+  jest.mocked(avviaImportazioneChunkedDataDriven).mockImplementation(() => {
+    setState('to_resume');
+    return null;
+  });
   jest.mocked(riprendiJobSospeso).mockImplementation(() => {
     setState('completed');
     aslRows.splice(
@@ -489,9 +495,15 @@ test('registerImportChunkedChecks suspends at to_resume, resumes without duplica
 test('registerImportChunkedChecks fails when the resume leaves duplicate STUDENTE rows', () => {
   const aslRows: Array<Record<string, unknown>> = [];
   const { container } = chunkedContainer(aslRows);
-  const { jobRunner, setState } = fakeJobRunnerControl('to_resume');
+  // registerImportChunkedChecks now resets job state before starting, so the
+  // mock must model the same not_started -> to_resume transition the real
+  // avviaImportazioneChunkedDataDriven produces (run then suspend).
+  const { jobRunner, setState } = fakeJobRunnerControl('not_started');
   jest.mocked(creaJobRunner).mockReturnValue(jobRunner as never);
-  jest.mocked(avviaImportazioneChunkedDataDriven).mockImplementation(() => null);
+  jest.mocked(avviaImportazioneChunkedDataDriven).mockImplementation(() => {
+    setState('to_resume');
+    return null;
+  });
   jest.mocked(riprendiJobSospeso).mockImplementation(() => {
     setState('completed');
     aslRows.splice(

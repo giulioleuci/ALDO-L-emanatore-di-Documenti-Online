@@ -132,8 +132,8 @@ describe('executeFullOnlineTests', () => {
         calls.push('init');
         return container;
       },
-      provision: (_overrides, force) => {
-        calls.push(`provision:${String(force)}`);
+      readSample: () => {
+        calls.push('readSample');
         return sample;
       },
       registrations
@@ -142,7 +142,7 @@ describe('executeFullOnlineTests', () => {
     const report = executeFullOnlineTests(deps);
 
     expect(calls).toEqual([
-      'provision:true',
+      'readSample',
       'reset',
       'init',
       'documenti',
@@ -223,14 +223,14 @@ describe('executeFullOnlineTests', () => {
         calls.push('init');
         return container;
       },
-      provision: (_overrides, force) => {
-        calls.push(`provision:${String(force)}`);
+      readSample: () => {
+        calls.push('readSample');
         return sample;
       }
     });
 
     expect(calls).toEqual([
-      'provision:true',
+      'readSample',
       'reset',
       'init',
       'interceptor',

@@ -703,6 +703,11 @@ export function registerImportChunkedChecks(
       groupName('import.chunked', 'sospensione to_resume su budget minimo'),
       sample.sampleSpreadsheetUrl,
       () => {
+        // Fixed job name reused across every online-test run: without this,
+        // leftover ScriptProperties state from a prior interrupted run (job
+        // existed, so JobQueue.execute's first-run guard skips
+        // stateManager.saveType) leaves resume() unable to determine the job type.
+        jobRunner.resetJob(jobName);
         const result = avviaImportazioneChunkedDataDriven(
           container,
           CONF_IMP_CHUNKED,

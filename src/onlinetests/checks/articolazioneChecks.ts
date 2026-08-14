@@ -530,7 +530,19 @@ export function registerArticolazioneChecks(
         JSON.stringify(primoEmails) !==
           JSON.stringify([e2eDocenteEmail(2), e2eDocenteEmail(3), e2eDocenteEmail(4)].sort()) ||
         JSON.stringify(secondoEmails) !==
-          JSON.stringify([e2eDocenteEmail(6), e2eDocenteEmail(7), e2eDocenteEmail(8)].sort())
+          // docente8's STO restriction-by-omission SUPPLENZE row (empty CLASSI,
+          // MATERIE=STO) also covers his nominal STO cattedra in CLASSE_C_PARTNER;
+          // at classCdu's default now=2026-07-15 (inside that row's DAL/AL window)
+          // with the default GestioneSupplenti.ENTRAMBI, both titolare (8) and
+          // supplente (17) are visible.
+          JSON.stringify(
+            [
+              e2eDocenteEmail(6),
+              e2eDocenteEmail(7),
+              e2eDocenteEmail(8),
+              e2eDocenteEmail(17)
+            ].sort()
+          )
       ) {
         throw new ValidationError(
           `Roster comune/separato del parent ${CLASSE_C_PARENT} non coerente: comune=${comuneEmails.join(',')} primo=${primoEmails.join(',')} secondo=${secondoEmails.join(',')}`

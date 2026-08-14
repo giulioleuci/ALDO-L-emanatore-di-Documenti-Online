@@ -1,11 +1,10 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
 import type { TestRunner } from '../report/OnlineTestReport';
-import type { SampleDatabase } from '../SampleDatabaseBuilder';
 import type { ContextBuilder } from '../../application/context-engine/ContextBuilder';
 import { recipe } from '../../application/context-engine/Recipe';
 import { ValidationError } from '../../domain/errors/DomainError';
-import { CLASSE_BASE, ALUNNO_PARTNER_EMAIL } from '../SampleDatabaseBuilder';
 import {
+  type SharedTestDatabase,
   ASSIGNMENT_MATRIX_DATE_E2E,
   CLASSE_A,
   CLASSE_C,
@@ -32,6 +31,17 @@ import { getCduMateriaAssignmentIdentity } from '../../application/context-engin
 interface AssignmentMatrixSample {
   sampleSpreadsheetUrl: string;
 }
+
+/**
+ * Focal identities for the two CDU access-path checks below. Both must exist in
+ * the dataset `SharedTestDatabaseBuilder` actually seeds — the retired
+ * `SampleDatabaseBuilder` constants (`4A`/`alunno5@…`) are NOT seeded any more,
+ * exactly like `repositoryChecks`' own `ALUNNO_PARTNER_EMAIL`.
+ * `e2ealunno49` is the first student of `3C-C` (fixtures.ts `CLASS_LAYOUTS`),
+ * i.e. the articolata partner group — same role the retired constant played.
+ */
+const CDU_FOCUS_CLASSE = CLASSE_A;
+const CDU_FOCUS_ALUNNO = e2eAlunnoEmail(49);
 
 const EXPECTED_STUDENT_COUNCILS = [
   {
@@ -936,7 +946,7 @@ export function registerEffectiveAssignmentConsumerChecks(
 export function registerContextEngineChecks(
   runner: TestRunner,
   container: ServiceContainer,
-  sample: SampleDatabase
+  sample: Pick<SharedTestDatabase, 'sampleSpreadsheetUrl'>
 ): void {
   const contextBuilder = container.get<ContextBuilder>('contextBuilder');
 
@@ -945,13 +955,13 @@ export function registerContextEngineChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const cdu = contextBuilder.build(
-        { target: CLASSE_BASE, tipoTarget: 'classe', now: new Date() },
+        { target: CDU_FOCUS_CLASSE, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
       const nome = cdu.focus.classe?.anagrafica.nome;
-      if (nome !== CLASSE_BASE) {
+      if (nome !== CDU_FOCUS_CLASSE) {
         throw new ValidationError(
-          `Atteso focus.classe.anagrafica.nome === ${CLASSE_BASE}, ricevuto ${String(nome)}`
+          `Atteso focus.classe.anagrafica.nome === ${CDU_FOCUS_CLASSE}, ricevuto ${String(nome)}`
         );
       }
     }
@@ -962,13 +972,13 @@ export function registerContextEngineChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const cdu = contextBuilder.build(
-        { target: ALUNNO_PARTNER_EMAIL, tipoTarget: 'alunno', now: new Date() },
+        { target: CDU_FOCUS_ALUNNO, tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       );
       const email = cdu.focus.alunno?.anagrafica.email;
-      if (email !== ALUNNO_PARTNER_EMAIL) {
+      if (email !== CDU_FOCUS_ALUNNO) {
         throw new ValidationError(
-          `Atteso focus.alunno.anagrafica.email === ${ALUNNO_PARTNER_EMAIL}, ricevuto ${String(email)}`
+          `Atteso focus.alunno.anagrafica.email === ${CDU_FOCUS_ALUNNO}, ricevuto ${String(email)}`
         );
       }
     }

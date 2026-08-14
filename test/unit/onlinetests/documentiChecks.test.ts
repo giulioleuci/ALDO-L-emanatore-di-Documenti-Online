@@ -2,8 +2,14 @@ import {
   registerDocumentiChecks,
   type DocumentiCheckScope
 } from '../../../src/onlinetests/checks/documentiChecks';
+import { avviaGenerazioneDataDriven, creaJobRunner } from '../../../src/config/Bootstrap';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+
+jest.mock('../../../src/config/Bootstrap', () => ({
+  avviaGenerazioneDataDriven: jest.fn(),
+  creaJobRunner: jest.fn()
+}));
 
 interface RegisteredCheck {
   name: string;
@@ -103,7 +109,7 @@ test('duplicate-policy checks assert real artifact counts alongside their LOG_DO
         return { fileId: null, status: 'SKIPPED' };
       }
       const path = permitted
-        ? '_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI'
+        ? '_ALDO_E2E_OUTPUT/DUPLICAZIONE_DOCUMENTI'
         : '_ALDO_E2E_OUTPUT/DOCUMENTI PERS';
       const fileId = `file-${nextFile++}`;
       fileCounts.set(path, (fileCounts.get(path) ?? 0) + 1);
@@ -138,7 +144,7 @@ test('duplicate-policy checks assert real artifact counts alongside their LOG_DO
   runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')!();
 
   expect(fileCounts.get('_ALDO_E2E_OUTPUT/DOCUMENTI PERS')).toBe(1);
-  expect(fileCounts.get('_ALDO_E2E_ROOT/OUTPUT/DUPLICAZIONE_DOCUMENTI')).toBe(4);
+  expect(fileCounts.get('_ALDO_E2E_OUTPUT/DUPLICAZIONE_DOCUMENTI')).toBe(4);
   expect(rows.filter((row) => row.ID_GEN === permittedId).map((row) => row.ID)).toEqual([
     'file-2',
     'file-3',
@@ -183,6 +189,34 @@ test('duplicate-policy checks reject persisted filenames with leading or trailin
   expect(
     runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')
   ).toThrow(/normalizzate/);
+});
+
+test('imported-table check clears leftover job state before the first generation run', () => {
+  const calls: string[] = [];
+  const jobRunner = {
+    resetJob: (jobName: string) => calls.push(`reset:${jobName}`)
+  };
+  jest.mocked(creaJobRunner).mockReturnValue(jobRunner as never);
+  jest
+    .mocked(avviaGenerazioneDataDriven)
+    .mockImplementation((_container, configId) => calls.push(`start:${String(configId)}`));
+
+  const runner = new RecordingRunner();
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'db') return { table: () => ({ findAll: () => [] }) } as T;
+      return {} as T;
+    }
+  } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, sample, 'tabelle-importate');
+
+  // The leftover-state reset must precede the launch; the check itself still
+  // fails afterwards because the stubbed run persists no LOG_DOCS row.
+  expect(runner.callbacks.get('documenti.tabelleImportate::generazione e contenuto')).toThrow(
+    /attesa una riga LOG_DOCS/
+  );
+  expect(calls).toEqual(['reset:gen_E2E_DOC_TABELLE', 'start:E2E_DOC_TABELLE']);
 });
 
 test('registers one TEST_MODE guard when the aggregate document scope is unsafe', () => {

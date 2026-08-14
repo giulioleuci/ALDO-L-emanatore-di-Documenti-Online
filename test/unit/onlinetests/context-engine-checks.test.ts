@@ -1,14 +1,13 @@
 import { buildAldoContainer } from '../../../src/config/Bootstrap';
 import { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 import { registerContextEngineChecks } from '../../../src/onlinetests/checks/contextEngineChecks';
-import type { SampleDatabase } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
-  CLASSE_BASE,
-  INDIRIZZO_1,
-  DOCENTE_1,
-  ALUNNO_PARTNER_EMAIL,
-  CLASSE_PARTNER
-} from '../../../src/onlinetests/SampleDatabaseBuilder';
+  CLASSE_A,
+  CLASSE_C_PARTNER,
+  INDIRIZZO_E2E,
+  e2eAlunnoEmail,
+  e2eDocenteEmail
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
@@ -27,17 +26,17 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
     CLASSI: includeClasse
       ? [
           {
-            ID: CLASSE_BASE,
-            ANNO: 4,
-            INDIRIZZO: INDIRIZZO_1,
+            ID: CLASSE_A,
+            ANNO: 1,
+            INDIRIZZO: INDIRIZZO_E2E,
             ARTICOLAZIONE: JSON.stringify({
               parent: null,
-              partner: CLASSE_PARTNER,
+              partner: null,
               partners: null
             }),
             RUOLI: '',
             ATTIVA: true,
-            COORD: DOCENTE_1,
+            COORD: e2eDocenteEmail(1),
             IRC: '',
             ALT: '',
             SEZ: 'A',
@@ -45,16 +44,16 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
             STORICO: false
           },
           {
-            ID: CLASSE_PARTNER,
-            ANNO: 4,
-            INDIRIZZO: INDIRIZZO_1,
-            ARTICOLAZIONE: JSON.stringify({ parent: null, partner: CLASSE_BASE, partners: null }),
+            ID: CLASSE_C_PARTNER,
+            ANNO: 3,
+            INDIRIZZO: INDIRIZZO_E2E,
+            ARTICOLAZIONE: JSON.stringify({ parent: null, partner: null, partners: null }),
             RUOLI: '',
             ATTIVA: true,
-            COORD: DOCENTE_1,
+            COORD: e2eDocenteEmail(7),
             IRC: '',
             ALT: '',
-            SEZ: 'A',
+            SEZ: 'C',
             TERMINALE: false,
             STORICO: false
           }
@@ -62,7 +61,7 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
       : [],
     INDIRIZZI: [
       {
-        ID: INDIRIZZO_1,
+        ID: INDIRIZZO_E2E,
         NOME: 'Informatica e Telecomunicazioni',
         NOME_SINTETICO: 'INF',
         TIPO: 'Tecnico'
@@ -70,9 +69,9 @@ function sampleSeedTables(options: { includeClasse?: boolean } = {}): Record<str
     ],
     ALUNNI: [
       {
-        EMAIL: ALUNNO_PARTNER_EMAIL,
-        COGNOMENOME: 'Alunno5 Test',
-        CLASSE: CLASSE_PARTNER,
+        EMAIL: e2eAlunnoEmail(49),
+        COGNOMENOME: 'Alunno49 Test',
+        CLASSE: CLASSE_C_PARTNER,
         RELIGIONE: 'IRC',
         ATTIVO: true,
         RIPETENTE: false,
@@ -98,13 +97,8 @@ function buildFakeContainer(options: { includeClasse?: boolean } = {}) {
   });
 }
 
-function sampleFixture(): SampleDatabase {
-  return {
-    masterSpreadsheetId: 'MASTER_ID',
-    sampleSpreadsheetId: 'SAMPLE_ID',
-    sampleSpreadsheetUrl: 'https://docs.google.com/spreadsheets/d/SAMPLE_ID',
-    sampleFolderUrl: 'https://drive.google.com/drive/folders/FOLDER_ID'
-  };
+function sampleFixture(): { sampleSpreadsheetUrl: string } {
+  return { sampleSpreadsheetUrl: 'https://docs.google.com/spreadsheets/d/SAMPLE_ID' };
 }
 
 describe('registerContextEngineChecks', () => {

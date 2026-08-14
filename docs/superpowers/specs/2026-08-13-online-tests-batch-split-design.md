@@ -125,12 +125,12 @@ export function runOnlineTestsBatch1(...): OnlineTestReport {
 
 Come ogni altro launcher (`creaDatiMockDrive`, `testDocumentiStandard`, ...):
 
-- `src/onlinetests/OnlineTestsEntry.ts`: aggiungere `runOnlineTestsBatch1..4`
-  all'interfaccia `AldoOnlineTestsLaunchers` + wrapper zero-arg che
-  inoltrano al bridge.
-- `src/onlinetests/entrypoints/EntryPointOnlineTests.ts`: importare le 4
-  funzioni da `./index`, aggiungerle all'oggetto `aldoOnlineTestsLaunchers` e
-  alle assegnazioni `gasGlobal.*`.
+- `src/onlinetests/OnlineTestsEntry.ts`: importare le 4 funzioni da
+  `./index`, aggiungerle all'oggetto `aldoOnlineTestsLaunchers` e alle
+  assegnazioni `gasGlobal.*`.
+- `src/onlinetests/entrypoints/EntryPointOnlineTests.ts`: aggiungere
+  `runOnlineTestsBatch1..4` all'interfaccia `AldoOnlineTestsLaunchers` +
+  wrapper zero-arg che inoltrano al bridge.
 
 Nessuna modifica a `Menu.ts`/UI: questi launcher restano, come tutti gli
 altri test online, invocabili solo dal menu Esegui di Apps Script (uso

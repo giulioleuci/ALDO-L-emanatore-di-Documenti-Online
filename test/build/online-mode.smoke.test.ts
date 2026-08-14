@@ -114,6 +114,7 @@ describe('online build mode', () => {
 
     const launchers = bridge as Record<string, () => unknown>;
     for (const launcherName of scenarioLauncherNames) {
+      expect(typeof launchers[launcherName]).toBe('function');
       launchers[launcherName] = (): string => launcherName;
     }
 

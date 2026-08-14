@@ -1,11 +1,14 @@
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import {
   executeFullOnlineTests,
+  executeOnlineTestsBatch1,
+  runOnlineTestsBatch1,
   PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
   testCacheIsolamento,
   testJobRunnerTriggerReale,
   testPermessiAttivi,
   type FullOnlineTestDeps,
+  type FullOnlineTestRegistrations,
   type FullOnlineTestSample
 } from '../../../src/onlinetests';
 import type { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
@@ -368,5 +371,86 @@ describe('executeFullOnlineTests', () => {
       'permessi_attivi',
       'PERMESSI_ATTIVI_SCENARIO'
     );
+  });
+});
+
+const ONLINE_TEST_GROUP_NAMES: Array<keyof FullOnlineTestRegistrations> = [
+  'documenti',
+  'email',
+  'jobRunner',
+  'import',
+  'storico',
+  'articolazione',
+  'itpDotted',
+  'supplenzeRuoli',
+  'aclReali',
+  'cacheIsolamento',
+  'permessi'
+];
+
+/** Properties fixture without the cache-isolated master: batches 1-3 must not need it. */
+function propertiesWithoutCacheFixture(): IPropertiesFacade {
+  return {
+    get: () => null,
+    set: () => undefined
+  };
+}
+
+function recordBatchGroups(
+  execute: (overrides: Partial<FullOnlineTestDeps>) => OnlineTestReport,
+  props: IPropertiesFacade
+): string[] {
+  const calls: string[] = [];
+  const registerInterceptor = jest.fn();
+  const container = {
+    get: jest.fn(() => ({ registerInterceptor }))
+  } as unknown as ServiceContainer;
+  const registrations: Record<string, unknown> = {};
+  for (const name of ONLINE_TEST_GROUP_NAMES) {
+    registrations[name] = (runner: Pick<TestRunner, 'add'>): void => {
+      calls.push(name);
+      runner.add(name, sample.sampleSpreadsheetUrl, () => undefined);
+    };
+  }
+
+  execute({
+    properties: props,
+    clock: () => new Date('2026-08-11T09:00:00Z'),
+    resetAldo: () => undefined,
+    initAldo: () => container,
+    readSample: () => sample,
+    registrations: registrations
+  });
+  return calls;
+}
+
+describe('online test batches', () => {
+  it('registers only documenti and jobRunner in batch 1, without the cache fixture', () => {
+    expect(recordBatchGroups(executeOnlineTestsBatch1, propertiesWithoutCacheFixture())).toEqual([
+      'documenti',
+      'jobRunner'
+    ]);
+  });
+
+  it('reports batch 1 through the shared job logger', () => {
+    const report = {
+      suite: 'aldo-online-tests' as const,
+      startedAt: '2026-08-11T09:00:00.000Z',
+      finishedAt: '2026-08-11T09:00:01.000Z',
+      passed: 1,
+      failed: 0,
+      results: []
+    };
+    const execute = jest.fn(() => report);
+    const logJobStart = jest.fn();
+    const logger = {
+      logJobStart,
+      logSummary: jest.fn(),
+      logJobEnd: jest.fn()
+    } as unknown as LoggerService;
+
+    expect(runOnlineTestsBatch1(execute, logger)).toBe(report);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(logJobStart).toHaveBeenCalledWith('online_tests_batch1', 'ONLINE_TEST_SUITE_BATCH');
   });
 });

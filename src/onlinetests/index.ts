@@ -311,7 +311,29 @@ function readPersistedFullOnlineTestSample(properties: IPropertiesFacade): Share
   };
 }
 
-export function executeFullOnlineTests(
+/** Registration order of the aggregate suite; batches below are subsets of this list. */
+const ALL_ONLINE_TEST_GROUPS: ReadonlyArray<keyof FullOnlineTestRegistrations> = [
+  'documenti',
+  'email',
+  'jobRunner',
+  'import',
+  'storico',
+  'articolazione',
+  'itpDotted',
+  'supplenzeRuoli',
+  'aclReali',
+  'cacheIsolamento',
+  'permessi'
+];
+
+/**
+ * Shared body of the aggregate runner and of every batch launcher: reads the persisted fixture,
+ * re-initialises Aldo against it and registers exactly the requested scenario groups.
+ * `cacheIsolationDeps` is resolved lazily so batches without `cacheIsolamento` never require the
+ * second master fixture.
+ */
+function executeOnlineTestsBatch(
+  groups: ReadonlyArray<keyof FullOnlineTestRegistrations>,
   overrides: Partial<FullOnlineTestDeps> = {}
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
@@ -330,23 +352,27 @@ export function executeFullOnlineTests(
 
   const runner = new TestRunner();
   const testSample: FullOnlineTestSample = { ...sample, testMode: sample.masterTestMode };
-  registrations.documenti(runner, container, testSample);
-  registrations.email(runner, container, testSample, EMAIL_TEST_SAFE);
-  registrations.jobRunner(runner, container, testSample, EMAIL_TEST_SAFE);
-  registrations.import(runner, container, testSample);
-  registrations.storico(runner, container, testSample);
-  registrations.articolazione(runner, container, testSample);
-  registrations.itpDotted(runner, container, testSample);
-  registrations.supplenzeRuoli(runner, container, testSample);
-  registrations.aclReali(runner, container, testSample);
-  registrations.cacheIsolamento(
-    runner,
-    container,
-    testSample,
-    cacheIsolationDeps(properties, overrides)
-  );
-  registrations.permessi(runner, container, testSample);
+  for (const key of groups) {
+    if (key === 'email' || key === 'jobRunner') {
+      registrations[key](runner, container, testSample, EMAIL_TEST_SAFE);
+    } else if (key === 'cacheIsolamento') {
+      registrations.cacheIsolamento(
+        runner,
+        container,
+        testSample,
+        cacheIsolationDeps(properties, overrides)
+      );
+    } else {
+      registrations[key](runner, container, testSample);
+    }
+  }
   return runner.report();
+}
+
+export function executeFullOnlineTests(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): OnlineTestReport {
+  return executeOnlineTestsBatch(ALL_ONLINE_TEST_GROUPS, overrides);
 }
 
 function runReportedSuite(
@@ -387,6 +413,25 @@ export function runFullOnlineTests(
   logger: LoggerService = ServiceFactory.getLogger()
 ): OnlineTestReport {
   return runReportedSuite('online_tests_full', 'ONLINE_TEST_SUITE', execute, logger);
+}
+
+/**
+ * Batch launchers: same coverage as `runFullOnlineTests`, split to stay inside the 30-minute GAS
+ * execution limit. Run them in order 1 → 2 → 3 → 4 against the same `creaDatiMockDrive` fixture:
+ * batch 2 asserts on LOG_DOCS/LOG_MAIL rows that batch 1 produces.
+ */
+export function executeOnlineTestsBatch1(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): OnlineTestReport {
+  return executeOnlineTestsBatch(['documenti', 'jobRunner'], overrides);
+}
+
+/** GAS Run-dropdown entry point: documenti + jobRunner (heaviest batch, provisions batch 2 data). */
+export function runOnlineTestsBatch1(
+  execute: () => OnlineTestReport = executeOnlineTestsBatch1,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('online_tests_batch1', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
 }
 
 /**

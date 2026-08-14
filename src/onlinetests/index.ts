@@ -434,6 +434,48 @@ export function runOnlineTestsBatch1(
   return runReportedSuite('online_tests_batch1', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
 }
 
+export function executeOnlineTestsBatch2(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): OnlineTestReport {
+  return executeOnlineTestsBatch(['email', 'articolazione'], overrides);
+}
+
+/** GAS Run-dropdown entry point: email + articolazione. Requires batch 1 on the same fixture. */
+export function runOnlineTestsBatch2(
+  execute: () => OnlineTestReport = executeOnlineTestsBatch2,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('online_tests_batch2', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
+}
+
+export function executeOnlineTestsBatch3(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): OnlineTestReport {
+  return executeOnlineTestsBatch(['import', 'storico', 'itpDotted', 'aclReali'], overrides);
+}
+
+/** GAS Run-dropdown entry point: import + storico + ITP puntate + ACL reali. */
+export function runOnlineTestsBatch3(
+  execute: () => OnlineTestReport = executeOnlineTestsBatch3,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('online_tests_batch3', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
+}
+
+export function executeOnlineTestsBatch4(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): OnlineTestReport {
+  return executeOnlineTestsBatch(['supplenzeRuoli', 'cacheIsolamento', 'permessi'], overrides);
+}
+
+/** GAS Run-dropdown entry point: supplenze/ruoli + isolamento cache + permessi attivi. */
+export function runOnlineTestsBatch4(
+  execute: () => OnlineTestReport = executeOnlineTestsBatch4,
+  logger: LoggerService = ServiceFactory.getLogger()
+): OnlineTestReport {
+  return runReportedSuite('online_tests_batch4', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
+}
+
 /**
  * GAS Run-dropdown entry point for the online-coverage spike. Empty when the bundle was not
  * built in online mode with Istanbul instrumentation.

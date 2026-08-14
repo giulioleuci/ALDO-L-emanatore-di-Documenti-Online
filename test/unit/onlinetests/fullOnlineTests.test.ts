@@ -2,7 +2,13 @@ import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import {
   executeFullOnlineTests,
   executeOnlineTestsBatch1,
+  executeOnlineTestsBatch2,
+  executeOnlineTestsBatch3,
+  executeOnlineTestsBatch4,
   runOnlineTestsBatch1,
+  runOnlineTestsBatch2,
+  runOnlineTestsBatch3,
+  runOnlineTestsBatch4,
   PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
   testCacheIsolamento,
   testJobRunnerTriggerReale,
@@ -452,5 +458,64 @@ describe('online test batches', () => {
     expect(runOnlineTestsBatch1(execute, logger)).toBe(report);
     expect(execute).toHaveBeenCalledTimes(1);
     expect(logJobStart).toHaveBeenCalledWith('online_tests_batch1', 'ONLINE_TEST_SUITE_BATCH');
+  });
+
+  it('registers only email and articolazione in batch 2, without the cache fixture', () => {
+    expect(recordBatchGroups(executeOnlineTestsBatch2, propertiesWithoutCacheFixture())).toEqual([
+      'email',
+      'articolazione'
+    ]);
+  });
+
+  it('registers only import, storico, itpDotted and aclReali in batch 3', () => {
+    expect(recordBatchGroups(executeOnlineTestsBatch3, propertiesWithoutCacheFixture())).toEqual([
+      'import',
+      'storico',
+      'itpDotted',
+      'aclReali'
+    ]);
+  });
+
+  it('registers only supplenzeRuoli, cacheIsolamento and permessi in batch 4', () => {
+    expect(recordBatchGroups(executeOnlineTestsBatch4, properties())).toEqual([
+      'supplenzeRuoli',
+      'cacheIsolamento',
+      'permessi'
+    ]);
+  });
+
+  it('covers every aggregate group exactly once across the four batches', () => {
+    const covered = [
+      ...recordBatchGroups(executeOnlineTestsBatch1, propertiesWithoutCacheFixture()),
+      ...recordBatchGroups(executeOnlineTestsBatch2, propertiesWithoutCacheFixture()),
+      ...recordBatchGroups(executeOnlineTestsBatch3, propertiesWithoutCacheFixture()),
+      ...recordBatchGroups(executeOnlineTestsBatch4, properties())
+    ];
+    expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
+  });
+
+  it.each([
+    ['batch 2', runOnlineTestsBatch2, 'online_tests_batch2'],
+    ['batch 3', runOnlineTestsBatch3, 'online_tests_batch3'],
+    ['batch 4', runOnlineTestsBatch4, 'online_tests_batch4']
+  ])('reports %s through the shared job logger', (_label, launcher, jobName) => {
+    const report = {
+      suite: 'aldo-online-tests' as const,
+      startedAt: '2026-08-11T09:00:00.000Z',
+      finishedAt: '2026-08-11T09:00:01.000Z',
+      passed: 1,
+      failed: 0,
+      results: []
+    };
+    const execute = jest.fn(() => report);
+    const logJobStart = jest.fn();
+    const logger = {
+      logJobStart,
+      logSummary: jest.fn(),
+      logJobEnd: jest.fn()
+    } as unknown as LoggerService;
+
+    expect(launcher(execute, logger)).toBe(report);
+    expect(logJobStart).toHaveBeenCalledWith(jobName, 'ONLINE_TEST_SUITE_BATCH');
   });
 });

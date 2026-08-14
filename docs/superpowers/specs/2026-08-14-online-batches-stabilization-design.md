@@ -1,6 +1,6 @@
 # Online Batches Stabilization Design
 
-Date: 2026-08-14  
+Date: 2026-08-14
 Status: approved in conversation; implementation plan pending.
 
 ## Goal
@@ -300,4 +300,3 @@ failed, and one intentional skip, with explicit PASS results for 10b and 10c.
 - Accepting arbitrary protected-range failures as skips.
 - Rebuilding the entire E2E environment when an idempotent migration suffices.
 - Unrelated refactoring of the online-test runner or production services.
-

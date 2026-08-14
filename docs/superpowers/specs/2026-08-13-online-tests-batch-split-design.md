@@ -1,7 +1,7 @@
 # Design: split di `runFullOnlineTests` in batch GAS separati
 
 Date: 2026-08-13
-Status: proposto, in attesa di review utente.
+Status: implementato (piano `docs/superpowers/plans/2026-08-13-online-tests-batch-split.md`).
 
 ## Obiettivo
 

@@ -28,6 +28,10 @@ const scenarioLauncherNames = [
   'testCacheIsolamento',
   'testPermessiAttivi',
   'runFullOnlineTests',
+  'runOnlineTestsBatch1',
+  'runOnlineTestsBatch2',
+  'runOnlineTestsBatch3',
+  'runOnlineTestsBatch4',
   'dumpOnlineCoverage'
 ] as const;
 

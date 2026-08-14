@@ -24,6 +24,10 @@ interface AldoOnlineTestsLaunchers {
   testCacheIsolamento: () => unknown;
   testPermessiAttivi: () => unknown;
   runFullOnlineTests: () => unknown;
+  runOnlineTestsBatch1: () => unknown;
+  runOnlineTestsBatch2: () => unknown;
+  runOnlineTestsBatch3: () => unknown;
+  runOnlineTestsBatch4: () => unknown;
   dumpOnlineCoverage: () => void;
 }
 
@@ -129,6 +133,23 @@ export function testPermessiAttivi(): unknown {
 
 export function runFullOnlineTests(): unknown {
   return getAldoOnlineTestsLaunchersBridge().runFullOnlineTests();
+}
+
+/** Suite online divisa in 4 batch da lanciare in ordine 1 → 2 → 3 → 4 sullo stesso fixture. */
+export function runOnlineTestsBatch1(): unknown {
+  return getAldoOnlineTestsLaunchersBridge().runOnlineTestsBatch1();
+}
+
+export function runOnlineTestsBatch2(): unknown {
+  return getAldoOnlineTestsLaunchersBridge().runOnlineTestsBatch2();
+}
+
+export function runOnlineTestsBatch3(): unknown {
+  return getAldoOnlineTestsLaunchersBridge().runOnlineTestsBatch3();
+}
+
+export function runOnlineTestsBatch4(): unknown {
+  return getAldoOnlineTestsLaunchersBridge().runOnlineTestsBatch4();
 }
 
 export function dumpOnlineCoverage(): void {

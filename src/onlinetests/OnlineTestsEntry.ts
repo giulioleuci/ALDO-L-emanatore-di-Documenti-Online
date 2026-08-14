@@ -2,6 +2,10 @@ import {
   creaDatiMockDrive,
   dumpOnlineCoverage,
   runFullOnlineTests,
+  runOnlineTestsBatch1,
+  runOnlineTestsBatch2,
+  runOnlineTestsBatch3,
+  runOnlineTestsBatch4,
   testACLReali,
   testArticolazione,
   testCacheIsolamento,
@@ -55,6 +59,10 @@ const aldoOnlineTestsLaunchers = {
   testCacheIsolamento,
   testPermessiAttivi,
   runFullOnlineTests,
+  runOnlineTestsBatch1,
+  runOnlineTestsBatch2,
+  runOnlineTestsBatch3,
+  runOnlineTestsBatch4,
   dumpOnlineCoverage
 };
 
@@ -85,6 +93,10 @@ const gasGlobal = globalThis as typeof globalThis & {
   testCacheIsolamento: typeof testCacheIsolamento;
   testPermessiAttivi: typeof testPermessiAttivi;
   runFullOnlineTests: typeof runFullOnlineTests;
+  runOnlineTestsBatch1: typeof runOnlineTestsBatch1;
+  runOnlineTestsBatch2: typeof runOnlineTestsBatch2;
+  runOnlineTestsBatch3: typeof runOnlineTestsBatch3;
+  runOnlineTestsBatch4: typeof runOnlineTestsBatch4;
   dumpOnlineCoverage: typeof dumpOnlineCoverage;
 };
 
@@ -113,4 +125,8 @@ gasGlobal.testACLReali = testACLReali;
 gasGlobal.testCacheIsolamento = testCacheIsolamento;
 gasGlobal.testPermessiAttivi = testPermessiAttivi;
 gasGlobal.runFullOnlineTests = runFullOnlineTests;
+gasGlobal.runOnlineTestsBatch1 = runOnlineTestsBatch1;
+gasGlobal.runOnlineTestsBatch2 = runOnlineTestsBatch2;
+gasGlobal.runOnlineTestsBatch3 = runOnlineTestsBatch3;
+gasGlobal.runOnlineTestsBatch4 = runOnlineTestsBatch4;
 gasGlobal.dumpOnlineCoverage = dumpOnlineCoverage;

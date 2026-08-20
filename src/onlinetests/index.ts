@@ -1,7 +1,7 @@
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { initAldo, resetAldo } from '../config/Bootstrap';
 import type { ServiceContainer } from '../config/ServiceContainer';
-import { TABLE, COL_ASL, COL_LOG_DOCS, COL_MATERIE } from '../config/schema';
+import { TABLE, COL_LOG_DOCS, COL_MATERIE } from '../config/schema';
 import { ConfigurationError } from '../domain/errors/DomainError';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
@@ -66,6 +66,14 @@ export const PROP_ONLINETEST_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
 /** Master fixture dedicated to proving Script Cache keys stay spreadsheet-scoped. */
 export const PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID =
   'CACHE_ISOLATED_MASTER_SPREADSHEET_ID';
+/** Schema/artifact version of the fixture selected by the E2E master pointer. */
+export const PROP_ONLINETEST_FIXTURE_VERSION = 'ALDO_ONLINETEST_FIXTURE_VERSION';
+const REQUIRED_ONLINETEST_FIXTURE_VERSION = 2;
+
+interface FixtureSpreadsheetService {
+  getRanges(spreadsheetId: string, range: string): unknown[][];
+  deleteColumn(spreadsheetId: string, sheetName: string, columnIndex: number): unknown;
+}
 
 export interface E2eTestDeps {
   spreadsheetFactory: ISampleSpreadsheetFactory;
@@ -137,6 +145,7 @@ export interface FullOnlineTestRegistrations {
 export interface FullOnlineTestDeps extends E2eTestDeps {
   readSample: (properties: IPropertiesFacade) => SharedTestDatabase;
   registrations: Partial<FullOnlineTestRegistrations>;
+  spreadsheetService: FixtureSpreadsheetService;
 }
 
 const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, sample) => {
@@ -341,9 +350,154 @@ const ALL_ONLINE_TEST_GROUPS: ReadonlyArray<keyof FullOnlineTestRegistrations> =
   'permessi'
 ];
 
+export interface PersistedE2eFixtureMigrationResult {
+  previousVersion: number;
+  version: number;
+  insertedMaterie: string[];
+  deletedAslColumn: boolean;
+}
+
+function readFixtureVersion(properties: IPropertiesFacade): number {
+  const raw = properties.get(PROP_ONLINETEST_FIXTURE_VERSION)?.trim();
+  if (raw === undefined || raw === '') return 0;
+  const version = Number(raw);
+  if (!Number.isInteger(version) || version < 0) {
+    throw new ConfigurationError(`Versione fixture E2E non valida: ${raw}.`);
+  }
+  if (version > REQUIRED_ONLINETEST_FIXTURE_VERSION) {
+    throw new ConfigurationError(
+      `Versione fixture E2E ${version} più recente di quella supportata (${REQUIRED_ONLINETEST_FIXTURE_VERSION}).`
+    );
+  }
+  return version;
+}
+
+function missingCanonicalMaterie(db: SheetDbAdapter): ReturnType<typeof buildMaterieRows> {
+  const existingIds = new Set(
+    db
+      .table(TABLE.MATERIE)
+      .findAll()
+      .map((row) => String(row[COL_MATERIE.ID]))
+  );
+  return buildMaterieRows().filter((row) => !existingIds.has(String(row[COL_MATERIE.ID])));
+}
+
+function readPhysicalAslHeader(
+  spreadsheetService: FixtureSpreadsheetService,
+  spreadsheetId: string
+): string[] {
+  const values = spreadsheetService.getRanges(spreadsheetId, 'ASL!1:1');
+  return (values[0] ?? []).map((value) => {
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+    return '';
+  });
+}
+
+function matchingHeaderIndices(header: string[], target: string): number[] {
+  const indices: number[] = [];
+  header.forEach((value, index) => {
+    if (value === target) indices.push(index + 1);
+  });
+  return indices;
+}
+
+function migrateResolvedPersistedE2eFixture(
+  sample: SharedTestDatabase,
+  properties: IPropertiesFacade,
+  overrides: Partial<FullOnlineTestDeps>
+): PersistedE2eFixtureMigrationResult {
+  const previousVersion = readFixtureVersion(properties);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+  const spreadsheetService = overrides.spreadsheetService ?? ServiceFactory.getSpreadsheetService();
+
+  resetAldoFn();
+  const migrationContainer = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
+  const db = migrationContainer.get<SheetDbAdapter>('db');
+  const missingMaterie = missingCanonicalMaterie(db);
+  const initialHeader = readPhysicalAslHeader(spreadsheetService, sample.sampleSpreadsheetId);
+  const initialMatches = matchingHeaderIndices(initialHeader, 'DATA_MODIFICA');
+
+  if (initialMatches.length > 1) {
+    throw new ConfigurationError(
+      `Migrazione fixture E2E ASL: DATA_MODIFICA compare ${initialMatches.length} volte; nessuna colonna eliminata.`
+    );
+  }
+
+  if (previousVersion === REQUIRED_ONLINETEST_FIXTURE_VERSION) {
+    if (missingMaterie.length > 0) {
+      throw new ConfigurationError(
+        `Fixture E2E v${REQUIRED_ONLINETEST_FIXTURE_VERSION} non valida: MATERIE mancanti ${missingMaterie
+          .map((row) => String(row[COL_MATERIE.ID]))
+          .join(', ')}.`
+      );
+    }
+    if (initialMatches.length === 1) {
+      throw new ConfigurationError(
+        `Fixture E2E v${REQUIRED_ONLINETEST_FIXTURE_VERSION} non valida: ASL.DATA_MODIFICA è ancora presente.`
+      );
+    }
+    return {
+      previousVersion,
+      version: REQUIRED_ONLINETEST_FIXTURE_VERSION,
+      insertedMaterie: [],
+      deletedAslColumn: false
+    };
+  }
+
+  let deletedAslColumn = false;
+  if (initialMatches.length === 1) {
+    const columnIndex = initialMatches[0]!;
+    const revalidatedHeader = readPhysicalAslHeader(spreadsheetService, sample.sampleSpreadsheetId);
+    const revalidatedMatches = matchingHeaderIndices(revalidatedHeader, 'DATA_MODIFICA');
+    const unchanged =
+      revalidatedHeader.length === initialHeader.length &&
+      revalidatedHeader.every((value, index) => value === initialHeader[index]);
+    if (!unchanged || revalidatedMatches.length !== 1 || revalidatedMatches[0] !== columnIndex) {
+      throw new ConfigurationError(
+        'Migrazione fixture E2E ASL: intestazione cambiata durante la validazione; nessuna colonna eliminata.'
+      );
+    }
+    spreadsheetService.deleteColumn(sample.sampleSpreadsheetId, TABLE.ASL, columnIndex);
+    deletedAslColumn = true;
+  }
+
+  const insertedMaterie: string[] = [];
+  for (const row of missingMaterie) {
+    db.table(TABLE.MATERIE).insert(row);
+    insertedMaterie.push(String(row[COL_MATERIE.ID]));
+  }
+  if (insertedMaterie.length > 0) db.save();
+
+  properties.set(PROP_ONLINETEST_FIXTURE_VERSION, String(REQUIRED_ONLINETEST_FIXTURE_VERSION));
+  return {
+    previousVersion,
+    version: REQUIRED_ONLINETEST_FIXTURE_VERSION,
+    insertedMaterie,
+    deletedAslColumn
+  };
+}
+
+/**
+ * Reconciles the versioned persisted E2E fixture through a temporary ALDO container. It never
+ * purges append-only history; callers must reset ALDO and build their final consumer container
+ * after this function returns.
+ */
+export function migratePersistedE2eFixture(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): PersistedE2eFixtureMigrationResult {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const readSample = overrides.readSample ?? readPersistedFullOnlineTestSample;
+  return migrateResolvedPersistedE2eFixture(readSample(properties), properties, overrides);
+}
+
 /**
  * Shared body of the aggregate runner and of every batch launcher: reads the persisted fixture,
- * re-initialises Aldo against it and registers exactly the requested scenario groups.
+ * migrates it before consumer snapshots, re-initialises Aldo and registers exactly the requested
+ * scenario groups. It deliberately does not purge history because later batches consume earlier
+ * batches' artifacts.
  * `cacheIsolationDeps` is resolved lazily so batches without `cacheIsolamento` never require the
  * second master fixture.
  */
@@ -363,6 +517,7 @@ function executeOnlineTestsBatch(
     ? resolveTestRecipient(overrides.activeUser ?? new SessionActiveUserFacade())
     : '';
 
+  migrateResolvedPersistedE2eFixture(sample, properties, overrides);
   resetAldoFn();
   const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
   container
@@ -499,20 +654,13 @@ export interface ResetE2eHistoryTablesResult {
   purgedLogMail: number;
   purgedLogDocs: number;
   insertedMaterie: string[];
+  deletedAslColumn: boolean;
   warnings: string[];
 }
 
 /**
- * Deletes every row from `LOG_MAIL`/`LOG_DOCS` (pure append-only run history —
- * safe to clear, reruns regenerate it) and tops up `MATERIE` with any row from
- * `buildMaterieRows()` missing from the persisted sheet (idempotent — never
- * touches an existing row), against the SAME persisted E2E sample the batch
- * launchers already reuse. This targets the systemic "stale persisted sheet"
- * failure family (2026-08-14 batch triage) without a full spreadsheet rebuild.
- *
- * Does NOT and cannot fix a stray `ASL` sheet column (e.g. `DATA_MODIFICA`
- * left by an earlier OVERWRITE import) — that's a header cell, not a row; any
- * such drift is only reported as a warning for manual removal.
+ * Explicit pre-Batch-1 launcher: migrates the persisted fixture, rebuilds the final container,
+ * then deletes every append-only row from `LOG_MAIL`/`LOG_DOCS`. No other table is purged.
  */
 export function resetE2eHistoryTables(
   overrides: Partial<FullOnlineTestDeps> = {}
@@ -525,36 +673,28 @@ export function resetE2eHistoryTables(
   const clock = overrides.clock ?? ((): Date => new Date());
   const logger = ServiceFactory.getLogger();
 
+  const migration = migrateResolvedPersistedE2eFixture(sample, properties, overrides);
   resetAldoFn();
   const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
   const db = container.get<SheetDbAdapter>('db');
 
   const purgedLogMail = purgeTable(db, TABLE.LOG_MAIL, '__PK');
   const purgedLogDocs = purgeTable(db, TABLE.LOG_DOCS, COL_LOG_DOCS.ID);
-  const insertedMaterie = topUpMaterie(db);
-
-  const warnings: string[] = [];
-  const strayAslColumn = 'DATA_MODIFICA';
-  const aslRow = db.table(TABLE.ASL).findAll()[0];
-  if (aslRow !== undefined && strayAslColumn in aslRow) {
-    warnings.push(
-      `ASL ha una colonna ${strayAslColumn} fuori schema (01_SCHEMA_DATABASE.md: solo ${COL_ASL.STUDENTE}/${COL_ASL.ANNO}/${COL_ASL.ORE}) — va rimossa a mano dal foglio reale, non è una riga.`
-    );
-  }
+  if (purgedLogMail + purgedLogDocs > 0) db.save();
 
   const result: ResetE2eHistoryTablesResult = {
     purgedLogMail,
     purgedLogDocs,
-    insertedMaterie,
-    warnings
+    insertedMaterie: migration.insertedMaterie,
+    deletedAslColumn: migration.deletedAslColumn,
+    warnings: []
   };
   logger.logSummary('🧹 Reset tabelle storiche E2E', 0, {
     purgedLogMail,
     purgedLogDocs,
-    insertedMaterie: insertedMaterie.length,
-    warnings: warnings.length
+    insertedMaterie: migration.insertedMaterie.length,
+    deletedAslColumn: migration.deletedAslColumn
   });
-  warnings.forEach((warning) => logger.warn(warning));
   return result;
 }
 
@@ -566,25 +706,6 @@ function purgeTable(db: SheetDbAdapter, table: string, pkColumn: string): number
   const ids = raw.getAllRows().map((row) => String(row[pkColumn]));
   ids.forEach((id) => raw.deleteRowById(id));
   return ids.length;
-}
-
-/** Inserts whichever `buildMaterieRows()` entries are missing from the persisted MATERIE table; never touches an existing row. */
-function topUpMaterie(db: SheetDbAdapter): string[] {
-  const existingIds = new Set(
-    db
-      .table(TABLE.MATERIE)
-      .findAll()
-      .map((row) => String(row[COL_MATERIE.ID]))
-  );
-  const inserted: string[] = [];
-  for (const row of buildMaterieRows()) {
-    const id = String(row[COL_MATERIE.ID]);
-    if (!existingIds.has(id)) {
-      db.table(TABLE.MATERIE).insert(row);
-      inserted.push(id);
-    }
-  }
-  return inserted;
 }
 
 /**

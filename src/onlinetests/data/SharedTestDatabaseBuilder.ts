@@ -97,7 +97,7 @@ const ESAME_CFG_E2E: Record<string, string> = {
 /**
  * The full MATERIE row set (base subjects + dotted-specifica rows), as pure
  * data — shared by `seedMaterie` (build-time, via `sample.appendRow`) and any
- * runtime top-up utility (e.g. `resetE2eHistoryTables`, which inserts only
+ * runtime fixture migration (e.g. `migratePersistedE2eFixture`, which inserts only
  * whichever of these are missing from an already-persisted E2E sheet) so both
  * stay byte-for-byte in sync with a single source of truth.
  */

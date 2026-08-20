@@ -157,7 +157,7 @@ export function dumpOnlineCoverage(): void {
   return getAldoOnlineTestsLaunchersBridge().dumpOnlineCoverage();
 }
 
-/** Purges LOG_MAIL/LOG_DOCS and tops up MATERIE on the persisted E2E sample — see resetE2eHistoryTables' doc comment. */
+/** Migrates the persisted fixture, then explicitly purges only LOG_MAIL/LOG_DOCS before Batch 1. */
 export function resetE2eHistoryTables(): unknown {
   return getAldoOnlineTestsLaunchersBridge().resetE2eHistoryTables();
 }

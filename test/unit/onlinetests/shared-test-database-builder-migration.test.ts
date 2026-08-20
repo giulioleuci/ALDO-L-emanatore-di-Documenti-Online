@@ -15,6 +15,7 @@ import {
   PIANO_DOPPIO_STUDENTE,
   RIPETENTE_1A,
   RIPETENTE_3C,
+  buildMaterieRows,
   e2eAlunnoEmail,
   e2eDocenteEmail,
   type E2eTemplateIds
@@ -38,6 +39,7 @@ import {
   COL_LOG_FOLD,
   COL_LOG_DOCS,
   COL_MASTER,
+  COL_MATERIE,
   COL_SUPPLENZE,
   TABLE
 } from '../../../src/config/schema';
@@ -123,6 +125,16 @@ const TEMPLATE_IDS: E2eTemplateIds = {
     PFP: 'tmpl_pfp'
   }
 };
+
+test('keeps INTERPRET.FLAUTO in the canonical MATERIE rows used by builds and migrations', () => {
+  expect(
+    buildMaterieRows().find((row) => row[COL_MATERIE.ID] === 'INTERPRET.FLAUTO')
+  ).toMatchObject({
+    [COL_MATERIE.ID]: 'INTERPRET.FLAUTO',
+    [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione',
+    [COL_MATERIE.SPECIFICITA]: 'Flauto'
+  });
+});
 
 test('builds the shared extended dataset through every migrated seeder', () => {
   const { spreadsheets, sheets } = recordingFactory();

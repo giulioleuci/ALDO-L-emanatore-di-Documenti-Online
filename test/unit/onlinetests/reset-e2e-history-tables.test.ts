@@ -1,4 +1,8 @@
-import { resetE2eHistoryTables } from '../../../src/onlinetests';
+import {
+  migratePersistedE2eFixture,
+  PROP_ONLINETEST_FIXTURE_VERSION,
+  resetE2eHistoryTables
+} from '../../../src/onlinetests';
 import { SheetDbAdapter } from '../../../src/infrastructure/db/SheetDbAdapter';
 import { ServiceContainer } from '../../../src/config/ServiceContainer';
 import { buildMaterieRows } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
@@ -54,12 +58,17 @@ function sample(): SharedTestDatabase {
   };
 }
 
-function fakeProperties(): IPropertiesFacade {
+function recordingProperties(
+  fixtureVersion: string | null = null
+): IPropertiesFacade & { set: jest.Mock<void, [string, string]> } {
+  const values = new Map<string, string>();
+  if (fixtureVersion !== null) values.set(PROP_ONLINETEST_FIXTURE_VERSION, fixtureVersion);
   return {
-    get: () => undefined,
-    set: () => {},
-    remove: () => {}
-  } as unknown as IPropertiesFacade;
+    get: (key: string) => values.get(key) ?? null,
+    set: jest.fn((key: string, value: string) => {
+      values.set(key, value);
+    })
+  };
 }
 
 function containerFor(adapter: SheetDbAdapter): ServiceContainer {
@@ -68,105 +77,278 @@ function containerFor(adapter: SheetDbAdapter): ServiceContainer {
   return container;
 }
 
-function baseSeed(): Record<string, unknown[][]> {
+function materiaData(excludedIds: string[] = [], includeUnrelated = false): unknown[][] {
+  const rows = buildMaterieRows().filter(
+    (row) => !excludedIds.includes(String(row[COL_MATERIE.ID]))
+  );
+  if (includeUnrelated) {
+    rows.push({
+      [COL_MATERIE.ID]: 'CUSTOM.SUBJECT',
+      [COL_MATERIE.NOME]: 'Custom subject'
+    });
+  }
+  const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
+  return [headers, ...rows.map((row) => headers.map((header) => row[header]))];
+}
+
+function baseSeed(
+  excludedMaterie: string[] = [],
+  includeUnrelated = false
+): Record<string, unknown[][]> {
   return {
     LOG_MAIL: [
       ['PATTERN', 'DESTINATARI', 'DATA', 'STATO', 'ALLEGATI', 'ERRORE', 'TESTO'],
       ['E2E_MAIL_PIANI', 'stale@real.example.com', '2026-01-01T00:00:00Z', 'INVIATO', '', '', ''],
-      ['E2E_MAIL_VERBALE', 'sgsa-onlinetests@onlinetest.aldo.local', '2026-08-01T00:00:00Z', 'INVIATO', '', '', '']
+      [
+        'E2E_MAIL_VERBALE',
+        'sgsa-onlinetests@onlinetest.aldo.local',
+        '2026-08-01T00:00:00Z',
+        'INVIATO',
+        '',
+        '',
+        ''
+      ]
     ],
     LOG_DOCS: [
-      ['ID', 'ID_GEN', 'TIPO', 'SOTTOTIPO', 'NOME', 'STATO', 'NOTIFICATO', 'PATH', 'LINK', 'CLASSI', 'UTENTI', 'MATERIE', 'DATA_CREAZ', 'ID_ORIG'],
-      ['doc-1', 'E2E_DOC_VERBALE', 'VERBALE', '', 'n1', 'OK', '', 'p1', 'l1', '3C', '', '', '2026-01-01', ''],
-      ['doc-2', 'E2E_DOC_VERBALE', 'VERBALE', '', 'n2', 'OK', '', 'p2', 'l2', '3C', '', 'MATE', '2026-08-01', '']
-    ],
-    MATERIE: [
       [
-        COL_MATERIE.ID,
-        COL_MATERIE.NOME,
-        COL_MATERIE.SINTESI,
-        COL_MATERIE.COLORE_1,
-        COL_MATERIE.COLORE_2,
-        COL_MATERIE.SIMBOLO,
-        COL_MATERIE.ESAME_CFG,
-        COL_MATERIE.EVOLUZIONE,
-        COL_MATERIE.IS_RELIGIONE_ALT
+        'ID',
+        'ID_GEN',
+        'TIPO',
+        'SOTTOTIPO',
+        'NOME',
+        'STATO',
+        'NOTIFICATO',
+        'PATH',
+        'LINK',
+        'CLASSI',
+        'UTENTI',
+        'MATERIE',
+        'DATA_CREAZ',
+        'ID_ORIG'
       ],
-      // Deliberately non-canonical NOME to prove the top-up never touches this existing row.
-      ['MAT', 'CUSTOM', 'CUSTOM', '#000', '#fff', 'M', '', '', false]
+      [
+        'doc-1',
+        'E2E_DOC_VERBALE',
+        'VERBALE',
+        '',
+        'n1',
+        'OK',
+        '',
+        'p1',
+        'l1',
+        '3C',
+        '',
+        '',
+        '2026-01-01',
+        ''
+      ],
+      [
+        'doc-2',
+        'E2E_DOC_VERBALE',
+        'VERBALE',
+        '',
+        'n2',
+        'OK',
+        '',
+        'p2',
+        'l2',
+        '3C',
+        '',
+        'MATE',
+        '2026-08-01',
+        ''
+      ]
     ],
+    MATERIE: materiaData(excludedMaterie, includeUnrelated),
     ASL: [['STUDENTE', 'ANNO', 'ORE']]
   };
 }
 
-test('purges every LOG_MAIL/LOG_DOCS row, regardless of content', () => {
-  const adapter = new SheetDbAdapter(libDb(baseSeed()));
-  const container = containerFor(adapter);
+function physicalSpreadsheet(initialHeader: unknown[]) {
+  const header = initialHeader.slice();
+  return {
+    getRanges: jest.fn(() => [header.slice()]),
+    deleteColumn: jest.fn((_spreadsheetId: string, _sheetName: string, columnIndex: number) => {
+      header.splice(columnIndex - 1, 1);
+    })
+  };
+}
 
-  const result = resetE2eHistoryTables({
-    properties: fakeProperties(),
+function migrationOverrides(
+  adapter: SheetDbAdapter,
+  properties: IPropertiesFacade,
+  spreadsheetService: ReturnType<typeof physicalSpreadsheet>
+) {
+  return {
+    properties,
     readSample: () => sample(),
-    resetAldo: () => {},
-    initAldo: () => container
+    resetAldo: jest.fn(),
+    initAldo: jest.fn(() => containerFor(adapter)),
+    spreadsheetService
+  };
+}
+
+test('migrates a missing INTERPRET.FLAUTO row and exact trimmed ASL header without purging history', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed(['INTERPRET.FLAUTO'], true)));
+  const save = jest.spyOn(adapter, 'save');
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE', ' DATA_MODIFICA ']);
+
+  const result = migratePersistedE2eFixture(
+    migrationOverrides(adapter, properties, spreadsheetService)
+  );
+
+  expect(result.insertedMaterie).toEqual(['INTERPRET.FLAUTO']);
+  expect(result.deletedAslColumn).toBe(true);
+  expect(spreadsheetService.deleteColumn).toHaveBeenCalledWith('sample', 'ASL', 4);
+  expect(properties.set).toHaveBeenCalledWith(PROP_ONLINETEST_FIXTURE_VERSION, '2');
+  expect(save).toHaveBeenCalledTimes(1);
+  expect(adapter.table(TABLE.LOG_MAIL).findAll()).toHaveLength(2);
+  expect(adapter.table(TABLE.LOG_DOCS).findAll()).toHaveLength(2);
+  expect(
+    adapter
+      .table(TABLE.MATERIE)
+      .findAll()
+      .map((row) => row[COL_MATERIE.ID])
+  ).toEqual(expect.arrayContaining(['INTERPRET.FLAUTO', 'CUSTOM.SUBJECT']));
+});
+
+test('a second verified migration run performs no persisted mutation', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed(['INTERPRET.FLAUTO'])));
+  const save = jest.spyOn(adapter, 'save');
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']);
+  const overrides = migrationOverrides(adapter, properties, spreadsheetService);
+
+  migratePersistedE2eFixture(overrides);
+  properties.set.mockClear();
+  spreadsheetService.deleteColumn.mockClear();
+  save.mockClear();
+  const rowCount = adapter.table(TABLE.MATERIE).findAll().length;
+
+  const result = migratePersistedE2eFixture(overrides);
+
+  expect(result).toMatchObject({ insertedMaterie: [], deletedAslColumn: false, version: 2 });
+  expect(adapter.table(TABLE.MATERIE).findAll()).toHaveLength(rowCount);
+  expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
+  expect(properties.set).not.toHaveBeenCalled();
+  expect(save).not.toHaveBeenCalled();
+});
+
+test('a required-version fixture missing INTERPRET.FLAUTO fails verification without mutation', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed(['INTERPRET.FLAUTO'])));
+  const properties = recordingProperties('2');
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
+
+  expect(() =>
+    migratePersistedE2eFixture(migrationOverrides(adapter, properties, spreadsheetService))
+  ).toThrow(/INTERPRET\.FLAUTO/);
+  expect(properties.set).not.toHaveBeenCalled();
+  expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
+  expect(
+    adapter
+      .table(TABLE.MATERIE)
+      .findAll()
+      .some((row) => row[COL_MATERIE.ID] === 'INTERPRET.FLAUTO')
+  ).toBe(false);
+});
+
+test('treats zero DATA_MODIFICA physical headers as already migrated', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
+
+  const result = migratePersistedE2eFixture(
+    migrationOverrides(adapter, properties, spreadsheetService)
+  );
+
+  expect(result.deletedAslColumn).toBe(false);
+  expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
+  expect(properties.set).toHaveBeenCalledWith(PROP_ONLINETEST_FIXTURE_VERSION, '2');
+});
+
+test('preserves an existing canonical MATERIE row instead of rewriting it', () => {
+  const seed = baseSeed();
+  const headers = seed['MATERIE']![0] as string[];
+  const idIndex = headers.indexOf(COL_MATERIE.ID);
+  const nameIndex = headers.indexOf(COL_MATERIE.NOME);
+  const matRow = seed['MATERIE']!.slice(1).find((row) => row[idIndex] === 'MAT')!;
+  matRow[nameIndex] = 'CUSTOM';
+  const adapter = new SheetDbAdapter(libDb(seed));
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
+
+  migratePersistedE2eFixture(migrationOverrides(adapter, properties, spreadsheetService));
+
+  expect(
+    adapter.table(TABLE.MATERIE).find((row) => row[COL_MATERIE.ID] === 'MAT')?.[COL_MATERIE.NOME]
+  ).toBe('CUSTOM');
+});
+
+test('refuses ambiguous duplicate DATA_MODIFICA headers without mutation', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet([
+    'STUDENTE',
+    'DATA_MODIFICA',
+    'ORE',
+    ' DATA_MODIFICA '
+  ]);
+
+  expect(() =>
+    migratePersistedE2eFixture(migrationOverrides(adapter, properties, spreadsheetService))
+  ).toThrow(/DATA_MODIFICA.*2/);
+  expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
+  expect(properties.set).not.toHaveBeenCalled();
+});
+
+test('revalidates the ASL header immediately before deletion and rejects mutation drift', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet([]);
+  spreadsheetService.getRanges
+    .mockReturnValueOnce([['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']])
+    .mockReturnValueOnce([['STUDENTE', 'ANNO', 'ORE', 'ALTRO', 'DATA_MODIFICA']]);
+
+  expect(() =>
+    migratePersistedE2eFixture(migrationOverrides(adapter, properties, spreadsheetService))
+  ).toThrow(/cambiata/);
+  expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
+  expect(properties.set).not.toHaveBeenCalled();
+});
+
+test('writes the fixture version only after the structural mutation succeeds', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']);
+  spreadsheetService.deleteColumn.mockImplementation(() => {
+    throw new Error('delete failed');
   });
+
+  expect(() =>
+    migratePersistedE2eFixture(migrationOverrides(adapter, properties, spreadsheetService))
+  ).toThrow('delete failed');
+  expect(properties.set).not.toHaveBeenCalled();
+});
+
+test('the explicit reset migrates first and then purges only LOG_MAIL/LOG_DOCS', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed(['INTERPRET.FLAUTO'], true)));
+  const save = jest.spyOn(adapter, 'save');
+  const properties = recordingProperties();
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
+
+  const result = resetE2eHistoryTables(migrationOverrides(adapter, properties, spreadsheetService));
 
   expect(result.purgedLogMail).toBe(2);
   expect(result.purgedLogDocs).toBe(2);
+  expect(result.insertedMaterie).toEqual(['INTERPRET.FLAUTO']);
+  expect(save).toHaveBeenCalledTimes(2);
   expect(adapter.table(TABLE.LOG_MAIL).findAll()).toHaveLength(0);
   expect(adapter.table(TABLE.LOG_DOCS).findAll()).toHaveLength(0);
-});
-
-test('tops up MATERIE with only the missing rows, never touching an existing one', () => {
-  const adapter = new SheetDbAdapter(libDb(baseSeed()));
-  const container = containerFor(adapter);
-  const expectedFullSet = buildMaterieRows().map((row) => String(row[COL_MATERIE.ID]));
-
-  const result = resetE2eHistoryTables({
-    properties: fakeProperties(),
-    readSample: () => sample(),
-    resetAldo: () => {},
-    initAldo: () => container
-  });
-
-  expect(result.insertedMaterie.sort()).toEqual(
-    expectedFullSet.filter((id) => id !== 'MAT').sort()
-  );
-  const rows = adapter.table(TABLE.MATERIE).findAll();
-  expect(rows.map((row) => String(row[COL_MATERIE.ID])).sort()).toEqual(expectedFullSet.sort());
-  // The pre-existing MAT row's custom NOME survived — top-up is additive only.
-  expect(rows.find((row) => row[COL_MATERIE.ID] === 'MAT')?.[COL_MATERIE.NOME]).toBe('CUSTOM');
-});
-
-test('warns about a stray ASL column instead of trying to fix it', () => {
-  const seed = baseSeed();
-  seed['ASL'] = [
-    ['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA'],
-    ['a1@school.it', 1, 10, '2026-01-01']
-  ];
-  const adapter = new SheetDbAdapter(libDb(seed));
-  const container = containerFor(adapter);
-
-  const result = resetE2eHistoryTables({
-    properties: fakeProperties(),
-    readSample: () => sample(),
-    resetAldo: () => {},
-    initAldo: () => container
-  });
-
-  expect(result.warnings).toHaveLength(1);
-  expect(result.warnings[0]).toMatch(/DATA_MODIFICA/);
-});
-
-test('no ASL warning when the sheet matches the canonical schema', () => {
-  const adapter = new SheetDbAdapter(libDb(baseSeed()));
-  const container = containerFor(adapter);
-
-  const result = resetE2eHistoryTables({
-    properties: fakeProperties(),
-    readSample: () => sample(),
-    resetAldo: () => {},
-    initAldo: () => container
-  });
-
-  expect(result.warnings).toHaveLength(0);
+  expect(
+    adapter
+      .table(TABLE.MATERIE)
+      .findAll()
+      .map((row) => row[COL_MATERIE.ID])
+  ).toEqual(expect.arrayContaining(['INTERPRET.FLAUTO', 'CUSTOM.SUBJECT']));
 });

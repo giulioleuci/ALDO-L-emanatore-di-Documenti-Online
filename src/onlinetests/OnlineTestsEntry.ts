@@ -65,6 +65,7 @@ const aldoOnlineTestsLaunchers = {
   runOnlineTestsBatch3,
   runOnlineTestsBatch4,
   dumpOnlineCoverage,
+  // Explicit pre-Batch-1 reset; ordinary batch launchers run migration without purging history.
   resetE2eHistoryTables
 };
 

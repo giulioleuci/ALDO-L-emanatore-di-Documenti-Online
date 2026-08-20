@@ -10,6 +10,7 @@ import {
   runOnlineTestsBatch2,
   runOnlineTestsBatch3,
   runOnlineTestsBatch4,
+  PROP_ONLINETEST_FIXTURE_VERSION,
   PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
   testCacheIsolamento,
   testJobRunnerTriggerReale,
@@ -20,9 +21,13 @@ import {
 } from '../../../src/onlinetests';
 import type { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 import type { OnlineTestReport } from '../../../src/onlinetests/report/OnlineTestReport';
-import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import {
+  buildMaterieRows,
+  type SharedTestDatabase
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import { EMAIL_TEST_SAFE } from '../../../src/onlinetests/data/fixtures';
+import { COL_MATERIE, TABLE } from '../../../src/config/schema';
 import {
   registerEffectiveAssignmentMatrixChecks,
   registerRepositoryChecks
@@ -119,11 +124,116 @@ const sample: SharedTestDatabase = {
   staticAttachmentFileId: 'attachment'
 };
 
+it('migrates the persisted fixture before the final registration container snapshots MATERIE', () => {
+  const calls: string[] = [];
+  const migrationDb = new FakeDatabase({
+    [TABLE.MATERIE]: buildMaterieRows().filter((row) => row[COL_MATERIE.ID] !== 'INTERPRET.FLAUTO'),
+    [TABLE.LOG_MAIL]: [{ ID: 'mail-history' }],
+    [TABLE.LOG_DOCS]: [{ ID: 'doc-history' }]
+  });
+  const tempContainer = {
+    get: jest.fn((key: string) => {
+      if (key === 'db') return migrationDb;
+      throw new Error(`temporary container cannot resolve ${key}`);
+    })
+  } as unknown as ServiceContainer;
+  const registerInterceptor = jest.fn();
+  const finalContainer = {
+    get: jest.fn((key: string) => {
+      if (key === 'contextBuilder') return { registerInterceptor };
+      throw new Error(`final container cannot resolve ${key}`);
+    })
+  } as unknown as ServiceContainer;
+  let initCount = 0;
+  let finalMaterieSnapshot: string[] = [];
+  const propertiesValues = new Map<string, string>();
+  const propertiesWithVersion: IPropertiesFacade = {
+    get: (key) => propertiesValues.get(key) ?? null,
+    set: (key, value) => {
+      calls.push(`set:${key}:${value}`);
+      propertiesValues.set(key, value);
+    }
+  };
+  const register = (name: string) =>
+    jest.fn((runner: Pick<TestRunner, 'add'>, container: ServiceContainer) => {
+      calls.push(`register:${name}`);
+      expect(container).toBe(finalContainer);
+      expect(finalMaterieSnapshot).toContain('INTERPRET.FLAUTO');
+      runner.add(name, sample.sampleSpreadsheetUrl, () => undefined);
+    });
+
+  const report = executeOnlineTestsBatch3({
+    properties: propertiesWithVersion,
+    readSample: () => {
+      calls.push('readSample');
+      return sample;
+    },
+    resetAldo: () => calls.push('reset'),
+    initAldo: () => {
+      initCount += 1;
+      if (initCount === 1) {
+        calls.push('init:temporary');
+        return tempContainer;
+      }
+      calls.push('init:final');
+      finalMaterieSnapshot = migrationDb
+        .table(TABLE.MATERIE)
+        .findAll()
+        .map((row) => String(row[COL_MATERIE.ID]));
+      return finalContainer;
+    },
+    spreadsheetService: {
+      getRanges: (_spreadsheetId: string, range: string) => {
+        calls.push(`getRanges:${range}`);
+        return [['STUDENTE', 'ANNO', 'ORE']];
+      },
+      deleteColumn: jest.fn()
+    },
+    registrations: {
+      import: register('import'),
+      storico: register('storico'),
+      itpDotted: register('itpDotted'),
+      aclReali: register('aclReali')
+    }
+  });
+
+  expect(calls).toEqual([
+    'readSample',
+    'reset',
+    'init:temporary',
+    'getRanges:ASL!1:1',
+    `set:${PROP_ONLINETEST_FIXTURE_VERSION}:2`,
+    'reset',
+    'init:final',
+    'register:import',
+    'register:storico',
+    'register:itpDotted',
+    'register:aclReali'
+  ]);
+  expect(migrationDb.table(TABLE.LOG_MAIL).findAll()).toEqual([{ ID: 'mail-history' }]);
+  expect(migrationDb.table(TABLE.LOG_DOCS).findAll()).toEqual([{ ID: 'doc-history' }]);
+  expect(report).toMatchObject({ passed: 4, failed: 0 });
+});
+
 function properties(): IPropertiesFacade {
   return {
-    get: (key: string) =>
-      key === PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID ? 'cache-master' : null,
+    get: (key: string) => {
+      if (key === PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID) return 'cache-master';
+      if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '2';
+      return null;
+    },
     set: () => undefined
+  };
+}
+
+function verifiedMigrationDb(): FakeDatabase {
+  return new FakeDatabase({ [TABLE.MATERIE]: buildMaterieRows() });
+}
+
+function verifiedSpreadsheetService() {
+  return {
+    getRanges: jest.fn(() => [['STUDENTE', 'ANNO', 'ORE']]),
+    deleteColumn: jest.fn()
   };
 }
 
@@ -131,8 +241,9 @@ describe('executeFullOnlineTests', () => {
   it('forces a fresh provision before registering every scenario group in the documented order', () => {
     const calls: string[] = [];
     const registerInterceptor = jest.fn();
+    const migrationDb = verifiedMigrationDb();
     const container = {
-      get: jest.fn(() => ({ registerInterceptor }))
+      get: jest.fn((key: string) => (key === 'db' ? migrationDb : { registerInterceptor }))
     } as unknown as ServiceContainer;
     const register =
       (name: string) =>
@@ -165,6 +276,7 @@ describe('executeFullOnlineTests', () => {
         calls.push('readSample');
         return sample;
       },
+      spreadsheetService: verifiedSpreadsheetService(),
       registrations
     };
 
@@ -172,6 +284,8 @@ describe('executeFullOnlineTests', () => {
 
     expect(calls).toEqual([
       'readSample',
+      'reset',
+      'init',
       'reset',
       'init',
       'documenti',
@@ -193,8 +307,9 @@ describe('executeFullOnlineTests', () => {
   it('uses the default transitional adapters to run existing checks instead of reporting 0/0', () => {
     const calls: string[] = [];
     const registerInterceptor = jest.fn(() => calls.push('interceptor'));
+    const migrationDb = verifiedMigrationDb();
     const container = {
-      get: jest.fn(() => ({ registerInterceptor }))
+      get: jest.fn((key: string) => (key === 'db' ? migrationDb : { registerInterceptor }))
     } as unknown as ServiceContainer;
     const registerExisting = (name: string) =>
       jest.fn(
@@ -255,11 +370,14 @@ describe('executeFullOnlineTests', () => {
       readSample: () => {
         calls.push('readSample');
         return sample;
-      }
+      },
+      spreadsheetService: verifiedSpreadsheetService()
     });
 
     expect(calls).toEqual([
       'readSample',
+      'reset',
+      'init',
       'reset',
       'init',
       'interceptor',
@@ -417,7 +535,7 @@ const ONLINE_TEST_GROUP_NAMES: Array<keyof FullOnlineTestRegistrations> = [
 /** Properties fixture without the cache-isolated master: batches 1-3 must not need it. */
 function propertiesWithoutCacheFixture(): IPropertiesFacade {
   return {
-    get: () => null,
+    get: (key: string) => (key === PROP_ONLINETEST_FIXTURE_VERSION ? '2' : null),
     set: () => undefined
   };
 }
@@ -428,8 +546,9 @@ function recordBatchGroups(
 ): string[] {
   const calls: string[] = [];
   const registerInterceptor = jest.fn();
+  const migrationDb = verifiedMigrationDb();
   const container = {
-    get: jest.fn(() => ({ registerInterceptor }))
+    get: jest.fn((key: string) => (key === 'db' ? migrationDb : { registerInterceptor }))
   } as unknown as ServiceContainer;
   const registrations: Record<string, unknown> = {};
   for (const name of ONLINE_TEST_GROUP_NAMES) {
@@ -445,6 +564,7 @@ function recordBatchGroups(
     resetAldo: () => undefined,
     initAldo: () => container,
     readSample: () => sample,
+    spreadsheetService: verifiedSpreadsheetService(),
     registrations: registrations
   });
   return calls;
@@ -454,7 +574,10 @@ it('resolves the authenticated operator once and passes its trimmed address to e
   const activeUser = { getEmail: jest.fn(() => '  operator@example.test  ') };
   const recipients: string[] = [];
   const registerInterceptor = jest.fn();
-  const container = { get: jest.fn(() => ({ registerInterceptor })) } as unknown as ServiceContainer;
+  const migrationDb = verifiedMigrationDb();
+  const container = {
+    get: jest.fn((key: string) => (key === 'db' ? migrationDb : { registerInterceptor }))
+  } as unknown as ServiceContainer;
 
   executeFullOnlineTests({
     properties: properties(),
@@ -463,6 +586,7 @@ it('resolves the authenticated operator once and passes its trimmed address to e
     initAldo: () => container,
     readSample: () => sample,
     activeUser,
+    spreadsheetService: verifiedSpreadsheetService(),
     registrations: {
       email: (_runner, _container, _sample, recipient) => recipients.push(recipient),
       jobRunner: (_runner, _container, _sample, recipient) => recipients.push(recipient)
@@ -491,7 +615,7 @@ function recordActualBatchScenarioNames(
   execute: (overrides: Partial<FullOnlineTestDeps>) => OnlineTestReport,
   props: IPropertiesFacade
 ): string[] {
-  const fakeDb = new FakeDatabase({});
+  const fakeDb = verifiedMigrationDb();
   const container = {
     get: jest.fn((key: string) =>
       key === 'db'
@@ -567,6 +691,7 @@ function recordActualBatchScenarioNames(
     resetAldo: () => undefined,
     initAldo: () => container,
     readSample: () => sample,
+    spreadsheetService: verifiedSpreadsheetService(),
     registrations
   }).results.map((result) => result.name);
   creaJobRunner.mockRestore();

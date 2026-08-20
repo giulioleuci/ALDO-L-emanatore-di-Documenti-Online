@@ -4,12 +4,18 @@ import type { Cdu } from '../../application/context-engine/Cdu';
 import { recipe } from '../../application/context-engine/Recipe';
 import type { RisolutoreRuoliService } from '../../application/services/RisolutoreRuoliService';
 import {
+  getCduArticolazionePartners,
+  getCduMateriaAssignmentIdentity
+} from '../../application/context-engine/CduInternalMetadata';
+import {
   type OnlineTestSkippedOutcome,
   type TestRunner
 } from '../report/OnlineTestReport';
 import { classifySyntheticProtectedRangeOutcome } from './protectedRangeOutcome';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
+import { MateriaId } from '../../domain/value-objects/MateriaId';
+import type { TeachingSlotKind } from '../../domain/repositories/IClasseRepository';
 import type {
   EmailNotificationService,
   SendPatternResult
@@ -18,6 +24,7 @@ import type { DocumentGenerationService } from '../../application/services/Docum
 import type { EmailDb } from '../../application/services/EmailNotificationService';
 import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
 import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
 import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
@@ -50,54 +57,150 @@ import {
   e2eDocenteEmail,
   type SharedTestDatabase
 } from '../data/SharedTestDatabaseBuilder';
-import { ALL_CLASSI, MATERIE_BASE, MATERIE_CLASSICO, MATERIE_SCIENTIFICO, MATERIE_SCIENZE_UMANE } from '../data/fixtures';
+import { ALL_CLASSI } from '../data/fixtures';
 
 type ProtectedRangeEvidence = ReturnType<SpreadsheetService['getProtectedRanges']>[number];
-type ExpectedEditorsForSubject = (classe: string, subject: string) => string[];
+interface ProtectedColumnMetadata {
+  sigla: string;
+  header: string;
+  specificita?: string;
+  classeId?: string;
+  kind?: TeachingSlotKind;
+  isSpecial?: boolean;
+}
 
-const PROTECTED_SUBJECT_HEADERS = new Set([
-  ...MATERIE_BASE.filter((subject) => subject !== 'IRC' && subject !== 'ALT'),
-  ...MATERIE_CLASSICO,
-  ...MATERIE_SCIENTIFICO,
-  ...MATERIE_SCIENZE_UMANE,
-  'REL',
-  'REL/ALT'
-].filter((subject) => subject !== 'IRC' && subject !== 'ALT'));
+interface ProtectedRangeExpectations {
+  columns: ProtectedColumnMetadata[];
+  expectedEditors: (column: ProtectedColumnMetadata) => string[];
+}
+
+type ProtectedRangeExpectationProvider = (classe: string) => ProtectedRangeExpectations;
 
 function exact(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort();
+}
+
+function protectedRangeHeader(
+  range: ProtectedRangeEvidence,
+  headers: string[]
+): string | undefined {
+  const index = (range.range as { startColumnIndex?: unknown }).startColumnIndex;
+  return typeof index === 'number' && Number.isInteger(index) ? headers[index] : undefined;
 }
 
 function assertRenderedProtectedRanges(
   classe: string,
   headers: string[],
   protections: ProtectedRangeEvidence[],
-  expectedEditorsForSubject: ExpectedEditorsForSubject | undefined
+  expectations: ProtectedRangeExpectations
 ): void {
-  for (const subject of headers.filter((header) => PROTECTED_SUBJECT_HEADERS.has(header))) {
-    const focal = protections.find((protection) =>
-      protection.description?.includes(` ${subject} `)
+  for (const column of expectations.columns) {
+    if (!headers.includes(column.header)) continue;
+    const matching = protections.filter(
+      (protection) => protectedRangeHeader(protection, headers) === column.header
     );
-    if (focal === undefined) {
-      throw new ValidationError(`Protected range ${subject} mancante per ${classe}.`);
+    if (matching.length === 0) {
+      throw new ValidationError(`Protected range ${column.header} mancante per ${classe}.`);
     }
+    if (matching.length > 1) {
+      throw new ValidationError(`Protected range ${column.header} duplicato per ${classe}.`);
+    }
+    const focal = matching[0]!;
     if (focal.warningOnly === true) {
-      throw new ValidationError(`Protected range ${subject} per ${classe} e solo warningOnly.`);
+      throw new ValidationError(`Protected range ${column.header} per ${classe} e solo warningOnly.`);
     }
     const actual = exact(focal.editors.users ?? []);
     if (actual.length === 0) {
-      throw new ValidationError(`Protected range ${subject} per ${classe} senza editors.`);
+      throw new ValidationError(`Protected range ${column.header} per ${classe} senza editors.`);
     }
-    const expected = expectedEditorsForSubject?.(classe, subject);
-    if (expected === undefined) continue;
+    const expected = exact(expectations.expectedEditors(column));
     const missing = exact(expected).filter((editor) => !actual.includes(editor));
-    const unexpected = actual.filter((editor) => !exact(expected).includes(editor));
+    const unexpected = actual.filter((editor) => !expected.includes(editor));
     if (missing.length > 0 || unexpected.length > 0) {
       throw new ValidationError(
-        `Protected range ${subject} per ${classe}: missing=${missing.join(',') || '-'} unexpected=${unexpected.join(',') || '-'}`
+        `Protected range ${column.header} per ${classe}: missing=${missing.join(',') || '-'} unexpected=${unexpected.join(',') || '-'}`
       );
     }
   }
+  for (const protection of protections) {
+    if (!expectations.columns.some((column) => column.header === protectedRangeHeader(protection, headers))) {
+      throw new ValidationError(
+        `Protected range inatteso per ${classe}: ${protection.description || '<senza descrizione>'}.`
+      );
+    }
+  }
+}
+
+function columnFromId(id: string, classeId?: string): Omit<ProtectedColumnMetadata, 'header'> {
+  const separator = id.indexOf('.');
+  return {
+    sigla: separator === -1 ? id : id.slice(0, separator),
+    ...(separator === -1 ? {} : { specificita: id.slice(separator + 1), kind: 'SPECIFICA' }),
+    ...(classeId === undefined ? {} : { classeId })
+  };
+}
+
+function renderedColumn(
+  column: Omit<ProtectedColumnMetadata, 'header'>,
+  materie: MateriaRepository
+): ProtectedColumnMetadata {
+  if (column.sigla === 'IRC' || column.sigla === 'ALT') {
+    return { ...column, header: column.sigla };
+  }
+  const catalogId = `${column.sigla}${column.specificita === undefined ? '' : `.${column.specificita}`}`;
+  const materia =
+    column.specificita === undefined
+      ? materie.findByIdCached(MateriaId.of(column.sigla))
+      : (materie.findSpecifiche(MateriaId.of(column.sigla)).find((item) => item.id === catalogId) ?? null);
+  return { ...column, header: materia?.sintesi.trim() || catalogId };
+}
+
+function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumnMetadata[] {
+  const classe = cdu.focus.classe;
+  if (classe === undefined) throw new ValidationError('CDU privo di focus.classe per le protezioni.');
+  const columns: Array<Omit<ProtectedColumnMetadata, 'header'>> = [];
+  const articolazione = classe.articolazione;
+  if (classe.flags.isArticolata && articolazione !== undefined) {
+    const partners = getCduArticolazionePartners(articolazione) ?? articolazione.partners ?? [];
+    columns.push(...articolazione.materieCondivise.map((materia) => columnFromId(materia.sigla)));
+    columns.push(
+      ...articolazione.materieSeparatePrimoGruppo.map((materia) =>
+        columnFromId(materia.sigla, partners[0])
+      )
+    );
+    columns.push(
+      ...articolazione.materieSeparateSecondoGruppo.map((materia) =>
+        columnFromId(materia.sigla, partners[1])
+      )
+    );
+  } else {
+    const unique = new Map<string, Omit<ProtectedColumnMetadata, 'header'>>();
+    for (const docente of classe.consiglioDiClasse ?? []) {
+      for (const materia of docente.materie) {
+        const identity = getCduMateriaAssignmentIdentity(materia);
+        const column = {
+          ...columnFromId(materia.sigla),
+          ...(identity?.kind === 'SPECIFICA' ? { kind: 'SPECIFICA' as const } : {})
+        };
+        unique.set(`${column.sigla}.${column.specificita ?? ''}`, column);
+      }
+    }
+    columns.push(...unique.values());
+  }
+  const hasAlt = (classe.consiglioDiClasse ?? []).some((docente) =>
+    docente.materie.some((materia) => materia.sigla === 'ALT')
+  );
+  const special: ProtectedColumnMetadata = {
+    sigla: hasAlt ? 'REL/ALT' : 'REL',
+    header: hasAlt ? 'REL/ALT' : 'REL',
+    isSpecial: true
+  };
+  return [
+    special,
+    ...columns
+      .filter((column) => column.sigla !== 'IRC' && column.sigla !== 'ALT')
+      .map((column) => renderedColumn(column, materie))
+  ];
 }
 
 function cduForSubject(cdu: Cdu, subject: string): Cdu {
@@ -141,7 +244,7 @@ export function verifyProtectedRangeScenario(
   documents: DocumentGenerationService,
   spreadsheets: SpreadsheetService,
   testMode: boolean,
-  expectedEditorsForSubject?: ExpectedEditorsForSubject
+  expectationProvider?: ProtectedRangeExpectationProvider
 ): void | OnlineTestSkippedOutcome {
   const expectedFixtureEditors = Array.from({ length: DOCENTE_COUNT }, (_, index) =>
     e2eDocenteEmail(index + 1)
@@ -189,7 +292,22 @@ export function verifyProtectedRangeScenario(
     if (protections.length === 0) {
       throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
     }
-    assertRenderedProtectedRanges(classe, headers, protections, expectedEditorsForSubject);
+    if (expectationProvider !== undefined) {
+      assertRenderedProtectedRanges(classe, headers, protections, expectationProvider(classe));
+      continue;
+    }
+    for (const protection of protections) {
+      if (protection.warningOnly === true) {
+        throw new ValidationError(
+          `Sheet permessi per ${classe}: range protetto "${protection.description}" e solo warningOnly`
+        );
+      }
+      if ((protection.editors.users ?? []).length === 0) {
+        throw new ValidationError(
+          `Sheet permessi per ${classe}: range protetto "${protection.description}" senza editors`
+        );
+      }
+    }
   }
 }
 
@@ -778,26 +896,37 @@ export function registerE2eScenarioChecks(
       const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const roles = container.get<RisolutoreRuoliService>('risolutoreRuoli');
-      const expectedEditorsForSubject: ExpectedEditorsForSubject = (classe, subject) => {
+      const materie = container.get<MateriaRepository>('materie');
+      const expectationProvider: ProtectedRangeExpectationProvider = (classe) => {
         const cdu = contextBuilder.build(
           { target: classe, tipoTarget: 'classe', now: new Date() },
           recipe('CLASSE_COMPLETA')
         );
-        const docenti = roles
-          .risolvi(
-            subject === 'REL' || subject === 'REL/ALT' ? 'DOCENTI_IRC_ALT' : 'DOCENTE_MATERIA',
-            subject === 'REL' || subject === 'REL/ALT' ? cdu : cduForSubject(cdu, subject),
-            { regolaSupplente: GestioneSupplenti.ENTRAMBI }
-          )
-          .map((email) => email.value);
-        const coordinatori = roles.risolvi('COORDINATORI', cdu).map((email) => email.value);
-        return exact([...docenti, ...coordinatori]);
+        return {
+          columns: generatorColumns(cdu, materie),
+          expectedEditors: (column) => {
+            const docenti = roles
+              .risolvi(
+                column.isSpecial === true ? 'DOCENTI_IRC_ALT' : 'DOCENTE_MATERIA',
+                column.isSpecial === true ? cdu : cduForSubject(cdu, column.sigla),
+                {
+                  regolaSupplente: GestioneSupplenti.ENTRAMBI,
+                  ...(column.classeId === undefined ? {} : { classeId: column.classeId }),
+                  ...(column.specificita === undefined ? {} : { specifica: column.specificita }),
+                  ...(column.kind === undefined ? {} : { kind: column.kind })
+                }
+              )
+              .map((email) => email.value);
+            const coordinatori = roles.risolvi('COORDINATORI', cdu).map((email) => email.value);
+            return exact([...docenti, ...coordinatori]);
+          }
+        };
       };
       return verifyProtectedRangeScenario(
         documents,
         spreadsheets,
         sample.testMode,
-        expectedEditorsForSubject
+        expectationProvider
       );
     }
   );

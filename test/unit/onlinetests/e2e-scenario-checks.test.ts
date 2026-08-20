@@ -21,12 +21,11 @@ import {
   PIANO_DOPPIO_STUDENTE,
   PDP_BES_3C,
   ALL_CLASSI_E2E,
-  CLASSE_A,
-  CLASSE_B,
   CLASSE_C,
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { ALL_CLASSI } from '../../../src/onlinetests/data/fixtures';
 import type { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import type {
   EmailDb,
@@ -744,14 +743,28 @@ test('scenario 10b generates the ARTICOLATA document for both partners, never th
   expect(harness.classGenerationTargets(CONF_DOC_ARTICOLATA)).not.toContain(CLASSE_C_PARENT);
 });
 
+test('scenario 10c generates CDC signature summaries for the articulated class roster', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario10c = runner
+    .report()
+    .results.find((result) => result.name.includes('scenario 10c'));
+  expect(scenario10c).toMatchObject({ status: 'pass' });
+});
+
 test('E2E phase persists CDC summaries for plain classes and articulated partners, never the parent', () => {
   const harness = recordingHarness();
   const runner = new TestRunner();
 
   registerE2eScenarioChecks(runner, harness.container, sample);
 
+  // ARTICOLATA scope now tracks the full class roster (ALL_CLASSI), not the
+  // legacy 3-class ALL_CLASSI_E2E — every class except an articulation parent.
   expect(harness.classGenerationTargets(CONF_DOC_RIEPILOGO_FIRME_CDC).sort()).toEqual(
-    [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER].sort()
+    ALL_CLASSI.filter((classe) => classe !== CLASSE_C_PARENT && classe !== '5B').sort()
   );
   expect(harness.classGenerationTargets(CONF_DOC_RIEPILOGO_FIRME_CDC)).not.toContain(
     CLASSE_C_PARENT

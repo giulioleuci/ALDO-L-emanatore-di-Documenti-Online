@@ -430,6 +430,33 @@ function recordBatchGroups(
   return calls;
 }
 
+function recordBatchScenarioNames(
+  execute: (overrides: Partial<FullOnlineTestDeps>) => OnlineTestReport,
+  props: IPropertiesFacade,
+  scenarioNames: Partial<Record<keyof FullOnlineTestRegistrations, string[]>>
+): string[] {
+  const container = {
+    get: jest.fn(() => ({ registerInterceptor: jest.fn() }))
+  } as unknown as ServiceContainer;
+  const registrations: Record<string, unknown> = {};
+  for (const name of ONLINE_TEST_GROUP_NAMES) {
+    registrations[name] = (runner: Pick<TestRunner, 'add'>): void => {
+      for (const scenario of scenarioNames[name] ?? []) {
+        runner.add(scenario, sample.sampleSpreadsheetUrl, () => undefined);
+      }
+    };
+  }
+
+  return execute({
+    properties: props,
+    clock: () => new Date('2026-08-11T09:00:00Z'),
+    resetAldo: () => undefined,
+    initAldo: () => container,
+    readSample: () => sample,
+    registrations
+  }).results.map((result) => result.name);
+}
+
 describe('online test batches', () => {
   it('registers only documenti and jobRunner in batch 1, without the cache fixture', () => {
     expect(recordBatchGroups(executeOnlineTestsBatch1, propertiesWithoutCacheFixture())).toEqual([
@@ -492,6 +519,47 @@ describe('online test batches', () => {
       ...recordBatchGroups(executeOnlineTestsBatch4, properties())
     ];
     expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
+  });
+
+  it('locks the 103-scenario acceptance contract across all four batches', () => {
+    const batch1 = recordBatchScenarioNames(
+      executeOnlineTestsBatch1,
+      propertiesWithoutCacheFixture(),
+      {
+        documenti: Array.from({ length: 25 }, (_, i) => `E2E batch 1 scenario ${i + 1}`),
+        jobRunner: ['E2E batch 1 scenario 26']
+      }
+    );
+    const batch2 = recordBatchScenarioNames(
+      executeOnlineTestsBatch2,
+      propertiesWithoutCacheFixture(),
+      {
+        email: Array.from({ length: 13 }, (_, i) => `E2E batch 2 scenario ${i + 1}`),
+        articolazione: [
+          'E2E scenario 10b: genera documento complesso classe articolata (3C)',
+          'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA'
+        ]
+      }
+    );
+    const batch3 = recordBatchScenarioNames(
+      executeOnlineTestsBatch3,
+      propertiesWithoutCacheFixture(),
+      {
+        import: Array.from({ length: 27 }, (_, i) => `E2E batch 3 scenario ${i + 1}`)
+      }
+    );
+    const batch4 = recordBatchScenarioNames(
+      executeOnlineTestsBatch4,
+      properties(),
+      {
+        supplenzeRuoli: Array.from({ length: 35 }, (_, i) => `E2E batch 4 scenario ${i + 1}`)
+      }
+    );
+    const allNames = [...batch1, ...batch2, ...batch3, ...batch4];
+    expect(allNames).toHaveLength(103);
+    expect(new Set(allNames).size).toBe(103);
+    expect(allNames).toContain('E2E scenario 10b: genera documento complesso classe articolata (3C)');
+    expect(allNames).toContain('E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA');
   });
 
   it.each([

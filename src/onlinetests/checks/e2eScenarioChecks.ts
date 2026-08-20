@@ -45,6 +45,7 @@ import {
   e2eDocenteEmail,
   type SharedTestDatabase
 } from '../data/SharedTestDatabaseBuilder';
+import { ALL_CLASSI } from '../data/fixtures';
 
 function emailDiagnostics(result: SendPatternResult): string {
   return [
@@ -633,11 +634,11 @@ export function registerE2eScenarioChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const drive = container.get<IDriveFacade>('drive');
-      const targets = [
-        ...ALL_CLASSI_E2E.filter((classe) => classe !== CLASSE_C_PARENT),
-        CLASSE_C,
-        CLASSE_C_PARTNER
-      ];
+      // ARTICOLATA scope: every class except an articulation parent (whose
+      // partners generate the document instead). Must track the full class
+      // roster, not the legacy 3-class ALL_CLASSI_E2E, or LOG_DOCS ends up
+      // short of the rows the dedicated articolazione check expects.
+      const targets = ALL_CLASSI.filter((classe) => classe !== CLASSE_C_PARENT && classe !== '5B');
       for (const classe of targets) {
         const { fileId, status } = documents.generateForClasse(
           ClasseId.of(classe),

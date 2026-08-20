@@ -12,6 +12,7 @@ import {
   runOnlineTestsBatch4,
   PROP_ONLINETEST_FIXTURE_VERSION,
   PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
+  PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID,
   testCacheIsolamento,
   testJobRunnerTriggerReale,
   testPermessiAttivi,
@@ -147,6 +148,7 @@ it('migrates the persisted fixture before the final registration container snaps
   let initCount = 0;
   let finalMaterieSnapshot: string[] = [];
   const propertiesValues = new Map<string, string>();
+  propertiesValues.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, sample.staticAttachmentFileId);
   const propertiesWithVersion: IPropertiesFacade = {
     get: (key) => propertiesValues.get(key) ?? null,
     set: (key, value) => {
@@ -220,6 +222,7 @@ function properties(): IPropertiesFacade {
     get: (key: string) => {
       if (key === PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID) return 'cache-master';
       if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '2';
+      if (key === PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID) return sample.staticAttachmentFileId;
       return null;
     },
     set: () => undefined
@@ -535,7 +538,11 @@ const ONLINE_TEST_GROUP_NAMES: Array<keyof FullOnlineTestRegistrations> = [
 /** Properties fixture without the cache-isolated master: batches 1-3 must not need it. */
 function propertiesWithoutCacheFixture(): IPropertiesFacade {
   return {
-    get: (key: string) => (key === PROP_ONLINETEST_FIXTURE_VERSION ? '2' : null),
+    get: (key: string) => {
+      if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '2';
+      if (key === PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID) return sample.staticAttachmentFileId;
+      return null;
+    },
     set: () => undefined
   };
 }

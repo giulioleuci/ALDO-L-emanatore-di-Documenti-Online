@@ -552,6 +552,11 @@ export function registerImportCercaDocumentiChecks(
     ),
     sample.sampleSpreadsheetUrl,
     () => {
+      if (sample.staticAttachmentFileId.trim() === '') {
+        throw new ConfigurationError(
+          'CERCA_DOCUMENTI: allegato statico non-foglio mancante; riesegui creaDatiMockDrive(true).'
+        );
+      }
       const documents = container.get<DocumentGenerationService>('documentGenerationService');
       const logDocsForSource = (): AslRow[] =>
         db

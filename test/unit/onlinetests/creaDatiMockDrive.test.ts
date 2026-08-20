@@ -1,7 +1,8 @@
 import {
   executeCreaDatiMockDrive,
   PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
-  PROP_ONLINETEST_MASTER_SPREADSHEET_ID
+  PROP_ONLINETEST_MASTER_SPREADSHEET_ID,
+  PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID
 } from '../../../src/onlinetests';
 import type { E2eTestDeps } from '../../../src/onlinetests';
 import type { IArtifactFactory } from '../../../src/onlinetests/E2eTemplateProvisioner';
@@ -119,7 +120,8 @@ describe('executeCreaDatiMockDrive', () => {
     expect(props.values).toEqual({
       [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master:active',
       [PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID]:
-        'sheet:_ALDO_E2E_CACHE_ISOLATED_MASTER'
+        'sheet:_ALDO_E2E_CACHE_ISOLATED_MASTER',
+      [PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID]: first.staticAttachmentFileId
     });
     expect(deps.spreadsheetFactory.openedIds).toEqual(['master:active', 'master:active']);
     expect(deps.spreadsheetFactory.createdIds).toEqual(createdAfterFirst);
@@ -143,6 +145,7 @@ describe('executeCreaDatiMockDrive', () => {
       [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master:active',
       [PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID]:
         'sheet:_ALDO_E2E_CACHE_ISOLATED_MASTER',
+      [PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID]: sample.staticAttachmentFileId,
       ALDO_E2E_FORCE_REBUILD: 'true'
     });
     expect(deps.spreadsheetFactory.openedIds).toEqual(['master:active']);

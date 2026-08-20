@@ -1,6 +1,9 @@
 import {
   dumpOnlineCoverage,
   historicalSpreadsheetUrls,
+  PROP_ONLINETEST_MASTER_SPREADSHEET_ID,
+  PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID,
+  readPersistedFullOnlineTestSample,
   runFullOnlineTests,
   testArticolazione,
   testITPeMateriePuntate,
@@ -12,6 +15,73 @@ import {
   testRecuperoStoricoClasse,
   testRecuperoStoricoDocumenti
 } from '../../../src/onlinetests';
+
+const persistedMaster = {
+  idSpreadsheet: 'sample-sheet',
+  idCartellaRoot: 'sample-folder',
+  testMode: true,
+  historicalSpreadsheetIds: ['prior-one', 'prior-two'],
+  historicalSpreadsheetUrls: [
+    'https://docs.google.com/spreadsheets/d/prior-one',
+    'https://docs.google.com/spreadsheets/d/prior-two'
+  ]
+};
+
+function persistedProperties(values: Record<string, string>) {
+  return {
+    get: (key: string) => values[key] ?? null,
+    set: () => undefined
+  };
+}
+
+test('reads the exact persisted non-Sheets static attachment ID with strict Drive metadata fields', () => {
+  const driveService = {
+    getFiles: jest.fn(() => ({ id: 'real-static-doc', mimeType: 'application/vnd.google-apps.document' }))
+  };
+
+  const sample = readPersistedFullOnlineTestSample(
+    persistedProperties({
+      [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master-sheet',
+      [PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID]: ' real-static-doc '
+    }),
+    { readMasterConfig: () => persistedMaster, driveService }
+  );
+
+  expect(sample.staticAttachmentFileId).toBe('real-static-doc');
+  expect(driveService.getFiles).toHaveBeenCalledWith('real-static-doc', {
+    fields: 'id,mimeType',
+    strict: true
+  });
+});
+
+test('rejects a missing persisted static attachment ID', () => {
+  expect(() =>
+    readPersistedFullOnlineTestSample(
+      persistedProperties({ [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master-sheet' }),
+      { readMasterConfig: () => persistedMaster }
+    )
+  ).toThrow(/allegato statico.*mancante/i);
+});
+
+test('rejects a persisted static attachment which Drive identifies as a Google Sheet', () => {
+  expect(() =>
+    readPersistedFullOnlineTestSample(
+      persistedProperties({
+        [PROP_ONLINETEST_MASTER_SPREADSHEET_ID]: 'master-sheet',
+        [PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID]: 'sheet-not-attachment'
+      }),
+      {
+        readMasterConfig: () => persistedMaster,
+        driveService: {
+          getFiles: () => ({
+            id: 'sheet-not-attachment',
+            mimeType: 'application/vnd.google-apps.spreadsheet'
+          })
+        }
+      }
+    )
+  ).toThrow(/non può essere un foglio Google/i);
+});
 
 test('maps persisted historical configs to useful spreadsheet artifact URLs', () => {
   expect(

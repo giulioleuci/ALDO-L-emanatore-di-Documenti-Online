@@ -415,6 +415,24 @@ test('registerImportCercaDocumentiChecks fails when the non-sheet document leaks
   expect(runner.checks[0]?.error?.message).toMatch(/documento non-foglio/);
 });
 
+test('registerImportCercaDocumentiChecks rejects an empty non-sheet sentinel ID before inserting it', () => {
+  const aslRows: Array<Record<string, unknown>> = [];
+  const logDocsRows: Array<Record<string, unknown>> = [];
+  const { container } = cercaDocumentiContainer(aslRows, logDocsRows);
+
+  const runner = new ImmediateRunner();
+  registerImportCercaDocumentiChecks(runner as never, container, {
+    sampleSpreadsheetUrl: 'https://example.test/sample',
+    staticAttachmentFileId: '',
+    testMode: true
+  } as never);
+
+  expect(runner.checks).toHaveLength(1);
+  expect(runner.checks[0]?.error?.message).toMatch(/allegato statico.*mancante/i);
+  expect(logDocsRows).toEqual([]);
+  expect(avviaImportazioneDataDriven).not.toHaveBeenCalled();
+});
+
 function chunkedContainer(aslRows: Array<Record<string, unknown>>): {
   container: ServiceContainer;
   get: jest.Mock;

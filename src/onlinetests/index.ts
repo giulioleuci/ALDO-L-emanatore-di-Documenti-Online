@@ -1,7 +1,7 @@
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { initAldo, resetAldo } from '../config/Bootstrap';
 import type { ServiceContainer } from '../config/ServiceContainer';
-import { TABLE, COL_LOG_DOCS, COL_MATERIE } from '../config/schema';
+import { TABLE, COL_CONF_MAIL, COL_LOG_DOCS, COL_MATERIE } from '../config/schema';
 import { ConfigurationError } from '../domain/errors/DomainError';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
@@ -56,6 +56,7 @@ import type { ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import {
   SharedTestDatabaseBuilder,
   buildMaterieRows,
+  CONF_MAIL_STATIC_ALLEGATO,
   type E2eTemplateIds,
   type SharedTestDatabase
 } from './data/SharedTestDatabaseBuilder';
@@ -68,6 +69,9 @@ export const PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID =
   'CACHE_ISOLATED_MASTER_SPREADSHEET_ID';
 /** Schema/artifact version of the fixture selected by the E2E master pointer. */
 export const PROP_ONLINETEST_FIXTURE_VERSION = 'ALDO_ONLINETEST_FIXTURE_VERSION';
+/** Real non-Sheets artifact used by the CERCA_DOCUMENTI fail-soft sentinel. */
+export const PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID =
+  'ALDO_ONLINETEST_STATIC_ATTACHMENT_FILE_ID';
 const REQUIRED_ONLINETEST_FIXTURE_VERSION = 2;
 
 interface FixtureSpreadsheetService {
@@ -102,6 +106,42 @@ function resolveTestRecipient(activeUser: IActiveUserFacade): string {
 }
 
 export type FullOnlineTestSample = SharedTestDatabase & { testMode: boolean };
+
+const GOOGLE_SHEETS_MIME_TYPE = 'application/vnd.google-apps.spreadsheet';
+
+interface PersistedSampleReaderDeps {
+  readMasterConfig: typeof readCurrentMasterConfig;
+  driveService: Pick<DriveService, 'getFiles'>;
+}
+
+function staticAttachmentConfigurationError(reason: string): ConfigurationError {
+  return new ConfigurationError(
+    `Allegato statico E2E ${reason}; riesegui creaDatiMockDrive(true).`
+  );
+}
+
+/** Validates the exact strict Drive metadata contract required by CERCA_DOCUMENTI. */
+export function validateStaticAttachmentFileId(
+  candidate: string,
+  driveService: Pick<DriveService, 'getFiles'> = ServiceFactory.getDriveService()
+): string {
+  const fileId = candidate.trim();
+  if (fileId === '') throw staticAttachmentConfigurationError('mancante');
+
+  let file: DriveFileMetadata;
+  try {
+    file = driveService.getFiles(fileId, { fields: 'id,mimeType', strict: true });
+  } catch {
+    throw staticAttachmentConfigurationError(`non accessibile (${fileId})`);
+  }
+  if (file === null || file.id !== fileId || typeof file.mimeType !== 'string') {
+    throw staticAttachmentConfigurationError(`non valido (${fileId})`);
+  }
+  if (file.mimeType === GOOGLE_SHEETS_MIME_TYPE) {
+    throw staticAttachmentConfigurationError(`non può essere un foglio Google (${fileId})`);
+  }
+  return fileId;
+}
 
 type RegisterSharedChecks = (
   runner: TestRunner,
@@ -294,6 +334,7 @@ export function executeCreaDatiMockDrive(
   ).buildCacheIsolationFixture(templateIds, cacheIsolationMaster);
 
   properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
+  properties.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, sample.staticAttachmentFileId);
   properties.set(
     PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID,
     cacheIsolation.masterSpreadsheetId
@@ -308,16 +349,33 @@ export function executeCreaDatiMockDrive(
  * against the same fixture. Injection keeps the composition testable without touching real GAS
  * services.
  */
-function readPersistedFullOnlineTestSample(properties: IPropertiesFacade): SharedTestDatabase {
+export function readPersistedFullOnlineTestSample(
+  properties: IPropertiesFacade,
+  deps: Partial<PersistedSampleReaderDeps> = {},
+  allowMissingStaticAttachment = false
+): SharedTestDatabase {
   const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
   if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
     throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
   }
-  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const master = (deps.readMasterConfig ?? readCurrentMasterConfig)(masterSpreadsheetId);
   if (master.historicalSpreadsheetIds.length < 2) {
     throw new ConfigurationError(
       'Dataset online incompleto: servono due database storici; riesegui creaDatiMockDrive.'
     );
+  }
+  const configuredStaticAttachmentFileId = properties
+    .get(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID)
+    ?.trim();
+  const staticAttachmentFileId =
+    configuredStaticAttachmentFileId === undefined || configuredStaticAttachmentFileId === ''
+      ? ''
+      : validateStaticAttachmentFileId(
+          configuredStaticAttachmentFileId,
+          deps.driveService ?? ServiceFactory.getDriveService()
+        );
+  if (staticAttachmentFileId === '' && !allowMissingStaticAttachment) {
+    throw staticAttachmentConfigurationError('mancante');
   }
   return {
     masterSpreadsheetId,
@@ -331,7 +389,7 @@ function readPersistedFullOnlineTestSample(properties: IPropertiesFacade): Share
     logFoldFolderUrl: '',
     jobRunnerDocConfigId: CONF_DOC_JOBRUNNER,
     masterTestMode: master.testMode,
-    staticAttachmentFileId: ''
+    staticAttachmentFileId
   };
 }
 
@@ -416,6 +474,31 @@ function migrateResolvedPersistedE2eFixture(
   resetAldoFn();
   const migrationContainer = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
   const db = migrationContainer.get<SheetDbAdapter>('db');
+  const persistedStaticAttachmentFileId = properties
+    .get(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID)
+    ?.trim();
+  let repairedStaticAttachmentFileId: string | null = null;
+  if (persistedStaticAttachmentFileId === undefined || persistedStaticAttachmentFileId === '') {
+    const configuredAttachments = db
+      .table(TABLE.CONF_MAIL)
+      .find((row) => row[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO)?.[COL_CONF_MAIL.ALLEGATI];
+    let configuredStaticAttachmentFileId = '';
+    if (typeof configuredAttachments === 'string') {
+      try {
+        const parsed: unknown = JSON.parse(configuredAttachments);
+        if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
+          configuredStaticAttachmentFileId = parsed[0].trim();
+        }
+      } catch {
+        configuredStaticAttachmentFileId = '';
+      }
+    }
+    const recoveredStaticAttachmentFileId = validateStaticAttachmentFileId(
+      configuredStaticAttachmentFileId
+    );
+    sample.staticAttachmentFileId = recoveredStaticAttachmentFileId;
+    repairedStaticAttachmentFileId = recoveredStaticAttachmentFileId;
+  }
   const missingMaterie = missingCanonicalMaterie(db);
   const initialHeader = readPhysicalAslHeader(spreadsheetService, sample.sampleSpreadsheetId);
   const initialMatches = matchingHeaderIndices(initialHeader, 'DATA_MODIFICA');
@@ -471,6 +554,9 @@ function migrateResolvedPersistedE2eFixture(
   }
   if (insertedMaterie.length > 0) db.save();
 
+  if (repairedStaticAttachmentFileId !== null) {
+    properties.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, repairedStaticAttachmentFileId);
+  }
   properties.set(PROP_ONLINETEST_FIXTURE_VERSION, String(REQUIRED_ONLINETEST_FIXTURE_VERSION));
   return {
     previousVersion,
@@ -489,7 +575,8 @@ export function migratePersistedE2eFixture(
   overrides: Partial<FullOnlineTestDeps> = {}
 ): PersistedE2eFixtureMigrationResult {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const readSample = overrides.readSample ?? readPersistedFullOnlineTestSample;
+  const readSample =
+    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   return migrateResolvedPersistedE2eFixture(readSample(properties), properties, overrides);
 }
 
@@ -506,7 +593,8 @@ function executeOnlineTestsBatch(
   overrides: Partial<FullOnlineTestDeps> = {}
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const readSample = overrides.readSample ?? readPersistedFullOnlineTestSample;
+  const readSample =
+    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
@@ -666,7 +754,8 @@ export function resetE2eHistoryTables(
   overrides: Partial<FullOnlineTestDeps> = {}
 ): ResetE2eHistoryTablesResult {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const readSample = overrides.readSample ?? readPersistedFullOnlineTestSample;
+  const readSample =
+    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;

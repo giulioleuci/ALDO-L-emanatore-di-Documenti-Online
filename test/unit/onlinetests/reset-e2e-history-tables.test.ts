@@ -1,6 +1,7 @@
 import {
   migratePersistedE2eFixture,
   PROP_ONLINETEST_FIXTURE_VERSION,
+  PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID,
   resetE2eHistoryTables
 } from '../../../src/onlinetests';
 import { SheetDbAdapter } from '../../../src/infrastructure/db/SheetDbAdapter';
@@ -63,6 +64,7 @@ function recordingProperties(
 ): IPropertiesFacade & { set: jest.Mock<void, [string, string]> } {
   const values = new Map<string, string>();
   if (fixtureVersion !== null) values.set(PROP_ONLINETEST_FIXTURE_VERSION, fixtureVersion);
+  values.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, 'static-attachment');
   return {
     get: (key: string) => values.get(key) ?? null,
     set: jest.fn((key: string, value: string) => {

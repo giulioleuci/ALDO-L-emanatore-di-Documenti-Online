@@ -186,6 +186,7 @@ export interface FullOnlineTestDeps extends E2eTestDeps {
   readSample: (properties: IPropertiesFacade) => SharedTestDatabase;
   registrations: Partial<FullOnlineTestRegistrations>;
   spreadsheetService: FixtureSpreadsheetService;
+  staticAttachmentDriveService: Pick<DriveService, 'getFiles'>;
 }
 
 const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, sample) => {
@@ -494,7 +495,8 @@ function migrateResolvedPersistedE2eFixture(
       }
     }
     const recoveredStaticAttachmentFileId = validateStaticAttachmentFileId(
-      configuredStaticAttachmentFileId
+      configuredStaticAttachmentFileId,
+      overrides.staticAttachmentDriveService ?? ServiceFactory.getDriveService()
     );
     sample.staticAttachmentFileId = recoveredStaticAttachmentFileId;
     repairedStaticAttachmentFileId = recoveredStaticAttachmentFileId;
@@ -908,39 +910,26 @@ function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): Onli
   return runner.report();
 }
 
-function executePersistedImportChecks(
+export function executePersistedImportChecks(
   register: RegisterSharedChecks,
-  overrides: Partial<E2eTestDeps> = {}
+  overrides: Partial<FullOnlineTestDeps> = {}
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
-  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
-    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
-  }
-  const master = readCurrentMasterConfig(masterSpreadsheetId);
+  const readSample =
+    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
+  const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
   const clock = overrides.clock ?? ((): Date => new Date());
 
+  migrateResolvedPersistedE2eFixture(sample, properties, overrides);
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
-  const sample: FullOnlineTestSample = {
-    masterSpreadsheetId,
-    sampleSpreadsheetId: master.idSpreadsheet,
-    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
-    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
-    priorSampleSpreadsheetId: '',
-    priorSampleSpreadsheetUrl: '',
-    priorSampleSpreadsheetId2: '',
-    priorSampleSpreadsheetUrl2: '',
-    logFoldFolderUrl: '',
-    jobRunnerDocConfigId: '',
-    masterTestMode: master.testMode,
-    staticAttachmentFileId: '',
-    testMode: master.testMode
-  };
+  const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
+  container
+    .get<ContextBuilder>('contextBuilder')
+    .registerInterceptor(e2eActiveRepresentativesInterceptor);
   const runner = new TestRunner();
-  register(runner, container, sample);
+  register(runner, container, { ...sample, testMode: sample.masterTestMode });
   return runner.report();
 }
 

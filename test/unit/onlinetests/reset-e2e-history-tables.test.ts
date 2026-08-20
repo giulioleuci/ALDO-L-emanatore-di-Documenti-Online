@@ -7,8 +7,9 @@ import {
 import { SheetDbAdapter } from '../../../src/infrastructure/db/SheetDbAdapter';
 import { ServiceContainer } from '../../../src/config/ServiceContainer';
 import { buildMaterieRows } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
-import { COL_MATERIE, TABLE } from '../../../src/config/schema';
+import { COL_CONF_MAIL, COL_MATERIE, TABLE } from '../../../src/config/schema';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { CONF_MAIL_STATIC_ALLEGATO } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 
 const logger = new LoggerService();
@@ -60,11 +61,14 @@ function sample(): SharedTestDatabase {
 }
 
 function recordingProperties(
-  fixtureVersion: string | null = null
+  fixtureVersion: string | null = null,
+  staticAttachmentFileId: string | null = 'static-attachment'
 ): IPropertiesFacade & { set: jest.Mock<void, [string, string]> } {
   const values = new Map<string, string>();
   if (fixtureVersion !== null) values.set(PROP_ONLINETEST_FIXTURE_VERSION, fixtureVersion);
-  values.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, 'static-attachment');
+  if (staticAttachmentFileId !== null) {
+    values.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, staticAttachmentFileId);
+  }
   return {
     get: (key: string) => values.get(key) ?? null,
     set: jest.fn((key: string, value: string) => {
@@ -162,6 +166,10 @@ function baseSeed(
       ]
     ],
     MATERIE: materiaData(excludedMaterie, includeUnrelated),
+    CONF_MAIL: [
+      [COL_CONF_MAIL.ID, COL_CONF_MAIL.ALLEGATI],
+      [CONF_MAIL_STATIC_ALLEGATO, JSON.stringify(['configured-static-document'])]
+    ],
     ASL: [['STUDENTE', 'ANNO', 'ORE']]
   };
 }
@@ -189,6 +197,66 @@ function migrationOverrides(
     spreadsheetService
   };
 }
+
+test('repairs an absent attachment property only from configured E2E_MAIL_STATIC_ALLEGATO with strict Drive metadata', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties(null, null);
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
+  const getFiles = jest.fn(() => ({
+    id: 'configured-static-document',
+    mimeType: 'application/vnd.google-apps.document'
+  }));
+
+  migratePersistedE2eFixture({
+    ...migrationOverrides(adapter, properties, spreadsheetService),
+    staticAttachmentDriveService: { getFiles }
+  });
+
+  expect(getFiles).toHaveBeenCalledWith('configured-static-document', {
+    fields: 'id,mimeType',
+    strict: true
+  });
+  expect(properties.set).toHaveBeenCalledWith(
+    PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID,
+    'configured-static-document'
+  );
+});
+
+test.each([
+  [
+    'missing configured ID',
+    '[]',
+    () => ({ id: '', mimeType: 'application/vnd.google-apps.document' })
+  ],
+  [
+    'inaccessible configured ID',
+    JSON.stringify(['configured-static-document']),
+    () => {
+      throw new Error('404');
+    }
+  ],
+  [
+    'Google Sheets configured ID',
+    JSON.stringify(['configured-static-document']),
+    () => ({
+      id: 'configured-static-document',
+      mimeType: 'application/vnd.google-apps.spreadsheet'
+    })
+  ]
+])('does not persist a bogus attachment ID when migration finds %s', (_label, allegati, lookup) => {
+  const seed = baseSeed();
+  seed['CONF_MAIL']![1]![1] = allegati;
+  const adapter = new SheetDbAdapter(libDb(seed));
+  const properties = recordingProperties(null, null);
+
+  expect(() =>
+    migratePersistedE2eFixture({
+      ...migrationOverrides(adapter, properties, physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE'])),
+      staticAttachmentDriveService: { getFiles: lookup }
+    })
+  ).toThrow(/creaDatiMockDrive\(true\)/);
+  expect(properties.set).not.toHaveBeenCalled();
+});
 
 test('migrates a missing INTERPRET.FLAUTO row and exact trimmed ASL header without purging history', () => {
   const adapter = new SheetDbAdapter(libDb(baseSeed(['INTERPRET.FLAUTO'], true)));

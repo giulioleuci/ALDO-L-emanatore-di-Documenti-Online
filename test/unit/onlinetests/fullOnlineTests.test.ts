@@ -2,6 +2,7 @@ import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import {
   executeFullOnlineTests,
+  executePersistedImportChecks,
   executeOnlineTestsBatch1,
   executeOnlineTestsBatch2,
   executeOnlineTestsBatch3,
@@ -124,6 +125,42 @@ const sample: SharedTestDatabase = {
   masterTestMode: true,
   staticAttachmentFileId: 'attachment'
 };
+
+it('passes the persisted non-Sheets attachment ID into the standalone import registration', () => {
+  const migrationDb = verifiedMigrationDb();
+  const container = {
+    get: jest.fn((key: string) => {
+      if (key === 'db') return migrationDb;
+      if (key === 'contextBuilder') return { registerInterceptor: jest.fn() };
+      throw new Error(`unexpected key ${key}`);
+    })
+  } as unknown as ServiceContainer;
+  const register = jest.fn(
+    (
+      runner: Pick<TestRunner, 'add'>,
+      _container: ServiceContainer,
+      persistedSample: FullOnlineTestSample
+    ) => {
+      expect(persistedSample.staticAttachmentFileId).toBe('attachment');
+      runner.add(
+        'standalone import registration',
+        persistedSample.sampleSpreadsheetUrl,
+        () => undefined
+      );
+    }
+  );
+
+  const report = executePersistedImportChecks(register, {
+    properties: properties(),
+    readSample: () => sample,
+    resetAldo: jest.fn(),
+    initAldo: jest.fn(() => container),
+    spreadsheetService: verifiedSpreadsheetService()
+  });
+
+  expect(register).toHaveBeenCalledTimes(1);
+  expect(report).toMatchObject({ passed: 1, failed: 0 });
+});
 
 it('migrates the persisted fixture before the final registration container snapshots MATERIE', () => {
   const calls: string[] = [];

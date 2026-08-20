@@ -356,6 +356,45 @@ test('registered import handler rejects a resume wrapper without configId before
   expect(engine.runImportChunk).not.toHaveBeenCalled();
 });
 
+test('top-level import configId overrides a conflicting resume configId', () => {
+  const database = db([confImpRow()]);
+  let recipeName = '';
+  const engine = {
+    runImportChunk: (recipe: ImportRecipe, checkpoint: ImportCheckpoint) => {
+      recipeName = recipe.name;
+      return {
+        checkpoint: {
+          ...checkpoint,
+          done: true,
+          counters: { ...checkpoint.counters, inserted: 1 }
+        },
+        done: true
+      };
+    }
+  } as unknown as ImportEngine;
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+  const checkpoint = {
+    recipeName: 'IMPORT_ALUNNI',
+    stage: 'LOAD',
+    sourceCursor: null,
+    rowOffset: 0,
+    loadOffset: 0,
+    counters: { extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 },
+    buffer: null,
+    done: false
+  } as ImportCheckpoint;
+
+  const result = service
+    .importJobHandler({
+      configId: 'IMPORT_ALUNNI',
+      resumeState: { configId: 'IMPORT_FROM_RESUME', importCheckpoint: checkpoint }
+    })
+    .next();
+
+  expect(recipeName).toBe('IMPORT_ALUNNI');
+  expect(result.value).toMatchObject({ inseriti: 1 });
+});
+
 test('executeAllActiveImports runs each active job independently; one failure does not abort the batch', () => {
   const database = db([
     confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),

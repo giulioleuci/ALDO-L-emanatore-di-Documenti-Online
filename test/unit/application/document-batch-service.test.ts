@@ -323,6 +323,25 @@ test('PIANI resume consumes its persisted target order without querying current 
   ]);
 });
 
+test('registered handler resumes a raw PIANI checkpoint without top-level IDs or duplicate plans', () => {
+  const { service, generated } = wirePiani();
+  const registered = new Map<string, unknown>();
+  service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
+  const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
+    resumeState?: BatchCheckpoint;
+  }) => Generator<BatchCheckpoint, unknown, void>;
+
+  const first = service
+    .batchGenerateHandler({ confDocId: 'PIANI_PERSONALIZZATI', jobId: 'job_piani' })
+    .next();
+  expect(first.value).toMatchObject({ confDocId: 'PIANI_PERSONALIZZATI', jobId: 'job_piani' });
+
+  const { result } = drain(handler({ resumeState: first.value }));
+
+  expect(generated.map(({ tipo }) => tipo)).toEqual([TipoPiano.PEI, TipoPiano.PDP_BES]);
+  expect(result).toMatchObject({ success: true, processed: expect.any(Array) });
+});
+
 test('PIANI isolates one plan error with the email:TIPO prefix and continues remaining targets', () => {
   const monitor = new FakeProcessMonitor();
   const { service, generated } = wirePiani({ monitor, failForTipo: TipoPiano.PEI });
@@ -460,6 +479,50 @@ test('registered handler resumes a raw class checkpoint without top-level IDs or
 
   expect(generated).toEqual(['5A:CD1', '1F:CD1']);
   expect(resumed.value).toMatchObject({ success: true, processed: ['5A', '1F'] });
+});
+
+test('top-level document IDs override conflicting resume IDs', () => {
+  const { service, generated } = wire();
+  const first = service
+    .batchGenerateHandler({
+      confDocId: 'CD1',
+      jobId: 'job_top',
+      resumeState: {
+        confDocId: 'CD_ARTICOLATA',
+        jobId: 'job_resume',
+        nextIndex: 0,
+        processed: [],
+        errori: []
+      }
+    })
+    .next();
+
+  expect(first.value).toMatchObject({ confDocId: 'CD1', jobId: 'job_top' });
+  expect(generated).toEqual(['5A:CD1']);
+});
+
+test('legacy document state without confDocId fails before configuration lookup or generation', () => {
+  const configs = { findById: jest.fn() };
+  const documenti = { generateForClasse: jest.fn() } as unknown as DocumentGenerationService;
+  const service = new DocumentBatchService(
+    {} as unknown as IClasseRepository,
+    {} as unknown as IAlunnoRepository,
+    configs,
+    documenti,
+    noopTeachingAssignments,
+    FIXED_NOW,
+    noopDipartimenti
+  );
+
+  expect(() =>
+    service
+      .batchGenerateHandler({
+        resumeState: { jobId: 'job_legacy', nextIndex: 0, processed: [], errori: [] }
+      })
+      .next()
+  ).toThrow('Stato di ripresa documenti privo di confDocId');
+  expect(configs.findById).not.toHaveBeenCalled();
+  expect(documenti.generateForClasse).not.toHaveBeenCalled();
 });
 
 test('a single class failure is isolated: logged in errori, the batch continues (15 §8)', () => {
@@ -664,6 +727,26 @@ function wireDocentiMateria(
 }
 
 describe('DocumentBatchService.generateDocentiMateria', () => {
+  test('registered handler resumes a raw docente/materia checkpoint without top-level IDs or duplicate targets', () => {
+    const { service, generated } = wireDocentiMateria();
+    const registered = new Map<string, unknown>();
+    service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
+    const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
+      resumeState?: BatchCheckpoint;
+    }) => Generator<BatchCheckpoint, unknown, void>;
+
+    const first = service
+      .batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job_docenti' })
+      .next();
+    expect(first.value).toMatchObject({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job_docenti' });
+
+    const { result } = drain(handler({ resumeState: first.value }));
+    const targetIds = generated.map(({ classe, materia, docente }) => `${classe}:${materia}:${docente}`);
+
+    expect(new Set(targetIds).size).toBe(targetIds.length);
+    expect(result).toMatchObject({ success: true, totale: targetIds.length });
+  });
+
   test('enumerates one target per cattedra across active classes (GESTIONE_ARTICOLAZIONE=COMPLETA excludes partners)', () => {
     const { service, generated } = wireDocentiMateria();
     const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' });
@@ -960,6 +1043,28 @@ describe('DocumentBatchService.generateDipartimenti', () => {
       { dipartimentoId: 'SCIENZE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'VERBALE_DIPARTIMENTO' }
     ]);
     expect(result.processed).toEqual(['LETTERE', 'SCIENZE']);
+  });
+
+  test('registered handler resumes a raw department checkpoint without top-level IDs or duplicate departments', () => {
+    const { service, generated } = wireDipartimenti();
+    const registered = new Map<string, unknown>();
+    service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
+    const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
+      resumeState?: BatchCheckpoint;
+    }) => Generator<BatchCheckpoint, unknown, void>;
+
+    const first = service
+      .batchGenerateHandler({ confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job_dipartimenti' })
+      .next();
+    expect(first.value).toMatchObject({
+      confDocId: 'VERBALE_DIPARTIMENTO',
+      jobId: 'job_dipartimenti'
+    });
+
+    const { result } = drain(handler({ resumeState: first.value }));
+
+    expect(generated.map(({ dipartimentoId }) => dipartimentoId)).toEqual(['LETTERE', 'SCIENZE']);
+    expect(result).toMatchObject({ success: true, processed: ['LETTERE', 'SCIENZE'] });
   });
 });
 

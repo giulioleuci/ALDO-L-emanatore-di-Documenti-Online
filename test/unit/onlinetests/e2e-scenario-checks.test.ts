@@ -313,7 +313,7 @@ function recordingHarness(
       {
         id: 1,
         range: {},
-        description: '',
+        description: 'Colonna materia MAT (10 §9)',
         editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
         sheetId: 0,
         sheetName: 'Sheet1',
@@ -328,6 +328,17 @@ function recordingHarness(
       if (key === 'importService') return importService as T;
       if (key === 'drive') return drive as unknown as T;
       if (key === 'spreadsheets') return spreadsheets as unknown as T;
+      if (key === 'contextBuilder') {
+        return { build: () => ({ meta: { parametriInput: {} }, tech: {} }) } as T;
+      }
+      if (key === 'risolutoreRuoli') {
+        return {
+          risolvi: (role: string) =>
+            role === 'COORDINATORI'
+              ? []
+              : [{ value: 'e2edocente1@onlinetest.aldo.local' }]
+        } as T;
+      }
       if (key === 'emailNotificationService') {
         emailResolutions += 1;
         events.push('resolve-email');
@@ -563,6 +574,90 @@ test('protected range scenario rejects warning-only persisted evidence instead o
   expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(/warningOnly/);
 });
 
+test('protected range scenario rejects one arbitrary range for multiple rendered subjects', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'incomplete-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['MAT', 'ITA']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: {},
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
+    /Protected range ITA mancante/
+  );
+});
+
+test('protected range scenario rejects a partial range set even when all actual editors are non-empty', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'partial-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['MAT', 'ING', 'STO']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: {},
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      },
+      {
+        id: 2,
+        range: {},
+        description: 'Colonna materia ING (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
+    /Protected range STO mancante/
+  );
+});
+
+test('protected range scenario rejects a range missing its expected editor principal', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'missing-editor-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['MAT']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: {},
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() =>
+    verifyProtectedRangeScenario(documents, spreadsheets, true, () => [
+      'teacher@onlinetest.aldo.local',
+      'coordinator@onlinetest.aldo.local'
+    ])
+  ).toThrow(/coordinator@onlinetest\.aldo\.local/);
+});
+
 test('protected range scenario rejects residual header placeholders in test mode', () => {
   const documents = {
     generateForClasse: () => ({ fileId: 'unrendered-sheet', status: 'CREATED' })
@@ -581,6 +676,7 @@ test('protected range scenario rejects absent ranges in production mode', () => 
     generateForClasse: () => ({ fileId: 'unprotected-sheet', status: 'CREATED' })
   } as unknown as DocumentGenerationService;
   const spreadsheets = {
+    getRanges: () => [['MAT']],
     getProtectedRanges: () => []
   } as unknown as SpreadsheetService;
 
@@ -594,6 +690,7 @@ test('protected range scenario rejects editors missing from a range in productio
     generateForClasse: () => ({ fileId: 'editorless-sheet', status: 'CREATED' })
   } as unknown as DocumentGenerationService;
   const spreadsheets = {
+    getRanges: () => [['MAT']],
     getProtectedRanges: () => [
       {
         id: 1,
@@ -1058,7 +1155,7 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
     {
       id: 'p1',
       range: {},
-      description: '',
+      description: 'Colonna materia MAT (10 §9)',
       editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
       sheetId: 0,
       sheetName: 'Sheet1',

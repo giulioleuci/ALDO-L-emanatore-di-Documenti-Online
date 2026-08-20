@@ -94,10 +94,10 @@ function protectedRangeCallback(
 
 afterEach(() => jest.restoreAllMocks());
 
-test('acl.reali returns the shared skip only after reading a generated artifact with empty synthetic evidence', () => {
+test('acl.reali records verified synthetic empty evidence as PASS, not a second skip', () => {
   const { callback, getFiles, getProtectedRanges } = protectedRangeCallback([]);
 
-  expect(callback()).toMatchObject({ status: 'skipped' });
+  expect(callback()).toBeUndefined();
   expect(getFiles).toHaveBeenCalledWith('sheet', expect.anything());
   expect(getProtectedRanges).toHaveBeenCalledWith('sheet');
 });

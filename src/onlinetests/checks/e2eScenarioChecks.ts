@@ -1,4 +1,8 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
+import type { ContextBuilder } from '../../application/context-engine/ContextBuilder';
+import type { Cdu } from '../../application/context-engine/Cdu';
+import { recipe } from '../../application/context-engine/Recipe';
+import type { RisolutoreRuoliService } from '../../application/services/RisolutoreRuoliService';
 import {
   type OnlineTestSkippedOutcome,
   type TestRunner
@@ -16,7 +20,7 @@ import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
 import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
-import { TipoPiano } from '../../domain/value-objects/enums';
+import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
 import {
   ALL_CLASSI_E2E,
   CLASSE_C,
@@ -46,7 +50,69 @@ import {
   e2eDocenteEmail,
   type SharedTestDatabase
 } from '../data/SharedTestDatabaseBuilder';
-import { ALL_CLASSI } from '../data/fixtures';
+import { ALL_CLASSI, MATERIE_BASE, MATERIE_CLASSICO, MATERIE_SCIENTIFICO, MATERIE_SCIENZE_UMANE } from '../data/fixtures';
+
+type ProtectedRangeEvidence = ReturnType<SpreadsheetService['getProtectedRanges']>[number];
+type ExpectedEditorsForSubject = (classe: string, subject: string) => string[];
+
+const PROTECTED_SUBJECT_HEADERS = new Set([
+  ...MATERIE_BASE.filter((subject) => subject !== 'IRC' && subject !== 'ALT'),
+  ...MATERIE_CLASSICO,
+  ...MATERIE_SCIENTIFICO,
+  ...MATERIE_SCIENZE_UMANE,
+  'REL',
+  'REL/ALT'
+].filter((subject) => subject !== 'IRC' && subject !== 'ALT'));
+
+function exact(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort();
+}
+
+function assertRenderedProtectedRanges(
+  classe: string,
+  headers: string[],
+  protections: ProtectedRangeEvidence[],
+  expectedEditorsForSubject: ExpectedEditorsForSubject | undefined
+): void {
+  for (const subject of headers.filter((header) => PROTECTED_SUBJECT_HEADERS.has(header))) {
+    const focal = protections.find((protection) =>
+      protection.description?.includes(` ${subject} `)
+    );
+    if (focal === undefined) {
+      throw new ValidationError(`Protected range ${subject} mancante per ${classe}.`);
+    }
+    if (focal.warningOnly === true) {
+      throw new ValidationError(`Protected range ${subject} per ${classe} e solo warningOnly.`);
+    }
+    const actual = exact(focal.editors.users ?? []);
+    if (actual.length === 0) {
+      throw new ValidationError(`Protected range ${subject} per ${classe} senza editors.`);
+    }
+    const expected = expectedEditorsForSubject?.(classe, subject);
+    if (expected === undefined) continue;
+    const missing = exact(expected).filter((editor) => !actual.includes(editor));
+    const unexpected = actual.filter((editor) => !exact(expected).includes(editor));
+    if (missing.length > 0 || unexpected.length > 0) {
+      throw new ValidationError(
+        `Protected range ${subject} per ${classe}: missing=${missing.join(',') || '-'} unexpected=${unexpected.join(',') || '-'}`
+      );
+    }
+  }
+}
+
+function cduForSubject(cdu: Cdu, subject: string): Cdu {
+  const variant: Cdu = {
+    ...cdu,
+    meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: subject } }
+  };
+  Object.defineProperty(variant, 'tech', {
+    value: cdu.tech,
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
+  return variant;
+}
 
 function emailDiagnostics(result: SendPatternResult): string {
   return [
@@ -74,13 +140,17 @@ function emailDiagnostics(result: SendPatternResult): string {
 export function verifyProtectedRangeScenario(
   documents: DocumentGenerationService,
   spreadsheets: SpreadsheetService,
-  testMode: boolean
+  testMode: boolean,
+  expectedEditorsForSubject?: ExpectedEditorsForSubject
 ): void | OnlineTestSkippedOutcome {
   const expectedFixtureEditors = Array.from({ length: DOCENTE_COUNT }, (_, index) =>
     e2eDocenteEmail(index + 1)
   );
-  const evidence: Array<{ classe: string; protections: ReturnType<SpreadsheetService['getProtectedRanges']> }> =
-    [];
+  const evidence: Array<{
+    classe: string;
+    headers: string[];
+    protections: ReturnType<SpreadsheetService['getProtectedRanges']>;
+  }> = [];
   for (const classe of ALL_CLASSI_E2E) {
     const { fileId, status } = documents.generateForClasse(
       ClasseId.of(classe),
@@ -91,12 +161,12 @@ export function verifyProtectedRangeScenario(
         `Generazione sheet permessi per ${classe} non ha prodotto un fileId (status=${status})`
       );
     }
+    const headers = spreadsheets
+      .getRanges(fileId, 'A1:ZZ1')
+      .flat()
+      .map((value) => String(value).trim())
+      .filter(Boolean);
     if (testMode) {
-      const headers = spreadsheets
-        .getRanges(fileId, 'A1:ZZ1')
-        .flat()
-        .map((value) => String(value).trim())
-        .filter(Boolean);
       if (headers.length === 0) {
         throw new ValidationError(`Sheet permessi per ${classe}: intestazioni non renderizzate`);
       }
@@ -107,7 +177,7 @@ export function verifyProtectedRangeScenario(
       }
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
-    evidence.push({ classe, protections });
+    evidence.push({ classe, headers, protections });
   }
   const outcome = classifySyntheticProtectedRangeOutcome(
     testMode,
@@ -115,22 +185,11 @@ export function verifyProtectedRangeScenario(
     expectedFixtureEditors
   );
   if (outcome !== undefined) return outcome;
-  for (const { classe, protections } of evidence) {
+  for (const { classe, headers, protections } of evidence) {
     if (protections.length === 0) {
       throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
     }
-    for (const p of protections) {
-      if (p.warningOnly === true) {
-        throw new ValidationError(
-          `Sheet permessi per ${classe}: range protetto "${p.description}" e solo warningOnly`
-        );
-      }
-      if ((p.editors.users ?? []).length === 0) {
-        throw new ValidationError(
-          `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
-        );
-      }
-    }
+    assertRenderedProtectedRanges(classe, headers, protections, expectedEditorsForSubject);
   }
 }
 
@@ -717,7 +776,29 @@ export function registerE2eScenarioChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const spreadsheets = container.get<SpreadsheetService>('spreadsheets');
-      return verifyProtectedRangeScenario(documents, spreadsheets, sample.testMode);
+      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+      const roles = container.get<RisolutoreRuoliService>('risolutoreRuoli');
+      const expectedEditorsForSubject: ExpectedEditorsForSubject = (classe, subject) => {
+        const cdu = contextBuilder.build(
+          { target: classe, tipoTarget: 'classe', now: new Date() },
+          recipe('CLASSE_COMPLETA')
+        );
+        const docenti = roles
+          .risolvi(
+            subject === 'REL' || subject === 'REL/ALT' ? 'DOCENTI_IRC_ALT' : 'DOCENTE_MATERIA',
+            subject === 'REL' || subject === 'REL/ALT' ? cdu : cduForSubject(cdu, subject),
+            { regolaSupplente: GestioneSupplenti.ENTRAMBI }
+          )
+          .map((email) => email.value);
+        const coordinatori = roles.risolvi('COORDINATORI', cdu).map((email) => email.value);
+        return exact([...docenti, ...coordinatori]);
+      };
+      return verifyProtectedRangeScenario(
+        documents,
+        spreadsheets,
+        sample.testMode,
+        expectedEditorsForSubject
+      );
     }
   );
 

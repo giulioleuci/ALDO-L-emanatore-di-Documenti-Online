@@ -258,7 +258,7 @@ export function registerE2eScenarioChecks(
       .filter((row) => row[COL_LOG_FOLD.TIPO] === 'VERBALE');
     const hasMate = (value: unknown): boolean => csvContains(value, 'MATE');
     const parentPath = (path: unknown): string => {
-      const value = String(path ?? '');
+      const value = typeof path === 'string' ? path : '';
       return value.slice(0, value.lastIndexOf('/'));
     };
     for (const classe of ALL_CLASSI_E2E) {

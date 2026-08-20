@@ -126,6 +126,10 @@ export function registerItpDottedChecks(
       let next = handler.next();
       while (!next.done) next = handler.next();
       const baseTeacher = base.actorEmails[0]!;
+      const expectedSubtypes = new Set([
+        `GRECO::${baseTeacher}`,
+        `${DOTTED_ID}::${e2eDocenteEmail(5)}`
+      ]);
       const rows = container
         .get<TableDatabase>('db')
         .table(TABLE.LOG_DOCS)
@@ -133,12 +137,11 @@ export function registerItpDottedChecks(
         .filter(
           (row) =>
             row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_MATERIA &&
-            row[COL_LOG_DOCS.CLASSI] === FOCAL_CLASS
+            expectedSubtypes.has(stringCell(row[COL_LOG_DOCS.SOTTOTIPO]))
         );
       const subtypes = new Set(rows.map((row) => stringCell(row[COL_LOG_DOCS.SOTTOTIPO])));
       if (
-        !subtypes.has(`GRECO::${baseTeacher}`) ||
-        !subtypes.has(`${DOTTED_ID}::${e2eDocenteEmail(5)}`)
+        [...expectedSubtypes].some((subtype) => !subtypes.has(subtype))
       ) {
         throw new ValidationError(
           `SOTTOTIPO base/dotted non distinto: ${[...subtypes].sort().join(', ')}`

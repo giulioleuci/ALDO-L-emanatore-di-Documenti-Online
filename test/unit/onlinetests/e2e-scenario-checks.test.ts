@@ -76,7 +76,8 @@ function recordingHarness(
   },
   unrequestedDynamicAttachmentPattern: string | null = null,
   planEmailRows: Array<{ logicalTargetId: unknown; text: string }> | null = null,
-  articolataMailClasses = [CLASSE_C, CLASSE_C_PARTNER]
+  articolataMailClasses = [CLASSE_C, CLASSE_C_PARTNER],
+  unrelatedVerbaleFolderBeforeReal = false
 ): {
   container: ServiceContainer;
   events: string[];
@@ -110,6 +111,7 @@ function recordingHarness(
         }
       }
       const fileId = `${configId}-${classe.value}`;
+      const folderPath = `VERBALI/${classe.value}`;
       rows.push({
         [COL_LOG_DOCS.ID]: fileId,
         [COL_LOG_DOCS.ID_GEN]: configId,
@@ -120,14 +122,24 @@ function recordingHarness(
               ? 'RIEPILOGO_FIRME_CDC'
               : configId,
         [COL_LOG_DOCS.CLASSI]: classe.value,
-        [COL_LOG_DOCS.MATERIE]: configId === 'E2E_VERBALE' ? 'MATE' : '',
+        [COL_LOG_DOCS.MATERIE]: configId === 'E2E_VERBALE' ? 'ALT,MATE' : '',
+        [COL_LOG_DOCS.PATH]: configId === 'E2E_VERBALE' ? `${folderPath}/${fileId}` : '',
         [COL_LOG_DOCS.NOME]: `${configId} ${classe.value}`,
         [COL_LOG_DOCS.LINK]: `https://example.test/${configId}/${classe.value}`
       });
       if (configId === 'E2E_VERBALE') {
+        if (unrelatedVerbaleFolderBeforeReal && classe.value === CLASSE_C_PARENT) {
+          folders.push({
+            [COL_LOG_FOLD.TIPO]: 'ALTRO',
+            [COL_LOG_FOLD.CLASSI]: classe.value,
+            [COL_LOG_FOLD.MATERIE]: 'ALT'
+          });
+        }
         folders.push({
+          [COL_LOG_FOLD.TIPO]: 'VERBALE',
+          [COL_LOG_FOLD.PATH]: folderPath,
           [COL_LOG_FOLD.CLASSI]: `ARCHIVIO,${classe.value}`,
-          [COL_LOG_FOLD.MATERIE]: 'MATE'
+          [COL_LOG_FOLD.MATERIE]: 'ALT,MATE'
         });
       }
       if (configId === CONF_DOC_ARTICOLATA) {
@@ -563,6 +575,27 @@ test('resolves the memoized email service once across the plan scenario and late
     CONF_MAIL_CARENZA
   ]);
   expect(runner.report().results.filter((result) => result.status === 'fail')).toEqual([]);
+});
+
+test('scenario 1 ignores an earlier non-verbale folder that mentions 3C', () => {
+  const harness = recordingHarness(
+    undefined,
+    undefined,
+    [],
+    undefined,
+    null,
+    undefined,
+    undefined,
+    true
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario1 = runner.report().results.find((result) =>
+    result.name.startsWith('E2E scenario 1:')
+  );
+  expect(scenario1).toMatchObject({ status: 'pass' });
 });
 
 test('scenario 3 uses one config to render, deduplicate, send, and subtype-isolate PEI/PDP_BES history', () => {

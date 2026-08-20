@@ -1,7 +1,8 @@
 import { registerItpDottedChecks } from '../../../src/onlinetests/checks/itpDottedChecks';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
-import { e2eDocenteEmail } from '../../../src/onlinetests/data/fixtures';
+import { CONF_DOC_DOCENTE_MATERIA, e2eDocenteEmail } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { COL_LOG_DOCS } from '../../../src/config/schema';
 
 interface RegisteredCheck {
   name: string;
@@ -99,4 +100,53 @@ test('specifica lookup accepts exactly the dedicated dotted ITP', () => {
   registerItpDottedChecks(runner as never, container, sample);
 
   expect(() => runner.callbacks.get(CHECK_NAMES[0])!()).not.toThrow();
+});
+
+test('dotted document identity accepts a prior-class duplicate for the focal batch', () => {
+  const runner = new RecordingRunner();
+  const baseTeacher = e2eDocenteEmail(4);
+  const rows = [
+    {
+      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+      [COL_LOG_DOCS.CLASSI]: '3A',
+      [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${baseTeacher}`
+    },
+    {
+      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+      [COL_LOG_DOCS.CLASSI]: '3A',
+      [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`
+    }
+  ];
+  const classi = {
+    findById: () => ({ id: '4A' }),
+    getTeachingSlots: () => [
+      { column: 'GRECO', actorEmails: [baseTeacher] },
+      {
+        column: 'INTERPRET.CHITARRA',
+        kind: 'SPECIFICA',
+        specifica: 'CHITARRA',
+        actorEmails: [e2eDocenteEmail(5)]
+      },
+      {
+        column: 'INTERPRET.CHITARRA.itp',
+        kind: 'ITP',
+        specifica: 'CHITARRA',
+        actorEmails: [e2eDocenteEmail(11)]
+      }
+    ]
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'classi') return classi as T;
+      if (key === 'documentBatchService') {
+        return { batchGenerateHandler: () => (function* () {})() } as T;
+      }
+      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+
+  registerItpDottedChecks(runner as never, container, sample);
+
+  expect(() => runner.callbacks.get(CHECK_NAMES[1])!()).not.toThrow();
 });

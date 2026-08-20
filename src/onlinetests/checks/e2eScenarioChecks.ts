@@ -236,16 +236,33 @@ export function registerE2eScenarioChecks(
   };
 
   const assertVerbaleRegistrationMetadata = (): void => {
-    const docs = db
-      .table(TABLE.LOG_DOCS)
+    const rowsForConfig = (table: string, configId: string): Array<Record<string, unknown>> =>
+      db
+        .table(table)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === configId);
+    const verbaleDocs = rowsForConfig(TABLE.LOG_DOCS, CONF_DOC_VERBALE);
+    const verbaleFolders = db
+      .table(TABLE.LOG_FOLD)
       .findAll()
-      .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_VERBALE);
-    const folders = db.table(TABLE.LOG_FOLD).findAll();
+      .filter((row) => row[COL_LOG_FOLD.TIPO] === 'VERBALE');
+    const hasMate = (value: unknown): boolean => csvContains(value, 'MATE');
+    const parentPath = (path: unknown): string => {
+      const value = String(path ?? '');
+      return value.slice(0, value.lastIndexOf('/'));
+    };
     for (const classe of ALL_CLASSI_E2E) {
-      const doc = docs.find((row) => row[COL_LOG_DOCS.CLASSI] === classe);
-      const folder = folders.find((row) => csvContains(row[COL_LOG_FOLD.CLASSI], classe));
-      if (doc?.[COL_LOG_DOCS.MATERIE] !== 'MATE' || folder?.[COL_LOG_FOLD.MATERIE] !== 'MATE') {
+      const doc = verbaleDocs.find((row) => csvContains(row[COL_LOG_DOCS.CLASSI], classe));
+      if (doc === undefined || !hasMate(doc[COL_LOG_DOCS.MATERIE])) {
         throw new ValidationError(`Verbale per ${classe} non ha metadata MATERIE configurati`);
+      }
+      const folder = verbaleFolders.find(
+        (row) =>
+          csvContains(row[COL_LOG_FOLD.CLASSI], classe) &&
+          row[COL_LOG_FOLD.PATH] === parentPath(doc[COL_LOG_DOCS.PATH])
+      );
+      if (folder === undefined || !hasMate(folder[COL_LOG_FOLD.MATERIE])) {
+        throw new ValidationError(`Cartella verbale per ${classe} non ha metadata MATERIE configurati`);
       }
     }
   };

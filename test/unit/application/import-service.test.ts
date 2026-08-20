@@ -333,9 +333,11 @@ test('registered import handler resumes a raw wrapper checkpoint without top-lev
 
 test('registered import handler rejects a resume wrapper without configId before engine invocation', () => {
   const database = db([confImpRow()]);
+  const startImport = jest.fn();
+  const runImportChunk = jest.fn();
   const engine = {
-    startImport: jest.fn(),
-    runImportChunk: jest.fn()
+    startImport,
+    runImportChunk
   } as unknown as ImportEngine;
   const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
   const registered = new Map<string, unknown>();
@@ -352,8 +354,8 @@ test('registered import handler rejects a resume wrapper without configId before
       resumeState: { importCheckpoint: { stage: 'EXTRACT' } }
     }).next()
   ).toThrow('Stato di ripresa import privo di configId');
-  expect(engine.startImport).not.toHaveBeenCalled();
-  expect(engine.runImportChunk).not.toHaveBeenCalled();
+  expect(startImport).not.toHaveBeenCalled();
+  expect(runImportChunk).not.toHaveBeenCalled();
 });
 
 test('top-level import configId overrides a conflicting resume configId', () => {

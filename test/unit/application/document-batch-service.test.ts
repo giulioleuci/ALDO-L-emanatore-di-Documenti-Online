@@ -339,7 +339,8 @@ test('registered handler resumes a raw PIANI checkpoint without top-level IDs or
   const { result } = drain(handler({ resumeState: first.value }));
 
   expect(generated.map(({ tipo }) => tipo)).toEqual([TipoPiano.PEI, TipoPiano.PDP_BES]);
-  expect(result).toMatchObject({ success: true, processed: expect.any(Array) });
+  expect(result.success).toBe(true);
+  expect(Array.isArray(result.processed)).toBe(true);
 });
 
 test('PIANI isolates one plan error with the email:TIPO prefix and continues remaining targets', () => {
@@ -503,7 +504,8 @@ test('top-level document IDs override conflicting resume IDs', () => {
 
 test('legacy document state without confDocId fails before configuration lookup or generation', () => {
   const configs = { findById: jest.fn() };
-  const documenti = { generateForClasse: jest.fn() } as unknown as DocumentGenerationService;
+  const generateForClasse = jest.fn();
+  const documenti = { generateForClasse } as unknown as DocumentGenerationService;
   const service = new DocumentBatchService(
     {} as unknown as IClasseRepository,
     {} as unknown as IAlunnoRepository,
@@ -522,7 +524,7 @@ test('legacy document state without confDocId fails before configuration lookup 
       .next()
   ).toThrow('Stato di ripresa documenti privo di confDocId');
   expect(configs.findById).not.toHaveBeenCalled();
-  expect(documenti.generateForClasse).not.toHaveBeenCalled();
+  expect(generateForClasse).not.toHaveBeenCalled();
 });
 
 test('a single class failure is isolated: logged in errori, the batch continues (15 §8)', () => {

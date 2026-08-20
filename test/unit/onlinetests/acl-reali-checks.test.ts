@@ -6,6 +6,7 @@ import {
 } from '../../../src/onlinetests/checks/aclRealiChecks';
 import type { OnlineTestSkippedOutcome } from '../../../src/onlinetests/report/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
+import type { Cdu } from '../../../src/application/context-engine/Cdu';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 
 class RecordingRunner {
@@ -54,6 +55,80 @@ test('registers real Drive ACL and protected-range read-back checks', () => {
       artifactUrl: sample.sampleSpreadsheetUrl
     }
   ]);
+});
+
+function protectedRangeCallback(
+  ranges: Array<{ description?: string; editors?: { users?: string[] }; warningOnly?: boolean }>
+): { callback: () => void | OnlineTestSkippedOutcome; getFiles: jest.Mock; getProtectedRanges: jest.Mock } {
+  const runner = new RecordingRunner();
+  const getFiles = jest.fn(() => ({ parents: ['folder'] }));
+  const getProtectedRanges = jest.fn(() => ranges);
+  const teacher = 'teacher@onlinetest.aldo.local';
+  const coordinator = 'coordinator@onlinetest.aldo.local';
+  const cdu = { meta: { parametriInput: {} }, tech: {} } as unknown as Cdu;
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'documentGenerationService') {
+        return { generateForClasse: () => ({ fileId: 'sheet', status: 'CREATED' }) } as T;
+      }
+      if (key === 'contextBuilder') return { build: () => cdu } as T;
+      if (key === 'risolutoreRuoli') {
+        return {
+          risolvi: (role: string) =>
+            (role === 'DOCENTE_MATERIA' ? [teacher] : [coordinator]).map((value) => ({ value }))
+        } as T;
+      }
+      throw new Error(`Unexpected service ${key}`);
+    }
+  } as ServiceContainer;
+  jest.spyOn(ServiceFactory, 'getDriveService').mockReturnValue({ getFiles } as never);
+  jest
+    .spyOn(ServiceFactory, 'getSpreadsheetService')
+    .mockReturnValue({ getProtectedRanges } as never);
+
+  registerAclRealiChecks(runner as never, container, sample);
+  const callback = runner.checks.find((check) => check.name.includes('protected ranges'))?.callback;
+  if (callback === undefined) throw new Error('Protected-range callback was not registered');
+  return { callback, getFiles, getProtectedRanges };
+}
+
+afterEach(() => jest.restoreAllMocks());
+
+test('acl.reali returns the shared skip only after reading a generated artifact with empty synthetic evidence', () => {
+  const { callback, getFiles, getProtectedRanges } = protectedRangeCallback([]);
+
+  expect(callback()).toMatchObject({ status: 'skipped' });
+  expect(getFiles).toHaveBeenCalledWith('sheet', expect.anything());
+  expect(getProtectedRanges).toHaveBeenCalledWith('sheet');
+});
+
+test.each([
+  {
+    label: 'warning-only range',
+    ranges: [
+      {
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local', 'coordinator@onlinetest.aldo.local'] },
+        warningOnly: true
+      }
+    ],
+    error: /warningOnly/
+  },
+  {
+    label: 'partial range',
+    ranges: [
+      {
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        warningOnly: false
+      }
+    ],
+    error: /coordinator@onlinetest\.aldo\.local/
+  }
+])('acl.reali sends $label to strict MAT principal assertion', ({ ranges, error }) => {
+  const { callback } = protectedRangeCallback(ranges);
+
+  expect(callback).toThrow(error);
 });
 
 test('Drive ACL assertion ignores owner but rejects unexpected non-owner principal', () => {

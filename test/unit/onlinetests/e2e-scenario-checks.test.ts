@@ -468,9 +468,10 @@ test('protected range scenario: test mode reports SKIPPED when mock editors bloc
       }
     ]
   };
+  const getProtectedRanges = jest.fn(() => []);
   const spreadsheets = {
     getRanges: () => [['MAT', 'ALT', 'Docente']],
-    getProtectedRanges: () => [],
+    getProtectedRanges,
     protectRanges: () => protectionResult
   } as unknown as SpreadsheetService;
   const documents = {
@@ -484,6 +485,7 @@ test('protected range scenario: test mode reports SKIPPED when mock editors bloc
   expect(outcome?.status).toBe('skipped');
   expect(outcome?.message).toContain('Utente non valido');
   expect(protectionResult.failures).toHaveLength(1);
+  expect(getProtectedRanges).toHaveBeenCalledTimes(ALL_CLASSI_E2E.length);
 });
 
 test('protected range scenario: test mode still verifies protections that the API did accept', () => {
@@ -508,6 +510,57 @@ test('protected range scenario: test mode still verifies protections that the AP
   expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
     /senza editors/
   );
+});
+
+test('protected range scenario fails mixed empty and persisted evidence instead of skipping', () => {
+  const documents = {
+    generateForClasse: (classe: ClasseId) => ({ fileId: `sheet-${classe.value}`, status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const getProtectedRanges = jest
+    .fn()
+    .mockReturnValueOnce([])
+    .mockReturnValue([
+      {
+        id: 1,
+        range: {},
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]);
+  const spreadsheets = {
+    getRanges: () => [['MAT', 'ALT', 'Docente']],
+    getProtectedRanges
+  } as unknown as SpreadsheetService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(
+    /nessun range protetto/
+  );
+  expect(getProtectedRanges).toHaveBeenCalledTimes(ALL_CLASSI_E2E.length);
+});
+
+test('protected range scenario rejects warning-only persisted evidence instead of skipping', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'warning-only-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['MAT', 'ALT', 'Docente']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: {},
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: true
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() => verifyProtectedRangeScenario(documents, spreadsheets, true)).toThrow(/warningOnly/);
 });
 
 test('protected range scenario rejects residual header placeholders in test mode', () => {

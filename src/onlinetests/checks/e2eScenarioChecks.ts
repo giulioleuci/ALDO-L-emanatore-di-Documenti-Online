@@ -76,10 +76,11 @@ export function verifyProtectedRangeScenario(
   spreadsheets: SpreadsheetService,
   testMode: boolean
 ): void | OnlineTestSkippedOutcome {
-  let skipped: OnlineTestSkippedOutcome | undefined;
   const expectedFixtureEditors = Array.from({ length: DOCENTE_COUNT }, (_, index) =>
     e2eDocenteEmail(index + 1)
   );
+  const evidence: Array<{ classe: string; protections: ReturnType<SpreadsheetService['getProtectedRanges']> }> =
+    [];
   for (const classe of ALL_CLASSI_E2E) {
     const { fileId, status } = documents.generateForClasse(
       ClasseId.of(classe),
@@ -106,19 +107,24 @@ export function verifyProtectedRangeScenario(
       }
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
-    const outcome = classifySyntheticProtectedRangeOutcome(
-      testMode,
-      protections,
-      expectedFixtureEditors
-    );
-    if (outcome !== undefined) {
-      skipped = outcome;
-      continue;
-    }
+    evidence.push({ classe, protections });
+  }
+  const outcome = classifySyntheticProtectedRangeOutcome(
+    testMode,
+    evidence.flatMap(({ protections }) => protections),
+    expectedFixtureEditors
+  );
+  if (outcome !== undefined) return outcome;
+  for (const { classe, protections } of evidence) {
     if (protections.length === 0) {
       throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
     }
     for (const p of protections) {
+      if (p.warningOnly === true) {
+        throw new ValidationError(
+          `Sheet permessi per ${classe}: range protetto "${p.description}" e solo warningOnly`
+        );
+      }
       if ((p.editors.users ?? []).length === 0) {
         throw new ValidationError(
           `Sheet permessi per ${classe}: range protetto "${p.description}" senza editors`
@@ -126,7 +132,6 @@ export function verifyProtectedRangeScenario(
       }
     }
   }
-  return skipped;
 }
 
 /**

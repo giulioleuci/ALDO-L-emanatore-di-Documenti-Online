@@ -222,6 +222,33 @@ test('repairs an absent attachment property only from configured E2E_MAIL_STATIC
   );
 });
 
+test('persists a valid v2 attachment repair once, then leaves the invariant-valid fixture untouched', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties('2', null);
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
+  const getFiles = jest.fn(() => ({
+    id: 'configured-static-document',
+    mimeType: 'application/vnd.google-apps.document'
+  }));
+  const overrides = {
+    ...migrationOverrides(adapter, properties, spreadsheetService),
+    staticAttachmentDriveService: { getFiles }
+  };
+
+  migratePersistedE2eFixture(overrides);
+
+  expect(properties.set).toHaveBeenCalledTimes(1);
+  expect(properties.set).toHaveBeenCalledWith(
+    PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID,
+    'configured-static-document'
+  );
+
+  properties.set.mockClear();
+  migratePersistedE2eFixture(overrides);
+
+  expect(properties.set).not.toHaveBeenCalled();
+});
+
 test.each([
   [
     'missing configured ID',

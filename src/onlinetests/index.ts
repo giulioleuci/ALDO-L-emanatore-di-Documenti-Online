@@ -524,6 +524,9 @@ function migrateResolvedPersistedE2eFixture(
         `Fixture E2E v${REQUIRED_ONLINETEST_FIXTURE_VERSION} non valida: ASL.DATA_MODIFICA è ancora presente.`
       );
     }
+    if (repairedStaticAttachmentFileId !== null) {
+      properties.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, repairedStaticAttachmentFileId);
+    }
     return {
       previousVersion,
       version: REQUIRED_ONLINETEST_FIXTURE_VERSION,

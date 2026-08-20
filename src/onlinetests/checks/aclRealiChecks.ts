@@ -201,5 +201,6 @@ export function registerAclRealiChecks(
     const skipped = classifySyntheticProtectedRangeOutcome(sample.masterTestMode, ranges, expected);
     if (skipped !== undefined) return skipped;
     assertProtectedRangePrincipals(ranges, expected, 'MAT');
+    return undefined;
   });
 }

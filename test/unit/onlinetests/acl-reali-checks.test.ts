@@ -102,6 +102,20 @@ test('acl.reali returns the shared skip only after reading a generated artifact 
   expect(getProtectedRanges).toHaveBeenCalledWith('sheet');
 });
 
+test('acl.reali completes without a skip after strict MAT principal assertion succeeds', () => {
+  const { callback } = protectedRangeCallback([
+    {
+      description: 'Colonna materia MAT (10 §9)',
+      editors: {
+        users: ['teacher@onlinetest.aldo.local', 'coordinator@onlinetest.aldo.local']
+      },
+      warningOnly: false
+    }
+  ]);
+
+  expect(callback()).toBeUndefined();
+});
+
 test.each([
   {
     label: 'warning-only range',

@@ -87,10 +87,8 @@ function protectedRangeColumnIndex(range: ProtectedRangeEvidence): number | unde
   return typeof index === 'number' && Number.isInteger(index) ? index : undefined;
 }
 
-function assertRenderedProtectedRanges(
-  classe: string,
+function assertRenderedProtectedHeaders(
   headers: string[],
-  protections: ProtectedRangeEvidence[],
   expectations: ProtectedRangeExpectations
 ): void {
   for (const column of expectations.columns) {
@@ -98,6 +96,15 @@ function assertRenderedProtectedRanges(
       throw new ValidationError(`Intestazione protetta ${column.header} mancante.`);
     }
   }
+}
+
+function assertRenderedProtectedRanges(
+  classe: string,
+  headers: string[],
+  protections: ProtectedRangeEvidence[],
+  expectations: ProtectedRangeExpectations
+): void {
+  assertRenderedProtectedHeaders(headers, expectations);
   const expectedIndices = new Set(expectations.columns.map((column) => column.column));
   const protectionsByIndex = new Map<number, ProtectedRangeEvidence>();
   for (const protection of protections) {
@@ -273,6 +280,7 @@ export function verifyProtectedRangeScenario(
     classe: string;
     headers: string[];
     protections: ReturnType<SpreadsheetService['getProtectedRanges']>;
+    expectations: ProtectedRangeExpectations | undefined;
   }> = [];
   for (const classe of ALL_CLASSI_E2E) {
     const { fileId, status } = documents.generateForClasse(
@@ -298,8 +306,10 @@ export function verifyProtectedRangeScenario(
         );
       }
     }
+    const expectations = expectationProvider?.(classe);
+    if (expectations !== undefined) assertRenderedProtectedHeaders(headers, expectations);
     const protections = spreadsheets.getProtectedRanges(fileId);
-    evidence.push({ classe, headers, protections });
+    evidence.push({ classe, headers, protections, expectations });
   }
   const outcome = classifySyntheticProtectedRangeOutcome(
     testMode,
@@ -307,12 +317,12 @@ export function verifyProtectedRangeScenario(
     expectedFixtureEditors
   );
   if (outcome !== undefined) return outcome;
-  for (const { classe, headers, protections } of evidence) {
+  for (const { classe, headers, protections, expectations } of evidence) {
     if (protections.length === 0) {
       throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
     }
-    if (expectationProvider !== undefined) {
-      assertRenderedProtectedRanges(classe, headers, protections, expectationProvider(classe));
+    if (expectations !== undefined) {
+      assertRenderedProtectedRanges(classe, headers, protections, expectations);
       continue;
     }
     for (const protection of protections) {

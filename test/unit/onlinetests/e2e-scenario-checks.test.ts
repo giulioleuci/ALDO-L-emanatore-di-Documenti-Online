@@ -864,6 +864,26 @@ test('protected range scenario rejects a generated column absent from rendered h
   ).toThrow(/Intestazione protetta Italiano mancante/);
 });
 
+test('protected range scenario rejects a missing rendered column before classifying zero synthetic ranges', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'missing-header-zero-range-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['Matematica']],
+    getProtectedRanges: () => []
+  } as unknown as SpreadsheetService;
+
+  expect(() =>
+    verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
+      columns: [
+        { sigla: 'MAT', header: 'Matematica', column: 0 },
+        { sigla: 'ITA', header: 'Italiano', column: 1 }
+      ],
+      expectedEditors: () => ['teacher@onlinetest.aldo.local']
+    }))
+  ).toThrow(/Intestazione protetta Italiano mancante/);
+});
+
 function scenario11WithArticulatedColumnEvidence(
   evidence: Array<{ index: number; editors: string[]; warningOnly?: boolean }>
 ) {
@@ -1592,7 +1612,7 @@ test('scenario 11: reports SKIPPED (not pass) when TEST_MODE mock editors leave 
     get<T>(key: string): T {
       if (key === 'spreadsheets') {
         return {
-          getRanges: () => [['MAT', 'ALT', 'Docente']],
+          getRanges: () => [['REL', 'Matematica', 'ALT', 'Docente']],
           getProtectedRanges: () => []
         } as unknown as T;
       }

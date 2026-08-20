@@ -219,6 +219,38 @@ test('imported-table check clears leftover job state before the first generation
   expect(calls).toEqual(['reset:gen_E2E_DOC_TABELLE', 'start:E2E_DOC_TABELLE']);
 });
 
+test('imported-table check reports only bounded heading diagnostics on content failure', () => {
+  const runner = new RecordingRunner();
+  jest.mocked(creaJobRunner).mockReturnValue({ resetJob: jest.fn() } as never);
+  jest.mocked(avviaGenerazioneDataDriven).mockImplementation(() => undefined);
+  const rows = [
+    {
+      ID_GEN: 'E2E_DOC_TABELLE',
+      CLASSI: '1A',
+      ID: 'generated-table-doc',
+      LINK: 'https://drive.google.com/open?id=generated-table-doc',
+      TIPO: 'E2E_TABELLE'
+    }
+  ];
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
+      if (key === 'drive') {
+        return {
+          getFileText: () => 'Nome Valore {{focus.classe.anagrafica.nome}} {{residuo}}'
+        } as T;
+      }
+      return {} as T;
+    }
+  } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, sample, 'tabelle-importate');
+
+  expect(runner.callbacks.get('documenti.tabelleImportate::generazione e contenuto')).toThrow(
+    /generated-table-doc.*heading atteso presente=false.*placeholder letterale residuo=true.*placeholder residui=2/
+  );
+});
+
 test('registers one TEST_MODE guard when the aggregate document scope is unsafe', () => {
   const runner = new RecordingRunner();
   const container = { get: () => ({}) } as ServiceContainer;

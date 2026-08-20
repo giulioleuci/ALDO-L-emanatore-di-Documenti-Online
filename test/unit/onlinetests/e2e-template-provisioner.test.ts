@@ -75,6 +75,7 @@ test('creates all 21 E2E artifacts, including the dedicated table, history, and 
   expect(ids).toHaveProperty('cdcRiepilogo', expect.stringMatching(/^doc_/));
   expect(created).toContain('doc:E2E CDC Riepilogo Firme Template');
   expect(ids.tabelleImportate).toMatch(/^doc_/);
+  expect(created).toContain('doc:E2E Doc Tabelle Importate Template v2');
   expect(ids.tabellaSorgenteDati).toMatch(/^sheet_/);
   expect(ids.tabellaSorgenteVuota).toMatch(/^sheet_/);
   expect(ids.storico).toMatch(/^doc_/);
@@ -162,18 +163,17 @@ test('authors the history, dotted/ITP, and history-email templates against canon
   );
 });
 
-test('reuses all dedicated Task-6 artifacts without re-authoring content', () => {
+test('does not reuse the v1 imported-table template after the heading fixture changes', () => {
   const { artifacts, created, docContent, sheetContent } = fakeArtifacts();
   const drive = new FakeDriveFacade();
   const existing = {
-    tabelleImportate: 'existing_table_doc',
     tabellaSorgenteDati: 'existing_data_sheet',
     tabellaSorgenteVuota: 'existing_empty_sheet',
     storico: 'existing_history_doc',
     dotted: 'existing_dotted_doc',
     storicoEmail: 'existing_history_email_doc'
   };
-  drive.files.set('FOLDER_1::E2E Doc Tabelle Importate Template', existing.tabelleImportate);
+  drive.files.set('FOLDER_1::E2E Doc Tabelle Importate Template', 'legacy_table_doc');
   drive.files.set('FOLDER_1::E2E Tabella Sorgente Dati', existing.tabellaSorgenteDati);
   drive.files.set('FOLDER_1::E2E Tabella Sorgente Vuota', existing.tabellaSorgenteVuota);
   drive.files.set('FOLDER_1::E2E Storico Template', existing.storico);
@@ -183,9 +183,10 @@ test('reuses all dedicated Task-6 artifacts without re-authoring content', () =>
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   expect(ids).toMatchObject(existing);
+  expect(ids.tabelleImportate).not.toBe('legacy_table_doc');
+  expect(created).toContain('doc:E2E Doc Tabelle Importate Template v2');
   expect(created).not.toEqual(
     expect.arrayContaining([
-      'doc:E2E Doc Tabelle Importate Template',
       'sheet:E2E Tabella Sorgente Dati',
       'sheet:E2E Tabella Sorgente Vuota',
       'doc:E2E Storico Template',
@@ -193,7 +194,7 @@ test('reuses all dedicated Task-6 artifacts without re-authoring content', () =>
       'doc:E2E Storico Email Template'
     ])
   );
-  expect(docContent).not.toHaveProperty(existing.tabelleImportate);
+  expect(docContent[ids.tabelleImportate]).toBeDefined();
   expect(docContent).not.toHaveProperty(existing.storico);
   expect(sheetContent).not.toHaveProperty(existing.tabellaSorgenteDati);
 });

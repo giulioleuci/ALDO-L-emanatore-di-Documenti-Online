@@ -17,13 +17,17 @@ class FakeDocumentTableFacade implements IDocumentTableFacade {
   }> = [];
   /** Records the interleaved call order ('insert' | 'remove') per marker, to assert insert-before-remove. */
   callOrder: string[] = [];
-  constructor(private readonly placeholders: TablePlaceholder[]) {}
+  constructor(
+    private readonly placeholders: TablePlaceholder[],
+    public documentText = ''
+  ) {}
   findTablePlaceholders(): TablePlaceholder[] {
     return this.placeholders;
   }
   removeText(fileId: string, marker: string): void {
     this.removed.push({ fileId, marker });
     this.callOrder.push(`remove:${marker}`);
+    this.documentText = this.documentText.replace(marker, '');
   }
   appendTable(fileId: string, data: string[][], options?: { headerRow?: boolean }): void {
     this.appended.push({ fileId, data, options });
@@ -39,6 +43,23 @@ class FakeDocumentTableFacade implements IDocumentTableFacade {
   }
 }
 
+class HeadingRenderingTemplateEngine extends FakeTemplateEngine {
+  textBeforeGenericRender = '';
+
+  constructor(private readonly document: FakeDocumentTableFacade) {
+    super();
+  }
+
+  override processDocument(fileId: string, context: Record<string, unknown>): void {
+    this.textBeforeGenericRender = this.document.documentText;
+    super.processDocument(fileId, context);
+    this.document.documentText = this.document.documentText.replace(
+      '{{focus.classe.anagrafica.nome}}',
+      '1A'
+    );
+  }
+}
+
 class FakeSpreadsheetService {
   constructor(
     private readonly sheets: SpreadsheetSheetInfo[],
@@ -47,8 +68,8 @@ class FakeSpreadsheetService {
   getSheetInfo(): SpreadsheetSheetInfo[] {
     return this.sheets;
   }
-  getRanges(_id: string, range: string): unknown[][] {
-    return this.ranges[range] ?? [];
+  getRanges(id: string, range: string): unknown[][] {
+    return this.ranges[`${id}:${range}`] ?? this.ranges[range] ?? [];
   }
   updateRanges(): unknown {
     throw new Error('not used');
@@ -71,13 +92,13 @@ function sheetInfo(name = 'Sheet1', rowCount = 5, columnCount = 3): SpreadsheetS
   return [{ name, sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount, columnCount } }];
 }
 
-function fakeCdu(): Cdu {
+function fakeCdu(className?: string): Cdu {
   return {
     meta: {
       date: { oggi: { breve: '09/07/2026' } },
       parametriInput: { target: 'x', tipoTarget: 'classe', opzioni: {} }
     },
-    focus: {},
+    focus: className === undefined ? {} : { classe: { anagrafica: { nome: className } } },
     tech: {
       entita: {},
       servizi: [],
@@ -93,7 +114,7 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     ];
     const tables = new FakeDocumentTableFacade(placeholders);
     const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 3, 2), {
-      'Sheet1!A1:B3': [
+      'sheet_1:Sheet1!A1:B3': [
         ['NOME', 'VOTO'],
         ['Rossi', 8],
         ['', '']
@@ -158,7 +179,7 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     const marker = '{{TABELLA:sheet_header_only}}';
     const tables = new FakeDocumentTableFacade([{ marker, sheetFileId: 'sheet_header_only' }]);
     const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 1, 2), {
-      'Sheet1!A1:B1': [['Nome', 'Valore']]
+      'sheet_header_only:Sheet1!A1:B1': [['Nome', 'Valore']]
     });
     const strategy = new DocumentoConTabelleImportateGeneratorStrategy(
       new FakeTemplateEngine(),
@@ -170,5 +191,50 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
 
     expect(tables.insertedAtMarker).toEqual([]);
     expect(tables.removed).toEqual([{ fileId: 'doc-header-only', marker }]);
+  });
+
+  test('preserves the heading placeholder through both table-marker mutations before generic CDU rendering', () => {
+    const dataMarker = '{{TABELLA:sheet_data}}';
+    const emptyMarker = '{{TABELLA:sheet_empty}}';
+    const tables = new FakeDocumentTableFacade(
+      [
+        { marker: dataMarker, sheetFileId: 'sheet_data' },
+        { marker: emptyMarker, sheetFileId: 'sheet_empty' }
+      ],
+      `Tabelle importate per la classe {{focus.classe.anagrafica.nome}}\n${dataMarker}\n${emptyMarker}`
+    );
+    const sheets = new FakeSpreadsheetService(sheetInfo('Sheet1', 3, 2), {
+      'sheet_data:Sheet1!A1:B3': [
+        ['Nome', 'Valore'],
+        ['Prima riga', '1'],
+        ['Seconda riga', '2']
+      ],
+      'sheet_empty:Sheet1!A1:B3': [['Nome', 'Valore']]
+    });
+    const templates = new HeadingRenderingTemplateEngine(tables);
+    const strategy = new DocumentoConTabelleImportateGeneratorStrategy(templates, sheets, tables);
+
+    strategy.render('doc-heading', fakeCdu('1A'));
+
+    expect(tables.insertedAtMarker).toEqual([
+      {
+        fileId: 'doc-heading',
+        marker: dataMarker,
+        data: [
+          ['Nome', 'Valore'],
+          ['Prima riga', '1'],
+          ['Seconda riga', '2']
+        ],
+        options: { headerRow: true }
+      }
+    ]);
+    expect(tables.removed).toEqual([
+      { fileId: 'doc-heading', marker: dataMarker },
+      { fileId: 'doc-heading', marker: emptyMarker }
+    ]);
+    expect(templates.textBeforeGenericRender).toBe(
+      'Tabelle importate per la classe {{focus.classe.anagrafica.nome}}\n\n'
+    );
+    expect(tables.documentText).toBe('Tabelle importate per la classe 1A\n\n');
   });
 });

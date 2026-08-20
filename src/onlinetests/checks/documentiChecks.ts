@@ -171,8 +171,10 @@ function registerTabelleImportateCheck(
       }
 
       const text = drive.getFileText(fileId);
+      const expectedHeading = 'Tabelle importate per la classe 1A';
+      const headingPlaceholder = '{{focus.classe.anagrafica.nome}}';
       const expectedFragments = [
-        'Tabelle importate per la classe 1A',
+        expectedHeading,
         'Nome',
         'Valore',
         'Prima riga',
@@ -181,22 +183,21 @@ function registerTabelleImportateCheck(
         'Testo dopo la tabella vuota'
       ];
       const missingFragments = expectedFragments.filter((fragment) => !text.includes(fragment));
-      if (missingFragments.length > 0) {
-        new LoggerService().warn(
-          `Tabelle importate: frammenti mancanti nel documento ${fileId}: ${missingFragments.join(', ')}`
-        );
-        throw new ValidationError(
-          'Tabelle importate: contenuto CDU o righe della sorgente dati mancanti nel documento'
-        );
-      }
+      const unresolvedTableMarker = /\{\{TABELLA:[^}]+\}\}/.test(text);
+      const residualPlaceholderCount = (text.match(/\{\{[^}]*\}\}/g) ?? []).length;
+      const expectedHeadingPresent = text.includes(expectedHeading);
+      const headingPlaceholderRemains = text.includes(headingPlaceholder);
+      const diagnostics = `file ID=${fileId}; heading atteso presente=${expectedHeadingPresent}; placeholder letterale residuo=${headingPlaceholderRemains}; placeholder residui=${residualPlaceholderCount}`;
       if (
-        /\{\{TABELLA:[^}]+\}\}/.test(text) ||
-        /\{\{[^}]*\}\}/.test(text) ||
+        missingFragments.length > 0 ||
+        unresolvedTableMarker ||
+        residualPlaceholderCount > 0 ||
         countOccurrences(text, 'Nome') !== 1 ||
         countOccurrences(text, 'Valore') !== 1
       ) {
+        new LoggerService().warn(`Tabelle importate: verifica contenuto fallita (${diagnostics})`);
         throw new ValidationError(
-          'Tabelle importate: marker irrisolto, Mustache residuo o tabella da sorgente solo-intestazione presente'
+          `Tabelle importate: contenuto CDU o righe della sorgente dati mancanti nel documento (${diagnostics})`
         );
       }
 

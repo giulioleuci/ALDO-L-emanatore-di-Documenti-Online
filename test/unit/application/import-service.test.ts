@@ -1,4 +1,4 @@
-import { ImportService } from '../../../src/application/services/ImportService';
+import { ImportService, JOB_TYPE_IMPORT_CHUNKED } from '../../../src/application/services/ImportService';
 import { ConfigurazioneImportRepository } from '../../../src/infrastructure/repositories/ConfigurazioneImportRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
@@ -277,6 +277,83 @@ test('executeImportChunked skips immediately when ATTIVO is false, same as execu
     ghost: 0,
     errori: ['skipped: ATTIVO=false']
   });
+});
+
+test('registered import handler resumes a raw wrapper checkpoint without top-level configId or duplicate chunks', () => {
+  const database = db([confImpRow()]);
+  const checkpoints: ImportCheckpoint[] = [];
+  const engine = {
+    startImport: (recipe: ImportRecipe) => ({
+      recipeName: recipe.name,
+      stage: 'EXTRACT',
+      sourceCursor: null,
+      rowOffset: 0,
+      loadOffset: 0,
+      counters: { extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 },
+      buffer: null,
+      done: false
+    }),
+    runImportChunk: (_recipe: ImportRecipe, checkpoint: ImportCheckpoint) => {
+      checkpoints.push(checkpoint);
+      return checkpoint.stage === 'EXTRACT'
+        ? { checkpoint: { ...checkpoint, stage: 'LOAD' }, done: false }
+        : {
+            checkpoint: {
+              ...checkpoint,
+              stage: 'DONE',
+              done: true,
+              counters: { ...checkpoint.counters, inserted: 1 }
+            },
+            done: true
+          };
+    }
+  } as unknown as ImportEngine;
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+  const registered = new Map<string, unknown>();
+  service.registerJobHandlers({
+    registerJobHandler: (type, handler) => registered.set(type, handler)
+  });
+  const handler = registered.get(JOB_TYPE_IMPORT_CHUNKED) as (params: {
+    configId?: string;
+    resumeState?: unknown;
+  }) => Generator<unknown, ImportResult, void>;
+
+  const firstGenerator = handler({ configId: 'IMPORT_ALUNNI' });
+  const first = firstGenerator.next();
+  expect(first.done).toBe(false);
+  expect(first.value).toMatchObject({ configId: 'IMPORT_ALUNNI', importCheckpoint: { stage: 'LOAD' } });
+
+  const resumedGenerator = handler({ resumeState: first.value });
+  let resumed = resumedGenerator.next();
+  while (!resumed.done) resumed = resumedGenerator.next();
+
+  expect(checkpoints.map((checkpoint) => checkpoint.stage)).toEqual(['EXTRACT', 'LOAD']);
+  expect(resumed.value).toMatchObject({ inseriti: 1 });
+});
+
+test('registered import handler rejects a resume wrapper without configId before engine invocation', () => {
+  const database = db([confImpRow()]);
+  const engine = {
+    startImport: jest.fn(),
+    runImportChunk: jest.fn()
+  } as unknown as ImportEngine;
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+  const registered = new Map<string, unknown>();
+  service.registerJobHandlers({
+    registerJobHandler: (type, handler) => registered.set(type, handler)
+  });
+  const handler = registered.get(JOB_TYPE_IMPORT_CHUNKED) as (params: {
+    configId?: string;
+    resumeState?: unknown;
+  }) => Generator<unknown, ImportResult, void>;
+
+  expect(() =>
+    handler({
+      resumeState: { importCheckpoint: { stage: 'EXTRACT' } }
+    }).next()
+  ).toThrow('Stato di ripresa import privo di configId');
+  expect(engine.startImport).not.toHaveBeenCalled();
+  expect(engine.runImportChunk).not.toHaveBeenCalled();
 });
 
 test('executeAllActiveImports runs each active job independently; one failure does not abort the batch', () => {

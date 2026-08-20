@@ -10,6 +10,12 @@ export interface ImportResult {
   errori: string[];
 }
 
+/** ALDO-owned JobRunner state; the nested checkpoint remains library-owned. */
+export interface ImportJobCheckpoint {
+  configId: string;
+  importCheckpoint: ImportCheckpoint;
+}
+
 /** Columns never subject to Ghost Record Detection besides the conflict key (ref 12 §3). */
 const META_COLUMNS = ['DATA_MODIFICA'];
 
@@ -231,13 +237,29 @@ export class ImportService {
     };
   }
 
+  /** JobRunner-facing wrapper which persists the CONF_IMP identity alongside the library state. */
+  *importJobHandler(
+    params: JobHandlerParams & { configId?: string }
+  ): Generator<ImportJobCheckpoint, ImportResult, void> {
+    const resume = (params.resumeState ?? null) as ImportJobCheckpoint | null;
+    const configId = String(params.configId ?? resume?.configId ?? '');
+    if (!configId) {
+      throw new PipelineError('Stato di ripresa import privo di configId');
+    }
+
+    const generator = this.executeImportChunked(configId, resume?.importCheckpoint);
+    let step = generator.next();
+    while (!step.done) {
+      yield { configId, importCheckpoint: step.value };
+      step = generator.next();
+    }
+    return step.value;
+  }
+
   /** JobRunnerLib registry callback (passed to run/resume) for the chunked import handler. */
   registerJobHandlers(queue: JobQueueLike): void {
     queue.registerJobHandler(JOB_TYPE_IMPORT_CHUNKED, (params) =>
-      this.executeImportChunked(
-        String((params as { configId?: string }).configId ?? ''),
-        (params as { resumeState?: ImportCheckpoint }).resumeState
-      )
+      this.importJobHandler(params)
     );
   }
 

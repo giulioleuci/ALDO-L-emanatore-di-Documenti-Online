@@ -137,6 +137,8 @@ describe('JobRunner online checks', () => {
         propertyValues.set(
           `state_${docJobName}`,
           JSON.stringify({
+            confDocId: CONF_DOC_JOBRUNNER,
+            jobId: docJobName,
             nextIndex: 1,
             processed: ['student-1@onlinetest.aldo.local:PDP_BES'],
             errori: [],

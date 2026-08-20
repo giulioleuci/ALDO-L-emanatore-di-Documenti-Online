@@ -30,6 +30,8 @@ export interface DocenteMateriaBatchTarget {
 
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
 export interface BatchResumeState {
+  confDocId: string;
+  jobId: string;
   nextIndex: number;
   processed: string[];
   errori: string[];
@@ -84,9 +86,12 @@ export class DocumentBatchService {
   *batchGenerateHandler(
     params: JobHandlerParams & { confDocId?: string; jobId?: string }
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    const confDocId = String(params.confDocId ?? '');
-    const jobId = String(params.jobId ?? confDocId);
     const resume = (params.resumeState ?? null) as BatchResumeState | null;
+    const confDocId = String(params.confDocId ?? resume?.confDocId ?? '');
+    const jobId = String(params.jobId ?? resume?.jobId ?? confDocId);
+    if (resume !== null && !resume.confDocId) {
+      throw new ConfigurationError('Stato di ripresa documenti privo di confDocId');
+    }
     const processed = resume === null ? [] : resume.processed.slice();
     const errori = resume === null ? [] : resume.errori.slice();
     const config = this.configs.findById(confDocId);
@@ -191,6 +196,8 @@ export class DocumentBatchService {
       const percentage = ((i + 1) / targets.length) * 100;
       this.monitor?.updateProgress(jobId, percentage, message);
       yield {
+        confDocId,
+        jobId,
         percentage,
         nextIndex: i + 1,
         processed: processed.slice(),
@@ -325,6 +332,8 @@ export class DocumentBatchService {
       const percentage = ((i + 1) / targets.length) * 100;
       this.monitor?.updateProgress(jobId, percentage, message);
       yield {
+        confDocId,
+        jobId,
         percentage,
         nextIndex: i + 1,
         processed: processed.slice(),
@@ -385,7 +394,14 @@ export class DocumentBatchService {
       processed.push(id);
       const percentage = ((i + 1) / tutti.length) * 100;
       this.monitor?.updateProgress(jobId, percentage, message);
-      yield { percentage, nextIndex: i + 1, processed: processed.slice(), errori: errori.slice() };
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice()
+      };
     }
 
     const success = errori.length === 0;
@@ -450,7 +466,14 @@ export class DocumentBatchService {
       processed.push(classe.id ?? '');
       const percentage = ((i + 1) / attive.length) * 100;
       this.monitor?.updateProgress(jobId, percentage, message);
-      yield { percentage, nextIndex: i + 1, processed: processed.slice(), errori: errori.slice() };
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice()
+      };
     }
 
     const success = errori.length === 0;

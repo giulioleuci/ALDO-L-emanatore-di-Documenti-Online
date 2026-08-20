@@ -430,13 +430,36 @@ test('handler resumes from params.resumeState without reprocessing completed cla
   const { service, generated } = wire();
   const gen = service.batchGenerateHandler({
     confDocId: 'CD1',
-    resumeState: { nextIndex: 1, processed: ['5A'], errori: [] }
+    resumeState: { confDocId: 'CD1', jobId: 'CD1', nextIndex: 1, processed: ['5A'], errori: [] }
   });
   let step = gen.next();
   while (!step.done) step = gen.next();
   const result = step.value;
   expect(generated).toEqual(['1F:CD1']); // 5A skipped, already processed
   expect(result.processed).toEqual(['5A', '1F']);
+});
+
+test('registered handler resumes a raw class checkpoint without top-level IDs or duplicate generation', () => {
+  const { service, generated } = wire();
+  const registered = new Map<string, unknown>();
+  service.registerJobHandlers({
+    registerJobHandler: (type, handler) => registered.set(type, handler)
+  });
+  const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
+    resumeState?: BatchCheckpoint;
+  }) => Generator<BatchCheckpoint, unknown, void>;
+
+  const firstRun = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_cd1' });
+  const first = firstRun.next();
+  expect(first.done).toBe(false);
+  expect(first.value).toMatchObject({ confDocId: 'CD1', jobId: 'job_cd1', nextIndex: 1 });
+
+  const resumedGenerator = handler({ resumeState: first.value });
+  let resumed = resumedGenerator.next();
+  while (!resumed.done) resumed = resumedGenerator.next();
+
+  expect(generated).toEqual(['5A:CD1', '1F:CD1']);
+  expect(resumed.value).toMatchObject({ success: true, processed: ['5A', '1F'] });
 });
 
 test('a single class failure is isolated: logged in errori, the batch continues (15 §8)', () => {
@@ -506,7 +529,7 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   const gen = service.batchGenerateHandler({
     confDocId: 'CD1',
     jobId: 'job_1',
-    resumeState: { nextIndex: 1, processed: ['5A'], errori: [] }
+    resumeState: { confDocId: 'CD1', jobId: 'job_1', nextIndex: 1, processed: ['5A'], errori: [] }
   });
   let step = gen.next();
   while (!step.done) step = gen.next();
@@ -705,6 +728,8 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     const gen = service.batchGenerateHandler({
       confDocId: 'PROGRAMMA_SVOLTO',
       resumeState: {
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO',
         nextIndex: 2,
         processed: ['5A:MATE:bianchi@school.it', '5A:FISI:bianchi@school.it'],
         errori: [],
@@ -905,7 +930,11 @@ describe('DocumentBatchService.generateDipartimenti', () => {
     const { result } = drain(service.batchGenerateHandler({ confDocId: 'VERBALE_DIPARTIMENTO' }));
 
     expect(generated).toEqual([
-      { dipartimentoId: 'LETTERE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'VERBALE_DIPARTIMENTO' }
+      {
+        dipartimentoId: 'LETTERE',
+        confDocId: 'VERBALE_DIPARTIMENTO',
+        jobId: 'VERBALE_DIPARTIMENTO'
+      }
     ]);
     expect(result.errori).toEqual(['SCIENZE: template non trovato']);
     expect(result.success).toBe(false);
@@ -917,7 +946,13 @@ describe('DocumentBatchService.generateDipartimenti', () => {
     const { result } = drain(
       service.batchGenerateHandler({
         confDocId: 'VERBALE_DIPARTIMENTO',
-        resumeState: { nextIndex: 1, processed: ['LETTERE'], errori: [] }
+        resumeState: {
+          confDocId: 'VERBALE_DIPARTIMENTO',
+          jobId: 'VERBALE_DIPARTIMENTO',
+          nextIndex: 1,
+          processed: ['LETTERE'],
+          errori: []
+        }
       })
     );
 

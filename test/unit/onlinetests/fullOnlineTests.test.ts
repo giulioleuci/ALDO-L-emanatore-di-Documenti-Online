@@ -22,14 +22,13 @@ import {
   type FullOnlineTestRegistrations,
   type FullOnlineTestSample
 } from '../../../src/onlinetests';
-import type { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
+import { TestRunner } from '../../../src/onlinetests/report/OnlineTestReport';
 import type { OnlineTestReport } from '../../../src/onlinetests/report/OnlineTestReport';
 import {
   buildMaterieRows,
   type SharedTestDatabase
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
-import { EMAIL_TEST_SAFE } from '../../../src/onlinetests/data/fixtures';
 import { COL_MATERIE, TABLE } from '../../../src/config/schema';
 import {
   registerEffectiveAssignmentMatrixChecks,
@@ -69,14 +68,19 @@ jest.mock('../../../src/infrastructure/facades/ActiveUserFacade', () => {
   >('../../../src/infrastructure/facades/ActiveUserFacade');
   return {
     ...actual,
-    SessionActiveUserFacade: jest.fn(() => ({ getEmail: () => 'e2edocente3@onlinetest.aldo.local' }))
+    SessionActiveUserFacade: jest.fn(() => ({
+      getEmail: () => 'e2edocente3@onlinetest.aldo.local'
+    }))
   };
 });
 jest.mock('../../../src/infrastructure/repositories/ClasseRepository', () => {
   const actual = jest.requireActual<
     typeof import('../../../src/infrastructure/repositories/ClasseRepository')
   >('../../../src/infrastructure/repositories/ClasseRepository');
-  return { ...actual, ClasseRepository: jest.fn(() => ({ findById: jest.fn(() => ({ id: 'fixture' })) })) };
+  return {
+    ...actual,
+    ClasseRepository: jest.fn(() => ({ findById: jest.fn(() => ({ id: 'fixture' })) }))
+  };
 });
 
 jest.mock('../../../src/onlinetests/checks/repositoryChecks', () => ({
@@ -675,7 +679,7 @@ function recordActualBatchScenarioNames(
           ? { resolveConsiglio: jest.fn(() => []), resolveMateria: jest.fn(() => []) }
           : key === 'contextBuilder'
             ? { build: jest.fn(() => ({ focus: {} })), registerInterceptor: jest.fn() }
-          : { registerInterceptor: jest.fn() }
+            : { registerInterceptor: jest.fn() }
     )
   } as unknown as ServiceContainer;
   const jobRunner = {
@@ -704,15 +708,9 @@ function recordActualBatchScenarioNames(
   const actualImportChecks = jest.requireActual<
     typeof import('../../../src/onlinetests/checks/importChecks')
   >('../../../src/onlinetests/checks/importChecks');
-  const actualStoricoChecks = jest.requireActual<
-    typeof import('../../../src/onlinetests/checks/storicoChecks')
-  >('../../../src/onlinetests/checks/storicoChecks');
   const actualArticolazioneChecks = jest.requireActual<
     typeof import('../../../src/onlinetests/checks/articolazioneChecks')
   >('../../../src/onlinetests/checks/articolazioneChecks');
-  const actualItpDottedChecks = jest.requireActual<
-    typeof import('../../../src/onlinetests/checks/itpDottedChecks')
-  >('../../../src/onlinetests/checks/itpDottedChecks');
   const actualSupplenzeRuoliChecks = jest.requireActual<
     typeof import('../../../src/onlinetests/checks/supplenzeRuoliChecks')
   >('../../../src/onlinetests/checks/supplenzeRuoliChecks');
@@ -725,74 +723,69 @@ function recordActualBatchScenarioNames(
   const actualPermessiChecks = jest.requireActual<
     typeof import('../../../src/onlinetests/checks/permessiChecks')
   >('../../../src/onlinetests/checks/permessiChecks');
-  const actual = {
-    repository: actualRepositoryChecks.registerRepositoryChecks,
-    context: actualContextEngineChecks.registerContextEngineChecks,
-    assignmentMatrix: actualRepositoryChecks.registerEffectiveAssignmentMatrixChecks,
-    assignmentConsumer: actualContextEngineChecks.registerEffectiveAssignmentConsumerChecks,
-    documenti: actualDocumentiChecks.registerDocumentiChecks,
-    email: actualEmailChecks.registerEmailChecks,
-    jobRunner: actualJobRunnerChecks.registerJobRunnerChecks,
-    import: actualImportChecks.registerImportChecks,
-    storico: actualStoricoChecks.registerStoricoChecks,
-    articolazione: actualArticolazioneChecks.registerArticolazioneChecks,
-    itpDotted: actualItpDottedChecks.registerItpDottedChecks,
-    supplenzeRuoli: actualSupplenzeRuoliChecks.registerSupplenzeRuoliChecks,
-    aclReali: actualAclRealiChecks.registerAclRealiChecks,
-    cacheIsolamento: actualCacheIsolamentoChecks.registerCacheIsolamentoChecks,
-    permessi: actualPermessiChecks.registerPermessiChecks
-  } as const;
-  const registrations: Record<string, unknown> = {};
-  for (const name of ONLINE_TEST_GROUP_NAMES) {
-    registrations[name] = (runner: Pick<TestRunner, 'add'>, groupContainer: ServiceContainer, groupSample: FullOnlineTestSample, safeEmail?: string, cacheDeps?: unknown): void => {
-      const captured: string[] = [];
-      const captureRunner = { add: (scenario: string): void => captured.push(scenario) } as unknown as TestRunner;
-      if (name === 'documenti') {
-        actual.repository(captureRunner, groupContainer, groupSample);
-        actual.context(captureRunner, groupContainer, groupSample);
-        actual.documenti(captureRunner, groupContainer, groupSample, 'all');
-      }
-      else if (name === 'jobRunner') actual.jobRunner(captureRunner, groupContainer, groupSample, safeEmail ?? EMAIL_TEST_SAFE);
-      else if (name === 'email') actual.email(captureRunner, groupContainer, groupSample, safeEmail ?? EMAIL_TEST_SAFE);
-      else if (name === 'import') {
-        actual.import(captureRunner, groupContainer, groupSample);
-        actualImportChecks.registerImportCartelleClasseChecks(
-          captureRunner,
-          groupContainer,
-          groupSample
-        );
-        actualImportChecks.registerImportCercaDocumentiChecks(
-          captureRunner,
-          groupContainer,
-          groupSample
-        );
-        actualImportChecks.registerImportChunkedChecks(captureRunner, groupContainer, groupSample);
-      }
-      else if (name === 'storico') actual.storico(captureRunner, groupContainer, groupSample, 'all');
-      else if (name === 'cacheIsolamento') actual.cacheIsolamento(captureRunner, groupContainer, groupSample, cacheDeps);
-      else if (name === 'supplenzeRuoli') {
-        actual.assignmentMatrix(captureRunner, groupContainer, groupSample);
-        actual.assignmentConsumer(captureRunner, groupContainer, groupSample);
-        actual.supplenzeRuoli(captureRunner, groupContainer, groupSample);
-      }
-      else actual[name](captureRunner, groupContainer, groupSample);
-      for (const scenario of captured) {
-        runner.add(scenario, sample.sampleSpreadsheetUrl, () => undefined);
-      }
-    };
-  }
+  jest
+    .mocked(registerRepositoryChecks)
+    .mockImplementation(actualRepositoryChecks.registerRepositoryChecks);
+  jest
+    .mocked(registerEffectiveAssignmentMatrixChecks)
+    .mockImplementation(actualRepositoryChecks.registerEffectiveAssignmentMatrixChecks);
+  jest
+    .mocked(registerContextEngineChecks)
+    .mockImplementation(actualContextEngineChecks.registerContextEngineChecks);
+  jest
+    .mocked(registerEffectiveAssignmentConsumerChecks)
+    .mockImplementation(actualContextEngineChecks.registerEffectiveAssignmentConsumerChecks);
+  jest
+    .mocked(registerDocumentiChecks)
+    .mockImplementation(actualDocumentiChecks.registerDocumentiChecks);
+  jest.mocked(registerEmailChecks).mockImplementation(actualEmailChecks.registerEmailChecks);
+  jest
+    .mocked(registerJobRunnerChecks)
+    .mockImplementation(actualJobRunnerChecks.registerJobRunnerChecks);
+  jest.mocked(registerImportChecks).mockImplementation(actualImportChecks.registerImportChecks);
+  jest
+    .mocked(registerImportCartelleClasseChecks)
+    .mockImplementation(actualImportChecks.registerImportCartelleClasseChecks);
+  jest
+    .mocked(registerImportCercaDocumentiChecks)
+    .mockImplementation(actualImportChecks.registerImportCercaDocumentiChecks);
+  jest
+    .mocked(registerImportChunkedChecks)
+    .mockImplementation(actualImportChecks.registerImportChunkedChecks);
+  jest
+    .mocked(registerArticolazioneChecks)
+    .mockImplementation(actualArticolazioneChecks.registerArticolazioneChecks);
+  jest
+    .mocked(registerSupplenzeRuoliChecks)
+    .mockImplementation(actualSupplenzeRuoliChecks.registerSupplenzeRuoliChecks);
+  jest
+    .mocked(registerAclRealiChecks)
+    .mockImplementation(actualAclRealiChecks.registerAclRealiChecks);
+  jest
+    .mocked(registerCacheIsolamentoChecks)
+    .mockImplementation(actualCacheIsolamentoChecks.registerCacheIsolamentoChecks);
+  jest
+    .mocked(registerPermessiChecks)
+    .mockImplementation(actualPermessiChecks.registerPermessiChecks);
 
-  const result = execute({
-    properties: props,
-    clock: () => new Date('2026-08-11T09:00:00Z'),
-    resetAldo: () => undefined,
-    initAldo: () => container,
-    readSample: () => sample,
-    spreadsheetService: verifiedSpreadsheetService(),
-    registrations
-  }).results.map((result) => result.name);
-  creaJobRunner.mockRestore();
-  return result;
+  const scenarioNames: string[] = [];
+  const add = jest
+    .spyOn(TestRunner.prototype, 'add')
+    .mockImplementation((name: string) => scenarioNames.push(name));
+  try {
+    execute({
+      properties: props,
+      clock: () => new Date('2026-08-11T09:00:00Z'),
+      resetAldo: () => undefined,
+      initAldo: () => container,
+      readSample: () => sample,
+      spreadsheetService: verifiedSpreadsheetService()
+    });
+    return scenarioNames;
+  } finally {
+    add.mockRestore();
+    creaJobRunner.mockRestore();
+  }
 }
 
 describe('online test batches', () => {
@@ -860,15 +853,29 @@ describe('online test batches', () => {
   });
 
   it('locks the 103-scenario acceptance contract across all four batches', () => {
-    const batch1 = recordActualBatchScenarioNames(executeOnlineTestsBatch1, propertiesWithoutCacheFixture());
-    const batch2 = recordActualBatchScenarioNames(executeOnlineTestsBatch2, propertiesWithoutCacheFixture());
-    const batch3 = recordActualBatchScenarioNames(executeOnlineTestsBatch3, propertiesWithoutCacheFixture());
+    const batch1 = recordActualBatchScenarioNames(
+      executeOnlineTestsBatch1,
+      propertiesWithoutCacheFixture()
+    );
+    const batch2 = recordActualBatchScenarioNames(
+      executeOnlineTestsBatch2,
+      propertiesWithoutCacheFixture()
+    );
+    const batch3 = recordActualBatchScenarioNames(
+      executeOnlineTestsBatch3,
+      propertiesWithoutCacheFixture()
+    );
     const batch4 = recordActualBatchScenarioNames(executeOnlineTestsBatch4, properties());
     const allNames = [...batch1, ...batch2, ...batch3, ...batch4];
+    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 15, 27, 35]);
     expect(allNames).toHaveLength(103);
     expect(new Set(allNames).size).toBe(103);
-    expect(allNames).toContain('E2E scenario 10b: genera documento complesso classe articolata (3C)');
-    expect(allNames).toContain('E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA');
+    expect(allNames).toContain(
+      'E2E scenario 10b: genera documento complesso classe articolata (3C)'
+    );
+    expect(allNames).toContain(
+      'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA'
+    );
   });
 
   it.each([

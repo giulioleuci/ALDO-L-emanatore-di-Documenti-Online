@@ -4,13 +4,22 @@ import {
   registerAclRealiChecks,
   type DrivePermissionExpectation
 } from '../../../src/onlinetests/checks/aclRealiChecks';
+import type { OnlineTestSkippedOutcome } from '../../../src/onlinetests/report/OnlineTestReport';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 
 class RecordingRunner {
-  readonly checks: Array<{ name: string; artifactUrl: string | undefined; callback: () => void }> = [];
+  readonly checks: Array<{
+    name: string;
+    artifactUrl: string | undefined;
+    callback: () => void | OnlineTestSkippedOutcome;
+  }> = [];
 
-  add(name: string, artifactUrl: string | undefined, callback: () => void): void {
+  add(
+    name: string,
+    artifactUrl: string | undefined,
+    callback: () => void | OnlineTestSkippedOutcome
+  ): void {
     this.checks.push({ name, artifactUrl, callback });
   }
 }

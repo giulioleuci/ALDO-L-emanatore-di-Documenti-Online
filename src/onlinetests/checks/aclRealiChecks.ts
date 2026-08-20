@@ -8,6 +8,7 @@ import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ValidationError } from '../../domain/errors/DomainError';
 import type { TestRunner } from '../report/OnlineTestReport';
+import { classifySyntheticProtectedRangeOutcome } from './protectedRangeOutcome';
 import {
   CONF_DOC_ACL_REALI,
   type SharedTestDatabase
@@ -197,6 +198,8 @@ export function registerAclRealiChecks(
     ];
     // Real Advanced Sheets wrapper: callback reads persisted protections back.
     const ranges = ServiceFactory.getSpreadsheetService().getProtectedRanges(fileId);
+    const skipped = classifySyntheticProtectedRangeOutcome(sample.masterTestMode, ranges, expected);
+    if (skipped !== undefined) return skipped;
     assertProtectedRangePrincipals(ranges, expected, 'MAT');
   });
 }

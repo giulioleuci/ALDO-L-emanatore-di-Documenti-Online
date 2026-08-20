@@ -1051,7 +1051,9 @@ test('scenario 11: reports SKIPPED (not pass) when TEST_MODE mock editors leave 
 
   const scenario11 = runner.report().results.find((r) => r.name.includes('scenario 11'));
   expect(scenario11?.status).toBe('skipped');
-  expect(scenario11?.message).toMatch(/nessun range protetto/i);
+  expect(scenario11?.message).toMatch(/addProtectedRange/);
+  expect(scenario11?.message).toMatch(/Utente non valido/);
+  expect(scenario11?.message).toMatch(/@onlinetest\.aldo\.local/);
 });
 
 test('legacy email and import adapters retain their existing E2E callbacks without document duplication', () => {

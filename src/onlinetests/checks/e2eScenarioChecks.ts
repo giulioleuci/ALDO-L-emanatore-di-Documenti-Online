@@ -1,9 +1,9 @@
 import type { ServiceContainer } from '../../config/ServiceContainer';
 import {
-  skippedOutcome,
   type OnlineTestSkippedOutcome,
   type TestRunner
 } from '../report/OnlineTestReport';
+import { classifySyntheticProtectedRangeOutcome } from './protectedRangeOutcome';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type {
@@ -42,6 +42,7 @@ import {
   PIANO_STUDENTE,
   PIANO_DOPPIO_STUDENTE,
   PDP_BES_3C,
+  DOCENTE_COUNT,
   e2eDocenteEmail,
   type SharedTestDatabase
 } from '../data/SharedTestDatabaseBuilder';
@@ -75,7 +76,10 @@ export function verifyProtectedRangeScenario(
   spreadsheets: SpreadsheetService,
   testMode: boolean
 ): void | OnlineTestSkippedOutcome {
-  const unverifiable: string[] = [];
+  let skipped: OnlineTestSkippedOutcome | undefined;
+  const expectedFixtureEditors = Array.from({ length: DOCENTE_COUNT }, (_, index) =>
+    e2eDocenteEmail(index + 1)
+  );
   for (const classe of ALL_CLASSI_E2E) {
     const { fileId, status } = documents.generateForClasse(
       ClasseId.of(classe),
@@ -102,12 +106,17 @@ export function verifyProtectedRangeScenario(
       }
     }
     const protections = spreadsheets.getProtectedRanges(fileId);
-    if (protections.length === 0) {
-      if (!testMode) {
-        throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
-      }
-      unverifiable.push(classe);
+    const outcome = classifySyntheticProtectedRangeOutcome(
+      testMode,
+      protections,
+      expectedFixtureEditors
+    );
+    if (outcome !== undefined) {
+      skipped = outcome;
       continue;
+    }
+    if (protections.length === 0) {
+      throw new ValidationError(`Sheet permessi per ${classe}: nessun range protetto trovato`);
     }
     for (const p of protections) {
       if ((p.editors.users ?? []).length === 0) {
@@ -117,11 +126,7 @@ export function verifyProtectedRangeScenario(
       }
     }
   }
-  if (unverifiable.length > 0) {
-    return skippedOutcome(
-      `Sheet permessi: nessun range protetto per ${unverifiable.join(', ')} — gli editor del fixture (@onlinetest.aldo.local) non sono account Google validi e l'API Sheets rifiuta addProtectedRange ("Utente non valido"). Sheet generato e intestazioni renderizzate verificati.`
-    );
-  }
+  return skipped;
 }
 
 /**

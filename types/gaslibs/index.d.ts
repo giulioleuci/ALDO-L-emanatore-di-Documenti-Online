@@ -1287,6 +1287,7 @@ declare global {
       requests: SpreadsheetCreateSheetRequest | SpreadsheetCreateSheetRequest[],
       options?: Record<string, unknown>
     ): unknown;
+    deleteColumn(spreadsheetId: string, sheetName: string, columnIndex: number): unknown;
     protectRanges(
       spreadsheetId: string,
       requests: SpreadsheetProtectRequest | SpreadsheetProtectRequest[],

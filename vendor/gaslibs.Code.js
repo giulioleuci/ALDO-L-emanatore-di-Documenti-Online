@@ -13001,7 +13001,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 
 
-
+;
 
 
 
@@ -19409,6 +19409,9 @@ class SpreadsheetRangeManager {
 
 
 
+
+
+
 class SpreadsheetGridManager {
   constructor(facade) {
     this.facade = facade;
@@ -19546,6 +19549,41 @@ class SpreadsheetGridManager {
           dimension: 'ROWS',
           startIndex: rowIndex - 1,
           endIndex: rowIndex
+        }
+      }
+    }];
+    const result = this.facade._executeWithRetry(() => Sheets.Spreadsheets.batchUpdate({
+      requests
+    }, spreadsheetId), {
+      spreadsheetId
+    }, 3);
+    this.facade._clearSheetMetadataCache(spreadsheetId);
+    return result;
+  }
+
+
+
+
+
+
+
+
+  deleteColumn(spreadsheetId, sheetName, columnIndex) {
+    if (!Number.isInteger(columnIndex) || columnIndex < 1) {
+      throw new Error('columnIndex must be a positive integer');
+    }
+    const sheets = this.facade._getCachedSheetMetadata(spreadsheetId);
+    const sheetMeta = sheets.find(s => s.properties.title === sheetName);
+    if (!sheetMeta) {
+      throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+    }
+    const requests = [{
+      deleteDimension: {
+        range: {
+          sheetId: sheetMeta.properties.sheetId,
+          dimension: 'COLUMNS',
+          startIndex: columnIndex - 1,
+          endIndex: columnIndex
         }
       }
     }];
@@ -19937,7 +19975,7 @@ class SpreadsheetService extends GoogleService {
       methods: ['updateRanges', 'getRanges', 'appendRows', 'insertRow', 'getLastError', 'clearRanges']
     }, {
       manager: this._gridManager,
-      methods: ['formatRanges', 'setColumnWidths', 'createSheets', 'deleteSheets', 'deleteRow', 'deleteRows', 'expandSheetGrid', 'getProtectedRanges', 'deleteProtectedRanges', 'protectRanges']
+      methods: ['formatRanges', 'setColumnWidths', 'createSheets', 'deleteSheets', 'deleteRow', 'deleteColumn', 'deleteRows', 'expandSheetGrid', 'getProtectedRanges', 'deleteProtectedRanges', 'protectRanges']
     }, {
       manager: this._hybridManager,
       methods: ['createSpreadsheet', 'openStandard', 'getActiveStandard', 'getStandardApp', 'flushBatch', '_verifyAdvancedSheets']
@@ -22482,7 +22520,7 @@ function ServiceFactory_toPrimitive(t, r) { if ("object" != typeof t || !t) retu
 
 
 
-
+;
 
 
 
@@ -64480,7 +64518,7 @@ function ImportConfiguration_toPrimitive(t, r) { if ("object" != typeof t || !t)
 
 
 
-
+;
 
 
 
@@ -66045,7 +66083,7 @@ function Loader_toPrimitive(t, r) { if ("object" != typeof t || !t) return t; va
 
 
 
-
+;
 
 
 

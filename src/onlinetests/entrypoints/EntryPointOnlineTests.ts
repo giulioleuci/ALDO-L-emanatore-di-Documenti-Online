@@ -29,6 +29,7 @@ interface AldoOnlineTestsLaunchers {
   runOnlineTestsBatch3: () => unknown;
   runOnlineTestsBatch4: () => unknown;
   dumpOnlineCoverage: () => void;
+  resetE2eHistoryTables: () => unknown;
 }
 
 function getAldoOnlineTestsLaunchersBridge(): AldoOnlineTestsLaunchers {
@@ -154,4 +155,9 @@ export function runOnlineTestsBatch4(): unknown {
 
 export function dumpOnlineCoverage(): void {
   return getAldoOnlineTestsLaunchersBridge().dumpOnlineCoverage();
+}
+
+/** Purges LOG_MAIL/LOG_DOCS and tops up MATERIE on the persisted E2E sample — see resetE2eHistoryTables' doc comment. */
+export function resetE2eHistoryTables(): unknown {
+  return getAldoOnlineTestsLaunchersBridge().resetE2eHistoryTables();
 }

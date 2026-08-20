@@ -55203,13 +55203,17 @@ class JobQueue {
       }
 
 
+
+
+      const jobState = stateManager.getState();
+
+
       if (!stateManager.tryAcquireRunning()) {
         this._logger.warn(`Job ${jobName} already running or lock acquisition failed.`);
         return null;
       }
 
 
-      const jobState = stateManager.getState();
       if (!jobState || forceRestart) {
         stateManager.saveType(jobType);
         stateManager.saveConfiguration(this._config);

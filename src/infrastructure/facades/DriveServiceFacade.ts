@@ -54,7 +54,15 @@ export class DriveServiceFacade implements IDriveFacade {
     private readonly permissions: PermissionService,
     private readonly rootFolderId: string,
     /** Only needed for `getFileText` (10 §9 escape hatch) — undefined for callers that never read Doc text back. */
-    private readonly documents?: DocumentService
+    private readonly documents?: DocumentService,
+    /**
+     * Drive rejects a share to an address with no resolvable Google account
+     * unless `sendNotificationEmail` is set, so the online-test environment
+     * (synthetic `@onlinetest.aldo.local` principals) needs this on; real
+     * school-domain accounts in production resolve fine, so it stays off
+     * there (default) to avoid unsolicited sharing emails.
+     */
+    private readonly notifyOnShare: boolean = false
   ) {}
 
   findFolderByPath(path: string): string | null {
@@ -108,7 +116,9 @@ export class DriveServiceFacade implements IDriveFacade {
 
   setPermission(fileId: string, email: string, permesso: string): void {
     const role = ROLE_MAP[permesso] ?? 'reader';
-    this.permissions.shareWithUsers([fileId], [{ type: 'user', role, email }], {});
+    this.permissions.shareWithUsers([fileId], [{ type: 'user', role, email }], {
+      sendNotificationEmail: this.notifyOnShare
+    });
   }
 
   setPermissions(grants: PermissionGrant[]): void {
@@ -124,7 +134,7 @@ export class DriveServiceFacade implements IDriveFacade {
       this.permissions.shareWithUsers(
         [...targetIds],
         [...emails].map((email) => ({ type: 'user', role, email })),
-        {}
+        { sendNotificationEmail: this.notifyOnShare }
       );
     }
   }

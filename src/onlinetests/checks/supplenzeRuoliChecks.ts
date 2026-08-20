@@ -248,7 +248,15 @@ export function registerSupplenzeRuoliChecks(
       assertActors('prima DAL', actorsAt(new Date(SUPPLENZA_INIZIO.getTime() - 1)), [principal]);
       assertActors('DAL inclusivo', actorsAt(SUPPLENZA_INIZIO), [substitute]);
       assertActors('AL inclusivo', actorsAt(SUPPLENZA_FINE), [substitute]);
-      assertActors('dopo AL', actorsAt(new Date(SUPPLENZA_FINE.getTime() + 1)), [principal]);
+      // AL is persisted date-only (COL_SUPPLENZE.AL is sliced to YYYY-MM-DD),
+      // so it's inclusive of the whole calendar day — a +1ms probe stays on
+      // the same day and never actually crosses the boundary. Advance a full
+      // day instead.
+      assertActors(
+        'dopo AL',
+        actorsAt(new Date(SUPPLENZA_FINE.getTime() + 24 * 60 * 60 * 1000)),
+        [principal]
+      );
     }
   );
 
@@ -292,6 +300,12 @@ export function registerSupplenzeRuoliChecks(
     'supplenze.ruoli::visibilita CDU destinatari ACL e protezioni',
     sample.sampleSpreadsheetUrl,
     () => {
+      // Dedicated window/pair (not SUPPLENZA_INIZIO's 19->20): 'CDC' is a
+      // whole-class-roster role, and docente20 is independently 4A/ITA's real
+      // titolare, so he'd surface in a SOLO_TITOLARI roster regardless of this
+      // substitution's mode — a false leak unrelated to what's under test.
+      // Docente9 holds no other nominal 4A slot, so this window isolates it.
+      const visibilityAt = new Date('2026-10-22T12:00:00Z');
       for (const mode of [
         GestioneSupplenti.SOLO_TITOLARI,
         GestioneSupplenti.SOLO_SUPPLENTI,
@@ -299,9 +313,9 @@ export function registerSupplenzeRuoliChecks(
       ]) {
         assertActorVisibility(
           String(mode),
-          visibilitySnapshot(container, SUPPLENZA_INIZIO, mode),
+          visibilitySnapshot(container, visibilityAt, mode),
           e2eDocenteEmail(19),
-          e2eDocenteEmail(20),
+          e2eDocenteEmail(9),
           mode
         );
       }

@@ -178,7 +178,11 @@ test('builds the shared extended dataset through every migrated seeder', () => {
     (row) => row[COL_SUPPLENZE.DAL] === '2026-09-01'
   );
   expect(boundarySubstitutions).toHaveLength(2);
-  expect(new Set(boundarySubstitutions.map((row) => row[COL_SUPPLENZE.TITOLARE])).size).toBe(1);
+  // Same window, different real cattedre: 4A/MAT's titolare (19) and 2B/ING's
+  // titolare (7, per CLASSE_B's hardcoded ING override) — not the same
+  // holder, or the 2B/ING row could never engage (EffectiveAssignmentResolver
+  // only applies a delegation when TITOLARE matches the resolved base actor).
+  expect(new Set(boundarySubstitutions.map((row) => row[COL_SUPPLENZE.TITOLARE])).size).toBe(2);
   expect(boundarySubstitutions.map((row) => row[COL_SUPPLENZE.CLASSI]).sort()).toEqual([
     '2B',
     '4A'

@@ -1,4 +1,5 @@
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
+import type { Row } from '../../infrastructure/db/Database';
 import type { ISampleSpreadsheet, ISampleSpreadsheetFactory } from '../SampleDatabaseBuilder';
 import type { IArtifactFactory } from '../E2eTemplateProvisioner';
 import {
@@ -92,6 +93,91 @@ const ESAME_CFG_E2E: Record<string, string> = {
   ITA: JSON.stringify({ prima_prova: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] }),
   MAT: JSON.stringify({ seconda_prova: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] })
 };
+
+/**
+ * The full MATERIE row set (base subjects + dotted-specifica rows), as pure
+ * data — shared by `seedMaterie` (build-time, via `sample.appendRow`) and any
+ * runtime top-up utility (e.g. `resetE2eHistoryTables`, which inserts only
+ * whichever of these are missing from an already-persisted E2E sheet) so both
+ * stay byte-for-byte in sync with a single source of truth.
+ */
+export function buildMaterieRows(): Row[] {
+  const nomi: Record<string, string> = {
+    MAT: 'Matematica',
+    ITA: 'Italiano',
+    ING: 'Inglese',
+    STO: 'Storia',
+    INF: 'Informatica',
+    IRC: 'Religione cattolica',
+    ALT: 'Attività alternativa',
+    GRECO: 'Greco',
+    LATINO: 'Latino',
+    FILOSOFIA: 'Filosofia',
+    PSICOLOGIA: 'Psicologia',
+    SCIUMANE: 'Scienze umane',
+    DIRECON: 'Diritto ed economia',
+    SCIENZE: 'Scienze',
+    FISICA: 'Fisica'
+  };
+  const rows: Row[] = ASSIGNMENT_MATERIE_E2E.map((sigla) => ({
+    [COL_MATERIE.ID]: sigla,
+    [COL_MATERIE.NOME]: nomi[sigla] ?? '',
+    [COL_MATERIE.SINTESI]: nomi[sigla] ?? '',
+    [COL_MATERIE.COLORE_1]: '#1565C0',
+    [COL_MATERIE.COLORE_2]: '#90CAF9',
+    [COL_MATERIE.SIMBOLO]: sigla.charAt(0),
+    [COL_MATERIE.ESAME_CFG]: ESAME_CFG_E2E[sigla] ?? '',
+    [COL_MATERIE.EVOLUZIONE]:
+      sigla === 'STO' ? JSON.stringify({ GST: [1, 2], STO: [3, 4, 5] }) : '',
+    [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
+  }));
+  const specifiche: Record<
+    string,
+    { principale: string; specificita: string; nome: string; sintesi: string }
+  > = {
+    'LAB.GRUPPO_A': {
+      principale: 'Laboratorio',
+      specificita: 'Gruppo A',
+      nome: '',
+      sintesi: 'Lab. Gruppo A'
+    },
+    'LAB.SEMINARIO_POMERIDIANO': {
+      principale: 'Laboratorio',
+      specificita: 'Seminario pomeridiano',
+      nome: '',
+      sintesi: 'Lab. Seminario'
+    },
+    'INTERPRET.CHITARRA': {
+      principale: 'Interpretazione ed esecuzione',
+      specificita: 'Chitarra',
+      nome: '',
+      sintesi: 'Interpretazione (Chitarra)'
+    },
+    'INTERPRET.FLAUTO': {
+      principale: 'Interpretazione ed esecuzione',
+      specificita: 'Flauto',
+      nome: 'Interpretazione ed esecuzione — indirizzo flauto',
+      sintesi: 'Interpretazione (Flauto)'
+    }
+  };
+  SPECIFICA_MATERIE_E2E.forEach((id) => {
+    const spec = specifiche[id]!;
+    rows.push({
+      [COL_MATERIE.ID]: id,
+      [COL_MATERIE.NOME]: spec.nome,
+      [COL_MATERIE.SINTESI]: spec.sintesi,
+      [COL_MATERIE.COLORE_1]: '#1565C0',
+      [COL_MATERIE.COLORE_2]: '#90CAF9',
+      [COL_MATERIE.SIMBOLO]: id.charAt(0),
+      [COL_MATERIE.ESAME_CFG]: '',
+      [COL_MATERIE.EVOLUZIONE]: '',
+      [COL_MATERIE.IS_RELIGIONE_ALT]: false,
+      [COL_MATERIE.PRINCIPALE]: spec.principale,
+      [COL_MATERIE.SPECIFICITA]: spec.specificita
+    });
+  });
+  return rows;
+}
 
 /** Name pools for realistic mock data (item 5) — plain constants, not a name generator. */
 const ALUNNO_COGNOMI = [
@@ -385,82 +471,7 @@ export class SharedTestDatabaseBuilder {
   }
 
   private seedMaterie(sample: ISampleSpreadsheet): void {
-    const nomi: Record<string, string> = {
-      MAT: 'Matematica',
-      ITA: 'Italiano',
-      ING: 'Inglese',
-      STO: 'Storia',
-      INF: 'Informatica',
-      IRC: 'Religione cattolica',
-      ALT: 'Attività alternativa',
-      GRECO: 'Greco',
-      LATINO: 'Latino',
-      FILOSOFIA: 'Filosofia',
-      PSICOLOGIA: 'Psicologia',
-      SCIUMANE: 'Scienze umane',
-      DIRECON: 'Diritto ed economia',
-      SCIENZE: 'Scienze',
-      FISICA: 'Fisica'
-    };
-    ASSIGNMENT_MATERIE_E2E.forEach((sigla) => {
-      sample.appendRow(TABLE.MATERIE, {
-        [COL_MATERIE.ID]: sigla,
-        [COL_MATERIE.NOME]: nomi[sigla],
-        [COL_MATERIE.SINTESI]: nomi[sigla],
-        [COL_MATERIE.COLORE_1]: '#1565C0',
-        [COL_MATERIE.COLORE_2]: '#90CAF9',
-        [COL_MATERIE.SIMBOLO]: sigla.charAt(0),
-        [COL_MATERIE.ESAME_CFG]: ESAME_CFG_E2E[sigla] ?? '',
-        [COL_MATERIE.EVOLUZIONE]:
-          sigla === 'STO' ? JSON.stringify({ GST: [1, 2], STO: [3, 4, 5] }) : '',
-        [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
-      });
-    });
-    const specifiche: Record<
-      string,
-      { principale: string; specificita: string; nome: string; sintesi: string }
-    > = {
-      'LAB.GRUPPO_A': {
-        principale: 'Laboratorio',
-        specificita: 'Gruppo A',
-        nome: '',
-        sintesi: 'Lab. Gruppo A'
-      },
-      'LAB.SEMINARIO_POMERIDIANO': {
-        principale: 'Laboratorio',
-        specificita: 'Seminario pomeridiano',
-        nome: '',
-        sintesi: 'Lab. Seminario'
-      },
-      'INTERPRET.CHITARRA': {
-        principale: 'Interpretazione ed esecuzione',
-        specificita: 'Chitarra',
-        nome: '',
-        sintesi: 'Interpretazione (Chitarra)'
-      },
-      'INTERPRET.FLAUTO': {
-        principale: 'Interpretazione ed esecuzione',
-        specificita: 'Flauto',
-        nome: 'Interpretazione ed esecuzione — indirizzo flauto',
-        sintesi: 'Interpretazione (Flauto)'
-      }
-    };
-    SPECIFICA_MATERIE_E2E.forEach((id) => {
-      const spec = specifiche[id]!;
-      sample.appendRow(TABLE.MATERIE, {
-        [COL_MATERIE.ID]: id,
-        [COL_MATERIE.NOME]: spec.nome,
-        [COL_MATERIE.SINTESI]: spec.sintesi,
-        [COL_MATERIE.COLORE_1]: '#1565C0',
-        [COL_MATERIE.COLORE_2]: '#90CAF9',
-        [COL_MATERIE.SIMBOLO]: id.charAt(0),
-        [COL_MATERIE.ESAME_CFG]: '',
-        [COL_MATERIE.EVOLUZIONE]: '',
-        [COL_MATERIE.IS_RELIGIONE_ALT]: false,
-        [COL_MATERIE.PRINCIPALE]: spec.principale,
-        [COL_MATERIE.SPECIFICITA]: spec.specificita
-      });
-    });
+    buildMaterieRows().forEach((row) => sample.appendRow(TABLE.MATERIE, row));
   }
 
   /** 20 DOCENTI rows, alternating GENERE, all in the single E2E dipartimento; realistic Italian names (item 5). */
@@ -878,13 +889,30 @@ export class SharedTestDatabaseBuilder {
     });
     // Same holder and window, but a different real cattedra: resolving 4A/MAT
     // must never leak the overlapping 2B/ING substitution into the focus.
+    // TITOLARE must match 2B's actual nominal ING holder (docente7, hardcoded
+    // in the CLASSE_B block above) — not docente19 (4A/MAT's holder) — or the
+    // substitution never engages and the isolation this row exists to test
+    // becomes untestable.
     sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
       [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
       [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
       [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
       [COL_SUPPLENZE.CLASSI]: CLASSE_B,
       [COL_SUPPLENZE.MATERIE]: 'ING'
+    });
+    // Dedicated window (after SUPPLENZA_FINE, before the degenerate row below
+    // — no overlap with either) for whole-council visibility checks: docente9
+    // has no other nominal 4A slot, unlike docente20 (4A/ITA's real titolare
+    // above), so he can't leak into a SOLO_TITOLARI 'CDC' roster for a reason
+    // unrelated to this substitution.
+    sample.appendRow(TABLE.SUPPLENZE, {
+      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(9),
+      [COL_SUPPLENZE.DAL]: '2026-10-20',
+      [COL_SUPPLENZE.AL]: '2026-10-25',
+      [COL_SUPPLENZE.CLASSI]: '4A',
+      [COL_SUPPLENZE.MATERIE]: 'MAT'
     });
     // Degenerate substitution: same principal/substitute identity. Every
     // consumer must deduplicate the actor instead of emitting two recipients.
@@ -1312,7 +1340,12 @@ export class SharedTestDatabaseBuilder {
         }
       ]),
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+      // ARTICOLATA (matches CONF_MAIL_VERBALE's sibling pattern): partners are
+      // the entry point, so 3C-S/3C-C each reach their own direct coordinator
+      // scoped to their own plans — COMPLETA would route the whole articulated
+      // group through the parent's single coordinator with classi=[parent
+      // only], leaving partner-owned plans unfound by PianiPersClasseProvider.
+      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
       [COL_CONF_MAIL.ALLEGATI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {

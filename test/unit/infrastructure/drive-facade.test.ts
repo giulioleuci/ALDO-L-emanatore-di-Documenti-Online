@@ -156,19 +156,19 @@ test('setPermission maps PermessoACL to the Drive v3 role and shares via Permiss
   expect(perms.shareWithUsers).toHaveBeenCalledWith(
     ['file_1'],
     [{ type: 'user', role: 'writer', email: 'rossi@school.it' }],
-    {}
+    { sendNotificationEmail: false }
   );
   facade.setPermission('file_1', 'bianchi@school.it', 'LETTURA');
   expect(perms.shareWithUsers).toHaveBeenLastCalledWith(
     ['file_1'],
     [{ type: 'user', role: 'reader', email: 'bianchi@school.it' }],
-    {}
+    { sendNotificationEmail: false }
   );
   facade.setPermission('file_1', 'verdi@school.it', 'COMMENTO');
   expect(perms.shareWithUsers).toHaveBeenLastCalledWith(
     ['file_1'],
     [{ type: 'user', role: 'commenter', email: 'verdi@school.it' }],
-    {}
+    { sendNotificationEmail: false }
   );
 });
 
@@ -184,12 +184,12 @@ test('setPermissions groups grants by permesso into one shareWithUsers call per 
   expect(perms.shareWithUsers).toHaveBeenCalledWith(
     ['file_1', 'folder_1'],
     [{ type: 'user', role: 'writer', email: 'rossi@school.it' }],
-    {}
+    { sendNotificationEmail: false }
   );
   expect(perms.shareWithUsers).toHaveBeenCalledWith(
     ['folder_1'],
     [{ type: 'user', role: 'reader', email: 'bianchi@school.it' }],
-    {}
+    { sendNotificationEmail: false }
   );
 });
 
@@ -293,7 +293,7 @@ describe('DriveServiceFacade — setPermission default role', () => {
     expect(perms.shareWithUsers).toHaveBeenCalledWith(
       ['FILE1'],
       [{ type: 'user', role: 'reader', email: 'a@b.com' }],
-      {}
+      { sendNotificationEmail: false }
     );
   });
 });

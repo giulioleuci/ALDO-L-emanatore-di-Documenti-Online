@@ -428,7 +428,9 @@ export function resetAldo(): void {
 export function initAldo(
   now: Date = new Date(),
   props?: IPropertiesFacade,
-  masterSpreadsheetId?: string
+  masterSpreadsheetId?: string,
+  /** Online-test containers pass true — see DriveServiceFacade's notifyOnShare doc. */
+  driveNotifyOnShare = false
 ): ServiceContainer {
   if (runtime !== null) return runtime;
   const logger = ServiceFactory.getLogger();
@@ -503,7 +505,8 @@ export function initAldo(
     ServiceFactory.getDriveService(),
     ServiceFactory.getPermissionService(),
     annoCorrente.idCartellaRoot,
-    documentService
+    documentService,
+    driveNotifyOnShare
   );
 
   const container = buildAldoContainer({

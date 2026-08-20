@@ -580,15 +580,19 @@ export function registerArticolazioneChecks(
       const partnerEmails = (partnerCdu.focus.classe?.consiglioDiClasse ?? [])
         .map((docente) => docente.anagrafica.email)
         .sort();
+      // Same restriction-by-omission STO row as CLASSE_C_PARENT's secondo
+      // group above (docente8's SUPPLENZE row, empty CLASSI/MATERIE=STO)
+      // also surfaces supplente 17 when the partner is queried directly.
       const expectedPartner = [
         e2eDocenteEmail(1),
         e2eDocenteEmail(6),
         e2eDocenteEmail(7),
-        e2eDocenteEmail(8)
+        e2eDocenteEmail(8),
+        e2eDocenteEmail(17)
       ].sort();
       if (JSON.stringify(partnerEmails) !== JSON.stringify(expectedPartner)) {
         throw new ValidationError(
-          `${CLASSE_C_PARTNER} (partner target diretto) espone ${partnerEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${partnerEmails.join(',')}`
+          `${CLASSE_C_PARTNER} (partner target diretto) espone ${partnerEmails.length} docenti invece dei ${expectedPartner.length} attesi (comune + gruppo proprio): ${partnerEmails.join(',')}`
         );
       }
     }

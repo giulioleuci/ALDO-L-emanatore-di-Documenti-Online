@@ -1,6 +1,7 @@
 import {
   creaDatiMockDrive,
   dumpOnlineCoverage,
+  resetE2eHistoryTables,
   runFullOnlineTests,
   runOnlineTestsBatch1,
   runOnlineTestsBatch2,
@@ -63,7 +64,8 @@ const aldoOnlineTestsLaunchers = {
   runOnlineTestsBatch2,
   runOnlineTestsBatch3,
   runOnlineTestsBatch4,
-  dumpOnlineCoverage
+  dumpOnlineCoverage,
+  resetE2eHistoryTables
 };
 
 /** Espone solo launcher zero-arg GAS. Vedi design 2026-08-10 Sez. 2. */
@@ -98,6 +100,7 @@ const gasGlobal = globalThis as typeof globalThis & {
   runOnlineTestsBatch3: typeof runOnlineTestsBatch3;
   runOnlineTestsBatch4: typeof runOnlineTestsBatch4;
   dumpOnlineCoverage: typeof dumpOnlineCoverage;
+  resetE2eHistoryTables: typeof resetE2eHistoryTables;
 };
 
 gasGlobal.__ALDO_ONLINE_TESTS_LAUNCHERS__ = aldoOnlineTestsLaunchers;
@@ -130,3 +133,4 @@ gasGlobal.runOnlineTestsBatch2 = runOnlineTestsBatch2;
 gasGlobal.runOnlineTestsBatch3 = runOnlineTestsBatch3;
 gasGlobal.runOnlineTestsBatch4 = runOnlineTestsBatch4;
 gasGlobal.dumpOnlineCoverage = dumpOnlineCoverage;
+gasGlobal.resetE2eHistoryTables = resetE2eHistoryTables;

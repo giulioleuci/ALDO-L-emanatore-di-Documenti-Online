@@ -1,7 +1,7 @@
 import type { ContextBuilder } from '../application/context-engine/ContextBuilder';
 import { initAldo, resetAldo } from '../config/Bootstrap';
 import type { ServiceContainer } from '../config/ServiceContainer';
-import { TABLE } from '../config/schema';
+import { TABLE, COL_ASL, COL_LOG_DOCS, COL_MATERIE } from '../config/schema';
 import { ConfigurationError } from '../domain/errors/DomainError';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
@@ -51,6 +51,7 @@ import { TestRunner, type OnlineTestReport } from './report/OnlineTestReport';
 import type { ISampleSpreadsheetFactory } from './SampleDatabaseBuilder';
 import {
   SharedTestDatabaseBuilder,
+  buildMaterieRows,
   type E2eTemplateIds,
   type SharedTestDatabase
 } from './data/SharedTestDatabaseBuilder';
@@ -73,7 +74,8 @@ export interface E2eTestDeps {
   initAldo: (
     now?: Date,
     props?: IPropertiesFacade,
-    masterSpreadsheetId?: string
+    masterSpreadsheetId?: string,
+    driveNotifyOnShare?: boolean
   ) => ServiceContainer;
   log: (message: string) => void;
 }
@@ -345,7 +347,7 @@ function executeOnlineTestsBatch(
   const registrations = { ...futureScenarioRegistrations, ...overrides.registrations };
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
@@ -476,6 +478,98 @@ export function runOnlineTestsBatch4(
   return runReportedSuite('online_tests_batch4', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
 }
 
+export interface ResetE2eHistoryTablesResult {
+  purgedLogMail: number;
+  purgedLogDocs: number;
+  insertedMaterie: string[];
+  warnings: string[];
+}
+
+/**
+ * Deletes every row from `LOG_MAIL`/`LOG_DOCS` (pure append-only run history —
+ * safe to clear, reruns regenerate it) and tops up `MATERIE` with any row from
+ * `buildMaterieRows()` missing from the persisted sheet (idempotent — never
+ * touches an existing row), against the SAME persisted E2E sample the batch
+ * launchers already reuse. This targets the systemic "stale persisted sheet"
+ * failure family (2026-08-14 batch triage) without a full spreadsheet rebuild.
+ *
+ * Does NOT and cannot fix a stray `ASL` sheet column (e.g. `DATA_MODIFICA`
+ * left by an earlier OVERWRITE import) — that's a header cell, not a row; any
+ * such drift is only reported as a warning for manual removal.
+ */
+export function resetE2eHistoryTables(
+  overrides: Partial<FullOnlineTestDeps> = {}
+): ResetE2eHistoryTablesResult {
+  const properties = overrides.properties ?? new ScriptPropertiesFacade();
+  const readSample = overrides.readSample ?? readPersistedFullOnlineTestSample;
+  const sample = readSample(properties);
+  const resetAldoFn = overrides.resetAldo ?? resetAldo;
+  const initAldoFn = overrides.initAldo ?? initAldo;
+  const clock = overrides.clock ?? ((): Date => new Date());
+  const logger = ServiceFactory.getLogger();
+
+  resetAldoFn();
+  const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
+  const db = container.get<SheetDbAdapter>('db');
+
+  const purgedLogMail = purgeTable(db, TABLE.LOG_MAIL, '__PK');
+  const purgedLogDocs = purgeTable(db, TABLE.LOG_DOCS, COL_LOG_DOCS.ID);
+  const insertedMaterie = topUpMaterie(db);
+
+  const warnings: string[] = [];
+  const strayAslColumn = 'DATA_MODIFICA';
+  const aslRow = db.table(TABLE.ASL).findAll()[0];
+  if (aslRow !== undefined && strayAslColumn in aslRow) {
+    warnings.push(
+      `ASL ha una colonna ${strayAslColumn} fuori schema (01_SCHEMA_DATABASE.md: solo ${COL_ASL.STUDENTE}/${COL_ASL.ANNO}/${COL_ASL.ORE}) — va rimossa a mano dal foglio reale, non è una riga.`
+    );
+  }
+
+  const result: ResetE2eHistoryTablesResult = {
+    purgedLogMail,
+    purgedLogDocs,
+    insertedMaterie,
+    warnings
+  };
+  logger.logSummary('🧹 Reset tabelle storiche E2E', 0, {
+    purgedLogMail,
+    purgedLogDocs,
+    insertedMaterie: insertedMaterie.length,
+    warnings: warnings.length
+  });
+  warnings.forEach((warning) => logger.warn(warning));
+  return result;
+}
+
+/** Deletes every row of `table`, keyed on `pkColumn` (`'__PK'` for LOG_MAIL's composite key, set up by `db.table()` below). */
+function purgeTable(db: SheetDbAdapter, table: string, pkColumn: string): number {
+  db.table(table); // triggers SheetTableAdapter's defineVirtualColumn/setPrimaryKey for this table
+  const raw = db.getDatabaseService().tables[table];
+  if (raw === undefined) return 0;
+  const ids = raw.getAllRows().map((row) => String(row[pkColumn]));
+  ids.forEach((id) => raw.deleteRowById(id));
+  return ids.length;
+}
+
+/** Inserts whichever `buildMaterieRows()` entries are missing from the persisted MATERIE table; never touches an existing row. */
+function topUpMaterie(db: SheetDbAdapter): string[] {
+  const existingIds = new Set(
+    db
+      .table(TABLE.MATERIE)
+      .findAll()
+      .map((row) => String(row[COL_MATERIE.ID]))
+  );
+  const inserted: string[] = [];
+  for (const row of buildMaterieRows()) {
+    const id = String(row[COL_MATERIE.ID]);
+    if (!existingIds.has(id)) {
+      db.table(TABLE.MATERIE).insert(row);
+      inserted.push(id);
+    }
+  }
+  return inserted;
+}
+
 /**
  * GAS Run-dropdown entry point for the online-coverage spike. Empty when the bundle was not
  * built in online mode with Istanbul instrumentation.
@@ -504,7 +598,7 @@ function executePersistedDocumentiChecks(
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
@@ -561,7 +655,7 @@ function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): Onli
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
@@ -601,7 +695,7 @@ function executePersistedImportChecks(
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   const sample: FullOnlineTestSample = {
     masterSpreadsheetId,
     sampleSpreadsheetId: master.idSpreadsheet,
@@ -677,7 +771,7 @@ export function executeCacheIsolamento(overrides: Partial<E2eTestDeps> = {}): On
   const initAldoFn = overrides.initAldo ?? initAldo;
   const clock = overrides.clock ?? (() => new Date());
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   const runner = new TestRunner();
   registerCacheIsolamentoChecks(
     runner,
@@ -721,7 +815,7 @@ function executePersistedStoricoChecks(
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
@@ -764,7 +858,7 @@ function executePersistedArticolazioneChecks(
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
@@ -805,7 +899,7 @@ export function executeITPeMateriePuntate(overrides: Partial<E2eTestDeps> = {}):
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);
@@ -861,7 +955,7 @@ function executePersistedJobRunnerChecks(
   const clock = overrides.clock ?? ((): Date => new Date());
 
   resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId);
+  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
   container
     .get<ContextBuilder>('contextBuilder')
     .registerInterceptor(e2eActiveRepresentativesInterceptor);

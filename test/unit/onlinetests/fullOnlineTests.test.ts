@@ -1,4 +1,5 @@
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
+import * as Bootstrap from '../../../src/config/Bootstrap';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import {
   executeFullOnlineTests,
@@ -54,21 +55,27 @@ import { registerCacheIsolamentoChecks } from '../../../src/onlinetests/checks/c
 import { registerPermessiChecks } from '../../../src/onlinetests/checks/permessiChecks';
 
 jest.mock('../../../src/infrastructure/facades/PropertiesFacade', () => {
-  const actual = jest.requireActual('../../../src/infrastructure/facades/PropertiesFacade');
+  const actual = jest.requireActual<
+    typeof import('../../../src/infrastructure/facades/PropertiesFacade')
+  >('../../../src/infrastructure/facades/PropertiesFacade');
   return {
     ...actual,
     ScriptPropertiesFacade: jest.fn(() => ({ get: () => null, set: () => undefined }))
   };
 });
 jest.mock('../../../src/infrastructure/facades/ActiveUserFacade', () => {
-  const actual = jest.requireActual('../../../src/infrastructure/facades/ActiveUserFacade');
+  const actual = jest.requireActual<
+    typeof import('../../../src/infrastructure/facades/ActiveUserFacade')
+  >('../../../src/infrastructure/facades/ActiveUserFacade');
   return {
     ...actual,
     SessionActiveUserFacade: jest.fn(() => ({ getEmail: () => 'e2edocente3@onlinetest.aldo.local' }))
   };
 });
 jest.mock('../../../src/infrastructure/repositories/ClasseRepository', () => {
-  const actual = jest.requireActual('../../../src/infrastructure/repositories/ClasseRepository');
+  const actual = jest.requireActual<
+    typeof import('../../../src/infrastructure/repositories/ClasseRepository')
+  >('../../../src/infrastructure/repositories/ClasseRepository');
   return { ...actual, ClasseRepository: jest.fn(() => ({ findById: jest.fn(() => ({ id: 'fixture' })) })) };
 });
 
@@ -671,31 +678,69 @@ function recordActualBatchScenarioNames(
           : { registerInterceptor: jest.fn() }
     )
   } as unknown as ServiceContainer;
-  const bootstrap = require('../../../src/config/Bootstrap') as {
-    creaJobRunner: jest.Mock;
-  };
   const jobRunner = {
     resetJob: jest.fn(),
     getStatus: jest.fn(() => ({ state: 'idle' })),
     cancelJob: jest.fn()
   };
-  const creaJobRunner = jest.spyOn(bootstrap, 'creaJobRunner').mockReturnValue(jobRunner as never);
+  const creaJobRunner = jest
+    .spyOn(Bootstrap, 'creaJobRunner')
+    .mockReturnValue(jobRunner as unknown as ReturnType<typeof Bootstrap.creaJobRunner>);
+  const actualRepositoryChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/repositoryChecks')
+  >('../../../src/onlinetests/checks/repositoryChecks');
+  const actualContextEngineChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/contextEngineChecks')
+  >('../../../src/onlinetests/checks/contextEngineChecks');
+  const actualDocumentiChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/documentiChecks')
+  >('../../../src/onlinetests/checks/documentiChecks');
+  const actualEmailChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/emailChecks')
+  >('../../../src/onlinetests/checks/emailChecks');
+  const actualJobRunnerChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/jobRunnerChecks')
+  >('../../../src/onlinetests/checks/jobRunnerChecks');
+  const actualImportChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/importChecks')
+  >('../../../src/onlinetests/checks/importChecks');
+  const actualStoricoChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/storicoChecks')
+  >('../../../src/onlinetests/checks/storicoChecks');
+  const actualArticolazioneChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/articolazioneChecks')
+  >('../../../src/onlinetests/checks/articolazioneChecks');
+  const actualItpDottedChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/itpDottedChecks')
+  >('../../../src/onlinetests/checks/itpDottedChecks');
+  const actualSupplenzeRuoliChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/supplenzeRuoliChecks')
+  >('../../../src/onlinetests/checks/supplenzeRuoliChecks');
+  const actualAclRealiChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/aclRealiChecks')
+  >('../../../src/onlinetests/checks/aclRealiChecks');
+  const actualCacheIsolamentoChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/cacheIsolamentoChecks')
+  >('../../../src/onlinetests/checks/cacheIsolamentoChecks');
+  const actualPermessiChecks = jest.requireActual<
+    typeof import('../../../src/onlinetests/checks/permessiChecks')
+  >('../../../src/onlinetests/checks/permessiChecks');
   const actual = {
-    repository: jest.requireActual('../../../src/onlinetests/checks/repositoryChecks').registerRepositoryChecks,
-    context: jest.requireActual('../../../src/onlinetests/checks/contextEngineChecks').registerContextEngineChecks,
-    assignmentMatrix: jest.requireActual('../../../src/onlinetests/checks/repositoryChecks').registerEffectiveAssignmentMatrixChecks,
-    assignmentConsumer: jest.requireActual('../../../src/onlinetests/checks/contextEngineChecks').registerEffectiveAssignmentConsumerChecks,
-    documenti: jest.requireActual('../../../src/onlinetests/checks/documentiChecks').registerDocumentiChecks,
-    email: jest.requireActual('../../../src/onlinetests/checks/emailChecks').registerEmailChecks,
-    jobRunner: jest.requireActual('../../../src/onlinetests/checks/jobRunnerChecks').registerJobRunnerChecks,
-    import: jest.requireActual('../../../src/onlinetests/checks/importChecks').registerImportChecks,
-    storico: jest.requireActual('../../../src/onlinetests/checks/storicoChecks').registerStoricoChecks,
-    articolazione: jest.requireActual('../../../src/onlinetests/checks/articolazioneChecks').registerArticolazioneChecks,
-    itpDotted: jest.requireActual('../../../src/onlinetests/checks/itpDottedChecks').registerItpDottedChecks,
-    supplenzeRuoli: jest.requireActual('../../../src/onlinetests/checks/supplenzeRuoliChecks').registerSupplenzeRuoliChecks,
-    aclReali: jest.requireActual('../../../src/onlinetests/checks/aclRealiChecks').registerAclRealiChecks,
-    cacheIsolamento: jest.requireActual('../../../src/onlinetests/checks/cacheIsolamentoChecks').registerCacheIsolamentoChecks,
-    permessi: jest.requireActual('../../../src/onlinetests/checks/permessiChecks').registerPermessiChecks
+    repository: actualRepositoryChecks.registerRepositoryChecks,
+    context: actualContextEngineChecks.registerContextEngineChecks,
+    assignmentMatrix: actualRepositoryChecks.registerEffectiveAssignmentMatrixChecks,
+    assignmentConsumer: actualContextEngineChecks.registerEffectiveAssignmentConsumerChecks,
+    documenti: actualDocumentiChecks.registerDocumentiChecks,
+    email: actualEmailChecks.registerEmailChecks,
+    jobRunner: actualJobRunnerChecks.registerJobRunnerChecks,
+    import: actualImportChecks.registerImportChecks,
+    storico: actualStoricoChecks.registerStoricoChecks,
+    articolazione: actualArticolazioneChecks.registerArticolazioneChecks,
+    itpDotted: actualItpDottedChecks.registerItpDottedChecks,
+    supplenzeRuoli: actualSupplenzeRuoliChecks.registerSupplenzeRuoliChecks,
+    aclReali: actualAclRealiChecks.registerAclRealiChecks,
+    cacheIsolamento: actualCacheIsolamentoChecks.registerCacheIsolamentoChecks,
+    permessi: actualPermessiChecks.registerPermessiChecks
   } as const;
   const registrations: Record<string, unknown> = {};
   for (const name of ONLINE_TEST_GROUP_NAMES) {
@@ -711,9 +756,17 @@ function recordActualBatchScenarioNames(
       else if (name === 'email') actual.email(captureRunner, groupContainer, groupSample, safeEmail ?? EMAIL_TEST_SAFE);
       else if (name === 'import') {
         actual.import(captureRunner, groupContainer, groupSample);
-        jest.requireActual('../../../src/onlinetests/checks/importChecks').registerImportCartelleClasseChecks(captureRunner, groupContainer, groupSample);
-        jest.requireActual('../../../src/onlinetests/checks/importChecks').registerImportCercaDocumentiChecks(captureRunner, groupContainer, groupSample);
-        jest.requireActual('../../../src/onlinetests/checks/importChecks').registerImportChunkedChecks(captureRunner, groupContainer, groupSample);
+        actualImportChecks.registerImportCartelleClasseChecks(
+          captureRunner,
+          groupContainer,
+          groupSample
+        );
+        actualImportChecks.registerImportCercaDocumentiChecks(
+          captureRunner,
+          groupContainer,
+          groupSample
+        );
+        actualImportChecks.registerImportChunkedChecks(captureRunner, groupContainer, groupSample);
       }
       else if (name === 'storico') actual.storico(captureRunner, groupContainer, groupSample, 'all');
       else if (name === 'cacheIsolamento') actual.cacheIsolamento(captureRunner, groupContainer, groupSample, cacheDeps);

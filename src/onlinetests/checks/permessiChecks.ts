@@ -6,7 +6,7 @@ import {
 } from '../../infrastructure/facades/ActiveUserFacade';
 import type { DrivePermissionEvidence } from './aclRealiChecks';
 import type { SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
-import { groupName, skippedOutcome, type TestRunner } from '../report/OnlineTestReport';
+import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
 export interface PermessiChecksDeps {
   activeUser: IActiveUserFacade;
@@ -37,9 +37,9 @@ function isActiveUser(permission: DrivePermissionEvidence, email: string): boole
 }
 
 /**
- * Active-user visibility can only be proven from a direct user ACL. Workspace installations that
- * hide the active identity or grant access only through group/domain ACLs report an explicit,
- * documented skip; operational Drive failures stay failures.
+ * Active-user visibility can only be proven from a direct user ACL. Any missing prerequisite or
+ * unattributable ACL is a failed acceptance check; Scenario 11 owns the suite's sole documented
+ * skip. All validation runs inside TestRunner so operational failures cannot escape the launcher.
  */
 export function registerPermessiChecks(
   runner: TestRunner,
@@ -50,28 +50,20 @@ export function registerPermessiChecks(
   const deps = { ...realDeps(), ...injected };
   const name = groupName('permessi.attivi', 'visibilità utente attivo (gated)');
 
-  if (!sample.masterTestMode) {
-    runner.skip(name, sample.sampleSpreadsheetUrl, 'SKIPPED: MASTER.TEST_MODE=false.');
-    return;
-  }
-
-  const email = deps.activeUser.getEmail().trim();
-  if (email === '') {
-    runner.skip(
-      name,
-      sample.sampleSpreadsheetUrl,
-      'SKIPPED: identità utente Workspace attivo non disponibile per policy.'
-    );
-    return;
-  }
-
   runner.add(name, sample.sampleSpreadsheetUrl, () => {
-    // Strict lookup is deliberately inside TestRunner: operational failures become a failed
-    // report result and never escape registration or turn into a policy skip.
+    if (!sample.masterTestMode) {
+      throw new ValidationError('PERMESSI_ATTIVI richiede MASTER.TEST_MODE=true.');
+    }
+    const email = deps.activeUser.getEmail().trim();
+    if (email === '') {
+      throw new ValidationError(
+        'Identità utente Workspace attivo non disponibile: ACL individuale non verificabile.'
+      );
+    }
     const permissions = livePermissions(deps.readPermissions(sample.sampleSpreadsheetId));
     if (permissions.length > 0 && permissions.every(isIndirectWorkspacePermission)) {
-      return skippedOutcome(
-        'SKIPPED: ACL leggibile solo come group/domain; accesso individuale non attribuibile.'
+      throw new ValidationError(
+        'ACL leggibile solo come group/domain: accesso individuale non attribuibile.'
       );
     }
     const unexpected = permissions.filter((permission) => !isActiveUser(permission, email));
@@ -86,6 +78,5 @@ export function registerPermessiChecks(
         `ACL utente attivo ${email} non esatta: inattesi=${principals || '-'} totale=${permissions.length}.`
       );
     }
-    return undefined;
   });
 }

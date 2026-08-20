@@ -49,32 +49,67 @@ test('accepts only active user as persisted direct ACL principal', () => {
   expect(() => runner.checks[0]!.callback()).not.toThrow();
 });
 
-test('records documented SKIPPED when Workspace policy withholds active-user identity', () => {
-  const runner = new RecordingRunner();
+test('records a failed report when Workspace policy withholds active-user identity', () => {
+  const runner = new TestRunner();
   const deps: PermessiChecksDeps = {
     activeUser: { getEmail: () => '' },
     readPermissions: jest.fn()
   };
 
-  registerPermessiChecks(runner as never, {} as ServiceContainer, sample, deps);
+  registerPermessiChecks(runner, {} as ServiceContainer, sample, deps);
 
-  expect(runner.checks).toEqual([]);
-  expect(runner.skipped[0]?.name).toBe('permessi.attivi::visibilità utente attivo (gated)');
-  expect(runner.skipped[0]?.reason).toMatch(/^SKIPPED:.*identit/i);
+  const report = runner.report();
+  expect(report).toMatchObject({
+    passed: 0,
+    failed: 1,
+    skipped: 0
+  });
+  expect(report.results[0]?.message).toMatch(/identit/i);
   expect(deps.readPermissions).not.toHaveBeenCalled();
 });
 
-test('records documented SKIPPED when read-back cannot attribute a group/domain ACL to active user', () => {
-  const runner = new RecordingRunner();
+test('records a failed report when read-back cannot attribute a group/domain ACL to active user', () => {
+  const runner = new TestRunner();
   const deps: PermessiChecksDeps = {
     activeUser: { getEmail: () => 'preside@example.test' },
     readPermissions: () => [{ type: 'domain', role: 'reader', domain: 'example.test' }]
   };
 
-  registerPermessiChecks(runner as never, {} as ServiceContainer, sample, deps);
+  registerPermessiChecks(runner, {} as ServiceContainer, sample, deps);
 
-  expect(runner.checks).toHaveLength(1);
-  expect(runner.checks[0]!.callback()).toMatchObject({ status: 'skipped' });
+  const report = runner.report();
+  expect(report).toMatchObject({
+    passed: 0,
+    failed: 1,
+    skipped: 0
+  });
+  expect(report.results[0]?.message).toMatch(/group\/domain/i);
+});
+
+test('records MASTER.TEST_MODE=false as a failed report without reading active identity or ACLs', () => {
+  const runner = new TestRunner();
+  const getEmail = jest.fn(() => 'preside@example.test');
+  const deps: PermessiChecksDeps = {
+    activeUser: { getEmail },
+    readPermissions: jest.fn()
+  };
+
+  registerPermessiChecks(
+    runner,
+    {} as ServiceContainer,
+    { ...sample, masterTestMode: false },
+    deps
+  );
+
+  const report = runner.report();
+  expect(report).toMatchObject({
+    passed: 0,
+    failed: 1,
+    skipped: 0
+  });
+  expect(report.results[0]?.message).toMatch(/MASTER\.TEST_MODE/);
+  expect(getEmail).not.toHaveBeenCalled();
+  expect(deps.readPermissions).not.toHaveBeenCalled();
 });
 
 test.each([

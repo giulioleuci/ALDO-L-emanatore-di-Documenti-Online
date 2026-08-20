@@ -525,6 +525,23 @@ test('protected range scenario: test mode reports SKIPPED when mock editors bloc
   expect(getProtectedRanges).toHaveBeenCalledTimes(ALL_CLASSI_E2E.length);
 });
 
+test('protected range scenario rejects zero ranges when any resolved expected editor is real', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'real-editor-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['Matematica']],
+    getProtectedRanges: () => []
+  } as unknown as SpreadsheetService;
+
+  expect(() =>
+    verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
+      columns: [{ sigla: 'MAT', header: 'Matematica', column: 0 }],
+      expectedEditors: () => ['mock@onlinetest.aldo.local', 'teacher@school.example']
+    }))
+  ).toThrow(/nessun range protetto/);
+});
+
 test('protected range scenario: test mode still verifies protections that the API did accept', () => {
   const documents = {
     generateForClasse: () => ({ fileId: 'protected-sheet', status: 'CREATED' })

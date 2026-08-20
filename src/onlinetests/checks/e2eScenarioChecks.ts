@@ -311,10 +311,17 @@ export function verifyProtectedRangeScenario(
     const protections = spreadsheets.getProtectedRanges(fileId);
     evidence.push({ classe, headers, protections, expectations });
   }
+  const resolvedExpectedEditors = exact(
+    evidence.flatMap(({ expectations }) =>
+      expectations === undefined
+        ? []
+        : expectations.columns.flatMap((column) => expectations.expectedEditors(column))
+    )
+  );
   const outcome = classifySyntheticProtectedRangeOutcome(
     testMode,
     evidence.flatMap(({ protections }) => protections),
-    expectedFixtureEditors
+    expectationProvider === undefined ? expectedFixtureEditors : resolvedExpectedEditors
   );
   if (outcome !== undefined) return outcome;
   for (const { classe, headers, protections, expectations } of evidence) {

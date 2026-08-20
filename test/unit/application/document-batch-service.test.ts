@@ -662,13 +662,18 @@ function wireDocentiMateria(
       };
     }
   } as unknown as DocumentGenerationService;
+  const configIds: string[] = [];
   const configs = {
-    findById: (id: string) =>
-      new ConfigurazioneDocumento({
-        ID: id,
-        TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
-        GENERATORE: 'PROGRAMMA_SVOLTO'
-      })
+    findById: (id: string) => {
+      configIds.push(id);
+      return id === 'PROGRAMMA_SVOLTO'
+        ? new ConfigurazioneDocumento({
+            ID: id,
+            TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+            GENERATORE: 'PROGRAMMA_SVOLTO'
+          })
+        : null;
+    }
   };
   // Models the real fixture fact fix round 1 addresses: 5A's nominal
   // CLASSI.MATE holder is rossi@school.it, but VARIAZIONI_CATTEDRA reassigns
@@ -723,12 +728,12 @@ function wireDocentiMateria(
     options.monitor,
     options.logger
   );
-  return { service, generated };
+  return { service, generated, configIds };
 }
 
 describe('DocumentBatchService.generateDocentiMateria', () => {
   test('registered handler resumes a raw docente/materia checkpoint without top-level IDs or duplicate targets', () => {
-    const { service, generated } = wireDocentiMateria();
+    const { service, generated, configIds } = wireDocentiMateria();
     const registered = new Map<string, unknown>();
     service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
     const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
@@ -743,6 +748,12 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     const { result } = drain(handler({ resumeState: first.value }));
     const targetIds = generated.map(({ classe, materia, docente }) => `${classe}:${materia}:${docente}`);
 
+    expect(configIds).toEqual(['PROGRAMMA_SVOLTO', 'PROGRAMMA_SVOLTO']);
+    expect(
+      generated.every(
+        ({ confDocId, jobId }) => confDocId === 'PROGRAMMA_SVOLTO' && jobId === 'job_docenti'
+      )
+    ).toBe(true);
     expect(new Set(targetIds).size).toBe(targetIds.length);
     expect(result).toMatchObject({ success: true, totale: targetIds.length });
   });
@@ -968,9 +979,14 @@ function wireDipartimenti(
       };
     }
   } as unknown as DocumentGenerationService;
+  const configIds: string[] = [];
   const configs = {
-    findById: (id: string) =>
-      new ConfigurazioneDocumento({ ID: id, TIPO: 'DIPARTIMENTO', GENERATORE: 'VERBALE_DIPARTIMENTO' })
+    findById: (id: string) => {
+      configIds.push(id);
+      return id === 'VERBALE_DIPARTIMENTO'
+        ? new ConfigurazioneDocumento({ ID: id, TIPO: 'DIPARTIMENTO', GENERATORE: 'VERBALE_DIPARTIMENTO' })
+        : null;
+    }
   };
   const service = new DocumentBatchService(
     {} as unknown as IClasseRepository,
@@ -983,7 +999,7 @@ function wireDipartimenti(
     options.monitor,
     options.logger
   );
-  return { service, generated };
+  return { service, generated, configIds };
 }
 
 describe('DocumentBatchService.generateDipartimenti', () => {
@@ -1046,7 +1062,7 @@ describe('DocumentBatchService.generateDipartimenti', () => {
   });
 
   test('registered handler resumes a raw department checkpoint without top-level IDs or duplicate departments', () => {
-    const { service, generated } = wireDipartimenti();
+    const { service, generated, configIds } = wireDipartimenti();
     const registered = new Map<string, unknown>();
     service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
     const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
@@ -1063,7 +1079,14 @@ describe('DocumentBatchService.generateDipartimenti', () => {
 
     const { result } = drain(handler({ resumeState: first.value }));
 
+    expect(configIds).toEqual(['VERBALE_DIPARTIMENTO', 'VERBALE_DIPARTIMENTO']);
     expect(generated.map(({ dipartimentoId }) => dipartimentoId)).toEqual(['LETTERE', 'SCIENZE']);
+    expect(
+      generated.every(
+        ({ confDocId, jobId }) =>
+          confDocId === 'VERBALE_DIPARTIMENTO' && jobId === 'job_dipartimenti'
+      )
+    ).toBe(true);
     expect(result).toMatchObject({ success: true, processed: ['LETTERE', 'SCIENZE'] });
   });
 });

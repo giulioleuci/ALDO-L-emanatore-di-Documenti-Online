@@ -284,13 +284,13 @@ describe('executeFullOnlineTests', () => {
       expect.anything(),
       container,
       expect.objectContaining({ testMode: true }),
-      EMAIL_TEST_SAFE
+      'e2edocente3@onlinetest.aldo.local'
     );
     expect(registerJobRunnerChecks).toHaveBeenCalledWith(
       expect.anything(),
       container,
       expect.objectContaining({ testMode: true }),
-      EMAIL_TEST_SAFE
+      'e2edocente3@onlinetest.aldo.local'
     );
     const cacheCall = jest.mocked(registerCacheIsolamentoChecks).mock.calls[0];
     expect(cacheCall?.[1]).toBe(container);
@@ -449,6 +449,43 @@ function recordBatchGroups(
   });
   return calls;
 }
+
+it('resolves the authenticated operator once and passes its trimmed address to email and JobRunner checks', () => {
+  const activeUser = { getEmail: jest.fn(() => '  operator@example.test  ') };
+  const recipients: string[] = [];
+  const registerInterceptor = jest.fn();
+  const container = { get: jest.fn(() => ({ registerInterceptor })) } as unknown as ServiceContainer;
+
+  executeFullOnlineTests({
+    properties: properties(),
+    clock: () => new Date('2026-08-11T09:00:00Z'),
+    resetAldo: () => undefined,
+    initAldo: () => container,
+    readSample: () => sample,
+    activeUser,
+    registrations: {
+      email: (_runner, _container, _sample, recipient) => recipients.push(recipient),
+      jobRunner: (_runner, _container, _sample, recipient) => recipients.push(recipient)
+    }
+  });
+
+  expect(activeUser.getEmail).toHaveBeenCalledTimes(1);
+  expect(recipients).toEqual(['operator@example.test', 'operator@example.test']);
+});
+
+it('refuses an empty authenticated operator before registering email batches', () => {
+  expect(() =>
+    executeOnlineTestsBatch2({
+      properties: propertiesWithoutCacheFixture(),
+      clock: () => new Date('2026-08-11T09:00:00Z'),
+      resetAldo: () => undefined,
+      initAldo: () => ({ get: jest.fn() }) as unknown as ServiceContainer,
+      readSample: () => sample,
+      activeUser: { getEmail: () => '  ' },
+      registrations: { email: () => undefined }
+    })
+  ).toThrow('Destinatario TEST_MODE Workspace non disponibile.');
+});
 
 function recordActualBatchScenarioNames(
   execute: (overrides: Partial<FullOnlineTestDeps>) => OnlineTestReport,

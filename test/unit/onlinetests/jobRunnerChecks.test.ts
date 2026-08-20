@@ -14,9 +14,10 @@ import {
 } from '../../../src/onlinetests/checks/jobRunnerChecks';
 import {
   CONF_DOC_JOBRUNNER,
-  CONF_MAIL_JOBRUNNER,
-  EMAIL_TEST_SAFE
+  CONF_MAIL_JOBRUNNER
 } from '../../../src/onlinetests/data/fixtures';
+
+const AUTHENTICATED_OPERATOR = 'operator@example.test';
 
 const propertyValues = new Map<string, string>();
 
@@ -157,7 +158,7 @@ describe('JobRunner online checks', () => {
         expect(patternId).toBe(CONF_MAIL_JOBRUNNER);
         expect(runner).toBe(mailRunner);
         expect(budget).toBe(50);
-        expect(recipient).toBe(EMAIL_TEST_SAFE);
+        expect(recipient).toBe(AUTHENTICATED_OPERATOR);
         expect(chunkSize).toBe(1);
         mailRows.push(mailRow('class:1A'));
         propertyValues.set(
@@ -166,7 +167,7 @@ describe('JobRunner online checks', () => {
             patternId: CONF_MAIL_JOBRUNNER,
             jobId: mailJobName,
             chunkSize: 1,
-            testRecipient: EMAIL_TEST_SAFE,
+            testRecipient: AUTHENTICATED_OPERATOR,
             nextIndex: 1,
             processed: ['1A'],
             sent: 1,
@@ -207,7 +208,7 @@ describe('JobRunner online checks', () => {
   it('runs doc and safe-email suspend, manual-resume and reset checks without duplicate logical targets', () => {
     const runner = new ImmediateRunner();
 
-    registerJobRunnerChecks(runner as never, container, sample as never, EMAIL_TEST_SAFE);
+    registerJobRunnerChecks(runner as never, container, sample as never, AUTHENTICATED_OPERATOR);
 
     expect(runner.checks).toHaveLength(6);
     expect(runner.checks.every((check) => check.error === undefined)).toBe(true);
@@ -270,7 +271,7 @@ describe('JobRunner online checks', () => {
     });
     const runner = new ImmediateRunner();
 
-    registerJobRunnerEmailChecks(runner as never, container, sample as never, EMAIL_TEST_SAFE);
+    registerJobRunnerEmailChecks(runner as never, container, sample as never, AUTHENTICATED_OPERATOR);
 
     expect(runner.checks[1]?.error?.message).toContain('duplicati non allineati');
   });
@@ -393,7 +394,7 @@ describe('JobRunner online checks', () => {
 function mailRow(logicalTargetId: string): Record<string, unknown> {
   return {
     [COL_LOG_MAIL.PATTERN]: CONF_MAIL_JOBRUNNER,
-    [COL_LOG_MAIL.DESTINATARI]: EMAIL_TEST_SAFE,
+    [COL_LOG_MAIL.DESTINATARI]: AUTHENTICATED_OPERATOR,
     [COL_LOG_MAIL.STATO]: 'SUCCESS',
     [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
       testMode: true,

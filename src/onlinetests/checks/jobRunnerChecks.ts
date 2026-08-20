@@ -20,7 +20,6 @@ const POLL_INTERVAL_MS = 10 * 1000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const JOB_STATE_COMPLETED = 'completed';
 const JOB_STATE_NOT_STARTED = 'not_started';
-const SAFE_EMAIL_DOMAIN = '@onlinetest.aldo.local';
 
 type LogRow = Record<string, unknown>;
 
@@ -172,13 +171,13 @@ export function registerJobRunnerEmailChecks(
   sample: SharedTestDatabase & { testMode: boolean },
   safeEmail: string
 ): void {
-  if (!sample.testMode || !isSafeEmail(safeEmail)) {
+  if (!sample.testMode) {
     runner.add(
       groupName('jobrunner.email', 'TEST_MODE e destinatario sicuro'),
       sample.sampleSpreadsheetUrl,
       () => {
         throw new ValidationError(
-          `JobRunner email rifiutato: MASTER.TEST_MODE deve essere true e il destinatario deve terminare con ${SAFE_EMAIL_DOMAIN}`
+          'JobRunner email rifiutato: MASTER.TEST_MODE deve essere true'
         );
       }
     );
@@ -554,8 +553,4 @@ function sameStringSet(actual: string[], expected: string[]): boolean {
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function isSafeEmail(value: string): boolean {
-  return value.trim().toLowerCase().endsWith(SAFE_EMAIL_DOMAIN);
 }

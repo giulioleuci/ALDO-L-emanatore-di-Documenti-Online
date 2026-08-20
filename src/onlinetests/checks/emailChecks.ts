@@ -14,7 +14,6 @@ import { CONF_MAIL_STORICO } from '../data/fixtures';
 import { groupName, type TestRunner } from '../report/OnlineTestReport';
 
 const EMAIL_CHECK_PATTERNS = [CONF_MAIL_VERBALE, CONF_MAIL_PIANI, CONF_MAIL_STORICO] as const;
-const SAFE_EMAIL_DOMAIN = '@onlinetest.aldo.local';
 const AMPLE_EMAIL_BATCH_BUDGET_MS = 5 * 60 * 1000;
 
 type LogMailRow = Record<string, unknown>;
@@ -47,15 +46,6 @@ export function registerEmailChecks(
     });
     return;
   }
-  if (!isSafeEmail(safeEmail)) {
-    runner.add(groupName('email', 'safe recipient guard'), sample.sampleSpreadsheetUrl, () => {
-      throw new ValidationError(
-        `Email checks refuse recipient outside ${SAFE_EMAIL_DOMAIN}: ${safeEmail}`
-      );
-    });
-    return;
-  }
-
   const db = container.get<EmailDb>('db');
   const runInTestMode = (patternId: string): void => {
     avviaInvioNotificheDataDriven(
@@ -132,9 +122,6 @@ export function registerEmailChecks(
   );
 }
 
-function isSafeEmail(value: string): boolean {
-  return value.trim().toLowerCase().endsWith(SAFE_EMAIL_DOMAIN);
-}
 
 function testRows(rows: LogMailRow[]): LogMailRow[] {
   return rows.filter((row) => isTestModeRow(row));

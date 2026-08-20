@@ -7,6 +7,10 @@ import { MasterSheetRepository } from '../infrastructure/repositories/MasterShee
 import { SheetDbAdapter } from '../infrastructure/db/SheetDbAdapter';
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
 import { DriveServiceFacade } from '../infrastructure/facades/DriveServiceFacade';
+import {
+  SessionActiveUserFacade,
+  type IActiveUserFacade
+} from '../infrastructure/facades/ActiveUserFacade';
 import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
 import { e2eActiveRepresentativesInterceptor } from './E2eActiveRepresentativesInterceptor';
@@ -55,7 +59,7 @@ import {
   type E2eTemplateIds,
   type SharedTestDatabase
 } from './data/SharedTestDatabaseBuilder';
-import { CONF_DOC_JOBRUNNER, EMAIL_TEST_SAFE } from './data/fixtures';
+import { CONF_DOC_JOBRUNNER } from './data/fixtures';
 
 /** Test-only fixture pointer; production startup always uses its bound spreadsheet. */
 export const PROP_ONLINETEST_MASTER_SPREADSHEET_ID = 'MASTER_SPREADSHEET_ID';
@@ -78,6 +82,15 @@ export interface E2eTestDeps {
     driveNotifyOnShare?: boolean
   ) => ServiceContainer;
   log: (message: string) => void;
+  activeUser: IActiveUserFacade;
+}
+
+function resolveTestRecipient(activeUser: IActiveUserFacade): string {
+  const testRecipient = activeUser.getEmail().trim();
+  if (testRecipient === '') {
+    throw new ConfigurationError('Destinatario TEST_MODE Workspace non disponibile.');
+  }
+  return testRecipient;
 }
 
 export type FullOnlineTestSample = SharedTestDatabase & { testMode: boolean };
@@ -345,6 +358,10 @@ function executeOnlineTestsBatch(
   const initAldoFn = overrides.initAldo ?? initAldo;
   const clock = overrides.clock ?? ((): Date => new Date());
   const registrations = { ...futureScenarioRegistrations, ...overrides.registrations };
+  const requiresTestRecipient = groups.some((key) => key === 'email' || key === 'jobRunner');
+  const testRecipient = requiresTestRecipient
+    ? resolveTestRecipient(overrides.activeUser ?? new SessionActiveUserFacade())
+    : '';
 
   resetAldoFn();
   const container = initAldoFn(clock(), properties, sample.masterSpreadsheetId, true);
@@ -356,7 +373,7 @@ function executeOnlineTestsBatch(
   const testSample: FullOnlineTestSample = { ...sample, testMode: sample.masterTestMode };
   for (const key of groups) {
     if (key === 'email' || key === 'jobRunner') {
-      registrations[key](runner, container, testSample, EMAIL_TEST_SAFE);
+      registrations[key](runner, container, testSample, testRecipient);
     } else if (key === 'cacheIsolamento') {
       registrations.cacheIsolamento(
         runner,
@@ -653,6 +670,7 @@ function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): Onli
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
   const clock = overrides.clock ?? ((): Date => new Date());
+  const activeUser = overrides.activeUser ?? new SessionActiveUserFacade();
 
   resetAldoFn();
   const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
@@ -676,7 +694,7 @@ function executePersistedEmailChecks(overrides: Partial<E2eTestDeps> = {}): Onli
     testMode: master.testMode
   };
   const runner = new TestRunner();
-  registerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+  registerEmailChecks(runner, container, sample, resolveTestRecipient(activeUser));
   return runner.report();
 }
 
@@ -953,6 +971,7 @@ function executePersistedJobRunnerChecks(
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
   const clock = overrides.clock ?? ((): Date => new Date());
+  const activeUser = overrides.activeUser ?? new SessionActiveUserFacade();
 
   resetAldoFn();
   const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
@@ -978,7 +997,7 @@ function executePersistedJobRunnerChecks(
   const runner = new TestRunner();
   if (scope === 'documenti') registerJobRunnerDocGenChecks(runner, container, sample);
   else if (scope === 'email')
-    registerJobRunnerEmailChecks(runner, container, sample, EMAIL_TEST_SAFE);
+    registerJobRunnerEmailChecks(runner, container, sample, resolveTestRecipient(activeUser));
   else registerJobRunnerTriggerRealeCheck(runner, container, sample);
   return runner.report();
 }

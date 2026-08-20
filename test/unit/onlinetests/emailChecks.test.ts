@@ -4,6 +4,8 @@ import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL, TABLE } from '../../../src/config/schema';
 import { EMAIL_TEST_SAFE } from '../../../src/onlinetests/data/fixtures';
 
+const AUTHENTICATED_OPERATOR = 'operator@example.test';
+
 jest.mock('../../../src/config/Bootstrap', () => ({
   avviaInvioNotificheDataDriven: jest.fn(),
   creaJobRunner: jest.fn(() => ({ runner: true }))
@@ -61,7 +63,7 @@ function databaseFor(
 describe('registerEmailChecks', () => {
   afterEach(() => jest.clearAllMocks());
 
-  it('persists the safe recipient override with every batch launch without mutating the container test mode', () => {
+  it('persists the authenticated operator with every batch launch and accepts matching successful LOG_MAIL rows', () => {
     const launches: Array<{ patternId: string; testRecipient: unknown }> = [];
     const rows: Record<string, unknown>[] = [];
     const db = databaseFor(
@@ -90,7 +92,7 @@ describe('registerEmailChecks', () => {
         launches.push({ patternId, testRecipient });
         rows.push({
           [COL_LOG_MAIL.PATTERN]: patternId,
-          [COL_LOG_MAIL.DESTINATARI]: EMAIL_TEST_SAFE,
+          [COL_LOG_MAIL.DESTINATARI]: AUTHENTICATED_OPERATOR,
           [COL_LOG_MAIL.STATO]: 'SUCCESS',
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
             testMode: true,
@@ -103,10 +105,10 @@ describe('registerEmailChecks', () => {
       });
 
     const runner = new ImmediateRunner();
-    registerEmailChecks(runner as never, container, sample, EMAIL_TEST_SAFE);
+    registerEmailChecks(runner as never, container, sample, AUTHENTICATED_OPERATOR);
 
     expect(launches).not.toHaveLength(0);
-    expect(launches.every((launch) => launch.testRecipient === EMAIL_TEST_SAFE)).toBe(true);
+    expect(launches.every((launch) => launch.testRecipient === AUTHENTICATED_OPERATOR)).toBe(true);
     expect(launches.map((launch) => launch.patternId)).toContain('E2E_MAIL_PIANI');
     expect(runner.checks.map((check) => check.name)).toEqual([
       expect.stringContaining('email.invio'),
@@ -131,15 +133,38 @@ describe('registerEmailChecks', () => {
     expect(runner.checks[0]?.artifactUrl).toBe(sample.sampleSpreadsheetUrl);
   });
 
-  it('refuses a recipient outside the dedicated online-test domain before any batch launch', () => {
-    const runner = new ImmediateRunner();
-    const container = { get: jest.fn() } as unknown as ServiceContainer;
+  it.each([
+    ['multiple recipients', `${AUTHENTICATED_OPERATOR}, production@example.test`, 'SUCCESS', 'target:mail'],
+    ['a production recipient different from the authenticated operator', 'production@example.test', 'SUCCESS', 'target:mail'],
+    ['a non-success result', AUTHENTICATED_OPERATOR, 'ERROR', 'target:mail'],
+    ['an empty logical target ID', AUTHENTICATED_OPERATOR, 'SUCCESS', '']
+  ])(
+    'rejects LOG_MAIL rows with %s',
+    (_caseName, recipients, status, logicalTargetId) => {
+      const rows: Record<string, unknown>[] = [];
+      const db = databaseFor(rows);
+      const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
+      jest.mocked(avviaInvioNotificheDataDriven).mockImplementation((_container, patternId) => {
+        rows.push({
+          [COL_LOG_MAIL.PATTERN]: patternId,
+          [COL_LOG_MAIL.DESTINATARI]: recipients,
+          [COL_LOG_MAIL.STATO]: status,
+          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+            testMode: true,
+            logicalTargetId,
+            docs: [],
+            folders: [],
+            attach: []
+          })
+        });
+      });
 
-    registerEmailChecks(runner as never, container, sample, 'teacher@school.example');
+      const runner = new ImmediateRunner();
+      registerEmailChecks(runner as never, container, sample, AUTHENTICATED_OPERATOR);
 
-    expect(avviaInvioNotificheDataDriven).not.toHaveBeenCalled();
-    expect(runner.checks[0]?.name).toContain('safe recipient guard');
-  });
+      expect(runner.checks[0]?.error?.message).toContain('LOG_MAIL testMode non sicuro o incompleto');
+    }
+  );
 
   it('rejects verbale logs whose document and folder IDs do not resolve to the expected persisted artifacts', () => {
     const rows: Record<string, unknown>[] = [];

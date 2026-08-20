@@ -35,7 +35,7 @@ import type {
 import type { ImportService, ImportResult } from '../../../src/application/services/ImportService';
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import type { IDriveFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
-import { TipoPiano } from '../../../src/domain/value-objects/enums';
+import { GestioneSupplenti, TipoPiano } from '../../../src/domain/value-objects/enums';
 import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL } from '../../../src/config/schema';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
 
@@ -308,11 +308,20 @@ function recordingHarness(
       planTexts[fileId] ?? 'Report Complesso — nessun placeholder residuo'
   } as unknown as IDriveFacade;
   const spreadsheets = {
-    getRanges: () => [['Matematica', 'ALT', 'Docente']],
+    getRanges: () => [['REL', 'Matematica', 'ALT', 'Docente']],
     getProtectedRanges: () => [
       {
         id: 1,
         range: { startColumnIndex: 0 },
+        description: 'Colonna materia REL (10 §9)',
+        editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      },
+      {
+        id: 2,
+        range: { startColumnIndex: 1 },
         description: 'Colonna materia MAT (10 §9)',
         editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
         sheetId: 0,
@@ -590,7 +599,7 @@ test('protected range scenario rejects warning-only persisted evidence instead o
 
   expect(() =>
     verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
-      columns: [{ sigla: 'MAT', header: 'Matematica' }],
+      columns: [{ sigla: 'MAT', header: 'Matematica', column: 0 }],
       expectedEditors: () => ['teacher@onlinetest.aldo.local']
     }))
   ).toThrow(/warningOnly/);
@@ -618,8 +627,8 @@ test('protected range scenario rejects one arbitrary range for multiple rendered
   expect(() =>
     verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
       columns: [
-        { sigla: 'MAT', header: 'Matematica' },
-        { sigla: 'ITA', header: 'Italiano' }
+        { sigla: 'MAT', header: 'Matematica', column: 0 },
+        { sigla: 'ITA', header: 'Italiano', column: 1 }
       ],
       expectedEditors: () => ['teacher@onlinetest.aldo.local']
     }))
@@ -657,9 +666,9 @@ test('protected range scenario rejects a partial range set even when all actual 
   expect(() =>
     verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
       columns: [
-        { sigla: 'MAT', header: 'Matematica' },
-        { sigla: 'ING', header: 'Inglese' },
-        { sigla: 'STO', header: 'Storia' }
+        { sigla: 'MAT', header: 'Matematica', column: 0 },
+        { sigla: 'ING', header: 'Inglese', column: 1 },
+        { sigla: 'STO', header: 'Storia', column: 2 }
       ],
       expectedEditors: () => ['teacher@onlinetest.aldo.local']
     }))
@@ -687,7 +696,7 @@ test('protected range scenario rejects a range missing its expected editor princ
 
   expect(() =>
     verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
-      columns: [{ sigla: 'MAT', header: 'Matematica' }],
+      columns: [{ sigla: 'MAT', header: 'Matematica', column: 0 }],
       expectedEditors: () => [
         'teacher@onlinetest.aldo.local',
         'coordinator@onlinetest.aldo.local'
@@ -718,8 +727,8 @@ test('protected range scenario correlates display labels with generator column m
   expect(() =>
     verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
       columns: [
-        { sigla: 'MAT', header: 'Matematica' },
-        { sigla: 'ITA', header: 'Italiano' }
+        { sigla: 'MAT', header: 'Matematica', column: 0 },
+        { sigla: 'ITA', header: 'Italiano', column: 1 }
       ],
       expectedEditors: () => ['teacher@onlinetest.aldo.local']
     }))
@@ -751,6 +760,7 @@ test('protected range scenario preserves articulated specific-column metadata wh
         {
           sigla: 'LAB',
           header: 'Laboratorio Gruppo A',
+          column: 0,
           specificita: 'GRUPPO_A',
           classeId: '3C-S',
           kind: 'SPECIFICA'
@@ -768,6 +778,279 @@ test('protected range scenario preserves articulated specific-column metadata wh
       }
     }))
   ).toThrow(/owner@onlinetest\.aldo\.local/);
+});
+
+test('protected range scenario matches repeated display labels by their generated occurrence and column index', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'repeated-label-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['REL', 'Fisica', 'Classe 3C-S', 'Fisica']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: { startColumnIndex: 0 },
+        description: 'Colonna materia REL (10 §9)',
+        editors: { users: ['special@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      },
+      {
+        id: 2,
+        range: { startColumnIndex: 1 },
+        description: 'Colonna materia FIS (10 §9)',
+        editors: { users: ['first@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      },
+      {
+        id: 3,
+        range: { startColumnIndex: 3 },
+        description: 'Colonna materia FIS (10 §9)',
+        editors: { users: ['second@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() =>
+    verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
+      columns: [
+        { sigla: 'REL', header: 'REL', column: 0, isSpecial: true },
+        { sigla: 'FIS', header: 'Fisica', column: 1, classeId: '3C-S' },
+        { sigla: 'FIS', header: 'Fisica', column: 3, classeId: '3C-C' }
+      ],
+      expectedEditors: (column) =>
+        column.isSpecial === true
+          ? ['special@onlinetest.aldo.local']
+          : column.classeId === '3C-S'
+            ? ['first@onlinetest.aldo.local']
+            : ['second@onlinetest.aldo.local']
+    }))
+  ).not.toThrow();
+});
+
+test('protected range scenario rejects a generated column absent from rendered headers', () => {
+  const documents = {
+    generateForClasse: () => ({ fileId: 'missing-header-sheet', status: 'CREATED' })
+  } as unknown as DocumentGenerationService;
+  const spreadsheets = {
+    getRanges: () => [['Matematica']],
+    getProtectedRanges: () => [
+      {
+        id: 1,
+        range: { startColumnIndex: 0 },
+        description: 'Colonna materia MAT (10 §9)',
+        editors: { users: ['teacher@onlinetest.aldo.local'] },
+        sheetId: 0,
+        sheetName: 'Sheet1',
+        warningOnly: false
+      }
+    ]
+  } as unknown as SpreadsheetService;
+
+  expect(() =>
+    verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
+      columns: [
+        { sigla: 'MAT', header: 'Matematica', column: 0 },
+        { sigla: 'ITA', header: 'Italiano', column: 1 }
+      ],
+      expectedEditors: () => ['teacher@onlinetest.aldo.local']
+    }))
+  ).toThrow(/Intestazione protetta Italiano mancante/);
+});
+
+function scenario11WithArticulatedColumnEvidence(
+  evidence: Array<{ index: number; editors: string[]; warningOnly?: boolean }>
+) {
+  const base = recordingHarness();
+  const roleCalls: Array<{ role: string; options: Record<string, unknown> }> = [];
+  const cdu = {
+    meta: { parametriInput: {} },
+    tech: {},
+    focus: {
+      classe: {
+        flags: { isArticolata: true },
+        articolazione: {
+          partners: ['3C-S', '3C-C'],
+          materieCondivise: [{ sigla: 'MAT' }],
+          materieSeparatePrimoGruppo: [{ sigla: 'FIS' }],
+          materieSeparateSecondoGruppo: [{ sigla: 'FIS' }, { sigla: 'LAB.GRUPPO_A' }]
+        },
+        consiglioDiClasse: [{ materie: [{ sigla: 'ALT' }] }]
+      }
+    }
+  };
+  const headers = ['REL/ALT', 'Matematica', 'Classe 3C-S', 'Fisica', 'Classe 3C-C', 'Fisica', 'Laboratorio Gruppo A'];
+  const expectedBySubject: Record<string, string> = {
+    MAT: 'mat@onlinetest.aldo.local',
+    FIS: 'second@onlinetest.aldo.local',
+    LAB: 'lab@onlinetest.aldo.local'
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'spreadsheets') {
+        return {
+          getRanges: () => [headers],
+          getProtectedRanges: () =>
+            evidence.map(({ index, editors, warningOnly = false }, id) => ({
+              id,
+              range: { startColumnIndex: index },
+              description: 'unrelated persisted description',
+              editors: { users: editors },
+              sheetId: 0,
+              sheetName: 'Sheet1',
+              warningOnly
+            }))
+        } as T;
+      }
+      if (key === 'contextBuilder') return { build: () => cdu } as T;
+      if (key === 'materie') {
+        return {
+          findByIdCached: (id: { value: string }) => ({
+            sintesi: id.value === 'MAT' ? 'Matematica' : id.value === 'FIS' ? 'Fisica' : id.value
+          }),
+          findSpecifiche: () => [{ id: 'LAB.GRUPPO_A', sintesi: 'Laboratorio Gruppo A' }]
+        } as T;
+      }
+      if (key === 'risolutoreRuoli') {
+        return {
+          risolvi: (role: string, subjectCdu: { meta: { parametriInput: { materiaCorrente?: string } } }, options: Record<string, unknown> = {}) => {
+            roleCalls.push({ role, options });
+            if (role === 'COORDINATORI') return [];
+            if (role === 'DOCENTI_IRC_ALT') return [{ value: 'special@onlinetest.aldo.local' }];
+            const subject = subjectCdu.meta.parametriInput.materiaCorrente ?? '';
+            if (subject === 'FIS' && options.classeId === '3C-S') {
+              return [{ value: 'first@onlinetest.aldo.local' }];
+            }
+            if (subject === 'FIS' && options.classeId === '3C-C') {
+              return [{ value: 'second@onlinetest.aldo.local' }];
+            }
+            return [{ value: expectedBySubject[subject] ?? 'unexpected@onlinetest.aldo.local' }];
+          }
+        } as T;
+      }
+      return base.container.get<T>(key);
+    }
+  } as ServiceContainer;
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+  return {
+    scenario: runner.report().results.find((result) => result.name.includes('scenario 11')),
+    roleCalls
+  };
+}
+
+test('registered Scenario 11 maps duplicate labels to articulated generator columns and exact resolver metadata', () => {
+  const { scenario, roleCalls } = scenario11WithArticulatedColumnEvidence([
+    { index: 0, editors: ['special@onlinetest.aldo.local'] },
+    { index: 1, editors: ['mat@onlinetest.aldo.local'] },
+    { index: 3, editors: ['first@onlinetest.aldo.local'] },
+    { index: 5, editors: ['second@onlinetest.aldo.local'] },
+    { index: 6, editors: ['lab@onlinetest.aldo.local'] }
+  ]);
+
+  expect(scenario?.status).toBe('pass');
+  expect(roleCalls).toContainEqual({
+    role: 'DOCENTE_MATERIA',
+    options: {
+      regolaSupplente: GestioneSupplenti.ENTRAMBI,
+      classeId: '3C-C',
+      specifica: 'GRUPPO_A',
+      kind: 'SPECIFICA'
+    }
+  });
+});
+
+test.each([
+  ['missing', [
+    { index: 0, editors: ['special@onlinetest.aldo.local'] },
+    { index: 1, editors: ['mat@onlinetest.aldo.local'] },
+    { index: 3, editors: ['first@onlinetest.aldo.local'] },
+    { index: 5, editors: ['second@onlinetest.aldo.local'] }
+  ], /Laboratorio Gruppo A mancante/],
+  ['warning', [
+    { index: 0, editors: ['special@onlinetest.aldo.local'] },
+    { index: 1, editors: ['mat@onlinetest.aldo.local'], warningOnly: true },
+    { index: 3, editors: ['first@onlinetest.aldo.local'] },
+    { index: 5, editors: ['second@onlinetest.aldo.local'] },
+    { index: 6, editors: ['lab@onlinetest.aldo.local'] }
+  ], /warningOnly/],
+  ['wrong principal', [
+    { index: 0, editors: ['special@onlinetest.aldo.local'] },
+    { index: 1, editors: ['mat@onlinetest.aldo.local'] },
+    { index: 3, editors: ['first@onlinetest.aldo.local'] },
+    { index: 5, editors: ['wrong@onlinetest.aldo.local'] },
+    { index: 6, editors: ['lab@onlinetest.aldo.local'] }
+  ], /wrong@onlinetest\.aldo\.local/]
+])('registered Scenario 11 fails %s articulated persisted evidence', (_variant, evidence, message) => {
+  const { scenario } = scenario11WithArticulatedColumnEvidence(evidence);
+  expect(scenario).toMatchObject({ status: 'fail' });
+  expect(scenario?.message).toMatch(message);
+});
+
+test('registered Scenario 11 mirrors non-articulated generator sorting when mapping persisted columns', () => {
+  const base = recordingHarness();
+  const resolvedSubjects: string[] = [];
+  const cdu = {
+    meta: { parametriInput: {} },
+    tech: {},
+    focus: {
+      classe: {
+        flags: { isArticolata: false },
+        consiglioDiClasse: [
+          { materie: [{ sigla: 'STO' }, { sigla: 'MAT' }] },
+          { materie: [{ sigla: 'LAB.GRUPPO_A' }] }
+        ]
+      }
+    }
+  };
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'spreadsheets') {
+        return {
+          getRanges: () => [['REL', 'Laboratorio Gruppo A', 'Matematica', 'Storia']],
+          getProtectedRanges: () => [
+            { id: 1, range: { startColumnIndex: 0 }, description: 'REL', editors: { users: ['special@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false },
+            { id: 2, range: { startColumnIndex: 1 }, description: 'LAB', editors: { users: ['lab@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false },
+            { id: 3, range: { startColumnIndex: 2 }, description: 'MAT', editors: { users: ['mat@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false },
+            { id: 4, range: { startColumnIndex: 3 }, description: 'STO', editors: { users: ['sto@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false }
+          ]
+        } as T;
+      }
+      if (key === 'contextBuilder') return { build: () => cdu } as T;
+      if (key === 'materie') {
+        return {
+          findByIdCached: (id: { value: string }) => ({
+            sintesi: ({ MAT: 'Matematica', STO: 'Storia' } as Record<string, string>)[id.value] ?? id.value
+          }),
+          findSpecifiche: () => [{ id: 'LAB.GRUPPO_A', sintesi: 'Laboratorio Gruppo A' }]
+        } as T;
+      }
+      if (key === 'risolutoreRuoli') {
+        return {
+          risolvi: (role: string, subjectCdu: { meta: { parametriInput: { materiaCorrente?: string } } }) => {
+            if (role === 'COORDINATORI') return [];
+            if (role === 'DOCENTI_IRC_ALT') return [{ value: 'special@onlinetest.aldo.local' }];
+            const subject = subjectCdu.meta.parametriInput.materiaCorrente ?? '';
+            resolvedSubjects.push(subject);
+            return [{ value: `${subject.toLowerCase()}@onlinetest.aldo.local` }];
+          }
+        } as T;
+      }
+      return base.container.get<T>(key);
+    }
+  } as ServiceContainer;
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, container, sample);
+
+  const scenario = runner.report().results.find((result) => result.name.includes('scenario 11'));
+  expect(scenario).toMatchObject({ status: 'pass' });
+  expect(resolvedSubjects.slice(0, 3)).toEqual(['LAB', 'MAT', 'STO']);
 });
 
 test('protected range scenario rejects residual header placeholders in test mode', () => {
@@ -1267,6 +1550,15 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
     {
       id: 'p1',
       range: { startColumnIndex: 0 },
+      description: 'Colonna materia REL (10 §9)',
+      editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
+      sheetId: 0,
+      sheetName: 'Sheet1',
+      warningOnly: false
+    },
+    {
+      id: 'p2',
+      range: { startColumnIndex: 1 },
       description: 'Colonna materia MAT (10 §9)',
       editors: { users: ['e2edocente1@onlinetest.aldo.local'] },
       sheetId: 0,
@@ -1278,7 +1570,7 @@ test('scenario 11: passes when every generated sheet has protected ranges with n
     get<T>(key: string): T {
       if (key === 'spreadsheets') {
         return {
-          getRanges: () => [['Matematica', 'ALT', 'Docente']],
+          getRanges: () => [['REL', 'Matematica', 'ALT', 'Docente']],
           getProtectedRanges
         } as unknown as T;
       }

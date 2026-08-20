@@ -63,6 +63,8 @@ type ProtectedRangeEvidence = ReturnType<SpreadsheetService['getProtectedRanges'
 interface ProtectedColumnMetadata {
   sigla: string;
   header: string;
+  /** Zero-based rendered position, including dynamic group-label columns. */
+  column: number;
   specificita?: string;
   classeId?: string;
   kind?: TeachingSlotKind;
@@ -80,12 +82,9 @@ function exact(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort();
 }
 
-function protectedRangeHeader(
-  range: ProtectedRangeEvidence,
-  headers: string[]
-): string | undefined {
+function protectedRangeColumnIndex(range: ProtectedRangeEvidence): number | undefined {
   const index = (range.range as { startColumnIndex?: unknown }).startColumnIndex;
-  return typeof index === 'number' && Number.isInteger(index) ? headers[index] : undefined;
+  return typeof index === 'number' && Number.isInteger(index) ? index : undefined;
 }
 
 function assertRenderedProtectedRanges(
@@ -95,17 +94,29 @@ function assertRenderedProtectedRanges(
   expectations: ProtectedRangeExpectations
 ): void {
   for (const column of expectations.columns) {
-    if (!headers.includes(column.header)) continue;
-    const matching = protections.filter(
-      (protection) => protectedRangeHeader(protection, headers) === column.header
-    );
-    if (matching.length === 0) {
+    if (headers[column.column] !== column.header) {
+      throw new ValidationError(`Intestazione protetta ${column.header} mancante.`);
+    }
+  }
+  const expectedIndices = new Set(expectations.columns.map((column) => column.column));
+  const protectionsByIndex = new Map<number, ProtectedRangeEvidence>();
+  for (const protection of protections) {
+    const index = protectedRangeColumnIndex(protection);
+    if (index === undefined || !expectedIndices.has(index)) {
+      throw new ValidationError(
+        `Protected range inatteso per ${classe}: ${protection.description || '<senza descrizione>'}.`
+      );
+    }
+    if (protectionsByIndex.has(index)) {
+      throw new ValidationError(`Protected range duplicato alla colonna ${index + 1} per ${classe}.`);
+    }
+    protectionsByIndex.set(index, protection);
+  }
+  for (const column of expectations.columns) {
+    const focal = protectionsByIndex.get(column.column);
+    if (focal === undefined) {
       throw new ValidationError(`Protected range ${column.header} mancante per ${classe}.`);
     }
-    if (matching.length > 1) {
-      throw new ValidationError(`Protected range ${column.header} duplicato per ${classe}.`);
-    }
-    const focal = matching[0]!;
     if (focal.warningOnly === true) {
       throw new ValidationError(`Protected range ${column.header} per ${classe} e solo warningOnly.`);
     }
@@ -122,16 +133,12 @@ function assertRenderedProtectedRanges(
       );
     }
   }
-  for (const protection of protections) {
-    if (!expectations.columns.some((column) => column.header === protectedRangeHeader(protection, headers))) {
-      throw new ValidationError(
-        `Protected range inatteso per ${classe}: ${protection.description || '<senza descrizione>'}.`
-      );
-    }
-  }
 }
 
-function columnFromId(id: string, classeId?: string): Omit<ProtectedColumnMetadata, 'header'> {
+type UnindexedProtectedColumn = Omit<ProtectedColumnMetadata, 'column'>;
+type ProtectedColumnInput = Omit<UnindexedProtectedColumn, 'header'>;
+
+function columnFromId(id: string, classeId?: string): ProtectedColumnInput {
   const separator = id.indexOf('.');
   return {
     sigla: separator === -1 ? id : id.slice(0, separator),
@@ -140,14 +147,18 @@ function columnFromId(id: string, classeId?: string): Omit<ProtectedColumnMetada
   };
 }
 
+function columnCatalogId(column: ProtectedColumnInput): string {
+  return `${column.sigla}${column.specificita === undefined ? '' : `.${column.specificita}`}`;
+}
+
 function renderedColumn(
-  column: Omit<ProtectedColumnMetadata, 'header'>,
+  column: ProtectedColumnInput,
   materie: MateriaRepository
-): ProtectedColumnMetadata {
+): UnindexedProtectedColumn {
   if (column.sigla === 'IRC' || column.sigla === 'ALT') {
     return { ...column, header: column.sigla };
   }
-  const catalogId = `${column.sigla}${column.specificita === undefined ? '' : `.${column.specificita}`}`;
+  const catalogId = columnCatalogId(column);
   const materia =
     column.specificita === undefined
       ? materie.findByIdCached(MateriaId.of(column.sigla))
@@ -158,23 +169,23 @@ function renderedColumn(
 function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumnMetadata[] {
   const classe = cdu.focus.classe;
   if (classe === undefined) throw new ValidationError('CDU privo di focus.classe per le protezioni.');
-  const columns: Array<Omit<ProtectedColumnMetadata, 'header'>> = [];
+  const groups: ProtectedColumnInput[][] = [[], [], []];
   const articolazione = classe.articolazione;
   if (classe.flags.isArticolata && articolazione !== undefined) {
     const partners = getCduArticolazionePartners(articolazione) ?? articolazione.partners ?? [];
-    columns.push(...articolazione.materieCondivise.map((materia) => columnFromId(materia.sigla)));
-    columns.push(
+    groups[0]!.push(...articolazione.materieCondivise.map((materia) => columnFromId(materia.sigla)));
+    groups[1]!.push(
       ...articolazione.materieSeparatePrimoGruppo.map((materia) =>
         columnFromId(materia.sigla, partners[0])
       )
     );
-    columns.push(
+    groups[2]!.push(
       ...articolazione.materieSeparateSecondoGruppo.map((materia) =>
         columnFromId(materia.sigla, partners[1])
       )
     );
   } else {
-    const unique = new Map<string, Omit<ProtectedColumnMetadata, 'header'>>();
+    const unique = new Map<string, ProtectedColumnInput>();
     for (const docente of classe.consiglioDiClasse ?? []) {
       for (const materia of docente.materie) {
         const identity = getCduMateriaAssignmentIdentity(materia);
@@ -185,22 +196,31 @@ function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumn
         unique.set(`${column.sigla}.${column.specificita ?? ''}`, column);
       }
     }
-    columns.push(...unique.values());
+    groups[0]!.push(
+      ...[...unique.values()].sort((left, right) =>
+        columnCatalogId(left).localeCompare(columnCatalogId(right))
+      )
+    );
   }
   const hasAlt = (classe.consiglioDiClasse ?? []).some((docente) =>
     docente.materie.some((materia) => materia.sigla === 'ALT')
   );
-  const special: ProtectedColumnMetadata = {
+  const special: UnindexedProtectedColumn = {
     sigla: hasAlt ? 'REL/ALT' : 'REL',
     header: hasAlt ? 'REL/ALT' : 'REL',
     isSpecial: true
   };
-  return [
-    special,
-    ...columns
-      .filter((column) => column.sigla !== 'IRC' && column.sigla !== 'ALT')
-      .map((column) => renderedColumn(column, materie))
-  ];
+  let position = 0;
+  return groups.flatMap((group, groupIndex) => {
+    const rendered = [
+      ...(groupIndex === 0 ? [special] : []),
+      ...group
+        .filter((column) => column.sigla !== 'IRC' && column.sigla !== 'ALT')
+        .map((column) => renderedColumn(column, materie))
+    ];
+    if (groupIndex > 0 && rendered.length > 0) position += 1;
+    return rendered.map((column) => ({ ...column, column: position++ }));
+  });
 }
 
 function cduForSubject(cdu: Cdu, subject: string): Cdu {
@@ -267,8 +287,7 @@ export function verifyProtectedRangeScenario(
     const headers = spreadsheets
       .getRanges(fileId, 'A1:ZZ1')
       .flat()
-      .map((value) => String(value).trim())
-      .filter(Boolean);
+      .map((value) => String(value).trim());
     if (testMode) {
       if (headers.length === 0) {
         throw new ValidationError(`Sheet permessi per ${classe}: intestazioni non renderizzate`);

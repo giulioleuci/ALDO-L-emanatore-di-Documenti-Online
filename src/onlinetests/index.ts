@@ -189,6 +189,8 @@ export interface FullOnlineTestDeps extends E2eTestDeps {
   registrations: Partial<FullOnlineTestRegistrations>;
   spreadsheetService: FixtureSpreadsheetService;
   staticAttachmentDriveService: Pick<DriveService, 'getFiles'>;
+  /** Injection seam for the pre-batch-1 purge (see `executeOnlineTestsBatch1`). */
+  resetHistory: (overrides: Partial<FullOnlineTestDeps>) => ResetE2eHistoryTablesResult;
 }
 
 const registerLegacyDocumentiChecks: RegisterSharedChecks = (runner, container, sample) => {
@@ -682,11 +684,16 @@ export function runFullOnlineTests(
 /**
  * Batch launchers: same coverage as `runFullOnlineTests`, split to stay inside the 30-minute GAS
  * execution limit. Run them in order 1 → 2 → 3 → 4 against the same `creaDatiMockDrive` fixture:
- * batch 2 asserts on LOG_DOCS/LOG_MAIL rows that batch 1 produces.
+ * batches 2–4 assert on LOG_DOCS/LOG_FOLD/LOG_MAIL rows that batch 1 produces. Batch 1 owns the
+ * history purge, so there is no separate reset step to sequence by hand.
  */
 export function executeOnlineTestsBatch1(
   overrides: Partial<FullOnlineTestDeps> = {}
 ): OnlineTestReport {
+  // ORDER MATTERS. Running `resetE2eHistoryTables` between batch 1 and batch 2 purges the
+  // LOG_DOCS rows every CONF_MAIL `documenti` box and the articolazione assertions read —
+  // six batch-2 failures in the 2026-08-21 run. Owning the purge here makes that unforgeable.
+  (overrides.resetHistory ?? resetE2eHistoryTables)(overrides);
   return executeOnlineTestsBatch(['documenti', 'jobRunner'], overrides);
 }
 
@@ -755,7 +762,12 @@ export interface ResetE2eHistoryTablesResult {
  * Explicit pre-Batch-1 launcher: migrates the persisted fixture, rebuilds the final container,
  * then deletes every append-only row from `LOG_MAIL`/`LOG_DOCS`. No other table is purged.
  *
- * ORDER MATTERS. Run it BEFORE batch 1 and never between batches: batches 2–4 consume the
+ * This is now the *manual* form of what `executeOnlineTestsBatch1` does automatically via its
+ * `resetHistory` seam — batch 1 calls this same function before registering its groups, so there
+ * is no separate step an operator needs to remember to run first. Keep using this standalone
+ * launcher only for manual, ad hoc resets.
+ *
+ * ORDER MATTERS. Run it BEFORE batch 1 and NEVER between batches: batches 2–4 consume the
  * LOG_DOCS/LOG_FOLD artifacts batch 1 produces (the `documenti`/`cartelle` boxes of every
  * CONF_MAIL read them). Running it after batch 1 makes every email skip with zero boxes.
  */

@@ -154,6 +154,10 @@ test('registers the articulation checks only for a TEST_MODE sample', () => {
 
   expect(runner.checks).toEqual([
     {
+      name: 'articolazione.prerequisiti::documenti di batch 1 presenti',
+      artifactUrl: sample.sampleSpreadsheetUrl
+    },
+    {
       name: 'Articolazione CDU: supplenza, titolare finale e confini data',
       artifactUrl: sample.sampleSpreadsheetUrl
     },
@@ -588,4 +592,31 @@ test('serializability check converts a cyclic CDU failure into ValidationError d
   expect(() =>
     runCheck(container, 'Articolazione CDU: serializzabilita, CdC unico, materie e indirizzo')
   ).toThrow(ValidationError);
+});
+
+/** Minimal fake container exposing only LOG_DOCS rows, for the batch-1-ordering prerequisite check. */
+function containerWithLogDocs(rows: Array<Record<string, unknown>>): ServiceContainer {
+  const db = {
+    table(name: string) {
+      if (name === TABLE.LOG_DOCS) return { findAll: () => rows };
+      return { findAll: () => [] };
+    }
+  };
+  return {
+    get<T>(key: string): T {
+      if (key === 'db') return db as T;
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+}
+
+test('articolazione prerequisite fails with an ordering hint when batch 1 left no LOG_DOCS', () => {
+  const runner = new RecordingRunner();
+  const container = containerWithLogDocs([]);
+
+  registerArticolazioneChecks(runner as never, container, sample);
+
+  expect(runner.callbacks.get('articolazione.prerequisiti::documenti di batch 1 presenti')).toThrow(
+    /Batch 1 non eseguito su questa fixture/
+  );
 });

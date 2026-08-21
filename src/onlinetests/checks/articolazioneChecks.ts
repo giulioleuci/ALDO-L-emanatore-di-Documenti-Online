@@ -11,7 +11,7 @@ import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
-import type { TestRunner } from '../report/OnlineTestReport';
+import { groupName, type TestRunner } from '../report/OnlineTestReport';
 import {
   ALL_CLASSI,
   CLASSE_A,
@@ -104,6 +104,25 @@ export function registerArticolazioneChecks(
     });
     return;
   }
+
+  runner.add(
+    groupName('articolazione.prerequisiti', 'documenti di batch 1 presenti'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const cdcRows = container
+        .get<TableDatabase>('db')
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO_FIRME_CDC);
+      if (cdcRows.length === 0) {
+        throw new ValidationError(
+          'Batch 1 non eseguito su questa fixture: LOG_DOCS non contiene documenti ' +
+            `${CONF_DOC_RIEPILOGO_FIRME_CDC}, quindi ogni asserzione LOG_DOCS di questo gruppo ` +
+            'legge zero righe. Esegui batch 1 (che purga e rigenera) e poi batch 2.'
+        );
+      }
+    }
+  );
 
   runner.add(
     'Articolazione CDU: supplenza, titolare finale e confini data',

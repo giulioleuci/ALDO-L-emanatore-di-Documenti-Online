@@ -292,6 +292,17 @@ function verifiedSpreadsheetService() {
   };
 }
 
+/** Stubbed `resetHistory` result for tests that exercise batch 1 without caring about the purge itself. */
+function noopResetHistoryResult() {
+  return {
+    purgedLogMail: 0,
+    purgedLogDocs: 0,
+    insertedMaterie: [] as string[],
+    deletedAslColumn: false,
+    warnings: [] as string[]
+  };
+}
+
 describe('executeFullOnlineTests', () => {
   it('forces a fresh provision before registering every scenario group in the documented order', () => {
     const calls: string[] = [];
@@ -633,7 +644,8 @@ function recordBatchGroups(
     initAldo: () => container,
     readSample: () => sample,
     spreadsheetService: verifiedSpreadsheetService(),
-    registrations: registrations
+    registrations: registrations,
+    resetHistory: () => noopResetHistoryResult()
   });
   return calls;
 }
@@ -792,7 +804,8 @@ function recordActualBatchScenarioNames(
       resetAldo: () => undefined,
       initAldo: () => container,
       readSample: () => sample,
-      spreadsheetService: verifiedSpreadsheetService()
+      spreadsheetService: verifiedSpreadsheetService(),
+      resetHistory: () => noopResetHistoryResult()
     });
     return scenarioNames;
   } finally {
@@ -866,7 +879,7 @@ describe('online test batches', () => {
     expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
   });
 
-  it('locks the 105-scenario acceptance contract across all four batches', () => {
+  it('locks the 106-scenario acceptance contract across all four batches', () => {
     const batch1 = recordActualBatchScenarioNames(
       executeOnlineTestsBatch1,
       propertiesWithoutCacheFixture()
@@ -881,9 +894,9 @@ describe('online test batches', () => {
     );
     const batch4 = recordActualBatchScenarioNames(executeOnlineTestsBatch4, properties());
     const allNames = [...batch1, ...batch2, ...batch3, ...batch4];
-    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 16, 27, 36]);
-    expect(allNames).toHaveLength(105);
-    expect(new Set(allNames).size).toBe(105);
+    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 17, 27, 36]);
+    expect(allNames).toHaveLength(106);
+    expect(new Set(allNames).size).toBe(106);
     expect(allNames).toContain(
       'E2E scenario 10b: genera documento complesso classe articolata (3C)'
     );
@@ -915,5 +928,67 @@ describe('online test batches', () => {
 
     expect(launcher(execute, logger)).toBe(report);
     expect(logJobStart).toHaveBeenCalledWith(jobName, 'ONLINE_TEST_SUITE_BATCH');
+  });
+});
+
+/**
+ * Minimal batch overrides shared by the history-reset seam tests below (mirrors recordBatchGroups,
+ * including its no-op registration for every group so real checks never run against the fake
+ * container/db).
+ */
+function batchOverrides(
+  props: IPropertiesFacade = propertiesWithoutCacheFixture()
+): Partial<FullOnlineTestDeps> {
+  const migrationDb = verifiedMigrationDb();
+  const container = {
+    get: jest.fn((key: string) => (key === 'db' ? migrationDb : { registerInterceptor: jest.fn() }))
+  } as unknown as ServiceContainer;
+  const registrations: Record<string, unknown> = {};
+  for (const name of ONLINE_TEST_GROUP_NAMES) {
+    registrations[name] = (): void => undefined;
+  }
+  return {
+    properties: props,
+    clock: () => new Date('2026-08-11T09:00:00Z'),
+    resetAldo: () => undefined,
+    initAldo: () => container,
+    readSample: () => sample,
+    spreadsheetService: verifiedSpreadsheetService(),
+    registrations
+  };
+}
+
+describe('batch 1 owns the history reset', () => {
+  test('batch 1 purges the history tables before running its groups', () => {
+    const calls: string[] = [];
+    const resetHistory = jest.fn(() => {
+      calls.push('reset');
+      return {
+        purgedLogMail: 0,
+        purgedLogDocs: 0,
+        insertedMaterie: [],
+        deletedAslColumn: false,
+        warnings: []
+      };
+    });
+    const registrations = {
+      documenti: () => calls.push('documenti'),
+      jobRunner: () => calls.push('jobRunner')
+    };
+
+    executeOnlineTestsBatch1({ ...batchOverrides(), resetHistory, registrations });
+
+    expect(calls[0]).toBe('reset');
+    expect(calls).toContain('documenti');
+  });
+
+  test('batches 2-4 never purge the history tables', () => {
+    const resetHistory = jest.fn();
+
+    executeOnlineTestsBatch2({ ...batchOverrides(), resetHistory });
+    executeOnlineTestsBatch3({ ...batchOverrides(), resetHistory });
+    executeOnlineTestsBatch4({ ...batchOverrides(properties()), resetHistory });
+
+    expect(resetHistory).not.toHaveBeenCalled();
   });
 });

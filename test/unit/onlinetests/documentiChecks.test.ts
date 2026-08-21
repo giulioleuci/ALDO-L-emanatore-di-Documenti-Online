@@ -251,6 +251,75 @@ test('imported-table check reports only bounded heading diagnostics on content f
   );
 });
 
+test('imported-table check accepts the template static tables that also head a Valore column', () => {
+  const runner = new RecordingRunner();
+  jest.mocked(creaJobRunner).mockReturnValue({ resetJob: jest.fn() } as never);
+  jest.mocked(avviaGenerazioneDataDriven).mockImplementation(() => undefined);
+  const rows = [
+    {
+      ID_GEN: 'E2E_DOC_TABELLE',
+      CLASSI: '1A',
+      ID: 'generated-table-doc',
+      LINK: 'https://drive.google.com/open?id=generated-table-doc',
+      TIPO: 'E2E_TABELLE'
+    }
+  ];
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
+      if (key === 'drive') {
+        return {
+          getFileText: () =>
+            'Tabelle importate per la classe 1A Nome Valore Prima riga 1 Seconda riga 2 ' +
+            'Testo dopo la tabella con dati Testo dopo la tabella vuota ' +
+            'Colonna Valore A Uno B Due Colonna Valore'
+        } as T;
+      }
+      return {} as T;
+    }
+  } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, sample, 'tabelle-importate');
+
+  expect(
+    runner.callbacks.get('documenti.tabelleImportate::generazione e contenuto')
+  ).not.toThrow();
+});
+
+test('imported-table check rejects a second insertion of the header-only source sheet', () => {
+  const runner = new RecordingRunner();
+  jest.mocked(creaJobRunner).mockReturnValue({ resetJob: jest.fn() } as never);
+  jest.mocked(avviaGenerazioneDataDriven).mockImplementation(() => undefined);
+  const rows = [
+    {
+      ID_GEN: 'E2E_DOC_TABELLE',
+      CLASSI: '1A',
+      ID: 'generated-table-doc',
+      LINK: 'https://drive.google.com/open?id=generated-table-doc',
+      TIPO: 'E2E_TABELLE'
+    }
+  ];
+  const container = {
+    get<T>(key: string): T {
+      if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
+      if (key === 'drive') {
+        return {
+          getFileText: () =>
+            'Tabelle importate per la classe 1A Nome Valore Prima riga 1 Seconda riga 2 ' +
+            'Testo dopo la tabella con dati Nome Valore Testo dopo la tabella vuota'
+        } as T;
+      }
+      return {} as T;
+    }
+  } as ServiceContainer;
+
+  registerDocumentiChecks(runner as never, container, sample, 'tabelle-importate');
+
+  expect(runner.callbacks.get('documenti.tabelleImportate::generazione e contenuto')).toThrow(
+    /occorrenze Nome=2/
+  );
+});
+
 test('registers one TEST_MODE guard when the aggregate document scope is unsafe', () => {
   const runner = new RecordingRunner();
   const container = { get: () => ({}) } as ServiceContainer;

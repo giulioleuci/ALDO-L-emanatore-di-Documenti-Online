@@ -187,13 +187,23 @@ function registerTabelleImportateCheck(
       const residualPlaceholderCount = (text.match(/\{\{[^}]*\}\}/g) ?? []).length;
       const expectedHeadingPresent = text.includes(expectedHeading);
       const headingPlaceholderRemains = text.includes(headingPlaceholder);
-      const diagnostics = `file ID=${fileId}; heading atteso presente=${expectedHeadingPresent}; placeholder letterale residuo=${headingPlaceholderRemains}; placeholder residui=${residualPlaceholderCount}`;
+      // `Nome` is the only header cell unique to the imported source sheet. The template
+      // carries two static tables of its own headed `Colonna | Valore`
+      // (E2eTemplateProvisioner.TABELLE_IMPORTATE_TABLES), so `Valore` legitimately occurs
+      // three times and cannot be a uniqueness sentinel. More than one `Nome` means the
+      // header-only source sheet was wrongly materialised as a second table.
+      const importedHeaderCount = countOccurrences(text, 'Nome');
+      const diagnostics =
+        `file ID=${fileId}; heading atteso presente=${expectedHeadingPresent}; ` +
+        `placeholder letterale residuo=${headingPlaceholderRemains}; ` +
+        `placeholder residui=${residualPlaceholderCount}; ` +
+        `frammenti mancanti=[${missingFragments.join(' | ')}]; ` +
+        `occorrenze Nome=${importedHeaderCount}`;
       if (
         missingFragments.length > 0 ||
         unresolvedTableMarker ||
         residualPlaceholderCount > 0 ||
-        countOccurrences(text, 'Nome') !== 1 ||
-        countOccurrences(text, 'Valore') !== 1
+        importedHeaderCount !== 1
       ) {
         new LoggerService().warn(`Tabelle importate: verifica contenuto fallita (${diagnostics})`);
         throw new ValidationError(

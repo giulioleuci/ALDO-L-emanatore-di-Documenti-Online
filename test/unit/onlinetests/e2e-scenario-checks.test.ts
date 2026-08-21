@@ -77,7 +77,9 @@ function recordingHarness(
   unrequestedDynamicAttachmentPattern: string | null = null,
   planEmailRows: Array<{ logicalTargetId: unknown; text: string }> | null = null,
   articolataMailClasses = [CLASSE_C, CLASSE_C_PARTNER],
-  unrelatedVerbaleFolderBeforeReal = false
+  unrelatedVerbaleFolderBeforeReal = false,
+  verbaleFolderTipo = 'E2E_VERBALE',
+  verbaleFolderMaterie = 'ALT,MATE'
 ): {
   container: ServiceContainer;
   events: string[];
@@ -123,7 +125,7 @@ function recordingHarness(
               : configId,
         [COL_LOG_DOCS.CLASSI]: classe.value,
         [COL_LOG_DOCS.MATERIE]: configId === 'E2E_VERBALE' ? 'ALT,MATE' : '',
-        [COL_LOG_DOCS.PATH]: configId === 'E2E_VERBALE' ? `${folderPath}/${fileId}` : '',
+        [COL_LOG_DOCS.PATH]: configId === 'E2E_VERBALE' ? folderPath : '',
         [COL_LOG_DOCS.NOME]: `${configId} ${classe.value}`,
         [COL_LOG_DOCS.LINK]: `https://example.test/${configId}/${classe.value}`
       });
@@ -136,10 +138,10 @@ function recordingHarness(
           });
         }
         folders.push({
-          [COL_LOG_FOLD.TIPO]: 'VERBALE',
+          [COL_LOG_FOLD.TIPO]: verbaleFolderTipo,
           [COL_LOG_FOLD.PATH]: folderPath,
           [COL_LOG_FOLD.CLASSI]: `ARCHIVIO,${classe.value}`,
-          [COL_LOG_FOLD.MATERIE]: 'ALT,MATE'
+          [COL_LOG_FOLD.MATERIE]: verbaleFolderMaterie
         });
       }
       if (configId === CONF_DOC_ARTICOLATA) {
@@ -1178,6 +1180,44 @@ test('scenario 1 ignores an earlier non-verbale folder that mentions 3C', () => 
     result.name.startsWith('E2E scenario 1:')
   );
   expect(scenario1).toMatchObject({ status: 'pass' });
+});
+
+test('accetta la cartella verbale registrata con TIPO=CONF_DOC.ID sul path del documento', () => {
+  const harness = recordingHarness();
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario1 = runner.report().results.find((result) =>
+    result.name.startsWith('E2E scenario 1:')
+  );
+  expect(scenario1).toMatchObject({ status: 'pass' });
+});
+
+test('rifiuta la cartella verbale priva di MATERIE', () => {
+  const harness = recordingHarness(
+    undefined,
+    undefined,
+    [],
+    undefined,
+    null,
+    undefined,
+    undefined,
+    false,
+    'E2E_VERBALE',
+    ''
+  );
+  const runner = new TestRunner();
+
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario1 = runner.report().results.find((result) =>
+    result.name.startsWith('E2E scenario 1:')
+  );
+  expect(scenario1).toMatchObject({
+    status: 'fail',
+    message: expect.stringMatching(/Cartella verbale per 1A/)
+  });
 });
 
 test('scenario 3 uses one config to render, deduplicate, send, and subtype-isolate PEI/PDP_BES history', () => {

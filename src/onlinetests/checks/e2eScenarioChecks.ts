@@ -465,15 +465,14 @@ export function registerE2eScenarioChecks(
         .findAll()
         .filter((row) => row[COL_LOG_DOCS.ID_GEN] === configId);
     const verbaleDocs = rowsForConfig(TABLE.LOG_DOCS, CONF_DOC_VERBALE);
+    // LOG_FOLD.TIPO is a FK to CONF_DOC.ID (01 §LOG_FOLD) — PrepareInfrastructureStep
+    // writes CONF_DOC.ID there, not CONF_DOC.TIPO — and the folder is registered at
+    // exactly the PATH_OUT that RegisterDocumentStep copies into LOG_DOCS.PATH.
     const verbaleFolders = db
       .table(TABLE.LOG_FOLD)
       .findAll()
-      .filter((row) => row[COL_LOG_FOLD.TIPO] === 'VERBALE');
+      .filter((row) => row[COL_LOG_FOLD.TIPO] === CONF_DOC_VERBALE);
     const hasMate = (value: unknown): boolean => csvContains(value, 'MATE');
-    const parentPath = (path: unknown): string => {
-      const value = typeof path === 'string' ? path : '';
-      return value.slice(0, value.lastIndexOf('/'));
-    };
     for (const classe of ALL_CLASSI_E2E) {
       const doc = verbaleDocs.find((row) => csvContains(row[COL_LOG_DOCS.CLASSI], classe));
       if (doc === undefined || !hasMate(doc[COL_LOG_DOCS.MATERIE])) {
@@ -482,7 +481,7 @@ export function registerE2eScenarioChecks(
       const folder = verbaleFolders.find(
         (row) =>
           csvContains(row[COL_LOG_FOLD.CLASSI], classe) &&
-          row[COL_LOG_FOLD.PATH] === parentPath(doc[COL_LOG_DOCS.PATH])
+          row[COL_LOG_FOLD.PATH] === doc[COL_LOG_DOCS.PATH]
       );
       if (folder === undefined || !hasMate(folder[COL_LOG_FOLD.MATERIE])) {
         throw new ValidationError(`Cartella verbale per ${classe} non ha metadata MATERIE configurati`);

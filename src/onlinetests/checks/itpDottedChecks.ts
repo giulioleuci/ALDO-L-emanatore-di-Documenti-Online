@@ -147,11 +147,7 @@ export function registerItpDottedChecks(
         .get<TableDatabase>('db')
         .table(TABLE.LOG_DOCS)
         .findAll()
-        .filter(
-          (row) =>
-            row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_MATERIA &&
-            expectedSubtypes.has(stringCell(row[COL_LOG_DOCS.SOTTOTIPO]))
-        );
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_MATERIA);
       const subtypes = new Set(rows.map((row) => stringCell(row[COL_LOG_DOCS.SOTTOTIPO])));
       const missingSubtypes = [...expectedSubtypes].filter((subtype) => !subtypes.has(subtype));
       if (missingSubtypes.length > 0) {

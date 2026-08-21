@@ -1113,7 +1113,11 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_MATERIA,
       [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA',
       [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
+      // The batch axis is (docente, materia) over EVERY active class: unscoped this
+      // produced 108 documents (~26 min) and killed batch 2 on the GAS execution limit
+      // (2026-08-21). The assertion only needs the INTERPRET.CHITARRA composite row on
+      // CLASSE_A, so the other classes are gated out at AnalyzeContext.
+      [COL_CONF_DOC.CONDIZIONE]: `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`,
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
       [COL_CONF_DOC.FILE_NAME]:
         'E2E_DocenteMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',

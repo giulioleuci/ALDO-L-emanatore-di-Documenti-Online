@@ -378,6 +378,9 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   });
   const docenteMateria = confDoc.find((c) => c[COL_CONF_DOC.ID] === CONF_DOC_DOCENTE_MATERIA)!;
   expect(docenteMateria[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_DOCENTE_MATERIA');
+  expect(docenteMateria[COL_CONF_DOC.CONDIZIONE]).toBe(
+    `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`
+  );
   expect(JSON.parse(String(docenteMateria[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
     classi: '{{focus.classe.anagrafica.nome}}',
     utenti: '{{focus.docente.email}}',

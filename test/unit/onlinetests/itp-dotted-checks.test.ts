@@ -4,6 +4,52 @@ import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTes
 import { CONF_DOC_DOCENTE_MATERIA, e2eDocenteEmail } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { COL_LOG_DOCS } from '../../../src/config/schema';
 
+/**
+ * Builds a fake container whose `classi.getTeachingSlots` varies by class id, so a test
+ * can drive both the FOCAL_CLASS ('4A') ownership assertion and the CLASSE_A ('1A')
+ * batch-scoped subtype assertion with independent teacher rosters. `classSlots` maps a
+ * class id to its GRECO/INTERPRET.CHITARRA teacher emails; the dotted ITP column
+ * (INTERPRET.CHITARRA.itp) is fixed at e2edocente11 for every class, matching the shared
+ * fixture the ownership assertion reads.
+ */
+function containerWithScopedBatch(
+  classSlots: Record<string, { GRECO: string; 'INTERPRET.CHITARRA': string }>,
+  logDocsRows: Array<Record<string, unknown>>
+): ServiceContainer {
+  const classi = {
+    findById: (id: { value: string }) => ({ id: id.value }),
+    getTeachingSlots: (classe: { id: string }) => {
+      const slots = classSlots[classe.id];
+      if (slots === undefined) throw new Error(`Unexpected class: ${classe.id}`);
+      return [
+        { column: 'GRECO', actorEmails: [slots.GRECO] },
+        {
+          column: 'INTERPRET.CHITARRA',
+          kind: 'SPECIFICA',
+          specifica: 'CHITARRA',
+          actorEmails: [slots['INTERPRET.CHITARRA']]
+        },
+        {
+          column: 'INTERPRET.CHITARRA.itp',
+          kind: 'ITP',
+          specifica: 'CHITARRA',
+          actorEmails: [e2eDocenteEmail(11)]
+        }
+      ];
+    }
+  };
+  return {
+    get<T>(key: string): T {
+      if (key === 'classi') return classi as T;
+      if (key === 'documentBatchService') {
+        return { batchGenerateHandler: () => (function* () {})() } as T;
+      }
+      if (key === 'db') return { table: () => ({ findAll: () => logDocsRows }) } as T;
+      throw new Error(`Unexpected dependency: ${key}`);
+    }
+  } as ServiceContainer;
+}
+
 interface RegisteredCheck {
   name: string;
   artifactUrl: string | undefined;
@@ -149,4 +195,48 @@ test('dotted document identity accepts a prior-class duplicate for the focal bat
   registerItpDottedChecks(runner as never, container, sample);
 
   expect(() => runner.callbacks.get(CHECK_NAMES[1])!()).not.toThrow();
+});
+
+test('subtype assertion expects the GRECO teacher of the batch-scoped class', () => {
+  const runner = new RecordingRunner();
+  const container = containerWithScopedBatch(
+    {
+      // 1A is the class CONF_DOC_DOCENTE_MATERIA.CONDIZIONE scopes the batch to.
+      '1A': { GRECO: e2eDocenteEmail(3), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) },
+      '4A': { GRECO: e2eDocenteEmail(7), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) }
+    },
+    [
+      { [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA, [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${e2eDocenteEmail(3)}` },
+      {
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+        [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`
+      }
+    ]
+  );
+
+  registerItpDottedChecks(runner as never, container, sample);
+
+  expect(runner.callbacks.get(CHECK_NAMES[1])!).not.toThrow();
+});
+
+test('subtype failure names the missing subtypes, not the found ones', () => {
+  const runner = new RecordingRunner();
+  const container = containerWithScopedBatch(
+    {
+      '1A': { GRECO: e2eDocenteEmail(3), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) },
+      '4A': { GRECO: e2eDocenteEmail(7), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) }
+    },
+    [
+      {
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+        [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`
+      }
+    ]
+  );
+
+  registerItpDottedChecks(runner as never, container, sample);
+
+  expect(runner.callbacks.get(CHECK_NAMES[1])!).toThrow(
+    /mancanti GRECO::e2edocente3@onlinetest\.aldo\.local/
+  );
 });

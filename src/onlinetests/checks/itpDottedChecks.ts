@@ -16,6 +16,7 @@ import type { ClasseRepository } from '../../infrastructure/repositories/ClasseR
 import type { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
 import {
+  CLASSE_A,
   CONF_DOC_DOCENTE_MATERIA,
   e2eAlunnoEmail,
   e2eDocenteEmail
@@ -125,10 +126,22 @@ export function registerItpDottedChecks(
       });
       let next = handler.next();
       while (!next.done) next = handler.next();
-      const baseTeacher = base.actorEmails[0]!;
+      // The DOCUMENTO_DOCENTE_MATERIA batch is scoped by CONF_DOC.CONDIZIONE to CLASSE_A
+      // (SharedTestDatabaseBuilder — unscoped it generated 108 documents and killed batch 2
+      // on the execution limit). The ownership assertions above stay on FOCAL_CLASS, where
+      // the dotted-ITP fixture lives, but the generated-subtype assertion must read the
+      // scoped class or it expects a document the batch never produces.
+      const scopedSlots = classi.getTeachingSlots(requireClass(classi, CLASSE_A));
+      const scopedBase = scopedSlots.find((slot) => slot.column === 'GRECO');
+      const scopedDotted = scopedSlots.find((slot) => slot.column === DOTTED_ID);
+      if (scopedBase === undefined || scopedDotted === undefined) {
+        throw new ValidationError(
+          `${CLASSE_A}: la classe su cui è scopato il batch non espone sia GRECO sia ${DOTTED_ID}`
+        );
+      }
       const expectedSubtypes = new Set([
-        `GRECO::${baseTeacher}`,
-        `${DOTTED_ID}::${e2eDocenteEmail(5)}`
+        `GRECO::${scopedBase.actorEmails[0]!}`,
+        `${DOTTED_ID}::${scopedDotted.actorEmails[0]!}`
       ]);
       const rows = container
         .get<TableDatabase>('db')
@@ -140,11 +153,11 @@ export function registerItpDottedChecks(
             expectedSubtypes.has(stringCell(row[COL_LOG_DOCS.SOTTOTIPO]))
         );
       const subtypes = new Set(rows.map((row) => stringCell(row[COL_LOG_DOCS.SOTTOTIPO])));
-      if (
-        [...expectedSubtypes].some((subtype) => !subtypes.has(subtype))
-      ) {
+      const missingSubtypes = [...expectedSubtypes].filter((subtype) => !subtypes.has(subtype));
+      if (missingSubtypes.length > 0) {
         throw new ValidationError(
-          `SOTTOTIPO base/dotted non distinto: ${[...subtypes].sort().join(', ')}`
+          `SOTTOTIPO base/dotted non distinto: mancanti ${missingSubtypes.join(', ')}; ` +
+            `presenti ${[...subtypes].sort().join(', ') || '(nessuno)'}`
         );
       }
     }

@@ -11,7 +11,7 @@ function exampleUsage() {
 } (() => { 
  	var __webpack_modules__ = ({
 
- 950
+ 67
 (module, exports, __webpack_require__) {
 
  module = __webpack_require__.nmd(module);
@@ -9459,7 +9459,7 @@ class ValidationUtils {
   }
 }
 
-var he = __webpack_require__(950);
+var he = __webpack_require__(67);
 ;
 
 
@@ -18916,7 +18916,7 @@ class DocumentBatchUpdateHandler {
       };
     }
     try {
-      this._logger.info(`Executing batch update with ${requests.length} requests on document ${documentId}`);
+      this._logger.debug(`Executing batch update with ${requests.length} requests on document ${documentId}`);
       const executeUpdate = () => {
         return Docs.Documents.batchUpdate({
           requests: requests
@@ -19237,7 +19237,7 @@ class SpreadsheetRangeManager {
       spreadsheetId,
       rangeCount: data.length
     }, 3);
-    this._logger.info(`Updated ${result.totalUpdatedCells} cells across ${result.totalUpdatedRows} rows`);
+    this._logger.debug(`Updated ${result.totalUpdatedCells} cells across ${result.totalUpdatedRows} rows`);
     return {
       totalUpdatedCells: result.totalUpdatedCells,
       totalUpdatedRows: result.totalUpdatedRows,
@@ -26770,7 +26770,7 @@ class _DocumentProcessor {
     return ranges.some(([start, end]) => index >= start && index < end);
   }
   process(documentId, context) {
-    this.logger.info(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
+    this.logger.debug(`Starting document processing with Reverse-Order Strategy for document: ${documentId}`);
     let structure = this.documentService.scanDocumentStructure(documentId, ['{{']);
     const structuralOps = [];
 
@@ -26908,9 +26908,9 @@ class _DocumentProcessor {
       batchRequests.push(...this._convertOperationToRequests(op));
     }
     if (batchRequests.length > 0) {
-      this.logger.info(`Executing batch update with ${batchRequests.length} requests`);
+      this.logger.debug(`Executing batch update with ${batchRequests.length} requests`);
       this.documentService._executeBatchUpdate(documentId, batchRequests);
-      this.logger.info(`Batch update completed successfully`);
+      this.logger.debug(`Batch update completed successfully`);
     } else {
       this.logger.info(`No batch operations to execute`);
     }
@@ -49910,7 +49910,7 @@ class DatabaseConnectionManager {
       this.facade._transaction.savedStates[tableName] = cloneDeep_cloneDeep(table._rowsCache);
     }
     this.facade._inTransaction = true;
-    this._logger.info('Transaction started');
+    this._logger.debug('Transaction started');
     return this.facade;
   }
   commit() {
@@ -49923,7 +49923,7 @@ class DatabaseConnectionManager {
       });
       this._spreadsheetService.flushBatch();
       const duration = Date.now() - this.facade._transaction.startTime;
-      this._logger.info(`Transaction committed successfully (${duration}ms)`);
+      this._logger.debug(`Transaction committed successfully (${duration}ms)`);
       this.facade._transaction = null;
       this.facade._inTransaction = false;
       return this.facade;
@@ -55241,13 +55241,17 @@ class JobQueue {
       }
 
 
+
+
+      const jobState = stateManager.getState();
+
+
       if (!stateManager.tryAcquireRunning()) {
         this._logger.warn(`Job ${jobName} already running or lock acquisition failed.`);
         return null;
       }
 
 
-      const jobState = stateManager.getState();
       if (!jobState || forceRestart) {
         stateManager.saveType(jobType);
         stateManager.saveConfiguration(this._config);

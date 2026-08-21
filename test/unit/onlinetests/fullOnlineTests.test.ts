@@ -256,7 +256,7 @@ it('migrates the persisted fixture before the final registration container snaps
     'reset',
     'init:temporary',
     'getRanges:ASL!1:1',
-    `set:${PROP_ONLINETEST_FIXTURE_VERSION}:2`,
+    `set:${PROP_ONLINETEST_FIXTURE_VERSION}:3`,
     'reset',
     'init:final',
     'register:import',
@@ -273,7 +273,7 @@ function properties(): IPropertiesFacade {
   return {
     get: (key: string) => {
       if (key === PROP_ONLINETEST_CACHE_ISOLATED_MASTER_SPREADSHEET_ID) return 'cache-master';
-      if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '2';
+      if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '3';
       if (key === PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID) return sample.staticAttachmentFileId;
       return null;
     },
@@ -600,7 +600,7 @@ const ONLINE_TEST_GROUP_NAMES: Array<keyof FullOnlineTestRegistrations> = [
 function propertiesWithoutCacheFixture(): IPropertiesFacade {
   return {
     get: (key: string) => {
-      if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '2';
+      if (key === PROP_ONLINETEST_FIXTURE_VERSION) return '3';
       if (key === PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID) return sample.staticAttachmentFileId;
       return null;
     },

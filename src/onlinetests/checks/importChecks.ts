@@ -75,6 +75,35 @@ export function registerImportChecks(
   const readAsl = (): AslRow[] => db.table(TABLE.ASL).findAll();
   const readCarenze = (): AslRow[] => db.table(TABLE.CARENZE).findAll();
 
+  // Runs first on purpose: this check asserts the TARGET has no timestamp column, and
+  // every other ASL recipe imports a source that carries DATA_MODIFICA — unmapped source
+  // columns are passed straight through by the library, so any of them would materialise
+  // the column and break the precondition (2026-08-21 batch 3 failure).
+  if (scope !== 'file-singolo')
+    runner.add(
+      groupName('import.policy', 'TIMESTAMP degrada a OVERWRITE senza colonna target'),
+      sample.sampleSpreadsheetUrl,
+      () => {
+        if (readAsl().some((row) => Object.prototype.hasOwnProperty.call(row, 'DATA_MODIFICA'))) {
+          throw new ValidationError(
+            'TIMESTAMP fallback: ASL non deve avere una colonna DATA_MODIFICA nel fixture'
+          );
+        }
+        const result = avviaImportazioneDataDriven(container, CONF_IMP_TIMESTAMP_FALLBACK);
+        assertSuccessful(result, 'TIMESTAMP fallback');
+        if (result.inseriti + result.aggiornati !== 1) {
+          throw new ValidationError(
+            `TIMESTAMP fallback: attesa una riga dal fallback OVERWRITE, ricevute inseriti=${result.inseriti}, aggiornati=${result.aggiornati}`
+          );
+        }
+        assertOre(
+          findAslRow(readAsl(), 'e2ealunno43@onlinetest.aldo.local', 'TIMESTAMP fallback'),
+          999,
+          'TIMESTAMP fallback OVERWRITE'
+        );
+      }
+    );
+
   if (scope !== 'policy')
     runner.add(
       groupName('import.fileSingolo', 'OVERWRITE, intestazioni e riga ghost'),
@@ -150,31 +179,6 @@ export function registerImportChecks(
             'TIMESTAMP: il record con sorgente più vecchia non doveva essere aggiornato'
           );
         }
-      }
-    );
-
-  if (scope !== 'file-singolo')
-    runner.add(
-      groupName('import.policy', 'TIMESTAMP degrada a OVERWRITE senza colonna target'),
-      sample.sampleSpreadsheetUrl,
-      () => {
-        if (readAsl().some((row) => Object.prototype.hasOwnProperty.call(row, 'DATA_MODIFICA'))) {
-          throw new ValidationError(
-            'TIMESTAMP fallback: ASL non deve avere una colonna DATA_MODIFICA nel fixture'
-          );
-        }
-        const result = avviaImportazioneDataDriven(container, CONF_IMP_TIMESTAMP_FALLBACK);
-        assertSuccessful(result, 'TIMESTAMP fallback');
-        if (result.inseriti + result.aggiornati !== 1) {
-          throw new ValidationError(
-            `TIMESTAMP fallback: attesa una riga dal fallback OVERWRITE, ricevute inseriti=${result.inseriti}, aggiornati=${result.aggiornati}`
-          );
-        }
-        assertOre(
-          findAslRow(readAsl(), 'e2ealunno43@onlinetest.aldo.local', 'TIMESTAMP fallback'),
-          999,
-          'TIMESTAMP fallback OVERWRITE'
-        );
       }
     );
 

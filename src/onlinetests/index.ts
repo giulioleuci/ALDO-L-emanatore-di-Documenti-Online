@@ -73,7 +73,7 @@ export const PROP_ONLINETEST_FIXTURE_VERSION = 'ALDO_ONLINETEST_FIXTURE_VERSION'
 /** Real non-Sheets artifact used by the CERCA_DOCUMENTI fail-soft sentinel. */
 export const PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID =
   'ALDO_ONLINETEST_STATIC_ATTACHMENT_FILE_ID';
-const REQUIRED_ONLINETEST_FIXTURE_VERSION = 2;
+const REQUIRED_ONLINETEST_FIXTURE_VERSION = 3;
 
 interface FixtureSpreadsheetService {
   getRanges(spreadsheetId: string, range: string): unknown[][];
@@ -465,6 +465,14 @@ function matchingHeaderIndices(header: string[], target: string): number[] {
   return indices;
 }
 
+/**
+ * Reconciles the versioned persisted E2E fixture through a temporary ALDO container.
+ * The reconciliation is an idempotent repair, not a one-shot upgrade: the ASL imports
+ * recreate `ASL.DATA_MODIFICA` on every run (the library passes unmapped source columns
+ * through), so gating the repair on a version change left the fixture dirty for the next
+ * run. It never purges append-only history; callers must reset ALDO and build their final
+ * consumer container after this function returns.
+ */
 function migrateResolvedPersistedE2eFixture(
   sample: SharedTestDatabase,
   properties: IPropertiesFacade,
@@ -515,30 +523,6 @@ function migrateResolvedPersistedE2eFixture(
     );
   }
 
-  if (previousVersion === REQUIRED_ONLINETEST_FIXTURE_VERSION) {
-    if (missingMaterie.length > 0) {
-      throw new ConfigurationError(
-        `Fixture E2E v${REQUIRED_ONLINETEST_FIXTURE_VERSION} non valida: MATERIE mancanti ${missingMaterie
-          .map((row) => String(row[COL_MATERIE.ID]))
-          .join(', ')}.`
-      );
-    }
-    if (initialMatches.length === 1) {
-      throw new ConfigurationError(
-        `Fixture E2E v${REQUIRED_ONLINETEST_FIXTURE_VERSION} non valida: ASL.DATA_MODIFICA è ancora presente.`
-      );
-    }
-    if (repairedStaticAttachmentFileId !== null) {
-      properties.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, repairedStaticAttachmentFileId);
-    }
-    return {
-      previousVersion,
-      version: REQUIRED_ONLINETEST_FIXTURE_VERSION,
-      insertedMaterie: [],
-      deletedAslColumn: false
-    };
-  }
-
   let deletedAslColumn = false;
   if (initialMatches.length === 1) {
     const columnIndex = initialMatches[0]!;
@@ -566,7 +550,16 @@ function migrateResolvedPersistedE2eFixture(
   if (repairedStaticAttachmentFileId !== null) {
     properties.set(PROP_ONLINETEST_STATIC_ATTACHMENT_FILE_ID, repairedStaticAttachmentFileId);
   }
-  properties.set(PROP_ONLINETEST_FIXTURE_VERSION, String(REQUIRED_ONLINETEST_FIXTURE_VERSION));
+  // Only touch the version property when something actually changed — the ASL imports
+  // recreate DATA_MODIFICA on every run, so this repair runs unconditionally even at the
+  // required version, but a no-op run at the required version must stay a true no-op.
+  const repaired =
+    previousVersion !== REQUIRED_ONLINETEST_FIXTURE_VERSION ||
+    insertedMaterie.length > 0 ||
+    deletedAslColumn;
+  if (repaired) {
+    properties.set(PROP_ONLINETEST_FIXTURE_VERSION, String(REQUIRED_ONLINETEST_FIXTURE_VERSION));
+  }
   return {
     previousVersion,
     version: REQUIRED_ONLINETEST_FIXTURE_VERSION,

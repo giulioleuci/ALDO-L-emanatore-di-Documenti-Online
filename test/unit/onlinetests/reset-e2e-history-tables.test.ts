@@ -224,7 +224,7 @@ test('repairs an absent attachment property only from configured E2E_MAIL_STATIC
 
 test('persists a valid v2 attachment repair once, then leaves the invariant-valid fixture untouched', () => {
   const adapter = new SheetDbAdapter(libDb(baseSeed()));
-  const properties = recordingProperties('2', null);
+  const properties = recordingProperties('3', null);
   const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
   const getFiles = jest.fn(() => ({
     id: 'configured-static-document',
@@ -298,7 +298,7 @@ test('migrates a missing INTERPRET.FLAUTO row and exact trimmed ASL header witho
   expect(result.insertedMaterie).toEqual(['INTERPRET.FLAUTO']);
   expect(result.deletedAslColumn).toBe(true);
   expect(spreadsheetService.deleteColumn).toHaveBeenCalledWith('sample', 'ASL', 4);
-  expect(properties.set).toHaveBeenCalledWith(PROP_ONLINETEST_FIXTURE_VERSION, '2');
+  expect(properties.set).toHaveBeenCalledWith(PROP_ONLINETEST_FIXTURE_VERSION, '3');
   expect(save).toHaveBeenCalledTimes(1);
   expect(adapter.table(TABLE.LOG_MAIL).findAll()).toHaveLength(2);
   expect(adapter.table(TABLE.LOG_DOCS).findAll()).toHaveLength(2);
@@ -325,29 +325,42 @@ test('a second verified migration run performs no persisted mutation', () => {
 
   const result = migratePersistedE2eFixture(overrides);
 
-  expect(result).toMatchObject({ insertedMaterie: [], deletedAslColumn: false, version: 2 });
+  expect(result).toMatchObject({ insertedMaterie: [], deletedAslColumn: false, version: 3 });
   expect(adapter.table(TABLE.MATERIE).findAll()).toHaveLength(rowCount);
   expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
   expect(properties.set).not.toHaveBeenCalled();
   expect(save).not.toHaveBeenCalled();
 });
 
-test('a required-version fixture missing INTERPRET.FLAUTO fails verification without mutation', () => {
+test('reinserisce le MATERIE canoniche mancanti alla versione corrente', () => {
   const adapter = new SheetDbAdapter(libDb(baseSeed(['INTERPRET.FLAUTO'])));
-  const properties = recordingProperties('2');
+  const properties = recordingProperties('3');
   const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE']);
 
-  expect(() =>
-    migratePersistedE2eFixture(migrationOverrides(adapter, properties, spreadsheetService))
-  ).toThrow(/INTERPRET\.FLAUTO/);
-  expect(properties.set).not.toHaveBeenCalled();
-  expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
+  const result = migratePersistedE2eFixture(
+    migrationOverrides(adapter, properties, spreadsheetService)
+  );
+
+  expect(result.insertedMaterie).toEqual(['INTERPRET.FLAUTO']);
   expect(
     adapter
       .table(TABLE.MATERIE)
       .findAll()
       .some((row) => row[COL_MATERIE.ID] === 'INTERPRET.FLAUTO')
-  ).toBe(false);
+  ).toBe(true);
+});
+
+test('ripara ASL.DATA_MODIFICA anche quando la versione fixture è già quella richiesta', () => {
+  const adapter = new SheetDbAdapter(libDb(baseSeed()));
+  const properties = recordingProperties('3');
+  const spreadsheetService = physicalSpreadsheet(['STUDENTE', 'ANNO', 'ORE', 'DATA_MODIFICA']);
+
+  const result = migratePersistedE2eFixture(
+    migrationOverrides(adapter, properties, spreadsheetService)
+  );
+
+  expect(result.deletedAslColumn).toBe(true);
+  expect(spreadsheetService.deleteColumn).toHaveBeenCalledWith(expect.any(String), 'ASL', 4);
 });
 
 test('treats zero DATA_MODIFICA physical headers as already migrated', () => {
@@ -361,7 +374,7 @@ test('treats zero DATA_MODIFICA physical headers as already migrated', () => {
 
   expect(result.deletedAslColumn).toBe(false);
   expect(spreadsheetService.deleteColumn).not.toHaveBeenCalled();
-  expect(properties.set).toHaveBeenCalledWith(PROP_ONLINETEST_FIXTURE_VERSION, '2');
+  expect(properties.set).toHaveBeenCalledWith(PROP_ONLINETEST_FIXTURE_VERSION, '3');
 });
 
 test('preserves an existing canonical MATERIE row instead of rewriting it', () => {

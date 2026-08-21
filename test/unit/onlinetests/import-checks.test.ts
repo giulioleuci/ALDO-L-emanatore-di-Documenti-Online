@@ -84,8 +84,14 @@ test('runs FILE_SINGOLO policies through the synchronous launcher and verifies t
         carenze[0]![COL_CARENZE.DATA_MODIFICA] = '2026-07-02';
         return { inseriti: 0, aggiornati: 1, saltati: 1, ghost: 0, errori: [] };
       case 'E2E_IMP_TIMESTAMP_FALLBACK':
-        rows[0]![COL_ASL.ORE] = 999;
-        return { inseriti: 0, aggiornati: 1, saltati: 0, ghost: 0, errori: [] };
+        // Runs before CONF_IMP_ASL now (Task 6), so it must not assume the ASL row
+        // already exists — it seeds it itself, exactly as the fallback OVERWRITE
+        // would against the pre-seeded fixture row.
+        rows.splice(0, rows.length, {
+          [COL_ASL.STUDENTE]: 'e2ealunno43@onlinetest.aldo.local',
+          [COL_ASL.ORE]: 999
+        });
+        return { inseriti: 1, aggiornati: 0, saltati: 0, ghost: 0, errori: [] };
       case CONF_IMP_NOHEADER:
         rows.splice(0, rows.length, {
           [COL_ASL.STUDENTE]: 'e2ealunno52@onlinetest.aldo.local',
@@ -120,10 +126,10 @@ test('runs FILE_SINGOLO policies through the synchronous launcher and verifies t
   expect(runner.checks).toHaveLength(7);
   expect(runner.checks.every((check) => check.error === undefined)).toBe(true);
   expect(jest.mocked(avviaImportazioneDataDriven).mock.calls.map(([, id]) => id)).toEqual([
+    'E2E_IMP_TIMESTAMP_FALLBACK',
     CONF_IMP_ASL,
     CONF_IMP_IGNORE,
     CONF_IMP_TIMESTAMP,
-    'E2E_IMP_TIMESTAMP_FALLBACK',
     CONF_IMP_NOHEADER,
     CONF_IMP_DISABLED,
     CONF_IMP_MISSING_FILE,
@@ -136,6 +142,31 @@ test('runs FILE_SINGOLO policies through the synchronous launcher and verifies t
   ]);
   expect(get).toHaveBeenCalledWith('db');
   expect(TABLE.ASL).toBe('ASL');
+});
+
+test('registra il fallback TIMESTAMP prima degli import che scrivono DATA_MODIFICA su ASL', () => {
+  const get = jest.fn(() => ({
+    table: () => ({ findAll: () => [] })
+  }));
+  const container = { get } as unknown as ServiceContainer;
+  jest.mocked(avviaImportazioneDataDriven).mockReturnValue({
+    inseriti: 0,
+    aggiornati: 0,
+    saltati: 0,
+    ghost: 0,
+    errori: []
+  });
+
+  const runner = new ImmediateRunner();
+  registerImportChecks(runner as never, container, {
+    sampleSpreadsheetUrl: 'https://example.test/sample',
+    testMode: true
+  } as never);
+
+  const names = runner.checks.map((check) => check.name);
+  expect(
+    names.indexOf('import.policy::TIMESTAMP degrada a OVERWRITE senza colonna target')
+  ).toBeLessThan(names.indexOf('import.fileSingolo::OVERWRITE, intestazioni e riga ghost'));
 });
 
 const CARTELLE_ELIGIBLE_CLASSES = ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C'];

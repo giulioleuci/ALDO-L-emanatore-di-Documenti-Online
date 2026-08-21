@@ -323,9 +323,10 @@ export class EmailNotificationService {
     if (this.monitor !== undefined && jobId !== undefined) {
       const monitor = this.monitor;
       pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
-      pipeline.afterStep((step, _ctx, result) =>
-        monitor.logStepComplete(jobId, step.getName(), result.success)
-      );
+      pipeline.afterStep((step, _ctx, result) => {
+        if (result.skipped === true) monitor.logStepSkipped(jobId, step.getName());
+        else monitor.logStepComplete(jobId, step.getName(), result.success);
+      });
     }
 
     return pipeline;

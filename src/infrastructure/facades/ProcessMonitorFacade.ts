@@ -13,6 +13,8 @@ export interface IProcessMonitor {
   logStepStart(jobId: string, stepName: string): void;
   logStepComplete(jobId: string, stepName: string, success: boolean): void;
   logStepSkipped(jobId: string, stepName: string): void;
+  /** Reads the job state the library persists (cache first, ScriptProperties fallback) — used by the online telemetry probe. */
+  getJobState(jobId: string): unknown;
   completeJob(jobId: string, message?: string): void;
   setError(jobId: string, error: unknown): void;
 }
@@ -37,6 +39,9 @@ export class ProcessMonitorFacade implements IProcessMonitor {
   }
   logStepSkipped(jobId: string, stepName: string): void {
     this.monitor.logStepSkipped(jobId, stepName);
+  }
+  getJobState(jobId: string): unknown {
+    return this.monitor.getJobState(jobId);
   }
   completeJob(jobId: string, message?: string): void {
     this.monitor.completeJob(jobId, message);

@@ -26,6 +26,7 @@ import {
   type CacheIsolationDeps
 } from './checks/cacheIsolamentoChecks';
 import { registerPermessiChecks } from './checks/permessiChecks';
+import { registerProcessMonitorChecks } from './checks/processMonitorChecks';
 import { registerDocumentiChecks, type DocumentiCheckScope } from './checks/documentiChecks';
 import { registerEmailChecks } from './checks/emailChecks';
 import {
@@ -179,6 +180,7 @@ export interface FullOnlineTestRegistrations {
   aclReali: RegisterSharedChecks;
   cacheIsolamento: RegisterCacheIsolationChecks;
   permessi: RegisterSharedChecks;
+  processMonitor: RegisterSharedChecks;
 }
 
 /** Injectable seams beyond reading the persisted dataset, kept separate from the real-GAS defaults. */
@@ -236,7 +238,8 @@ const futureScenarioRegistrations: FullOnlineTestRegistrations = {
   supplenzeRuoli: registerSupplenzeRuoliScenarioChecks,
   aclReali: registerAclRealiChecks,
   cacheIsolamento: registerCacheIsolamentoChecks,
-  permessi: registerPermessiChecks
+  permessi: registerPermessiChecks,
+  processMonitor: registerProcessMonitorChecks
 };
 
 const E2E_ROOT_FOLDER_NAME = '_ALDO_E2E_ROOT';
@@ -406,7 +409,8 @@ const ALL_ONLINE_TEST_GROUPS: ReadonlyArray<keyof FullOnlineTestRegistrations> =
   'supplenzeRuoli',
   'aclReali',
   'cacheIsolamento',
-  'permessi'
+  'permessi',
+  'processMonitor'
 ];
 
 export interface PersistedE2eFixtureMigrationResult {
@@ -732,10 +736,13 @@ export function runOnlineTestsBatch3(
 export function executeOnlineTestsBatch4(
   overrides: Partial<FullOnlineTestDeps> = {}
 ): OnlineTestReport {
-  return executeOnlineTestsBatch(['supplenzeRuoli', 'cacheIsolamento', 'permessi'], overrides);
+  return executeOnlineTestsBatch(
+    ['supplenzeRuoli', 'cacheIsolamento', 'permessi', 'processMonitor'],
+    overrides
+  );
 }
 
-/** GAS Run-dropdown entry point: supplenze/ruoli + isolamento cache + permessi attivi. */
+/** GAS Run-dropdown entry point: supplenze/ruoli + isolamento cache + permessi attivi + telemetria monitor. */
 export function runOnlineTestsBatch4(
   execute: () => OnlineTestReport = executeOnlineTestsBatch4,
   logger: LoggerService = ServiceFactory.getLogger()

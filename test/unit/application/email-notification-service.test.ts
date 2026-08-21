@@ -1281,6 +1281,49 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     expect(result.durationMs).toEqual(expect.any(Number));
   });
 
+  test('registra gli step SKIPPED come saltati, non come completati', () => {
+    const monitor = new FakeProcessMonitor();
+    const { db, gmail } = wire([
+      {
+        ID: 'CDC_NEVER',
+        OGGETTO: 'X',
+        PROCESSO: 'PER_CDC',
+        BOX_CFG: null,
+        TESTO: '',
+        SUPPLENTI: 'SOLO_TITOLARI',
+        NOREPLY: false,
+        COLORE_HEADER: '',
+        CONDIZIONE: 'false',
+        POST_PROCESSO: null
+      }
+    ]);
+    const service = new EmailNotificationService(fullDeps(db, gmail, { monitor }));
+
+    service.sendToTarget(
+      'CDC_NEVER',
+      {
+        tipo: 'cdc',
+        tipoTarget: 'classe',
+        target: '5A',
+        emails: ['rossi@school.it'],
+        classiCompetenza: ['5A']
+      },
+      'job1'
+    );
+
+    expect(monitor.steps).toContainEqual({
+      jobId: 'job1',
+      stepName: 'ComposeEmail',
+      event: 'skipped'
+    });
+    expect(monitor.steps).not.toContainEqual({
+      jobId: 'job1',
+      stepName: 'ComposeEmail',
+      event: 'complete',
+      success: true
+    });
+  });
+
   test('sendToTarget sends and returns sent/errors/skipped:false on a successful run', () => {
     const { service, gmail } = wire();
     const result = service.sendToTarget('CDC_OTTOBRE', {

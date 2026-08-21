@@ -11,6 +11,7 @@ import type { GeneratorStrategy } from '../../../src/application/strategies/Gene
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
+import { FakeProcessMonitor } from '../../fakes/FakeProcessMonitor';
 import { fixtureTables } from '../../fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
@@ -46,6 +47,7 @@ function wire(
     registry?: Map<string, GeneratorStrategy>;
     db?: FakeDatabase;
     now?: Date;
+    monitor?: FakeProcessMonitor;
   } = {}
 ) {
   const db = options.db ?? new FakeDatabase(tables);
@@ -64,7 +66,8 @@ function wire(
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
-    now: options.now ?? new Date('2026-07-01T09:00:00Z')
+    now: options.now ?? new Date('2026-07-01T09:00:00Z'),
+    monitor: options.monitor
   });
   return { db, drive, templates, service };
 }
@@ -131,6 +134,27 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
       status: 'SKIPPED'
     });
     expect(second.durationMs).toEqual(expect.any(Number));
+  });
+
+  test('registra gli step SKIPPED come saltati, non come completati', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC[0] = { ...tables.CONF_DOC[0]!, CONDIZIONE: 'false' };
+    const monitor = new FakeProcessMonitor();
+    const { service } = wire(tables, { monitor });
+
+    service.generateForClasse(ClasseId.of('5A'), 'CD1', 'job1');
+
+    expect(monitor.steps).toContainEqual({
+      jobId: 'job1',
+      stepName: 'PrepareInfrastructure',
+      event: 'skipped'
+    });
+    expect(monitor.steps).not.toContainEqual({
+      jobId: 'job1',
+      stepName: 'PrepareInfrastructure',
+      event: 'complete',
+      success: true
+    });
   });
 
   test('generates one document per class in a shared folder and skips the same class retry', () => {

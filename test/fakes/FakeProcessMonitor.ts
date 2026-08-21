@@ -33,6 +33,9 @@ export class FakeProcessMonitor implements IProcessMonitor {
   logStepSkipped(jobId: string, stepName: string): void {
     this.steps.push({ jobId, stepName, event: 'skipped' });
   }
+  getJobState(): unknown {
+    return null;
+  }
   completeJob(jobId: string, message?: string): void {
     this.completed.push(message === undefined ? { jobId } : { jobId, message });
   }

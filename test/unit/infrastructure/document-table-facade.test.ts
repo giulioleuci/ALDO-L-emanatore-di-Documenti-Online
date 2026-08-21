@@ -18,6 +18,7 @@ class FakeDocumentBuilder {
 
 class FakeDocumentService {
   builders: Record<string, FakeDocumentBuilder> = {};
+  standardDocs: Record<string, { saveAndClose?: () => void }> = {};
   scanResult: DocumentScanResult = { tables: [], textMatches: [] };
   insertTableAtMarkerCalls: Array<{
     documentId: string;
@@ -32,6 +33,9 @@ class FakeDocumentService {
   }
   scanDocumentStructure(): DocumentScanResult {
     return this.scanResult;
+  }
+  openStandard(documentId: string): { saveAndClose?: () => void } {
+    return this.standardDocs[documentId] ?? {};
   }
   insertTableAtMarker(
     documentId: string,
@@ -116,6 +120,25 @@ describe('DocumentTableFacade (10 §9)', () => {
     facade.insertTableAtMarker('doc1', '{{TABELLA:sheet_1}}', []);
 
     expect(documents.insertTableAtMarkerCalls).toEqual([]);
+  });
+
+  test('flush saves and closes the DocumentApp model opened by table insertion', () => {
+    const saveAndClose = jest.fn();
+    const documents = new FakeDocumentService();
+    documents.standardDocs = { doc1: { saveAndClose } };
+    const facade = new DocumentTableFacade(documents as never);
+
+    facade.flush('doc1');
+
+    expect(saveAndClose).toHaveBeenCalledTimes(1);
+  });
+
+  test('flush does not throw when the document does not expose saveAndClose', () => {
+    const documents = new FakeDocumentService();
+    documents.standardDocs = { doc1: {} };
+    const facade = new DocumentTableFacade(documents as never);
+
+    expect(() => facade.flush('doc1')).not.toThrow();
   });
 
   test('throws when the builder reports failure', () => {

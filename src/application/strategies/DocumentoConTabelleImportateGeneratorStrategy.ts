@@ -20,7 +20,8 @@ function cellToString(cell: unknown): string {
  * stripped marker resolves to nothing rather than an empty-string
  * artifact). Insertion happens BEFORE marker removal: `insertTableAtMarker`
  * locates the marker via `findText`, so removing it first would make it
- * unfindable for positional insertion.
+ * unfindable for positional insertion. Its DocumentApp model is then flushed
+ * before marker removal and generic rendering issue Docs-API writes.
  */
 export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGenericoGeneratorStrategy {
   private readonly sheetReader: SheetByIdStrategy;
@@ -36,11 +37,20 @@ export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGene
   }
 
   override render(fileId: string, cdu: Cdu): void {
-    for (const placeholder of this.tables.findTablePlaceholders(fileId)) {
+    const placeholders = this.tables.findTablePlaceholders(fileId);
+    const inserted: string[] = [];
+    for (const placeholder of placeholders) {
       const data = this.readSheetAsStrings(placeholder.sheetFileId);
       if (data.length > 1) {
         this.tables.insertTableAtMarker(fileId, placeholder.marker, data, { headerRow: true });
+        inserted.push(placeholder.marker);
       }
+    }
+    // insertTableAtMarker writes through DocumentApp and never saves; removeText and
+    // the generic pass below write through the Docs API. Flush here or the DocumentApp
+    // model auto-saves last and reverts both of them (2026-08-21 batch 1 failure).
+    if (inserted.length > 0) this.tables.flush(fileId);
+    for (const placeholder of placeholders) {
       this.tables.removeText(fileId, placeholder.marker);
     }
     super.render(fileId, cdu);

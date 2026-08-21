@@ -22,11 +22,22 @@ export interface IDocumentTableFacade {
     data: string[][],
     options?: { headerRow?: boolean }
   ): void;
+  /**
+   * Saves and closes the DocumentApp model left open by `insertTableAtMarker`
+   * (the library never flushes it). Mandatory before any Docs-API write on the
+   * same file: otherwise GAS auto-saves the stale model at the end of the
+   * execution and silently reverts every batchUpdate edit.
+   */
+  flush(fileId: string): void;
 }
 
 const TABELLA_PATTERN = /\{\{TABELLA:([^}]+)\}\}/g;
 
-/** Real DocumentService-backed facade (10 §9, 08 §3.4) — see IDocumentTableFacade for the capability limits this composes around. */
+/**
+ * Real DocumentService-backed facade (10 §9, 08 §3.4). Positional insertion
+ * opens a DocumentApp model, which must be flushed before the following Docs-API
+ * marker removals and generic template render pass.
+ */
 export class DocumentTableFacade implements IDocumentTableFacade {
   constructor(private readonly documents: DocumentService) {}
 
@@ -64,5 +75,10 @@ export class DocumentTableFacade implements IDocumentTableFacade {
   ): void {
     if (data.length === 0) return;
     this.documents.insertTableAtMarker(fileId, marker, data, options);
+  }
+
+  flush(fileId: string): void {
+    const doc = this.documents.openStandard(fileId) as { saveAndClose?: () => void };
+    if (typeof doc?.saveAndClose === 'function') doc.saveAndClose();
   }
 }

@@ -27,7 +27,7 @@ import {
   CONF_MAIL_STORICO,
   EMAIL_TEST_SAFE
 } from './fixtures';
-import { e2eAlunnoEmail, e2eDocenteEmail, MATERIE_PUNTATE } from './fixtures';
+import { e2eAlunnoEmail, e2eDocenteEmail } from './fixtures';
 import { buildMaterieRows } from './SharedTestDatabaseBuilder';
 import {
   COL_ALUNNI,
@@ -217,28 +217,15 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_MATERIE.PRINCIPALE]: '',
     [COL_MATERIE.SPECIFICITA]: ''
   });
-  // Every dotted column in the shared CLASSI header must exist in this year's
-  // MATERIE catalog, populated or not — ClasseRepository.getTeachingSlots resolves
-  // the catalog id for the ones that are populated, and the E2E storico sheets get
-  // the same full header as the current-year sheet.
-  for (const row of buildMaterieRows().filter((materia) =>
-    MATERIE_PUNTATE.includes(String(materia[COL_MATERIE.ID]))
-  )) {
+  // The prior-year CLASSI rows below carry the same header as the current-year sheet
+  // (MAT, GST, INF, INF.itp, INTERPRET.CHITARRA[.itp]), and ClasseRepository builds its
+  // cattedra-column map from MATERIE: a subject missing here makes its column invisible,
+  // so the storico continuity providers silently lose the INF titolare/ITP
+  // (2026-08-21 batch 3). Seed the full current-year catalog — buildMaterieRows already
+  // carries STO's EVOLUZIONE mapping — and keep GST, which is storico-only.
+  for (const row of buildMaterieRows()) {
     prior.appendRow(TABLE.MATERIE, row);
   }
-  prior.appendRow(TABLE.MATERIE, {
-    [COL_MATERIE.ID]: 'STO',
-    [COL_MATERIE.NOME]: 'Storia',
-    [COL_MATERIE.SINTESI]: 'STO',
-    [COL_MATERIE.COLORE_1]: '#1565C0',
-    [COL_MATERIE.COLORE_2]: '#90CAF9',
-    [COL_MATERIE.SIMBOLO]: 'S',
-    [COL_MATERIE.ESAME_CFG]: '',
-    [COL_MATERIE.EVOLUZIONE]: JSON.stringify({ GST: [1, 2], STO: [3, 4, 5] }),
-    [COL_MATERIE.IS_RELIGIONE_ALT]: false,
-    [COL_MATERIE.PRINCIPALE]: '',
-    [COL_MATERIE.SPECIFICITA]: ''
-  });
   prior.appendRow(TABLE.CARENZE, {
     [COL_CARENZE.STUDENTE]: alunno,
     [COL_CARENZE.PROGRESSIVO]: 1,

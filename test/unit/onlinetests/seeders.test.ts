@@ -220,6 +220,17 @@ test('seedStorico registra ogni materia puntata usata dalle intestazioni CLASSI'
   expect(ids).toEqual(expect.arrayContaining(MATERIE_PUNTATE));
 });
 
+test('seedStorico seeds every current-year subject so prior cattedra columns resolve', () => {
+  const prior = new RecordingSpreadsheet('prior');
+  seedStorico(prior, ANNI_PRECEDENTI[0]);
+
+  const ids = prior.rows[TABLE.MATERIE]!.map((row) => String(row[COL_MATERIE.ID]));
+  for (const expected of ['INF', 'MAT', 'STO', 'GST', 'INTERPRET.CHITARRA']) {
+    expect(ids).toContain(expected);
+  }
+  expect(ids.filter((id) => id === 'STO')).toHaveLength(1);
+});
+
 test('seeds one ASL folder record and real sheets for each eligible class only', () => {
   const drive = new FakeDriveFacade();
   const sample = new RecordingSpreadsheet('sample');

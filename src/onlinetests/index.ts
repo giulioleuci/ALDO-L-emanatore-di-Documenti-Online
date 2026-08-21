@@ -754,6 +754,10 @@ export interface ResetE2eHistoryTablesResult {
 /**
  * Explicit pre-Batch-1 launcher: migrates the persisted fixture, rebuilds the final container,
  * then deletes every append-only row from `LOG_MAIL`/`LOG_DOCS`. No other table is purged.
+ *
+ * ORDER MATTERS. Run it BEFORE batch 1 and never between batches: batches 2–4 consume the
+ * LOG_DOCS/LOG_FOLD artifacts batch 1 produces (the `documenti`/`cartelle` boxes of every
+ * CONF_MAIL read them). Running it after batch 1 makes every email skip with zero boxes.
  */
 export function resetE2eHistoryTables(
   overrides: Partial<FullOnlineTestDeps> = {}

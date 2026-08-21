@@ -63,6 +63,25 @@ export function registerEmailChecks(
       .filter((row) => row[COL_LOG_MAIL.PATTERN] === patternId);
 
   runner.add(
+    groupName('email.prerequisiti', 'documenti di batch 1 presenti'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const verbali = db
+        .table(TABLE.LOG_DOCS)
+        .findAll()
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_VERBALE);
+      if (verbali.length === 0) {
+        throw new ValidationError(
+          'Batch 1 non eseguito su questa fixture: LOG_DOCS non contiene documenti ' +
+            `${CONF_DOC_VERBALE}, quindi il box "documenti" di ogni CONF_MAIL resta vuoto e ` +
+            'ogni invio viene saltato. Esegui resetE2eHistoryTables PRIMA di batch 1, poi ' +
+            'batch 1, poi batch 2.'
+        );
+      }
+    }
+  );
+
+  runner.add(
     groupName('email.invio', 'batch test mode + allegati LOG_MAIL'),
     sample.sampleSpreadsheetUrl,
     () => {

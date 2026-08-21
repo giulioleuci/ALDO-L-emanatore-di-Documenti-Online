@@ -111,10 +111,24 @@ describe('registerEmailChecks', () => {
     expect(launches.every((launch) => launch.testRecipient === AUTHENTICATED_OPERATOR)).toBe(true);
     expect(launches.map((launch) => launch.patternId)).toContain('E2E_MAIL_PIANI');
     expect(runner.checks.map((check) => check.name)).toEqual([
+      expect.stringContaining('email.prerequisiti'),
       expect.stringContaining('email.invio'),
       expect.stringContaining('email.sicurezza'),
       expect.stringContaining('email.duplicati')
     ]);
+  });
+
+  it('fallisce subito con un messaggio esplicito se mancano i documenti di batch 1', () => {
+    const db = databaseFor([]);
+    const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
+
+    const runner = new ImmediateRunner();
+    registerEmailChecks(runner as never, container, sample, AUTHENTICATED_OPERATOR);
+
+    expect(runner.checks[0]?.name).toContain('email.prerequisiti');
+    expect(runner.checks[0]?.error?.message).toMatch(
+      /Batch 1 non eseguito su questa fixture.*resetE2eHistoryTables/
+    );
   });
 
   it('refuses to schedule any email batch when MASTER.TEST_MODE is false', () => {
@@ -142,7 +156,14 @@ describe('registerEmailChecks', () => {
     'rejects LOG_MAIL rows with %s',
     (_caseName, recipients, status, logicalTargetId) => {
       const rows: Record<string, unknown>[] = [];
-      const db = databaseFor(rows);
+      const db = databaseFor(rows, [
+        {
+          [COL_LOG_DOCS.ID]: 'document-id',
+          [COL_LOG_DOCS.ID_GEN]: 'E2E_VERBALE',
+          [COL_LOG_DOCS.TIPO]: 'VERBALE',
+          [COL_LOG_DOCS.LINK]: 'https://drive.example/document-id'
+        }
+      ]);
       const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
       jest.mocked(avviaInvioNotificheDataDriven).mockImplementation((_container, patternId) => {
         rows.push({
@@ -162,7 +183,7 @@ describe('registerEmailChecks', () => {
       const runner = new ImmediateRunner();
       registerEmailChecks(runner as never, container, sample, AUTHENTICATED_OPERATOR);
 
-      expect(runner.checks[0]?.error?.message).toContain('LOG_MAIL testMode non sicuro o incompleto');
+      expect(runner.checks[1]?.error?.message).toContain('LOG_MAIL testMode non sicuro o incompleto');
     }
   );
 
@@ -204,7 +225,7 @@ describe('registerEmailChecks', () => {
     const runner = new ImmediateRunner();
     registerEmailChecks(runner as never, container, sample, EMAIL_TEST_SAFE);
 
-    expect(runner.checks[0]?.error?.message).toContain(
+    expect(runner.checks[1]?.error?.message).toContain(
       'non corrispondono ai VERBALE/LOG_FOLD persistiti'
     );
   });

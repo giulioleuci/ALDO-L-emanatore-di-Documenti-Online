@@ -866,7 +866,7 @@ describe('online test batches', () => {
     expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
   });
 
-  it('locks the 104-scenario acceptance contract across all four batches', () => {
+  it('locks the 105-scenario acceptance contract across all four batches', () => {
     const batch1 = recordActualBatchScenarioNames(
       executeOnlineTestsBatch1,
       propertiesWithoutCacheFixture()
@@ -881,9 +881,9 @@ describe('online test batches', () => {
     );
     const batch4 = recordActualBatchScenarioNames(executeOnlineTestsBatch4, properties());
     const allNames = [...batch1, ...batch2, ...batch3, ...batch4];
-    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 15, 27, 36]);
-    expect(allNames).toHaveLength(104);
-    expect(new Set(allNames).size).toBe(104);
+    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 16, 27, 36]);
+    expect(allNames).toHaveLength(105);
+    expect(new Set(allNames).size).toBe(105);
     expect(allNames).toContain(
       'E2E scenario 10b: genera documento complesso classe articolata (3C)'
     );

@@ -511,6 +511,58 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     expect(cdu.meta.parametriInput.materiaCorrente).toBeNull();
   });
 
+  test('non tenta la protezione quando ogni editor di colonna è un principal sintetico', () => {
+    const tables = fixtureTables();
+    const classi = tables['CLASSI'] as Array<Record<string, unknown>>;
+    const classe5A = classi.find((row) => row['ID'] === '5A')!;
+    // Every source of editors for 5A's dynamic columns (coordinator, MATE, FISI, and the
+    // IRC/ALT special column) resolves to the same synthetic principal, so every protection
+    // request ends up all-synthetic and the strategy must skip all of them.
+    classe5A['COORD'] = 'e2edocente1@onlinetest.aldo.local';
+    classe5A['IRC'] = 'e2edocente1@onlinetest.aldo.local';
+    classe5A['MATE'] = 'e2edocente1@onlinetest.aldo.local';
+    classe5A['FISI'] = 'e2edocente1@onlinetest.aldo.local';
+    (tables['DOCENTI'] as Array<Record<string, unknown>>).push({
+      EMAIL: 'e2edocente1@onlinetest.aldo.local',
+      COGNOME: 'SINTETICO',
+      NOME: 'E2E',
+      GENERE: 'M',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    });
+    const db = new FakeDatabase(tables);
+    const cdu = buildCdu(db, '5A');
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const warn = jest.spyOn(LoggerService.prototype, 'warn');
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      composeRisolutoreRuoli(db)
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    expect(sheets.protectCalls).toHaveLength(0);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('principal sintetici'));
+  });
+
+  test('protegge normalmente quando almeno un editor è reale', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = buildCdu(db, '5A');
+    const sheets = new FakeSpreadsheetService(sheetInfo());
+    const strategy = new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      new FakeTemplateEngine(),
+      composeRisolutoreRuoli(db)
+    );
+
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
+
+    expect(sheets.protectCalls.length).toBeGreaterThan(0);
+  });
+
   test('uses PERMESSI.regolaSupplente.file for protected ranges even when PARAMETRI conflicts', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');

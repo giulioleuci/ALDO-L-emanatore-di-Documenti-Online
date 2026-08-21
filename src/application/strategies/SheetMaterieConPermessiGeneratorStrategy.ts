@@ -11,8 +11,9 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 import type { RisolutoreRuoliService } from '../services/RisolutoreRuoliService';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
+import { SYNTHETIC_DOMAIN, isSyntheticPrincipal } from '../../config/syntheticPrincipals';
 
-function protectionGestioneSupplenti(config: ConfigurazioneDocumento): GestioneSupplenti {
+export function protectionGestioneSupplenti(config: ConfigurazioneDocumento): GestioneSupplenti {
   const permissions = config.getPermessi();
   const routing = permissions.regolaSupplente;
   const raw =
@@ -145,18 +146,21 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
    * `MateriaColumn` source item on every non-label column, replacing the
    * previous parallel `siglaOrder` array this class had to reconstruct by
    * hand from the same group-building logic `renderColumns` used.
+   *
+   * Pure resolution, no Sheets call and no synthetic-principal filtering: one
+   * request per data column, in layout order, so a caller that needs to verify
+   * effective-assignment resolution (e.g. an online-test consumer check) can
+   * compare against it 1:1 without the doomed-call skip in `protectColumns`
+   * collapsing the index alignment.
    */
-  private protectColumns(
-    fileId: string,
+  resolveColumnRequests(
     cdu: Cdu,
     sheetName: string,
     layout: SheetColumnLayout[],
     gestioneSupplenti: GestioneSupplenti
-  ): void {
-    const hasDataColumn = layout.some((c) => !c.isLabel);
-    if (!hasDataColumn) return;
+  ): SpreadsheetProtectRequest[] {
     const coordinatori = this.roles.risolvi('COORDINATORI', cdu).map((e) => e.value);
-    const requests = layout
+    return layout
       .map((column) => {
         if (column.isLabel) return null;
         const item = column.item as MateriaColumn | null;
@@ -181,6 +185,32 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
+  }
+
+  private protectColumns(
+    fileId: string,
+    cdu: Cdu,
+    sheetName: string,
+    layout: SheetColumnLayout[],
+    gestioneSupplenti: GestioneSupplenti
+  ): void {
+    const hasDataColumn = layout.some((c) => !c.isLabel);
+    if (!hasDataColumn) return;
+    const allRequests = this.resolveColumnRequests(cdu, sheetName, layout, gestioneSupplenti);
+    // Sheets rejects every @onlinetest.aldo.local principal with "Utente non valido",
+    // and GasResilienceLib retries three times with backoff before giving up: 58 doomed
+    // calls and ~90 s per suite in the 2026-08-21 run. Skip them, log once, keep every
+    // real principal strict.
+    const requests = allRequests.filter((request) => {
+      const users = request.editors?.users ?? [];
+      if (users.length > 0 && users.every(isSyntheticPrincipal)) {
+        this.logger.warn(
+          `SHEET_CON_MATERIE_E_PERMESSI: protezione ${request.range} saltata — solo principal sintetici (${SYNTHETIC_DOMAIN})`
+        );
+        return false;
+      }
+      return true;
+    });
     if (requests.length === 0) return;
     const result = this.sheets.protectRanges(fileId, requests, { onError: 'continue' });
     for (const failure of result.failures ?? []) {

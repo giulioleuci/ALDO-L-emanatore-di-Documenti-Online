@@ -1,6 +1,5 @@
 import { skippedOutcome, type OnlineTestSkippedOutcome } from '../report/OnlineTestReport';
-
-const SYNTHETIC_DOMAIN = '@onlinetest.aldo.local';
+import { SYNTHETIC_DOMAIN } from '../../config/syntheticPrincipals';
 
 /**
  * Classifies the sole non-applicable protected-range outcome: Google Sheets

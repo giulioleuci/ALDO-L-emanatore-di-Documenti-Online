@@ -23,7 +23,10 @@ import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps'
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
-import { SheetMaterieConPermessiGeneratorStrategy } from '../../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
+import {
+  SheetMaterieConPermessiGeneratorStrategy,
+  protectionGestioneSupplenti
+} from '../../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { getCduMateriaAssignmentIdentity } from '../../application/context-engine/CduInternalMetadata';
@@ -498,7 +501,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     'Effective assignment consumers: spreadsheet column ACL recipients',
     sample.sampleSpreadsheetUrl,
     () => {
-      const requests: SpreadsheetProtectRequest[] = [];
+      let capturedLayout: SheetColumnLayout[] = [];
       const sheets = {
         getSheetInfo: (): SpreadsheetSheetInfo[] => [
           {
@@ -509,18 +512,12 @@ export function registerEffectiveAssignmentConsumerChecks(
             gridProperties: { rowCount: 20, columnCount: 20 }
           }
         ],
-        protectRanges: (
-          _spreadsheetId: string,
-          input: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]
-        ): SpreadsheetProtectResult => {
-          requests.push(...(Array.isArray(input) ? input : [input]));
-          return {
-            spreadsheetId: 'matrix-sheet',
-            protectedCount: requests.length,
-            protectedRangeIds: requests.map((_, index) => index),
-            replies: []
-          };
-        }
+        protectRanges: (): SpreadsheetProtectResult => ({
+          spreadsheetId: 'matrix-sheet',
+          protectedCount: 0,
+          protectedRangeIds: [],
+          replies: []
+        })
       } as unknown as SpreadsheetService;
       const templates = {
         processSheet: (
@@ -528,7 +525,7 @@ export function registerEffectiveAssignmentConsumerChecks(
           context: Record<string, unknown>
         ): SheetColumnLayout[] => {
           const groups = materieColonneOf(context);
-          return [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
+          const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
             (item, index) => {
               const header =
                 typeof item['header'] === 'string'
@@ -545,6 +542,8 @@ export function registerEffectiveAssignmentConsumerChecks(
               };
             }
           );
+          capturedLayout = layout;
+          return layout;
         }
       } as unknown as ITemplateEngine;
       const config = ConfigurazioneDocumento.fromData({
@@ -562,12 +561,23 @@ export function registerEffectiveAssignmentConsumerChecks(
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GSHEET'
       });
-      new SheetMaterieConPermessiGeneratorStrategy(
+      const strategy = new SheetMaterieConPermessiGeneratorStrategy(
         sheets,
         new MateriaRepository(db),
         templates,
         roles
-      ).render('matrix-sheet', cdu, config);
+      );
+      strategy.render('matrix-sheet', cdu, config);
+      // Pure resolution, independent of the synthetic-principal skip in `protectColumns`
+      // (2026-08-21 Task 9) — this check verifies assignment routing reaches the ACL layer
+      // correctly, not whether Sheets would accept the call, and every E2E teacher is a
+      // synthetic principal.
+      const requests = strategy.resolveColumnRequests(
+        cdu,
+        'Sheet1',
+        capturedLayout,
+        protectionGestioneSupplenti(config)
+      );
       const coordinatori = new Set(
         classi.getCoordinatori(classe).map((docente) => docente.id ?? '')
       );
@@ -702,25 +712,26 @@ export function registerEffectiveAssignmentConsumerChecks(
         new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(documentCtx);
         assertSameRecipients(`document ACL recipients ${classeId}`, expectedRecipients, permissions, partnerAssignments);
 
-        const requests: SpreadsheetProtectRequest[] = [];
         const columnItems: Array<Record<string, unknown>> = [];
+        let capturedLayout: SheetColumnLayout[] = [];
         const sheets = {
           getSheetInfo: (): SpreadsheetSheetInfo[] => [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }],
-          protectRanges: (_spreadsheetId: string, input: SpreadsheetProtectRequest | SpreadsheetProtectRequest[]): SpreadsheetProtectResult => {
-            requests.push(...(Array.isArray(input) ? input : [input]));
-            return { spreadsheetId: 'matrix-sheet', protectedCount: requests.length, protectedRangeIds: requests.map((_, index) => index), replies: [] };
-          }
+          protectRanges: (): SpreadsheetProtectResult => ({
+            spreadsheetId: 'matrix-sheet', protectedCount: 0, protectedRangeIds: [], replies: []
+          })
         } as unknown as SpreadsheetService;
         const templates = {
           processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
             const groups = materieColonneOf(context);
             const items = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
             columnItems.push(...items);
-            return items.map((item, index) => ({
+            const layout = items.map((item, index) => ({
               sheetName: 'Sheet1', column: index + 1,
               header: typeof item['header'] === 'string' ? item['header'] : typeof item['sigla'] === 'string' ? item['sigla'] : '',
               isLabel: false, item
             }));
+            capturedLayout = layout;
+            return layout;
           }
         } as unknown as ITemplateEngine;
         const sheetConfig = ConfigurazioneDocumento.fromData({
@@ -729,8 +740,17 @@ export function registerEffectiveAssignmentConsumerChecks(
           DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
           GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
         });
-        new SheetMaterieConPermessiGeneratorStrategy(sheets, new MateriaRepository(db), templates, roles).render(
-          `matrix-sheet-${classeId}`, partnerCdu, sheetConfig
+        const partnerStrategy = new SheetMaterieConPermessiGeneratorStrategy(sheets, new MateriaRepository(db), templates, roles);
+        partnerStrategy.render(`matrix-sheet-${classeId}`, partnerCdu, sheetConfig);
+        // Pure resolution, independent of the synthetic-principal skip in `protectColumns`
+        // (2026-08-21 Task 9) — this check verifies assignment routing reaches the ACL layer
+        // correctly, not whether Sheets would accept the call, and every E2E teacher is a
+        // synthetic principal.
+        const requests = partnerStrategy.resolveColumnRequests(
+          partnerCdu,
+          'Sheet1',
+          capturedLayout,
+          protectionGestioneSupplenti(sheetConfig)
         );
         const coordinators = classi.getCoordinatori(partner).flatMap((docente) => docente.id === null ? [] : [docente.id]);
         if (requests.length !== columnItems.length) {

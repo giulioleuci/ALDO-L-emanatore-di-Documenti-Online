@@ -168,6 +168,13 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   if (deps.spreadsheets !== undefined) {
     c.register('spreadsheets', () => deps.spreadsheets!);
   }
+  // Same optional-dependency shape as `spreadsheets`: GasProcessMonitorLib is a
+  // GAS-only port, so off-GAS containers deliberately leave the key unregistered
+  // and `ServiceContainer.get` fails typed. The online-test telemetry probe
+  // (`processMonitorChecks`) resolves it by key.
+  if (deps.monitor !== undefined) {
+    c.register('monitor', () => deps.monitor!);
+  }
   c.register('strategyRegistry', (container) => {
     // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value
     // implemented. The Sheet/Doc-structural strategies need a live

@@ -349,6 +349,17 @@ describe('buildAldoContainer — optional generator strategies', () => {
     const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
     expect(c.get('spreadsheets')).toBeDefined();
   });
+
+  test("registers 'monitor' in the container when deps.monitor is provided", () => {
+    const monitor = { registerJob: jest.fn() } as never;
+    const c = buildAldoContainer({ ...baseDeps(), monitor });
+    expect(c.get('monitor')).toBe(monitor);
+  });
+
+  test("does not register 'monitor' when deps.monitor is omitted", () => {
+    const c = buildAldoContainer(baseDeps());
+    expect(() => c.get('monitor')).toThrow(/monitor/);
+  });
 });
 
 describe('initAldo — singleton reuse + missing master id', () => {

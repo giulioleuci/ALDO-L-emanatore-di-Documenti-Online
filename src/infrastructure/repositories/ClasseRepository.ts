@@ -141,6 +141,12 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       add(itp, 'ITP', null);
       for (const column of Object.keys(row)) {
         if (column.startsWith(prefix) && column !== itp) {
+          const actorEmails = this.csvEmails(row[column]);
+          // An empty dotted column is just a header the sheet carries (every E2E and
+          // storico sheet gets the full CLASSI header): nobody is assigned, so there is
+          // nothing to resolve and nothing to validate. Only a populated column must
+          // exist in the MATERIE catalog (2026-07-30 specifica-catalog design).
+          if (actorEmails.length === 0) continue;
           const isSpecificaItp = column.endsWith('.itp');
           const catalogColumn = isSpecificaItp ? column.slice(0, -'.itp'.length) : column;
           const specifica = catalogColumn.slice(prefix.length);

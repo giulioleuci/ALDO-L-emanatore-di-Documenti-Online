@@ -33,6 +33,48 @@ test('cattedra matrix: getDocentiPerMateria + unknown materia throws', () => {
   expect(() => r.getDocentiPerMateria(c5a, MateriaId.of('NOPE'))).toThrow(MateriaNotFoundError);
 });
 
+test('ignora una colonna specifica non registrata quando è vuota', () => {
+  const r = new ClasseRepository(
+    new FakeDatabase({
+      MATERIE: [{ ID: 'INTERPRET.CHITARRA' }],
+      CLASSI: [
+        {
+          ID: '4A',
+          ANNO: 4,
+          INDIRIZZO: 'SCIENTIFICO',
+          'INTERPRET.CHITARRA': 'doc5@x.it',
+          'INTERPRET.FLAUTO': ''
+        }
+      ]
+    })
+  );
+
+  const slots = r.getTeachingSlots(r.findById('4A')!);
+
+  expect(slots.map((slot) => slot.column)).toEqual(['INTERPRET.CHITARRA']);
+});
+
+test('continua a rifiutare una colonna specifica non registrata ma popolata', () => {
+  const r = new ClasseRepository(
+    new FakeDatabase({
+      MATERIE: [{ ID: 'INTERPRET.CHITARRA' }],
+      CLASSI: [
+        {
+          ID: '4A',
+          ANNO: 4,
+          INDIRIZZO: 'SCIENTIFICO',
+          'INTERPRET.CHITARRA': 'doc5@x.it',
+          'INTERPRET.FLAUTO': 'doc6@x.it'
+        }
+      ]
+    })
+  );
+
+  expect(() => r.getTeachingSlots(r.findById('4A')!)).toThrow(
+    /Specifica INTERPRET\.FLAUTO non registrata in MATERIE/
+  );
+});
+
 test('getAllDocentiCDC dedupes and sorts by surname', () => {
   expect(
     repo()

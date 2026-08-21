@@ -14,7 +14,8 @@ import type {
 import {
   seedAnniPrecedenti,
   seedConfDedicated,
-  seedLogFold
+  seedLogFold,
+  seedStorico
 } from '../../../src/onlinetests/data/Seeders';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import {
@@ -24,6 +25,7 @@ import {
   COL_ASL,
   COL_LOG_FOLD,
   COL_MASTER,
+  COL_MATERIE,
   TABLE
 } from '../../../src/config/schema';
 import {
@@ -37,7 +39,8 @@ import {
   CONF_IMP_CHUNKED,
   CONF_MAIL_JOBRUNNER,
   CONF_MAIL_STORICO,
-  CLASS_LAYOUTS
+  CLASS_LAYOUTS,
+  MATERIE_PUNTATE
 } from '../../../src/onlinetests/data/fixtures';
 import { ConfigurazioneImport } from '../../../src/domain/entities/ConfigurazioneImport';
 import { toLibraryRecipe } from '../../../src/application/import/ImportRecipeMapper';
@@ -207,6 +210,14 @@ test('seeds two prior databases with every historical-provider table and master 
     ANNI_PRECEDENTI
   );
   expect(master.rows[TABLE.MASTER].every((row) => row[COL_MASTER.TEST_MODE] === true)).toBe(true);
+});
+
+test('seedStorico registra ogni materia puntata usata dalle intestazioni CLASSI', () => {
+  const prior = new RecordingSpreadsheet('prior');
+  seedStorico(prior, '2025-2026');
+
+  const ids = prior.rows[TABLE.MATERIE]!.map((row) => row[COL_MATERIE.ID]);
+  expect(ids).toEqual(expect.arrayContaining(MATERIE_PUNTATE));
 });
 
 test('seeds one ASL folder record and real sheets for each eligible class only', () => {

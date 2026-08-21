@@ -27,7 +27,8 @@ import {
   CONF_MAIL_STORICO,
   EMAIL_TEST_SAFE
 } from './fixtures';
-import { e2eAlunnoEmail, e2eDocenteEmail } from './fixtures';
+import { e2eAlunnoEmail, e2eDocenteEmail, MATERIE_PUNTATE } from './fixtures';
+import { buildMaterieRows } from './SharedTestDatabaseBuilder';
 import {
   COL_ALUNNI,
   COL_ASL,
@@ -216,19 +217,15 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_MATERIE.PRINCIPALE]: '',
     [COL_MATERIE.SPECIFICITA]: ''
   });
-  prior.appendRow(TABLE.MATERIE, {
-    [COL_MATERIE.ID]: 'INTERPRET.CHITARRA',
-    [COL_MATERIE.NOME]: '',
-    [COL_MATERIE.SINTESI]: 'Interpretazione (Chitarra)',
-    [COL_MATERIE.COLORE_1]: '#1565C0',
-    [COL_MATERIE.COLORE_2]: '#90CAF9',
-    [COL_MATERIE.SIMBOLO]: 'I',
-    [COL_MATERIE.ESAME_CFG]: '',
-    [COL_MATERIE.EVOLUZIONE]: '',
-    [COL_MATERIE.IS_RELIGIONE_ALT]: false,
-    [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione',
-    [COL_MATERIE.SPECIFICITA]: 'Chitarra'
-  });
+  // Every dotted column in the shared CLASSI header must exist in this year's
+  // MATERIE catalog, populated or not — ClasseRepository.getTeachingSlots resolves
+  // the catalog id for the ones that are populated, and the E2E storico sheets get
+  // the same full header as the current-year sheet.
+  for (const row of buildMaterieRows().filter((materia) =>
+    MATERIE_PUNTATE.includes(String(materia[COL_MATERIE.ID]))
+  )) {
+    prior.appendRow(TABLE.MATERIE, row);
+  }
   prior.appendRow(TABLE.MATERIE, {
     [COL_MATERIE.ID]: 'STO',
     [COL_MATERIE.NOME]: 'Storia',

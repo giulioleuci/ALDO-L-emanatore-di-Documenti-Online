@@ -353,6 +353,25 @@ describe('StoricoDocentiService.perDocente — no matches', () => {
 // --- MasterStoricoDatabaseProvider ---
 
 describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
+  function mockHistoricalDatabaseConstruction() {
+    const originalDatabaseService = (global as unknown as { DatabaseService: unknown })
+      .DatabaseService;
+    const databaseService = jest.fn().mockImplementation(() => ({
+      tables: new Proxy({}, { get: () => sheetTable([]) })
+    }));
+    (global as unknown as { DatabaseService: unknown }).DatabaseService = databaseService;
+    const utilsSpy = jest.spyOn(ServiceFactory, 'getUtils').mockReturnValue({});
+    const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
+      getScriptCache: () => ({})
+    });
+
+    return () => {
+      cacheSpy.mockRestore();
+      utilsSpy.mockRestore();
+      (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
+    };
+  }
+
   it('returns an empty array and never calls the Master Sheet when profondita <= 0', () => {
     const findAnniStorici = jest.fn();
     const master = { findAnniStorici } as unknown as MasterSheetRepository;
@@ -402,6 +421,50 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
       cacheSpy.mockRestore();
       utilsSpy.mockRestore();
       (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
+    }
+  });
+
+  test('riusa il database di un anno già aperto tra chiamate successive', () => {
+    const restore = mockHistoricalDatabaseConstruction();
+    const master = {
+      findAnniStorici: jest.fn(() => [
+        { idSpreadsheet: 'ss1', annoScolasticoRaw: '2025-2026' }
+      ])
+    };
+    const provider = new MasterStoricoDatabaseProvider(master as never, new LoggerService());
+
+    try {
+      const first = provider.anniStorici(1);
+      const second = provider.anniStorici(1);
+
+      expect(second[0]!.db).toBe(first[0]!.db);
+      expect(second[0]!.logDocs).toBe(first[0]!.logDocs);
+    } finally {
+      restore();
+    }
+  });
+
+  test('apre un anno non ancora visto quando la profondità cresce', () => {
+    const restore = mockHistoricalDatabaseConstruction();
+    const master = {
+      findAnniStorici: jest
+        .fn()
+        .mockReturnValueOnce([{ idSpreadsheet: 'ss1', annoScolasticoRaw: '2025-2026' }])
+        .mockReturnValueOnce([
+          { idSpreadsheet: 'ss1', annoScolasticoRaw: '2025-2026' },
+          { idSpreadsheet: 'ss2', annoScolasticoRaw: '2024-2025' }
+        ])
+    };
+    const provider = new MasterStoricoDatabaseProvider(master as never, new LoggerService());
+
+    try {
+      const shallow = provider.anniStorici(1);
+      const deep = provider.anniStorici(2);
+
+      expect(deep).toHaveLength(2);
+      expect(deep[0]!.db).toBe(shallow[0]!.db);
+    } finally {
+      restore();
     }
   });
 });

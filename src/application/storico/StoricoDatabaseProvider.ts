@@ -29,6 +29,15 @@ export interface StoricoDatabaseProvider {
  * when the requested depth needs them.
  */
 export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
+  /**
+   * One `DatabaseService` per historical spreadsheet, for the lifetime of the
+   * provider. Each construction costs a `spreadsheets.get` plus a
+   * `values.batchGet` schema probe, and the six storico call sites re-enter
+   * `anniStorici` several times per CDU build — that is what tripped the Sheets
+   * "Read requests per minute per user" quota in the 2026-08-21 batch 3 run.
+   */
+  private readonly opened = new Map<string, AnnoStorico>();
+
   constructor(
     private readonly master: IMasterSheetRepository,
     private readonly logger: LoggerService
@@ -37,6 +46,8 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
   anniStorici(profondita: number): AnnoStorico[] {
     if (profondita <= 0) return [];
     return this.master.findAnniStorici(profondita).map((config) => {
+      const cached = this.opened.get(config.idSpreadsheet);
+      if (cached !== undefined) return cached;
       const db = new SheetDbAdapter(
         new DatabaseService(
           config.idSpreadsheet,
@@ -47,11 +58,13 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
           { verifyTables: [TABLE.CLASSI, TABLE.LOG_DOCS] }
         )
       );
-      return {
+      const anno: AnnoStorico = {
         anno: config.annoScolasticoRaw,
         db,
         logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
       };
+      this.opened.set(config.idSpreadsheet, anno);
+      return anno;
     });
   }
 }

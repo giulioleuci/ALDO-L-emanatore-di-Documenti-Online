@@ -6,7 +6,10 @@ import { ValidationError } from '../../domain/errors/DomainError';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps';
-import { SheetMaterieConPermessiGeneratorStrategy } from '../../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
+import {
+  SheetMaterieConPermessiGeneratorStrategy,
+  protectionGestioneSupplenti
+} from '../../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
@@ -96,7 +99,7 @@ function assertActors(label: string, actual: string[], expected: string[]): void
   }
 }
 
-function visibilitySnapshot(
+export function visibilitySnapshot(
   container: ServiceContainer,
   now: Date,
   mode: GestioneSupplenti
@@ -141,6 +144,7 @@ function visibilitySnapshot(
   new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(pipeline);
 
   const protectionRequests: SpreadsheetProtectRequest[] = [];
+  const capturedLayout: SheetColumnLayout[] = [];
   const sheets = {
     getSheetInfo: (): SpreadsheetSheetInfo[] => [
       {
@@ -174,7 +178,7 @@ function visibilitySnapshot(
         group2?: Array<Record<string, unknown>>;
         group3?: Array<Record<string, unknown>>;
       };
-      return [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
+      const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
         (item, index) => ({
           sheetName: 'Sheet1',
           column: index + 1,
@@ -188,6 +192,8 @@ function visibilitySnapshot(
           item
         })
       );
+      capturedLayout.push(...layout);
+      return layout;
     }
   } as unknown as ITemplateEngine;
   const sheetConfig = ConfigurazioneDocumento.fromData({
@@ -199,13 +205,24 @@ function visibilitySnapshot(
     // Deliberately conflicting legacy/undocumented key: PERMESSI must win.
     PARAMETRI: JSON.stringify({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   });
-  new SheetMaterieConPermessiGeneratorStrategy(
+  const strategy = new SheetMaterieConPermessiGeneratorStrategy(
     sheets,
     new MateriaRepository(container.get('db')),
     templates,
     roles
-  ).render('visibility-sheet', cdu, sheetConfig);
-  const matProtection = protectionRequests.find((request) =>
+  );
+  strategy.render('visibility-sheet', cdu, sheetConfig);
+  // Pure resolution, independent of the synthetic-principal skip in `protectColumns`
+  // (2026-08-21 round 1): this check asserts that effective-assignment resolution reaches
+  // the column-ACL layer, not that Sheets would accept the call — and every E2E teacher is
+  // a synthetic principal, so the real call is always skipped.
+  const resolvedRequests = strategy.resolveColumnRequests(
+    cdu,
+    'Sheet1',
+    capturedLayout,
+    protectionGestioneSupplenti(sheetConfig)
+  );
+  const matProtection = resolvedRequests.find((request) =>
     request.description?.includes(' MAT ')
   );
 

@@ -1214,10 +1214,8 @@ test('rifiuta la cartella verbale priva di MATERIE', () => {
   const scenario1 = runner.report().results.find((result) =>
     result.name.startsWith('E2E scenario 1:')
   );
-  expect(scenario1).toMatchObject({
-    status: 'fail',
-    message: expect.stringMatching(/Cartella verbale per 1A/)
-  });
+  expect(scenario1?.status).toBe('fail');
+  expect(scenario1?.message).toMatch(/Cartella verbale per 1A/);
 });
 
 test('scenario 3 uses one config to render, deduplicate, send, and subtype-isolate PEI/PDP_BES history', () => {

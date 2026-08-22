@@ -658,6 +658,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
           ? '<p>Storico {{focus.classe.anagrafica.nome}}</p><p>{{#focus.classe.storico.statistiche}}{{annoScolastico}} {{classe}} {{statistiche.totale}}; {{/focus.classe.storico.statistiche}}</p><p>{{#focus.alunno.storico.anni}}{{annoScolastico}} {{classe}} {{esito}}; {{/focus.alunno.storico.anni}}</p>'
           : `<p>Scenario ${subject}: ${EMAIL_TEST_SAFE}</p>`,
       [COL_CONF_MAIL.TESTO_END]: '',
+      [COL_CONF_MAIL.RISPONDI_A]: '',
       [COL_CONF_MAIL.SUPPLENTI]: false,
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',

@@ -1102,6 +1102,66 @@ test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TE
   expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
 
+test('ComposeEmailStep resolves RISPONDI_A to a valid address and SendEmailStep sets it as replyTo', () => {
+  const w = wire(
+    {
+      PROCESSO: 'PER_DOCENTE',
+      // PATTERN_ROW's default carenze/assenze boxes render nothing for a classe
+      // target (no per-alunno carenza data), which would leave shouldSend false
+      // and skip ComposeEmailStep entirely — a static box guarantees content.
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Avviso.</p>' }]),
+      RISPONDI_A: '{{focus.classe.coordinatori.elenco.0.email}}'
+    },
+    docenteTarget()
+  );
+  runThroughCompose(w);
+  expect(w.ctx.get<string>('replyTo')).toBe('rossi@school.it'); // 5A's COORD fixture value
+
+  w.ctx.set('destinatariFinali', [{ emails: ['bianchi@school.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.replyTo).toBe('rossi@school.it');
+});
+
+test('ComposeEmailStep leaves replyTo unset when RISPONDI_A is blank', () => {
+  const w = wire();
+  runThroughCompose(w);
+  expect(w.ctx.get('replyTo')).toBeNull(); // PipelineContext.get default when the key was never set
+
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.replyTo).toBeUndefined();
+});
+
+test('ComposeEmailStep warns and omits replyTo when RISPONDI_A resolves to an invalid address, send still proceeds', () => {
+  const w = wire({ RISPONDI_A: '{{focus.alunno.anagrafica.nomeCompleto}}' }); // resolves to a name, not an email
+  runThroughRender(w);
+  const warnMock = jest.fn();
+  const mockLogger = {
+    trace: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: warnMock,
+    error: jest.fn()
+  } as unknown as LoggerService;
+  new ComposeEmailStep(
+    mockLogger,
+    w.templates,
+    new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
+    new FakeDriveFacade()
+  ).execute(w.ctx);
+
+  expect(w.ctx.get('replyTo')).toBeNull(); // PipelineContext.get default when the key was never set
+  expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('RISPONDI_A'));
+
+  w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
+  const gmail = new FakeGmailFacade();
+  send(w, gmail);
+  expect(gmail.sent[0]!.replyTo).toBeUndefined();
+  expect(gmail.sent).toHaveLength(1);
+});
+
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO (REVIEW_ALDO.md #2)', () => {
   const w = wire({ TESTO_START: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
   buildStep(w).execute(w.ctx);

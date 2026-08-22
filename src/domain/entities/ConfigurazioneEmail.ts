@@ -21,6 +21,7 @@ export class ConfigurazioneEmail extends AldoEntity {
   private readonly boxCfgRaw: string | null;
   private readonly testoStartRaw: string;
   private readonly testoEndRaw: string;
+  private readonly rispondiARaw: string;
   private readonly noreply: boolean;
   private readonly coloreHeaderRaw: string;
   private readonly condizioneRaw: string;
@@ -53,6 +54,10 @@ export class ConfigurazioneEmail extends AldoEntity {
       typeof data[COL_CONF_MAIL.TESTO_END] === 'string'
         ? (data[COL_CONF_MAIL.TESTO_END] as string)
         : '';
+    this.rispondiARaw =
+      typeof data[COL_CONF_MAIL.RISPONDI_A] === 'string'
+        ? (data[COL_CONF_MAIL.RISPONDI_A] as string)
+        : '';
     this.noreply = data[COL_CONF_MAIL.NOREPLY] === true;
     this.coloreHeaderRaw =
       typeof data[COL_CONF_MAIL.COLORE_HEADER] === 'string'
@@ -79,6 +84,11 @@ export class ConfigurazioneEmail extends AldoEntity {
   getTestoEnd(): string {
     return this.testoEndRaw;
   }
+
+  getRispondiA(): string {
+    return this.rispondiARaw;
+  }
+
   isNoreply(): boolean {
     return this.noreply;
   }
@@ -132,6 +142,7 @@ export class ConfigurazioneEmail extends AldoEntity {
       [COL_CONF_MAIL.BOX_CFG]: this.boxCfgRaw,
       [COL_CONF_MAIL.TESTO_START]: this.testoStartRaw,
       [COL_CONF_MAIL.TESTO_END]: this.testoEndRaw,
+      [COL_CONF_MAIL.RISPONDI_A]: this.rispondiARaw,
       [COL_CONF_MAIL.NOREPLY]: this.noreply,
       [COL_CONF_MAIL.COLORE_HEADER]: this.coloreHeaderRaw,
       [COL_CONF_MAIL.CONDIZIONE]: this.condizioneRaw,

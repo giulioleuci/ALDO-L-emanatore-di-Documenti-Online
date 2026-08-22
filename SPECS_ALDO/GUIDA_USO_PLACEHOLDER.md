@@ -484,6 +484,20 @@ oppure itera direttamente <code>destinatario.contesto.materieCompetenza</code>:<
 inserito dopo i box, prima del footer "comunicazione automatica" — utile per
 un saluto di chiusura o un rimando successivo ai contenuti dinamici.
 
+`RISPONDI_A` (stessa tabella) è un'espressione placeholder che deve risolvere
+a un singolo indirizzo email — imposta l'intestazione Reply-To del messaggio.
+Esempio per una comunicazione ai genitori che deve tornare al coordinatore
+della classe frequentata dal figlio:
+
+```text
+{{focus.classe.coordinatori.elenco.0.email}}
+```
+
+Se la colonna è vuota, l'invio si comporta come oggi (nessun Reply-To
+impostato). Se non è vuota ma il risultato non è un indirizzo email valido
+(ad esempio la classe non ha coordinatori), l'invio prosegue comunque, senza
+intestazione Reply-To, e viene registrato un WARN nei log operativi.
+
 ---
 
 ### Esempio 4: Formattazione Avanzata con Filtri Pipe e Separatori

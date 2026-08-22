@@ -85,3 +85,16 @@ describe('ConfigurazioneEmail.getTestoEnd', () => {
     expect(email.toData()[COL_CONF_MAIL.TESTO_END]).toBe(html);
   });
 });
+
+describe('ConfigurazioneEmail.getRispondiA', () => {
+  test('defaults to empty string when the column is missing', () => {
+    expect(config().getRispondiA()).toBe('');
+  });
+
+  test('reads RISPONDI_A and round-trips through toData()', () => {
+    const expr = '{{focus.classe.coordinatori.elenco.0.email}}';
+    const email = config({ [COL_CONF_MAIL.RISPONDI_A]: expr });
+    expect(email.getRispondiA()).toBe(expr);
+    expect(email.toData()[COL_CONF_MAIL.RISPONDI_A]).toBe(expr);
+  });
+});

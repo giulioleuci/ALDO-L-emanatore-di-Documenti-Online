@@ -570,6 +570,18 @@ export class ComposeEmailStep extends Step {
     this.setResult(ctx, 'allegati', allegati.blobs);
     this.setResult(ctx, 'allegatiIds', allegati.ids);
     this.setResult(ctx, 'allegatiLinks', allegati.links);
+
+    const rispondiARaw = conf.getRispondiA();
+    if (rispondiARaw.trim() !== '') {
+      const resolved = this.templates.processString(rispondiARaw, cduRecord(ctx)).trim();
+      try {
+        this.setResult(ctx, 'replyTo', Email.of(resolved).value);
+      } catch {
+        this.logger.warn(
+          `ComposeEmail: RISPONDI_A "${rispondiARaw}" risolto a un indirizzo non valido ("${resolved}") — invio senza intestazione Reply-To`
+        );
+      }
+    }
   }
 
   protected override _getLogDetails(ctx: PipelineContext): { Subject: string; Attachments: number } {
@@ -674,6 +686,7 @@ export class SendEmailStep extends Step {
   protected _executeLogic(ctx: PipelineContext): void {
     const supervisore = this.findSupervisore();
     const testEmail = ctx.get<string>('testEmail');
+    const replyTo = ctx.get<string>('replyTo');
     const destinazioni = ctx.get<Destinazione[]>('destinatariFinali')!;
     const errors: string[] = [];
     const attempted: string[] = [];
@@ -696,6 +709,7 @@ export class SendEmailStep extends Step {
       if (dest.cc !== undefined && testEmail === null) opts.cc = dest.cc;
       for (const email of opts.cc ?? []) if (!resolvedCc.includes(email)) resolvedCc.push(email);
       for (const email of opts.bcc ?? []) if (!resolvedBcc.includes(email)) resolvedBcc.push(email);
+      if (replyTo !== null) opts.replyTo = replyTo;
       const result = this.gmail.sendEmail(opts);
       if (result.success) {
         sent += 1;

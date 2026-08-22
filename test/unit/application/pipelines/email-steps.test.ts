@@ -1085,7 +1085,10 @@ test('ComposeEmailStep appends TESTO_END after the boxes and before the footer',
 });
 
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO_END', () => {
-  const w = wire({ TESTO_END: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
+  const w = wire({
+    OGGETTO: 'Oggetto statico',
+    TESTO_END: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>'
+  });
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';
@@ -1163,7 +1166,10 @@ test('ComposeEmailStep warns and omits replyTo when RISPONDI_A resolves to an in
 });
 
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO (REVIEW_ALDO.md #2)', () => {
-  const w = wire({ TESTO_START: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
+  const w = wire({
+    OGGETTO: 'Oggetto statico',
+    TESTO_START: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>'
+  });
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';

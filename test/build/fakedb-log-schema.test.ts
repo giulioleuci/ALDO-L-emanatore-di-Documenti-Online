@@ -94,7 +94,8 @@ test('FAKEDB CONF_MAIL rows expose the complete deployment schema with safe dupl
     'OGGETTO',
     'PROCESSO',
     'BOX_CFG',
-    'TESTO',
+    'TESTO_START',
+    'TESTO_END',
     'SUPPLENTI',
     'NOREPLY',
     'COLORE_HEADER',
@@ -102,7 +103,8 @@ test('FAKEDB CONF_MAIL rows expose the complete deployment schema with safe dupl
     'POST_PROCESSO',
     'ALLEGATI',
     'GESTIONE_ARTICOLAZIONE',
-    'DUPLICAZIONE'
+    'DUPLICAZIONE',
+    'RISPONDI_A'
   ]);
 
   for (const row of csvRecords('CONF_MAIL.csv')) {

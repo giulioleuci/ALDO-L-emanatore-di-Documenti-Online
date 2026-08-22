@@ -39,6 +39,11 @@ export class Classe extends AldoEntity {
     return this._anno;
   }
 
+  /** Sezione portion of `nome` (the class name with its leading year digits stripped, e.g. "5A" -> "A"). */
+  get sezione(): string {
+    return this.nome.replace(/^\d+/, '');
+  }
+
   get classeId(): ClasseId {
     return ClasseId.of(this.id ?? '');
   }

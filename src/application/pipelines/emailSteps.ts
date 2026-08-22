@@ -14,6 +14,7 @@ import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepos
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
+import type { Classe } from '../../domain/entities/Classe';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -136,6 +137,17 @@ export class BuildCDUStep extends Step {
     super('BuildCDU', logger, { requiredKeys: ['config', 'confMail', 'emailTarget', 'now'] });
   }
 
+  /**
+   * `resolveConsiglio(classe, when)` result cache, scoped to this Step instance
+   * (11 §3 review fix — memoize per-class resolver calls): `EmailNotificationService`
+   * reuses ONE `BuildCDUStep` across every email of a batch run (`getPipeline`,
+   * rebuilt only when `jobId` changes), so a class with N docente-target emails
+   * would otherwise call `resolveConsiglio` on the same (classe, when) pair N
+   * times. Keyed by `classeId|when.getTime()` — safe within one batch, never
+   * reused across batches since the whole step (and this map) is rebuilt fresh.
+   */
+  private readonly consiglioCache = new Map<string, TeachingAssignment[]>();
+
   protected _executeLogic(ctx: PipelineContext): void {
     const conf = confMail(ctx);
     const t = target(ctx);
@@ -254,9 +266,9 @@ export class BuildCDUStep extends Step {
       if (classe === null) continue;
       let mie: TeachingAssignment[];
       try {
-        mie = this.teachingAssignments
-          .resolveConsiglio(classe, when)
-          .filter((a) => a.docenteEffettivo.id === docenteEmail);
+        mie = this.resolveConsiglioCached(classe, when).filter(
+          (a) => a.docenteEffettivo.id === docenteEmail
+        );
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         this.logger.warn(
@@ -280,12 +292,22 @@ export class BuildCDUStep extends Step {
         classeId: classe.id ?? classeId,
         classeNome: classe.nome,
         anno: classe.anno.value,
-        sezione: classe.nome.replace(/^\d+/, ''),
+        sezione: classe.sezione,
         materie
       });
       flat = flat.concat(materie);
     }
     return { cattedre, materieCompetenza: dedupeSubjectsMainOverItp(flat) };
+  }
+
+  /** Memoized per (classeId, when) — see `consiglioCache`. Only successful results are cached; a thrown error is never memoized, so a later call for the same key still retries. */
+  private resolveConsiglioCached(classe: Classe, when: Date): TeachingAssignment[] {
+    const key = `${classe.id ?? ''}|${when.getTime()}`;
+    const cached = this.consiglioCache.get(key);
+    if (cached !== undefined) return cached;
+    const result = this.teachingAssignments.resolveConsiglio(classe, when);
+    this.consiglioCache.set(key, result);
+    return result;
   }
 }
 

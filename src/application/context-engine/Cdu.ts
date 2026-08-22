@@ -394,8 +394,10 @@ export interface CduPianoFocus {
   parametriGenerazione: Record<string, unknown>;
 }
 
+/** One row of `destinatario.contesto.cattedre[]` (02 §5/§8.13): the docente target's effective materie, grouped per class. */
 export interface CattedraVM {
   classeId: string;
+  /** Currently always identical to `classeId` — `Classe.nome` is backed by `Classe.id` in this data model, no separate display name exists. */
   classeNome: string;
   anno: number;
   sezione: string;

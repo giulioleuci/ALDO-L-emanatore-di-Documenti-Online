@@ -524,20 +524,15 @@ destinatario:
     sostituisce: PersonVM | null      # STUB: sempre null — non ancora calcolato (non collegato a isSupplente)
     classiCompetenza: string[]        # Genuinamente calcolato: ClasseId su cui il destinatario ha titolarità
     materieCompetenza: SubjectVM[]    # Solo target docente: materie effettive deduplicate su tutte le classi (§8.2)
-    cattedre: CattedraVM[]            # Solo target docente: le stesse materie raggruppate per classe
+    cattedre: CattedraVM[]            # Solo target docente: le stesse materie raggruppate per classe (§8.13)
 
   comunicazione:
     salutoIniziale: string       # es. "Gentile Prof.ssa Bianchi," o "Spettabile Genitore,"
     oggettoCalcolato: string     # Oggetto email finale processato tramite template engine
     testoContenutoPuro: string   # Testo plain-text senza wrapper HTML (per audit log)
-
-CattedraVM:
-  classeId: string               # "5AB-LC-LS"
-  classeNome: string              # nome completo della classe
-  anno: number
-  sezione: string
-  materie: SubjectVM[]            # SubjectVM completi (§8.2): sigla, nome, nomeSintetico, colore1/colore2, specificita, isITP, flag esami
 ```
+
+> **BREAKING CHANGE (2026-08-22):** `materieCompetenza` è passato da `string[]` a `SubjectVM[]` — un `CONF_MAIL` già configurato che itera questo campo con l'idioma legacy `{{.}}` (elemento come stringa nuda) renderizzerà `[object Object]`; aggiornare il template all'idioma `{{nome}}` per elemento (vedi `GUIDA_USO_PLACEHOLDER.md`).
 
 ---
 
@@ -910,6 +905,27 @@ SupplenzaAggregataVM:
 > In una catena di supplenze A→B→C il supplente è C (ultimo effettivo); gli
 > intermedi sono omessi. L'ordinamento è per `supplente.nomeCompleto`, poi
 > `titolare.nomeCompleto`.
+
+---
+
+### 8.13 Cattedra del destinatario docente (`CattedraVM`)
+
+Riga di `destinatario.contesto.cattedre[]` (§5), costruita da `BuildCDUStep.buildCattedre`
+per i soli target `tipo === 'docente'`: raggruppa per classe le materie effettive del
+destinatario alla data di invio (stesso `ITeachingAssignmentResolver.resolveConsiglio`
+usato per `materieCompetenza`, §5). Una classe senza materie effettive del destinatario
+non produce alcuna riga.
+
+```yaml
+CattedraVM:
+  classeId: string               # "5AB-LC-LS"
+  classeNome: string              # Attualmente sempre identico a classeId — Classe.nome è
+                                   #   backed da Classe.id in questo data model, non esiste
+                                   #   un nome visualizzato distinto
+  anno: number
+  sezione: string                 # classeId con le cifre iniziali dell'anno rimosse (es. "5A" -> "A")
+  materie: SubjectVM[]            # SubjectVM completi (§8.2): sigla, nome, nomeSintetico, colore1/colore2, specificita, isITP, flag esami
+```
 
 ---
 

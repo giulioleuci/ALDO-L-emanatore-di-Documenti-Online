@@ -46,7 +46,7 @@ export class ClasseProvider implements ContextProvider {
       anagrafica: {
         nome: classe.nome,
         anno: anno.value,
-        sezione: classe.nome.replace(/^\d+/, ''),
+        sezione: classe.sezione,
         annoScolastico,
         indirizzo: {
           nome: indirizzo.nome,

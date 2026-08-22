@@ -690,6 +690,30 @@ class ThrowingForOneClassResolver implements ITeachingAssignmentResolver {
   }
 }
 
+/** Delegates to a real resolver while recording every `resolveConsiglio` call's classeId (design 2026-08-22 review fix 4). */
+class CountingResolver implements ITeachingAssignmentResolver {
+  public readonly resolveConsiglioCalls: string[] = [];
+  constructor(private readonly real: ITeachingAssignmentResolver) {}
+
+  resolveMateria(
+    classe: Classe,
+    materia: MateriaId,
+    data: Date,
+    routingPolicy?: RoutingPolicyValue
+  ): TeachingAssignment[] {
+    return this.real.resolveMateria(classe, materia, data, routingPolicy);
+  }
+
+  resolveConsiglio(
+    classe: Classe,
+    data: Date,
+    options?: { includeReligioneAlt?: boolean; routingPolicy?: RoutingPolicyValue }
+  ): TeachingAssignment[] {
+    this.resolveConsiglioCalls.push(classe.id ?? '');
+    return this.real.resolveConsiglio(classe, data, options);
+  }
+}
+
 test('BuildCDUStep tolerates a resolver error on one competenza class: that class is excluded, others still build, warning logged (design 2026-08-22 review fix 4)', () => {
   const w = wire(
     { PROCESSO: 'PER_DOCENTE' },
@@ -724,6 +748,62 @@ test('BuildCDUStep tolerates a resolver error on one competenza class: that clas
   );
   expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1F'));
   warnSpy.mockRestore();
+});
+
+test('BuildCDUStep memoizes resolveConsiglio per (classe, when) across docente targets on the same step instance (design 2026-08-22 review fix 4)', () => {
+  // '1F-LSO' holds rossi/MATE and bianchi/FISI (see test/fixtures/tables.ts):
+  // both docenti's cattedre computation needs a resolveConsiglio call for the
+  // SAME (classe, when) pair — this is exactly the redundant-call shape
+  // EmailNotificationService's batch reuse of one BuildCDUStep hits in
+  // production (a class of N docenti each getting a PER_DOCENTE email).
+  const tables = fixtureTables();
+  const db = new FakeDatabase(tables);
+  const counting = new CountingResolver(new AldoTeachingAssignmentResolver(db));
+  const step = new BuildCDUStep(
+    logger,
+    composeContextBuilder(db),
+    new DocenteRepository(db),
+    new AlunnoRepository(db),
+    new ClasseRepository(db),
+    new MateriaRepository(db),
+    counting
+  );
+  const row = { ...PATTERN_ROW, PROCESSO: 'PER_DOCENTE' } as Row;
+  const baseTarget: EmailTarget = {
+    tipo: 'docente',
+    tipoTarget: 'classe',
+    target: '1F-LSO',
+    docenteEmail: 'rossi@school.it',
+    emails: ['rossi@school.it'],
+    classiCompetenza: ['1F-LSO']
+  };
+
+  const ctxRossi = new PipelineContext();
+  ctxRossi.set('config', row);
+  ctxRossi.set('confMail', ConfigurazioneEmail.fromData(row));
+  ctxRossi.set('emailTarget', baseTarget);
+  ctxRossi.set('now', NOW);
+  step.execute(ctxRossi);
+
+  const ctxBianchi = new PipelineContext();
+  ctxBianchi.set('config', row);
+  ctxBianchi.set('confMail', ConfigurazioneEmail.fromData(row));
+  ctxBianchi.set('emailTarget', {
+    ...baseTarget,
+    docenteEmail: 'bianchi@school.it',
+    emails: ['bianchi@school.it']
+  });
+  ctxBianchi.set('now', NOW);
+  step.execute(ctxBianchi);
+
+  // The underlying resolver was hit only once for '1F-LSO' despite two docente targets.
+  expect(counting.resolveConsiglioCalls.filter((id) => id === '1F-LSO')).toHaveLength(1);
+
+  // The cache must not corrupt per-docente results: each still sees only their own materia.
+  const rossiCdu = ctxRossi.get<Cdu>('cdu')!;
+  const bianchiCdu = ctxBianchi.get<Cdu>('cdu')!;
+  expect(rossiCdu.destinatario!.contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(bianchiCdu.destinatario!.contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['FISI']);
 });
 
 test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {

@@ -4,6 +4,7 @@ import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEm
 import type { DocumentoStoricoConTipo } from '../storico/StoricoDocumentiService';
 import type { AggregatoreDati } from '../services/AggregatoreDati';
 import type { LogCartella } from '../../domain/entities/LogCartella';
+import type { CattedraVM } from '../context-engine/Cdu';
 
 /**
  * Box Rendering System (11 §5/§11) on ComposableContentLib (L4): every
@@ -293,14 +294,8 @@ function renderAssenzeBox(): string {
   );
 }
 
-interface CattedraBoxRow {
-  classeId: string;
-  classeNome: string;
-  materie: Array<{ nome: string; isITP: boolean }>;
-}
-
 function renderCattedreBox(data: unknown): string {
-  const cattedre = data as CattedraBoxRow[];
+  const cattedre = data as CattedraVM[];
   const righe = cattedre
     .map((c) => {
       const materie = c.materie
@@ -316,7 +311,7 @@ function renderCattedreBox(data: unknown): string {
 }
 
 /**
- * Composer wired with the six registered TIPO_BOX blocks (11 §11). Blocks read
+ * Composer wired with the registered TIPO_BOX blocks (11 §11). Blocks read
  * their data from the serialized composition context (`boxdata.*` aggregated by
  * `renderBoxes`, full CDU for `testo_dinamico`).
  */
@@ -504,13 +499,6 @@ function aggregaDati(
         };
       }
     | undefined;
-  const destinatario = cdu['destinatario'] as
-    | {
-        contesto?: {
-          cattedre?: CattedraBoxRow[];
-        };
-      }
-    | undefined;
   const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
   const documenti =
     focus?.classe?.didattica?.documenti ??
@@ -559,8 +547,7 @@ function aggregaDati(
       items: pianiItems.filter((i) => i.notificato),
       storicoRef: pianiStoricoRef,
       defaultTemplate: ''
-    },
-    cattedre: destinatario?.contesto?.cattedre ?? []
+    }
   };
 }
 

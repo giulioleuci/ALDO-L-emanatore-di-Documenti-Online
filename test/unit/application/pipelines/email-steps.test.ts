@@ -537,7 +537,7 @@ test('BuildCDUStep copies EmailTarget.classiCompetenza into BuildParams', () => 
   expect(capturedParams?.classiCompetenza).toEqual(['5A', '1F']);
 });
 
-test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes for a docente target (design 2026-08-22)', () => {
+test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes for a docente target, collapsing an articolazione parent+partner pair into one row (design 2026-08-22, updated 2026-08-22 articolata dedupe)', () => {
   // NOTE (deviation from task-1-brief.md): the brief's original fixture pair
   // was ['5A', '1F'], but the fixture's own VARIAZIONI_CATTEDRA row
   // (TITOLARE rossi -> NUOVO_TITOLARE bianchi, DAL 2025-10-01, CLASSI '5A',
@@ -550,6 +550,12 @@ test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes
   // preserving the test's intent (multi-class cattedre computation + MATE
   // dedup on the flat list) without relying on stale-assignment exclusion,
   // which is covered separately by the "excludes a class..." test below.
+  //
+  // '1F' is the articolazione parent and '1F-LSO' one of its partners (see
+  // test/fixtures/tables.ts): rossi teaches the COMUNE subject MATE across
+  // the whole group, so these two classes now collapse into ONE cattedra
+  // row keyed by the parent '1F' (design 2026-08-22 articolata dedupe),
+  // instead of one row per sibling class.
   const w = wire(
     { PROCESSO: 'PER_DOCENTE' },
     {
@@ -564,11 +570,36 @@ test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   const contesto = cdu.destinatario!.contesto;
-  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F', '1F-LSO']);
+  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F']);
   expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
   expect(contesto.cattedre[0]!.anno).toBe(1);
   expect(contesto.cattedre[0]!.sezione).toBe('F');
   // rossi teaches MATE in both 1F and 1F-LSO: flat list dedupes to one entry.
+  expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
+});
+
+test('BuildCDUStep collapses all three classes of an articolazione group (parent + both partners) into a single cattedra row (design 2026-08-22 articolata dedupe)', () => {
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '1F',
+      docenteEmail: 'rossi@school.it',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['1F', '1F-LSO', '1F-LSS']
+    }
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const contesto = cdu.destinatario!.contesto;
+  // Three classes in classiCompetenza, all in the same articolazione group,
+  // all resolving MATE for rossi (COMUNE subject) -> a single row, not three.
+  expect(contesto.cattedre).toHaveLength(1);
+  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F']);
+  expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(contesto.cattedre[0]!.anno).toBe(1);
+  expect(contesto.cattedre[0]!.sezione).toBe('F');
   expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
 });
 
@@ -741,7 +772,11 @@ test('BuildCDUStep tolerates a resolver error on one competenza class: that clas
 
   const cdu = w.ctx.get<Cdu>('cdu')!;
   const contesto = cdu.destinatario!.contesto;
-  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F-LSO']);
+  // '1F' throws (excluded); '1F-LSO' succeeds and groups under its
+  // articolazione parent '1F' (design 2026-08-22 articolata dedupe), so the
+  // single surviving cattedra row is keyed by the parent's classeId, not by
+  // '1F-LSO' itself.
+  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F']);
   expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
   expect(warnSpy).toHaveBeenCalledWith(
     expect.stringContaining('rossi@school.it')

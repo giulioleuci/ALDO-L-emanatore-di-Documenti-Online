@@ -505,7 +505,7 @@ focus.dipartimento:
 
 Popolata ESCLUSIVAMENTE dal `BuildCDUStep` della pipeline email (`src/application/pipelines/emailSteps.ts`): un CDU costruito per la sola generazione documenti non ha mai `cdu.destinatario`. `destinatario.anagrafica` è un `PersonVM` (§8.1) completo, quindi reca anche `appellativoCompleto`/`appellativoCognome`.
 
-`destinatario.contesto.materieCompetenza` e `destinatario.contesto.cattedre` sono calcolati esclusivamente per i target `tipo === 'docente'` (per gli altri target restano `[]`), a partire dalle materie effettive alla data di invio via `ITeachingAssignmentResolver.resolveConsiglio` (stesso resolver usato per il targeting) — IRC/ALT esclusi di default. A differenza del resolver usato per il targeting dei destinatari, qui `resolveConsiglio` è invocato con le opzioni di default (IRC/ALT esclusi, nessun `routingPolicy` da `conf.supplenti`): un docente che ha ceduto una materia a un supplente non la vede più tra le proprie cattedre, anche se `conf.supplenti` lo includerebbe come destinatario. `materieCompetenza` è la lista piatta deduplicata su tutte le classi (precedenza MAIN > ITP, stessa regola legacy di `ClasseRepository.getMaterieDelDocente`); `cattedre` raggruppa le stesse materie per classe. `ruoliAttivi`, `flags.isTutor`, `flags.isTutorAsl`, `flags.isDocenteSostegno`, `flags.isSupplente` restano STUB (`[]`/`false`), non ancora calcolati. Solo `flags.isCoordinatore` (derivato da `conf.processo === ProcessoInvio.PER_COORDINATORE`) e `contesto.classiCompetenza` erano già genuinamente calcolati.
+`destinatario.contesto.materieCompetenza` e `destinatario.contesto.cattedre` sono calcolati esclusivamente per i target `tipo === 'docente'` (per gli altri target restano `[]`), a partire dalle materie effettive alla data di invio via `ITeachingAssignmentResolver.resolveConsiglio` (stesso resolver usato per il targeting) — IRC/ALT esclusi di default. A differenza del resolver usato per il targeting dei destinatari, qui `resolveConsiglio` è invocato con le opzioni di default (IRC/ALT esclusi, nessun `routingPolicy` da `conf.supplenti`): un docente che ha ceduto una materia a un supplente non la vede più tra le proprie cattedre, anche se `conf.supplenti` lo includerebbe come destinatario. `materieCompetenza` è la lista piatta deduplicata su tutte le classi (precedenza MAIN > ITP, stessa regola legacy di `ClasseRepository.getMaterieDelDocente`); `cattedre` raggruppa le stesse materie per classe. **Classi articolate (2026-08-22):** se due o più classi in `classiCompetenza` appartengono allo stesso gruppo di articolazione (una classe parent e le sue partner, es. `1F` + `1F-LSO` + `1F-LSS`), le rispettive righe di `cattedre` collassano in UNA sola, indicizzata dall'identità della classe parent (`classeId`/`classeNome`/`anno`/`sezione` presi dalla parent tramite `IClasseRepository.getClasseParent`), con le materie di tutte le classi del gruppo unite e dedupate — così un docente che insegna una materia COMUNE sull'intero gruppo articolato vede una sola cattedra, non una per ogni classe sorella. `ruoliAttivi`, `flags.isTutor`, `flags.isTutorAsl`, `flags.isDocenteSostegno`, `flags.isSupplente` restano STUB (`[]`/`false`), non ancora calcolati. Solo `flags.isCoordinatore` (derivato da `conf.processo === ProcessoInvio.PER_COORDINATORE`) e `contesto.classiCompetenza` erano già genuinamente calcolati.
 
 ```yaml
 destinatario:
@@ -915,6 +915,16 @@ per i soli target `tipo === 'docente'`: raggruppa per classe le materie effettiv
 destinatario alla data di invio (stesso `ITeachingAssignmentResolver.resolveConsiglio`
 usato per `materieCompetenza`, §5). Una classe senza materie effettive del destinatario
 non produce alcuna riga.
+
+**Classi articolate.** Il raggruppamento non è per singola classe ma per "gruppo di
+articolazione": ogni classe di `classiCompetenza` è ricondotta alla propria classe parent
+via `IClasseRepository.getClasseParent(classe) ?? classe` (una classe parent o una classe
+non articolata restano identità a sé stanti), e tutte le classi che si riconducono alla
+stessa parent producono UNA sola `CattedraVM`, con `classeId`/`classeNome`/`anno`/`sezione`
+presi dalla classe parent (o dalla classe stessa se non articolata) e `materie` unite/dedupate
+(precedenza MAIN > ITP) su tutte le classi del gruppo. Esempio: `1F` (parent) + `1F-LSO` +
+`1F-LSS` (partner) con un docente che insegna la materia COMUNE su tutto il gruppo →
+una sola riga `CattedraVM` con `classeId: '1F'`, non tre.
 
 ```yaml
 CattedraVM:

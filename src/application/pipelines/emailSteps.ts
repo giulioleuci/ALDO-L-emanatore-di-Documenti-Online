@@ -249,6 +249,15 @@ export class BuildCDUStep extends Step {
    * 2026-08-22): materie effettive alla data di invio, stesso resolver dei
    * target (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), IRC/ALT esclusi di
    * default. Classi senza materie effettive del destinatario sono escluse.
+   *
+   * Classi articolate (design 2026-08-22 follow-up): le classi che
+   * appartengono allo stesso gruppo di articolazione (una classe parent e le
+   * sue partner, es. '1F' + '1F-LSO' + '1F-LSS') collassano in UNA sola riga
+   * `CattedraVM`, indicizzata dall'identità della classe parent
+   * (`getClasseParent(classe) ?? classe`). Le materie di tutte le classi del
+   * gruppo vengono unite e dedupate (MAIN over ITP) sotto quella riga, cosi
+   * un docente che insegna una materia COMUNE sull'intero gruppo articolato
+   * vede una sola cattedra invece di una per ogni classe sorella.
    */
   private buildCattedre(
     t: EmailTarget,
@@ -259,7 +268,7 @@ export class BuildCDUStep extends Step {
       return { cattedre: [], materieCompetenza: [] };
     }
     const docenteEmail = t.docenteEmail;
-    const cattedre: CattedraVM[] = [];
+    const gruppi = new Map<string, { classe: Classe; materie: SubjectVM[] }>();
     let flat: SubjectVM[] = [];
     for (const classeId of classiCompetenza) {
       const classe = this.classi.findById(ClasseId.of(classeId));
@@ -288,15 +297,23 @@ export class BuildCDUStep extends Step {
           .filter((vm): vm is SubjectVM => vm !== null)
       );
       if (materie.length === 0) continue;
-      cattedre.push({
-        classeId: classe.id ?? classeId,
-        classeNome: classe.nome,
-        anno: classe.anno.value,
-        sezione: classe.sezione,
-        materie
-      });
+      const gruppoClasse = this.classi.getClasseParent(classe) ?? classe;
+      const key = gruppoClasse.id ?? classeId;
+      const gruppo = gruppi.get(key);
+      if (gruppo === undefined) {
+        gruppi.set(key, { classe: gruppoClasse, materie: [...materie] });
+      } else {
+        gruppo.materie.push(...materie);
+      }
       flat = flat.concat(materie);
     }
+    const cattedre: CattedraVM[] = [...gruppi.values()].map(({ classe, materie }) => ({
+      classeId: classe.id ?? '',
+      classeNome: classe.nome,
+      anno: classe.anno.value,
+      sezione: classe.sezione,
+      materie: dedupeSubjectsMainOverItp(materie)
+    }));
     return { cattedre, materieCompetenza: dedupeSubjectsMainOverItp(flat) };
   }
 

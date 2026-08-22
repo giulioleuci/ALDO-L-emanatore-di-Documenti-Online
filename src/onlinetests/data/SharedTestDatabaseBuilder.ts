@@ -1247,10 +1247,12 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         // FILTRO_TIPO (item 6): scope the rendered links to VERBALE docs only —
         // otherwise a class with CONDOTTA/PIANO_PERS docs too would list those
-        // as well. No DATI_SORGENTE here, so ComposeEmailStep never attaches
-        // anything (attachment is opt-in, item 3 — no PDFs from getBlob()).
+        // as well. The ALLEGATI column below stays '[]': real file attachments
+        // remain opt-in (item 3). DATI_SORGENTE is unrelated to attachments —
+        // it makes renderBoxes resolve each class's real LOG_FOLD folders so
+        // LOG_MAIL.ALLEGATI records which folders recipients gained access to.
         { TIPO_BOX: 'documenti', FILTRO_TIPO: 'VERBALE' },
-        { TIPO_BOX: 'cartelle' }
+        { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO]: '<p>In allegato il verbale del consiglio di classe.</p>',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
@@ -1270,7 +1272,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         { TIPO_BOX: 'documenti', FILTRO_TIPO: 'CONDOTTA' },
-        { TIPO_BOX: 'cartelle' }
+        { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO]: '<p>In allegato la scheda di valutazione condotta.</p>',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_SUPPLENTI',

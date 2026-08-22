@@ -21,6 +21,7 @@ import {
   CONF_DOC_DOCENTE_MATERIA,
   CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_VERBALE,
+  CONF_MAIL_CONDOTTA,
   CONF_MAIL_PIANI,
   CONF_MAIL_STATIC_ALLEGATO,
   e2eAlunnoEmail,
@@ -533,6 +534,27 @@ test('the observable coordinator verbale email targets articulated partners inst
 
   expect(row?.[COL_CONF_MAIL.PROCESSO]).toBe('PER_COORDINATORE');
   expect(row?.[COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]).toBe('ARTICOLATA');
+});
+
+test('verbale and condotta mail patterns resolve real class folders via DATI_SORGENTE', () => {
+  const { spreadsheets, sheets, master } = factory();
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
+    TEMPLATE_IDS,
+    master
+  );
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  for (const patternId of [CONF_MAIL_VERBALE, CONF_MAIL_CONDOTTA]) {
+    const row = sample.rows[TABLE.CONF_MAIL]!.find(
+      (candidate) => candidate[COL_CONF_MAIL.ID] === patternId
+    )!;
+    const boxes = JSON.parse(String(row[COL_CONF_MAIL.BOX_CFG])) as Array<{
+      TIPO_BOX: string;
+      DATI_SORGENTE?: { metodo?: string };
+    }>;
+    const cartelle = boxes.find((box) => box.TIPO_BOX === 'cartelle');
+    expect(cartelle?.DATI_SORGENTE?.metodo).toBe('cartellePerClasse');
+  }
 });
 
 test('exactly RIPETENTE_1A and RIPETENTE_3C are flagged RIPETENTE this year', () => {

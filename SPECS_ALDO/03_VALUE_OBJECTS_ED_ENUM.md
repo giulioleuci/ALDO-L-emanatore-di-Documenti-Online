@@ -568,7 +568,7 @@ La chiave `regolaSupplente` controlla come le supplenze influenzano l'assegnazio
 
 ```json
 {
-  "TIPO_BOX": "carenze | documenti | documenti_dipartimento | cartelle | note | assenze | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
+  "TIPO_BOX": "carenze | documenti | documenti_dipartimento | cartelle | note | assenze | cattedre | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
   "TITOLO": "string (opzionale; se assente usa il titolo di default del tipo)",
   "ORDINE": 1,
   "ALLEGA": "boolean (default false; solo true autorizza l'invio Gmail dei file della sorgente)",

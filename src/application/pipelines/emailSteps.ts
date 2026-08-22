@@ -14,7 +14,10 @@ import type { IDocenteRepository } from '../../domain/repositories/IDocenteRepos
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
-import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
+import type {
+  ITeachingAssignmentResolver,
+  TeachingAssignment
+} from '../ports/ITeachingAssignmentResolver';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
@@ -249,9 +252,18 @@ export class BuildCDUStep extends Step {
     for (const classeId of classiCompetenza) {
       const classe = this.classi.findById(ClasseId.of(classeId));
       if (classe === null) continue;
-      const mie = this.teachingAssignments
-        .resolveConsiglio(classe, when)
-        .filter((a) => a.docenteEffettivo.id === docenteEmail);
+      let mie: TeachingAssignment[];
+      try {
+        mie = this.teachingAssignments
+          .resolveConsiglio(classe, when)
+          .filter((a) => a.docenteEffettivo.id === docenteEmail);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `BuildCDU.buildCattedre: risoluzione cattedra fallita per docente=${docenteEmail}, classe=${classeId} — classe esclusa (${msg})`
+        );
+        continue;
+      }
       const materie = dedupeSubjectsMainOverItp(
         mie
           .map((a) =>

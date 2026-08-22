@@ -41,6 +41,8 @@ import type {
 import { MateriaId } from '../../../../src/domain/value-objects/MateriaId';
 import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
 import { emailTargetId } from '../../../../src/application/email/saluto';
+import type { Classe } from '../../../../src/domain/entities/Classe';
+import { AmbiguousVariazioneCattedraError } from '../../../../src/domain/errors/DomainError';
 
 const logger = new LoggerService();
 const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supplenza window
@@ -654,6 +656,74 @@ test('BuildCDUStep supplenza ENTRAMBI: the resolved supplente sees the covered m
   buildStep(wTitolare).execute(wTitolare.ctx);
   const titolareCdu = wTitolare.ctx.get<Cdu>('cdu')!;
   expect(titolareCdu.destinatario!.contesto.cattedre).toEqual([]);
+});
+
+/**
+ * Delegates to a real resolver for every class except one, where it throws —
+ * simulating a malformed VARIAZIONI_CATTEDRA row surfacing as
+ * AmbiguousVariazioneCattedraError for that single class only.
+ */
+class ThrowingForOneClassResolver implements ITeachingAssignmentResolver {
+  constructor(
+    private readonly real: ITeachingAssignmentResolver,
+    private readonly throwingClasseId: string
+  ) {}
+
+  resolveMateria(
+    classe: Classe,
+    materia: MateriaId,
+    data: Date,
+    routingPolicy?: RoutingPolicyValue
+  ): TeachingAssignment[] {
+    return this.real.resolveMateria(classe, materia, data, routingPolicy);
+  }
+
+  resolveConsiglio(
+    classe: Classe,
+    data: Date,
+    options?: { includeReligioneAlt?: boolean; routingPolicy?: RoutingPolicyValue }
+  ): TeachingAssignment[] {
+    if (classe.id === this.throwingClasseId) {
+      throw new AmbiguousVariazioneCattedraError(`VARIAZIONI_CATTEDRA malformata per ${classe.id}`);
+    }
+    return this.real.resolveConsiglio(classe, data, options);
+  }
+}
+
+test('BuildCDUStep tolerates a resolver error on one competenza class: that class is excluded, others still build, warning logged (design 2026-08-22 review fix 4)', () => {
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '1F',
+      docenteEmail: 'rossi@school.it',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['1F', '1F-LSO']
+    }
+  );
+  const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+  const step = new BuildCDUStep(
+    logger,
+    composeContextBuilder(w.db),
+    w.docenti,
+    w.alunni,
+    new ClasseRepository(w.db),
+    new MateriaRepository(w.db),
+    new ThrowingForOneClassResolver(new AldoTeachingAssignmentResolver(w.db), '1F')
+  );
+
+  expect(() => step.execute(w.ctx)).not.toThrow();
+
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const contesto = cdu.destinatario!.contesto;
+  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F-LSO']);
+  expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(warnSpy).toHaveBeenCalledWith(
+    expect.stringContaining('rossi@school.it')
+  );
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1F'));
+  warnSpy.mockRestore();
 });
 
 test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {

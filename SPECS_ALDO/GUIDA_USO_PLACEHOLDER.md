@@ -459,7 +459,7 @@ Template HTML memorizzato nel campo `TESTO` della tabella `CONF_MAIL`:
 <ul>
   {{#destinatario.contesto.cattedre}}
   <li><strong>{{classeNome}}</strong> —
-    {{#materie}}{{nome}}{{^last}}, {{/last}}{{/materie}}
+    {{#materie}}{{nome}}{{^@last}}, {{/@last}}{{/materie}}
   </li>
   {{/destinatario.contesto.cattedre}}
 </ul>

@@ -1,4 +1,5 @@
-import type { Cdu, CduDestinatario } from '../context-engine/Cdu';
+import type { Cdu, CduDestinatario, CattedraVM } from '../context-engine/Cdu';
+import type { SubjectVM } from '../context-engine/mappers/subjectVmMapper';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { BuildParams, RecipeOptions } from '../context-engine/Recipe';
 import { emailTargetId, type EmailTarget } from '../email/saluto';
@@ -29,7 +30,10 @@ import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
-import { resolveEffectiveDocenti } from '../context-engine/TeachingCouncilProjection';
+import {
+  resolveEffectiveDocenti,
+  materiaVmFromSlot
+} from '../context-engine/TeachingCouncilProjection';
 import { buildPersonVm } from '../context-engine/mappers/personVmMapper';
 
 /**
@@ -105,13 +109,26 @@ function now(ctx: PipelineContext): Date {
   return ctx.get<Date>('now')!;
 }
 
+/** MAIN precedes ITP for the same sigla, matching ClasseRepository.getMaterieDelDocente's legacy precedence rule. */
+function dedupeSubjectsMainOverItp(vms: SubjectVM[]): SubjectVM[] {
+  const bySigla = new Map<string, SubjectVM>();
+  for (const vm of vms) {
+    const existing = bySigla.get(vm.sigla);
+    if (existing === undefined || (existing.isITP && !vm.isITP)) bySigla.set(vm.sigla, vm);
+  }
+  return [...bySigla.values()];
+}
+
 /** Step 1 (11 §3): recipient CDU via the recipe mapped from PROCESSO + destinatario enrichment. */
 export class BuildCDUStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly contextBuilder: ContextBuilder,
     private readonly docenti: IDocenteRepository,
-    private readonly alunni: IAlunnoRepository
+    private readonly alunni: IAlunnoRepository,
+    private readonly classi: IClasseRepository,
+    private readonly materie: IMateriaRepository,
+    private readonly teachingAssignments: ITeachingAssignmentResolver
   ) {
     super('BuildCDU', logger, { requiredKeys: ['config', 'confMail', 'emailTarget', 'now'] });
   }
@@ -136,7 +153,7 @@ export class BuildCDUStep extends Step {
         ...storicoOptionsFor(conf)
       })
     );
-    built.destinatario = this.buildDestinatario(conf, t);
+    built.destinatario = this.buildDestinatario(conf, t, now(ctx));
     this.setResult(ctx, 'cdu', built);
   }
 
@@ -156,7 +173,7 @@ export class BuildCDUStep extends Step {
     };
   }
 
-  private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget): CduDestinatario {
+  private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget, when: Date): CduDestinatario {
     const docente = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
     const titolare = t.titolareEmail !== undefined ? this.docenti.findById(t.titolareEmail) : null;
     const alunno = t.tipoTarget === 'alunno' ? this.alunni.findById(t.target) : null;
@@ -171,6 +188,14 @@ export class BuildCDUStep extends Step {
         : t.tipo === 'alunno' && alunno !== null
           ? buildPersonVm({ nome: alunno.cognomeNome, cognome: null, email: alunno.id ?? '', genere: null })
           : buildPersonVm({ nome: '', cognome: null, email: t.emails[0] ?? '', genere: null });
+
+    const classiCompetenza =
+      t.classiCompetenza.length > 0
+        ? t.classiCompetenza
+        : t.tipoTarget === 'classe'
+          ? [t.target]
+          : [];
+    const { cattedre, materieCompetenza } = this.buildCattedre(t, classiCompetenza, when);
 
     return {
       anagrafica,
@@ -192,13 +217,9 @@ export class BuildCDUStep extends Step {
                 genere: titolare.genere
               })
             : null,
-        classiCompetenza:
-          t.classiCompetenza.length > 0
-            ? t.classiCompetenza
-            : t.tipoTarget === 'classe'
-              ? [t.target]
-              : [],
-        materieCompetenza: []
+        classiCompetenza,
+        materieCompetenza,
+        cattedre
       },
       comunicazione: {
         salutoIniziale: salutoPerTarget(t, docente, alunno),
@@ -206,6 +227,53 @@ export class BuildCDUStep extends Step {
         testoContenutoPuro: ''
       }
     };
+  }
+
+  /**
+   * Per-classe cattedra composition for a docente target (design
+   * 2026-08-22): materie effettive alla data di invio, stesso resolver dei
+   * target (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), IRC/ALT esclusi di
+   * default. Classi senza materie effettive del destinatario sono escluse.
+   */
+  private buildCattedre(
+    t: EmailTarget,
+    classiCompetenza: string[],
+    when: Date
+  ): { cattedre: CattedraVM[]; materieCompetenza: SubjectVM[] } {
+    if (t.tipo !== 'docente' || t.docenteEmail === undefined) {
+      return { cattedre: [], materieCompetenza: [] };
+    }
+    const docenteEmail = t.docenteEmail;
+    const cattedre: CattedraVM[] = [];
+    let flat: SubjectVM[] = [];
+    for (const classeId of classiCompetenza) {
+      const classe = this.classi.findById(ClasseId.of(classeId));
+      if (classe === null) continue;
+      const mie = this.teachingAssignments
+        .resolveConsiglio(classe, when)
+        .filter((a) => a.docenteEffettivo.id === docenteEmail);
+      const materie = dedupeSubjectsMainOverItp(
+        mie
+          .map((a) =>
+            materiaVmFromSlot(this.materie, classe, {
+              materia: a.slot.materia.value,
+              kind: a.slot.kind,
+              specifica: a.slot.specifica
+            })
+          )
+          .filter((vm): vm is SubjectVM => vm !== null)
+      );
+      if (materie.length === 0) continue;
+      cattedre.push({
+        classeId: classe.id ?? classeId,
+        classeNome: classe.nome,
+        anno: classe.anno.value,
+        sezione: classe.nome.replace(/^\d+/, ''),
+        materie
+      });
+      flat = flat.concat(materie);
+    }
+    return { cattedre, materieCompetenza: dedupeSubjectsMainOverItp(flat) };
   }
 }
 

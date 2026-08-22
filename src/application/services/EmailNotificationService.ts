@@ -308,7 +308,9 @@ export class EmailNotificationService {
       stopOnError: false,
       logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
     })
-      .addStep(new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni))
+      .addStep(
+        new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni, d.classi, d.materie, d.teachingAssignments)
+      )
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new CheckAlreadySentStep(this.logger))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))

@@ -394,6 +394,14 @@ export interface CduPianoFocus {
   parametriGenerazione: Record<string, unknown>;
 }
 
+export interface CattedraVM {
+  classeId: string;
+  classeNome: string;
+  anno: number;
+  sezione: string;
+  materie: SubjectVM[];
+}
+
 export interface CduDestinatario {
   anagrafica: PersonVM;
   ruoliAttivi: string[];
@@ -407,7 +415,8 @@ export interface CduDestinatario {
   contesto: {
     sostituisce: PersonVM | null;
     classiCompetenza: string[];
-    materieCompetenza: string[];
+    materieCompetenza: SubjectVM[];
+    cattedre: CattedraVM[];
   };
   comunicazione: { salutoIniziale: string; oggettoCalcolato: string; testoContenutoPuro: string };
 }

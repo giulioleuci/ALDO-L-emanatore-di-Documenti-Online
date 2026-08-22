@@ -212,7 +212,7 @@ function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(
   return result;
 }
 
-function materiaVmFromSlot(
+export function materiaVmFromSlot(
   materie: IMateriaRepository,
   classe: Classe,
   slot: { materia: string; kind: string; specifica: string | null }

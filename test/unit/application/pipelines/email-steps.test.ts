@@ -145,7 +145,15 @@ function wire(
 }
 
 function buildStep(w: Wiring): BuildCDUStep {
-  return new BuildCDUStep(logger, composeContextBuilder(w.db), w.docenti, w.alunni);
+  return new BuildCDUStep(
+    logger,
+    composeContextBuilder(w.db),
+    w.docenti,
+    w.alunni,
+    new ClasseRepository(w.db),
+    new MateriaRepository(w.db),
+    new AldoTeachingAssignmentResolver(w.db)
+  );
 }
 
 function runThroughRender(w: Wiring): string[] {
@@ -515,8 +523,137 @@ test('BuildCDUStep copies EmailTarget.classiCompetenza into BuildParams', () => 
       return real.build(params, r);
     }
   } as ContextBuilder;
-  new BuildCDUStep(logger, spyBuilder, w.docenti, w.alunni).execute(w.ctx);
+  new BuildCDUStep(
+    logger,
+    spyBuilder,
+    w.docenti,
+    w.alunni,
+    new ClasseRepository(w.db),
+    new MateriaRepository(w.db),
+    new AldoTeachingAssignmentResolver(w.db)
+  ).execute(w.ctx);
   expect(capturedParams?.classiCompetenza).toEqual(['5A', '1F']);
+});
+
+test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes for a docente target (design 2026-08-22)', () => {
+  // NOTE (deviation from task-1-brief.md): the brief's original fixture pair
+  // was ['5A', '1F'], but the fixture's own VARIAZIONI_CATTEDRA row
+  // (TITOLARE rossi -> NUOVO_TITOLARE bianchi, DAL 2025-10-01, CLASSI '5A',
+  // MATERIE 'MATE', see test/fixtures/tables.ts) permanently reassigns
+  // 5A/MATE to bianchi as of NOW (2025-11-15) -- rossi is no longer the
+  // docenteEffettivo there, so 5A is correctly excluded from rossi's
+  // cattedre by design (a stale/reassigned class must not appear). '1F' and
+  // '1F-LSO' are used instead: both nominally and effectively hold
+  // rossi/MATE at NOW with no active SUPPLENZE/VARIAZIONI_CATTEDRA override,
+  // preserving the test's intent (multi-class cattedre computation + MATE
+  // dedup on the flat list) without relying on stale-assignment exclusion,
+  // which is covered separately by the "excludes a class..." test below.
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '1F',
+      docenteEmail: 'rossi@school.it',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['1F', '1F-LSO']
+    }
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const contesto = cdu.destinatario!.contesto;
+  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F', '1F-LSO']);
+  expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(contesto.cattedre[0]!.anno).toBe(1);
+  expect(contesto.cattedre[0]!.sezione).toBe('F');
+  // rossi teaches MATE in both 1F and 1F-LSO: flat list dedupes to one entry.
+  expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
+});
+
+test('BuildCDUStep excludes a class from cattedre when the docente has no effective materia there, email still buildable (design 2026-08-22)', () => {
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '5A',
+      docenteEmail: 'verdi@school.it',
+      emails: ['verdi@school.it'],
+      classiCompetenza: ['5A']
+    }
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const contesto = cdu.destinatario!.contesto;
+  expect(contesto.cattedre).toEqual([]);
+  expect(contesto.materieCompetenza).toEqual([]);
+  expect(cdu.destinatario!.anagrafica.email).toBe('verdi@school.it');
+});
+
+test('BuildCDUStep only computes cattedre for docente-type targets, not genitori/alunno (design 2026-08-22)', () => {
+  const w = wire();
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.destinatario!.contesto.cattedre).toEqual([]);
+  expect(cdu.destinatario!.contesto.materieCompetenza).toEqual([]);
+});
+
+test('BuildCDUStep dedupes MAIN over ITP on the flat materieCompetenza list (legacy precedence, design 2026-08-22)', () => {
+  const tables = fixtureTables();
+  (tables['CLASSI'] as Row[]).push({
+    ID: '2C',
+    ANNO: 2,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    MATE: 'rossi@school.it',
+    'MATE.itp': 'rossi@school.it'
+  });
+  const w = wire(
+    { PROCESSO: 'PER_DOCENTE' },
+    {
+      tipo: 'docente',
+      tipoTarget: 'classe',
+      target: '2C',
+      docenteEmail: 'rossi@school.it',
+      emails: ['rossi@school.it'],
+      classiCompetenza: ['2C']
+    },
+    tables
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  const materie = cdu.destinatario!.contesto.cattedre[0]!.materie;
+  expect(materie).toHaveLength(1);
+  expect(materie[0]!.sigla).toBe('MATE');
+  expect(materie[0]!.isITP).toBe(false);
+});
+
+test('BuildCDUStep supplenza ENTRAMBI: the resolved supplente sees the covered materia, the titolare does not (design 2026-08-22)', () => {
+  const supplenteTarget: EmailTarget = {
+    ...docente4BTarget(),
+    docenteEmail: 'bianchi@school.it',
+    titolareEmail: 'rossi@school.it'
+  };
+  const wSupplente = wire(
+    { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' },
+    supplenteTarget,
+    tablesWith4B()
+  );
+  buildStep(wSupplente).execute(wSupplente.ctx);
+  const supplenteCdu = wSupplente.ctx.get<Cdu>('cdu')!;
+  expect(supplenteCdu.destinatario!.contesto.materieCompetenza.map((m) => m.sigla)).toContain('MATE');
+
+  const wTitolare = wire(
+    { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' },
+    docente4BTarget(),
+    tablesWith4B()
+  );
+  buildStep(wTitolare).execute(wTitolare.ctx);
+  const titolareCdu = wTitolare.ctx.get<Cdu>('cdu')!;
+  expect(titolareCdu.destinatario!.contesto.cattedre).toEqual([]);
 });
 
 test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {
@@ -1537,7 +1674,15 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const w = wire({ ID: null });
     const builder = composeContextBuilder(w.db);
     const buildSpy = jest.spyOn(builder, 'build');
-    new BuildCDUStep(logger, builder, w.docenti, w.alunni).execute(w.ctx);
+    new BuildCDUStep(
+      logger,
+      builder,
+      w.docenti,
+      w.alunni,
+      new ClasseRepository(w.db),
+      new MateriaRepository(w.db),
+      new AldoTeachingAssignmentResolver(w.db)
+    ).execute(w.ctx);
     const params = buildSpy.mock.calls[0]![0] as { idConfigurazione?: string };
     expect(params.idConfigurazione).toBeUndefined();
   });
@@ -1545,7 +1690,15 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
   test('BuildCDUStep falls back to "" for docente.id when the injected docente lookup returns a Docente with no id', () => {
     const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
     const docentiStub = { findById: () => Docente.fromData({}) } as unknown as DocenteRepository;
-    new BuildCDUStep(logger, composeContextBuilder(w.db), docentiStub, w.alunni).execute(w.ctx);
+    new BuildCDUStep(
+      logger,
+      composeContextBuilder(w.db),
+      docentiStub,
+      w.alunni,
+      new ClasseRepository(w.db),
+      new MateriaRepository(w.db),
+      new AldoTeachingAssignmentResolver(w.db)
+    ).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
     expect(cdu.destinatario?.anagrafica.email).toBe('');
   });
@@ -1564,7 +1717,15 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const alunniStub = {
       findById: () => Alunno.fromData({ ATTIVO: true })
     } as unknown as AlunnoRepository;
-    new BuildCDUStep(logger, composeContextBuilder(w.db), w.docenti, alunniStub).execute(w.ctx);
+    new BuildCDUStep(
+      logger,
+      composeContextBuilder(w.db),
+      w.docenti,
+      alunniStub,
+      new ClasseRepository(w.db),
+      new MateriaRepository(w.db),
+      new AldoTeachingAssignmentResolver(w.db)
+    ).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
     expect(cdu.destinatario?.anagrafica.email).toBe('');
   });
@@ -1920,7 +2081,10 @@ describe('CheckAlreadySentStep', () => {
         new AldoTeachingAssignmentResolver(db)
       ),
       docenti,
-      alunni
+      alunni,
+      new ClasseRepository(db),
+      new MateriaRepository(db),
+      new AldoTeachingAssignmentResolver(db)
     ).execute(ctx);
     new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(ctx);
     return { db, ctx };

@@ -505,13 +505,13 @@ focus.dipartimento:
 
 Popolata ESCLUSIVAMENTE dal `BuildCDUStep` della pipeline email (`src/application/pipelines/emailSteps.ts`): un CDU costruito per la sola generazione documenti non ha mai `cdu.destinatario`. `destinatario.anagrafica` è un `PersonVM` (§8.1) completo, quindi reca anche `appellativoCompleto`/`appellativoCognome`.
 
-> **STUB NON IMPLEMENTATO:** `BuildCDUStep.buildDestinatario` (`emailSteps.ts:157-196`) valorizza `ruoliAttivi`, `flags.isTutor`, `flags.isTutorAsl`, `flags.isDocenteSostegno`, `flags.isSupplente`, `contesto.sostituisce` e `contesto.materieCompetenza` con il loro valore-zero incondizionato (`[]`/`false`/`null`), indipendentemente dal destinatario reale — non sono ancora calcolati. La FORMA (il tipo, in `CduDestinatario`) è quella reale e già stabile; il VALORE è oggi sempre lo stub, in attesa di un'implementazione futura. Solo `flags.isCoordinatore` (derivato da `conf.processo === ProcessoInvio.PER_COORDINATORE`) e `contesto.classiCompetenza` sono genuinamente calcolati per destinatario.
+`destinatario.contesto.materieCompetenza` e `destinatario.contesto.cattedre` sono calcolati esclusivamente per i target `tipo === 'docente'` (per gli altri target restano `[]`), a partire dalle materie effettive alla data di invio via `ITeachingAssignmentResolver.resolveConsiglio` (stesso resolver usato per il targeting) — IRC/ALT esclusi di default. `materieCompetenza` è la lista piatta deduplicata su tutte le classi (precedenza MAIN > ITP, stessa regola legacy di `ClasseRepository.getMaterieDelDocente`); `cattedre` raggruppa le stesse materie per classe. `ruoliAttivi`, `flags.isTutor`, `flags.isTutorAsl`, `flags.isDocenteSostegno`, `flags.isSupplente` restano STUB (`[]`/`false`), non ancora calcolati. Solo `flags.isCoordinatore` (derivato da `conf.processo === ProcessoInvio.PER_COORDINATORE`) e `contesto.classiCompetenza` erano già genuinamente calcolati.
 
 ```yaml
 destinatario:
   anagrafica: PersonVM           # Dati anagrafici standardizzati (§8.1) del destinatario
 
-  ruoliAttivi: string[]          # STUB: sempre [] — non ancora calcolato (vedi nota sopra)
+  ruoliAttivi: string[]          # STUB: sempre [] — non ancora calcolato
 
   flags:
     isCoordinatore: boolean      # Genuinamente calcolato: true se conf.processo === PER_COORDINATORE
@@ -521,14 +521,22 @@ destinatario:
     isSupplente: boolean         # STUB: sempre false — non ancora calcolato
 
   contesto:
-    sostituisce: PersonVM | null # STUB: sempre null — non ancora calcolato (non collegato a isSupplente)
-    classiCompetenza: string[]   # Genuinamente calcolato: ClasseId su cui il destinatario ha titolarità
-    materieCompetenza: string[]  # STUB: sempre [] — non ancora calcolato
+    sostituisce: PersonVM | null      # STUB: sempre null — non ancora calcolato (non collegato a isSupplente)
+    classiCompetenza: string[]        # Genuinamente calcolato: ClasseId su cui il destinatario ha titolarità
+    materieCompetenza: SubjectVM[]    # Solo target docente: materie effettive deduplicate su tutte le classi (§8.2)
+    cattedre: CattedraVM[]            # Solo target docente: le stesse materie raggruppate per classe
 
   comunicazione:
     salutoIniziale: string       # es. "Gentile Prof.ssa Bianchi," o "Spettabile Genitore,"
     oggettoCalcolato: string     # Oggetto email finale processato tramite template engine
     testoContenutoPuro: string   # Testo plain-text senza wrapper HTML (per audit log)
+
+CattedraVM:
+  classeId: string               # "5AB-LC-LS"
+  classeNome: string              # nome completo della classe
+  anno: number
+  sezione: string
+  materie: SubjectVM[]            # SubjectVM completi (§8.2): sigla, nome, nomeSintetico, colore1/colore2, specificita, isITP, flag esami
 ```
 
 ---
@@ -1503,7 +1511,24 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       "isDocenteSostegno": false,
       "isSupplente": false
     },
-    "contesto": { "sostituisce": null, "classiCompetenza": ["5AB-LC-LS"], "materieCompetenza": [] },
+    "contesto": {
+      "sostituisce": null,
+      "classiCompetenza": ["5AB-LC-LS"],
+      "materieCompetenza": [
+        { "sigla": "MATE", "nome": "Matematica", "nomeSintetico": "Matematica", "colore1": "#c0392b", "colore2": "#fdecea", "isMateriaPrimaProva": false, "isMateriaSecondaProva": false, "principale": null, "specificita": null, "isITP": false, "evoluzione": null }
+      ],
+      "cattedre": [
+        {
+          "classeId": "5AB-LC-LS",
+          "classeNome": "5AB-LC-LS",
+          "anno": 5,
+          "sezione": "AB-LC-LS",
+          "materie": [
+            { "sigla": "MATE", "nome": "Matematica", "nomeSintetico": "Matematica", "colore1": "#c0392b", "colore2": "#fdecea", "isMateriaPrimaProva": false, "isMateriaSecondaProva": false, "principale": null, "specificita": null, "isITP": false, "evoluzione": null }
+          ]
+        }
+      ]
+    },
     "comunicazione": { "salutoIniziale": "Gentile Prof. Rossi,", "oggettoCalcolato": "Convocazione CDC 5AB-LC-LS", "testoContenutoPuro": "" }
   },
   "render": { "boxes": {}, "body": { "htmlCompleto": "", "htmlSoloContenuto": "" } }

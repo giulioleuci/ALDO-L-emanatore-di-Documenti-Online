@@ -455,10 +455,21 @@ Template HTML memorizzato nel campo `TESTO` della tabella `CONF_MAIL`:
 </p>
 {{/destinatario.flags.isCoordinatore}}
 
-<p>Materie di Tua competenza per questa classe:</p>
+<p>Le tue cattedre:</p>
+<ul>
+  {{#destinatario.contesto.cattedre}}
+  <li><strong>{{classeNome}}</strong> —
+    {{#materie}}{{nome}}{{^last}}, {{/last}}{{/materie}}
+  </li>
+  {{/destinatario.contesto.cattedre}}
+</ul>
+
+<p>Oppure, per la lista piatta deduplicata su tutte le classi, usa il box standard
+<code>cattedre</code> (BOX_CFG <code>{"TIPO_BOX":"cattedre"}</code>, titolo default "Le tue cattedre")
+oppure itera direttamente <code>destinatario.contesto.materieCompetenza</code>:</p>
 <ul>
   {{#destinatario.contesto.materieCompetenza}}
-  <li>{{.}}</li>
+  <li>{{nome}}</li>
   {{/destinatario.contesto.materieCompetenza}}
 </ul>
 

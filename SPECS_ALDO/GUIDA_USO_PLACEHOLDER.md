@@ -480,6 +480,10 @@ oppure itera direttamente <code>destinatario.contesto.materieCompetenza</code>:<
 </p>
 ```
 
+`TESTO_END` (stessa tabella) accetta lo stesso tipo di template HTML e viene
+inserito dopo i box, prima del footer "comunicazione automatica" — utile per
+un saluto di chiusura o un rimando successivo ai contenuti dinamici.
+
 ---
 
 ### Esempio 4: Formattazione Avanzata con Filtri Pipe e Separatori

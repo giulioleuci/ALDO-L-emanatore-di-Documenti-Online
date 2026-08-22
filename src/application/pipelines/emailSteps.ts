@@ -466,7 +466,7 @@ export class RenderBoxesStep extends Step {
   }
 }
 
-/** Step 5 (11 §6): msgstart + header + saluto + TESTO_START + boxes + footer + msgend. */
+/** Step 5 (11 §6): msgstart + header + saluto + TESTO_START + boxes + TESTO_END + footer + msgend. */
 export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
@@ -539,6 +539,7 @@ export class ComposeEmailStep extends Step {
     const built = cdu(ctx);
     const saluto = built.destinatario?.comunicazione.salutoIniziale ?? 'Gentile Utente';
     const testo = this.templates.processStringEscaped(conf.getTestoStart(), cduRecord(ctx));
+    const testoEnd = this.templates.processStringEscaped(conf.getTestoEnd(), cduRecord(ctx));
     const boxes = ctx.get<string[]>('boxHtmlOrdered') ?? [];
     const noReplyBlock = conf.isNoreply()
       ? '<p><strong>⚠️ La risposta a questa email non sarà monitorata.</strong></p>'
@@ -551,7 +552,7 @@ export class ComposeEmailStep extends Step {
 
     // Saluto/oggetto embed sheet-sourced names; the header colour lands in a
     // style attribute — all pass the same escaping/whitelisting as the boxes.
-    const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}`;
+    const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}${testoEnd}`;
     const htmlCompleto =
       '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="margin:0; padding:0; background-color:#f4f4f4;">' +

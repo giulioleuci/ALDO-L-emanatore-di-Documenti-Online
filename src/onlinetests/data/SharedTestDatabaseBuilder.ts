@@ -1255,6 +1255,7 @@ export class SharedTestDatabaseBuilder {
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO_START]: '<p>In allegato il verbale del consiglio di classe.</p>',
+      [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
@@ -1275,6 +1276,7 @@ export class SharedTestDatabaseBuilder {
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO_START]: '<p>In allegato la scheda di valutazione condotta.</p>',
+      [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_SUPPLENTI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
@@ -1297,6 +1299,7 @@ export class SharedTestDatabaseBuilder {
       ]),
       [COL_CONF_MAIL.TESTO_START]:
         '<p>Comunichiamo una carenza rilevata per il/la vostro/a figlio/a.</p>',
+      [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
@@ -1322,6 +1325,7 @@ export class SharedTestDatabaseBuilder {
         { TIPO_BOX: 'piani_pers_inviati' }
       ]),
       [COL_CONF_MAIL.TESTO_START]: '<p>Piani personalizzati nuovi e già notificati.</p>',
+      [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
@@ -1367,6 +1371,7 @@ export class SharedTestDatabaseBuilder {
       ]),
       [COL_CONF_MAIL.TESTO_START]:
         '<p>Il piano di lavoro e la cartella dei verbali delle riunioni sono collegati di seguito.</p>',
+      [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
@@ -1382,6 +1387,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
       [COL_CONF_MAIL.BOX_CFG]: '[]',
       [COL_CONF_MAIL.TESTO_START]: '<p>Messaggio con allegato statico di prova.</p>',
+      [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'ENTRAMBI',
       [COL_CONF_MAIL.NOREPLY]: false,
       [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',

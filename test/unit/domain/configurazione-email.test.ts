@@ -72,3 +72,16 @@ describe('ConfigurazioneEmail.getTestoStart', () => {
     expect(email.toData()[COL_CONF_MAIL.TESTO_START]).toBe(html);
   });
 });
+
+describe('ConfigurazioneEmail.getTestoEnd', () => {
+  test('defaults to empty string when the column is missing', () => {
+    expect(config().getTestoEnd()).toBe('');
+  });
+
+  test('reads TESTO_END and round-trips through toData()', () => {
+    const html = '<p>Cordiali saluti, {{focus.classe.coordinatori.appellativo}}</p>';
+    const email = config({ [COL_CONF_MAIL.TESTO_END]: html });
+    expect(email.getTestoEnd()).toBe(html);
+    expect(email.toData()[COL_CONF_MAIL.TESTO_END]).toBe(html);
+  });
+});

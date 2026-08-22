@@ -1072,6 +1072,36 @@ test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () 
   expect(w.ctx.get('allegati')).toEqual([]);
 });
 
+test('ComposeEmailStep appends TESTO_END after the boxes and before the footer', () => {
+  const w = wire({ TESTO_END: '<p>Cordiali saluti, la segreteria.</p>' });
+  runThroughCompose(w);
+  const html = w.ctx.get<string>('corpoHtml')!;
+  const boxesIdx = html.indexOf('Carenze');
+  const endIdx = html.indexOf('Cordiali saluti, la segreteria.');
+  const footerIdx = html.indexOf('comunicazione automatica');
+  expect(boxesIdx).toBeGreaterThan(-1);
+  expect(endIdx).toBeGreaterThan(boxesIdx);
+  expect(footerIdx).toBeGreaterThan(endIdx);
+});
+
+test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO_END', () => {
+  const w = wire({ TESTO_END: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
+  new ComposeEmailStep(
+    logger,
+    w.templates,
+    new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
+    new FakeDriveFacade()
+  ).execute(w.ctx);
+  const html = w.ctx.get<string>('corpoHtml')!;
+  expect(html).not.toContain('<script>alert(1)</script>');
+  expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO (REVIEW_ALDO.md #2)', () => {
   const w = wire({ TESTO_START: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
   buildStep(w).execute(w.ctx);

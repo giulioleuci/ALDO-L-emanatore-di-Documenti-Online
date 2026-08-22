@@ -293,6 +293,28 @@ function renderAssenzeBox(): string {
   );
 }
 
+interface CattedraBoxRow {
+  classeId: string;
+  classeNome: string;
+  materie: Array<{ nome: string; isITP: boolean }>;
+}
+
+function renderCattedreBox(data: unknown): string {
+  const cattedre = data as CattedraBoxRow[];
+  const righe = cattedre
+    .map((c) => {
+      const materie = c.materie
+        .map(
+          (m) =>
+            `${escapeHtml(m.nome)}${m.isITP ? ' <span style="font-size:11px;color:#888;">(ITP)</span>' : ''}`
+        )
+        .join(', ');
+      return `<li><strong>${escapeHtml(c.classeNome)}</strong> — ${materie}</li>`;
+    })
+    .join('');
+  return wrapUl(righe);
+}
+
 /**
  * Composer wired with the six registered TIPO_BOX blocks (11 §11). Blocks read
  * their data from the serialized composition context (`boxdata.*` aggregated by
@@ -369,6 +391,12 @@ export function createBoxComposer(
     (ctx) => ctx.get('focus.carenza.hasAssenze', false) === true,
     (d) => d !== true
   );
+  simple(
+    'cattedre',
+    'Cattedre',
+    (ctx) => ctx.get('destinatario.contesto.cattedre', []),
+    (d) => (d as unknown[]).length === 0
+  );
   // testo_dinamico: sempre visibile (MOSTRA_SE_VUOTO implicito, 11 §11); data = whole CDU.
   blocks.register({
     definition: {
@@ -400,6 +428,7 @@ export function createBoxComposer(
         piani_pers_inviati: (data, options) => renderPianiPersBox(data, options, templates, logger),
         note: (data) => renderNoteBox(data),
         assenze: () => renderAssenzeBox(),
+        cattedre: (data) => renderCattedreBox(data),
         testo_dinamico: (data, options) =>
           templates.processStringEscaped(str(options.config['CONTENUTO']), data as Record<string, unknown>)
       }
@@ -417,6 +446,7 @@ const DEFAULT_TITLES: Record<string, string> = {
   cartelle: 'Cartelle',
   note: 'Note',
   assenze: 'Assenze',
+  cattedre: 'Le tue cattedre',
   testo_dinamico: '',
   piani_pers_da_inviare: 'Piani personalizzati da notificare',
   piani_pers_inviati: 'Piani personalizzati notificati'
@@ -474,6 +504,13 @@ function aggregaDati(
         };
       }
     | undefined;
+  const destinatario = cdu['destinatario'] as
+    | {
+        contesto?: {
+          cattedre?: CattedraBoxRow[];
+        };
+      }
+    | undefined;
   const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
   const documenti =
     focus?.classe?.didattica?.documenti ??
@@ -522,7 +559,8 @@ function aggregaDati(
       items: pianiItems.filter((i) => i.notificato),
       storicoRef: pianiStoricoRef,
       defaultTemplate: ''
-    }
+    },
+    cattedre: destinatario?.contesto?.cattedre ?? []
   };
 }
 

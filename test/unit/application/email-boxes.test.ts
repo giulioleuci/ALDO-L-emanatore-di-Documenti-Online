@@ -292,6 +292,74 @@ test('note + assenze boxes read focus.carenza (11 §11)', () => {
   expect(out.boxes['assenze']!.html).toContain('assenze');
 });
 
+function cattedraVm(overrides: Partial<{ nome: string; sigla: string; isITP: boolean }> = {}) {
+  return {
+    sigla: overrides.sigla ?? 'MATE',
+    nome: overrides.nome ?? 'Matematica',
+    nomeSintetico: 'Matematica',
+    colore1: '#c0392b',
+    colore2: '#fdecea',
+    isMateriaPrimaProva: false,
+    isMateriaSecondaProva: false,
+    principale: null,
+    specificita: null,
+    isITP: overrides.isITP ?? false,
+    evoluzione: null
+  };
+}
+
+test('cattedre box renders one row per classe with its materie (design 2026-08-22)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  cdu['destinatario'] = {
+    contesto: {
+      cattedre: [
+        {
+          classeId: '5A',
+          classeNome: '5A',
+          anno: 5,
+          sezione: 'A',
+          materie: [cattedraVm({ nome: 'Matematica' }), cattedraVm({ nome: 'Fisica', sigla: 'FISI', isITP: true })]
+        }
+      ]
+    }
+  };
+  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  expect(out.boxes['cattedre']!.visibile).toBe(true);
+  expect(out.boxes['cattedre']!.html).toContain('5A');
+  expect(out.boxes['cattedre']!.html).toContain('Matematica');
+  expect(out.boxes['cattedre']!.html).toContain('Fisica');
+});
+
+test('cattedre box is hidden when destinatario.contesto.cattedre is absent/empty (design 2026-08-22)', () => {
+  const out = render([{ TIPO_BOX: 'cattedre' }]);
+  expect(out.boxes['cattedre']!.visibile).toBe(false);
+  expect(out.boxes['cattedre']!.html).toBe('');
+});
+
+test('cattedre box HTML-escapes a hostile materia nome (design 2026-08-22)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = cduRecord();
+  cdu['destinatario'] = {
+    contesto: {
+      cattedre: [
+        {
+          classeId: '5A',
+          classeNome: '5A',
+          anno: 5,
+          sezione: 'A',
+          materie: [cattedraVm({ nome: '<script>alert(1)</script>' })]
+        }
+      ]
+    }
+  };
+  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  expect(out.boxes['cattedre']!.html).not.toContain('<script>');
+  expect(out.boxes['cattedre']!.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
 test('testo_dinamico always visible, resolves CONTENUTO placeholders', () => {
   const out = render([
     { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Classe {{focus.classe.anagrafica.nome}}</p>' }

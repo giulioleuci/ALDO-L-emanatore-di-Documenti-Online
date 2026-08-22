@@ -238,9 +238,7 @@ test('prior-year CLASSI sheets declare a GST cattedra column', () => {
   const masterSheet = new RecordingSpreadsheet('master');
   seedAnniPrecedenti(masterSheet, factory, 'folder_e2e');
 
-  const priors = [...sheets.entries()].filter(([name]) =>
-    name.startsWith('_ALDO_E2E_PRIOR_')
-  );
+  const priors = [...sheets.entries()].filter(([name]) => name.startsWith('_ALDO_E2E_PRIOR_'));
   expect(priors.length).toBe(ANNI_PRECEDENTI.length);
   for (const [, prior] of priors) {
     expect(prior.headers[TABLE.CLASSI]).toContain('GST');

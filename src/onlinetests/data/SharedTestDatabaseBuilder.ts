@@ -1250,7 +1250,7 @@ export class SharedTestDatabaseBuilder {
         // as well. The ALLEGATI column below stays '[]': real file attachments
         // remain opt-in (item 3). DATI_SORGENTE is unrelated to attachments —
         // it makes renderBoxes resolve each class's real LOG_FOLD folders so
-        // LOG_MAIL.ALLEGATI records which folders recipients gained access to.
+        // LOG_MAIL.ALLEGATI records which class folders the mail referenced.
         { TIPO_BOX: 'documenti', FILTRO_TIPO: 'VERBALE' },
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),

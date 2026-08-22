@@ -6,17 +6,17 @@ Analysis of the online GAS test execution (`ONLINE_RESULTS/batch1..4.txt`), run 
 
 ## 1. Executive summary
 
-| Batch | Window | Tests | Passed | Failed | Verdict |
-|-------|--------|-------|--------|--------|---------|
-| batch1 | (log not retained) | — | — | 0 | ✅ "Zero errors!" |
-| batch2 | 09:10:27 → 09:16:12 | 17 | 16 | **1** | ❌ Job `online_tests_batch2` failed (16 passed, 1 failed) |
-| batch3 | 09:22:27 → 09:28:24 | 27 | 25 | **2** | ❌ Job `online_tests_batch3` failed (25 passed, 2 failed) |
-| batch4 | (log not retained) | — | — | 0 | ✅ "All correct, no errors!" |
+| Batch  | Window              | Tests | Passed | Failed | Verdict                                                   |
+| ------ | ------------------- | ----- | ------ | ------ | --------------------------------------------------------- |
+| batch1 | (log not retained)  | —     | —      | 0      | ✅ "Zero errors!"                                         |
+| batch2 | 09:10:27 → 09:16:12 | 17    | 16     | **1**  | ❌ Job `online_tests_batch2` failed (16 passed, 1 failed) |
+| batch3 | 09:22:27 → 09:28:24 | 27    | 25     | **2**  | ❌ Job `online_tests_batch3` failed (25 passed, 2 failed) |
+| batch4 | (log not retained)  | —     | —      | 0      | ✅ "All correct, no errors!"                              |
 
 There are exactly **3 failed tests**, caused by **2 distinct error types**:
 
-1. `ValidationError` — *"Invio verbale: gli artefatti LOG_MAIL non corrispondono ai VERBALE/LOG_FOLD persistiti"* (batch2, 1 test). Root cause: **CONFIRMED** — the seeded CONF_MAIL never enables folder resolution (`DATI_SORGENTE` missing on the cartelle box), so `LOG_MAIL.ALLEGATI.folders` is always `[]` while the test requires non-empty. See §2b. **Status: FIX APPLIED (offline-verified)** — commit `d9728b5`.
-2. `ValidationError` — *"Storico E2E: titolare STO non materializzato"* (batch3, 2 tests, identical signature). Root cause: **CONFIRMED** — prior-year CLASSI fixture rows lose their `GST` value at write time because the column is absent from the declared header and the test framework's `appendRow` silently drops out-of-header keys. See §3. **Status: FIX APPLIED (offline-verified)** — commit `55ab0b0`.
+1. `ValidationError` — _"Invio verbale: gli artefatti LOG_MAIL non corrispondono ai VERBALE/LOG_FOLD persistiti"_ (batch2, 1 test). Root cause: **CONFIRMED** — the seeded CONF_MAIL never enables folder resolution (`DATI_SORGENTE` missing on the cartelle box), so `LOG_MAIL.ALLEGATI.folders` is always `[]` while the test requires non-empty. See §2b. **Status: FIX APPLIED (offline-verified)** — commit `d9728b5`.
+2. `ValidationError` — _"Storico E2E: titolare STO non materializzato"_ (batch3, 2 tests, identical signature). Root cause: **CONFIRMED** — prior-year CLASSI fixture rows lose their `GST` value at write time because the column is absent from the declared header and the test framework's `appendRow` silently drops out-of-header keys. See §3. **Status: FIX APPLIED (offline-verified)** — commit `55ab0b0`.
 
 All failures are **assertion failures thrown by the online tests themselves**
 (`throw new ValidationError(...)`) — no unexpected runtime exceptions,
@@ -50,17 +50,17 @@ uncaught errors or infrastructure crashes occurred in either batch.
 
 ### Stack frames resolved to original TypeScript source (via `dist/gas-source-map.json`)
 
-| Minified frame | Original source |
-|----------------|-----------------|
-| `OnlineTests:213361:19` | `src/onlinetests/checks/emailChecks.ts:189` — **exact throw point**, inside `assertVerbaleArtifacts()` |
-| `OnlineTests:213251:9` | `src/onlinetests/checks/emailChecks.ts:102` — invocation of `assertVerbaleArtifacts(verbaleRows, db.table(TABLE.LOG_DOCS).findAll(), db.table(TABLE.LOG_FOLD).findAll())` in the test body (lines 99–103) |
-| `OnlineTests:172560:53` | `src/onlinetests/report/OnlineTestReport.ts:56` — generic test-function wrapper (`Object.fn`) |
-| `Code:50337:26` / `Code:50321:30` | Vendor bundle (`EnhancedTestRunner._runTest` / `.run`, GasLibraryFactory prelude) — intentionally unmapped |
-| `OnlineTests:172570:82` | `src/onlinetests/report/OnlineTestReport.ts:59` |
-| `OnlineTests:213220:12` | `src/onlinetests/checks/emailChecks.ts:87` — registration block `registerEmailChecks` |
-| `OnlineTests:261113:31` | `src/onlinetests/index.ts:623` — `executeOnlineTestsBatch` |
-| `OnlineTests:261195:12` | `src/onlinetests/index.ts:711` — `executeOnlineTestsBatch2` |
-| `OnlineTests:261144:52` | `src/onlinetests/index.ts:652` — `runReportedSuite` |
+| Minified frame                    | Original source                                                                                                                                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OnlineTests:213361:19`           | `src/onlinetests/checks/emailChecks.ts:189` — **exact throw point**, inside `assertVerbaleArtifacts()`                                                                                                    |
+| `OnlineTests:213251:9`            | `src/onlinetests/checks/emailChecks.ts:102` — invocation of `assertVerbaleArtifacts(verbaleRows, db.table(TABLE.LOG_DOCS).findAll(), db.table(TABLE.LOG_FOLD).findAll())` in the test body (lines 99–103) |
+| `OnlineTests:172560:53`           | `src/onlinetests/report/OnlineTestReport.ts:56` — generic test-function wrapper (`Object.fn`)                                                                                                             |
+| `Code:50337:26` / `Code:50321:30` | Vendor bundle (`EnhancedTestRunner._runTest` / `.run`, GasLibraryFactory prelude) — intentionally unmapped                                                                                                |
+| `OnlineTests:172570:82`           | `src/onlinetests/report/OnlineTestReport.ts:59`                                                                                                                                                           |
+| `OnlineTests:213220:12`           | `src/onlinetests/checks/emailChecks.ts:87` — registration block `registerEmailChecks`                                                                                                                     |
+| `OnlineTests:261113:31`           | `src/onlinetests/index.ts:623` — `executeOnlineTestsBatch`                                                                                                                                                |
+| `OnlineTests:261195:12`           | `src/onlinetests/index.ts:711` — `executeOnlineTestsBatch2`                                                                                                                                               |
+| `OnlineTests:261144:52`           | `src/onlinetests/index.ts:652` — `runReportedSuite`                                                                                                                                                       |
 
 ### Exact failure point
 
@@ -81,7 +81,7 @@ which also trips condition 1/2 — so both "artifacts not persisted" and
 
 ### Evidence from the run
 
-- All three mail jobs completed successfully *before* the assertion ran:
+- All three mail jobs completed successfully _before_ the assertion ran:
   `mail_E2E_MAIL_VERBALE` (15.4 s), `mail_E2E_MAIL_PIANI` (14.4 s),
   `mail_E2E_MAIL_STORICO` (21.4 s) — each ended with `🏁 [COMPLETED]`,
   pipeline `8 executed, 1 skipped, 0 failed`, including `[LogEmail] EXECUTED`.
@@ -115,9 +115,9 @@ never populate `folders`:
 2. In `renderBoxes` (`src/application/email/boxes.ts:535+`),
    `cartelleMetodo = str(cartelleCfg?.['DATI_SORGENTE']?.metodo)` → `''`, so the
    guard `cartelleMetodo === 'cartellePerClasse' && aggregatoreDati !== undefined
-   && classeIds !== undefined` fails → `realCartelle = null`.
+&& classeIds !== undefined` fails → `realCartelle = null`.
 3. Fallback path: `renderedFolderIds = boxdata.cartelle.items.filter(tipo ===
-   'CARTELLA')` — CDU *document* items only. The verbale flow generates
+'CARTELLA')` — CDU _document_ items only. The verbale flow generates
    documents of TIPO `VERBALE`; folders exist solely as LOG_FOLD rows, so this
    yields `[]`.
 4. `LogEmailStep` (`emailSteps.ts:745`) writes
@@ -127,23 +127,24 @@ never populate `folders`:
 
 Corroboration that this is a fixture gap, not a production defect:
 
-| Evidence | Source |
-|----------|--------|
-| `E2E_MAIL_LAVORO` carries the correct config `{TIPO_BOX:'cartelle', DATI_SORGENTE:{metodo:'cartellePerClasse'}}` | CONF_MAIL row in the dump |
-| `AggregatoreDati` is always instantiated and passed to `RenderBoxesStep` | `ApplicationComposition.ts:125`, `EmailNotificationService.ts:316` |
-| Folder data is present and well-formed | 3 × LOG_FOLD E2E_VERBALE rows |
-| Docs audit path works end-to-end | all verbale doc ids verified |
+| Evidence                                                                                                         | Source                                                             |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `E2E_MAIL_LAVORO` carries the correct config `{TIPO_BOX:'cartelle', DATI_SORGENTE:{metodo:'cartellePerClasse'}}` | CONF_MAIL row in the dump                                          |
+| `AggregatoreDati` is always instantiated and passed to `RenderBoxesStep`                                         | `ApplicationComposition.ts:125`, `EmailNotificationService.ts:316` |
+| Folder data is present and well-formed                                                                           | 3 × LOG_FOLD E2E_VERBALE rows                                      |
+| Docs audit path works end-to-end                                                                                 | all verbale doc ids verified                                       |
 
 Also latent: `E2E_MAIL_CONDOTTA` has the same missing config, but no assertion
 checks its folders today.
 
-### Fix directions (not applied)
+### Fix applied — see commit reference above
 
 1. **Fixture fix (recommended)**: add
    `"DATI_SORGENTE":{"metodo":"cartellePerClasse"}` to the cartelle box of
    `E2E_MAIL_VERBALE` (and `E2E_MAIL_CONDOTTA` for consistency) in
    `seedConfMail`. This makes the mails actually exercise the folder-sharing
    audit path the test asserts — matching the LAVORO precedent and test intent.
+   Applied in commit `d9728b5` (offline-verified; see §1).
 2. Alternative (not recommended): relax the test to accept empty folders —
    weakens exactly the check the assertion author wrote it for.
 
@@ -195,15 +196,15 @@ checks its folders today.
 
 ### Stack frames resolved to original TypeScript source
 
-| Minified frame | Original source |
-|----------------|-----------------|
-| `OnlineTests:245939:11` | `src/onlinetests/checks/storicoChecks.ts:31` — `fail()`: `throw new ValidationError('Storico E2E: ' + message)` |
-| `OnlineTests:245949:9` | `src/onlinetests/checks/storicoChecks.ts:35` — `asRecord(value, label)`: fires `${label} non materializzato` when value is `null` / not an object |
-| `OnlineTests:246231:16` | `src/onlinetests/checks/storicoChecks.ts:173` — **exact throw point**: `asRecord(anno.titolare, 'titolare STO')` inside the `stoAnni.some(...)` predicate |
-| `Array.some (<anonymous>)` | native — iterating `continuita.docentiAnniPrecedenti` of subject `STO` |
-| `OnlineTests:246228:13` | `src/onlinetests/checks/storicoChecks.ts:172` — `assertClasseStorico()` |
-| `OnlineTests:246458:13` | `src/onlinetests/checks/storicoChecks.ts:310` — test body #1: `assertClasseStorico(storico, cdu.focus.classe?.materie)` |
-| `OnlineTests:246466:13` | `src/onlinetests/checks/storicoChecks.ts:318` — test body #2: same assertion on second sample spreadsheet |
+| Minified frame             | Original source                                                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OnlineTests:245939:11`    | `src/onlinetests/checks/storicoChecks.ts:31` — `fail()`: `throw new ValidationError('Storico E2E: ' + message)`                                           |
+| `OnlineTests:245949:9`     | `src/onlinetests/checks/storicoChecks.ts:35` — `asRecord(value, label)`: fires `${label} non materializzato` when value is `null` / not an object         |
+| `OnlineTests:246231:16`    | `src/onlinetests/checks/storicoChecks.ts:173` — **exact throw point**: `asRecord(anno.titolare, 'titolare STO')` inside the `stoAnni.some(...)` predicate |
+| `Array.some (<anonymous>)` | native — iterating `continuita.docentiAnniPrecedenti` of subject `STO`                                                                                    |
+| `OnlineTests:246228:13`    | `src/onlinetests/checks/storicoChecks.ts:172` — `assertClasseStorico()`                                                                                   |
+| `OnlineTests:246458:13`    | `src/onlinetests/checks/storicoChecks.ts:310` — test body #1: `assertClasseStorico(storico, cdu.focus.classe?.materie)`                                   |
+| `OnlineTests:246466:13`    | `src/onlinetests/checks/storicoChecks.ts:318` — test body #2: same assertion on second sample spreadsheet                                                 |
 
 ### Exact failure point and meaning
 
@@ -214,8 +215,8 @@ const sto = asRecord(bySigla('STO').continuita, 'continuità STO');
 const stoAnni = asArray(sto.docentiAnniPrecedenti, 'continuità STO anni');
 if (
   stoAnni.length !== 2 ||
-  stoAnni.some((anno) =>
-    asRecord(anno.titolare, 'titolare STO').email !== 'e2edocente4@onlinetest.aldo.local'
+  stoAnni.some(
+    (anno) => asRecord(anno.titolare, 'titolare STO').email !== 'e2edocente4@onlinetest.aldo.local'
   )
 ) {
   fail('evoluzione GST verso STO non riconciliata su due anni');
@@ -228,7 +229,7 @@ The assertion expects class **STO** to expose exactly two historical years whose
 
 Both tests build the CDU for the same fixture class (`CLASSE_C_PARENT`, depth 2)
 and call the same assertion, hence the identical failure; everything checked
-*before* this point (statistiche, progetti/referenti, INF continuity, MAT
+_before_ this point (statistiche, progetti/referenti, INF continuity, MAT
 "no ITP" shape) passed.
 
 ### Production path that produced the `null`
@@ -238,7 +239,7 @@ and call the same assertion, hence the identical failure; everything checked
 `buildContinuita()` (`src/application/context-engine/mappers/continuitaMapper.ts:43–58`):
 
 ```ts
-titolare: resolveDocente(titolareMatch?.docenteEmail, input.docenti)
+titolare: resolveDocente(titolareMatch?.docenteEmail, input.docenti);
 ```
 
 No docente row of either historical year reconciles to the current sigla `STO`
@@ -255,7 +256,7 @@ an interaction between two fixture facts:
 1. **The CLASSI header used for the prior-year spreadsheets has no `GST`
    column.** Prior sheets are created with `prior.addSheet(table, HEADERS[table])`
    (`Seeders.ts:94`), and `HEADERS[TABLE.CLASSI] = [...COL_CLASSI,
-   ...ASSIGNMENT_COLUMNS_E2E]`. The assignment columns derive from
+...ASSIGNMENT_COLUMNS_E2E]`. The assignment columns derive from
    `ASSIGNMENT_MATERIE_E2E` (union of all `MATERIE_PER_INDIRIZZO` values plus
    `'INF'`, all built from `MATERIE_BASE = ['MAT','ITA','ING','STO','IRC','ALT']`)
    plus `INF.itp`, `MATERIE_PUNTATE` and `INTERPRET.CHITARRA.itp`.
@@ -266,7 +267,9 @@ an interaction between two fixture facts:
    the header declared via `addSheet`:
 
    ```js
-   const values = headerRow.map(header => row[String(header)] !== undefined ? row[String(header)] : '');
+   const values = headerRow.map((header) =>
+     row[String(header)] !== undefined ? row[String(header)] : ''
+   );
    ```
 
    So when `seedStorico` writes `GST: e2eDocenteEmail(4)` into the prior CLASSI
@@ -276,7 +279,7 @@ an interaction between two fixture facts:
 Downstream effect chain (fully verified):
 
 - `ClasseRepository(priorDb)` builds its cattedra column map from the PRIOR
-  MATERIE catalog — which *does* contain GST since commit `715072e` — but
+  MATERIE catalog — which _does_ contain GST since commit `715072e` — but
   `getTeachingSlots('2C')` / `('1C')` read an empty `row['GST']` and emit no GST
   slot;
 - `perClasse()` therefore returns docenti lists without any GST entry for both
@@ -286,32 +289,34 @@ Downstream effect chain (fully verified):
 
 ### Why every other assertion still passes
 
-| Passing check | Why unaffected |
-|---------------|----------------|
-| statistiche / progetti / referente | Do not read CLASSI cattedre |
-| INF continuity + ITP subtype | `INF` / `INF.itp` **are** in the declared header |
-| MAT "no ITP" shape | `MAT` column present |
-| Alunno carenze GST→STO (PASSES) | Reads CARENZE, whose canonical header **includes** `'GST'` (added by `5ce6283`); reconciles against the prior db's own MATERIE catalog — never touches CLASSI cattedre |
-| Offline unit tests (push gate green) | Unit tests feed `buildContinuita` hand-built `docenti` arrays containing `{ materia: 'GST' }`; they bypass the physical write path entirely |
+| Passing check                        | Why unaffected                                                                                                                                                         |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| statistiche / progetti / referente   | Do not read CLASSI cattedre                                                                                                                                            |
+| INF continuity + ITP subtype         | `INF` / `INF.itp` **are** in the declared header                                                                                                                       |
+| MAT "no ITP" shape                   | `MAT` column present                                                                                                                                                   |
+| Alunno carenze GST→STO (PASSES)      | Reads CARENZE, whose canonical header **includes** `'GST'` (added by `5ce6283`); reconciles against the prior db's own MATERIE catalog — never touches CLASSI cattedre |
+| Offline unit tests (push gate green) | Unit tests feed `buildContinuita` hand-built `docenti` arrays containing `{ materia: 'GST' }`; they bypass the physical write path entirely                            |
 
 ### Timeline (git)
 
-| Commit | Date | Role in this bug |
-|--------|------|------------------|
-| `b15e95d` | 08-13 12:33 | Introduced storico E2E tests and the `GST→d4` write into prior CLASSI rows — broken from day one |
-| `5ce6283` | 08-13 12:47 | The same facade had already eaten the CARENZE GST value; fixed **only CARENZE** by appending `'GST'` to its header — CLASSI left unfixed |
-| `715072e` | 08-21 | Repaired the *repository visibility* layer (full MATERIE catalog seeded into priors), unblocking INF/MAT continuity; but GST visibility was already there via its explicit MATERIE row — the *physical write* layer remained broken |
+| Commit    | Date        | Role in this bug                                                                                                                                                                                                                    |
+| --------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `b15e95d` | 08-13 12:33 | Introduced storico E2E tests and the `GST→d4` write into prior CLASSI rows — broken from day one                                                                                                                                    |
+| `5ce6283` | 08-13 12:47 | The same facade had already eaten the CARENZE GST value; fixed **only CARENZE** by appending `'GST'` to its header — CLASSI left unfixed                                                                                            |
+| `715072e` | 08-21       | Repaired the _repository visibility_ layer (full MATERIE catalog seeded into priors), unblocking INF/MAT continuity; but GST visibility was already there via its explicit MATERIE row — the _physical write_ layer remained broken |
 
-### Fix directions (not applied)
+### Fix applied — see commit reference above
 
 1. **Fixture fix (ALDO-side, minimal)**: make `GST` appear in the CLASSI header
    of the prior-year spreadsheets only (e.g. extend the header when creating
    prior sheets in `seedAnniPrecedenti`), mirroring the `5ce6283` precedent.
+   Applied in commit `55ab0b0` (offline-verified; see §1).
 2. **Library hardening (GasLibraryFactory)**: `appendRow` dropping unknown keys
    silently has now produced two distinct bugs (CARENZE on 2026-08-13, CLASSI
    today). Consider warning or throwing on out-of-header keys so this class of
    bug fails loudly at write time instead of surfacing as a distant assertion
-   failure days later.
+   failure days later. Not applied — deferred as a separate library decision
+   (out of scope for this plan).
 
 ---
 
@@ -319,27 +324,27 @@ Downstream effect chain (fully verified):
 
 These appear alarming in the logs but are **not defects**:
 
-| Log evidence | Location | Explanation |
-|--------------|----------|-------------|
-| `❌ [FAILED] Job 'import_E2E_IMP_MISSING_FILE' … MISSING_FOLDER … MISSING_IDGEN … BAD_STRATEGY` (4 lines) | batch3 lines 234–252 | Intentional negative-path assertions of test `import.policy::misconfig fallisce prima di mutare il target` — the test itself **PASSED** (line 254). Config-validation errors are the expected outcome. |
-| `[WARN] [Operation] Retry attempt 1 after error: … Quota exceeded … 'Read requests per minute per user'` ×2 | batch3 lines 372, 607 | Sheets API quota backpressure during heavy import tests; both recovered: `[RECOVERED] Operation after 2 attempts`. |
-| `[WARN] LockService not available - using mock lock for testing` | batch2/batch3, several | Expected in online test mode. |
-| `[WARN] CERCA_DOCUMENTI: documento 1wsAkhkvjliwh3WHOhqCT3ZFGofq3N-6ArIO8_xdtQDg non e un foglio, saltato` | batch3 line 495 | Expected skip logic (non-Sheet document ignored). |
-| `[WARN] [Transformer] Source data is empty, returning empty array` (~25×) | batch3 lines 555–629 | Chunked-import resume test reading drained ranges; test PASSED. |
-| `SHEET_CON_MATERIE_E_PERMESSI: protezione Sheet1!X:X saltata — solo principal sintetici` (24×) | batch3 lines 2586–2633 | ACL guard correctly refuses real-domain principals with synthetic-only fixtures; ACL tests PASSED. |
+| Log evidence                                                                                                | Location               | Explanation                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `❌ [FAILED] Job 'import_E2E_IMP_MISSING_FILE' … MISSING_FOLDER … MISSING_IDGEN … BAD_STRATEGY` (4 lines)   | batch3 lines 234–252   | Intentional negative-path assertions of test `import.policy::misconfig fallisce prima di mutare il target` — the test itself **PASSED** (line 254). Config-validation errors are the expected outcome. |
+| `[WARN] [Operation] Retry attempt 1 after error: … Quota exceeded … 'Read requests per minute per user'` ×2 | batch3 lines 372, 607  | Sheets API quota backpressure during heavy import tests; both recovered: `[RECOVERED] Operation after 2 attempts`.                                                                                     |
+| `[WARN] LockService not available - using mock lock for testing`                                            | batch2/batch3, several | Expected in online test mode.                                                                                                                                                                          |
+| `[WARN] CERCA_DOCUMENTI: documento 1wsAkhkvjliwh3WHOhqCT3ZFGofq3N-6ArIO8_xdtQDg non e un foglio, saltato`   | batch3 line 495        | Expected skip logic (non-Sheet document ignored).                                                                                                                                                      |
+| `[WARN] [Transformer] Source data is empty, returning empty array` (~25×)                                   | batch3 lines 555–629   | Chunked-import resume test reading drained ranges; test PASSED.                                                                                                                                        |
+| `SHEET_CON_MATERIE_E_PERMESSI: protezione Sheet1!X:X saltata — solo principal sintetici` (24×)              | batch3 lines 2586–2633 | ACL guard correctly refuses real-domain principals with synthetic-only fixtures; ACL tests PASSED.                                                                                                     |
 
 ---
 
 ## 5. Recommended next steps
 
-1. **Verbale artifacts (batch2) — diagnosed, fix pending.** Root cause confirmed
-   in §2b (missing `DATI_SORGENTE.metodo='cartellePerClasse'` on the cartelle
-   box). Apply fixture fix §2b item 1.
-2. **STO continuity (batch3) — diagnosed, fix pending.** Root cause confirmed in
-   §3 (GST column missing from prior CLASSI header + silent `appendRow` drop).
-   Apply the fixture fix from §3 "Fix directions" item 1; decide separately on
-   the `GasLibraryFactory` hardening proposal (item 2), which requires a
-   library-side change.
+1. **Verbale artifacts (batch2) — fix applied, online-pending.** Root cause
+   confirmed in §2b (missing `DATI_SORGENTE.metodo='cartellePerClasse'` on the
+   cartelle box). Fixture fix applied in commit `d9728b5` (offline-verified).
+2. **STO continuity (batch3) — fix applied, online-pending.** Root cause
+   confirmed in §3 (GST column missing from prior CLASSI header + silent
+   `appendRow` drop). Fixture fix applied in commit `55ab0b0`
+   (offline-verified). The `GasLibraryFactory` hardening proposal (§3 item 2)
+   remains a separate, undecided library-side change.
 3. Consider logging the offending row's key fields inside the assertions
    before throwing, so future runs identify the exact artifact without DB spelunking.
 4. Both fixes above have landed and are offline-verified (`npm run typecheck`,
@@ -347,6 +352,37 @@ These appear alarming in the logs but are **not defects**:
    folder resolution) and commit `55ab0b0` (GST cattedra column on prior-year
    CLASSI sheets). Online re-verification via `build:online`/`push:online` and
    GAS console batch2/batch3 reruns is still pending — not yet claimed green.
+5. **Before re-running batch2/batch3, the persisted online-test fixture must
+   be refreshed — it is not enough to just re-run the batches.** Online
+   batches read the already-persisted fixture spreadsheet via
+   `readPersistedFullOnlineTestSample` (`src/onlinetests/index.ts`), which
+   never re-provisions — it only reads whatever is already on disk in the live
+   Sheets. The persisted `_ALDO_E2E_SAMPLE` still has the pre-fix `BOX_CFG`
+   row, and the persisted `_ALDO_E2E_PRIOR_*` CLASSI sheets still lack the
+   `GST` header — both predate these two fixes. A plain batch re-run against
+   that stale persisted state will fail identically and look like the fixes
+   didn't work. One of two resolutions must be chosen before Step 5 executes
+   (neither is implemented by this plan — that decision/work is out of
+   scope here):
+   - force a full re-provision (`creaDatiMockDrive`, or setting
+     `ALDO_E2E_FORCE_REBUILD=true`) before the batches run; or
+   - add both this branch's fixture repairs to
+     `migrateResolvedPersistedE2eFixture` (`src/onlinetests/index.ts`) and
+     bump `REQUIRED_ONLINETEST_FIXTURE_VERSION` — the established pattern
+     already used there for two earlier fixture-shape gaps.
+6. **The Task 1 fix may cause new mail sends, not just a new audit field.**
+   `renderBoxes` pushes the cartelle box HTML into the `ordered` list, which
+   `RenderBoxesStep` uses to gate whether the mail sends at all (`shouldSend`
+   becomes true once `ordered.length > 0`). Previously VERBALE/CONDOTTA's
+   cartelle box always rendered empty, so mails to targets with nothing else
+   renderable may have been skipped entirely; now that box can render
+   non-empty, some previously-skipped targets may now receive mail — a new
+   `LOG_MAIL` row, not merely a populated field on an existing one. If the
+   batch2 online re-run shows a different `LOG_MAIL` row count than before,
+   that is expected new-send behavior, not a regression.
 
-**Status: all 3 failures fully diagnosed — both root causes are fixture
-configuration gaps, no production code defect found.**
+**Status: all 3 failures fully diagnosed; fixes for both root causes have
+landed and are offline-verified (commits `d9728b5`, `55ab0b0`) — no production
+code defect found. Online re-verification (batch2/batch3 GAS console reruns,
+after refreshing the persisted fixture per item 5 above) is the remaining
+step.**

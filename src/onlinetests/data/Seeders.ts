@@ -91,7 +91,12 @@ export function seedAnniPrecedenti(
   for (const anno of ANNI_PRECEDENTI) {
     const prior = spreadsheets.createSpreadsheet(`_ALDO_E2E_PRIOR_${anno}`);
     for (const table of HISTORICAL_TABLES) {
-      prior.addSheet(table, HEADERS[table]!);
+      // GST is a storico-only subject: it existed in past years' catalogs before
+      // evolving into STO (MATERIE.EVOLUZIONE), so prior CLASSI sheets carry a
+      // GST cattedra column even though ASSIGNMENT_COLUMNS_E2E never declares
+      // one. Without it, SampleSpreadsheetBuilder.appendRow silently drops the
+      // GST value written by seedStorico (keys outside the declared header).
+      prior.addSheet(table, table === TABLE.CLASSI ? [...HEADERS[table]!, 'GST'] : HEADERS[table]!);
     }
     seedStorico(prior, anno);
     master.appendRow(TABLE.MASTER, {

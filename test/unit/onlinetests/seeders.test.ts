@@ -168,7 +168,9 @@ test('seeds two prior databases with every historical-provider table and master 
     const prior = sheets.get(`_ALDO_E2E_PRIOR_${anno}`)!;
     expect(Object.keys(prior.headers).sort()).toEqual([...historicalTables].sort());
     for (const table of historicalTables) {
-      expect(prior.headers[table]).toEqual(HEADERS[table]);
+      expect(prior.headers[table]).toEqual(
+        table === TABLE.CLASSI ? [...HEADERS[table]!, 'GST'] : HEADERS[table]
+      );
     }
     expect(prior.rows[TABLE.ALUNNI].map((row) => row.EMAIL)).toEqual(
       expect.arrayContaining([e2eAlunnoEmail(138), e2eAlunnoEmail(139)])
@@ -229,6 +231,20 @@ test('seedStorico seeds every current-year subject so prior cattedra columns res
     expect(ids).toContain(expected);
   }
   expect(ids.filter((id) => id === 'STO')).toHaveLength(1);
+});
+
+test('prior-year CLASSI sheets declare a GST cattedra column', () => {
+  const { factory, sheets } = spreadsheetFactory();
+  const masterSheet = new RecordingSpreadsheet('master');
+  seedAnniPrecedenti(masterSheet, factory, 'folder_e2e');
+
+  const priors = [...sheets.entries()].filter(([name]) =>
+    name.startsWith('_ALDO_E2E_PRIOR_')
+  );
+  expect(priors.length).toBe(ANNI_PRECEDENTI.length);
+  for (const [, prior] of priors) {
+    expect(prior.headers[TABLE.CLASSI]).toContain('GST');
+  }
 });
 
 test('seeds one ASL folder record and real sheets for each eligible class only', () => {

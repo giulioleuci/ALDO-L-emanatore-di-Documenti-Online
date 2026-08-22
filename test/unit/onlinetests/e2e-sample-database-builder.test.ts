@@ -936,3 +936,12 @@ test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUD
   });
   expect(config).not.toHaveProperty('map');
 });
+
+test('current-year CLASSI schema keeps no GST column', () => {
+  const { spreadsheets, sheets, master } = factory();
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
+    TEMPLATE_IDS,
+    master
+  );
+  expect(sheets.get('_ALDO_E2E_SAMPLE')!.headers[TABLE.CLASSI]).not.toContain('GST');
+});

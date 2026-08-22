@@ -653,7 +653,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         { TIPO_BOX: 'documenti', PATH_OUT: path, destinatari: [EMAIL_TEST_SAFE] }
       ]),
-      [COL_CONF_MAIL.TESTO]:
+      [COL_CONF_MAIL.TESTO_START]:
         id === CONF_MAIL_STORICO
           ? '<p>Storico {{focus.classe.anagrafica.nome}}</p><p>{{#focus.classe.storico.statistiche}}{{annoScolastico}} {{classe}} {{statistiche.totale}}; {{/focus.classe.storico.statistiche}}</p><p>{{#focus.alunno.storico.anni}}{{annoScolastico}} {{classe}} {{esito}}; {{/focus.alunno.storico.anni}}</p>'
           : `<p>Scenario ${subject}: ${EMAIL_TEST_SAFE}</p>`,

@@ -19,7 +19,7 @@ export class ConfigurazioneEmail extends AldoEntity {
   public readonly supplenti: GestioneSupplenti;
   public readonly gestioneArticolazione: GestioneArticolazione;
   private readonly boxCfgRaw: string | null;
-  private readonly testoRaw: string;
+  private readonly testoStartRaw: string;
   private readonly noreply: boolean;
   private readonly coloreHeaderRaw: string;
   private readonly condizioneRaw: string;
@@ -44,8 +44,10 @@ export class ConfigurazioneEmail extends AldoEntity {
       typeof data[COL_CONF_MAIL.BOX_CFG] === 'string'
         ? (data[COL_CONF_MAIL.BOX_CFG] as string)
         : null;
-    this.testoRaw =
-      typeof data[COL_CONF_MAIL.TESTO] === 'string' ? (data[COL_CONF_MAIL.TESTO] as string) : '';
+    this.testoStartRaw =
+      typeof data[COL_CONF_MAIL.TESTO_START] === 'string'
+        ? (data[COL_CONF_MAIL.TESTO_START] as string)
+        : '';
     this.noreply = data[COL_CONF_MAIL.NOREPLY] === true;
     this.coloreHeaderRaw =
       typeof data[COL_CONF_MAIL.COLORE_HEADER] === 'string'
@@ -65,8 +67,8 @@ export class ConfigurazioneEmail extends AldoEntity {
     return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
   }
 
-  getTesto(): string {
-    return this.testoRaw;
+  getTestoStart(): string {
+    return this.testoStartRaw;
   }
   isNoreply(): boolean {
     return this.noreply;
@@ -119,7 +121,7 @@ export class ConfigurazioneEmail extends AldoEntity {
       [COL_CONF_MAIL.SUPPLENTI]: this.supplenti,
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: this.gestioneArticolazione,
       [COL_CONF_MAIL.BOX_CFG]: this.boxCfgRaw,
-      [COL_CONF_MAIL.TESTO]: this.testoRaw,
+      [COL_CONF_MAIL.TESTO_START]: this.testoStartRaw,
       [COL_CONF_MAIL.NOREPLY]: this.noreply,
       [COL_CONF_MAIL.COLORE_HEADER]: this.coloreHeaderRaw,
       [COL_CONF_MAIL.CONDIZIONE]: this.condizioneRaw,

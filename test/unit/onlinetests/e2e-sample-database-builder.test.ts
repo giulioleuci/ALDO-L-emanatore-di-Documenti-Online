@@ -888,7 +888,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
     },
     { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
   ]);
-  expect(String(mail![COL_CONF_MAIL.TESTO])).not.toMatch(/in allegato/i);
+  expect(String(mail![COL_CONF_MAIL.TESTO_START])).not.toMatch(/in allegato/i);
 });
 
 test('E2E personalized-plan email template uses the readable label for every current plan', () => {

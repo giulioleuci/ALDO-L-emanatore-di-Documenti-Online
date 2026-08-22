@@ -108,7 +108,7 @@ test('email routing: PER_DOCENTE targets and delivers to the 2-hop chain final h
       OGGETTO: 'Comunicazione {{focus.classe.anagrafica.nome}}',
       PROCESSO: 'PER_DOCENTE',
       BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Comunicazione.</p>"}]',
-      TESTO: '<p>Gentile collega</p>',
+      TESTO_START: '<p>Gentile collega</p>',
       SUPPLENTI: 'SOLO_TITOLARI',
       NOREPLY: true,
       COLORE_HEADER: '',

@@ -276,7 +276,7 @@ export function fixtureTables(): Record<string, Row[]> {
         PROCESSO: 'PER_CDC',
         BOX_CFG:
           '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Comunicazione del consiglio di classe.</p>"},{"TIPO_BOX":"carenze"}]',
-        TESTO: '<p>Gentili colleghi</p>',
+        TESTO_START: '<p>Gentili colleghi</p>',
         SUPPLENTI: 'ENTRAMBI',
         NOREPLY: true,
         COLORE_HEADER: '',
@@ -291,7 +291,7 @@ export function fixtureTables(): Record<string, Row[]> {
         OGGETTO: 'Comunicazione carenze',
         PROCESSO: 'PER_GENITORI_ALUNNO',
         BOX_CFG: null,
-        TESTO: '',
+        TESTO_START: '',
         SUPPLENTI: 'SOLO_TITOLARI',
         NOREPLY: false,
         COLORE_HEADER: '#ff0000',
@@ -307,7 +307,7 @@ export function fixtureTables(): Record<string, Row[]> {
         PROCESSO: 'PER_CARENZA_GENITORI',
         BOX_CFG:
           '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
-        TESTO: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
+        TESTO_START: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
         SUPPLENTI: 'SOLO_TITOLARI',
         NOREPLY: true,
         COLORE_HEADER: '',

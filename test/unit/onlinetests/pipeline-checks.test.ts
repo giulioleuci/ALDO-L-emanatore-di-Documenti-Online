@@ -118,7 +118,7 @@ function sampleSeedTables(
             OGGETTO: oggetto,
             PROCESSO: 'PER_ALUNNO',
             BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
-            TESTO: 'Messaggio di prova generato dalla suite di test online ALDO.',
+            TESTO_START: 'Messaggio di prova generato dalla suite di test online ALDO.',
             SUPPLENTI: false,
             NOREPLY: false,
             COLORE_HEADER: '#1565C0',

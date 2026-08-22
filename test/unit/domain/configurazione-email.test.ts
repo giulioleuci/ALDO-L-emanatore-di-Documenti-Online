@@ -59,3 +59,16 @@ describe('ConfigurazioneEmail.gestioneArticolazione', () => {
     expect(email.toData()[COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]).toBe('ARTICOLATA');
   });
 });
+
+describe('ConfigurazioneEmail.getTestoStart', () => {
+  test('defaults to empty string when the column is missing', () => {
+    expect(config().getTestoStart()).toBe('');
+  });
+
+  test('reads TESTO_START and round-trips through toData()', () => {
+    const html = '<p>Ciao {{focus.alunno.anagrafica.nomeCompleto}}</p>';
+    const email = config({ [COL_CONF_MAIL.TESTO_START]: html });
+    expect(email.getTestoStart()).toBe(html);
+    expect(email.toData()[COL_CONF_MAIL.TESTO_START]).toBe(html);
+  });
+});

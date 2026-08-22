@@ -410,7 +410,7 @@ export function registerStoricoChecks(
           templates.processDocument(fileId, renderContext);
           const documentText = drive.getFileText(fileId);
           const mailText = templates.processStringEscaped(
-            `${String(mailConfig[COL_CONF_MAIL.OGGETTO])} ${String(mailConfig[COL_CONF_MAIL.TESTO])}`,
+            `${String(mailConfig[COL_CONF_MAIL.OGGETTO])} ${String(mailConfig[COL_CONF_MAIL.TESTO_START])}`,
             renderContext
           );
           assertStoricoRender(documentText, mailText);

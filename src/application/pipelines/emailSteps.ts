@@ -466,7 +466,7 @@ export class RenderBoxesStep extends Step {
   }
 }
 
-/** Step 5 (11 §6): msgstart + header + saluto + TESTO + boxes + footer + msgend. */
+/** Step 5 (11 §6): msgstart + header + saluto + TESTO_START + boxes + footer + msgend. */
 export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
@@ -538,7 +538,7 @@ export class ComposeEmailStep extends Step {
     const conf = confMail(ctx);
     const built = cdu(ctx);
     const saluto = built.destinatario?.comunicazione.salutoIniziale ?? 'Gentile Utente';
-    const testo = this.templates.processStringEscaped(conf.getTesto(), cduRecord(ctx));
+    const testo = this.templates.processStringEscaped(conf.getTestoStart(), cduRecord(ctx));
     const boxes = ctx.get<string[]>('boxHtmlOrdered') ?? [];
     const noReplyBlock = conf.isNoreply()
       ? '<p><strong>⚠️ La risposta a questa email non sarà monitorata.</strong></p>'

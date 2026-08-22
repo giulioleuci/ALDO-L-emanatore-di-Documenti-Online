@@ -79,7 +79,7 @@ function confMail(boxCfg: unknown): ConfigurazioneEmail {
     OGGETTO: 'Oggetto',
     PROCESSO: 'PER_GENITORI_ALUNNO',
     BOX_CFG: JSON.stringify(boxCfg),
-    TESTO: '',
+    TESTO_START: '',
     SUPPLENTI: 'SOLO_TITOLARI',
     NOREPLY: false,
     COLORE_HEADER: '',

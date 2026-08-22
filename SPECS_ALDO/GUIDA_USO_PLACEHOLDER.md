@@ -438,7 +438,7 @@ Configurazione cella $A1$ e $B1$ per un foglio di calcolo generato con `SheetPro
 
 ### Esempio 3: Convocazione Personalizzata via Email (HTML / Gmail)
 
-Template HTML memorizzato nel campo `TESTO` della tabella `CONF_MAIL`:
+Template HTML memorizzato nel campo `TESTO_START` della tabella `CONF_MAIL`:
 
 ```html
 <p>{{destinatario.comunicazione.salutoIniziale}}</p>

@@ -182,7 +182,7 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
     OGGETTO: 'Promemoria docente',
     PROCESSO: 'PER_DOCENTE',
     BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Promemoria.</p>"}]',
-    TESTO: '',
+    TESTO_START: '',
     SUPPLENTI: 'SOLO_SUPPLENTI',
     NOREPLY: false,
     COLORE_HEADER: '',

@@ -52,7 +52,7 @@ const PATTERN_ROW: Row = {
   OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}',
   PROCESSO: 'PER_GENITORI_ALUNNO',
   BOX_CFG: '[{"TIPO_BOX":"carenze","TITOLO":"Carenze"},{"TIPO_BOX":"assenze","ORDINE":5}]',
-  TESTO: '<p>Si comunica quanto segue per la classe {{focus.alunno.classe.nome}}.</p>',
+  TESTO_START: '<p>Si comunica quanto segue per la classe {{focus.alunno.classe.nome}}.</p>',
   SUPPLENTI: 'SOLO_TITOLARI',
   NOREPLY: true,
   COLORE_HEADER: '',
@@ -1073,7 +1073,7 @@ test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () 
 });
 
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO (REVIEW_ALDO.md #2)', () => {
-  const w = wire({ TESTO: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
+  const w = wire({ TESTO_START: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>' });
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';

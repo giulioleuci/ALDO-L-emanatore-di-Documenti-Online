@@ -35,7 +35,7 @@ test('PER_CARENZA_GENITORI end-to-end: boxes, genitori TO, BCC, LOG_MAIL, NOTIFI
   expect(perA1.noReply).toBe(true);
   const html = perA1.htmlBody;
   expect(html).toContain('Gentili Genitori');
-  expect(html).toContain('per la classe 5A.'); // TESTO resolved on focus.carenza.classe
+  expect(html).toContain('per la classe 5A.'); // TESTO_START resolved on focus.carenza.classe
   expect(html).toContain('border-left:4px solid #c0392b'); // MATE colour from MATERIE
   expect(html).toContain('📐 Matematica');
   expect(html).toContain('Voto 4.5');
@@ -73,7 +73,7 @@ test('PER_CDC end-to-end: one multi-TO email per entry class, articulated parent
   // to the materia-less CDC lookup, so no substitute is found and only bianchi remains.
   expect(per5A.to.sort()).toEqual(['bianchi@school.it']);
   expect(per5A.htmlBody).toContain('Gentili Docenti');
-  expect(per5A.htmlBody).toContain('Gentili colleghi'); // TESTO
+  expect(per5A.htmlBody).toContain('Gentili colleghi'); // TESTO_START
   const per1F = gmail.sent.find((s) => s.subject.includes('1F'))!;
   expect(per1F.to.sort()).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
 

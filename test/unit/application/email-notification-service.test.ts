@@ -68,11 +68,13 @@ function conf(processo: string, overrides: Record<string, unknown> = {}): Config
     PROCESSO: processo,
     BOX_CFG: null,
     TESTO_START: '',
+    TESTO_END: '',
     SUPPLENTI: 'SOLO_TITOLARI',
     NOREPLY: false,
     COLORE_HEADER: '',
     CONDIZIONE: null,
     POST_PROCESSO: null,
+    RISPONDI_A: '',
     ...overrides
   });
 }
@@ -84,6 +86,7 @@ function mailRow(id: string, overrides: Record<string, unknown> = {}): Row {
     PROCESSO: 'PER_CDC',
     BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Contenuto.</p>' }]),
     TESTO_START: '',
+    TESTO_END: '',
     SUPPLENTI: 'SOLO_TITOLARI',
     NOREPLY: false,
     COLORE_HEADER: '',
@@ -92,6 +95,7 @@ function mailRow(id: string, overrides: Record<string, unknown> = {}): Row {
     DUPLICAZIONE: 'NEGATA',
     GESTIONE_ARTICOLAZIONE: 'COMPLETA',
     ALLEGATI: '[]',
+    RISPONDI_A: '',
     ...overrides
   };
 }

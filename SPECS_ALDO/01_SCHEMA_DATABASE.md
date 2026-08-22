@@ -382,9 +382,15 @@ Motore di configurazione per le notifiche email. Ogni record è un pattern di co
 | `ALLEGATI`      | JSON    | —   | Array di ID Drive da allegare staticamente; usare `[]` quando non sono configurati allegati                                                                                                      |
 | `GESTIONE_ARTICOLAZIONE` | Enum | —   | Stesso significato di `CONF_DOC.GESTIONE_ARTICOLAZIONE`: `COMPLETA` (default) esclude le classi partner dai punti di ingresso della notifica; `ARTICOLATA` esclude la classe genitore |
 | `DUPLICAZIONE`  | Enum    | —   | Politica di reinvio: `NEGATA` (default) blocca un target logico già registrato `SUCCESS` per lo stesso `ID`; `PERMESSA` consente il reinvio. L'identità è il `logicalTargetId` stabile salvato in `LOG_MAIL.ALLEGATI`; righe `ERROR` e invii in modalità test non bloccano il target reale |
-| `RISPONDI_A`    | String  | —   | Espressione placeholder `{{...}}` risolta sul CDU destinatario (stesso motore di `TESTO_START`/`TESTO_END`/`OGGETTO`) che deve risolvere a un singolo indirizzo email valido; se non vuota e il risultato non è un indirizzo valido, l'invio prosegue senza intestazione Reply-To e viene emesso un WARN nei log |
+| `RISPONDI_A`    | String  | —   | Espressione placeholder `{{...}}` risolta sul CDU destinatario tramite lo stesso `WorkspaceTemplateEngine` di `TESTO_START`/`TESTO_END`/`OGGETTO` (non HTML-escaped, come `OGGETTO` — a differenza di `TESTO_START`/`TESTO_END` che sono HTML-escaped) che deve risolvere a un singolo indirizzo email valido; se non vuota e il risultato non è un indirizzo valido, l'invio prosegue senza intestazione Reply-To e viene emesso un WARN nei log |
 
-> **Migrazione database esistenti:** prima di distribuire questa versione, aggiungere la colonna fisica `DUPLICAZIONE` a ogni foglio `CONF_MAIL` e valorizzare le righe esistenti con `NEGATA`; usare `PERMESSA` solo per pattern che devono intenzionalmente consentire reinvii. Verificare inoltre che i fogli espongano già `ALLEGATI` e `GESTIONE_ARTICOLAZIONE`, nell'ordine previsto dal provisioning/seed aggiornato. Rinominare la colonna fisica `TESTO` in `TESTO_START` su ogni foglio `CONF_MAIL` esistente (stesso significato, nessun cambiamento di contenuto). Aggiungere la colonna fisica `TESTO_END` a ogni foglio `CONF_MAIL` esistente, valorizzandola vuota per le righe esistenti (nessun testo di chiusura aggiuntivo). Aggiungere la colonna fisica `RISPONDI_A` a ogni foglio `CONF_MAIL` esistente, valorizzandola vuota per le righe esistenti (nessuna intestazione Reply-To aggiuntiva, comportamento di invio invariato).
+> **Migrazione database esistenti:** prima di distribuire questa versione, applicare a ogni foglio `CONF_MAIL` esistente:
+>
+> - Aggiungere la colonna fisica `DUPLICAZIONE` e valorizzare le righe esistenti con `NEGATA`; usare `PERMESSA` solo per pattern che devono intenzionalmente consentire reinvii.
+> - Verificare che i fogli espongano già `ALLEGATI` e `GESTIONE_ARTICOLAZIONE`, nell'ordine previsto dal provisioning/seed aggiornato.
+> - Rinominare la colonna fisica `TESTO` in `TESTO_START` (stesso significato, nessun cambiamento di contenuto).
+> - Aggiungere la colonna fisica `TESTO_END`, valorizzandola vuota per le righe esistenti (nessun testo di chiusura aggiuntivo).
+> - Aggiungere la colonna fisica `RISPONDI_A`, valorizzandola vuota per le righe esistenti (nessuna intestazione Reply-To aggiuntiva, comportamento di invio invariato).
 
 ---
 

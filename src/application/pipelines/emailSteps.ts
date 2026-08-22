@@ -575,10 +575,12 @@ export class ComposeEmailStep extends Step {
     if (rispondiARaw.trim() !== '') {
       const resolved = this.templates.processString(rispondiARaw, cduRecord(ctx)).trim();
       try {
-        this.setResult(ctx, 'replyTo', Email.of(resolved).value);
+        const address = Email.of(resolved).value;
+        this.setResult(ctx, 'replyTo', address);
       } catch {
+        const safeResolved = PiiRedactor.redact(resolved).slice(0, 200);
         this.logger.warn(
-          `ComposeEmail: RISPONDI_A "${rispondiARaw}" risolto a un indirizzo non valido ("${resolved}") — invio senza intestazione Reply-To`
+          `ComposeEmail: RISPONDI_A "${rispondiARaw}" risolto a un indirizzo non valido ("${safeResolved}") — invio senza intestazione Reply-To`
         );
       }
     }
@@ -709,6 +711,9 @@ export class SendEmailStep extends Step {
       if (dest.cc !== undefined && testEmail === null) opts.cc = dest.cc;
       for (const email of opts.cc ?? []) if (!resolvedCc.includes(email)) resolvedCc.push(email);
       for (const email of opts.bcc ?? []) if (!resolvedBcc.includes(email)) resolvedBcc.push(email);
+      // Unlike cc/bcc above, replyTo is not suppressed in test-send mode: it's a header
+      // annotation, not a delivery target, so no mail reaches the real coordinator and
+      // keeping it lets a test send actually exercise the RISPONDI_A feature.
       if (replyTo !== null) opts.replyTo = replyTo;
       const result = this.gmail.sendEmail(opts);
       if (result.success) {

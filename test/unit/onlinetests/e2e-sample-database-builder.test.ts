@@ -894,7 +894,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(boxes).toEqual([
     {
       TIPO_BOX: 'documenti',
-      FILTRO_TIPO: 'PIANO_LAVORO'
+      DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
     },
     { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
   ]);

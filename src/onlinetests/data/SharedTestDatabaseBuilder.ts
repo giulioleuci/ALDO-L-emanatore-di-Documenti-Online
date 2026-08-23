@@ -1280,13 +1280,16 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.OGGETTO]: '[E2E] Verbale del consiglio di classe',
       [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        // FILTRO_TIPO (item 6): scope the rendered links to VERBALE docs only —
+        // DATI_SORGENTE.filtri (item 6): scope rendered links to VERBALE docs only —
         // otherwise a class with CONDOTTA/PIANO_PERS docs too would list those
         // as well. The ALLEGATI column below stays '[]': real file attachments
         // remain opt-in (item 3). DATI_SORGENTE is unrelated to attachments —
         // it makes renderBoxes resolve each class's real LOG_FOLD folders so
         // LOG_MAIL.ALLEGATI records which class folders the mail referenced.
-        { TIPO_BOX: 'documenti', FILTRO_TIPO: 'VERBALE' },
+        {
+          TIPO_BOX: 'documenti',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
+        },
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO_START]: '<p>In allegato il verbale del consiglio di classe.</p>',
@@ -1308,7 +1311,10 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.OGGETTO]: '[E2E] Scheda condotta {{focus.classe.anagrafica.nome}}',
       [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        { TIPO_BOX: 'documenti', FILTRO_TIPO: 'CONDOTTA' },
+        {
+          TIPO_BOX: 'documenti',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'CONDOTTA' } }
+        },
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),
       [COL_CONF_MAIL.TESTO_START]: '<p>In allegato la scheda di valutazione condotta.</p>',
@@ -1404,7 +1410,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
         {
           TIPO_BOX: 'documenti',
-          FILTRO_TIPO: 'PIANO_LAVORO'
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
         },
         { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
       ]),

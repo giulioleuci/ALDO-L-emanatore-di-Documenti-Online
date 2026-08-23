@@ -622,7 +622,7 @@ function resolveSourceItems(
           : scope?.classeId === undefined
             ? []
             : [scope.classeId];
-        if (classi.length === 0) return [];
+        if (classi.length === 0) return [aggregatoreDati.perMetodo(metodo, { filtri }, logger)];
         return classi.map((classeId) =>
           aggregatoreDati.perMetodo(metodo, { classeId, filtri }, logger) ?? null
         );
@@ -742,6 +742,7 @@ export function renderBoxes(
   const byInstance = new Map(result.blocks.map((b) => [b.instanceId, b]));
   const ordered: string[] = [];
   const boxes: Record<string, RenderedBox> = {};
+  const sourceContentTypes = new Set<string>();
   const orderedCfg = [...renderable].sort((a, b) => {
     const oa = typeof a.cfg['ORDINE'] === 'number' ? a.cfg['ORDINE'] : a.index;
     const ob = typeof b.cfg['ORDINE'] === 'number' ? b.cfg['ORDINE'] : b.index;
@@ -751,6 +752,7 @@ export function renderBoxes(
   for (const { cfg, index, tipo } of orderedCfg) {
     const block = byInstance.get(`${tipo}_${index}`);
     if (block === undefined) continue;
+    if (block.isVisible && block.content !== '') sourceContentTypes.add(tipo);
     const isEmpty = block.isEmpty || !block.isVisible || block.content === '';
     let inner = block.isVisible ? block.content : '';
     if (inner === '' && cfg['MOSTRA_SE_VUOTO'] === true) {
@@ -764,16 +766,16 @@ export function renderBoxes(
   }
   const ids = (items: Array<{ id?: string | undefined }>): string[] =>
     Array.from(new Set(items.map((item) => item.id).filter((id): id is string => id !== undefined && id !== '')));
-  const isRendered = (tipo: string): boolean => boxes[tipo]?.visibile === true;
+  const hasRenderedSourceContent = (tipo: string): boolean => sourceContentTypes.has(tipo);
   const documentIds = [
-    ...(isRendered('documenti') ? boxdata.documenti.items : []),
-    ...(isRendered('piani_pers_da_inviare') ? boxdata.pianiPersDaInviare.items : []),
-    ...(isRendered('piani_pers_inviati') ? boxdata.pianiPersInviati.items : [])
+    ...(hasRenderedSourceContent('documenti') ? boxdata.documenti.items : []),
+    ...(hasRenderedSourceContent('piani_pers_da_inviare') ? boxdata.pianiPersDaInviare.items : []),
+    ...(hasRenderedSourceContent('piani_pers_inviati') ? boxdata.pianiPersInviati.items : [])
   ];
   return {
     ordered,
     boxes,
     documentIds: ids(documentIds),
-    folderIds: isRendered('cartelle') ? ids(boxdata.cartelle.items) : []
+    folderIds: hasRenderedSourceContent('cartelle') ? ids(boxdata.cartelle.items) : []
   };
 }

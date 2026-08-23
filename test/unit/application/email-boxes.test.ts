@@ -934,6 +934,63 @@ test('documenti box with DATI_SORGENTE and no filtri keeps every item in its sco
   expect(out.documentIds).toEqual(['doc-a', 'doc-b']);
 });
 
+test('source IDs are not recorded when a prerequisite hides source content and TESTO_VUOTO is shown', () => {
+  const tables = fixtureTables();
+  (tables['LOG_DOCS'] as Record<string, unknown>[]) = [
+    {
+      ID: 'doc-nascosto', ID_GEN: 'VERBALE', TIPO: 'VERBALE', NOME: 'Documento nascosto',
+      STATO: 'GENERATO', LINK: 'https://drive/doc-nascosto', CLASSI: '5A', UTENTI: '',
+      MATERIE: 'MATE', DATA_CREAZ: '2026-07-01'
+    }
+  ];
+  (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
+    {
+      ID: 'folder-nascosta', TIPO: 'VERBALI', NOME: 'Cartella nascosta', PATH: '_ALDO/5A',
+      LINK: 'https://drive/folder-nascosta', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE'
+    }
+  ];
+  const templates = new FakeTemplateEngine();
+  const out = renderBoxes(
+    createBoxComposer(logger, templates),
+    confMail([
+      {
+        TIPO_BOX: 'documenti', PREREQUISITI: 'never', MOSTRA_SE_VUOTO: true,
+        TESTO_VUOTO: 'Documenti non disponibili',
+        DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+      },
+      {
+        TIPO_BOX: 'cartelle', PREREQUISITI: 'never', MOSTRA_SE_VUOTO: true,
+        TESTO_VUOTO: 'Cartelle non disponibili',
+        DATI_SORGENTE: { metodo: 'cartellePerClasse' }
+      }
+    ]),
+    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
+    { classiCompetenza: ['5A'] }, logger
+  );
+
+  expect(out.boxes['documenti']!.html).toContain('Documenti non disponibili');
+  expect(out.boxes['cartelle']!.html).toContain('Cartelle non disponibili');
+  expect(out.documentIds).toEqual([]);
+  expect(out.folderIds).toEqual([]);
+});
+
+test('a per-classe source without competence or focus class warns and skips its box', () => {
+  const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+  const templates = new FakeTemplateEngine();
+  const out = renderBoxes(
+    createBoxComposer(logger, templates),
+    confMail([{ TIPO_BOX: 'documenti', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }]),
+    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(fixtureTables())),
+    {}, logger
+  );
+
+  expect(out.boxes['documenti']).toBeUndefined();
+  expect(warn).toHaveBeenCalledWith(
+    expect.stringContaining('classeId mancante o non risolvibile')
+  );
+  warn.mockRestore();
+});
+
 test('legacy document filters make only that box invisible and log a CONF_MAIL configuration error', () => {
   const error = jest.spyOn(logger, 'error').mockImplementation(() => undefined);
   const out = renderBoxes(

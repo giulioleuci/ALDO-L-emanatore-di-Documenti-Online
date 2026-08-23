@@ -836,7 +836,12 @@ test.each([
         ID: patternId,
         OGGETTO: `Documenti ${tipo}`,
         PROCESSO: 'PER_CDC',
-        BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', FILTRO_TIPO: tipo }]),
+        BOX_CFG: JSON.stringify([
+          {
+            TIPO_BOX: 'documenti',
+            DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo } }
+          }
+        ]),
         TESTO_START: '',
         SUPPLENTI: 'SOLO_TITOLARI',
         NOREPLY: false,

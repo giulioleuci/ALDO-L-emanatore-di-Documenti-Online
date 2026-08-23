@@ -314,9 +314,7 @@ export class EmailNotificationService {
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new CheckAlreadySentStep(this.logger))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
-      .addStep(
-        new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive, d.aggregatoreDati)
-      )
+      .addStep(new ComposeEmailStep(this.logger, d.templates, d.logDocs, d.drive))
       .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.classi, d.teachingAssignments))
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))
       .addStep(new LogEmailStep(this.logger, d.logMail))

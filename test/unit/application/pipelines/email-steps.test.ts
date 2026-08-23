@@ -192,8 +192,7 @@ function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveF
     logger,
     w.templates,
     new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
-    drive,
-    aggregatoreDati
+    drive
   ).execute(w.ctx);
   return drive;
 }
@@ -216,8 +215,7 @@ function runFilteredSourcesThroughCompose(
     stepLogger,
     w.templates,
     new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
-    drive,
-    aggregatoreDati
+    drive
   ).execute(w.ctx);
   return drive;
 }
@@ -1310,8 +1308,7 @@ test('ComposeEmailStep never attaches documents from DATI_SORGENTE unless BOX_CF
   const w = wire({
     BOX_CFG: JSON.stringify([
       {
-        TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '<p>Documenti collegati.</p>',
+        TIPO_BOX: 'documenti',
         DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
       }
     ])
@@ -1340,8 +1337,7 @@ test('ComposeEmailStep keeps static IDs first and deduplicates them with opted-i
     ALLEGATI: JSON.stringify(['static one', 'shared-id', 'static-two']),
     BOX_CFG: JSON.stringify([
       {
-        TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '<p>Documenti allegati.</p>',
+        TIPO_BOX: 'documenti',
         ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       }
@@ -1395,8 +1391,7 @@ test('ComposeEmailStep resolves class-attached documents as blobs once a box opt
   const w = wire({
     BOX_CFG: JSON.stringify([
       {
-        TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '<p>Allegati disponibili.</p>',
+        TIPO_BOX: 'documenti',
         ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       }
@@ -1426,8 +1421,7 @@ test('ComposeEmailStep filters attachments by the documentiPerClasse BOX_CFG ent
   const w = wire({
     BOX_CFG: JSON.stringify([
       {
-        TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '<p>Allegati disponibili.</p>',
+        TIPO_BOX: 'documenti',
         ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PDP' } }
       }
@@ -1607,6 +1601,150 @@ test('folder source attachments warn and leave static attachment behavior unchan
   expect(w.ctx.get('allegati')).toEqual(['blob:static-id']);
   expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('cartelle'));
   warnSpy.mockRestore();
+});
+
+test('attachment entity validation rejects cartelle, unrelated and unknown boxes that contain a document method', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'doc-must-not-attach',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      NOME: 'Documento non allegabile',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      ALLEGATI: JSON.stringify(['static-id']),
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'cartelle',
+          ALLEGA: true,
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        },
+        {
+          TIPO_BOX: 'testo_dinamico',
+          CONTENUTO: '<p>Testo.</p>',
+          ALLEGA: true,
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        },
+        {
+          TIPO_BOX: 'sconosciuto',
+          ALLEGA: true,
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        }
+      ])
+    },
+    docenteTarget(),
+    tables
+  );
+  const warnSpy = jest.spyOn(logger, 'warn');
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get('allegatiIds')).toEqual(['static-id']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:static-id']);
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('cartelle'));
+  warnSpy.mockRestore();
+});
+
+test('legacy attachment filters invalidate the document box and preserve static attachments', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'doc-legacy',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      NOME: 'Documento legacy',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      ALLEGATI: JSON.stringify(['static-id']),
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          ALLEGA: true,
+          FILTRO_TIPO: 'VERBALE',
+          FILTRO_STATO: 'GENERATO',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        }
+      ])
+    },
+    docenteTarget(),
+    tables
+  );
+  const errorSpy = jest.spyOn(logger, 'error');
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get('documentIds')).toEqual([]);
+  expect(w.ctx.get('allegatiIds')).toEqual(['static-id']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:static-id']);
+  expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('FILTRO_TIPO'));
+  expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('FILTRO_STATO'));
+  errorSpy.mockRestore();
+});
+
+test('two-box parity preserves distinct per-instance filters for rendered and attached document IDs', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'doc-verbale',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      NOME: 'Verbale visibile',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    },
+    {
+      ID: 'doc-pdp',
+      ID_GEN: 'PDP',
+      TIPO: 'PDP',
+      NOME: 'PDP visibile',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          TITOLO: 'Verbali',
+          ALLEGA: true,
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
+        },
+        {
+          TIPO_BOX: 'documenti',
+          TITOLO: 'Piani',
+          ALLEGA: true,
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PDP' } }
+        }
+      ])
+    },
+    docenteTarget(),
+    tables
+  );
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbale visibile');
+  expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('PDP visibile');
+  expect(w.ctx.get('documentIds')).toEqual(['doc-verbale', 'doc-pdp']);
+  expect(w.ctx.get('allegatiIds')).toEqual(['doc-verbale', 'doc-pdp']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:doc-verbale', 'blob:doc-pdp']);
 });
 
 test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and omits noReply block when false', () => {
@@ -1970,8 +2108,7 @@ test('LogEmailStep records links to files actually sent as attachments in LOG_MA
   const w = wire({
     BOX_CFG: JSON.stringify([
       {
-        TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '<p>Allegati disponibili.</p>',
+        TIPO_BOX: 'documenti',
         ALLEGA: true,
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       }
@@ -2004,7 +2141,7 @@ test('LogEmailStep records links to files actually sent as attachments in LOG_MA
     docs: string[];
     attach: string[];
   };
-  expect(allegati.docs).toEqual([]);
+  expect(allegati.docs).toEqual(['doc1', 'doc2']);
   expect(allegati.attach).toEqual(['https://drive/doc1', 'https://drive/doc2']);
 });
 
@@ -2311,11 +2448,11 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const w = wire({
       BOX_CFG: JSON.stringify([
         {
-          TIPO_BOX: 'testo_dinamico',
-          CONTENUTO: '<p>Allegati disponibili.</p>',
+          TIPO_BOX: 'documenti',
           ALLEGA: true,
           DATI_SORGENTE: { metodo: 'documentiPerClasse' }
-        }
+        },
+        { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Corpo visibile.</p>' }
       ])
     });
     w.db
@@ -2336,8 +2473,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const w = wire({
       BOX_CFG: JSON.stringify([
         {
-          TIPO_BOX: 'testo_dinamico',
-          CONTENUTO: '<p>Allegati disponibili.</p>',
+          TIPO_BOX: 'documenti',
           ALLEGA: true,
           DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { stato: 'NOTIFICATO' } }
         }

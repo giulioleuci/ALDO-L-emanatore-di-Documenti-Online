@@ -29,7 +29,7 @@ export interface CarenzaFormatoB {
   descrizione: string;
 }
 
-interface DocumentoItem {
+export interface DocumentoItem {
   id?: string | undefined;
   nome: string;
   link: string;
@@ -75,6 +75,7 @@ export interface SourceScope {
 }
 
 const DEFAULT_BORDER = '#ddd';
+const INSTANCE_SOURCE_DATA_PATH = '__ALDO_SOURCE_DATA_PATH';
 const folderProjector = new CollectionProjector({ logger: new LoggerService() });
 
 /**
@@ -339,13 +340,16 @@ export function createBoxComposer(
   ): void => {
     blocks.register({
       definition: { id, name, supportedFormats: ['html'], emptyBehavior: 'HIDE' },
-      factory: (definition, config) =>
-        new SimpleContentBlock(definition, {
+      factory: (definition, config) => {
+        const sourceDataPath = str(config[INSTANCE_SOURCE_DATA_PATH]);
+        return new SimpleContentBlock(definition, {
           ...config,
-          dataExtractor,
+          dataExtractor:
+            sourceDataPath === '' ? dataExtractor : (ctx) => ctx.get(sourceDataPath, undefined),
           emptyChecker,
           templates: { html: id }
-        })
+        });
+      }
     });
   };
 
@@ -545,7 +549,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function uniqueById<T extends { id: string | null | undefined }>(items: T[]): T[] {
+function uniqueById<T extends { id?: string | null | undefined }>(items: T[]): T[] {
   const distinct = folderProjector.project(
     items.flatMap((item, index) => (item.id === null || item.id === undefined ? [] : [{ id: item.id, index }])),
     [{ type: 'distinctBy', keys: ['id'] }]
@@ -644,6 +648,60 @@ function resolveSourceItems(
     : uniqueById(entities as LogCartella[]).map(cartellaItem);
 }
 
+interface ResolvedBoxConfiguration {
+  cfg: Record<string, unknown>;
+  index: number;
+  tipo: string;
+  sourceItems?: DocumentoItem[] | undefined;
+}
+
+/**
+ * Single validation and source-resolution boundary for renderer instances and
+ * dynamic attachments. Entity comes exclusively from a known TIPO_BOX; a
+ * DATI_SORGENTE method can never reclassify an unrelated or unknown box.
+ */
+function resolveBoxConfigurations(
+  confMail: ConfigurazioneEmail,
+  aggregatoreDati: AggregatoreDati | undefined,
+  sourceScope: SourceScope | undefined,
+  logger: LoggerService
+): ResolvedBoxConfiguration[] {
+  return confMail.getBoxes().flatMap((cfg, index) => {
+    const tipo = str(cfg['TIPO_BOX']);
+    if (tipo === '' || !(tipo in DEFAULT_TITLES)) return [];
+    if ((tipo === 'documenti' || tipo === 'cartelle') && isLegacyFilter(cfg)) {
+      const legacy = ['FILTRO_TIPO', 'FILTRO_STATO'].filter((key) =>
+        Object.prototype.hasOwnProperty.call(cfg, key)
+      );
+      logger.error(
+        `CONF_MAIL ${confMail.id ?? ''}: chiavi legacy ${legacy.join(', ')} non ammesse; usa DATI_SORGENTE.filtri`
+      );
+      return [];
+    }
+    if (tipo !== 'documenti' && tipo !== 'cartelle') return [{ cfg, index, tipo }];
+    if (tipo === 'cartelle' && cfg['ALLEGA'] === true) {
+      logger.warn(
+        `CONF_MAIL ${confMail.id ?? ''}: sorgente cartelle non allegabile; allegati statici invariati`
+      );
+    }
+    if (cfg['DATI_SORGENTE'] === undefined && Object.prototype.hasOwnProperty.call(cfg, 'filtri')) {
+      logger.error(
+        `CONF_MAIL ${confMail.id ?? ''}: filtri deve comparire in DATI_SORGENTE.filtri`
+      );
+      return [];
+    }
+    const sourceItems = resolveSourceItems(
+      cfg,
+      tipo,
+      aggregatoreDati,
+      sourceScope,
+      logger,
+      confMail.id ?? ''
+    );
+    return sourceItems === null ? [] : [{ cfg, index, tipo, sourceItems }];
+  });
+}
+
 /**
  * Runs the Box Rendering System for one CONF_MAIL pattern (11 §5): BOX_CFG →
  * CompositionRecipe → ContentComposer; applies the FormattatoreDatiEmail
@@ -664,78 +722,62 @@ export function renderBoxes(
   boxes: Record<string, RenderedBox>;
   documentIds: string[];
   folderIds: string[];
+  dynamicAttachments: Array<{ id: string; link: string }>;
 } {
   const activeLogger = logger ?? new LoggerService();
-  const cfgs = confMail.getBoxes();
-  const known = cfgs.flatMap((cfg, index) => {
-    const c = cfg;
-    const tipo = str(c['TIPO_BOX']);
-    if (tipo === '' || !(tipo in DEFAULT_TITLES)) return [];
-    if ((tipo === 'documenti' || tipo === 'cartelle') && isLegacyFilter(c)) {
-      const legacy = ['FILTRO_TIPO', 'FILTRO_STATO'].filter((key) =>
-        Object.prototype.hasOwnProperty.call(c, key)
-      );
-      activeLogger.error(
-        `CONF_MAIL ${confMail.id ?? ''}: chiavi legacy ${legacy.join(', ')} non ammesse; usa DATI_SORGENTE.filtri`
-      );
-      return [];
-    }
-    return [{ cfg: c, index, tipo }];
-  });
-  if (known.length === 0) return { ordered: [], boxes: {}, documentIds: [], folderIds: [] };
-
-  let documentiSorgente: DocumentoItem[] | undefined;
-  let cartelleSorgente: DocumentoItem[] | undefined;
-  const renderable = known.filter(({ cfg, tipo }) => {
-    if (tipo !== 'documenti' && tipo !== 'cartelle') return true;
-    if (cfg['DATI_SORGENTE'] === undefined && Object.prototype.hasOwnProperty.call(cfg, 'filtri')) {
-      activeLogger.error(
-        `CONF_MAIL ${confMail.id ?? ''}: filtri deve comparire in DATI_SORGENTE.filtri`
-      );
-      return false;
-    }
-    const items = resolveSourceItems(
-      cfg,
-      tipo === 'documenti' ? 'documenti' : 'cartelle',
-      aggregatoreDati,
-      sourceScope,
-      activeLogger,
-      confMail.id ?? ''
-    );
-    if (items === null) return false;
-    if (items !== undefined) {
-      if (tipo === 'documenti') documentiSorgente = items;
-      else cartelleSorgente = items;
-    }
-    return true;
-  });
-  if (renderable.length === 0) return { ordered: [], boxes: {}, documentIds: [], folderIds: [] };
+  const renderable = resolveBoxConfigurations(
+    confMail,
+    aggregatoreDati,
+    sourceScope,
+    activeLogger
+  );
+  if (renderable.length === 0)
+    return {
+      ordered: [],
+      boxes: {},
+      documentIds: [],
+      folderIds: [],
+      dynamicAttachments: []
+    };
 
   const recipe: CompositionRecipeInput = {
     id: confMail.id ?? 'boxes',
     name: `Boxes ${confMail.id ?? ''}`,
     outputFormat: 'html',
-    blocks: renderable.map(({ cfg, index, tipo }) => {
+    blocks: renderable.map(({ cfg, index, tipo, sourceItems }) => {
       const prerequisiti = str(cfg['PREREQUISITI']);
+      const instanceId = `${tipo}_${index}`;
       return {
-        instanceId: `${tipo}_${index}`,
+        instanceId,
         blockType: tipo,
         visibility: prerequisiti === '' ? 'always' : prerequisiti,
         order: typeof cfg['ORDINE'] === 'number' ? cfg['ORDINE'] : index,
-        config: cfg
+        config:
+          sourceItems === undefined
+            ? cfg
+            : { ...cfg, [INSTANCE_SOURCE_DATA_PATH]: `boxSourceData.${instanceId}` }
       };
     })
   };
 
-  const context: Record<string, unknown> = {
-    ...cdu,
-    boxdata: aggregaDati(cdu, materie, documentiSorgente, cartelleSorgente)
-  };
-  const boxdata = context['boxdata'] as {
-    documenti: { items: DocumentoItem[] };
-    cartelle: { items: DocumentoItem[] };
+  const boxdata = aggregaDati(cdu, materie) as {
+    documenti: { items: DocumentoItem[]; storicoRef?: LazyRef<DocumentoStoricoConTipo[]> };
+    cartelle: { items: DocumentoItem[]; storicoRef?: LazyRef<DocumentoStoricoConTipo[]> };
     pianiPersDaInviare: { items: PianoPersonalizzatoRow[] };
     pianiPersInviati: { items: PianoPersonalizzatoRow[] };
+  };
+  const boxSourceData: Record<string, unknown> = {};
+  for (const { index, tipo, sourceItems } of renderable) {
+    if (sourceItems === undefined || (tipo !== 'documenti' && tipo !== 'cartelle')) continue;
+    boxSourceData[`${tipo}_${index}`] = {
+      ...boxdata[tipo],
+      items: sourceItems
+    };
+  }
+  const context: Record<string, unknown> = {
+    ...cdu,
+    boxdata,
+    boxSourceData
   };
   const result = composer.compose(recipe, context);
 
@@ -743,16 +785,29 @@ export function renderBoxes(
   const ordered: string[] = [];
   const boxes: Record<string, RenderedBox> = {};
   const sourceContentTypes = new Set<string>();
+  const renderedDocumentItems: DocumentoItem[] = [];
+  const renderedFolderItems: DocumentoItem[] = [];
+  const dynamicAttachmentItems: DocumentoItem[] = [];
   const orderedCfg = [...renderable].sort((a, b) => {
     const oa = typeof a.cfg['ORDINE'] === 'number' ? a.cfg['ORDINE'] : a.index;
     const ob = typeof b.cfg['ORDINE'] === 'number' ? b.cfg['ORDINE'] : b.index;
     return oa - ob;
   });
 
-  for (const { cfg, index, tipo } of orderedCfg) {
+  for (const { cfg, index, tipo, sourceItems } of orderedCfg) {
     const block = byInstance.get(`${tipo}_${index}`);
     if (block === undefined) continue;
-    if (block.isVisible && block.content !== '') sourceContentTypes.add(tipo);
+    if (block.isVisible && block.content !== '') {
+      sourceContentTypes.add(tipo);
+      if (tipo === 'documenti') {
+        const items = sourceItems ?? boxdata.documenti.items;
+        renderedDocumentItems.push(...items);
+        if (cfg['ALLEGA'] === true && sourceItems !== undefined)
+          dynamicAttachmentItems.push(...sourceItems);
+      } else if (tipo === 'cartelle') {
+        renderedFolderItems.push(...(sourceItems ?? boxdata.cartelle.items));
+      }
+    }
     const isEmpty = block.isEmpty || !block.isVisible || block.content === '';
     let inner = block.isVisible ? block.content : '';
     if (inner === '' && cfg['MOSTRA_SE_VUOTO'] === true) {
@@ -768,14 +823,18 @@ export function renderBoxes(
     Array.from(new Set(items.map((item) => item.id).filter((id): id is string => id !== undefined && id !== '')));
   const hasRenderedSourceContent = (tipo: string): boolean => sourceContentTypes.has(tipo);
   const documentIds = [
-    ...(hasRenderedSourceContent('documenti') ? boxdata.documenti.items : []),
+    ...renderedDocumentItems,
     ...(hasRenderedSourceContent('piani_pers_da_inviare') ? boxdata.pianiPersDaInviare.items : []),
     ...(hasRenderedSourceContent('piani_pers_inviati') ? boxdata.pianiPersInviati.items : [])
   ];
+  const dynamicAttachments = uniqueById(dynamicAttachmentItems)
+    .map((item) => ({ id: item.id ?? '', link: item.link }))
+    .filter((item) => item.id !== '');
   return {
     ordered,
     boxes,
     documentIds: ids(documentIds),
-    folderIds: hasRenderedSourceContent('cartelle') ? ids(boxdata.cartelle.items) : []
+    folderIds: ids(renderedFolderItems),
+    dynamicAttachments
   };
 }

@@ -1061,8 +1061,7 @@ test('sendToTarget sends static attachments first, then opted-in class documents
         ALLEGATI: JSON.stringify(['static-id', 'shared-id']),
         BOX_CFG: JSON.stringify([
           {
-            TIPO_BOX: 'testo_dinamico',
-            CONTENUTO: '<p>Documenti allegati.</p>',
+            TIPO_BOX: 'documenti',
             ALLEGA: true,
             DATI_SORGENTE: { metodo: 'documentiPerClasse' }
           }

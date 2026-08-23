@@ -349,15 +349,6 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 > a `{{focus.alunno.anagrafica.email}}`; il log risultante usa sempre
 > `ID_GEN=PIANI_PERSONALIZZATI`, `TIPO=PIANO_PERS` e
 > `SOTTOTIPO=focus.piano.tipo`.
->
-> **Eccezione ammessa — famiglia `NO_PEI`.** È ammesso un secondo record
-> `CONF_DOC`, con `ID=PIANI_PERSONALIZZATI_NO_PEI` e `TIPO=PIANO_PERS`, a
-> fianco del record canonico, a condizione che riusi lo stesso
-> `GENERATORE=DOC_PERSONALIZZATO` e la stessa struttura `MODELLI`/`PATH_OUT`/
-> `FILE_NAME`/`PERMESSI`, e che la sua `CONDIZIONE` escluda esplicitamente
-> `focus.piano.tipo == "PEI"` (es. `{{focus.piano.tipo}} != "PEI"`). Non sono
-> ammessi ulteriori record distinti per altri sottoinsiemi di `PIANI.TIPO`:
-> questa è l'unica eccezione al vincolo del record unico sopra descritto.
 
 > **Altri `CONF_DOC.TIPO` riservati (asse di batch).** Oltre a `PIANO_PERS`, altri due valori di `TIPO` sono riservati perché pilotano l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`):
 > - `DOCUMENTO_DOCENTE_MATERIA`: un documento per ciascuna coppia (docente, materia) del consiglio di classe risolto per ruolo (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), su tutte le classi attive — non un documento per classe. Popola `focus.docente`/`focus.materia` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia::docenteEmail` (vedi sotto).

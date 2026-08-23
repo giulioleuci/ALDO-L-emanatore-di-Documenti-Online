@@ -198,6 +198,21 @@ describe('source filter specifications', () => {
     expect(matchingDocuments({ classi: ['5A'], not: { tipo: 'VERBALE' } })).toEqual([]);
   });
 
+  it('applies the outer all CSV mode to not criteria', () => {
+    const singleClassDocument = documento({
+      [COL_LOG_DOCS.ID]: 'doc-3',
+      [COL_LOG_DOCS.CLASSI]: '5A'
+    });
+
+    expect(
+      [documents[0], singleClassDocument]
+        .filter((candidate) =>
+          specDocumenti({ csv: 'all', not: { classi: ['5A', '3B'] } }).isSatisfiedBy(candidate)
+        )
+        .map((item) => item.id)
+    ).toEqual(['doc-3']);
+  });
+
   it('matches folder idGen exactly and name/path as case-sensitive substrings', () => {
     expect(matchingFolders({ idGen: 'VERBALI' })).toEqual(['fold-1']);
     expect(matchingFolders({ nome: 'Verbali' })).toEqual(['fold-1']);

@@ -21,14 +21,17 @@ import { presenteTuttoAnno } from '../../storico/presenza';
  * partner classes — no per-indirizzo grouping (moved to `focus.classe.partner`, 02 §2.5).
  * `status.presenteAnnoPrecedente`/`presenteTuttoAnno` mirror
  * `AlunnoProvider`'s own fields of the same name (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md
- * §4/§5): presenteAnnoPrecedente looks one year back through `storicoDb`
- * (cheap — that provider caches opened databases by spreadsheet id across the
- * whole CDU build) and is gated behind `options.includiStorico`, matching
- * every other historical-data provider in the recipe — `storicoDb` is only
- * ever touched when the caller opted into historical data, so a plain roster
- * build (includiStorico defaults to false) never opens a second database.
- * presenteTuttoAnno reads this year's own MOV_ALUNNI via
- * `IAlunnoRepository.getStoricoMovimenti` and needs no gating.
+ * §4/§5): presenteAnnoPrecedente is gated behind `options.includiStorico`,
+ * like every other historical-data provider in the recipe — `storicoDb` is
+ * only ever touched when the caller opted into historical data, so a plain
+ * roster build (includiStorico defaults to false) never opens a second
+ * database. Unlike those other providers it always looks exactly one year
+ * back through `storicoDb` (`anniStorici(1)`, cheap — that provider caches
+ * opened databases by spreadsheet id across the whole CDU build) regardless
+ * of `options.profonditaAnniStorico`, since "was the student here last year"
+ * is intrinsically a depth-1 question. presenteTuttoAnno reads this year's
+ * own MOV_ALUNNI via `IAlunnoRepository.getStoricoMovimenti` and needs no
+ * gating.
  */
 export class StudentiProvider implements ContextProvider {
   constructor(

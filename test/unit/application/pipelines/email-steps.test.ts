@@ -152,8 +152,11 @@ function wire(
 // test/setup/load-gaslibs.cjs's CacheService comment). BuildCDUStep decides
 // includiStorico itself from BOX_CFG (e.g. arricchisciConStorico:true), so any
 // test here can end up exercising it even without asking for it explicitly;
-// backing every composeContextBuilder call in this file with a no-op
-// StoricoDatabaseProvider keeps that harmless regardless.
+// buildStep() below backs its composeContextBuilder call with a no-op
+// StoricoDatabaseProvider for that reason. The other composeContextBuilder
+// call sites in this file use the real provider instead and stay harmless
+// only because the shared fixture's MASTER table lists no historical years,
+// so anniStorici() never actually needs to open anything.
 function noHistoryStoricoDb(): StoricoDatabaseProvider {
   return { anniStorici: () => [] };
 }

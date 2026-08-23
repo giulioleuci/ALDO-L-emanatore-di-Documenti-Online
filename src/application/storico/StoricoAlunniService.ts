@@ -31,7 +31,7 @@ export interface AnnoAlunnoStorico {
   esito: Esito;
   carenze: CarenzaStorica[];
   piani: string[];
-  /** Era già iscritto in questa scuola nell'anno immediatamente precedente a questo? */
+  /** Era già iscritto in questa scuola nell'anno immediatamente precedente a questo? Al confine della profondità storica configurata (profonditaAnniStorico) non esiste un anno ulteriore da verificare, quindi il valore ricade su false di default — non una conferma reale di assenza. */
   presenteAnnoPrecedente: boolean;
   /** Nessun IN/CAMBIO datato entro questo anno? (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §5) */
   presenteTuttoAnno: boolean;

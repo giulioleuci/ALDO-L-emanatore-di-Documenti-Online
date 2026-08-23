@@ -373,7 +373,7 @@ focus.alunno:
     isBes: boolean
     isRipetente: boolean
     isRappresentante: boolean
-    presenteAnnoPrecedente: boolean  # false anche per classi di anno 1 (iscrizione ordinaria, non trasferimento)
+    presenteAnnoPrecedente: boolean  # false anche per classi di anno 1 (iscrizione ordinaria, non trasferimento); valorizzato solo se options.includiStorico è true — altrimenti sempre false (non un dato reale sull'assenza)
     presenteTuttoAnno: boolean       # false se un IN/CAMBIO è datato entro l'anno corrente
 
   # Array (Principio 1) — stesso schema di focus.classe.studenti.listaCompleta[].curriculum
@@ -760,7 +760,7 @@ StudentStoricoVM:
       carenze:                   # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
         - materiaSigla: string
           valore: string
-      presenteAnnoPrecedente: boolean  # Era già iscritto in questa scuola nell'anno precedente a questo?
+      presenteAnnoPrecedente: boolean  # Era già iscritto in questa scuola nell'anno precedente a questo? Al confine della profondità storica configurata (profonditaAnniStorico) non c'è un anno ulteriore da verificare, quindi il valore ricade su false di default — non una conferma reale di assenza
       presenteTuttoAnno: boolean       # Nessun IN/CAMBIO datato entro questo anno?
   pianiPrimoAnnoPrecedente:
     - tipo: string               # Enum TipoPiano (es. "PDP_DSA")
@@ -796,7 +796,7 @@ StudentVM:
     isRappresentante: boolean
     religione: string            # "IRC" | "ALT" | "NO"
     religioneLabel: string       # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
-    presenteAnnoPrecedente: boolean
+    presenteAnnoPrecedente: boolean  # valorizzato solo se options.includiStorico è true — altrimenti sempre false (non un dato reale sull'assenza)
     presenteTuttoAnno: boolean
   # Array (Principio 1)
   curriculum: CurriculumVM[]     # [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome } ] } ]

@@ -33,12 +33,15 @@ import { EntityNotFoundError } from '../../../domain/errors/DomainError';
  * through `storicoDb` (cheap — that provider caches opened databases by
  * spreadsheet id across the whole CDU build), presenteTuttoAnno reads this
  * year's own MOV_ALUNNI via `IAlunnoRepository.getStoricoMovimenti`.
- * presenteAnnoPrecedente is gated behind `options.includiStorico`, matching
- * every other historical-data provider in the recipe (StoricoProvider,
- * DocumentiStoricoProvider, PianiPers*StoricoProvider): `storicoDb` is only
+ * presenteAnnoPrecedente is gated behind `options.includiStorico`, like every
+ * other historical-data provider in the recipe (StoricoProvider,
+ * DocumentiStoricoProvider, PianiPers*StoricoProvider) — `storicoDb` is only
  * ever touched when the caller opted into historical data, so a plain
  * ALUNNO_DETTAGLIATO/CLASSE_COMPLETA build (includiStorico defaults to false)
- * never opens a second database. Stays a plain `boolean`, not a `LazyRef`
+ * never opens a second database. Unlike those other providers it always looks
+ * exactly one year back (`anniStorici(1)`) regardless of
+ * `options.profonditaAnniStorico`, since "was the student here last year" is
+ * intrinsically a depth-1 question. Stays a plain `boolean`, not a `LazyRef`
  * (unlike `focus.alunno.storico`) — per SPECS_ALDO/02_CDU_STRUTTURA.md:1584,
  * `status.*` fields must stay template-renderable plain values, so gating is
  * done in the provider, not by deferring resolution to the consumer.

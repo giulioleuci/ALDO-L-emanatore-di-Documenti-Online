@@ -1694,6 +1694,48 @@ test('legacy attachment filters invalidate the document box and preserve static 
   errorSpy.mockRestore();
 });
 
+test('a misplaced top-level filter invalidates a document source for rendering and attachments', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'doc-misplaced-filter',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      NOME: 'Documento da non renderizzare',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      ALLEGATI: JSON.stringify(['static-id']),
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          ALLEGA: true,
+          filtri: { tipo: 'VERBALE' },
+          DATI_SORGENTE: { metodo: 'documentiPerClasse' }
+        }
+      ])
+    },
+    docenteTarget(),
+    tables
+  );
+  const errorSpy = jest.spyOn(logger, 'error');
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get('documentIds')).toEqual([]);
+  expect(w.ctx.get('allegatiIds')).toEqual(['static-id']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:static-id']);
+  expect(errorSpy).toHaveBeenCalledWith(
+    expect.stringContaining('filtri deve comparire in DATI_SORGENTE.filtri')
+  );
+  errorSpy.mockRestore();
+});
+
 test('two-box parity preserves distinct per-instance filters for rendered and attached document IDs', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [

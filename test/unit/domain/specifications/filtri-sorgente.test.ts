@@ -197,6 +197,23 @@ describe('source filter specifications', () => {
     expect(matchingDocuments({ classi: ['5A'], not: { tipo: 'VERBALE' } })).toEqual([]);
   });
 
+  it('rejects a document when any one of multiple scalar not criteria matches', () => {
+    expect(
+      matchingDocuments({
+        not: { tipo: 'VERBALE', stato: StatoDocumento.ARCHIVIATO }
+      })
+    ).toEqual([]);
+  });
+
+  it('rejects a folder when any one of multiple scalar not criteria matches', () => {
+    expect(matchingFolders({ not: { idGen: 'VERBALI', nome: 'Archivio' } })).toEqual([]);
+  });
+
+  it('normalizes an empty not to no exclusion', () => {
+    expect(matchingDocuments({ not: {} })).toEqual(['doc-1', 'doc-2']);
+    expect(matchingFolders({ not: {} })).toEqual(['fold-1', 'fold-2']);
+  });
+
   it('applies the outer all CSV mode to not criteria', () => {
     const singleClassDocument = documento({
       [COL_LOG_DOCS.ID]: 'doc-3',

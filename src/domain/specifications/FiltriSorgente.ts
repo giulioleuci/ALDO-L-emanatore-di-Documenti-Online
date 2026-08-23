@@ -148,6 +148,13 @@ function combine<T>(criteria: Specification<T>[]): Specification<T> {
   );
 }
 
+function combineAny<T>(criteria: Specification<T>[]): Specification<T> {
+  return criteria.reduce<Specification<T>>(
+    (combined, criterion) => combined.or(criterion) as Specification<T>,
+    new PredicateSpecification<T>(() => false)
+  );
+}
+
 function matchesCsv(
   filter: string[],
   candidateContains: (value: string) => boolean,
@@ -238,7 +245,7 @@ export function specDocumenti(filtri: FiltriSorgente): Specification<LogDocument
   const criteria = documentCriteria(filtri);
   if (filtri.not)
     criteria.push(
-      combine(
+      combineAny(
         documentCriteria(filtri.not, filtri.csv ?? 'any')
       ).not() as Specification<LogDocumento>
     );
@@ -249,7 +256,7 @@ export function specCartelle(filtri: FiltriSorgente): Specification<LogCartella>
   const criteria = folderCriteria(filtri);
   if (filtri.not)
     criteria.push(
-      combine(folderCriteria(filtri.not, filtri.csv ?? 'any')).not() as Specification<LogCartella>
+      combineAny(folderCriteria(filtri.not, filtri.csv ?? 'any')).not() as Specification<LogCartella>
     );
   return combine(criteria);
 }

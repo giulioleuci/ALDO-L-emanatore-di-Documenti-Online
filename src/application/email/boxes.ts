@@ -684,7 +684,7 @@ function resolveBoxConfigurations(
         `CONF_MAIL ${confMail.id ?? ''}: sorgente cartelle non allegabile; allegati statici invariati`
       );
     }
-    if (cfg['DATI_SORGENTE'] === undefined && Object.prototype.hasOwnProperty.call(cfg, 'filtri')) {
+    if (Object.prototype.hasOwnProperty.call(cfg, 'filtri')) {
       logger.error(
         `CONF_MAIL ${confMail.id ?? ''}: filtri deve comparire in DATI_SORGENTE.filtri`
       );

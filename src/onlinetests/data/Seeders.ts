@@ -163,7 +163,15 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_ALUNNI.RELIGIONE]: 'IRC',
     [COL_ALUNNI.CURRICULUM]: '',
     [COL_ALUNNI.ATTIVO]: true,
-    [COL_ALUNNI.RIPETENTE]: false,
+    // RIPETENTE on the MORE RECENT prior year (ANNI_PRECEDENTI[0]) is what
+    // StoricoAlunniService reads to derive the OLDER prior year's esito
+    // (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §2): true here makes the older
+    // year resolve to NON_PROMOSSO, while this year's own esito is resolved
+    // from the CURRENT year's ALUNNI.RIPETENTE (false — 138 is not in
+    // SharedTestDatabaseBuilder's RIPETENTE_1A/RIPETENTE_3C list), so this
+    // year itself still resolves to PROMOSSO. See storicoChecks.ts's
+    // assertAlunnoStorico for the exact expected esito-per-anno signature.
+    [COL_ALUNNI.RIPETENTE]: anno === ANNI_PRECEDENTI[0],
     [COL_ALUNNI.RAPPR_STUD]: false,
     [COL_ALUNNI.RAPPR_GEN]: '',
     [COL_ALUNNI.TUTOR_1]: EMAIL_TEST_SAFE,
@@ -247,13 +255,20 @@ export function seedStorico(prior: ISampleSpreadsheet, anno: string): void {
     [COL_PIANI.TIPO]: 'PDP_BES',
     [COL_PIANI.PARAMETRI]: JSON.stringify({ anno, storico: true })
   });
+  // TIPO=RITIRATO (not OUT): this student withdrew from studies entirely
+  // (ATTIVO=false, NOTE='ritirato'), not transferred to another institute —
+  // see 03_VALUE_OBJECTS_ED_ENUM.md's TipoMovimento split.
   prior.appendRow(TABLE.MOV_ALUNNI, {
     [COL_MOV_ALUNNI.STUDENTE]: ritirato,
-    [COL_MOV_ALUNNI.TIPO]: 'OUT',
+    [COL_MOV_ALUNNI.TIPO]: 'RITIRATO',
     [COL_MOV_ALUNNI.DATA]: `${anno.slice(0, 4)}-02-01`,
     [COL_MOV_ALUNNI.DA]: classe,
     [COL_MOV_ALUNNI.A]: ''
   });
+  // Deliberately inert: CAMBIO never drives esito under the RIPETENTE-based
+  // algorithm (it's an internal same-year section change, structurally
+  // incapable of signalling promotion). Kept here as noise proving the
+  // algorithm ignores it, same as the ALDO unit test fixtures.
   prior.appendRow(TABLE.MOV_ALUNNI, {
     [COL_MOV_ALUNNI.STUDENTE]: alunno,
     [COL_MOV_ALUNNI.TIPO]: 'CAMBIO',

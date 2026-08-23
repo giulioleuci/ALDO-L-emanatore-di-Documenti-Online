@@ -178,9 +178,16 @@ test('seeds two prior databases with every historical-provider table and master 
     expect(prior.rows[TABLE.ALUNNI].find((row) => row.EMAIL === e2eAlunnoEmail(138))!.CLASSE).toBe(
       anno === '2025-2026' ? '2C' : '1C'
     );
+    // RIPETENTE is true only on the more recent prior year (2025-2026): that's
+    // what StoricoAlunniService reads to derive 2024-2025's NON_PROMOSSO esito
+    // (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §2) — see storicoChecks.ts's
+    // assertAlunnoStorico for the resulting esito-per-anno signature.
+    expect(
+      prior.rows[TABLE.ALUNNI].find((row) => row.EMAIL === e2eAlunnoEmail(138))!.RIPETENTE
+    ).toBe(anno === '2025-2026');
     expect(prior.rows[TABLE.MOV_ALUNNI]).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ TIPO: 'OUT', STUDENTE: e2eAlunnoEmail(139) }),
+        expect.objectContaining({ TIPO: 'RITIRATO', STUDENTE: e2eAlunnoEmail(139) }),
         expect.objectContaining({
           TIPO: 'CAMBIO',
           STUDENTE: e2eAlunnoEmail(138),

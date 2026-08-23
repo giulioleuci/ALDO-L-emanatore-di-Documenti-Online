@@ -286,7 +286,7 @@ export function registerStoricoChecks(
           'storico ritirato'
         );
         if (!asArray(ritirato.anni, 'anni ritirato').every((anno) => anno.esito === 'RITIRATO')) {
-          fail('movimento OUT non produce RITIRATO');
+          fail('movimento RITIRATO non produce esito RITIRATO');
         }
         const ripetente = buildAlunno(builder, RIPETENTE_3C, {
           includiStorico: true,

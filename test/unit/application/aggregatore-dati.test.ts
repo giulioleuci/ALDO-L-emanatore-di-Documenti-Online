@@ -1,5 +1,4 @@
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
-import { StatoDocumento } from '../../../src/domain/value-objects/enums';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
@@ -18,56 +17,191 @@ test('getCarenzePerAlunno returns the student rows most-recent first (14 §2)', 
   expect(rows.every((c) => c.studente === 'a1@school.it')).toBe(true);
 });
 
-test('getDocumentiPerAlunno filters by UTENTI contains + tipo/stato (14 §2)', () => {
+test('getDocumentiPerUtente scopes UTENTI before applying document filters (14 §2)', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [
     {
       ID: 'd1',
       ID_GEN: 'CD1',
       TIPO: 'PDP',
+      SOTTOTIPO: 'ANNUALE',
       STATO: 'GENERATO',
       UTENTI: 'a1@school.it',
-      CLASSI: '5A'
+      CLASSI: '5A',
+      MATERIE: 'MATE'
     },
     {
       ID: 'd2',
       ID_GEN: 'CD1',
-      TIPO: 'VERBALE',
-      STATO: 'ARCHIVIATO',
+      TIPO: 'PDP',
+      SOTTOTIPO: 'INTERMEDIO',
+      STATO: 'GENERATO',
       UTENTI: 'a1@school.it',
-      CLASSI: '5A'
+      CLASSI: '5A',
+      MATERIE: 'MATE'
     },
     {
       ID: 'd3',
       ID_GEN: 'CD1',
       TIPO: 'PDP',
+      SOTTOTIPO: 'ANNUALE',
       STATO: 'GENERATO',
       UTENTI: 'a2@school.it',
-      CLASSI: '5A'
+      CLASSI: '5A',
+      MATERIE: 'MATE'
     }
   ];
   const agg = aggregatore(tables);
-  expect(agg.getDocumentiPerAlunno('a1@school.it').map((d) => d.id)).toEqual(['d1', 'd2']);
-  expect(agg.getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP' }).map((d) => d.id)).toEqual([
-    'd1'
-  ]);
   expect(
-    agg.getDocumentiPerAlunno('a1@school.it', { stato: StatoDocumento.ARCHIVIATO }).map((d) => d.id)
-  ).toEqual(['d2']);
+    agg
+      .getDocumentiPerUtente('a1@school.it', {
+        tipo: 'PDP',
+        sottotipo: 'ANNUALE',
+        classi: ['5A']
+      })
+      .map((d) => d.id)
+  ).toEqual(['d1']);
 });
 
-test('getDocumentiPerClasse and getCartellePerClasse filter by CSV contains (14 §2)', () => {
+test('perMetodo scopes every document and folder accessor before applying its specification', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [
-    { ID: 'd1', ID_GEN: 'CD1', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '5A,3B', UTENTI: '' }
+    {
+      ID: 'classe-verbale',
+      ID_GEN: 'VERBALI',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'ITA'
+    },
+    {
+      ID: 'classe-condotta',
+      ID_GEN: 'CONDOTTA',
+      TIPO: 'CONDOTTA',
+      STATO: 'GENERATO',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'ITA'
+    },
+    {
+      ID: 'dip-mate',
+      ID_GEN: 'DIP',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      CLASSI: '',
+      UTENTI: '',
+      MATERIE: 'MATE'
+    },
+    {
+      ID: 'dip-fisi',
+      ID_GEN: 'DIP',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      CLASSI: '',
+      UTENTI: '',
+      MATERIE: 'FISI'
+    },
+    {
+      ID: 'dip-ita',
+      ID_GEN: 'DIP',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      CLASSI: '',
+      UTENTI: '',
+      MATERIE: 'ITA'
+    }
   ];
   tables.LOG_FOLD = [
-    { ID: 'f1', PATH: 'Verbali/5', LINK: '', CLASSI: '5A', UTENTI: '' },
-    { ID: 'f2', PATH: 'Verbali/3', LINK: '', CLASSI: '3B', UTENTI: '' }
+    {
+      ID: 'folder-classe',
+      TIPO: 'ARCHIVIO',
+      NOME: 'Documenti',
+      PATH: 'Archivio/5A',
+      LINK: '',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: ''
+    },
+    {
+      ID: 'folder-utente',
+      TIPO: 'UTENTE',
+      NOME: 'Verbali personali',
+      PATH: 'Privato',
+      LINK: '',
+      CLASSI: '',
+      UTENTI: 'a@school.it',
+      MATERIE: ''
+    },
+    {
+      ID: 'folder-dip',
+      TIPO: 'VERBALI',
+      NOME: 'Verbali dipartimento',
+      PATH: 'Dipartimento',
+      LINK: '',
+      CLASSI: '',
+      UTENTI: '',
+      MATERIE: 'MATE'
+    },
+    {
+      ID: 'folder-fuori-dip',
+      TIPO: 'VERBALI',
+      NOME: 'Verbali lettere',
+      PATH: 'Dipartimento',
+      LINK: '',
+      CLASSI: '',
+      UTENTI: '',
+      MATERIE: 'ITA'
+    }
   ];
+  tables.DIPART = [{ ID: 'DIP_SCI', NOME: 'Scientifico', CAPO: '', MATERIE: 'MATE,FISI' }];
+  tables.MATERIE = [{ ID: 'MATE' }, { ID: 'FISI' }, { ID: 'ITA' }];
   const agg = aggregatore(tables);
-  expect(agg.getDocumentiPerClasse('5A').map((d) => d.id)).toEqual(['d1']);
-  expect(agg.getCartellePerClasse('5A').map((f) => f.id ?? '')).toEqual(['f1']);
+  expect(
+    (
+      agg.perMetodo(
+        'documentiPerClasse',
+        { classeId: '5A', filtri: { not: { tipo: 'CONDOTTA' } } },
+        logger
+      ) as LogDocumento[]
+    ).map((item) => item.id)
+  ).toEqual(['classe-verbale']);
+  expect(
+    (
+      agg.perMetodo(
+        'documentiPerDipartimento',
+        { dipartimentoId: 'DIP_SCI', filtri: { materie: 'MATE' } },
+        logger
+      ) as LogDocumento[]
+    ).map((item) => item.id)
+  ).toEqual(['dip-mate']);
+  expect(
+    (
+      agg.perMetodo(
+        'cartellePerClasse',
+        { classeId: '5A', filtri: { path: 'Archivio' } },
+        logger
+      ) as { id: string }[]
+    ).map((item) => item.id)
+  ).toEqual(['folder-classe']);
+  expect(
+    (
+      agg.perMetodo(
+        'cartellePerUtente',
+        { utenteEmail: 'a@school.it', filtri: { nome: 'Verbali' } },
+        logger
+      ) as { id: string }[]
+    ).map((item) => item.id)
+  ).toEqual(['folder-utente']);
+  expect(
+    (
+      agg.perMetodo(
+        'cartellePerDipartimento',
+        { dipartimentoId: 'DIP_SCI', filtri: { idGen: 'VERBALI' } },
+        logger
+      ) as { id: string }[]
+    ).map((item) => item.id)
+  ).toEqual(['folder-dip']);
 });
 
 test('documentiPerClasse exposes parent-owned documents to a partner without rewriting CLASSI', () => {
@@ -174,38 +308,15 @@ test('perMetodo logs a warning with the unknown metodo name and returns null (11
   warnSpy.mockRestore();
 });
 
-test('getDocumentiPerAlunno filters by sottotipo too, and only matches when ALL provided filtri match (14 §2)', () => {
-  const tables = fixtureTables();
-  tables.LOG_DOCS = [
-    {
-      ID: 'd1',
-      ID_GEN: 'CD1',
-      TIPO: 'PDP',
-      SOTTOTIPO: 'ANNUALE',
-      STATO: 'GENERATO',
-      UTENTI: 'a1@school.it',
-      CLASSI: '5A'
-    },
-    {
-      ID: 'd2',
-      ID_GEN: 'CD1',
-      TIPO: 'PDP',
-      SOTTOTIPO: 'INTERMEDIO',
-      STATO: 'GENERATO',
-      UTENTI: 'a1@school.it',
-      CLASSI: '5A'
-    }
-  ];
-  const agg = aggregatore(tables);
-  expect(
-    agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'ANNUALE' }).map((d) => d.id)
-  ).toEqual(['d1']);
-  expect(agg.getDocumentiPerAlunno('a1@school.it', { sottotipo: 'INESISTENTE' })).toEqual([]);
-  expect(
-    agg
-      .getDocumentiPerAlunno('a1@school.it', { tipo: 'PDP', sottotipo: 'ANNUALE' })
-      .map((d) => d.id)
-  ).toEqual(['d1']);
+test('perMetodo warns and returns null when a scoped source is missing its scope', () => {
+  const agg = aggregatore();
+  const warnSpy = jest.spyOn(logger, 'warn');
+
+  expect(agg.perMetodo('documentiPerUtente', { filtri: { tipo: 'PDP' } }, logger)).toBeNull();
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('documentiPerUtente'));
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('utenteEmail mancante'));
+
+  warnSpy.mockRestore();
 });
 
 test('allCartelle() memoizes LOG_FOLD: cartellePerClasse called twice reads the table only once (N+1 prevention)', () => {

@@ -3,21 +3,26 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 import { CarenzaRepository } from '../../infrastructure/repositories/CarenzaRepository';
 import { LogDocumentoRepository } from '../../infrastructure/repositories/LogDocumentoRepository';
 import { LogCartellaRepository } from '../../infrastructure/repositories/LogCartellaRepository';
+import { DipartimentoRepository } from '../../infrastructure/repositories/DipartimentoRepository';
+import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { ICarenzaRepository } from '../../domain/repositories/ICarenzaRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ILogCartellaRepository } from '../../domain/repositories/ILogCartellaRepository';
+import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { Carenza } from '../../domain/entities/Carenza';
 import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import type { LogCartella } from '../../domain/entities/LogCartella';
 import type { Email } from '../../domain/value-objects/Email';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
-import type { StatoDocumento } from '../../domain/value-objects/enums';
-
-export interface DocumentoFiltri {
-  tipo?: string;
-  stato?: StatoDocumento;
-  sottotipo?: string;
-}
+import { DipartimentoId } from '../../domain/value-objects/DipartimentoId';
+import {
+  parseFiltriSorgente,
+  specCartelle,
+  specDocumenti,
+  type EntitaSorgente,
+  type FiltriSorgente
+} from '../../domain/specifications/FiltriSorgente';
+import { MateriePerDipartimentoSpec } from '../../domain/specifications/MateriePerDipartimentoSpec';
 
 /**
  * AggregatoreDati (14 §2): the read-optimized query surface used by the email
@@ -32,6 +37,8 @@ export class AggregatoreDati {
   private readonly carenze: ICarenzaRepository;
   private readonly logDocs: ILogDocumentoRepository;
   private readonly logFold: ILogCartellaRepository;
+  private readonly dipartimenti: DipartimentoRepository;
+  private readonly materie: IMateriaRepository;
 
   private carenzeCache: Carenza[] | null = null;
   private documentiCache: LogDocumento[] | null = null;
@@ -42,6 +49,8 @@ export class AggregatoreDati {
     this.carenze = new CarenzaRepository(database);
     this.logDocs = new LogDocumentoRepository(database, new LazyRef(() => this.classi));
     this.logFold = new LogCartellaRepository(database);
+    this.dipartimenti = new DipartimentoRepository(database);
+    this.materie = new MateriaRepository(database);
   }
 
   /** CARENZE of one student, most recent first (14 §2). */
@@ -51,25 +60,51 @@ export class AggregatoreDati {
       .sort((a, b) => b.data.localeCompare(a.data));
   }
 
-  /** LOG_DOCS whose UTENTI contains the student, with optional tipo/stato/sottotipo filters (14 §2). */
-  getDocumentiPerAlunno(alunnoEmail: string, filtri: DocumentoFiltri = {}): LogDocumento[] {
-    return this.allDocumenti()
-      .filter((d) => d.containsUtente(alunnoEmail))
-      .filter((d) => this.matchesDoc(d, filtri));
+  /** LOG_DOCS whose UTENTI contains the requested user (14 §2). */
+  getDocumentiPerUtente(utenteEmail: string, filtri?: FiltriSorgente): LogDocumento[] {
+    return this.filterDocumenti(
+      this.allDocumenti().filter((documento) => documento.containsUtente(utenteEmail)),
+      filtri
+    );
   }
 
-  /** LOG_DOCS visible to the class, with optional tipo/stato filters (14 §2). */
-  getDocumentiPerClasse(classeId: string, filtri: DocumentoFiltri = {}): LogDocumento[] {
+  /** LOG_DOCS visible to the class, including parent-owned partner documents (14 §2). */
+  getDocumentiPerClasse(classeId: string, filtri?: FiltriSorgente): LogDocumento[] {
     const classe = this.classi.findById(ClasseId.of(classeId));
     if (classe === null) return [];
-    return this.logDocs
-      .findByClasse(classe)
-      .filter((documento) => this.matchesDoc(documento, filtri));
+    return this.filterDocumenti(this.logDocs.findByClasse(classe), filtri);
+  }
+
+  /** LOG_DOCS whose MATERIE intersects the department subject catalogue (14 §2). */
+  getDocumentiPerDipartimento(dipartimentoId: string, filtri?: FiltriSorgente): LogDocumento[] {
+    return this.filterDocumenti(
+      this.scopedToDipartimento(this.allDocumenti(), dipartimentoId),
+      filtri
+    );
   }
 
   /** LOG_FOLD whose CLASSI contains the class (14 §2). */
-  getCartellePerClasse(classeId: string): LogCartella[] {
-    return this.allCartelle().filter((f) => f.containsClasse(classeId));
+  getCartellePerClasse(classeId: string, filtri?: FiltriSorgente): LogCartella[] {
+    return this.filterCartelle(
+      this.allCartelle().filter((cartella) => cartella.containsClasse(classeId)),
+      filtri
+    );
+  }
+
+  /** LOG_FOLD whose UTENTI contains the requested user (14 §2). */
+  getCartellePerUtente(utenteEmail: string, filtri?: FiltriSorgente): LogCartella[] {
+    return this.filterCartelle(
+      this.allCartelle().filter((cartella) => cartella.containsUtente(utenteEmail)),
+      filtri
+    );
+  }
+
+  /** LOG_FOLD whose MATERIE intersects the department subject catalogue (14 §2). */
+  getCartellePerDipartimento(dipartimentoId: string, filtri?: FiltriSorgente): LogCartella[] {
+    return this.filterCartelle(
+      this.scopedToDipartimento(this.allCartelle(), dipartimentoId),
+      filtri
+    );
   }
 
   /**
@@ -94,33 +129,165 @@ export class AggregatoreDati {
    */
   perMetodo(
     metodo: string,
-    params: { alunnoEmail?: string; classeId?: string; filtri?: DocumentoFiltri },
+    params: {
+      alunnoEmail?: string;
+      utenteEmail?: string;
+      classeId?: string;
+      dipartimentoId?: string;
+      filtri?: unknown;
+    },
     logger?: LoggerService
   ): unknown[] | null {
+    const activeLogger = logger ?? new LoggerService();
     switch (metodo) {
       case 'carenzePerAlunno':
         return this.getCarenzePerAlunno(params.alunnoEmail ?? '');
-      case 'documentiPerAlunno':
-        return this.getDocumentiPerAlunno(params.alunnoEmail ?? '', params.filtri ?? {});
       case 'documentiPerClasse':
-        return this.getDocumentiPerClasse(params.classeId ?? '', params.filtri ?? {});
+        return this.documentiPerClasse(params, activeLogger);
+      case 'documentiPerUtente':
+        return this.documentiPerUtente(params, activeLogger);
+      case 'documentiPerDipartimento':
+        return this.documentiPerDipartimento(params, activeLogger);
       case 'cartellePerClasse':
-        return this.getCartellePerClasse(params.classeId ?? '');
+        return this.cartellePerClasse(params, activeLogger);
+      case 'cartellePerUtente':
+        return this.cartellePerUtente(params, activeLogger);
+      case 'cartellePerDipartimento':
+        return this.cartellePerDipartimento(params, activeLogger);
       case 'emailCoordinatori':
         return this.getEmailCoordinatori(params.classeId ?? '');
       default:
-        (logger ?? new LoggerService()).warn(
+        activeLogger.warn(
           `AggregatoreDati: metodo DATI_SORGENTE sconosciuto "${metodo}" — box saltato`
         );
         return null;
     }
   }
 
-  private matchesDoc(d: LogDocumento, filtri: DocumentoFiltri): boolean {
-    if (filtri.tipo !== undefined && d.tipo !== filtri.tipo) return false;
-    if (filtri.stato !== undefined && d.getStato() !== filtri.stato) return false;
-    if (filtri.sottotipo !== undefined && d.getSottotipo() !== filtri.sottotipo) return false;
-    return true;
+  private documentiPerClasse(
+    params: { classeId?: string; filtri?: unknown },
+    logger: LoggerService
+  ): LogDocumento[] | null {
+    const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerClasse', logger);
+    if (filtri === null || !this.classeEsiste(params.classeId))
+      return this.warnScope('documentiPerClasse', 'classeId mancante o non risolvibile', logger);
+    return this.getDocumentiPerClasse(params.classeId!, filtri);
+  }
+
+  private documentiPerUtente(
+    params: { utenteEmail?: string; filtri?: unknown },
+    logger: LoggerService
+  ): LogDocumento[] | null {
+    const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerUtente', logger);
+    if (filtri === null || !this.isNonEmpty(params.utenteEmail))
+      return this.warnScope('documentiPerUtente', 'utenteEmail mancante', logger);
+    return this.getDocumentiPerUtente(params.utenteEmail, filtri);
+  }
+
+  private documentiPerDipartimento(
+    params: { dipartimentoId?: string; filtri?: unknown },
+    logger: LoggerService
+  ): LogDocumento[] | null {
+    const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerDipartimento', logger);
+    if (filtri === null || !this.dipartimentoEsiste(params.dipartimentoId))
+      return this.warnScope(
+        'documentiPerDipartimento',
+        'dipartimentoId mancante o non risolvibile',
+        logger
+      );
+    return this.getDocumentiPerDipartimento(params.dipartimentoId!, filtri);
+  }
+
+  private cartellePerClasse(
+    params: { classeId?: string; filtri?: unknown },
+    logger: LoggerService
+  ): LogCartella[] | null {
+    const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerClasse', logger);
+    if (filtri === null || !this.classeEsiste(params.classeId))
+      return this.warnScope('cartellePerClasse', 'classeId mancante o non risolvibile', logger);
+    return this.getCartellePerClasse(params.classeId!, filtri);
+  }
+
+  private cartellePerUtente(
+    params: { utenteEmail?: string; filtri?: unknown },
+    logger: LoggerService
+  ): LogCartella[] | null {
+    const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerUtente', logger);
+    if (filtri === null || !this.isNonEmpty(params.utenteEmail))
+      return this.warnScope('cartellePerUtente', 'utenteEmail mancante', logger);
+    return this.getCartellePerUtente(params.utenteEmail, filtri);
+  }
+
+  private cartellePerDipartimento(
+    params: { dipartimentoId?: string; filtri?: unknown },
+    logger: LoggerService
+  ): LogCartella[] | null {
+    const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerDipartimento', logger);
+    if (filtri === null || !this.dipartimentoEsiste(params.dipartimentoId))
+      return this.warnScope(
+        'cartellePerDipartimento',
+        'dipartimentoId mancante o non risolvibile',
+        logger
+      );
+    return this.getCartellePerDipartimento(params.dipartimentoId!, filtri);
+  }
+
+  private parseFiltri(
+    raw: unknown,
+    entita: EntitaSorgente,
+    metodo: string,
+    logger: LoggerService
+  ): FiltriSorgente | undefined | null {
+    const { filtri, errori } = parseFiltriSorgente(raw, entita);
+    if (errori.length === 0) return filtri;
+    logger.warn(`AggregatoreDati: filtri non validi per ${metodo}: ${errori.join('; ')}`);
+    return null;
+  }
+
+  private warnScope(metodo: string, motivo: string, logger: LoggerService): null {
+    logger.warn(`AggregatoreDati: ${metodo} — ${motivo}; box saltato`);
+    return null;
+  }
+
+  private classeEsiste(classeId: string | undefined): boolean {
+    if (!this.isNonEmpty(classeId)) return false;
+    return this.classi.findById(ClasseId.of(classeId)) !== null;
+  }
+
+  private dipartimentoEsiste(dipartimentoId: string | undefined): boolean {
+    if (!this.isNonEmpty(dipartimentoId)) return false;
+    return this.dipartimenti.findByIdCached(DipartimentoId.of(dipartimentoId)) !== null;
+  }
+
+  private scopedToDipartimento<T extends { containsMateria(materiaId: string): boolean }>(
+    source: T[],
+    dipartimentoId: string
+  ): T[] {
+    const dipartimento = this.dipartimenti.findByIdCached(DipartimentoId.of(dipartimentoId));
+    if (dipartimento === null) return [];
+    const spec = new MateriePerDipartimentoSpec(dipartimento);
+    const materie = this.materie
+      .findAllCached()
+      .filter((materia) => spec.isSatisfiedBy(materia))
+      .map((materia) => materia.id)
+      .filter((id): id is string => id !== null);
+    return source.filter((item) => materie.some((materia) => item.containsMateria(materia)));
+  }
+
+  private filterDocumenti(documenti: LogDocumento[], filtri?: FiltriSorgente): LogDocumento[] {
+    if (filtri === undefined) return documenti;
+    const spec = specDocumenti(filtri);
+    return documenti.filter((documento) => spec.isSatisfiedBy(documento));
+  }
+
+  private filterCartelle(cartelle: LogCartella[], filtri?: FiltriSorgente): LogCartella[] {
+    if (filtri === undefined) return cartelle;
+    const spec = specCartelle(filtri);
+    return cartelle.filter((cartella) => spec.isSatisfiedBy(cartella));
+  }
+
+  private isNonEmpty(value: string | undefined): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
   }
 
   private allCarenze(): Carenza[] {

@@ -319,6 +319,60 @@ test('perMetodo warns and returns null when a scoped source is missing its scope
   warnSpy.mockRestore();
 });
 
+test('perMetodo stops after invalid filters without a false missing-scope warning', () => {
+  const agg = aggregatore();
+  const warnSpy = jest.spyOn(logger, 'warn');
+
+  expect(
+    agg.perMetodo('documentiPerUtente', { filtri: { stato: 'BOGUS' } }, logger)
+  ).toBeNull();
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('filtri non validi'));
+  expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('utenteEmail mancante'));
+
+  warnSpy.mockRestore();
+});
+
+test('perMetodo routes documentiPerUtente with its scope and parsed filters', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'user-match',
+      ID_GEN: 'PDP',
+      TIPO: 'PDP',
+      SOTTOTIPO: 'ANNUALE',
+      STATO: 'GENERATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A'
+    },
+    {
+      ID: 'user-wrong-subtype',
+      ID_GEN: 'PDP',
+      TIPO: 'PDP',
+      SOTTOTIPO: 'INTERMEDIO',
+      STATO: 'GENERATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A'
+    },
+    {
+      ID: 'other-user',
+      ID_GEN: 'PDP',
+      TIPO: 'PDP',
+      SOTTOTIPO: 'ANNUALE',
+      STATO: 'GENERATO',
+      UTENTI: 'a2@school.it',
+      CLASSI: '5A'
+    }
+  ];
+
+  const result = aggregatore(tables).perMetodo(
+    'documentiPerUtente',
+    { utenteEmail: 'a1@school.it', filtri: { sottotipo: 'ANNUALE' } },
+    logger
+  ) as LogDocumento[];
+
+  expect(result.map((documento) => documento.id)).toEqual(['user-match']);
+});
+
 test('allCartelle() memoizes LOG_FOLD: cartellePerClasse called twice reads the table only once (N+1 prevention)', () => {
   const db = new FakeDatabase(fixtureTables());
   const findAllSpy = jest.spyOn(LogCartellaRepository.prototype, 'findAll');

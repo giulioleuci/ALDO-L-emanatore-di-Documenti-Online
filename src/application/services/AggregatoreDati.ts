@@ -169,7 +169,8 @@ export class AggregatoreDati {
     logger: LoggerService
   ): LogDocumento[] | null {
     const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerClasse', logger);
-    if (filtri === null || !this.classeEsiste(params.classeId))
+    if (filtri === null) return null;
+    if (!this.classeEsiste(params.classeId))
       return this.warnScope('documentiPerClasse', 'classeId mancante o non risolvibile', logger);
     return this.getDocumentiPerClasse(params.classeId!, filtri);
   }
@@ -179,7 +180,8 @@ export class AggregatoreDati {
     logger: LoggerService
   ): LogDocumento[] | null {
     const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerUtente', logger);
-    if (filtri === null || !this.isNonEmpty(params.utenteEmail))
+    if (filtri === null) return null;
+    if (!this.isNonEmpty(params.utenteEmail))
       return this.warnScope('documentiPerUtente', 'utenteEmail mancante', logger);
     return this.getDocumentiPerUtente(params.utenteEmail, filtri);
   }
@@ -189,7 +191,8 @@ export class AggregatoreDati {
     logger: LoggerService
   ): LogDocumento[] | null {
     const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerDipartimento', logger);
-    if (filtri === null || !this.dipartimentoEsiste(params.dipartimentoId))
+    if (filtri === null) return null;
+    if (!this.dipartimentoEsiste(params.dipartimentoId))
       return this.warnScope(
         'documentiPerDipartimento',
         'dipartimentoId mancante o non risolvibile',
@@ -203,7 +206,8 @@ export class AggregatoreDati {
     logger: LoggerService
   ): LogCartella[] | null {
     const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerClasse', logger);
-    if (filtri === null || !this.classeEsiste(params.classeId))
+    if (filtri === null) return null;
+    if (!this.classeEsiste(params.classeId))
       return this.warnScope('cartellePerClasse', 'classeId mancante o non risolvibile', logger);
     return this.getCartellePerClasse(params.classeId!, filtri);
   }
@@ -213,7 +217,8 @@ export class AggregatoreDati {
     logger: LoggerService
   ): LogCartella[] | null {
     const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerUtente', logger);
-    if (filtri === null || !this.isNonEmpty(params.utenteEmail))
+    if (filtri === null) return null;
+    if (!this.isNonEmpty(params.utenteEmail))
       return this.warnScope('cartellePerUtente', 'utenteEmail mancante', logger);
     return this.getCartellePerUtente(params.utenteEmail, filtri);
   }
@@ -223,7 +228,8 @@ export class AggregatoreDati {
     logger: LoggerService
   ): LogCartella[] | null {
     const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerDipartimento', logger);
-    if (filtri === null || !this.dipartimentoEsiste(params.dipartimentoId))
+    if (filtri === null) return null;
+    if (!this.dipartimentoEsiste(params.dipartimentoId))
       return this.warnScope(
         'cartellePerDipartimento',
         'dipartimentoId mancante o non risolvibile',

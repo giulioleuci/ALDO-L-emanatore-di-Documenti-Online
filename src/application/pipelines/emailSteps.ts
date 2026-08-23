@@ -24,12 +24,20 @@ import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRep
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
+import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import type { AggregatoreDati } from '../services/AggregatoreDati';
 import { getClasseEntity } from '../context-engine/techEntities';
 import { recipe } from '../context-engine/Recipe';
 import { salutoPerTarget } from '../email/saluto';
-import { createBoxComposer, renderBoxes, escapeHtml, safeColor } from '../email/boxes';
+import {
+  createBoxComposer,
+  renderBoxes,
+  escapeHtml,
+  safeColor,
+  type SourceScope
+} from '../email/boxes';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
+import { parseFiltriSorgente } from '../../domain/specifications/FiltriSorgente';
 import { COL_CONF_MAIL } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -111,6 +119,30 @@ function cduRecord(ctx: PipelineContext): Record<string, unknown> {
 }
 function now(ctx: PipelineContext): Date {
   return ctx.get<Date>('now')!;
+}
+
+function sourceScopeFor(built: Cdu, emailTarget: EmailTarget): SourceScope {
+  const focusClasseId =
+    built.focus.classe !== undefined ? (getClasseEntity(built).id ?? undefined) : undefined;
+  const classeIds =
+    emailTarget.classiCompetenza.length > 0
+      ? emailTarget.classiCompetenza
+      : focusClasseId === undefined
+        ? undefined
+        : [focusClasseId];
+  const utenteEmail = built.focus.alunno?.anagrafica.email ?? built.focus.docente?.email;
+  return {
+    ...(classeIds === undefined ? {} : { classiCompetenza: classeIds }),
+    ...(focusClasseId === undefined ? {} : { classeId: focusClasseId }),
+    ...(utenteEmail === undefined || utenteEmail === null ? {} : { utenteEmail }),
+    ...(built.focus.dipartimento === undefined
+      ? {}
+      : { dipartimentoId: built.focus.dipartimento.anagrafica.id })
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 /** MAIN precedes ITP for the same sigla, matching ClasseRepository.getMaterieDelDocente's legacy precedence rule. */
@@ -413,23 +445,7 @@ export class RenderBoxesStep extends Step {
   }
   protected _executeLogic(ctx: PipelineContext): void {
     const built = cdu(ctx);
-    const focusClasseId =
-      built.focus.classe !== undefined ? (getClasseEntity(built).id ?? undefined) : undefined;
-    const classeIds =
-      target(ctx).classiCompetenza.length > 0
-        ? target(ctx).classiCompetenza
-        : focusClasseId === undefined
-          ? undefined
-          : [focusClasseId];
-    const utenteEmail = built.focus.alunno?.anagrafica.email ?? built.focus.docente?.email;
-    const sourceScope = {
-      ...(classeIds === undefined ? {} : { classiCompetenza: classeIds }),
-      ...(focusClasseId === undefined ? {} : { classeId: focusClasseId }),
-      ...(utenteEmail === undefined || utenteEmail === null ? {} : { utenteEmail }),
-      ...(built.focus.dipartimento === undefined
-        ? {}
-        : { dipartimentoId: built.focus.dipartimento.anagrafica.id })
-    };
+    const sourceScope = sourceScopeFor(built, target(ctx));
     const result = renderBoxes(
       this.composer,
       confMail(ctx),
@@ -481,8 +497,9 @@ export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly templates: ITemplateEngine,
-    private readonly logDocs: ILogDocumentoRepository,
-    private readonly drive: IDriveFacade
+    _logDocs: ILogDocumentoRepository,
+    private readonly drive: IDriveFacade,
+    private readonly aggregatoreDati?: AggregatoreDati
   ) {
     super('ComposeEmail', logger, {
       shouldExecuteCondition: sendGate,
@@ -491,40 +508,91 @@ export class ComposeEmailStep extends Step {
   }
 
   /**
-   * Static CONF_MAIL.ALLEGATI files are always resolved first. Class documents
-   * are appended only when a documentiPerClasse box explicitly opts in with
-   * ALLEGA=true; their optional tipo/stato filters are preserved.
+   * Static CONF_MAIL.ALLEGATI files are always resolved first. Dynamic documents
+   * are appended only from ALLEGA=true document source boxes, through the same
+   * AggregatoreDati method, filter dialect and CDU scope used by RenderBoxesStep.
    */
   private resolveAllegati(
     conf: ConfigurazioneEmail,
-    built: Cdu
+    built: Cdu,
+    emailTarget: EmailTarget
   ): { ids: string[]; links: string[]; blobs: unknown[] } {
     const attachments = conf.getAllegati().map((id) => ({
       id,
       link: `https://drive.google.com/open?id=${encodeURIComponent(id)}`
     }));
-    const boxConfig = conf.getBoxes().find((b) => {
-      const sorgente = b['DATI_SORGENTE'] as { metodo?: string } | undefined;
-      return b['ALLEGA'] === true && sorgente?.metodo === 'documentiPerClasse';
-    });
-    if (boxConfig !== undefined && built.focus.classe !== undefined) {
-      const filtri =
-        (
-          boxConfig['DATI_SORGENTE'] as
-            | { filtri?: { tipo?: string; stato?: string } }
-            | undefined
-        )?.filtri ?? {};
-      const classe = getClasseEntity(built);
-      const documenti = this.logDocs
-        .findByClasse(classe)
-        .filter(
-          (d) =>
-            (filtri.tipo === undefined || d.tipo === filtri.tipo) &&
-            (filtri.stato === undefined || String(d.getStato()) === filtri.stato)
+    const sourceScope = sourceScopeFor(built, emailTarget);
+    const documentMethods = new Set([
+      'documentiPerClasse',
+      'documentiPerUtente',
+      'documentiPerDipartimento'
+    ]);
+    const folderMethods = new Set([
+      'cartellePerClasse',
+      'cartellePerUtente',
+      'cartellePerDipartimento'
+    ]);
+    for (const boxConfig of conf.getBoxes()) {
+      if (boxConfig['ALLEGA'] !== true) continue;
+      const source = boxConfig['DATI_SORGENTE'];
+      if (!isRecord(source)) continue;
+      const metodo = typeof source['metodo'] === 'string' ? source['metodo'] : '';
+      if (folderMethods.has(metodo)) {
+        this.logger.warn(
+          `CONF_MAIL ${conf.id ?? ''}: sorgente cartelle ${metodo} non allegabile; allegati statici invariati`
         );
+        continue;
+      }
+      if (!documentMethods.has(metodo)) continue;
+
+      const { filtri, errori } = parseFiltriSorgente(source['filtri'], 'documenti');
+      if (errori.length > 0) {
+        this.logger.error(
+          `CONF_MAIL ${conf.id ?? ''}: filtri documenti non validi: ${errori.join('; ')}`
+        );
+        continue;
+      }
+      if (this.aggregatoreDati === undefined) {
+        this.logger.warn(
+          `CONF_MAIL ${conf.id ?? ''}: AggregatoreDati non disponibile; allegati dinamici saltati`
+        );
+        continue;
+      }
+      const aggregatoreDati = this.aggregatoreDati;
+
+      const calls: Array<unknown[] | null> = metodo.endsWith('PerClasse')
+        ? (() => {
+            const classi = sourceScope.classiCompetenza?.length
+              ? sourceScope.classiCompetenza
+              : sourceScope.classeId === undefined
+                ? []
+                : [sourceScope.classeId];
+            if (classi.length === 0)
+              return [aggregatoreDati.perMetodo(metodo, { filtri }, this.logger)];
+            return classi.map((classeId) =>
+              aggregatoreDati.perMetodo(metodo, { classeId, filtri }, this.logger)
+            );
+          })()
+        : [
+            aggregatoreDati.perMetodo(
+              metodo,
+              {
+                ...(sourceScope.utenteEmail === undefined
+                  ? {}
+                  : { utenteEmail: sourceScope.utenteEmail }),
+                ...(sourceScope.dipartimentoId === undefined
+                  ? {}
+                  : { dipartimentoId: sourceScope.dipartimentoId }),
+                ...(filtri === undefined ? {} : { filtri })
+              },
+              this.logger
+            )
+          ];
+      if (calls.some((items) => items === null)) continue;
+      const documenti = calls.flat() as LogDocumento[];
       attachments.push(
         ...documenti
-          .map((d) => ({ id: d.id ?? '', link: d.getLink() }))
+          .map((documento) => ({ id: documento.id ?? '', link: documento.getLink() }))
           .filter((attachment) => attachment.id !== '')
       );
     }
@@ -575,7 +643,7 @@ export class ComposeEmailStep extends Step {
     if (built.render !== undefined) built.render.body = { htmlCompleto, htmlSoloContenuto };
     if (built.destinatario !== undefined)
       built.destinatario.comunicazione.testoContenutoPuro = htmlSoloContenuto;
-    const allegati = this.resolveAllegati(conf, built);
+    const allegati = this.resolveAllegati(conf, built, target(ctx));
     this.setResult(ctx, 'corpoHtml', htmlCompleto);
     this.setResult(ctx, 'allegati', allegati.blobs);
     this.setResult(ctx, 'allegatiIds', allegati.ids);

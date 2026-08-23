@@ -54,7 +54,7 @@ class PredicateSpecification<T> extends Specification<T> {
 
 function isPlainObject(value: unknown): value is Oggetto {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 
@@ -124,7 +124,7 @@ function parseCriteria(
     else result[key] = value;
   }
 
-  return result as FiltriDocumenti | FiltriCartelle;
+  return result;
 }
 
 export function parseFiltriSorgente(

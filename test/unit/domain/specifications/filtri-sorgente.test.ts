@@ -95,10 +95,9 @@ describe('parseFiltriSorgente', () => {
       }
     ]
   ] as const)('accepts every valid %s field', (entita, raw) => {
-    expect(parseFiltriSorgente(raw, entita)).toEqual({
-      filtri: expect.any(Object),
-      errori: []
-    });
+    const result = parseFiltriSorgente(raw, entita);
+    expect(result.errori).toEqual([]);
+    expect(result.filtri).toBeDefined();
   });
 
   test.each([
@@ -113,7 +112,7 @@ describe('parseFiltriSorgente', () => {
     [{ sottotipo: 'CDC' }, 'sottotipo'],
     [{ not: { not: { tipo: 'VERBALE' } } }, 'not']
   ])('rejects invalid filters %p mentioning %s', (raw, offendingKey) => {
-    const entita = Object.hasOwn(raw, 'sottotipo') ? 'cartelle' : 'documenti';
+    const entita = 'sottotipo' in raw ? 'cartelle' : 'documenti';
     const result = parseFiltriSorgente(raw, entita);
     expect(result.filtri).toBeUndefined();
     expect(result.errori.join(' ')).toContain(offendingKey);

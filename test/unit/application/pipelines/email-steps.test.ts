@@ -173,20 +173,51 @@ function buildStep(w: Wiring): BuildCDUStep {
   );
 }
 
-function runThroughRender(w: Wiring): string[] {
+function runThroughRender(w: Wiring, aggregatoreDati?: AggregatoreDati): string[] {
   buildStep(w).execute(w.ctx);
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
-  new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
+  new RenderBoxesStep(
+    logger,
+    new MateriaRepository(w.db),
+    w.templates,
+    aggregatoreDati
+  ).execute(w.ctx);
   return w.ctx.get<string[]>('boxHtmlOrdered')!;
 }
 
 function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveFacade {
-  runThroughRender(w);
+  const aggregatoreDati = new AggregatoreDati(w.db);
+  runThroughRender(w, aggregatoreDati);
   new ComposeEmailStep(
     logger,
     w.templates,
     new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
-    drive
+    drive,
+    aggregatoreDati
+  ).execute(w.ctx);
+  return drive;
+}
+
+function runFilteredSourcesThroughCompose(
+  w: Wiring,
+  drive = new FakeDriveFacade(),
+  stepLogger: LoggerService = logger
+): FakeDriveFacade {
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(stepLogger, new ExpressionEngineFacade()).execute(w.ctx);
+  const aggregatoreDati = new AggregatoreDati(w.db);
+  new RenderBoxesStep(
+    stepLogger,
+    new MateriaRepository(w.db),
+    w.templates,
+    aggregatoreDati
+  ).execute(w.ctx);
+  new ComposeEmailStep(
+    stepLogger,
+    w.templates,
+    new LogDocumentoRepository(w.db, new LazyRef(() => new ClasseRepository(w.db))),
+    drive,
+    aggregatoreDati
   ).execute(w.ctx);
   return drive;
 }
@@ -1420,6 +1451,162 @@ test('ComposeEmailStep filters attachments by the documentiPerClasse BOX_CFG ent
   });
   runThroughCompose(w);
   expect(w.ctx.get('allegati')).toEqual(['blob:doc2']);
+});
+
+test('document source parity keeps rendered links and dynamic attachments on the same filtered source path', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'doc-ok',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'CDC',
+      NOME: 'Verbale valido',
+      STATO: 'GENERATO',
+      NOTIFICATO: '2025-11-14T09:00:00.000Z',
+      CLASSI: '5A',
+      UTENTI: ''
+    },
+    {
+      ID: 'doc-wrong-subtype',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'INTERMEDIO',
+      NOME: 'Sottotipo errato',
+      STATO: 'GENERATO',
+      NOTIFICATO: '2025-11-14T09:00:00.000Z',
+      CLASSI: '5A',
+      UTENTI: ''
+    },
+    {
+      ID: 'doc-wrong-class',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'CDC',
+      NOME: 'Classe errata',
+      STATO: 'GENERATO',
+      NOTIFICATO: '2025-11-14T09:00:00.000Z',
+      CLASSI: '3B',
+      UTENTI: ''
+    },
+    {
+      ID: 'doc-not-notified',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'CDC',
+      NOME: 'Non notificato',
+      STATO: 'GENERATO',
+      NOTIFICATO: '',
+      CLASSI: '5A',
+      UTENTI: ''
+    },
+    {
+      ID: 'doc-excluded',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'ESCLUSO',
+      SOTTOTIPO: 'CDC',
+      NOME: 'Escluso da not',
+      STATO: 'GENERATO',
+      NOTIFICATO: '2025-11-14T09:00:00.000Z',
+      CLASSI: '5A',
+      UTENTI: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          ALLEGA: true,
+          DATI_SORGENTE: {
+            metodo: 'documentiPerClasse',
+            filtri: {
+              sottotipo: 'CDC',
+              classi: ['5A'],
+              notificato: true,
+              not: { tipo: 'ESCLUSO' }
+            }
+          }
+        }
+      ])
+    },
+    docenteTarget(),
+    tables
+  );
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get('documentIds')).toEqual(['doc-ok']);
+  expect(w.ctx.get('allegatiIds')).toEqual(['doc-ok']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:doc-ok']);
+});
+
+test('invalid document filters skip only dynamic attachments and preserve static attachment IDs', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'doc-invalid-state',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      NOME: 'Configurazione non valida',
+      STATO: 'BOGUS',
+      CLASSI: '5A',
+      UTENTI: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      ALLEGATI: JSON.stringify(['static-id']),
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          ALLEGA: true,
+          DATI_SORGENTE: {
+            metodo: 'documentiPerClasse',
+            filtri: { stato: 'BOGUS' }
+          }
+        }
+      ])
+    },
+    docenteTarget(),
+    tables
+  );
+  const errorSpy = jest.spyOn(logger, 'error');
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get('documentIds')).toEqual([]);
+  expect(w.ctx.get('allegatiIds')).toEqual(['static-id']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:static-id']);
+  expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('filtri documenti non validi'));
+  errorSpy.mockRestore();
+});
+
+test('folder source attachments warn and leave static attachment behavior unchanged', () => {
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      ALLEGATI: JSON.stringify(['static-id']),
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'cartelle',
+          ALLEGA: true,
+          DATI_SORGENTE: { metodo: 'cartellePerClasse' }
+        }
+      ])
+    },
+    docenteTarget()
+  );
+  const warnSpy = jest.spyOn(logger, 'warn');
+
+  runFilteredSourcesThroughCompose(w);
+
+  expect(w.ctx.get('allegatiIds')).toEqual(['static-id']);
+  expect(w.ctx.get('allegati')).toEqual(['blob:static-id']);
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('cartelle'));
+  warnSpy.mockRestore();
 });
 
 test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and omits noReply block when false', () => {

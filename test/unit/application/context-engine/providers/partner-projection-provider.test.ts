@@ -55,7 +55,8 @@ function makeHarness(tables: Record<string, Row[]>) {
   const materie = new MateriaRepository(db);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   const classeProvider = new ClasseProvider(classi, alunni, materie);
-  const studentiProvider = new StudentiProvider(classi, alunni, materie);
+  const storicoDb = { anniStorici: () => [] };
+  const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
   const tutorProvider = new TutorProvider(classi);
   // Not reused by PartnerProjectionProvider (fix round 1) -- kept here only to
   // run the 'consiglio' token on the OUTER cdu, exactly like CLASSE_COMPLETA

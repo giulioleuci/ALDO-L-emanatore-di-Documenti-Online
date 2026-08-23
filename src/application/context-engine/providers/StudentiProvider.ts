@@ -1,13 +1,17 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, AlunnoContestoVM } from '../Cdu';
+import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
+import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
+import { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
 import { getClasseEntity } from '../techEntities';
 import { carenzeDettaglioSemplice, curriculumArray } from '../mappers/carenzeMapper';
 import { tipoPianoLabel, religioneLabel } from '../mappers/labels';
 import { buildPerSpecificita } from '../mappers/specificitaAlunniMapper';
+import { presenteTuttoAnno } from '../../storico/presenza';
 
 /**
  * Populates `focus.classe.studenti.listaCompleta` (02 §4.1/§8.7). Each item is
@@ -15,18 +19,31 @@ import { buildPerSpecificita } from '../mappers/specificitaAlunniMapper';
  * templates never navigate back to `focus.classe.anagrafica` inside a loop.
  * For the parent of an articulated class the roster is the union across both
  * partner classes — no per-indirizzo grouping (moved to `focus.classe.partner`, 02 §2.5).
+ * `status.presenteAnnoPrecedente`/`presenteTuttoAnno` mirror
+ * `AlunnoProvider`'s own fields of the same name (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md
+ * §4/§5): presenteAnnoPrecedente looks one year back through `storicoDb`
+ * (cheap — that provider caches opened databases by spreadsheet id across the
+ * whole CDU build) and is gated behind `options.includiStorico`, matching
+ * every other historical-data provider in the recipe — `storicoDb` is only
+ * ever touched when the caller opted into historical data, so a plain roster
+ * build (includiStorico defaults to false) never opens a second database.
+ * presenteTuttoAnno reads this year's own MOV_ALUNNI via
+ * `IAlunnoRepository.getStoricoMovimenti` and needs no gating.
  */
 export class StudentiProvider implements ContextProvider {
   constructor(
     private readonly classi: IClasseRepository,
     private readonly alunni: IAlunnoRepository,
-    private readonly materie: IMateriaRepository
+    private readonly materie: IMateriaRepository,
+    private readonly storicoDb: StoricoDatabaseProvider
   ) {}
 
-  provide(cdu: Cdu): void {
+  provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
     const classe = getClasseEntity(cdu);
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
+
+    const alunniAnnoPrecedente = this.alunniAnnoPrecedente(options);
 
     const config = this.classi.getArticolazione(classe);
     const sourceClassi = config?.isParent() === true ? this.classi.getClassiPartner(classe) : [classe];
@@ -34,7 +51,7 @@ export class StudentiProvider implements ContextProvider {
       this.classi
         .getStudenti(source)
         .filter((alunno) => alunno.isAttivo())
-        .map((alunno) => this.buildVM(alunno, focusClasse))
+        .map((alunno) => this.buildVM(alunno, focusClasse, alunniAnnoPrecedente))
     );
     focusClasse.studenti = {
       listaCompleta,
@@ -42,7 +59,18 @@ export class StudentiProvider implements ContextProvider {
     };
   }
 
-  private buildVM(alunno: Alunno, focusClasse: NonNullable<Cdu['focus']['classe']>): AlunnoContestoVM {
+  private alunniAnnoPrecedente(options: RecipeOptions): IAlunnoRepository | null {
+    if (!options.includiStorico) return null;
+    const annoPrecedente = this.storicoDb.anniStorici(1)[0];
+    if (annoPrecedente === undefined) return null;
+    return new AlunnoRepository(annoPrecedente.db);
+  }
+
+  private buildVM(
+    alunno: Alunno,
+    focusClasse: NonNullable<Cdu['focus']['classe']>,
+    alunniAnnoPrecedente: IAlunnoRepository | null
+  ): AlunnoContestoVM {
     const dettaglio = carenzeDettaglioSemplice(
       this.alunni.getCarenze(alunno),
       this.materie.findAllSigle(),
@@ -64,7 +92,11 @@ export class StudentiProvider implements ContextProvider {
         isRipetente: alunno.isRipetente(),
         isRappresentante: alunno.isRappresentante(),
         religione: alunno.religione,
-        religioneLabel: religioneLabel(alunno.religione)
+        religioneLabel: religioneLabel(alunno.religione),
+        presenteAnnoPrecedente:
+          alunniAnnoPrecedente !== null &&
+          alunniAnnoPrecedente.findById(alunno.email.value) !== null,
+        presenteTuttoAnno: presenteTuttoAnno(this.alunni.getStoricoMovimenti(alunno))
       },
       curriculum: curriculumArray(alunno, this.materie),
       didattica: {

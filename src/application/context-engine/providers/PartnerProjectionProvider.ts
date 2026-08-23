@@ -64,8 +64,8 @@ export class PartnerProjectionProvider implements ContextProvider {
     ];
 
     focusClasse.partner = {
-      primo: this.buildProjection(partners[0]!, cdu, params, consiglioPrimo),
-      secondo: this.buildProjection(partners[1]!, cdu, params, consiglioSecondo)
+      primo: this.buildProjection(partners[0]!, cdu, params, options, consiglioPrimo),
+      secondo: this.buildProjection(partners[1]!, cdu, params, options, consiglioSecondo)
     };
   }
 
@@ -73,6 +73,7 @@ export class PartnerProjectionProvider implements ContextProvider {
     classeId: string,
     outerCdu: Cdu,
     params: BuildParams,
+    options: RecipeOptions,
     consiglioDiClasse: DocenteCdcVM[]
   ): SingleClassProjection {
     const scratch: Cdu = {
@@ -83,7 +84,7 @@ export class PartnerProjectionProvider implements ContextProvider {
     };
     const scratchParams: BuildParams = { ...params, target: classeId, tipoTarget: 'classe' };
     this.classeProvider.provide(scratch, scratchParams);
-    this.studentiProvider.provide(scratch);
+    this.studentiProvider.provide(scratch, scratchParams, options);
     this.tutorProvider.provide(scratch);
 
     const classe = scratch.focus.classe!;

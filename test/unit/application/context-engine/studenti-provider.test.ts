@@ -9,14 +9,20 @@ import { ClasseRepository } from '../../../../src/infrastructure/repositories/Cl
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { DocenteRepository } from '../../../../src/infrastructure/repositories/DocenteRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
+import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import type { Row } from '../../../../src/infrastructure/db/Database';
 
+function noHistory(): StoricoDatabaseProvider {
+  return { anniStorici: () => [] };
+}
+
 function build(
   target: string,
   tables = fixtureTables(),
-  optionOverrides: Parameters<typeof makeOptions>[0] = {}
+  optionOverrides: Parameters<typeof makeOptions>[0] = {},
+  storicoDb: StoricoDatabaseProvider = noHistory()
 ): Cdu {
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
@@ -24,7 +30,7 @@ function build(
   const alunni = new AlunnoRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi));
-  b.registerProvider('students', new StudentiProvider(classi, alunni, materie));
+  b.registerProvider('students', new StudentiProvider(classi, alunni, materie, storicoDb));
   b.registerProvider(
     'statistiche',
     new StatisticheProvider(classi, new DocenteRepository(db), alunni)
@@ -74,7 +80,9 @@ test('StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'
       isRipetente: false,
       isRappresentante: true,
       religione: 'IRC',
-      religioneLabel: 'Religione cattolica'
+      religioneLabel: 'Religione cattolica',
+      presenteAnnoPrecedente: false, // includiStorico defaults to false — the lookup is gated off, storicoDb is never touched
+      presenteTuttoAnno: true // a1@school.it has no MOV_ALUNNI row in fixtureTables()
     },
     curriculum: [
       {
@@ -239,4 +247,39 @@ test('StudentiProvider: always populates perSpecificita for a class CDU (02 §2.
   ]);
 
   expect(build('1F').focus.classe!.studenti!.perSpecificita).toEqual([]);
+});
+
+test('StudentiProvider: presenteAnnoPrecedente/presenteTuttoAnno computed per roster student (ANALYSIS_HISTORIC_ENRICH_EXTENSION §4/§5)', () => {
+  const priorDb = new FakeDatabase(fixtureTables());
+  const storicoDb: StoricoDatabaseProvider = {
+    anniStorici: (profondita: number) =>
+      profondita > 0 ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }] : []
+  };
+  const tables = fixtureTables();
+  // a2@school.it already has an IN movement in fixtureTables() (2025-09-15) -> presenteTuttoAnno false.
+  const cdu = build('5A', tables, { includiStorico: true }, storicoDb);
+  const a1 = cdu.focus.classe!.studenti!.listaCompleta.find(
+    (a) => a.anagrafica.email === 'a1@school.it'
+  )!;
+  expect(a1.status.presenteAnnoPrecedente).toBe(true); // exists in priorDb's fixtureTables() too
+  expect(a1.status.presenteTuttoAnno).toBe(true); // no MOV_ALUNNI row for a1
+});
+
+test('StudentiProvider: presenteAnnoPrecedente gated behind includiStorico — storicoDb is never touched when false', () => {
+  let opened = false;
+  const storicoDb: StoricoDatabaseProvider = {
+    anniStorici: (profondita: number) => {
+      opened = true;
+      return profondita > 0
+        ? [{ anno: '2025-2026', db: new FakeDatabase(fixtureTables()), logDocs: {} as never }]
+        : [];
+    }
+  };
+  // includiStorico omitted -> defaults to false (makeOptions default).
+  const cdu = build('5A', fixtureTables(), {}, storicoDb);
+  const a1 = cdu.focus.classe!.studenti!.listaCompleta.find(
+    (a) => a.anagrafica.email === 'a1@school.it'
+  )!;
+  expect(a1.status.presenteAnnoPrecedente).toBe(false);
+  expect(opened).toBe(false); // gate must short-circuit before storicoDb.anniStorici() is ever called
 });

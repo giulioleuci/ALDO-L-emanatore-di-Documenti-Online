@@ -102,7 +102,7 @@ export class ContextEngineFactory {
     // `consiglioDiClasseComune`/`consiglioDiClasseSeparato` (written by the
     // 'consiglio' token, which always runs before 'partner').
     const classeProvider = new ClasseProvider(classi, alunni, materie);
-    const studentiProvider = new StudentiProvider(classi, alunni, materie);
+    const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
     const tutorProvider = new TutorProvider(classi);
     const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
 

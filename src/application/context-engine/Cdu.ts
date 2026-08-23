@@ -60,6 +60,8 @@ export interface AlunnoContestoVM {
     isRappresentante: boolean;
     religione: string;
     religioneLabel: string;
+    presenteAnnoPrecedente: boolean;
+    presenteTuttoAnno: boolean;
   };
   curriculum: CurriculumVM[];
   didattica: {
@@ -297,6 +299,8 @@ export interface CduAlunno {
     isBes: boolean;
     isRipetente: boolean;
     isRappresentante: boolean;
+    presenteAnnoPrecedente: boolean;
+    presenteTuttoAnno: boolean;
   };
   curriculum: CurriculumVM[];
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };

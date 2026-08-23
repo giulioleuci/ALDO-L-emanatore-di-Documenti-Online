@@ -35,7 +35,14 @@ function cduConPiani(
     focus: {
       alunno: {
         anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
-        status: { religione: 'SI', isBes: true, isRipetente: false, isRappresentante: false },
+        status: {
+          religione: 'SI',
+          isBes: true,
+          isRipetente: false,
+          isRappresentante: false,
+          presenteAnnoPrecedente: false,
+          presenteTuttoAnno: true
+        },
         curriculum: {},
         classe: { nome: '5A', indirizzoSigla: '', indirizzoNome: '' },
         didattica: {

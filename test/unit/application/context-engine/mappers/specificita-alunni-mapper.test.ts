@@ -15,7 +15,9 @@ function studente(
       isRipetente: false,
       isRappresentante: false,
       religione: 'IRC',
-      religioneLabel: 'x'
+      religioneLabel: 'x',
+      presenteAnnoPrecedente: false,
+      presenteTuttoAnno: true
     },
     curriculum,
     didattica: {

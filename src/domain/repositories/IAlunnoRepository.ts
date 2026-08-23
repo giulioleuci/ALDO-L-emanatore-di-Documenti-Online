@@ -1,6 +1,7 @@
 import type { Alunno } from '../entities/Alunno';
 import type { Carenza } from '../entities/Carenza';
 import type { Piano } from '../entities/Piano';
+import type { MovimentoAlunno } from '../entities/MovimentoAlunno';
 import type { AnnoScolastico } from '../value-objects/AnnoScolastico';
 
 export interface IAlunnoRepository {
@@ -16,4 +17,6 @@ export interface IAlunnoRepository {
   getPiani(alunno: Alunno): Piano[];
   /** Total ASL/PCTO hours across all the student's years. */
   getOreASLTotali(alunno: Alunno): number;
+  /** Full mobility history on this database, most recent first. */
+  getStoricoMovimenti(alunno: Alunno): MovimentoAlunno[];
 }

@@ -373,6 +373,8 @@ focus.alunno:
     isBes: boolean
     isRipetente: boolean
     isRappresentante: boolean
+    presenteAnnoPrecedente: boolean  # false anche per classi di anno 1 (iscrizione ordinaria, non trasferimento)
+    presenteTuttoAnno: boolean       # false se un IN/CAMBIO è datato entro l'anno corrente
 
   # Array (Principio 1) — stesso schema di focus.classe.studenti.listaCompleta[].curriculum
   curriculum: CurriculumVM[]     # [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome } ] } ]
@@ -754,10 +756,12 @@ StudentStoricoVM:
   anni:
     - annoScolastico: string     # es. "2024-2025"
       classe: string             # Classe frequentata nell'anno
-      esito: string              # "PROMOSSO" | "NON_PROMOSSO" | "RITIRATO" | "SCONOSCIUTO"
+      esito: string              # "PROMOSSO" | "NON_PROMOSSO" | "TRASFERITO" | "RITIRATO" | "SCONOSCIUTO"
       carenze:                   # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
         - materiaSigla: string
           valore: string
+      presenteAnnoPrecedente: boolean  # Era già iscritto in questa scuola nell'anno precedente a questo?
+      presenteTuttoAnno: boolean       # Nessun IN/CAMBIO datato entro questo anno?
   pianiPrimoAnnoPrecedente:
     - tipo: string               # Enum TipoPiano (es. "PDP_DSA")
       tipoLabel: string          # Etichetta leggibile (es. "PDP DSA")
@@ -792,6 +796,8 @@ StudentVM:
     isRappresentante: boolean
     religione: string            # "IRC" | "ALT" | "NO"
     religioneLabel: string       # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
+    presenteAnnoPrecedente: boolean
+    presenteTuttoAnno: boolean
   # Array (Principio 1)
   curriculum: CurriculumVM[]     # [ { materiaId, materiaSigla, materiaNome, specifiche: [ { nome } ] } ]
   didattica:
@@ -1464,7 +1470,9 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
               "isRipetente": false,
               "isRappresentante": true,
               "religione": "IRC",
-              "religioneLabel": "Religione cattolica"
+              "religioneLabel": "Religione cattolica",
+              "presenteAnnoPrecedente": true,
+              "presenteTuttoAnno": true
             },
             "curriculum": [
               {

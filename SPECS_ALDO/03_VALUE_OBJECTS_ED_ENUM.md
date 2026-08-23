@@ -152,11 +152,12 @@ Ogni `TipoPiano`, ECCETTO `PFP`, implica SEMPRE un bisogno educativo speciale (B
 
 **Utilizzo:** `MOV_ALUNNI.TIPO`
 
-| Valore   | Descrizione                            |
-| -------- | -------------------------------------- |
-| `IN`     | Ingresso da altra scuola o classe      |
-| `OUT`    | Uscita (ritiro, trasferimento esterno) |
-| `CAMBIO` | Cambio di classe interno all'istituto  |
+| Valore     | Descrizione                                          |
+| ---------- | ----------------------------------------------------- |
+| `IN`       | Ingresso da altra scuola o classe                      |
+| `OUT`      | Uscita per trasferimento verso altro istituto          |
+| `RITIRATO` | Uscita per ritiro dagli studi (non verso altra scuola) |
+| `CAMBIO`   | Cambio di classe interno all'istituto                  |
 
 ---
 

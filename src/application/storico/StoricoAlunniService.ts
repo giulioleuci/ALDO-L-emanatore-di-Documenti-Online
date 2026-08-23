@@ -11,12 +11,14 @@ import { MovimentoAlunnoRepository } from '../../infrastructure/repositories/Mov
 import type { IMovimentoAlunnoRepository } from '../../domain/repositories/IMovimentoAlunnoRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
+import type { Alunno } from '../../domain/entities/Alunno';
+import type { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
 import { Email } from '../../domain/value-objects/Email';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
-import { TipoMovimento } from '../../domain/value-objects/enums';
 import { reconcileSigla } from './reconcileSigla';
+import { presenteTuttoAnno } from './presenza';
 
-export type Esito = 'PROMOSSO' | 'NON_PROMOSSO' | 'RITIRATO' | 'SCONOSCIUTO';
+export type Esito = 'PROMOSSO' | 'NON_PROMOSSO' | 'TRASFERITO' | 'RITIRATO' | 'SCONOSCIUTO';
 
 export interface CarenzaStorica {
   materiaSigla: string;
@@ -29,6 +31,20 @@ export interface AnnoAlunnoStorico {
   esito: Esito;
   carenze: CarenzaStorica[];
   piani: string[];
+  /** Era già iscritto in questa scuola nell'anno immediatamente precedente a questo? */
+  presenteAnnoPrecedente: boolean;
+  /** Nessun IN/CAMBIO datato entro questo anno? (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §5) */
+  presenteTuttoAnno: boolean;
+}
+
+interface AnnoRisolto {
+  anno: string;
+  alunno: Alunno | null;
+  classi: IClasseRepository;
+  carenze: ICarenzaRepository;
+  piani: IPianoRepository;
+  movimenti: MovimentoAlunno[];
+  materie: IMateriaRepository;
 }
 
 /**
@@ -36,72 +52,92 @@ export interface AnnoAlunnoStorico {
  * end-of-year outcome, last-measurement shortfalls (sigle reconciled to the
  * current MATERIE catalogue) and active personalized plans.
  *
- * Esito derivation: MOV_ALUNNI has no explicit outcome column (ref 01), so the
- * outcome is inferred from that year's movement records — an OUT movement is
- * RITIRATO; a CAMBIO into a class whose numeric year is not higher than the
- * source is NON_PROMOSSO (repeated); a CAMBIO into a strictly higher year is
- * PROMOSSO; no movement at all yields SCONOSCIUTO (nothing recorded to infer
- * from). This rule is a ReportService/StoricoAlunniService-level policy since
- * the spec does not fix one.
+ * Esito derivation (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §2-3): an OUT
+ * movement in the year is TRASFERITO, a RITIRATO movement is RITIRATO — both
+ * take priority since an exit makes "promoted or not" moot. Otherwise, the
+ * outcome comes from the STUDENT'S OWN `ALUNNI.RIPETENTE` flag on the
+ * IMMEDIATELY FOLLOWING year (this same fetched batch's previous entry, or
+ * the current-year `Alunno` passed as `alunnoAnnoSuccessivo` for the most
+ * recent historical year): RIPETENTE=true there means this year was
+ * NON_PROMOSSO, RIPETENTE=false means PROMOSSO. `CAMBIO` never drives esito —
+ * by definition it cannot cross a course-year boundary. No next-year record
+ * at all (boundary of the configured/available depth) yields SCONOSCIUTO —
+ * an accepted terminal case, not a bug (§7).
  */
 export class StoricoAlunniService {
   constructor(private readonly provider: StoricoDatabaseProvider) {}
 
-  perAlunno(alunnoEmail: string, profondita = 1): AnnoAlunnoStorico[] {
-    const out: AnnoAlunnoStorico[] = [];
-    for (const { anno, db } of this.provider.anniStorici(profondita)) {
+  perAlunno(
+    alunnoEmail: string,
+    profondita = 1,
+    alunnoAnnoSuccessivo: Alunno | null = null
+  ): AnnoAlunnoStorico[] {
+    const risolti: AnnoRisolto[] = this.provider.anniStorici(profondita).map(({ anno, db }) => {
       const alunni: IAlunnoRepository = new AlunnoRepository(db);
-      const classi: IClasseRepository = new ClasseRepository(db);
-      const carenze: ICarenzaRepository = new CarenzaRepository(db);
-      const piani: IPianoRepository = new PianoRepository(db);
-      const movimenti: IMovimentoAlunnoRepository = new MovimentoAlunnoRepository(db);
-      const materie: IMateriaRepository = new MateriaRepository(db);
-
+      const movimentiRepo: IMovimentoAlunnoRepository = new MovimentoAlunnoRepository(db);
       const alunno = alunni.findById(alunnoEmail);
+      return {
+        anno,
+        alunno,
+        classi: new ClasseRepository(db),
+        carenze: new CarenzaRepository(db),
+        piani: new PianoRepository(db),
+        movimenti: alunno !== null ? movimentiRepo.findByAlunno(alunno) : [],
+        materie: new MateriaRepository(db)
+      };
+    });
+
+    return risolti.map((corrente, i) => {
+      const { anno, alunno, classi, carenze, piani, movimenti, materie } = corrente;
+
+      if (alunno === null) {
+        return {
+          anno,
+          classe: null,
+          esito: 'SCONOSCIUTO',
+          carenze: [],
+          piani: [],
+          presenteAnnoPrecedente: false,
+          presenteTuttoAnno: false
+        };
+      }
+
       const classe =
-        alunno !== null && alunno.classe !== ''
-          ? classi.findById(ClasseId.of(alunno.classe))
-          : null;
+        alunno.classe !== '' ? classi.findById(ClasseId.of(alunno.classe)) : null;
       const annoCorso = classe?.anno.value ?? null;
 
       const carenzeStoriche: CarenzaStorica[] = [];
-      if (alunno !== null) {
-        for (const c of carenze.findByAlunno(alunno)) {
-          for (const [materiaId, valore] of carenze.getCarenzePerMateria(c)) {
-            const sigla =
-              annoCorso !== null
-                ? reconcileSigla(materiaId.value, annoCorso, materie.findAllCached())
-                : materiaId.value;
-            carenzeStoriche.push({ materiaSigla: sigla, valore: valore.toString() });
-          }
+      for (const c of carenze.findByAlunno(alunno)) {
+        for (const [materiaId, valore] of carenze.getCarenzePerMateria(c)) {
+          const sigla =
+            annoCorso !== null
+              ? reconcileSigla(materiaId.value, annoCorso, materie.findAllCached())
+              : materiaId.value;
+          carenzeStoriche.push({ materiaSigla: sigla, valore: valore.toString() });
         }
       }
 
-      out.push({
+      const successivo = i === 0 ? alunnoAnnoSuccessivo : risolti[i - 1]!.alunno;
+      const precedente = risolti[i + 1]?.alunno ?? null;
+
+      return {
         anno,
-        classe: alunno?.classe ?? null,
-        esito: alunno === null ? 'SCONOSCIUTO' : this.esito(movimenti, alunno),
+        classe: alunno.classe,
+        esito: this.esito(movimenti, successivo),
         carenze: carenzeStoriche,
-        piani:
-          alunno !== null
-            ? piani.findByAlunno(Email.of(alunno.id ?? alunnoEmail)).map((p) => p.tipo)
-            : []
-      });
-    }
-    return out;
+        piani: piani.findByAlunno(Email.of(alunno.id ?? alunnoEmail)).map((p) => p.tipo),
+        presenteAnnoPrecedente: precedente !== null,
+        presenteTuttoAnno: presenteTuttoAnno(movimenti)
+      };
+    });
   }
 
-  private esito(
-    movimenti: IMovimentoAlunnoRepository,
-    alunno: Parameters<IMovimentoAlunnoRepository['findByAlunno']>[0]
-  ): Esito {
-    const storia = movimenti.findByAlunno(alunno);
-    if (storia.some((m) => m.tipo === TipoMovimento.OUT)) return 'RITIRATO';
-    const cambio = storia.find((m) => m.tipo === TipoMovimento.CAMBIO);
-    if (cambio === undefined) return 'SCONOSCIUTO';
-    const annoDa = Number(cambio.da.match(/^\d+/)?.[0]);
-    const annoA = Number(cambio.a.match(/^\d+/)?.[0]);
-    if (!Number.isFinite(annoDa) || !Number.isFinite(annoA)) return 'SCONOSCIUTO';
-    return annoA > annoDa ? 'PROMOSSO' : 'NON_PROMOSSO';
+  private esito(movimenti: MovimentoAlunno[], alunnoAnnoSuccessivo: Alunno | null): Esito {
+    if (movimenti.some((m) => m.isUscita())) return 'TRASFERITO';
+    if (movimenti.some((m) => m.isRitirato())) return 'RITIRATO';
+    if (alunnoAnnoSuccessivo !== null) {
+      return alunnoAnnoSuccessivo.isRipetente() ? 'NON_PROMOSSO' : 'PROMOSSO';
+    }
+    return 'SCONOSCIUTO';
   }
 }

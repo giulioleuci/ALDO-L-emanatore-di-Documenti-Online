@@ -1,4 +1,5 @@
 import { reconcileSigla } from '../../../src/application/storico/reconcileSigla';
+import { Alunno } from '../../../src/domain/entities/Alunno';
 import { StoricoAlunniService } from '../../../src/application/storico/StoricoAlunniService';
 import { StoricoDocumentiService } from '../../../src/application/storico/StoricoDocumentiService';
 import { StoricoClassiService } from '../../../src/application/storico/StoricoClassiService';
@@ -94,9 +95,8 @@ function masterWithYear(annoScolasticoRaw: string): MasterSheetRepository {
 
 const logger = new LoggerService();
 
-function annoPrecedente(): Record<string, Row[]> {
+function annoPrecedente(overrides: { movAlunni?: Row[] } = {}): Record<string, Row[]> {
   const tables = fixtureTables();
-  // a1 was in 4A last year, promoted to 5A this year (CAMBIO 4A->5A).
   tables.CLASSI = [
     {
       ID: '4A',
@@ -135,8 +135,11 @@ function annoPrecedente(): Record<string, Row[]> {
       MATE: '4'
     }
   ];
-  tables.MOV_ALUNNI = [
-    { STUDENTE: 'a1@school.it', TIPO: 'CAMBIO', DATA: '2025-06-15', DA: '4A', A: '5A' }
+  // CAMBIO is deliberately present but must never drive esito any more (13 §... /
+  // ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §1): it is an internal same-year
+  // section change, structurally incapable of signalling promotion.
+  tables.MOV_ALUNNI = overrides.movAlunni ?? [
+    { STUDENTE: 'a1@school.it', TIPO: 'CAMBIO', DATA: '2025-06-15', DA: '4A', A: '4B' }
   ];
   tables.PIANI = [{ STUDENTE: 'a1@school.it', TIPO: 'PDP_DSA', PARAMETRI: null }];
   tables.LOG_DOCS = [
@@ -160,51 +163,97 @@ function annoPrecedente(): Record<string, Row[]> {
   return tables;
 }
 
+function alunnoAnnoCorrente(ripetente: boolean): Alunno {
+  return Alunno.fromData({
+    EMAIL: 'a1@school.it',
+    COGNOMENOME: 'VERDI ANNA',
+    CLASSE: '5A',
+    RELIGIONE: 'IRC',
+    ATTIVO: true,
+    RIPETENTE: ripetente,
+    RAPPR_STUD: false,
+    CURRICULUM: null
+  });
+}
+
 // --- StoricoAlunniService ---
 
-describe('StoricoAlunniService (13 §3)', () => {
-  test('resolves class, esito, reconciled carenze and piani for the prior year', () => {
+describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5)', () => {
+  test('esito PROMOSSO when the current-year record exists and is not RIPETENTE', () => {
     const service = new StoricoAlunniService(
       fakeProvider([annoStorico('2025-2026', annoPrecedente())])
     );
-    const [record] = service.perAlunno('a1@school.it', 1);
+    const [record] = service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false));
     expect(record).toBeDefined();
     expect(record!.anno).toBe('2025-2026');
     expect(record!.classe).toBe('4A');
-    expect(record!.esito).toBe('PROMOSSO'); // 4A -> 5A
+    expect(record!.esito).toBe('PROMOSSO');
     expect(record!.carenze).toEqual([{ materiaSigla: 'MATE', valore: '4' }]);
     expect(record!.piani).toEqual(['PDP_DSA']);
+    expect(record!.presenteTuttoAnno).toBe(false); // the inert CAMBIO row still counts as a mid-year entry
   });
 
-  test('esito RITIRATO when the year has an OUT movement', () => {
-    const tables = annoPrecedente();
-    tables.MOV_ALUNNI = [
-      { STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'RITIRO' }
-    ];
-    const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
-    expect(service.perAlunno('a1@school.it', 1)[0]!.esito).toBe('RITIRATO');
+  test('esito NON_PROMOSSO when the current-year record exists and is RIPETENTE', () => {
+    const service = new StoricoAlunniService(
+      fakeProvider([annoStorico('2025-2026', annoPrecedente({ movAlunni: [] }))])
+    );
+    const [record] = service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(true));
+    expect(record!.esito).toBe('NON_PROMOSSO');
+    expect(record!.presenteTuttoAnno).toBe(true); // no movement at all this time
   });
 
-  test('esito NON_PROMOSSO when CAMBIO does not increase the class year', () => {
-    const tables = annoPrecedente();
-    tables.MOV_ALUNNI = [
-      { STUDENTE: 'a1@school.it', TIPO: 'CAMBIO', DATA: '2025-06-15', DA: '4A', A: '4B' }
-    ];
+  test('esito SCONOSCIUTO when no next-year record is available (boundary of configured depth)', () => {
+    const service = new StoricoAlunniService(
+      fakeProvider([annoStorico('2025-2026', annoPrecedente({ movAlunni: [] }))])
+    );
+    const [record] = service.perAlunno('a1@school.it', 1, null);
+    expect(record!.esito).toBe('SCONOSCIUTO');
+  });
+
+  test('esito TRASFERITO when the year has an OUT movement, regardless of next-year RIPETENTE', () => {
+    const tables = annoPrecedente({
+      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }]
+    });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
-    expect(service.perAlunno('a1@school.it', 1)[0]!.esito).toBe('NON_PROMOSSO');
+    expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false))[0]!.esito).toBe(
+      'TRASFERITO'
+    );
+  });
+
+  test('esito RITIRATO when the year has a RITIRATO movement', () => {
+    const tables = annoPrecedente({
+      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'RITIRATO', DATA: '2025-03-01', DA: '4A', A: '' }]
+    });
+    const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
+    expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false))[0]!.esito).toBe(
+      'RITIRATO'
+    );
+  });
+
+  test('an OUT/RITIRATO movement takes priority over a RIPETENTE-derived esito', () => {
+    const tables = annoPrecedente({
+      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }]
+    });
+    const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
+    // Even though the student is RIPETENTE next year (contradictory data), OUT wins.
+    expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(true))[0]!.esito).toBe(
+      'TRASFERITO'
+    );
   });
 
   test('unknown student in that historical year yields a null-classe SCONOSCIUTO record, not a crash', () => {
     const service = new StoricoAlunniService(
       fakeProvider([annoStorico('2025-2026', annoPrecedente())])
     );
-    const [record] = service.perAlunno('ghost@school.it', 1);
+    const [record] = service.perAlunno('ghost@school.it', 1, alunnoAnnoCorrente(false));
     expect(record).toEqual({
       anno: '2025-2026',
       classe: null,
       esito: 'SCONOSCIUTO',
       carenze: [],
-      piani: []
+      piani: [],
+      presenteAnnoPrecedente: false,
+      presenteTuttoAnno: false
     });
   });
 
@@ -216,6 +265,21 @@ describe('StoricoAlunniService (13 §3)', () => {
     const service = new StoricoAlunniService(fakeProvider(anni));
     expect(service.perAlunno('a1@school.it', 1)).toHaveLength(1);
     expect(service.perAlunno('a1@school.it', 2)).toHaveLength(2);
+  });
+
+  test('esito for a year uses the NEXT fetched historical year (not the current year) when profondita > 1', () => {
+    // anni[0] = 2025-2026 (RIPETENTE=false -> the anni[1] year was PROMOSSO),
+    // anni[1] = 2024-2025 (esito resolved from anni[0]'s RIPETENTE flag: false).
+    const anni = [
+      annoStorico('2025-2026', annoPrecedente({ movAlunni: [] })), // RIPETENTE=false by default fixture
+      annoStorico('2024-2025', annoPrecedente({ movAlunni: [] }))
+    ];
+    const service = new StoricoAlunniService(fakeProvider(anni));
+    const records = service.perAlunno('a1@school.it', 2, alunnoAnnoCorrente(false));
+    expect(records[0]!.esito).toBe('PROMOSSO'); // resolved from the (current-year) param
+    expect(records[1]!.esito).toBe('PROMOSSO'); // resolved from anni[0]'s own RIPETENTE=false
+    expect(records[0]!.presenteAnnoPrecedente).toBe(true); // anni[1] has a matching ALUNNI row
+    expect(records[1]!.presenteAnnoPrecedente).toBe(false); // no anni[2] fetched -> boundary default
   });
 });
 

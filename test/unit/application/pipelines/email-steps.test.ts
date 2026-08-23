@@ -935,7 +935,12 @@ test('RenderBoxesStep: one visible non-empty document box keeps delivery eligibl
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', FILTRO_TIPO: 'VERBALE' }])
+      BOX_CFG: JSON.stringify([
+        {
+          TIPO_BOX: 'documenti',
+          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
+        }
+      ])
     },
     docenteTarget()
   );
@@ -951,7 +956,15 @@ test('RenderBoxesStep: one visible non-empty document box keeps delivery eligibl
     DATA_CREAZ: '2025-11-10'
   });
 
-  const ordered = runThroughRender(w);
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(
+    logger,
+    new MateriaRepository(w.db),
+    w.templates,
+    new AggregatoreDati(w.db)
+  ).execute(w.ctx);
+  const ordered = w.ctx.get<string[]>('boxHtmlOrdered')!;
 
   expect(ordered).toHaveLength(1);
   expect(ordered[0]).toContain('Verbale 5A novembre');
@@ -1034,10 +1047,10 @@ test('RenderBoxesStep includes cartellePerClasse folders for every competent tar
     {
       ID: 'folder2',
       TIPO: 'E2E_VERBALE',
-      NOME: 'Verbali 5B',
-      PATH: '_ALDO_E2E_OUTPUT/5B',
+      NOME: 'Verbali 3B',
+      PATH: '_ALDO_E2E_OUTPUT/3B',
       LINK: 'https://drive.google.com/drive/folders/folder2',
-      CLASSI: '5B',
+      CLASSI: '3B',
       UTENTI: '',
       MATERIE: 'MATE,FISI'
     }
@@ -1047,7 +1060,7 @@ test('RenderBoxesStep includes cartellePerClasse folders for every competent tar
       PROCESSO: 'PER_COORDINATORE',
       BOX_CFG: '[{"TIPO_BOX":"cartelle","DATI_SORGENTE":{"metodo":"cartellePerClasse"}}]'
     },
-    { ...docenteTarget(), classiCompetenza: ['5A', '5B'] },
+    { ...docenteTarget(), classiCompetenza: ['5A', '3B'] },
     tables
   );
   buildStep(w).execute(w.ctx);
@@ -1061,7 +1074,7 @@ test('RenderBoxesStep includes cartellePerClasse folders for every competent tar
 
   expect(w.ctx.get<string[]>('cartelleFolderIds')!.sort()).toEqual(['folder1', 'folder2']);
   expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 5A');
-  expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 5B');
+  expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 3B');
 });
 
 test('RenderBoxesStep sets cartelleFolderIds to [] when no cartellePerClasse opt-in is configured', () => {

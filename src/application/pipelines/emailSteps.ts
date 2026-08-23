@@ -421,6 +421,15 @@ export class RenderBoxesStep extends Step {
         : focusClasseId === undefined
           ? undefined
           : [focusClasseId];
+    const utenteEmail = built.focus.alunno?.anagrafica.email ?? built.focus.docente?.email;
+    const sourceScope = {
+      ...(classeIds === undefined ? {} : { classiCompetenza: classeIds }),
+      ...(focusClasseId === undefined ? {} : { classeId: focusClasseId }),
+      ...(utenteEmail === undefined || utenteEmail === null ? {} : { utenteEmail }),
+      ...(built.focus.dipartimento === undefined
+        ? {}
+        : { dipartimentoId: built.focus.dipartimento.anagrafica.id })
+    };
     const result = renderBoxes(
       this.composer,
       confMail(ctx),
@@ -428,7 +437,8 @@ export class RenderBoxesStep extends Step {
       this.materie,
       this.templates,
       this.aggregatoreDati,
-      classeIds
+      sourceScope,
+      this.logger
     );
     built.render = { boxes: result.boxes, body: { htmlCompleto: '', htmlSoloContenuto: '' } };
     const oggetto = this.templates.processString(confMail(ctx).oggetto, cduRecord(ctx));

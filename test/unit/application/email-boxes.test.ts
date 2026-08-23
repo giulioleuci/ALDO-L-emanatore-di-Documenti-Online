@@ -858,6 +858,109 @@ test('piani_pers_da_inviare: empty when items list is empty', () => {
   expect(out.boxes['piani_pers_da_inviare']!.html).toBe('');
 });
 
+test('documenti box renders only the valid DATI_SORGENTE.filtri result and returns its rendered ID', () => {
+  const tables = fixtureTables();
+  (tables['LOG_DOCS'] as Record<string, unknown>[]) = [
+    {
+      ID: 'doc-ammesso', ID_GEN: 'VERBALE_CDC', TIPO: 'VERBALE', SOTTOTIPO: 'CDC',
+      NOME: 'Verbale CDC', STATO: 'GENERATO', LINK: 'https://drive/doc-ammesso',
+      CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-01'
+    },
+    {
+      ID: 'doc-archiviato', ID_GEN: 'VERBALE_CDC', TIPO: 'VERBALE', SOTTOTIPO: 'CDC',
+      NOME: 'Verbale archiviato', STATO: 'ARCHIVIATO', LINK: 'https://drive/doc-archiviato',
+      CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-02'
+    },
+    {
+      ID: 'doc-altro', ID_GEN: 'VERBALE_ALTRO', TIPO: 'VERBALE', SOTTOTIPO: 'ALTRO',
+      NOME: 'Verbale altra tipologia', STATO: 'GENERATO', LINK: 'https://drive/doc-altro',
+      CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-03'
+    }
+  ];
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'documenti',
+        DATI_SORGENTE: {
+          metodo: 'documentiPerClasse',
+          filtri: { tipo: 'VERBALE', sottotipo: 'CDC', not: { stato: 'ARCHIVIATO' } }
+        }
+      }
+    ]),
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(tables)),
+    { classiCompetenza: ['5A'] },
+    logger
+  );
+
+  expect(out.boxes['documenti']!.html).toContain('Verbale CDC');
+  expect(out.boxes['documenti']!.html).not.toContain('Verbale archiviato');
+  expect(out.boxes['documenti']!.html).not.toContain('Verbale altra tipologia');
+  expect(out.documentIds).toEqual(['doc-ammesso']);
+});
+
+test('documenti box with DATI_SORGENTE and no filtri keeps every item in its scope', () => {
+  const tables = fixtureTables();
+  (tables['LOG_DOCS'] as Record<string, unknown>[]) = [
+    {
+      ID: 'doc-a', ID_GEN: 'A', TIPO: 'VERBALE', NOME: 'Verbale A', STATO: 'GENERATO',
+      LINK: 'https://drive/doc-a', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-01'
+    },
+    {
+      ID: 'doc-b', ID_GEN: 'B', TIPO: 'PIANO_LAVORO', NOME: 'Piano B', STATO: 'ARCHIVIATO',
+      LINK: 'https://drive/doc-b', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-02'
+    }
+  ];
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'documenti', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }]),
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(tables)),
+    { classiCompetenza: ['5A'] },
+    logger
+  );
+
+  expect(out.boxes['documenti']!.html).toContain('Verbale A');
+  expect(out.boxes['documenti']!.html).toContain('Piano B');
+  expect(out.documentIds).toEqual(['doc-a', 'doc-b']);
+});
+
+test('legacy document filters make only that box invisible and log a CONF_MAIL configuration error', () => {
+  const error = jest.spyOn(logger, 'error').mockImplementation(() => undefined);
+  const out = renderBoxes(
+    createBoxComposer(logger, new FakeTemplateEngine()),
+    confMail([{ TIPO_BOX: 'documenti', FILTRO_TIPO: 'VERBALE', FILTRO_STATO: 'GENERATO' }]),
+    cduRecord(),
+    materie(),
+    new FakeTemplateEngine(),
+    undefined,
+    undefined,
+    logger
+  );
+
+  expect(out.boxes['documenti']).toBeUndefined();
+  expect(out.documentIds).toEqual([]);
+  expect(error).toHaveBeenCalledWith(
+    expect.stringContaining('CONF_MAIL P1')
+  );
+  expect(error).toHaveBeenCalledWith(
+    expect.stringContaining('FILTRO_TIPO')
+  );
+  expect(error).toHaveBeenCalledWith(
+    expect.stringContaining('FILTRO_STATO')
+  );
+  error.mockRestore();
+});
+
 test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_FOLD folders, not CDU-embedded items', () => {
   const tables = fixtureTables();
   (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
@@ -884,7 +987,7 @@ test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_
     materie(),
     templates,
     aggregatoreDati,
-    ['5A']
+    { classiCompetenza: ['5A'] }
   );
 
   expect(out.boxes['cartelle']!.html).toContain('https://drive.google.com/drive/folders/folder1');
@@ -908,10 +1011,10 @@ test('cartellePerClasse includes folders for all competent classes and deduplica
     {
       ID: 'folder2',
       TIPO: 'E2E_VERBALE',
-      NOME: 'Verbali 5B',
-      PATH: '_ALDO_E2E_OUTPUT/5B',
+      NOME: 'Verbali 3B',
+      PATH: '_ALDO_E2E_OUTPUT/3B',
       LINK: 'https://drive.google.com/drive/folders/folder2',
-      CLASSI: '5B',
+      CLASSI: '3B',
       UTENTI: '',
       MATERIE: 'MATE,FISI'
     },
@@ -921,7 +1024,7 @@ test('cartellePerClasse includes folders for all competent classes and deduplica
       NOME: 'Verbali 5A',
       PATH: '_ALDO_E2E_OUTPUT/5A',
       LINK: 'https://drive.google.com/drive/folders/folder1',
-      CLASSI: '5A,5B',
+      CLASSI: '5A,3B',
       UTENTI: '',
       MATERIE: 'MATE,FISI'
     }
@@ -937,12 +1040,88 @@ test('cartellePerClasse includes folders for all competent classes and deduplica
     materie(),
     templates,
     aggregatoreDati,
-    ['5A', '5B']
+    { classiCompetenza: ['5A', '3B'] }
   );
 
   expect(out.folderIds.sort()).toEqual(['folder1', 'folder2']);
   expect(out.boxes['cartelle']!.html).toContain('Verbali 5A');
-  expect(out.boxes['cartelle']!.html).toContain('Verbali 5B');
+  expect(out.boxes['cartelle']!.html).toContain('Verbali 3B');
+});
+
+test('cartelle boxes use validated class, user, and department sources with filters and deduplicate rendered folder IDs', () => {
+  const tables = fixtureTables();
+  (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
+    {
+      ID: 'folder-classe', TIPO: 'VERBALI', NOME: 'Verbali consiglio', PATH: '_ALDO/5A',
+      LINK: 'https://drive/folder-classe', CLASSI: '5A,3B', UTENTI: '', MATERIE: 'MATE,FISI'
+    },
+    {
+      ID: 'folder-archivio', TIPO: 'VERBALI', NOME: 'Verbali archivio', PATH: '_ALDO/archivio',
+      LINK: 'https://drive/folder-archivio', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE'
+    },
+    {
+      ID: 'folder-utente', TIPO: 'AREA', NOME: 'Area studente', PATH: '_ALDO/studenti/a1',
+      LINK: 'https://drive/folder-utente', CLASSI: '', UTENTI: 'a1@school.it', MATERIE: ''
+    },
+    {
+      ID: 'folder-dipartimento', TIPO: 'DIPART', NOME: 'Materiali scientifici', PATH: '_ALDO/dipartimenti/scienze',
+      LINK: 'https://drive/folder-dipartimento', CLASSI: '', UTENTI: '', MATERIE: 'MATE'
+    }
+  ];
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const perClasse = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'cartelle',
+        DATI_SORGENTE: {
+          metodo: 'cartellePerClasse',
+          filtri: { nome: 'Verbali', path: '_ALDO', materie: 'MATE', not: { path: 'archivio' } }
+        }
+      }
+    ]),
+    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
+    { classiCompetenza: ['5A', '3B'] }, logger
+  );
+  const perUtente = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerUtente', filtri: { nome: 'Area' } } }]),
+    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
+    { utenteEmail: 'a1@school.it' }, logger
+  );
+  const perDipartimento = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerDipartimento', filtri: { nome: 'Materiali', materie: ['MATE'] } } }]),
+    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
+    { dipartimentoId: 'SCIENTIFICO_DIP' }, logger
+  );
+
+  expect(perClasse.boxes['cartelle']!.html).toContain('Verbali consiglio');
+  expect(perClasse.boxes['cartelle']!.html).not.toContain('Verbali archivio');
+  expect(perClasse.folderIds).toEqual(['folder-classe']);
+  expect(perUtente.folderIds).toEqual(['folder-utente']);
+  expect(perDipartimento.folderIds).toEqual(['folder-dipartimento']);
+});
+
+test('a cartelle box with a document-only filter is skipped without suppressing other boxes', () => {
+  const error = jest.spyOn(logger, 'error').mockImplementation(() => undefined);
+  const templates = new FakeTemplateEngine();
+  const out = renderBoxes(
+    createBoxComposer(logger, templates),
+    confMail([
+      { TIPO_BOX: 'carenze' },
+      { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { sottotipo: 'CDC' } } }
+    ]),
+    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(fixtureTables())),
+    { classiCompetenza: ['5A'] }, logger
+  );
+
+  expect(out.boxes['carenze']!.visibile).toBe(true);
+  expect(out.boxes['cartelle']).toBeUndefined();
+  expect(out.folderIds).toEqual([]);
+  expect(error).toHaveBeenCalledWith(expect.stringContaining('CONF_MAIL P1'));
+  error.mockRestore();
 });
 
 test('cartelle box without DATI_SORGENTE falls back to CDU-embedded items and reports empty folderIds', () => {

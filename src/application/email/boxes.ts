@@ -4,7 +4,9 @@ import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEm
 import type { DocumentoStoricoConTipo } from '../storico/StoricoDocumentiService';
 import type { AggregatoreDati } from '../services/AggregatoreDati';
 import type { LogCartella } from '../../domain/entities/LogCartella';
+import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import type { CattedraVM } from '../context-engine/Cdu';
+import { parseFiltriSorgente, type EntitaSorgente } from '../../domain/specifications/FiltriSorgente';
 
 /**
  * Box Rendering System (11 §5/§11) on ComposableContentLib (L4): every
@@ -61,6 +63,15 @@ export interface RenderedBox {
   html: string;
   isEmpty: boolean;
   visibile: boolean;
+}
+
+/** Scope resolved by RenderBoxesStep before invoking a DATI_SORGENTE accessor. */
+export interface SourceScope {
+  /** Explicit recipient competence classes take precedence over the CDU focus class. */
+  classiCompetenza?: string[];
+  classeId?: string;
+  utenteEmail?: string;
+  dipartimentoId?: string;
 }
 
 const DEFAULT_BORDER = '#ddd';
@@ -459,8 +470,8 @@ function str(v: unknown): string {
 function aggregaDati(
   cdu: Record<string, unknown>,
   materie: IMateriaRepository,
-  documentiFiltro: { tipo?: string; stato?: string } = {},
-  realCartelle: LogCartella[] | null = null
+  documentiSorgente?: DocumentoItem[],
+  cartelleSorgente?: DocumentoItem[]
 ): Record<string, unknown> {
   const focus = cdu['focus'] as
     | {
@@ -506,36 +517,15 @@ function aggregaDati(
     focus?.dipartimento?.didattica?.documenti;
   const items = documenti?.items ?? [];
   const storicoRef = documenti?.storico;
-  // FILTRO_TIPO/FILTRO_STATO (11 §11): the 'documenti' TIPO_BOX config scopes the
-  // rendered link list to this CONF_MAIL's own document type — e.g. the VERBALE
-  // pattern's box must not also list the class's CONDOTTA/PIANO_PERS documents.
-  // Independent of attachment resolution (ComposeEmailStep.resolveAllegati's
-  // DATI_SORGENTE opt-in) so scoping the visible links never implies attaching them.
-  const nonCartelle = items.filter((i) => i.tipo !== 'CARTELLA');
-  const documentiFiltrati = nonCartelle.filter(
-    (i) =>
-      (documentiFiltro.tipo === undefined || i.tipo === documentiFiltro.tipo) &&
-      (documentiFiltro.stato === undefined || i.stato === documentiFiltro.stato)
-  );
   const pianiPers = focus?.classe?.didattica?.pianiPersonalizzati ?? focus?.alunno?.didattica?.pianiPersonalizzati;
   const pianiItems = pianiPers?.items ?? [];
   const pianiStoricoRef = pianiPers?.storico;
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
-    documenti: { items: documentiFiltrati, storicoRef },
+    documenti: { items: documentiSorgente ?? items.filter((i) => i.tipo !== 'CARTELLA'), storicoRef },
     documentiDipartimento: { items: focus?.dipartimento?.didattica?.documenti?.items ?? [] },
     cartelle: {
-      items:
-        realCartelle !== null
-          ? realCartelle.map((f) => ({
-              nome: f.nome,
-              link: f.getLink(),
-              tipo: 'CARTELLA',
-              idGen: '',
-              stato: '',
-              dataCreazione: ''
-            }))
-          : items.filter((i) => i.tipo === 'CARTELLA'),
+      items: cartelleSorgente ?? items.filter((i) => i.tipo === 'CARTELLA'),
       storicoRef: undefined
     },
     pianiPersDaInviare: {
@@ -551,6 +541,109 @@ function aggregaDati(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function uniqueById<T extends { id: string | null | undefined }>(items: T[]): T[] {
+  const distinct = folderProjector.project(
+    items.flatMap((item, index) => (item.id === null || item.id === undefined ? [] : [{ id: item.id, index }])),
+    [{ type: 'distinctBy', keys: ['id'] }]
+  ).value as Array<{ index: number }>;
+  return distinct.map(({ index }) => items[index]!);
+}
+
+function documentoItem(documento: LogDocumento): DocumentoItem {
+  return {
+    id: documento.id ?? undefined,
+    nome: documento.nome,
+    link: documento.getLink(),
+    tipo: documento.tipo,
+    idGen: documento.idGen,
+    stato: documento.getStato(),
+    dataCreazione: documento.getDataCreazione()
+  };
+}
+
+function cartellaItem(cartella: LogCartella): DocumentoItem {
+  return {
+    id: cartella.id ?? undefined,
+    nome: cartella.nome,
+    link: cartella.getLink(),
+    tipo: 'CARTELLA',
+    idGen: cartella.tipo,
+    stato: '',
+    dataCreazione: ''
+  };
+}
+
+function isLegacyFilter(cfg: Record<string, unknown>): boolean {
+  return Object.prototype.hasOwnProperty.call(cfg, 'FILTRO_TIPO') ||
+    Object.prototype.hasOwnProperty.call(cfg, 'FILTRO_STATO');
+}
+
+function sourceMethodsFor(entita: EntitaSorgente): ReadonlySet<string> {
+  return entita === 'documenti'
+    ? new Set(['documentiPerClasse', 'documentiPerUtente', 'documentiPerDipartimento'])
+    : new Set(['cartellePerClasse', 'cartellePerUtente', 'cartellePerDipartimento']);
+}
+
+function resolveSourceItems(
+  cfg: Record<string, unknown>,
+  entita: EntitaSorgente,
+  aggregatoreDati: AggregatoreDati | undefined,
+  scope: SourceScope | undefined,
+  logger: LoggerService,
+  confMailId: string
+): DocumentoItem[] | undefined | null {
+  const source = cfg['DATI_SORGENTE'];
+  if (source === undefined) return undefined;
+  if (!isRecord(source)) {
+    logger.warn(`CONF_MAIL ${confMailId}: DATI_SORGENTE non risolvibile — box saltato`);
+    return null;
+  }
+
+  const { filtri, errori } = parseFiltriSorgente(source['filtri'], entita);
+  if (errori.length > 0) {
+    logger.error(`CONF_MAIL ${confMailId}: filtri ${entita} non validi: ${errori.join('; ')}`);
+    return null;
+  }
+
+  const metodo = str(source['metodo']);
+  if (metodo === '' || !sourceMethodsFor(entita).has(metodo) || aggregatoreDati === undefined) {
+    logger.warn(`CONF_MAIL ${confMailId}: DATI_SORGENTE.metodo non risolvibile — box saltato`);
+    return null;
+  }
+
+  const calls: Array<unknown[] | null> = metodo.endsWith('PerClasse')
+    ? (() => {
+        const classi = scope?.classiCompetenza?.length
+          ? scope.classiCompetenza
+          : scope?.classeId === undefined
+            ? []
+            : [scope.classeId];
+        if (classi.length === 0) return [];
+        return classi.map((classeId) =>
+          aggregatoreDati.perMetodo(metodo, { classeId, filtri }, logger) ?? null
+        );
+      })()
+    : [
+        aggregatoreDati.perMetodo(metodo, {
+          ...(scope?.utenteEmail === undefined ? {} : { utenteEmail: scope.utenteEmail }),
+          ...(scope?.dipartimentoId === undefined
+            ? {}
+            : { dipartimentoId: scope.dipartimentoId }),
+          ...(filtri === undefined ? {} : { filtri })
+        }, logger)
+      ];
+  if (calls.length === 0 || calls.some((items) => items === null)) return null;
+
+  const entities = calls.flat();
+  return entita === 'documenti'
+    ? uniqueById(entities as LogDocumento[]).map(documentoItem)
+    : uniqueById(entities as LogCartella[]).map(cartellaItem);
+}
+
 /**
  * Runs the Box Rendering System for one CONF_MAIL pattern (11 §5): BOX_CFG →
  * CompositionRecipe → ContentComposer; applies the FormattatoreDatiEmail
@@ -564,71 +657,79 @@ export function renderBoxes(
   materie: IMateriaRepository,
   templates: ITemplateEngine,
   aggregatoreDati?: AggregatoreDati,
-  classeIds?: string[]
+  sourceScope?: SourceScope,
+  logger?: LoggerService
 ): {
   ordered: string[];
   boxes: Record<string, RenderedBox>;
   documentIds: string[];
   folderIds: string[];
 } {
+  const activeLogger = logger ?? new LoggerService();
   const cfgs = confMail.getBoxes();
-  const known = cfgs.filter((c) => {
+  const known = cfgs.flatMap((cfg, index) => {
+    const c = cfg;
     const tipo = str(c['TIPO_BOX']);
-    return tipo !== '' && tipo in DEFAULT_TITLES;
+    if (tipo === '' || !(tipo in DEFAULT_TITLES)) return [];
+    if ((tipo === 'documenti' || tipo === 'cartelle') && isLegacyFilter(c)) {
+      const legacy = ['FILTRO_TIPO', 'FILTRO_STATO'].filter((key) =>
+        Object.prototype.hasOwnProperty.call(c, key)
+      );
+      activeLogger.error(
+        `CONF_MAIL ${confMail.id ?? ''}: chiavi legacy ${legacy.join(', ')} non ammesse; usa DATI_SORGENTE.filtri`
+      );
+      return [];
+    }
+    return [{ cfg: c, index, tipo }];
   });
   if (known.length === 0) return { ordered: [], boxes: {}, documentIds: [], folderIds: [] };
 
-  const documentiCfg = known.find((c) => str(c['TIPO_BOX']) === 'documenti');
-  const documentiFiltro: { tipo?: string; stato?: string } = {};
-  const filtroTipo = str(documentiCfg?.['FILTRO_TIPO']);
-  const filtroStato = str(documentiCfg?.['FILTRO_STATO']);
-  if (filtroTipo !== '') documentiFiltro.tipo = filtroTipo;
-  if (filtroStato !== '') documentiFiltro.stato = filtroStato;
-
-  const cartelleCfg = known.find((c) => str(c['TIPO_BOX']) === 'cartelle');
-  const cartelleMetodo = str(
-    (cartelleCfg?.['DATI_SORGENTE'] as { metodo?: string } | undefined)?.metodo
-  );
-  const realCartelle: LogCartella[] | null =
-    cartelleMetodo === 'cartellePerClasse' && aggregatoreDati !== undefined && classeIds !== undefined
-      ? (() => {
-          const cartelle = classeIds.flatMap(
-            (classeId) =>
-              (aggregatoreDati.perMetodo('cartellePerClasse', { classeId }) as LogCartella[] | null) ?? []
-          );
-          const distinct = folderProjector.project(
-            cartelle.flatMap((folder, index) =>
-              folder.id === null ? [] : [{ id: folder.id, index }]
-            ),
-            [{ type: 'distinctBy', keys: ['id'] }]
-          ).value as Array<{ index: number }>;
-          return distinct.map(({ index }) => cartelle[index]!);
-        })()
-      : null;
-  const folderIds = (realCartelle ?? [])
-    .map((f) => f.id)
-    .filter((id): id is string => id !== null);
+  let documentiSorgente: DocumentoItem[] | undefined;
+  let cartelleSorgente: DocumentoItem[] | undefined;
+  const renderable = known.filter(({ cfg, tipo }) => {
+    if (tipo !== 'documenti' && tipo !== 'cartelle') return true;
+    if (cfg['DATI_SORGENTE'] === undefined && Object.prototype.hasOwnProperty.call(cfg, 'filtri')) {
+      activeLogger.error(
+        `CONF_MAIL ${confMail.id ?? ''}: filtri deve comparire in DATI_SORGENTE.filtri`
+      );
+      return false;
+    }
+    const items = resolveSourceItems(
+      cfg,
+      tipo === 'documenti' ? 'documenti' : 'cartelle',
+      aggregatoreDati,
+      sourceScope,
+      activeLogger,
+      confMail.id ?? ''
+    );
+    if (items === null) return false;
+    if (items !== undefined) {
+      if (tipo === 'documenti') documentiSorgente = items;
+      else cartelleSorgente = items;
+    }
+    return true;
+  });
+  if (renderable.length === 0) return { ordered: [], boxes: {}, documentIds: [], folderIds: [] };
 
   const recipe: CompositionRecipeInput = {
     id: confMail.id ?? 'boxes',
     name: `Boxes ${confMail.id ?? ''}`,
     outputFormat: 'html',
-    blocks: known.map((c, i) => {
-      const tipo = str(c['TIPO_BOX']);
-      const prerequisiti = str(c['PREREQUISITI']);
+    blocks: renderable.map(({ cfg, index, tipo }) => {
+      const prerequisiti = str(cfg['PREREQUISITI']);
       return {
-        instanceId: `${tipo}_${i}`,
+        instanceId: `${tipo}_${index}`,
         blockType: tipo,
         visibility: prerequisiti === '' ? 'always' : prerequisiti,
-        order: typeof c['ORDINE'] === 'number' ? c['ORDINE'] : i,
-        config: c
+        order: typeof cfg['ORDINE'] === 'number' ? cfg['ORDINE'] : index,
+        config: cfg
       };
     })
   };
 
   const context: Record<string, unknown> = {
     ...cdu,
-    boxdata: aggregaDati(cdu, materie, documentiFiltro, realCartelle)
+    boxdata: aggregaDati(cdu, materie, documentiSorgente, cartelleSorgente)
   };
   const boxdata = context['boxdata'] as {
     documenti: { items: DocumentoItem[] };
@@ -636,45 +737,19 @@ export function renderBoxes(
     pianiPersDaInviare: { items: PianoPersonalizzatoRow[] };
     pianiPersInviati: { items: PianoPersonalizzatoRow[] };
   };
-  const documentIds = Array.from(
-    new Set(
-      known
-        .flatMap((cfg): Array<{ id?: string | undefined }> => {
-          switch (str(cfg['TIPO_BOX'])) {
-            case 'documenti':
-              return boxdata.documenti.items;
-            case 'piani_pers_da_inviare':
-              return boxdata.pianiPersDaInviare.items;
-            case 'piani_pers_inviati':
-              return boxdata.pianiPersInviati.items;
-            default:
-              return [];
-          }
-        })
-        .map((item) => item.id)
-        .filter((id): id is string => id !== undefined && id !== '')
-    )
-  );
-  const renderedFolderIds =
-    realCartelle === null
-      ? boxdata.cartelle.items
-          .map((item) => item.id)
-          .filter((id): id is string => id !== undefined && id !== '')
-      : folderIds;
   const result = composer.compose(recipe, context);
 
   const byInstance = new Map(result.blocks.map((b) => [b.instanceId, b]));
   const ordered: string[] = [];
   const boxes: Record<string, RenderedBox> = {};
-  const orderedCfg = [...known.entries()].sort((a, b) => {
-    const oa = typeof a[1]['ORDINE'] === 'number' ? a[1]['ORDINE'] : a[0];
-    const ob = typeof b[1]['ORDINE'] === 'number' ? b[1]['ORDINE'] : b[0];
+  const orderedCfg = [...renderable].sort((a, b) => {
+    const oa = typeof a.cfg['ORDINE'] === 'number' ? a.cfg['ORDINE'] : a.index;
+    const ob = typeof b.cfg['ORDINE'] === 'number' ? b.cfg['ORDINE'] : b.index;
     return oa - ob;
   });
 
-  for (const [i, cfg] of orderedCfg) {
-    const tipo = str(cfg['TIPO_BOX']);
-    const block = byInstance.get(`${tipo}_${i}`);
+  for (const { cfg, index, tipo } of orderedCfg) {
+    const block = byInstance.get(`${tipo}_${index}`);
     if (block === undefined) continue;
     const isEmpty = block.isEmpty || !block.isVisible || block.content === '';
     let inner = block.isVisible ? block.content : '';
@@ -684,8 +759,21 @@ export function renderBoxes(
     const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
     const coloreBordo = str(cfg['COLORE']) !== '' ? str(cfg['COLORE']) : DEFAULT_BORDER;
     const html = inner === '' ? '' : titolo === '' ? inner : wrapBox(titolo, coloreBordo, inner);
-    boxes[tipo] = { id: `${tipo}_${i}`, titolo, html, isEmpty, visibile: html !== '' };
+    boxes[tipo] = { id: `${tipo}_${index}`, titolo, html, isEmpty, visibile: html !== '' };
     if (html !== '') ordered.push(html);
   }
-  return { ordered, boxes, documentIds, folderIds: renderedFolderIds };
+  const ids = (items: Array<{ id?: string | undefined }>): string[] =>
+    Array.from(new Set(items.map((item) => item.id).filter((id): id is string => id !== undefined && id !== '')));
+  const isRendered = (tipo: string): boolean => boxes[tipo]?.visibile === true;
+  const documentIds = [
+    ...(isRendered('documenti') ? boxdata.documenti.items : []),
+    ...(isRendered('piani_pers_da_inviare') ? boxdata.pianiPersDaInviare.items : []),
+    ...(isRendered('piani_pers_inviati') ? boxdata.pianiPersInviati.items : [])
+  ];
+  return {
+    ordered,
+    boxes,
+    documentIds: ids(documentIds),
+    folderIds: isRendered('cartelle') ? ids(boxdata.cartelle.items) : []
+  };
 }

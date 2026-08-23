@@ -44,9 +44,14 @@ function build(providers: string[], databases: StoricoDatabaseProvider, options 
   const alunni = new AlunnoRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
+  // AlunnoProvider's own historical lookup (presenteAnnoPrecedente) is unrelated
+  // to this file's "no historical DB opened" invariant for DocumentiStoricoProvider
+  // — give it an isolated no-op so the shared `databases` tracker below reports
+  // only what DocumentiStoricoProvider itself opens.
+  const noHistory: StoricoDatabaseProvider = { anniStorici: () => [] };
   b.registerProvider(
     'student',
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), noHistory)
   );
   b.registerProvider(
     'documenti',

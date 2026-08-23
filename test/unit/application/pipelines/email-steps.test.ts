@@ -14,6 +14,7 @@ import { Docente } from '../../../../src/domain/entities/Docente';
 import { Alunno } from '../../../../src/domain/entities/Alunno';
 import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
+import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import type { EmailTarget } from '../../../../src/application/email/saluto';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
 import type { ContextBuilder } from '../../../../src/application/context-engine/ContextBuilder';
@@ -146,10 +147,21 @@ function wire(
   };
 }
 
+// No offline unit test in this file can construct a real historical-year
+// DatabaseService — this harness has no Advanced Sheets API stand-in (see
+// test/setup/load-gaslibs.cjs's CacheService comment). BuildCDUStep decides
+// includiStorico itself from BOX_CFG (e.g. arricchisciConStorico:true), so any
+// test here can end up exercising it even without asking for it explicitly;
+// backing every composeContextBuilder call in this file with a no-op
+// StoricoDatabaseProvider keeps that harmless regardless.
+function noHistoryStoricoDb(): StoricoDatabaseProvider {
+  return { anniStorici: () => [] };
+}
+
 function buildStep(w: Wiring): BuildCDUStep {
   return new BuildCDUStep(
     logger,
-    composeContextBuilder(w.db),
+    composeContextBuilder(w.db, undefined, undefined, noHistoryStoricoDb()),
     w.docenti,
     w.alunni,
     new ClasseRepository(w.db),

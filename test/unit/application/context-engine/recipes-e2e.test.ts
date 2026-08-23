@@ -1,11 +1,24 @@
 import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import { recipe } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams } from '../../../../src/application/context-engine/Recipe';
+import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 
+// No offline unit test can construct a real historical-year DatabaseService —
+// this harness has no Advanced Sheets API stand-in (see
+// test/setup/load-gaslibs.cjs's CacheService comment). The two includiStorico:true
+// tests below only assert their LazyRefs stay unresolved, so a no-op backing
+// provider is behaviorally identical to the real one for every assertion here,
+// and also keeps AlunnoProvider's gated presenteAnnoPrecedente lookup from ever
+// touching it.
+function noHistory(): StoricoDatabaseProvider {
+  return { anniStorici: () => [] };
+}
+
 function factory() {
-  return composeContextBuilder(new FakeDatabase(fixtureTables()));
+  const db = new FakeDatabase(fixtureTables());
+  return composeContextBuilder(db, undefined, undefined, noHistory());
 }
 const now = new Date('2026-07-01T09:00:00Z');
 

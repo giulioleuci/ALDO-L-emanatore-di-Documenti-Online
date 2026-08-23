@@ -34,11 +34,13 @@ import {
 } from '../application/services/EmailNotificationService';
 import { AggregatoreDati } from '../application/services/AggregatoreDati';
 import type { ITeachingAssignmentResolver } from '../application/ports/ITeachingAssignmentResolver';
+import type { StoricoDatabaseProvider } from '../application/storico/StoricoDatabaseProvider';
 
 function contextDependencies(
   db: RepositoryDatabase,
   master: IMasterSheetRepository,
-  teachingAssignments: ITeachingAssignmentResolver
+  teachingAssignments: ITeachingAssignmentResolver,
+  storicoDb?: StoricoDatabaseProvider
 ): ContextEngineDependencies {
   const classi = new ClasseRepository(db);
   return {
@@ -52,20 +54,35 @@ function contextDependencies(
     oreAsl: new OreASLRepository(db),
     logDocs: new LogDocumentoRepository(db, new LazyRef(() => classi)),
     progetti: new ProgettoRepository(db),
-    dipartimenti: new DipartimentoRepository(db)
+    dipartimenti: new DipartimentoRepository(db),
+    // exactOptionalPropertyTypes: only include the key when an override was
+    // actually given — an explicit `storicoDb: undefined` is a type error
+    // against ContextEngineDependencies's `storicoDb?: StoricoDatabaseProvider`.
+    ...(storicoDb !== undefined ? { storicoDb } : {})
   };
 }
 
 /**
  * Convenience composition for isolated tests and online checks. Runtime
  * production wiring uses Bootstrap's container-owned singleton graph.
+ * `storicoDb` is an optional override (undefined by default, matching current
+ * behaviour exactly): `ContextEngineFactory.create` falls back to a real
+ * `MasterStoricoDatabaseProvider` over `master` when it's omitted. Offline
+ * unit tests that exercise `includiStorico: true` should pass a fake here
+ * instead — this offline harness has no ambient Advanced Sheets API, so a
+ * real `MasterStoricoDatabaseProvider` can never actually open a historical
+ * year's database under Jest (see test/setup/load-gaslibs.cjs's `CacheService`
+ * stub comment for the related, narrower `Logger`/`CacheService` gap).
  */
 export function composeContextBuilder(
   db: RepositoryDatabase,
   master: IMasterSheetRepository = new MasterSheetRepository(db),
-  teachingAssignments: ITeachingAssignmentResolver = new AldoTeachingAssignmentResolver(db)
+  teachingAssignments: ITeachingAssignmentResolver = new AldoTeachingAssignmentResolver(db),
+  storicoDb?: StoricoDatabaseProvider
 ): ContextBuilder {
-  return ContextEngineFactory.create(contextDependencies(db, master, teachingAssignments));
+  return ContextEngineFactory.create(
+    contextDependencies(db, master, teachingAssignments, storicoDb)
+  );
 }
 
 export function composeRisolutoreRuoliDependencies(

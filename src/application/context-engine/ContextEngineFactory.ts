@@ -27,6 +27,7 @@ import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import { DocenteMateriaFocusProvider } from './providers/DocenteMateriaFocusProvider';
 import { DipartimentoProvider } from './providers/DipartimentoProvider';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
+import type { StoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { IRuoloSpecialeRepository } from '../../domain/repositories/IRuoloSpecialeRepository';
@@ -51,6 +52,19 @@ export interface ContextEngineDependencies {
   logDocs: ILogDocumentoRepository;
   progetti: ProgettoRepository;
   dipartimenti: IDipartimentoRepository;
+  /**
+   * Override for the real `MasterStoricoDatabaseProvider` this factory builds
+   * from `master` by default. Production callers (Bootstrap.ts) must never
+   * pass this — it exists solely so offline tests that exercise
+   * `includiStorico: true` through the real composition root
+   * (`composeContextBuilder`/`ContextEngineFactory.create`, as opposed to a
+   * provider constructed directly with a hand-rolled fake) can inject a no-op
+   * `StoricoDatabaseProvider` instead of hitting the real
+   * `MasterStoricoDatabaseProvider` → `DatabaseService` → Advanced Sheets API
+   * chain, which this offline test harness has no ambient stand-in for (unlike
+   * `Logger`/`CacheService`, see test/setup/load-gaslibs.cjs).
+   */
+  storicoDb?: StoricoDatabaseProvider;
 }
 
 /**
@@ -70,9 +84,11 @@ export class ContextEngineFactory {
     oreAsl,
     logDocs,
     progetti,
-    dipartimenti
+    dipartimenti,
+    storicoDb: storicoDbOverride
   }: ContextEngineDependencies): ContextBuilder {
-    const storicoDb = new MasterStoricoDatabaseProvider(master, new LoggerService());
+    const storicoDb =
+      storicoDbOverride ?? new MasterStoricoDatabaseProvider(master, new LoggerService());
 
     // Constructed once and reused both under their own recipe tokens and
     // inside PartnerProjectionProvider ('partner'), which reruns the same
@@ -96,7 +112,7 @@ export class ContextEngineFactory {
       .registerProvider('students', studentiProvider)
       .registerProvider(
         'student',
-        new AlunnoProvider(alunni, classi, oreAsl, materie, teachingAssignments)
+        new AlunnoProvider(alunni, classi, oreAsl, materie, storicoDb, teachingAssignments)
       )
       .registerProvider('tutor', tutorProvider)
       .registerProvider('consiglio', consiglioProvider)

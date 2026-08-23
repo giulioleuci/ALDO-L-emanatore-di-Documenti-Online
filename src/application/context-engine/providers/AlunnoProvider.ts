@@ -7,6 +7,8 @@ import type { IOreASLRepository } from '../../../domain/repositories/IOreASLRepo
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { Alunno } from '../../../domain/entities/Alunno';
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
+import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
+import { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
 import {
   createTeachingCouncilProjection,
   prepareStudentCouncilAssignments,
@@ -16,6 +18,7 @@ import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
 import { setAlunnoEntity } from '../techEntities';
 import { curriculumArray } from '../mappers/carenzeMapper';
 import { religioneLabel } from '../mappers/labels';
+import { presenteTuttoAnno } from '../../storico/presenza';
 import { EntityNotFoundError } from '../../../domain/errors/DomainError';
 
 /**
@@ -24,6 +27,21 @@ import { EntityNotFoundError } from '../../../domain/errors/DomainError';
  * placeholder — PianiProvider (which reads PIANI, later in the recipe) flips it
  * to true when the student has a BES plan. Carenze and piani sub-sections are
  * filled by their own providers. Stashes the live Alunno entity in tech.entita.
+ * `status.presenteAnnoPrecedente`/`presenteTuttoAnno` mirror the historical
+ * per-year fields on `StudentStoricoVM.anni[]` (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md
+ * §4/§5) but for the CURRENT year: presenteAnnoPrecedente looks one year back
+ * through `storicoDb` (cheap — that provider caches opened databases by
+ * spreadsheet id across the whole CDU build), presenteTuttoAnno reads this
+ * year's own MOV_ALUNNI via `IAlunnoRepository.getStoricoMovimenti`.
+ * presenteAnnoPrecedente is gated behind `options.includiStorico`, matching
+ * every other historical-data provider in the recipe (StoricoProvider,
+ * DocumentiStoricoProvider, PianiPers*StoricoProvider): `storicoDb` is only
+ * ever touched when the caller opted into historical data, so a plain
+ * ALUNNO_DETTAGLIATO/CLASSE_COMPLETA build (includiStorico defaults to false)
+ * never opens a second database. Stays a plain `boolean`, not a `LazyRef`
+ * (unlike `focus.alunno.storico`) — per SPECS_ALDO/02_CDU_STRUTTURA.md:1584,
+ * `status.*` fields must stay template-renderable plain values, so gating is
+ * done in the provider, not by deferring resolution to the consumer.
  */
 export class AlunnoProvider implements ContextProvider {
   private readonly projection: CollectionProjectionInterceptor;
@@ -33,6 +51,7 @@ export class AlunnoProvider implements ContextProvider {
     private readonly classi: IClasseRepository,
     private readonly oreAsl: IOreASLRepository,
     private readonly materie: IMateriaRepository,
+    private readonly storicoDb: StoricoDatabaseProvider,
     private readonly teachingAssignments?: ITeachingAssignmentResolver
   ) {
     this.projection = createTeachingCouncilProjection(classi, materie).alunno;
@@ -57,7 +76,9 @@ export class AlunnoProvider implements ContextProvider {
         religioneLabel: religioneLabel(alunno.religione),
         isBes: false,
         isRipetente: alunno.isRipetente(),
-        isRappresentante: alunno.isRappresentante()
+        isRappresentante: alunno.isRappresentante(),
+        presenteAnnoPrecedente: this.presenteAnnoPrecedente(alunno, options),
+        presenteTuttoAnno: presenteTuttoAnno(this.alunni.getStoricoMovimenti(alunno))
       },
       curriculum: curriculumArray(alunno, this.materie),
       classe: {
@@ -100,5 +121,12 @@ export class AlunnoProvider implements ContextProvider {
     const anno = cdu.istituto?.organizzazione.annoScolastico;
     if (anno === undefined || anno === '') return 0;
     return this.oreAsl.getOrCreate(alunno, AnnoScolastico.of(anno)).getOre();
+  }
+
+  private presenteAnnoPrecedente(alunno: Alunno, options: RecipeOptions): boolean {
+    if (!options.includiStorico) return false;
+    const annoPrecedente = this.storicoDb.anniStorici(1)[0];
+    if (annoPrecedente === undefined) return false;
+    return new AlunnoRepository(annoPrecedente.db).findById(alunno.email.value) !== null;
   }
 }

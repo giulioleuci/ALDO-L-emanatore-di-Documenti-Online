@@ -4,6 +4,7 @@ import { ClasseProvider } from '../../../../src/application/context-engine/provi
 import { AlunnoProvider } from '../../../../src/application/context-engine/providers/AlunnoProvider';
 import { PianiProvider } from '../../../../src/application/context-engine/providers/PianiProvider';
 import { PianoFocusProvider } from '../../../../src/application/context-engine/providers/PianoFocusProvider';
+import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
@@ -18,11 +19,12 @@ function build(pianoTipo: TipoPiano) {
   const db = new FakeDatabase(fixtureTables());
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
+  const storicoDb: StoricoDatabaseProvider = { anniStorici: () => [] };
   const builder = new ContextBuilder()
     .registerProvider('class', new ClasseProvider(classi, alunni))
     .registerProvider(
       'student',
-      new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+      new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), storicoDb)
     )
     .registerProvider('piani', new PianiProvider(alunni))
     .registerProvider('pianoFocus', new PianoFocusProvider());

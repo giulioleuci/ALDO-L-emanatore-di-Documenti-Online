@@ -14,11 +14,21 @@ import { ClasseRepository } from '../../../../src/infrastructure/repositories/Cl
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
+import type { AnnoStorico, StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import type { Row } from '../../../../src/infrastructure/db/Database';
 
-function build(target: string, tables = fixtureTables()): Cdu {
+function noHistory(): StoricoDatabaseProvider {
+  return { anniStorici: () => [] };
+}
+
+function build(
+  target: string,
+  tables = fixtureTables(),
+  storicoDb: StoricoDatabaseProvider = noHistory(),
+  options = makeOptions()
+): Cdu {
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
@@ -34,7 +44,7 @@ function build(target: string, tables = fixtureTables()): Cdu {
     )
   );
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, materie));
+  b.registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, materie, storicoDb));
   b.registerProvider('carenze', new CarenzeProvider(alunni, materie));
   b.registerProvider('piani', new PianiProvider(alunni));
   const params: BuildParams = {
@@ -44,7 +54,7 @@ function build(target: string, tables = fixtureTables()): Cdu {
   };
   const recipe: Recipe = {
     providers: ['school', 'class', 'student', 'carenze', 'piani'],
-    options: makeOptions()
+    options
   };
   return b.build(params, recipe);
 }
@@ -57,7 +67,9 @@ test('AlunnoProvider: anagrafica/status/curriculum/classe + ASL hours (02 §4.2)
     religioneLabel: 'Religione cattolica',
     isBes: true,
     isRipetente: false,
-    isRappresentante: true
+    isRappresentante: true,
+    presenteAnnoPrecedente: false, // includiStorico defaults to false — the lookup is gated off, storicoDb is never touched
+    presenteTuttoAnno: true // a1@school.it has no MOV_ALUNNI row in fixtureTables()
   });
   expect(a.curriculum).toEqual([
     {
@@ -125,4 +137,37 @@ test('a non-BES student (PFP): isBes stays false, class resolved for alunno targ
 test('AlunnoProvider: adds religioneLabel to focus.alunno.status (02 §4.2)', () => {
   const a = build('a1@school.it').focus.alunno!;
   expect(a.status.religioneLabel).toBe('Religione cattolica');
+});
+
+test('AlunnoProvider: presenteAnnoPrecedente true when a previous-year ALUNNI record exists (ANALYSIS_HISTORIC_ENRICH_EXTENSION §4)', () => {
+  const priorTables = fixtureTables();
+  const priorDb = new FakeDatabase(priorTables);
+  const storicoDb: StoricoDatabaseProvider = {
+    anniStorici: (profondita: number): AnnoStorico[] =>
+      profondita > 0
+        ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }]
+        : []
+  };
+  // presenteAnnoPrecedente is gated behind includiStorico (matches every other
+  // historical-data provider in the recipe) — must opt in for this fake to be consulted.
+  const a = build(
+    'a1@school.it',
+    fixtureTables(),
+    storicoDb,
+    makeOptions({ includiStorico: true })
+  ).focus.alunno!;
+  expect(a.status.presenteAnnoPrecedente).toBe(true); // a1@school.it exists in fixtureTables() ALUNNI both times
+});
+
+test('AlunnoProvider: presenteTuttoAnno false when the student has a current-year IN/CAMBIO movement', () => {
+  const tables = fixtureTables();
+  (tables['MOV_ALUNNI'] as Row[]).push({
+    STUDENTE: 'a1@school.it',
+    TIPO: 'CAMBIO',
+    DATA: '2026-02-01',
+    DA: '5A',
+    A: '5B'
+  });
+  const a = build('a1@school.it', tables).focus.alunno!;
+  expect(a.status.presenteTuttoAnno).toBe(false);
 });

@@ -6,6 +6,7 @@ import { CarenzaFocusProvider } from '../../../../src/application/context-engine
 import { makeOptions } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
+import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { ClasseRepository } from '../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
@@ -25,10 +26,11 @@ function build(
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
   const b = new ContextBuilder();
+  const storicoDb: StoricoDatabaseProvider = { anniStorici: () => [] };
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider(
     'student',
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), storicoDb)
   );
   b.registerProvider(
     'documenti',

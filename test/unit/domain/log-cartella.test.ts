@@ -44,6 +44,24 @@ describe('LogCartella.containsClasse', () => {
   });
 });
 
+test('LogCartella exposes path and source filters without raw records', () => {
+  const log = new LogCartella({
+    PATH: 'Archivio/2026/Verbali',
+    CLASSI: '5A,3B',
+    UTENTI: 'a@school.it,b@school.it',
+    MATERIE: 'MATE,FIS'
+  });
+
+  expect(log.getPath()).toBe('Archivio/2026/Verbali');
+  expect(log.getClassi()).toEqual(['5A', '3B']);
+  expect(log.getUtenti()).toEqual(['a@school.it', 'b@school.it']);
+  expect(log.getMaterie()).toEqual(['MATE', 'FIS']);
+  expect(log.containsUtente('b@school.it')).toBe(true);
+  expect(log.containsUtente('missing@school.it')).toBe(false);
+  expect(log.containsMateria('FIS')).toBe(true);
+  expect(log.containsMateria('LAT')).toBe(false);
+});
+
 describe('LogCartella.toData / fromData', () => {
   test('toData round-trips the full raw row, including unknown/dynamic columns', () => {
     const raw = {

@@ -64,6 +64,11 @@ export class LogDocumento extends AldoEntity {
       ? (this.raw[COL_LOG_DOCS.SOTTOTIPO] as string)
       : '';
   }
+  getIdOrig(): string {
+    return typeof this.raw[COL_LOG_DOCS.ID_ORIG] === 'string'
+      ? (this.raw[COL_LOG_DOCS.ID_ORIG] as string)
+      : '';
+  }
   isNotificato(): boolean {
     return this.notificato.trim().length > 0;
   }
@@ -82,6 +87,9 @@ export class LogDocumento extends AldoEntity {
   }
   getUtenti(): string[] {
     return csv(this.raw[COL_LOG_DOCS.UTENTI]);
+  }
+  getMaterie(): string[] {
+    return csv(this.raw[COL_LOG_DOCS.MATERIE]);
   }
 
   /** Updates STATO (transition validation is the service's job, ref 04 §18). Marks dirty. */

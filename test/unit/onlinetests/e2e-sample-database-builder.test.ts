@@ -14,6 +14,7 @@ import {
   PDP_BES_3C,
   PIANO_DOPPIO_STUDENTE,
   CONF_DOC_PIANI,
+  CONF_DOC_PIANI_NO_PEI,
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
@@ -329,7 +330,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   );
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
-  expect(confDoc).toHaveLength(17);
+  expect(confDoc).toHaveLength(18);
   const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'
@@ -410,6 +411,15 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     utenti: '{{focus.alunno.anagrafica.email}}',
     materie: ''
   });
+  const pianiNoPei = confDoc.filter((c) => c[COL_CONF_DOC.ID] === CONF_DOC_PIANI_NO_PEI);
+  expect(pianiNoPei).toHaveLength(1);
+  const pianoNoPei = pianiNoPei[0]!;
+  expect(pianoNoPei[COL_CONF_DOC.TIPO]).toBe('PIANO_PERS');
+  expect(pianoNoPei[COL_CONF_DOC.GENERATORE]).toBe('DOC_PERSONALIZZATO');
+  expect(pianoNoPei[COL_CONF_DOC.CONDIZIONE]).toBe('{{focus.piano.tipo}} != "PEI"');
+  expect(JSON.parse(String(pianoNoPei[COL_CONF_DOC.MODELLI]))).toEqual(
+    JSON.parse(String(piano[COL_CONF_DOC.MODELLI]))
+  );
   expectCompleteRows(confDoc, COL_CONF_DOC);
   for (const row of confDoc) {
     expectRegistrationJson(row[COL_CONF_DOC.REGISTRA_DOC]);

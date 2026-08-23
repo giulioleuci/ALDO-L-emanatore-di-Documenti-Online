@@ -59,13 +59,17 @@ export const CLASSE_B = '2B';
 export const CLASSE_C_PARENT = '3C';
 export const CLASSE_C = '3C-S';
 export const CLASSE_C_PARTNER = '3C-C';
+export const CLASSE_D_PARENT = '5B';
+export const CLASSE_D = '5B-S';
+export const CLASSE_D_PARTNER = '5B-C';
 /**
  * Every entry-point class (05 §5 / EmailNotificationService.classiEntryPoint):
- * CLASSE_C_PARENT aggregates CLASSE_C/CLASSE_C_PARTNER, so both partner rows
- * are filtered and the parent receives the single PER_COORDINATORE/PER_CDC
+ * CLASSE_C_PARENT and CLASSE_D_PARENT each aggregate their partner rows
+ * (CLASSE_C/CLASSE_C_PARTNER, CLASSE_D/CLASSE_D_PARTNER), so both partner
+ * rows are filtered and the parent receives the single PER_COORDINATORE/PER_CDC
  * target for the articulated group.
  */
-export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT];
+export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_D_PARENT];
 export const ASSIGNMENT_MATRIX_DATE_E2E = new Date('2026-07-15T09:00:00Z');
 
 /** Minimal persisted fixture descriptor used only by the Script Cache isolation callback. */
@@ -247,6 +251,7 @@ export const CONF_DOC_DOCENTE_MATERIA = 'E2E_DOCENTE_MATERIA';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export const CONF_DOC_ACL_REALI = 'E2E_ACL_REALI';
 export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
+export const CONF_DOC_PIANI_NO_PEI = 'PIANI_PERSONALIZZATI_NO_PEI';
 export const CONF_DOC_PIANO_LAVORO = 'E2E_PIANO_LAVORO';
 export const CONF_MAIL_VERBALE = 'E2E_MAIL_VERBALE';
 export const CONF_MAIL_CONDOTTA = 'E2E_MAIL_CONDOTTA';
@@ -1212,6 +1217,36 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
       [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
       [COL_CONF_DOC.CONDIZIONE]: '',
+      [COL_CONF_DOC.MODELLI]: JSON.stringify(
+        TIPI_PIANO.map((tipo) => ({
+          condizione: `{{focus.piano.tipo}} == "${tipo}"`,
+          templateId: templateIds.piani[tipo]
+        }))
+      ),
+      [COL_CONF_DOC.FILE_NAME]:
+        'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
+      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+      [COL_CONF_DOC.PERMESSI]: '',
+      [COL_CONF_DOC.POST_PROCESSO]: null,
+      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+      [COL_CONF_DOC.FORMATO]: 'GDOC',
+      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '{{focus.alunno.anagrafica.email}}',
+        materie: ''
+      }),
+      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+    });
+    // 01_SCHEMA_DATABASE.md "Eccezione ammessa — famiglia NO_PEI": identical
+    // to CONF_DOC_PIANI in every column except ID and CONDIZIONE, which
+    // excludes PEI targets before AnalyzeContextStep ever reaches MODELLI.
+    sample.appendRow(TABLE.CONF_DOC, {
+      [COL_CONF_DOC.ID]: CONF_DOC_PIANI_NO_PEI,
+      [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
+      [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+      [COL_CONF_DOC.CONDIZIONE]: '{{focus.piano.tipo}} != "PEI"',
       [COL_CONF_DOC.MODELLI]: JSON.stringify(
         TIPI_PIANO.map((tipo) => ({
           condizione: `{{focus.piano.tipo}} == "${tipo}"`,

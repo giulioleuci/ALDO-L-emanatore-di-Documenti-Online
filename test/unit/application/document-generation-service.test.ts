@@ -349,6 +349,48 @@ describe('DocumentGenerationService.generateForPiano', () => {
       'CONF_DOC CD1 deve avere TIPO PIANO_PERS'
     );
   });
+
+  test('PIANI_PERSONALIZZATI_NO_PEI (01_SCHEMA_DATABASE.md "Eccezione ammessa"): CONDIZIONE skips PEI, generates other subtypes identically', () => {
+    const tables = fixtureTables();
+    tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{"gravita":"lieve"}' });
+    tables.CONF_DOC!.push({
+      ID: 'PIANI_PERSONALIZZATI_NO_PEI',
+      TIPO: 'PIANO_PERS',
+      GENERATORE: 'DOC_PERSONALIZZATO',
+      CONDIZIONE: '{{focus.piano.tipo}} != "PEI"',
+      MODELLI: JSON.stringify([
+        { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
+        { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
+      ]),
+      FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+      PATH_OUT: 'Piani',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: '',
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: JSON.stringify({
+        classi: '{{focus.classe.anagrafica.nome}}',
+        utenti: '{{focus.alunno.anagrafica.email}}',
+        materie: ''
+      })
+    });
+    const { drive, service } = wire(tables, {
+      registry: new Map([
+        ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())]
+      ])
+    });
+
+    expect(
+      service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI_NO_PEI')
+    ).toMatchObject({ fileId: null, fileName: null, fileLink: null, status: 'SKIPPED' });
+    expect(
+      service.generateForPiano('a1@school.it', TipoPiano.PDP_BES, 'PIANI_PERSONALIZZATI_NO_PEI')
+        .status
+    ).toBe('GENERATO');
+    expect(drive.copies.map((copy) => copy.templateId)).toEqual(['tmpl_pdp_bes']);
+  });
 });
 
 describe('DocumentGenerationService.generateForClasse — articulated parent (ARTICOLAZIONE.md item 4)', () => {

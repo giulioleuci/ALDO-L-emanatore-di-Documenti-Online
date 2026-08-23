@@ -9,11 +9,17 @@ function repo() {
 }
 const engine = new ExpressionEngineFacade();
 const ctx = (anno: number) => ({ focus: { classe: { anagrafica: { anno } } } });
+const pianoCtx = (tipo: string) => ({ focus: { piano: { tipo } } });
 
 test('ExpressionEngineFacade evaluates {{path}} boolean expressions via the library', () => {
   expect(engine.evaluateBoolean('{{focus.classe.anagrafica.anno}} == 5', ctx(5))).toBe(true);
   expect(engine.evaluateBoolean('{{focus.classe.anagrafica.anno}} > 3', ctx(2))).toBe(false);
   expect(engine.evaluateBoolean('true', {})).toBe(true);
+});
+
+test('ExpressionEngineFacade evaluates != on string placeholders (PIANI_PERSONALIZZATI_NO_PEI CONDIZIONE)', () => {
+  expect(engine.evaluateBoolean('{{focus.piano.tipo}} != "PEI"', pianoCtx('PEI'))).toBe(false);
+  expect(engine.evaluateBoolean('{{focus.piano.tipo}} != "PEI"', pianoCtx('PDP_BES'))).toBe(true);
 });
 
 test('shouldGenerate: null CONDIZIONE → true; else evaluated by the engine (06 §8, 10 Step 1)', () => {

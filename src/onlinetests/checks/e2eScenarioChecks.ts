@@ -672,7 +672,7 @@ export function registerE2eScenarioChecks(
   );
 
   // Every entry-point class needs both doc types (ALL_CLASSI_E2E doc comment):
-  // each of the 3 coordinatori and each of the 4 CdC gets its own email
+  // each of the 4 coordinatori and each of the 6 CdC gets its own email
   // (scenari 4/5), so a class missing a doc gets an email with an empty box.
   runner.add(
     'E2E scenario 1: genera verbale consiglio di classe (tutte le classi)',

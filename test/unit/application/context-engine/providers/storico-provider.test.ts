@@ -1,5 +1,7 @@
 import { StoricoProvider } from '../../../../../src/application/context-engine/providers/StoricoProvider';
+import { setAlunnoEntity } from '../../../../../src/application/context-engine/techEntities';
 import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
+import type { Alunno } from '../../../../../src/domain/entities/Alunno';
 import type {
   BuildParams,
   RecipeOptions
@@ -9,10 +11,19 @@ import type {
   AnnoStorico
 } from '../../../../../src/application/storico/StoricoDatabaseProvider';
 
+// Stashes a minimal alunno entity in `tech.entita.alunno`, mirroring what
+// AlunnoProvider does in a real recipe run before StoricoProvider executes.
+// StoricoProvider now unconditionally calls getAlunnoEntity(cdu), so the
+// fixture must satisfy that invariant even though none of these tests
+// exercise the resolved Alunno's fields (fakeDatabases() always returns an
+// empty history, so perAlunno never reaches the branch that reads it).
 function cduWithAlunno(email: string): Cdu {
-  return {
-    focus: { alunno: { anagrafica: { email }, didattica: {} } }
+  const cdu = {
+    focus: { alunno: { anagrafica: { email }, didattica: {} } },
+    tech: { entita: {} }
   } as unknown as Cdu;
+  setAlunnoEntity(cdu, {} as Alunno);
+  return cdu;
 }
 
 function fakeDatabases(anni: AnnoStorico[] = []): StoricoDatabaseProvider {

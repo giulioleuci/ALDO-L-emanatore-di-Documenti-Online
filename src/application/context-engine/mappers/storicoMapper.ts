@@ -8,6 +8,8 @@ export interface StudentStoricoVM {
     classe: string;
     esito: AnnoAlunnoStorico['esito'];
     carenze: AnnoAlunnoStorico['carenze'];
+    presenteAnnoPrecedente: boolean;
+    presenteTuttoAnno: boolean;
   }>;
   pianiPrimoAnnoPrecedente: Array<{ tipo: string; tipoLabel: string }>;
   pianiSecondoAnnoPrecedente: Array<{ tipo: string; tipoLabel: string }>;
@@ -25,7 +27,9 @@ export function buildStudentStoricoVm(anni: AnnoAlunnoStorico[]): StudentStorico
     annoScolastico: a.anno,
     classe: a.classe ?? '',
     esito: a.esito,
-    carenze: a.carenze.map((carenza) => ({ ...carenza }))
+    carenze: a.carenze.map((carenza) => ({ ...carenza })),
+    presenteAnnoPrecedente: a.presenteAnnoPrecedente,
+    presenteTuttoAnno: a.presenteTuttoAnno
   }));
   const bocciature = mapped
     .filter((a) => a.esito === 'NON_PROMOSSO')

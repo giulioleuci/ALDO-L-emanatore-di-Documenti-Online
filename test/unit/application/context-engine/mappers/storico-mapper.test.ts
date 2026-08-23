@@ -2,16 +2,26 @@ import { buildStudentStoricoVm } from '../../../../../src/application/context-en
 import type { AnnoAlunnoStorico } from '../../../../../src/application/storico/StoricoAlunniService';
 
 describe('buildStudentStoricoVm', () => {
-  it('maps anni, splits piani into primo/secondo anno precedente with tipoLabel, and flags bocciature', () => {
+  it('maps anni (incl. presenteAnnoPrecedente/presenteTuttoAnno), splits piani into primo/secondo anno precedente with tipoLabel, and flags bocciature', () => {
     const anni: AnnoAlunnoStorico[] = [
       {
         anno: '2024-2025',
         classe: '4A-LC',
         esito: 'NON_PROMOSSO',
         carenze: [{ materiaSigla: 'STO', valore: '4' }],
-        piani: ['PDP_DSA']
+        piani: ['PDP_DSA'],
+        presenteAnnoPrecedente: true,
+        presenteTuttoAnno: false
       },
-      { anno: '2023-2024', classe: '4A-LC', esito: 'PROMOSSO', carenze: [], piani: [] }
+      {
+        anno: '2023-2024',
+        classe: '4A-LC',
+        esito: 'PROMOSSO',
+        carenze: [],
+        piani: [],
+        presenteAnnoPrecedente: false,
+        presenteTuttoAnno: true
+      }
     ];
     const vm = buildStudentStoricoVm(anni);
     expect(vm.anni).toEqual([
@@ -19,9 +29,18 @@ describe('buildStudentStoricoVm', () => {
         annoScolastico: '2024-2025',
         classe: '4A-LC',
         esito: 'NON_PROMOSSO',
-        carenze: [{ materiaSigla: 'STO', valore: '4' }]
+        carenze: [{ materiaSigla: 'STO', valore: '4' }],
+        presenteAnnoPrecedente: true,
+        presenteTuttoAnno: false
       },
-      { annoScolastico: '2023-2024', classe: '4A-LC', esito: 'PROMOSSO', carenze: [] }
+      {
+        annoScolastico: '2023-2024',
+        classe: '4A-LC',
+        esito: 'PROMOSSO',
+        carenze: [],
+        presenteAnnoPrecedente: false,
+        presenteTuttoAnno: true
+      }
     ]);
     expect(vm.pianiPrimoAnnoPrecedente).toEqual([{ tipo: 'PDP_DSA', tipoLabel: 'PDP (DSA)' }]);
     expect(vm.pianiSecondoAnnoPrecedente).toEqual([]);

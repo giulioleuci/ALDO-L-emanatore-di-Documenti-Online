@@ -39,8 +39,13 @@ export class MovimentoAlunno extends AldoEntity {
   isIngresso(): boolean {
     return this.tipo === TipoMovimento.IN;
   }
+  /** TIPO=OUT: uscita per trasferimento verso altro istituto (03 §TipoMovimento). */
   isUscita(): boolean {
     return this.tipo === TipoMovimento.OUT;
+  }
+  /** TIPO=RITIRATO: uscita per ritiro dagli studi, non verso altra scuola (03 §TipoMovimento). */
+  isRitirato(): boolean {
+    return this.tipo === TipoMovimento.RITIRATO;
   }
   isCambioClasse(): boolean {
     return this.tipo === TipoMovimento.CAMBIO;

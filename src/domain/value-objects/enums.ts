@@ -54,6 +54,7 @@ export enum TipoProgetto {
 export enum TipoMovimento {
   IN = 'IN',
   OUT = 'OUT',
+  RITIRATO = 'RITIRATO',
   CAMBIO = 'CAMBIO'
 }
 export enum ProcessoInvio {

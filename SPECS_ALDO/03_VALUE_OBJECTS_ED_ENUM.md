@@ -411,15 +411,15 @@ L'ordine del CSV in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREG
 
 ```json
 {
-  "prima_prova": ["IndirizzoId", ...],
-  "seconda_prova": ["IndirizzoId", ...]
+  "primaProva": ["IndirizzoId", ...],
+  "secondaProva": ["IndirizzoId", ...]
 }
 ```
 
 | Metodo                                                  | Comportamento                              |
 | ------------------------------------------------------- | ------------------------------------------ |
-| `isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean`   | `true` se l'indirizzo è in `prima_prova`   |
-| `isSecondaProvaPerIndirizzo(ind: IndirizzoId): boolean` | `true` se l'indirizzo è in `seconda_prova` |
+| `isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean`   | `true` se l'indirizzo è in `primaProva`   |
+| `isSecondaProvaPerIndirizzo(ind: IndirizzoId): boolean` | `true` se l'indirizzo è in `secondaProva` |
 
 ---
 

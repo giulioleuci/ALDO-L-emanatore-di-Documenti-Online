@@ -152,6 +152,17 @@ test('documenti box lists links; cartelle box empty ⇒ hidden', () => {
   expect(out.boxes['cartelle']!.html).toBe('');
 });
 
+test('boxes keeps every same-type instance under its stable instance key', () => {
+  const out = render([
+    { TIPO_BOX: 'note', TITOLO: 'Prima nota' },
+    { TIPO_BOX: 'note', TITOLO: 'Seconda nota' }
+  ]);
+
+  expect(out.boxes['note_0']!.titolo).toBe('Prima nota');
+  expect(out.boxes['note_1']!.titolo).toBe('Seconda nota');
+  expect(out.boxes['note']!.titolo).toBe('Seconda nota');
+});
+
 test('renderBoxes returns the IDs of document and personalized-plan links rendered in the email body', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);

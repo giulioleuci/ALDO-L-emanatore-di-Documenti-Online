@@ -56,7 +56,10 @@ const DEFAULT_PIANI_PERS_TEMPLATE =
   '{{#storico}} — Si invia anche il link al piano dell\'anno precedente: ' +
   '<a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}}){{/storico}}</li>';
 
-/** One rendered box as exposed at `cdu.render.boxes[TIPO_BOX]` (02, 11 §5). */
+/**
+ * One rendered box exposed at `cdu.render.boxes[TIPO_BOX]` and, for every
+ * instance, at `cdu.render.boxes[`${TIPO_BOX}_${index}`]` (02, 11 §5).
+ */
 export interface RenderedBox {
   id: string;
   titolo: string;
@@ -795,7 +798,8 @@ export function renderBoxes(
   });
 
   for (const { cfg, index, tipo, sourceItems } of orderedCfg) {
-    const block = byInstance.get(`${tipo}_${index}`);
+    const instanceId = `${tipo}_${index}`;
+    const block = byInstance.get(instanceId);
     if (block === undefined) continue;
     if (block.isVisible && block.content !== '') {
       sourceContentTypes.add(tipo);
@@ -816,7 +820,9 @@ export function renderBoxes(
     const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
     const coloreBordo = str(cfg['COLORE']) !== '' ? str(cfg['COLORE']) : DEFAULT_BORDER;
     const html = inner === '' ? '' : titolo === '' ? inner : wrapBox(titolo, coloreBordo, inner);
-    boxes[tipo] = { id: `${tipo}_${index}`, titolo, html, isEmpty, visibile: html !== '' };
+    const renderedBox = { id: instanceId, titolo, html, isEmpty, visibile: html !== '' };
+    boxes[instanceId] = renderedBox;
+    boxes[tipo] = renderedBox;
     if (html !== '') ordered.push(html);
   }
   const ids = (items: Array<{ id?: string | undefined }>): string[] =>

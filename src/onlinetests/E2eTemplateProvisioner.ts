@@ -425,7 +425,7 @@ const PIANO_LAVORO_PARAGRAPHS = [
 
 const STATIC_ATTACHMENT_PARAGRAPHS = [
   'ALDO E2E static email attachment',
-  'Questo documento è allegato tramite CONF_MAIL.ALLEGATI senza essere rappresentato da un box.'
+  'Questo documento è allegato tramite CONF_MAIL.ALLEGATI_STATICI senza essere rappresentato da un box.'
 ];
 
 const TABELLE_IMPORTATE_TABLES: E2eDocumentTable[] = [

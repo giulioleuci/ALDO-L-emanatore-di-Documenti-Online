@@ -130,7 +130,7 @@ describe('SampleDatabaseBuilder', () => {
 
     const row = factory.__sheets.get(TABLE.CONF_MAIL)!.rows[0]!;
     expect(Object.keys(row).sort()).toEqual(Object.values(COL_CONF_MAIL).sort());
-    expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
+    expect(row[COL_CONF_MAIL.ALLEGATI_STATICI]).toBe('[]');
   });
 
   it('names artifacts with a fixed (non-timestamped) base name, so repeated runs resolve the same Drive resources (ref ALDO_GLF_AUDIT_RESULTS.md K-1)', () => {

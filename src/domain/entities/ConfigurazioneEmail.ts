@@ -67,7 +67,7 @@ export class ConfigurazioneEmail extends AldoEntity {
       typeof data[COL_CONF_MAIL.CONDIZIONE] === 'string'
         ? (data[COL_CONF_MAIL.CONDIZIONE] as string)
         : '';
-    this.allegatiRaw = data[COL_CONF_MAIL.ALLEGATI] ?? null;
+    this.allegatiRaw = data[COL_CONF_MAIL.ALLEGATI_STATICI] ?? null;
   }
 
   /** BoxConfig array parsed from BOX_CFG; empty when null (ref 06 §9). */
@@ -146,7 +146,7 @@ export class ConfigurazioneEmail extends AldoEntity {
       [COL_CONF_MAIL.NOREPLY]: this.noreply,
       [COL_CONF_MAIL.COLORE_HEADER]: this.coloreHeaderRaw,
       [COL_CONF_MAIL.CONDIZIONE]: this.condizioneRaw,
-      [COL_CONF_MAIL.ALLEGATI]: this.allegatiRaw
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: this.allegatiRaw
     };
   }
 

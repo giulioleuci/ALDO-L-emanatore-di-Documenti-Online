@@ -286,7 +286,7 @@ export function fixtureTables(): Record<string, Row[]> {
         POST_PROCESSO: null,
         [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-        [COL_CONF_MAIL.ALLEGATI]: '[]'
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
       },
       {
         ID: 'CARENZE_FAM',
@@ -303,7 +303,7 @@ export function fixtureTables(): Record<string, Row[]> {
         POST_PROCESSO: null,
         [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-        [COL_CONF_MAIL.ALLEGATI]: '[]'
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
       },
       {
         ID: 'CARENZE_NOTIFICA',
@@ -322,7 +322,7 @@ export function fixtureTables(): Record<string, Row[]> {
           '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]',
         [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-        [COL_CONF_MAIL.ALLEGATI]: '[]'
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
       }
     ],
     CONF_IMP: [

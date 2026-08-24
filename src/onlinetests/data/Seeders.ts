@@ -695,7 +695,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_MAIL.POST_PROCESSO]: null,
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
   }
 }

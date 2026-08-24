@@ -496,7 +496,7 @@ function migrateResolvedPersistedE2eFixture(
   if (persistedStaticAttachmentFileId === undefined || persistedStaticAttachmentFileId === '') {
     const configuredAttachments = db
       .table(TABLE.CONF_MAIL)
-      .find((row) => row[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO)?.[COL_CONF_MAIL.ALLEGATI];
+      .find((row) => row[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO)?.[COL_CONF_MAIL.ALLEGATI_STATICI];
     let configuredStaticAttachmentFileId = '';
     if (typeof configuredAttachments === 'string') {
       try {

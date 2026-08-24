@@ -1302,7 +1302,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.POST_PROCESSO]: null,
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_CONDOTTA,
@@ -1327,7 +1327,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.POST_PROCESSO]: null,
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_CARENZA,
@@ -1351,7 +1351,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.POST_PROCESSO]: null,
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_PIANI,
@@ -1401,7 +1401,7 @@ export class SharedTestDatabaseBuilder {
       // group through the parent's single coordinator with classi=[parent
       // only], leaving partner-owned plans unfound by PianiPersClasseProvider.
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_LAVORO,
@@ -1428,7 +1428,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.POST_PROCESSO]: null,
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
     sample.appendRow(TABLE.CONF_MAIL, {
       [COL_CONF_MAIL.ID]: CONF_MAIL_STATIC_ALLEGATO,
@@ -1445,7 +1445,7 @@ export class SharedTestDatabaseBuilder {
       [COL_CONF_MAIL.POST_PROCESSO]: null,
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: JSON.stringify([templateIds.staticAttachment])
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: JSON.stringify([templateIds.staticAttachment])
     });
   }
 

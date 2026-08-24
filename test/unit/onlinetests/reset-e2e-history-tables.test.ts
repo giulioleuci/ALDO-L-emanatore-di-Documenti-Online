@@ -167,7 +167,7 @@ function baseSeed(
     ],
     MATERIE: materiaData(excludedMaterie, includeUnrelated),
     CONF_MAIL: [
-      [COL_CONF_MAIL.ID, COL_CONF_MAIL.ALLEGATI],
+      [COL_CONF_MAIL.ID, COL_CONF_MAIL.ALLEGATI_STATICI],
       [CONF_MAIL_STATIC_ALLEGATO, JSON.stringify(['configured-static-document'])]
     ],
     ASL: [['STUDENTE', 'ANNO', 'ORE']]

@@ -42,7 +42,7 @@ test('CONF_MAIL repository fixtures explicitly store an empty ALLEGATI JSON arra
 
   for (const row of rows) {
     expect(Object.keys(row).sort()).toEqual(Object.values(COL_CONF_MAIL).sort());
-    expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
+    expect(row[COL_CONF_MAIL.ALLEGATI_STATICI]).toBe('[]');
   }
 });
 

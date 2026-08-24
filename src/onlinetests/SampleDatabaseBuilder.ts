@@ -383,7 +383,7 @@ export class SampleDatabaseBuilder {
       [COL_CONF_MAIL.POST_PROCESSO]: null, // PostProcessEmailStep gates on `!= null`, not truthiness
       [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
+      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
     });
   }
 

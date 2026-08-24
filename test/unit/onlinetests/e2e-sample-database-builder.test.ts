@@ -473,12 +473,12 @@ test('seeds the legacy and dedicated CONF_MAIL rows with safe attachment metadat
   );
   expectCompleteRows(confMail, COL_CONF_MAIL);
   const staticAttachment = confMail.find((c) => c[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO)!;
-  expect(staticAttachment[COL_CONF_MAIL.ALLEGATI]).toBe(
+  expect(staticAttachment[COL_CONF_MAIL.ALLEGATI_STATICI]).toBe(
     JSON.stringify(['real_static_attachment_id'])
   );
   expect(result.staticAttachmentFileId).toBe('real_static_attachment_id');
   for (const row of confMail.filter((c) => c !== staticAttachment)) {
-    expect(row[COL_CONF_MAIL.ALLEGATI]).toBe('[]');
+    expect(row[COL_CONF_MAIL.ALLEGATI_STATICI]).toBe('[]');
   }
 });
 

@@ -54,9 +54,10 @@ function withDocs() {
       ID: 'doc1',
       ID_GEN: 'g1',
       TIPO: 'PDP',
+      SOTTOTIPO: 'PDP_DSA',
       NOME: 'PDP a1',
       STATO: 'GENERATO',
-      NOTIFICATO: '',
+      NOTIFICATO: '2026-03-05T10:00:00.000Z',
       LINK: 'http://d/1',
       UTENTI: 'a1@school.it',
       DATA_CREAZ: '2026-03-01'
@@ -87,7 +88,9 @@ test('DocumentiProvider: items of the student from LOG_DOCS (02 §4.2)', () => {
         link: 'http://d/1',
         tipo: 'PDP',
         idGen: 'g1',
+        sottotipo: 'PDP_DSA',
         stato: 'GENERATO',
+        notificato: true,
         dataCreazione: '2026-03-01'
       }
     ]

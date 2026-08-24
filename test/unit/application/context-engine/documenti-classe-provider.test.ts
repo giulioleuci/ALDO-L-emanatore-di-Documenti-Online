@@ -17,6 +17,7 @@ function tablesWithClasseDocs(): Record<string, Row[]> {
       ID: 'doc_verbale_5a',
       ID_GEN: 'VERBALE_CDC',
       TIPO: 'VERBALE',
+      SOTTOTIPO: 'ORDINARIO',
       NOME: 'Verbale 5A',
       STATO: 'GENERATO',
       NOTIFICATO: '',
@@ -31,7 +32,7 @@ function tablesWithClasseDocs(): Record<string, Row[]> {
       TIPO: 'CONDOTTA',
       NOME: 'Condotta 5A',
       STATO: 'GENERATO',
-      NOTIFICATO: '',
+      NOTIFICATO: '2026-03-05T08:00:00.000Z',
       LINK: 'http://d/condotta5a',
       CLASSI: '5A',
       UTENTI: '',
@@ -76,6 +77,12 @@ test('DocumentiClasseProvider: aggregates LOG_DOCS for the single target class',
   const documenti = cdu.focus.classe!.didattica!.documenti!;
   expect(documenti.hasDocumenti).toBe(true);
   expect(documenti.items.map((i) => i.idGen).sort()).toEqual(['CONDOTTA', 'VERBALE_CDC']);
+  const verbale = documenti.items.find((i) => i.idGen === 'VERBALE_CDC')!;
+  expect(verbale.sottotipo).toBe('ORDINARIO');
+  expect(verbale.notificato).toBe(false);
+  const condotta = documenti.items.find((i) => i.idGen === 'CONDOTTA')!;
+  expect(condotta.sottotipo).toBe('');
+  expect(condotta.notificato).toBe(true);
 });
 
 test('DocumentiClasseProvider: aggregates across every class in classiCompetenza (coordinatore covering multiple classes)', () => {

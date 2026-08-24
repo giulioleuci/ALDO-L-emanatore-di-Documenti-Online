@@ -279,11 +279,14 @@ export interface CduClasse {
     /** Class-wide LOG_DOCS aggregation (mirrors `CduAlunno.didattica.documenti`, 11 §11 new). */
     documenti?: {
       items: Array<{
+        id?: string | undefined;
         nome: string;
         link: string;
         tipo: string;
         idGen: string;
+        sottotipo: string;
         stato: string;
+        notificato: boolean;
         dataCreazione: string;
       }>;
       hasDocumenti: boolean;
@@ -326,11 +329,14 @@ export interface CduAlunno {
     };
     documenti?: {
       items: Array<{
+        id?: string | undefined;
         nome: string;
         link: string;
         tipo: string;
         idGen: string;
+        sottotipo: string;
         stato: string;
+        notificato: boolean;
         dataCreazione: string;
       }>;
       hasDocumenti: boolean;
@@ -356,8 +362,11 @@ export interface CduAlunno {
  * `MateriaId` alone doesn't carry a `SubjectVM`'s other fields (`nome`,
  * `colore1`, etc.) without a lookup against `IMateriaRepository`, and nothing
  * in this extension's templates needs more than the sigla. `didattica.
- * documenti.items` mirrors `DocumentiClasseProvider`'s output shape exactly
- * (`{ id?, nome, link, tipo, idGen, stato, dataCreazione }`), filtered by
+ * documenti.items` uses the canonical 9-field `documenti.items[]` shape
+ * shared by `CduClasse`/`CduAlunno`/`CduDipartimentoFocus` — 8 template-facing
+ * fields (`nome, link, tipo, idGen, sottotipo, stato, notificato,
+ * dataCreazione`) plus the internal-only `id?` (Drive file ID, not for
+ * template use — it feeds `boxes.ts`'s attachment resolution) — filtered by
  * materia overlap instead of `findByClasse` since a department has no class
  * dimension.
  */
@@ -374,7 +383,9 @@ export interface CduDipartimentoFocus {
         link: string;
         tipo: string;
         idGen: string;
+        sottotipo: string;
         stato: string;
+        notificato: boolean;
         dataCreazione: string;
       }>;
     };

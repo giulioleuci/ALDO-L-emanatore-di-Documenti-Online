@@ -35,7 +35,9 @@ export interface DocumentoItem {
   link: string;
   tipo: string;
   idGen: string;
+  sottotipo: string;
   stato: string;
+  notificato: boolean;
   dataCreazione: string;
 }
 
@@ -567,11 +569,19 @@ function documentoItem(documento: LogDocumento): DocumentoItem {
     link: documento.getLink(),
     tipo: documento.tipo,
     idGen: documento.idGen,
+    sottotipo: documento.getSottotipo(),
     stato: documento.getStato(),
+    notificato: documento.isNotificato(),
     dataCreazione: documento.getDataCreazione()
   };
 }
 
+/**
+ * `LogCartella` (LOG_FOLD) has no SOTTOTIPO/NOTIFICATO columns — a Drive
+ * folder record has no document-lifecycle state to notify on. `sottotipo`/
+ * `notificato` default to `''`/`false` to keep `DocumentoItem` a single
+ * shape shared by both documents and folders.
+ */
 function cartellaItem(cartella: LogCartella): DocumentoItem {
   return {
     id: cartella.id ?? undefined,
@@ -579,7 +589,9 @@ function cartellaItem(cartella: LogCartella): DocumentoItem {
     link: cartella.getLink(),
     tipo: 'CARTELLA',
     idGen: cartella.tipo,
+    sottotipo: '',
     stato: '',
+    notificato: false,
     dataCreazione: ''
   };
 }

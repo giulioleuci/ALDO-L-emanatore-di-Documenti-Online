@@ -346,11 +346,14 @@ focus.classe:
       storico: LazyRef<DocumentoStoricoConTipo[]>  # opzionale, solo se opzioni.includiStorico = true
     documenti:
       items:
-        - nome: string
+        - id: string | undefined  # ID file Drive — solo uso interno (risoluzione allegati in boxes.ts), non documentato per i template
+          nome: string
           link: string
           tipo: string
           idGen: string
+          sottotipo: string       # LOG_DOCS.SOTTOTIPO — stringa vuota se assente
           stato: string
+          notificato: boolean     # true sse LOG_DOCS.NOTIFICATO è valorizzato (LogDocumento.isNotificato())
           dataCreazione: string
       hasDocumenti: boolean
 ```
@@ -411,11 +414,14 @@ focus.alunno:
     documenti:                   # opzionale — presente solo se il provider gira (ALUNNO_DETTAGLIATO, FAMIGLIA_COMPLETO)
       hasDocumenti: boolean
       items:
-        - nome: string
+        - id: string | undefined  # ID file Drive — solo uso interno (risoluzione allegati in boxes.ts), non documentato per i template
+          nome: string
           link: string
           tipo: string
           idGen: string
+          sottotipo: string       # LOG_DOCS.SOTTOTIPO — stringa vuota se assente
           stato: string
+          notificato: boolean     # true sse LOG_DOCS.NOTIFICATO è valorizzato (LogDocumento.isNotificato())
           dataCreazione: string
       storico: LazyRef<DocumentoStoricoConTipo[]>   # opzionale — solo se opzioni.includiStorico = true
     pianiPersonalizzati:         # opzionale — LOG_DOCS con TIPO = 'PIANO_PERS' per il solo alunno focalizzato
@@ -490,14 +496,18 @@ focus.dipartimento:
   docenti: PersonVM[]             # §8.1 — docenti afferenti al dipartimento
   didattica:
     documenti:
-      items:                      # Stessa forma di DocumentiClasseProvider, filtrata per overlap di materia
-                                   #   anziché per classe (un dipartimento non ha classi)
-        - id: string | undefined
+      items:                      # Forma canonica dei 9 campi di documenti.items[], identica su
+                                   #   focus.classe/focus.alunno/focus.dipartimento (8 campi per i
+                                   #   template + `id` a solo uso interno) — filtrata per overlap di
+                                   #   materia anziché per classe (un dipartimento non ha classi)
+        - id: string | undefined  # ID file Drive — solo uso interno (risoluzione allegati in boxes.ts), non documentato per i template
           nome: string
           link: string
           tipo: string
           idGen: string
+          sottotipo: string       # LOG_DOCS.SOTTOTIPO — stringa vuota se assente
           stato: string
+          notificato: boolean     # true sse LOG_DOCS.NOTIFICATO è valorizzato (LogDocumento.isNotificato())
           dataCreazione: string
 ```
 

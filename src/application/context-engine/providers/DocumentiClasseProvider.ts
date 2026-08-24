@@ -33,7 +33,9 @@ export class DocumentiClasseProvider implements ContextProvider {
         link: l.getLink(),
         tipo: l.tipo,
         idGen: l.idGen,
+        sottotipo: l.getSottotipo(),
         stato: l.getStato(),
+        notificato: l.isNotificato(),
         dataCreazione: l.getDataCreazione()
       }));
     });

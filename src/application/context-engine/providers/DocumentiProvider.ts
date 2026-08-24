@@ -20,7 +20,9 @@ export class DocumentiProvider implements ContextProvider {
       link: l.getLink(),
       tipo: l.tipo,
       idGen: l.idGen,
+      sottotipo: l.getSottotipo(),
       stato: l.getStato(),
+      notificato: l.isNotificato(),
       dataCreazione: l.getDataCreazione()
     }));
     focusAlunno.didattica.documenti = { items, hasDocumenti: items.length > 0 };

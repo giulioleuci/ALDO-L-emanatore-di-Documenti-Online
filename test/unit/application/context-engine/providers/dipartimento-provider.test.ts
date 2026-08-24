@@ -32,8 +32,10 @@ function fakeLogDocumento(id: string, materie: string): LogDocumento {
     ID: id,
     ID_GEN: 'CD1',
     TIPO: 'VERBALE',
+    SOTTOTIPO: 'ORDINARIO',
     NOME: `Verbale ${id}`,
     STATO: 'GENERATO',
+    NOTIFICATO: '2026-06-02T00:00:00.000Z',
     LINK: `https://drive/${id}`,
     MATERIE: materie,
     DATA_CREAZ: '2026-06-01T00:00:00.000Z'
@@ -67,6 +69,8 @@ describe('DipartimentoProvider', () => {
     expect(cdu.focus.dipartimento!.docenti).toHaveLength(2);
     expect(cdu.focus.dipartimento!.didattica.documenti.items).toHaveLength(1);
     expect(cdu.focus.dipartimento!.didattica.documenti.items[0]!.id).toBe('LD1');
+    expect(cdu.focus.dipartimento!.didattica.documenti.items[0]!.sottotipo).toBe('ORDINARIO');
+    expect(cdu.focus.dipartimento!.didattica.documenti.items[0]!.notificato).toBe(true);
   });
 
   it('sets capo to null when the department has no CAPO', () => {

@@ -85,7 +85,9 @@ test('DocumentiStoricoProvider: includiStorico false ⇒ no storico key, no hist
         link: 'http://d/1',
         tipo: 'PDP',
         idGen: 'CD_PDP',
+        sottotipo: '',
         stato: 'GENERATO',
+        notificato: false,
         dataCreazione: '2026-03-01'
       }
     ]

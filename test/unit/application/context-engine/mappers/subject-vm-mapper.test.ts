@@ -12,7 +12,7 @@ describe('subjectVmMapper', () => {
       [COL_MATERIE.SINTESI]: 'Italiano',
       [COL_MATERIE.COLORE_1]: '#005A9C',
       [COL_MATERIE.COLORE_2]: '#E6F0FA',
-      [COL_MATERIE.ESAME_CFG]: JSON.stringify({ prima_prova: ['LC'], seconda_prova: [] }),
+      [COL_MATERIE.ESAME_CFG]: JSON.stringify({ primaProva: ['LC'], secondaProva: [] }),
       [COL_MATERIE.EVOLUZIONE]: JSON.stringify({ GST: [1, 2] })
     });
     const vm = buildSubjectVm(materia, { indirizzo: IndirizzoId.of('LC') });

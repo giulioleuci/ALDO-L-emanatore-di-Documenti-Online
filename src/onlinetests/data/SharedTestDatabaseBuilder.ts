@@ -94,8 +94,8 @@ export const DIPART_E2E = 'DIPART_E2E';
 export const DOCENTE_COUNT = 20;
 /** MATERIE.ESAME_CFG for the scientific E2E indirizzo (02 §2.9/§8.2 `esame.materiePrimaProva`/`materieSecondaProva`). */
 const ESAME_CFG_E2E: Record<string, string> = {
-  ITA: JSON.stringify({ prima_prova: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] }),
-  MAT: JSON.stringify({ seconda_prova: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] })
+  ITA: JSON.stringify({ primaProva: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] }),
+  MAT: JSON.stringify({ secondaProva: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] })
 };
 
 /**

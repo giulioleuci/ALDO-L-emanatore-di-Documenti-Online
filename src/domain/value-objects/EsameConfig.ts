@@ -1,8 +1,8 @@
 import { IndirizzoId } from './IndirizzoId';
 
 interface EsameConfigJson {
-  prima_prova?: string[];
-  seconda_prova?: string[];
+  primaProva?: string[];
+  secondaProva?: string[];
 }
 
 /**
@@ -18,7 +18,7 @@ export class EsameConfig {
   static fromJson(json: string | null | undefined): EsameConfig | null {
     if (json === null || json === undefined || json.trim() === '') return null;
     const parsed = JSON.parse(json) as EsameConfigJson;
-    return new EsameConfig(parsed.prima_prova ?? [], parsed.seconda_prova ?? []);
+    return new EsameConfig(parsed.primaProva ?? [], parsed.secondaProva ?? []);
   }
 
   isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean {

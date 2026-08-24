@@ -91,7 +91,7 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_1: '#c0392b',
         COLORE_2: '#fdecea',
         SIMBOLO: '📐',
-        ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}'
+        ESAME_CFG: '{"primaProva":["SCIENTIFICO"],"secondaProva":["LSSA"]}'
       },
       {
         ID: 'FISI',

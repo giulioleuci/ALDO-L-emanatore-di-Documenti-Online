@@ -18,7 +18,7 @@ test('Materia hydrates and parses ESAME_CFG lazily', () => {
     ID: 'MATE',
     NOME: 'Matematica',
     SINTESI: 'Matematica',
-    ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}'
+    ESAME_CFG: '{"primaProva":["SCIENTIFICO"],"secondaProva":["LSSA"]}'
   });
   expect(m.materiaId.value).toBe('MATE');
   expect(m.sintesi).toBe('Matematica');
@@ -32,7 +32,7 @@ test('EsameConfig treats a malformed raw entry as a non-match instead of throwin
     ID: 'FISI2',
     NOME: 'Fisica',
     SINTESI: 'Fisica',
-    ESAME_CFG: '{"prima_prova":["","SCIENTIFICO"],"seconda_prova":[""]}'
+    ESAME_CFG: '{"primaProva":["","SCIENTIFICO"],"secondaProva":[""]}'
   });
   // Malformed entry ('' is rejected by IndirizzoId.of) doesn't throw...
   expect(() =>

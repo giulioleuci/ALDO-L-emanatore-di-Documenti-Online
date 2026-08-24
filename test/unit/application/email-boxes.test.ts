@@ -539,9 +539,9 @@ test('documenti box in arricchisciConStorico mode renders templateRiga, matching
     confMail([
       {
         TIPO_BOX: 'documenti',
-        arricchisciConStorico: true,
-        configArricchimento: {
-          templateRiga: '<li>{{corrente.nome}} — storico: {{#storico}}{{nome}} ({{anno}}){{/storico}}</li>'
+        ARRICCHISCI_CON_STORICO: true,
+        CONFIG_ARRICCHIMENTO: {
+          TEMPLATE_RIGA: '<li>{{corrente.nome}} — storico: {{#storico}}{{nome}} ({{anno}}){{/storico}}</li>'
         }
       }
     ]),
@@ -563,7 +563,7 @@ test('documenti box falls back to standard rendering when templateRiga is empty 
   }]);
   const out = renderBoxes(
     composer,
-    confMail([{ TIPO_BOX: 'documenti', arricchisciConStorico: true }]),
+    confMail([{ TIPO_BOX: 'documenti', ARRICCHISCI_CON_STORICO: true }]),
     cdu,
     materie(),
     templates
@@ -580,8 +580,8 @@ test('documenti box falls back to standard rendering when includiStorico was fal
     confMail([
       {
         TIPO_BOX: 'documenti',
-        arricchisciConStorico: true,
-        configArricchimento: { templateRiga: '<li>{{corrente.nome}}</li>' }
+        ARRICCHISCI_CON_STORICO: true,
+        CONFIG_ARRICCHIMENTO: { TEMPLATE_RIGA: '<li>{{corrente.nome}}</li>' }
       }
     ]),
     cduRecord(), // no .storico attached
@@ -605,8 +605,8 @@ test('documenti box arricchisciConStorico templateRiga escapes hostile storico n
     confMail([
       {
         TIPO_BOX: 'documenti',
-        arricchisciConStorico: true,
-        configArricchimento: { templateRiga: '<li>{{#storico}}{{nome}}{{/storico}}</li>' }
+        ARRICCHISCI_CON_STORICO: true,
+        CONFIG_ARRICCHIMENTO: { TEMPLATE_RIGA: '<li>{{#storico}}{{nome}}{{/storico}}</li>' }
       }
     ]),
     cdu,
@@ -618,21 +618,21 @@ test('documenti box arricchisciConStorico templateRiga escapes hostile storico n
 });
 
 test('documenti box displayMode "link" shows the URL as link text', () => {
-  const out = render([{ TIPO_BOX: 'documenti', displayMode: 'link' }]);
+  const out = render([{ TIPO_BOX: 'documenti', DISPLAY_MODE: 'link' }]);
   const html = out.boxes['documenti']!.html;
   expect(html).toContain('<a href="https://drive/x" target="_blank">https://drive/x</a>');
   expect(html).not.toContain('PDP Anna');
 });
 
 test('documenti box displayMode "nome+link" shows both nome and the link', () => {
-  const out = render([{ TIPO_BOX: 'documenti', displayMode: 'nome+link' }]);
+  const out = render([{ TIPO_BOX: 'documenti', DISPLAY_MODE: 'nome+link' }]);
   const html = out.boxes['documenti']!.html;
   expect(html).toContain('PDP Anna');
   expect(html).toContain('<a href="https://drive/x" target="_blank">https://drive/x</a>');
 });
 
 test('documenti box displayMode "sololink" shows a generic "Apri" label', () => {
-  const out = render([{ TIPO_BOX: 'documenti', displayMode: 'sololink' }]);
+  const out = render([{ TIPO_BOX: 'documenti', DISPLAY_MODE: 'sololink' }]);
   const html = out.boxes['documenti']!.html;
   expect(html).toContain('<a href="https://drive/x" target="_blank">Apri</a>');
   expect(html).not.toContain('PDP Anna');
@@ -737,8 +737,8 @@ test('piani_pers_da_inviare: exposes the readable label to row templates without
     confMail([
       {
         TIPO_BOX: 'piani_pers_da_inviare',
-        arricchisciConStorico: true,
-        configArricchimento: { templateRiga: '<li>{{corrente.tipoLabel}} {{#storico}}{{nome}}{{/storico}}</li>' }
+        ARRICCHISCI_CON_STORICO: true,
+        CONFIG_ARRICCHIMENTO: { TEMPLATE_RIGA: '<li>{{corrente.tipoLabel}} {{#storico}}{{nome}}{{/storico}}</li>' }
       }
     ]),
     cdu,
@@ -770,7 +770,7 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
 
   const out = renderBoxes(
     composer,
-    confMail([{ TIPO_BOX: 'piani_pers_da_inviare', arricchisciConStorico: true }]),
+    confMail([{ TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: true }]),
     cdu,
     materie(),
     templates

@@ -575,9 +575,9 @@ La chiave `regolaSupplente` controlla come le supplenze influenzano l'assegnazio
   "MOSTRA_SE_VUOTO": false,
   "TESTO_VUOTO": "string (Mustache, valutato sull'intera CDU)",
   "COLORE": "string hex (bordo sinistro del contenitore; default #ddd)",
-  "displayMode": "nome | link | nome+link | sololink (solo per documenti/cartelle, fallback a lista semplice)",
-  "arricchisciConStorico": true,
-  "configArricchimento": { "templateRiga": "string Mustache, contesto { corrente, storico }" },
+  "DISPLAY_MODE": "nome | link | nome+link | sololink (solo per documenti/cartelle, fallback a lista semplice)",
+  "ARRICCHISCI_CON_STORICO": true,
+  "CONFIG_ARRICCHIMENTO": { "TEMPLATE_RIGA": "string Mustache, contesto { corrente, storico }" },
   "CONTENUTO": "string HTML Mustache (solo per testo_dinamico, valutato sull'intera CDU)"
 }
 ```

@@ -916,10 +916,10 @@ test('E2E personalized-plan email template uses the readable label for every cur
   const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === CONF_MAIL_PIANI)!;
   const boxes = JSON.parse(String(mail[COL_CONF_MAIL.BOX_CFG])) as Array<{
     TIPO_BOX: string;
-    configArricchimento?: { templateRiga?: string };
+    CONFIG_ARRICCHIMENTO?: { TEMPLATE_RIGA?: string };
   }>;
   const template = boxes.find((box) => box.TIPO_BOX === 'piani_pers_da_inviare')!
-    .configArricchimento?.templateRiga;
+    .CONFIG_ARRICCHIMENTO?.TEMPLATE_RIGA;
   expect(template).toContain('<strong>{{corrente.tipoLabel}}</strong>');
   expect(template).not.toContain('{{corrente.sottotipo}}');
   expect(template).toContain('{{corrente.studente.nomeCompleto}}');

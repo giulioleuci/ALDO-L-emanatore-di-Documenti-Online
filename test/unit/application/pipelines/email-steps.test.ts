@@ -150,7 +150,7 @@ function wire(
 // No offline unit test in this file can construct a real historical-year
 // DatabaseService — this harness has no Advanced Sheets API stand-in (see
 // test/setup/load-gaslibs.cjs's CacheService comment). BuildCDUStep decides
-// includiStorico itself from BOX_CFG (e.g. arricchisciConStorico:true), so any
+// includiStorico itself from BOX_CFG (e.g. ARRICCHISCI_CON_STORICO:true), so any
 // test here can end up exercising it even without asking for it explicitly;
 // buildStep() below backs its composeContextBuilder call with a no-op
 // StoricoDatabaseProvider for that reason. The other composeContextBuilder
@@ -322,7 +322,7 @@ describe('email pipeline operational log details', () => {
     const w = wire(
       {
         PROCESSO: 'PER_COORDINATORE',
-        BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', arricchisciConStorico: false }])
+        BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false }])
       },
       docenteTarget(),
       tables
@@ -887,7 +887,7 @@ test('BuildCDUStep memoizes resolveConsiglio per (classe, when) across docente t
 
 test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {
   const w = wire({
-    BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', arricchisciConStorico: true }])
+    BOX_CFG: JSON.stringify([{ TIPO_BOX: 'documenti', ARRICCHISCI_CON_STORICO: true }])
   }); // default PROCESSO PER_GENITORI_ALUNNO, default target genitoriTarget()
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
@@ -924,7 +924,7 @@ test('BuildCDUStep respects an explicit arricchisciConStorico:false override on 
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', arricchisciConStorico: false }])
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false }])
     },
     docenteTarget()
   );

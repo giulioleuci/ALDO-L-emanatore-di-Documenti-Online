@@ -91,7 +91,7 @@ function storicoOptionsFor(conf: ConfigurazioneEmail): Partial<RecipeOptions> {
   const wants = conf.getBoxes().some((b) => {
     const tipo = typeof b['TIPO_BOX'] === 'string' ? b['TIPO_BOX'] : '';
     if (!HISTORICAL_BOX_TYPES.has(tipo)) return false;
-    const explicit = b['arricchisciConStorico'];
+    const explicit = b['ARRICCHISCI_CON_STORICO'];
     if (typeof explicit === 'boolean') return explicit;
     return DEFAULT_ON_BOX_TYPES.has(tipo);
   });

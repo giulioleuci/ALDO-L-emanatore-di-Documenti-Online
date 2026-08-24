@@ -191,14 +191,14 @@ function renderDocumentiBox(
     items: DocumentoItem[];
     storicoRef?: LazyRef<DocumentoStoricoConTipo[]>;
   };
-  const arricchisci = options.config['arricchisciConStorico'] === true;
-  const configArricchimento = options.config['configArricchimento'] as
+  const arricchisci = options.config['ARRICCHISCI_CON_STORICO'] === true;
+  const configArricchimento = options.config['CONFIG_ARRICCHIMENTO'] as
     | Record<string, unknown>
     | undefined;
-  const templateRiga = arricchisci ? str(configArricchimento?.['templateRiga']) : '';
+  const templateRiga = arricchisci ? str(configArricchimento?.['TEMPLATE_RIGA']) : '';
 
   if (templateRiga === '' || storicoRef === undefined)
-    return renderRigaStandard(items, str(options.config['displayMode']));
+    return renderRigaStandard(items, str(options.config['DISPLAY_MODE']));
 
   // arricchisciConStorico (11 §11, 13 §4): storico entries are matched to the
   // current item by ID_GEN, not the display TIPO — the historical DTO keeps
@@ -237,11 +237,11 @@ function renderPianiPersBox(
     storicoRef?: LazyRef<DocumentoStoricoConTipo[]>;
     defaultTemplate: string;
   };
-  const arricchisci = options.config['arricchisciConStorico'];
-  const configArricchimento = options.config['configArricchimento'] as
+  const arricchisci = options.config['ARRICCHISCI_CON_STORICO'];
+  const configArricchimento = options.config['CONFIG_ARRICCHIMENTO'] as
     | Record<string, unknown>
     | undefined;
-  const explicitTemplate = str(configArricchimento?.['templateRiga']);
+  const explicitTemplate = str(configArricchimento?.['TEMPLATE_RIGA']);
   const wantsHistorical = typeof arricchisci === 'boolean' ? arricchisci : defaultTemplate !== '';
   const templateRiga = wantsHistorical ? (explicitTemplate !== '' ? explicitTemplate : defaultTemplate) : '';
 

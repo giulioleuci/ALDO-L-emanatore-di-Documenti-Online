@@ -48,7 +48,7 @@ test('parent class: aggregates students across both partner classes', () => {
   const rosterB = [alunno('a2@school.it'), alunno('a3@school.it')];
   const repo = fakeRepo({
     getArticolazione: () =>
-      ArticolazioneConfig.fromJson(JSON.stringify({ partners: '1F-LSO,1F-LSS' })),
+      ArticolazioneConfig.fromJson(JSON.stringify({ partners: ['1F-LSO', '1F-LSS'] })),
     getClassiPartner: () => [partnerA, partnerB],
     getStudenti: (c: Classe) => (c.nome === '1F-LSO' ? rosterA : rosterB)
   });

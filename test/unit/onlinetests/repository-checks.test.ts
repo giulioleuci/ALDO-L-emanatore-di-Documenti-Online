@@ -445,7 +445,7 @@ describe('registerRepositoryChecks', () => {
     expect(JSON.parse(String(parent[COL_CLASSI.ARTICOLAZIONE]))).toEqual({
       parent: null,
       partner: null,
-      partners: `${CLASSE_C},${CLASSE_C_PARTNER}`
+      partners: [CLASSE_C, CLASSE_C_PARTNER]
     });
     expect(
       (JSON.parse(String(partnerA[COL_CLASSI.ARTICOLAZIONE])) as { parent: string }).parent

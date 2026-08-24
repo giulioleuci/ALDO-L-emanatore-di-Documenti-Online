@@ -185,7 +185,7 @@ test('seeds all shared classes, articulated groups, and exactly STUDENT_TOTALE s
   ).toEqual({
     parent: null,
     partner: null,
-    partners: `${CLASSE_C},${CLASSE_C_PARTNER}`
+    partners: [CLASSE_C, CLASSE_C_PARTNER]
   });
 
   const alunni = sample.rows[TABLE.ALUNNI]!;

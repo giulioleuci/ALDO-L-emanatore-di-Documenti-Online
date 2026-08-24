@@ -211,7 +211,7 @@ test('documentiPerClasse exposes parent-owned documents to a partner without rew
       ID: '3C',
       ANNO: 3,
       INDIRIZZO: 'SCI',
-      ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' })
+      ARTICOLAZIONE: JSON.stringify({ partners: ['3C-S', '3C-C'] })
     },
     {
       ID: '3C-S',

@@ -82,7 +82,7 @@ test('LOG_DOCS exposes a parent-owned document to its direct partner only', () =
         ID: '3C',
         ANNO: 3,
         INDIRIZZO: 'SCI',
-        ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' })
+        ARTICOLAZIONE: JSON.stringify({ partners: ['3C-S', '3C-C'] })
       },
       {
         ID: '3C-S',

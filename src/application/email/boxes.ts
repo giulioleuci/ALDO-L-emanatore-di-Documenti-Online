@@ -224,7 +224,7 @@ function renderDocumentiBox(
  * then renders each row via a Mustache template — a built-in default for
  * `piani_pers_da_inviare` (so the historical "sent last year too" line works
  * with zero BOX_CFG configuration), falling back to plain rows otherwise,
- * both overridable via the existing configArricchimento.templateRiga key.
+ * both overridable via the existing CONFIG_ARRICCHIMENTO.TEMPLATE_RIGA key.
  */
 function renderPianiPersBox(
   data: unknown,

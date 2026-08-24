@@ -46,7 +46,7 @@ export class ArticolazioneConfig {
     return new ArticolazioneConfig(parent, partner, partners);
   }
 
-  /** Parent class: carries the two partners CSV. */
+  /** Parent class: carries the two partners as a JSON array. */
   isParent(): boolean {
     return this.partners.length > 0;
   }

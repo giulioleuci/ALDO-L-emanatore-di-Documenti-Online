@@ -425,7 +425,7 @@ L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGG
 
 ### `CsvScope`
 
-- **Proprietà:** `value: string` — CSV di ID oppure `"*"` (tutte)
+- **Costruzione:** `static of(raw: unknown): CsvScope` — stato interno privato (`wildcard`/`values`), nessuna proprietà pubblica `value`; il raw è una CSV di ID oppure `"*"` (tutte)
 - Unico VO generico che copre sia lo scope-classi sia lo scope-materie (usato in `SUPPLENZE.CLASSI`/`SUPPLENZE.MATERIE` e in `VARIAZIONI_CATTEDRA.CLASSI`/`VARIAZIONI_CATTEDRA.MATERIE`); in precedenza descritto come due VO gemelli (`ClassiScope`, `MaterieScope`), unificati in `src/domain/value-objects/CsvScope.ts`.
 
 | Metodo                                 | Comportamento                                        |

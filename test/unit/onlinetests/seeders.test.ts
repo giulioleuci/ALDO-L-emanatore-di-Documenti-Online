@@ -260,8 +260,16 @@ test('seeds one ASL folder record and real sheets for each eligible class only',
   seedLogFold(sample, drive, artifacts);
 
   const loggedClasses = sample.rows[TABLE.LOG_FOLD].map((row) => row[COL_LOG_FOLD.CLASSI]);
-  expect(loggedClasses).toEqual(['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C']);
+  expect(loggedClasses).toEqual(['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C', '1A']);
   expect(loggedClasses).not.toContain('2B');
+  expect(sample.rows[TABLE.LOG_FOLD]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        [COL_LOG_FOLD.TIPO]: 'E2E_FILTER_DECOY',
+        [COL_LOG_FOLD.CLASSI]: '1A'
+      })
+    ])
+  );
   expect(sheets.filter((sheet) => sheet.name.endsWith('_DATI'))).toHaveLength(6);
   expect(sheets.filter((sheet) => sheet.name.endsWith('_HEADER_ONLY'))).toHaveLength(6);
   expect(sheets.find((sheet) => sheet.name === 'ASL_3C_12_ORE_DATI')!.updates).toEqual(

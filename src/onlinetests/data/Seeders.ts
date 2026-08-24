@@ -61,6 +61,7 @@ const HISTORICAL_TABLES = [
 ] as const;
 
 const ASL_FOLDER_TYPE = 'E2E_ASL_CARTELLE';
+const FILTER_DECOY_FOLDER_TYPE = 'E2E_FILTER_DECOY';
 const ASL_ELIGIBLE_CLASSES = ['3C', '3C-S', '3C-C', '5B', '5B-S', '5B-C'] as const;
 const ASL_STUDENT_BY_CLASS: Record<(typeof ASL_ELIGIBLE_CLASSES)[number], string> = {
   '3C': e2eAlunnoEmail(138),
@@ -371,6 +372,19 @@ export function seedLogFold(
       [COL_ASL.ORE]: ore
     });
   }
+
+  const filterDecoyPath = '_ALDO_E2E_FILTER_DECOY/1A';
+  const filterDecoyId = drive.createFolder(filterDecoyPath);
+  sample.appendRow(TABLE.LOG_FOLD, {
+    [COL_LOG_FOLD.ID]: filterDecoyId,
+    [COL_LOG_FOLD.TIPO]: FILTER_DECOY_FOLDER_TYPE,
+    [COL_LOG_FOLD.NOME]: 'E2E cartella esclusa dal filtro sorgente',
+    [COL_LOG_FOLD.PATH]: filterDecoyPath,
+    [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${filterDecoyId}`,
+    [COL_LOG_FOLD.CLASSI]: '1A',
+    [COL_LOG_FOLD.UTENTI]: '',
+    [COL_LOG_FOLD.MATERIE]: ''
+  });
 
   const nonEligibleFolder = drive.createFolder('_ALDO_E2E_ASL/2B_DECOY');
   const nonEligibleDecoy = artifacts.createSheet(

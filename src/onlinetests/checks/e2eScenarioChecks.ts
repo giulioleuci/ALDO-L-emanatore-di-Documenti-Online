@@ -999,6 +999,18 @@ export function registerE2eScenarioChecks(
       if (logRows.length === 0) {
         throw new ValidationError('Invio piano di lavoro: nessuna riga LOG_MAIL registrata');
       }
+      const docsById = new Map(
+        db
+          .table(TABLE.LOG_DOCS)
+          .findAll()
+          .map((document) => [String(document[COL_LOG_DOCS.ID] ?? ''), document])
+      );
+      const foldersById = new Map(
+        db
+          .table(TABLE.LOG_FOLD)
+          .findAll()
+          .map((folder) => [String(folder[COL_LOG_FOLD.ID] ?? ''), folder])
+      );
       for (const row of logRows) {
         const allegati = JSON.parse(String(row[COL_LOG_MAIL.ALLEGATI] ?? '{}')) as {
           docs?: string[];
@@ -1013,6 +1025,24 @@ export function registerE2eScenarioChecks(
         if ((allegati.folders ?? []).length === 0) {
           throw new ValidationError(
             'LOG_MAIL.ALLEGATI.folders è vuoto: la cartella verbali non è stata registrata'
+          );
+        }
+        if (
+          (allegati.docs ?? []).some(
+            (id) => docsById.get(id)?.[COL_LOG_DOCS.TIPO] !== 'PIANO_LAVORO'
+          )
+        ) {
+          throw new ValidationError(
+            'LOG_MAIL.ALLEGATI.docs contiene documenti esclusi dal filtro tipo=PIANO_LAVORO'
+          );
+        }
+        if (
+          (allegati.folders ?? []).some(
+            (id) => foldersById.get(id)?.[COL_LOG_FOLD.TIPO] !== CONF_DOC_VERBALE
+          )
+        ) {
+          throw new ValidationError(
+            `LOG_MAIL.ALLEGATI.folders contiene cartelle escluse dal filtro idGen=${CONF_DOC_VERBALE}`
           );
         }
         if ((allegati.attach ?? []).length > 0) {

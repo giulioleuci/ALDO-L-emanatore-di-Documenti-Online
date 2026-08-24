@@ -1412,7 +1412,10 @@ export class SharedTestDatabaseBuilder {
           TIPO_BOX: 'documenti',
           DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
         },
-        { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
+        {
+          TIPO_BOX: 'cartelle',
+          DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { idGen: CONF_DOC_VERBALE } }
+        }
       ]),
       [COL_CONF_MAIL.TESTO_START]:
         '<p>Il piano di lavoro e la cartella dei verbali delle riunioni sono collegati di seguito.</p>',

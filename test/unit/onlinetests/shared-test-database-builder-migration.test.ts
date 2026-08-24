@@ -157,7 +157,15 @@ test('builds the shared extended dataset through every migrated seeder', () => {
     expect(materie.every((materia) => typeof row[materia] === 'string')).toBe(true);
   }
 
-  expect(sample.rows[TABLE.LOG_FOLD]).toHaveLength(6);
+  expect(sample.rows[TABLE.LOG_FOLD]).toHaveLength(7);
+  expect(sample.rows[TABLE.LOG_FOLD]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        [COL_LOG_FOLD.TIPO]: 'E2E_FILTER_DECOY',
+        [COL_LOG_FOLD.CLASSI]: '1A'
+      })
+    ])
+  );
   expect(
     sample.rows[TABLE.LOG_FOLD].every((row) => String(row[COL_LOG_FOLD.LINK]).includes('/folders/'))
   ).toBe(true);

@@ -15,6 +15,7 @@ import {
   CONF_MAIL_LAVORO,
   CONF_MAIL_STATIC_ALLEGATO,
   CONF_DOC_PIANI,
+  CONF_DOC_PIANO_LAVORO,
   CONF_DOC_COMPLESSO,
   CONF_DOC_ARTICOLATA,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
@@ -79,7 +80,11 @@ function recordingHarness(
   articolataMailClasses = [CLASSE_C, CLASSE_C_PARTNER],
   unrelatedVerbaleFolderBeforeReal = false,
   verbaleFolderTipo = 'E2E_VERBALE',
-  verbaleFolderMaterie = 'ALT,MATE'
+  verbaleFolderMaterie = 'ALT,MATE',
+  workPlanAudit: { docs: string[]; folders: string[] } = {
+    docs: ['E2E_PIANO_LAVORO-1A'],
+    folders: ['folder-1A']
+  }
 ): {
   container: ServiceContainer;
   events: string[];
@@ -120,6 +125,8 @@ function recordingHarness(
         [COL_LOG_DOCS.TIPO]:
           configId === 'E2E_VERBALE'
             ? 'VERBALE'
+            : configId === CONF_DOC_PIANO_LAVORO
+              ? 'PIANO_LAVORO'
             : configId === CONF_DOC_RIEPILOGO_FIRME_CDC
               ? 'RIEPILOGO_FIRME_CDC'
               : configId,
@@ -138,6 +145,7 @@ function recordingHarness(
           });
         }
         folders.push({
+          [COL_LOG_FOLD.ID]: `folder-${classe.value}`,
           [COL_LOG_FOLD.TIPO]: verbaleFolderTipo,
           [COL_LOG_FOLD.PATH]: folderPath,
           [COL_LOG_FOLD.CLASSI]: `ARCHIVIO,${classe.value}`,
@@ -211,6 +219,12 @@ function recordingHarness(
       return { fileId, status: 'CREATED' };
     }
   } as unknown as DocumentGenerationService;
+  folders.push({
+    [COL_LOG_FOLD.ID]: 'folder-decoy',
+    [COL_LOG_FOLD.TIPO]: 'E2E_FILTER_DECOY',
+    [COL_LOG_FOLD.CLASSI]: '1A',
+    [COL_LOG_FOLD.MATERIE]: ''
+  });
   const logMailRows: Array<Record<string, unknown>> = [];
   const email = {
     sendPattern(patternId: string) {
@@ -219,8 +233,7 @@ function recordingHarness(
         logMailRows.push({
           [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
-            docs: ['E2E_PIANO_LAVORO-1A'],
-            folders: ['folder1'],
+            ...workPlanAudit,
             attach: workPlanAttachmentLinks
           })
         });
@@ -1706,7 +1719,11 @@ test('legacy email and import adapters retain their existing E2E callbacks witho
 });
 
 test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.ALLEGATI', () => {
-  const rows: Array<Record<string, unknown>> = [];
+  const mailRows: Array<Record<string, unknown>> = [];
+  const documentRows = [
+    { [COL_LOG_DOCS.ID]: 'E2E_PIANO_LAVORO-1A', [COL_LOG_DOCS.TIPO]: 'PIANO_LAVORO' }
+  ];
+  const folderRows = [{ [COL_LOG_FOLD.ID]: 'folder1', [COL_LOG_FOLD.TIPO]: 'E2E_VERBALE' }];
   const documents = {
     generateForClasse(classe: ClasseId, configId: string) {
       return { fileId: `${configId}-${classe.value}`, status: 'CREATED' };
@@ -1718,7 +1735,7 @@ test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.A
   const email = {
     sendPattern(patternId: string): SendPatternResult {
       if (patternId === CONF_MAIL_LAVORO) {
-        rows.push({
+        mailRows.push({
           [COL_LOG_MAIL.PATTERN]: CONF_MAIL_LAVORO,
           [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
             docs: ['E2E_PIANO_LAVORO-1A'],
@@ -1730,7 +1747,12 @@ test('scenario 12: sends, and asserts both docs and folders landed in LOG_MAIL.A
       return { targets: 1, sent: 1, skipped: 0, errors: [] };
     }
   } as EmailNotificationService;
-  const db = { table: () => ({ findAll: () => rows }) } as unknown as EmailDb;
+  const db = {
+    table: (name: string) => ({
+      findAll: () =>
+        name === 'LOG_MAIL' ? mailRows : name === 'LOG_DOCS' ? documentRows : folderRows
+    })
+  } as unknown as EmailDb;
   const container = {
     get<T>(key: string): T {
       if (key === 'documentGenerationService') return documents as T;
@@ -1787,4 +1809,48 @@ test('scenario 12: fails when LOG_MAIL.ALLEGATI.folders is empty', () => {
 
   const scenario12 = runner.report().results.find((r) => r.name.includes('scenario 12'));
   expect(scenario12?.status).toBe('fail');
+});
+
+test('scenario 12: rejects a document excluded by its source filter', () => {
+  const harness = recordingHarness(
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    { docs: ['E2E_VERBALE-1A'], folders: ['folder-1A'] }
+  );
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario12 = runner.report().results.find((r) => r.name.includes('scenario 12'));
+  expect(scenario12?.status).toBe('fail');
+  expect(scenario12?.message).toMatch(/documenti.*filtro/i);
+});
+
+test('scenario 12: rejects a folder excluded by its source filter', () => {
+  const harness = recordingHarness(
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    { docs: ['E2E_PIANO_LAVORO-1A'], folders: ['folder-decoy'] }
+  );
+  const runner = new TestRunner();
+  registerE2eScenarioChecks(runner, harness.container, sample);
+
+  const scenario12 = runner.report().results.find((r) => r.name.includes('scenario 12'));
+  expect(scenario12?.status).toBe('fail');
+  expect(scenario12?.message).toMatch(/cartelle.*filtro/i);
 });

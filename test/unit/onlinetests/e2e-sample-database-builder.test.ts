@@ -14,6 +14,7 @@ import {
   PDP_BES_3C,
   PIANO_DOPPIO_STUDENTE,
   CONF_DOC_PIANI,
+  CONF_DOC_VERBALE,
   CONF_DOC_PIANI_NO_PEI,
   CONF_DOC_CONDOTTA,
   CONF_DOC_RIEPILOGO,
@@ -896,7 +897,10 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
       TIPO_BOX: 'documenti',
       DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
     },
-    { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
+    {
+      TIPO_BOX: 'cartelle',
+      DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { idGen: CONF_DOC_VERBALE } }
+    }
   ]);
   expect(String(mail![COL_CONF_MAIL.TESTO_START])).not.toMatch(/in allegato/i);
 });

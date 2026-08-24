@@ -162,12 +162,74 @@ def rule_conf_doc(wb: xl.Workbook, log: ChangeLog) -> None:
             c.value = new_raw
 
 
+LOG_DOCS_TIPO_MAP = {
+    "PIANO_PERS": "PIANI_PERSONALIZZATI",
+    "PCTO": "PCTO",
+    "PIANO_LAVORO": "PIANO_LAVORO",
+}
+VERBALE_MONTH_MAP = {
+    "10": "VERBALE_CDC_OTTOBRE",
+    "11": "VERBALE_CDC_NOVEMBRE",
+    "02": "VERBALE_CDC_FEBBRAIO",
+    "04": "VERBALE_CDC_APRILE",
+    "05": "VERBALE_CDC_MAGGIO",
+}
+LOG_DOCS_IDGEN_MAP = {"DOCUMENTO_PERSONALIZZATO": "PIANI_PERSONALIZZATI"}
+LOG_FOLD_MAP = {
+    "DOCUMENTO_PERSONALIZZATO": "PIANI_PERSONALIZZATI",
+    "VERBALE_CDC": "VERBALE_CDC_OTTOBRE",
+    "PROGRAMMI_SVOLTI": "PROGRAMMA",
+    "RELAZIONI_FINALI": "RELAZIONE_FINALE",
+    "DOCUMENTO_15_MAGGIO": "DOC15MAGGIO",
+}
+SOTTOTIPO_NORMALIZE = {
+    "PDP BES": "PDP_BES",
+    "PDP DSA": "PDP_DSA",
+    "PDP STRANIERI": "PDP_STRANIERI",
+}
+
+
+def rule_logs(wb: xl.Workbook, log: ChangeLog) -> None:
+    ws = wb["LOG_DOCS"]
+    for row_num, rec in _rows(ws):
+        ig = rec.get("ID_GEN")
+        tipo = rec.get("TIPO")
+        new_id = LOG_DOCS_IDGEN_MAP.get(str(ig) if ig else "")
+        if new_id is None and (ig is None or str(ig).strip() == ""):
+            if tipo == "VERBALE_CDC":
+                data = str(rec.get("DATA_CREAZ") or "")
+                new_id = VERBALE_MONTH_MAP.get(data[3:5])
+            else:
+                new_id = LOG_DOCS_TIPO_MAP.get(tipo)
+        if new_id and new_id != ig:
+            c = _cell(ws, row_num, "ID_GEN")
+            log.add("log.docs-idgen", "LOG_DOCS", rec.get("ID"), "ID_GEN", ig, new_id)
+            c.value = new_id
+            st = rec.get("SOTTOTIPO")
+            fixed = SOTTOTIPO_NORMALIZE.get(str(st) if st else "")
+            if fixed:
+                cs = _cell(ws, row_num, "SOTTOTIPO")
+                log.add("log.docs-sottotipo", "LOG_DOCS", rec.get("ID"),
+                        "SOTTOTIPO", st, fixed)
+                cs.value = fixed
+    ws = wb["LOG_FOLD"]
+    for row_num, rec in _rows(ws):
+        old = rec.get("TIPO")
+        new = LOG_FOLD_MAP.get(str(old) if old else "")
+        if new and new != old:
+            c = _cell(ws, row_num, "TIPO")
+            log.add("log.fold-tipo", "LOG_FOLD", rec.get("ID"), "TIPO", old, new)
+            c.value = new
+
+
 def apply_rules(wb: xl.Workbook, log: ChangeLog) -> None:
     # Fogli assenti dal workbook ignorati (stessa convenzione di collect_residuals).
     if "INDIRIZZI" in wb.sheetnames:
         rule_indirizzi(wb, log)
     if "CONF_DOC" in wb.sheetnames:
         rule_conf_doc(wb, log)
+    if "LOG_DOCS" in wb.sheetnames and "LOG_FOLD" in wb.sheetnames:
+        rule_logs(wb, log)
 
 
 def _col_index(headers: tuple, name: str) -> int:

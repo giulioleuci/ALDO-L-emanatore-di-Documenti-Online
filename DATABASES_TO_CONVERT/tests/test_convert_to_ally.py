@@ -168,5 +168,59 @@ class ConfDocRulesTest(unittest.TestCase):
         self.assertEqual(log.count("confdoc.condizione-doc15maggio"), 1)
 
 
+class LogsRemapTest(unittest.TestCase):
+    def _wb(self):
+        return make_wb({
+            "CONF_DOC": (("ID",), (("PCTO",), ("PIANO_LAVORO",),
+                                   ("PIANI_PERSONALIZZATI",), ("VERBALE_CDC_OTTOBRE",))),
+            "LOG_DOCS": (
+                ("ID", "ID_GEN", "TIPO", "SOTTOTIPO", "DATA_CREAZ"),
+                (("d1", "DOCUMENTO_PERSONALIZZATO", "PIANO_PERS", "PDP BES", None),),
+                (("d2", None, "PIANO_PERS", "PDP DSA", None),),
+                (("d3", None, "PCTO", None, None),),
+                (("d4", None, "PIANO_LAVORO", None, None),),
+                (("d5", None, "VERBALE_CDC", None, "13/10/2025 09:00:00"),),
+                (("d6", None, "VERBALE_CDC", None, "13/01/2026 09:00:00"),),  # mese non mappabile
+                (("d7", "RIEPILOGO_QUINTA", "DATI_OGGETTIVI_CLASSE", None, None),),  # intatto
+            ),
+            "LOG_FOLD": (
+                ("ID", "TIPO"),
+                (("f1", "DOCUMENTO_PERSONALIZZATO"),),
+                (("f2", "VERBALE_ASSEMBLEA_CLASSE"),),  # intatto
+                (("f3", "PROGRAMMI_SVOLTI"),),
+                (("f4", "RELAZIONI_FINALI"),),
+                (("f5", "DOCUMENTO_15_MAGGIO"),),
+                (("f6", "VERBALE_CDC"),),
+            ),
+            "LOG_MAIL": (("PATTERN",), (("X",),)),
+        })
+
+    def test_remap_logs(self):
+        wb = self._wb()
+        log = conv.ChangeLog()
+        conv.rule_logs(wb, log)
+        docs = wb["LOG_DOCS"]
+        self.assertEqual(docs.cell(2, 2).value, "PIANI_PERSONALIZZATI")
+        self.assertEqual(docs.cell(2, 4).value, "PDP_BES")       # normalizzato
+        self.assertEqual(docs.cell(3, 2).value, "PIANI_PERSONALIZZATI")
+        self.assertEqual(docs.cell(3, 4).value, "PDP_DSA")
+        self.assertEqual(docs.cell(4, 2).value, "PCTO")
+        self.assertEqual(docs.cell(5, 2).value, "PIANO_LAVORO")
+        self.assertEqual(docs.cell(6, 2).value, "VERBALE_CDC_OTTOBRE")
+        self.assertIsNone(docs.cell(7, 2).value)                  # mese non in mappa
+        self.assertEqual(docs.cell(8, 2).value, "RIEPILOGO_QUINTA")  # intatto
+        fold = wb["LOG_FOLD"]
+        self.assertEqual(fold.cell(2, 2).value, "PIANI_PERSONALIZZATI")
+        self.assertEqual(fold.cell(3, 2).value, "VERBALE_ASSEMBLEA_CLASSE")
+        self.assertEqual(fold.cell(4, 2).value, "PROGRAMMA")
+        self.assertEqual(fold.cell(5, 2).value, "RELAZIONE_FINALE")
+        self.assertEqual(fold.cell(6, 2).value, "DOC15MAGGIO")
+        self.assertEqual(fold.cell(7, 2).value, "VERBALE_CDC_OTTOBRE")
+        self.assertEqual(log.count("log.docs-idgen"), 5)
+        self.assertEqual(log.count("log.docs-sottotipo"), 2)
+        # ruling P1: la fixture mappa 5 righe LOG_FOLD (f1, f3..f6), non 4.
+        self.assertEqual(log.count("log.fold-tipo"), 5)
+
+
 if __name__ == "__main__":
     unittest.main()

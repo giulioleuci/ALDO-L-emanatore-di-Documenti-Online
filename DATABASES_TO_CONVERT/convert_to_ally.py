@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 
 import openpyxl as xl
@@ -369,6 +368,10 @@ EXPECTED_RESIDUAL_KEYS = {
 }
 
 
+def _plurale_righe(count: int) -> str:
+    return "riga" if count == 1 else "righe"
+
+
 def write_report(log: ChangeLog, residuals: list[dict], path: Path) -> None:
     lines: list[str] = [
         "# Report allineamento AS 2526 per ALDO",
@@ -389,22 +392,22 @@ def write_report(log: ChangeLog, residuals: list[dict], path: Path) -> None:
         lines += [f"### {rule} — {len(entries)} modifiche", "",
                   "| Foglio | Riga | Colonna | Vecchio | Nuovo |",
                   "| --- | --- | --- | --- | --- |"]
-        for e in entries[:100]:
+        for e in entries:
             lines.append(f"| {e['sheet']} | {e['row']} | {e['column']} "
                          f"| `{e['old']}` | `{e['new']}` |")
-        if len(entries) > 100:
-            lines.append(f"| … | … | … | … ({len(entries) - 100} omesse) | ")
         lines.append("")
 
     lines += ["## Residui non risolti (attesi)", ""]
     unexpected = [r for r in residuals
                   if (r["sheet"], r["field"]) not in EXPECTED_RESIDUAL_KEYS]
     for r in sorted(residuals, key=lambda r: (r["sheet"], r["field"], r["value"])):
-        lines.append(f"- `{r['sheet']}.{r['field']}` = `{r['value']}` — {r['count']} righe")
+        lines.append(f"- `{r['sheet']}.{r['field']}` = `{r['value']}` "
+                     f"— {r['count']} {_plurale_righe(r['count'])}")
     if unexpected:
         lines += ["", "### RESIDUI NON ATTESI (richiedono attenzione)", ""]
         for r in unexpected:
-            lines.append(f"- `{r['sheet']}.{r['field']}` = `{r['value']}` — {r['count']} righe")
+            lines.append(f"- `{r['sheet']}.{r['field']}` = `{r['value']}` "
+                         f"— {r['count']} {_plurale_righe(r['count'])}")
 
     lines += [
         "",
@@ -420,6 +423,10 @@ def write_report(log: ChangeLog, residuals: list[dict], path: Path) -> None:
         "- Chiavi PARAMETRI inerti presenti (`colonneMaterie`, `schede`, `anniCorso`, "
         "`configurazionePipeline`): non lette da alcuno strategy.",
         "- `DIPART.CAPO` lasciato vuoto in attesa di nomi reali.",
+        "- `MOV_ALUNNI` — coppia `michelle.dellamora@…` OUT+IN `2E`→`2E` lasciata intatta e "
+        "solo segnalata: anomalia dati, non rientra nei fix puntuali (spec §4.6).",
+        "- Classe di test `ALTRO ISTITUTO` mantenuta: in SGSA rappresenta la semantica esterna "
+        "gestita da `ProvenienzaDestinazione.isEsterna()` (spec §5).",
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

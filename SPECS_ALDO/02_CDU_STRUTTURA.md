@@ -180,7 +180,7 @@ focus.classe:
     partner: string | null       # Per classe partner: ID dell'altro partner; per classe parent: null
     partners: string[] | null    # Per classe parent: ID delle sottoclassi [primo, secondo]; altrimenti null
     parent:                      # Oggetto parent descrittivo (null se il partner non ha classe parent risolvibile)
-      id: string                 # ID classe parent (es. "5AB-LC-LS")
+      nome: string               # nome/ID classe parent (coincidono, `CLASSI` non ha una colonna NOME separata; es. "5AB-LC-LS")
       anno: number                # es. 5
       indirizzi:                 # Array degli indirizzi partner componenti (loop `parent.indirizzi`)
         - sigla: string

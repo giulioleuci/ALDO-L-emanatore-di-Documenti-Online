@@ -164,7 +164,7 @@ test('ClasseProvider: articulated parent flags + materie split (02 §4.1, 09 §9
 test('ClasseProvider: articulated partner points to descriptive parent + counterpart (02 §4.1, 09 §9)', () => {
   const c = build('1F-LSO').focus.classe!;
   expect(c.articolazione?.parent).toEqual({
-    id: '1F',
+    nome: '1F',
     anno: 1,
     indirizzi: [
       { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico', tipo: 'LICEO' },

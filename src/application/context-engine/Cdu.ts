@@ -178,7 +178,7 @@ export interface CduClasse {
     partner: string | null;
     partners: string[] | null;
     parent: {
-      id: string;
+      nome: string;
       anno: number;
       indirizzi: Array<{ sigla: string; nome: string; nomeSintetico: string; tipo: string }>;
     } | null;

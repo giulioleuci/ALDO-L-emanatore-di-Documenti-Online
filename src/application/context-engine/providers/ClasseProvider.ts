@@ -138,7 +138,7 @@ export class ClasseProvider implements ContextProvider {
       const ind = this.classi.getIndirizzo(partner);
       return { sigla: partner.indirizzo, nome: ind.nome, nomeSintetico: ind.nomeSintetico, tipo: ind.tipo };
     });
-    return { id: parentId, anno: parentClasse.anno.value, indirizzi };
+    return { nome: parentId, anno: parentClasse.anno.value, indirizzi };
   }
 
   /** Resolves articolazione subject sigle to SubjectVM via MATERIE, silently dropping unknown sigle. */

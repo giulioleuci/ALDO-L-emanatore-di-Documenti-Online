@@ -102,7 +102,7 @@ export class ConfigurazioneEmail extends AldoEntity {
     return this.condizioneRaw.trim() === '' ? null : this.condizioneRaw;
   }
 
-  /** Attachment IDs configured in ALLEGATI, preserving their declared order. */
+  /** Attachment IDs configured in ALLEGATI_STATICI, preserving their declared order. */
   getAllegati(): string[] {
     if (this.allegatiRaw === null) return [];
     if (typeof this.allegatiRaw !== 'string') {
@@ -156,7 +156,7 @@ export class ConfigurazioneEmail extends AldoEntity {
 
   private allegatiConfigurationError(): ConfigurationError {
     return new ConfigurationError(
-      `CONF_MAIL ${this.id ?? '?'}: ALLEGATI deve essere un array JSON di ID non vuoti`
+      `CONF_MAIL ${this.id ?? '?'}: ALLEGATI_STATICI deve essere un array JSON di ID non vuoti`
     );
   }
 }

@@ -343,7 +343,7 @@ describe('email pipeline operational log details', () => {
   });
 
   test('publishes the subject and attachment count without the composed HTML body', () => {
-    const w = wire({ OGGETTO: 'Convocazione consiglio', ALLEGATI: '["file-1","file-2"]' });
+    const w = wire({ OGGETTO: 'Convocazione consiglio', ALLEGATI_STATICI: '["file-1","file-2"]' });
     runThroughRender(w);
 
     const composed = new ComposeEmailStep(
@@ -1265,8 +1265,8 @@ test('ComposeEmailStep resolves no attachments when no box opts in via DATI_SORG
   expect(w.ctx.get('allegati')).toEqual([]);
 });
 
-test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI file without a box or focus class', () => {
-  const w = wire({ ALLEGATI: JSON.stringify(['static id/1?']), BOX_CFG: '[]' });
+test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI_STATICI file without a box or focus class', () => {
+  const w = wire({ ALLEGATI_STATICI: JSON.stringify(['static id/1?']), BOX_CFG: '[]' });
   buildStep(w).execute(w.ctx);
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
@@ -1291,8 +1291,8 @@ test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI file without a box o
   expect(getFileBlob).toHaveBeenCalledWith('static id/1?');
 });
 
-test('ComposeEmailStep leaves attachments empty for an empty CONF_MAIL.ALLEGATI cell', () => {
-  const w = wire({ ALLEGATI: '' });
+test('ComposeEmailStep leaves attachments empty for an empty CONF_MAIL.ALLEGATI_STATICI cell', () => {
+  const w = wire({ ALLEGATI_STATICI: '' });
   const drive = new FakeDriveFacade();
   const getFileBlob = jest.spyOn(drive, 'getFileBlob');
 
@@ -1334,7 +1334,7 @@ test('ComposeEmailStep never attaches documents from DATI_SORGENTE unless BOX_CF
 
 test('ComposeEmailStep keeps static IDs first and deduplicates them with opted-in class documents', () => {
   const w = wire({
-    ALLEGATI: JSON.stringify(['static one', 'shared-id', 'static-two']),
+    ALLEGATI_STATICI: JSON.stringify(['static one', 'shared-id', 'static-two']),
     BOX_CFG: JSON.stringify([
       {
         TIPO_BOX: 'documenti',
@@ -1552,7 +1552,7 @@ test('invalid document filters skip only dynamic attachments and preserve static
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      ALLEGATI: JSON.stringify(['static-id']),
+      ALLEGATI_STATICI: JSON.stringify(['static-id']),
       BOX_CFG: JSON.stringify([
         {
           TIPO_BOX: 'documenti',
@@ -1582,7 +1582,7 @@ test('folder source attachments warn and leave static attachment behavior unchan
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      ALLEGATI: JSON.stringify(['static-id']),
+      ALLEGATI_STATICI: JSON.stringify(['static-id']),
       BOX_CFG: JSON.stringify([
         {
           TIPO_BOX: 'cartelle',
@@ -1619,7 +1619,7 @@ test('attachment entity validation rejects cartelle, unrelated and unknown boxes
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      ALLEGATI: JSON.stringify(['static-id']),
+      ALLEGATI_STATICI: JSON.stringify(['static-id']),
       BOX_CFG: JSON.stringify([
         {
           TIPO_BOX: 'cartelle',
@@ -1668,7 +1668,7 @@ test('legacy attachment filters invalidate the document box and preserve static 
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      ALLEGATI: JSON.stringify(['static-id']),
+      ALLEGATI_STATICI: JSON.stringify(['static-id']),
       BOX_CFG: JSON.stringify([
         {
           TIPO_BOX: 'documenti',
@@ -1710,7 +1710,7 @@ test('a misplaced top-level filter invalidates a document source for rendering a
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      ALLEGATI: JSON.stringify(['static-id']),
+      ALLEGATI_STATICI: JSON.stringify(['static-id']),
       BOX_CFG: JSON.stringify([
         {
           TIPO_BOX: 'documenti',

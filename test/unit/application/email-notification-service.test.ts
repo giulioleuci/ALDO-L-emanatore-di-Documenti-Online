@@ -94,7 +94,7 @@ function mailRow(id: string, overrides: Record<string, unknown> = {}): Row {
     POST_PROCESSO: null,
     DUPLICAZIONE: 'NEGATA',
     GESTIONE_ARTICOLAZIONE: 'COMPLETA',
-    ALLEGATI: '[]',
+    ALLEGATI_STATICI: '[]',
     RISPONDI_A: '',
     ...overrides
   };
@@ -887,7 +887,7 @@ test('sendPattern delivers a configured static Word blob even when no box is con
       mailRow('STATIC_WORD', {
         BOX_CFG: '[]',
         TESTO_START: '<p>In allegato la circolare.</p>',
-        ALLEGATI: JSON.stringify(['static-word-id'])
+        ALLEGATI_STATICI: JSON.stringify(['static-word-id'])
       })
     ],
     drive
@@ -916,7 +916,7 @@ test('sendPattern delivers a configured static Word blob even when no box is con
 });
 
 test('sendToTarget sends no attachments when the static configuration is empty', () => {
-  const { service, gmail } = wire([mailRow('STATIC_EMPTY', { ALLEGATI: '' })]);
+  const { service, gmail } = wire([mailRow('STATIC_EMPTY', { ALLEGATI_STATICI: '' })]);
 
   const result = service.sendToTarget('STATIC_EMPTY', {
     tipo: 'cdc',
@@ -1058,7 +1058,7 @@ test('sendToTarget sends static attachments first, then opted-in class documents
   const { service, gmail, db } = wire(
     [
       mailRow('STATIC_AND_DYNAMIC', {
-        ALLEGATI: JSON.stringify(['static-id', 'shared-id']),
+        ALLEGATI_STATICI: JSON.stringify(['static-id', 'shared-id']),
         BOX_CFG: JSON.stringify([
           {
             TIPO_BOX: 'documenti',
@@ -1108,12 +1108,12 @@ test('sendToTarget sends static attachments first, then opted-in class documents
 test('malformed static attachment configuration aborts before Gmail with a diagnosable error', () => {
   const { service, gmail } = wire([
     mailRow('STATIC_MALFORMED', {
-      ALLEGATI: JSON.stringify({ id: 'not-an-array' })
+      ALLEGATI_STATICI: JSON.stringify({ id: 'not-an-array' })
     })
   ]);
 
   expect(() => service.sendPattern('STATIC_MALFORMED')).toThrow(
-    'CONF_MAIL STATIC_MALFORMED: ALLEGATI deve essere un array JSON di ID non vuoti'
+    'CONF_MAIL STATIC_MALFORMED: ALLEGATI_STATICI deve essere un array JSON di ID non vuoti'
   );
   expect(gmail.sent).toHaveLength(0);
 });

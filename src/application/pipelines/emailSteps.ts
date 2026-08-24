@@ -501,7 +501,7 @@ export class ComposeEmailStep extends Step {
   }
 
   /**
-   * Static CONF_MAIL.ALLEGATI files are always resolved first. Dynamic documents
+   * Static CONF_MAIL.ALLEGATI_STATICI files are always resolved first. Dynamic documents
    * come from RenderBoxesStep's validated, visible per-instance source result,
    * so attachment eligibility cannot diverge from rendered box content.
    */

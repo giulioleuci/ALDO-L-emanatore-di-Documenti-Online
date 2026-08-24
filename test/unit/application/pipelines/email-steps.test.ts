@@ -614,7 +614,7 @@ test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   const contesto = cdu.destinatario!.contesto;
-  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F']);
+  expect(contesto.cattedre.map((c) => c.classeNome)).toEqual(['1F']);
   expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
   expect(contesto.cattedre[0]!.anno).toBe(1);
   expect(contesto.cattedre[0]!.sezione).toBe('F');
@@ -640,7 +640,7 @@ test('BuildCDUStep collapses all three classes of an articolazione group (parent
   // Three classes in classiCompetenza, all in the same articolazione group,
   // all resolving MATE for rossi (COMUNE subject) -> a single row, not three.
   expect(contesto.cattedre).toHaveLength(1);
-  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F']);
+  expect(contesto.cattedre.map((c) => c.classeNome)).toEqual(['1F']);
   expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
   expect(contesto.cattedre[0]!.anno).toBe(1);
   expect(contesto.cattedre[0]!.sezione).toBe('F');
@@ -818,9 +818,9 @@ test('BuildCDUStep tolerates a resolver error on one competenza class: that clas
   const contesto = cdu.destinatario!.contesto;
   // '1F' throws (excluded); '1F-LSO' succeeds and groups under its
   // articolazione parent '1F' (design 2026-08-22 articolata dedupe), so the
-  // single surviving cattedra row is keyed by the parent's classeId, not by
+  // single surviving cattedra row is keyed by the parent's classeNome, not by
   // '1F-LSO' itself.
-  expect(contesto.cattedre.map((c) => c.classeId)).toEqual(['1F']);
+  expect(contesto.cattedre.map((c) => c.classeNome)).toEqual(['1F']);
   expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
   expect(warnSpy).toHaveBeenCalledWith(
     expect.stringContaining('rossi@school.it')

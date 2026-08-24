@@ -334,7 +334,6 @@ export class BuildCDUStep extends Step {
       flat = flat.concat(materie);
     }
     const cattedre: CattedraVM[] = [...gruppi.values()].map(({ classe, materie }) => ({
-      classeId: classe.id ?? '',
       classeNome: classe.nome,
       anno: classe.anno.value,
       sezione: classe.sezione,

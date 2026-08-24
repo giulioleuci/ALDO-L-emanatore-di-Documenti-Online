@@ -423,18 +423,16 @@ L'ordine del CSV in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREG
 
 ---
 
-### `ClassiScope` e `MaterieScope`
+### `CsvScope`
 
 - **Proprietà:** `value: string` — CSV di ID oppure `"*"` (tutte)
-- Usati in `SUPPLENZE.CLASSI` e `SUPPLENZE.MATERIE`
+- Unico VO generico che copre sia lo scope-classi sia lo scope-materie (usato in `SUPPLENZE.CLASSI`/`SUPPLENZE.MATERIE` e in `VARIAZIONI_CATTEDRA.CLASSI`/`VARIAZIONI_CATTEDRA.MATERIE`); in precedenza descritto come due VO gemelli (`ClassiScope`, `MaterieScope`), unificati in `src/domain/value-objects/CsvScope.ts`.
 
-| Metodo                                   | Comportamento                                          |
-| ---------------------------------------- | ------------------------------------------------------ |
-| `isTotale(): boolean`                    | `true` se `value === "*"` oppure se `value` è `null`   |
-| `getClassi(): ClasseId[] \| null`        | Array di ClasseId parsati dal CSV, o `null` se totale  |
-| `getMaterie(): MateriaId[] \| null`      | Array di MateriaId parsati dal CSV, o `null` se totale |
-| `applicaAClasse(c: ClasseId): boolean`   | `true` se `isTotale()` o se `c` è nel CSV              |
-| `applicaAMateria(m: MateriaId): boolean` | `true` se `isTotale()` o se `m` è nel CSV              |
+| Metodo                                 | Comportamento                                        |
+| --------------------------------------- | ----------------------------------------------------- |
+| `isWildcard(): boolean`                 | `true` se `value === "*"`                             |
+| `applica(id: string): boolean`          | `true` se il valore è `"*"` oppure se `id` è nel CSV  |
+| `overlaps(other: CsvScope): boolean`    | `true` se i due scope si intersecano (o uno dei due è totale) |
 
 ---
 

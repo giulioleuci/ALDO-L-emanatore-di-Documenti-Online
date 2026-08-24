@@ -33,7 +33,7 @@ Regole vincolanti:
 3. **Partizioni semantiche precalcolate.** I raggruppamenti basati su *valori di dominio* (COMUNE/SEPARATO, PRIMA/SECONDA prova, ITP) sono già divisi in array dedicati dal CDU, così il template non scrive `| where:'tipoArticolazione','COMUNE'` con un valore hardcodato.
 4. **Stringhe e label precalcolate.** Il CDU espone già le forme testuali pronte per la stampa (`appellativoCompleto`, `materieDescrizione`, `tipoLabel`, `religioneLabel`, `docentiDescrizione`, ...): un solo placeholder al posto di concatenazioni o catene di filtri.
 5. **Booleani companion.** Ogni array su cui un template può voler fare un branch ha accanto un booleano `hasXxx` (es. `hasProgetti`, `hasCarenze`, `hasBocciature`) per `{{#hasXxx}}` / `{{^hasXxx}}`.
-6. **Budget di lunghezza placeholder.** Dentro i loop: ≤ 2-3 segmenti (`{{nomeCompleto}}`, `{{anagrafica.nomeCompleto}}`, `{{didattica.piani.hasPiani}}`). Fuori dai loop: ≤ 4 segmenti (`{{focus.classe.anagrafica.nome}}`). Un path più lungo va ridotto denormalizzando.
+6. **Budget di lunghezza placeholder.** Dentro i loop: ≤ 2-3 segmenti (`{{nomeCompleto}}`, `{{anagrafica.nomeCompleto}}`, `{{didattica.piani.hasPiani}}`). Fuori dai loop: ≤ 4 segmenti (`{{focus.classe.anagrafica.nome}}`). Un path più lungo va ridotto denormalizzando. (Eccezione: path di stato/partizione con nesting intrinsecamente profondo, del tipo `didattica.<sottoinsieme>.<partizione>.hasXxx` — es. `focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.hasElenco`, che supera il budget perché denormalizzare `nonVerbalizzati` più in alto nell'albero duplicherebbe dati a cascata.)
 
 ---
 

@@ -162,7 +162,9 @@ class ConfDocRulesTest(unittest.TestCase):
         self.assertEqual(log.count("confdoc.generatore"), 2)
         self.assertEqual(log.count("confdoc.permessi"), 3)
         self.assertEqual(log.count("confdoc.tipo-per-cattedra"), 1)
-        self.assertEqual(log.count("confdoc.placeholder-file-name"), 2)
+        # Una sola voce: ChangeLog registra una voce per cella, non per token
+        # (ruling P5 — non "correggere" il conteggio a 2).
+        self.assertEqual(log.count("confdoc.placeholder-file-name"), 1)
         self.assertEqual(log.count("confdoc.condizione-doc15maggio"), 1)
 
 

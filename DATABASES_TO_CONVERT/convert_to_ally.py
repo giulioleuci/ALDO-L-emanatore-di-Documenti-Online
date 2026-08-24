@@ -139,16 +139,14 @@ def rule_conf_doc(wb: xl.Workbook, log: ChangeLog) -> None:
                         c_tipo.value, "DOCUMENTO_DOCENTE_MATERIA")
                 c_tipo.value = "DOCUMENTO_DOCENTE_MATERIA"
             c_fn = _cell(ws, row_num, "FILE_NAME")
-            # Una voce di log per singolo placeholder sostituito.
+            # Una voce di log per cella modificata (invariante ChangeLog, ruling P5).
+            new_fn = c_fn.value
             for old_tok, new_tok in PLACEHOLDER_FIXES.items():
-                cur = c_fn.value
-                if cur is None:
-                    continue
-                new_fn = cur.replace(old_tok, new_tok)
-                if new_fn != cur:
-                    log.add("confdoc.placeholder-file-name", "CONF_DOC", cid, "FILE_NAME",
-                            cur, new_fn)
-                    c_fn.value = new_fn
+                new_fn = new_fn.replace(old_tok, new_tok)
+            if new_fn != c_fn.value:
+                log.add("confdoc.placeholder-file-name", "CONF_DOC", cid, "FILE_NAME",
+                        c_fn.value, new_fn)
+                c_fn.value = new_fn
         # Condizione MODELLI con percorso CDU inesistente
         raw_mod = rec.get("MODELLI")
         if raw_mod and COND_TOKEN_OLD in raw_mod:

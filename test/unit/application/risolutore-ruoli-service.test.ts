@@ -290,14 +290,14 @@ describe('RisolutoreRuoliService — every private resolver empty-result branch'
   });
 
   test('exam-commission resolver (DOCENTE_PRIMA_PROVA) skips materie with null esameConfig and materie whose prova does not match the indirizzo', () => {
-    // 3B is indirizzo ITI: MATE's prima_prova (SCIENTIFICO) doesn't match, and
+    // 3B is indirizzo ITI: MATE's primaProva (SCIENTIFICO) doesn't match, and
     // FISI has ESAME_CFG null — both skipped, yielding no commission teachers.
     const { cdu, service } = build({ target: '3B', tipoTarget: 'classe' });
     expect(emails(service, 'DOCENTE_PRIMA_PROVA', cdu)).toEqual([]);
   });
 
   test('exam-commission resolver (DOCENTE_PRIMA_PROVA) resolves the matching prova teacher when the indirizzo matches', () => {
-    // 5A is indirizzo SCIENTIFICO: MATE's prima_prova matches -> bianchi (effective MATE teacher post-variazione).
+    // 5A is indirizzo SCIENTIFICO: MATE's primaProva matches -> bianchi (effective MATE teacher post-variazione).
     const { cdu, service } = build({});
     expect(emails(service, 'DOCENTE_PRIMA_PROVA', cdu)).toEqual(['bianchi@school.it']);
   });
@@ -406,7 +406,7 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     // resolved directly against the parent and returned [].
     expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual(['bianchi@school.it', 'verdi@school.it']);
 
-    // MATE is shared (COMUNE, rossi on both partners) -- prima_prova matches SCIENTIFICO
+    // MATE is shared (COMUNE, rossi on both partners) -- primaProva matches SCIENTIFICO
     // (1F's own indirizzo), and the merge must not duplicate rossi.
     const cduMate = composeContextBuilder(db).build(
       { target: '1F', tipoTarget: 'classe', now: NOW, materiaCorrente: 'MATE' },

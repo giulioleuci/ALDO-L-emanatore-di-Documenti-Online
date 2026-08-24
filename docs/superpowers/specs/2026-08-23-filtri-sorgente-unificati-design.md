@@ -64,7 +64,7 @@ Rifiutati: estensione diretta di DomainRepositoryLib (troppo lavoro upfront) e p
     "classi": ["1A", "2B"],          // CSV: stringa singola o array
     "utenti": "docente@school.it",
     "materie": ["MATE"],
-    // --- campi cartelle ---
+    // --- esempi campi cartelle ---
     "nome": "Verbalini",             // sottostringa case-sensitive
     "path": "Archivio/2026",
     // --- esclusioni: stessa forma, annidate in "not" ---

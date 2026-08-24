@@ -1,5 +1,5 @@
 # DATABASES_TO_CONVERT/tests/test_convert_to_ally.py
-import sys, tempfile, unittest
+import json, sys, tempfile, unittest
 from pathlib import Path
 
 import openpyxl as xl  # verifica dipendenza
@@ -103,6 +103,67 @@ class ResidualsTest(unittest.TestCase):
         for frag in ("# Report allineamento", "## Modifiche", "## Residui",
                      "Deviazioni accettate", "orphan@x.it"):
             self.assertIn(frag, txt)
+
+
+class ConfDocRulesTest(unittest.TestCase):
+    def _confdoc_wb(self):
+        return make_wb({
+            "INDIRIZZI": (
+                ("ID", "NOME", "NOME_SINTETICO", "TIPO"),
+                (("LC", "Liceo Classico", "Classico", "CLASSICO"),),
+                (("LS", "Liceo Scientifico", "Scientifico", "SCIENTIFICO"),),
+            ),
+            "CONF_DOC": (
+                ("ID", "TIPO", "GENERATORE", "FORMATO", "MODELLI", "PERMESSI", "FILE_NAME"),
+                (("CONDOTTA", "CONDOTTA", None, "GSHEET",
+                  '[{"templateId":"T1"}]',
+                  '{"file":[{"ruolo":"COORDINATORI","permesso":"scrittura"}]}',
+                  None),),
+                (("RELAZIONE_FINALE", "RELAZIONE_FINALE", "DOCUMENTO_GENERICO", "GDOC",
+                  '[{"templateId":"T2"}]', '{"file":[],"cartella":[]}',
+                  "Relazione - {{materia.sigla}} - {{docente.nomeCompleto}}"),),
+                (("DOC15MAGGIO", "DOC_15_MAGGIO", None, "GDOC",
+                  '[{"condizione":"{{classe.indirizzoSigla}} == \'LC\'","templateId":"T3"},'
+                  '{"templateId":"T4"}]',
+                  '{"file":[{"ruolo":"COORDINATORI","permesso":"lettura"}],'
+                  '"regolaSupplente":{"file":"ENTRAMBI","cartella":"SOLO_TITOLARI"}}',
+                  None),),
+            ),
+        })
+
+    def test_regole_conf_doc_e_indirizzi(self):
+        wb = self._confdoc_wb()
+        log = conv.ChangeLog()
+        conv.rule_indirizzi(wb, log)
+        conv.rule_conf_doc(wb, log)
+        ind = wb["INDIRIZZI"]
+        self.assertEqual(ind.cell(2, 4).value, "LICEO")
+        self.assertEqual(ind.cell(3, 4).value, "LICEO")
+        cd = wb["CONF_DOC"]
+        # CONDOTTA: generatore + permesso maiuscolo
+        self.assertEqual(cd.cell(2, 3).value, "SHEET_CON_MATERIE_E_PERMESSI")
+        self.assertEqual(
+            [e["permesso"] for e in json.loads(cd.cell(2, 6).value)["file"]],
+            ["SCRITTURA"])
+        # RELAZIONE_FINALE: TIPO asse + placeholder focus.*
+        self.assertEqual(cd.cell(3, 2).value, "DOCUMENTO_DOCENTE_MATERIA")
+        self.assertIn("{{focus.materia.sigla}}", cd.cell(3, 7).value)
+        self.assertIn("{{focus.docente.nomeCompleto}}", cd.cell(3, 7).value)
+        self.assertNotIn('"cartella"', cd.cell(3, 6).value)
+        # DOC15MAGGIO: generatore, condizione canonica, folder/regolaSupplente
+        self.assertEqual(cd.cell(4, 3).value, "DOCUMENTO_CON_TABELLE_IMPORTATE")
+        modelli = json.loads(cd.cell(4, 5).value)
+        self.assertEqual(modelli[0]["condizione"],
+                         "{{focus.classe.anagrafica.indirizzo.sigla}} == 'LC'")
+        pm = json.loads(cd.cell(4, 6).value)
+        self.assertEqual(pm["file"][0]["permesso"], "LETTURA")
+        self.assertEqual(pm["regolaSupplente"]["folder"], "SOLO_TITOLARI")
+        self.assertEqual(log.count("indirizzi.tipo"), 2)
+        self.assertEqual(log.count("confdoc.generatore"), 2)
+        self.assertEqual(log.count("confdoc.permessi"), 3)
+        self.assertEqual(log.count("confdoc.tipo-per-cattedra"), 1)
+        self.assertEqual(log.count("confdoc.placeholder-file-name"), 2)
+        self.assertEqual(log.count("confdoc.condizione-doc15maggio"), 1)
 
 
 if __name__ == "__main__":

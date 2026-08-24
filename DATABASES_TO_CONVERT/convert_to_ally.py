@@ -7,6 +7,8 @@ Non modifica mai il sorgente.
 from __future__ import annotations
 
 import argparse
+import json
+import re
 from pathlib import Path
 
 import openpyxl as xl
@@ -38,8 +40,136 @@ def load_workbook(path: Path) -> xl.Workbook:
     return xl.load_workbook(path, data_only=True)
 
 
+LICEO_MAP = {"CLASSICO": "LICEO", "SCIENTIFICO": "LICEO"}
+
+# (ID_CONF_DOC) con GENERATORE vuoto da completare (spec §4.2).
+GENERIC_FILL = {
+    "CONDOTTA": "SHEET_CON_MATERIE_E_PERMESSI",
+    "COMPETENZE": "SHEET_CON_MATERIE_E_PERMESSI",
+    "CARENZE_SEGNALATORE_NOVEMBRE": "SHEET_CON_MATERIE_E_PERMESSI",
+    "CARENZE_SEGNALATORE_FEBBRAIO": "SHEET_CON_MATERIE_E_PERMESSI",
+    "DOC15MAGGIO": "DOCUMENTO_CON_TABELLE_IMPORTATE",
+}
+
+# Righe da spostare sull'asse batch DOCUMENTO_DOCENTE_MATERIA (spec §4.3).
+DOCENTE_MATERIA_IDS = {"RELAZIONE_FINALE", "PROGRAMMA", "PROGRAMMA_RELAZIONI_QUINTE"}
+PLACEHOLDER_FIXES = {
+    "{{materia.sigla}}": "{{focus.materia.sigla}}",
+    "{{docente.nomeCompleto}}": "{{focus.docente.nomeCompleto}}",
+}
+COND_TOKEN_OLD = "{{classe.indirizzoSigla}}"
+COND_TOKEN_NEW = "{{focus.classe.anagrafica.indirizzo.sigla}}"
+PERMESSO_CASE = {"scrittura": "SCRITTURA", "lettura": "LETTURA"}
+
+
+def _rows(ws):
+    """Itera (numero_riga, {header: valore}) a partire dalla riga 2."""
+    it = ws.iter_rows(values_only=False)
+    headers = [c.value for c in next(it)]
+    for row in it:
+        yield row[0].row, dict(zip(headers, [c.value for c in row]))
+
+
+def _cell(ws, row_num: int, header: str):
+    return ws.cell(row=row_num, column=[c.value for c in ws[1]].index(header) + 1)
+
+
+def rule_indirizzi(wb: xl.Workbook, log: ChangeLog) -> None:
+    ws = wb["INDIRIZZI"]
+    for row_num, rec in _rows(ws):
+        old = rec.get("TIPO")
+        new = LICEO_MAP.get(str(old).strip()) if old else None
+        if new and old != new:
+            c = _cell(ws, row_num, "TIPO")
+            log.add("indirizzi.tipo", "INDIRIZZI", rec["ID"], "TIPO", old, new)
+            c.value = new
+
+
+def _fix_permessi_obj(obj):
+    """Rende maiuscoli i permessi e rinomina cartella->folder (anche annidati)."""
+    changed = False
+    if isinstance(obj, dict):
+        for key in list(obj.keys()):
+            val = obj[key]
+            if key == "cartella":
+                obj["folder"] = obj.pop("cartella")
+                changed = True
+                key = "folder"
+                val = obj[key]
+            if key == "permesso" and isinstance(val, str):
+                fixed = PERMESSO_CASE.get(val, val)
+                if fixed != val:
+                    obj[key] = fixed
+                    changed = True
+            if isinstance(val, list):
+                for item in val:
+                    changed = _fix_permessi_obj(item) or changed
+            elif isinstance(val, dict):
+                changed = _fix_permessi_obj(val) or changed
+    return changed
+
+
+def rule_conf_doc(wb: xl.Workbook, log: ChangeLog) -> None:
+    ws = wb["CONF_DOC"]
+    for row_num, rec in _rows(ws):
+        cid = rec.get("ID")
+        if not cid:
+            continue  # righe fantasma/test: intatte (spec §5)
+        # GENERATORE mancante
+        gen = rec.get("GENERATORE")
+        target_gen = GENERIC_FILL.get(cid)
+        if target_gen and gen != target_gen:
+            c = _cell(ws, row_num, "GENERATORE")
+            log.add("confdoc.generatore", "CONF_DOC", cid, "GENERATORE", gen, target_gen)
+            c.value = target_gen
+        # PERMESSI: casing + chiavi
+        raw_pm = rec.get("PERMESSI")
+        if raw_pm:
+            obj = json.loads(raw_pm)
+            if _fix_permessi_obj(obj):
+                c = _cell(ws, row_num, "PERMESSI")
+                log.add("confdoc.permessi", "CONF_DOC", cid, "PERMESSI",
+                        raw_pm, json.dumps(obj, ensure_ascii=False))
+                c.value = json.dumps(obj, ensure_ascii=False)
+        # Asse per-cattedra: TIPO + placeholder in FILE_NAME
+        if cid in DOCENTE_MATERIA_IDS:
+            c_tipo = _cell(ws, row_num, "TIPO")
+            if c_tipo.value != "DOCUMENTO_DOCENTE_MATERIA":
+                log.add("confdoc.tipo-per-cattedra", "CONF_DOC", cid, "TIPO",
+                        c_tipo.value, "DOCUMENTO_DOCENTE_MATERIA")
+                c_tipo.value = "DOCUMENTO_DOCENTE_MATERIA"
+            c_fn = _cell(ws, row_num, "FILE_NAME")
+            # Una voce di log per singolo placeholder sostituito.
+            for old_tok, new_tok in PLACEHOLDER_FIXES.items():
+                cur = c_fn.value
+                if cur is None:
+                    continue
+                new_fn = cur.replace(old_tok, new_tok)
+                if new_fn != cur:
+                    log.add("confdoc.placeholder-file-name", "CONF_DOC", cid, "FILE_NAME",
+                            cur, new_fn)
+                    c_fn.value = new_fn
+        # Condizione MODELLI con percorso CDU inesistente
+        raw_mod = rec.get("MODELLI")
+        if raw_mod and COND_TOKEN_OLD in raw_mod:
+            obj = json.loads(raw_mod)
+            for branch in obj:
+                if isinstance(branch, dict) and isinstance(branch.get("condizione"), str):
+                    branch["condizione"] = branch["condizione"].replace(
+                        COND_TOKEN_OLD, COND_TOKEN_NEW)
+            new_raw = json.dumps(obj, ensure_ascii=False)
+            c = _cell(ws, row_num, "MODELLI")
+            log.add("confdoc.condizione-doc15maggio", "CONF_DOC", cid, "MODELLI",
+                    raw_mod, new_raw)
+            c.value = new_raw
+
+
 def apply_rules(wb: xl.Workbook, log: ChangeLog) -> None:
-    """Punto di estensione: le regole dei task seguenti si agganciano qui."""
+    # Fogli assenti dal workbook ignorati (stessa convenzione di collect_residuals).
+    if "INDIRIZZI" in wb.sheetnames:
+        rule_indirizzi(wb, log)
+    if "CONF_DOC" in wb.sheetnames:
+        rule_conf_doc(wb, log)
 
 
 def _col_index(headers: tuple, name: str) -> int:

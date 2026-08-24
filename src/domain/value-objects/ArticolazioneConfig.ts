@@ -4,12 +4,12 @@ import { ValidationError } from '../errors/DomainError';
 interface ArticolazioneJson {
   parent?: string | null;
   partner?: string | null;
-  partners?: string | null;
+  partners?: string[] | null;
 }
 
 /**
  * Parsed CLASSI.ARTICOLAZIONE (ref 05 §2). Three shapes:
- * - parent class:   parent=null, partner=null, partners="1F-LSO,1F-LSS"
+ * - parent class:   parent=null, partner=null, partners=["1F-LSO","1F-LSS"]
  * - partner class:  parent="1F", partner="1F-LSS", partners=null
  * - standard class: all null → fromJson returns null
  */
@@ -32,14 +32,11 @@ export class ArticolazioneConfig {
       typeof obj.partner === 'string' && obj.partner.trim() !== ''
         ? ClasseId.of(obj.partner.trim())
         : null;
-    const partners =
-      typeof obj.partners === 'string'
-        ? obj.partners
-            .split(',')
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0)
-            .map((s) => ClasseId.of(s))
-        : [];
+    const partners = Array.isArray(obj.partners)
+      ? obj.partners
+          .filter((s): s is string => typeof s === 'string' && s.trim() !== '')
+          .map((s) => ClasseId.of(s.trim()))
+      : [];
     if (parent === null && partner === null && partners.length === 0) return null;
     if (partners.length > 0 && partners.length !== 2) {
       throw new ValidationError(

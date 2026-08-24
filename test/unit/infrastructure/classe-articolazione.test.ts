@@ -17,7 +17,7 @@ function classe(id: string) {
 
 test('ArticolazioneConfig parses parent / partner / standard shapes (05 §2)', () => {
   const parent = ArticolazioneConfig.fromJson(
-    '{"parent":null,"partner":null,"partners":"1F-LSO,1F-LSS"}'
+    '{"parent":null,"partner":null,"partners":["1F-LSO","1F-LSS"]}'
   )!;
   expect(parent.isParent()).toBe(true);
   expect(parent.partners.map((c) => c.value)).toEqual(['1F-LSO', '1F-LSS']);
@@ -28,7 +28,7 @@ test('ArticolazioneConfig parses parent / partner / standard shapes (05 §2)', (
   expect(partner.parent!.value).toBe('1F');
   expect(ArticolazioneConfig.fromJson(null)).toBeNull();
   expect(ArticolazioneConfig.fromJson('{"parent":null,"partner":null,"partners":null}')).toBeNull();
-  expect(() => ArticolazioneConfig.fromJson('{"partners":"1F-LSO"}')).toThrow(ValidationError);
+  expect(() => ArticolazioneConfig.fromJson('{"partners":["1F-LSO"]}')).toThrow(ValidationError);
 });
 
 test('isArticolata + parent/partner navigation (06 §3)', () => {

@@ -378,11 +378,11 @@ Transizione tipica: `GENERATO` → `VERBALIZZATO/NOTIFICATO` → `ARCHIVIATO`.
 {
   "parent": "ClasseId | null",
   "partner": "ClasseId | null",
-  "partners": "csv | null" // esattamente due ClasseId quando presente, mai più o meno
+  "partners": ["ClasseId", "ClasseId"] | null  // esattamente due elementi quando presente, mai più o meno; l'ordine determina PRIMO/SECONDO gruppo
 }
 ```
 
-L'ordine del CSV in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREGATI_E_CLASSI_ARTICOLATE.md`).
+L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREGATI_E_CLASSI_ARTICOLATE.md`).
 
 - **Invarianti di configurazione:**
   - `partners`, quando presente, DEVE contenere ESATTAMENTE due `ClasseId`; un'articolazione con un numero diverso di partner NON è supportata.

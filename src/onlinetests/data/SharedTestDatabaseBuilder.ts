@@ -616,10 +616,10 @@ export class SharedTestDatabaseBuilder {
 
   private articolazione(layout: ClasseLayout): string {
     if (layout.id === '3C') {
-      return JSON.stringify({ parent: null, partner: null, partners: '3C-S,3C-C' });
+      return JSON.stringify({ parent: null, partner: null, partners: ['3C-S', '3C-C'] });
     }
     if (layout.id === '5B') {
-      return JSON.stringify({ parent: null, partner: null, partners: '5B-S,5B-C' });
+      return JSON.stringify({ parent: null, partner: null, partners: ['5B-S', '5B-C'] });
     }
     if (layout.articolazione === '{}') return '';
     const parsed = JSON.parse(layout.articolazione) as { parent: string; partner: string };

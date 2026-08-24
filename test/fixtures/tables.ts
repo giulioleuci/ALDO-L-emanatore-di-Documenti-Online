@@ -33,7 +33,7 @@ export function fixtureTables(): Record<string, Row[]> {
         INDIRIZZO: 'SCIENTIFICO',
         ATTIVA: true,
         COORD: 'rossi@school.it',
-        ARTICOLAZIONE: '{"parent":null,"partner":null,"partners":"1F-LSO,1F-LSS"}',
+        ARTICOLAZIONE: '{"parent":null,"partner":null,"partners":["1F-LSO","1F-LSS"]}',
         MATE: 'rossi@school.it'
       },
       {

@@ -269,7 +269,7 @@ export interface CduClasse {
       >;
       /** Precomputed partition of `items` with stato !== VERBALIZZATO (02 §4.1) — templates MUST NOT filter on `stato`. */
       nonVerbalizzati?: {
-        isPresenteLista: boolean;
+        hasElenco: boolean;
         elenco: Array<{
           studente: { nomeCompleto: string; email: string };
           tipoLabel: string;

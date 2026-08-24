@@ -151,13 +151,13 @@ test('PianiPersClasseProvider: nonVerbalizzati excludes VERBALIZZATO and exposes
     }
   ]);
   const nv = cdu.focus.classe!.didattica!.pianiPersonalizzati.nonVerbalizzati!;
-  expect(nv.isPresenteLista).toBe(true);
+  expect(nv.hasElenco).toBe(true);
   expect(nv.elenco).toEqual([
     { studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, tipoLabel: 'PDP (DSA)' }
   ]);
 });
 
-test('PianiPersClasseProvider: nonVerbalizzati.isPresenteLista is false when every item is VERBALIZZATO', () => {
+test('PianiPersClasseProvider: nonVerbalizzati.hasElenco is false when every item is VERBALIZZATO', () => {
   const cdu = buildPianiPers([
     {
       ID: 'doc_verb',
@@ -174,7 +174,7 @@ test('PianiPersClasseProvider: nonVerbalizzati.isPresenteLista is false when eve
     }
   ]);
   const nv = cdu.focus.classe!.didattica!.pianiPersonalizzati.nonVerbalizzati!;
-  expect(nv.isPresenteLista).toBe(false);
+  expect(nv.hasElenco).toBe(false);
   expect(nv.elenco).toEqual([]);
 });
 
@@ -199,7 +199,7 @@ test('DOCENTE_COMPLETO recipe populates nonVerbalizzati alongside items', () => 
     recipe('DOCENTE_COMPLETO')
   );
   const nv = cdu.focus.classe!.didattica!.pianiPersonalizzati.nonVerbalizzati!;
-  expect(nv.isPresenteLista).toBe(true);
+  expect(nv.hasElenco).toBe(true);
   expect(nv.elenco).toHaveLength(2); // both GENERATO rows; the VERBALIZZATO one excluded
 });
 

@@ -339,7 +339,7 @@ focus.classe:
       items: PianoPersonalizzatoItem[]   # §8.11 — ogni item porta `studente: {nomeCompleto, email}`
       nonVerbalizzati:                   # Partizione precalcolata (Principio 3): stato != VERBALIZZATO.
                                          #   Vietato filtrare su `stato` nei template (where:'stato',...).
-        isPresenteLista: boolean         # true sse elenco non vuoto (per {{#isPresenteLista}}/{{^}})
+        hasElenco: boolean               # true sse elenco non vuoto (per {{#hasElenco}}/{{^}})
         elenco:
           - studente: { nomeCompleto: string, email: string }  # stesso shape di PianoPersonalizzatoItem.studente
             tipoLabel: string            # es. "PDP (DSA)" — da tipoPianoLabel()
@@ -997,7 +997,7 @@ Questa sezione è la tavola di traduzione tra "cosa voglio stampare" e placehold
 | Materia con ITP | `{{#hasItp}} ... {{/hasItp}}` su un item di `focus.classe.materie` |
 | Carenze presenti | `{{#focus.alunno.didattica.carenze.hasCarenze}} ... {{/focus.alunno.didattica.carenze.hasCarenze}}` |
 | La classe ha supplenze attive | `{{#focus.classe.supplenze}} ... {{/focus.classe.supplenze}}` (sezione Mustache su array; guardare anche `{{^}}`) |
-| Ci sono piani non verbalizzati | `{{#focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.isPresenteLista}} ... {{/focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.isPresenteLista}}` |
+| Ci sono piani non verbalizzati | `{{#focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.hasElenco}} ... {{/focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.hasElenco}}` |
 
 ### 9.5 Filtri pipe: ammessi e vietati
 
@@ -1517,7 +1517,7 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       "didattica": {
         "pianiPersonalizzati": {
           "items": [],
-          "nonVerbalizzati": { "isPresenteLista": false, "elenco": [] }
+          "nonVerbalizzati": { "hasElenco": false, "elenco": [] }
         },
         "documenti": { "items": [], "hasDocumenti": false }
       }

@@ -54,7 +54,7 @@ export class PianiPersClasseProvider implements ContextProvider {
         });
     });
     const nonVerbalizzati = {
-      isPresenteLista: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
+      hasElenco: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
       elenco: items
         .filter((item) => item.stato !== StatoDocumento.VERBALIZZATO)
         .map((item) => ({

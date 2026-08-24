@@ -222,6 +222,67 @@ def rule_logs(wb: xl.Workbook, log: ChangeLog) -> None:
             c.value = new
 
 
+RUOLI_NOME_FILL = {
+    "REF_ORIENTAMENTO": "Referente Orientamento",
+    "DOCENTE_PRIMA_PROVA": "Docente della prima prova d'esame",
+    "DOCENTE_SECONDA_PROVA": "Docente della seconda prova d'esame",
+    "ALUNNO": "Alunno",
+}
+RUOLI_TYPO_FIXES = {"classedei": "classe dei"}
+MOV_FIXES = [
+    # (studente, tipo_attuale, a_attuale|None, nuovi valori)
+    {"studente": "vittorio.dantonio@pietroaldi.com", "tipo": "OUT",
+     "match_a": "RITIRO FREQUENZA", "set": {"TIPO": "RITIRATO", "A": "RITIRO"}},
+    {"studente": "aurora.petrini@pietroaldi.com", "tipo": "OUT",
+     "match_a": "", "set": {"A": "ALTRO ISTITUTO"}},
+]
+
+
+def rule_anagrafica(wb: xl.Workbook, log: ChangeLog) -> None:
+    ws = wb["DIPART"]
+    for row_num, rec in _rows(ws):
+        capo = rec.get("CAPO")
+        if capo and "@scuola.edu" in str(capo):
+            c = _cell(ws, row_num, "CAPO")
+            log.add("dipart.capo", "DIPART", rec["ID"], "CAPO", capo, "")
+            c.value = None
+
+    ws = wb["RUOLI"]
+    for row_num, rec in _rows(ws):
+        rid = rec.get("ID")
+        nome = rec.get("NOME")
+        new_nome = nome
+        if rid in RUOLI_NOME_FILL and not nome:
+            new_nome = RUOLI_NOME_FILL[rid]
+        if new_nome:
+            for old_frag, new_frag in RUOLI_TYPO_FIXES.items():
+                new_nome = new_nome.replace(old_frag, new_frag)
+        if new_nome != nome:
+            c = _cell(ws, row_num, "NOME")
+            log.add("ruoli.nome", "RUOLI", rid, "NOME", nome, new_nome)
+            c.value = new_nome
+
+    ws = wb["CLASSI"]
+    for row_num, rec in _rows(ws):
+        anno = rec.get("ANNO")
+        term = rec.get("TERMINALE")
+        if anno == 5 and term is not True:
+            c = _cell(ws, row_num, "TERMINALE")
+            log.add("classi.terminale", "CLASSI", rec["ID"], "TERMINALE", term, True)
+            c.value = True
+
+    ws = wb["MOV_ALUNNI"]
+    for row_num, rec in _rows(ws):
+        for fix in MOV_FIXES:
+            if (rec.get("STUDENTE") == fix["studente"] and rec.get("TIPO") == fix["tipo"]
+                    and str(rec.get("A") or "").strip() == fix["match_a"]):
+                for col, val in fix["set"].items():
+                    c = _cell(ws, row_num, col)
+                    log.add("mov.tipomovimento", "MOV_ALUNNI",
+                            rec["STUDENTE"], col, rec.get(col), val)
+                    c.value = val
+
+
 def apply_rules(wb: xl.Workbook, log: ChangeLog) -> None:
     # Fogli assenti dal workbook ignorati (stessa convenzione di collect_residuals).
     if "INDIRIZZI" in wb.sheetnames:
@@ -230,6 +291,9 @@ def apply_rules(wb: xl.Workbook, log: ChangeLog) -> None:
         rule_conf_doc(wb, log)
     if "LOG_DOCS" in wb.sheetnames and "LOG_FOLD" in wb.sheetnames:
         rule_logs(wb, log)
+    if all(name in wb.sheetnames
+           for name in ("DIPART", "RUOLI", "CLASSI", "MOV_ALUNNI")):
+        rule_anagrafica(wb, log)
 
 
 def _col_index(headers: tuple, name: str) -> int:

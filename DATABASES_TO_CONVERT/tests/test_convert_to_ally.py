@@ -222,5 +222,61 @@ class LogsRemapTest(unittest.TestCase):
         self.assertEqual(log.count("log.fold-tipo"), 5)
 
 
+class AnagraficaTest(unittest.TestCase):
+    def test_regole_anagrafiche(self):
+        wb = make_wb({
+            "DIPART": (
+                ("ID", "NOME", "CAPO", "MATERIE"),
+                (("LETT", "Lettere", "docente1@scuola.edu", "ITA,LAT"),),
+            ),
+            "RUOLI": (
+                ("ID", "NOME", "DOCENTE"),
+                (("REF_ORIENTAMENTO", None, None),),
+                (("DOCENTE_PRIMA_PROVA", None, None),),
+                (("DOCENTE_SECONDA_PROVA", None, None),),
+                (("ALUNNO", None, None),),
+                (("RAPPRESENTANTE_GENITORI", "Rappresentante di classedei genitori", None),),
+            ),
+            "CLASSI": (
+                ("ID", "ANNO", "TERMINALE"),
+                (("5ALC", 5, None),),
+                (("2E", 2, None),),
+            ),
+            # ruling P2: le righe toccate da MOV_FIXES usano le email reali
+            # @pietroaldi.com del database, non @x.it.
+            "MOV_ALUNNI": (
+                ("STUDENTE", "TIPO", "DATA", "DA", "A"),
+                (("vittorio.dantonio@pietroaldi.com", "OUT",
+                  "2026-01-09", "4G", "RITIRO FREQUENZA"),),
+                (("aurora.petrini@pietroaldi.com", "OUT",
+                  "2026-02-02", "4BLC", None),),
+                (("michelle.dellamora@x.it", "OUT", "2025-12-01", "2E", "2E"),),
+            ),
+        })
+        log = conv.ChangeLog()
+        conv.rule_anagrafica(wb, log)
+        self.assertIsNone(wb["DIPART"].cell(2, 3).value)
+        ruoli = wb["RUOLI"]
+        self.assertEqual(ruoli.cell(2, 2).value, "Referente Orientamento")
+        self.assertEqual(ruoli.cell(3, 2).value, "Docente della prima prova d'esame")
+        self.assertEqual(ruoli.cell(4, 2).value, "Docente della seconda prova d'esame")
+        self.assertEqual(ruoli.cell(5, 2).value, "Alunno")
+        self.assertEqual(ruoli.cell(6, 2).value, "Rappresentante di classe dei genitori")
+        classi = wb["CLASSI"]
+        self.assertTrue(classi.cell(2, 3).value)
+        self.assertIsNone(classi.cell(3, 3).value)
+        mov = wb["MOV_ALUNNI"]
+        self.assertEqual((mov.cell(2, 2).value, mov.cell(2, 5).value),
+                         ("RITIRATO", "RITIRO"))
+        self.assertEqual(mov.cell(3, 5).value, "ALTRO ISTITUTO")
+        self.assertEqual((mov.cell(4, 2).value, mov.cell(4, 5).value), ("OUT", "2E"))
+        self.assertEqual(log.count("dipart.capo"), 1)
+        self.assertEqual(log.count("ruoli.nome"), 5)
+        self.assertEqual(log.count("classi.terminale"), 1)
+        # ruling P3: voci per cella, non per riga (dantonio: TIPO+A = 2 voci;
+        # petrini: A = 1 voce) => totale 3.
+        self.assertEqual(log.count("mov.tipomovimento"), 3)
+
+
 if __name__ == "__main__":
     unittest.main()

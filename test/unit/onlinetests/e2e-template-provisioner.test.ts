@@ -194,7 +194,11 @@ test('does not reuse the v1 imported-table template after the heading fixture ch
       'doc:E2E Storico Email Template'
     ])
   );
-  expect(docContent[ids.tabelleImportate]).toBeDefined();
+  const tabelleImportateParagraphs = docContent[ids.tabelleImportate] ?? [];
+  expect(tabelleImportateParagraphs).toHaveLength(5);
+  expect(documentText(tabelleImportateParagraphs)).toContain(
+    'Tabelle importate per la classe {{focus.classe.anagrafica.nome}}'
+  );
   expect(docContent).not.toHaveProperty(existing.storico);
   expect(sheetContent).not.toHaveProperty(existing.tabellaSorgenteDati);
 });
@@ -272,18 +276,18 @@ test('authors real CDU-path placeholder content into newly-created templates, no
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   const verbaleParagraphs = docContent[ids.verbale] ?? [];
-  expect(verbaleParagraphs.length).toBeGreaterThan(0);
+  expect(verbaleParagraphs).toHaveLength(9);
   expect(documentText(verbaleParagraphs)).toContain('{{focus.classe.anagrafica.nome}}');
   expect(documentText(verbaleParagraphs)).toContain('consiglioDiClasse');
 
   const condottaUpdates = sheetContent[ids.condotta] ?? [];
-  expect(condottaUpdates.length).toBeGreaterThan(0);
+  expect(condottaUpdates).toHaveLength(32); // header + roster placeholder row + 30 AVERAGE() rows
   const condottaText = JSON.stringify(condottaUpdates);
   expect(condottaText).toContain('dynamic_rows[source=focus.classe.studenti.listaCompleta');
   expect(condottaText).toContain('AVERAGE(');
 
   const riepilogoParagraphs = docContent[ids.riepilogo] ?? [];
-  expect(riepilogoParagraphs.length).toBeGreaterThan(0);
+  expect(riepilogoParagraphs).toHaveLength(7);
   const riepilogoText = documentText(riepilogoParagraphs);
   expect(riepilogoText).not.toContain('{{TABELLA_ALUNNI}}');
   expect(docTables[ids.riepilogo]).toEqual([
@@ -318,7 +322,7 @@ test('authors real CDU-path placeholder content into newly-created templates, no
 
   for (const tipo of TIPI_PIANO) {
     const pianoParagraphs = docContent[ids.piani[tipo]] ?? [];
-    expect(pianoParagraphs.length).toBeGreaterThan(0);
+    expect(pianoParagraphs).toHaveLength(7);
     const pianoText = documentText(pianoParagraphs);
     expect(pianoText).toContain('{{focus.alunno.anagrafica.nomeCompleto}}');
     expect(pianoText).toContain('{{focus.piano.tipoLabel}}');
@@ -417,9 +421,11 @@ test('authors the work-plan (piano di lavoro) template', () => {
   const drive = new FakeDriveFacade();
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
-  const text = documentText(docContent[ids.pianoLavoro] ?? []);
+  const pianoLavoroParagraphs = docContent[ids.pianoLavoro] ?? [];
+  expect(pianoLavoroParagraphs).toHaveLength(3);
+  const text = documentText(pianoLavoroParagraphs);
   expect(text).toContain('{{focus.classe.anagrafica.nome}}');
-  expect(text.length).toBeGreaterThan(0);
+  expect(text).toContain('{{focus.classe.anagrafica.indirizzo.nomeSintetico}}');
 });
 
 test('does not re-author content for a reused (found, not created) template', () => {

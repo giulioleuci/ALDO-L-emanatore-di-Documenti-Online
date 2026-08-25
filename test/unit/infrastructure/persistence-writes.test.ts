@@ -21,7 +21,7 @@ test('ClasseRepository.setCoordinatori persists COORD via the table seam (06 §3
     'rossi@school.it',
     'bianchi@school.it'
   ]);
-  expect(db.saved).toBeGreaterThan(0);
+  expect(db.saved).toBe(1);
 });
 
 test('setDocentiRuolo sets and removes RUOLI keys; getDocentiCDC unaffected', () => {
@@ -60,7 +60,6 @@ test('creaSupplenza appends when valid and rejects overlapping context (04 §14)
   expect(r.findByTitolare(rossi).length).toBe(before + 1);
 
   // Different subject → no overlap, allowed.
-  expect(() =>
-    r.creaSupplenza(rossi, bianchi, new Date('2026-03-15'), new Date('2026-04-10'), '5A', 'FISI')
-  ).not.toThrow();
+  r.creaSupplenza(rossi, bianchi, new Date('2026-03-15'), new Date('2026-04-10'), '5A', 'FISI');
+  expect(r.findByTitolare(rossi)).toHaveLength(before + 2);
 });

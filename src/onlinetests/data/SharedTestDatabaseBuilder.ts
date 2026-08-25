@@ -98,7 +98,7 @@ const ESAME_CFG_E2E: Record<string, string> = {
 
 /**
  * The full MATERIE row set (base subjects + dotted-specifica rows), as pure
- * data — shared by `seedMaterie` (build-time, via `sample.appendRow`) and any
+ * data — shared by `seedMaterie` (build-time, via `sample.appendRows`) and any
  * runtime fixture migration (e.g. `migratePersistedE2eFixture`, which inserts only
  * whichever of these are missing from an already-persisted E2E sheet) so both
  * stay byte-for-byte in sync with a single source of truth.
@@ -453,47 +453,57 @@ export class SharedTestDatabaseBuilder {
         sintesi: 'SUM'
       }
     };
-    for (const id of INDIRIZZI) {
-      const label = labels[id]!;
-      sample.appendRow(TABLE.INDIRIZZI, {
-        [COL_INDIRIZZI.ID]: id,
-        [COL_INDIRIZZI.NOME]: label.nome,
-        [COL_INDIRIZZI.NOME_SINTETICO]: label.sintesi,
-        [COL_INDIRIZZI.TIPO]: 'Liceo'
-      });
-    }
+    sample.appendRows(
+      TABLE.INDIRIZZI,
+      INDIRIZZI.map((id) => {
+        const label = labels[id]!;
+        return {
+          [COL_INDIRIZZI.ID]: id,
+          [COL_INDIRIZZI.NOME]: label.nome,
+          [COL_INDIRIZZI.NOME_SINTETICO]: label.sintesi,
+          [COL_INDIRIZZI.TIPO]: 'Liceo'
+        };
+      })
+    );
   }
 
   private seedDipart(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.DIPART, {
-      [COL_DIPART.ID]: DIPART_E2E,
-      [COL_DIPART.NOME]: 'Dipartimento E2E',
-      [COL_DIPART.CAPO]: e2eDocenteEmail(1),
-      [COL_DIPART.MATERIE]: MATERIE_E2E.join(',')
-    });
+    sample.appendRows(TABLE.DIPART, [
+      {
+        [COL_DIPART.ID]: DIPART_E2E,
+        [COL_DIPART.NOME]: 'Dipartimento E2E',
+        [COL_DIPART.CAPO]: e2eDocenteEmail(1),
+        [COL_DIPART.MATERIE]: MATERIE_E2E.join(',')
+      }
+    ]);
   }
 
   private seedMaterie(sample: ISampleSpreadsheet): void {
-    buildMaterieRows().forEach((row) => sample.appendRow(TABLE.MATERIE, row));
+    sample.appendRows(TABLE.MATERIE, buildMaterieRows());
   }
 
   /** 20 DOCENTI rows, alternating GENERE, all in the single E2E dipartimento; realistic Italian names (item 5). */
   private seedDocenti(sample: ISampleSpreadsheet): void {
-    for (let i = 1; i <= DOCENTE_COUNT; i++) {
-      const genere = i % 2 === 0 ? 'F' : 'M';
-      sample.appendRow(TABLE.DOCENTI, {
-        [COL_DOCENTI.EMAIL]: e2eDocenteEmail(i),
-        [COL_DOCENTI.COGNOME]: DOCENTE_COGNOMI[(i - 1) % DOCENTE_COGNOMI.length]!,
-        [COL_DOCENTI.NOME]: (genere === 'F' ? DOCENTE_NOMI_F : DOCENTE_NOMI_M)[(i - 1) % 5]!,
-        [COL_DOCENTI.GENERE]: genere,
-        [COL_DOCENTI.DIPART]: DIPART_E2E,
-        [COL_DOCENTI.ITP]: i === 2 || i === 11
-      });
-    }
+    sample.appendRows(
+      TABLE.DOCENTI,
+      Array.from({ length: DOCENTE_COUNT }, (_, index) => {
+        const i = index + 1;
+        const genere = i % 2 === 0 ? 'F' : 'M';
+        return {
+          [COL_DOCENTI.EMAIL]: e2eDocenteEmail(i),
+          [COL_DOCENTI.COGNOME]: DOCENTE_COGNOMI[(i - 1) % DOCENTE_COGNOMI.length]!,
+          [COL_DOCENTI.NOME]: (genere === 'F' ? DOCENTE_NOMI_F : DOCENTE_NOMI_M)[(i - 1) % 5]!,
+          [COL_DOCENTI.GENERE]: genere,
+          [COL_DOCENTI.DIPART]: DIPART_E2E,
+          [COL_DOCENTI.ITP]: i === 2 || i === 11
+        };
+      })
+    );
   }
 
   /** All shared classes with the complete address-specific assignment matrix. */
   private seedClassi(sample: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
+    const rows: Array<Record<string, unknown>> = [];
     layouts.forEach((layout, classIndex) => {
       const indirizzo = CLASS_ADDRESS_BY_CLASS[layout.id]!;
       const row: Record<string, unknown> = {
@@ -608,8 +618,9 @@ export class SharedTestDatabaseBuilder {
           'INTERPRET.FLAUTO': e2eDocenteEmail(6)
         });
       }
-      sample.appendRow(TABLE.CLASSI, row);
+      rows.push(row);
     });
+    sample.appendRows(TABLE.CLASSI, rows);
   }
 
   private articolazione(layout: ClasseLayout): string {
@@ -626,6 +637,7 @@ export class SharedTestDatabaseBuilder {
 
   /** 220 deterministic students; explicit layout starts preserve the legacy focal identities. */
   private seedAlunni(sample: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
+    const rows: Array<Record<string, unknown>> = [];
     for (const layout of layouts) {
       for (let n = 0; n < layout.count; n++) {
         const counter = layout.studentStart + n;
@@ -635,7 +647,7 @@ export class SharedTestDatabaseBuilder {
         const eccezione = layout.religionExceptions.find((e) => e.index === n);
         const isRapprStud = n < layout.studentRepCount;
         const isRapprGen = n >= layout.count - layout.parentRepCount;
-        sample.appendRow(TABLE.ALUNNI, {
+        rows.push({
           [COL_ALUNNI.EMAIL]: email,
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: layout.id,
@@ -662,6 +674,7 @@ export class SharedTestDatabaseBuilder {
         });
       }
     }
+    sample.appendRows(TABLE.ALUNNI, rows);
   }
 
   /** Adds the original focal 2025-2026 seams after Task 4's broader historical rows. */
@@ -685,6 +698,7 @@ export class SharedTestDatabaseBuilder {
     const scientifico = layouts.find((layout) => layout.id === CLASSE_C);
     if (scientifico === undefined) throw new ConfigurationError(`Missing focal layout ${CLASSE_C}`);
     rows.push({ id: CLASSE_C, layout: scientifico, focalIndex: 2 });
+    const classRows: Array<Record<string, unknown>> = [];
 
     for (const { id, layout, focalIndex } of rows) {
       const row: Record<string, unknown> = {
@@ -706,11 +720,13 @@ export class SharedTestDatabaseBuilder {
         row[sigla] = e2eDocenteEmail(((focalIndex * MATERIE_E2E.length + materiaIndex) % 8) + 1);
       });
       if (layout.id === CLASSE_C_PARTNER) row.MAT = e2eDocenteEmail(1);
-      prior.appendRow(TABLE.CLASSI, row);
+      classRows.push(row);
     }
+    prior.appendRows(TABLE.CLASSI, classRows);
   }
 
   private seedLegacyFocalStudents(prior: ISampleSpreadsheet, layouts: ClasseLayout[]): void {
+    const rows: Array<Record<string, unknown>> = [];
     for (const layout of layouts) {
       for (let offset = 0; offset < layout.count; offset += 1) {
         const counter = layout.studentStart + offset;
@@ -719,7 +735,7 @@ export class SharedTestDatabaseBuilder {
         if (layout.id === CLASSE_A && !isRipetente) continue;
         const cognome = ALUNNO_COGNOMI[(counter - 1) % ALUNNO_COGNOMI.length]!;
         const nome = ALUNNO_NOMI[(counter - 1) % ALUNNO_NOMI.length]!;
-        prior.appendRow(TABLE.ALUNNI, {
+        rows.push({
           [COL_ALUNNI.EMAIL]: email,
           [COL_ALUNNI.COGNOMENOME]: `${cognome} ${nome}`,
           [COL_ALUNNI.CLASSE]: isRipetente ? layout.id : classePrecedente(layout.id),
@@ -735,11 +751,13 @@ export class SharedTestDatabaseBuilder {
         });
       }
     }
+    prior.appendRows(TABLE.ALUNNI, rows);
   }
 
   private seedLegacyFocalPlans(prior: ISampleSpreadsheet): void {
-    for (const tipo of [TipoPiano.PEI, TipoPiano.PDP_BES]) {
-      prior.appendRow(TABLE.LOG_DOCS, {
+    prior.appendRows(
+      TABLE.LOG_DOCS,
+      [TipoPiano.PEI, TipoPiano.PDP_BES].map((tipo) => ({
         [COL_LOG_DOCS.ID]: `E2E_FAKE_LOGDOC_${tipo}_2025_2026`,
         [COL_LOG_DOCS.ID_GEN]: CONF_DOC_PIANI,
         [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
@@ -754,8 +772,8 @@ export class SharedTestDatabaseBuilder {
         [COL_LOG_DOCS.MATERIE]: '',
         [COL_LOG_DOCS.DATA_CREAZ]: '2025-11-10T09:00:00.000Z',
         [COL_LOG_DOCS.ID_ORIG]: ''
-      });
-    }
+      }))
+    );
   }
 
   /**
@@ -772,8 +790,9 @@ export class SharedTestDatabaseBuilder {
       { studente: CARENZA_ALUNNO_1, classe: CLASSE_A },
       { studente: CARENZA_ALUNNO_2, classe: CLASSE_B }
     ];
-    for (const { studente, classe } of rows) {
-      sample.appendRow(TABLE.CARENZE, {
+    sample.appendRows(
+      TABLE.CARENZE,
+      rows.map(({ studente, classe }) => ({
         [COL_CARENZE.STUDENTE]: studente,
         [COL_CARENZE.PROGRESSIVO]: 1,
         [COL_CARENZE.CLASSE]: classe,
@@ -783,170 +802,194 @@ export class SharedTestDatabaseBuilder {
         [COL_CARENZE.NOTE]: 'Carenza E2E di prova',
         [COL_CARENZE.DATA_MODIFICA]: '2026-07-01',
         [materiaCarenza]: 4
-      });
-    }
+      }))
+    );
   }
 
   /** Same SUPPLENZE -> VARIAZIONI_CATTEDRA -> CLASSI priority-chain case as SampleDatabaseBuilder, using docenti 9/10 (outside the cattedra round-robin pool). */
   private seedSupplenzeEVariazioni(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(1),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(9),
-      [COL_SUPPLENZE.DAL]: '2026-07-01',
-      [COL_SUPPLENZE.AL]: '2026-07-10',
-      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
-      [COL_SUPPLENZE.MATERIE]: MATERIE_E2E[0]
-    });
-    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIE]: MATERIE_E2E[0],
-      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(1),
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(10),
-      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
-    });
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(2),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(11),
-      [COL_SUPPLENZE.DAL]: '2026-07-01',
-      [COL_SUPPLENZE.AL]: '2026-07-31',
-      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
-      [COL_SUPPLENZE.MATERIE]: 'INF'
-    });
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(13),
-      [COL_SUPPLENZE.DAL]: '2026-07-01',
-      [COL_SUPPLENZE.AL]: '2026-07-31',
-      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
-      [COL_SUPPLENZE.MATERIE]: 'ALT'
-    });
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(13),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(14),
-      [COL_SUPPLENZE.DAL]: '2026-07-01',
-      [COL_SUPPLENZE.AL]: '2026-07-31',
-      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
-      [COL_SUPPLENZE.MATERIE]: 'ALT'
-    });
-    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'IRC',
-      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(6),
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(12),
-      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
-    });
-    // 2-hop VARIAZIONI_CATTEDRA override chain on CLASSE_A/ITA (docente 2, the
-    // round-robin nominal holder, genuinely untouched by any other row above):
-    // docente2 -> docente15 -> docente16, both hops decorse before
-    // ASSIGNMENT_MATRIX_DATE_E2E so the chain must be walked to its final
-    // holder, not stop at the intermediate hop (ref design
-    // 2026-07-30-cattedra-chain-verification-design.md, EXPECTED_ASSIGNMENT_MATRIX 'ITA').
-    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'ITA',
-      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(2),
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(15),
-      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-01'
-    });
-    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'ITA',
-      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(15),
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(16),
-      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-08'
-    });
+    const supplenze: Array<Record<string, unknown>> = [
+      {
+        [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(1),
+        [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(9),
+        [COL_SUPPLENZE.DAL]: '2026-07-01',
+        [COL_SUPPLENZE.AL]: '2026-07-10',
+        [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+        [COL_SUPPLENZE.MATERIE]: MATERIE_E2E[0]
+      }
+    ];
+    const variazioni: Array<Record<string, unknown>> = [
+      {
+        [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+        [COL_VARIAZIONI_CATTEDRA.MATERIE]: MATERIE_E2E[0],
+        [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(1),
+        [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(10),
+        [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
+      }
+    ];
+    supplenze.push(
+      ...[
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(2),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(11),
+          [COL_SUPPLENZE.DAL]: '2026-07-01',
+          [COL_SUPPLENZE.AL]: '2026-07-31',
+          [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+          [COL_SUPPLENZE.MATERIE]: 'INF'
+        },
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(13),
+          [COL_SUPPLENZE.DAL]: '2026-07-01',
+          [COL_SUPPLENZE.AL]: '2026-07-31',
+          [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+          [COL_SUPPLENZE.MATERIE]: 'ALT'
+        },
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(13),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(14),
+          [COL_SUPPLENZE.DAL]: '2026-07-01',
+          [COL_SUPPLENZE.AL]: '2026-07-31',
+          [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+          [COL_SUPPLENZE.MATERIE]: 'ALT'
+        }
+      ]
+    );
+    variazioni.push(
+      ...[
+        {
+          [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'IRC',
+          [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(6),
+          [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(12),
+          [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
+        },
+        // 2-hop VARIAZIONI_CATTEDRA override chain on CLASSE_A/ITA (docente 2, the
+        // round-robin nominal holder, genuinely untouched by any other row above):
+        // docente2 -> docente15 -> docente16, both hops decorse before
+        // ASSIGNMENT_MATRIX_DATE_E2E so the chain must be walked to its final
+        // holder, not stop at the intermediate hop (ref design
+        // 2026-07-30-cattedra-chain-verification-design.md, EXPECTED_ASSIGNMENT_MATRIX 'ITA').
+        {
+          [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'ITA',
+          [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(2),
+          [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(15),
+          [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-01'
+        },
+        {
+          [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'ITA',
+          [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(15),
+          [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(16),
+          [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-08'
+        }
+      ]
+    );
     // Restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE): docente8
     // nominally holds STO in both CLASSE_B and CLASSE_C_PARTNER (only subject he
     // teaches). A CLASSI-omitted, MATERIE=STO-scoped supplenza must resolve
     // to BOTH his nominal STO cattedre from his own actual teaching slots, not
     // a naive cross-product with classes/subjects he doesn't teach (ref design
     // 2026-07-30-cattedra-resolution-wiring-design.md §2 worked example).
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(8),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(17),
-      [COL_SUPPLENZE.DAL]: '2026-07-01',
-      [COL_SUPPLENZE.AL]: '2026-07-31',
-      [COL_SUPPLENZE.CLASSI]: '',
-      [COL_SUPPLENZE.MATERIE]: 'STO'
-    });
-    // .SPECIFICA-targeted MATERIE entry on a SUPPLENZE row (not VARIAZIONI_
-    // CATTEDRA, ref design §8 bullet 3): reuses the existing specifica-bearing
-    // LAB.SEMINARIO_POMERIDIANO slot (sub-project 4 catalog) rather than adding
-    // a new one. A fresh Aug window keeps this independent of the July
-    // EXPECTED_ASSIGNMENT_MATRIX assertion for the same slot.
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(4),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
-      [COL_SUPPLENZE.DAL]: '2026-08-01',
-      [COL_SUPPLENZE.AL]: '2026-08-10',
-      [COL_SUPPLENZE.CLASSI]: CLASSE_A,
-      [COL_SUPPLENZE.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO'
-    });
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(20),
-      [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
-      [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
-      [COL_SUPPLENZE.CLASSI]: '4A',
-      [COL_SUPPLENZE.MATERIE]: 'MAT'
-    });
-    // Same holder and window, but a different real cattedra: resolving 4A/MAT
-    // must never leak the overlapping 2B/ING substitution into the focus.
-    // TITOLARE must match 2B's actual nominal ING holder (docente7, hardcoded
-    // in the CLASSE_B block above) — not docente19 (4A/MAT's holder) — or the
-    // substitution never engages and the isolation this row exists to test
-    // becomes untestable.
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
-      [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
-      [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
-      [COL_SUPPLENZE.CLASSI]: CLASSE_B,
-      [COL_SUPPLENZE.MATERIE]: 'ING'
-    });
-    // Dedicated window (after SUPPLENZA_FINE, before the degenerate row below
-    // — no overlap with either) for whole-council visibility checks: docente9
-    // has no other nominal 4A slot, unlike docente20 (4A/ITA's real titolare
-    // above), so he can't leak into a SOLO_TITOLARI 'CDC' roster for a reason
-    // unrelated to this substitution.
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(9),
-      [COL_SUPPLENZE.DAL]: '2026-10-20',
-      [COL_SUPPLENZE.AL]: '2026-10-25',
-      [COL_SUPPLENZE.CLASSI]: '4A',
-      [COL_SUPPLENZE.MATERIE]: 'MAT'
-    });
-    // Degenerate substitution: same principal/substitute identity. Every
-    // consumer must deduplicate the actor instead of emitting two recipients.
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
-      [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(19),
-      [COL_SUPPLENZE.DAL]: '2026-11-01',
-      [COL_SUPPLENZE.AL]: '2026-11-10',
-      [COL_SUPPLENZE.CLASSI]: '4A',
-      [COL_SUPPLENZE.MATERIE]: 'MAT'
-    });
-    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
-      [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO',
-      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(4),
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(20),
-      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-10-16'
-    });
+    supplenze.push(
+      ...[
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(8),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(17),
+          [COL_SUPPLENZE.DAL]: '2026-07-01',
+          [COL_SUPPLENZE.AL]: '2026-07-31',
+          [COL_SUPPLENZE.CLASSI]: '',
+          [COL_SUPPLENZE.MATERIE]: 'STO'
+        },
+        // .SPECIFICA-targeted MATERIE entry on a SUPPLENZE row (not VARIAZIONI_
+        // CATTEDRA, ref design §8 bullet 3): reuses the existing specifica-bearing
+        // LAB.SEMINARIO_POMERIDIANO slot (sub-project 4 catalog) rather than adding
+        // a new one. A fresh Aug window keeps this independent of the July
+        // EXPECTED_ASSIGNMENT_MATRIX assertion for the same slot.
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(4),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
+          [COL_SUPPLENZE.DAL]: '2026-08-01',
+          [COL_SUPPLENZE.AL]: '2026-08-10',
+          [COL_SUPPLENZE.CLASSI]: CLASSE_A,
+          [COL_SUPPLENZE.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO'
+        },
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(20),
+          [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
+          [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
+          [COL_SUPPLENZE.CLASSI]: '4A',
+          [COL_SUPPLENZE.MATERIE]: 'MAT'
+        },
+        // Same holder and window, but a different real cattedra: resolving 4A/MAT
+        // must never leak the overlapping 2B/ING substitution into the focus.
+        // TITOLARE must match 2B's actual nominal ING holder (docente7, hardcoded
+        // in the CLASSE_B block above) — not docente19 (4A/MAT's holder) — or the
+        // substitution never engages and the isolation this row exists to test
+        // becomes untestable.
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(7),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(18),
+          [COL_SUPPLENZE.DAL]: SUPPLENZA_INIZIO.toISOString().slice(0, 10),
+          [COL_SUPPLENZE.AL]: SUPPLENZA_FINE.toISOString().slice(0, 10),
+          [COL_SUPPLENZE.CLASSI]: CLASSE_B,
+          [COL_SUPPLENZE.MATERIE]: 'ING'
+        },
+        // Dedicated window (after SUPPLENZA_FINE, before the degenerate row below
+        // — no overlap with either) for whole-council visibility checks: docente9
+        // has no other nominal 4A slot, unlike docente20 (4A/ITA's real titolare
+        // above), so he can't leak into a SOLO_TITOLARI 'CDC' roster for a reason
+        // unrelated to this substitution.
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(9),
+          [COL_SUPPLENZE.DAL]: '2026-10-20',
+          [COL_SUPPLENZE.AL]: '2026-10-25',
+          [COL_SUPPLENZE.CLASSI]: '4A',
+          [COL_SUPPLENZE.MATERIE]: 'MAT'
+        },
+        // Degenerate substitution: same principal/substitute identity. Every
+        // consumer must deduplicate the actor instead of emitting two recipients.
+        {
+          [COL_SUPPLENZE.TITOLARE]: e2eDocenteEmail(19),
+          [COL_SUPPLENZE.SUPPLENTE]: e2eDocenteEmail(19),
+          [COL_SUPPLENZE.DAL]: '2026-11-01',
+          [COL_SUPPLENZE.AL]: '2026-11-10',
+          [COL_SUPPLENZE.CLASSI]: '4A',
+          [COL_SUPPLENZE.MATERIE]: 'MAT'
+        }
+      ]
+    );
+    variazioni.push(
+      ...[
+        {
+          [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_A,
+          [COL_VARIAZIONI_CATTEDRA.MATERIE]: 'LAB.SEMINARIO_POMERIDIANO',
+          [COL_VARIAZIONI_CATTEDRA.TITOLARE]: e2eDocenteEmail(4),
+          [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: e2eDocenteEmail(20),
+          [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-10-16'
+        }
+      ]
+    );
+    sample.appendRows(TABLE.SUPPLENZE, supplenze);
+    sample.appendRows(TABLE.VARIAZIONI_CATTEDRA, variazioni);
   }
 
   /** One PIANI row per (TipoPiano, studente) pair (scenario 3), spread across PIANO_STUDENTE (item 5). */
   private seedPiani(sample: ISampleSpreadsheet): void {
+    const rows: Array<Record<string, unknown>> = [];
     for (const tipo of TIPI_PIANO) {
       for (const studente of PIANO_STUDENTE[tipo]) {
-        sample.appendRow(TABLE.PIANI, {
+        rows.push({
           [COL_PIANI.STUDENTE]: studente,
           [COL_PIANI.TIPO]: tipo,
           [COL_PIANI.PARAMETRI]: JSON.stringify({ note: `Piano E2E ${tipo}` })
         });
       }
     }
+    sample.appendRows(TABLE.PIANI, rows);
   }
 
   /**
@@ -956,22 +999,24 @@ export class SharedTestDatabaseBuilder {
    * without an ASL hour count).
    */
   private seedProgetti(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.PROGETTI, {
-      [COL_PROGETTI.CLASSE]: CLASSE_A,
-      [COL_PROGETTI.TIPO]: TipoProgetto.ASL,
-      [COL_PROGETTI.NOME]: 'E2E Stage aziendale',
-      [COL_PROGETTI.REFERENTE]: e2eDocenteEmail(1),
-      [COL_PROGETTI.ORE]: 60,
-      [COL_PROGETTI.ORE_ASL]: 60
-    });
-    sample.appendRow(TABLE.PROGETTI, {
-      [COL_PROGETTI.CLASSE]: CLASSE_A,
-      [COL_PROGETTI.TIPO]: TipoProgetto.ORIENTAMENTO,
-      [COL_PROGETTI.NOME]: 'E2E Open day universita',
-      [COL_PROGETTI.REFERENTE]: e2eDocenteEmail(2),
-      [COL_PROGETTI.ORE]: 8,
-      [COL_PROGETTI.ORE_ASL]: 0
-    });
+    sample.appendRows(TABLE.PROGETTI, [
+      {
+        [COL_PROGETTI.CLASSE]: CLASSE_A,
+        [COL_PROGETTI.TIPO]: TipoProgetto.ASL,
+        [COL_PROGETTI.NOME]: 'E2E Stage aziendale',
+        [COL_PROGETTI.REFERENTE]: e2eDocenteEmail(1),
+        [COL_PROGETTI.ORE]: 60,
+        [COL_PROGETTI.ORE_ASL]: 60
+      },
+      {
+        [COL_PROGETTI.CLASSE]: CLASSE_A,
+        [COL_PROGETTI.TIPO]: TipoProgetto.ORIENTAMENTO,
+        [COL_PROGETTI.NOME]: 'E2E Open day universita',
+        [COL_PROGETTI.REFERENTE]: e2eDocenteEmail(2),
+        [COL_PROGETTI.ORE]: 8,
+        [COL_PROGETTI.ORE_ASL]: 0
+      }
+    ]);
   }
 
   private seedConfDoc(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
@@ -980,485 +1025,491 @@ export class SharedTestDatabaseBuilder {
       utenti: '',
       materie: ''
     });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_VERBALE,
-      [COL_CONF_DOC.TIPO]: 'VERBALE',
-      [COL_CONF_DOC.GENERATORE]: 'VERBALE_CDC',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.verbale }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/VERBALI/{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: JSON.stringify([
-        {
-          tipo: 'AGGIORNA_STATO_DOC',
-          stato: StatoDocumento.VERBALIZZATO,
-          criteri: {
-            [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-            [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
+    sample.appendRows(TABLE.CONF_DOC, [
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_VERBALE,
+        [COL_CONF_DOC.TIPO]: 'VERBALE',
+        [COL_CONF_DOC.GENERATORE]: 'VERBALE_CDC',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.verbale }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/VERBALI/{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: JSON.stringify([
+          {
+            tipo: 'AGGIORNA_STATO_DOC',
+            stato: StatoDocumento.VERBALIZZATO,
+            criteri: {
+              [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+              [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
+            }
+          },
+          {
+            tipo: 'AGGIORNA_STATO_DOC',
+            stato: StatoDocumento.VERBALIZZATO,
+            criteri: {
+              [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+              [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.partners | join}}'
+            }
           }
-        },
-        {
-          tipo: 'AGGIORNA_STATO_DOC',
-          stato: StatoDocumento.VERBALIZZATO,
-          criteri: {
-            [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-            [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.partners | join}}'
-          }
-        }
-      ]),
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '',
-        materie: 'MATE'
-      }),
-      // Come il REGISTRA_DOC del piano di lavoro sopra, la cartella del verbale
-      // deve risultare raggiungibile anche quando interrogata con classiCompetenza
-      // =[partner] (il box "cartelle" di CONF_MAIL_LAVORO instrada ogni
-      // coordinatore di partner separatamente via cartellePerClasse); il join
-      // gestisce con grazia il caso "non articolata" (log-registration.test.ts).
-      [COL_CONF_DOC.REGISTRA_FOLD]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
-        utenti: '',
-        materie: 'MATE'
-      })
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_CONDOTTA,
-      [COL_CONF_DOC.TIPO]: 'CONDOTTA',
-      [COL_CONF_DOC.GENERATORE]: 'FOGLIO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.condotta }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Condotta_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/CONDOTTA',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
-      [COL_CONF_DOC.TIPO]: 'RIEPILOGO_CLASSE',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_COMPLESSO,
-      [COL_CONF_DOC.TIPO]: 'REPORT_COMPLESSO',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_ARTICOLATA,
-      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ARTICOLATA',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-      [COL_CONF_DOC.TIPO]: 'RIEPILOGO_FIRME_CDC',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.cdcRiepilogo }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_RiepilogoFirmeCdc_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI_FIRME_CDC',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_MATERIA,
-      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      // The batch axis is (docente, materia) over EVERY active class: unscoped this
-      // produced 108 documents (~26 min) and killed batch 2 on the GAS execution limit
-      // (2026-08-21). The assertion only needs the INTERPRET.CHITARRA composite row on
-      // CLASSE_A, so the other classes are gated out at AnalyzeContext.
-      [COL_CONF_DOC.CONDIZIONE]: `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`,
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
-      [COL_CONF_DOC.FILE_NAME]:
-        'E2E_DocenteMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCENTI_MATERIE',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.docente.email}}',
-        materie: '{{focus.materia.sigla}}'
-      }),
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_SHEET_PERMESSI,
-      [COL_CONF_DOC.TIPO]: 'SHEET_PERMESSI',
-      [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_PERS',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_ACL_REALI,
-      [COL_CONF_DOC.TIPO]: 'ACL_REALI',
-      [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_ACL_Reali_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ACL_REALI',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
-      [COL_CONF_DOC.PERMESSI]: JSON.stringify({
-        file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }],
-        folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }],
-        regolaSupplente: { file: 'ENTRAMBI', folder: 'ENTRAMBI' }
-      }),
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.REGISTRA_DOC]: '{}',
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO,
-      [COL_CONF_DOC.TIPO]: 'PIANO_LAVORO',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.pianoLavoro }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_LAVORO',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      // Il piano di lavoro è un documento UNICO per classe (mai per singolo
-      // docente/materia): per una classe articolata parent, la registrazione
-      // deve coprire l'intero gruppo (join di focus.classe.articolazione
-      // .partners, gestisce con grazia anche il caso "non articolata" dove
-      // .partners è assente — vedi log-registration.test.ts) così che il box
-      // "documenti" trovi il documento anche quando interrogato con
-      // classiCompetenza=[partner] (EmailNotificationService.
-      // targetsPerCoordinatore instrada ogni coordinatore di partner
-      // separatamente). I coordinatori (fusi tra le partner da
-      // ClasseProvider.buildCoordinatori per il parent) vanno in UTENTI.
-      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
-        // coordinatori is a { appellativo, articolo, coordina, presiede, elenco: PersonVM[] }
-        // container, not a bare array (02 §2.6) — iterate .elenco.
-        utenti:
-          '{{#focus.classe.coordinatori.elenco}}{{email}},{{/focus.classe.coordinatori.elenco}}',
-        materie: ''
-      }),
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_PIANI,
-      [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-      [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify(
-        TIPI_PIANO.map((tipo) => ({
-          condizione: `{{focus.piano.tipo}} == "${tipo}"`,
-          templateId: templateIds.piani[tipo]
-        }))
-      ),
-      [COL_CONF_DOC.FILE_NAME]:
-        'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.alunno.anagrafica.email}}',
-        materie: ''
-      }),
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
-    // 01_SCHEMA_DATABASE.md "Eccezione ammessa — famiglia NO_PEI": identical
-    // to CONF_DOC_PIANI in every column except ID and CONDIZIONE, which
-    // excludes PEI targets before AnalyzeContextStep ever reaches MODELLI.
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_PIANI_NO_PEI,
-      [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-      [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
-      [COL_CONF_DOC.CONDIZIONE]: '{{focus.piano.tipo}} != "PEI"',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify(
-        TIPI_PIANO.map((tipo) => ({
-          condizione: `{{focus.piano.tipo}} == "${tipo}"`,
-          templateId: templateIds.piani[tipo]
-        }))
-      ),
-      [COL_CONF_DOC.FILE_NAME]:
-        'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.alunno.anagrafica.email}}',
-        materie: ''
-      }),
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
+        ]),
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}}',
+          utenti: '',
+          materie: 'MATE'
+        }),
+        // Come il REGISTRA_DOC del piano di lavoro sopra, la cartella del verbale
+        // deve risultare raggiungibile anche quando interrogata con classiCompetenza
+        // =[partner] (il box "cartelle" di CONF_MAIL_LAVORO instrada ogni
+        // coordinatore di partner separatamente via cartellePerClasse); il join
+        // gestisce con grazia il caso "non articolata" (log-registration.test.ts).
+        [COL_CONF_DOC.REGISTRA_FOLD]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+          utenti: '',
+          materie: 'MATE'
+        })
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_CONDOTTA,
+        [COL_CONF_DOC.TIPO]: 'CONDOTTA',
+        [COL_CONF_DOC.GENERATORE]: 'FOGLIO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.condotta }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Condotta_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/CONDOTTA',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GSHEET',
+        [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
+        [COL_CONF_DOC.TIPO]: 'RIEPILOGO_CLASSE',
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_COMPLESSO,
+        [COL_CONF_DOC.TIPO]: 'REPORT_COMPLESSO',
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_ARTICOLATA,
+        [COL_CONF_DOC.TIPO]: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA',
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ARTICOLATA',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
+        [COL_CONF_DOC.TIPO]: 'RIEPILOGO_FIRME_CDC',
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.cdcRiepilogo }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_RiepilogoFirmeCdc_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI_FIRME_CDC',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_MATERIA,
+        [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA',
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        // The batch axis is (docente, materia) over EVERY active class: unscoped this
+        // produced 108 documents (~26 min) and killed batch 2 on the GAS execution limit
+        // (2026-08-21). The assertion only needs the INTERPRET.CHITARRA composite row on
+        // CLASSE_A, so the other classes are gated out at AnalyzeContext.
+        [COL_CONF_DOC.CONDIZIONE]: `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`,
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
+        [COL_CONF_DOC.FILE_NAME]:
+          'E2E_DocenteMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCENTI_MATERIE',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}}',
+          utenti: '{{focus.docente.email}}',
+          materie: '{{focus.materia.sigla}}'
+        }),
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_SHEET_PERMESSI,
+        [COL_CONF_DOC.TIPO]: 'SHEET_PERMESSI',
+        [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_PERS',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GSHEET',
+        [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_ACL_REALI,
+        [COL_CONF_DOC.TIPO]: 'ACL_REALI',
+        [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_ACL_Reali_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ACL_REALI',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
+        [COL_CONF_DOC.PERMESSI]: JSON.stringify({
+          file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }],
+          folder: [{ ruolo: 'COORDINATORI', permesso: 'LETTURA' }],
+          regolaSupplente: { file: 'ENTRAMBI', folder: 'ENTRAMBI' }
+        }),
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GSHEET',
+        [COL_CONF_DOC.REGISTRA_DOC]: '{}',
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO,
+        [COL_CONF_DOC.TIPO]: 'PIANO_LAVORO',
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.pianoLavoro }),
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_LAVORO',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        // Il piano di lavoro è un documento UNICO per classe (mai per singolo
+        // docente/materia): per una classe articolata parent, la registrazione
+        // deve coprire l'intero gruppo (join di focus.classe.articolazione
+        // .partners, gestisce con grazia anche il caso "non articolata" dove
+        // .partners è assente — vedi log-registration.test.ts) così che il box
+        // "documenti" trovi il documento anche quando interrogato con
+        // classiCompetenza=[partner] (EmailNotificationService.
+        // targetsPerCoordinatore instrada ogni coordinatore di partner
+        // separatamente). I coordinatori (fusi tra le partner da
+        // ClasseProvider.buildCoordinatori per il parent) vanno in UTENTI.
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+          // coordinatori is a { appellativo, articolo, coordina, presiede, elenco: PersonVM[] }
+          // container, not a bare array (02 §2.6) — iterate .elenco.
+          utenti:
+            '{{#focus.classe.coordinatori.elenco}}{{email}},{{/focus.classe.coordinatori.elenco}}',
+          materie: ''
+        }),
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_PIANI,
+        [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
+        [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify(
+          TIPI_PIANO.map((tipo) => ({
+            condizione: `{{focus.piano.tipo}} == "${tipo}"`,
+            templateId: templateIds.piani[tipo]
+          }))
+        ),
+        [COL_CONF_DOC.FILE_NAME]:
+          'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}}',
+          utenti: '{{focus.alunno.anagrafica.email}}',
+          materie: ''
+        }),
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      },
+      // 01_SCHEMA_DATABASE.md "Eccezione ammessa — famiglia NO_PEI": identical
+      // to CONF_DOC_PIANI in every column except ID and CONDIZIONE, which
+      // excludes PEI targets before AnalyzeContextStep ever reaches MODELLI.
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_PIANI_NO_PEI,
+        [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
+        [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+        [COL_CONF_DOC.CONDIZIONE]: '{{focus.piano.tipo}} != "PEI"',
+        [COL_CONF_DOC.MODELLI]: JSON.stringify(
+          TIPI_PIANO.map((tipo) => ({
+            condizione: `{{focus.piano.tipo}} == "${tipo}"`,
+            templateId: templateIds.piani[tipo]
+          }))
+        ),
+        [COL_CONF_DOC.FILE_NAME]:
+          'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}}',
+          utenti: '{{focus.alunno.anagrafica.email}}',
+          materie: ''
+        }),
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      }
+    ]);
   }
 
   private seedConfMail(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_VERBALE,
-      // No class name (item 2): PER_COORDINATORE covers every class the
-      // coordinatore is responsible for — 1A/2B share one coordinatore, so
-      // naming just the (arbitrary) first class here would be misleading.
-      [COL_CONF_MAIL.OGGETTO]: '[E2E] Verbale del consiglio di classe',
-      [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
-      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        // DATI_SORGENTE.filtri (item 6): scope rendered links to VERBALE docs only —
-        // otherwise a class with CONDOTTA/PIANO_PERS docs too would list those
-        // as well. The ALLEGATI column below stays '[]': real file attachments
-        // remain opt-in (item 3). DATI_SORGENTE is unrelated to attachments —
-        // it makes renderBoxes resolve each class's real LOG_FOLD folders so
-        // LOG_MAIL.ALLEGATI records which class folders the mail referenced.
-        {
-          TIPO_BOX: 'documenti',
-          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
-        },
-        { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
-      ]),
-      [COL_CONF_MAIL.TESTO_START]: '<p>In allegato il verbale del consiglio di classe.</p>',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
-    });
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_CONDOTTA,
-      // PER_CDC always targets exactly one class (targetsPerCdc) — no multi-class
-      // ambiguity, so the class name stays (unlike VERBALE/PIANI, item 2).
-      [COL_CONF_MAIL.OGGETTO]: '[E2E] Scheda condotta {{focus.classe.anagrafica.nome}}',
-      [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
-      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        {
-          TIPO_BOX: 'documenti',
-          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'CONDOTTA' } }
-        },
-        { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
-      ]),
-      [COL_CONF_MAIL.TESTO_START]: '<p>In allegato la scheda di valutazione condotta.</p>',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_SUPPLENTI',
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
-    });
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_CARENZA,
-      [COL_CONF_MAIL.OGGETTO]: '[E2E] Comunicazione carenza',
-      [COL_CONF_MAIL.PROCESSO]: 'PER_CARENZA_GENITORI',
-      // carenze/note/assenze boxes (item 1) — an empty BOX_CFG rendered no
-      // deficiency list at all, despite CARENZA_COMPLETO populating the data.
-      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        { TIPO_BOX: 'carenze' },
-        { TIPO_BOX: 'note' },
-        { TIPO_BOX: 'assenze' }
-      ]),
-      [COL_CONF_MAIL.TESTO_START]:
-        '<p>Comunichiamo una carenza rilevata per il/la vostro/a figlio/a.</p>',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
-    });
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_PIANI,
-      [COL_CONF_MAIL.OGGETTO]: '[E2E] Piani personalizzati', // no class name (item 2, PER_COORDINATORE)
-      [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
-      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        {
-          TIPO_BOX: 'piani_pers_da_inviare',
-          ARRICCHISCI_CON_STORICO: true,
-          CONFIG_ARRICCHIMENTO: {
-            TEMPLATE_RIGA:
-              '<li><strong>{{corrente.tipoLabel}}</strong> — {{corrente.studente.nomeCompleto}}: <a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
+    sample.appendRows(TABLE.CONF_MAIL, [
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_VERBALE,
+        // No class name (item 2): PER_COORDINATORE covers every class the
+        // coordinatore is responsible for — 1A/2B share one coordinatore, so
+        // naming just the (arbitrary) first class here would be misleading.
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Verbale del consiglio di classe',
+        [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
+        [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+          // DATI_SORGENTE.filtri (item 6): scope rendered links to VERBALE docs only —
+          // otherwise a class with CONDOTTA/PIANO_PERS docs too would list those
+          // as well. The ALLEGATI column below stays '[]': real file attachments
+          // remain opt-in (item 3). DATI_SORGENTE is unrelated to attachments —
+          // it makes renderBoxes resolve each class's real LOG_FOLD folders so
+          // LOG_MAIL.ALLEGATI records which class folders the mail referenced.
+          {
+            TIPO_BOX: 'documenti',
+            DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'VERBALE' } }
+          },
+          { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
+        ]),
+        [COL_CONF_MAIL.TESTO_START]: '<p>In allegato il verbale del consiglio di classe.</p>',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
+      },
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_CONDOTTA,
+        // PER_CDC always targets exactly one class (targetsPerCdc) — no multi-class
+        // ambiguity, so the class name stays (unlike VERBALE/PIANI, item 2).
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Scheda condotta {{focus.classe.anagrafica.nome}}',
+        [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
+        [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+          {
+            TIPO_BOX: 'documenti',
+            DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'CONDOTTA' } }
+          },
+          { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse' } }
+        ]),
+        [COL_CONF_MAIL.TESTO_START]: '<p>In allegato la scheda di valutazione condotta.</p>',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_SUPPLENTI',
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
+      },
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_CARENZA,
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Comunicazione carenza',
+        [COL_CONF_MAIL.PROCESSO]: 'PER_CARENZA_GENITORI',
+        // carenze/note/assenze boxes (item 1) — an empty BOX_CFG rendered no
+        // deficiency list at all, despite CARENZA_COMPLETO populating the data.
+        [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+          { TIPO_BOX: 'carenze' },
+          { TIPO_BOX: 'note' },
+          { TIPO_BOX: 'assenze' }
+        ]),
+        [COL_CONF_MAIL.TESTO_START]:
+          '<p>Comunichiamo una carenza rilevata per il/la vostro/a figlio/a.</p>',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#C62828',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
+      },
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_PIANI,
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Piani personalizzati', // no class name (item 2, PER_COORDINATORE)
+        [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
+        [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+          {
+            TIPO_BOX: 'piani_pers_da_inviare',
+            ARRICCHISCI_CON_STORICO: true,
+            CONFIG_ARRICCHIMENTO: {
+              TEMPLATE_RIGA:
+                '<li><strong>{{corrente.tipoLabel}}</strong> — {{corrente.studente.nomeCompleto}}: <a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
+            }
+          },
+          { TIPO_BOX: 'piani_pers_inviati' }
+        ]),
+        [COL_CONF_MAIL.TESTO_START]: '<p>Piani personalizzati nuovi e già notificati.</p>',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        // Marks every PIANO_PERS doc of every class the coordinatore covers as
+        // notificato once the email actually sends (item 7) — without this,
+        // piani_pers_inviati never gets any content and "already sent" plans
+        // never exist in the mock DB. Must match on the FULL classiCompetenza
+        // list (join filter), not just focus.classe (the arbitrary first
+        // class): a 1A+2B coordinatore's email renders/sends both classes'
+        // plans (PianiPersClasseProvider aggregates classiCompetenza), so a
+        // single-class criterion would silently leave 2B's rows unmarked.
+        [COL_CONF_MAIL.POST_PROCESSO]: JSON.stringify([
+          {
+            tipo: 'INSERISCI_TIMESTAMP',
+            tab: TABLE.LOG_DOCS,
+            col: COL_LOG_DOCS.NOTIFICATO,
+            criteri: {
+              [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
+              [COL_LOG_DOCS.CLASSI]: '{{destinatario.contesto.classiCompetenza | join}}'
+            }
           }
-        },
-        { TIPO_BOX: 'piani_pers_inviati' }
-      ]),
-      [COL_CONF_MAIL.TESTO_START]: '<p>Piani personalizzati nuovi e già notificati.</p>',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      // Marks every PIANO_PERS doc of every class the coordinatore covers as
-      // notificato once the email actually sends (item 7) — without this,
-      // piani_pers_inviati never gets any content and "already sent" plans
-      // never exist in the mock DB. Must match on the FULL classiCompetenza
-      // list (join filter), not just focus.classe (the arbitrary first
-      // class): a 1A+2B coordinatore's email renders/sends both classes'
-      // plans (PianiPersClasseProvider aggregates classiCompetenza), so a
-      // single-class criterion would silently leave 2B's rows unmarked.
-      [COL_CONF_MAIL.POST_PROCESSO]: JSON.stringify([
-        {
-          tipo: 'INSERISCI_TIMESTAMP',
-          tab: TABLE.LOG_DOCS,
-          col: COL_LOG_DOCS.NOTIFICATO,
-          criteri: {
-            [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-            [COL_LOG_DOCS.CLASSI]: '{{destinatario.contesto.classiCompetenza | join}}'
+        ]),
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        // ARTICOLATA (matches CONF_MAIL_VERBALE's sibling pattern): partners are
+        // the entry point, so 3C-S/3C-C each reach their own direct coordinator
+        // scoped to their own plans — COMPLETA would route the whole articulated
+        // group through the parent's single coordinator with classi=[parent
+        // only], leaving partner-owned plans unfound by PianiPersClasseProvider.
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
+      },
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_LAVORO,
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Piano di lavoro e verbali riunioni',
+        [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
+        [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+          {
+            TIPO_BOX: 'documenti',
+            DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
+          },
+          {
+            TIPO_BOX: 'cartelle',
+            DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { idGen: CONF_DOC_VERBALE } }
           }
-        }
-      ]),
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      // ARTICOLATA (matches CONF_MAIL_VERBALE's sibling pattern): partners are
-      // the entry point, so 3C-S/3C-C each reach their own direct coordinator
-      // scoped to their own plans — COMPLETA would route the whole articulated
-      // group through the parent's single coordinator with classi=[parent
-      // only], leaving partner-owned plans unfound by PianiPersClasseProvider.
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
-    });
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_LAVORO,
-      [COL_CONF_MAIL.OGGETTO]: '[E2E] Piano di lavoro e verbali riunioni',
-      [COL_CONF_MAIL.PROCESSO]: 'PER_COORDINATORE',
-      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        {
-          TIPO_BOX: 'documenti',
-          DATI_SORGENTE: { metodo: 'documentiPerClasse', filtri: { tipo: 'PIANO_LAVORO' } }
-        },
-        {
-          TIPO_BOX: 'cartelle',
-          DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { idGen: CONF_DOC_VERBALE } }
-        }
-      ]),
-      [COL_CONF_MAIL.TESTO_START]:
-        '<p>Il piano di lavoro e la cartella dei verbali delle riunioni sono collegati di seguito.</p>',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
-    });
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_STATIC_ALLEGATO,
-      [COL_CONF_MAIL.OGGETTO]: '[E2E] Allegato statico di prova',
-      [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
-      [COL_CONF_MAIL.BOX_CFG]: '[]',
-      [COL_CONF_MAIL.TESTO_START]: '<p>Messaggio con allegato statico di prova.</p>',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'ENTRAMBI',
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: JSON.stringify([templateIds.staticAttachment])
-    });
+        ]),
+        [COL_CONF_MAIL.TESTO_START]:
+          '<p>Il piano di lavoro e la cartella dei verbali delle riunioni sono collegati di seguito.</p>',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
+      },
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_STATIC_ALLEGATO,
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Allegato statico di prova',
+        [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
+        [COL_CONF_MAIL.BOX_CFG]: '[]',
+        [COL_CONF_MAIL.TESTO_START]: '<p>Messaggio con allegato statico di prova.</p>',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'ENTRAMBI',
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: JSON.stringify([templateIds.staticAttachment])
+      }
+    ]);
   }
 
   private seedConfImp(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
-    sample.appendRow(TABLE.CONF_IMP, {
-      [COL_CONF_IMP.ID]: CONF_IMP_ASL,
-      [COL_CONF_IMP.TARGET]: TABLE.ASL,
-      [COL_CONF_IMP.CONFIG]: JSON.stringify({
-        searchStrategy: 'FILE_SINGOLO',
-        fileId: templateIds.aslImportSheet,
-        key: 'STUDENTE',
-        conflictResolution: 'OVERWRITE'
-      }),
-      [COL_CONF_IMP.ATTIVO]: true
-    });
+    sample.appendRows(TABLE.CONF_IMP, [
+      {
+        [COL_CONF_IMP.ID]: CONF_IMP_ASL,
+        [COL_CONF_IMP.TARGET]: TABLE.ASL,
+        [COL_CONF_IMP.CONFIG]: JSON.stringify({
+          searchStrategy: 'FILE_SINGOLO',
+          fileId: templateIds.aslImportSheet,
+          key: 'STUDENTE',
+          conflictResolution: 'OVERWRITE'
+        }),
+        [COL_CONF_IMP.ATTIVO]: true
+      }
+    ]);
   }
 
   private seedMaster(
@@ -1467,13 +1518,15 @@ export class SharedTestDatabaseBuilder {
     folderId: string,
     testMode: boolean
   ): void {
-    master.appendRow(TABLE.MASTER, {
-      [COL_MASTER.ANNO_SCOLASTICO]: '2026-2027',
-      [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
-      [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
-      [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente E2E',
-      [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local',
-      [COL_MASTER.TEST_MODE]: testMode
-    });
+    master.appendRows(TABLE.MASTER, [
+      {
+        [COL_MASTER.ANNO_SCOLASTICO]: '2026-2027',
+        [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
+        [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
+        [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente E2E',
+        [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local',
+        [COL_MASTER.TEST_MODE]: testMode
+      }
+    ]);
   }
 }

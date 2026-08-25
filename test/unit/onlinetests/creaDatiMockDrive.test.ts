@@ -27,6 +27,9 @@ function persistentSpreadsheet(id: string): ISampleSpreadsheet {
     appendRow: (sheetName: string, row: Record<string, unknown>) => {
       sheets.get(sheetName)!.push(row);
     },
+    appendRows: (sheetName: string, rows: Array<Record<string, unknown>>) => {
+      sheets.get(sheetName)!.push(...rows);
+    },
     getUrl: () => `https://docs.google.com/spreadsheets/d/${id}`
   };
 }

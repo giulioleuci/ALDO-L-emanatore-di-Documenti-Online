@@ -30,6 +30,7 @@ export interface ISampleSpreadsheet {
   id: string;
   addSheet(name: string, headerRow: string[]): void;
   appendRow(sheetName: string, row: Record<string, unknown>): void;
+  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void;
   getUrl(): string;
 }
 
@@ -152,127 +153,138 @@ export class SampleDatabaseBuilder {
   }
 
   private seedIndirizzi(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.INDIRIZZI, {
-      [COL_INDIRIZZI.ID]: INDIRIZZO_1,
-      [COL_INDIRIZZI.NOME]: 'Informatica e Telecomunicazioni',
-      [COL_INDIRIZZI.NOME_SINTETICO]: 'INF',
-      [COL_INDIRIZZI.TIPO]: 'Tecnico'
-    });
+    sample.appendRows(TABLE.INDIRIZZI, [
+      {
+        [COL_INDIRIZZI.ID]: INDIRIZZO_1,
+        [COL_INDIRIZZI.NOME]: 'Informatica e Telecomunicazioni',
+        [COL_INDIRIZZI.NOME_SINTETICO]: 'INF',
+        [COL_INDIRIZZI.TIPO]: 'Tecnico'
+      }
+    ]);
   }
 
   private seedDipart(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.DIPART, {
-      [COL_DIPART.ID]: DIPART_1,
-      [COL_DIPART.NOME]: 'Dipartimento di Matematica e Informatica',
-      [COL_DIPART.CAPO]: DOCENTE_1,
-      [COL_DIPART.MATERIE]: MATERIA_1
-    });
+    sample.appendRows(TABLE.DIPART, [
+      {
+        [COL_DIPART.ID]: DIPART_1,
+        [COL_DIPART.NOME]: 'Dipartimento di Matematica e Informatica',
+        [COL_DIPART.CAPO]: DOCENTE_1,
+        [COL_DIPART.MATERIE]: MATERIA_1
+      }
+    ]);
   }
 
   private seedMaterie(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.MATERIE, {
-      [COL_MATERIE.ID]: MATERIA_1,
-      [COL_MATERIE.NOME]: 'Matematica',
-      [COL_MATERIE.SINTESI]: 'MAT',
-      [COL_MATERIE.COLORE_1]: '#1565C0',
-      [COL_MATERIE.COLORE_2]: '#90CAF9',
-      [COL_MATERIE.SIMBOLO]: 'M',
-      [COL_MATERIE.ESAME_CFG]: '',
-      [COL_MATERIE.EVOLUZIONE]: ''
-    });
-    // Specifica catalog row (design 2026-07-30-materie-specifica-catalog):
-    // a dotted MATERIE.ID, catalog-only here (no CLASSI SPECIFICA column uses it).
-    sample.appendRow(TABLE.MATERIE, {
-      [COL_MATERIE.ID]: `${MATERIA_1}.SPECIALE`,
-      [COL_MATERIE.NOME]: 'Matematica speciale',
-      [COL_MATERIE.SINTESI]: 'MAT.SPECIALE',
-      [COL_MATERIE.COLORE_1]: '#1565C0',
-      [COL_MATERIE.COLORE_2]: '#90CAF9',
-      [COL_MATERIE.SIMBOLO]: 'M',
-      [COL_MATERIE.ESAME_CFG]: '',
-      [COL_MATERIE.EVOLUZIONE]: ''
-    });
+    sample.appendRows(TABLE.MATERIE, [
+      {
+        [COL_MATERIE.ID]: MATERIA_1,
+        [COL_MATERIE.NOME]: 'Matematica',
+        [COL_MATERIE.SINTESI]: 'MAT',
+        [COL_MATERIE.COLORE_1]: '#1565C0',
+        [COL_MATERIE.COLORE_2]: '#90CAF9',
+        [COL_MATERIE.SIMBOLO]: 'M',
+        [COL_MATERIE.ESAME_CFG]: '',
+        [COL_MATERIE.EVOLUZIONE]: ''
+      },
+      // Specifica catalog row (design 2026-07-30-materie-specifica-catalog):
+      // a dotted MATERIE.ID, catalog-only here (no CLASSI SPECIFICA column uses it).
+      {
+        [COL_MATERIE.ID]: `${MATERIA_1}.SPECIALE`,
+        [COL_MATERIE.NOME]: 'Matematica speciale',
+        [COL_MATERIE.SINTESI]: 'MAT.SPECIALE',
+        [COL_MATERIE.COLORE_1]: '#1565C0',
+        [COL_MATERIE.COLORE_2]: '#90CAF9',
+        [COL_MATERIE.SIMBOLO]: 'M',
+        [COL_MATERIE.ESAME_CFG]: '',
+        [COL_MATERIE.EVOLUZIONE]: ''
+      }
+    ]);
   }
 
   private seedDocenti(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.DOCENTI, {
-      [COL_DOCENTI.EMAIL]: DOCENTE_1,
-      [COL_DOCENTI.COGNOME]: 'Rossi',
-      [COL_DOCENTI.NOME]: 'Mario',
-      [COL_DOCENTI.GENERE]: 'M',
-      [COL_DOCENTI.DIPART]: DIPART_1,
-      [COL_DOCENTI.ITP]: false
-    });
-    sample.appendRow(TABLE.DOCENTI, {
-      [COL_DOCENTI.EMAIL]: DOCENTE_2,
-      [COL_DOCENTI.COGNOME]: 'Bianchi',
-      [COL_DOCENTI.NOME]: 'Laura',
-      [COL_DOCENTI.GENERE]: 'F',
-      [COL_DOCENTI.DIPART]: DIPART_1,
-      [COL_DOCENTI.ITP]: false
-    });
-    sample.appendRow(TABLE.DOCENTI, {
-      [COL_DOCENTI.EMAIL]: DOCENTE_3,
-      [COL_DOCENTI.COGNOME]: 'Verdi',
-      [COL_DOCENTI.NOME]: 'Paolo',
-      [COL_DOCENTI.GENERE]: 'M',
-      [COL_DOCENTI.DIPART]: DIPART_1,
-      [COL_DOCENTI.ITP]: false
-    });
+    sample.appendRows(TABLE.DOCENTI, [
+      {
+        [COL_DOCENTI.EMAIL]: DOCENTE_1,
+        [COL_DOCENTI.COGNOME]: 'Rossi',
+        [COL_DOCENTI.NOME]: 'Mario',
+        [COL_DOCENTI.GENERE]: 'M',
+        [COL_DOCENTI.DIPART]: DIPART_1,
+        [COL_DOCENTI.ITP]: false
+      },
+      {
+        [COL_DOCENTI.EMAIL]: DOCENTE_2,
+        [COL_DOCENTI.COGNOME]: 'Bianchi',
+        [COL_DOCENTI.NOME]: 'Laura',
+        [COL_DOCENTI.GENERE]: 'F',
+        [COL_DOCENTI.DIPART]: DIPART_1,
+        [COL_DOCENTI.ITP]: false
+      },
+      {
+        [COL_DOCENTI.EMAIL]: DOCENTE_3,
+        [COL_DOCENTI.COGNOME]: 'Verdi',
+        [COL_DOCENTI.NOME]: 'Paolo',
+        [COL_DOCENTI.GENERE]: 'M',
+        [COL_DOCENTI.DIPART]: DIPART_1,
+        [COL_DOCENTI.ITP]: false
+      }
+    ]);
   }
 
   /** 2 CLASSI rows: a plain class and its articolata partner (05_AGGREGATI_E_CLASSI_ARTICOLATE.md). */
   private seedClassi(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.CLASSI, {
-      [COL_CLASSI.ID]: CLASSE_BASE,
-      [COL_CLASSI.ANNO]: 4,
-      [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
-      // ArticolazioneConfig.fromJson (ref 05 §2) parses ARTICOLAZIONE as JSON, not
-      // a bare class id — a symmetric partner-only pair (parent: null on both
-      // sides) is one of its three valid shapes (see ArticolazioneConfig.ts doc).
-      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
-        parent: null,
-        partner: CLASSE_PARTNER,
-        partners: null
-      }),
-      [COL_CLASSI.RUOLI]: '',
-      [COL_CLASSI.ATTIVA]: true,
-      [COL_CLASSI.COORD]: DOCENTE_1,
-      [COL_CLASSI.IRC]: '',
-      [COL_CLASSI.ALT]: '',
-      [COL_CLASSI.SEZ]: 'A',
-      [COL_CLASSI.TERMINALE]: false,
-      [COL_CLASSI.STORICO]: false,
-      // Priority 3 (CLASSI) nominal cattedra holder for MATERIA_1 — the base
-      // the SUPPLENZE/VARIAZIONI_CATTEDRA rows below override (see
-      // seedSupplenzeEVariazioni). Written to a dynamic column keyed by
-      // MATERIA_1's sigla (ref 06 §3), appended to HEADERS[TABLE.CLASSI] above.
-      [MATERIA_1]: DOCENTE_1
-    });
-    sample.appendRow(TABLE.CLASSI, {
-      [COL_CLASSI.ID]: CLASSE_PARTNER,
-      [COL_CLASSI.ANNO]: 4,
-      [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
-      [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
-        parent: null,
-        partner: CLASSE_BASE,
-        partners: null
-      }),
-      [COL_CLASSI.RUOLI]: '',
-      [COL_CLASSI.ATTIVA]: true,
-      [COL_CLASSI.COORD]: DOCENTE_2,
-      [COL_CLASSI.IRC]: '',
-      [COL_CLASSI.ALT]: '',
-      [COL_CLASSI.SEZ]: 'A',
-      [COL_CLASSI.TERMINALE]: false,
-      [COL_CLASSI.STORICO]: false
-    });
+    sample.appendRows(TABLE.CLASSI, [
+      {
+        [COL_CLASSI.ID]: CLASSE_BASE,
+        [COL_CLASSI.ANNO]: 4,
+        [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
+        // ArticolazioneConfig.fromJson (ref 05 §2) parses ARTICOLAZIONE as JSON, not
+        // a bare class id — a symmetric partner-only pair (parent: null on both
+        // sides) is one of its three valid shapes (see ArticolazioneConfig.ts doc).
+        [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
+          parent: null,
+          partner: CLASSE_PARTNER,
+          partners: null
+        }),
+        [COL_CLASSI.RUOLI]: '',
+        [COL_CLASSI.ATTIVA]: true,
+        [COL_CLASSI.COORD]: DOCENTE_1,
+        [COL_CLASSI.IRC]: '',
+        [COL_CLASSI.ALT]: '',
+        [COL_CLASSI.SEZ]: 'A',
+        [COL_CLASSI.TERMINALE]: false,
+        [COL_CLASSI.STORICO]: false,
+        // Priority 3 (CLASSI) nominal cattedra holder for MATERIA_1 — the base
+        // the SUPPLENZE/VARIAZIONI_CATTEDRA rows below override (see
+        // seedSupplenzeEVariazioni). Written to a dynamic column keyed by
+        // MATERIA_1's sigla (ref 06 §3), appended to HEADERS[TABLE.CLASSI] above.
+        [MATERIA_1]: DOCENTE_1
+      },
+      {
+        [COL_CLASSI.ID]: CLASSE_PARTNER,
+        [COL_CLASSI.ANNO]: 4,
+        [COL_CLASSI.INDIRIZZO]: INDIRIZZO_1,
+        [COL_CLASSI.ARTICOLAZIONE]: JSON.stringify({
+          parent: null,
+          partner: CLASSE_BASE,
+          partners: null
+        }),
+        [COL_CLASSI.RUOLI]: '',
+        [COL_CLASSI.ATTIVA]: true,
+        [COL_CLASSI.COORD]: DOCENTE_2,
+        [COL_CLASSI.IRC]: '',
+        [COL_CLASSI.ALT]: '',
+        [COL_CLASSI.SEZ]: 'A',
+        [COL_CLASSI.TERMINALE]: false,
+        [COL_CLASSI.STORICO]: false
+      }
+    ]);
   }
 
   /** 5 ALUNNI rows, 4 in the base class and 1 enrolled in the articolata partner class. */
   private seedAlunni(sample: ISampleSpreadsheet): void {
+    const rows: Array<Record<string, unknown>> = [];
     for (let i = 1; i <= 4; i++) {
-      sample.appendRow(TABLE.ALUNNI, {
+      rows.push({
         [COL_ALUNNI.EMAIL]: alunnoEmail(i),
         [COL_ALUNNI.COGNOMENOME]: `Alunno${i} Test`,
         [COL_ALUNNI.CLASSE]: CLASSE_BASE,
@@ -287,7 +299,7 @@ export class SampleDatabaseBuilder {
         [COL_ALUNNI.NOTE]: ''
       });
     }
-    sample.appendRow(TABLE.ALUNNI, {
+    rows.push({
       [COL_ALUNNI.EMAIL]: ALUNNO_PARTNER_EMAIL,
       [COL_ALUNNI.COGNOMENOME]: 'Alunno5 Test',
       [COL_ALUNNI.CLASSE]: CLASSE_PARTNER,
@@ -301,6 +313,7 @@ export class SampleDatabaseBuilder {
       [COL_ALUNNI.TUTOR_2]: '',
       [COL_ALUNNI.NOTE]: ''
     });
+    sample.appendRows(TABLE.ALUNNI, rows);
   }
 
   /**
@@ -313,78 +326,86 @@ export class SampleDatabaseBuilder {
    * would visibly differ from DOCENTE_2.
    */
   private seedSupplenzeEVariazioni(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.SUPPLENZE, {
-      [COL_SUPPLENZE.TITOLARE]: DOCENTE_1,
-      [COL_SUPPLENZE.SUPPLENTE]: DOCENTE_2,
-      [COL_SUPPLENZE.DAL]: '2026-07-01',
-      [COL_SUPPLENZE.AL]: '2026-07-10',
-      [COL_SUPPLENZE.CLASSI]: CLASSE_BASE,
-      [COL_SUPPLENZE.MATERIE]: MATERIA_1
-    });
-    sample.appendRow(TABLE.VARIAZIONI_CATTEDRA, {
-      [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_BASE,
-      [COL_VARIAZIONI_CATTEDRA.MATERIE]: MATERIA_1,
-      [COL_VARIAZIONI_CATTEDRA.TITOLARE]: DOCENTE_1,
-      [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: DOCENTE_3,
-      [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
-    });
+    sample.appendRows(TABLE.SUPPLENZE, [
+      {
+        [COL_SUPPLENZE.TITOLARE]: DOCENTE_1,
+        [COL_SUPPLENZE.SUPPLENTE]: DOCENTE_2,
+        [COL_SUPPLENZE.DAL]: '2026-07-01',
+        [COL_SUPPLENZE.AL]: '2026-07-10',
+        [COL_SUPPLENZE.CLASSI]: CLASSE_BASE,
+        [COL_SUPPLENZE.MATERIE]: MATERIA_1
+      }
+    ]);
+    sample.appendRows(TABLE.VARIAZIONI_CATTEDRA, [
+      {
+        [COL_VARIAZIONI_CATTEDRA.CLASSI]: CLASSE_BASE,
+        [COL_VARIAZIONI_CATTEDRA.MATERIE]: MATERIA_1,
+        [COL_VARIAZIONI_CATTEDRA.TITOLARE]: DOCENTE_1,
+        [COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE]: DOCENTE_3,
+        [COL_VARIAZIONI_CATTEDRA.DAL]: '2026-07-05'
+      }
+    ]);
   }
 
   private seedConfDoc(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_ID,
-      [COL_CONF_DOC.TIPO]: 'ONLINETEST',
-      // DOCUMENTO_GENERICO (10 §9): plain {{...}} substitution, registered in
-      // buildAldoContainer's strategyRegistry with no extra deps (Bootstrap.ts)
-      // — 'DOC' is not a GENERATORE the registry ever knows.
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      // Simple-form MODELLI (ConfigurazioneDocumentoRepository.resolveTemplateId,
-      // ref 06 §8): a bare templateId string throws "MODELLI privo di
-      // templateId" — the {"templateId": "..."} object form is required.
-      [COL_CONF_DOC.MODELLI]: '{"templateId":"TEMPLATE_ONLINETEST"}',
-      [COL_CONF_DOC.FILE_NAME]: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_ONLINETEST_OUTPUT',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null, // PostProcessStep gates on `!= null`, not truthiness
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'PDF',
-      [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '',
-        materie: ''
-      }),
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
+    sample.appendRows(TABLE.CONF_DOC, [
+      {
+        [COL_CONF_DOC.ID]: CONF_DOC_ID,
+        [COL_CONF_DOC.TIPO]: 'ONLINETEST',
+        // DOCUMENTO_GENERICO (10 §9): plain {{...}} substitution, registered in
+        // buildAldoContainer's strategyRegistry with no extra deps (Bootstrap.ts)
+        // — 'DOC' is not a GENERATORE the registry ever knows.
+        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.CONDIZIONE]: '',
+        // Simple-form MODELLI (ConfigurazioneDocumentoRepository.resolveTemplateId,
+        // ref 06 §8): a bare templateId string throws "MODELLI privo di
+        // templateId" — the {"templateId": "..."} object form is required.
+        [COL_CONF_DOC.MODELLI]: '{"templateId":"TEMPLATE_ONLINETEST"}',
+        [COL_CONF_DOC.FILE_NAME]: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_ONLINETEST_OUTPUT',
+        [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_DOC.PERMESSI]: '',
+        [COL_CONF_DOC.POST_PROCESSO]: null, // PostProcessStep gates on `!= null`, not truthiness
+        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+        [COL_CONF_DOC.FORMATO]: 'PDF',
+        [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
+          classi: '{{focus.classe.anagrafica.nome}}',
+          utenti: '',
+          materie: ''
+        }),
+        [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+      }
+    ]);
   }
 
   private seedConfMail(sample: ISampleSpreadsheet): void {
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_ID,
-      [COL_CONF_MAIL.OGGETTO]: '[ALDO ONLINE TEST] Notifica di prova',
-      // ProcessoInvio.PER_ALUNNO (enums.ts): EmailNotificationService.enumerateTargets
-      // switches on this value and has no default — 'ONLINETEST' is not a member,
-      // which silently falls through to `undefined` instead of an EmailTarget[].
-      [COL_CONF_MAIL.PROCESSO]: 'PER_ALUNNO',
-      // The online pipeline assertion must exercise recipient routing, not the
-      // empty-content delivery gate: a static testo_dinamico box makes this
-      // test email visibly renderable without depending on CDU data.
-      [COL_CONF_MAIL.BOX_CFG]:
-        '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
-      [COL_CONF_MAIL.TESTO_START]: 'Messaggio di prova generato dalla suite di test online ALDO.',
-      [COL_CONF_MAIL.TESTO_END]: '',
-      [COL_CONF_MAIL.RISPONDI_A]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: false,
-      [COL_CONF_MAIL.NOREPLY]: false,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null, // PostProcessEmailStep gates on `!= null`, not truthiness
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
-    });
+    sample.appendRows(TABLE.CONF_MAIL, [
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_ID,
+        [COL_CONF_MAIL.OGGETTO]: '[ALDO ONLINE TEST] Notifica di prova',
+        // ProcessoInvio.PER_ALUNNO (enums.ts): EmailNotificationService.enumerateTargets
+        // switches on this value and has no default — 'ONLINETEST' is not a member,
+        // which silently falls through to `undefined` instead of an EmailTarget[].
+        [COL_CONF_MAIL.PROCESSO]: 'PER_ALUNNO',
+        // The online pipeline assertion must exercise recipient routing, not the
+        // empty-content delivery gate: a static testo_dinamico box makes this
+        // test email visibly renderable without depending on CDU data.
+        [COL_CONF_MAIL.BOX_CFG]:
+          '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
+        [COL_CONF_MAIL.TESTO_START]: 'Messaggio di prova generato dalla suite di test online ALDO.',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.RISPONDI_A]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: false,
+        [COL_CONF_MAIL.NOREPLY]: false,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null, // PostProcessEmailStep gates on `!= null`, not truthiness
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'
+      }
+    ]);
   }
 
   private seedMaster(
@@ -392,12 +413,14 @@ export class SampleDatabaseBuilder {
     sampleSpreadsheetId: string,
     folderId: string
   ): void {
-    master.appendRow(TABLE.MASTER, {
-      [COL_MASTER.ANNO_SCOLASTICO]: '2026-2027',
-      [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
-      [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
-      [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente OnlineTest',
-      [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local'
-    });
+    master.appendRows(TABLE.MASTER, [
+      {
+        [COL_MASTER.ANNO_SCOLASTICO]: '2026-2027',
+        [COL_MASTER.ID_SPREADSHEET]: sampleSpreadsheetId,
+        [COL_MASTER.ID_CARTELLA_GOOGLE]: folderId,
+        [COL_MASTER.DIRIGENTE_SCOLASTICO]: 'Dirigente OnlineTest',
+        [COL_MASTER.SUPERVISORE_EMAIL]: 'supervisore@onlinetest.aldo.local'
+      }
+    ]);
   }
 }

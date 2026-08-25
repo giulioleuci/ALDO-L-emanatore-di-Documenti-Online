@@ -73,6 +73,10 @@ class RecordingSpreadsheet implements ISampleSpreadsheet {
     (this.rows[sheetName] ??= []).push(row);
   }
 
+  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
+    (this.rows[sheetName] ??= []).push(...rows);
+  }
+
   getUrl(): string {
     return `https://example.test/${this.id}`;
   }
@@ -280,11 +284,10 @@ function sampleFixture(): SampleDatabase {
 describe('registerRepositoryChecks', () => {
   it('filters every class built by SharedTestDatabaseBuilder through the real articulation repository', () => {
     const { spreadsheets, sheets, master } = e2eRecordingFactory();
-    new SharedTestDatabaseBuilder(
-      spreadsheets,
-      new FakeDriveFacade(),
-      testArtifactFactory()
-    ).build(E2E_TEMPLATE_IDS, master);
+    new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
+      E2E_TEMPLATE_IDS,
+      master
+    );
     const db = new FakeDatabase(sheets.get('_ALDO_E2E_SAMPLE')!.rows as Record<string, Row[]>);
     const classi = new ClasseRepository(db);
     const active = classi.findAttive();
@@ -299,27 +302,16 @@ describe('registerRepositoryChecks', () => {
       classi
         .filterPerGestioneArticolazione(active, GestioneArticolazione.ARTICOLATA)
         .map((classe) => classe.id)
-    ).toEqual([
-      '1A',
-      '2A',
-      '4A',
-      '1B',
-      '2B',
-      '5B-S',
-      '5B-C',
-      '3C-S',
-      '3C-C',
-      '4D',
-      '5E'
-    ]);
+    ).toEqual(['1A', '2A', '4A', '1B', '2B', '5B-S', '5B-C', '3C-S', '3C-C', '4D', '5E']);
   });
 
   it('registers passing online matrix checks across the resolver and all assignment consumers', () => {
     const { spreadsheets, sheets, master } = e2eRecordingFactory();
-    const sample = new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
-      E2E_TEMPLATE_IDS,
-      master
-    );
+    const sample = new SharedTestDatabaseBuilder(
+      spreadsheets,
+      new FakeDriveFacade(),
+      testArtifactFactory()
+    ).build(E2E_TEMPLATE_IDS, master);
     const db = new FakeDatabase({
       ...(sheets.get('_ALDO_E2E_SAMPLE')!.rows as Record<string, Row[]>),
       MASTER: master.rows.MASTER as Row[]
@@ -476,9 +468,7 @@ describe('registerRepositoryChecks', () => {
       testArtifactFactory()
     ).build(E2E_TEMPLATE_IDS, master);
     const rows = sheets.get('_ALDO_E2E_SAMPLE')!.rows;
-    const student = rows[TABLE.ALUNNI]!.find(
-      (row) => row[COL_ALUNNI.EMAIL] === e2eAlunnoEmail(2)
-    )!;
+    const student = rows[TABLE.ALUNNI]!.find((row) => row[COL_ALUNNI.EMAIL] === e2eAlunnoEmail(2))!;
     student[COL_ALUNNI.RELIGIONE] = 'NO';
     const db = new FakeDatabase({
       ...(rows as Record<string, Row[]>),

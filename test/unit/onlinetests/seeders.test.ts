@@ -51,6 +51,7 @@ import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 class RecordingSpreadsheet implements ISampleSpreadsheet {
   public readonly rows: Record<string, Record<string, unknown>[]> = {};
   public readonly headers: Record<string, string[]> = {};
+  public readonly batches: string[] = [];
 
   constructor(public readonly id: string) {}
 
@@ -61,6 +62,11 @@ class RecordingSpreadsheet implements ISampleSpreadsheet {
 
   appendRow(sheetName: string, row: Record<string, unknown>): void {
     (this.rows[sheetName] ??= []).push(row);
+  }
+
+  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
+    this.batches.push(sheetName);
+    (this.rows[sheetName] ??= []).push(...rows);
   }
 
   getUrl(): string {
@@ -227,6 +233,14 @@ test('seedStorico registra ogni materia puntata usata dalle intestazioni CLASSI'
 
   const ids = prior.rows[TABLE.MATERIE]!.map((row) => row[COL_MATERIE.ID]);
   expect(ids).toEqual(expect.arrayContaining(MATERIE_PUNTATE));
+});
+
+test('seedStorico raggruppa ogni tabella in un solo batch', () => {
+  const prior = new RecordingSpreadsheet('prior');
+  seedStorico(prior, '2025-2026');
+
+  expect(prior.batches).toHaveLength(new Set(prior.batches).size);
+  expect(prior.batches).toEqual(expect.arrayContaining([TABLE.CLASSI, TABLE.MATERIE]));
 });
 
 test('seedStorico seeds every current-year subject so prior cattedra columns resolve', () => {

@@ -59,6 +59,10 @@ class RecordingSpreadsheet implements ISampleSpreadsheet {
     (this.rows[sheetName] ??= []).push(row);
   }
 
+  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
+    (this.rows[sheetName] ??= []).push(...rows);
+  }
+
   getUrl(): string {
     return `https://example.test/${this.id}`;
   }

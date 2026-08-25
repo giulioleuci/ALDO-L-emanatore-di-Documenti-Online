@@ -23,6 +23,8 @@ function fakeFactory() {
         sheets.set(sheetName, { headers: headerRow, rows: [] }),
       appendRow: (sheetName: string, row: Record<string, unknown>) =>
         sheets.get(sheetName)!.rows.push(row),
+      appendRows: (sheetName: string, rows: Array<Record<string, unknown>>) =>
+        sheets.get(sheetName)!.rows.push(...rows),
       getUrl: () => `https://docs.google.com/spreadsheets/d/SS_${name}`
     })),
     __sheets: sheets

@@ -1799,6 +1799,7 @@ declare global {
     readonly id: string;
     addSheet(name: string, headerRow: string[]): void;
     appendRow(sheetName: string, row: Record<string, unknown>): void;
+    appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void;
     getUrl(): string;
   }
 }

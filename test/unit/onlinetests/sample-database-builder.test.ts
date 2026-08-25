@@ -96,12 +96,8 @@ describe('SampleDatabaseBuilder', () => {
     const classi = factory.__sheets.get(TABLE.CLASSI)!.rows;
     expect(classi.length).toBeGreaterThanOrEqual(2);
     const partner = classi.find((c) => c.ID === CLASSE_PARTNER);
-    expect(partner).toEqual(
-      expect.objectContaining({
-        ID: CLASSE_PARTNER,
-        ARTICOLAZIONE: expect.stringContaining(CLASSE_BASE)
-      })
-    );
+    expect(partner?.ID).toBe(CLASSE_PARTNER);
+    expect(String(partner?.ARTICOLAZIONE)).toContain(CLASSE_BASE);
 
     const alunni = factory.__sheets.get(TABLE.ALUNNI)!.rows;
     expect(alunni.length).toBeGreaterThanOrEqual(4);

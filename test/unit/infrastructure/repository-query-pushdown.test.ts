@@ -20,8 +20,14 @@ test('CarenzaRepository.findByAlunno pushes the STUDENTE filter down through sel
   const result = repo.findByAlunno(a1);
 
   expect(selectSpy).toHaveBeenCalled();
-  expect(result.length).toBeGreaterThan(0);
-  expect(result.every((c) => c.studente === 'a1@school.it')).toBe(true);
+  expect(
+    result
+      .map(({ studente, progressivo, classe, data }) => ({ studente, progressivo, classe, data }))
+      .sort((a, b) => a.progressivo - b.progressivo)
+  ).toEqual([
+    { studente: 'a1@school.it', progressivo: 1, classe: '5A', data: '2026-02-15' },
+    { studente: 'a1@school.it', progressivo: 2, classe: '5A', data: '2026-05-20' }
+  ]);
 });
 
 test('DocenteRepository.findITP pushes the ITP=true filter down through select()', () => {

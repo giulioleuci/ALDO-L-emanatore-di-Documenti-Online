@@ -13,7 +13,8 @@ import { ConfigurazioneEmail } from '../../../../src/domain/entities/Configurazi
 import { Docente } from '../../../../src/domain/entities/Docente';
 import { Alunno } from '../../../../src/domain/entities/Alunno';
 import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
-import type { Cdu } from '../../../../src/application/context-engine/Cdu';
+import type { Cdu, DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
+import type { PersonVM } from '../../../../src/application/context-engine/mappers/personVmMapper';
 import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import type { EmailTarget } from '../../../../src/application/email/saluto';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
@@ -472,7 +473,8 @@ test('BuildCDUStep PER_GENITORI_ALUNNO builds FAMIGLIA_COMPLETO CDU and enriches
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   expect(cdu.focus.alunno?.anagrafica.email).toBe('a1@school.it');
-  expect(cdu.focus.alunno?.didattica.documenti).toBeDefined(); // FAMIGLIA_COMPLETO includes documenti
+  // FAMIGLIA_COMPLETO includes documenti — a1@school.it has no PIANI/documents seeded.
+  expect(cdu.focus.alunno?.didattica.documenti).toEqual({ items: [], hasDocumenti: false });
   expect(cdu.destinatario?.comunicazione.salutoIniziale).toBe('Gentili Genitori');
   expect(cdu.destinatario?.anagrafica.email).toBe('genitore1@x.it');
 });
@@ -482,7 +484,15 @@ test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafi
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   expect(cdu.focus.classe?.anagrafica.nome).toBe('5A');
-  expect(cdu.focus.classe?.consiglioDiClasse).toBeDefined();
+  expect(cdu.focus.classe?.consiglioDiClasse).toEqual([
+    expect.objectContaining<Partial<DocenteCdcVM>>({
+      anagrafica: expect.objectContaining({
+        cognome: 'BIANCHI',
+        nome: 'LUCIA',
+        email: 'bianchi@school.it'
+      }) as PersonVM
+    })
+  ]);
   const d = cdu.destinatario!;
   // PersonVM.nomeCompleto is "Nome Cognome" (02 §8.1), the reverse order of
   // Docente.getNomeCompleto()'s "${cognome} ${nome}" — the latter still drives
@@ -812,7 +822,7 @@ test('BuildCDUStep tolerates a resolver error on one competenza class: that clas
     new ThrowingForOneClassResolver(new AldoTeachingAssignmentResolver(w.db), '1F')
   );
 
-  expect(() => step.execute(w.ctx)).not.toThrow();
+  step.execute(w.ctx);
 
   const cdu = w.ctx.get<Cdu>('cdu')!;
   const contesto = cdu.destinatario!.contesto;
@@ -2284,10 +2294,10 @@ test('logs logicalTargetId for a test-mode delivery', () => {
   new LogEmailStep(logger, logMail).execute(w.ctx);
 
   expect(registraInvio).toHaveBeenCalledWith(
-    expect.any(String),
-    expect.any(Array),
-    expect.anything(),
-    expect.any(String),
+    'TEST_PATTERN',
+    [expect.objectContaining({ value: 'tester@school.it' })],
+    'SUCCESS',
+    '<p>x</p>',
     expect.objectContaining({ logicalTargetId: 'docente:docente@school.it', testMode: true }),
     undefined
   );
@@ -2717,7 +2727,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     w.ctx.set('destinatariFinali', [{ emails: ['genitore1@x.it'] }]);
     send(w, new FakeGmailFacade());
     const savedBefore = w.db.saved;
-    expect(() => new PostProcessEmailStep(logger, w.db, w.templates).execute(w.ctx)).not.toThrow();
+    new PostProcessEmailStep(logger, w.db, w.templates).execute(w.ctx);
     expect(w.db.saved).toBe(savedBefore);
   });
 

@@ -195,7 +195,8 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
 
     expect(templates.renderedSheets).toHaveLength(1);
     const context = templates.sheetContextFor('file_1');
-    expect(context?.['focus']).toBeDefined();
+    const focus = context?.['focus'] as { classe?: { anagrafica?: { nome?: string } } } | undefined;
+    expect(focus?.classe?.anagrafica?.nome).toBe('5A');
   });
 
   test('throws a ConfigurationError when the CDU has no focus.classe', () => {
@@ -419,9 +420,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       composeRisolutoreRuoli(db)
     );
 
-    expect(() =>
-      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
-    ).not.toThrow();
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     expect(templates.renderedSheets).toHaveLength(1);
   });
@@ -444,9 +443,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       composeRisolutoreRuoli(db)
     );
 
-    expect(() =>
-      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
-    ).not.toThrow();
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     expect(templates.renderedSheets).toHaveLength(1);
     expect(sheets.protectOptions).toEqual({ onError: 'continue' });
@@ -474,9 +471,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     );
 
     expect(Object.keys(cdu)).not.toContain('tech');
-    expect(() =>
-      strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'))
-    ).not.toThrow();
+    strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     expect(cdu.focus.classe?.elencoMaterieConPermessi?.map((item) => item.sigla)).toEqual([
       'REL',
@@ -560,7 +555,12 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
-    expect(sheets.protectCalls.length).toBeGreaterThan(0);
+    // One protect call per rendered column for 5A: A=REL (special), B=Fisica, C=Matematica.
+    expect(sheets.protectCalls.map((c) => c.range)).toEqual([
+      'Sheet1!A:A',
+      'Sheet1!B:B',
+      'Sheet1!C:C'
+    ]);
   });
 
   test('uses PERMESSI.regolaSupplente.file for protected ranges even when PARAMETRI conflicts', () => {
@@ -590,7 +590,11 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const routed = roles.calls.filter(([role]) =>
       ['DOCENTE_MATERIA', 'DOCENTI_IRC_ALT'].includes(role)
     );
-    expect(routed.length).toBeGreaterThan(0);
+    expect(routed.map(([role]) => role)).toEqual([
+      'DOCENTI_IRC_ALT',
+      'DOCENTE_MATERIA',
+      'DOCENTE_MATERIA'
+    ]);
     expect(
       routed.every(
         ([, , options]) => options?.regolaSupplente === GestioneSupplenti.SOLO_SUPPLENTI
@@ -616,7 +620,11 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const routed = roles.calls.filter(([role]) =>
       ['DOCENTE_MATERIA', 'DOCENTI_IRC_ALT'].includes(role)
     );
-    expect(routed.length).toBeGreaterThan(0);
+    expect(routed.map(([role]) => role)).toEqual([
+      'DOCENTI_IRC_ALT',
+      'DOCENTE_MATERIA',
+      'DOCENTE_MATERIA'
+    ]);
     expect(
       routed.every(([, , options]) => options?.regolaSupplente === GestioneSupplenti.ENTRAMBI)
     ).toBe(true);
@@ -735,7 +743,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
     expect(cdu.focus.classe!.sheet?.materieColonne.group1[0]).toMatchObject({ isSpecial: true });
-    expect(cdu.focus.classe!.sheet?.materieColonne.group2Label).toEqual(expect.any(String));
+    expect(cdu.focus.classe!.sheet?.materieColonne.group2Label).toBe('1F-LSO');
 
     // Finding 3 fix: group2/group3 come from articolazione columns, which carry
     // `classeId` (partner class) internally -- confirm it (and `specificita`/`kind`,
@@ -747,7 +755,12 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       ...cdu.focus.classe!.sheet!.materieColonne.group2,
       ...cdu.focus.classe!.sheet!.materieColonne.group3
     ];
-    expect(printableColumns.length).toBeGreaterThan(0);
+    expect(printableColumns).toEqual([
+      { sigla: 'REL', header: 'REL', isSpecial: true, roles: ['IRC'] },
+      { sigla: 'MATE', header: 'Matematica' },
+      { sigla: 'FISI', header: 'Fisica' },
+      { sigla: 'FISI', header: 'Fisica' }
+    ]);
     for (const column of printableColumns) {
       expect(column).not.toHaveProperty('classeId');
       expect(column).not.toHaveProperty('specificita');

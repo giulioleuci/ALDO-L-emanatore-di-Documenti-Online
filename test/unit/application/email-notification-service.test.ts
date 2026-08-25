@@ -246,7 +246,12 @@ test('PER_DOCENTE + SOLO_SUPPLENTI enumerates the actual supplente, not the tito
       target.docenteEmail === 'bianchi@school.it' && target.titolareEmail === 'rossi@school.it'
   )!;
 
-  expect(bianchiSplit).toBeDefined();
+  expect(bianchiSplit).toEqual(
+    expect.objectContaining({
+      docenteEmail: 'bianchi@school.it',
+      titolareEmail: 'rossi@school.it'
+    })
+  );
   expect(bianchiSplit.classiCompetenza).toContain('4B');
 });
 
@@ -301,22 +306,31 @@ test('PER_DOCENTE + ENTRAMBI splits a titolare cattedra into one target per acti
   const rossiTarget = targets.find((target) => target.docenteEmail === 'rossi@school.it')!;
   expect(bianchiTarget.titolareEmail).toBe('rossi@school.it');
   expect(rossiTarget.titolareEmail).toBeUndefined();
-  expect(resolveConsiglio).toHaveBeenCalledWith(
-    expect.any(Classe),
-    NOW,
-    expect.objectContaining({
-      includeReligioneAlt: true,
-      routingPolicy: RoutingPolicy.PRINCIPAL_ONLY
-    })
-  );
-  expect(resolveConsiglio).toHaveBeenCalledWith(
-    expect.any(Classe),
-    NOW,
-    expect.objectContaining({
-      includeReligioneAlt: true,
-      routingPolicy: RoutingPolicy.BOTH_EQUAL
-    })
-  );
+  // resolveConsiglio is called once per candidate classe per routing pass: a
+  // PRINCIPAL_ONLY pass to resolve titolare/effective grouping, then a
+  // BOTH_EQUAL pass (which also reaches 1F's articulated partners) for the
+  // ENTRAMBI content split.
+  expect(
+    resolveConsiglio.mock.calls.map(([classe, date, options]) => ({
+      nome: classe.nome,
+      date,
+      routingPolicy: (options as { routingPolicy?: RoutingPolicyValue } | undefined)
+        ?.routingPolicy
+    }))
+  ).toEqual([
+    { nome: '5A', date: NOW, routingPolicy: RoutingPolicy.PRINCIPAL_ONLY },
+    { nome: '1F', date: NOW, routingPolicy: RoutingPolicy.PRINCIPAL_ONLY },
+    { nome: '5A', date: NOW, routingPolicy: RoutingPolicy.BOTH_EQUAL },
+    { nome: '1F', date: NOW, routingPolicy: RoutingPolicy.BOTH_EQUAL },
+    { nome: '1F-LSO', date: NOW, routingPolicy: RoutingPolicy.BOTH_EQUAL },
+    { nome: '1F-LSS', date: NOW, routingPolicy: RoutingPolicy.BOTH_EQUAL }
+  ]);
+  expect(
+    resolveConsiglio.mock.calls.every(
+      ([, , options]) =>
+        (options as { includeReligioneAlt?: boolean } | undefined)?.includeReligioneAlt === true
+    )
+  ).toBe(true);
 });
 
 test('PER_CDC: one multi-TO target per entry class (parent aggregates the articulated group, 05 §5)', () => {
@@ -376,14 +390,26 @@ test('PER_CDC applies CONF_MAIL.SUPPLENTI through the shared resolver', () => {
   const targets = service.enumerateTargets(conf('PER_CDC', { SUPPLENTI: 'SOLO_SUPPLENTI' }));
 
   expect(targets.every((target) => target.emails[0] === 'bianchi@school.it')).toBe(true);
-  expect(resolveConsiglio).toHaveBeenCalledWith(
-    expect.any(Classe),
-    NOW,
-    expect.objectContaining({
-      includeReligioneAlt: true,
-      routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL
-    })
-  );
+  // One DELEGATE_OR_PRINCIPAL resolveConsiglio call per entry class (5A, 1F — the
+  // two PER_CDC entry classes seeded by wire(), see the "one multi-TO target per
+  // entry class" test above).
+  expect(
+    resolveConsiglio.mock.calls.map(([classe, date, options]) => ({
+      nome: classe.nome,
+      date,
+      routingPolicy: (options as { routingPolicy?: RoutingPolicyValue } | undefined)
+        ?.routingPolicy
+    }))
+  ).toEqual([
+    { nome: '5A', date: NOW, routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL },
+    { nome: '1F', date: NOW, routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL }
+  ]);
+  expect(
+    resolveConsiglio.mock.calls.every(
+      ([, , options]) =>
+        (options as { includeReligioneAlt?: boolean } | undefined)?.includeReligioneAlt === true
+    )
+  ).toBe(true);
 });
 
 test('PER_CDC: cdcEmails is deterministically sorted by cognome (BIANCHI < ROSSI < VERDI), so emails[0] is stable regardless of resolveConsiglio materia/class iteration order (11 §14 fix)', () => {
@@ -608,7 +634,7 @@ test('sendPattern reuses the same Pipeline instance across all targets in one ca
 test('sendPattern skips a target already SUCCESS-logged for this pattern, and still sends the rest', () => {
   const { db, gmail, service } = wire([mailRow('DEDUPE_TEST', { PROCESSO: 'PER_CDC' })]);
   const targets = service.enumerateTargets(conf('PER_CDC'));
-  expect(targets.length).toBeGreaterThan(0);
+  expect(targets).toHaveLength(2); // the two PER_CDC entry classes seeded by wire() (5A, 1F)
   const alreadySentTarget = targets[0]!;
   new LogEmailRepository(db).registraInvio(
     'DEDUPE_TEST',
@@ -865,7 +891,7 @@ test.each([
     const result = service.sendPattern(patternId);
     const sentBodies = gmail.sent.map((sent) => sent.htmlBody);
 
-    expect(result.targets).toBeGreaterThan(0);
+    expect(result.targets).toBe(2); // the two PER_CDC entry classes seeded by wire() (5A, 1F)
     expect(result.sent).toBe(result.targets);
     expect(result.skipped).toBe(0);
     expect(result.errors).toEqual([]);
@@ -933,7 +959,8 @@ test('sendToTarget sends no attachments when the static configuration is empty',
     recipients: ['rossi@school.it'],
     subject: 'Oggetto STATIC_EMPTY'
   });
-  expect(result.durationMs).toEqual(expect.any(Number));
+  expect(Number.isInteger(result.durationMs)).toBe(true);
+  expect(result.durationMs).toBeGreaterThanOrEqual(0);
   expect(gmail.sent).toHaveLength(1);
   expect(gmail.sent[0]!.attachments).toEqual([]);
 });
@@ -1014,7 +1041,8 @@ test('sendToTarget never assignment-routes a flagged target under PER_COORDINATO
     recipients: ['rossi@school.it'],
     subject: 'Oggetto COORDINATORE_STALE_TARGET'
   });
-  expect(result.durationMs).toEqual(expect.any(Number));
+  expect(Number.isInteger(result.durationMs)).toBe(true);
+  expect(result.durationMs).toBeGreaterThanOrEqual(0);
   expect(gmail.sent[0]!.to).toEqual(['rossi@school.it']);
 });
 
@@ -1286,7 +1314,8 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       recipients: [],
       subject: ''
     });
-    expect(result.durationMs).toEqual(expect.any(Number));
+    expect(Number.isInteger(result.durationMs)).toBe(true);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
   });
 
   test('registra gli step SKIPPED come saltati, non come completati', () => {
@@ -1383,7 +1412,26 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       },
       'job-1'
     );
-    expect(monitor.steps.length).toBeGreaterThan(0);
+    expect(monitor.steps.map((s) => `${s.stepName}:${s.event}`)).toEqual([
+      'BuildCDU:start',
+      'BuildCDU:complete',
+      'ValutaCondizioniInvio:start',
+      'ValutaCondizioniInvio:complete',
+      'CheckAlreadySent:start',
+      'CheckAlreadySent:complete',
+      'RenderBoxes:start',
+      'RenderBoxes:complete',
+      'ComposeEmail:start',
+      'ComposeEmail:complete',
+      'ResolveRecipients:start',
+      'ResolveRecipients:complete',
+      'SendEmail:start',
+      'SendEmail:complete',
+      'LogEmail:start',
+      'LogEmail:complete',
+      'PostProcessEmail:start',
+      'PostProcessEmail:skipped'
+    ]);
     expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'start')).toBe(true);
     expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'complete')).toBe(
       true

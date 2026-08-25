@@ -35,6 +35,6 @@ describe('EsameConfig.isPrimaProvaPerIndirizzo / isSecondaProvaPerIndirizzo', ()
     // IndirizzoId.of('') throws ValidationError internally; matches() must swallow it.
     const cfg = EsameConfig.fromJson(JSON.stringify({ primaProva: ['', 'SCIENTIFICO'] }))!;
     expect(cfg.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).toBe(true);
-    expect(() => cfg.isPrimaProvaPerIndirizzo(IndirizzoId.of('ALTRO'))).not.toThrow();
+    expect(cfg.isPrimaProvaPerIndirizzo(IndirizzoId.of('ALTRO'))).toBe(false);
   });
 });

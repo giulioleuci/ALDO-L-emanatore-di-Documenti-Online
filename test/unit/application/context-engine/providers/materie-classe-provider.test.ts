@@ -116,7 +116,11 @@ describe('MaterieClasseProvider', () => {
         params,
         makeOptions({ includiStorico: true, profonditaAnniStorico: 2 })
       );
-      expect(cdu.focus.classe!.materie![0]!.continuita).toBeDefined();
+      expect(cdu.focus.classe!.materie![0]!.continuita).toEqual({
+        docentiAnniPrecedenti: [],
+        continuitaUltimiDueAnni: false,
+        continuitaUltimiTreAnni: false
+      });
 
       const cdu2 = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
       provider.provide(cdu2, params, makeOptions({ includiStorico: false }));

@@ -55,7 +55,6 @@ import { GmailServiceFacade } from '../infrastructure/facades/GmailServiceFacade
 import { TemplateEngineFacade } from '../infrastructure/facades/TemplateEngineFacade';
 import { ExpressionEngineFacade } from '../infrastructure/facades/ExpressionEngineFacade';
 import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
-import { ProcessMonitorFacade } from '../infrastructure/facades/ProcessMonitorFacade';
 import { ConfigurationError } from '../domain/errors/DomainError';
 import type { ITeachingAssignmentResolver } from '../application/ports/ITeachingAssignmentResolver';
 import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
@@ -465,12 +464,10 @@ export function initAldo(
   // ImportEngine's constructor — GasProcessMonitorLib job progress for
   // imports (15 §9), mirroring how emailBatchService/documentBatchService
   // already receive deps.monitor.
-  const monitor = new ProcessMonitorFacade(
-    new ProcessMonitorService(
-      logger,
-      ServiceFactory.getCacheService(),
-      ServiceFactory.getPropertiesService()
-    )
+  const monitor: IProcessMonitor = new ProcessMonitorService(
+    logger,
+    ServiceFactory.getCacheService(),
+    ServiceFactory.getPropertiesService()
   );
 
   // GasDataImporter's Loader writes through the raw SheetDBLib table API

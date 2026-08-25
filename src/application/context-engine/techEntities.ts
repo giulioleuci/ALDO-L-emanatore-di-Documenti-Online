@@ -1,4 +1,4 @@
-import type { Cdu } from './Cdu';
+import type { Cdu, CduAlunno as CduAlunnoFocus } from './Cdu';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Alunno } from '../../domain/entities/Alunno';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
@@ -36,4 +36,10 @@ export function getAlunnoEntity(cdu: Cdu): Alunno {
     );
   }
   return alunno as Alunno;
+}
+
+/** Esegue `fn` solo quando il CDU ha un alunno in focus. */
+export function withFocusAlunno(cdu: Cdu, fn: (alunno: CduAlunnoFocus) => void): void {
+  const alunno = cdu.focus.alunno;
+  if (alunno !== undefined) fn(alunno);
 }

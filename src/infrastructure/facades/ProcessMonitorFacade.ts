@@ -18,35 +18,3 @@ export interface IProcessMonitor {
   completeJob(jobId: string, message?: string): void;
   setError(jobId: string, error: unknown): void;
 }
-
-export class ProcessMonitorFacade implements IProcessMonitor {
-  constructor(private readonly monitor: ProcessMonitorService) {}
-
-  registerJob(jobId: string): void {
-    this.monitor.registerJob(jobId);
-  }
-  startJob(jobId: string): void {
-    this.monitor.startJob(jobId);
-  }
-  updateProgress(jobId: string, percentage: number, message?: string): void {
-    this.monitor.updateProgress(jobId, percentage, message);
-  }
-  logStepStart(jobId: string, stepName: string): void {
-    this.monitor.logStepStart(jobId, stepName);
-  }
-  logStepComplete(jobId: string, stepName: string, success: boolean): void {
-    this.monitor.logStepComplete(jobId, stepName, success);
-  }
-  logStepSkipped(jobId: string, stepName: string): void {
-    this.monitor.logStepSkipped(jobId, stepName);
-  }
-  getJobState(jobId: string): unknown {
-    return this.monitor.getJobState(jobId);
-  }
-  completeJob(jobId: string, message?: string): void {
-    this.monitor.completeJob(jobId, message);
-  }
-  setError(jobId: string, error: unknown): void {
-    this.monitor.setError(jobId, error);
-  }
-}

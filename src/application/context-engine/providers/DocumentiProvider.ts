@@ -1,7 +1,7 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
-import { getAlunnoEntity } from '../techEntities';
+import { getAlunnoEntity, withFocusAlunno } from '../techEntities';
 
 /**
  * Fills `focus.alunno.didattica.documenti` from LOG_DOCS via
@@ -12,19 +12,19 @@ export class DocumentiProvider implements ContextProvider {
   constructor(private readonly logDocs: ILogDocumentoRepository) {}
 
   provide(cdu: Cdu): void {
-    const focusAlunno = cdu.focus.alunno;
-    if (focusAlunno === undefined) return;
-    const items = this.logDocs.findByUtente(getAlunnoEntity(cdu).email).map((l) => ({
-      id: l.id ?? undefined,
-      nome: l.nome,
-      link: l.getLink(),
-      tipo: l.tipo,
-      idGen: l.idGen,
-      sottotipo: l.getSottotipo(),
-      stato: l.getStato(),
-      notificato: l.isNotificato(),
-      dataCreazione: l.getDataCreazione()
-    }));
-    focusAlunno.didattica.documenti = { items, hasDocumenti: items.length > 0 };
+    withFocusAlunno(cdu, (focusAlunno) => {
+      const items = this.logDocs.findByUtente(getAlunnoEntity(cdu).email).map((l) => ({
+        id: l.id ?? undefined,
+        nome: l.nome,
+        link: l.getLink(),
+        tipo: l.tipo,
+        idGen: l.idGen,
+        sottotipo: l.getSottotipo(),
+        stato: l.getStato(),
+        notificato: l.isNotificato(),
+        dataCreazione: l.getDataCreazione()
+      }));
+      focusAlunno.didattica.documenti = { items, hasDocumenti: items.length > 0 };
+    });
   }
 }

@@ -1,7 +1,7 @@
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
-import { getAlunnoEntity } from '../techEntities';
+import { getAlunnoEntity, withFocusAlunno } from '../techEntities';
 import { tipoPianoLabel } from '../mappers/labels';
 
 /**
@@ -14,17 +14,17 @@ export class PianiProvider implements ContextProvider {
   constructor(private readonly alunni: IAlunnoRepository) {}
 
   provide(cdu: Cdu): void {
-    const focusAlunno = cdu.focus.alunno;
-    if (focusAlunno === undefined) return;
-    const items = this.alunni.getPiani(getAlunnoEntity(cdu)).map((p) => ({
-      tipo: p.tipo,
-      tipoLabel: tipoPianoLabel(p.tipo),
-      isBes: p.isBES(),
-      link: '',
-      parametriGenerazione: p.getParametri()
-    }));
-    const hasBes = items.some((i) => i.isBes);
-    focusAlunno.didattica.piani = { items, hasPiani: items.length > 0, hasBes };
-    focusAlunno.status.isBes = hasBes;
+    withFocusAlunno(cdu, (focusAlunno) => {
+      const items = this.alunni.getPiani(getAlunnoEntity(cdu)).map((p) => ({
+        tipo: p.tipo,
+        tipoLabel: tipoPianoLabel(p.tipo),
+        isBes: p.isBES(),
+        link: '',
+        parametriGenerazione: p.getParametri()
+      }));
+      const hasBes = items.some((i) => i.isBes);
+      focusAlunno.didattica.piani = { items, hasPiani: items.length > 0, hasBes };
+      focusAlunno.status.isBes = hasBes;
+    });
   }
 }

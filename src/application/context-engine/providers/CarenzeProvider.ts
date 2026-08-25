@@ -2,7 +2,7 @@ import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
-import { getAlunnoEntity } from '../techEntities';
+import { getAlunnoEntity, withFocusAlunno } from '../techEntities';
 import { carenzeDettaglioSemplice } from '../mappers/carenzeMapper';
 
 /**
@@ -16,17 +16,17 @@ export class CarenzeProvider implements ContextProvider {
   ) {}
 
   provide(cdu: Cdu): void {
-    const focusAlunno = cdu.focus.alunno;
-    if (focusAlunno === undefined) return;
-    const dettaglio = carenzeDettaglioSemplice(
-      this.alunni.getCarenze(getAlunnoEntity(cdu)),
-      this.materie.findAllSigle(),
-      this.materie
-    );
-    focusAlunno.didattica.carenze = {
-      dettaglio,
-      numero: dettaglio.length,
-      hasCarenze: dettaglio.length > 0
-    };
+    withFocusAlunno(cdu, (focusAlunno) => {
+      const dettaglio = carenzeDettaglioSemplice(
+        this.alunni.getCarenze(getAlunnoEntity(cdu)),
+        this.materie.findAllSigle(),
+        this.materie
+      );
+      focusAlunno.didattica.carenze = {
+        dettaglio,
+        numero: dettaglio.length,
+        hasCarenze: dettaglio.length > 0
+      };
+    });
   }
 }

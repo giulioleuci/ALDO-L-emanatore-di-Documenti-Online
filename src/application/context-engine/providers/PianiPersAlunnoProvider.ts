@@ -3,7 +3,7 @@ import type { Cdu } from '../Cdu';
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
 import { TipoPiano } from '../../../domain/value-objects/enums';
 import { tipoPianoLabel } from '../mappers/labels';
-import { getAlunnoEntity } from '../techEntities';
+import { getAlunnoEntity, withFocusAlunno } from '../techEntities';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
 
@@ -19,23 +19,23 @@ export class PianiPersAlunnoProvider implements ContextProvider {
   constructor(private readonly logDocs: ILogDocumentoRepository) {}
 
   provide(cdu: Cdu): void {
-    const focusAlunno = cdu.focus.alunno;
-    if (focusAlunno === undefined) return;
-    const items = this.logDocs
-      .findByUtente(getAlunnoEntity(cdu).email)
-      .filter((l) => l.tipo === TIPO_PIANO_PERS)
-      .map((l) => ({
-        id: l.id ?? undefined,
-        nome: l.nome,
-        link: l.getLink(),
-        tipo: l.tipo,
-        sottotipo: l.getSottotipo(),
-        tipoLabel: tipoPianoLabel(l.getSottotipo() as TipoPiano),
-        idGen: l.idGen,
-        stato: l.getStato(),
-        dataCreazione: l.getDataCreazione(),
-        notificato: l.isNotificato()
-      }));
-    focusAlunno.didattica.pianiPersonalizzati = { items };
+    withFocusAlunno(cdu, (focusAlunno) => {
+      const items = this.logDocs
+        .findByUtente(getAlunnoEntity(cdu).email)
+        .filter((l) => l.tipo === TIPO_PIANO_PERS)
+        .map((l) => ({
+          id: l.id ?? undefined,
+          nome: l.nome,
+          link: l.getLink(),
+          tipo: l.tipo,
+          sottotipo: l.getSottotipo(),
+          tipoLabel: tipoPianoLabel(l.getSottotipo() as TipoPiano),
+          idGen: l.idGen,
+          stato: l.getStato(),
+          dataCreazione: l.getDataCreazione(),
+          notificato: l.isNotificato()
+        }));
+      focusAlunno.didattica.pianiPersonalizzati = { items };
+    });
   }
 }

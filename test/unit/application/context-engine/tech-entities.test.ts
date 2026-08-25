@@ -2,7 +2,8 @@ import {
   setClasseEntity,
   getClasseEntity,
   setAlunnoEntity,
-  getAlunnoEntity
+  getAlunnoEntity,
+  withFocusAlunno
 } from '../../../../src/application/context-engine/techEntities';
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
 import { Classe } from '../../../../src/domain/entities/Classe';
@@ -60,4 +61,16 @@ describe('techEntities: alunno entity slot', () => {
     expect(getClasseEntity(cdu)).toBe(classe);
     expect(getAlunnoEntity(cdu)).toBe(alunno);
   });
+});
+
+test('withFocusAlunno esegue il callback solo per un alunno in focus', () => {
+  const withoutFocus = { focus: { alunno: undefined } } as unknown as Cdu;
+  const focus = {};
+  const withFocus = { focus: { alunno: focus } } as unknown as Cdu;
+  const seen: object[] = [];
+
+  withFocusAlunno(withoutFocus, (alunno) => seen.push(alunno));
+  withFocusAlunno(withFocus, (alunno) => seen.push(alunno));
+
+  expect(seen).toEqual([focus]);
 });

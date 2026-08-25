@@ -3,6 +3,7 @@ import type { Cdu } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
+import { withFocusAlunno } from '../techEntities';
 
 const TIPO_PIANO_PERS = 'PIANO_PERS';
 
@@ -18,13 +19,16 @@ export class PianiPersAlunnoStoricoProvider implements ContextProvider {
 
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
     if (!options.includiStorico) return;
-    const alunno = cdu.focus.alunno;
-    if (alunno === undefined || alunno.didattica.pianiPersonalizzati === undefined) return;
-    const email = alunno.anagrafica.email;
-    const profondita = options.profonditaAnniDocumenti;
-    const service = new StoricoDocumentiService(this.databases);
-    alunno.didattica.pianiPersonalizzati.storico = new LazyRef(() =>
-      service.perAlunnoConTipo(email, profondita).filter((documento) => documento.tipo === TIPO_PIANO_PERS)
-    );
+    withFocusAlunno(cdu, (alunno) => {
+      if (alunno.didattica.pianiPersonalizzati === undefined) return;
+      const email = alunno.anagrafica.email;
+      const profondita = options.profonditaAnniDocumenti;
+      const service = new StoricoDocumentiService(this.databases);
+      alunno.didattica.pianiPersonalizzati.storico = new LazyRef(() =>
+        service
+          .perAlunnoConTipo(email, profondita)
+          .filter((documento) => documento.tipo === TIPO_PIANO_PERS)
+      );
+    });
   }
 }

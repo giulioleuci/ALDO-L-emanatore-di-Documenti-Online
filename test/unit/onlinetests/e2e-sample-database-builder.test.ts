@@ -147,7 +147,8 @@ function expectCompleteRows(
 
 function expectRegistrationJson(value: unknown): void {
   const registration = JSON.parse(String(value)) as Record<string, unknown>;
-  expect(registration).toEqual(expect.any(Object));
+  expect(registration).not.toBeNull();
+  expect(typeof registration).toBe('object');
   expect(Array.isArray(registration)).toBe(false);
   for (const [key, expression] of Object.entries(registration)) {
     expect(['classi', 'utenti', 'materie']).toContain(key);
@@ -627,10 +628,16 @@ test('each class has at least one NO and/or ALT religion exception alongside the
   );
   const alunni = sheets.get('_ALDO_E2E_SAMPLE')!.rows[TABLE.ALUNNI]!;
   const byClasse = (id: string) => alunni.filter((a) => a[COL_ALUNNI.CLASSE] === id);
+  const expectedExceptionCount: Record<string, number> = {
+    [CLASSE_A]: 2, // fixtures.ts layout('1A', ...): index 0 NO, index 3 ALT
+    [CLASSE_B]: 1, // layout('2B', ...): index 0 NO
+    [CLASSE_C]: 1, // layout('3C-S', ...): index 2 ALT
+    [CLASSE_C_PARTNER]: 2 // default religionExceptions: index 0 NO, index 1 ALT
+  };
   for (const id of [CLASSE_A, CLASSE_B, CLASSE_C, CLASSE_C_PARTNER]) {
     const rows = byClasse(id);
     const exceptions = rows.filter((a) => a[COL_ALUNNI.RELIGIONE] !== 'IRC');
-    expect(exceptions.length).toBeGreaterThan(0);
+    expect(exceptions.length).toBe(expectedExceptionCount[id]);
     expect(rows.filter((a) => a[COL_ALUNNI.RELIGIONE] === 'IRC').length).toBe(
       rows.length - exceptions.length
     );
@@ -756,7 +763,7 @@ test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENER
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO');
-  expect(row).toBeDefined();
+  expect(row).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: 'E2E_DOC_COMPLESSO' }));
   expect(row![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(String(row![COL_CONF_DOC.MODELLI]))).toEqual({
     templateId: TEMPLATE_IDS.docComplesso
@@ -816,7 +823,7 @@ test('seeds a CONF_DOC row using the SHEET_CON_MATERIE_E_PERMESSI generator', ()
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_SHEET_PERMESSI');
-  expect(row).toBeDefined();
+  expect(row).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: 'E2E_SHEET_PERMESSI' }));
   expect(row![COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
   expect(row![COL_CONF_DOC.FORMATO]).toBe('GSHEET');
 });
@@ -880,7 +887,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   const doc = sample.rows[TABLE.CONF_DOC]!.find(
     (r) => r[COL_CONF_DOC.ID] === CONF_DOC_PIANO_LAVORO
   );
-  expect(doc).toBeDefined();
+  expect(doc).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO }));
   expect(doc![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
   expect(JSON.parse(String(doc![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
     classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
@@ -889,7 +896,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   });
 
   const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === 'E2E_MAIL_LAVORO');
-  expect(mail).toBeDefined();
+  expect(mail).toEqual(expect.objectContaining({ [COL_CONF_MAIL.ID]: 'E2E_MAIL_LAVORO' }));
   expect(mail![COL_CONF_MAIL.PROCESSO]).toBe('PER_COORDINATORE');
   const boxes: unknown = JSON.parse(String(mail![COL_CONF_MAIL.BOX_CFG]));
   expect(boxes).toEqual([

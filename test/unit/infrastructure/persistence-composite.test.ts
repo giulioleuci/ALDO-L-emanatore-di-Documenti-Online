@@ -28,7 +28,7 @@ test('aggiungiOre updates the right (STUDENTE, ANNO) row, leaving other years in
       .getOre()
   ).toBe(40); // untouched
   expect(reread.getTotaleOre(a1)).toBe(115);
-  expect(db.saved).toBeGreaterThan(0);
+  expect(db.saved).toBe(1);
 });
 
 test('aggiungiOre appends a new year when none exists', () => {
@@ -69,5 +69,5 @@ test('setCarenzaMateria updates one subject cell of the right CARENZE row (06 §
   const map2 = new CarenzaRepository(db).getCarenzePerMateria(
     new CarenzaRepository(db).findByAlunno(a1).find((c) => c.progressivo === 1)!
   );
-  expect(map2.size).toBe(2);
+  expect([...map2].map(([materia]) => materia.value).sort()).toEqual(['FISI', 'MATE']);
 });

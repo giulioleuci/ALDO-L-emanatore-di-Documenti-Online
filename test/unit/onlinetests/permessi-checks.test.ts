@@ -46,7 +46,7 @@ test('accepts only active user as persisted direct ACL principal', () => {
 
   expect(runner.skipped).toEqual([]);
   expect(runner.checks).toHaveLength(1);
-  expect(() => runner.checks[0]!.callback()).not.toThrow();
+  runner.checks[0]!.callback();
 });
 
 test('records a failed report when Workspace policy withholds active-user identity', () => {
@@ -151,7 +151,7 @@ test('records Drive quota/auth/read-back error as failed report result', () => {
     }
   };
 
-  expect(() => registerPermessiChecks(runner, {} as ServiceContainer, sample, deps)).not.toThrow();
+  registerPermessiChecks(runner, {} as ServiceContainer, sample, deps);
   expect(runner.report()).toMatchObject({
     passed: 0,
     failed: 1,

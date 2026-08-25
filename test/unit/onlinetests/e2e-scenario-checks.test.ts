@@ -849,21 +849,19 @@ test('protected range scenario matches repeated display labels by their generate
     ]
   } as unknown as SpreadsheetService;
 
-  expect(() =>
-    verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
-      columns: [
-        { sigla: 'REL', header: 'REL', column: 0, isSpecial: true },
-        { sigla: 'FIS', header: 'Fisica', column: 1, classeId: '3C-S' },
-        { sigla: 'FIS', header: 'Fisica', column: 3, classeId: '3C-C' }
-      ],
-      expectedEditors: (column) =>
-        column.isSpecial === true
-          ? ['special@onlinetest.aldo.local']
-          : column.classeId === '3C-S'
-            ? ['first@onlinetest.aldo.local']
-            : ['second@onlinetest.aldo.local']
-    }))
-  ).not.toThrow();
+  verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
+    columns: [
+      { sigla: 'REL', header: 'REL', column: 0, isSpecial: true },
+      { sigla: 'FIS', header: 'Fisica', column: 1, classeId: '3C-S' },
+      { sigla: 'FIS', header: 'Fisica', column: 3, classeId: '3C-C' }
+    ],
+    expectedEditors: (column) =>
+      column.isSpecial === true
+        ? ['special@onlinetest.aldo.local']
+        : column.classeId === '3C-S'
+          ? ['first@onlinetest.aldo.local']
+          : ['second@onlinetest.aldo.local']
+  }));
 });
 
 test('protected range scenario rejects a generated column absent from rendered headers', () => {

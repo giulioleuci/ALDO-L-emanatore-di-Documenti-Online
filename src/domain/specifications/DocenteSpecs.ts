@@ -11,7 +11,7 @@ export class DocentiPerDipartimentoSpec extends Specification<Docente> {
   isSatisfiedBy(d: Docente): boolean {
     return DipartimentoId.of(d.dipart).equals(this.dipartId);
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_DOCENTI.DIPART]: this.dipartId.value };
   }
 }
@@ -21,7 +21,7 @@ export class DocentiITPSpec extends Specification<Docente> {
   isSatisfiedBy(d: Docente): boolean {
     return d.isITP();
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_DOCENTI.ITP]: true };
   }
 }

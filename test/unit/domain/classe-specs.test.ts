@@ -124,8 +124,8 @@ describe('specification composition (Task 8: and()/or()/not() via GLF Specificat
     // `specification.isSatisfiedBy(entity)` — exactly the path exercised
     // above. This is intentional, not a bug: composed specs "just work"
     // against `Repository.find()` precisely because they fail pushdown and
-    // fall back, even though no ALDO spec implements the query-builder half
-    // of GLF's `SpecificationLike`.
-    expect((composed as unknown as { toQueryObject?: unknown }).toQueryObject).toBeUndefined();
+    // CompositeSpecification inherits the base null fast path and therefore
+    // falls back to its existing query-builder translation contract.
+    expect(composed.toQueryObject()).toBeNull();
   });
 });

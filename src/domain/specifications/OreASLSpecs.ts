@@ -12,7 +12,7 @@ export class OreASLPerAlunnoSpec extends Specification<OreASL> {
   isSatisfiedBy(o: OreASL): boolean {
     return o.studente === this.email.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ASL.STUDENTE]: this.email.value };
   }
 }
@@ -25,7 +25,7 @@ export class OreASLPerAnnoSpec extends Specification<OreASL> {
   isSatisfiedBy(o: OreASL): boolean {
     return o.anno === this.anno.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ASL.ANNO]: this.anno.value };
   }
 }

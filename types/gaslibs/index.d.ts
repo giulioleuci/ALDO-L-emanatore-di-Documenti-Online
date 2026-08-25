@@ -20,9 +20,7 @@ declare global {
 
   type LogDetailScalar = string | number | boolean | null | undefined;
   type LogDetails =
-    | string
-    | LogDetailScalar[]
-    | Record<string, LogDetailScalar | LogDetailScalar[]>;
+    string | LogDetailScalar[] | Record<string, LogDetailScalar | LogDetailScalar[]>;
 
   interface PipelineStepDetails {
     content?: LogDetails;
@@ -1090,44 +1088,41 @@ declare global {
   }
 
   // The minimal shape Repository.find()/QueryTranslator actually need. GLF's own
-  // FieldSpecification/CompositeSpecification (SpecificationLike, with and/or/not
-  // and canBeTranslatedToQuery/toQuery) satisfy it, and so do ALDO's domain-pure
-  // `Specification<T>` implementations (src/domain/specifications/Specification.ts),
-  // which extend the ambient `Specification` class below and add isSatisfiedBy +
-  // toQueryObject (ref REPORT_GLF.md B1/A1). ALDO's domain layer does reference this
-  // ambient global directly (no `@DomainRepositoryLib` module import exists — see
-  // AldoEntity.ts's identical precedent with `Entity`), but stays free of any
-  // query-builder import: `toQueryObject` is ALDO-local and RepositoryQueryBuilder
-  // is never touched outside infrastructure.
-  interface QueryableSpecification {
-    isSatisfiedBy(entity: unknown): boolean;
+  // FieldSpecification/CompositeSpecification (SpecificationLike, with and/or/not)
+  // satisfy it, as do domain-pure subclasses that only override isSatisfiedBy and,
+  // when exact equality pushdown is available, toQueryObject.
+  interface QueryableSpecification<T = unknown> {
+    isSatisfiedBy(entity: T): boolean;
     toQueryObject?(): Record<string, unknown> | null;
     canBeTranslatedToQuery?(): boolean;
     toQuery?(queryBuilder: RepositoryQueryBuilder): RepositoryQueryBuilder;
   }
 
-  interface SpecificationLike extends QueryableSpecification {
-    and(other: SpecificationLike): SpecificationLike;
-    or(other: SpecificationLike): SpecificationLike;
-    not(): SpecificationLike;
+  interface SpecificationLike<T = unknown> extends QueryableSpecification<T> {
+    and(other: SpecificationLike<T>): SpecificationLike<T>;
+    or(other: SpecificationLike<T>): SpecificationLike<T>;
+    not(): SpecificationLike<T>;
   }
-  abstract class Specification implements SpecificationLike {
-    abstract isSatisfiedBy(entity: unknown): boolean;
-    and(other: SpecificationLike): SpecificationLike;
-    or(other: SpecificationLike): SpecificationLike;
-    not(): SpecificationLike;
+  abstract class Specification<T = unknown> implements SpecificationLike<T> {
+    abstract isSatisfiedBy(entity: T): boolean;
+    and(other: SpecificationLike<T>): SpecificationLike<T>;
+    or(other: SpecificationLike<T>): SpecificationLike<T>;
+    not(): SpecificationLike<T>;
+    toQueryObject(): Record<string, unknown> | null;
+    canBeTranslatedToQuery(): boolean;
+    toQuery(queryBuilder: RepositoryQueryBuilder): RepositoryQueryBuilder;
   }
-  class FieldSpecification extends Specification {
+  class FieldSpecification<T = unknown> extends Specification<T> {
     constructor(field: string, operator: string, value: unknown);
-    isSatisfiedBy(entity: unknown): boolean;
+    isSatisfiedBy(entity: T): boolean;
     toQueryObject(): Record<string, unknown> | null;
   }
-  class FunctionSpecification extends Specification {
-    constructor(predicate: (entity: unknown) => boolean);
-    isSatisfiedBy(entity: unknown): boolean;
+  class FunctionSpecification<T = unknown> extends Specification<T> {
+    constructor(predicate: (entity: T) => boolean, description?: string | null);
+    isSatisfiedBy(entity: T): boolean;
   }
-  class CompositeSpecification extends Specification {
-    isSatisfiedBy(entity: unknown): boolean;
+  class CompositeSpecification<T = unknown> extends Specification<T> {
+    isSatisfiedBy(entity: T): boolean;
   }
   class EntityNotFoundException extends Error {}
 

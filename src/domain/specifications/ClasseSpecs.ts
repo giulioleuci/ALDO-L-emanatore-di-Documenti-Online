@@ -8,7 +8,7 @@ export class ClassiAttiveSpec extends Specification<Classe> {
   isSatisfiedBy(c: Classe): boolean {
     return c.getDynamicColumns()[COL_CLASSI.ATTIVA] === true;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_CLASSI.ATTIVA]: true };
   }
 }
@@ -25,9 +25,6 @@ export class ClassiPerAnnoSpec extends Specification<Classe> {
   isSatisfiedBy(c: Classe): boolean {
     return c.anno.value === this.anno;
   }
-  toQueryObject(): null {
-    return null;
-  }
 }
 
 /** Classes in a given indirizzo (ref 06 §3). */
@@ -38,7 +35,7 @@ export class ClassiPerIndirizzoSpec extends Specification<Classe> {
   isSatisfiedBy(c: Classe): boolean {
     return c.indirizzo === this.indirizzoId.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_CLASSI.INDIRIZZO]: this.indirizzoId.value };
   }
 }
@@ -48,8 +45,5 @@ export class ClassiArticolateSpec extends Specification<Classe> {
   isSatisfiedBy(c: Classe): boolean {
     const a = c.getDynamicColumns()[COL_CLASSI.ARTICOLAZIONE];
     return typeof a === 'string' && a.trim().length > 0;
-  }
-  toQueryObject(): null {
-    return null;
   }
 }

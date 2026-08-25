@@ -12,7 +12,7 @@ export class CarenzePerAlunnoSpec extends Specification<Carenza> {
   isSatisfiedBy(c: Carenza): boolean {
     return c.studente === this.email.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_CARENZE.STUDENTE]: this.email.value };
   }
 }
@@ -25,7 +25,7 @@ export class CarenzePerClasseSpec extends Specification<Carenza> {
   isSatisfiedBy(c: Carenza): boolean {
     return c.classe === this.classeId.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_CARENZE.CLASSE]: this.classeId.value };
   }
 }
@@ -34,8 +34,5 @@ export class CarenzePerClasseSpec extends Specification<Carenza> {
 export class CarenzeNonNotificateSpec extends Specification<Carenza> {
   isSatisfiedBy(c: Carenza): boolean {
     return !c.isNotificato();
-  }
-  toQueryObject(): null {
-    return null;
   }
 }

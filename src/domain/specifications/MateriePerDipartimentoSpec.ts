@@ -5,7 +5,7 @@ import type { Dipartimento } from '../entities/Dipartimento';
 /**
  * Materie belonging to a department (ref 07 §4). Keyed by the Dipartimento entity
  * (whose MATERIE CSV lists its subjects) to keep the spec in the domain layer —
- * no repository dependency. In-memory only (toQueryObject null).
+ * no repository dependency. In-memory only (inherits toQueryObject null).
  */
 export class MateriePerDipartimentoSpec extends Specification<Materia> {
   private readonly materieIds: Set<string>;
@@ -15,8 +15,5 @@ export class MateriePerDipartimentoSpec extends Specification<Materia> {
   }
   isSatisfiedBy(candidate: Materia): boolean {
     return candidate.id !== null && this.materieIds.has(candidate.id);
-  }
-  toQueryObject(): null {
-    return null;
   }
 }

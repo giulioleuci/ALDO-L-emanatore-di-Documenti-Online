@@ -847,7 +847,7 @@ __webpack_require__.d(WorkspaceTemplateEngine_namespaceObject_0, {
   FilterStrategy: () => (FilterStrategy),
   Mustache: () => (MyMustache),
   MustacheRenderError: () => (MustacheRenderError),
-  PlaceholderService: () => (MyPlaceholderService),
+  PlaceholderService: () => (PlaceholderService),
   SheetProcessor: () => (_SheetProcessor)
 });
 
@@ -859,7 +859,7 @@ __webpack_require__.d(WorkspaceTemplateEngine_namespaceObject, {
   FilterStrategy: () => (FilterStrategy),
   Mustache: () => (MyMustache),
   MustacheRenderError: () => (MustacheRenderError),
-  PlaceholderService: () => (MyPlaceholderService),
+  PlaceholderService: () => (PlaceholderService),
   SheetProcessor: () => (_SheetProcessor)
 });
 
@@ -1948,7 +1948,7 @@ __webpack_require__.d(SheetDBLib_namespaceObject_0, {
   CrossPartitionQuery: () => (CrossPartitionQuery),
   CrossPartitionQueryError: () => (CrossPartitionQueryError),
   DatabasePartition: () => (DatabasePartition),
-  DatabaseService: () => (MyDatabaseService),
+  DatabaseService: () => (DatabaseService),
   DynamicColumnAccessor: () => (DynamicColumnAccessor),
   FamilyAggregator: () => (FamilyAggregator),
   MemberSourceType: () => (MemberSourceType),
@@ -1981,7 +1981,7 @@ __webpack_require__.d(SheetDBLib_namespaceObject, {
   CrossPartitionQuery: () => (CrossPartitionQuery),
   CrossPartitionQueryError: () => (CrossPartitionQueryError),
   DatabasePartition: () => (DatabasePartition),
-  DatabaseService: () => (MyDatabaseService),
+  DatabaseService: () => (DatabaseService),
   DynamicColumnAccessor: () => (DynamicColumnAccessor),
   FamilyAggregator: () => (FamilyAggregator),
   MemberSourceType: () => (MemberSourceType),
@@ -3309,6 +3309,34 @@ class IdGenerator {
 
 
 const _FORMAT_REGEXES = Object.fromEntries(['YYYY', 'yyyy', 'YY', 'yy', 'MM', 'DD', 'dd', 'HH', 'mm', 'ss', 'SSS'].map(t => [t, new RegExp(t, 'g')]));
+const _parseGoogleSheetsDate = serialNumber => new Date(new Date(1899, 11, 30).getTime() + serialNumber * 24 * 60 * 60 * 1000);
+
+
+
+
+
+
+function parseDate(input) {
+  if (!input && input !== 0) {
+    return null;
+  }
+  if (input instanceof Date) {
+    const copy = new Date(input.getTime());
+    return isNaN(copy.getTime()) ? null : copy;
+  }
+  if (typeof input === 'string') {
+    const date = new Date(input);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof input === 'number') {
+    if (input > 0 && input < 100000) {
+      return _parseGoogleSheetsDate(input);
+    }
+    const date = new Date(input);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  return null;
+}
 class DateUtils {
 
 
@@ -3356,32 +3384,7 @@ class DateUtils {
 
 
   parseDate(input) {
-    if (!input && input !== 0) {
-      return null;
-    }
-
-
-    if (input instanceof Date) {
-      return isNaN(input.getTime()) ? null : input;
-    }
-
-
-    if (typeof input === 'string') {
-      const date = new Date(input);
-      return isNaN(date.getTime()) ? null : date;
-    }
-
-
-    if (typeof input === 'number') {
-
-      if (input > 0 && input < 100000) {
-        return this.parseGoogleSheetsDate(input);
-      }
-
-      const date = new Date(input);
-      return isNaN(date.getTime()) ? null : date;
-    }
-    return null;
+    return parseDate(input);
   }
 
 
@@ -3390,10 +3393,7 @@ class DateUtils {
 
 
   parseGoogleSheetsDate(serialNumber) {
-
-    const epoch = new Date(1899, 11, 30);
-    const millisPerDay = DateUtils.MILLIS_PER_DAY;
-    return new Date(epoch.getTime() + serialNumber * millisPerDay);
+    return _parseGoogleSheetsDate(serialNumber);
   }
 
 
@@ -7207,15 +7207,6 @@ class StringUtils {
 
 
 
-  isEmpty(str) {
-    return !str || typeof str === 'string' && str.trim().length === 0;
-  }
-
-
-
-
-
-
 
 
   truncate(str, maxLength, suffix = '...') {
@@ -7522,361 +7513,6 @@ class SystemEnvironmentUtils {
 
 
 
-class SystemQuotaManager {
-
-
-
-
-
-
-  chunk(array, size) {
-    if (!Array.isArray(array) || size <= 0) {
-      return [];
-    }
-    return chunk_chunk(array, size);
-  }
-
-
-
-
-
-
-  unique(array) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return [...new Set(array)];
-  }
-
-
-
-
-
-
-
-  flatten(array, depth = 1) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    if (depth === Infinity) {
-      return flattenDeep(array);
-    }
-    let result = array;
-    for (let i = 0; i < depth; i++) {
-      result = LodashFacade_flatten(result);
-    }
-    return result;
-  }
-
-
-
-
-
-
-  flattenShallow(array) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return LodashFacade_flatten(array);
-  }
-
-
-
-
-
-
-  flattenDeep(array) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return flattenDeep(array);
-  }
-
-
-
-
-
-
-  compact(array) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return compact(array);
-  }
-
-
-
-
-
-
-
-  difference(array, ...values) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return difference_difference(array, ...values);
-  }
-
-
-
-
-
-
-
-
-  differenceBy(array, values, iteratee) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return differenceBy_differenceBy(array, values, iteratee);
-  }
-
-
-
-
-
-
-
-  groupBy(array, iteratee) {
-    if (!Array.isArray(array)) {
-      return {};
-    }
-    return groupBy_groupBy(array, iteratee);
-  }
-
-
-
-
-
-
-  intersection(...arrays) {
-    return intersection_intersection(...arrays);
-  }
-
-
-
-
-
-
-
-  keyBy(array, iteratee) {
-    if (!Array.isArray(array)) {
-      return {};
-    }
-    return keyBy(array, iteratee);
-  }
-
-
-
-
-
-
-
-
-  orderBy(array, iteratees, orders) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return orderBy(array, iteratees, orders);
-  }
-
-
-
-
-
-
-  uniq(array) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return LodashFacade_uniq(array);
-  }
-
-
-
-
-
-
-
-  uniqBy(array, iteratee) {
-    if (!Array.isArray(array)) {
-      return [];
-    }
-    return uniqBy_uniqBy(array, iteratee);
-  }
-
-
-
-
-
-
-
-  randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-
-
-
-
-
-
-  round(number, decimals = 0) {
-    const multiplier = Math.pow(10, decimals);
-    return Math.round(number * multiplier) / multiplier;
-  }
-
-
-
-
-
-
-
-
-  clamp(number, min, max) {
-    return Math.min(Math.max(number, min), max);
-  }
-
-
-
-
-
-
-
-  maxBy(array, iteratee) {
-    if (!Array.isArray(array) || array.length === 0) {
-      return undefined;
-    }
-    return maxBy_maxBy(array, iteratee);
-  }
-
-
-
-
-
-
-
-  minBy(array, iteratee) {
-    if (!Array.isArray(array) || array.length === 0) {
-      return undefined;
-    }
-    return minBy_minBy(array, iteratee);
-  }
-
-
-
-
-
-
-
-  sumBy(array, iteratee) {
-    if (!Array.isArray(array) || array.length === 0) {
-      return 0;
-    }
-    return sumBy_sumBy(array, iteratee);
-  }
-
-
-
-
-
-
-
-  meanBy(array, iteratee) {
-    if (!Array.isArray(array) || array.length === 0) {
-      return NaN;
-    }
-    return meanBy_meanBy(array, iteratee);
-  }
-
-
-
-
-
-
-
-  every(collection, predicate) {
-    return every(collection, predicate);
-  }
-
-
-
-
-
-
-
-  filter(collection, predicate) {
-    return filter(collection, predicate);
-  }
-
-
-
-
-
-
-
-
-  find(collection, predicate, fromIndex = 0) {
-    return find(collection, predicate, fromIndex);
-  }
-
-
-
-
-
-
-
-  forEach(collection, iteratee) {
-    return forEach(collection, iteratee);
-  }
-
-
-
-
-
-
-
-  map(collection, iteratee) {
-    return map(collection, iteratee);
-  }
-
-
-
-
-
-
-
-
-  reduce(collection, iteratee, accumulator) {
-    return reduce(collection, iteratee, accumulator);
-  }
-
-
-
-
-
-
-  size(collection) {
-    return size(collection);
-  }
-
-
-
-
-
-
-
-  some(collection, predicate) {
-    return some(collection, predicate);
-  }
-}
-;
-
-
-
-
-
-
 class SystemScriptSettings {
 
 
@@ -7985,8 +7621,12 @@ class SystemScriptSettings {
 }
 ;
 
+const unique = a => Array.isArray(a) ? [...new Set(a)] : [];
+const collections_compact = a => Array.isArray(a) ? a.filter(Boolean) : [];
+const collections_flatten = (a, depth = 1) => Array.isArray(a) ? a.flat(depth) : [];
+const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi);
 
-
+;
 
 
 
@@ -7996,33 +7636,162 @@ class SystemScriptSettings {
 class SystemUtils {
   constructor(sleepFn = null) {
     this._environmentUtils = new SystemEnvironmentUtils(sleepFn);
-    this._quotaManager = new SystemQuotaManager();
     this._scriptSettings = new SystemScriptSettings();
-
-
-    const delegations = [{
-      manager: this._environmentUtils,
-      methods: ['sleep', 'delay', 'isValidEmail', 'isValidUrl', 'isEqual', 'isNil', 'isNumber', 'isString', 'isEmptyValue', 'debounce', 'once', 'noop']
-    }, {
-      manager: this._quotaManager,
-      methods: ['chunk', 'unique', 'flatten', 'flattenShallow', 'flattenDeep', 'compact', 'difference', 'differenceBy', 'groupBy', 'intersection', 'keyBy', 'orderBy', 'uniq', 'uniqBy', 'randomInt', 'round', 'clamp', 'maxBy', 'minBy', 'sumBy', 'meanBy', 'every', 'filter', 'find', 'forEach', 'map', 'reduce', 'size', 'some']
-    }, {
-      manager: this._scriptSettings,
-      methods: ['deepClone', 'deepMerge', 'getNestedProperty', 'setNestedProperty', 'has', 'pick', 'omit', 'mapKeys', 'mapValues']
-    }];
-    delegations.forEach(({
-      manager,
-      methods
-    }) => {
-      methods.forEach(method => {
-        if (typeof manager[method] === 'function') {
-          this[method] = manager[method].bind(manager);
-        }
-      });
-    });
+  }
+  sleep(...args) {
+    return this._environmentUtils.sleep(...args);
+  }
+  delay(...args) {
+    return this._environmentUtils.delay(...args);
+  }
+  isValidEmail(...args) {
+    return this._environmentUtils.isValidEmail(...args);
+  }
+  isValidUrl(...args) {
+    return this._environmentUtils.isValidUrl(...args);
+  }
+  isEqual(...args) {
+    return this._environmentUtils.isEqual(...args);
+  }
+  isNil(...args) {
+    return this._environmentUtils.isNil(...args);
+  }
+  isNumber(...args) {
+    return this._environmentUtils.isNumber(...args);
+  }
+  isString(...args) {
+    return this._environmentUtils.isString(...args);
+  }
+  isEmptyValue(...args) {
+    return this._environmentUtils.isEmptyValue(...args);
+  }
+  debounce(...args) {
+    return this._environmentUtils.debounce(...args);
+  }
+  once(...args) {
+    return this._environmentUtils.once(...args);
+  }
+  noop(...args) {
+    return this._environmentUtils.noop(...args);
+  }
+  chunk(...args) {
+    return chunk_chunk(...args);
+  }
+  unique(...args) {
+    return unique(...args);
+  }
+  flatten(...args) {
+    return collections_flatten(...args);
+  }
+  flattenShallow(array) {
+    return collections_flatten(array);
+  }
+  flattenDeep(array) {
+    return collections_flatten(array, Infinity);
+  }
+  compact(...args) {
+    return collections_compact(...args);
+  }
+  difference(...args) {
+    return difference_difference(...args);
+  }
+  differenceBy(...args) {
+    return differenceBy_differenceBy(...args);
+  }
+  groupBy(...args) {
+    return groupBy_groupBy(...args);
+  }
+  intersection(...args) {
+    return intersection_intersection(...args);
+  }
+  keyBy(...args) {
+    return keyBy(...args);
+  }
+  orderBy(...args) {
+    return orderBy(...args);
+  }
+  uniq(...args) {
+    return unique(...args);
+  }
+  uniqBy(...args) {
+    return uniqBy_uniqBy(...args);
+  }
+  randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  round(number, decimals = 0) {
+    const multiplier = Math.pow(10, decimals);
+    return Math.round(number * multiplier) / multiplier;
+  }
+  clamp(...args) {
+    return clamp(...args);
+  }
+  maxBy(...args) {
+    return maxBy_maxBy(...args);
+  }
+  minBy(...args) {
+    return minBy_minBy(...args);
+  }
+  sumBy(...args) {
+    return sumBy_sumBy(...args);
+  }
+  meanBy(...args) {
+    return meanBy_meanBy(...args);
+  }
+  every(...args) {
+    return every(...args);
+  }
+  filter(...args) {
+    return filter(...args);
+  }
+  find(...args) {
+    return find(...args);
+  }
+  forEach(...args) {
+    return forEach(...args);
+  }
+  map(...args) {
+    return map(...args);
+  }
+  reduce(...args) {
+    return reduce(...args);
+  }
+  size(...args) {
+    return size(...args);
+  }
+  some(...args) {
+    return some(...args);
+  }
+  deepClone(...args) {
+    return this._scriptSettings.deepClone(...args);
+  }
+  deepMerge(...args) {
+    return this._scriptSettings.deepMerge(...args);
+  }
+  getNestedProperty(...args) {
+    return this._scriptSettings.getNestedProperty(...args);
+  }
+  setNestedProperty(...args) {
+    return this._scriptSettings.setNestedProperty(...args);
+  }
+  has(...args) {
+    return this._scriptSettings.has(...args);
+  }
+  pick(...args) {
+    return this._scriptSettings.pick(...args);
+  }
+  omit(...args) {
+    return this._scriptSettings.omit(...args);
+  }
+  mapKeys(...args) {
+    return this._scriptSettings.mapKeys(...args);
+  }
+  mapValues(...args) {
+    return this._scriptSettings.mapValues(...args);
   }
 }
 ;
+
 
 
 
@@ -8064,6 +7833,7 @@ class MyUtilsService {
         this[name] = manager[name].bind(manager);
       });
     });
+    this.isEmpty = isEmpty;
   }
 }
 
@@ -15681,7 +15451,7 @@ class UtilitiesService {
 
 
 
-  formatDate(date, timeZone, format) {
+  formatDateNative(date, timeZone, format) {
     try {
       const formatted = __webpack_require__.g.Utilities.formatDate(date, timeZone, format);
       this._logger.debug(`Formatted date: ${formatted}`);
@@ -27550,7 +27320,7 @@ class _SheetProcessor {
 
 
 
-class MyPlaceholderService {
+class PlaceholderService {
 
 
 
@@ -27561,7 +27331,7 @@ class MyPlaceholderService {
       name: 'placeholderService',
       dependencies: ['logger', 'mustache'],
       isSingleton: true,
-      factory: (logger, mustache) => new MyPlaceholderService({
+      factory: (logger, mustache) => new PlaceholderService({
         logger,
         mustache
       })
@@ -27587,7 +27357,7 @@ class MyPlaceholderService {
 
 
     if (!this.mustache) {
-      throw new Error('MyPlaceholderService requires a MyMustache instance');
+      throw new Error('PlaceholderService requires a MyMustache instance');
     }
 
 
@@ -27596,7 +27366,7 @@ class MyPlaceholderService {
     };
     this.documentProcessor = new _DocumentProcessor(this, processorOptions);
     this.sheetProcessor = new _SheetProcessor(this);
-    this.logger.debug('MyPlaceholderService (Facade) initialized.');
+    this.logger.debug('PlaceholderService (Facade) initialized.');
   }
 
 
@@ -30665,7 +30435,7 @@ class ExpressionEngineService {
     this.logger.debug('Mustache engine initialized from WorkspaceTemplateEngine.');
 
 
-    this.placeholderService = new MyPlaceholderService({
+    this.placeholderService = new PlaceholderService({
       logger: this.logger,
       mustache: this.mustache,
       utils: this.utils,
@@ -50125,7 +49895,7 @@ class DatabaseMetaDataHandler {
 
 
 
-class MyDatabaseService {
+class DatabaseService {
   constructor(spreadsheetId, logger, utils, cache, exceptionService = null, options = {}) {
     this._spreadsheetId = spreadsheetId;
     this._logger = logger;
@@ -50175,6 +49945,8 @@ class MyDatabaseService {
   }
 }
 
+
+
 ;
 
 
@@ -50208,15 +49980,6 @@ const ColumnType = Object.freeze({
 
 function isValidColumnType(value) {
   return Object.values(ColumnType).includes(value);
-}
-
-
-
-
-
-
-function getColumnTypes() {
-  return Object.values(ColumnType);
 }
 
 
@@ -53260,7 +53023,7 @@ class PartitionCoordinator {
         ...partition.connectionOptions,
         ...this._defaultConnectionOptions
       };
-      const db = new MyDatabaseService(partition.spreadsheetId, this._logger, this._utils, this._cache, null,
+      const db = new DatabaseService(partition.spreadsheetId, this._logger, this._utils, this._cache, null,
 
       connectionOptions);
       this._connections.set(partition.id, db);
@@ -69107,6 +68870,7 @@ class QueryTranslator {
 
   constructor(logger = null) {
     this.logger = logger || new LoggerService();
+    this._queryObjectCriteriaCache = new WeakMap();
   }
 
 
@@ -69123,10 +68887,10 @@ class QueryTranslator {
     if (!queryBuilder) {
       throw new SpecificationException('Query builder is required', 'QueryTranslator');
     }
-    if (this._hasQueryObjectCriteria(specification)) {
+    if (this._queryObjectCriteria(specification) !== null) {
       try {
         this.logger.debug(`Translating specification via toQueryObject(): ${specification.constructor.name}`);
-        return this._applyQueryObject(specification.toQueryObject(), queryBuilder);
+        return this._applyQueryObject(specification, queryBuilder);
       } catch (error) {
         if (error instanceof SpecificationException) {
           throw error;
@@ -69137,6 +68901,7 @@ class QueryTranslator {
         });
       }
     }
+    this._queryObjectCriteriaCache.delete(specification);
 
 
     if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
@@ -69164,10 +68929,14 @@ class QueryTranslator {
 
 
 
-
-
-  _hasQueryObjectCriteria(specification) {
-    return typeof specification.toQueryObject === 'function' && specification.toQueryObject() !== null && specification.toQueryObject() !== undefined;
+  _queryObjectCriteria(specification) {
+    if (this._queryObjectCriteriaCache.has(specification)) {
+      return this._queryObjectCriteriaCache.get(specification);
+    }
+    const criteria = typeof specification.toQueryObject === 'function' ? specification.toQueryObject() : null;
+    const normalized = criteria === null || criteria === undefined ? null : criteria;
+    this._queryObjectCriteriaCache.set(specification, normalized);
+    return normalized;
   }
 
 
@@ -69177,7 +68946,9 @@ class QueryTranslator {
 
 
 
-  _applyQueryObject(criteria, queryBuilder) {
+  _applyQueryObject(specification, queryBuilder) {
+    const criteria = this._queryObjectCriteria(specification);
+    this._queryObjectCriteriaCache.delete(specification);
     for (const [column, value] of Object.entries(criteria)) {
       queryBuilder.where(column, '=', value);
     }
@@ -69196,13 +68967,14 @@ class QueryTranslator {
         reason: 'Specification is null or undefined'
       };
     }
-    if (this._hasQueryObjectCriteria(specification)) {
+    if (this._queryObjectCriteria(specification) !== null) {
       return {
         valid: true,
         reason: null
       };
     }
     if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
+      this._queryObjectCriteriaCache.delete(specification);
       return {
         valid: false,
         reason: `${specification.constructor.name} cannot be translated to a database query`
@@ -70028,9 +69800,33 @@ class Specification {
 
 
 
-  canBeTranslatedToQuery() {
-    try {
 
+
+
+
+
+
+
+
+
+
+
+  toQueryObject() {
+    return null;
+  }
+
+
+
+
+
+  canBeTranslatedToQuery() {
+    if (this.toQueryObject() !== null) {
+      return true;
+    }
+    if (Object.getPrototypeOf(this).toQuery === Specification.prototype.toQuery) {
+      return false;
+    }
+    try {
       const mockBuilder = {
         where: () => mockBuilder,
         andWhere: () => mockBuilder,
@@ -70402,6 +70198,16 @@ class FieldSpecification extends Specification {
       default:
         return false;
     }
+  }
+
+
+
+
+
+  toQueryObject() {
+    return this._operator === 'equals' ? {
+      [this._field]: this._value
+    } : null;
   }
 
 
@@ -72870,39 +72676,6 @@ class Role {
 
 
 
-
-
-
-
-function parseDate(value) {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  if (value instanceof Date) {
-    const copy = new Date(value.getTime());
-    return isNaN(copy.getTime()) ? null : copy;
-  }
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
-    return isNaN(parsed.getTime()) ? null : parsed;
-  }
-  return null;
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Assignment {
 
 
@@ -72971,7 +72744,6 @@ class Assignment {
     Object.freeze(this);
     Object.freeze(this.metadata);
   }
-
 
 
 
@@ -77859,6 +77631,7 @@ class BlockResult extends Result {
 
 
 
+
 class ContentBlock {
 
 
@@ -77910,7 +77683,7 @@ class ContentBlock {
 
 
 
-  getData(context) {
+  getData(_context) {
     throw new Error('ContentBlock.getData() must be implemented by subclass');
   }
 
@@ -77921,7 +77694,7 @@ class ContentBlock {
 
 
   isEmpty(data) {
-    throw new Error('ContentBlock.isEmpty() must be implemented by subclass');
+    return isEmpty(data);
   }
 
 
@@ -77930,7 +77703,7 @@ class ContentBlock {
 
 
 
-  getTemplateId(format) {
+  getTemplateId(_format) {
     throw new Error('ContentBlock.getTemplateId() must be implemented by subclass');
   }
 
@@ -78000,7 +77773,7 @@ class ContentBlock {
 
 
 
-  _getMetadata(data) {
+  _getMetadata(_data) {
     return {
       blockType: this.getTypeId(),
       blockName: this.getName()
@@ -78066,7 +77839,7 @@ class SimpleContentBlock extends ContentBlock {
 
 
 
-    this._emptyChecker = config.emptyChecker || (() => false);
+    this._emptyChecker = config.emptyChecker || isEmpty;
 
 
 

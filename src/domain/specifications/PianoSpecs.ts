@@ -13,7 +13,7 @@ export class PianiPerAlunnoSpec extends Specification<Piano> {
   isSatisfiedBy(p: Piano): boolean {
     return p.studente === this.email.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_PIANI.STUDENTE]: this.email.value };
   }
 }
@@ -26,7 +26,7 @@ export class PianiPerTipoSpec extends Specification<Piano> {
   isSatisfiedBy(p: Piano): boolean {
     return p.tipo === this.tipo;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_PIANI.TIPO]: this.tipo };
   }
 }
@@ -42,9 +42,6 @@ export class AlunniBESSpec extends Specification<Alunno> {
   }
   isSatisfiedBy(a: Alunno): boolean {
     return this.besStudentEmails.has(a.email.value);
-  }
-  toQueryObject(): null {
-    return null;
   }
   static fromPiani(besStudentEmails: Iterable<string>): AlunniBESSpec {
     return new AlunniBESSpec(new Set(besStudentEmails));

@@ -16,9 +16,6 @@ export class VariazioniPerClasseSpec extends Specification<VariazioneCattedra> {
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.applicaAClasse(this.classeId);
   }
-  toQueryObject(): null {
-    return null;
-  }
 }
 
 /**
@@ -32,9 +29,6 @@ export class VariazioniPerMateriaSpec extends Specification<VariazioneCattedra> 
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.applicaAMateria(this.materiaId);
   }
-  toQueryObject(): null {
-    return null;
-  }
 }
 
 /** Variations by new titolare — plain equality on NUOVO_TITOLARE, pushdown-eligible. */
@@ -45,7 +39,7 @@ export class VariazioniPerNuovoTitolareSpec extends Specification<VariazioneCatt
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.nuovoTitolare === this.email.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_VARIAZIONI.NUOVO_TITOLARE]: this.email.value };
   }
 }
@@ -58,7 +52,7 @@ export class VariazioniPerTitolareSpec extends Specification<VariazioneCattedra>
   isSatisfiedBy(v: VariazioneCattedra): boolean {
     return v.titolare === this.email.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_VARIAZIONI.TITOLARE]: this.email.value };
   }
 }

@@ -8,7 +8,7 @@ export class AlunniAttiviSpec extends Specification<RowLike> {
     return candidate[COL_ALUNNI.ATTIVO] === true;
   }
 
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ALUNNI.ATTIVO]: true };
   }
 }

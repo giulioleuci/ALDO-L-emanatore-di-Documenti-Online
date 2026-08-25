@@ -38,20 +38,6 @@ const CAMPI_CARTELLE = ['idGen', 'nome', 'path'] as const;
 const CAMPI_CSV = ['classi', 'utenti', 'materie'] as const;
 const STATI_DOCUMENTO = Object.values(StatoDocumento) as string[];
 
-class PredicateSpecification<T> extends Specification<T> {
-  constructor(private readonly predicate: (candidate: T) => boolean) {
-    super();
-  }
-
-  isSatisfiedBy(candidate: T): boolean {
-    return this.predicate(candidate);
-  }
-
-  toQueryObject(): null {
-    return null;
-  }
-}
-
 function isPlainObject(value: unknown): value is Oggetto {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
   const prototype: unknown = Object.getPrototypeOf(value);
@@ -144,14 +130,14 @@ export function parseFiltriSorgente(
 function combine<T>(criteria: Specification<T>[]): Specification<T> {
   return criteria.reduce<Specification<T>>(
     (combined, criterion) => combined.and(criterion) as Specification<T>,
-    new PredicateSpecification<T>(() => true)
+    new FunctionSpecification<T>(() => true)
   );
 }
 
 function combineAny<T>(criteria: Specification<T>[]): Specification<T> {
   return criteria.reduce<Specification<T>>(
     (combined, criterion) => combined.or(criterion) as Specification<T>,
-    new PredicateSpecification<T>(() => false)
+    new FunctionSpecification<T>(() => false)
   );
 }
 
@@ -172,36 +158,44 @@ function documentCriteria(
   const documenti = filtri as FiltriDocumenti;
   const criteria: Specification<LogDocumento>[] = [];
   if (documenti.tipo !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.tipo === documenti.tipo));
+    criteria.push(new FunctionSpecification<LogDocumento>((item) => item.tipo === documenti.tipo));
   if (documenti.stato !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.getStato() === documenti.stato));
+    criteria.push(
+      new FunctionSpecification<LogDocumento>((item) => item.getStato() === documenti.stato)
+    );
   if (documenti.sottotipo !== undefined)
     criteria.push(
-      new PredicateSpecification((item) => item.getSottotipo() === documenti.sottotipo)
+      new FunctionSpecification<LogDocumento>((item) => item.getSottotipo() === documenti.sottotipo)
     );
   if (documenti.idGen !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.idGen === documenti.idGen));
+    criteria.push(
+      new FunctionSpecification<LogDocumento>((item) => item.idGen === documenti.idGen)
+    );
   if (documenti.idOrig !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.getIdOrig() === documenti.idOrig));
+    criteria.push(
+      new FunctionSpecification<LogDocumento>((item) => item.getIdOrig() === documenti.idOrig)
+    );
   if (documenti.notificato !== undefined)
     criteria.push(
-      new PredicateSpecification((item) => item.isNotificato() === documenti.notificato)
+      new FunctionSpecification<LogDocumento>(
+        (item) => item.isNotificato() === documenti.notificato
+      )
     );
   if (documenti.classi)
     criteria.push(
-      new PredicateSpecification((item) =>
+      new FunctionSpecification<LogDocumento>((item) =>
         matchesCsv(documenti.classi!, (value) => item.containsClasse(value), csvMode)
       )
     );
   if (documenti.utenti)
     criteria.push(
-      new PredicateSpecification((item) =>
+      new FunctionSpecification<LogDocumento>((item) =>
         matchesCsv(documenti.utenti!, (value) => item.containsUtente(value), csvMode)
       )
     );
   if (documenti.materie)
     criteria.push(
-      new PredicateSpecification((item) =>
+      new FunctionSpecification<LogDocumento>((item) =>
         matchesCsv(documenti.materie!, (value) => item.containsMateria(value), csvMode)
       )
     );
@@ -215,26 +209,30 @@ function folderCriteria(
   const cartelle = filtri as FiltriCartelle;
   const criteria: Specification<LogCartella>[] = [];
   if (cartelle.idGen !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.tipo === cartelle.idGen));
+    criteria.push(new FunctionSpecification<LogCartella>((item) => item.tipo === cartelle.idGen));
   if (cartelle.nome !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.nome.includes(cartelle.nome!)));
+    criteria.push(
+      new FunctionSpecification<LogCartella>((item) => item.nome.includes(cartelle.nome!))
+    );
   if (cartelle.path !== undefined)
-    criteria.push(new PredicateSpecification((item) => item.getPath().includes(cartelle.path!)));
+    criteria.push(
+      new FunctionSpecification<LogCartella>((item) => item.getPath().includes(cartelle.path!))
+    );
   if (cartelle.classi)
     criteria.push(
-      new PredicateSpecification((item) =>
+      new FunctionSpecification<LogCartella>((item) =>
         matchesCsv(cartelle.classi!, (value) => item.containsClasse(value), csvMode)
       )
     );
   if (cartelle.utenti)
     criteria.push(
-      new PredicateSpecification((item) =>
+      new FunctionSpecification<LogCartella>((item) =>
         matchesCsv(cartelle.utenti!, (value) => item.containsUtente(value), csvMode)
       )
     );
   if (cartelle.materie)
     criteria.push(
-      new PredicateSpecification((item) =>
+      new FunctionSpecification<LogCartella>((item) =>
         matchesCsv(cartelle.materie!, (value) => item.containsMateria(value), csvMode)
       )
     );
@@ -256,7 +254,9 @@ export function specCartelle(filtri: FiltriSorgente): Specification<LogCartella>
   const criteria = folderCriteria(filtri);
   if (filtri.not)
     criteria.push(
-      combineAny(folderCriteria(filtri.not, filtri.csv ?? 'any')).not() as Specification<LogCartella>
+      combineAny(
+        folderCriteria(filtri.not, filtri.csv ?? 'any')
+      ).not() as Specification<LogCartella>
     );
   return combine(criteria);
 }

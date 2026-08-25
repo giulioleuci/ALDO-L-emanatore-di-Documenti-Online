@@ -11,7 +11,7 @@ export class IndirizziPerTipoSpec extends Specification<Indirizzo> {
   isSatisfiedBy(candidate: Indirizzo): boolean {
     return candidate.tipo === this.tipo;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_INDIRIZZI.TIPO]: this.tipo };
   }
 }

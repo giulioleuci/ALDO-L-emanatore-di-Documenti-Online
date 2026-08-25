@@ -10,9 +10,6 @@ export class MaterieEsamePrimaSpec extends Specification<Materia> {
   isSatisfiedBy(candidate: Materia): boolean {
     return candidate.esameConfig?.isPrimaProvaPerIndirizzo(this.indirizzo) ?? false;
   }
-  toQueryObject(): null {
-    return null;
-  }
 }
 
 /** Materie that are the SECOND exam paper for an indirizzo (ref 07 §4). In-memory only. */
@@ -22,8 +19,5 @@ export class MaterieEsameSecondaSpec extends Specification<Materia> {
   }
   isSatisfiedBy(candidate: Materia): boolean {
     return candidate.esameConfig?.isSecondaProvaPerIndirizzo(this.indirizzo) ?? false;
-  }
-  toQueryObject(): null {
-    return null;
   }
 }

@@ -12,7 +12,7 @@ export class MovimentiPerAlunnoSpec extends Specification<MovimentoAlunno> {
   isSatisfiedBy(m: MovimentoAlunno): boolean {
     return m.studente === this.email.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_MOV_ALUNNI.STUDENTE]: this.email.value };
   }
 }
@@ -25,7 +25,7 @@ export class MovimentiPerTipoSpec extends Specification<MovimentoAlunno> {
   isSatisfiedBy(m: MovimentoAlunno): boolean {
     return m.tipo === this.tipo;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_MOV_ALUNNI.TIPO]: this.tipo };
   }
 }

@@ -14,7 +14,7 @@ export class RuoliPerDocenteSpec extends Specification<RuoloSpeciale> {
   isSatisfiedBy(candidate: RuoloSpeciale): boolean {
     return candidate.hasDocente(this.email);
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_RUOLI.DOCENTE]: this.email.value };
   }
 }

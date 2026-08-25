@@ -12,7 +12,7 @@ export class ProgettiPerClasseSpec extends Specification<Progetto> {
   isSatisfiedBy(p: Progetto): boolean {
     return p.classe === this.classeId.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_PROGETTI.CLASSE]: this.classeId.value };
   }
 }
@@ -25,7 +25,7 @@ export class ProgettiPerTipoSpec extends Specification<Progetto> {
   isSatisfiedBy(p: Progetto): boolean {
     return p.tipo === this.tipo;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_PROGETTI.TIPO]: this.tipo };
   }
 }

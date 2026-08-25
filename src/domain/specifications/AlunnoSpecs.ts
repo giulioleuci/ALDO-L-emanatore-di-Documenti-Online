@@ -12,7 +12,7 @@ export class AlunniInClasseSpec extends Specification<Alunno> {
   isSatisfiedBy(a: Alunno): boolean {
     return a.classe === this.classeId.value;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ALUNNI.CLASSE]: this.classeId.value };
   }
 }
@@ -22,7 +22,7 @@ export class AlunniRipetentiSpec extends Specification<Alunno> {
   isSatisfiedBy(a: Alunno): boolean {
     return a.isRipetente();
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ALUNNI.RIPETENTE]: true };
   }
 }
@@ -32,7 +32,7 @@ export class AlunniRappresentantiSpec extends Specification<Alunno> {
   isSatisfiedBy(a: Alunno): boolean {
     return a.isRappresentante();
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ALUNNI.RAPPR_STUD]: true };
   }
 }
@@ -45,7 +45,7 @@ export class AlunniPerReligioneSpec extends Specification<Alunno> {
   isSatisfiedBy(a: Alunno): boolean {
     return a.religione === this.religione;
   }
-  toQueryObject(): Record<string, unknown> {
+  override toQueryObject(): Record<string, unknown> {
     return { [COL_ALUNNI.RELIGIONE]: this.religione };
   }
 }

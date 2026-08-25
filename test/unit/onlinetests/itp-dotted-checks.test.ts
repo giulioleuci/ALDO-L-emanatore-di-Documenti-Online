@@ -145,7 +145,7 @@ test('specifica lookup accepts exactly the dedicated dotted ITP', () => {
   } as ServiceContainer;
   registerItpDottedChecks(runner as never, container, sample);
 
-  expect(() => runner.callbacks.get(CHECK_NAMES[0])!()).not.toThrow();
+  runner.callbacks.get(CHECK_NAMES[0])!();
 });
 
 test('dotted document identity accepts a prior-class duplicate for the focal batch', () => {
@@ -194,7 +194,7 @@ test('dotted document identity accepts a prior-class duplicate for the focal bat
 
   registerItpDottedChecks(runner as never, container, sample);
 
-  expect(() => runner.callbacks.get(CHECK_NAMES[1])!()).not.toThrow();
+  runner.callbacks.get(CHECK_NAMES[1])!();
 });
 
 test('subtype assertion expects the GRECO teacher of the batch-scoped class', () => {
@@ -216,7 +216,7 @@ test('subtype assertion expects the GRECO teacher of the batch-scoped class', ()
 
   registerItpDottedChecks(runner as never, container, sample);
 
-  expect(runner.callbacks.get(CHECK_NAMES[1])!).not.toThrow();
+  runner.callbacks.get(CHECK_NAMES[1])!();
 });
 
 test('subtype failure names the missing subtypes, not the found ones', () => {

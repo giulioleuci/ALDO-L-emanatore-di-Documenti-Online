@@ -3,9 +3,23 @@ import { COL_CONF_MAIL } from '../../config/schema';
 import { ConfigurationError } from '../errors/DomainError';
 import { AldoEntity } from './AldoEntity';
 
-export interface ConfigurazioneEmailData {
-  [key: string]: unknown;
-}
+export type ConfigurazioneEmailData = {
+  [COL_CONF_MAIL.ID]?: string;
+  [COL_CONF_MAIL.OGGETTO]?: string;
+  [COL_CONF_MAIL.PROCESSO]?: string;
+  [COL_CONF_MAIL.BOX_CFG]?: string | null;
+  [COL_CONF_MAIL.TESTO_START]?: string;
+  [COL_CONF_MAIL.TESTO_END]?: string;
+  [COL_CONF_MAIL.SUPPLENTI]?: string;
+  [COL_CONF_MAIL.NOREPLY]?: boolean;
+  [COL_CONF_MAIL.COLORE_HEADER]?: string;
+  [COL_CONF_MAIL.CONDIZIONE]?: string;
+  [COL_CONF_MAIL.POST_PROCESSO]?: unknown;
+  [COL_CONF_MAIL.ALLEGATI_STATICI]?: unknown;
+  [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]?: string;
+  [COL_CONF_MAIL.DUPLICAZIONE]?: unknown;
+  [COL_CONF_MAIL.RISPONDI_A]?: string;
+};
 
 const DEFAULT_HEADER_COLOR = '#007bff';
 
@@ -150,7 +164,7 @@ export class ConfigurazioneEmail extends AldoEntity {
     };
   }
 
-  static fromData(data: ConfigurazioneEmailData): ConfigurazioneEmail {
+  static fromData(data: Record<string, unknown>): ConfigurazioneEmail {
     return new ConfigurazioneEmail(data);
   }
 

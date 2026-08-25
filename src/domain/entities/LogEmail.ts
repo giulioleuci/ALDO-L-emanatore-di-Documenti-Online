@@ -2,9 +2,15 @@ import { StatoEmail } from '../value-objects/enums';
 import { COL_LOG_MAIL } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface LogEmailData {
-  [key: string]: unknown;
-}
+export type LogEmailData = {
+  [COL_LOG_MAIL.PATTERN]?: string;
+  [COL_LOG_MAIL.DESTINATARI]?: string;
+  [COL_LOG_MAIL.DATA]?: string;
+  [COL_LOG_MAIL.STATO]?: string;
+  [COL_LOG_MAIL.ALLEGATI]?: string | null;
+  [COL_LOG_MAIL.ERRORE]?: string;
+  [COL_LOG_MAIL.TESTO]?: string;
+};
 
 /**
  * LOG_MAIL entity — append-only audit record of a sent email (ref 04, 06 §19).
@@ -69,7 +75,7 @@ export class LogEmail extends AldoEntity {
     };
   }
 
-  static fromData(data: LogEmailData): LogEmail {
+  static fromData(data: Record<string, unknown>): LogEmail {
     return new LogEmail(data);
   }
 }

@@ -5,9 +5,14 @@ import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_SUPPLENZE } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface SupplenzaData {
-  [key: string]: unknown;
-}
+export type SupplenzaData = {
+  [COL_SUPPLENZE.TITOLARE]?: string;
+  [COL_SUPPLENZE.SUPPLENTE]?: string;
+  [COL_SUPPLENZE.DAL]?: string;
+  [COL_SUPPLENZE.AL]?: string;
+  [COL_SUPPLENZE.CLASSI]?: string;
+  [COL_SUPPLENZE.MATERIE]?: string;
+};
 
 /**
  * SUPPLENZE entity — temporary teacher replacement, Priority 1 in role
@@ -120,7 +125,7 @@ export class Supplenza extends AldoEntity {
     };
   }
 
-  static fromData(data: SupplenzaData): Supplenza {
+  static fromData(data: Record<string, unknown>): Supplenza {
     return new Supplenza(data);
   }
 }

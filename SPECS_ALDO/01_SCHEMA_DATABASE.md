@@ -50,6 +50,15 @@ Lo script orchestratore SGSA è associato a un unico foglio di calcolo **Master 
 
 ## 2. Schema dettagliato per tabella
 
+### Colonne riservate all'utente
+
+Le colonne il cui nome inizia con `_` sono riservate agli appunti e ai calcoli
+dell'utente. ALDO le legge insieme al resto della riga, **le preserva a ogni
+scrittura** (l'update è un merge sulla riga originale, non una sostituzione) e
+non le interpreta mai: non compaiono in nessun tipo di entità, non sono mai
+scambiate per colonne dinamiche, e la futura analisi di consistenza le ignora
+invece di segnalarle come anomalie.
+
 ### ALUNNI
 
 Registro anagrafico degli studenti. La colonna `EMAIL` è la chiave primaria e l'identificativo con cui ogni alunno è referenziato in tutto il sistema.
@@ -382,7 +391,7 @@ Motore di configurazione per le notifiche email. Ogni record è un pattern di co
 | `ID`            | String  | ✅  | Codice pattern (es. `CDC_OTTOBRE`)                                                                                                                                                                |
 | `OGGETTO`       | String  | —   | Oggetto email (supporta placeholder `{{...}}`)                                                                                                                                                    |
 | `PROCESSO`      | String  | —   | Iteratore destinatari: `PER_COORDINATORE`, `PER_DOCENTE`, `PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`, `PER_CARENZA_GENITORI_E_COORD`, `PER_CAPO_DIPARTIMENTO`, `PER_DIPARTIMENTO` |
-| `BOX_CFG`       | JSON    | —   | Array di BoxConfig per i contenuti dinamici dell'email                                                                                                                                            |
+| `BOX_CFG`       | JSON    | —   | Array di BoxConfig per i contenuti dinamici dell'email (schema autorevole in `03_VALUE_OBJECTS_ED_ENUM.md` § `BoxConfig`, incl. `DATI_SORGENTE.filtri`)                                             |
 | `TESTO_START`   | String  | —   | HTML opzionale inserito prima dei box; supporta placeholder `{{...}}` risolti tramite `WorkspaceTemplateEngine`                                                                                   |
 | `TESTO_END`     | String  | —   | HTML opzionale inserito dopo i box, prima del footer; stessa risoluzione placeholder di `TESTO_START`                                                                                            |
 | `SUPPLENTI`     | String  | —   | Routing supplenze: `SOLO_TITOLARI`, `SOLO_SUPPLENTI`, `ENTRAMBI`                                                                                                                                  |

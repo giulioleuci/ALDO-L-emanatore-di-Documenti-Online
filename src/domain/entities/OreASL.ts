@@ -3,9 +3,11 @@ import { AnnoScolastico } from '../value-objects/AnnoScolastico';
 import { COL_ASL } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface OreASLData {
-  [key: string]: unknown;
-}
+export type OreASLData = {
+  [COL_ASL.STUDENTE]?: string;
+  [COL_ASL.ANNO]?: string;
+  [COL_ASL.ORE]?: number;
+};
 
 /**
  * ASL entity — cumulative PCTO hours per student per school year. Composite PK
@@ -40,7 +42,7 @@ export class OreASL extends AldoEntity {
     };
   }
 
-  static fromData(data: OreASLData): OreASL {
+  static fromData(data: Record<string, unknown>): OreASL {
     return new OreASL(data);
   }
 

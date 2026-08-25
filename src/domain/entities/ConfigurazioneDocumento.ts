@@ -2,9 +2,23 @@ import { FormatoOutput, GestioneArticolazione } from '../value-objects/enums';
 import { COL_CONF_DOC } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface ConfigurazioneDocumentoData {
-  [key: string]: unknown;
-}
+export type ConfigurazioneDocumentoData = {
+  [COL_CONF_DOC.ID]?: string;
+  [COL_CONF_DOC.TIPO]?: string;
+  [COL_CONF_DOC.GENERATORE]?: string;
+  [COL_CONF_DOC.CONDIZIONE]?: string;
+  [COL_CONF_DOC.MODELLI]?: string | null;
+  [COL_CONF_DOC.FILE_NAME]?: unknown;
+  [COL_CONF_DOC.PATH_OUT]?: unknown;
+  [COL_CONF_DOC.DUPLICAZIONE]?: unknown;
+  [COL_CONF_DOC.PERMESSI]?: string | null;
+  [COL_CONF_DOC.POST_PROCESSO]?: unknown;
+  [COL_CONF_DOC.PARAMETRI]?: string | null;
+  [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]?: string;
+  [COL_CONF_DOC.FORMATO]?: string;
+  [COL_CONF_DOC.REGISTRA_DOC]?: unknown;
+  [COL_CONF_DOC.REGISTRA_FOLD]?: unknown;
+};
 
 /**
  * CONF_DOC entity (PK = ID) — declarative definition of a generable document
@@ -116,7 +130,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
     };
   }
 
-  static fromData(data: ConfigurazioneDocumentoData): ConfigurazioneDocumento {
+  static fromData(data: Record<string, unknown>): ConfigurazioneDocumento {
     return new ConfigurazioneDocumento(data);
   }
 }

@@ -140,7 +140,8 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
 /**
  * Ghost Record Detection (ref 12 §3): a mapped row is a ghost — ignored,
  * counted separately, neither inserted nor updated — iff every field OTHER
- * than the conflict-key columns and the declared meta/timestamp columns is
+ * than the conflict-key columns, the declared meta/timestamp columns, and the
+ * user-reserved `_`-prefixed columns (01 §Colonne riservate all'utente) is
  * null or an empty string. Applied after mapping, before conflict handling.
  */
 export function isGhostRecord(
@@ -150,6 +151,6 @@ export function isGhostRecord(
 ): boolean {
   const excluded = new Set([...keyColumns, ...metaColumns]);
   return Object.entries(row)
-    .filter(([col]) => !excluded.has(col))
+    .filter(([col]) => !excluded.has(col) && !col.startsWith('_'))
     .every(([, value]) => value === null || value === undefined || value === '');
 }

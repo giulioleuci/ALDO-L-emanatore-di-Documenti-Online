@@ -3,13 +3,12 @@ import { TipoIstituto } from '../value-objects/enums';
 import { COL_INDIRIZZI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface IndirizzoData {
+export type IndirizzoData = {
   [COL_INDIRIZZI.ID]?: string;
   [COL_INDIRIZZI.NOME]?: string;
   [COL_INDIRIZZI.NOME_SINTETICO]?: string;
   [COL_INDIRIZZI.TIPO]?: string;
-  [key: string]: unknown;
-}
+};
 
 /** INDIRIZZI entity (PK = ID). Study-path lookup (ref 01, 04). */
 export class Indirizzo extends AldoEntity {
@@ -38,7 +37,7 @@ export class Indirizzo extends AldoEntity {
     };
   }
 
-  static fromData(data: IndirizzoData): Indirizzo {
+  static fromData(data: Record<string, unknown>): Indirizzo {
     return new Indirizzo(data);
   }
 }

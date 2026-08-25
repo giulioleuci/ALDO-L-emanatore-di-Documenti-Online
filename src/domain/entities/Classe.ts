@@ -4,12 +4,16 @@ import { ValidationError } from '../errors/DomainError';
 import { COL_CLASSI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface ClasseData {
-  [COL_CLASSI.ID]?: string;
-  [COL_CLASSI.ANNO]?: number | string;
-  [COL_CLASSI.INDIRIZZO]?: string;
-  [key: string]: unknown;
-}
+/**
+ * CLASSI row. Matrice di assegnazione cattedre: oltre alle colonne fisse sotto,
+ * la tabella porta una colonna dinamica per ogni materia (`ITA`), per ogni ITP
+ * (`INF.itp`) e per ogni specifica (`INTERPRET.CHITARRA`), più le colonne
+ * riservate all'utente con prefisso `_`. Tipo volutamente aperto.
+ *
+ * Colonne fisse (01 §CLASSI): ID, ANNO, TERMINALE, SEZ, INDIRIZZO, COORD,
+ * RUOLI, ATTIVA, ARTICOLAZIONE, STORICO.
+ */
+export type ClasseData = Record<string, unknown>;
 
 /**
  * CLASSI entity (PK = ID). Hydrated from a flat row via {@link Classe.fromData}.
@@ -23,7 +27,8 @@ export class Classe extends AldoEntity {
 
   constructor(data: ClasseData = {}) {
     super(data);
-    this.id = data[COL_CLASSI.ID] ?? null;
+    const id = data[COL_CLASSI.ID];
+    this.id = typeof id === 'string' ? id : null;
     const indirizzo = data[COL_CLASSI.INDIRIZZO];
     if (typeof indirizzo !== 'string' || indirizzo.trim() === '') {
       throw new ValidationError(

@@ -5,9 +5,20 @@ import { ReligioneScelta } from '../value-objects/enums';
 import { COL_ALUNNI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface AlunnoData {
-  [key: string]: unknown;
-}
+export type AlunnoData = {
+  [COL_ALUNNI.EMAIL]?: string;
+  [COL_ALUNNI.COGNOMENOME]?: string;
+  [COL_ALUNNI.CLASSE]?: string;
+  [COL_ALUNNI.RELIGIONE]?: string;
+  [COL_ALUNNI.CURRICULUM]?: string | null;
+  [COL_ALUNNI.ATTIVO]?: boolean;
+  [COL_ALUNNI.RIPETENTE]?: boolean;
+  [COL_ALUNNI.RAPPR_STUD]?: boolean;
+  [COL_ALUNNI.RAPPR_GEN]?: string;
+  [COL_ALUNNI.TUTOR_1]?: string;
+  [COL_ALUNNI.TUTOR_2]?: string;
+  [COL_ALUNNI.NOTE]?: string;
+};
 
 /**
  * ALUNNI entity (PK = EMAIL). Root of the student aggregate (ref 04/05). For
@@ -103,7 +114,7 @@ export class Alunno extends AldoEntity {
     };
   }
 
-  static fromData(data: AlunnoData): Alunno {
+  static fromData(data: Record<string, unknown>): Alunno {
     return new Alunno(data);
   }
 }

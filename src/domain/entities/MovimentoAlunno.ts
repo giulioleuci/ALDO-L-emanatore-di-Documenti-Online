@@ -2,9 +2,13 @@ import { TipoMovimento } from '../value-objects/enums';
 import { COL_MOV_ALUNNI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface MovimentoAlunnoData {
-  [key: string]: unknown;
-}
+export type MovimentoAlunnoData = {
+  [COL_MOV_ALUNNI.STUDENTE]?: string;
+  [COL_MOV_ALUNNI.TIPO]?: string;
+  [COL_MOV_ALUNNI.DATA]?: string;
+  [COL_MOV_ALUNNI.DA]?: string;
+  [COL_MOV_ALUNNI.A]?: string;
+};
 
 /**
  * MOV_ALUNNI entity — append-only student-mobility record. Composite PK
@@ -61,7 +65,7 @@ export class MovimentoAlunno extends AldoEntity {
     };
   }
 
-  static fromData(data: MovimentoAlunnoData): MovimentoAlunno {
+  static fromData(data: Record<string, unknown>): MovimentoAlunno {
     return new MovimentoAlunno(data);
   }
 }

@@ -2,9 +2,22 @@ import { StatoDocumento } from '../value-objects/enums';
 import { COL_LOG_DOCS } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface LogDocumentoData {
-  [key: string]: unknown;
-}
+export type LogDocumentoData = {
+  [COL_LOG_DOCS.ID]?: string;
+  [COL_LOG_DOCS.ID_GEN]?: string;
+  [COL_LOG_DOCS.TIPO]?: string;
+  [COL_LOG_DOCS.SOTTOTIPO]?: string;
+  [COL_LOG_DOCS.NOME]?: string;
+  [COL_LOG_DOCS.STATO]?: string;
+  [COL_LOG_DOCS.NOTIFICATO]?: string;
+  [COL_LOG_DOCS.PATH]?: string;
+  [COL_LOG_DOCS.LINK]?: string;
+  [COL_LOG_DOCS.CLASSI]?: string;
+  [COL_LOG_DOCS.UTENTI]?: string;
+  [COL_LOG_DOCS.MATERIE]?: string;
+  [COL_LOG_DOCS.DATA_CREAZ]?: string;
+  [COL_LOG_DOCS.ID_ORIG]?: string;
+};
 
 function csv(cell: unknown): string[] {
   return typeof cell === 'string'
@@ -114,7 +127,7 @@ export class LogDocumento extends AldoEntity {
     };
   }
 
-  static fromData(data: LogDocumentoData): LogDocumento {
+  static fromData(data: Record<string, unknown>): LogDocumento {
     return new LogDocumento(data);
   }
 }

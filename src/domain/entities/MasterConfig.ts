@@ -2,9 +2,14 @@ import { AnnoScolastico } from '../value-objects/AnnoScolastico';
 import { COL_MASTER } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface MasterConfigData {
-  [key: string]: unknown;
-}
+export type MasterConfigData = {
+  [COL_MASTER.ANNO_SCOLASTICO]?: string;
+  [COL_MASTER.ID_SPREADSHEET]?: string;
+  [COL_MASTER.ID_CARTELLA_GOOGLE]?: string;
+  [COL_MASTER.DIRIGENTE_SCOLASTICO]?: string;
+  [COL_MASTER.SUPERVISORE_EMAIL]?: string;
+  [COL_MASTER.TEST_MODE]?: boolean;
+};
 
 /**
  * A Master Sheet row (PK = ANNO_SCOLASTICO, ref 01 §0). Maps a school year to
@@ -66,7 +71,7 @@ export class MasterConfig extends AldoEntity {
     };
   }
 
-  static fromData(data: MasterConfigData): MasterConfig {
+  static fromData(data: Record<string, unknown>): MasterConfig {
     return new MasterConfig(data);
   }
 }

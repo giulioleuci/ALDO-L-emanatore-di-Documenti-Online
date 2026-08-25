@@ -297,4 +297,9 @@ describe('isGhostRecord (12 §3): after mapping, before conflict handling', () =
       )
     ).toBe(false);
   });
+
+  test('una colonna utente _ non salva una riga fantasma', () => {
+    const row = { EMAIL: '', NOME: '', _NOTE_MIE: 'appunto' };
+    expect(isGhostRecord(row, ['EMAIL'], [])).toBe(true);
+  });
 });

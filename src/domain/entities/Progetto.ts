@@ -2,9 +2,14 @@ import { TipoProgetto } from '../value-objects/enums';
 import { COL_PROGETTI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface ProgettoData {
-  [key: string]: unknown;
-}
+export type ProgettoData = {
+  [COL_PROGETTI.CLASSE]?: string;
+  [COL_PROGETTI.TIPO]?: string;
+  [COL_PROGETTI.NOME]?: string;
+  [COL_PROGETTI.REFERENTE]?: string;
+  [COL_PROGETTI.ORE]?: number;
+  [COL_PROGETTI.ORE_ASL]?: number;
+};
 
 /**
  * PROGETTI entity — extracurricular activity / PCTO path. Composite PK
@@ -63,7 +68,7 @@ export class Progetto extends AldoEntity {
     };
   }
 
-  static fromData(data: ProgettoData): Progetto {
+  static fromData(data: Record<string, unknown>): Progetto {
     return new Progetto(data);
   }
 }

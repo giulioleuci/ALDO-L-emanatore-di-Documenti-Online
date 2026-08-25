@@ -1,9 +1,16 @@
 import { COL_LOG_FOLD } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface LogCartellaData {
-  [key: string]: unknown;
-}
+export type LogCartellaData = {
+  [COL_LOG_FOLD.ID]?: string;
+  [COL_LOG_FOLD.TIPO]?: string;
+  [COL_LOG_FOLD.NOME]?: string;
+  [COL_LOG_FOLD.PATH]?: string;
+  [COL_LOG_FOLD.LINK]?: string;
+  [COL_LOG_FOLD.CLASSI]?: string;
+  [COL_LOG_FOLD.UTENTI]?: string;
+  [COL_LOG_FOLD.MATERIE]?: string;
+};
 
 function csv(cell: unknown): string[] {
   return typeof cell === 'string'
@@ -73,7 +80,7 @@ export class LogCartella extends AldoEntity {
     return { ...this.raw };
   }
 
-  static fromData(data: LogCartellaData): LogCartella {
+  static fromData(data: Record<string, unknown>): LogCartella {
     return new LogCartella(data);
   }
 }

@@ -4,13 +4,12 @@ import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { COL_DIPART } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface DipartimentoData {
+export type DipartimentoData = {
   [COL_DIPART.ID]?: string;
   [COL_DIPART.NOME]?: string;
   [COL_DIPART.CAPO]?: string;
   [COL_DIPART.MATERIE]?: string;
-  [key: string]: unknown;
-}
+};
 
 /**
  * DIPART entity (PK = ID). CAPO is a teacher email; MATERIE is a CSV of MateriaId
@@ -56,7 +55,7 @@ export class Dipartimento extends AldoEntity {
     };
   }
 
-  static fromData(data: DipartimentoData): Dipartimento {
+  static fromData(data: Record<string, unknown>): Dipartimento {
     return new Dipartimento(data);
   }
 }

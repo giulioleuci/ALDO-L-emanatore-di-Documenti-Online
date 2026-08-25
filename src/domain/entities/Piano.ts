@@ -2,9 +2,11 @@ import { TipoPiano } from '../value-objects/enums';
 import { COL_PIANI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface PianoData {
-  [key: string]: unknown;
-}
+export type PianoData = {
+  [COL_PIANI.STUDENTE]?: string;
+  [COL_PIANI.TIPO]?: string;
+  [COL_PIANI.PARAMETRI]?: string | null;
+};
 
 /**
  * PIANI entity — personalized plan (PDP/PEI/PFP). Composite PK (STUDENTE, TIPO);
@@ -46,7 +48,7 @@ export class Piano extends AldoEntity {
     };
   }
 
-  static fromData(data: PianoData): Piano {
+  static fromData(data: Record<string, unknown>): Piano {
     return new Piano(data);
   }
 }

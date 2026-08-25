@@ -3,20 +3,16 @@ import { EsameConfig } from '../value-objects/EsameConfig';
 import { COL_MATERIE } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface MateriaData {
-  [COL_MATERIE.ID]?: string;
-  [COL_MATERIE.NOME]?: string;
-  [COL_MATERIE.SINTESI]?: string;
-  [COL_MATERIE.COLORE_1]?: string;
-  [COL_MATERIE.COLORE_2]?: string;
-  [COL_MATERIE.SIMBOLO]?: string;
-  [COL_MATERIE.ESAME_CFG]?: string | null;
-  [COL_MATERIE.EVOLUZIONE]?: string | null;
-  [COL_MATERIE.IS_RELIGIONE_ALT]?: boolean;
-  [COL_MATERIE.PRINCIPALE]?: string;
-  [COL_MATERIE.SPECIFICITA]?: string;
-  [key: string]: unknown;
-}
+/**
+ * MATERIE row. Tipo volutamente aperto in vista della futura funzionalità
+ * MATERIE × INDIRIZZI (spec §8), che porterà colonne aggiuntive per indirizzo;
+ * lo schema odierno (01 §MATERIE) è comunque fisso — vedi elenco sotto — e le
+ * colonne riservate all'utente con prefisso `_` sono preservate come sempre.
+ *
+ * Colonne fisse (01 §MATERIE): ID, NOME, SINTESI, COLORE_1, COLORE_2, SIMBOLO,
+ * ESAME_CFG, EVOLUZIONE, IS_RELIGIONE_ALT, PRINCIPALE, SPECIFICITA.
+ */
+export type MateriaData = Record<string, unknown>;
 
 /** Default border colour when a MATERIA has no COLORE_1 (ref 11 §11). */
 const DEFAULT_COLORE_1 = '#ddd';
@@ -36,9 +32,12 @@ export class Materia extends AldoEntity {
 
   constructor(data: MateriaData = {}) {
     super(data);
-    this.id = data[COL_MATERIE.ID] ?? null;
-    this.rawNome = data[COL_MATERIE.NOME] ?? '';
-    this.sintesi = data[COL_MATERIE.SINTESI] ?? '';
+    const id = data[COL_MATERIE.ID];
+    this.id = typeof id === 'string' ? id : null;
+    const nome = data[COL_MATERIE.NOME];
+    this.rawNome = typeof nome === 'string' ? nome : '';
+    const sintesi = data[COL_MATERIE.SINTESI];
+    this.sintesi = typeof sintesi === 'string' ? sintesi : '';
     const c1 = data[COL_MATERIE.COLORE_1];
     this.colore1 = typeof c1 === 'string' && c1.trim() !== '' ? c1 : DEFAULT_COLORE_1;
     const c2 = data[COL_MATERIE.COLORE_2];

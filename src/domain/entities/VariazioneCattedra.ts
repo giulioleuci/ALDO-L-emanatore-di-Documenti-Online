@@ -4,9 +4,13 @@ import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_VARIAZIONI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface VariazioneCattedraData {
-  [key: string]: unknown;
-}
+export type VariazioneCattedraData = {
+  [COL_VARIAZIONI.TITOLARE]?: string;
+  [COL_VARIAZIONI.NUOVO_TITOLARE]?: string;
+  [COL_VARIAZIONI.DAL]?: string;
+  [COL_VARIAZIONI.CLASSI]?: string;
+  [COL_VARIAZIONI.MATERIE]?: string;
+};
 
 /**
  * VARIAZIONI_CATTEDRA entity — permanent change of cattedra ownership after the
@@ -86,7 +90,7 @@ export class VariazioneCattedra extends AldoEntity {
     };
   }
 
-  static fromData(data: VariazioneCattedraData): VariazioneCattedra {
+  static fromData(data: Record<string, unknown>): VariazioneCattedra {
     return new VariazioneCattedra(data);
   }
 }

@@ -2,12 +2,11 @@ import { Email } from '../value-objects/Email';
 import { COL_RUOLI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface RuoloSpecialeData {
+export type RuoloSpecialeData = {
   [COL_RUOLI.ID]?: string;
   [COL_RUOLI.NOME]?: string;
   [COL_RUOLI.DOCENTE]?: string;
-  [key: string]: unknown;
-}
+};
 
 /**
  * RUOLI entity (PK = ID) — a special institute role held by one or more teachers
@@ -46,7 +45,7 @@ export class RuoloSpeciale extends AldoEntity {
     };
   }
 
-  static fromData(data: RuoloSpecialeData): RuoloSpeciale {
+  static fromData(data: Record<string, unknown>): RuoloSpeciale {
     return new RuoloSpeciale(data);
   }
 }

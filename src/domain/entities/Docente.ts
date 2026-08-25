@@ -4,13 +4,14 @@ import { Genere, appellativo } from '../value-objects/enums';
 import { COL_DOCENTI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface DocenteData {
+export type DocenteData = {
   [COL_DOCENTI.EMAIL]?: string;
   [COL_DOCENTI.COGNOME]?: string;
   [COL_DOCENTI.NOME]?: string;
   [COL_DOCENTI.GENERE]?: string;
-  [key: string]: unknown;
-}
+  [COL_DOCENTI.DIPART]?: string;
+  [COL_DOCENTI.ITP]?: boolean;
+};
 
 /**
  * DOCENTI entity (PK = EMAIL). Hydrated from a flat row via {@link Docente.fromData};
@@ -74,7 +75,7 @@ export class Docente extends AldoEntity {
     };
   }
 
-  static fromData(data: DocenteData): Docente {
+  static fromData(data: Record<string, unknown>): Docente {
     return new Docente(data);
   }
 

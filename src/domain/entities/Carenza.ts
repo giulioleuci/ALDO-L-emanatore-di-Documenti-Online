@@ -3,9 +3,17 @@ import type { ValoreCarenza } from '../value-objects/ValoreCarenza';
 import { COL_CARENZE } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface CarenzaData {
-  [key: string]: unknown;
-}
+/**
+ * CARENZE row. Matrice studente × data: oltre alle colonne fisse sotto, la
+ * tabella porta una colonna dinamica per ogni materia (siglata, es. `MAT`),
+ * più le colonne riservate all'utente con prefisso `_`. Tipo volutamente
+ * aperto; il valore di ogni cella-materia è letto da CarenzaRepository via
+ * {@link Carenza.getCella}, che possiede la mappa delle colonne dinamiche.
+ *
+ * Colonne fisse (01 §CARENZE): STUDENTE, PROGRESSIVO, CLASSE, DATA,
+ * NOTIFICATO, ASSENZE, NOTE, DATA_MODIFICA.
+ */
+export type CarenzaData = Record<string, unknown>;
 
 /**
  * CARENZE entity — a single matrix row (student × date) of shortfalls, with

@@ -1,9 +1,12 @@
 import { COL_CONF_IMP } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
-export interface ConfigurazioneImportData {
-  [key: string]: unknown;
-}
+export type ConfigurazioneImportData = {
+  [COL_CONF_IMP.ID]?: string;
+  [COL_CONF_IMP.TARGET]?: string;
+  [COL_CONF_IMP.CONFIG]?: string | null;
+  [COL_CONF_IMP.ATTIVO]?: boolean;
+};
 
 /**
  * CONF_IMP entity (PK = ID) — an ETL import job config (ref 01, 06 §10).
@@ -40,7 +43,7 @@ export class ConfigurazioneImport extends AldoEntity {
     };
   }
 
-  static fromData(data: ConfigurazioneImportData): ConfigurazioneImport {
+  static fromData(data: Record<string, unknown>): ConfigurazioneImport {
     return new ConfigurazioneImport(data);
   }
 }

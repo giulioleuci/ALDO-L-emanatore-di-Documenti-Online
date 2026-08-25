@@ -190,7 +190,7 @@ describe('registerPipelineChecks', () => {
       .report()
       .results.find((r) => r.name.includes('DocumentGenerationService'));
     expect(result?.status).toBe('fail');
-    expect(result?.message).toBeDefined();
+    expect(result?.message).toMatch(/CONF_DOC DOC_ONLINETEST non trovato/);
   });
 
   it('routes the sent email to the injected testRecipientEmail via enableTestMode, not the seeded alunno address', () => {
@@ -224,7 +224,7 @@ describe('registerPipelineChecks', () => {
     );
     const result = runner.report().results.find((r) => r.name.includes('EmailNotificationService'));
     expect(result?.status).toBe('fail');
-    expect(result?.message).toBeDefined();
+    expect(result?.message).toMatch(/CONF_MAIL MAIL_ONLINETEST non trovato/);
   });
 
   it('registers a failing email check with a descriptive message when CONF_MAIL.OGGETTO lacks the [ALDO ONLINE TEST] prefix', () => {

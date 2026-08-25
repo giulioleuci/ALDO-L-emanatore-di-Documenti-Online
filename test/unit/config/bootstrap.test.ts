@@ -346,8 +346,9 @@ describe('buildAldoContainer — optional generator strategies', () => {
   });
 
   test("registers 'spreadsheets' in the container when deps.spreadsheets is provided", () => {
-    const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
-    expect(c.get('spreadsheets')).toBeDefined();
+    const spreadsheets = {} as never;
+    const c = buildAldoContainer({ ...baseDeps(), spreadsheets });
+    expect(c.get('spreadsheets')).toBe(spreadsheets);
   });
 
   test("registers 'monitor' in the container when deps.monitor is provided", () => {
@@ -573,7 +574,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
       const enableSpy = jest.spyOn(EmailNotificationService.prototype, 'enableTestMode');
       const c = initAldo(new Date('2026-01-01'), props);
       expect(enableSpy).toHaveBeenCalledWith('owner@school.it');
-      expect(c).toBeDefined();
+      expect(c.get('emailNotificationService')).toBeInstanceOf(EmailNotificationService);
       enableSpy.mockRestore();
     } finally {
       ownerSpy.mockRestore();

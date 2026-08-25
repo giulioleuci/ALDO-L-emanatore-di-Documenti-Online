@@ -108,7 +108,6 @@ describe('PartnerProjectionProvider', () => {
     const partner = cdu.focus.classe!.partner!;
     expect(partner.primo.anagrafica.nome).toBe('1F-LSO');
     expect(partner.secondo.anagrafica.nome).toBe('1F-LSS');
-    expect(partner.primo.studenti.listaCompleta.length).toBeGreaterThan(0);
     expect(partner.primo.studenti.listaCompleta.map((a) => a.anagrafica.email)).toEqual([
       's1@school.it'
     ]);

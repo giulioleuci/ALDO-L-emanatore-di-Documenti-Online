@@ -109,7 +109,6 @@ test('DocumentiStoricoProvider: includiStorico true attaches an unresolved LazyR
     makeOptions({ includiStorico: true, profonditaAnniDocumenti: 1 })
   );
   const storico = cdu.focus.alunno!.didattica.documenti!.storico!;
-  expect(storico).toBeDefined();
   expect(storico.isResolved()).toBe(false);
 });
 

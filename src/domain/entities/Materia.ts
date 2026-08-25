@@ -103,7 +103,7 @@ export class Materia extends AldoEntity {
     };
   }
 
-  static fromData(data: MateriaData): Materia {
+  static fromData(data: Record<string, unknown>): Materia {
     return new Materia(data);
   }
 }

@@ -61,7 +61,7 @@ export class Classe extends AldoEntity {
     };
   }
 
-  static fromData(data: ClasseData): Classe {
+  static fromData(data: Record<string, unknown>): Classe {
     return new Classe(data);
   }
 

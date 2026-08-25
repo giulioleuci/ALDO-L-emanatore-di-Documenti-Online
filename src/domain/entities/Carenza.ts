@@ -101,7 +101,7 @@ export class Carenza extends AldoEntity {
     return { ...this.raw, [COL_CARENZE.NOTIFICATO]: this.notificato };
   }
 
-  static fromData(data: CarenzaData): Carenza {
+  static fromData(data: Record<string, unknown>): Carenza {
     return new Carenza(data);
   }
 }

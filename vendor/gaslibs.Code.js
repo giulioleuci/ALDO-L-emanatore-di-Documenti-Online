@@ -68870,7 +68870,6 @@ class QueryTranslator {
 
   constructor(logger = null) {
     this.logger = logger || new LoggerService();
-    this._queryObjectCriteriaCache = new WeakMap();
   }
 
 
@@ -68880,17 +68879,24 @@ class QueryTranslator {
 
 
 
-  translate(specification, queryBuilder) {
+
+  translate(specification, queryBuilder, validation = null) {
     if (!specification) {
       throw new SpecificationException('Specification is required', 'QueryTranslator');
     }
     if (!queryBuilder) {
       throw new SpecificationException('Query builder is required', 'QueryTranslator');
     }
-    if (this._queryObjectCriteria(specification) !== null) {
+    const analysis = validation || this.validate(specification);
+    if (!analysis.valid) {
+      throw new SpecificationException(`Specification ${specification.constructor.name} cannot be translated to a database query`, 'QueryTranslator', {
+        specification: specification.toString()
+      });
+    }
+    if (analysis.queryObjectCriteria !== null) {
       try {
         this.logger.debug(`Translating specification via toQueryObject(): ${specification.constructor.name}`);
-        return this._applyQueryObject(specification, queryBuilder);
+        return this._applyQueryObject(analysis.queryObjectCriteria, queryBuilder);
       } catch (error) {
         if (error instanceof SpecificationException) {
           throw error;
@@ -68900,14 +68906,6 @@ class QueryTranslator {
           error: error.message
         });
       }
-    }
-    this._queryObjectCriteriaCache.delete(specification);
-
-
-    if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
-      throw new SpecificationException(`Specification ${specification.constructor.name} cannot be translated to a database query`, 'QueryTranslator', {
-        specification: specification.toString()
-      });
     }
     try {
       this.logger.debug(`Translating specification: ${specification.toString()}`);
@@ -68930,13 +68928,8 @@ class QueryTranslator {
 
 
   _queryObjectCriteria(specification) {
-    if (this._queryObjectCriteriaCache.has(specification)) {
-      return this._queryObjectCriteriaCache.get(specification);
-    }
     const criteria = typeof specification.toQueryObject === 'function' ? specification.toQueryObject() : null;
-    const normalized = criteria === null || criteria === undefined ? null : criteria;
-    this._queryObjectCriteriaCache.set(specification, normalized);
-    return normalized;
+    return criteria === null || criteria === undefined ? null : criteria;
   }
 
 
@@ -68946,9 +68939,7 @@ class QueryTranslator {
 
 
 
-  _applyQueryObject(specification, queryBuilder) {
-    const criteria = this._queryObjectCriteria(specification);
-    this._queryObjectCriteriaCache.delete(specification);
+  _applyQueryObject(criteria, queryBuilder) {
     for (const [column, value] of Object.entries(criteria)) {
       queryBuilder.where(column, '=', value);
     }
@@ -68964,25 +68955,29 @@ class QueryTranslator {
     if (!specification) {
       return {
         valid: false,
-        reason: 'Specification is null or undefined'
+        reason: 'Specification is null or undefined',
+        queryObjectCriteria: null
       };
     }
-    if (this._queryObjectCriteria(specification) !== null) {
+    const queryObjectCriteria = this._queryObjectCriteria(specification);
+    if (queryObjectCriteria !== null) {
       return {
         valid: true,
-        reason: null
+        reason: null,
+        queryObjectCriteria
       };
     }
-    if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery()) {
-      this._queryObjectCriteriaCache.delete(specification);
+    if (typeof specification.canBeTranslatedToQuery !== 'function' || !specification.canBeTranslatedToQuery(queryObjectCriteria)) {
       return {
         valid: false,
-        reason: `${specification.constructor.name} cannot be translated to a database query`
+        reason: `${specification.constructor.name} cannot be translated to a database query`,
+        queryObjectCriteria
       };
     }
     return {
       valid: true,
-      reason: null
+      reason: null,
+      queryObjectCriteria
     };
   }
 
@@ -69132,7 +69127,7 @@ class Repository {
       if (validation.valid) {
 
         const query = this.database.select(['*']).from(this.tableName);
-        this.queryTranslator.translate(specification, query);
+        this.queryTranslator.translate(specification, query, validation);
         rows = query.execute();
       } else {
 
@@ -69819,11 +69814,11 @@ class Specification {
 
 
 
-  canBeTranslatedToQuery() {
-    if (this.toQueryObject() !== null) {
+  canBeTranslatedToQuery(queryObjectCriteria = this.toQueryObject()) {
+    if (queryObjectCriteria !== null && queryObjectCriteria !== undefined) {
       return true;
     }
-    if (Object.getPrototypeOf(this).toQuery === Specification.prototype.toQuery) {
+    if (this.toQuery === Specification.prototype.toQuery) {
       return false;
     }
     try {

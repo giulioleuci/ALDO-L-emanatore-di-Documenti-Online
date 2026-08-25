@@ -38,10 +38,16 @@ test('findByDocente matches by CSV containment (07 §14)', () => {
   expect(repo().findByDocente(Email.of('nobody@school.it'))).toEqual([]);
 });
 
-test('RuoliPerDocenteSpec toQueryObject is a DOCENTE hint', () => {
-  expect(new RuoliPerDocenteSpec(Email.of('rossi@school.it')).toQueryObject()).toEqual({
-    DOCENTE: 'rossi@school.it'
+test('RuoliPerDocenteSpec keeps multi-value CSV containment in memory', () => {
+  const spec = new RuoliPerDocenteSpec(Email.of('bianchi@school.it'));
+  const ruolo = RuoloSpeciale.fromData({
+    ID: 'REF_BES',
+    NOME: 'Referente BES',
+    DOCENTE: 'rossi@school.it, bianchi@school.it'
   });
+
+  expect(spec.isSatisfiedBy(ruolo)).toBe(true);
+  expect(spec.toQueryObject()).toBeNull();
 });
 
 test('findById (base) returns a hydrated role; lookup is cached', () => {

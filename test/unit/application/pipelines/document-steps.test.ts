@@ -876,9 +876,7 @@ test("PostProcessStep skipped when POST_PROCESSO is an empty string (regression:
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, POST_PROCESSO: '' });
-  expect(() =>
-    new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx)
-  ).not.toThrow();
+  new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx);
   expect(ctx.get('postProcessUpdated')).toBeNull();
 });
 
@@ -924,9 +922,7 @@ test("ApplyPermissionsStep is skipped when PERMESSI is an empty string (regressi
   const ctx = baseCtx(db);
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: '' });
   const drive = new FakeDriveFacade();
-  expect(() =>
-    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx)
-  ).not.toThrow();
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
   expect(drive.permissions).toEqual([]);
 });
 

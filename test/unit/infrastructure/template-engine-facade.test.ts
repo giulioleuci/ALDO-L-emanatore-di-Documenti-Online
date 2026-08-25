@@ -44,7 +44,9 @@ describe('TemplateEngineFacade — failure branches', () => {
   });
 
   it('builds its own PlaceholderService/Mustache/LoggerService when none is injected', () => {
-    expect(() => new TemplateEngineFacade()).not.toThrow();
+    expect(new TemplateEngineFacade().processString('Ciao {{nome}}', { nome: 'Anna' })).toBe(
+      'Ciao Anna'
+    );
   });
 
   it('processStringEscaped HTML-escapes string leaves before rendering (CoreUtilsLib HtmlSanitizer.escapeContextDeep)', () => {

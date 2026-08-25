@@ -487,8 +487,10 @@ describe('executeFullOnlineTests', () => {
     expect(cacheCall?.[1]).toBe(container);
     expect(cacheCall?.[2]).toMatchObject({ testMode: true });
     expect(cacheCall?.[3].secondMasterSpreadsheetId).toBe('cache-master');
-    expect(report.passed).toBeGreaterThan(0);
-    expect(report.failed).toBeGreaterThan(0);
+    expect({ passed: report.passed, failed: report.failed }).toEqual({
+      passed: 17,
+      failed: 13
+    });
     expect(report.results.map((result) => result.name)).toEqual([
       'repository',
       'context',

@@ -122,7 +122,7 @@ describe('registerContextEngineChecks', () => {
       .report()
       .results.find((r) => r.name.includes('focus.classe.anagrafica.nome'));
     expect(result?.status).toBe('fail');
-    expect(result?.message).toBeDefined();
+    expect(result?.message).toMatch(/Classe 1A non trovata/);
   });
 
   it('registers a passing check when focus.alunno.anagrafica.email resolves to the seeded alunno', () => {

@@ -524,7 +524,6 @@ describe('registerRepositoryChecks', () => {
     const report = runner.report();
     const result = report.results.find((r) => r.name.includes('ClasseRepository'));
     expect(result?.status).toBe('fail');
-    expect(result?.message).toBeDefined();
     expect(result?.message).toContain(CLASSE_BASE);
   });
 

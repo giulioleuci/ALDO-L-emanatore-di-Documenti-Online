@@ -37,7 +37,7 @@ describe('resumeJob', () => {
       throw new Error('CONF_DOC row misconfigured');
     });
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => gasGlobal.resumeJob()).not.toThrow();
+    gasGlobal.resumeJob();
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('CONF_DOC row misconfigured'));
     errorSpy.mockRestore();
   });

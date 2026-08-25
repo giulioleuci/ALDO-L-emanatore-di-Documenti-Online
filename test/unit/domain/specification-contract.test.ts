@@ -63,6 +63,15 @@ import {
 
 type Row = Record<string, unknown>;
 type PushdownCase = [string, Specification<unknown>, Row[], (row: Row) => unknown];
+
+export function assertSpecificationContractTypecheck(): void {
+  const specWithoutQueryObject: QueryableSpecification<unknown> = {
+    isSatisfiedBy: () => true
+  };
+  // @ts-expect-error The runtime guard calls toQueryObject unconditionally.
+  assertSpecificationContract(specWithoutQueryObject, [], (row) => row);
+}
+
 const hydrateAlunno = (row: Row) => Alunno.fromData(row);
 const hydrateCarenza = (row: Row) => Carenza.fromData(row);
 const hydrateClasse = (row: Row) => Classe.fromData(row);
@@ -97,12 +106,6 @@ const SPEC_PUSHDOWN: PushdownCase[] = [
     'AlunniRappresentantiSpec',
     new AlunniRappresentantiSpec(),
     [{ RAPPR_STUD: true }, { RAPPR_STUD: false }, { RAPPR_STUD: 'true' }, {}],
-    hydrateAlunno
-  ],
-  [
-    'AlunniPerReligioneSpec',
-    new AlunniPerReligioneSpec(ReligioneScelta.IRC),
-    [{ RELIGIONE: 'IRC' }, { RELIGIONE: 'ALT' }],
     hydrateAlunno
   ],
   [
@@ -146,12 +149,6 @@ const SPEC_PUSHDOWN: PushdownCase[] = [
     new DocentiITPSpec(),
     [{ ITP: true }, { ITP: false }, { ITP: 'true' }, {}],
     hydrateDocente
-  ],
-  [
-    'IndirizziPerTipoSpec',
-    new IndirizziPerTipoSpec(TipoIstituto.LICEO),
-    [{ TIPO: 'LICEO' }, { TIPO: 'TECNICO' }],
-    hydrateIndirizzo
   ],
   [
     'MovimentiPerAlunnoSpec',
@@ -225,6 +222,14 @@ it.each(SPEC_PUSHDOWN)('%s: pushdown e in-memory concordano', (_name, spec, rows
   expect(queryMatches).toContain(true);
   expect(queryMatches).toContain(false);
   expect(assertSpecificationContract(spec, rows, hydrate).divergenti).toEqual([]);
+});
+
+it.each([
+  ['AlunniPerReligioneSpec', new AlunniPerReligioneSpec(ReligioneScelta.IRC), {}, hydrateAlunno],
+  ['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(TipoIstituto.LICEO), {}, hydrateIndirizzo]
+])('%s resta in memoria quando la colonna assente usa il valore predefinito', (_name, spec, row, hydrate) => {
+  expect(spec.toQueryObject()).toBeNull();
+  expect(spec.isSatisfiedBy(hydrate(row))).toBe(true);
 });
 
 test('DocentiPerDipartimentoSpec resta in memoria per preservare la normalizzazione del VO', () => {

@@ -46,11 +46,14 @@ test('findByTipo filters via IndirizziPerTipoSpec', () => {
   ).toEqual(['ITI']);
 });
 
-test('IndirizziPerTipoSpec: isSatisfiedBy + toQueryObject (07 §5)', () => {
+test('IndirizziPerTipoSpec preserves TIPO defaults in memory (07 §5)', () => {
   const spec = new IndirizziPerTipoSpec(TipoIstituto.TECNICO);
-  expect(spec.toQueryObject()).toEqual({ TIPO: 'TECNICO' });
+  expect(spec.toQueryObject()).toBeNull();
   expect(spec.isSatisfiedBy(Indirizzo.fromData({ ID: 'ITI', TIPO: 'TECNICO' }))).toBe(true);
   expect(spec.isSatisfiedBy(Indirizzo.fromData({ ID: 'LSSA', TIPO: 'LICEO' }))).toBe(false);
+  expect(new IndirizziPerTipoSpec(TipoIstituto.LICEO).isSatisfiedBy(Indirizzo.fromData({}))).toBe(
+    true
+  );
 });
 
 test('lookup table is cached for the session (06 §Caching)', () => {

@@ -77,7 +77,7 @@ test('findConBES loads students with a BES plan (06 §1)', () => {
   ).toEqual(['a2@school.it', 'a1@school.it']);
 });
 
-test('Alunno specs (07 §1): isSatisfiedBy + toQueryObject', () => {
+test('Alunno specs (07 §1): preserve RELIGIONE defaults in memory', () => {
   const a1 = Alunno.fromData({ EMAIL: 'a1', CLASSE: '5A', RAPPR_STUD: true, RELIGIONE: 'IRC' });
   const a2 = Alunno.fromData({ EMAIL: 'a2', CLASSE: '5A', RIPETENTE: true, RELIGIONE: 'NO' });
   expect(new AlunniInClasseSpec(ClasseId.of('5A')).isSatisfiedBy(a1)).toBe(true);
@@ -85,7 +85,6 @@ test('Alunno specs (07 §1): isSatisfiedBy + toQueryObject', () => {
   expect(new AlunniRipetentiSpec().isSatisfiedBy(a2)).toBe(true);
   expect(new AlunniRipetentiSpec().isSatisfiedBy(a1)).toBe(false);
   expect(new AlunniRappresentantiSpec().isSatisfiedBy(a1)).toBe(true);
-  expect(new AlunniPerReligioneSpec(ReligioneScelta.ALT).toQueryObject()).toEqual({
-    RELIGIONE: 'ALT'
-  });
+  expect(new AlunniPerReligioneSpec(ReligioneScelta.ALT).toQueryObject()).toBeNull();
+  expect(new AlunniPerReligioneSpec(ReligioneScelta.IRC).isSatisfiedBy(Alunno.fromData({}))).toBe(true);
 });

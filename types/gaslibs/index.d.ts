@@ -1119,7 +1119,9 @@ declare global {
     toString(): string;
   }
   function assertSpecificationContract<T, R extends Record<string, unknown>>(
-    specification: QueryableSpecification<T>,
+    specification: QueryableSpecification<T> & {
+      toQueryObject(): Record<string, unknown> | null;
+    },
     rows: R[],
     hydrate: (row: R) => T
   ): { ok: boolean; divergenti: R[] };

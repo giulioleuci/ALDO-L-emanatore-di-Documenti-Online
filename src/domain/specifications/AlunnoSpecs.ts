@@ -24,9 +24,13 @@ export class AlunniRappresentantiSpec extends EqualityFieldSpec<Alunno> {
   }
 }
 
-/** Students by IRC choice (ref 07 §1). */
-export class AlunniPerReligioneSpec extends EqualityFieldSpec<Alunno> {
-  constructor(religione: ReligioneScelta) {
-    super(COL_ALUNNI.RELIGIONE, (alunno) => alunno.religione, religione);
+/** Students by IRC choice (ref 07 §1). In memory: an absent RELIGIONE defaults to IRC. */
+export class AlunniPerReligioneSpec extends Specification<Alunno> {
+  constructor(private readonly religione: ReligioneScelta) {
+    super();
+  }
+
+  isSatisfiedBy(alunno: Alunno): boolean {
+    return alunno.religione === this.religione;
   }
 }

@@ -137,8 +137,11 @@ describe('DocumentTableFacade (10 §9)', () => {
     const documents = new FakeDocumentService();
     documents.standardDocs = { doc1: {} };
     const facade = new DocumentTableFacade(documents as never);
+    const openStandard = jest.spyOn(documents, 'openStandard');
 
-    expect(() => facade.flush('doc1')).not.toThrow();
+    facade.flush('doc1');
+
+    expect(openStandard).toHaveBeenCalledWith('doc1');
   });
 
   test('throws when the builder reports failure', () => {

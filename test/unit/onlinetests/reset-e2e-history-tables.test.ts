@@ -360,7 +360,7 @@ test('ripara ASL.DATA_MODIFICA anche quando la versione fixture è già quella r
   );
 
   expect(result.deletedAslColumn).toBe(true);
-  expect(spreadsheetService.deleteColumn).toHaveBeenCalledWith(expect.any(String), 'ASL', 4);
+  expect(spreadsheetService.deleteColumn).toHaveBeenCalledWith('sample', 'ASL', 4);
 });
 
 test('treats zero DATA_MODIFICA physical headers as already migrated', () => {

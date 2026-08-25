@@ -81,6 +81,17 @@ describe('parseFiltriSorgente', () => {
         classi: '5A',
         utenti: ['a@school.it'],
         materie: ['MATE']
+      },
+      {
+        tipo: 'VERBALE',
+        stato: StatoDocumento.GENERATO,
+        sottotipo: 'CDC',
+        idGen: 'GEN',
+        idOrig: 'orig',
+        notificato: false,
+        classi: ['5A'],
+        utenti: ['a@school.it'],
+        materie: ['MATE']
       }
     ],
     [
@@ -92,12 +103,20 @@ describe('parseFiltriSorgente', () => {
         classi: '5A',
         utenti: ['a@school.it'],
         materie: ['MATE']
+      },
+      {
+        idGen: 'VERBALI',
+        nome: 'Verbali',
+        path: 'Archivio',
+        classi: ['5A'],
+        utenti: ['a@school.it'],
+        materie: ['MATE']
       }
     ]
-  ] as const)('accepts every valid %s field', (entita, raw) => {
+  ] as const)('accepts every valid %s field', (entita, raw, expected) => {
     const result = parseFiltriSorgente(raw, entita);
     expect(result.errori).toEqual([]);
-    expect(result.filtri).toBeDefined();
+    expect(result.filtri).toEqual(expected);
   });
 
   test.each([

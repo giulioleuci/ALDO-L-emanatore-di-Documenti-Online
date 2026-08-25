@@ -1,4 +1,9 @@
-import { SampleDatabaseBuilder, MATERIA_1 } from '../../../src/onlinetests/SampleDatabaseBuilder';
+import {
+  SampleDatabaseBuilder,
+  MATERIA_1,
+  CLASSE_BASE,
+  CLASSE_PARTNER
+} from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
   COL_CONF_DOC,
   COL_CONF_MAIL,
@@ -52,7 +57,7 @@ describe('SampleDatabaseBuilder', () => {
     const master = factory.__sheets.get(TABLE.MASTER)!;
     expect(master.rows).toHaveLength(1);
     expect(master.rows[0].ID_SPREADSHEET).toBe(db.sampleSpreadsheetId);
-    expect(master.rows[0].ID_CARTELLA_GOOGLE).toBeDefined();
+    expect(master.rows[0].ID_CARTELLA_GOOGLE).toMatch(/^folder_\d+$/);
   });
 
   it('seeds a MATERIA.SPECIFICA catalog row alongside the base MATERIA_1 row (design 2026-07-30)', () => {
@@ -90,14 +95,18 @@ describe('SampleDatabaseBuilder', () => {
 
     const classi = factory.__sheets.get(TABLE.CLASSI)!.rows;
     expect(classi.length).toBeGreaterThanOrEqual(2);
-    const partner = classi.find(
-      (c) => typeof c.ARTICOLAZIONE === 'string' && c.ARTICOLAZIONE.length > 0
+    const partner = classi.find((c) => c.ID === CLASSE_PARTNER);
+    expect(partner).toEqual(
+      expect.objectContaining({
+        ID: CLASSE_PARTNER,
+        ARTICOLAZIONE: expect.stringContaining(CLASSE_BASE)
+      })
     );
-    expect(partner).toBeDefined();
 
     const alunni = factory.__sheets.get(TABLE.ALUNNI)!.rows;
     expect(alunni.length).toBeGreaterThanOrEqual(4);
-    expect(alunni.some((a) => a.CLASSE === partner!.ID)).toBe(true);
+    const alunniInPartner = alunni.filter((a) => a.CLASSE === partner!.ID);
+    expect(alunniInPartner).toHaveLength(1);
   });
 
   it('seeds a schema-complete CONF_DOC row with configured registration metadata', () => {

@@ -391,8 +391,11 @@ test('exposes stato.sostituisce as a PersonVM when a supplente is displayed (Tas
     GestioneSupplenti.SOLO_SUPPLENTI
   );
   const docente = list.find((d) => d.stato.sostituisce !== null)!;
-  expect(docente.stato.sostituisce?.nomeCompleto).toEqual(expect.any(String));
-  expect(docente.stato.sostituisce?.appellativoCompleto).toEqual(expect.any(String));
+  expect(docente.stato.sostituisce).toMatchObject({
+    email: 'rossi@school.it',
+    nomeCompleto: 'MARIO ROSSI',
+    appellativoCompleto: 'Prof. MARIO ROSSI'
+  });
 });
 
 test('the council projection delegates grouping and ordering to GLF configuration', () => {

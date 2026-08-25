@@ -79,7 +79,6 @@ test('includiStorico:true with positive depth attaches a LazyRef without opening
     recipe('ALUNNO_DETTAGLIATO', { includiStorico: true, profonditaAnniStorico: 1 })
   );
   const storico = cdu.focus.alunno!.storico!;
-  expect(storico).toBeDefined();
   expect(storico.isResolved()).toBe(false); // nothing queried yet — lazy by construction
 });
 
@@ -89,9 +88,8 @@ test('ALUNNO_DETTAGLIATO with includiStorico:true also attaches documenti.storic
     params,
     recipe('ALUNNO_DETTAGLIATO', { includiStorico: true, profonditaAnniDocumenti: 1 })
   );
-  const storico = cdu.focus.alunno!.didattica.documenti!.storico;
-  expect(storico).toBeDefined();
-  expect(storico!.isResolved()).toBe(false);
+  const storico = cdu.focus.alunno!.didattica.documenti!.storico!;
+  expect(storico.isResolved()).toBe(false);
 });
 
 test('recipe() rejects an unknown recipe name (09 §3)', () => {

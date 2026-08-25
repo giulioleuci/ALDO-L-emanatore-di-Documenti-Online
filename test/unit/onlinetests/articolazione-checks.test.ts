@@ -229,10 +229,8 @@ test('artifact verification is read-only and repeatable over persisted LOG_DOCS 
   const before = JSON.stringify(rows);
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    expect(() =>
-      runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
-    ).not.toThrow();
-    expect(() => runCheck(container, 'Articolazione CDU: piano duale renderizzato')).not.toThrow();
+    runCheck(container, 'Articolazione CDU: documento CDC include partner ed esclude parent');
+    runCheck(container, 'Articolazione CDU: piano duale renderizzato');
   }
 
   expect(JSON.stringify(rows)).toBe(before);
@@ -377,9 +375,7 @@ function substitutionContainer(
 test('role/date check accepts valid composite LAB catalog rows for substitute and restored holder', () => {
   const container = substitutionContainer(validLabSeminar(), validLabSeminar());
 
-  expect(() =>
-    runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
-  ).not.toThrow();
+  runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data');
 });
 
 test.each([

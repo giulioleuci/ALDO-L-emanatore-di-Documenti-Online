@@ -4,12 +4,9 @@ import type { IndirizzoId } from '../value-objects/IndirizzoId';
 import { COL_CLASSI } from '../../config/schema';
 
 /** Active classes (ref 06 §3). */
-export class ClassiAttiveSpec extends Specification<Classe> {
-  isSatisfiedBy(c: Classe): boolean {
-    return c.getDynamicColumns()[COL_CLASSI.ATTIVA] === true;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_CLASSI.ATTIVA]: true };
+export class ClassiAttiveSpec extends EqualityFieldSpec<Classe> {
+  constructor() {
+    super(COL_CLASSI.ATTIVA, (classe) => classe.getDynamicColumns()[COL_CLASSI.ATTIVA], true);
   }
 }
 
@@ -28,15 +25,9 @@ export class ClassiPerAnnoSpec extends Specification<Classe> {
 }
 
 /** Classes in a given indirizzo (ref 06 §3). */
-export class ClassiPerIndirizzoSpec extends Specification<Classe> {
-  constructor(private readonly indirizzoId: IndirizzoId) {
-    super();
-  }
-  isSatisfiedBy(c: Classe): boolean {
-    return c.indirizzo === this.indirizzoId.value;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_CLASSI.INDIRIZZO]: this.indirizzoId.value };
+export class ClassiPerIndirizzoSpec extends EqualityFieldSpec<Classe> {
+  constructor(indirizzoId: IndirizzoId) {
+    super(COL_CLASSI.INDIRIZZO, (classe) => classe.indirizzo, indirizzoId.value);
   }
 }
 

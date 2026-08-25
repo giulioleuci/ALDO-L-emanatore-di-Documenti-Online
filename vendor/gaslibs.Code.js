@@ -2211,6 +2211,7 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject_0, {
   EntityMapper: () => (EntityMapper),
   EntityNotFoundException: () => (EntityNotFoundException),
   EntityUpdatedEvent: () => (EntityUpdatedEvent),
+  EqualityFieldSpec: () => (EqualityFieldSpec),
   EventDispatcher: () => (EventDispatcher),
   ExpressionSpecification: () => (ExpressionSpecification),
   FieldSpecification: () => (FieldSpecification),
@@ -2227,6 +2228,7 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject_0, {
   ValidationException: () => (ValidationException),
   ValueObject: () => (ValueObject),
   ZodValidator: () => (SchemaValidator),
+  assertSpecificationContract: () => (assertSpecificationContract),
   z: () => (external_namespaceObject)
 });
 
@@ -2245,6 +2247,7 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject, {
   EntityMapper: () => (EntityMapper),
   EntityNotFoundException: () => (EntityNotFoundException),
   EntityUpdatedEvent: () => (EntityUpdatedEvent),
+  EqualityFieldSpec: () => (EqualityFieldSpec),
   EventDispatcher: () => (EventDispatcher),
   ExpressionSpecification: () => (ExpressionSpecification),
   FieldSpecification: () => (FieldSpecification),
@@ -2261,6 +2264,7 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject, {
   ValidationException: () => (ValidationException),
   ValueObject: () => (ValueObject),
   ZodValidator: () => (SchemaValidator),
+  assertSpecificationContract: () => (assertSpecificationContract),
   z: () => (external_namespaceObject)
 });
 
@@ -69852,6 +69856,38 @@ class Specification {
 
 
 
+class EqualityFieldSpec extends Specification {
+
+
+
+
+
+  constructor(column, read, expected) {
+    super();
+    this._column = column;
+    this._read = read;
+    this._expected = expected;
+  }
+  isSatisfiedBy(entity) {
+    return this._read(entity) === this._expected;
+  }
+  toQueryObject() {
+    return {
+      [this._column]: this._expected
+    };
+  }
+  toString() {
+    return `${this._column} = ${String(this._expected)}`;
+  }
+}
+;
+
+
+
+
+
+
+
 
 class CompositeSpecification extends Specification {
 
@@ -70705,6 +70741,35 @@ class FieldSpecificationBuilder {
 
 
 
+
+
+
+
+function assertSpecificationContract(spec, rows, hydrate) {
+  const criteria = spec.toQueryObject();
+  if (criteria === null) {
+    return {
+      ok: true,
+      divergenti: []
+    };
+  }
+  const divergenti = rows.filter(row => {
+    const viaQuery = Object.entries(criteria).every(([column, value]) => row[column] === value);
+    const viaMemory = spec.isSatisfiedBy(hydrate(row));
+    return viaQuery !== viaMemory;
+  });
+  return {
+    ok: divergenti.length === 0,
+    divergenti
+  };
+}
+;
+
+
+
+
+
+
 class DomainEvent {
 
 
@@ -71013,6 +71078,8 @@ class EventDispatcher {
   }
 }
 ;
+
+
 
 
 

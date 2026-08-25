@@ -6,28 +6,16 @@ import type { TipoPiano } from '../value-objects/enums';
 import { COL_PIANI } from '../../config/schema';
 
 /** PIANI of a student (ref 07 §8). */
-export class PianiPerAlunnoSpec extends Specification<Piano> {
-  constructor(private readonly email: Email) {
-    super();
-  }
-  isSatisfiedBy(p: Piano): boolean {
-    return p.studente === this.email.value;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_PIANI.STUDENTE]: this.email.value };
+export class PianiPerAlunnoSpec extends EqualityFieldSpec<Piano> {
+  constructor(email: Email) {
+    super(COL_PIANI.STUDENTE, (piano) => piano.studente, email.value);
   }
 }
 
 /** PIANI of a given type (ref 07 §8). */
-export class PianiPerTipoSpec extends Specification<Piano> {
-  constructor(private readonly tipo: TipoPiano) {
-    super();
-  }
-  isSatisfiedBy(p: Piano): boolean {
-    return p.tipo === this.tipo;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_PIANI.TIPO]: this.tipo };
+export class PianiPerTipoSpec extends EqualityFieldSpec<Piano> {
+  constructor(tipo: TipoPiano) {
+    super(COL_PIANI.TIPO, (piano) => piano.tipo, tipo);
   }
 }
 

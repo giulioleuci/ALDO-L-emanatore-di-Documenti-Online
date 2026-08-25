@@ -5,28 +5,16 @@ import type { ClasseId } from '../value-objects/ClasseId';
 import { COL_CARENZE } from '../../config/schema';
 
 /** CARENZE rows of a student (ref 06 §11). */
-export class CarenzePerAlunnoSpec extends Specification<Carenza> {
-  constructor(private readonly email: Email) {
-    super();
-  }
-  isSatisfiedBy(c: Carenza): boolean {
-    return c.studente === this.email.value;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_CARENZE.STUDENTE]: this.email.value };
+export class CarenzePerAlunnoSpec extends EqualityFieldSpec<Carenza> {
+  constructor(email: Email) {
+    super(COL_CARENZE.STUDENTE, (carenza) => carenza.studente, email.value);
   }
 }
 
 /** CARENZE rows of a class (ref 06 §11). */
-export class CarenzePerClasseSpec extends Specification<Carenza> {
-  constructor(private readonly classeId: ClasseId) {
-    super();
-  }
-  isSatisfiedBy(c: Carenza): boolean {
-    return c.classe === this.classeId.value;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_CARENZE.CLASSE]: this.classeId.value };
+export class CarenzePerClasseSpec extends EqualityFieldSpec<Carenza> {
+  constructor(classeId: ClasseId) {
+    super(COL_CARENZE.CLASSE, (carenza) => carenza.classe, classeId.value);
   }
 }
 

@@ -32,7 +32,6 @@ export class RuoloSpecialeRepository
 
   /** Roles held by a teacher — CONTAINS search over the CSV DOCENTE column. */
   findByDocente(email: Email): RuoloSpeciale[] {
-    const spec = new RuoliPerDocenteSpec(email);
-    return this.all().filter((r) => spec.isSatisfiedBy(r));
+    return this.find(new RuoliPerDocenteSpec(email));
   }
 }

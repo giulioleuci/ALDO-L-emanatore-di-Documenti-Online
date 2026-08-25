@@ -1112,6 +1112,17 @@ declare global {
     canBeTranslatedToQuery(): boolean;
     toQuery(queryBuilder: RepositoryQueryBuilder): RepositoryQueryBuilder;
   }
+  abstract class EqualityFieldSpec<T = unknown> extends Specification<T> {
+    constructor(column: string, read: (entity: T) => unknown, expected: unknown);
+    isSatisfiedBy(entity: T): boolean;
+    toQueryObject(): Record<string, unknown>;
+    toString(): string;
+  }
+  function assertSpecificationContract<T, R extends Record<string, unknown>>(
+    specification: QueryableSpecification<T>,
+    rows: R[],
+    hydrate: (row: R) => T
+  ): { ok: boolean; divergenti: R[] };
   class FieldSpecification<T = unknown> extends Specification<T> {
     constructor(field: string, operator: string, value: unknown);
     isSatisfiedBy(entity: T): boolean;

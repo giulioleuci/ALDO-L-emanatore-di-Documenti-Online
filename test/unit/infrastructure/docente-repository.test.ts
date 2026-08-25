@@ -42,9 +42,7 @@ test('findByDipartimento / findITP filter DOCENTI', () => {
       .findITP()
       .map((d) => d.id)
   ).toEqual(['verdi@school.it']);
-  expect(new DocentiPerDipartimentoSpec(DipartimentoId.of('LETTERE')).toQueryObject()).toEqual({
-    DIPART: 'LETTERE'
-  });
+  expect(new DocentiPerDipartimentoSpec(DipartimentoId.of('LETTERE')).toQueryObject()).toBeNull();
 });
 
 test('findCoordinatori reads CLASSI.COORD CSV, deduped', () => {

@@ -32,27 +32,15 @@ export class VariazioniPerMateriaSpec extends Specification<VariazioneCattedra> 
 }
 
 /** Variations by new titolare — plain equality on NUOVO_TITOLARE, pushdown-eligible. */
-export class VariazioniPerNuovoTitolareSpec extends Specification<VariazioneCattedra> {
-  constructor(private readonly email: Email) {
-    super();
-  }
-  isSatisfiedBy(v: VariazioneCattedra): boolean {
-    return v.nuovoTitolare === this.email.value;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_VARIAZIONI.NUOVO_TITOLARE]: this.email.value };
+export class VariazioniPerNuovoTitolareSpec extends EqualityFieldSpec<VariazioneCattedra> {
+  constructor(email: Email) {
+    super(COL_VARIAZIONI.NUOVO_TITOLARE, (variazione) => variazione.nuovoTitolare, email.value);
   }
 }
 
 /** Variations by titolare — plain equality on TITOLARE, pushdown-eligible. */
-export class VariazioniPerTitolareSpec extends Specification<VariazioneCattedra> {
-  constructor(private readonly email: Email) {
-    super();
-  }
-  isSatisfiedBy(v: VariazioneCattedra): boolean {
-    return v.titolare === this.email.value;
-  }
-  override toQueryObject(): Record<string, unknown> {
-    return { [COL_VARIAZIONI.TITOLARE]: this.email.value };
+export class VariazioniPerTitolareSpec extends EqualityFieldSpec<VariazioneCattedra> {
+  constructor(email: Email) {
+    super(COL_VARIAZIONI.TITOLARE, (variazione) => variazione.titolare, email.value);
   }
 }

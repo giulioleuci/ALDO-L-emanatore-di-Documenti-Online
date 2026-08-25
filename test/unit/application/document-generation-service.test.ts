@@ -125,15 +125,20 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
 
   test("returns status 'SKIPPED' when CheckDuplicatesStep prevents a newFileId from being produced", () => {
     const { service } = wire();
-    service.generateForClasse(ClasseId.of('5A'), 'CD1');
-    const second = service.generateForClasse(ClasseId.of('5A'), 'CD1');
-    expect(second).toMatchObject({
-      fileId: null,
-      fileName: null,
-      fileLink: null,
-      status: 'SKIPPED'
-    });
-    expect(second.durationMs).toEqual(expect.any(Number));
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1000);
+    try {
+      service.generateForClasse(ClasseId.of('5A'), 'CD1');
+      const second = service.generateForClasse(ClasseId.of('5A'), 'CD1');
+      expect(second).toEqual({
+        fileId: null,
+        fileName: null,
+        fileLink: null,
+        status: 'SKIPPED',
+        durationMs: 0
+      });
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   test('registra gli step SKIPPED come saltati, non come completati', () => {

@@ -184,7 +184,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
       fakeProvider([annoStorico('2025-2026', annoPrecedente())])
     );
     const [record] = service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false));
-    expect(record).toBeDefined();
+    expect(record).toEqual(
+      expect.objectContaining({ anno: '2025-2026', classe: '4A', esito: 'PROMOSSO' })
+    );
     expect(record!.anno).toBe('2025-2026');
     expect(record!.classe).toBe('4A');
     expect(record!.esito).toBe('PROMOSSO');

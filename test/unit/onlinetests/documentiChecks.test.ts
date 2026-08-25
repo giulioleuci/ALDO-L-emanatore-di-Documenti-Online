@@ -281,9 +281,7 @@ test('imported-table check accepts the template static tables that also head a V
 
   registerDocumentiChecks(runner as never, container, sample, 'tabelle-importate');
 
-  expect(
-    runner.callbacks.get('documenti.tabelleImportate::generazione e contenuto')
-  ).not.toThrow();
+  runner.callbacks.get('documenti.tabelleImportate::generazione e contenuto')!();
 });
 
 test('imported-table check rejects a second insertion of the header-only source sheet', () => {
@@ -367,6 +365,6 @@ test('rejects interop output without a rendered table cell and template link', (
   const callback = runner.callbacks.get(
     'documenti.standard::template interop unicode, liste, tabelle e link'
   );
-  expect(callback).toBeDefined();
+  expect(typeof callback).toBe('function');
   expect(callback).toThrow(/tabella|link/i);
 });

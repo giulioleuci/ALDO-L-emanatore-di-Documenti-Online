@@ -77,7 +77,7 @@ test('student assertion requires two distinctive years, outcomes and plans', () 
     hasBocciature: true
   };
 
-  expect(() => assertAlunnoStorico(storico)).not.toThrow();
+  assertAlunnoStorico(storico);
   expect(() => assertAlunnoStorico({ ...storico, anni: storico.anni.slice(0, 1) })).toThrow(
     /due anni/
   );
@@ -147,7 +147,7 @@ test('class assertion distinguishes real and fallback referees plus ITP omission
     }
   ];
 
-  expect(() => assertClasseStorico(storico, materie)).not.toThrow();
+  assertClasseStorico(storico, materie);
   const matConItpNull = { ...materie[1], continuita: { docentiAnniPrecedenti: [{ itp: null }] } };
   expect(() => assertClasseStorico(storico, [materie[0], matConItpNull, materie[2]])).toThrow(
     /MAT.*itp/i
@@ -186,18 +186,16 @@ test('document assertion rejects PEI/PDP cross-linking and render residue', () =
     }
   ];
 
-  expect(() => assertDocumentiStorici(docs)).not.toThrow();
+  assertDocumentiStorici(docs);
   expect(() =>
     assertDocumentiStorici([
       { ...docs[0], link: 'https://drive.test/PDP_BES_cross' },
       ...docs.slice(1)
     ])
   ).toThrow(/isolamento/);
-  expect(() =>
-    assertStoricoRender(
-      '2025-2026 2024-2025 NON_PROMOSSO ASL storico',
-      '<p>2C 2025-2026; 1C 2024-2025</p>'
-    )
-  ).not.toThrow();
+  assertStoricoRender(
+    '2025-2026 2024-2025 NON_PROMOSSO ASL storico',
+    '<p>2C 2025-2026; 1C 2024-2025</p>'
+  );
   expect(() => assertStoricoRender('{{focus.alunno.storico}}', '<p>ok</p>')).toThrow(/Mustache/);
 });

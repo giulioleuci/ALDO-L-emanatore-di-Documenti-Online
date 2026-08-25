@@ -89,15 +89,13 @@ test.each([
   [GestioneSupplenti.SOLO_SUPPLENTI, ['supplente@example.test']],
   [GestioneSupplenti.ENTRAMBI, ['titolare@example.test', 'supplente@example.test']]
 ])('accepts exact actor visibility for %s across every consumer', (mode, actors) => {
-  expect(() =>
-    assertActorVisibility(
-      String(mode),
-      snapshot(actors),
-      'titolare@example.test',
-      'supplente@example.test',
-      mode
-    )
-  ).not.toThrow();
+  assertActorVisibility(
+    String(mode),
+    snapshot(actors),
+    'titolare@example.test',
+    'supplente@example.test',
+    mode
+  );
 });
 
 test('rejects a protected-range consumer that leaks the principal in SOLO_SUPPLENTI', () => {

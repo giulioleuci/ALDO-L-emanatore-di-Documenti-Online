@@ -38,7 +38,7 @@ test('telemetry probe passes when ProbeStep survives the read after logStepStart
     sampleSpreadsheetUrl: 'https://example.test/sample'
   });
 
-  expect(() => runner.checks[0]!.callback()).not.toThrow();
+  runner.checks[0]!.callback();
   expect(monitor.logStepStart.mock.calls).toEqual([
     [expect.stringMatching(/^probe_\d+$/), 'ProbeStep']
   ]);

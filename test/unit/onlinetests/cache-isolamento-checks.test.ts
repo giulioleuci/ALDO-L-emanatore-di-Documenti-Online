@@ -57,7 +57,7 @@ test('second fixture cannot read the 1A row warmed from the shared fixture cache
   expect(runner.checks.map((check) => check.name)).toEqual([
     'cache.isolamento::secondo fixture non riusa righe cached'
   ]);
-  expect(() => runner.checks[0]!.callback()).not.toThrow();
+  runner.checks[0]!.callback();
   expect(calls).toEqual(['reset', 'init:master-isolated', 'reset', 'init:master-shared']);
 });
 

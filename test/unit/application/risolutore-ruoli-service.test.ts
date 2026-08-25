@@ -471,10 +471,8 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
 describe('RisolutoreRuoliService — articulated parent expansion (ARTICOLAZIONE.md item 2)', () => {
   test('GENITORI_CLASSE resolves tutors of students in both partner classes from the parent', () => {
     const { cdu, service } = build({ target: '1F' });
-    // Fixture has no ALUNNI seeded under 1F/1F-LSO/1F-LSS, so this must be an
-    // empty array — the point of this test is that it does NOT throw and does
-    // NOT silently short-circuit on the parent id (see the assertion helper).
-    expect(() => emails(service, 'GENITORI_CLASSE', cdu)).not.toThrow();
+    // Fixture has no ALUNNI seeded under 1F/1F-LSO/1F-LSS.
+    expect(emails(service, 'GENITORI_CLASSE', cdu)).toEqual([]);
   });
 
   test('TUTOR_ASL merges RUOLI across both partner classes when resolved from the parent', () => {

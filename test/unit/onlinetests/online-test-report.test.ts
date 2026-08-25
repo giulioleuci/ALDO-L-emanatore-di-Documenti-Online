@@ -74,12 +74,10 @@ describe('TestRunner', () => {
 
   it('never throws out of add() even when fn throws a non-Error value', () => {
     const runner = new TestRunner();
-    expect(() =>
-      runner.add('check-3', undefined, () => {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error -- deliberately exercises the non-Error catch branch
-        throw 'stringa';
-      })
-    ).not.toThrow();
+    runner.add('check-3', undefined, () => {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error -- deliberately exercises the non-Error catch branch
+      throw 'stringa';
+    });
     expect(runner.report().results[0]).toEqual({
       name: 'check-3',
       status: 'fail',
@@ -90,7 +88,11 @@ describe('TestRunner', () => {
   it('sets startedAt at construction and finishedAt at report() time as ISO strings', () => {
     const runner = new TestRunner();
     const report = runner.report();
-    expect(() => new Date(report.startedAt).toISOString()).not.toThrow();
-    expect(() => new Date(report.finishedAt).toISOString()).not.toThrow();
+    const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+    expect(report.startedAt).toMatch(isoPattern);
+    expect(report.finishedAt).toMatch(isoPattern);
+    expect(new Date(report.finishedAt).getTime()).toBeGreaterThanOrEqual(
+      new Date(report.startedAt).getTime()
+    );
   });
 });

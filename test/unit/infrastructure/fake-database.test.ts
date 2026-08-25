@@ -5,7 +5,7 @@ import { TABLE, COL_CLASSI } from '../../../src/config/schema';
 test('FakeDatabase reads seeded CLASSI rows', () => {
   const db = new FakeDatabase(fixtureTables());
   const rows = db.table(TABLE.CLASSI).findAll();
-  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.map((row) => row[COL_CLASSI.ID])).toEqual(['5A', '3B', '1F', '1F-LSO', '1F-LSS']);
   expect(rows[0]![COL_CLASSI.ID]).toBe('5A');
 });
 

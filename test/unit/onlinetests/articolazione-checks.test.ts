@@ -234,6 +234,25 @@ test('artifact verification is read-only and repeatable over persisted LOG_DOCS 
   }
 
   expect(JSON.stringify(rows)).toBe(before);
+
+  const brokenCdc = persistedArtifactContainer();
+  const cdcRow = brokenCdc.rows.find(
+    (candidate) =>
+      candidate[COL_LOG_DOCS.ID_GEN] === CONF_DOC_RIEPILOGO_FIRME_CDC &&
+      candidate[COL_LOG_DOCS.CLASSI] === CLASSE_C
+  );
+  if (cdcRow === undefined) throw new Error('Missing CDC fixture row');
+  cdcRow[COL_LOG_DOCS.ID] = '';
+  expect(() =>
+    runCheck(brokenCdc.container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
+  ).toThrow(/fileId LOG_DOCS/);
+
+  const brokenPiano = persistedArtifactContainer();
+  const planRows = brokenPiano.rows.filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_PIANI);
+  planRows[1]![COL_LOG_DOCS.ID] = planRows[0]![COL_LOG_DOCS.ID];
+  expect(() =>
+    runCheck(brokenPiano.container, 'Articolazione CDU: piano duale renderizzato')
+  ).toThrow(/stesso file/);
 });
 
 test('CDC check rejects persisted partner content without the rendered council', () => {
@@ -376,6 +395,11 @@ test('role/date check accepts valid composite LAB catalog rows for substitute an
   const container = substitutionContainer(validLabSeminar(), validLabSeminar());
 
   runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data');
+
+  const corrupted = substitutionContainer(validLabSeminar({ sigla: 'LAB' }), validLabSeminar());
+  expect(() =>
+    runCheck(corrupted, 'Articolazione CDU: supplenza, titolare finale e confini data')
+  ).toThrow(/attesi supplente LAB\.SEMINARIO_POMERIDIANO/);
 });
 
 test.each([

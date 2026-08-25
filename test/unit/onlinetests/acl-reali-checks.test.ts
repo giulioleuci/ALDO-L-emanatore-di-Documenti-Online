@@ -169,6 +169,13 @@ test('Drive ACL assertion accepts exact non-owner principals and deduplicates AP
   assertExactDrivePermissionPrincipals('file', permissions, [
     { type: 'user', principal: 'writer@example.test', role: 'writer' }
   ]);
+  expect(() =>
+    assertExactDrivePermissionPrincipals(
+      'file',
+      [...permissions, { type: 'user', role: 'reader', emailAddress: 'unexpected@example.test' }],
+      [{ type: 'user', principal: 'writer@example.test', role: 'writer' }]
+    )
+  ).toThrow(/unexpected@example\.test/);
 });
 
 test.each([
@@ -225,15 +232,21 @@ test('protected-range assertion rejects missing editor and an unprotected expect
 });
 
 test('protected-range assertion accepts exact editors for focal subject', () => {
-  assertProtectedRangePrincipals(
-    [
-      {
-        description: 'Colonna materia MAT (10 §9)',
-        editors: { users: ['coordinatore@example.test', 'docente@example.test'] },
-        warningOnly: false
-      }
-    ],
-    ['docente@example.test', 'coordinatore@example.test'],
-    'MAT'
-  );
+  const ranges = [
+    {
+      description: 'Colonna materia MAT (10 §9)',
+      editors: { users: ['coordinatore@example.test', 'docente@example.test'] },
+      warningOnly: false
+    }
+  ];
+  const expected = ['docente@example.test', 'coordinatore@example.test'];
+
+  assertProtectedRangePrincipals(ranges, expected, 'MAT');
+  expect(() =>
+    assertProtectedRangePrincipals(
+      [{ ...ranges[0], editors: { users: ['coordinatore@example.test'] } }],
+      expected,
+      'MAT'
+    )
+  ).toThrow(/docente@example\.test/);
 });

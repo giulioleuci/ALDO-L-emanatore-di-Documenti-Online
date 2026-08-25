@@ -96,6 +96,17 @@ test.each([
     'supplente@example.test',
     mode
   );
+
+  const leaked = { ...snapshot(actors), cdu: [] };
+  expect(() =>
+    assertActorVisibility(
+      String(mode),
+      leaked,
+      'titolare@example.test',
+      'supplente@example.test',
+      mode
+    )
+  ).toThrow(/cdu atteso=/);
 });
 
 test('rejects a protected-range consumer that leaks the principal in SOLO_SUPPLENTI', () => {

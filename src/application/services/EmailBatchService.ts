@@ -6,10 +6,10 @@ import type { IPropertiesFacade } from '../../infrastructure/facades/PropertiesF
 export const JOB_TYPE_INVIO_EMAIL = 'INVIO_EMAIL_BATCH';
 
 /** Gmail quota guard: at most this many recipients per checkpoint chunk (11 §14). */
-export const EMAIL_CHUNK_SIZE = 100;
+const EMAIL_CHUNK_SIZE = 100;
 
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
-export interface EmailBatchResumeState {
+interface EmailBatchResumeState {
   /** Batch identity retained by JobRunnerLib for trigger resumes, which drop run() parameters. */
   patternId?: string;
   jobId?: string;
@@ -24,7 +24,7 @@ export interface EmailBatchResumeState {
 export interface EmailBatchCheckpoint extends EmailBatchResumeState {
   percentage: number;
 }
-export interface EmailBatchResult {
+interface EmailBatchResult {
   success: boolean;
   totale: number;
   processed: string[];

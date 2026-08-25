@@ -1,4 +1,4 @@
-export interface OnlineTestResult {
+interface OnlineTestResult {
   name: string;
   status: 'pass' | 'fail' | 'skipped';
   message?: string;

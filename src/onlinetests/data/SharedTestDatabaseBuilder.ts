@@ -60,20 +60,18 @@ export const CLASSE_C_PARENT = '3C';
 export const CLASSE_C = '3C-S';
 export const CLASSE_C_PARTNER = '3C-C';
 export const CLASSE_D_PARENT = '5B';
-export const CLASSE_D = '5B-S';
-export const CLASSE_D_PARTNER = '5B-C';
 /**
  * Every entry-point class (05 §5 / EmailNotificationService.classiEntryPoint):
  * CLASSE_C_PARENT and CLASSE_D_PARENT each aggregate their partner rows
- * (CLASSE_C/CLASSE_C_PARTNER, CLASSE_D/CLASSE_D_PARTNER), so both partner
- * rows are filtered and the parent receives the single PER_COORDINATORE/PER_CDC
- * target for the articulated group.
+ * ('3C-S'/'3C-C', '5B-S'/'5B-C'), so both partner rows are filtered and the
+ * parent receives the single PER_COORDINATORE/PER_CDC target for the
+ * articulated group.
  */
 export const ALL_CLASSI_E2E = [CLASSE_A, CLASSE_B, CLASSE_C_PARENT, CLASSE_D_PARENT];
 export const ASSIGNMENT_MATRIX_DATE_E2E = new Date('2026-07-15T09:00:00Z');
 
 /** Minimal persisted fixture descriptor used only by the Script Cache isolation callback. */
-export interface CacheIsolationFixture {
+interface CacheIsolationFixture {
   masterSpreadsheetId: string;
   sampleSpreadsheetId: string;
   sampleSpreadsheetUrl: string;

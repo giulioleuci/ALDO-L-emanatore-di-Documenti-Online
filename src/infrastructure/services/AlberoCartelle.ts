@@ -2,7 +2,7 @@ import type { IDriveFacade } from '../facades/DriveServiceFacade';
 import type { IDatabase, Row } from '../db/Database';
 import { TABLE, COL_LOG_FOLD } from '../../config/schema';
 
-export interface FindOrCreateOptions {
+interface FindOrCreateOptions {
   classi?: string;
   utenti?: string;
   materie?: string;
@@ -12,7 +12,7 @@ export interface FindOrCreateOptions {
   nome?: string;
 }
 
-export interface CartellaResult {
+interface CartellaResult {
   folderId: string;
   created: boolean;
 }

@@ -16,16 +16,16 @@ import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { TipoPiano } from '../../domain/value-objects/enums';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
 
-export type Severita = 'GRAVE' | 'MEDIA' | 'LIEVE';
+type Severita = 'GRAVE' | 'MEDIA' | 'LIEVE';
 
-export interface StatisticheClasse {
+interface StatisticheClasse {
   alunni: { totali: number; attivi: number; conBes: number; conDsa: number; ripetenti: number };
   carenze: { grave: number; media: number; lieve: number; totale: number };
   oreAsl: number;
   documentiPerTipo: Record<string, number>;
 }
 
-export interface StatisticheIstituto {
+interface StatisticheIstituto {
   totaleAlunni: number;
   totaleDocenti: number;
   totaleClassiAttive: number;
@@ -33,24 +33,24 @@ export interface StatisticheIstituto {
   perIndirizzo: Record<string, number>;
 }
 
-export interface CarenzaRow {
+interface CarenzaRow {
   studente: string;
   materia: string;
   valore: string;
   severita: Severita;
 }
-export interface CarenzeReport {
+interface CarenzeReport {
   righe: CarenzaRow[];
   totale: number;
   perSeverita: { grave: number; media: number; lieve: number };
 }
-export interface ReportCarenzeOptions {
+interface ReportCarenzeOptions {
   classe: string;
   materia?: string;
   soloNonNotificate?: boolean;
 }
 
-export interface ASLReport {
+interface ASLReport {
   perStudente: Array<{ studente: string; ore: number }>;
   totaleClasse: number;
 }

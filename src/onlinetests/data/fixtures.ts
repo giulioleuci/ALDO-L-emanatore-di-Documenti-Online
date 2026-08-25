@@ -25,10 +25,6 @@ export const ALL_CLASSI = [
   '5E'
 ] as const;
 
-export const CLASSI_CLASSICO = ['1A', '2A', '4A'] as const;
-export const CLASSI_SCIENZE_UMANE = ['1B', '2B', '5B', '5B-S', '5B-C'] as const;
-export const CLASSI_SCIENTIFICO = ['3C', '3C-S', '3C-C', '4D', '5E'] as const;
-
 /** Address lookup kept separate from the seeder-compatible class layouts. */
 export const CLASS_ADDRESS_BY_CLASS: Record<string, string> = {
   '1A': INDIRIZZO_CLASSICO,
@@ -114,10 +110,7 @@ export const CLASS_LAYOUTS: FixtureClasseLayout[] = [
   layout('5E', 202, 19, 8)
 ];
 
-export const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];
-export const MATERIE_CLASSICO = [...MATERIE_BASE, 'GRECO', 'LATINO', 'FILOSOFIA'];
-export const MATERIE_SCIENZE_UMANE = [...MATERIE_BASE, 'PSICOLOGIA', 'SCIUMANE', 'DIRECON'];
-export const MATERIE_SCIENTIFICO = [...MATERIE_BASE, 'SCIENZE', 'FISICA', 'INF'];
+const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];
 export const MATERIE_PUNTATE = [
   'LAB.GRUPPO_A',
   'LAB.SEMINARIO_POMERIDIANO',
@@ -126,14 +119,13 @@ export const MATERIE_PUNTATE = [
 ];
 
 export const MATERIE_PER_INDIRIZZO = {
-  [INDIRIZZO_CLASSICO]: MATERIE_CLASSICO,
-  [INDIRIZZO_SCIENTIFICO]: MATERIE_SCIENTIFICO,
-  [INDIRIZZO_SCIENTIFICO_APPLICATE]: MATERIE_SCIENZE_UMANE
+  [INDIRIZZO_CLASSICO]: [...MATERIE_BASE, 'GRECO', 'LATINO', 'FILOSOFIA'],
+  [INDIRIZZO_SCIENTIFICO]: [...MATERIE_BASE, 'SCIENZE', 'FISICA', 'INF'],
+  [INDIRIZZO_SCIENTIFICO_APPLICATE]: [...MATERIE_BASE, 'PSICOLOGIA', 'SCIUMANE', 'DIRECON']
 } as const;
 
 export const STUDENT_TOTALE = 220;
 
-export const ANNO_CORRENTE = '2026-2027';
 export const ANNI_PRECEDENTI = ['2025-2026', '2024-2025'] as const;
 
 export const CONF_DOC_JOBRUNNER = 'JOBRUNNER_DOC';
@@ -159,13 +151,6 @@ export const CONF_MAIL_JOBRUNNER = 'E2E_MAIL_JOBRUNNER';
 export const CONF_MAIL_STORICO = 'E2E_MAIL_STORICO';
 
 export const JOBRUNNER_DOC = CONF_DOC_JOBRUNNER;
-export const TEMPLATE_JOBRUNNER_DOC = 'TEMPLATE_JOBRUNNER_DOC';
-export const TEMPLATE_TABELLE = 'TEMPLATE_TABELLE';
-export const TEMPLATE_STORICO = 'TEMPLATE_STORICO';
-export const TEMPLATE_DOTTED = 'TEMPLATE_DOTTED';
-export const TEMPLATE_ASL_CARTELLE = 'TEMPLATE_ASL_CARTELLE';
-export const TEMPLATE_CERCA_DOCUMENTI = 'TEMPLATE_CERCA_DOCUMENTI';
-export const TEMPLATE_CHUNKED = 'TEMPLATE_CHUNKED';
 
 export const EMAIL_TEST_SAFE = 'sgsa-onlinetests@onlinetest.aldo.local';
 

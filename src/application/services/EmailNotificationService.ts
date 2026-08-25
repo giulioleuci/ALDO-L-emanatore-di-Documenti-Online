@@ -79,7 +79,7 @@ export interface EmailNotificationDeps {
   logger?: LoggerService;
 }
 
-export interface SendPatternOptions {
+interface SendPatternOptions {
   /** Restrict the run to targets whose candidate emails intersect this list (retry seam, 11 §16). */
   onlyRecipients?: string[];
   /** Restrict the run to stable pre-routing logical target ids (new retry seam). */
@@ -93,7 +93,7 @@ export interface SendPatternResult {
   errors: string[];
 }
 
-export interface EmailTargetResult {
+interface EmailTargetResult {
   sent: number;
   errors: string[];
   skipped: boolean;

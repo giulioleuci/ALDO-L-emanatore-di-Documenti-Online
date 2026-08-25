@@ -3,7 +3,7 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 
 const KEYS = ['classi', 'utenti', 'materie'] as const;
 
-export interface LogRegistrationMetadata {
+interface LogRegistrationMetadata {
   classi: string;
   utenti: string;
   materie: string;

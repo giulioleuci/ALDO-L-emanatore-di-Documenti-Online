@@ -15,7 +15,7 @@ export interface PersonVM {
   appellativoCognome: string;
 }
 
-export interface PersonVmInput {
+interface PersonVmInput {
   nome: string;
   cognome: string | null;
   email: string | null;
@@ -80,7 +80,7 @@ export function buildPersonVmFromDocente(docente: Docente, materia: string | nul
   });
 }
 
-export interface PersonGroupDeclension {
+interface PersonGroupDeclension {
   appellativo: string;
   articolo: string;
 }

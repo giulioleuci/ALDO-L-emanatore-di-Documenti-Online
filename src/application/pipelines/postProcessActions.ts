@@ -11,7 +11,7 @@ import { TABLE, COL_LOG_DOCS } from '../../config/schema';
  * inside the document pipeline the service transaction commits; the email
  * pipeline calls `save()` right after (11 §10).
  */
-export interface PostProcessAction {
+interface PostProcessAction {
   tipo: string;
   tab?: string;
   col?: string;

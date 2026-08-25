@@ -61,7 +61,7 @@ import type { ITeachingAssignmentResolver } from '../application/ports/ITeaching
 import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
-export interface BootstrapDeps {
+interface BootstrapDeps {
   db: EmailDb;
   /**
    * Repository over the Master Sheet itself (06 §0) — a DIFFERENT spreadsheet

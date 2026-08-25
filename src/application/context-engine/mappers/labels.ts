@@ -1,6 +1,6 @@
 import { TipoPiano, ReligioneScelta, TipoProgetto } from '../../../domain/value-objects/enums';
 
-export const TIPO_PIANO_LABELS: Record<TipoPiano, string> = {
+const TIPO_PIANO_LABELS: Record<TipoPiano, string> = {
   [TipoPiano.PDP_DSA]: 'PDP (DSA)',
   [TipoPiano.PDP_BES]: 'PDP (BES)',
   [TipoPiano.PDP_STRANIERI]: 'PDP (STRANIERI)',
@@ -12,7 +12,7 @@ export function tipoPianoLabel(tipo: TipoPiano): string {
   return TIPO_PIANO_LABELS[tipo];
 }
 
-export const RELIGIONE_LABELS: Record<ReligioneScelta, string> = {
+const RELIGIONE_LABELS: Record<ReligioneScelta, string> = {
   [ReligioneScelta.IRC]: 'Religione cattolica',
   [ReligioneScelta.ALT]: 'Attività alternativa',
   [ReligioneScelta.NO]: 'Non si avvale'
@@ -22,7 +22,7 @@ export function religioneLabel(religione: ReligioneScelta): string {
   return RELIGIONE_LABELS[religione];
 }
 
-export const TIPO_PROGETTO_LABELS: Record<TipoProgetto, string> = {
+const TIPO_PROGETTO_LABELS: Record<TipoProgetto, string> = {
   [TipoProgetto.ASL]: 'PCTO/ASL',
   [TipoProgetto.ORIENTAMENTO]: 'Orientamento',
   [TipoProgetto.ALTRO]: 'Altro'

@@ -7,8 +7,8 @@ import { Genere } from '../../../src/domain/value-objects/enums';
 
 test('Docente appellativo from genere (03/04)', () => {
   const d = Docente.create(Email.of('rossi@school.it'), 'ROSSI', 'MARIO', Genere.M);
-  expect(d.nomeConAppellativo()).toBe('Prof. ROSSI MARIO');
-  expect(d.cognomeNome()).toBe('ROSSI MARIO');
+  expect(d.getNomeCompletoConAppellativo()).toBe('Prof. ROSSI MARIO');
+  expect(d.getNomeCompleto()).toBe('ROSSI MARIO');
   expect(d.email.value).toBe('rossi@school.it');
 });
 

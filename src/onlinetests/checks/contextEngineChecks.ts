@@ -156,7 +156,7 @@ interface AssignmentTuple {
 }
 
 function unique(values: string[]): string[] {
-  return values.filter((value, index) => values.indexOf(value) === index);
+  return [...new Set(values)];
 }
 
 function tupleKey(tuple: AssignmentTuple): string {

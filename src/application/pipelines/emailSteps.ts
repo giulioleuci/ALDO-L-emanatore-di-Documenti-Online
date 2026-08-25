@@ -65,7 +65,7 @@ export interface Destinazione {
 }
 
 /** CONF_MAIL.PROCESSO → ContextEngine recipe (11 §3). */
-export const RECIPE_PER_PROCESSO: Record<ProcessoInvio, string> = {
+const RECIPE_PER_PROCESSO: Record<ProcessoInvio, string> = {
   [ProcessoInvio.PER_COORDINATORE]: 'DOCENTE_COMPLETO',
   [ProcessoInvio.PER_DOCENTE]: 'DOCENTE_COMPLETO',
   [ProcessoInvio.PER_CDC]: 'DOCENTE_COMPLETO',

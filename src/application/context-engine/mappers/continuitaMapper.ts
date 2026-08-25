@@ -18,7 +18,7 @@ export interface ContinuitaVM {
   continuitaUltimiDueAnniItp?: boolean;
 }
 
-export interface BuildContinuitaInput {
+interface BuildContinuitaInput {
   siglaCorrente: string;
   hasItp: boolean;
   titolareCorrenteEmail: string | null;

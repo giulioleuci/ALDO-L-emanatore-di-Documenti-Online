@@ -1,6 +1,6 @@
 import type { AlunnoContestoVM } from '../Cdu';
 
-export interface PersonMinVM {
+interface PersonMinVM {
   nome: string | null;
   cognome: string | null;
   nomeCompleto: string;

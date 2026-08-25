@@ -3,7 +3,7 @@ import type { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import type { PersonVM } from './personVmMapper';
 import type { ContinuitaVM } from './continuitaMapper';
 
-export interface SubjectVmEvoluzione {
+interface SubjectVmEvoluzione {
   siglePrecedenti: Array<{ sigla: string; nome: string | null; anni: number[] }>;
 }
 
@@ -25,7 +25,7 @@ export interface SubjectVM {
   continuita?: ContinuitaVM;
 }
 
-export interface BuildSubjectVmOptions {
+interface BuildSubjectVmOptions {
   indirizzo?: IndirizzoId;
   isITP?: boolean;
   principale?: string | null;

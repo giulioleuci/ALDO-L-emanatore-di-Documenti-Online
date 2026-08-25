@@ -3,7 +3,7 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 /** Sentinel meaning "unrestricted"/"unqualified" for a scope dimension (ref RoleResolutionLib AssignmentSlot.matches/matchesContextDimensions). */
 export const ANY = '*';
 
-export interface MateriaSlotGroup {
+interface MateriaSlotGroup {
   /** 'ITP' | 'SPECIFICA' | ANY (bare, any slot). */
   kind: string;
   /** Literal specifica id, or ANY when not SPECIFICA-qualified. */
@@ -12,7 +12,7 @@ export interface MateriaSlotGroup {
   materie: string[];
 }
 
-export interface ScopeFragment {
+interface ScopeFragment {
   classi: string;
   materie: string;
   kind: string;

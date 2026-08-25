@@ -415,7 +415,7 @@ const ALL_ONLINE_TEST_GROUPS: ReadonlyArray<keyof FullOnlineTestRegistrations> =
   'processMonitor'
 ];
 
-export interface PersistedE2eFixtureMigrationResult {
+interface PersistedE2eFixtureMigrationResult {
   previousVersion: number;
   version: number;
   insertedMaterie: string[];
@@ -750,7 +750,7 @@ export function runOnlineTestsBatch4(
   return runReportedSuite('online_tests_batch4', 'ONLINE_TEST_SUITE_BATCH', execute, logger);
 }
 
-export interface ResetE2eHistoryTablesResult {
+interface ResetE2eHistoryTablesResult {
   purgedLogMail: number;
   purgedLogDocs: number;
   insertedMaterie: string[];

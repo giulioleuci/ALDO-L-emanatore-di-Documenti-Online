@@ -29,7 +29,7 @@ export interface DocenteMateriaBatchTarget {
 }
 
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
-export interface BatchResumeState {
+interface BatchResumeState {
   confDocId: string;
   jobId: string;
   nextIndex: number;
@@ -41,7 +41,7 @@ export interface BatchResumeState {
 export interface BatchCheckpoint extends BatchResumeState {
   percentage: number;
 }
-export interface BatchResult {
+interface BatchResult {
   success: boolean;
   totale: number;
   processed: string[];

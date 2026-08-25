@@ -21,7 +21,7 @@ import type {
 } from '../ports/ITeachingAssignmentResolver';
 import { routingPolicyByGestioneSupplenti } from '../context-engine/TeachingCouncilProjection';
 
-export interface RisolviOptions {
+interface RisolviOptions {
   regolaSupplente?: GestioneSupplenti;
   /** Restricts an articulated subject role to the assignment owned by one partner class. */
   classeId?: string;

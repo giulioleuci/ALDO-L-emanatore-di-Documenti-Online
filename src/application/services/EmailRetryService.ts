@@ -5,13 +5,13 @@ import type { LogEmail } from '../../domain/entities/LogEmail';
 import type { EmailNotificationService } from './EmailNotificationService';
 import { escapeHtml } from '../email/boxes';
 
-export interface EmailRetryOptions {
+interface EmailRetryOptions {
   /** Give up after this many failed attempts for the same pattern/logical target (default 3, 11 §16). */
   maxTentativi?: number;
   logger?: LoggerService;
 }
 
-export interface RetryResult {
+interface RetryResult {
   retried: number;
   permanent: number;
 }
@@ -30,7 +30,7 @@ export const JOB_TYPE_RETRY_EMAIL = 'RETRY_EMAIL_BATCH';
  * previous invocation yielded checkpoints against, and an index-based resume
  * can silently skip groups that were never actually retried.
  */
-export interface RetryResumeState extends RetryResult {
+interface RetryResumeState extends RetryResult {
   processedKeys: string[];
 }
 

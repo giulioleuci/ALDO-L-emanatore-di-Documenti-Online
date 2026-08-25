@@ -52,7 +52,7 @@ export interface DocumentGenerationDeps {
   logger?: LoggerService;
 }
 
-export interface DocumentGenerationResult {
+interface DocumentGenerationResult {
   fileId: string | null;
   fileName: string | null;
   fileLink: string | null;

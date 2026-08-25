@@ -63,16 +63,6 @@ export class Docente extends AldoEntity {
     return this.itp;
   }
 
-  /** @deprecated use getNomeCompleto(); kept for the vertical slice. */
-  cognomeNome(): string {
-    return this.getNomeCompleto();
-  }
-
-  /** @deprecated use getNomeCompletoConAppellativo(); kept for the vertical slice. */
-  nomeConAppellativo(): string {
-    return this.getNomeCompletoConAppellativo();
-  }
-
   override toData(): EntityData {
     return {
       [COL_DOCENTI.EMAIL]: this.id,

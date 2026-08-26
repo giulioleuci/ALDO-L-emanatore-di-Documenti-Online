@@ -470,9 +470,43 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
 
 describe('RisolutoreRuoliService — articulated parent expansion (ARTICOLAZIONE.md item 2)', () => {
   test('GENITORI_CLASSE resolves tutors of students in both partner classes from the parent', () => {
-    const { cdu, service } = build({ target: '1F' });
-    // Fixture has no ALUNNI seeded under 1F/1F-LSO/1F-LSS.
-    expect(emails(service, 'GENITORI_CLASSE', cdu)).toEqual([]);
+    const tables = fixtureTables();
+    tables.ALUNNI!.push(
+      {
+        EMAIL: 'lso@school.it',
+        COGNOMENOME: 'ALFA UNO',
+        CLASSE: '1F-LSO',
+        RELIGIONE: 'IRC',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: 'tutor-lso@family.test',
+        TUTOR_2: '',
+        CURRICULUM: null
+      },
+      {
+        EMAIL: 'lss@school.it',
+        COGNOMENOME: 'BETA DUE',
+        CLASSE: '1F-LSS',
+        RELIGIONE: 'IRC',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        TUTOR_1: 'tutor-lss@family.test',
+        TUTOR_2: '',
+        CURRICULUM: null
+      }
+    );
+    const db = new FakeDatabase(tables);
+    const cdu = composeContextBuilder(db).build(
+      { target: '1F', tipoTarget: 'classe', now: NOW },
+      recipe('CLASSE_COMPLETA')
+    );
+
+    expect(emails(composeRisolutoreRuoli(db), 'GENITORI_CLASSE', cdu)).toEqual([
+      'tutor-lso@family.test',
+      'tutor-lss@family.test'
+    ]);
   });
 
   test('TUTOR_ASL merges RUOLI across both partner classes when resolved from the parent', () => {

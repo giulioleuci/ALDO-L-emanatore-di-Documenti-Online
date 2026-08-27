@@ -260,7 +260,7 @@ function readCurrentMasterConfig(masterId: string): {
       logger,
       ServiceFactory.getUtils(),
       ServiceFactory.getCacheService().getScriptCache(),
-      null,
+      ServiceFactory.getExceptionService(),
       { verifyTables: [TABLE.MASTER] }
     )
   );

@@ -445,13 +445,16 @@ export function initAldo(
   const masterId = masterSpreadsheetId ?? spreadsheetService.getActiveStandard().getId();
   const utils = ServiceFactory.getUtils();
   const cache = ServiceFactory.getCacheService().getScriptCache();
+  const exceptionService = ServiceFactory.getExceptionService();
   const masterDb = new SheetDbAdapter(
-    new DatabaseService(masterId, logger, utils, cache, null, { verifyTables: [TABLE.MASTER] })
+    new DatabaseService(masterId, logger, utils, cache, exceptionService, {
+      verifyTables: [TABLE.MASTER]
+    })
   );
   const masterRepo = new MasterSheetRepository(masterDb);
   const annoCorrente = masterRepo.findConfigAnnoCorrente();
   const db = new SheetDbAdapter(
-    new DatabaseService(annoCorrente.idSpreadsheet, logger, utils, cache, null, {
+    new DatabaseService(annoCorrente.idSpreadsheet, logger, utils, cache, exceptionService, {
       verifyTables: Object.values(TABLE).filter((t) => t !== TABLE.MASTER)
     })
   );

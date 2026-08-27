@@ -394,7 +394,10 @@ describe('initAldo — singleton reuse + missing master id', () => {
     return Object.assign(restore, { databaseService });
   }
 
-  function mockServiceFactory(masterId = 'BOUND_MASTER_ID') {
+  function mockServiceFactory(
+    masterId = 'BOUND_MASTER_ID',
+    exceptionService = { executeWithRetry: jest.fn() }
+  ) {
     const spies = [
       jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue(fakeLogger as never),
       jest.spyOn(ServiceFactory, 'getDriveService').mockReturnValue({} as never),
@@ -407,6 +410,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
       jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
         getScriptCache: () => ({ get: jest.fn(), put: jest.fn(), remove: jest.fn() })
       }),
+      jest.spyOn(ServiceFactory, 'getExceptionService').mockReturnValue(exceptionService),
       jest.spyOn(ServiceFactory, 'getPropertiesService').mockReturnValue({} as never)
     ];
     return () => spies.forEach((s) => s.mockRestore());
@@ -439,10 +443,32 @@ describe('initAldo — singleton reuse + missing master id', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        null,
+        expect.anything(),
         expect.objectContaining({ verifyTables: ['MASTER'] })
       );
       expect(props.get).not.toHaveBeenCalled();
+    } finally {
+      findConfigSpy.mockRestore();
+      restoreFactory();
+      restoreDb();
+    }
+  });
+
+  test('injects GLF retry support into both databases opened during bootstrap', () => {
+    const restoreDb = mockDatabaseServiceGlobal();
+    const exceptionService = { executeWithRetry: jest.fn() };
+    const restoreFactory = mockServiceFactory('BOUND_MASTER_ID', exceptionService);
+    const findConfigSpy = jest
+      .spyOn(MasterSheetRepository.prototype, 'findConfigAnnoCorrente')
+      .mockReturnValue({ idSpreadsheet: 'ss1', idCartellaRoot: 'root1' } as never);
+
+    try {
+      initAldo(new Date('2026-01-01'));
+
+      expect((restoreDb.databaseService.mock.calls as unknown[][]).map((call) => call[4])).toEqual([
+        exceptionService,
+        exceptionService
+      ]);
     } finally {
       findConfigSpy.mockRestore();
       restoreFactory();
@@ -473,7 +499,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        null,
+        expect.anything(),
         expect.objectContaining({ verifyTables: ['MASTER'] })
       );
     } finally {

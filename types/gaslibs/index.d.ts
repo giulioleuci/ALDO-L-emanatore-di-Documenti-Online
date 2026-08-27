@@ -1405,6 +1405,8 @@ declare global {
     static getUtilitiesService(): UtilitiesService;
     /** CoreUtilsLib's foundational UtilsService (formatDate w/ tokens, formatISODate, isValidEmail, ...). */
     static getUtils(): UtilsService;
+    /** Shared GasResilienceLib retry service. */
+    static getExceptionService(): unknown;
     static getDriveService(): DriveService;
     static getDocumentService(): DocumentService;
     static getMailService(options?: Record<string, unknown>): MailService;

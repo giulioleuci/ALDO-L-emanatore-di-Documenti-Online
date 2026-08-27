@@ -329,6 +329,9 @@ test('reads historical documents from the minimal CLASSI/ALUNNI/LOG_DOCS databas
   const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
     getScriptCache: () => ({})
   });
+  const exceptionSpy = jest
+    .spyOn(ServiceFactory, 'getExceptionService')
+    .mockReturnValue({ executeWithRetry: jest.fn() });
 
   try {
     const provider = new MasterStoricoDatabaseProvider(masterWithYear('2025-2026'), logger);
@@ -350,6 +353,7 @@ test('reads historical documents from the minimal CLASSI/ALUNNI/LOG_DOCS databas
       })
     ]);
   } finally {
+    exceptionSpy.mockRestore();
     cacheSpy.mockRestore();
     utilsSpy.mockRestore();
     (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
@@ -430,8 +434,12 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
     const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
       getScriptCache: () => ({})
     });
+    const exceptionSpy = jest
+      .spyOn(ServiceFactory, 'getExceptionService')
+      .mockReturnValue({ executeWithRetry: jest.fn() });
 
     return () => {
+      exceptionSpy.mockRestore();
       cacheSpy.mockRestore();
       utilsSpy.mockRestore();
       (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
@@ -466,6 +474,10 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
     const cacheSpy = jest.spyOn(ServiceFactory, 'getCacheService').mockReturnValue({
       getScriptCache: () => ({})
     });
+    const exceptionService = { executeWithRetry: jest.fn() };
+    const exceptionSpy = jest
+      .spyOn(ServiceFactory, 'getExceptionService')
+      .mockReturnValue(exceptionService);
     const master = {
       findAnniStorici: jest.fn().mockReturnValue([
         { idSpreadsheet: 'STORICO_APPENA_CREATO', annoScolasticoRaw: '2025-2026' }
@@ -480,10 +492,11 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        null,
+        exceptionService,
         { verifyTables: [TABLE.CLASSI, TABLE.LOG_DOCS] }
       );
     } finally {
+      exceptionSpy.mockRestore();
       cacheSpy.mockRestore();
       utilsSpy.mockRestore();
       (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;

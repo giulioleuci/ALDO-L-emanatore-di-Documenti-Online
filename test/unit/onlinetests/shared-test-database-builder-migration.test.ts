@@ -360,3 +360,28 @@ test('composes Task 4 history with the legacy promoted/repeater roster and dual 
     ])
   );
 });
+
+test('seedConfMail seeds the ELENCO_MATERIE pattern (Feature 1)', () => {
+  const { spreadsheets, sheets } = recordingFactory();
+  const master = new RecordingSpreadsheet('bound-master');
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), recordingArtifacts()).build(
+    TEMPLATE_IDS,
+    master
+  );
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const rows = sample.rows[TABLE.CONF_MAIL];
+  const elenco = rows.find((r) => r['ID'] === 'ELENCO_MATERIE');
+  expect(elenco).toBeDefined();
+  expect(elenco!['PROCESSO']).toBe('PER_DOCENTE');
+  expect(elenco!['SUPPLENTI']).toBe('SOLO_TITOLARI');
+  expect(elenco!['GESTIONE_ARTICOLAZIONE']).toBe('COMPLETA');
+  expect(elenco!['DUPLICAZIONE']).toBe('PERMESSA');
+  expect(elenco!['NOREPLY']).toBe(true);
+  expect(elenco!['TESTO_START']).toBe('');
+  expect(elenco!['TESTO_END']).toBe('');
+  expect(JSON.parse(String(elenco!['BOX_CFG']))).toEqual([
+    { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+  ]);
+  expect(String(elenco!['OGGETTO'])).toContain('{{destinatario.anagrafica.cognome}}');
+});

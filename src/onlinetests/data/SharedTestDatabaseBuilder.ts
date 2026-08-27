@@ -42,6 +42,7 @@ import {
   SUPPLENZA_FINE,
   SUPPLENZA_INIZIO,
   CONF_DOC_JOBRUNNER,
+  CONF_MAIL_ELENCO_MATERIE,
   e2eAlunnoEmail,
   e2eDocenteEmail,
   type FixtureClasseLayout
@@ -1492,6 +1493,29 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
         [COL_CONF_MAIL.ALLEGATI_STATICI]: JSON.stringify([templateIds.staticAttachment])
+      },
+      {
+        [COL_CONF_MAIL.ID]: CONF_MAIL_ELENCO_MATERIE,
+        // Root-level `destinatario` (BuildCDUStep.buildDestinatario), NOT
+        // focus.destinatario — the design doc's path was wrong.
+        [COL_CONF_MAIL.OGGETTO]:
+          "[E2E] Ipotesi assegnazione cattedre per l'anno scolastico appena iniziato " +
+          '(prof/prof.ssa {{destinatario.anagrafica.nome}} {{destinatario.anagrafica.cognome}})',
+        [COL_CONF_MAIL.PROCESSO]: 'PER_DOCENTE',
+        [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+          { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+        ]),
+        [COL_CONF_MAIL.TESTO_START]: '',
+        [COL_CONF_MAIL.TESTO_END]: '',
+        [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
+        [COL_CONF_MAIL.NOREPLY]: true,
+        [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+        [COL_CONF_MAIL.CONDIZIONE]: '',
+        [COL_CONF_MAIL.POST_PROCESSO]: null,
+        [COL_CONF_MAIL.DUPLICAZIONE]: 'PERMESSA',
+        [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+        [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]',
+        [COL_CONF_MAIL.RISPONDI_A]: ''
       }
     ]);
   }

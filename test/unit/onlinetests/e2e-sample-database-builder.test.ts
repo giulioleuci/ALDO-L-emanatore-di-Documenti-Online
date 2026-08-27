@@ -462,7 +462,7 @@ test('seeds the legacy and dedicated CONF_MAIL rows with safe attachment metadat
   );
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confMail = sample.rows[TABLE.CONF_MAIL]!;
-  expect(confMail).toHaveLength(8);
+  expect(confMail).toHaveLength(9);
   expect(confMail.map((c) => c[COL_CONF_MAIL.PROCESSO]).sort()).toEqual(
     [
       'PER_CARENZA_GENITORI',
@@ -472,7 +472,8 @@ test('seeds the legacy and dedicated CONF_MAIL rows with safe attachment metadat
       'PER_CDC',
       'PER_COORDINATORE',
       'PER_COORDINATORE',
-      'PER_COORDINATORE'
+      'PER_COORDINATORE',
+      'PER_DOCENTE'
     ].sort()
   );
   expectCompleteRows(confMail, COL_CONF_MAIL);

@@ -3,5 +3,9 @@
   "compilerOptions": {
     "isolatedModules": false
   },
-  "include": ["../../types/gaslibs/index.d.ts", "function-specification.contract.ts"]
+  "include": [
+    "../../types/gaslibs/index.d.ts",
+    "function-specification.contract.ts",
+    "specification-contract.contract.ts"
+  ]
 }

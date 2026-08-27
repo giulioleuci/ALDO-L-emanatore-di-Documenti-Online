@@ -37,6 +37,7 @@ import {
   INDIRIZZO_CLASSICO,
   INDIRIZZO_SCIENTIFICO,
   INDIRIZZO_SCIENTIFICO_APPLICATE,
+  MATERIE_ANNI_PER_INDIRIZZO,
   MATERIE_PER_INDIRIZZO,
   MATERIE_PUNTATE,
   SUPPLENZA_FINE,
@@ -97,6 +98,16 @@ const ESAME_CFG_E2E: Record<string, string> = {
   MAT: JSON.stringify({ secondaProva: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] })
 };
 
+/** Feature 4: `{ [INDIRIZZI.ID]: '1,2,3' }` cells for one MATERIE row. */
+function curriculumCells(materiaId: string): Record<string, string> {
+  const cells: Record<string, string> = {};
+  for (const indirizzo of INDIRIZZI) {
+    const anni = MATERIE_ANNI_PER_INDIRIZZO[indirizzo]?.[materiaId] ?? [];
+    cells[indirizzo] = anni.join(',');
+  }
+  return cells;
+}
+
 /**
  * The full MATERIE row set (base subjects + dotted-specifica rows), as pure
  * data — shared by `seedMaterie` (build-time, via `sample.appendRows`) and any
@@ -132,7 +143,8 @@ export function buildMaterieRows(): Row[] {
     [COL_MATERIE.ESAME_CFG]: ESAME_CFG_E2E[sigla] ?? '',
     [COL_MATERIE.EVOLUZIONE]:
       sigla === 'STO' ? JSON.stringify({ GST: [1, 2], STO: [3, 4, 5] }) : '',
-    [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT'
+    [COL_MATERIE.IS_RELIGIONE_ALT]: sigla === 'IRC' || sigla === 'ALT',
+    ...curriculumCells(sigla)
   }));
   const specifiche: Record<
     string,
@@ -176,7 +188,8 @@ export function buildMaterieRows(): Row[] {
       [COL_MATERIE.EVOLUZIONE]: '',
       [COL_MATERIE.IS_RELIGIONE_ALT]: false,
       [COL_MATERIE.PRINCIPALE]: spec.principale,
-      [COL_MATERIE.SPECIFICITA]: spec.specificita
+      [COL_MATERIE.SPECIFICITA]: spec.specificita,
+      ...curriculumCells(id)
     });
   });
   return rows;

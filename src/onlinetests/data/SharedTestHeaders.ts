@@ -21,7 +21,7 @@ import {
   COL_LOG_FOLD,
   COL_LOG_MAIL
 } from '../../config/schema';
-import { MATERIE_PER_INDIRIZZO, MATERIE_PUNTATE } from './fixtures';
+import { INDIRIZZI, MATERIE_PER_INDIRIZZO, MATERIE_PUNTATE } from './fixtures';
 
 export const MATERIE_E2E = ['MAT', 'ITA', 'ING', 'STO'];
 export const ASSIGNMENT_MATERIE_E2E = Array.from(
@@ -39,7 +39,7 @@ export const HEADERS: Record<string, string[]> = {
   [TABLE.ALUNNI]: Object.values(COL_ALUNNI),
   [TABLE.DOCENTI]: Object.values(COL_DOCENTI),
   [TABLE.CLASSI]: [...Object.values(COL_CLASSI), ...ASSIGNMENT_COLUMNS_E2E],
-  [TABLE.MATERIE]: Object.values(COL_MATERIE),
+  [TABLE.MATERIE]: [...Object.values(COL_MATERIE), ...INDIRIZZI],
   [TABLE.INDIRIZZI]: Object.values(COL_INDIRIZZI),
   [TABLE.DIPART]: Object.values(COL_DIPART),
   [TABLE.RUOLI]: Object.values(COL_RUOLI),

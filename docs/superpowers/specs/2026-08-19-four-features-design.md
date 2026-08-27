@@ -269,6 +269,11 @@ For existing databases:
 2. Leave all values empty (user fills manually or via import).
 3. The system does not enforce that every MATERIE row has a value for every address column — empty means "not applicable for that address."
 
+**Applied 2026-08-20:** columns are appended to the MATERIE sheet by hand (one
+per INDIRIZZI.ID, header = the address id) and left empty. Empty = the subject
+is not part of that address's curriculum. `SheetDbAdapter` resolves them at
+runtime; no schema.ts change is needed.
+
 ### Files to Modify
 
 | File | Change |

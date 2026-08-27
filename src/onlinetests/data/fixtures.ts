@@ -124,6 +124,20 @@ export const MATERIE_PER_INDIRIZZO = {
   [INDIRIZZO_SCIENTIFICO_APPLICATE]: [...MATERIE_BASE, 'PSICOLOGIA', 'SCIUMANE', 'DIRECON']
 } as const;
 
+/**
+ * Feature 4: MATERIE.<INDIRIZZO_ID> — the years of course (1-5) in which a
+ * subject is mandatory for that address. Absent entry = empty cell = "not
+ * applicable for this address". Derived from MATERIE_PER_INDIRIZZO so the
+ * fixture cannot drift from the class layouts.
+ */
+export const MATERIE_ANNI_PER_INDIRIZZO: Record<string, Record<string, number[]>> =
+  Object.fromEntries(
+    Object.entries(MATERIE_PER_INDIRIZZO).map(([indirizzo, materie]) => [
+      indirizzo,
+      Object.fromEntries(materie.map((sigla) => [sigla, [1, 2, 3, 4, 5]]))
+    ])
+  );
+
 export const STUDENT_TOTALE = 220;
 
 export const ANNI_PRECEDENTI = ['2025-2026', '2024-2025'] as const;

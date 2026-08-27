@@ -25,6 +25,8 @@ import {
   ANNI_PRECEDENTI,
   CLASS_ADDRESS_BY_CLASS,
   CLASS_LAYOUTS,
+  INDIRIZZI,
+  MATERIE_ANNI_PER_INDIRIZZO,
   MATERIE_PER_INDIRIZZO,
   STUDENT_TOTALE,
   CONF_DOC_JOBRUNNER,
@@ -384,4 +386,33 @@ test('seedConfMail seeds the ELENCO_MATERIE pattern (Feature 1)', () => {
     { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
   ]);
   expect(String(elenco!['OGGETTO'])).toContain('{{destinatario.anagrafica.cognome}}');
+});
+
+test('MATERIE headers carry one curriculum column per indirizzo (Feature 4)', () => {
+  const { spreadsheets, sheets } = recordingFactory();
+  const master = new RecordingSpreadsheet('bound-master');
+  new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), recordingArtifacts()).build(
+    TEMPLATE_IDS,
+    master
+  );
+
+  const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  for (const indirizzo of INDIRIZZI) {
+    expect(sample.headers[TABLE.MATERIE]).toContain(indirizzo);
+  }
+});
+
+test('buildMaterieRows fills the per-indirizzo curriculum columns', () => {
+  const rows = buildMaterieRows();
+  for (const row of rows) {
+    for (const indirizzo of INDIRIZZI) {
+      expect(row).toHaveProperty(indirizzo);
+      const value = String(row[indirizzo] ?? '');
+      if (value !== '') expect(value).toMatch(/^[1-5](,[1-5])*$/);
+    }
+  }
+  const mat = rows.find((r) => r['ID'] === 'MAT');
+  const indirizzo = INDIRIZZI[0];
+  const atteso = (indirizzo && MATERIE_ANNI_PER_INDIRIZZO[indirizzo]?.['MAT']) ?? [];
+  expect(String((mat && indirizzo && mat[indirizzo]) ?? '')).toBe(atteso.join(','));
 });

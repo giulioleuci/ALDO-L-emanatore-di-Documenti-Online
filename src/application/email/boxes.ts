@@ -829,7 +829,12 @@ export function renderBoxes(
     if (inner === '' && cfg['MOSTRA_SE_VUOTO'] === true) {
       inner = templates.processStringEscaped(str(cfg['TESTO_VUOTO']), cdu); // fallback (11 §5)
     }
-    const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
+    // TITOLO is a Mustache template over the CDU (11 §5) — e.g. the
+    // cattedre box titles itself with the class name. `wrapBox` escapes
+    // the result, so interpolate UNescaped here to avoid double-escaping.
+    const titoloCfg = str(cfg['TITOLO']);
+    const titolo =
+      titoloCfg !== '' ? templates.processString(titoloCfg, cdu) : DEFAULT_TITLES[tipo]!;
     const coloreBordo = str(cfg['COLORE']) !== '' ? str(cfg['COLORE']) : DEFAULT_BORDER;
     const html = inner === '' ? '' : titolo === '' ? inner : wrapBox(titolo, coloreBordo, inner);
     const renderedBox = { id: instanceId, titolo, html, isEmpty, visibile: html !== '' };

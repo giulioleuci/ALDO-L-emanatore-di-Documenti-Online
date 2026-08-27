@@ -13,6 +13,7 @@ import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
+import { COL_CONF_MAIL } from '../../../src/config/schema';
 
 const logger = new LoggerService();
 
@@ -1195,4 +1196,23 @@ test('a cartelle box with a document-only filter is skipped without suppressing 
 test('cartelle box without DATI_SORGENTE falls back to CDU-embedded items and reports empty folderIds', () => {
   const out = render([{ TIPO_BOX: 'cartelle' }]);
   expect(out.folderIds).toEqual([]);
+});
+
+test('BOX_CFG.TITOLO is interpolated against the CDU (11 §5)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const conf = new ConfigurazioneEmail({
+    [COL_CONF_MAIL.ID]: 'T1',
+    [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
+    [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+      { TIPO_BOX: 'note', TITOLO: 'Note per {{focus.classe.anagrafica.nome}}' }
+    ])
+  });
+  const cdu = cduRecord();
+  (cdu['focus'] as Record<string, unknown>)['carenza'] = { note: 'Testo libero' };
+
+  const { boxes } = renderBoxes(composer, conf, cdu, materie(), templates);
+
+  expect(boxes['note']!.titolo).toBe('Note per 5A');
+  expect(boxes['note']!.html).toContain('Note per 5A');
 });

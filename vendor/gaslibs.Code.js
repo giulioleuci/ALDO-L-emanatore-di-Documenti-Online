@@ -13024,6 +13024,7 @@ class CircuitBreaker {
     this._monitoringPeriod = config.monitoringPeriod || 120000; 
     this._logger = logger;
     this._cache = cache; 
+    this._memoryStates = new Map();
 
 
     if (this._failureThreshold < 1) {
@@ -13060,9 +13061,8 @@ class CircuitBreaker {
 
 
   _loadState(operationName) {
-
     if (!this._cache) {
-      return {
+      return this._memoryStates.get(operationName) || {
         state: CircuitBreaker.STATE.CLOSED,
         failures: [],
         consecutiveSuccesses: 0,
@@ -13099,8 +13099,8 @@ class CircuitBreaker {
 
 
   _saveState(operationName, state) {
-
     if (!this._cache) {
+      this._memoryStates.set(operationName, state);
       return;
     }
     try {

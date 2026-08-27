@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship four independent SGSA features: a `materie_classe` email box that tells each teacher which subjects they teach in a class, a menu-launched database validator that writes a violation report sheet, a menu-launched bulk downgrade of write permissions on all logged documents, and per-address curriculum columns on MATERIE.
+**Goal:** Ship four independent SGSA features: a `cattedre` email pattern (box already implemented; only the CONF_MAIL seed remains), a menu-launched database validator that writes a violation report sheet, a menu-launched bulk downgrade of write permissions on all logged documents, and per-address curriculum columns on MATERIE.
 
-**Architecture:** Two of the four features are grown in `GasLibraryFactory` first (a generic `DatasetValidator` in `GasSchemaValidatorLib`, a permission-id-level role change in `GoogleApiWrapper.PermissionService`), then consumed from ALDO through ALDO-owned facades and application services wired in `Bootstrap.ts`. The email box is a new `TIPO_BOX` registered on the existing `ComposableContentLib` composer. The MATERIE change is pure data/schema: dynamic columns resolved at runtime, consumed only by the new validator.
+**Architecture:** Two of the four features are grown in `GasLibraryFactory` first (a generic `DatasetValidator` in `GasSchemaValidatorLib`, a permission-id-level role change in `GoogleApiWrapper.PermissionService`), then consumed from ALDO through ALDO-owned facades and application services wired in `Bootstrap.ts`. The email box (`cattedre`) is already implemented; only the CONF_MAIL seed record remains. The MATERIE change is pure data/schema: dynamic columns resolved at runtime, consumed only by the new validator.
 
 **Tech Stack:** TypeScript (ALDO `src/`), JavaScript ESM (GasLibraryFactory), Jest (`jest.config.cjs` unit, `jest.build.config.cjs` build, GasLibraryFactory's own `jest.config.cjs`), webpack + Babel (Chrome 80) → GAS V8, `clasp`.
 
@@ -26,7 +26,7 @@
 
 ## Decisions that deviate from the spec (already agreed)
 
-1. **`{{focus.destinatario...}}` is wrong.** `BuildCDUStep` assigns `built.destinatario` at the CDU **root** (`emailSteps.ts:139`, `Cdu.ts:440`). The `OGGETTO` must use `{{destinatario.anagrafica.nome}}` / `{{destinatario.anagrafica.cognome}}`.
+1. **`{{focus.destinatario...}}` is wrong.** `BuildCDUStep` assigns `built.destinatario` at the CDU **root** (`emailSteps.ts:197`, `Cdu.ts:464`). The `OGGETTO` must use `{{destinatario.anagrafica.nome}}` / `{{destinatario.anagrafica.cognome}}`.
 2. **Box data comes from the CDU, not from raw CLASSI columns.** `DOCENTE_COMPLETO` already runs the `consiglio` + `materie` providers (`Recipe.ts:163`), so `focus.classe.consiglioDiClasse[].materie[]` holds resolved `SubjectVM`s (with `nome` and `isITP`) for the target teacher. Re-parsing CLASSI dynamic columns inside a box renderer would duplicate `AldoTeachingAssignmentResolver` and ignore `CONF_MAIL.SUPPLENTI`.
 3. **Feature 2 validation engine lives in `GasSchemaValidatorLib`** as a generic `DatasetValidator` (user decision). ALDO supplies only the SGSA rule table and the Italian message formatting.
 4. **Feature 3 uses a new `PermissionService.changeRolesByPermissionId`** (user decision), so link-wide (`type: 'anyone'`/`'domain'`) writer grants — which have no `emailAddress` and are therefore invisible to the existing `changeRoles(fileIds, [{email, newRole}])` — get downgraded too.
@@ -42,7 +42,7 @@
 - `GoogleApiWrapper/src/services/__tests__/PermissionService.test.js` — modify.
 
 **ALDO:**
-- `src/application/email/boxes.ts` — modify: `materie_classe` block, renderer, `DEFAULT_TITLES` entry, `aggregaDati` extraction, templated `TITOLO`.
+- `src/application/email/boxes.ts` — modify: templated `TITOLO` (line 832). The `cattedre` box already exists; no new box type needed.
 - `src/config/validationRules.ts` — new. The SGSA rule table (FK map, JSON columns, required columns, ENUM sets, dynamic-column and predicate rules) + Italian message formatter.
 - `src/application/services/DatabaseValidationService.ts` — new. Reads every table, runs `DatasetValidator`, formats rows, writes the report sheet.
 - `src/application/services/LockDocumentsService.ts` — new. LOG_DOCS → permission downgrade, with per-file failure isolation.
@@ -57,19 +57,36 @@
 
 ---
 
-# Phase 1 — Feature 1: `materie_classe` email box
+# Phase 1 — Feature 1: `cattedre` email pattern
+
+> **The `cattedre` TIPO_BOX already exists** (`boxes.ts:314-328` renderer,
+> `409-414` block registration, `446` HtmlRenderer, `464` DEFAULT_TITLES).
+> Data comes from `destinatario.contesto.cattedre` (built by
+> `BuildCDUStep.buildCattedre` at `emailSteps.ts:288-343`). Each
+> `CattedraVM` has `classeNome`, `anno`, `sezione`, and `materie: SubjectVM[]`
+> (with `nome` and `isITP`). The original `materie_classe` proposal is
+> **superseded** — the `cattedre` box already covers the use case and more.
+>
+> **TITOLO interpolation** (`boxes.ts:832`) is NOT yet implemented:
+> `cfg['TITOLO']` is used as a literal string. This must be fixed so the
+> `ELENCO_MATERIE` pattern can use `{{focus.classe.anagrafica.nome}}` as
+> the box title.
 
 ### Task 1: Templated box `TITOLO`
 
-The spec wants the box title to be the class name ("3C"). `renderBoxes` currently uses `BOX_CFG.TITOLO` as a literal (`boxes.ts:648`), so `{{focus.classe.anagrafica.nome}}` would be shown verbatim. Interpolate it against the CDU. Use `processString` (not `processStringEscaped`): `wrapBox` already HTML-escapes the title, so escaping twice would turn `&` into `&amp;amp;`.
+The spec wants the box title to be the class name ("3C"). `renderBoxes` currently
+uses `BOX_CFG.TITOLO` as a literal (`boxes.ts:832`), so
+`{{focus.classe.anagrafica.nome}}` would be shown verbatim. Interpolate it against
+the CDU. Use `processString` (not `processStringEscaped`): `wrapBox` already
+HTML-escapes the title, so escaping twice would turn `&` into `&amp;amp;`.
 
 **Files:**
-- Modify: `src/application/email/boxes.ts:645-650`
+- Modify: `src/application/email/boxes.ts` (line 832)
 - Test: `test/unit/application/email-boxes.test.ts`
 
 **Interfaces:**
 - Consumes: nothing from earlier tasks.
-- Produces: `BOX_CFG.TITOLO` is a Mustache template rendered against the CDU. Task 3's CONF_MAIL row depends on this.
+- Produces: `BOX_CFG.TITOLO` is a Mustache template rendered against the CDU. Task 2's CONF_MAIL row depends on this.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -109,7 +126,7 @@ Expected: FAIL — received `"Note per {{focus.classe.anagrafica.nome}}"`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `boxes.ts`, inside the `for (const [i, cfg] of orderedCfg)` loop, replace:
+In `boxes.ts`, inside the `for (const { cfg, index, tipo, sourceItems } of orderedCfg)` loop (line 812), replace line 832:
 
 ```typescript
     const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
@@ -119,7 +136,7 @@ with:
 
 ```typescript
     // TITOLO is a Mustache template over the CDU (11 §5) — e.g. the
-    // materie_classe box titles itself with the class name. `wrapBox` escapes
+    // cattedre box titles itself with the class name. `wrapBox` escapes
     // the result, so interpolate UNescaped here to avoid double-escaping.
     const titoloCfg = str(cfg['TITOLO']);
     const titolo =
@@ -140,211 +157,16 @@ git commit -m "feat(email): interpolate BOX_CFG.TITOLO against the CDU"
 
 ---
 
-### Task 2: `materie_classe` TIPO_BOX
+### Task 2: `ELENCO_MATERIE` CONF_MAIL seed
 
-Extract the target teacher's non-ITP subjects for the focus class from `focus.classe.consiglioDiClasse`, matching on `destinatario.anagrafica.email`, and render them as a `<ul>` of full names. `emptyBehavior: 'HIDE'` (the `simple()` helper already hardcodes HIDE).
-
-**Files:**
-- Modify: `src/application/email/boxes.ts`
-- Test: `test/unit/application/email-boxes.test.ts`
-
-**Interfaces:**
-- Consumes: Task 1's templated `TITOLO`.
-- Produces:
-  - `boxdata.materieAssegnate: string[]` on the composition context.
-  - Exported `export function materieAssegnatePerDestinatario(cdu: Record<string, unknown>): string[]`.
-  - TIPO_BOX id `materie_classe`, registered in `createBoxComposer()` and in `DEFAULT_TITLES` (value `''`).
-
-- [ ] **Step 1: Write the failing test**
-
-Append to `test/unit/application/email-boxes.test.ts`:
-
-```typescript
-function cduDocenteConMaterie(): Record<string, unknown> {
-  return {
-    meta: { date: { oggi: { breve: '05/07/2026' } } },
-    destinatario: { anagrafica: { nome: 'Mario', cognome: 'Rossi', email: 'rossi@school.it' } },
-    focus: {
-      classe: {
-        anagrafica: { nome: '3C' },
-        consiglioDiClasse: [
-          {
-            anagrafica: { email: 'rossi@school.it' },
-            materie: [
-              { sigla: 'MAT', nome: 'Matematica', isITP: false },
-              { sigla: 'FIS', nome: 'Fisica', isITP: false },
-              { sigla: 'MAT', nome: 'Matematica', isITP: false }
-            ]
-          },
-          {
-            anagrafica: { email: 'bianchi@school.it' },
-            materie: [{ sigla: 'ITA', nome: 'Italiano', isITP: false }]
-          }
-        ]
-      }
-    }
-  };
-}
-
-function renderMaterieClasse(cdu: Record<string, unknown>): string {
-  const templates = new FakeTemplateEngine();
-  const composer = createBoxComposer(logger, templates);
-  const conf = new ConfigurazioneEmail({
-    [COL_CONF_MAIL.ID]: 'ELENCO_MATERIE',
-    [COL_CONF_MAIL.PROCESSO]: 'PER_DOCENTE',
-    [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-      { TIPO_BOX: 'materie_classe', TITOLO: '{{focus.classe.anagrafica.nome}}' }
-    ])
-  });
-  return renderBoxes(composer, conf, cdu, materie(), templates).ordered.join('');
-}
-
-test('materie_classe lists the recipient subjects in the focus class, deduped', () => {
-  const html = renderMaterieClasse(cduDocenteConMaterie());
-  expect(html).toContain('<li>Matematica</li>');
-  expect(html).toContain('<li>Fisica</li>');
-  expect(html).not.toContain('Italiano');
-  expect(html.match(/<li>Matematica<\/li>/g)).toHaveLength(1);
-  expect(html).toContain('3C');
-});
-
-test('materie_classe excludes ITP slots (spec: .itp columns are not counted)', () => {
-  const cdu = cduDocenteConMaterie();
-  const cdc = (
-    (cdu['focus'] as Record<string, unknown>)['classe'] as Record<string, unknown>
-  )['consiglioDiClasse'] as Array<{ materie: Array<Record<string, unknown>> }>;
-  cdc[0]!.materie = [{ sigla: 'INF', nome: 'Informatica', isITP: true }];
-  expect(renderMaterieClasse(cdu)).toBe('');
-});
-
-test('materie_classe hides itself when the recipient teaches nothing in the class', () => {
-  const cdu = cduDocenteConMaterie();
-  (cdu['destinatario'] as { anagrafica: { email: string } }).anagrafica.email = 'nessuno@school.it';
-  expect(renderMaterieClasse(cdu)).toBe('');
-});
-
-test('materie_classe escapes subject names', () => {
-  const cdu = cduDocenteConMaterie();
-  const cdc = (
-    (cdu['focus'] as Record<string, unknown>)['classe'] as Record<string, unknown>
-  )['consiglioDiClasse'] as Array<{ materie: Array<Record<string, unknown>> }>;
-  cdc[0]!.materie = [{ sigla: 'X', nome: 'Storia & Geografia <b>', isITP: false }];
-  expect(renderMaterieClasse(cdu)).toContain('<li>Storia &amp; Geografia &lt;b&gt;</li>');
-});
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `npx jest --config jest.config.cjs test/unit/application/email-boxes.test.ts -t "materie_classe"`
-Expected: FAIL — all four render `''` (unknown TIPO_BOX is filtered out by `known`).
-
-- [ ] **Step 3: Write minimal implementation**
-
-In `boxes.ts`, add the extraction helper next to `mapCarenzeFormatoB`:
-
-```typescript
-/** One CDC member as seen from the serialized CDU (subset of DocenteCdcVM used here). */
-interface CdcMemberLike {
-  anagrafica?: { email?: string | null };
-  materie?: Array<{ nome?: string; isITP?: boolean }>;
-}
-
-/**
- * `boxdata.materieAssegnate` (Feature 1): the full names of the subjects the
- * email's recipient teaches in the focus class. Read from
- * `focus.classe.consiglioDiClasse` — already resolved by the `consiglio`
- * provider under the pattern's CONF_MAIL.SUPPLENTI policy — never by
- * re-parsing CLASSI dynamic columns. ITP slots are excluded (the spec counts
- * only the non-`.itp` columns), duplicates collapsed, order preserved.
- */
-export function materieAssegnatePerDestinatario(cdu: Record<string, unknown>): string[] {
-  const destinatario = cdu['destinatario'] as { anagrafica?: { email?: string | null } } | undefined;
-  const email = (destinatario?.anagrafica?.email ?? '').trim().toLowerCase();
-  if (email === '') return [];
-  const focus = cdu['focus'] as { classe?: { consiglioDiClasse?: CdcMemberLike[] } } | undefined;
-  const consiglio = focus?.classe?.consiglioDiClasse ?? [];
-  const nomi: string[] = [];
-  for (const membro of consiglio) {
-    if ((membro.anagrafica?.email ?? '').trim().toLowerCase() !== email) continue;
-    for (const materia of membro.materie ?? []) {
-      const nome = str(materia.nome);
-      if (materia.isITP === true || nome === '' || nomi.includes(nome)) continue;
-      nomi.push(nome);
-    }
-  }
-  return nomi;
-}
-```
-
-Note: `str` is declared later in the file with a `function` declaration, so it is hoisted — no reordering needed.
-
-Add the renderer next to `renderNoteBox`:
-
-```typescript
-function renderMaterieClasseBox(data: unknown): string {
-  const nomi = data as string[];
-  return wrapUl(nomi.map((nome) => `<li>${escapeHtml(nome)}</li>`).join(''));
-}
-```
-
-Register the block in `createBoxComposer()`, after the `assenze` block:
-
-```typescript
-  simple(
-    'materie_classe',
-    'Materie assegnate',
-    (ctx) => ctx.get('boxdata.materieAssegnate', []),
-    (d) => (d as unknown[]).length === 0
-  );
-```
-
-Add the renderer to the `HtmlRenderer` templates map, after `assenze`:
-
-```typescript
-        materie_classe: (data) => renderMaterieClasseBox(data),
-```
-
-Add to `DEFAULT_TITLES` (empty: the CONF_MAIL row supplies the class name via `TITOLO`):
-
-```typescript
-  materie_classe: '',
-```
-
-And in `aggregaDati`'s returned object, add:
-
-```typescript
-    materieAssegnate: materieAssegnatePerDestinatario(cdu),
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `npx jest --config jest.config.cjs test/unit/application/email-boxes.test.ts`
-Expected: PASS (all tests in file).
-
-- [ ] **Step 5: Typecheck + lint**
-
-Run: `npm run typecheck && npm run lint`
-Expected: both exit 0.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/application/email/boxes.ts test/unit/application/email-boxes.test.ts
-git commit -m "feat(email): add materie_classe TIPO_BOX"
-```
-
----
-
-### Task 3: `ELENCO_MATERIE` CONF_MAIL seed
-
-Seed the pattern in the online-test database so the E2E suite can exercise it end to end.
+Seed the pattern in the online-test database so the E2E suite can exercise it end to end. Uses the **existing** `cattedre` TIPO_BOX (not a new `materie_classe` type).
 
 **Files:**
-- Modify: `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (`seedConfMail`, ~line 1235), `src/onlinetests/data/fixtures.ts` (id constant)
+- Modify: `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (`seedConfMail` at line 1319), `src/onlinetests/data/fixtures.ts` (id constant)
 - Test: `test/unit/onlinetests/shared-test-database-builder-migration.test.ts`
 
 **Interfaces:**
-- Consumes: `materie_classe` (Task 2), templated `TITOLO` (Task 1).
+- Consumes: existing `cattedre` TIPO_BOX, templated `TITOLO` (Task 1).
 - Produces: exported `CONF_MAIL_ELENCO_MATERIE = 'ELENCO_MATERIE'` in `src/onlinetests/data/fixtures.ts`.
 
 - [ ] **Step 1: Write the failing test**
@@ -363,7 +185,7 @@ test('seedConfMail seeds the ELENCO_MATERIE pattern (Feature 1)', () => {
   expect(elenco!['NOREPLY']).toBe(true);
   expect(elenco!['TESTO']).toBe('');
   expect(JSON.parse(String(elenco!['BOX_CFG']))).toEqual([
-    { TIPO_BOX: 'materie_classe', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+    { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
   ]);
   expect(String(elenco!['OGGETTO'])).toContain('{{destinatario.anagrafica.cognome}}');
 });
@@ -382,7 +204,7 @@ In `src/onlinetests/data/fixtures.ts`, next to the other CONF_MAIL id constants:
 export const CONF_MAIL_ELENCO_MATERIE = 'ELENCO_MATERIE';
 ```
 
-Import it in `SharedTestDatabaseBuilder.ts` alongside the other CONF_MAIL constants, then append inside `seedConfMail`:
+Import it in `SharedTestDatabaseBuilder.ts` alongside the other CONF_MAIL constants, then append inside `seedConfMail` (line 1319):
 
 ```typescript
     sample.appendRow(TABLE.CONF_MAIL, {
@@ -394,7 +216,7 @@ Import it in `SharedTestDatabaseBuilder.ts` alongside the other CONF_MAIL consta
         '(prof/prof.ssa {{destinatario.anagrafica.nome}} {{destinatario.anagrafica.cognome}})',
       [COL_CONF_MAIL.PROCESSO]: 'PER_DOCENTE',
       [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        { TIPO_BOX: 'materie_classe', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+        { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
       ]),
       [COL_CONF_MAIL.TESTO]: '',
       [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
@@ -417,19 +239,19 @@ Expected: PASS / exit 0.
 
 ```bash
 git add src/onlinetests/data/fixtures.ts src/onlinetests/data/SharedTestDatabaseBuilder.ts test/unit/onlinetests/shared-test-database-builder-migration.test.ts
-git commit -m "test(onlinetests): seed ELENCO_MATERIE CONF_MAIL pattern"
+git commit -m "test(onlinetests): seed ELENCO_MATERIE CONF_MAIL pattern (cattedre box)"
 ```
 
 ---
 
 # Phase 2 — Feature 4: per-address MATERIE columns
 
-### Task 4: `MATERIE.<INDIRIZZO_ID>` curriculum columns
+### Task 3: `MATERIE.<INDIRIZZO_ID>` curriculum columns
 
-One column per `INDIRIZZI.ID` on MATERIE, holding a CSV of course years (1–5) in which the subject is mandatory for that address. Empty means "not applicable". No production code reads these yet — Task 8's curriculum rule is the first consumer.
+One column per `INDIRIZZI.ID` on MATERIE, holding a CSV of course years (1–5) in which the subject is mandatory for that address. Empty means "not applicable". No production code reads these yet — Task 6's curriculum rule is the first consumer.
 
 **Files:**
-- Modify: `src/onlinetests/data/fixtures.ts`, `src/onlinetests/data/SharedTestHeaders.ts`, `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (`buildMaterieRows`, line 104)
+- Modify: `src/onlinetests/data/fixtures.ts`, `src/onlinetests/data/SharedTestHeaders.ts`, `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (`buildMaterieRows` at line 106)
 - Test: `test/unit/onlinetests/shared-test-database-builder-migration.test.ts`
 
 **Interfaces:**
@@ -553,7 +375,7 @@ git commit -m "feat(schema): add per-indirizzo curriculum columns to MATERIE"
 
 # Phase 3 — Feature 2: database validation
 
-### Task 5: `DatasetValidator` in GasSchemaValidatorLib
+### Task 4: `DatasetValidator` in GasSchemaValidatorLib
 
 A generic, ALDO-agnostic engine: given `datasets` (`{ TABLE: rows[] }`) and `rules`, return violations. It owns iteration, target-value indexing, CSV splitting, wildcard/empty handling and the violation shape. Callers own vocabulary and messages.
 
@@ -938,7 +760,7 @@ cd ..
 
 ---
 
-### Task 6: Vendor the new library build into ALDO
+### Task 5: Vendor the new library build into ALDO
 
 **Files:**
 - Modify (generated): `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION`
@@ -946,7 +768,7 @@ cd ..
 - Test: `test/unit/harness/gaslibs.test.ts`
 
 **Interfaces:**
-- Consumes: Task 5's `DatasetValidator`.
+- Consumes: Task 4's `DatasetValidator`.
 - Produces: ambient `DatasetValidator` class declaration usable from ALDO TypeScript:
 
 ```typescript
@@ -1062,7 +884,7 @@ git commit -m "chore(vendor): refresh gaslibs bundle with DatasetValidator"
 
 ---
 
-### Task 7: The SGSA validation rule table
+### Task 6: The SGSA validation rule table
 
 All rules from the spec, as data, plus the Italian message formatter. Pure module: no I/O, no GAS, trivially testable.
 
@@ -1071,7 +893,7 @@ All rules from the spec, as data, plus the Italian message formatter. Pure modul
 - Test: `test/unit/config/validation-rules.test.ts`
 
 **Interfaces:**
-- Consumes: Task 6's ambient `DatasetValidationRule` / `DatasetViolation` types; `src/config/schema.ts` constants; `src/domain/value-objects/enums.ts`.
+- Consumes: Task 5's ambient `DatasetValidationRule` / `DatasetViolation` types; `src/config/schema.ts` constants; `src/domain/value-objects/enums.ts`.
 - Produces:
 
 ```typescript
@@ -1468,7 +1290,7 @@ git commit -m "feat(validation): declare the SGSA database validation rule table
 
 ---
 
-### Task 8: `DatabaseValidationService` + report facade
+### Task 7: `DatabaseValidationService` + report facade
 
 **Files:**
 - Create: `src/infrastructure/facades/SpreadsheetReportFacade.ts`
@@ -1477,7 +1299,7 @@ git commit -m "feat(validation): declare the SGSA database validation rule table
 - Test: `test/unit/application/database-validation-service.test.ts`
 
 **Interfaces:**
-- Consumes: Task 6's `DatasetValidator`; Task 7's `regoleValidazione` / `messaggioErrore` / `VALIDATION_TABLES`; `IDatabase` (`src/infrastructure/db/Database.ts`); `IMasterSheetRepository`.
+- Consumes: Task 5's `DatasetValidator`; Task 6's `regoleValidazione` / `messaggioErrore` / `VALIDATION_TABLES`; `IDatabase` (`src/infrastructure/db/Database.ts`); `IMasterSheetRepository`.
 - Produces:
 
 ```typescript
@@ -1773,7 +1595,7 @@ git commit -m "feat(validation): add DatabaseValidationService and report facade
 
 ---
 
-### Task 9: Menu entry + wiring for validation
+### Task 8: Menu entry + wiring for validation
 
 Adds the confirmation-based wrapper scheme (`avvioConConferma`) that Feature 3 reuses in Task 13.
 
@@ -1782,7 +1604,7 @@ Adds the confirmation-based wrapper scheme (`avvioConConferma`) that Feature 3 r
 - Test: `test/unit/presentation/menu.test.ts`, `test/unit/config/bootstrap.test.ts`, `test/unit/index.test.ts`
 
 **Interfaces:**
-- Consumes: Task 8's `DatabaseValidationService`.
+- Consumes: Task 7's `DatabaseValidationService`.
 - Produces:
 
 ```typescript
@@ -2066,7 +1888,7 @@ git commit -m "feat(menu): add VALIDAZIONE DATABASE launcher"
 
 # Phase 4 — Feature 3: lock documents
 
-### Task 10: `changeRolesByPermissionId` in PermissionService
+### Task 9: `changeRolesByPermissionId` in PermissionService
 
 `changeRoles` resolves permissions by `emailAddress`, so `type: 'anyone'` / `'domain'` grants (no email) can never be targeted. Add a permission-id-level sibling.
 
@@ -2211,7 +2033,7 @@ cd ..
 
 ---
 
-### Task 11: Vendor refresh + Drive facade permission methods
+### Task 10: Vendor refresh + Drive facade permission methods
 
 **Files:**
 - Modify (generated): `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION`
@@ -2219,7 +2041,7 @@ cd ..
 - Test: `test/unit/infrastructure/drive-facade.test.ts`
 
 **Interfaces:**
-- Consumes: Task 10's `changeRolesByPermissionId`, existing `getPermissions`.
+- Consumes: Task 9's `changeRolesByPermissionId`, existing `getPermissions`.
 - Produces, on `IDriveFacade`:
 
 ```typescript
@@ -2425,14 +2247,14 @@ git commit -m "feat(drive): expose permission listing and role downgrade on the 
 
 ---
 
-### Task 12: `LockDocumentsService`
+### Task 11: `LockDocumentsService`
 
 **Files:**
 - Create: `src/application/services/LockDocumentsService.ts`
 - Test: `test/unit/application/lock-documents-service.test.ts`
 
 **Interfaces:**
-- Consumes: `ILogDocumentoRepository.findAll()`; Task 11's `listPermissions` / `changePermissionRoles`.
+- Consumes: `ILogDocumentoRepository.findAll()`; Task 10's `listPermissions` / `changePermissionRoles`.
 - Produces:
 
 ```typescript
@@ -2630,14 +2452,14 @@ git commit -m "feat(drive): add LockDocumentsService"
 
 ---
 
-### Task 13: Menu entry + wiring for document lock
+### Task 12: Menu entry + wiring for document lock
 
 **Files:**
 - Modify: `src/presentation/Menu.ts`, `src/config/Bootstrap.ts`, `src/index.ts`, `src/entrypoints/EntryPoints_Menu.ts`
 - Test: `test/unit/presentation/menu.test.ts`, `test/unit/config/bootstrap.test.ts`, `test/unit/index.test.ts`
 
 **Interfaces:**
-- Consumes: Task 9's `avvioConConferma`; Task 12's `LockDocumentsService`.
+- Consumes: Task 8's `avvioConConferma`; Task 11's `LockDocumentsService`.
 - Produces:
 
 ```typescript
@@ -2734,7 +2556,7 @@ export function avviaBloccoDocumenti(c: ServiceContainer): LockOutcome {
 }
 ```
 
-In `src/index.ts`, import and expose `avviaBloccoDocumenti` and `menuBloccaDocumenti` exactly as Task 9 did for the validation pair.
+In `src/index.ts`, import and expose `avviaBloccoDocumenti` and `menuBloccaDocumenti` exactly as Task 8 did for the validation pair.
 
 In `src/entrypoints/EntryPoints_Menu.ts`:
 
@@ -2791,6 +2613,6 @@ git commit -m "feat(menu): add BLOCCA DOCUMENTI launcher"
 - [ ] `npm test` green from `GasLibraryFactory/`.
 - [ ] `npm run verify:vendor` green (vendor checksum matches the committed bundle).
 - [ ] The operator has been told what the deployment needs beyond code:
-  - the `ELENCO_MATERIE` row inserted into the production `CONF_MAIL` sheet (Task 3's seed only covers the E2E database),
-  - one `MATERIE.<INDIRIZZO_ID>` column per address added to the production MATERIE sheet (Task 4's migration note),
+  - the `ELENCO_MATERIE` row inserted into the production `CONF_MAIL` sheet (Task 2's seed only covers the E2E database),
+  - one `MATERIE.<INDIRIZZO_ID>` column per address added to the production MATERIE sheet (Task 3's migration note),
   - `clasp push` performed by whoever owns the deployment.

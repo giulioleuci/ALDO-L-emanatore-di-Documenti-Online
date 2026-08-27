@@ -8,72 +8,18 @@
 
 ## Feature 1 — Email Each Teacher Their Class Subject Structure
 
-### Goal
+> **ALREADY IMPLEMENTED as `cattedre` box** (`boxes.ts:314-328`, `409-414`, `446`, `464`).
+> The `cattedre` TIPO_BOX already renders ALL classes the teacher teaches, each
+> with its subject list and ITP marking. Data comes from `destinatario.contesto.cattedre`
+> (built by `BuildCDUStep.buildCattedre` at `emailSteps.ts:288-343`). The original
+> `materie_classe` proposal (single focus-class box) is **superseded**: the `cattedre`
+> box already covers the use case and more. The `ELENCO_MATERIE` CONF_MAIL row
+> should use `TIPO_BOX: 'cattedre'` instead of a new `materie_classe` type.
 
-Send each teacher an email containing the name of their class and a bulleted list of the subjects they are assigned to teach in that class (full subject name only).
+### What remains
 
-### Approach
-
-New `CONF_MAIL` record + new `TIPO_BOX` `materie_classe` registered in the box composer.
-
-The existing `PER_DOCENTE` process already iterates over each (teacher, class) pair. The CDU for this target (`DOCENTE_COMPLETO`) has access to `focus.classe` with the full teaching assignment matrix. A new box type extracts the subjects where the target teacher's email appears in the class's dynamic columns and renders them as a `<ul>` of full names.
-
-### New TIPO_BOX: `materie_classe`
-
-Registered in `createBoxComposer()` in `src/application/email/boxes.ts`.
-
-**Data extraction** (`agregaDati` in `boxes.ts`):
-- For each dynamic column in `focus.classe` whose name matches a `MATERIE.ID` (excluding `.itp`), check if the target teacher's email is present in the CSV value.
-- If present, collect `MATERIE.NOME` (full name) for that materia.
-- Expose as `boxdata.materieAssegnate: string[]` in the CDU context.
-
-**Renderer** (`renderMaterieClasseBox`):
-```html
-<ul style="margin:0; padding-left:20px; font-size:14px; color:#555;">
-  <li>Matematica</li>
-  <li>Fisica</li>
-  ...
-</ul>
-```
-
-**Empty behavior**: HIDE (no box rendered if teacher has no subjects in the class — edge case).
-
-### CONF_MAIL Record
-
-| Field | Value |
-|---|---|
-| `ID` | `ELENCO_MATERIE` |
-| `PROCESSO` | `PER_DOCENTE` |
-| `OGGETTO` | `Ipotesi assegnazione cattedre per l'anno scolastico appena iniziato (prof/prof.ssa {{focus.destinatario.anagrafica.nome}} {{focus.destinatario.anagrafica.cognome}})` |
-| `BOX_CFG` | `[{ "TIPO_BOX": "materie_classe" }]` |
-| `TESTO` | *(empty)* |
-| `SUPPLENTI` | `SOLO_TITOLARI` |
-| `NOREPLY` | `true` |
-| `GESTIONE_ARTICOLAZIONE` | `COMPLETA` |
-| `DUPLICAZIONE` | `PERMESSA` |
-| `ALLEGATI` | `[]` |
-
-### Email Content
-
-The email body contains only the box output:
-- **Box title**: "Class Name" (e.g., "3C")
-- **Box content**: Bulleted list of full subject names
-
-### Files to Modify
-
-| File | Change |
-|---|---|
-| `src/application/email/boxes.ts` | Register `materie_classe` TIPO_BOX in `createBoxComposer()`, add `renderMaterieClasseBox` renderer, add data extraction in `agregaDati()` |
-| `src/application/email/boxes.ts` | Add `materie_classe` to `DEFAULT_TITLES` map |
-| `src/config/schema.ts` | No change (CONF_MAIL schema already supports arbitrary ID values) |
-| `src/onlinetests/data/SharedTestDatabaseBuilder.ts` | Add `seedConfMail` entry for `ELENCO_MATERIE` |
-| `test/unit/application/email-boxes.test.ts` | Add tests for the new box type |
-
-### CDU Placeholder for OGGETTO
-
-The `OGGETTO` uses `{{focus.destinatario.anagrafica.nome}}` and `{{focus.destinatario.anagrafica.cognome}}`. These are already populated by `BuildCDUStep.buildDestinatario()` in `emailSteps.ts` for `PER_DOCENTE` targets. The `appellativo` (Prof./Prof.ssa) is derived from `DOCENTI.GENERE` via `buildPersonVm()`.
-
-The static text "prof/prof.ssa" in the OGGETTO is literal — it does not dynamically choose the correct gendered form. If dynamic gender selection is desired, the OGGETTO would need `{{focus.destinatario.anagrafica.appellativo}}` instead of the literal "prof/prof.ssa".
+Only the `ELENCO_MATERIE` CONF_MAIL seed record (Task 3 in the plan) and
+its online-test integration. No new box type or renderer is needed.
 
 ---
 
@@ -178,7 +124,7 @@ Parse each of these fields as JSON; report parse failures:
 | INDIRIZZI | TIPO | `LICEO`, `ITS`, `IEFP`, `PROFESSIONALE`, `TECNICO` |
 | PIANI | TIPO | `PEI`, `PDP_BES`, `PDP_DSA`, `PDP_STRANIERI`, `PFP` |
 | PROGETTI | TIPO | `ASL`, `ORIENTAMENTO`, `ALTRO` |
-| MOV_ALUNNI | TIPO | `IN`, `OUT`, `CAMBIO` |
+| MOV_ALUNNI | TIPO | `IN`, `OUT`, `RITIRATO`, `CAMBIO` |
 
 #### 5. Dynamic Column Integrity
 

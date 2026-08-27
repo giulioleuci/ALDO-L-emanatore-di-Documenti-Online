@@ -13,3 +13,4 @@ scripts/email-examples/
 GasLibraryFactory/
 .antigravitycli/
 .worktrees/
+__pycache__/

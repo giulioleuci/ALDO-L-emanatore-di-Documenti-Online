@@ -568,21 +568,91 @@ La chiave `regolaSupplente` controlla come le supplenze influenzano l'assegnazio
 ```json
 {
   "TIPO_BOX": "carenze | documenti | documenti_dipartimento | cartelle | note | assenze | cattedre | testo_dinamico | piani_pers_da_inviare | piani_pers_inviati",
-  "TITOLO": "string (opzionale; se assente usa il titolo di default del tipo)",
+  "TITOLO": "string (opzionale; se assente usa il titolo di default del tipo; template Mustache valutato sulla CDU)",
   "ORDINE": 1,
-  "ALLEGA": "boolean (default false; solo true autorizza l'invio Gmail dei file della sorgente)",
-  "PREREQUISITI": "string (espressione di visibilità per ComposableContentLib; '' = sempre visibile)",
+  "ALLEGA": false,
+  "PREREQUISITI": "",
   "MOSTRA_SE_VUOTO": false,
   "TESTO_VUOTO": "string (Mustache, valutato sull'intera CDU)",
-  "COLORE": "string hex (bordo sinistro del contenitore; default #ddd)",
-  "DISPLAY_MODE": "nome | link | nome+link | sololink (solo per documenti/cartelle, fallback a lista semplice)",
+  "COLORE": "#ddd",
+  "DISPLAY_MODE": "nome | link | nome+link | sololink",
   "ARRICCHISCI_CON_STORICO": true,
   "CONFIG_ARRICCHIMENTO": { "TEMPLATE_RIGA": "string Mustache, contesto { corrente, storico }" },
-  "CONTENUTO": "string HTML Mustache (solo per testo_dinamico, valutato sull'intera CDU)"
+  "CONTENUTO": "string HTML Mustache (solo per testo_dinamico, valutato sull'intera CDU)",
+  "DATI_SORGENTE": {
+    "metodo": "documentiPerClasse | documentiPerUtente | documentiPerDipartimento | cartellePerClasse | cartellePerUtente | cartellePerDipartimento",
+    "filtri": { "tipo": "VERBALE", "not": { "stato": "ARCHIVIATO" } }
+  }
 }
 ```
 
-Nota: questo schema riflette il codice effettivo (`src/application/email/boxes.ts`), non lo schema
-`DATI_SORGENTE`/`PREREQUISITI`-array più ricco descritto in `AGGIORNAMENTI_DA_FARE.md`/
-`FAKEDB/CONF_MAIL.csv` — vedi `BOX_CONF_GUIDE.md`, nota finale "Perché non `DATI_SORGENTE`", per il
-dettaglio di questa discrepanza intenzionale.
+Nota: schema riflette il codice effettivo (`src/application/email/boxes.ts`,
+`src/domain/specifications/FiltriSorgente.ts`, `src/application/services/AggregatoreDati.ts`);
+fonte di verità del formato filtri: design doc
+`docs/superpowers/specs/2026-08-23-filtri-sorgente-unificati-design.md`.
+
+#### Chiavi comuni
+
+| Chiave                 | Descrizione                                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `TIPO_BOX`             | Selettore del renderer; valore fuori dall'elenco → box scartato                                                                     |
+| `TITOLO`               | Interpolato contro la CDU con `processString` (l'HTML del contenitore fa già l'escape)                                              |
+| `ORDINE`               | Ordine di composizione; in assenza si usa l'indice di array                                                                         |
+| `ALLEGA`               | Solo `documenti`: autorizza l'invio Gmail dei file della sorgente (`cartelle` + `ALLEGA=true` → warning e allegati statici invariati) |
+| `PREREQUISITI`         | Espressione di visibilità per ComposableContentLib; `''` = sempre visibile                                                          |
+| `MOSTRA_SE_VUOTO`      | Se true e il box è vuoto, mostra `TESTO_VUOTO`                                                                                      |
+| `TESTO_VUOTO`          | Mustache valutato sull'intera CDU                                                                                                   |
+| `COLORE`               | Bordo sinistro del contenitore; default `#ddd`                                                                                      |
+| `DISPLAY_MODE`          | Solo documenti/cartelle: `nome \| link \| nome+link \| sololink`; fallback a lista semplice                                          |
+| `ARRICCHISCI_CON_STORICO` / `CONFIG_ARRICCHIMENTO` | Arricchimento storico per riga (default on per `piani_pers_da_inviare`)                          |
+| `CONTENUTO`            | Solo `testo_dinamico`                                                                                                               |
+
+#### `DATI_SORGENTE` (solo `documenti` e `cartelle`)
+
+Un solo dialetto di filtraggio per link visibili **e** allegati: la stessa config
+produce gli stessi insiemi sia che il box mostri link sia che alleghi file.
+
+| Metodo                     | Entità       | Scope di base (prima dei filtri)                                            |
+| -------------------------- | ------------ | ---------------------------------------------------------------------------- |
+| `documentiPerClasse`       | `LOG_DOCS`   | `findByClasse`, ripetuto su ogni classe di competenza (o `focus.classe`)      |
+| `documentiPerUtente`       | `LOG_DOCS`   | `LOG_DOCS.UTENTI` ∋ email utente (`focus.alunno`/`focus.docente`)             |
+| `documentiPerDipartimento` | `LOG_DOCS`   | `MATERIE` interseca le materie del dipartimento                               |
+| `cartellePerClasse`        | `LOG_FOLD`   | `LOG_FOLD.CLASSI` ∋ classe                                                    |
+| `cartellePerUtente`        | `LOG_FOLD`   | `LOG_FOLD.UTENTI` ∋ email utente                                              |
+| `cartellePerDipartimento`  | `LOG_FOLD`   | `MATERIE` interseca le materie del dipartimento                               |
+
+- `DATI_SORGENTE` assente → fallback legacy sui dati CDU non filtrati.
+- `metodo` mancante/sconosciuto o scope non risolvibile → warning + box saltato.
+- I filtri si applicano sempre **dopo** lo scope di base.
+
+#### `filtri` (Filtri Sorgente Unificati)
+
+Chiavi ammesse, camelCase:
+
+| Entità                | Chiavi                                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| documenti (`LOG_DOCS`) | `tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`, `notificato`, `classi`, `utenti`, `materie`, `csv`, `not` |
+| cartelle (`LOG_FOLD`)  | `idGen` (→ colonna `TIPO`), `nome`, `path`, `classi`, `utenti`, `materie`, `csv`, `not`                    |
+
+Semantica di matching:
+
+- **AND** tra tutti i criteri positivi.
+- Campi scalari (`tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`): uguaglianza esatta case-sensitive.
+- `notificato`: boolean sulla presenza (`true`) / assenza (`false`) del timestamp `NOTIFICATO`.
+- Campi CSV (`classi`, `utenti`, `materie`): stringa singola o array. Con `"csv": "any"` *(default)* basta un
+  valore in comune; con `"csv": "all"` tutti i valori del filtro devono essere presenti nell'entità.
+- `nome`, `path` (solo cartelle): sottostringa case-sensitive.
+- Esclusioni: blocco `not` con la stessa forma dei criteri positivi (senza `not` annidato né `csv` dedicato;
+  eredita la modalità globale). L'entità è scartata se almeno una esclusione matcha.
+- `filtri` assente o vuoto → nessun filtraggio oltre lo scope.
+- `stato` è validato sull'enum `StatoDocumento`; una chiave valida per un'entità usata sull'altra è errore.
+
+Gestione errori (chiave sconosciuta, chiave di altra entità, `stato` fuori enum, tipi errati):
+
+1. `logger.error` con ID pattern `CONF_MAIL` ed elenco chiavi offending;
+2. **box saltato** — mai filtro silenziosamente ignorato, mai eccezione che blocca la pipeline.
+
+Chiavi legacy **non ammesse** (rete di sicurezza per config non migrate):
+
+- `FILTRO_TIPO` / `FILTRO_STATO` a livello box → errore + box saltato;
+- `filtri` a livello box (fuori da `DATI_SORGENTE`) → errore + box saltato.

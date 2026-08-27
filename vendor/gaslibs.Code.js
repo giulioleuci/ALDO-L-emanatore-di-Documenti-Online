@@ -1918,6 +1918,7 @@ __webpack_require__.d(external_namespaceObject, {
 var GasSchemaValidatorLib_namespaceObject_0 = {};
 __webpack_require__.r(GasSchemaValidatorLib_namespaceObject_0);
 __webpack_require__.d(GasSchemaValidatorLib_namespaceObject_0, {
+  DatasetValidator: () => (DatasetValidator),
   GasValidators: () => (GasValidators),
   SchemaValidator: () => (SchemaValidator),
   ValidationException: () => (ValidationException),
@@ -1929,6 +1930,7 @@ __webpack_require__.d(GasSchemaValidatorLib_namespaceObject_0, {
 var GasSchemaValidatorLib_namespaceObject = {};
 __webpack_require__.r(GasSchemaValidatorLib_namespaceObject);
 __webpack_require__.d(GasSchemaValidatorLib_namespaceObject, {
+  DatasetValidator: () => (DatasetValidator),
   GasValidators: () => (GasValidators),
   SchemaValidator: () => (SchemaValidator),
   ValidationException: () => (ValidationException),
@@ -31277,6 +31279,229 @@ class SchemaValidator {
   }
 }
 ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+const WILDCARD = '*';
+function cellToString(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  return String(value).trim();
+}
+function splitCsv(value) {
+  return value.split(',').map(part => part.trim()).filter(part => part.length > 0);
+}
+class DatasetValidator {
+
+
+
+  constructor(deps = {}) {
+    this._logger = deps.logger || null;
+    this._indexes = new Map();
+  }
+
+
+
+
+
+
+  validate(datasets, rules) {
+    this._indexes = new Map();
+    const context = {
+      datasets,
+      index: (table, column) => this._index(datasets, table, column)
+    };
+    const violations = [];
+    (rules || []).forEach(rule => {
+      const rows = datasets[rule.table];
+      if (!Array.isArray(rows)) {
+        if (this._logger) {
+          this._logger.warn(`DatasetValidator: tabella "${rule.table}" assente`);
+        }
+        return;
+      }
+      violations.push(...this._applyRule(rule, rows, datasets, context));
+    });
+    return {
+      violations
+    };
+  }
+  _applyRule(rule, rows, datasets, context) {
+    switch (rule.type) {
+      case 'required':
+        return this._required(rule, rows);
+      case 'enum':
+        return this._enum(rule, rows);
+      case 'json':
+        return this._json(rule, rows);
+      case 'foreignKey':
+        return this._foreignKey(rule, rows, datasets);
+      case 'columnName':
+        return this._columnName(rule, rows, datasets);
+      case 'rowPredicate':
+        return this._rowPredicate(rule, rows, context);
+      default:
+        throw new Error(`DatasetValidator: tipo di regola non supportato "${rule.type}"`);
+    }
+  }
+  _violation(rule, rowIndex, column, value, details) {
+    return {
+      ruleId: rule.id,
+      type: rule.type,
+      table: rule.table,
+      rowIndex,
+      column,
+      value,
+      details: details || {}
+    };
+  }
+  _index(datasets, table, column) {
+    const key = `${table}::${column}`;
+    let set = this._indexes.get(key);
+    if (set) {
+      return set;
+    }
+    set = new Set();
+    (datasets[table] || []).forEach(row => {
+      const value = cellToString(row[column]);
+      if (value !== '') {
+        set.add(value);
+      }
+    });
+    this._indexes.set(key, set);
+    return set;
+  }
+  _required(rule, rows) {
+    const out = [];
+    rows.forEach((row, rowIndex) => {
+      rule.columns.forEach(column => {
+        if (cellToString(row[column]) === '') {
+          out.push(this._violation(rule, rowIndex, column, ''));
+        }
+      });
+    });
+    return out;
+  }
+  _enum(rule, rows) {
+    const allowEmpty = rule.allowEmpty !== false;
+    const allowed = new Set(rule.values);
+    const out = [];
+    rows.forEach((row, rowIndex) => {
+      const value = cellToString(row[rule.column]);
+      if (value === '' && allowEmpty) {
+        return;
+      }
+      if (allowed.has(value)) {
+        return;
+      }
+      out.push(this._violation(rule, rowIndex, rule.column, value, {
+        values: rule.values
+      }));
+    });
+    return out;
+  }
+  _json(rule, rows) {
+    const out = [];
+    rows.forEach((row, rowIndex) => {
+      const raw = row[rule.column];
+      if (raw === null || raw === undefined) {
+        return;
+      }
+      if (typeof raw === 'object') {
+        return;
+      }
+      const value = cellToString(raw);
+      if (value === '') {
+        return;
+      }
+      try {
+        JSON.parse(value);
+      } catch (error) {
+        out.push(this._violation(rule, rowIndex, rule.column, value, {
+          reason: error.message
+        }));
+      }
+    });
+    return out;
+  }
+  _foreignKey(rule, rows, datasets) {
+    const target = this._index(datasets, rule.targetTable, rule.targetColumn);
+    const allowEmpty = rule.allowEmpty !== false;
+    const details = {
+      targetTable: rule.targetTable,
+      targetColumn: rule.targetColumn
+    };
+    const out = [];
+    rows.forEach((row, rowIndex) => {
+      const raw = cellToString(row[rule.column]);
+      if (raw === '') {
+        if (!allowEmpty) {
+          out.push(this._violation(rule, rowIndex, rule.column, '', details));
+        }
+        return;
+      }
+      const tokens = rule.csv ? splitCsv(raw) : [raw];
+      tokens.forEach(token => {
+        if (rule.allowWildcard && token === WILDCARD) {
+          return;
+        }
+        if (target.has(token)) {
+          return;
+        }
+        out.push(this._violation(rule, rowIndex, rule.column, token, details));
+      });
+    });
+    return out;
+  }
+  _columnName(rule, rows, datasets) {
+    const target = this._index(datasets, rule.targetTable, rule.targetColumn);
+    const known = new Set(rule.knownColumns || []);
+    const ignore = new Set(rule.ignore || []);
+    const normalize = rule.normalize || (name => name);
+    const details = {
+      targetTable: rule.targetTable,
+      targetColumn: rule.targetColumn
+    };
+    const seen = new Set();
+    const out = [];
+    rows.forEach(row => {
+      Object.keys(row).forEach(column => {
+        if (known.has(column) || ignore.has(column) || seen.has(column)) {
+          return;
+        }
+        seen.add(column);
+        if (target.has(normalize(column))) {
+          return;
+        }
+        out.push(this._violation(rule, 0, column, column, details));
+      });
+    });
+    return out;
+  }
+  _rowPredicate(rule, rows, context) {
+    const out = [];
+    rows.forEach((row, rowIndex) => {
+      const hit = rule.check(row, context);
+      if (!hit) {
+        return;
+      }
+      out.push(this._violation(rule, rowIndex, hit.column, cellToString(hit.value), hit.details));
+    });
+    return out;
+  }
+}
+;
 var _a;
 
 const NEVER =  Object.freeze({
@@ -45850,6 +46075,7 @@ config(en());
 
 
 ;
+
 
 
 
@@ -75955,9 +76181,9 @@ class ActorSource {
     throw new Error('ActorSource.getActor() must be implemented');
   }
 }
-function splitCsv(value) {
+function EffectiveAssignmentSource_splitCsv(value) {
   if (Array.isArray(value)) {
-    return value.flatMap(splitCsv);
+    return value.flatMap(EffectiveAssignmentSource_splitCsv);
   }
   if (typeof value !== 'string') {
     return value == null ? [] : [String(value)];
@@ -75968,7 +76194,7 @@ function splitCsv(value) {
 
 function matchesContextDimensions(context, dimensions = {}) {
   return Object.entries(dimensions).every(([name, expected]) => {
-    const values = splitCsv(expected);
+    const values = EffectiveAssignmentSource_splitCsv(expected);
     return values.includes('*') || values.includes(String(context[name]));
   });
 }
@@ -75988,7 +76214,7 @@ function getPath(value, path) {
 function mapped(row, definition) {
   if (definition && typeof definition === 'object' && !Array.isArray(definition) && 'from' in definition) {
     const value = getPath(row, definition.from);
-    return definition.parse === 'csv' ? splitCsv(value) : value;
+    return definition.parse === 'csv' ? EffectiveAssignmentSource_splitCsv(value) : value;
   }
   return definition;
 }
@@ -76037,7 +76263,7 @@ class WideRowAssignmentSource extends EffectiveAssignmentSource {
         if (!matchesContextDimensions(context, contextDimensions)) {
           return;
         }
-        const ids = this._csv ? splitCsv(getPath(row, column.name)) : [getPath(row, column.name)].filter(Boolean);
+        const ids = this._csv ? EffectiveAssignmentSource_splitCsv(getPath(row, column.name)) : [getPath(row, column.name)].filter(Boolean);
         ids.forEach(actorId => {
           candidates.push(new AssignmentCandidate({
             id: `${rowId}:${column.name}:${actorId}`,

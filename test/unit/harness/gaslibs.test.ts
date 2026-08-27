@@ -321,3 +321,13 @@ test('custom SourceStrategy registered via ImportEngine.registerCustomSource wor
   );
   expect(extracted).toEqual([{ EMAIL: 'probe@x' }]);
 });
+
+test('vendored bundle exposes DatasetValidator (Feature 2)', () => {
+  const validator = new DatasetValidator();
+  const { violations } = validator.validate(
+    { T: [{ A: '' }] },
+    [{ id: 'R', type: 'required', table: 'T', columns: ['A'] }]
+  );
+  expect(violations).toHaveLength(1);
+  expect(violations[0]!.ruleId).toBe('R');
+});

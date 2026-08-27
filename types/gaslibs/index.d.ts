@@ -1419,6 +1419,66 @@ declare global {
     static getCacheService(): { getScriptCache(): unknown };
   }
 
+  // --- GasSchemaValidatorLib (L1): declarative dataset validation ---
+  interface DatasetViolation {
+    ruleId: string;
+    type: string;
+    table: string;
+    /** 0-based index into the dataset array (sheet row = index + 2). */
+    rowIndex: number;
+    column: string;
+    value: string;
+    details: Record<string, unknown>;
+  }
+
+  interface DatasetRuleContext {
+    datasets: Record<string, Array<Record<string, unknown>>>;
+    index(table: string, column: string): Set<string>;
+  }
+
+  type DatasetValidationRule =
+    | { id: string; type: 'required'; table: string; columns: string[] }
+    | { id: string; type: 'enum'; table: string; column: string; values: string[]; allowEmpty?: boolean }
+    | { id: string; type: 'json'; table: string; column: string }
+    | {
+        id: string;
+        type: 'foreignKey';
+        table: string;
+        column: string;
+        targetTable: string;
+        targetColumn: string;
+        csv?: boolean;
+        allowWildcard?: boolean;
+        allowEmpty?: boolean;
+      }
+    | {
+        id: string;
+        type: 'columnName';
+        table: string;
+        knownColumns: string[];
+        targetTable: string;
+        targetColumn: string;
+        ignore?: string[];
+        normalize?: (columnName: string) => string;
+      }
+    | {
+        id: string;
+        type: 'rowPredicate';
+        table: string;
+        check: (
+          row: Record<string, unknown>,
+          ctx: DatasetRuleContext
+        ) => null | { column: string; value: unknown; details?: Record<string, unknown> };
+      };
+
+  class DatasetValidator {
+    constructor(deps?: { logger?: LoggerService });
+    validate(
+      datasets: Record<string, Array<Record<string, unknown>>>,
+      rules: DatasetValidationRule[]
+    ): { violations: DatasetViolation[] };
+  }
+
   // --- GasProcessMonitorLib (L4): job progress tracking + monitoring sidebar ---
   class ProcessMonitorService {
     constructor(logger: LoggerService, cacheService: unknown, propertiesService: unknown);

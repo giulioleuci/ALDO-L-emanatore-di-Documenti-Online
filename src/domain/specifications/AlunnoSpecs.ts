@@ -1,3 +1,4 @@
+import { Specification } from './Specification';
 import type { Alunno } from '../entities/Alunno';
 import type { ClasseId } from '../value-objects/ClasseId';
 import type { ReligioneScelta } from '../value-objects/enums';

@@ -1,3 +1,4 @@
+import { Specification } from './Specification';
 import type { Indirizzo } from '../entities/Indirizzo';
 import { TipoIstituto } from '../value-objects/enums';
 

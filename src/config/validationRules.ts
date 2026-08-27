@@ -54,9 +54,9 @@ function cell(row: Record<string, unknown>, column: string): string {
   return scalarString(row[column]).trim();
 }
 
-/** `INF.itp` / `LAB.GRUPPO_A` -> `INF` / `LAB`: the base MATERIE.ID of a dynamic column. */
+/** `INF.itp` -> `INF`; dotted MATERIE ids (`LAB.GRUPPO_A`) are ids, not suffixes. */
 function baseMateria(columnName: string): string {
-  return columnName.split('.')[0] ?? columnName;
+  return columnName.endsWith('.itp') ? columnName.slice(0, -4) : columnName;
 }
 
 function fk(

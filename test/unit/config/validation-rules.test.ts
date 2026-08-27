@@ -1,5 +1,21 @@
 import { regoleValidazione, messaggioErrore, VALIDATION_TABLES } from '../../../src/config/validationRules';
-import { TABLE } from '../../../src/config/schema';
+import { TABLE, COL_CLASSI, COL_DOCENTI, COL_MATERIE } from '../../../src/config/schema';
+
+/** Minimal DatasetRuleContext: the 3 rowPredicate checks in this file only ever read ctx.datasets. */
+function makeCtx(datasets: Record<string, Array<Record<string, unknown>>>): DatasetRuleContext {
+  return { datasets, index: () => new Set<string>() };
+}
+
+function findRowPredicate(id: string): (
+  row: Record<string, unknown>,
+  ctx: DatasetRuleContext
+) => null | { column: string; value: unknown; details?: Record<string, unknown> } {
+  const rule = regoleValidazione().find((r) => r.id === id);
+  if (!rule || rule.type !== 'rowPredicate') {
+    throw new Error(`rule ${id} not found or not a rowPredicate`);
+  }
+  return rule.check;
+}
 
 test('every rule targets a table the service will load', () => {
   for (const rule of regoleValidazione()) {
@@ -66,4 +82,66 @@ test('messaggioErrore renders Italian text per violation type', () => {
   expect(
     messaggioErrore({ ruleId: 'ITP_CLASSI', type: 'rowPredicate', table: 'CLASSI', rowIndex: 0, column: 'INF.itp', value: 'x@y.it', details: {} })
   ).toBe('Colonna ITP INF.itp: il docente "x@y.it" non ha DOCENTI.ITP = true');
+});
+
+test('DYN_CLASSI.normalize strips only the .itp suffix, leaving dotted MATERIE ids intact', () => {
+  const rule = regoleValidazione().find((r) => r.id === 'DYN_CLASSI');
+  if (!rule || rule.type !== 'columnName' || !rule.normalize) {
+    throw new Error('DYN_CLASSI rule missing or has no normalize()');
+  }
+  const normalize = rule.normalize;
+  // Real fixture MATERIE.ID primary keys (SharedTestDatabaseBuilder) - must survive unchanged.
+  expect(normalize('LAB.GRUPPO_A')).toBe('LAB.GRUPPO_A');
+  expect(normalize('LAB.SEMINARIO_POMERIDIANO')).toBe('LAB.SEMINARIO_POMERIDIANO');
+  expect(normalize('INTERPRET.CHITARRA')).toBe('INTERPRET.CHITARRA');
+  expect(normalize('INTERPRET.FLAUTO')).toBe('INTERPRET.FLAUTO');
+  // The one real suffix case: an ITP-assignment column on a composite id.
+  expect(normalize('INTERPRET.CHITARRA.itp')).toBe('INTERPRET.CHITARRA');
+  expect(normalize('INF.itp')).toBe('INF');
+});
+
+test('ITP_CLASSI.check: passes when the assigned docente has DOCENTI.ITP = true, fails otherwise', () => {
+  const check = findRowPredicate('ITP_CLASSI');
+  const docenti = [
+    { [COL_DOCENTI.EMAIL]: 'itp@scuola.it', [COL_DOCENTI.ITP]: true },
+    { [COL_DOCENTI.EMAIL]: 'nonitp@scuola.it', [COL_DOCENTI.ITP]: false }
+  ];
+  const ctx = makeCtx({ [TABLE.DOCENTI]: docenti });
+
+  expect(check({ 'INF.itp': 'itp@scuola.it' }, ctx)).toBeNull();
+  expect(check({ 'INF.itp': 'nonitp@scuola.it' }, ctx)).toEqual({
+    column: 'INF.itp',
+    value: 'nonitp@scuola.it'
+  });
+});
+
+test('MATERIE_COMPOSITE_PRINCIPALE.check: composite MATERIE.ID rows require a non-empty PRINCIPALE', () => {
+  const check = findRowPredicate('MATERIE_COMPOSITE_PRINCIPALE');
+  const ctx = makeCtx({});
+
+  expect(
+    check({ [COL_MATERIE.ID]: 'INTERPRET.CHITARRA', [COL_MATERIE.PRINCIPALE]: 'INTERPRET' }, ctx)
+  ).toBeNull();
+  expect(check({ [COL_MATERIE.ID]: 'INTERPRET.CHITARRA', [COL_MATERIE.PRINCIPALE]: '' }, ctx)).toEqual({
+    column: COL_MATERIE.PRINCIPALE,
+    value: 'INTERPRET.CHITARRA'
+  });
+});
+
+test('CURRICULUM_COVERAGE.check: flags a mandated subject missing its CLASSI column, using the MATERIE.<INDIRIZZO_ID> CSV-year-list', () => {
+  const check = findRowPredicate('CURRICULUM_COVERAGE');
+  const materie = [{ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: 'Italiano', LS: '1,2,3,4,5' }];
+  const ctx = makeCtx({ [TABLE.MATERIE]: materie });
+
+  // Passing: CLASSI row for indirizzo LS, anno 1, already has the ITA column.
+  expect(
+    check({ [COL_CLASSI.INDIRIZZO]: 'LS', [COL_CLASSI.ANNO]: '1', ITA: 'docente@scuola.it' }, ctx)
+  ).toBeNull();
+
+  // Failing: same indirizzo/anno, but the ITA column is absent from CLASSI.
+  expect(check({ [COL_CLASSI.INDIRIZZO]: 'LS', [COL_CLASSI.ANNO]: '1' }, ctx)).toEqual({
+    column: 'ITA',
+    value: 'ITA',
+    details: { indirizzo: 'LS', anno: '1' }
+  });
 });

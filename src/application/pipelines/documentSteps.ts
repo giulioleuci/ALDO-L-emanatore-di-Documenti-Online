@@ -188,6 +188,10 @@ export class CheckDuplicatesStep extends Step {
 
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
     const tipo = String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '');
+    const tipi =
+      tipo === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'
+        ? [tipo, 'DOCUMENTO_DOCENTE_MATERIA']
+        : [tipo];
     const pianoPersonalizzato = isPianoPersonalizzato(ctx);
     const sottotipoValue = sottotipo(ctx);
     const utenti = pianoPersonalizzato
@@ -237,7 +241,7 @@ export class CheckDuplicatesStep extends Step {
     }
     const existing = this.db.table(TABLE.LOG_DOCS).find(
       (r) =>
-        String(r[COL_LOG_DOCS.TIPO] ?? '') === tipo &&
+        tipi.includes(String(r[COL_LOG_DOCS.TIPO] ?? '')) &&
         String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipoValue &&
         String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
         (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&

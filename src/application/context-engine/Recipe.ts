@@ -248,5 +248,9 @@ export const RECIPES: Record<string, string[]> = {
 export function recipe(name: string, overrides: Partial<RecipeOptions> = {}): Recipe {
   const providers = RECIPES[name];
   if (providers === undefined) throw new ValidationError(`Recipe sconosciuta: ${name}`);
-  return { providers: providers.slice(), options: makeOptions(overrides) };
+  const recipeDefaults =
+    name === 'CLASSE_MATERIA'
+      ? { gestioneSupplenti: GestioneSupplenti.SOLO_SUPPLENTI }
+      : {};
+  return { providers: providers.slice(), options: makeOptions({ ...recipeDefaults, ...overrides }) };
 }

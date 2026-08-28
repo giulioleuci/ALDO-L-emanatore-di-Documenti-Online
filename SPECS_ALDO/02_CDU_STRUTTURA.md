@@ -485,7 +485,7 @@ focus.classiMateria:
   docenti: PersonVM[]             # §8.1 — tutti i docenti role-resolved della materia nella classe
 ```
 
-> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`), ma sia l'enumerazione batch (`DocumentBatchService.generateDocentiClasseMateria`) sia questo provider trattano solo la coppia (classe, materia, docente): due cattedre che differiscono solo per `kind`/`specifica` (es. STANDARD+ITP sulla stessa materia di laboratorio) collassano in un solo documento, per scelta di scope — non è un bug.
+> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`): l'asse `DOCUMENTO_CLASSE_MATERIA` distingue i target `BASE.SPECIFICA`, mentre collassa solo `kind`. Due cattedre con stessa materia e stessa specifica ma `kind` diverso (es. STANDARD+ITP) producono quindi un solo documento, per scelta di scope — non è un bug.
 
 ---
 

@@ -6,6 +6,13 @@ import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFaca
 const RUOLO_SCRITTURA = 'writer';
 const RUOLO_LETTURA = 'reader';
 
+// Progress-logging cadence for bloccaTutti()'s unbounded loop: with hundreds+
+// of LOG_DOCS rows this run can exceed the GAS execution cap. It's safely
+// re-runnable (already-processed files have no writer permissions left, so a
+// re-run skips them), but a periodic log line gives the GAS execution
+// transcript itself as an audit trail if the run is killed mid-way.
+const INTERVALLO_LOG_PROGRESSO = 25;
+
 export interface LockOutcome {
   totaleDocumenti: number;
   documentiModificati: number;
@@ -45,7 +52,12 @@ export class LockDocumentsService {
       falliti: []
     };
 
+    let indice = 0;
     for (const documento of documenti) {
+      indice += 1;
+      if (indice % INTERVALLO_LOG_PROGRESSO === 0) {
+        this.logger.info(`Blocco documenti: elaborati ${indice}/${documenti.length}`);
+      }
       const fileId = documento.id;
       if (fileId === null || fileId === '') continue;
       try {

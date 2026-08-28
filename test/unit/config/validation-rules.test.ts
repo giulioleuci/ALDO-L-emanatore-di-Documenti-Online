@@ -6,6 +6,19 @@ function makeCtx(datasets: Record<string, Array<Record<string, unknown>>>): Data
   return { datasets, index: () => new Set<string>() };
 }
 
+/** FK_CLASSI_CATTEDRE reads ctx.index(table, column); this mirrors DatasetValidator's real semantics. */
+function makeIndexedCtx(datasets: Record<string, Array<Record<string, unknown>>>): DatasetRuleContext {
+  return {
+    datasets,
+    index: (table, column) =>
+      new Set(
+        (datasets[table] ?? [])
+          .map((row) => (typeof row[column] === 'string' ? row[column] : '').trim())
+          .filter((value) => value !== '')
+      )
+  };
+}
+
 function findRowPredicate(id: string): (
   row: Record<string, unknown>,
   ctx: DatasetRuleContext
@@ -82,6 +95,10 @@ test('messaggioErrore renders Italian text per violation type', () => {
   expect(
     messaggioErrore({ ruleId: 'ITP_CLASSI', type: 'rowPredicate', table: 'CLASSI', rowIndex: 0, column: 'INF.itp', value: 'x@y.it', details: {} })
   ).toBe('Colonna ITP INF.itp: il docente "x@y.it" non ha DOCENTI.ITP = true');
+
+  expect(
+    messaggioErrore({ ruleId: 'FK_CLASSI_CATTEDRE', type: 'rowPredicate', table: 'CLASSI', rowIndex: 0, column: 'MAT', value: 'ghost@x.it', details: {} })
+  ).toBe('FK violata: colonna dinamica MAT "ghost@x.it" non esiste in DOCENTI.EMAIL');
 });
 
 test('DYN_CLASSI.normalize strips only the .itp suffix, leaving dotted MATERIE ids intact', () => {
@@ -113,6 +130,39 @@ test('ITP_CLASSI.check: passes when the assigned docente has DOCENTI.ITP = true,
     column: 'INF.itp',
     value: 'nonitp@scuola.it'
   });
+});
+
+test('FK_CLASSI_CATTEDRE.check: passes when the dynamic column email exists in DOCENTI, fails otherwise', () => {
+  const check = findRowPredicate('FK_CLASSI_CATTEDRE');
+  const docenti = [{ [COL_DOCENTI.EMAIL]: 'mat@scuola.it' }];
+  const ctx = makeIndexedCtx({ [TABLE.DOCENTI]: docenti });
+
+  expect(check({ [COL_CLASSI.ID]: '1A', MAT: 'mat@scuola.it' }, ctx)).toBeNull();
+  expect(check({ [COL_CLASSI.ID]: '1A', MAT: 'ghost@x.it' }, ctx)).toEqual({
+    column: 'MAT',
+    value: 'ghost@x.it'
+  });
+});
+
+test('FK_CLASSI_CATTEDRE.check: static columns (COORD/IRC/ALT/etc.) are skipped, only dynamic subject columns are checked', () => {
+  const check = findRowPredicate('FK_CLASSI_CATTEDRE');
+  const ctx = makeIndexedCtx({ [TABLE.DOCENTI]: [] });
+
+  // COORD/IRC/ALT already have their own fk() rules; FK_CLASSI_CATTEDRE must not
+  // also flag them (would double-report the same email).
+  expect(
+    check({ [COL_CLASSI.ID]: '1A', [COL_CLASSI.COORD]: 'ghost@x.it' }, ctx)
+  ).toBeNull();
+});
+
+test('ITP_CLASSI.check: returns null (not a violation) when the .itp email is not in DOCENTI at all', () => {
+  const check = findRowPredicate('ITP_CLASSI');
+  const ctx = makeCtx({ [TABLE.DOCENTI]: [] });
+
+  // The email is unknown to DOCENTI entirely: that is FK_CLASSI_CATTEDRE's
+  // job to report, not ITP_CLASSI's — reporting it here would misleadingly
+  // tell the operator to fix an ITP flag on a docente who doesn't exist.
+  expect(check({ 'INF.itp': 'ghost@x.it' }, ctx)).toBeNull();
 });
 
 test('MATERIE_COMPOSITE_PRINCIPALE.check: composite MATERIE.ID rows require a non-empty PRINCIPALE', () => {

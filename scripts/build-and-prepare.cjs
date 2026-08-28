@@ -772,7 +772,9 @@ gas-source-map.json
           'onOpen',
           'menu_avvioGenerazioneDocumenti',
           'menu_avvioComunicazioniEmail',
-          'menu_avvioImportazioni'
+          'menu_avvioImportazioni',
+          'menu_validazioneDatabase',
+          'menu_bloccaDocumenti'
         ]
       ],
       ['EntryPoints_User.gs', ['generaPagelle', 'inviaNotificaAssenze', 'importaAlunniChunked']]

@@ -120,7 +120,7 @@ export function menuBloccaDocumenti(ui: IUiFacade, esegui: () => string): void {
   avvioConConferma(
     ui,
     'BLOCCA DOCUMENTI',
-    "Tutti i permessi di scrittura sui documenti dell'anno corrente saranno declassati a sola lettura. L'operazione NON è reversibile dal sistema.",
+    "Tutti i permessi di scrittura sui documenti dell'anno corrente saranno declassati a sola lettura. L'operazione NON è reversibile dal sistema. Se l'operazione supera il tempo massimo di esecuzione, è possibile rilanciarla: i documenti già elaborati verranno saltati automaticamente.",
     esegui
   );
 }

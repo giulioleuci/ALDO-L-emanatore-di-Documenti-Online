@@ -40,9 +40,6 @@ import {
 /** Tables the validator reads (every table except MASTER, which lives in another spreadsheet). */
 export const VALIDATION_TABLES: string[] = Object.values(TABLE).filter((t) => t !== TABLE.MASTER);
 
-/** Religione columns of CLASSI hold docente emails, not materia ids (01). */
-const CLASSI_NON_MATERIA_COLUMNS = [COL_CLASSI.IRC, COL_CLASSI.ALT];
-
 /** Scalar cell value -> trimmed string; non-scalars (objects/arrays) never stringify meaningfully. */
 function scalarString(value: unknown): string {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
@@ -120,6 +117,26 @@ export function regoleValidazione(): DatasetValidationRule[] {
     fk('FK_LOG_FOLD_TIPO', TABLE.LOG_FOLD, COL_LOG_FOLD.TIPO, TABLE.CONF_DOC, COL_CONF_DOC.ID),
     fk('FK_LOG_MAIL_PATTERN', TABLE.LOG_MAIL, COL_LOG_MAIL.PATTERN, TABLE.CONF_MAIL, COL_CONF_MAIL.ID),
 
+    // CLASSI's dynamic per-subject/specifica columns (e.g. MAT, INF.itp,
+    // LAB.GRUPPO_A) hold a docente email or CSV of emails each — not covered
+    // by the static fk() calls above since the column set is data-driven.
+    {
+      id: 'FK_CLASSI_CATTEDRE',
+      type: 'rowPredicate',
+      table: TABLE.CLASSI,
+      check: (row, ctx) => {
+        const docenti = ctx.index(TABLE.DOCENTI, COL_DOCENTI.EMAIL);
+        const statiche = new Set<string>(Object.values(COL_CLASSI));
+        for (const [column, value] of Object.entries(row)) {
+          if (statiche.has(column)) continue; // COORD/IRC/ALT already have their own FK rules
+          for (const email of scalarString(value).split(',').map((s) => s.trim()).filter((s) => s !== '')) {
+            if (!docenti.has(email)) return { column, value: email };
+          }
+        }
+        return null;
+      }
+    },
+
     // --- 2. JSON fields ---
     json(TABLE.ALUNNI, COL_ALUNNI.CURRICULUM),
     json(TABLE.CLASSI, COL_CLASSI.RUOLI),
@@ -174,7 +191,6 @@ export function regoleValidazione(): DatasetValidationRule[] {
       type: 'columnName',
       table: TABLE.CLASSI,
       knownColumns: Object.values(COL_CLASSI),
-      ignore: CLASSI_NON_MATERIA_COLUMNS,
       targetTable: TABLE.MATERIE,
       targetColumn: COL_MATERIE.ID,
       normalize: baseMateria
@@ -184,7 +200,6 @@ export function regoleValidazione(): DatasetValidationRule[] {
       type: 'columnName',
       table: TABLE.CARENZE,
       knownColumns: Object.values(COL_CARENZE),
-      ignore: CLASSI_NON_MATERIA_COLUMNS,
       targetTable: TABLE.MATERIE,
       targetColumn: COL_MATERIE.ID,
       normalize: baseMateria
@@ -209,7 +224,8 @@ export function regoleValidazione(): DatasetValidationRule[] {
           const docente = (ctx.datasets[TABLE.DOCENTI] ?? []).find(
             (d) => cell(d, COL_DOCENTI.EMAIL) === email
           );
-          const isItp = docente?.[COL_DOCENTI.ITP];
+          if (!docente) continue; // unknown email: FK_CLASSI_CATTEDRE reports this, not ITP_CLASSI
+          const isItp = docente[COL_DOCENTI.ITP];
           if (isItp === true || String(isItp).toUpperCase() === 'TRUE') continue;
           return { column, value: email };
         }
@@ -278,6 +294,8 @@ export function messaggioErrore(v: DatasetViolation): string {
       break;
   }
   switch (v.ruleId) {
+    case 'FK_CLASSI_CATTEDRE':
+      return `FK violata: colonna dinamica ${v.column} "${v.value}" non esiste in DOCENTI.EMAIL`;
     case 'ITP_CLASSI':
       return `Colonna ITP ${v.column}: il docente "${v.value}" non ha DOCENTI.ITP = true`;
     case 'MATERIE_COMPOSITE_PRINCIPALE':

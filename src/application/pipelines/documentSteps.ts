@@ -3,7 +3,7 @@ import type { IDriveFacade, PermissionGrant } from '../../infrastructure/facades
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
-import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
+import type { DocumentStrategyFactory } from '../factories/DocumentStrategyFactory';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import type { Email } from '../../domain/value-objects/Email';
@@ -390,7 +390,7 @@ export class CloneTemplateStep extends Step {
 export class RenderTemplateStep extends Step {
   constructor(
     logger: LoggerService,
-    private readonly registry: Map<string, GeneratorStrategy>
+    private readonly strategies: DocumentStrategyFactory
   ) {
     super('RenderTemplate', logger, {
       shouldExecuteCondition: generateGate,
@@ -398,14 +398,12 @@ export class RenderTemplateStep extends Step {
     });
   }
   protected _executeLogic(ctx: PipelineContext): void {
-    const generatore = String(cfg(ctx)[COL_CONF_DOC.GENERATORE]);
-    const strategy = this.registry.get(generatore);
-    if (!strategy) throw new PipelineError(`GENERATORE non registrato: ${generatore}`); // 10 §9
+    const strategy = this.strategies.resolve(confDoc(ctx));
     strategy.render(ctx.get<string>('newFileId')!, cdu(ctx), confDoc(ctx));
   }
 
   protected override _getLogDetails(ctx: PipelineContext): string {
-    return String(cfg(ctx)[COL_CONF_DOC.GENERATORE]);
+    return confDoc(ctx).generatore;
   }
 }
 

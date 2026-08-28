@@ -1,5 +1,5 @@
 import { DocumentGenerationService } from '../../src/application/services/DocumentGenerationService';
-import { VerbaleGeneratorStrategy } from '../../src/application/strategies/VerbaleGeneratorStrategy';
+import { DocumentoGenericoGeneratorStrategy } from '../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
 import { ConfigurazioneDocumentoRepository } from '../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import {
   composeContextBuilder,
@@ -7,6 +7,7 @@ import {
 } from '../../src/config/ApplicationComposition';
 import { ExpressionEngineFacade } from '../../src/infrastructure/facades/ExpressionEngineFacade';
 import type { GeneratorStrategy } from '../../src/application/strategies/GeneratorStrategy';
+import type { DocumentStrategyFactory } from '../../src/application/factories/DocumentStrategyFactory';
 import { FakeDatabase } from '../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../fakes/FakeDriveFacade';
 import { FakeTemplateEngine } from '../fakes/FakeTemplateEngine';
@@ -24,9 +25,9 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
     db,
     drive,
     contextBuilder: composeContextBuilder(db),
-    strategyRegistry: new Map([
-      ['VERBALE_CDC', strategy ?? new VerbaleGeneratorStrategy(templates)]
-    ]),
+    strategyFactory: {
+      resolve: () => strategy ?? new DocumentoGenericoGeneratorStrategy(templates)
+    } as unknown as DocumentStrategyFactory,
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),

@@ -7,7 +7,7 @@ import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonito
 import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
-import type { GeneratorStrategy } from '../strategies/GeneratorStrategy';
+import type { DocumentStrategyFactory } from '../factories/DocumentStrategyFactory';
 import { recipe, type BuildParams } from '../context-engine/Recipe';
 import {
   AnalyzeContextStep,
@@ -35,7 +35,7 @@ export interface DocumentGenerationDeps {
   drive: IDriveFacade;
   /** Modular CDU assembler (context-engine, spec 09) wired via ContextEngineFactory. */
   contextBuilder: ContextBuilder;
-  strategyRegistry: Map<string, GeneratorStrategy>;
+  strategyFactory: DocumentStrategyFactory;
   /** WorkspaceTemplateEngine port (FILE_NAME/PATH_OUT strings + document rendering). */
   templates: ITemplateEngine;
   /** GasExpressionEngineLib port (CONDIZIONE + conditional MODELLI). */
@@ -72,7 +72,7 @@ export class DocumentGenerationService {
   private readonly db: IDatabase & PostProcessDb;
   private readonly drive: IDriveFacade;
   private readonly contextBuilder: ContextBuilder;
-  private readonly strategyRegistry: Map<string, GeneratorStrategy>;
+  private readonly strategyFactory: DocumentStrategyFactory;
   private readonly templates: ITemplateEngine;
   private readonly expressionEngine: IExpressionEngine;
   private readonly configs: IConfigurazioneDocumentoRepository;
@@ -88,7 +88,7 @@ export class DocumentGenerationService {
     this.db = deps.db;
     this.drive = deps.drive;
     this.contextBuilder = deps.contextBuilder;
-    this.strategyRegistry = deps.strategyRegistry;
+    this.strategyFactory = deps.strategyFactory;
     this.templates = deps.templates;
     this.expressionEngine = deps.expressionEngine;
     this.configs = deps.configs;
@@ -148,9 +148,6 @@ export class DocumentGenerationService {
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
-    if (!this.strategyRegistry.has(config.generatore)) {
-      throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
-    }
 
     const classe = this.classi.findById(target);
     if (classe === null) throw new PipelineError(`Classe ${target.value} non trovata`);
@@ -210,9 +207,6 @@ export class DocumentGenerationService {
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
     const config = ConfigurazioneDocumento.fromData(row);
-    if (!this.strategyRegistry.has(config.generatore)) {
-      throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
-    }
 
     const cdu = this.contextBuilder.build(
       {
@@ -285,9 +279,6 @@ export class DocumentGenerationService {
     if (expectedConfDocTipo !== undefined && config.tipo !== expectedConfDocTipo) {
       throw new PipelineError(`CONF_DOC ${confDocId} deve avere TIPO ${expectedConfDocTipo}`);
     }
-    if (!this.strategyRegistry.has(config.generatore)) {
-      throw new PipelineError(`GENERATORE non registrato: ${config.generatore}`);
-    }
 
     const cdu = this.contextBuilder.build(
       {
@@ -359,7 +350,7 @@ export class DocumentGenerationService {
       .addStep(new GenerateNameStep(this.logger, this.templates))
       .addStep(new SelectTemplateStep(this.logger, this.configs, this.expressionEngine))
       .addStep(new CloneTemplateStep(this.logger, this.drive))
-      .addStep(new RenderTemplateStep(this.logger, this.strategyRegistry))
+      .addStep(new RenderTemplateStep(this.logger, this.strategyFactory))
       .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver))
       .addStep(new RegisterDocumentStep(this.logger, this.db, this.templates))
       .addStep(new PostProcessStep(this.logger, this.db, this.templates, this.now));

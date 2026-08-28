@@ -1,6 +1,7 @@
 import { DocumentGenerationService } from '../../src/application/services/DocumentGenerationService';
-import { VerbaleGeneratorStrategy } from '../../src/application/strategies/VerbaleGeneratorStrategy';
+import { DocumentoGenericoGeneratorStrategy } from '../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../src/application/strategies/SheetMaterieConPermessiGeneratorStrategy';
+import type { DocumentStrategyFactory } from '../../src/application/factories/DocumentStrategyFactory';
 import { ConfigurazioneDocumentoRepository } from '../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import { MateriaRepository } from '../../src/infrastructure/repositories/MateriaRepository';
 import {
@@ -78,7 +79,9 @@ test('doc-gen: 2-hop VARIAZIONI_CATTEDRA chain resolves the generated CDU to the
     db,
     drive,
     contextBuilder: composeContextBuilder(db),
-    strategyRegistry: new Map([['VERBALE_CDC', new VerbaleGeneratorStrategy(templates)]]),
+    strategyFactory: {
+      resolve: () => new DocumentoGenericoGeneratorStrategy(templates)
+    } as unknown as DocumentStrategyFactory,
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),

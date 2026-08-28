@@ -39,6 +39,21 @@ import { MasterSheetRepository } from '../../../src/infrastructure/repositories/
 import { DriveServiceFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import type { ITeachingAssignmentResolver } from '../../../src/application/ports/ITeachingAssignmentResolver';
+import type { DocumentStrategyFactory } from '../../../src/application/factories/DocumentStrategyFactory';
+import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
+import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
+import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
+import { COL_CONF_DOC } from '../../../src/config/schema';
+
+function strategyConfig(overrides: Record<string, unknown>): ConfigurazioneDocumento {
+  return ConfigurazioneDocumento.fromData({
+    [COL_CONF_DOC.ID]: 'X',
+    [COL_CONF_DOC.TIPO]: 'T',
+    [COL_CONF_DOC.GENERATORE]: 'CLASSE',
+    [COL_CONF_DOC.FORMATO]: 'GDOC',
+    ...overrides
+  });
+}
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -110,8 +125,10 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   expect(c.get('reportService')).toBeInstanceOf(ReportService);
   expect(c.get('aggregatoreDati')).toBeInstanceOf(AggregatoreDati);
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
-  const registry = c.get<Map<string, unknown>>('strategyRegistry');
-  expect(registry.has('FOGLIO_GENERICO')).toBe(true);
+  const factory = c.get<DocumentStrategyFactory>('strategyFactory');
+  expect(factory.resolve(strategyConfig({ [COL_CONF_DOC.FORMATO]: 'GSHEET' }))).toBeInstanceOf(
+    FoglioGenericoGeneratorStrategy
+  );
 });
 
 test('container injects one role and teaching resolver graph into every document consumer', () => {
@@ -311,41 +328,74 @@ describe('buildAldoContainer — optional generator strategies', () => {
     };
   }
 
-  test('does not register SHEET_CON_MATERIE/SHEET_CON_MATERIE_E_PERMESSI/DOCUMENTO_CON_TABELLE_IMPORTATE when deps.spreadsheets is undefined', () => {
+  test('throws resolving SHEET_CON_MATERIE/SHEET_CON_MATERIE_E_PERMESSI/DOCUMENTO_CON_TABELLE_IMPORTATE when deps.spreadsheets is undefined', () => {
     const c = buildAldoContainer(baseDeps());
-    const registry = c.get<Map<string, unknown>>('strategyRegistry');
-    expect(registry.has('SHEET_CON_MATERIE')).toBe(false);
-    expect(registry.has('SHEET_CON_MATERIE_E_PERMESSI')).toBe(false);
-    expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(false);
+    const factory = c.get<DocumentStrategyFactory>('strategyFactory');
+    expect(() =>
+      factory.resolve(
+        strategyConfig({
+          [COL_CONF_DOC.FORMATO]: 'GSHEET',
+          [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterie: true })
+        })
+      )
+    ).toThrow('SHEET_CON_MATERIE');
+    expect(() =>
+      factory.resolve(
+        strategyConfig({
+          [COL_CONF_DOC.FORMATO]: 'GSHEET',
+          [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterieConPermessi: true })
+        })
+      )
+    ).toThrow('SHEET_CON_MATERIE_E_PERMESSI');
+    expect(() =>
+      factory.resolve(strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+    ).toThrow('DOCUMENTO_CON_TABELLE_IMPORTATE');
   });
 
-  test('registers SHEET_CON_MATERIE and SHEET_CON_MATERIE_E_PERMESSI when deps.spreadsheets is provided, but not DOCUMENTO_CON_TABELLE_IMPORTATE without deps.documents', () => {
+  test('resolves SHEET_CON_MATERIE and SHEET_CON_MATERIE_E_PERMESSI when deps.spreadsheets is provided, but not DOCUMENTO_CON_TABELLE_IMPORTATE without deps.documents', () => {
     const c = buildAldoContainer({ ...baseDeps(), spreadsheets: {} as never });
-    const registry = c.get<Map<string, unknown>>('strategyRegistry');
-    expect(registry.has('SHEET_CON_MATERIE')).toBe(true);
-    expect(registry.has('SHEET_CON_MATERIE_E_PERMESSI')).toBe(true);
-    expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(false);
+    const factory = c.get<DocumentStrategyFactory>('strategyFactory');
+    expect(() =>
+      factory.resolve(
+        strategyConfig({
+          [COL_CONF_DOC.FORMATO]: 'GSHEET',
+          [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterie: true })
+        })
+      )
+    ).not.toThrow();
+    expect(() =>
+      factory.resolve(
+        strategyConfig({
+          [COL_CONF_DOC.FORMATO]: 'GSHEET',
+          [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterieConPermessi: true })
+        })
+      )
+    ).not.toThrow();
+    expect(() =>
+      factory.resolve(strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+    ).toThrow('DOCUMENTO_CON_TABELLE_IMPORTATE');
   });
 
-  test('registers DOCUMENTO_CON_TABELLE_IMPORTATE when both deps.spreadsheets and deps.documents are provided', () => {
+  test('resolves DOCUMENTO_CON_TABELLE_IMPORTATE when both deps.spreadsheets and deps.documents are provided', () => {
     const c = buildAldoContainer({
       ...baseDeps(),
       spreadsheets: {} as never,
       documents: {} as never
     });
-    const registry = c.get<Map<string, unknown>>('strategyRegistry');
-    expect(registry.has('DOCUMENTO_CON_TABELLE_IMPORTATE')).toBe(true);
+    const factory = c.get<DocumentStrategyFactory>('strategyFactory');
+    expect(() =>
+      factory.resolve(strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+    ).not.toThrow();
   });
 
-  test('keeps DOCUMENTO_GENERICO registered and never registers the obsolete RIEPILOGO_CLASSE strategy', () => {
+  test('resolves DOCUMENTO_GENERICO for a plain GDOC config', () => {
     const c = buildAldoContainer({
       ...baseDeps(),
       spreadsheets: {} as never,
       documents: {} as never
     });
-    const registry = c.get<Map<string, unknown>>('strategyRegistry');
-    expect(registry.has('DOCUMENTO_GENERICO')).toBe(true);
-    expect(registry.has('RIEPILOGO_CLASSE')).toBe(false);
+    const factory = c.get<DocumentStrategyFactory>('strategyFactory');
+    expect(factory.resolve(strategyConfig({}))).toBeInstanceOf(DocumentoGenericoGeneratorStrategy);
   });
 
   test("registers 'spreadsheets' in the container when deps.spreadsheets is provided", () => {

@@ -199,7 +199,7 @@ export function fixtureTables(): Record<string, Row[]> {
       {
         ID: 'CD1',
         TIPO: 'VERBALE',
-        GENERATORE: 'VERBALE_CDC',
+        GENERATORE: 'CLASSE',
         CONDIZIONE: null,
         MODELLI: '{"templateId":"tmpl_verbale"}',
         FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
@@ -216,7 +216,7 @@ export function fixtureTables(): Record<string, Row[]> {
       {
         ID: 'CD_ESAME',
         TIPO: 'VERBALE',
-        GENERATORE: 'VERBALE_CDC',
+        GENERATORE: 'CLASSE',
         CONDIZIONE: '{{focus.classe.anagrafica.anno}} == 5',
         MODELLI:
           '[{"condizione":"{{focus.classe.anagrafica.anno}} == 5","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
@@ -234,7 +234,7 @@ export function fixtureTables(): Record<string, Row[]> {
       {
         ID: 'PIANI_PERSONALIZZATI',
         TIPO: 'PIANO_PERS',
-        GENERATORE: 'DOC_PERSONALIZZATO',
+        GENERATORE: 'PIANO_PERSONALIZZATO',
         CONDIZIONE: null,
         MODELLI:
           '[{"condizione":"{{focus.piano.tipo}} == \\"PDP_DSA\\"","templateId":"tmpl_pdp_dsa"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_BES\\"","templateId":"tmpl_pdp_bes"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_STRANIERI\\"","templateId":"tmpl_pdp_stranieri"},{"condizione":"{{focus.piano.tipo}} == \\"PEI\\"","templateId":"tmpl_pei"},{"condizione":"{{focus.piano.tipo}} == \\"PFP\\"","templateId":"tmpl_pfp"}]',
@@ -254,7 +254,7 @@ export function fixtureTables(): Record<string, Row[]> {
       {
         ID: 'CD_ARTICOLATA',
         TIPO: 'VERBALE_ARTICOLATO',
-        GENERATORE: 'VERBALE_CDC',
+        GENERATORE: 'CLASSE',
         CONDIZIONE: null,
         MODELLI: '{"templateId":"tmpl_verbale"}',
         FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',

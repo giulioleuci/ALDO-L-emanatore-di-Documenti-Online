@@ -17,14 +17,13 @@ import { RisolutoreRuoliService } from '../application/services/RisolutoreRuoliS
 import { ReportService } from '../application/services/ReportService';
 import { AggregatoreDati } from '../application/services/AggregatoreDati';
 import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
-import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';
 import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/DocumentoGenericoGeneratorStrategy';
 import { FoglioGenericoGeneratorStrategy } from '../application/strategies/FoglioGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../application/strategies/SheetMaterieConPermessiGeneratorStrategy';
 import { DocumentoConTabelleImportateGeneratorStrategy } from '../application/strategies/DocumentoConTabelleImportateGeneratorStrategy';
-import type { GeneratorStrategy } from '../application/strategies/GeneratorStrategy';
+import { DocumentStrategyFactory } from '../application/factories/DocumentStrategyFactory';
 import { DocumentTableFacade } from '../infrastructure/facades/DocumentTableFacade';
 import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
 import { DocenteRepository } from '../infrastructure/repositories/DocenteRepository';
@@ -188,46 +187,44 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   if (deps.monitor !== undefined) {
     c.register('monitor', () => deps.monitor!);
   }
-  c.register('strategyRegistry', (container) => {
-    // Data-driven registry (10 §9): one entry per CONF_DOC.GENERATORE value
-    // implemented. The Sheet/Doc-structural strategies need a live
-    // SpreadsheetService/DocumentService (deps.spreadsheets/deps.documents,
-    // GAS-only) — omitted (and thus unregistered — RenderTemplateStep then
-    // fails typed with "GENERATORE non registrato") when running off-GAS.
-    const registry = new Map<string, GeneratorStrategy>([
-      ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
-      ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
-      ['FOGLIO_GENERICO', new FoglioGenericoGeneratorStrategy(deps.templates)],
-      ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(deps.templates)]
-    ]);
+  c.register('strategyFactory', (container) => {
+    // Replaces the old GENERATORE-keyed registry (10 §9): the base engine is
+    // chosen from FORMATO, not a lookup key. The Sheet/Doc-structural
+    // strategies need a live SpreadsheetService/DocumentService
+    // (deps.spreadsheets/deps.documents, GAS-only) — left undefined (and thus
+    // DocumentStrategyFactory.resolve throws typed) when running off-GAS.
+    const docGenerico = new DocumentoGenericoGeneratorStrategy(deps.templates);
+    const foglioGenerico = new FoglioGenericoGeneratorStrategy(deps.templates);
+    const docPersonalizzato = new DocPersonalizzatoGeneratorStrategy(deps.templates);
+    let docTabelle: DocumentoConTabelleImportateGeneratorStrategy | undefined;
+    let sheetMaterie: SheetMaterieGeneratorStrategy | undefined;
+    let sheetPermessi: SheetMaterieConPermessiGeneratorStrategy | undefined;
     if (deps.spreadsheets !== undefined) {
       const materie = container.get<MateriaRepository>('materie');
-      registry.set(
-        'SHEET_CON_MATERIE',
-        new SheetMaterieGeneratorStrategy(deps.spreadsheets, materie, deps.templates)
-      );
-      registry.set(
-        'SHEET_CON_MATERIE_E_PERMESSI',
-        new SheetMaterieConPermessiGeneratorStrategy(
-          deps.spreadsheets,
-          materie,
-          deps.templates,
-          container.get<RisolutoreRuoliService>('risolutoreRuoli')
-        )
+      sheetMaterie = new SheetMaterieGeneratorStrategy(deps.spreadsheets, materie, deps.templates);
+      sheetPermessi = new SheetMaterieConPermessiGeneratorStrategy(
+        deps.spreadsheets,
+        materie,
+        deps.templates,
+        container.get<RisolutoreRuoliService>('risolutoreRuoli')
       );
       if (deps.documents !== undefined) {
-        registry.set(
-          'DOCUMENTO_CON_TABELLE_IMPORTATE',
-          new DocumentoConTabelleImportateGeneratorStrategy(
-            deps.templates,
-            deps.spreadsheets,
-            new DocumentTableFacade(deps.documents),
-            logger
-          )
+        docTabelle = new DocumentoConTabelleImportateGeneratorStrategy(
+          deps.templates,
+          deps.spreadsheets,
+          new DocumentTableFacade(deps.documents),
+          logger
         );
       }
     }
-    return registry;
+    return new DocumentStrategyFactory(
+      docGenerico,
+      foglioGenerico,
+      docPersonalizzato,
+      docTabelle,
+      sheetMaterie,
+      sheetPermessi
+    );
   });
   c.register(
     'documentGenerationService',
@@ -236,7 +233,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         db: deps.db,
         drive: deps.drive,
         contextBuilder: container.get<ContextBuilder>('contextBuilder'),
-        strategyRegistry: container.get<Map<string, GeneratorStrategy>>('strategyRegistry'),
+        strategyFactory: container.get<DocumentStrategyFactory>('strategyFactory'),
         templates: deps.templates,
         expressionEngine: deps.expressionEngine,
         configs: new ConfigurazioneDocumentoRepository(deps.db),

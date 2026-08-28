@@ -1,5 +1,5 @@
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
-import { VerbaleGeneratorStrategy } from '../../../src/application/strategies/VerbaleGeneratorStrategy';
+import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../../src/config/ApplicationComposition';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import type { GeneratorStrategy } from '../../../src/application/strategies/GeneratorStrategy';
+import type { DocumentStrategyFactory } from '../../../src/application/factories/DocumentStrategyFactory';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
@@ -16,10 +17,14 @@ import { fixtureTables } from '../../fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
 import { TABLE } from '../../../src/config/schema';
-import { PipelineError } from '../../../src/domain/errors/DomainError';
+import { ConfigurationError, PipelineError } from '../../../src/domain/errors/DomainError';
 import type { Row, IReadableTable } from '../../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
+
+function stubFactory(strategy: GeneratorStrategy): DocumentStrategyFactory {
+  return { resolve: () => strategy } as unknown as DocumentStrategyFactory;
+}
 
 /**
  * A FakeDatabase whose LOG_DOCS.find() always misses, while every other
@@ -44,7 +49,7 @@ function wire(
   tables: Record<string, Row[]> = fixtureTables(),
   options: {
     strategy?: GeneratorStrategy;
-    registry?: Map<string, GeneratorStrategy>;
+    strategyFactory?: DocumentStrategyFactory;
     db?: FakeDatabase;
     now?: Date;
     monitor?: FakeProcessMonitor;
@@ -53,14 +58,13 @@ function wire(
   const db = options.db ?? new FakeDatabase(tables);
   const drive = new FakeDriveFacade();
   const templates = new FakeTemplateEngine();
-  const registry =
-    options.registry ??
-    new Map([['VERBALE_CDC', options.strategy ?? new VerbaleGeneratorStrategy(templates)]]);
+  const strategyFactory =
+    options.strategyFactory ?? stubFactory(options.strategy ?? new DocumentoGenericoGeneratorStrategy(templates));
   const service = new DocumentGenerationService({
     db,
     drive,
     contextBuilder: composeContextBuilder(db),
-    strategyRegistry: registry,
+    strategyFactory,
     templates,
     expressionEngine: new ExpressionEngineFacade(),
     configs: new ConfigurazioneDocumentoRepository(db),
@@ -81,10 +85,17 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     );
   });
 
-  test('throws when the configured GENERATORE is not registered in the strategy registry', () => {
-    const { service } = wire(fixtureTables(), { registry: new Map() });
+  // The old strategyRegistry.has() guard is gone (10 §9 redesign, Task 2):
+  // ConfigurazioneDocumento.fromData(row) — called just above where that guard
+  // used to sit — already rejects an invalid GENERATORE (Task 1), so this is
+  // now where an unresolvable GENERATORE surfaces.
+  test('throws a ConfigurationError when the configured GENERATORE is not a valid GeneratoreAxis', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC![0] = { ...tables.CONF_DOC![0]!, GENERATORE: 'VERBALE_CDC' };
+    const { service } = wire(tables);
+    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(ConfigurationError);
     expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(
-      'GENERATORE non registrato: VERBALE_CDC'
+      'GENERATORE non valido: VERBALE_CDC'
     );
   });
 
@@ -188,10 +199,9 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
 
 describe('DocumentGenerationService.generateForPiano', () => {
   test('returns the generated document metadata and measured duration from the completed pipeline context', () => {
-    const registry = new Map([
-      ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())]
-    ]);
-    const { service } = wire(fixtureTables(), { registry });
+    const { service } = wire(fixtureTables(), {
+      strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())
+    });
     const nowSpy = jest
       .spyOn(Date, 'now')
       .mockReturnValueOnce(1000)
@@ -223,7 +233,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
     tables.CONF_DOC!.push({
       ID: 'PIANI_PERSONALIZZATI',
       TIPO: 'PIANO_PERS',
-      GENERATORE: 'DOC_PERSONALIZZATO',
+      GENERATORE: 'PIANO_PERSONALIZZATO',
       CONDIZIONE: null,
       MODELLI: JSON.stringify([
         { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
@@ -245,9 +255,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
     });
     const documentTemplates = new FakeTemplateEngine();
     const { db, drive, service } = wire(tables, {
-      registry: new Map([
-        ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(documentTemplates)]
-      ])
+      strategy: new DocPersonalizzatoGeneratorStrategy(documentTemplates)
     });
 
     const pei = service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI');
@@ -302,21 +310,14 @@ describe('DocumentGenerationService.generateForPiano', () => {
       PARAMETRI: '{"gravita":"lieve"}'
     });
     const db = new FakeDatabase(tables);
-    const registry = () =>
-      new Map([
-        [
-          'DOC_PERSONALIZZATO',
-          new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())
-        ]
-      ]);
     const firstRun = wire(tables, {
       db,
-      registry: registry(),
+      strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine()),
       now: new Date('2026-07-01T09:00:00Z')
     });
     const laterRun = wire(tables, {
       db,
-      registry: registry(),
+      strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine()),
       now: new Date('2026-07-02T09:00:00Z')
     });
 
@@ -361,7 +362,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
     tables.CONF_DOC!.push({
       ID: 'PIANI_PERSONALIZZATI_NO_PEI',
       TIPO: 'PIANO_PERS',
-      GENERATORE: 'DOC_PERSONALIZZATO',
+      GENERATORE: 'PIANO_PERSONALIZZATO',
       CONDIZIONE: '{{focus.piano.tipo}} != "PEI"',
       MODELLI: JSON.stringify([
         { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
@@ -382,9 +383,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
       })
     });
     const { drive, service } = wire(tables, {
-      registry: new Map([
-        ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())]
-      ])
+      strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())
     });
 
     expect(
@@ -411,7 +410,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
     tables.CONF_DOC!.push({
       ID: 'CD_CLASSE_COMPLETA',
       TIPO: 'GENERICO',
-      GENERATORE: 'CAPTURING',
+      GENERATORE: 'CLASSE',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
       FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
@@ -442,7 +441,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       ID_ORIG: ''
     });
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     service.generateForClasse(ClasseId.of('1F'), 'CD_CLASSE_COMPLETA');
 
@@ -456,7 +455,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
     tables.CONF_DOC!.push({
       ID: 'CD_PARTNER',
       TIPO: 'GENERICO',
-      GENERATORE: 'CAPTURING',
+      GENERATORE: 'CLASSE',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
       FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
@@ -487,7 +486,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       ID_ORIG: ''
     });
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     service.generateForClasse(ClasseId.of('1F-LSO'), 'CD_PARTNER');
 
@@ -499,7 +498,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
     tables.CONF_DOC!.push({
       ID: 'CD_5A',
       TIPO: 'GENERICO',
-      GENERATORE: 'CAPTURING',
+      GENERATORE: 'CLASSE',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
       FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
@@ -514,7 +513,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       REGISTRA_FOLD: null
     });
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     service.generateForClasse(ClasseId.of('5A'), 'CD_5A');
 
@@ -535,7 +534,7 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
     tables.CONF_DOC!.push({
       ID: id,
       TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
-      GENERATORE: 'CAPTURING',
+      GENERATORE: 'CLASSE_DOCENTE_MATERIA',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
       FILE_NAME: 'Programma_{{focus.materia.sigla}}_{{focus.docente.email}}',
@@ -561,7 +560,7 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
     const tables = fixtureTables();
     pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     const result = service.generateForDocenteClasseMateria(
       ClasseId.of('5A'),
@@ -580,7 +579,7 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
     const tables = fixtureTables();
     pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
     const seen: Pipeline[] = [];
     const originalBuildPipeline = (
       service as unknown as { buildPipeline: (jobId?: string) => Pipeline }
@@ -631,7 +630,7 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
     const tables = fixtureTables();
     pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     expect(() =>
       service.generateForDocenteClasseMateria(
@@ -657,7 +656,7 @@ describe('DocumentGenerationService.generateForClasseMateria', () => {
     tables.CONF_DOC!.push({
       ID: 'CD_CLASSE_MATERIA',
       TIPO: 'DOCUMENTO_CLASSE_MATERIA',
-      GENERATORE: 'CAPTURING',
+      GENERATORE: 'CLASSE_MATERIA',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
       FILE_NAME: 'Materia_{{focus.materia.sigla}}',
@@ -672,7 +671,7 @@ describe('DocumentGenerationService.generateForClasseMateria', () => {
       REGISTRA_FOLD: null
     });
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     const result = service.generateForClasseMateria(
       ClasseId.of('5A'),
@@ -702,7 +701,7 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
     tables.CONF_DOC!.push({
       ID: id,
       TIPO: 'DIPARTIMENTO',
-      GENERATORE: 'CAPTURING',
+      GENERATORE: 'DIPARTIMENTO',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
       FILE_NAME: 'Verbale_{{focus.dipartimento.anagrafica.nome}}',
@@ -726,7 +725,7 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
     const tables = fixtureTables();
     pushDipartimentoConfig(tables);
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     const result = service.generateForDipartimento('SCIENTIFICO_DIP', 'CD_DIPARTIMENTO');
 
@@ -748,7 +747,7 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
     const tables = fixtureTables();
     pushDipartimentoConfig(tables);
     const strategy = new CapturingStrategy();
-    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+    const { service } = wire(tables, { strategy });
 
     expect(() => service.generateForDipartimento('IGNOTO', 'CD_DIPARTIMENTO')).toThrow(
       /Dipartimento IGNOTO non trovato/

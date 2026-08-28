@@ -1,5 +1,6 @@
 import { DocumentGenerationService } from '../../src/application/services/DocumentGenerationService';
 import { DocPersonalizzatoGeneratorStrategy } from '../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
+import type { DocumentStrategyFactory } from '../../src/application/factories/DocumentStrategyFactory';
 import {
   composeContextBuilder,
   composeEmailNotificationService,
@@ -192,9 +193,9 @@ test('pipeline observability survives real SheetDB commit and dynamic job execut
       db: sheetDb.db,
       drive,
       contextBuilder: composeContextBuilder(sheetDb.db),
-      strategyRegistry: new Map([
-        ['DOC_PERSONALIZZATO', new DocPersonalizzatoGeneratorStrategy(templates)]
-      ]),
+      strategyFactory: {
+        resolve: () => new DocPersonalizzatoGeneratorStrategy(templates)
+      } as unknown as DocumentStrategyFactory,
       templates,
       expressionEngine: new ExpressionEngineFacade(),
       configs: new ConfigurazioneDocumentoRepository(sheetDb.db),

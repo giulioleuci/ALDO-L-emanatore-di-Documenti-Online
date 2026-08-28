@@ -11,7 +11,8 @@ import {
   ApplyPermissionsStep,
   CRITICAL_STEPS
 } from '../../../../src/application/pipelines/documentSteps';
-import { VerbaleGeneratorStrategy } from '../../../../src/application/strategies/VerbaleGeneratorStrategy';
+import { DocumentoGenericoGeneratorStrategy } from '../../../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
+import type { DocumentStrategyFactory } from '../../../../src/application/factories/DocumentStrategyFactory';
 import { ConfigurazioneDocumento } from '../../../../src/domain/entities/ConfigurazioneDocumento';
 import { ConfigurazioneDocumentoRepository } from '../../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
 import { ExpressionEngineFacade } from '../../../../src/infrastructure/facades/ExpressionEngineFacade';
@@ -100,7 +101,7 @@ function pianoConfig(): Record<string, unknown> {
     ...fixtureTables().CONF_DOC[0]!,
     ID: 'PIANI_PERSONALIZZATI',
     TIPO: 'PIANO_PERS',
-    GENERATORE: 'DOC_PERSONALIZZATO',
+    GENERATORE: 'PIANO_PERSONALIZZATO',
     MODELLI: JSON.stringify([
       { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
       { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
@@ -206,13 +207,13 @@ describe('document pipeline operational log details', () => {
     const db = new FakeDatabase(fixtureTables());
     const ctx = baseCtx(db);
     ctx.set('newFileId', 'file_1');
-    const registry = new Map([
-      ['VERBALE_CDC', new VerbaleGeneratorStrategy(new FakeTemplateEngine())]
-    ]);
+    const strategies = {
+      resolve: () => new DocumentoGenericoGeneratorStrategy(new FakeTemplateEngine())
+    } as unknown as DocumentStrategyFactory;
 
-    const result = new RenderTemplateStep(logger, registry).execute(ctx);
+    const result = new RenderTemplateStep(logger, strategies).execute(ctx);
 
-    expect(logDetails(result)).toBe('VERBALE_CDC');
+    expect(logDetails(result)).toBe('CLASSE');
   });
 
   test('publishes unique operational permission addresses and no registration payload', () => {
@@ -681,29 +682,21 @@ test('CloneTemplateStep sets newFileLink to a Sheets edit URL for FORMATO=GSHEET
   );
 });
 
-test('CloneTemplateStep falls back to the generic Drive file link for FORMATO=PDF/TEXT (item 1)', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db);
-  ctx.set(
-    'confDoc',
-    ConfigurazioneDocumento.fromData({ ...fixtureTables().CONF_DOC[0]!, FORMATO: 'PDF' })
-  );
-  ctx.set('destFolderId', 'folder_1');
-  ctx.set('nomeFile', 'X');
-  ctx.set('templateId', 'tmpl_verbale');
-  const drive = new FakeDriveFacade();
-  new CloneTemplateStep(logger, drive).execute(ctx);
-  const fileId = ctx.get<string>('newFileId')!;
-  expect(ctx.get('newFileLink')).toBe(`https://drive.google.com/file/d/${fileId}/edit`);
-});
+// The FORMATO=PDF/TEXT generic-Drive-link fallback (CloneTemplateStep's
+// buildFileLink) is no longer reachable: ConfigurazioneDocumento's constructor
+// (Task 1, GENERATORE/FORMATO redesign) now rejects any FORMATO other than
+// GDOC/GSHEET, so a PDF/TEXT CONF_DOC row can never reach this step. Dropped
+// this scenario rather than leaving an untestable premise in place — the
+// GDOC/GSHEET link-format cases above remain covered.
 
 test('RenderTemplateStep delegates to strategy → WorkspaceTemplateEngine with the CDU as context', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   ctx.set('newFileId', 'file_1');
   const templates = new FakeTemplateEngine();
-  const registry = new Map([['VERBALE_CDC', new VerbaleGeneratorStrategy(templates)]]);
-  new RenderTemplateStep(logger, registry).execute(ctx);
+  const strategy = new DocumentoGenericoGeneratorStrategy(templates);
+  const strategies = { resolve: () => strategy } as unknown as DocumentStrategyFactory;
+  new RenderTemplateStep(logger, strategies).execute(ctx);
   const rendered = templates.contextFor('file_1') as {
     focus: { classe: { anagrafica: { nome: string } } };
   };

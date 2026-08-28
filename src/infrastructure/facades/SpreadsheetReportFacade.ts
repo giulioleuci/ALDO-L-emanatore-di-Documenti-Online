@@ -20,10 +20,14 @@ export class SpreadsheetReportFacade implements ISpreadsheetReportFacade {
     // name is locale-dependent: "Foglio1" vs "Sheet1"), so no extra read.
     const sheetName = created.sheets?.[0]?.properties.title ?? 'Sheet1';
     const escaped = sheetName.replace(/'/g, "''");
-    this.spreadsheets.updateRanges(created.spreadsheetId, {
-      range: `'${escaped}'!A1`,
-      values: righe
-    });
+    // RAW (not the SpreadsheetService default of USER_ENTERED): report cells hold
+    // unsanitized DB values (e.g. failed-validation VALORE strings) — USER_ENTERED
+    // would let a leading =/+/-/@ be parsed as a live formula (CWE-1236).
+    this.spreadsheets.updateRanges(
+      created.spreadsheetId,
+      { range: `'${escaped}'!A1`, values: righe },
+      { valueInputOption: 'RAW' }
+    );
     return created.spreadsheetId;
   }
 }

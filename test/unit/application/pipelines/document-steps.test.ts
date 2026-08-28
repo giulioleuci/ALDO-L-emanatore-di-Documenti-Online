@@ -807,7 +807,7 @@ test('RegisterDocumentStep keeps SOTTOTIPO empty for non-plan generators even wi
 // 5A/MATE resolves to bianchi@school.it via VARIAZIONI_CATTEDRA (rossi is the
 // nominal CLASSI.MATE holder but was reassigned to bianchi effective
 // 2025-10-01, before this fixed `now`) — same fixture fact relied on by
-// document-generation-service.test.ts's generateForClasseDocenteClasseMateria case.
+// document-generation-service.test.ts's generateForDocenteClasseMateria case.
 test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUMENTO_DOCENTE_CLASSE_MATERIA', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
@@ -863,6 +863,40 @@ test('CLASSE_MATERIA exposes the active SUPPLENZE actor, not the nominal holder'
   expect(cdu.focus.classiMateria?.docenti.map((docente) => docente.email)).toEqual([
     'bianchi@school.it'
   ]);
+});
+
+test('CLASSE_DOCENTE_MATERIA resolves the active SUPPLENZE substitute as focus.docente, not just the nominal titolare', () => {
+  const tables = fixtureTables();
+  tables.CLASSI.push({
+    ID: '4B',
+    ANNO: 4,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    MATE: 'rossi@school.it'
+  });
+  const db = new FakeDatabase(tables);
+
+  // Before the Recipe.ts fix, CLASSE_DOCENTE_MATERIA had no gestioneSupplenti
+  // default (SOLO_TITOLARI), so the council only contains rossi@school.it (the
+  // nominal titolare) and this lookup for the active substitute would throw
+  // "DOCUMENTO_DOCENTE_CLASSE_MATERIA: docente bianchi@school.it non trovato
+  // nel consiglio di classe".
+  const cdu = composeContextBuilder(db).build(
+    {
+      target: '4B',
+      tipoTarget: 'classe',
+      docenteCorrente: 'bianchi@school.it',
+      materiaCorrente: 'MATE',
+      now: new Date('2025-11-15T09:00:00Z')
+    },
+    recipe('CLASSE_DOCENTE_MATERIA')
+  );
+
+  expect(cdu.focus.docente?.email).toBe('bianchi@school.it');
+  expect(cdu.focus.materia?.sigla).toBe('MATE');
 });
 
 test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_CLASSE_MATERIA identity includes the materia::docente SOTTOTIPO', () => {

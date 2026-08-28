@@ -249,7 +249,7 @@ export function recipe(name: string, overrides: Partial<RecipeOptions> = {}): Re
   const providers = RECIPES[name];
   if (providers === undefined) throw new ValidationError(`Recipe sconosciuta: ${name}`);
   const recipeDefaults =
-    name === 'CLASSE_MATERIA'
+    name === 'CLASSE_MATERIA' || name === 'CLASSE_DOCENTE_MATERIA'
       ? { gestioneSupplenti: GestioneSupplenti.SOLO_SUPPLENTI }
       : {};
   return { providers: providers.slice(), options: makeOptions({ ...recipeDefaults, ...overrides }) };

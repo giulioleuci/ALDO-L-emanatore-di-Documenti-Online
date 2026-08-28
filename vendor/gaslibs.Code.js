@@ -20344,6 +20344,54 @@ class PermissionService extends GoogleService {
 
 
 
+  changeRolesByPermissionId(fileIds, roleChanges, _options = {}) {
+    const fileIdsArray = Array.isArray(fileIds) ? fileIds : [fileIds];
+    const changesArray = Array.isArray(roleChanges) ? roleChanges : [roleChanges];
+    const results = {
+      successful: [],
+      failed: []
+    };
+    fileIdsArray.forEach(fileId => {
+      changesArray.forEach(change => {
+        try {
+          this._exceptionService.executeWithRetry(() => Drive.Permissions.update({
+            role: change.newRole
+          }, fileId, change.permissionId), {}, 3);
+          results.successful.push({
+            fileId,
+            permissionId: change.permissionId,
+            newRole: change.newRole,
+            statusCode: 200
+          });
+        } catch (error) {
+          results.failed.push({
+            fileId,
+            permissionId: change.permissionId,
+            error: error,
+            statusCode: error.code || 500
+          });
+          this._logger.warn(`Failed to update permission ${change.permissionId} on ${fileId}: ${error.message}`);
+        }
+      });
+      const cacheKey = this._generateCacheKey(this._cachePrefix, fileId, 'getPermissions');
+      this._cache.remove(cacheKey);
+    });
+    return results;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

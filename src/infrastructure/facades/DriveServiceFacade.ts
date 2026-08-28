@@ -5,6 +5,15 @@ export interface PermissionGrant {
   permesso: string;
 }
 
+/** One Drive permission as ALDO sees it (subset of the Drive v3 resource). */
+export interface DrivePermission {
+  id: string;
+  /** null for link-wide grants (`tipo` 'anyone'/'domain'), which carry no address. */
+  email: string | null;
+  role: string;
+  tipo: string;
+}
+
 export interface IDriveFacade {
   findFolderByPath(path: string): string | null;
   createFolder(path: string): string;
@@ -27,6 +36,13 @@ export interface IDriveFacade {
   getFileText(fileId: string): string;
   /** Counts non-trashed files (excluding subfolders) directly inside `folderId`. */
   countFilesInFolder(folderId: string): number;
+  /** Every permission on the file (Feature 3 — includes link-wide grants). */
+  listPermissions(fileId: string): DrivePermission[];
+  /** Applies role changes by permission id; returns one entry per FAILED change. */
+  changePermissionRoles(
+    fileId: string,
+    changes: Array<{ permissionId: string; role: string }>
+  ): Array<{ permissionId: string; errore: string }>;
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -165,6 +181,30 @@ export class DriveServiceFacade implements IDriveFacade {
       );
     }
     return this.documents.openStandard(fileId).getBody().getText();
+  }
+
+  listPermissions(fileId: string): DrivePermission[] {
+    return this.permissions.getPermissions(fileId).map((p) => ({
+      id: p.id,
+      email: p.emailAddress ?? null,
+      role: p.role,
+      tipo: p.type
+    }));
+  }
+
+  changePermissionRoles(
+    fileId: string,
+    changes: Array<{ permissionId: string; role: string }>
+  ): Array<{ permissionId: string; errore: string }> {
+    if (changes.length === 0) return [];
+    const result = this.permissions.changeRolesByPermissionId(
+      fileId,
+      changes.map((c) => ({ permissionId: c.permissionId, newRole: c.role }))
+    );
+    return result.failed.map((f) => ({
+      permissionId: f.permissionId,
+      errore: f.error instanceof Error ? f.error.message : String(f.error)
+    }));
   }
 }
 

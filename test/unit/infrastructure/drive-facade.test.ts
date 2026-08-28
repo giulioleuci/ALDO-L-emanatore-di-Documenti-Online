@@ -297,3 +297,57 @@ describe('DriveServiceFacade — setPermission default role', () => {
     );
   });
 });
+
+describe('DriveServiceFacade — permission listing and role changes', () => {
+  test('listPermissions maps the library shape onto DrivePermission', () => {
+    const { drive } = fakeDrive();
+    const permissions = {
+      getPermissions: jest.fn(() => [
+        { id: 'p1', emailAddress: 'a@x.it', role: 'writer', type: 'user' },
+        { id: 'p2', role: 'writer', type: 'anyone' }
+      ]),
+      changeRolesByPermissionId: jest.fn(() => ({ successful: [], failed: [] }))
+    };
+    const facade = new DriveServiceFacade(drive as never, permissions as never, ROOT);
+
+    expect(facade.listPermissions('f1')).toEqual([
+      { id: 'p1', email: 'a@x.it', role: 'writer', tipo: 'user' },
+      { id: 'p2', email: null, role: 'writer', tipo: 'anyone' }
+    ]);
+    expect(permissions.getPermissions).toHaveBeenCalledWith('f1');
+  });
+
+  test('changePermissionRoles returns only the failures', () => {
+    const { drive } = fakeDrive();
+    const permissions = {
+      getPermissions: jest.fn(() => []),
+      changeRolesByPermissionId: jest.fn(() => ({
+        successful: [{ fileId: 'f1', permissionId: 'p1' }],
+        failed: [{ fileId: 'f1', permissionId: 'p2', error: new Error('nope') }]
+      }))
+    };
+    const facade = new DriveServiceFacade(drive as never, permissions as never, ROOT);
+
+    const failures = facade.changePermissionRoles('f1', [
+      { permissionId: 'p1', role: 'reader' },
+      { permissionId: 'p2', role: 'reader' }
+    ]);
+
+    expect(permissions.changeRolesByPermissionId).toHaveBeenCalledWith('f1', [
+      { permissionId: 'p1', newRole: 'reader' },
+      { permissionId: 'p2', newRole: 'reader' }
+    ]);
+    expect(failures).toEqual([{ permissionId: 'p2', errore: 'nope' }]);
+  });
+
+  test('changePermissionRoles with no changes performs no API call', () => {
+    const { drive } = fakeDrive();
+    const permissions = {
+      getPermissions: jest.fn(() => []),
+      changeRolesByPermissionId: jest.fn()
+    };
+    const facade = new DriveServiceFacade(drive as never, permissions as never, ROOT);
+    expect(facade.changePermissionRoles('f1', [])).toEqual([]);
+    expect(permissions.changeRolesByPermissionId).not.toHaveBeenCalled();
+  });
+});

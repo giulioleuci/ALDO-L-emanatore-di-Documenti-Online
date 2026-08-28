@@ -441,6 +441,26 @@ declare global {
       fileIds: string | string[],
       emailsOrPermissionIds: string | string[]
     ): DriveBatchOutcome<unknown>;
+    /** Uncached-by-ALDO (5-minute library-side cache) Drive permission evidence for one file. */
+    getPermissions(
+      fileId: string
+    ): Array<{ id: string; emailAddress?: string; role: string; type: string; domain?: string }>;
+    /**
+     * Applies role changes by permission id (not email) — reaches link-wide grants
+     * (`type: 'anyone'`/`'domain'`) that `changeRoles` cannot resolve.
+     * `DriveBatchOutcome`'s `{id,status,data}`/`{id,status,error}` shape doesn't match
+     * this method's actual `{fileId,permissionId,...}` results, so the return type is
+     * declared inline rather than via that generic.
+     */
+    changeRolesByPermissionId(
+      fileIds: string | string[],
+      roleChanges:
+        | { permissionId: string; newRole: string }
+        | Array<{ permissionId: string; newRole: string }>
+    ): {
+      successful: Array<{ fileId: string; permissionId: string; newRole: string }>;
+      failed: Array<{ fileId: string; permissionId: string; error: Error }>;
+    };
   }
 
   // --- WorkspaceTemplateEngine (L2): Mustache engine + PlaceholderService facade ---

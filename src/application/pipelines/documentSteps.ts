@@ -12,7 +12,8 @@ import {
   StatoDocumento,
   DuplicazioneDocumento,
   GestioneSupplenti,
-  FormatoOutput
+  FormatoOutput,
+  GeneratoreAxis
 } from '../../domain/value-objects/enums';
 import { ConfigurationError, PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
@@ -103,12 +104,12 @@ function isPianoPersonalizzato(ctx: PipelineContext): boolean {
  */
 function sottotipo(ctx: PipelineContext): string {
   if (isPianoPersonalizzato(ctx)) return cdu(ctx).focus.piano?.tipo ?? '';
-  if (String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '') === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA') {
+  if (confDoc(ctx).generatore === GeneratoreAxis.CLASSE_DOCENTE_MATERIA) {
     const materiaId = cdu(ctx).focus.materia?.sigla ?? '';
     const docenteEmail = cdu(ctx).focus.docente?.email ?? '';
     return `${materiaId}::${docenteEmail}`;
   }
-  if (String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '') === 'DOCUMENTO_CLASSE_MATERIA') {
+  if (confDoc(ctx).generatore === GeneratoreAxis.CLASSE_MATERIA) {
     return cdu(ctx).focus.materia?.sigla ?? '';
   }
   return '';

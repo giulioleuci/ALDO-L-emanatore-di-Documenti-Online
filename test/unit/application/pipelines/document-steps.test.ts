@@ -29,6 +29,7 @@ import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
 import {
   DuplicazioneDocumento,
+  GeneratoreAxis,
   GestioneSupplenti,
   TipoPiano
 } from '../../../../src/domain/value-objects/enums';
@@ -804,7 +805,11 @@ test('RegisterDocumentStep keeps SOTTOTIPO empty for non-plan generators even wi
 test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUMENTO_DOCENTE_CLASSE_MATERIA', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' };
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
+    GENERATORE: GeneratoreAxis.CLASSE_DOCENTE_MATERIA
+  };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
   ctx.set('cdu', buildDocenteClasseMateriaCdu(db, 'bianchi@school.it', 'MATE'));
@@ -820,7 +825,11 @@ test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUM
 test('RegisterDocumentStep writes SOTTOTIPO as materiaId for DOCUMENTO_CLASSE_MATERIA', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_CLASSE_MATERIA' };
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    TIPO: 'DOCUMENTO_CLASSE_MATERIA',
+    GENERATORE: GeneratoreAxis.CLASSE_MATERIA
+  };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
   ctx.set('cdu', buildClasseMateriaCdu(db, 'MATE'));
@@ -908,7 +917,11 @@ test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_CLASSE_MATERIA identity includes th
   ];
   const db = new FakeDatabase(tables);
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' };
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
+    GENERATORE: GeneratoreAxis.CLASSE_DOCENTE_MATERIA
+  };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
   ctx.set('cdu', buildDocenteClasseMateriaCdu(db, 'bianchi@school.it', 'MATE'));
@@ -934,7 +947,11 @@ test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_CLASSE_MATERIA matches legacy persi
   ];
   const db = new FakeDatabase(tables);
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' };
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
+    GENERATORE: GeneratoreAxis.CLASSE_DOCENTE_MATERIA
+  };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
   ctx.set('cdu', buildDocenteClasseMateriaCdu(db, 'bianchi@school.it', 'MATE'));
@@ -942,6 +959,46 @@ test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_CLASSE_MATERIA matches legacy persi
   new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
 
   expect(ctx.get('shouldGenerate')).toBe(false);
+});
+
+test('RegisterDocumentStep composes materia::docente SOTTOTIPO from GENERATORE=CLASSE_DOCENTE_MATERIA regardless of TIPO', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    TIPO: 'PROGRAMMA_SVOLTO',
+    GENERATORE: GeneratoreAxis.CLASSE_DOCENTE_MATERIA
+  };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildDocenteClasseMateriaCdu(db, 'bianchi@school.it', 'MATE'));
+  ctx.set('newFileId', 'file_regenkey');
+  ctx.set('newFileLink', 'https://drive/file_regenkey');
+  ctx.set('nomeFile', 'Programma_MATE');
+  ctx.set('destFolderPath', 'Docs');
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_regenkey');
+  expect(row?.SOTTOTIPO).toBe('MATE::bianchi@school.it');
+});
+
+test('RegisterDocumentStep composes materia SOTTOTIPO from GENERATORE=CLASSE_MATERIA regardless of TIPO', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = {
+    ...fixtureTables().CONF_DOC[0]!,
+    TIPO: 'PROGRAMMA_SVOLTO',
+    GENERATORE: GeneratoreAxis.CLASSE_MATERIA
+  };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildClasseMateriaCdu(db, 'MATE'));
+  ctx.set('newFileId', 'file_regenkey2');
+  ctx.set('newFileLink', 'https://drive/file_regenkey2');
+  ctx.set('nomeFile', 'Programma_MATE');
+  ctx.set('destFolderPath', 'Docs');
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_regenkey2');
+  expect(row?.SOTTOTIPO).toBe('MATE');
 });
 
 test('critical steps are exactly the rollback points of 10 §8', () => {

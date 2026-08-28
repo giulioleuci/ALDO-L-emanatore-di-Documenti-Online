@@ -329,17 +329,17 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 | Colonna                  | Tipo   | PK  | Descrizione                                                                                                  |
 | ------------------------ | ------ | --- | ------------------------------------------------------------------------------------------------------------ |
 | `ID`                     | String | ✅  | Codice identificativo (es. `VERBALE_CDC`)                                                                    |
-| `TIPO`                   | String | —   | Macro-categoria: (es. `VERBALE`, `PIANO_PERS`, `PIANO_LAVORO`...)                                            |
+| `TIPO`                   | String | —   | Etichetta libera di categoria, scritta in `LOG_DOCS.TIPO`; unico valore riservato: `PIANO_PERS` per `GENERATORE=PIANO_PERSONALIZZATO` |
 | `NOME`                   | String | —   | Nome descrittivo per l'interfaccia utente                                                                    |
-| `GENERATORE`             | String | —   | Nome della Strategy di generazione (vedi `10_PIPELINE_DOCUMENTI.md`)                                         |
-| `FORMATO`                | String | —   | Enum                                                                                                         |
+| `GENERATORE`             | String | —   | Asse di iterazione del batch e driver della recipe CDU: `CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO` |
+| `FORMATO`                | String | —   | Enum ristretto a `GDOC` o `GSHEET`; il costruttore valida il valore e solleva `ConfigurationError` altrimenti |
 | `DUPLICAZIONE`           | Enum   | —   | Politica di generazione duplicata: `NEGATA` (default) blocca l'identità già generata; `PERMESSA` la consente. **L'identità è `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO` (+`UTENTI` per `PIANO_PERS`). Per calcolare `NOME_NORMALIZZATO`, ogni controllo genera un marker alfanumerico temporaneo, verifica che non compaia nel `FILE_NAME` completo reso con lo stesso CDU e un valore-sonda non vuoto per `progressivo`, sostituisce con il marker solo i token esatti `{{progressivo}}`, rende il template completo e tratta solo quel marker come una sequenza numerica.** Il marker non è persistito. Valori `FILE_NAME` distinti distinguono le identità duplicate, salvo differenze limitate a `{{progressivo}}`, che normalizzano allo stesso slot numerico. Un tipo documento le cui istanze devono restare distinguibili tra loro (es. un verbale per riunione) DEVE usare un `CONF_DOC.ID` distinto per istanza solo quando tutti i componenti dell'identità, incluso il nome normalizzato, sarebbero altrimenti uguali. |
 | `GESTIONE_ARTICOLAZIONE` | Enum   | —   | `COMPLETA` (default) esclude le classi partner dal batch di generazione (solo genitore/classe standard); `ARTICOLATA` esclude la classe genitore (solo partner/classe standard)                                                  |
 | `PATH_OUT`               | String | —   | Pattern per il percorso cartella (supporta placeholder `{{...}}` e separazione cartelle tramite `/`)         |
 | `FILE_NAME`              | String | —   | Pattern per il nome file (supporta placeholder `{{...}}`)                                                    |
 | `MODELLI`                | JSON   | —   | ID dei template Drive; forma semplice o condizionale                                                         |
 | `PERMESSI`               | JSON   | —   | ACL per file e cartelle (ruoli astratti → permessi)                                                          |
-| `PARAMETRI`              | JSON   | —   | Parametri extra passati al generatore                                                                        |
+| `PARAMETRI`              | JSON   | —   | Feature flag e parametri del generatore: `aggiungiMaterie`, `aggiungiMaterieConPermessi` (mutuamente esclusivi) e `tabelleImportate` |
 | `CONDIZIONE`             | String | —   | Espressione logica per la generazione condizionale                                                           |
 | `POST_PROCESSO`          | JSON   | —   | Azioni automatiche post-generazione (array)                                                                  |
 | `REGISTRA_DOC`           | JSON   | —   | Opzionale; espressioni template per i CSV `classi`, `utenti`, `materie` di `LOG_DOCS`                        |
@@ -368,10 +368,16 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 > ammessi ulteriori record distinti per altri sottoinsiemi di `PIANI.TIPO`:
 > questa è l'unica eccezione al vincolo del record unico sopra descritto.
 
-> **Altri `CONF_DOC.TIPO` riservati (asse di batch).** Oltre a `PIANO_PERS`, altri tre valori di `TIPO` sono riservati perché pilotano l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`):
-> - `DOCUMENTO_DOCENTE_CLASSE_MATERIA`: un documento per ciascuna coppia (docente, materia) del consiglio di classe risolto per ruolo (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), su tutte le classi attive — non un documento per classe. Popola `focus.docente`/`focus.materia` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia::docenteEmail` (vedi sotto).
-> - `DOCUMENTO_CLASSE_MATERIA`: un documento per ciascuna materia di ogni classe attiva — non per docente. Popola `focus.materia`/`focus.classiMateria` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia`. Il documento nomina il docente effettivo (risolto per ruolo, quindi l'eventuale supplente) nel corpo: le righe `CONF_DOC` su questo asse DEVONO impostare `PERMESSI.regolaSupplente.file`/`.folder` a `SOLO_SUPPLENTI` (o `ENTRAMBI`) — altrimenti i permessi ACL vengono concessi al titolare mentre il documento nomina il supplente.
-> - `DIPARTIMENTO`: un documento per ciascuna riga `DIPART`, senza asse classe (un dipartimento non ha classi). Popola `focus.dipartimento` (02 §4.6).
+> **Semantica di `GENERATORE` (asse di batch).** `GENERATORE` pilota l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`). I valori ammessi sono `CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO` (vedi §4 dello spec di redesign). `TIPO` resta un'etichetta libera scritta in `LOG_DOCS.TIPO`, salvo il vincolo residuo: se `GENERATORE=PIANO_PERSONALIZZATO`, `TIPO` DEVE essere `PIANO_PERS`.
+>
+> Le chiavi di registro precedenti `SHEET_CON_MATERIE`, `SHEET_CON_MATERIE_E_PERMESSI`, `DOCUMENTO_CON_TABELLE_IMPORTATE`, `VERBALE_CDC`, `DOC_PERSONALIZZATO`, `DOCUMENTO_GENERICO` e `FOGLIO_GENERICO` sono ritirate come valori di `GENERATORE`: non erano assi, ma nomi di strategie/registrazioni legacy. La colonna ora identifica esclusivamente l'asse di batch.
+
+> **`FORMATO` e `PARAMETRI`: compatibilità e validazione.** `FORMATO` ammette esclusivamente `GDOC` e `GSHEET`. Le flag `PARAMETRI.aggiungiMaterie` e `PARAMETRI.aggiungiMaterieConPermessi` sono mutuamente esclusive; entrambe aggiungono colonne materie su `GSHEET`, con o senza protezioni di intervallo. `PARAMETRI.tabelleImportate` abilita i placeholder `{{TABELLA:<sheetFileId>}}` su `GDOC`. Le combinazioni incompatibili sono rifiutate dal costruttore con questi messaggi esatti:
+>
+> - `ConfigurationError("L'importazione tabelle è supportata unicamente su formato GDOC")` se `FORMATO=GSHEET` e `tabelleImportate=true`;
+> - `ConfigurationError("Le colonne materie sono supportate unicamente su formato GSHEET")` se `FORMATO=GDOC` e una delle flag materie è attiva;
+> - `ConfigurationError("Le colonne materie non sono applicabili all'asse DIPARTIMENTO (nessun consiglio di classe)")` se `GENERATORE=DIPARTIMENTO` e una delle flag materie è attiva;
+> - `ConfigurationError("aggiungiMaterie e aggiungiMaterieConPermessi sono mutuamente esclusivi")` se entrambe le flag sono attive.
 
 **Azioni POST_PROCESSO supportate:**
 

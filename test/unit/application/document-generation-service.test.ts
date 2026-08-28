@@ -832,3 +832,71 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
     );
   });
 });
+
+describe('DocumentGenerationService.generateForDocente', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  function pushDocenteConfig(tables: Record<string, Row[]>, id = 'CD_DOCENTE'): void {
+    tables.CONF_DOC!.push({
+      ID: id,
+      TIPO: 'DOCENTE',
+      GENERATORE: 'DOCENTE',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Cattedre_{{focus.docente.nomeCompleto}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+  }
+
+  // fixtureTables(): bianchi@school.it is the effective MATE holder in 5A
+  // (VARIAZIONI_CATTEDRA decorsa 2025-10-01) and the nominal FISI/IRC holder
+  // there, plus the nominal FISI holder of 1F-LSO (one of '1F's articulated
+  // partners) — classiCompetenza ['5A', '1F'] gives bianchi one cattedra per
+  // class.
+  test('generateForDocente builds a DOCENTE_AGGREGATO CDU scoped to the teacher, not a class', () => {
+    const tables = fixtureTables();
+    pushDocenteConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { strategy });
+
+    const result = service.generateForDocente('bianchi@school.it', ['5A', '1F'], 'CD_DOCENTE');
+
+    expect(strategy.cdu?.meta.parametriInput.target).toBe('bianchi@school.it');
+    expect(strategy.cdu?.meta.parametriInput.tipoTarget).toBe('docente');
+    expect(strategy.cdu?.focus.classe).toBeUndefined();
+    expect(strategy.cdu?.focus.docente?.email).toBe('bianchi@school.it');
+    expect(strategy.cdu?.focus.docente?.cattedre).toHaveLength(2);
+    expect(result.status).toBe('GENERATO');
+  });
+
+  test('throws when the docente has no cattedra in any listed class', () => {
+    const tables = fixtureTables();
+    pushDocenteConfig(tables);
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { strategy });
+
+    expect(() =>
+      service.generateForDocente('nessuno@school.it', ['5A', '1F'], 'CD_DOCENTE')
+    ).toThrow(/DOCENTE: nessuna cattedra trovata per nessuno@school\.it/);
+  });
+
+  test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
+    const { service } = wire();
+    expect(() =>
+      service.generateForDocente('bianchi@school.it', ['5A'], 'MISSING_ID')
+    ).toThrow(PipelineError);
+  });
+});

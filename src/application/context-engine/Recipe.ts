@@ -30,7 +30,7 @@ export interface Recipe {
  */
 export interface BuildParams {
   target: string;
-  tipoTarget: 'classe' | 'alunno' | 'dipartimento';
+  tipoTarget: 'classe' | 'alunno' | 'dipartimento' | 'docente';
   now: Date;
   idConfigurazione?: string;
   tipoOperazione?: string;
@@ -219,7 +219,9 @@ export const RECIPES: Record<string, string[]> = {
   ],
   CARENZA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'carenzaFocus'],
   /** Department-scoped recipe (11 §11 new) — a dipartimento has no class dimension, so this activates only 'school' + 'dipartimentoFocus'. */
-  DIPARTIMENTO_COMPLETO: ['school', 'dipartimentoFocus']
+  DIPARTIMENTO_COMPLETO: ['school', 'dipartimentoFocus'],
+  /** DOCENTE axis (spec §4.1.2) — one aggregate document per teacher, spanning every class in `params.classiCompetenza`. No single class in focus, so this activates only 'school' + 'docenteAggregatoFocus'. */
+  DOCENTE_AGGREGATO: ['school', 'docenteAggregatoFocus']
 };
 
 /**

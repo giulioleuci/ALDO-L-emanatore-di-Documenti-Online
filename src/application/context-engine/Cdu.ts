@@ -134,7 +134,7 @@ export interface CduMeta {
   };
   parametriInput: {
     target: string;
-    tipoTarget: 'classe' | 'alunno' | 'dipartimento';
+    tipoTarget: 'classe' | 'alunno' | 'dipartimento' | 'docente';
     materiaCorrente: string | null;
     opzioni: RecipeOptionsView;
   };
@@ -458,7 +458,7 @@ export interface Cdu {
     dipartimento?: CduDipartimentoFocus;
     carenza?: CduCarenzaFocus;
     piano?: CduPianoFocus;
-    docente?: PersonVM;
+    docente?: PersonVM & { cattedre?: CattedraVM[] };
     materia?: SubjectVM;
     classiMateria?: { docenti: PersonVM[] };
   };

@@ -28,6 +28,7 @@ import { DocenteClasseMateriaFocusProvider } from './providers/DocenteClasseMate
 import { DocenteClasseFocusProvider } from './providers/DocenteClasseFocusProvider';
 import { ClasseMateriaFocusProvider } from './providers/ClasseMateriaFocusProvider';
 import { DipartimentoProvider } from './providers/DipartimentoProvider';
+import { DocenteAggregatoFocusProvider } from './providers/DocenteAggregatoFocusProvider';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import type { StoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
@@ -143,6 +144,10 @@ export class ContextEngineFactory {
       .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni))
       .registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(storicoDb))
       .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs))
-      .registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, logDocs));
+      .registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, logDocs))
+      .registerProvider(
+        'docenteAggregatoFocus',
+        new DocenteAggregatoFocusProvider(classi, materie, teachingAssignments)
+      );
   }
 }

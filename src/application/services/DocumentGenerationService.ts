@@ -254,6 +254,54 @@ export class DocumentGenerationService {
     return this.resultFromContext(ctx, startedAt);
   }
 
+  /**
+   * One aggregate document per teacher (spec §4.1.2) — DOCENTE_AGGREGATO recipe,
+   * tipoTarget 'docente'. No class dimension in focus, so — like
+   * generateForDipartimento — this doesn't reuse generateForClasseWithRecipe.
+   */
+  generateForDocente(
+    docenteEmail: string,
+    classiCompetenza: string[],
+    confDocId: string,
+    jobId?: string
+  ): DocumentGenerationResult {
+    const startedAt = Date.now();
+    const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
+    if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
+    const config = ConfigurazioneDocumento.fromData(row);
+
+    const cdu = this.contextBuilder.build(
+      {
+        target: docenteEmail,
+        tipoTarget: 'docente',
+        now: this.now,
+        idConfigurazione: confDocId,
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO',
+        classiCompetenza,
+        docenteCorrente: docenteEmail
+      },
+      recipe('DOCENTE_AGGREGATO')
+    );
+
+    this.db.beginTransaction();
+    let ctx: PipelineContext;
+    try {
+      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+    } catch (e) {
+      this.db.rollback();
+      throw e;
+    }
+
+    const critical = ctx.getFlag<string>('criticalError');
+    if (critical !== null) {
+      this.db.rollback();
+      throw new PipelineError(critical);
+    }
+    this.db.commit();
+
+    return this.resultFromContext(ctx, startedAt);
+  }
+
   /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
   generateForAlunno(
     target: string,

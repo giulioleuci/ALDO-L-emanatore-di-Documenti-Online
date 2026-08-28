@@ -60,7 +60,7 @@ differentiates occasions — `NOME`/`{{progressivo}}` no longer needs to.
   which alone uniquely pins the document to one student for a given
   `SOTTOTIPO` (`PIANI.TIPO`). `NOME` (the student's display name) was always
   redundant here.
-- **`DOCUMENTO_DOCENTE_MATERIA`**: identity already includes `SOTTOTIPO`
+- **`DOCUMENTO_DOCENTE_CLASSE_MATERIA`**: identity already includes `SOTTOTIPO`
   (`materiaId::docenteEmail`), which uniquely pins the subject/teacher pair.
   `PATH` additionally varies per class where applicable. `NOME` was redundant.
 - **`VERBALE`-style types (the motivating case)**: today `PATH_OUT`
@@ -136,7 +136,7 @@ per instance.
 ## Testing
 
 - New regression test as above (the actual motivating scenario).
-- Existing `CheckDuplicatesStep` PIANO_PERS and DOCUMENTO_DOCENTE_MATERIA
+- Existing `CheckDuplicatesStep` PIANO_PERS and DOCUMENTO_DOCENTE_CLASSE_MATERIA
   identity tests keep passing unmodified (their fixtures already match on
   `UTENTI`/`SOTTOTIPO`, `NOME` was never load-bearing there).
 - Run `npm test`, `npm run test:integration`, `npm run typecheck`, `npm run

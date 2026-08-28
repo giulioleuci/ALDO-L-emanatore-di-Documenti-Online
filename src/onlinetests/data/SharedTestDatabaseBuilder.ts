@@ -259,7 +259,7 @@ export const CONF_DOC_RIEPILOGO = 'E2E_RIEPILOGO';
 export const CONF_DOC_COMPLESSO = 'E2E_DOC_COMPLESSO';
 export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';
 export const CONF_DOC_RIEPILOGO_FIRME_CDC = 'E2E_RIEPILOGO_FIRME_CDC';
-export const CONF_DOC_DOCENTE_MATERIA = 'E2E_DOCENTE_MATERIA';
+export const CONF_DOC_DOCENTE_CLASSE_MATERIA = 'E2E_DOCENTE_CLASSE_MATERIA';
 export const CONF_DOC_SHEET_PERMESSI = 'E2E_SHEET_PERMESSI';
 export const CONF_DOC_ACL_REALI = 'E2E_ACL_REALI';
 export const CONF_DOC_PIANI = 'PIANI_PERSONALIZZATI';
@@ -1173,8 +1173,8 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
       },
       {
-        [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_MATERIA,
-        [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA',
+        [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
+        [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
         [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
         // The batch axis is (docente, materia) over EVERY active class: unscoped this
         // produced 108 documents (~26 min) and killed batch 2 on the GAS execution limit
@@ -1183,7 +1183,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.CONDIZIONE]: `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`,
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
         [COL_CONF_DOC.FILE_NAME]:
-          'E2E_DocenteMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',
+          'E2E_DocenteClasseMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCENTI_MATERIE',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',

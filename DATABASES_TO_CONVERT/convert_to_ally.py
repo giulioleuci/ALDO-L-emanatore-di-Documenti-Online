@@ -50,7 +50,7 @@ GENERIC_FILL = {
     "DOC15MAGGIO": "DOCUMENTO_CON_TABELLE_IMPORTATE",
 }
 
-# Righe da spostare sull'asse batch DOCUMENTO_DOCENTE_MATERIA (spec §4.3).
+# Righe da spostare sull'asse batch DOCUMENTO_DOCENTE_CLASSE_MATERIA (spec §4.3).
 DOCENTE_MATERIA_IDS = {"RELAZIONE_FINALE", "PROGRAMMA", "PROGRAMMA_RELAZIONI_QUINTE"}
 PLACEHOLDER_FIXES = {
     "{{materia.sigla}}": "{{focus.materia.sigla}}",
@@ -133,10 +133,10 @@ def rule_conf_doc(wb: xl.Workbook, log: ChangeLog) -> None:
         # Asse per-cattedra: TIPO + placeholder in FILE_NAME
         if cid in DOCENTE_MATERIA_IDS:
             c_tipo = _cell(ws, row_num, "TIPO")
-            if c_tipo.value != "DOCUMENTO_DOCENTE_MATERIA":
+            if c_tipo.value != "DOCUMENTO_DOCENTE_CLASSE_MATERIA":
                 log.add("confdoc.tipo-per-cattedra", "CONF_DOC", cid, "TIPO",
-                        c_tipo.value, "DOCUMENTO_DOCENTE_MATERIA")
-                c_tipo.value = "DOCUMENTO_DOCENTE_MATERIA"
+                        c_tipo.value, "DOCUMENTO_DOCENTE_CLASSE_MATERIA")
+                c_tipo.value = "DOCUMENTO_DOCENTE_CLASSE_MATERIA"
             c_fn = _cell(ws, row_num, "FILE_NAME")
             # Una voce di log per cella modificata (invariante ChangeLog, ruling P5).
             new_fn = c_fn.value

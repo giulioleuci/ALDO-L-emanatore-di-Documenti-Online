@@ -143,12 +143,12 @@ the resolved `Materia` row (persisted data) instead of the raw
 `RisolutoreRuoliService`, `SheetMaterieGeneratorStrategy`'s column addressing)
 is untouched and stays a separate concern from this CDU-display field.
 
-## `DocumentBatchService.generateDocentiMateria`
+## `DocumentBatchService.generateDocentiClasseMateria`
 
 **File:** `src/application/services/DocumentBatchService.ts:211-337`
 
-`materiaId` (the DOCUMENTO_DOCENTE_MATERIA batch target key, matched
-downstream by `DocenteMateriaFocusProvider`'s `materie.find(sigla === ...)`)
+`materiaId` (the DOCUMENTO_DOCENTE_CLASSE_MATERIA batch target key, matched
+downstream by `DocenteClasseMateriaFocusProvider`'s `materie.find(sigla === ...)`)
 must switch from `assignment.slot.materia.value` (base) to the composite id
 when a specifica is present — mirroring the `catalogId` pattern already used
 in `SheetMaterieGeneratorStrategy.catalogId()`:
@@ -164,7 +164,7 @@ const materiaId =
 ("slots differing only by kind/specifica collapse to a single target here by
 design... not a bug") currently means a docente teaching both
 `INTERPRET.CHITARRA` and `INTERPRET.FLAUTO` in the same class gets **one**
-merged DOCUMENTO_DOCENTE_MATERIA document today. After this change, since
+merged DOCUMENTO_DOCENTE_CLASSE_MATERIA document today. After this change, since
 `materiaId` is now specifica-qualified, they become **two separate**
 composite targets — one document per specific flavor. This follows directly
 from "specifics predominate, there's no single main subject" and is treated
@@ -216,13 +216,13 @@ which is now actually true end-to-end for the first time.
   catalog row → `null` (existing contract).
 - Unit: `materiePerPrincipaleMapper` — composite group's `nome` now reads
   `principale`, not a dead base-row lookup.
-- Unit: `DocumentBatchService.generateDocentiMateria` — composite
+- Unit: `DocumentBatchService.generateDocentiClasseMateria` — composite
   `materiaId` target generated for a specifica cattedra; two separate targets
   for a docente holding two specifics of the same family.
 - E2E: extend the articolazione/consiglio checks (or a new check) asserting
   1A's `INTERPRET.CHITARRA` docente shows composite sigla/principale/
   specificita in `focus.classe.consiglioDiClasse`, and that the
-  DOCUMENTO_DOCENTE_MATERIA batch produces a document keyed to the composite
+  DOCUMENTO_DOCENTE_CLASSE_MATERIA batch produces a document keyed to the composite
   id for that cattedra.
 - `npm run typecheck && npm run lint && npm test` green; online suite
   (`npm run build:online` pre-push gate) covers the batch-generation/E2E path.

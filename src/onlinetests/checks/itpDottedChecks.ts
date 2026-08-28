@@ -17,7 +17,7 @@ import type { MateriaRepository } from '../../infrastructure/repositories/Materi
 import type { SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
 import {
   CLASSE_A,
-  CONF_DOC_DOCENTE_MATERIA,
+  CONF_DOC_DOCENTE_CLASSE_MATERIA,
   e2eAlunnoEmail,
   e2eDocenteEmail
 } from '../data/SharedTestDatabaseBuilder';
@@ -121,12 +121,12 @@ export function registerItpDottedChecks(
 
       const batch = container.get<DocumentBatchService>('documentBatchService');
       const handler = batch.batchGenerateHandler({
-        confDocId: CONF_DOC_DOCENTE_MATERIA,
+        confDocId: CONF_DOC_DOCENTE_CLASSE_MATERIA,
         jobId: 'E2E_ITP_DOTTED_BATCH'
       });
       let next = handler.next();
       while (!next.done) next = handler.next();
-      // The DOCUMENTO_DOCENTE_MATERIA batch is scoped by CONF_DOC.CONDIZIONE to CLASSE_A
+      // The DOCUMENTO_DOCENTE_CLASSE_MATERIA batch is scoped by CONF_DOC.CONDIZIONE to CLASSE_A
       // (SharedTestDatabaseBuilder — unscoped it generated 108 documents and killed batch 2
       // on the execution limit). The ownership assertions above stay on FOCAL_CLASS, where
       // the dotted-ITP fixture lives, but the generated-subtype assertion must read the
@@ -147,7 +147,7 @@ export function registerItpDottedChecks(
         .get<TableDatabase>('db')
         .table(TABLE.LOG_DOCS)
         .findAll()
-        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_MATERIA);
+        .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_CLASSE_MATERIA);
       const subtypes = new Set(rows.map((row) => stringCell(row[COL_LOG_DOCS.SOTTOTIPO])));
       const missingSubtypes = [...expectedSubtypes].filter((subtype) => !subtypes.has(subtype));
       if (missingSubtypes.length > 0) {

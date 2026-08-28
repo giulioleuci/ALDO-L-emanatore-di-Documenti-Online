@@ -22,7 +22,7 @@ export interface PianoBatchTarget {
   tipo: TipoPiano;
 }
 
-export interface DocenteMateriaBatchTarget {
+export interface DocenteClasseMateriaBatchTarget {
   classe: string;
   docenteEmail: string;
   materiaId: string;
@@ -41,7 +41,7 @@ interface BatchResumeState {
   processed: string[];
   errori: string[];
   planTargets?: PianoBatchTarget[];
-  docenteMateriaTargets?: DocenteMateriaBatchTarget[];
+  docenteClasseMateriaTargets?: DocenteClasseMateriaBatchTarget[];
   classeMateriaTargets?: ClasseMateriaBatchTarget[];
 }
 export interface BatchCheckpoint extends BatchResumeState {
@@ -75,7 +75,7 @@ export class DocumentBatchService {
     private readonly configs: DocumentConfigLookup,
     private readonly documenti: DocumentGenerationService,
     /** Role-resolved (SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI) council, used only
-     * by generateDocentiMateria — a raw IClasseRepository.getConsiglioDiClasse
+     * by generateDocentiClasseMateria — a raw IClasseRepository.getConsiglioDiClasse
      * read would enumerate the stale nominal teacher on an active
      * substitution/cattedra variation, silently skipping the actually-current
      * one (fix round 1). */
@@ -111,8 +111,8 @@ export class DocumentBatchService {
     if (config.tipo === 'PIANO_PERS') {
       return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
     }
-    if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
-      return yield* this.generateDocentiMateria(config, confDocId, jobId, resume, processed, errori);
+    if (config.tipo === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA') {
+      return yield* this.generateDocentiClasseMateria(config, confDocId, jobId, resume, processed, errori);
     }
     if (config.tipo === 'DOCUMENTO_CLASSE_MATERIA') {
       return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
@@ -223,8 +223,8 @@ export class DocumentBatchService {
     return { success, totale: targets.length, processed, errori };
   }
 
-  /** One document per (docente, materia) cattedra of every active class's council (batch mirror of DocumentGenerationService.generateForClasseDocenteMateria). */
-  private *generateDocentiMateria(
+  /** One document per (docente, materia) cattedra of every active class's council (batch mirror of DocumentGenerationService.generateForClasseDocenteClasseMateria). */
+  private *generateDocentiClasseMateria(
     config: ConfigurazioneDocumento,
     confDocId: string,
     jobId: string,
@@ -232,10 +232,10 @@ export class DocumentBatchService {
     processed: string[],
     errori: string[]
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    let targets: DocenteMateriaBatchTarget[];
+    let targets: DocenteClasseMateriaBatchTarget[];
     if (resume === null) {
       targets = [];
-      // DocenteMateriaBatchTarget is (classe, docenteEmail, materiaId), where
+      // DocenteClasseMateriaBatchTarget is (classe, docenteEmail, materiaId), where
       // materiaId is specifica-qualified (BASE.SPECIFICA) when the slot has a
       // specifica — mirroring SheetMaterieGeneratorStrategy.catalogId(). A
       // docente teaching two specifics of the same family (e.g. INTERPRET.CHITARRA
@@ -243,7 +243,7 @@ export class DocumentBatchService {
       // Slots differing only by *kind* (STANDARD vs ITP on the same materiaId)
       // still collapse to one target here by design — extending the batch axis
       // to carry kind is out of scope; dedup keeps the first match, mirroring
-      // DocenteMateriaFocusProvider's own first-match `materie.find` semantics.
+      // DocenteClasseMateriaFocusProvider's own first-match `materie.find` semantics.
       const seen = new Set<string>();
       const attive = this.classi.filterPerGestioneArticolazione(
         this.classi.findAttive(),
@@ -253,7 +253,7 @@ export class DocumentBatchService {
         // Role-resolved (SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI), not the raw
         // IClasseRepository.getConsiglioDiClasse nominal cattedre — an active
         // substitution/variation must enumerate the current teacher, same
-        // council data DocenteMateriaFocusProvider matches against downstream
+        // council data DocenteClasseMateriaFocusProvider matches against downstream
         // (fix round 1: the two previously diverged). includeReligioneAlt:
         // true mirrors resolveCouncilForProjection's call
         // (TeachingCouncilProjection.ts) — without it, AldoTeachingAssignmentResolver
@@ -286,12 +286,12 @@ export class DocumentBatchService {
         }
       }
     } else {
-      if (resume.docenteMateriaTargets === undefined) {
+      if (resume.docenteClasseMateriaTargets === undefined) {
         throw new ConfigurationError(
           `Stato di ripresa ${confDocId} privo dei target docente/materia persistiti`
         );
       }
-      targets = resume.docenteMateriaTargets.map((t) => ({ ...t }));
+      targets = resume.docenteClasseMateriaTargets.map((t) => ({ ...t }));
     }
 
     if (resume === null) {
@@ -307,7 +307,7 @@ export class DocumentBatchService {
       let message: string;
       const itemStartedAt = Date.now();
       try {
-        const result = this.documenti.generateForClasseDocenteMateria(
+        const result = this.documenti.generateForClasseDocenteClasseMateria(
           ClasseId.of(target.classe),
           target.docenteEmail,
           target.materiaId,
@@ -347,7 +347,7 @@ export class DocumentBatchService {
         nextIndex: i + 1,
         processed: processed.slice(),
         errori: errori.slice(),
-        docenteMateriaTargets: targets
+        docenteClasseMateriaTargets: targets
       };
     }
 

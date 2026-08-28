@@ -523,7 +523,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
   });
 });
 
-describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
+describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () => {
   class CapturingStrategy implements GeneratorStrategy {
     cdu: Cdu | undefined;
     render(_fileId: string, cdu: Cdu): void {
@@ -531,10 +531,10 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
     }
   }
 
-  function pushDocenteMateriaConfig(tables: Record<string, Row[]>, id = 'CD_DOCENTE_MATERIA'): void {
+  function pushDocenteClasseMateriaConfig(tables: Record<string, Row[]>, id = 'CD_DOCENTE_CLASSE_MATERIA'): void {
     tables.CONF_DOC!.push({
       ID: id,
-      TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+      TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
       GENERATORE: 'CAPTURING',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
@@ -559,15 +559,15 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
   // reflects bianchi as 5A's current MATE titolare.
   test('builds the CDU scoped to the docente/materia focus (5A: MATE -> bianchi@school.it per VARIAZIONI_CATTEDRA) and runs the pipeline', () => {
     const tables = fixtureTables();
-    pushDocenteMateriaConfig(tables);
+    pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
     const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
 
-    const result = service.generateForClasseDocenteMateria(
+    const result = service.generateForClasseDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
-      'CD_DOCENTE_MATERIA'
+      'CD_DOCENTE_CLASSE_MATERIA'
     );
 
     expect(strategy.cdu?.focus.docente?.email).toBe('bianchi@school.it');
@@ -578,7 +578,7 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
 
   test('reuses the same Pipeline instance for one jobId and rebuilds it when the jobId changes', () => {
     const tables = fixtureTables();
-    pushDocenteMateriaConfig(tables);
+    pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
     const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
     const seen: Pipeline[] = [];
@@ -593,34 +593,34 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
       return pipeline;
     };
 
-    service.generateForClasseDocenteMateria(
+    service.generateForClasseDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
-      'CD_DOCENTE_MATERIA',
+      'CD_DOCENTE_CLASSE_MATERIA',
       'job-1'
     );
-    service.generateForClasseDocenteMateria(
+    service.generateForClasseDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
-      'CD_DOCENTE_MATERIA',
+      'CD_DOCENTE_CLASSE_MATERIA',
       'job-1'
     );
 
     expect(seen).toHaveLength(1);
 
-    service.generateForClasseDocenteMateria(
+    service.generateForClasseDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
-      'CD_DOCENTE_MATERIA',
+      'CD_DOCENTE_CLASSE_MATERIA',
       'job-2'
     );
     expect(seen).toHaveLength(2);
   });
 
-  // The DocenteMateriaFocusProvider PipelineError is thrown during
+  // The DocenteClasseMateriaFocusProvider PipelineError is thrown during
   // ContextBuilder.build's provider-assembly step, same as every other
   // provider error (e.g. ClasseProvider/AlunnoProvider's EntityNotFoundError)
   // — the ContextEngine library wraps it in a ContextEngineError, so the
@@ -629,16 +629,16 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
   // in docente-materia-focus-provider.test.ts).
   test('throws when the docente/materia pair is not on the class council', () => {
     const tables = fixtureTables();
-    pushDocenteMateriaConfig(tables);
+    pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
     const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
 
     expect(() =>
-      service.generateForClasseDocenteMateria(
+      service.generateForClasseDocenteClasseMateria(
         ClasseId.of('5A'),
         'ignoto@school.it',
         'MATE',
-        'CD_DOCENTE_MATERIA'
+        'CD_DOCENTE_CLASSE_MATERIA'
       )
     ).toThrow(/docente ignoto@school\.it non trovato nel consiglio di classe/);
   });

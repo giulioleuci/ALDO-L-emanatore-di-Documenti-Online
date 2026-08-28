@@ -108,7 +108,7 @@ Permettere `{{studente.nomeCompleto}}` dentro un `tablerow_loop` su
 
 ---
 
-## 3. Generatore `DOCUMENTO_DOCENTE_MATERIA`
+## 3. Generatore `DOCUMENTO_DOCENTE_CLASSE_MATERIA`
 
 Fonte: `ESTENSIONI_ALDO/CREA_GENERATORE_DOCENTE_MATERIA.md`.
 
@@ -127,7 +127,7 @@ Il pattern corretto esiste già nel codebase per `PIANO_PERS`: `Document
 BatchService.generatePiani` enumera coppie (alunno, piano) e chiama
 `DocumentGenerationService.generateForPiano`, che esegue una pipeline
 **completa e separata** per ciascun target (proprio clone, proprio nome,
-propria riga `LOG_DOCS`). `DOCUMENTO_DOCENTE_MATERIA` replica questo stesso
+propria riga `LOG_DOCS`). `DOCUMENTO_DOCENTE_CLASSE_MATERIA` replica questo stesso
 schema. Non serve nessuna nuova classe `Strategy`: la resa è delega diretta
 a `templates.processDocument(fileId, cdu)`, identica a `VerbaleGenerator
 Strategy`/`DocumentoGenericoGeneratorStrategy` — basta che il CDU porti il
@@ -142,7 +142,7 @@ classi Strategy per ogni tipo.
 
 ### Progetto
 
-- `CONF_DOC.TIPO = 'DOCUMENTO_DOCENTE_MATERIA'`: nuovo valore riservato,
+- `CONF_DOC.TIPO = 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'`: nuovo valore riservato,
   discriminatore dell'asse di batch (stesso meccanismo di `PIANO_PERS`, che
   `batchGenerateHandler` già riconosce oggi via `config.tipo`).
   `CONF_DOC.GENERATORE` resta `DOCUMENTO_GENERICO` — invariato, nessuna
@@ -152,9 +152,9 @@ classi Strategy per ogni tipo.
     `materiaCorrente` già esistente (già usato altrove per instradamento di
     ruolo, es. `RisolutoreRuoliService.capoDipartimento`).
   - Nuova recipe `CLASSE_DOCENTE_MATERIA` = provider di `CLASSE_COMPLETA`
-    + `'docenteMateriaFocus'` in coda (dopo `consiglio`, di cui dipende).
+    + `'docenteClasseMateriaFocus'` in coda (dopo `consiglio`, di cui dipende).
 - Nuovo `src/application/context-engine/providers/
-  DocenteMateriaFocusProvider.ts` (mirror di `PianoFocusProvider`): legge
+  DocenteClasseMateriaFocusProvider.ts` (mirror di `PianoFocusProvider`): legge
   `cdu.focus.classe.consiglioDiClasse` (già popolato dal provider
   `consiglio` — nessuna nuova query), trova il `DocenteCdcVM` con email =
   `params.docenteCorrente`, poi il `SubjectVM` al suo interno con id =
@@ -170,25 +170,25 @@ classi Strategy per ogni tipo.
     `beginTransaction`/`buildPipeline().execute`/commit-rollback) in un
     metodo privato parametrizzato su nome recipe + `BuildParams` extra, così
     da non duplicarlo.
-  - Nuovo metodo pubblico `generateForClasseDocenteMateria(classeId,
+  - Nuovo metodo pubblico `generateForClasseDocenteClasseMateria(classeId,
     docenteEmail, materiaId, confDocId, jobId?)` che usa l'helper con la
     recipe `CLASSE_DOCENTE_MATERIA` e
     `{ docenteCorrente: docenteEmail, materiaCorrente: materiaId }`.
 - `DocumentBatchService.ts`:
-  - Nuovo generatore privato `generateDocentiMateria` (mirror di
+  - Nuovo generatore privato `generateDocentiClasseMateria` (mirror di
     `generatePiani`): target = per ogni classe attiva (filtrata per
     `gestioneArticolazione` come `generateClassi`), per ogni cattedra di
     `this.classi.getConsiglioDiClasse(classe.classeId).cattedre`
     (repository-level, nessun CDU necessario per enumerare) → `{classe,
     docenteEmail, materiaId}`.
   - `batchGenerateHandler`: nuovo ramo `config.tipo ===
-    'DOCUMENTO_DOCENTE_MATERIA'` → `generateDocentiMateria`.
-  - `BatchResumeState`: nuovo campo `docenteMateriaTargets` (mirror di
+    'DOCUMENTO_DOCENTE_CLASSE_MATERIA'` → `generateDocentiClasseMateria`.
+  - `BatchResumeState`: nuovo campo `docenteClasseMateriaTargets` (mirror di
     `planTargets`) per la ripresa da checkpoint.
 - `documentSteps.ts`: generalizzare `sottotipoPiano(ctx)` in `sottotipo(ctx)`
   (stessi due punti di chiamata, `CheckDuplicatesStep` e
   `RegisterDocumentStep`): ramo `PIANO_PERS` invariato, nuovo ramo
-  `DOCUMENTO_DOCENTE_MATERIA` → `` `${materiaId}::${docenteEmail}` `` da
+  `DOCUMENTO_DOCENTE_CLASSE_MATERIA` → `` `${materiaId}::${docenteEmail}` `` da
   `cdu.focus.materia?.id`/`cdu.focus.docente?.email`, default `''`
   altrimenti.
 - Nessun codice nuovo per `LOG_DOCS.MATERIE`/`.UTENTI`: già completamente
@@ -204,17 +204,17 @@ classi Strategy per ogni tipo.
 
 ### Verifica
 
-- Unit test `DocenteMateriaFocusProvider`: dato un CDU con
+- Unit test `DocenteClasseMateriaFocusProvider`: dato un CDU con
   `consiglioDiClasse` popolato, verifica risoluzione corretta di
   `focus.docente`/`focus.materia` e l'errore quando non trovati.
-- Unit test `DocumentGenerationService.generateForClasseDocenteMateria`:
+- Unit test `DocumentGenerationService.generateForClasseDocenteClasseMateria`:
   verifica che la pipeline sia eseguita con la recipe corretta e i
   `BuildParams` giusti.
-- Unit test `DocumentBatchService.generateDocentiMateria`: verifica
+- Unit test `DocumentBatchService.generateDocentiClasseMateria`: verifica
   enumerazione target (una entry per cattedra), progressione/ripresa da
   checkpoint.
 - Unit test `sottotipo(ctx)`: entrambi i rami (`PIANO_PERS` invariato,
-  nuovo `DOCUMENTO_DOCENTE_MATERIA`).
+  nuovo `DOCUMENTO_DOCENTE_CLASSE_MATERIA`).
 - `npm run typecheck` e `npm run lint`.
 
 ---
@@ -282,7 +282,7 @@ eccezione.
 ### 4.C — Batch documenti: `DocumentBatchService.generateDipartimenti`
 
 Come deciso: nuovo generatore privato nello stesso `DocumentBatchService`
-(mirror di `generatePiani`/la nuova `generateDocentiMateria` §3), non un
+(mirror di `generatePiani`/la nuova `generateDocentiClasseMateria` §3), non un
 servizio separato. `CONF_DOC.TIPO = 'DIPARTIMENTO'`, nuovo ramo in
 `batchGenerateHandler`.
 

@@ -1,7 +1,7 @@
 import { registerItpDottedChecks } from '../../../src/onlinetests/checks/itpDottedChecks';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
-import { CONF_DOC_DOCENTE_MATERIA, e2eDocenteEmail } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { CONF_DOC_DOCENTE_CLASSE_MATERIA, e2eDocenteEmail } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { COL_LOG_DOCS } from '../../../src/config/schema';
 
 /**
@@ -153,12 +153,12 @@ test('dotted document identity accepts a prior-class duplicate for the focal bat
   const baseTeacher = e2eDocenteEmail(4);
   const rows = [
     {
-      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
       [COL_LOG_DOCS.CLASSI]: '3A',
       [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${baseTeacher}`
     },
     {
-      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+      [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
       [COL_LOG_DOCS.CLASSI]: '3A',
       [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`
     }
@@ -201,14 +201,14 @@ test('subtype assertion expects the GRECO teacher of the batch-scoped class', ()
   const runner = new RecordingRunner();
   const container = containerWithScopedBatch(
     {
-      // 1A is the class CONF_DOC_DOCENTE_MATERIA.CONDIZIONE scopes the batch to.
+      // 1A is the class CONF_DOC_DOCENTE_CLASSE_MATERIA.CONDIZIONE scopes the batch to.
       '1A': { GRECO: e2eDocenteEmail(3), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) },
       '4A': { GRECO: e2eDocenteEmail(7), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) }
     },
     [
-      { [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA, [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${e2eDocenteEmail(3)}` },
+      { [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA, [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${e2eDocenteEmail(3)}` },
       {
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
         [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`
       }
     ]
@@ -228,7 +228,7 @@ test('subtype failure names the missing subtypes, not the found ones', () => {
     },
     [
       {
-        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_MATERIA,
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
         [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`
       }
     ]

@@ -470,14 +470,14 @@ focus.carenza:
 
 ### 4.5 `focus.docente` / `focus.materia`
 
-Presenti unicamente nelle recipe `DOCUMENTO_DOCENTE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteMateriaFocusProvider`). Scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
+Presenti unicamente nelle recipe `DOCUMENTO_DOCENTE_CLASSE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteClasseMateriaFocusProvider`). Scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
 
 ```yaml
 focus.docente: PersonVM          # §8.1 — anagrafica completa del docente della cattedra (docenteCdc.anagrafica)
 focus.materia: SubjectVM         # §8.2 — materia della cattedra (docenteCdc.materie[], primo match su sigla)
 ```
 
-> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`), ma sia l'enumerazione batch (`DocumentBatchService.generateDocentiMateria`) sia questo provider trattano solo la coppia (classe, materia, docente): due cattedre che differiscono solo per `kind`/`specifica` (es. STANDARD+ITP sulla stessa materia di laboratorio) collassano in un solo documento, per scelta di scope — non è un bug.
+> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`), ma sia l'enumerazione batch (`DocumentBatchService.generateDocentiClasseMateria`) sia questo provider trattano solo la coppia (classe, materia, docente): due cattedre che differiscono solo per `kind`/`specifica` (es. STANDARD+ITP sulla stessa materia di laboratorio) collassano in un solo documento, per scelta di scope — non è un bug.
 
 ---
 

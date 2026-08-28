@@ -97,12 +97,12 @@ function isPianoPersonalizzato(ctx: PipelineContext): boolean {
  * The SOTTOTIPO discriminator used by CheckDuplicatesStep's identity match and
  * RegisterDocumentStep's LOG_DOCS row (10 §4/§11): the focused plan subtype
  * for PIANO_PERS, the `materia::docente` cattedra pair for
- * DOCUMENTO_DOCENTE_MATERIA (one document per teacher/subject on the class
+ * DOCUMENTO_DOCENTE_CLASSE_MATERIA (one document per teacher/subject on the class
  * council), empty otherwise.
  */
 function sottotipo(ctx: PipelineContext): string {
   if (isPianoPersonalizzato(ctx)) return cdu(ctx).focus.piano?.tipo ?? '';
-  if (String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '') === 'DOCUMENTO_DOCENTE_MATERIA') {
+  if (String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '') === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA') {
     const materiaId = cdu(ctx).focus.materia?.sigla ?? '';
     const docenteEmail = cdu(ctx).focus.docente?.email ?? '';
     return `${materiaId}::${docenteEmail}`;

@@ -146,7 +146,7 @@ class ConfDocRulesTest(unittest.TestCase):
             [e["permesso"] for e in json.loads(cd.cell(2, 6).value)["file"]],
             ["SCRITTURA"])
         # RELAZIONE_FINALE: TIPO asse + placeholder focus.*
-        self.assertEqual(cd.cell(3, 2).value, "DOCUMENTO_DOCENTE_MATERIA")
+        self.assertEqual(cd.cell(3, 2).value, "DOCUMENTO_DOCENTE_CLASSE_MATERIA")
         self.assertIn("{{focus.materia.sigla}}", cd.cell(3, 7).value)
         self.assertIn("{{focus.docente.nomeCompleto}}", cd.cell(3, 7).value)
         self.assertNotIn('"cartella"', cd.cell(3, 6).value)

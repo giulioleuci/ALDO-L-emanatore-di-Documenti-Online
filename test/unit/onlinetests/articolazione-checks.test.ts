@@ -174,7 +174,7 @@ test('registers the articulation checks only for a TEST_MODE sample', () => {
       artifactUrl: sample.sampleSpreadsheetUrl
     },
     {
-      name: 'Articolazione CDU: batch DOCUMENTO_DOCENTE_MATERIA registra INTERPRET.CHITARRA composita',
+      name: 'Articolazione CDU: batch DOCUMENTO_DOCENTE_CLASSE_MATERIA registra INTERPRET.CHITARRA composita',
       artifactUrl: sample.sampleSpreadsheetUrl
     },
     {
@@ -552,10 +552,10 @@ test('INTERPRET.CHITARRA check rejects a base-only materia resolution', () => {
   ).toThrow(/non risolta alla riga composita/);
 });
 
-test('DOCUMENTO_DOCENTE_MATERIA check rejects a base materia LOG_DOCS key', () => {
+test('DOCUMENTO_DOCENTE_CLASSE_MATERIA check rejects a base materia LOG_DOCS key', () => {
   const rows: Array<Record<string, unknown>> = [
     {
-      [COL_LOG_DOCS.ID_GEN]: 'E2E_DOCENTE_MATERIA',
+      [COL_LOG_DOCS.ID_GEN]: 'E2E_DOCENTE_CLASSE_MATERIA',
       [COL_LOG_DOCS.CLASSI]: CLASSE_A,
       [COL_LOG_DOCS.UTENTI]: 'e2edocente5@onlinetest.aldo.local',
       [COL_LOG_DOCS.MATERIE]: 'INTERPRET',
@@ -579,8 +579,8 @@ test('DOCUMENTO_DOCENTE_MATERIA check rejects a base materia LOG_DOCS key', () =
               ? {
                   findAll: () => [
                     {
-                      [COL_CONF_DOC.ID]: 'E2E_DOCENTE_MATERIA',
-                      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_MATERIA'
+                      [COL_CONF_DOC.ID]: 'E2E_DOCENTE_CLASSE_MATERIA',
+                      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'
                     }
                   ]
                 }
@@ -594,7 +594,7 @@ test('DOCUMENTO_DOCENTE_MATERIA check rejects a base materia LOG_DOCS key', () =
   expect(() =>
     runCheck(
       container,
-      'Articolazione CDU: batch DOCUMENTO_DOCENTE_MATERIA registra INTERPRET.CHITARRA composita'
+      'Articolazione CDU: batch DOCUMENTO_DOCENTE_CLASSE_MATERIA registra INTERPRET.CHITARRA composita'
     )
   ).toThrow(/non registra la chiave composita/);
 });

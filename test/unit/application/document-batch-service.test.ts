@@ -36,13 +36,13 @@ import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 /** Injected clock shared by every wire*() factory below — the batch service's role-resolution call must be deterministic, not the system clock. */
 const FIXED_NOW = new Date('2026-07-01T09:00:00Z');
 
-/** Stub resolver for suites that don't exercise generateDocentiMateria (generateClassi/generatePiani never call it). */
+/** Stub resolver for suites that don't exercise generateDocentiClasseMateria (generateClassi/generatePiani never call it). */
 const noopTeachingAssignments = {
   resolveConsiglio: () => [],
   resolveMateria: () => []
 } as unknown as ITeachingAssignmentResolver;
 
-/** Stub repository for suites that don't exercise generateDipartimenti (generateClassi/generatePiani/generateDocentiMateria never call it). */
+/** Stub repository for suites that don't exercise generateDipartimenti (generateClassi/generatePiani/generateDocentiClasseMateria never call it). */
 const noopDipartimenti = {
   findAll: () => [],
   findByMateria: () => null
@@ -603,7 +603,7 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   expect(monitor.completed).toHaveLength(1);
 });
 
-/** Minimal fake TeachingAssignment — DocumentBatchService.generateDocentiMateria only reads slot.materia/docenteEffettivo.email. */
+/** Minimal fake TeachingAssignment — DocumentBatchService.generateDocentiClasseMateria only reads slot.materia/docenteEffettivo.email. */
 function fakeAssignment(materiaId: string, docenteEmail: string): TeachingAssignment {
   return {
     slot: { materia: MateriaId.of(materiaId), kind: 'STANDARD', specifica: null },
@@ -613,7 +613,7 @@ function fakeAssignment(materiaId: string, docenteEmail: string): TeachingAssign
 
 /** Same as fakeAssignment but with an explicit kind/specifica — Finding 1: two
  * slots differing ONLY on this third TeachingSlot dimension must collapse to
- * one DocenteMateriaBatchTarget (classe, materiaId, docenteEmail is 2-D). */
+ * one DocenteClasseMateriaBatchTarget (classe, materiaId, docenteEmail is 2-D). */
 function fakeAssignmentWithSlot(
   materiaId: string,
   docenteEmail: string,
@@ -626,7 +626,7 @@ function fakeAssignmentWithSlot(
   } as unknown as TeachingAssignment;
 }
 
-function wireDocentiMateria(
+function wireDocentiClasseMateria(
   options: {
     failFor?: string;
     monitor?: FakeProcessMonitor;
@@ -645,7 +645,7 @@ function wireDocentiMateria(
     jobId?: string;
   }> = [];
   const documenti = {
-    generateForClasseDocenteMateria: (
+    generateForClasseDocenteClasseMateria: (
       target: ClasseId,
       docenteEmail: string,
       materiaId: string,
@@ -671,7 +671,7 @@ function wireDocentiMateria(
       return id === 'PROGRAMMA_SVOLTO'
         ? new ConfigurazioneDocumento({
             ID: id,
-            TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+            TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
             GENERATORE: 'PROGRAMMA_SVOLTO'
           })
         : null;
@@ -684,7 +684,7 @@ function wireDocentiMateria(
   // .test.ts, which independently rely on the same fact for the CDU-recipe
   // path). Enumerating via role resolution (not the raw CLASSI cattedre) must
   // surface bianchi as 5A's current MATE titolare, matching what
-  // DocenteMateriaFocusProvider resolves downstream — that's exactly the
+  // DocenteClasseMateriaFocusProvider resolves downstream — that's exactly the
   // divergence Finding 1 flagged.
   const councilByClasse: Record<string, TeachingAssignment[]> = {
     '5A': [
@@ -733,9 +733,9 @@ function wireDocentiMateria(
   return { service, generated, configIds };
 }
 
-describe('DocumentBatchService.generateDocentiMateria', () => {
+describe('DocumentBatchService.generateDocentiClasseMateria', () => {
   test('registered handler resumes a raw docente/materia checkpoint without top-level IDs or duplicate targets', () => {
-    const { service, generated, configIds } = wireDocentiMateria();
+    const { service, generated, configIds } = wireDocentiClasseMateria();
     const registered = new Map<string, unknown>();
     service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
     const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
@@ -761,7 +761,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
   });
 
   test('enumerates one target per cattedra across active classes (GESTIONE_ARTICOLAZIONE=COMPLETA excludes partners)', () => {
-    const { service, generated } = wireDocentiMateria();
+    const { service, generated } = wireDocentiClasseMateria();
     const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' });
     const checkpoints: BatchCheckpoint[] = [];
     let step = gen.next();
@@ -775,7 +775,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     // defaults to COMPLETA (unset on the fabricated config), so the parent (1F)
     // is targeted and its partners are excluded — same subset as the CD1 case.
     // 5A's role-resolved council is MATE->bianchi (substitution, see
-    // wireDocentiMateria's comment), FISI->bianchi, plus the religione-alt-gated
+    // wireDocentiClasseMateria's comment), FISI->bianchi, plus the religione-alt-gated
     // IRC->verdi (only present because resolveConsiglio is called with
     // includeReligioneAlt: true, fix round 2); 1F is only MATE->rossi.
     expect(generated).toEqual([
@@ -805,7 +805,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
   // entry, just absent — which is exactly what happens if
   // resolveConsiglio is called without { includeReligioneAlt: true }.
   test('enumerates a docente who only teaches a religione-alt materia (IRC) — regression guard for includeReligioneAlt', () => {
-    const { service, generated } = wireDocentiMateria();
+    const { service, generated } = wireDocentiClasseMateria();
     const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO' });
     let step = gen.next();
     while (!step.done) step = gen.next();
@@ -819,8 +819,8 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     });
   });
 
-  test('resumes from persisted docenteMateriaTargets without re-querying the teaching-assignment resolver', () => {
-    const { service, generated } = wireDocentiMateria();
+  test('resumes from persisted docenteClasseMateriaTargets without re-querying the teaching-assignment resolver', () => {
+    const { service, generated } = wireDocentiClasseMateria();
     const gen = service.batchGenerateHandler({
       confDocId: 'PROGRAMMA_SVOLTO',
       resumeState: {
@@ -829,7 +829,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
         nextIndex: 2,
         processed: ['5A:MATE:bianchi@school.it', '5A:FISI:bianchi@school.it'],
         errori: [],
-        docenteMateriaTargets: [
+        docenteClasseMateriaTargets: [
           { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' },
           { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'FISI' },
           { classe: '5A', docenteEmail: 'verdi@school.it', materiaId: 'IRC' },
@@ -841,7 +841,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     while (!step.done) step = gen.next();
 
     // Only the two targets after nextIndex=2 are (re)generated — proves the
-    // persisted docenteMateriaTargets snapshot is consumed as-is rather than
+    // persisted docenteClasseMateriaTargets snapshot is consumed as-is rather than
     // re-derived from teachingAssignments.resolveConsiglio on resume.
     expect(generated).toEqual([
       { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
@@ -856,7 +856,7 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
   });
 
   test('a single cattedra failure is isolated: logged in errori, the batch continues (15 §8)', () => {
-    const { service, generated } = wireDocentiMateria({ failFor: '5A:FISI:bianchi@school.it' });
+    const { service, generated } = wireDocentiClasseMateria({ failFor: '5A:FISI:bianchi@school.it' });
     const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO' });
     let step = gen.next();
     while (!step.done) step = gen.next();
@@ -871,8 +871,8 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     expect(result.success).toBe(false);
   });
 
-  test('generateDocentiMateria targets the composite materiaId for a specifica cattedra', () => {
-    const { service, generated } = wireDocentiMateria({
+  test('generateDocentiClasseMateria targets the composite materiaId for a specifica cattedra', () => {
+    const { service, generated } = wireDocentiClasseMateria({
       extraCouncilByClasse: {
         '5A': [fakeAssignmentWithSlot('INTERPRET', 'bianchi@school.it', 'SPECIFICA', 'CHITARRA')]
       }
@@ -892,8 +892,8 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
     expect(result.processed).toContain('5A:INTERPRET.CHITARRA:bianchi@school.it');
   });
 
-  test('generateDocentiMateria produces two separate targets for a docente holding two specifics of the same family', () => {
-    const { service, generated } = wireDocentiMateria({
+  test('generateDocentiClasseMateria produces two separate targets for a docente holding two specifics of the same family', () => {
+    const { service, generated } = wireDocentiClasseMateria({
       extraCouncilByClasse: {
         '5A': [
           fakeAssignmentWithSlot('INTERPRET', 'bianchi@school.it', 'SPECIFICA', 'CHITARRA'),
@@ -913,12 +913,12 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
   });
 
   // Finding 1 (final review fix wave): TeachingSlot is 3-D (materia, kind,
-  // specifica) but DocenteMateriaBatchTarget is 2-D (classe, materiaId,
+  // specifica) but DocenteClasseMateriaBatchTarget is 2-D (classe, materiaId,
   // docenteEmail). A docente holding two slots on the same materia that
   // differ only by kind (STANDARD+ITP on a lab subject) or specifica must
   // collapse to exactly ONE target, not two byte-identical ones.
   test('two TeachingAssignments for the same (classe, materia, docente) differing only by kind/specifica collapse to one target', () => {
-    const { service, generated } = wireDocentiMateria({
+    const { service, generated } = wireDocentiClasseMateria({
       extraCouncilByClasse: {
         '1F': [fakeAssignmentWithSlot('MATE', 'rossi@school.it', 'ITP', null)]
       }

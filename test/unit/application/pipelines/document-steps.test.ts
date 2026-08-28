@@ -61,7 +61,7 @@ function buildPianoCdu(db: FakeDatabase, pianoTipo: TipoPiano): Cdu {
   );
 }
 
-function buildDocenteMateriaCdu(
+function buildDocenteClasseMateriaCdu(
   db: FakeDatabase,
   docenteCorrente: string,
   materiaCorrente: string
@@ -790,14 +790,14 @@ test('RegisterDocumentStep keeps SOTTOTIPO empty for non-plan generators even wi
 // 5A/MATE resolves to bianchi@school.it via VARIAZIONI_CATTEDRA (rossi is the
 // nominal CLASSI.MATE holder but was reassigned to bianchi effective
 // 2025-10-01, before this fixed `now`) — same fixture fact relied on by
-// document-generation-service.test.ts's generateForClasseDocenteMateria case.
-test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUMENTO_DOCENTE_MATERIA', () => {
+// document-generation-service.test.ts's generateForClasseDocenteClasseMateria case.
+test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUMENTO_DOCENTE_CLASSE_MATERIA', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_MATERIA' };
+  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('cdu', buildDocenteMateriaCdu(db, 'bianchi@school.it', 'MATE'));
+  ctx.set('cdu', buildDocenteClasseMateriaCdu(db, 'bianchi@school.it', 'MATE'));
   ctx.set('newFileId', 'file_docmat');
   ctx.set('newFileLink', 'https://drive/file_docmat');
   ctx.set('nomeFile', 'Programma_MATE');
@@ -807,13 +807,13 @@ test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUM
   expect(row?.SOTTOTIPO).toBe('MATE::bianchi@school.it');
 });
 
-test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_MATERIA identity includes the materia::docente SOTTOTIPO', () => {
+test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_CLASSE_MATERIA identity includes the materia::docente SOTTOTIPO', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [
     {
       ID: 'old',
       ID_GEN: 'CD1',
-      TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+      TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
       SOTTOTIPO: 'MATE::bianchi@school.it',
       PATH: 'Verbali/5',
       NOME: 'Verbale_5A_01/07/2026',
@@ -823,10 +823,10 @@ test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_MATERIA identity includes the mater
   ];
   const db = new FakeDatabase(tables);
   const ctx = baseCtx(db);
-  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_MATERIA' };
+  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' };
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('cdu', buildDocenteMateriaCdu(db, 'bianchi@school.it', 'MATE'));
+  ctx.set('cdu', buildDocenteClasseMateriaCdu(db, 'bianchi@school.it', 'MATE'));
 
   new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   expect(ctx.get('shouldGenerate')).toBe(false);

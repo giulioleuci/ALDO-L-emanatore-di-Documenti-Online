@@ -55,15 +55,15 @@ Approccio scartato: editing manuale su Sheets (non riproducibile); pipeline TS v
 
 | Riga | Campo | Vecchio | Nuovo |
 | --- | --- | --- | --- |
-| RELAZIONE_FINALE | `TIPO` | `RELAZIONE_FINALE` | `DOCUMENTO_DOCENTE_MATERIA` |
+| RELAZIONE_FINALE | `TIPO` | `RELAZIONE_FINALE` | `DOCUMENTO_DOCENTE_CLASSE_MATERIA` |
 | RELAZIONE_FINALE | `FILE_NAME` | `{{materia.sigla}}` / `{{docente.nomeCompleto}}` | `{{focus.materia.sigla}}` / `{{focus.docente.nomeCompleto}}` |
-| PROGRAMMA | `TIPO` | `PROGRAMMA_SVOLTO` | `DOCUMENTO_DOCENTE_MATERIA` |
+| PROGRAMMA | `TIPO` | `PROGRAMMA_SVOLTO` | `DOCUMENTO_DOCENTE_CLASSE_MATERIA` |
 | PROGRAMMA | `FILE_NAME` | `{{materia.sigla}}` | `{{focus.materia.sigla}}` |
-| PROGRAMMA_RELAZIONI_QUINTE | `TIPO` | `RELAZIONE_DOCENTE_DOC_15_MAGGIO` | `DOCUMENTO_DOCENTE_MATERIA` |
+| PROGRAMMA_RELAZIONI_QUINTE | `TIPO` | `RELAZIONE_DOCENTE_DOC_15_MAGGIO` | `DOCUMENTO_DOCENTE_CLASSE_MATERIA` |
 | PROGRAMMA_RELAZIONI_QUINTE | `FILE_NAME` | `{{materia.sigla}}` | `{{focus.materia.sigla}}` |
 | DOC15MAGGIO | `MODELLI[0].condizione` | `{{classe.indirizzoSigla}} == 'LC'` | `{{focus.classe.anagrafica.indirizzo.sigla}} == 'LC'` |
 
-Motivazione: `focus.docente`/`focus.materia` sono popolati SOLO dall'asse batch `DOCUMENTO_DOCENTE_MATERIA` (01 §CONF_DOC "Altri TIPO riservati", 02 §4.5); il percorso `classe.indirizzoSigla` non esiste nel CDU e la condizione sarebbe sempre falsa (template sbagliato scelto in silenzio).
+Motivazione: `focus.docente`/`focus.materia` sono popolati SOLO dall'asse batch `DOCUMENTO_DOCENTE_CLASSE_MATERIA` (01 §CONF_DOC "Altri TIPO riservati", 02 §4.5); il percorso `classe.indirizzoSigla` non esiste nel CDU e la condizione sarebbe sempre falsa (template sbagliato scelto in silenzio).
 
 ### 4.4 PIANI_PERSONALIZZATI — ramo PEI
 

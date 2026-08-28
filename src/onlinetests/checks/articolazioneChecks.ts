@@ -19,7 +19,7 @@ import {
   CLASSE_C_PARENT,
   CLASSE_C_PARTNER,
   CONF_DOC_ARTICOLATA,
-  CONF_DOC_DOCENTE_MATERIA,
+  CONF_DOC_DOCENTE_CLASSE_MATERIA,
   CONF_DOC_PIANI,
   CONF_DOC_RIEPILOGO,
   CONF_DOC_RIEPILOGO_FIRME_CDC,
@@ -274,20 +274,20 @@ export function registerArticolazioneChecks(
   );
 
   runner.add(
-    'Articolazione CDU: batch DOCUMENTO_DOCENTE_MATERIA registra INTERPRET.CHITARRA composita',
+    'Articolazione CDU: batch DOCUMENTO_DOCENTE_CLASSE_MATERIA registra INTERPRET.CHITARRA composita',
     sample.sampleSpreadsheetUrl,
     () => {
       const db = container.get<TableDatabase>('db');
-      const config = documentConfig(db, CONF_DOC_DOCENTE_MATERIA);
-      if (config.tipo !== 'DOCUMENTO_DOCENTE_MATERIA') {
+      const config = documentConfig(db, CONF_DOC_DOCENTE_CLASSE_MATERIA);
+      if (config.tipo !== 'DOCUMENTO_DOCENTE_CLASSE_MATERIA') {
         throw new ValidationError(
-          `CONF_DOC ${CONF_DOC_DOCENTE_MATERIA} non ha TIPO DOCUMENTO_DOCENTE_MATERIA.`
+          `CONF_DOC ${CONF_DOC_DOCENTE_CLASSE_MATERIA} non ha TIPO DOCUMENTO_DOCENTE_CLASSE_MATERIA.`
         );
       }
       const batch = container.get<DocumentBatchService>('documentBatchService');
       const handler = batch.batchGenerateHandler({
-        confDocId: CONF_DOC_DOCENTE_MATERIA,
-        jobId: 'E2E_DOCENTE_MATERIA_ARTICOLAZIONE'
+        confDocId: CONF_DOC_DOCENTE_CLASSE_MATERIA,
+        jobId: 'E2E_DOCENTE_CLASSE_MATERIA_ARTICOLAZIONE'
       });
       let next = handler.next();
       while (!next.done) next = handler.next();
@@ -299,7 +299,7 @@ export function registerArticolazioneChecks(
         .findAll()
         .find(
           (candidate) =>
-            candidate[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_MATERIA &&
+            candidate[COL_LOG_DOCS.ID_GEN] === CONF_DOC_DOCENTE_CLASSE_MATERIA &&
             candidate[COL_LOG_DOCS.CLASSI] === CLASSE_A &&
             candidate[COL_LOG_DOCS.UTENTI] === docente
         );
@@ -309,7 +309,7 @@ export function registerArticolazioneChecks(
         row[COL_LOG_DOCS.SOTTOTIPO] !== `${materia}::${docente}`
       ) {
         throw new ValidationError(
-          `Batch DOCUMENTO_DOCENTE_MATERIA per ${docente}/${CLASSE_A} non registra la chiave composita ${materia}: ${JSON.stringify(row)}`
+          `Batch DOCUMENTO_DOCENTE_CLASSE_MATERIA per ${docente}/${CLASSE_A} non registra la chiave composita ${materia}: ${JSON.stringify(row)}`
         );
       }
     }

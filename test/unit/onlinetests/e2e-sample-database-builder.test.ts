@@ -20,7 +20,7 @@ import {
   CONF_DOC_RIEPILOGO,
   CONF_DOC_COMPLESSO,
   CONF_DOC_ARTICOLATA,
-  CONF_DOC_DOCENTE_MATERIA,
+  CONF_DOC_DOCENTE_CLASSE_MATERIA,
   CONF_DOC_PIANO_LAVORO,
   CONF_MAIL_VERBALE,
   CONF_MAIL_CONDOTTA,
@@ -383,12 +383,14 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(JSON.parse(sheetPermessi[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_sheet_permessi'
   });
-  const docenteMateria = confDoc.find((c) => c[COL_CONF_DOC.ID] === CONF_DOC_DOCENTE_MATERIA)!;
-  expect(docenteMateria[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_DOCENTE_MATERIA');
-  expect(docenteMateria[COL_CONF_DOC.CONDIZIONE]).toBe(
+  const docenteClasseMateria = confDoc.find(
+    (c) => c[COL_CONF_DOC.ID] === CONF_DOC_DOCENTE_CLASSE_MATERIA
+  )!;
+  expect(docenteClasseMateria[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_DOCENTE_CLASSE_MATERIA');
+  expect(docenteClasseMateria[COL_CONF_DOC.CONDIZIONE]).toBe(
     `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`
   );
-  expect(JSON.parse(String(docenteMateria[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
+  expect(JSON.parse(String(docenteClasseMateria[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
     classi: '{{focus.classe.anagrafica.nome}}',
     utenti: '{{focus.docente.email}}',
     materie: '{{focus.materia.sigla}}'

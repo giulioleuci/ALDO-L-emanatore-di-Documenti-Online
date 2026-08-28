@@ -14,6 +14,8 @@ import { DocenteRepository } from '../../../src/infrastructure/repositories/Doce
 import { Docente } from '../../../src/domain/entities/Docente';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import { buildPersonVm } from '../../../src/application/context-engine/mappers/personVmMapper';
+import type { CduDipartimentoFocus } from '../../../src/application/context-engine/Cdu';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -85,6 +87,55 @@ describe('RisolutoreRuoliService — single-teacher roles (14 §1.1)', () => {
   test('CAPO_DIPARTIMENTO resolves the department of materiaCorrente', () => {
     const { cdu, service } = build({ materiaCorrente: 'MATE' });
     expect(emails(service, 'CAPO_DIPARTIMENTO', cdu)).toEqual(['rossi@school.it']);
+  });
+});
+
+function dipartimentoFocus(overrides: Partial<CduDipartimentoFocus>): CduDipartimentoFocus {
+  return {
+    anagrafica: { id: 'DIP', nome: 'Dipartimento' },
+    capo: null,
+    materie: [],
+    docenti: [],
+    didattica: { documenti: { items: [] } },
+    ...overrides
+  };
+}
+
+function person(email: string) {
+  return buildPersonVm({ nome: 'Nome', cognome: 'Cognome', email, genere: 'M' });
+}
+
+describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / CAPO_DIPART (Task 4)', () => {
+  test('DOCENTE_CORRENTE resolves cdu.focus.docente.email', () => {
+    const { cdu, service } = build({});
+    cdu.focus.docente = person('prof@scuola.it');
+    expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['prof@scuola.it']);
+  });
+
+  test('DOCENTE_CORRENTE is empty when focus.docente is absent', () => {
+    const { cdu, service } = build({});
+    expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual([]);
+  });
+
+  test('DOCENTI_DIPARTIMENTO resolves cdu.focus.dipartimento.docenti', () => {
+    const { cdu, service } = build({});
+    cdu.focus.dipartimento = dipartimentoFocus({
+      docenti: [person('a@x.it'), person('b@x.it')]
+    });
+    expect(emails(service, 'DOCENTI_DIPARTIMENTO', cdu)).toEqual(['a@x.it', 'b@x.it']);
+  });
+
+  test('CAPO_DIPART reads focus.dipartimento.capo.email directly when populated', () => {
+    // materiaCorrente MATE would fall back to rossi (per CAPO_DIPARTIMENTO above) —
+    // proves the focus-populated capo (bianchi) takes priority over that fallback.
+    const { cdu, service } = build({ materiaCorrente: 'MATE' });
+    cdu.focus.dipartimento = dipartimentoFocus({ capo: person('bianchi@school.it') });
+    expect(emails(service, 'CAPO_DIPART', cdu)).toEqual(['bianchi@school.it']);
+  });
+
+  test('CAPO_DIPART falls back to findByMateria(materiaCorrente) when focus.dipartimento is absent', () => {
+    const { cdu, service } = build({ materiaCorrente: 'MATE' });
+    expect(emails(service, 'CAPO_DIPART', cdu)).toEqual(['rossi@school.it']);
   });
 });
 

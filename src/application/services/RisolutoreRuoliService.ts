@@ -161,6 +161,9 @@ export class RisolutoreRuoliService {
       ],
       ['DOCENTE_MATERIA', (c) => this.docenteMateria(c)],
       ['CAPO_DIPARTIMENTO', (c) => this.emailsOf(this.capoDipartimento(c))],
+      ['DOCENTE_CORRENTE', (c) => this.docenteCorrente(c)],
+      ['DOCENTI_DIPARTIMENTO', (c) => this.docentiDipartimento(c)],
+      ['CAPO_DIPART', (c) => this.emailsOf(this.capoDipart(c))],
       ['DOCENTE_PRIMA_PROVA', (c) => this.docentiProva(c, 'prima')],
       ['DOCENTE_SECONDA_PROVA', (c) => this.docentiProva(c, 'seconda')],
       ['ALUNNO', (c) => this.alunnoEmail(c)],
@@ -233,6 +236,31 @@ export class RisolutoreRuoliService {
     if (capo === null) return [];
     const docente = this.docenti.findById(capo.value);
     return docente === null ? [] : [docente];
+  }
+
+  private docenteCorrente(ctx: RoleContext): Email[] {
+    const email = ctx.cdu.focus.docente?.email;
+    return email !== undefined && email !== null && email.trim() !== '' ? [Email.of(email)] : [];
+  }
+
+  private docentiDipartimento(ctx: RoleContext): Email[] {
+    return (ctx.cdu.focus.dipartimento?.docenti ?? []).flatMap((d) =>
+      d.email !== null && d.email.trim() !== '' ? [Email.of(d.email)] : []
+    );
+  }
+
+  /**
+   * CAPO_DIPART (spec §6.2.1): prefers the already-resolved focus.dipartimento.capo,
+   * falls back to the existing materia-driven lookup (capoDipartimento) shared with
+   * CAPO_DIPARTIMENTO.
+   */
+  private capoDipart(ctx: RoleContext): Docente[] {
+    const focusCapoEmail = ctx.cdu.focus.dipartimento?.capo?.email;
+    if (focusCapoEmail !== undefined && focusCapoEmail !== null && focusCapoEmail.trim() !== '') {
+      const docente = this.docenti.findById(focusCapoEmail);
+      return docente === null ? [] : [docente];
+    }
+    return this.capoDipartimento(ctx);
   }
 
   private docentiProva(ctx: RoleContext, prova: 'prima' | 'seconda'): Email[] {

@@ -42,18 +42,8 @@ import type { ITeachingAssignmentResolver } from '../../../src/application/ports
 import type { DocumentStrategyFactory } from '../../../src/application/factories/DocumentStrategyFactory';
 import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/strategies/DocumentoGenericoGeneratorStrategy';
 import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
-import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { COL_CONF_DOC } from '../../../src/config/schema';
-
-function strategyConfig(overrides: Record<string, unknown>): ConfigurazioneDocumento {
-  return ConfigurazioneDocumento.fromData({
-    [COL_CONF_DOC.ID]: 'X',
-    [COL_CONF_DOC.TIPO]: 'T',
-    [COL_CONF_DOC.GENERATORE]: 'CLASSE',
-    [COL_CONF_DOC.FORMATO]: 'GDOC',
-    ...overrides
-  });
-}
+import { confDocFixture as strategyConfig } from '../../fixtures/confDoc';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };

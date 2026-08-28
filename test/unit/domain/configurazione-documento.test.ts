@@ -158,4 +158,26 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
       "Le colonne materie non sono applicabili all'asse DIPARTIMENTO (nessun consiglio di classe)"
     );
   });
+
+  it('rejects aggiungiMaterie on the DOCENTE axis (equally class-less, no consiglio di classe)', () => {
+    const row = validRow({
+      [COL_CONF_DOC.GENERATORE]: 'DOCENTE',
+      [COL_CONF_DOC.FORMATO]: 'GSHEET',
+      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterie: true })
+    });
+    expect(() => ConfigurazioneDocumento.fromData(row)).toThrow(
+      "Le colonne materie non sono applicabili all'asse DOCENTE (nessun consiglio di classe)"
+    );
+  });
+
+  it('rejects aggiungiMaterieConPermessi on the DOCENTE axis', () => {
+    const row = validRow({
+      [COL_CONF_DOC.GENERATORE]: 'DOCENTE',
+      [COL_CONF_DOC.FORMATO]: 'GSHEET',
+      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterieConPermessi: true })
+    });
+    expect(() => ConfigurazioneDocumento.fromData(row)).toThrow(
+      "Le colonne materie non sono applicabili all'asse DOCENTE (nessun consiglio di classe)"
+    );
+  });
 });

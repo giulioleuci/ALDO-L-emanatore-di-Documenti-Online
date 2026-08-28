@@ -6,7 +6,7 @@ import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRe
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
 import { PipelineError } from '../../../domain/errors/DomainError';
-import { dedupeSubjectsMainOverItp, materiaVmFromSlot } from '../TeachingCouncilProjection';
+import { materieDocenteInClasse } from '../TeachingCouncilProjection';
 import { buildPersonVmFromDocente } from '../mappers/personVmMapper';
 
 /**
@@ -39,25 +39,25 @@ export class DocenteAggregatoFocusProvider implements ContextProvider {
     for (const classeIdValue of classiCompetenza) {
       const classe = this.classi.findById(ClasseId.of(classeIdValue));
       if (classe === null) continue;
-      const assignments = this.teachingAssignments
-        .resolveConsiglio(classe, params.now, { includeReligioneAlt: true })
-        .filter((a) => a.docenteEffettivo.id === docenteEmail);
-      if (assignments.length === 0) continue;
-      if (anagrafica === undefined) {
-        anagrafica = buildPersonVmFromDocente(assignments[0]!.docenteEffettivo);
-      }
-      const materie = dedupeSubjectsMainOverItp(
-        assignments
-          .map((a) =>
-            materiaVmFromSlot(this.materie, classe, {
-              materia: a.slot.materia.value,
-              kind: a.slot.kind,
-              specifica: a.slot.specifica
-            })
-          )
-          .filter((m): m is NonNullable<typeof m> => m !== null)
+      const assignments = this.teachingAssignments.resolveConsiglio(classe, params.now, {
+        includeReligioneAlt: true
+      });
+      const { assignmentsDelDocente, materieVm } = materieDocenteInClasse(
+        this.materie,
+        classe,
+        assignments,
+        docenteEmail
       );
-      cattedre.push({ classeNome: classe.nome, anno: classe.anno.value, sezione: classe.sezione, materie });
+      if (assignmentsDelDocente.length === 0) continue;
+      if (anagrafica === undefined) {
+        anagrafica = buildPersonVmFromDocente(assignmentsDelDocente[0]!.docenteEffettivo);
+      }
+      cattedre.push({
+        classeNome: classe.nome,
+        anno: classe.anno.value,
+        sezione: classe.sezione,
+        materie: materieVm
+      });
     }
 
     if (anagrafica === undefined) {

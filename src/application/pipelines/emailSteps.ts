@@ -43,7 +43,7 @@ import { Email } from '../../domain/value-objects/Email';
 import {
   dedupeSubjectsMainOverItp,
   resolveEffectiveDocenti,
-  materiaVmFromSlot
+  materieDocenteInClasse
 } from '../context-engine/TeachingCouncilProjection';
 import { buildPersonVm } from '../context-engine/mappers/personVmMapper';
 
@@ -290,11 +290,10 @@ export class BuildCDUStep extends Step {
     for (const classeId of classiCompetenza) {
       const classe = this.classi.findById(ClasseId.of(classeId));
       if (classe === null) continue;
-      let mie: TeachingAssignment[];
+      let materie: SubjectVM[];
       try {
-        mie = this.resolveConsiglioCached(classe, when).filter(
-          (a) => a.docenteEffettivo.id === docenteEmail
-        );
+        const assignments = this.resolveConsiglioCached(classe, when);
+        materie = materieDocenteInClasse(this.materie, classe, assignments, docenteEmail).materieVm;
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         this.logger.warn(
@@ -302,17 +301,6 @@ export class BuildCDUStep extends Step {
         );
         continue;
       }
-      const materie = dedupeSubjectsMainOverItp(
-        mie
-          .map((a) =>
-            materiaVmFromSlot(this.materie, classe, {
-              materia: a.slot.materia.value,
-              kind: a.slot.kind,
-              specifica: a.slot.specifica
-            })
-          )
-          .filter((vm): vm is SubjectVM => vm !== null)
-      );
       if (materie.length === 0) continue;
       const gruppoClasse = this.classi.getClasseParent(classe) ?? classe;
       const key = gruppoClasse.id ?? classeId;

@@ -3,6 +3,17 @@ import { COL_CONF_DOC } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 import { ConfigurationError } from '../errors/DomainError';
 
+/** The subset of PARAMETRI this entity's own constructor validates (spec §5.2.2) — typed narrowly so a
+ * typo'd flag name is a compile error here, not a silently-ignored key. PARAMETRI also carries other,
+ * generator-specific parameters (e.g. `sheetName`, `includiStorico`, `classiTarget`) read by individual
+ * strategies/providers via the untyped `getParametri()` bag — those are intentionally out of this type. */
+interface DocumentoParametriFlags {
+  aggiungiMaterie?: boolean;
+  aggiungiMaterieConPermessi?: boolean;
+  tabelleImportate?: boolean;
+  overwrite?: boolean;
+}
+
 export type ConfigurazioneDocumentoData = {
   [COL_CONF_DOC.ID]?: string;
   [COL_CONF_DOC.TIPO]?: string;
@@ -66,7 +77,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
     this.permessiRaw =
       typeof data[COL_CONF_DOC.PERMESSI] === 'string' ? (data[COL_CONF_DOC.PERMESSI] as string) : null;
 
-    const parametri = this.getParametri();
+    const parametri = this.getParametri() as DocumentoParametriFlags;
     const aggiungiMaterie = Boolean(parametri.aggiungiMaterie);
     const aggiungiMaterieConPermessi = Boolean(parametri.aggiungiMaterieConPermessi);
     if (this.formato === FormatoOutput.GSHEET && parametri.tabelleImportate === true) {
@@ -75,9 +86,12 @@ export class ConfigurazioneDocumento extends AldoEntity {
     if (this.formato === FormatoOutput.GDOC && (aggiungiMaterie || aggiungiMaterieConPermessi)) {
       throw new ConfigurationError('Le colonne materie sono supportate unicamente su formato GSHEET');
     }
-    if (this.generatore === GeneratoreAxis.DIPARTIMENTO && (aggiungiMaterie || aggiungiMaterieConPermessi)) {
+    if (
+      (this.generatore === GeneratoreAxis.DIPARTIMENTO || this.generatore === GeneratoreAxis.DOCENTE) &&
+      (aggiungiMaterie || aggiungiMaterieConPermessi)
+    ) {
       throw new ConfigurationError(
-        "Le colonne materie non sono applicabili all'asse DIPARTIMENTO (nessun consiglio di classe)"
+        `Le colonne materie non sono applicabili all'asse ${this.generatore} (nessun consiglio di classe)`
       );
     }
     if (aggiungiMaterie && aggiungiMaterieConPermessi) {
@@ -114,7 +128,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
 
   /** Reserved PARAMETRI.overwrite flag — skips the duplicate check (ref 01, 10 Step 2). */
   isOverwrite(): boolean {
-    return this.getParametri().overwrite === true;
+    return (this.getParametri() as DocumentoParametriFlags).overwrite === true;
   }
 
   getModelli(): Record<string, unknown> {

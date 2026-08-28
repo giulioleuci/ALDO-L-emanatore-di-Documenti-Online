@@ -11,7 +11,6 @@ import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentRe
 
 /** Job type under which the batch handler is registered in JobRunnerLib. */
 export const JOB_TYPE_GENERAZIONE_DOCUMENTI = 'GENERAZIONE_DOCUMENTI_CLASSI';
-export const CONF_DOC_PIANI_PERSONALIZZATI = 'PIANI_PERSONALIZZATI';
 
 interface DocumentConfigLookup {
   findById(id: string): ConfigurazioneDocumento | null;

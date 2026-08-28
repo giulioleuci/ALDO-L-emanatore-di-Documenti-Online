@@ -222,6 +222,36 @@ export function dedupeSubjectsMainOverItp(vms: SubjectVM[]): SubjectVM[] {
   return [...bySigla.values()];
 }
 
+/**
+ * Filters a class's resolved teaching assignments down to one docente, maps each remaining slot to its
+ * SubjectVM, and dedupes MAIN over ITP. Shared by DocenteAggregatoFocusProvider (DOCENTE axis) and
+ * BuildCDUStep.buildCattedre (email boxes) — both resolve "what does this teacher teach in this class"
+ * from a per-class TeachingAssignment[]; identity comparison is on Docente.email.value (not .id, which
+ * can be null before a Docente is persisted).
+ */
+export function materieDocenteInClasse(
+  materie: IMateriaRepository,
+  classe: Classe,
+  assignments: TeachingAssignment[],
+  docenteEmail: string
+): { assignmentsDelDocente: TeachingAssignment[]; materieVm: SubjectVM[] } {
+  const assignmentsDelDocente = assignments.filter(
+    (a) => a.docenteEffettivo.email.value === docenteEmail
+  );
+  const materieVm = dedupeSubjectsMainOverItp(
+    assignmentsDelDocente
+      .map((a) =>
+        materiaVmFromSlot(materie, classe, {
+          materia: a.slot.materia.value,
+          kind: a.slot.kind,
+          specifica: a.slot.specifica
+        })
+      )
+      .filter((vm): vm is SubjectVM => vm !== null)
+  );
+  return { assignmentsDelDocente, materieVm };
+}
+
 export function materiaVmFromSlot(
   materie: IMateriaRepository,
   classe: Classe,

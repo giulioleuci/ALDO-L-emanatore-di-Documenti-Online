@@ -29,6 +29,7 @@ import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
 import {
   DuplicazioneDocumento,
+  FormatoOutput,
   GeneratoreAxis,
   GestioneSupplenti,
   TipoPiano
@@ -683,12 +684,23 @@ test('CloneTemplateStep sets newFileLink to a Sheets edit URL for FORMATO=GSHEET
   );
 });
 
-// The FORMATO=PDF/TEXT generic-Drive-link fallback (CloneTemplateStep's
-// buildFileLink) is no longer reachable: ConfigurazioneDocumento's constructor
-// (Task 1, GENERATORE/FORMATO redesign) now rejects any FORMATO other than
-// GDOC/GSHEET, so a PDF/TEXT CONF_DOC row can never reach this step. Dropped
-// this scenario rather than leaving an untestable premise in place — the
-// GDOC/GSHEET link-format cases above remain covered.
+test('CloneTemplateStep rejects a FORMATO other than GDOC/GSHEET (invariant guard, unreachable via a real CONF_DOC row)', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = ConfigurazioneDocumento.fromData(fixtureTables().CONF_DOC[0]!);
+  // ConfigurazioneDocumento.fromData already rejects FORMATO=PDF/TEXT (Task 1) —
+  // bypass that via a direct field override to prove buildFileLink's own guard
+  // still trips if this invariant is ever violated some other way.
+  (config as { formato: FormatoOutput }).formato = FormatoOutput.PDF;
+  ctx.set('confDoc', config);
+  ctx.set('destFolderId', 'folder_1');
+  ctx.set('nomeFile', 'Invalido_5A');
+  ctx.set('templateId', 'tmpl_verbale');
+  const drive = new FakeDriveFacade();
+  expect(() => new CloneTemplateStep(logger, drive).execute(ctx)).toThrow(
+    'FORMATO non supportato per il file link: PDF'
+  );
+});
 
 test('RenderTemplateStep delegates to strategy → WorkspaceTemplateEngine with the CDU as context', () => {
   const db = new FakeDatabase(fixtureTables());

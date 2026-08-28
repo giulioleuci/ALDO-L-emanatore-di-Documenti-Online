@@ -92,14 +92,14 @@ function cduRecord(ctx: PipelineContext): Record<string, unknown> {
   return cdu(ctx) as unknown as Record<string, unknown>;
 }
 function isPianoPersonalizzato(ctx: PipelineContext): boolean {
-  return confDoc(ctx).tipo === 'PIANO_PERS';
+  return confDoc(ctx).generatore === GeneratoreAxis.PIANO_PERSONALIZZATO;
 }
 /**
  * The SOTTOTIPO discriminator used by CheckDuplicatesStep's identity match and
  * RegisterDocumentStep's LOG_DOCS row (10 §4/§11): the focused plan subtype
- * for PIANO_PERS, the `materia::docente` cattedra pair for
- * DOCUMENTO_DOCENTE_CLASSE_MATERIA (one document per teacher/subject on the class
- * council), the materia for DOCUMENTO_CLASSE_MATERIA (one document per
+ * for GENERATORE=PIANO_PERSONALIZZATO, the `materia::docente` cattedra pair for
+ * GENERATORE=CLASSE_DOCENTE_MATERIA (one document per teacher/subject on the
+ * class council), the materia for GENERATORE=CLASSE_MATERIA (one document per
  * class/subject), empty otherwise.
  */
 function sottotipo(ctx: PipelineContext): string {
@@ -132,12 +132,8 @@ function randomProgressivoMarker(): string {
   return `ALDOPROGRESSIVO${randomPart}`;
 }
 
-/**
- * Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1): the cloned
- * artifact is still a live Drive file at this point in the pipeline regardless
- * of its eventual export format, so PDF/TEXT (or any future FORMATO value)
- * keeps the generic Drive file link.
- */
+/** Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1). ConfigurazioneDocumento's constructor
+ * validates FORMATO to GDOC/GSHEET only, so PDF/TEXT can't reach here from a real CONF_DOC row. */
 function buildFileLink(fileId: string, formato: FormatoOutput): string {
   switch (formato) {
     case FormatoOutput.GSHEET:
@@ -145,7 +141,7 @@ function buildFileLink(fileId: string, formato: FormatoOutput): string {
     case FormatoOutput.GDOC:
       return `https://docs.google.com/document/d/${fileId}/edit`;
     default:
-      return `https://drive.google.com/file/d/${fileId}/edit`;
+      throw new ConfigurationError(`FORMATO non supportato per il file link: ${String(formato)}`);
   }
 }
 

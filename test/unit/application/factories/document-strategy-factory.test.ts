@@ -5,18 +5,8 @@ import { DocPersonalizzatoGeneratorStrategy } from '../../../../src/application/
 import { DocumentoConTabelleImportateGeneratorStrategy } from '../../../../src/application/strategies/DocumentoConTabelleImportateGeneratorStrategy';
 import { SheetMaterieGeneratorStrategy } from '../../../../src/application/strategies/SheetMaterieGeneratorStrategy';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../../../src/application/strategies/SheetMaterieConPermessiGeneratorStrategy';
-import { ConfigurazioneDocumento } from '../../../../src/domain/entities/ConfigurazioneDocumento';
 import { COL_CONF_DOC } from '../../../../src/config/schema';
-
-function config(overrides: Record<string, unknown>): ConfigurazioneDocumento {
-  return ConfigurazioneDocumento.fromData({
-    [COL_CONF_DOC.ID]: 'X',
-    [COL_CONF_DOC.TIPO]: 'T',
-    [COL_CONF_DOC.GENERATORE]: 'CLASSE',
-    [COL_CONF_DOC.FORMATO]: 'GDOC',
-    ...overrides
-  });
-}
+import { confDocFixture as config } from '../../../fixtures/confDoc';
 
 describe('DocumentStrategyFactory', () => {
   const docGenerico = {} as DocumentoGenericoGeneratorStrategy;

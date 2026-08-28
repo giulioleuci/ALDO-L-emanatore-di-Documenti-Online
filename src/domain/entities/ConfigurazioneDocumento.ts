@@ -1,6 +1,7 @@
-import { FormatoOutput, GestioneArticolazione } from '../value-objects/enums';
+import { FormatoOutput, GestioneArticolazione, GeneratoreAxis } from '../value-objects/enums';
 import { COL_CONF_DOC } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
+import { ConfigurationError } from '../errors/DomainError';
 
 export type ConfigurazioneDocumentoData = {
   [COL_CONF_DOC.ID]?: string;
@@ -29,7 +30,7 @@ export type ConfigurazioneDocumentoData = {
  */
 export class ConfigurazioneDocumento extends AldoEntity {
   public readonly tipo: string;
-  public readonly generatore: string;
+  public readonly generatore: GeneratoreAxis;
   public readonly formato: FormatoOutput;
   public readonly gestioneArticolazione: GestioneArticolazione;
   private readonly modelliRaw: string | null;
@@ -42,31 +43,46 @@ export class ConfigurazioneDocumento extends AldoEntity {
     this.id = typeof data[COL_CONF_DOC.ID] === 'string' ? (data[COL_CONF_DOC.ID] as string) : null;
     this.tipo =
       typeof data[COL_CONF_DOC.TIPO] === 'string' ? (data[COL_CONF_DOC.TIPO] as string) : '';
-    this.generatore =
-      typeof data[COL_CONF_DOC.GENERATORE] === 'string'
-        ? (data[COL_CONF_DOC.GENERATORE] as string)
-        : '';
-    this.formato = (data[COL_CONF_DOC.FORMATO] as FormatoOutput) ?? FormatoOutput.GDOC;
+    const generatoreRaw = data[COL_CONF_DOC.GENERATORE];
+    if (!Object.values(GeneratoreAxis).includes(generatoreRaw as GeneratoreAxis)) {
+      throw new ConfigurationError(`CONF_DOC ${this.id ?? '?'}: GENERATORE non valido: ${String(generatoreRaw)}`);
+    }
+    this.generatore = generatoreRaw as GeneratoreAxis;
+    const formatoRaw = data[COL_CONF_DOC.FORMATO];
+    if (formatoRaw !== FormatoOutput.GDOC && formatoRaw !== FormatoOutput.GSHEET) {
+      throw new ConfigurationError(`CONF_DOC ${this.id ?? '?'}: FORMATO non valido: ${String(formatoRaw)}`);
+    }
+    this.formato = formatoRaw;
     this.gestioneArticolazione =
       data[COL_CONF_DOC.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
         ? GestioneArticolazione.ARTICOLATA
         : GestioneArticolazione.COMPLETA;
     this.modelliRaw =
-      typeof data[COL_CONF_DOC.MODELLI] === 'string'
-        ? (data[COL_CONF_DOC.MODELLI] as string)
-        : null;
+      typeof data[COL_CONF_DOC.MODELLI] === 'string' ? (data[COL_CONF_DOC.MODELLI] as string) : null;
     this.condizioneRaw =
-      typeof data[COL_CONF_DOC.CONDIZIONE] === 'string'
-        ? (data[COL_CONF_DOC.CONDIZIONE] as string)
-        : '';
+      typeof data[COL_CONF_DOC.CONDIZIONE] === 'string' ? (data[COL_CONF_DOC.CONDIZIONE] as string) : '';
     this.parametriRaw =
-      typeof data[COL_CONF_DOC.PARAMETRI] === 'string'
-        ? (data[COL_CONF_DOC.PARAMETRI] as string)
-        : null;
+      typeof data[COL_CONF_DOC.PARAMETRI] === 'string' ? (data[COL_CONF_DOC.PARAMETRI] as string) : null;
     this.permessiRaw =
-      typeof data[COL_CONF_DOC.PERMESSI] === 'string'
-        ? (data[COL_CONF_DOC.PERMESSI] as string)
-        : null;
+      typeof data[COL_CONF_DOC.PERMESSI] === 'string' ? (data[COL_CONF_DOC.PERMESSI] as string) : null;
+
+    const parametri = this.getParametri();
+    const aggiungiMaterie = Boolean(parametri.aggiungiMaterie);
+    const aggiungiMaterieConPermessi = Boolean(parametri.aggiungiMaterieConPermessi);
+    if (this.formato === FormatoOutput.GSHEET && parametri.tabelleImportate === true) {
+      throw new ConfigurationError("L'importazione tabelle è supportata unicamente su formato GDOC");
+    }
+    if (this.formato === FormatoOutput.GDOC && (aggiungiMaterie || aggiungiMaterieConPermessi)) {
+      throw new ConfigurationError('Le colonne materie sono supportate unicamente su formato GSHEET');
+    }
+    if (this.generatore === GeneratoreAxis.DIPARTIMENTO && (aggiungiMaterie || aggiungiMaterieConPermessi)) {
+      throw new ConfigurationError(
+        "Le colonne materie non sono applicabili all'asse DIPARTIMENTO (nessun consiglio di classe)"
+      );
+    }
+    if (aggiungiMaterie && aggiungiMaterieConPermessi) {
+      throw new ConfigurationError('aggiungiMaterie e aggiungiMaterieConPermessi sono mutuamente esclusivi');
+    }
   }
 
   getCondizione(): string | null {

@@ -368,8 +368,9 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 > ammessi ulteriori record distinti per altri sottoinsiemi di `PIANI.TIPO`:
 > questa è l'unica eccezione al vincolo del record unico sopra descritto.
 
-> **Altri `CONF_DOC.TIPO` riservati (asse di batch).** Oltre a `PIANO_PERS`, altri due valori di `TIPO` sono riservati perché pilotano l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`):
+> **Altri `CONF_DOC.TIPO` riservati (asse di batch).** Oltre a `PIANO_PERS`, altri tre valori di `TIPO` sono riservati perché pilotano l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`):
 > - `DOCUMENTO_DOCENTE_CLASSE_MATERIA`: un documento per ciascuna coppia (docente, materia) del consiglio di classe risolto per ruolo (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), su tutte le classi attive — non un documento per classe. Popola `focus.docente`/`focus.materia` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia::docenteEmail` (vedi sotto).
+> - `DOCUMENTO_CLASSE_MATERIA`: un documento per ciascuna materia di ogni classe attiva — non per docente. Popola `focus.materia`/`focus.classiMateria` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia`.
 > - `DIPARTIMENTO`: un documento per ciascuna riga `DIPART`, senza asse classe (un dipartimento non ha classi). Popola `focus.dipartimento` (02 §4.6).
 
 **Azioni POST_PROCESSO supportate:**

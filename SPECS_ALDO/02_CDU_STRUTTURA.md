@@ -45,7 +45,7 @@ Il CDU è articolato in sei sezioni di primo livello:
 | :--- | :--- |
 | **`meta`** | Dati tecnici dell'operazione: timestamp, ID esecuzione, date formattate, configurazione box e parametri di input. |
 | **`istituto`** | Dati globali dell'istituzione scolastica: dirigenti, ruoli di staff e statistiche d'istituto. |
-| **`focus`** | Il cuore dei dati di business oggetto dell'operazione: classe focalizzata (`focus.classe`), eventuale alunno (`focus.alunno`), singolo piano personalizzato (`focus.piano`), singola carenza (`focus.carenza`), coppia docente/materia di una singola cattedra (`focus.docente`/`focus.materia`), dipartimento focalizzato (`focus.dipartimento`). |
+| **`focus`** | Il cuore dei dati di business oggetto dell'operazione: classe focalizzata (`focus.classe`), eventuale alunno (`focus.alunno`), singolo piano personalizzato (`focus.piano`), singola carenza (`focus.carenza`), coppia docente/materia di una singola cattedra (`focus.docente`/`focus.materia`) o materia della classe con tutti i suoi docenti (`focus.materia`/`focus.classiMateria`), dipartimento focalizzato (`focus.dipartimento`). |
 | **`destinatario`** | Dati anagrafici, ruoli, permessi e saluti specifici per il destinatario. Popolata ESCLUSIVAMENTE dalla pipeline email (`BuildCDUStep`); assente in un CDU costruito per la sola generazione documenti. |
 | **`render`** | HTML pre-renderizzato dei box di testo dinamici (utilizzato unicamente nella pipeline email). |
 | **`tech`** | Riferimenti agli oggetti vivi di dominio e servizi (non serializzati, protetti tramite `enumerable: false`). |
@@ -468,13 +468,21 @@ focus.carenza:
 
 ---
 
-### 4.5 `focus.docente` / `focus.materia`
+### 4.5 `focus.docente` / `focus.materia` / `focus.classiMateria`
 
-Presenti unicamente nelle recipe `DOCUMENTO_DOCENTE_CLASSE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteClasseMateriaFocusProvider`). Scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
+Nelle recipe `DOCUMENTO_DOCENTE_CLASSE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteClasseMateriaFocusProvider`), `focus.docente`/`focus.materia` scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
 
 ```yaml
 focus.docente: PersonVM          # §8.1 — anagrafica completa del docente della cattedra (docenteCdc.anagrafica)
 focus.materia: SubjectVM         # §8.2 — materia della cattedra (docenteCdc.materie[], primo match su sigla)
+```
+
+Nelle recipe `DOCUMENTO_CLASSE_MATERIA` il provider `ClasseMateriaFocusProvider` scopa la generazione a una materia della classe focalizzata, senza selezionare un singolo docente: legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`) e raccoglie tutti i docenti risolti per ruolo che insegnano `params.materiaCorrente`.
+
+```yaml
+focus.materia: SubjectVM          # §8.2 — materia focalizzata (primo match su sigla)
+focus.classiMateria:
+  docenti: PersonVM[]             # §8.1 — tutti i docenti role-resolved della materia nella classe
 ```
 
 > **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`), ma sia l'enumerazione batch (`DocumentBatchService.generateDocentiClasseMateria`) sia questo provider trattano solo la coppia (classe, materia, docente): due cattedre che differiscono solo per `kind`/`specifica` (es. STANDARD+ITP sulla stessa materia di laboratorio) collassano in un solo documento, per scelta di scope — non è un bug.

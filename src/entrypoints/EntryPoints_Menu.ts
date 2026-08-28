@@ -20,6 +20,12 @@ declare function avviaInvioNotificheDataDriven(
   maxDurationMs?: number
 ): unknown;
 declare function avviaImportazioneDataDriven(container: unknown, configId: string): unknown;
+declare function menuValidazioneDatabase(ui: unknown, esegui: () => string): void;
+declare function avviaValidazioneDatabase(container: unknown): {
+  violazioni: unknown[];
+  spreadsheetId: string;
+  nome: string;
+};
 declare const GasUiFacade: new () => unknown;
 
 /** Builds the MASTER spreadsheet's custom menu; no container is initialized here. */
@@ -58,9 +64,20 @@ function menu_avvioImportazioni(): void {
   );
 }
 
+/** Validates the current year's database and writes the report sheet (Feature 2). */
+function menu_validazioneDatabase(): void {
+  menuValidazioneDatabase(new GasUiFacade(), () => {
+    const esito = avviaValidazioneDatabase(initAldo());
+    return esito.violazioni.length === 0
+      ? `Nessun errore rilevato. Report: ${esito.nome}`
+      : `${esito.violazioni.length} violazioni. Report: ${esito.nome}`;
+  });
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).onOpen = onOpen;
 (globalThis as any).menu_avvioGenerazioneDocumenti = menu_avvioGenerazioneDocumenti;
 (globalThis as any).menu_avvioComunicazioniEmail = menu_avvioComunicazioniEmail;
 (globalThis as any).menu_avvioImportazioni = menu_avvioImportazioni;
+(globalThis as any).menu_validazioneDatabase = menu_validazioneDatabase;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

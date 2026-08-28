@@ -9,12 +9,14 @@ import type { IUiFacade, MenuVoce } from '../infrastructure/facades/UiFacade';
 
 export const MENU_TITOLO = 'AVVIA PROCESSI';
 
-/** The three data-driven launchers (15 §3). */
+/** The five data-driven launchers (15 §3). */
 export function vociMenu(): MenuVoce[] {
   return [
     { etichetta: 'GENERAZIONE DOCUMENTI', funzione: 'menu_avvioGenerazioneDocumenti' },
     { etichetta: 'COMUNICAZIONI EMAIL', funzione: 'menu_avvioComunicazioniEmail' },
-    { etichetta: 'IMPORTAZIONI', funzione: 'menu_avvioImportazioni' }
+    { etichetta: 'IMPORTAZIONI', funzione: 'menu_avvioImportazioni' },
+    { etichetta: 'VALIDAZIONE DATABASE', funzione: 'menu_validazioneDatabase' },
+    { etichetta: 'BLOCCA DOCUMENTI', funzione: 'menu_bloccaDocumenti' }
   ];
 }
 
@@ -75,5 +77,41 @@ export function menuImportazioni(ui: IUiFacade, avvia: (configId: string) => voi
     "Inserisci l'ID di configurazione (CONF_IMP.ID):",
     'imp_',
     avvia
+  );
+}
+
+export const PAROLA_CONFERMA = 'CONFERMA';
+
+/**
+ * Wrapper scheme for launchers that take no configuration id but DO need an
+ * explicit go-ahead (15 §4 variant): typed confirmation → delegation → outcome
+ * message. Typed rather than a yes/no dialog because `IUiFacade` exposes no
+ * button-set prompt and the native `SpreadsheetApp.getUi().ButtonSet` enum is
+ * off-limits to ALDO code.
+ */
+export function avvioConConferma(
+  ui: IUiFacade,
+  titolo: string,
+  domanda: string,
+  esegui: () => string
+): void {
+  const risposta = ui.chiediInput(titolo, `${domanda}\n\nScrivi ${PAROLA_CONFERMA} per procedere.`);
+  if (risposta.toUpperCase() !== PAROLA_CONFERMA) {
+    ui.mostraMessaggio(titolo, 'Operazione annullata.');
+    return;
+  }
+  try {
+    ui.mostraMessaggio(titolo, esegui());
+  } catch (e) {
+    ui.mostraMessaggio(titolo, `Errore: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+export function menuValidazioneDatabase(ui: IUiFacade, esegui: () => string): void {
+  avvioConConferma(
+    ui,
+    'VALIDAZIONE DATABASE',
+    "Verificare l'integrità del database dell'anno corrente?",
+    esegui
   );
 }

@@ -58,6 +58,14 @@ import { ScriptPropertiesFacade } from '../infrastructure/facades/PropertiesFaca
 import { ConfigurationError } from '../domain/errors/DomainError';
 import type { ITeachingAssignmentResolver } from '../application/ports/ITeachingAssignmentResolver';
 import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import {
+  DatabaseValidationService,
+  type ValidationReport
+} from '../application/services/DatabaseValidationService';
+import {
+  SpreadsheetReportFacade,
+  type ISpreadsheetReportFacade
+} from '../infrastructure/facades/SpreadsheetReportFacade';
 
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
 interface BootstrapDeps {
@@ -101,6 +109,11 @@ interface BootstrapDeps {
   properties?: IPropertiesFacade;
   now: Date;
   logger?: LoggerService;
+  /**
+   * Report-sheet writer (Feature 2). Optional for the same reason as
+   * `spreadsheets`: building the real one needs a live SpreadsheetService.
+   */
+  report?: ISpreadsheetReportFacade;
 }
 
 /**
@@ -306,6 +319,14 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     );
   }
   c.register('reportService', () => new ReportService(deps.db));
+  if (deps.report !== undefined) {
+    const report = deps.report;
+    c.register(
+      'databaseValidationService',
+      () =>
+        new DatabaseValidationService({ db: deps.db, master: deps.master, report, logger })
+    );
+  }
   c.register('aggregatoreDati', () => new AggregatoreDati(deps.db));
   c.register('alberoCartelle', () => new AlberoCartelle(deps.drive, deps.db));
   return c;
@@ -385,6 +406,16 @@ export function avviaImportazioneChunkedDataDriven(
   return c
     .get<ImportService>('importService')
     .start(runner, `imp_chunked_${configId}`, configId, false, maxDurationMs);
+}
+
+/** Data-driven launcher (15 §4): synchronous DB validation (Feature 2). Not a JobRunner job — one pass over the sheets. */
+export function avviaValidazioneDatabase(c: ServiceContainer): ValidationReport {
+  if (!c.has('databaseValidationService')) {
+    throw new ConfigurationError(
+      'Validazione database non disponibile: nessun SpreadsheetService configurato (richiede esecuzione su GAS)'
+    );
+  }
+  return c.get<DatabaseValidationService>('databaseValidationService').esegui();
 }
 
 /**
@@ -529,7 +560,8 @@ export function initAldo(
     monitor,
     properties,
     now,
-    logger
+    logger,
+    report: new SpreadsheetReportFacade(spreadsheetService)
   });
 
   if (annoCorrente.testMode) {

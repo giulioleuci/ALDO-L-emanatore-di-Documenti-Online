@@ -4,13 +4,15 @@ jest.mock('../../src/config/Bootstrap', () => ({
   avviaGenerazioneDataDriven: jest.fn(),
   avviaInvioNotificheDataDriven: jest.fn(),
   avviaImportazioneDataDriven: jest.fn(),
+  avviaValidazioneDatabase: jest.fn(),
   riprendiJobSospeso: jest.fn()
 }));
 jest.mock('../../src/presentation/Menu', () => ({
   costruisciMenu: jest.fn(),
   menuGenerazioneDocumenti: jest.fn(),
   menuComunicazioniEmail: jest.fn(),
-  menuImportazioni: jest.fn()
+  menuImportazioni: jest.fn(),
+  menuValidazioneDatabase: jest.fn()
 }));
 jest.mock('../../src/infrastructure/facades/UiFacade', () => ({ GasUiFacade: jest.fn() }));
 import '../../src/index';
@@ -53,4 +55,13 @@ describe('resumeJob', () => {
       30 * 60 * 1000
     );
   });
+});
+
+test('menu_validazioneDatabase and its launcher are exposed as globals', () => {
+  expect(typeof (globalThis as Record<string, unknown>)['menuValidazioneDatabase']).toBe(
+    'function'
+  );
+  expect(typeof (globalThis as Record<string, unknown>)['avviaValidazioneDatabase']).toBe(
+    'function'
+  );
 });

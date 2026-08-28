@@ -4,11 +4,13 @@ import {
   avviaInvioNotificheDataDriven,
   avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
+  avviaValidazioneDatabase,
   riprendiJobSospeso,
   initAldo,
   resetAldo,
   creaJobRunner
 } from '../../../src/config/Bootstrap';
+import { FakeSpreadsheetReportFacade } from '../../fakes/FakeSpreadsheetReportFacade';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
 import {
@@ -360,6 +362,15 @@ describe('buildAldoContainer — optional generator strategies', () => {
   test("does not register 'monitor' when deps.monitor is omitted", () => {
     const c = buildAldoContainer(baseDeps());
     expect(() => c.get('monitor')).toThrow(/monitor/);
+  });
+
+  test('databaseValidationService is registered only when a report facade is wired', () => {
+    const senza = buildAldoContainer(baseDeps());
+    expect(senza.has('databaseValidationService')).toBe(false);
+    expect(() => avviaValidazioneDatabase(senza)).toThrow(/Validazione database non disponibile/);
+
+    const con = buildAldoContainer({ ...baseDeps(), report: new FakeSpreadsheetReportFacade() });
+    expect(con.has('databaseValidationService')).toBe(true);
   });
 });
 

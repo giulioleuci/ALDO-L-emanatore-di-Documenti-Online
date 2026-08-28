@@ -9,13 +9,15 @@ import {
   avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
   avviaImportazioneChunkedDataDriven,
+  avviaValidazioneDatabase,
   riprendiJobSospeso
 } from './config/Bootstrap';
 import {
   costruisciMenu,
   menuGenerazioneDocumenti,
   menuComunicazioniEmail,
-  menuImportazioni
+  menuImportazioni,
+  menuValidazioneDatabase
 } from './presentation/Menu';
 import { GasUiFacade } from './infrastructure/facades/UiFacade';
 
@@ -32,5 +34,7 @@ import { GasUiFacade } from './infrastructure/facades/UiFacade';
 (globalThis as any).menuGenerazioneDocumenti = menuGenerazioneDocumenti;
 (globalThis as any).menuComunicazioniEmail = menuComunicazioniEmail;
 (globalThis as any).menuImportazioni = menuImportazioni;
+(globalThis as any).avviaValidazioneDatabase = avviaValidazioneDatabase;
+(globalThis as any).menuValidazioneDatabase = menuValidazioneDatabase;
 (globalThis as any).GasUiFacade = GasUiFacade;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

@@ -42,6 +42,8 @@ interface BatchResumeState {
   errori: string[];
   planTargets?: PianoBatchTarget[];
   docenteClasseMateriaTargets?: DocenteClasseMateriaBatchTarget[];
+  /** Historical checkpoint key kept only to resume jobs suspended before Task 6. */
+  docenteMateriaTargets?: DocenteClasseMateriaBatchTarget[];
   classeMateriaTargets?: ClasseMateriaBatchTarget[];
 }
 export interface BatchCheckpoint extends BatchResumeState {
@@ -286,12 +288,14 @@ export class DocumentBatchService {
         }
       }
     } else {
-      if (resume.docenteClasseMateriaTargets === undefined) {
+      const persistedTargets =
+        resume.docenteClasseMateriaTargets ?? resume.docenteMateriaTargets;
+      if (persistedTargets === undefined) {
         throw new ConfigurationError(
           `Stato di ripresa ${confDocId} privo dei target docente/materia persistiti`
         );
       }
-      targets = resume.docenteClasseMateriaTargets.map((t) => ({ ...t }));
+      targets = persistedTargets.map((t) => ({ ...t }));
     }
 
     if (resume === null) {

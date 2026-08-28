@@ -626,7 +626,7 @@ describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () =
   // — the ContextEngine library wraps it in a ContextEngineError, so the
   // observable contract at this integration boundary is the message, not the
   // original error class (already covered directly at the provider unit level
-  // in docente-materia-focus-provider.test.ts).
+  // in docente-classe-materia-focus-provider.test.ts).
   test('throws when the docente/materia pair is not on the class council', () => {
     const tables = fixtureTables();
     pushDocenteClasseMateriaConfig(tables);

@@ -680,7 +680,7 @@ function wireDocentiClasseMateria(
   // Models the real fixture fact fix round 1 addresses: 5A's nominal
   // CLASSI.MATE holder is rossi@school.it, but VARIAZIONI_CATTEDRA reassigns
   // it to bianchi@school.it effective 2025-10-01 (see fixtureTables() /
-  // docente-materia-focus-provider.test.ts and document-generation-service
+  // docente-classe-materia-focus-provider.test.ts and document-generation-service
   // .test.ts, which independently rely on the same fact for the CDU-recipe
   // path). Enumerating via role resolution (not the raw CLASSI cattedre) must
   // surface bianchi as 5A's current MATE titolare, matching what
@@ -853,6 +853,29 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
       '5A:IRC:verdi@school.it',
       '1F:MATE:rossi@school.it'
     ]);
+  });
+
+  test('resumes historical docenteMateriaTargets and emits only docenteClasseMateriaTargets', () => {
+    const { service } = wireDocentiClasseMateria();
+    const gen = service.batchGenerateHandler({
+      confDocId: 'PROGRAMMA_SVOLTO',
+      resumeState: {
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO',
+        nextIndex: 0,
+        processed: [],
+        errori: [],
+        docenteMateriaTargets: [{ classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' }]
+      }
+    });
+
+    const step = gen.next();
+
+    expect(step).toMatchObject({
+      done: false,
+      value: { docenteClasseMateriaTargets: [{ classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' }] }
+    });
+    expect(step.value).not.toHaveProperty('docenteMateriaTargets');
   });
 
   test('a single cattedra failure is isolated: logged in errori, the batch continues (15 §8)', () => {

@@ -159,7 +159,11 @@ export function regoleValidazione(): DatasetValidationRule[] {
     required(TABLE.ALUNNI, [COL_ALUNNI.EMAIL]),
     required(TABLE.DOCENTI, [COL_DOCENTI.EMAIL, COL_DOCENTI.COGNOME, COL_DOCENTI.NOME]),
     required(TABLE.CLASSI, [COL_CLASSI.ID]),
-    required(TABLE.MATERIE, [COL_MATERIE.ID, COL_MATERIE.NOME]),
+    // NOME is not required blanket-wide: 01 §MATERIE allows an empty NOME
+    // when PRINCIPALE+SPECIFICITA are both set (composite-specifica catalog
+    // rows), reconstructed at read time as "PRINCIPALE (SPECIFICITA)" —
+    // see Materia.nome. See MATERIE_NOME_MANCANTE below for the real rule.
+    required(TABLE.MATERIE, [COL_MATERIE.ID]),
     required(TABLE.INDIRIZZI, [COL_INDIRIZZI.ID, COL_INDIRIZZI.NOME]),
     required(TABLE.DIPART, [COL_DIPART.ID, COL_DIPART.NOME]),
     required(TABLE.RUOLI, [COL_RUOLI.ID, COL_RUOLI.NOME]),
@@ -246,6 +250,23 @@ export function regoleValidazione(): DatasetValidationRule[] {
       }
     },
 
+    // NOME may be legitimately empty when both PRINCIPALE and SPECIFICITA
+    // are set (01 §MATERIE: reconstructed in-read as "PRINCIPALE
+    // (SPECIFICITA)" — see Materia.nome). Only flag an empty NOME that has
+    // no such fallback.
+    {
+      id: 'MATERIE_NOME_MANCANTE',
+      type: 'rowPredicate',
+      table: TABLE.MATERIE,
+      check: (row) => {
+        if (cell(row, COL_MATERIE.NOME) !== '') return null;
+        if (cell(row, COL_MATERIE.PRINCIPALE) !== '' && cell(row, COL_MATERIE.SPECIFICITA) !== '') {
+          return null;
+        }
+        return { column: COL_MATERIE.NOME, value: cell(row, COL_MATERIE.ID) };
+      }
+    },
+
     // --- 8. Curriculum coverage (Feature 4) ---
     // Every subject the class's INDIRIZZO marks mandatory for the class's ANNO
     // must have a corresponding column in CLASSI. The reverse direction is
@@ -300,6 +321,8 @@ export function messaggioErrore(v: DatasetViolation): string {
       return `Colonna ITP ${v.column}: il docente "${v.value}" non ha DOCENTI.ITP = true`;
     case 'MATERIE_COMPOSITE_PRINCIPALE':
       return `Materia composita "${v.value}": PRINCIPALE è obbligatorio`;
+    case 'MATERIE_NOME_MANCANTE':
+      return `Campo obbligatorio vuoto: ${v.column}`;
     case 'CURRICULUM_COVERAGE':
       return `Materia "${v.value}" obbligatoria per l'indirizzo ${String(v.details['indirizzo'])} anno ${String(v.details['anno'])}: colonna assente in CLASSI`;
     default:

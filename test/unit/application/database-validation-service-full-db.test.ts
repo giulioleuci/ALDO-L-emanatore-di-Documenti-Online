@@ -149,10 +149,10 @@ test('the full ~60-rule table produces no violations on the realistic, fully-see
   //    'Liceo' vs 'LICEO' casing mismatch in seedIndirizzi.
   //  - CONF_MAIL righe 9-10: two dedicated rows hardcode SUPPLENTI: false
   //    instead of a GestioneSupplenti enum value (Seeders.ts ~line 723).
-  //  - MATERIE righe 17-19: composite specifica rows (LAB.GRUPPO_A,
-  //    LAB.SEMINARIO_POMERIDIANO, INTERPRET.CHITARRA) intentionally carry
-  //    NOME: '' per the 2026-07-30 specifica-catalog design (SINTESI is used
-  //    for display instead).
+  // (MATERIE righe 17-19 — LAB.GRUPPO_A, LAB.SEMINARIO_POMERIDIANO,
+  // INTERPRET.CHITARRA — carry NOME: '' by 2026-07-30 specifica-catalog
+  // design, but also carry PRINCIPALE+SPECIFICITA, so MATERIE_NOME_MANCANTE
+  // legitimately does not flag them; see 01 §MATERIE.)
   // None of these are new — they predate this fix wave and are unrelated to
   // CLASSI cattedre. This test's job is to prove the RULE TABLE itself
   // (including the new FK_CLASSI_CATTEDRE rule) doesn't ALSO false-positive
@@ -171,10 +171,7 @@ test('the full ~60-rule table produces no violations on the realistic, fully-see
     'LOG_FOLD|5|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
     'LOG_FOLD|6|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
     'LOG_FOLD|7|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|8|TIPO|FK violata: TIPO "E2E_FILTER_DECOY" non esiste in CONF_DOC.ID',
-    'MATERIE|17|NOME|Campo obbligatorio vuoto: NOME',
-    'MATERIE|18|NOME|Campo obbligatorio vuoto: NOME',
-    'MATERIE|19|NOME|Campo obbligatorio vuoto: NOME'
+    'LOG_FOLD|8|TIPO|FK violata: TIPO "E2E_FILTER_DECOY" non esiste in CONF_DOC.ID'
   ]);
 
   // The important assertion for this fix wave: no CLASSI/DOCENTI-cattedre

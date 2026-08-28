@@ -178,6 +178,48 @@ test('MATERIE_COMPOSITE_PRINCIPALE.check: composite MATERIE.ID rows require a no
   });
 });
 
+test('MATERIE_NOME_MANCANTE.check: empty NOME is legal when PRINCIPALE+SPECIFICITA are both set (01 §MATERIE composite-specifica fallback)', () => {
+  const check = findRowPredicate('MATERIE_NOME_MANCANTE');
+  const ctx = makeCtx({});
+
+  // Composite-specifica row: NOME empty, but PRINCIPALE+SPECIFICITA present
+  // -> Materia.nome reconstructs "PRINCIPALE (SPECIFICITA)" at read time.
+  expect(
+    check(
+      {
+        [COL_MATERIE.ID]: 'INTERPRET.CHITARRA',
+        [COL_MATERIE.NOME]: '',
+        [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione',
+        [COL_MATERIE.SPECIFICITA]: 'Chitarra'
+      },
+      ctx
+    )
+  ).toBeNull();
+
+  // NOME set: always fine regardless of PRINCIPALE/SPECIFICITA.
+  expect(
+    check({ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: 'Italiano' }, ctx)
+  ).toBeNull();
+
+  // Empty NOME with no PRINCIPALE/SPECIFICITA fallback: genuine data error.
+  expect(check({ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: '' }, ctx)).toEqual({
+    column: COL_MATERIE.NOME,
+    value: 'ITA'
+  });
+
+  // Empty NOME with only one of PRINCIPALE/SPECIFICITA set: still a data error.
+  expect(
+    check(
+      {
+        [COL_MATERIE.ID]: 'INTERPRET.CHITARRA',
+        [COL_MATERIE.NOME]: '',
+        [COL_MATERIE.PRINCIPALE]: 'Interpretazione ed esecuzione'
+      },
+      ctx
+    )
+  ).toEqual({ column: COL_MATERIE.NOME, value: 'INTERPRET.CHITARRA' });
+});
+
 test('CURRICULUM_COVERAGE.check: flags a mandated subject missing its CLASSI column, using the MATERIE.<INDIRIZZO_ID> CSV-year-list', () => {
   const check = findRowPredicate('CURRICULUM_COVERAGE');
   const materie = [{ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: 'Italiano', LS: '1,2,3,4,5' }];

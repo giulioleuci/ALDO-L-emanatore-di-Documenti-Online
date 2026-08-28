@@ -122,6 +122,11 @@ export class DocumentBatchService {
     if (config.tipo === 'DIPARTIMENTO') {
       return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
     }
+    if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
+      throw new ConfigurationError(
+        "CONF_DOC.TIPO 'DOCUMENTO_DOCENTE_MATERIA' è stato rinominato in 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' — aggiornare la riga CONF_DOC"
+      );
+    }
 
     return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
   }
@@ -225,7 +230,7 @@ export class DocumentBatchService {
     return { success, totale: targets.length, processed, errori };
   }
 
-  /** One document per (docente, materia) cattedra of every active class's council (batch mirror of DocumentGenerationService.generateForClasseDocenteClasseMateria). */
+  /** One document per (docente, materia) cattedra of every active class's council (batch mirror of DocumentGenerationService.generateForDocenteClasseMateria). */
   private *generateDocentiClasseMateria(
     config: ConfigurazioneDocumento,
     confDocId: string,
@@ -311,7 +316,7 @@ export class DocumentBatchService {
       let message: string;
       const itemStartedAt = Date.now();
       try {
-        const result = this.documenti.generateForClasseDocenteClasseMateria(
+        const result = this.documenti.generateForDocenteClasseMateria(
           ClasseId.of(target.classe),
           target.docenteEmail,
           target.materiaId,

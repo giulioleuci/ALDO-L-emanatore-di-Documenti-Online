@@ -446,6 +446,34 @@ test('generateClassi honors CONF_DOC.GESTIONE_ARTICOLAZIONE=ARTICOLATA: the pare
   });
 });
 
+test('handler throws ConfigurationError for the renamed legacy TIPO=DOCUMENTO_DOCENTE_MATERIA instead of silently falling through to generateClassi', () => {
+  const configs = {
+    findById: (id: string) =>
+      id === 'CD_LEGACY'
+        ? new ConfigurazioneDocumento({
+            ID: id,
+            TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
+            GENERATORE: 'SCHEDA_MATERIA'
+          })
+        : null
+  };
+  const service = new DocumentBatchService(
+    new ClasseRepository(new FakeDatabase(fixtureTables())),
+    new AlunnoRepository(new FakeDatabase(fixtureTables())),
+    configs,
+    {} as unknown as DocumentGenerationService,
+    noopTeachingAssignments,
+    FIXED_NOW,
+    noopDipartimenti
+  );
+
+  const gen = service.batchGenerateHandler({ confDocId: 'CD_LEGACY', jobId: 'job1' });
+  expect(() => gen.next()).toThrow(ConfigurationError);
+  expect(() =>
+    service.batchGenerateHandler({ confDocId: 'CD_LEGACY', jobId: 'job1' }).next()
+  ).toThrow("CONF_DOC.TIPO 'DOCUMENTO_DOCENTE_MATERIA' è stato rinominato in 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'");
+});
+
 test('handler resumes from params.resumeState without reprocessing completed classes (JobRunnerLib resume cycle)', () => {
   const { service, generated } = wire();
   const gen = service.batchGenerateHandler({
@@ -645,7 +673,7 @@ function wireDocentiClasseMateria(
     jobId?: string;
   }> = [];
   const documenti = {
-    generateForClasseDocenteClasseMateria: (
+    generateForDocenteClasseMateria: (
       target: ClasseId,
       docenteEmail: string,
       materiaId: string,

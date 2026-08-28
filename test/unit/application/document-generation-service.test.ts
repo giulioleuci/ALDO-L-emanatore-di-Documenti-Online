@@ -644,6 +644,52 @@ describe('DocumentGenerationService.generateForClasseDocenteMateria', () => {
   });
 });
 
+describe('DocumentGenerationService.generateForClasseMateria', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  test('builds the CDU scoped to a materia and its role-resolved class teachers', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_CLASSE_MATERIA',
+      TIPO: 'DOCUMENTO_CLASSE_MATERIA',
+      GENERATORE: 'CAPTURING',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Materia_{{focus.materia.sigla}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
+
+    const result = service.generateForClasseMateria(
+      ClasseId.of('5A'),
+      'MATE',
+      'CD_CLASSE_MATERIA'
+    );
+
+    expect(strategy.cdu?.focus.materia?.sigla).toBe('MATE');
+    expect(strategy.cdu?.focus.classiMateria?.docenti.map((docente) => docente.email)).toEqual([
+      'bianchi@school.it'
+    ]);
+    expect(strategy.cdu?.focus.classe?.anagrafica.anno).toBe(5);
+    expect(strategy.cdu?.focus.classe?.anagrafica.indirizzo?.sigla).toBe('SCIENTIFICO');
+    expect(result.status).toBe('GENERATO');
+  });
+});
+
 describe('DocumentGenerationService.generateForDipartimento', () => {
   class CapturingStrategy implements GeneratorStrategy {
     cdu: Cdu | undefined;

@@ -121,6 +121,22 @@ export class DocumentGenerationService {
     );
   }
 
+  /** One document per (classe, materia) of an active class — e.g. "scheda materia per classe". */
+  generateForClasseMateria(
+    target: ClasseId,
+    materiaId: string,
+    confDocId: string,
+    jobId?: string
+  ): DocumentGenerationResult {
+    return this.generateForClasseWithRecipe(
+      target,
+      confDocId,
+      'CLASSE_MATERIA',
+      { materiaCorrente: materiaId },
+      jobId
+    );
+  }
+
   private generateForClasseWithRecipe(
     target: ClasseId,
     confDocId: string,

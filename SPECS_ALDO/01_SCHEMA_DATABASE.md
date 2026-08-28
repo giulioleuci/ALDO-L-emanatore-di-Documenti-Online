@@ -362,7 +362,7 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 > **Eccezione ammessa — famiglia `NO_PEI`.** È ammesso un secondo record
 > `CONF_DOC`, con `ID=PIANI_PERSONALIZZATI_NO_PEI` e `TIPO=PIANO_PERS`, a
 > fianco del record canonico, a condizione che riusi lo stesso
-> `GENERATORE=DOC_PERSONALIZZATO` e la stessa struttura `MODELLI`/`PATH_OUT`/
+> `GENERATORE=PIANO_PERSONALIZZATO` e la stessa struttura `MODELLI`/`PATH_OUT`/
 > `FILE_NAME`/`PERMESSI`, e che la sua `CONDIZIONE` escluda esplicitamente
 > `focus.piano.tipo == "PEI"` (es. `{{focus.piano.tipo}} != "PEI"`). Non sono
 > ammessi ulteriori record distinti per altri sottoinsiemi di `PIANI.TIPO`:
@@ -372,7 +372,7 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 >
 > Le chiavi di registro precedenti `SHEET_CON_MATERIE`, `SHEET_CON_MATERIE_E_PERMESSI`, `DOCUMENTO_CON_TABELLE_IMPORTATE`, `VERBALE_CDC`, `DOC_PERSONALIZZATO`, `DOCUMENTO_GENERICO` e `FOGLIO_GENERICO` sono ritirate come valori di `GENERATORE`: non erano assi, ma nomi di strategie/registrazioni legacy. La colonna ora identifica esclusivamente l'asse di batch.
 
-> **`FORMATO` e `PARAMETRI`: compatibilità e validazione.** `FORMATO` ammette esclusivamente `GDOC` e `GSHEET`. Le flag `PARAMETRI.aggiungiMaterie` e `PARAMETRI.aggiungiMaterieConPermessi` sono mutuamente esclusive; entrambe aggiungono colonne materie su `GSHEET`, con o senza protezioni di intervallo. `PARAMETRI.tabelleImportate` abilita i placeholder `{{TABELLA:<sheetFileId>}}` su `GDOC`. Le combinazioni incompatibili sono rifiutate dal costruttore con questi messaggi esatti:
+> **`FORMATO` e `PARAMETRI`: compatibilità e validazione.** `FORMATO` ammette esclusivamente `GDOC` e `GSHEET`. Le tre flag `PARAMETRI.aggiungiMaterie`, `PARAMETRI.aggiungiMaterieConPermessi` e `PARAMETRI.tabelleImportate` hanno default `false`. Le flag `aggiungiMaterie` e `aggiungiMaterieConPermessi` sono mutuamente esclusive; entrambe aggiungono colonne materie su `GSHEET`, con o senza protezioni di intervallo. `PARAMETRI.tabelleImportate` abilita i placeholder `{{TABELLA:<sheetFileId>}}` su `GDOC`. Le combinazioni incompatibili sono rifiutate dal costruttore con questi messaggi esatti:
 >
 > - `ConfigurationError("L'importazione tabelle è supportata unicamente su formato GDOC")` se `FORMATO=GSHEET` e `tabelleImportate=true`;
 > - `ConfigurationError("Le colonne materie sono supportate unicamente su formato GSHEET")` se `FORMATO=GDOC` e una delle flag materie è attiva;
@@ -447,7 +447,7 @@ Audit trail immutabile (append-only) di ogni documento generato. Lega l'ID fisic
 | `ID`         | String       | ✅  | —           | ID Drive del file generato                                                                                                                                                     |
 | `ID_GEN`     | String       | —   | CONF_DOC.ID | Tipo di configurazione usata                                                                                                                                                   |
 | `TIPO`       | String       | —   | —           | Tipo del documento; valore derivato da `CONF_DOC.TIPO` (campo categoriale, non PK di `CONF_DOC`)                                                                               |
-| `SOTTOTIPO`  | String       | —   | —           | Specializzazione del documento. Per `TIPO=PIANO_PERS` è obbligatoriamente il `PIANI.TIPO` focalizzato (es. `PDP_BES`, `PEI`) e discrimina piani generati dallo stesso `ID_GEN`. Per `TIPO=DOCUMENTO_DOCENTE_CLASSE_MATERIA` è `materia::docenteEmail` (es. `MATE::rossi@school.it`), la coppia sigla materia + email docente della cattedra. Per `TIPO=DOCUMENTO_CLASSE_MATERIA` è la sigla materia (es. `MATE`); entrambi discriminano i documenti generati per lo stesso `ID_GEN` sulla stessa classe (vedi `sottotipo()` in `documentSteps.ts`) |
+| `SOTTOTIPO`  | String       | —   | —           | Specializzazione del documento. Per `TIPO=PIANO_PERS` è obbligatoriamente il `PIANI.TIPO` focalizzato (es. `PDP_BES`, `PEI`) e discrimina piani generati dallo stesso `ID_GEN`. Per `GENERATORE=CLASSE_DOCENTE_MATERIA` è `materia::docenteEmail` (es. `MATE::rossi@school.it`), la coppia sigla materia + email docente della cattedra. Per `GENERATORE=CLASSE_MATERIA` è la sigla materia (es. `MATE`); entrambi discriminano i documenti generati per lo stesso `ID_GEN` sulla stessa classe (vedi `sottotipo()` in `documentSteps.ts`) |
 | `NOME`       | String       | —   | —           | Nome del file                                                                                                                                                                  |
 | `STATO`      | String       | —   | —           | Enum                                                                                                                                                                           |
 | `NOTIFICATO` | String       | —   | —           | Timestamp della notifica agli interessati                                                                                                                                      |

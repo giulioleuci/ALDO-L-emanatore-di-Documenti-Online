@@ -476,7 +476,7 @@ Nella recipe `CLASSE_DOCENTE` (asse di batch per coppia classe/docente), `focus.
 focus.docente: PersonVM          # §8.1 — docente della classe focalizzata, senza narrowing per materia
 ```
 
-Nella recipe `DOCENTE_AGGREGATO` (asse di batch aggregato per docente), `focus.docente` rappresenta il profilo del docente e `focus.docente.cattedre` raccoglie una voce per ogni classe in cui insegna, con le materie raggruppate per classe. La forma di ogni voce è `CattedraVM[]` e rispecchia quella già usata da `destinatario.contesto.cattedre` nella pipeline email (§5, §8.13).
+Nella recipe `DOCENTE_AGGREGATO` (asse di batch aggregato per docente), `focus.docente` rappresenta il profilo del docente e `focus.docente.cattedre` raccoglie una voce `CattedraVM` per ogni classe in cui insegna, con le materie raggruppate per classe. La collezione ha forma `CattedraVM[]` e rispecchia quella già usata da `destinatario.contesto.cattedre` nella pipeline email (§5, §8.13).
 
 ```yaml
 focus.docente: PersonVM              # §8.1 — profilo completo del docente aggregato

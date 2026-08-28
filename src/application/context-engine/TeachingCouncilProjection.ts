@@ -212,6 +212,16 @@ function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(
   return result;
 }
 
+/** MAIN precedes ITP for the same sigla, matching ClasseRepository.getMaterieDelDocente's legacy precedence rule. */
+export function dedupeSubjectsMainOverItp(vms: SubjectVM[]): SubjectVM[] {
+  const bySigla = new Map<string, SubjectVM>();
+  for (const vm of vms) {
+    const existing = bySigla.get(vm.sigla);
+    if (existing === undefined || (existing.isITP && !vm.isITP)) bySigla.set(vm.sigla, vm);
+  }
+  return [...bySigla.values()];
+}
+
 export function materiaVmFromSlot(
   materie: IMateriaRepository,
   classe: Classe,

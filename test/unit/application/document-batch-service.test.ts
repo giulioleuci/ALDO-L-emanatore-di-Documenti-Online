@@ -1200,13 +1200,12 @@ function wireDocenti() {
       return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
     }
   } as unknown as DocumentGenerationService;
+  const assignmentsByClasse: Record<string, TeachingAssignment[]> = {
+    '5A': [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')],
+    '1F': [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'rossi@school.it')]
+  };
   const teachingAssignments = {
-    resolveConsiglio: (classe: Classe) =>
-      classe.id === '5A'
-        ? [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')]
-        : classe.id === '1F'
-          ? [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'rossi@school.it')]
-          : [],
+    resolveConsiglio: (classe: Classe) => assignmentsByClasse[classe.id ?? ''] ?? [],
     resolveMateria: () => []
   } as unknown as ITeachingAssignmentResolver;
   const service = new DocumentBatchService(
@@ -1223,7 +1222,7 @@ function wireDocenti() {
     FIXED_NOW,
     noopDipartimenti
   );
-  return { service, generated };
+  return { service, generated, assignmentsByClasse };
 }
 
 describe('DocumentBatchService.generateDocenti', () => {
@@ -1243,15 +1242,35 @@ describe('DocumentBatchService.generateDocenti', () => {
       ]
     });
   });
+
+  test('resume consumes persisted docenteTargets after the teaching source changes', () => {
+    const { service, generated, assignmentsByClasse } = wireDocenti();
+    const initial = service.batchGenerateHandler({ confDocId: 'DOCENTE', jobId: 'job_d' });
+    const first = initial.next();
+    expect(first.done).toBe(false);
+    assignmentsByClasse['5A'] = [];
+    assignmentsByClasse['1F'] = [fakeAssignment('MATE', 'mutato@school.it')];
+
+    const { result } = drain(
+      service.batchGenerateHandler({ resumeState: first.value })
+    );
+
+    expect(generated).toEqual([
+      { docente: 'bianchi@school.it', classiCompetenza: ['5A', '1F'] },
+      { docente: 'rossi@school.it', classiCompetenza: ['1F'] }
+    ]);
+    expect(result).toMatchObject({ processed: ['bianchi@school.it', 'rossi@school.it'] });
+  });
 });
 
 function wireAlunni() {
   const generated: string[] = [];
+  const activeStudents = [
+    new Alunno({ EMAIL: 'alfa@school.it', COGNOMENOME: 'ALFA', CLASSE: '5A', RELIGIONE: 'IRC', ATTIVO: true }),
+    new Alunno({ EMAIL: 'beta@school.it', COGNOMENOME: 'BETA', CLASSE: '1F', RELIGIONE: 'IRC', ATTIVO: true })
+  ];
   const alunni = {
-    findAttivi: () => [
-      new Alunno({ EMAIL: 'alfa@school.it', COGNOMENOME: 'ALFA', CLASSE: '5A', RELIGIONE: 'IRC', ATTIVO: true }),
-      new Alunno({ EMAIL: 'beta@school.it', COGNOMENOME: 'BETA', CLASSE: '1F', RELIGIONE: 'IRC', ATTIVO: true })
-    ],
+    findAttivi: () => activeStudents,
     getPiani: () => []
   } as unknown as IAlunnoRepository;
   const documenti = {
@@ -1274,7 +1293,7 @@ function wireAlunni() {
     FIXED_NOW,
     noopDipartimenti
   );
-  return { service, generated };
+  return { service, generated, activeStudents };
 }
 
 describe('DocumentBatchService.generateAlunni', () => {
@@ -1290,6 +1309,31 @@ describe('DocumentBatchService.generateAlunni', () => {
       alunnoTargets: [{ email: 'alfa@school.it' }, { email: 'beta@school.it' }]
     });
     expect(result).toMatchObject({ totale: 2, processed: ['alfa@school.it', 'beta@school.it'] });
+  });
+
+  test('resume consumes persisted alunnoTargets after the student source changes', () => {
+    const { service, generated, activeStudents } = wireAlunni();
+    const initial = service.batchGenerateHandler({ confDocId: 'ALUNNO', jobId: 'job_a' });
+    const first = initial.next();
+    expect(first.done).toBe(false);
+    activeStudents.splice(
+      0,
+      activeStudents.length,
+      new Alunno({
+        EMAIL: 'mutato@school.it',
+        COGNOMENOME: 'MUTATO',
+        CLASSE: '5A',
+        RELIGIONE: 'IRC',
+        ATTIVO: true
+      })
+    );
+
+    const { result } = drain(
+      service.batchGenerateHandler({ resumeState: first.value })
+    );
+
+    expect(generated).toEqual(['alfa@school.it', 'beta@school.it']);
+    expect(result).toMatchObject({ processed: ['alfa@school.it', 'beta@school.it'] });
   });
 });
 

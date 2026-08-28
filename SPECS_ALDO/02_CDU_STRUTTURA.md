@@ -483,14 +483,14 @@ focus.docente: PersonVM              # §8.1 — profilo completo del docente ag
 focus.docente.cattedre: CattedraVM[] # §8.13 — una cattedra per classe, materie raggruppate
 ```
 
-Nelle recipe `DOCUMENTO_DOCENTE_CLASSE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteClasseMateriaFocusProvider`), `focus.docente`/`focus.materia` scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
+Nella recipe `CLASSE_DOCENTE_MATERIA` (generazione batch per singola cattedra docente/materia, `DocenteClasseMateriaFocusProvider`), `focus.docente`/`focus.materia` scopano l'intera generazione a un solo (docente, materia) della classe focalizzata: il provider legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`, che DEVE quindi girare prima nella recipe) e vi cerca la voce il cui `anagrafica.email` corrisponde a `params.docenteCorrente`, poi la materia il cui `sigla` corrisponde a `params.materiaCorrente` (primo match — `Array.find`).
 
 ```yaml
 focus.docente: PersonVM          # §8.1 — anagrafica completa del docente della cattedra (docenteCdc.anagrafica)
 focus.materia: SubjectVM         # §8.2 — materia della cattedra (docenteCdc.materie[], primo match su sigla)
 ```
 
-Nelle recipe `DOCUMENTO_CLASSE_MATERIA` il provider `ClasseMateriaFocusProvider` scopa la generazione a una materia della classe focalizzata, senza selezionare un singolo docente: legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`) e raccoglie tutti i docenti risolti per ruolo che insegnano `params.materiaCorrente`.
+Nella recipe `CLASSE_MATERIA` il provider `ClasseMateriaFocusProvider` scopa la generazione a una materia della classe focalizzata, senza selezionare un singolo docente: legge `focus.classe.consiglioDiClasse` (già popolato dal provider `'consiglio'`) e raccoglie tutti i docenti risolti per ruolo che insegnano `params.materiaCorrente`.
 
 ```yaml
 focus.materia: SubjectVM          # §8.2 — materia focalizzata (primo match su sigla)
@@ -498,7 +498,7 @@ focus.classiMateria:
   docenti: PersonVM[]             # §8.1 — tutti i docenti role-resolved della materia nella classe
 ```
 
-> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`): l'asse `DOCUMENTO_CLASSE_MATERIA` distingue i target `BASE.SPECIFICA`, mentre collassa solo `kind`. Due cattedre con stessa materia e stessa specifica ma `kind` diverso (es. STANDARD+ITP) producono quindi un solo documento, per scelta di scope — non è un bug.
+> **Limite di scope noto.** `TeachingSlot` (risoluzione ruoli) è a tre dimensioni (`materia`, `kind`, `specifica`): l'asse `CLASSE_MATERIA` distingue i target `BASE.SPECIFICA`, mentre collassa solo `kind`. Due cattedre con stessa materia e stessa specifica ma `kind` diverso (es. STANDARD+ITP) producono quindi un solo documento, per scelta di scope — non è un bug.
 
 ---
 

@@ -164,6 +164,7 @@ export class RisolutoreRuoliService {
       ['DOCENTE_CORRENTE', (c) => this.docenteCorrente(c)],
       ['DOCENTI_DIPARTIMENTO', (c) => this.docentiDipartimento(c)],
       ['CAPO_DIPART', (c) => this.emailsOf(this.capoDipart(c))],
+      ['DIPART.CAPO', (c) => this.emailsOf(this.capoDipart(c))],
       ['DOCENTE_PRIMA_PROVA', (c) => this.docentiProva(c, 'prima')],
       ['DOCENTE_SECONDA_PROVA', (c) => this.docentiProva(c, 'seconda')],
       ['ALUNNO', (c) => this.alunnoEmail(c)],
@@ -239,7 +240,8 @@ export class RisolutoreRuoliService {
   }
 
   private docenteCorrente(ctx: RoleContext): Email[] {
-    const email = ctx.cdu.focus.docente?.email;
+    const focusEmail = ctx.cdu.focus.docente?.email;
+    const email = focusEmail?.trim() ? focusEmail : ctx.cdu.meta.parametriInput.docenteCorrente;
     return email !== undefined && email !== null && email.trim() !== '' ? [Email.of(email)] : [];
   }
 

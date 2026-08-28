@@ -41,6 +41,7 @@ import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/v
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
 import {
+  dedupeSubjectsMainOverItp,
   resolveEffectiveDocenti,
   materiaVmFromSlot
 } from '../context-engine/TeachingCouncilProjection';
@@ -137,16 +138,6 @@ function sourceScopeFor(built: Cdu, emailTarget: EmailTarget): SourceScope {
       ? {}
       : { dipartimentoId: built.focus.dipartimento.anagrafica.id })
   };
-}
-
-/** MAIN precedes ITP for the same sigla, matching ClasseRepository.getMaterieDelDocente's legacy precedence rule. */
-function dedupeSubjectsMainOverItp(vms: SubjectVM[]): SubjectVM[] {
-  const bySigla = new Map<string, SubjectVM>();
-  for (const vm of vms) {
-    const existing = bySigla.get(vm.sigla);
-    if (existing === undefined || (existing.isITP && !vm.isITP)) bySigla.set(vm.sigla, vm);
-  }
-  return [...bySigla.values()];
 }
 
 /** Step 1 (11 §3): recipient CDU via the recipe mapped from PROCESSO + destinatario enrichment. */

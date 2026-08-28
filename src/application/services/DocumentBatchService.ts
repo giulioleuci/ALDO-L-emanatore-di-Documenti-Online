@@ -94,7 +94,8 @@ export class DocumentBatchService {
     private readonly configs: DocumentConfigLookup,
     private readonly documenti: DocumentGenerationService,
     /** Role-resolved (SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI) council, used only
-     * by generateDocentiClasseMateria — a raw IClasseRepository.getConsiglioDiClasse
+     * by generateDocentiClasseMateria, generateClassiMateria, generateClasseDocente,
+     * and generateDocenti — a raw IClasseRepository.getConsiglioDiClasse
      * read would enumerate the stale nominal teacher on an active
      * substitution/cattedra variation, silently skipping the actually-current
      * one (fix round 1). */

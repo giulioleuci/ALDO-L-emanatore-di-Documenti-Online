@@ -4,6 +4,12 @@ import type { BuildParams } from '../../../../../src/application/context-engine/
 import { ClasseRepository } from '../../../../../src/infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../../../../src/infrastructure/repositories/MateriaRepository';
 import { AldoTeachingAssignmentResolver } from '../../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import type {
+  ITeachingAssignmentResolver,
+  TeachingAssignment
+} from '../../../../../src/application/ports/ITeachingAssignmentResolver';
+import { Docente } from '../../../../../src/domain/entities/Docente';
+import { MateriaId } from '../../../../../src/domain/value-objects/MateriaId';
 import { PipelineError } from '../../../../../src/domain/errors/DomainError';
 import { FakeDatabase } from '../../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../../fixtures/tables';
@@ -12,11 +18,17 @@ function emptyCdu(): Cdu {
   return { meta: { parametriInput: {} } as never, focus: {}, tech: {} as never };
 }
 
-function makeProvider(tables = fixtureTables()): DocenteAggregatoFocusProvider {
+function makeProvider(
+  tables = fixtureTables(),
+  assignments?: TeachingAssignment[]
+): DocenteAggregatoFocusProvider {
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const materie = new MateriaRepository(db);
-  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const teachingAssignments =
+    assignments === undefined
+      ? new AldoTeachingAssignmentResolver(db)
+      : ({ resolveConsiglio: () => assignments } as unknown as ITeachingAssignmentResolver);
   return new DocenteAggregatoFocusProvider(classi, materie, teachingAssignments);
 }
 
@@ -57,5 +69,31 @@ describe('DocenteAggregatoFocusProvider', () => {
     } as BuildParams;
 
     expect(() => provider.provide(cdu, params)).toThrow(PipelineError);
+  });
+
+  it('dedupes repeated subject slots with MAIN taking precedence over ITP', () => {
+    const docente = new Docente({
+      EMAIL: 'bianchi@school.it',
+      COGNOME: 'BIANCHI',
+      NOME: 'LUCIA',
+      GENERE: 'F'
+    });
+    const assignment = (kind: 'MAIN' | 'ITP') =>
+      ({
+        slot: { materia: MateriaId.of('MATE'), kind, specifica: null },
+        docenteEffettivo: docente
+      }) as unknown as TeachingAssignment;
+    const provider = makeProvider(fixtureTables(), [assignment('ITP'), assignment('MAIN')]);
+    const cdu = emptyCdu();
+
+    provider.provide(cdu, {
+      docenteCorrente: 'bianchi@school.it',
+      classiCompetenza: ['5A'],
+      now: new Date('2026-07-01T09:00:00Z')
+    } as BuildParams);
+
+    expect(cdu.focus.docente?.cattedre?.[0]?.materie).toEqual([
+      expect.objectContaining({ sigla: 'MATE', isITP: false })
+    ]);
   });
 });

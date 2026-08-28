@@ -112,7 +112,13 @@ describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / C
     expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['prof@scuola.it']);
   });
 
-  test('DOCENTE_CORRENTE is empty when focus.docente is absent', () => {
+  test('DOCENTE_CORRENTE falls back to meta.parametriInput.docenteCorrente', () => {
+    const { cdu, service } = build({ docenteCorrente: 'prof@scuola.it' });
+    expect(cdu.meta.parametriInput.docenteCorrente).toBe('prof@scuola.it');
+    expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['prof@scuola.it']);
+  });
+
+  test('DOCENTE_CORRENTE is empty when focus and metadata are absent', () => {
     const { cdu, service } = build({});
     expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual([]);
   });
@@ -131,6 +137,12 @@ describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / C
     const { cdu, service } = build({ materiaCorrente: 'MATE' });
     cdu.focus.dipartimento = dipartimentoFocus({ capo: person('bianchi@school.it') });
     expect(emails(service, 'CAPO_DIPART', cdu)).toEqual(['bianchi@school.it']);
+  });
+
+  test('DIPART.CAPO is an exact alias of CAPO_DIPART', () => {
+    const { cdu, service } = build({ materiaCorrente: 'MATE' });
+    cdu.focus.dipartimento = dipartimentoFocus({ capo: person('bianchi@school.it') });
+    expect(emails(service, 'DIPART.CAPO', cdu)).toEqual(emails(service, 'CAPO_DIPART', cdu));
   });
 
   test('CAPO_DIPART falls back to findByMateria(materiaCorrente) when focus.dipartimento is absent', () => {

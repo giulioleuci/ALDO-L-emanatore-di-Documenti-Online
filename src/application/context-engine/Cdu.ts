@@ -136,6 +136,7 @@ export interface CduMeta {
     target: string;
     tipoTarget: 'classe' | 'alunno' | 'dipartimento' | 'docente';
     materiaCorrente: string | null;
+    docenteCorrente: string | null;
     opzioni: RecipeOptionsView;
   };
 }

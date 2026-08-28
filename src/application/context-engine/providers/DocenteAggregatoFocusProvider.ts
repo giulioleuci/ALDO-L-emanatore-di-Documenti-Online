@@ -6,7 +6,7 @@ import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRe
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
 import { PipelineError } from '../../../domain/errors/DomainError';
-import { materiaVmFromSlot } from '../TeachingCouncilProjection';
+import { dedupeSubjectsMainOverItp, materiaVmFromSlot } from '../TeachingCouncilProjection';
 import { buildPersonVmFromDocente } from '../mappers/personVmMapper';
 
 /**
@@ -46,15 +46,17 @@ export class DocenteAggregatoFocusProvider implements ContextProvider {
       if (anagrafica === undefined) {
         anagrafica = buildPersonVmFromDocente(assignments[0]!.docenteEffettivo);
       }
-      const materie = assignments
-        .map((a) =>
-          materiaVmFromSlot(this.materie, classe, {
-            materia: a.slot.materia.value,
-            kind: a.slot.kind,
-            specifica: a.slot.specifica
-          })
-        )
-        .filter((m): m is NonNullable<typeof m> => m !== null);
+      const materie = dedupeSubjectsMainOverItp(
+        assignments
+          .map((a) =>
+            materiaVmFromSlot(this.materie, classe, {
+              materia: a.slot.materia.value,
+              kind: a.slot.kind,
+              specifica: a.slot.specifica
+            })
+          )
+          .filter((m): m is NonNullable<typeof m> => m !== null)
+      );
       cattedre.push({ classeNome: classe.nome, anno: classe.anno.value, sezione: classe.sezione, materie });
     }
 

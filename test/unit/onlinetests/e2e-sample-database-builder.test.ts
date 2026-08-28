@@ -336,7 +336,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const confDoc = sample.rows[TABLE.CONF_DOC]!;
   expect(confDoc).toHaveLength(18);
-  const verbale = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'VERBALE_CDC')!;
+  const verbale = confDoc.find((c) => c[COL_CONF_DOC.ID] === CONF_DOC_VERBALE)!;
   expect(JSON.parse(verbale[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_verbale'
   });
@@ -350,7 +350,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     utenti: '',
     materie: 'MATE'
   });
-  const condotta = confDoc.find((c) => c[COL_CONF_DOC.GENERATORE] === 'FOGLIO_GENERICO')!;
+  const condotta = confDoc.find((c) => c[COL_CONF_DOC.ID] === CONF_DOC_CONDOTTA)!;
   expect(JSON.parse(condotta[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_condotta'
   });

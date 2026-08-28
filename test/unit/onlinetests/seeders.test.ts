@@ -328,7 +328,8 @@ test('seeds dedicated document, import, and mail configurations with unique outp
       }),
       expect.objectContaining({
         [COL_CONF_DOC.ID]: CONF_DOC_TABELLE,
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE'
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
+        [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true })
       }),
       expect.objectContaining({
         [COL_CONF_DOC.ID]: 'E2E_DOC_STORICO',
@@ -336,7 +337,7 @@ test('seeds dedicated document, import, and mail configurations with unique outp
       }),
       expect.objectContaining({
         [COL_CONF_DOC.ID]: CONF_DOC_DOTTED,
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: TEMPLATE_IDS.dotted })
       })
     ])
@@ -359,7 +360,7 @@ test('seeds dedicated document, import, and mail configurations with unique outp
     sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.TIPO] === 'E2E_IMPORT_SOURCE')![
       COL_CONF_DOC.GENERATORE
     ]
-  ).toBe('FOGLIO_GENERICO');
+  ).toBe('CLASSE');
   expect(
     sample.rows[TABLE.CONF_DOC].find((row) => row[COL_CONF_DOC.TIPO] === 'E2E_IMPORT_SOURCE')![
       COL_CONF_DOC.FORMATO

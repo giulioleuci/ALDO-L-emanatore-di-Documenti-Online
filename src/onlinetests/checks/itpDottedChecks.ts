@@ -352,7 +352,7 @@ export function registerItpDottedChecks(
         .table(TABLE.CONF_DOC)
         .findAll()
         .find((row) => row[COL_CONF_DOC.ID] === CONF_DOC_DOTTED);
-      if (config?.[COL_CONF_DOC.GENERATORE] !== 'DOCUMENTO_GENERICO') {
+      if (config?.[COL_CONF_DOC.GENERATORE] !== 'CLASSE') {
         throw new ValidationError(`CONF_DOC ${CONF_DOC_DOTTED} assente o con generatore errato.`);
       }
       const documents = container.get<DocumentGenerationService>('documentGenerationService');

@@ -1043,7 +1043,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_VERBALE,
         [COL_CONF_DOC.TIPO]: 'VERBALE',
-        [COL_CONF_DOC.GENERATORE]: 'VERBALE_CDC',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.verbale }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.anagrafica.nome}}',
@@ -1090,7 +1090,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_CONDOTTA,
         [COL_CONF_DOC.TIPO]: 'CONDOTTA',
-        [COL_CONF_DOC.GENERATORE]: 'FOGLIO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.condotta }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_Condotta_{{focus.classe.anagrafica.nome}}',

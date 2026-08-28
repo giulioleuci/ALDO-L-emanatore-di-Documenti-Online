@@ -450,7 +450,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     {
       [COL_CONF_DOC.ID]: CONF_DOC_STORICO,
       [COL_CONF_DOC.TIPO]: 'E2E_STORICO',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.GENERATORE]: 'ALUNNO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.storico }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Storico_{{focus.alunno.anagrafica.nomeCompleto}}',
@@ -471,7 +471,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     {
       [COL_CONF_DOC.ID]: CONF_DOC_DOTTED,
       [COL_CONF_DOC.TIPO]: 'E2E_DOTTED',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.dotted }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Dotted_{{focus.classe.anagrafica.nome}}',
@@ -495,7 +495,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     {
       [COL_CONF_DOC.ID]: CONF_DOC_DUPLICAZIONE_PERMESSA,
       [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-      [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+      [COL_CONF_DOC.GENERATORE]: 'PIANO_PERSONALIZZATO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_DuplicazionePermessa_{{focus.alunno.anagrafica.nomeCompleto}}',
@@ -516,7 +516,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     {
       [COL_CONF_DOC.ID]: CONF_DOC_JOBRUNNER,
       [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-      [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+      [COL_CONF_DOC.GENERATORE]: 'PIANO_PERSONALIZZATO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_JobRunner_{{focus.alunno.anagrafica.nomeCompleto}}',
@@ -537,7 +537,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     {
       [COL_CONF_DOC.ID]: CONF_DOC_CERCA_DOCUMENTI_SOURCE,
       [COL_CONF_DOC.TIPO]: 'E2E_IMPORT_SOURCE',
-      [COL_CONF_DOC.GENERATORE]: 'FOGLIO_GENERICO',
+      [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.aslImportSheet }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_ImportSource_{{focus.classe.anagrafica.nome}}',
@@ -558,7 +558,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
     {
       [COL_CONF_DOC.ID]: CONF_DOC_TABELLE,
       [COL_CONF_DOC.TIPO]: 'E2E_TABELLE',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_CON_TABELLE_IMPORTATE',
+      [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.tabelleImportate }),
       [COL_CONF_DOC.FILE_NAME]: 'E2E_Tabelle_{{focus.classe.anagrafica.nome}}',
@@ -566,7 +566,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
       [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
+      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }),
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({

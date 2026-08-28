@@ -352,10 +352,10 @@ export class SampleDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_ID,
         [COL_CONF_DOC.TIPO]: 'ONLINETEST',
-        // DOCUMENTO_GENERICO (10 §9): plain {{...}} substitution, registered in
-        // buildAldoContainer's strategyRegistry with no extra deps (Bootstrap.ts)
-        // — 'DOC' is not a GENERATORE the registry ever knows.
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        // CLASSE axis, plain {{...}} substitution: FORMATO=GDOC with no
+        // PARAMETRI flags resolves to DocumentoGenericoGeneratorStrategy via
+        // DocumentStrategyFactory (Bootstrap.ts) with no extra deps.
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         // Simple-form MODELLI (ConfigurazioneDocumentoRepository.resolveTemplateId,
         // ref 06 §8): a bare templateId string throws "MODELLI privo di
@@ -368,7 +368,7 @@ export class SampleDatabaseBuilder {
         [COL_CONF_DOC.POST_PROCESSO]: null, // PostProcessStep gates on `!= null`, not truthiness
         [COL_CONF_DOC.PARAMETRI]: '',
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-        [COL_CONF_DOC.FORMATO]: 'PDF',
+        [COL_CONF_DOC.FORMATO]: 'GDOC',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
           classi: '{{focus.classe.anagrafica.nome}}',
           utenti: '',

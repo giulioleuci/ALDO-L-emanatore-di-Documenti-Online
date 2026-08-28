@@ -150,6 +150,7 @@ export const RECIPES: Record<string, string[]> = {
     'pianiPersClasse',
     'docenteMateriaFocus'
   ],
+  CLASSE_MATERIA: ['school', 'class', 'consiglio', 'classeMateriaFocus'],
   ALUNNO_DETTAGLIATO: [
     'school',
     'class',

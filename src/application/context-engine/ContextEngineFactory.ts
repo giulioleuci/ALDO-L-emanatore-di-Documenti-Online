@@ -25,6 +25,7 @@ import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
 import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import { DocenteMateriaFocusProvider } from './providers/DocenteMateriaFocusProvider';
+import { ClasseMateriaFocusProvider } from './providers/ClasseMateriaFocusProvider';
 import { DipartimentoProvider } from './providers/DipartimentoProvider';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import type { StoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
@@ -118,6 +119,7 @@ export class ContextEngineFactory {
       .registerProvider('consiglio', consiglioProvider)
       .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
       .registerProvider('docenteMateriaFocus', new DocenteMateriaFocusProvider())
+      .registerProvider('classeMateriaFocus', new ClasseMateriaFocusProvider())
       .registerProvider('esame', new EsameProvider())
       .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
       .registerProvider(

@@ -460,6 +460,7 @@ export interface Cdu {
     piano?: CduPianoFocus;
     docente?: PersonVM;
     materia?: SubjectVM;
+    classiMateria?: { docenti: PersonVM[] };
   };
   destinatario?: CduDestinatario;
   render?: {

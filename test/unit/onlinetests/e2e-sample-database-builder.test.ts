@@ -368,18 +368,18 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     });
   }
   const riepilogo = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_RIEPILOGO')!;
-  expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(riepilogo[COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(riepilogo[COL_CONF_DOC.TIPO]).toBe('RIEPILOGO_CLASSE');
   expect(JSON.parse(riepilogo[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_riepilogo'
   });
   const complesso = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO')!;
-  expect(complesso[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(complesso[COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(JSON.parse(complesso[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_doc_complesso'
   });
   const sheetPermessi = confDoc.find((c) => c[COL_CONF_DOC.ID] === 'E2E_SHEET_PERMESSI')!;
-  expect(sheetPermessi[COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
+  expect(sheetPermessi[COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(JSON.parse(sheetPermessi[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_sheet_permessi'
   });
@@ -399,7 +399,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(piani).toHaveLength(1);
   const piano = piani[0]!;
   expect(piano[COL_CONF_DOC.ID]).toBe(CONF_DOC_PIANI);
-  expect(piano[COL_CONF_DOC.GENERATORE]).toBe('DOC_PERSONALIZZATO');
+  expect(piano[COL_CONF_DOC.GENERATORE]).toBe('PIANO_PERSONALIZZATO');
   expect(piano[COL_CONF_DOC.PARAMETRI]).toBe('');
   expect(String(piano[COL_CONF_DOC.FILE_NAME])).toContain('{{focus.piano.tipoLabel}}');
   expect(String(piano[COL_CONF_DOC.FILE_NAME])).not.toContain('{{focus.piano.tipo}}');
@@ -422,7 +422,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   expect(pianiNoPei).toHaveLength(1);
   const pianoNoPei = pianiNoPei[0]!;
   expect(pianoNoPei[COL_CONF_DOC.TIPO]).toBe('PIANO_PERS');
-  expect(pianoNoPei[COL_CONF_DOC.GENERATORE]).toBe('DOC_PERSONALIZZATO');
+  expect(pianoNoPei[COL_CONF_DOC.GENERATORE]).toBe('PIANO_PERSONALIZZATO');
   expect(pianoNoPei[COL_CONF_DOC.CONDIZIONE]).toBe('{{focus.piano.tipo}} != "PEI"');
   expect(JSON.parse(String(pianoNoPei[COL_CONF_DOC.MODELLI]))).toEqual(
     JSON.parse(String(piano[COL_CONF_DOC.MODELLI]))
@@ -770,7 +770,7 @@ test('seeds a CONF_DOC row for the complex-placeholder template (DOCUMENTO_GENER
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_DOC_COMPLESSO');
   expect(row).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: 'E2E_DOC_COMPLESSO' }));
-  expect(row![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(row![COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(JSON.parse(String(row![COL_CONF_DOC.MODELLI]))).toEqual({
     templateId: TEMPLATE_IDS.docComplesso
   });
@@ -785,7 +785,7 @@ test('seeds the CONF_DOC row for the articulated-class complex document', () => 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === CONF_DOC_ARTICOLATA)!;
   expect(row[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA');
-  expect(row[COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(row[COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(JSON.parse(row[COL_CONF_DOC.MODELLI] as string)).toEqual({
     templateId: 'tmpl_doc_articolata'
   });
@@ -805,7 +805,7 @@ test('seeds an articulated generic CDC signature-summary document with registrat
   expect(row).toEqual(
     expect.objectContaining({
       [COL_CONF_DOC.TIPO]: 'RIEPILOGO_FIRME_CDC',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+      [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
       [COL_CONF_DOC.FORMATO]: 'GDOC'
     })
@@ -830,7 +830,7 @@ test('seeds a CONF_DOC row using the SHEET_CON_MATERIE_E_PERMESSI generator', ()
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const row = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_SHEET_PERMESSI');
   expect(row).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: 'E2E_SHEET_PERMESSI' }));
-  expect(row![COL_CONF_DOC.GENERATORE]).toBe('SHEET_CON_MATERIE_E_PERMESSI');
+  expect(row![COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(row![COL_CONF_DOC.FORMATO]).toBe('GSHEET');
 });
 
@@ -894,7 +894,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
     (r) => r[COL_CONF_DOC.ID] === CONF_DOC_PIANO_LAVORO
   );
   expect(doc).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO }));
-  expect(doc![COL_CONF_DOC.GENERATORE]).toBe('DOCUMENTO_GENERICO');
+  expect(doc![COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(JSON.parse(String(doc![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
     classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
     utenti: '{{#focus.classe.coordinatori.elenco}}{{email}},{{/focus.classe.coordinatori.elenco}}',

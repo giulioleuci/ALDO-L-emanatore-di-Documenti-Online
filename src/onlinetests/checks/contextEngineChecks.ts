@@ -371,7 +371,7 @@ export function registerEffectiveAssignmentConsumerChecks(
       }
     } as unknown as ITemplateEngine;
     const config = ConfigurazioneDocumento.fromData({
-      ID: 'MATRIX_HEADERS', TIPO: 'MATRIX', GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+      ID: 'MATRIX_HEADERS', TIPO: 'MATRIX', GENERATORE: 'CLASSE',
       CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
       DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
       GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
@@ -468,7 +468,7 @@ export function registerEffectiveAssignmentConsumerChecks(
       const row = {
         ID: 'MATRIX_DOCUMENT',
         TIPO: 'MATRIX',
-        GENERATORE: 'DOCUMENTO_GENERICO',
+        GENERATORE: 'CLASSE',
         CONDIZIONE: null,
         MODELLI: '{"templateId":"matrix"}',
         FILE_NAME: 'matrix',
@@ -549,7 +549,7 @@ export function registerEffectiveAssignmentConsumerChecks(
       const config = ConfigurazioneDocumento.fromData({
         ID: 'MATRIX_SHEET',
         TIPO: 'MATRIX',
-        GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+        GENERATORE: 'CLASSE',
         CONDIZIONE: null,
         MODELLI: '{"templateId":"matrix"}',
         FILE_NAME: 'matrix',
@@ -696,7 +696,7 @@ export function registerEffectiveAssignmentConsumerChecks(
           }
         } as unknown as IDriveFacade;
         const row = {
-          ID: 'MATRIX_PARTNER_DOCUMENT', TIPO: 'MATRIX', GENERATORE: 'DOCUMENTO_GENERICO',
+          ID: 'MATRIX_PARTNER_DOCUMENT', TIPO: 'MATRIX', GENERATORE: 'CLASSE',
           CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
           DUPLICAZIONE: 'NEGATA',
           PERMESSI: JSON.stringify({ file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }], folder: [], regolaSupplente: { file: 'ENTRAMBI' } }),
@@ -735,7 +735,7 @@ export function registerEffectiveAssignmentConsumerChecks(
           }
         } as unknown as ITemplateEngine;
         const sheetConfig = ConfigurazioneDocumento.fromData({
-          ID: 'MATRIX_PARTNER_SHEET', TIPO: 'MATRIX', GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+          ID: 'MATRIX_PARTNER_SHEET', TIPO: 'MATRIX', GENERATORE: 'CLASSE',
           CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
           DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
           GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'

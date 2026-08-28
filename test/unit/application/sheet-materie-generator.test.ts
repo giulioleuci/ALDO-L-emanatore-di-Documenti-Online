@@ -16,7 +16,7 @@ import { fixtureTables } from '../../fixtures/tables';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 import type { MaterieGroups } from '../../../src/application/strategies/SheetMaterieGeneratorStrategy';
 import type { SubjectVM } from '../../../src/application/context-engine/mappers/subjectVmMapper';
-import { GestioneSupplenti } from '../../../src/domain/value-objects/enums';
+import { GeneratoreAxis, GestioneSupplenti } from '../../../src/domain/value-objects/enums';
 
 /** Minimal SubjectVM fixture for articolazione groups — only `sigla` matters to
  * buildGroups (headers/colors are resolved separately from MATERIE), other
@@ -102,14 +102,14 @@ function sheetInfo(name = 'Sheet1', rowCount = 20, columnCount = 10): Spreadshee
 }
 
 function confDoc(
-  generatore: string,
+  _generatore: string,
   parametri: Record<string, unknown> | null = null,
   permessi: Record<string, unknown> | null = null
 ): ConfigurazioneDocumento {
   return ConfigurazioneDocumento.fromData({
     ID: 'CD_MAT',
     TIPO: 'GRIGLIA',
-    GENERATORE: generatore,
+    GENERATORE: GeneratoreAxis.CLASSE,
     CONDIZIONE: null,
     MODELLI: '{"templateId":"tmpl"}',
     FILE_NAME: 'x',

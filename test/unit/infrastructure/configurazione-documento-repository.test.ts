@@ -1,6 +1,6 @@
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { PipelineError } from '../../../src/domain/errors/DomainError';
-import { TipoPiano } from '../../../src/domain/value-objects/enums';
+import { GeneratoreAxis, TipoPiano } from '../../../src/domain/value-objects/enums';
 import { composeContextBuilder } from '../../../src/config/ApplicationComposition';
 import { recipe } from '../../../src/application/context-engine/Recipe';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
@@ -24,7 +24,8 @@ function conditionalPlanConfig(): ConfigurazioneDocumento {
   return ConfigurazioneDocumento.fromData({
     ID: 'PIANI_PERSONALIZZATI',
     TIPO: 'PIANO_PERS',
-    GENERATORE: 'DOC_PERSONALIZZATO',
+    GENERATORE: GeneratoreAxis.PIANO_PERSONALIZZATO,
+    FORMATO: 'GDOC',
     MODELLI: JSON.stringify([
       { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
       { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }

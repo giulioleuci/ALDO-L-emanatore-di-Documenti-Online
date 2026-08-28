@@ -2,7 +2,7 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import type { TipoPiano } from '../../domain/value-objects/enums';
+import { GeneratoreAxis, type TipoPiano } from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from './DocumentGenerationService';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
@@ -33,6 +33,20 @@ export interface ClasseMateriaBatchTarget {
   materiaId: string;
 }
 
+export interface ClasseDocenteBatchTarget {
+  classe: string;
+  docenteEmail: string;
+}
+
+export interface DocenteBatchTarget {
+  docenteEmail: string;
+  classiCompetenza: string[];
+}
+
+export interface AlunnoBatchTarget {
+  email: string;
+}
+
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
 interface BatchResumeState {
   confDocId: string;
@@ -45,6 +59,9 @@ interface BatchResumeState {
   /** Historical checkpoint key kept only to resume jobs suspended before Task 6. */
   docenteMateriaTargets?: DocenteClasseMateriaBatchTarget[];
   classeMateriaTargets?: ClasseMateriaBatchTarget[];
+  classeDocenteTargets?: ClasseDocenteBatchTarget[];
+  docenteTargets?: DocenteBatchTarget[];
+  alunnoTargets?: AlunnoBatchTarget[];
 }
 export interface BatchCheckpoint extends BatchResumeState {
   percentage: number;
@@ -107,28 +124,44 @@ export class DocumentBatchService {
     if (config === null) {
       throw new ConfigurationError(`CONF_DOC ${confDocId} non trovato`);
     }
-    if (confDocId === CONF_DOC_PIANI_PERSONALIZZATI && config.tipo !== 'PIANO_PERS') {
-      throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
-    }
-    if (config.tipo === 'PIANO_PERS') {
-      return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
-    }
-    if (config.tipo === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA') {
-      return yield* this.generateDocentiClasseMateria(config, confDocId, jobId, resume, processed, errori);
-    }
-    if (config.tipo === 'DOCUMENTO_CLASSE_MATERIA') {
-      return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
-    }
-    if (config.tipo === 'DIPARTIMENTO') {
-      return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
-    }
-    if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
+    if (
+      config.tipo === 'PIANO_PERS' &&
+      config.generatore !== GeneratoreAxis.PIANO_PERSONALIZZATO
+    ) {
       throw new ConfigurationError(
-        "CONF_DOC.TIPO 'DOCUMENTO_DOCENTE_MATERIA' è stato rinominato in 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' — aggiornare la riga CONF_DOC"
+        `CONF_DOC ${confDocId} ha TIPO PIANO_PERS ma GENERATORE ${config.generatore} (atteso PIANO_PERSONALIZZATO)`
       );
     }
-
-    return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+    if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) {
+      if (config.tipo !== 'PIANO_PERS') {
+        throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
+      }
+      return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
+    }
+    switch (config.generatore) {
+      case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
+        return yield* this.generateDocentiClasseMateria(
+          config,
+          confDocId,
+          jobId,
+          resume,
+          processed,
+          errori
+        );
+      case GeneratoreAxis.CLASSE_MATERIA:
+        return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
+      case GeneratoreAxis.CLASSE_DOCENTE:
+        return yield* this.generateClasseDocente(config, confDocId, jobId, resume, processed, errori);
+      case GeneratoreAxis.DOCENTE:
+        return yield* this.generateDocenti(config, confDocId, jobId, resume, processed, errori);
+      case GeneratoreAxis.DIPARTIMENTO:
+        return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
+      case GeneratoreAxis.ALUNNO:
+        return yield* this.generateAlunni(confDocId, jobId, resume, processed, errori);
+      case GeneratoreAxis.CLASSE:
+      default:
+        return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+    }
   }
 
   private *generatePiani(
@@ -467,6 +500,267 @@ export class DocumentBatchService {
       jobId,
       `${processed.length} documenti classe/materia elaborati, ${errori.length} errori`
     );
+    return { success, totale: targets.length, processed, errori };
+  }
+
+  private *generateClasseDocente(
+    config: ConfigurazioneDocumento,
+    confDocId: string,
+    jobId: string,
+    resume: BatchResumeState | null,
+    processed: string[],
+    errori: string[]
+  ): Generator<BatchCheckpoint, BatchResult, void> {
+    let targets: ClasseDocenteBatchTarget[];
+    if (resume === null) {
+      targets = [];
+      const seen = new Set<string>();
+      const attive = this.classi.filterPerGestioneArticolazione(
+        this.classi.findAttive(),
+        config.gestioneArticolazione
+      );
+      for (const classe of attive) {
+        for (const assignment of this.teachingAssignments.resolveConsiglio(classe, this.now, {
+          includeReligioneAlt: true
+        })) {
+          const classeId = classe.id ?? '';
+          const docenteEmail = assignment.docenteEffettivo.email.value;
+          const key = `${classeId}:${docenteEmail}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          targets.push({ classe: classeId, docenteEmail });
+        }
+      }
+    } else {
+      if (resume.classeDocenteTargets === undefined) {
+        throw new ConfigurationError(
+          `Stato di ripresa ${confDocId} privo dei target classe/docente persistiti`
+        );
+      }
+      targets = resume.classeDocenteTargets.map((target) => ({ ...target }));
+    }
+
+    if (resume === null) {
+      this.monitor?.registerJob(jobId);
+      this.monitor?.startJob(jobId);
+    }
+    this.logger?.logBatchStart(targets.length);
+
+    for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
+      const target = targets[i]!;
+      const targetId = `${target.classe}:${target.docenteEmail}`;
+      this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
+      let message: string;
+      const itemStartedAt = Date.now();
+      try {
+        const result = this.documenti.generateForClasseDocente(
+          ClasseId.of(target.classe),
+          target.docenteEmail,
+          confDocId,
+          jobId
+        );
+        const name = result.fileName ?? targetId;
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errori.push(`${targetId}: ${reason}`);
+        this.logger?.logSummary(
+          'Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${targetId}: ${reason}`,
+          { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+        );
+        message = `Errore ${i + 1}/${targets.length} ${targetId}: ${reason}`;
+      }
+      processed.push(targetId);
+      const percentage = ((i + 1) / targets.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, message);
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice(),
+        classeDocenteTargets: targets
+      };
+    }
+
+    const success = errori.length === 0;
+    this.monitor?.completeJob(
+      jobId,
+      `${processed.length} documenti classe/docente elaborati, ${errori.length} errori`
+    );
+    return { success, totale: targets.length, processed, errori };
+  }
+
+  private *generateDocenti(
+    config: ConfigurazioneDocumento,
+    confDocId: string,
+    jobId: string,
+    resume: BatchResumeState | null,
+    processed: string[],
+    errori: string[]
+  ): Generator<BatchCheckpoint, BatchResult, void> {
+    let targets: DocenteBatchTarget[];
+    if (resume === null) {
+      const classiPerDocente = new Map<string, Set<string>>();
+      const attive = this.classi.filterPerGestioneArticolazione(
+        this.classi.findAttive(),
+        config.gestioneArticolazione
+      );
+      for (const classe of attive) {
+        const classeId = classe.id ?? '';
+        for (const assignment of this.teachingAssignments.resolveConsiglio(classe, this.now, {
+          includeReligioneAlt: true
+        })) {
+          const docenteEmail = assignment.docenteEffettivo.email.value;
+          const classi = classiPerDocente.get(docenteEmail) ?? new Set<string>();
+          classi.add(classeId);
+          classiPerDocente.set(docenteEmail, classi);
+        }
+      }
+      targets = [...classiPerDocente.entries()].map(([docenteEmail, classi]) => ({
+        docenteEmail,
+        classiCompetenza: [...classi]
+      }));
+    } else {
+      if (resume.docenteTargets === undefined) {
+        throw new ConfigurationError(`Stato di ripresa ${confDocId} privo dei target docente persistiti`);
+      }
+      targets = resume.docenteTargets.map((target) => ({
+        docenteEmail: target.docenteEmail,
+        classiCompetenza: [...target.classiCompetenza]
+      }));
+    }
+
+    if (resume === null) {
+      this.monitor?.registerJob(jobId);
+      this.monitor?.startJob(jobId);
+    }
+    this.logger?.logBatchStart(targets.length);
+
+    for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
+      const target = targets[i]!;
+      this.logger?.logItemStart(i + 1, targets.length, 'Target', target.docenteEmail, 'DOCUMENT');
+      let message: string;
+      const itemStartedAt = Date.now();
+      try {
+        const result = this.documenti.generateForDocente(
+          target.docenteEmail,
+          target.classiCompetenza,
+          confDocId,
+          jobId
+        );
+        const name = result.fileName ?? target.docenteEmail;
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errori.push(`${target.docenteEmail}: ${reason}`);
+        this.logger?.logSummary(
+          'Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${target.docenteEmail}: ${reason}`,
+          { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+        );
+        message = `Errore ${i + 1}/${targets.length} ${target.docenteEmail}: ${reason}`;
+      }
+      processed.push(target.docenteEmail);
+      const percentage = ((i + 1) / targets.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, message);
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice(),
+        docenteTargets: targets
+      };
+    }
+
+    const success = errori.length === 0;
+    this.monitor?.completeJob(jobId, `${processed.length} docenti elaborati, ${errori.length} errori`);
+    return { success, totale: targets.length, processed, errori };
+  }
+
+  private *generateAlunni(
+    confDocId: string,
+    jobId: string,
+    resume: BatchResumeState | null,
+    processed: string[],
+    errori: string[]
+  ): Generator<BatchCheckpoint, BatchResult, void> {
+    let targets: AlunnoBatchTarget[];
+    if (resume === null) {
+      targets = this.alunni.findAttivi().map((alunno) => ({ email: alunno.email.value }));
+    } else {
+      if (resume.alunnoTargets === undefined) {
+        throw new ConfigurationError(`Stato di ripresa ${confDocId} privo dei target alunno persistiti`);
+      }
+      targets = resume.alunnoTargets.map((target) => ({ ...target }));
+    }
+
+    if (resume === null) {
+      this.monitor?.registerJob(jobId);
+      this.monitor?.startJob(jobId);
+    }
+    this.logger?.logBatchStart(targets.length);
+
+    for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
+      const email = targets[i]!.email;
+      this.logger?.logItemStart(i + 1, targets.length, 'Target', email, 'DOCUMENT');
+      let message = `Generazione documento alunno ${email}`;
+      const itemStartedAt = Date.now();
+      try {
+        const result = this.documenti.generateForAlunno(email, confDocId, jobId);
+        const name = result.fileName ?? email;
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errori.push(`${email}: ${reason}`);
+        this.logger?.logSummary(
+          'Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${email}: ${reason}`,
+          { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+        );
+        message = `Errore: ${reason} (alunno ${email})`;
+      }
+      processed.push(email);
+      const percentage = ((i + 1) / targets.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, message);
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice(),
+        alunnoTargets: targets
+      };
+    }
+
+    const success = errori.length === 0;
+    this.monitor?.completeJob(jobId, `${processed.length} alunni elaborati, ${errori.length} errori`);
     return { success, totale: targets.length, processed, errori };
   }
 

@@ -14,7 +14,7 @@ import { FakeProcessMonitor } from '../../fakes/FakeProcessMonitor';
 import { Alunno } from '../../../src/domain/entities/Alunno';
 import { Piano } from '../../../src/domain/entities/Piano';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
-import { TipoPiano } from '../../../src/domain/value-objects/enums';
+import { GeneratoreAxis, TipoPiano } from '../../../src/domain/value-objects/enums';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import type { IClasseRepository } from '../../../src/domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../src/domain/repositories/IAlunnoRepository';
@@ -130,7 +130,8 @@ function wirePiani(
         ? new ConfigurazioneDocumento({
             ID: id,
             TIPO: options.configTipo ?? 'PIANO_PERS',
-            GENERATORE: 'DOC_PERSONALIZZATO'
+            GENERATORE: GeneratoreAxis.PIANO_PERSONALIZZATO,
+            FORMATO: 'GDOC'
           })
         : null
   };
@@ -446,32 +447,12 @@ test('generateClassi honors CONF_DOC.GESTIONE_ARTICOLAZIONE=ARTICOLATA: the pare
   });
 });
 
-test('handler throws ConfigurationError for the renamed legacy TIPO=DOCUMENTO_DOCENTE_MATERIA instead of silently falling through to generateClassi', () => {
-  const configs = {
-    findById: (id: string) =>
-      id === 'CD_LEGACY'
-        ? new ConfigurazioneDocumento({
-            ID: id,
-            TIPO: 'DOCUMENTO_DOCENTE_MATERIA',
-            GENERATORE: 'SCHEDA_MATERIA'
-          })
-        : null
-  };
-  const service = new DocumentBatchService(
-    new ClasseRepository(new FakeDatabase(fixtureTables())),
-    new AlunnoRepository(new FakeDatabase(fixtureTables())),
-    configs,
-    {} as unknown as DocumentGenerationService,
-    noopTeachingAssignments,
-    FIXED_NOW,
-    noopDipartimenti
-  );
+test('PIANO_PERS TIPO constraint is still enforced independently of GENERATORE', () => {
+  const { service } = wirePiani({ configTipo: 'VERBALE' });
 
-  const gen = service.batchGenerateHandler({ confDocId: 'CD_LEGACY', jobId: 'job1' });
-  expect(() => gen.next()).toThrow(ConfigurationError);
   expect(() =>
-    service.batchGenerateHandler({ confDocId: 'CD_LEGACY', jobId: 'job1' }).next()
-  ).toThrow("CONF_DOC.TIPO 'DOCUMENTO_DOCENTE_MATERIA' è stato rinominato in 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'");
+    service.batchGenerateHandler({ confDocId: 'PIANI_PERSONALIZZATI', jobId: 'job_piani' }).next()
+  ).toThrow('CONF_DOC PIANI_PERSONALIZZATI deve avere TIPO PIANO_PERS');
 });
 
 test('handler resumes from params.resumeState without reprocessing completed classes (JobRunnerLib resume cycle)', () => {
@@ -700,7 +681,8 @@ function wireDocentiClasseMateria(
         ? new ConfigurazioneDocumento({
             ID: id,
             TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
-            GENERATORE: 'PROGRAMMA_SVOLTO'
+            GENERATORE: GeneratoreAxis.CLASSE_DOCENTE_MATERIA,
+            FORMATO: 'GDOC'
           })
         : null;
     }
@@ -992,7 +974,7 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
   });
 });
 
-function wireClassiMateria(options: { failFor?: string } = {}) {
+function wireClassiMateria(options: { failFor?: string; tipoLabel?: string } = {}) {
   const db = new FakeDatabase(fixtureTables());
   const generated: Array<{ classe: string; materia: string; confDocId: string; jobId?: string }> = [];
   const documenti = {
@@ -1014,8 +996,9 @@ function wireClassiMateria(options: { failFor?: string } = {}) {
       id === 'SCHEDA_MATERIA'
         ? new ConfigurazioneDocumento({
             ID: id,
-            TIPO: 'DOCUMENTO_CLASSE_MATERIA',
-            GENERATORE: 'SCHEDA_MATERIA'
+            TIPO: options.tipoLabel ?? 'DOCUMENTO_CLASSE_MATERIA',
+            GENERATORE: GeneratoreAxis.CLASSE_MATERIA,
+            FORMATO: 'GDOC'
           })
         : null
   };
@@ -1051,6 +1034,16 @@ function wireClassiMateria(options: { failFor?: string } = {}) {
 }
 
 describe('DocumentBatchService.generateClassiMateria', () => {
+  test('dispatch routes purely on GENERATORE, ignoring an unrelated TIPO label', () => {
+    const { service, generated } = wireClassiMateria({
+      tipoLabel: 'ETICHETTA_LIBERA_QUALSIASI'
+    });
+
+    drain(service.batchGenerateHandler({ confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }));
+
+    expect(generated.length).toBeGreaterThan(0);
+  });
+
   test('DOCUMENTO_CLASSE_MATERIA emits one target per (classe, materia), not per docente', () => {
     const { service, generated, resolvedClassIds } = wireClassiMateria();
 
@@ -1114,6 +1107,192 @@ describe('DocumentBatchService.generateClassiMateria', () => {
   });
 });
 
+function wireClasseDocente() {
+  const db = new FakeDatabase(fixtureTables());
+  const generated: Array<{ classe: string; docente: string }> = [];
+  let resolveCalls = 0;
+  const documenti = {
+    generateForClasseDocente: (target: ClasseId, docenteEmail: string) => {
+      generated.push({ classe: target.value, docente: docenteEmail });
+      return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
+    }
+  } as unknown as DocumentGenerationService;
+  const teachingAssignments = {
+    resolveConsiglio: (classe: Classe) => {
+      resolveCalls++;
+      return classe.id === '5A'
+        ? [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')]
+        : classe.id === '1F'
+          ? [fakeAssignment('MATE', 'rossi@school.it')]
+          : [];
+    },
+    resolveMateria: () => []
+  } as unknown as ITeachingAssignmentResolver;
+  const service = new DocumentBatchService(
+    new ClasseRepository(db),
+    new AlunnoRepository(db),
+    {
+      findById: (id: string) =>
+        id === 'CLASSE_DOCENTE'
+          ? new ConfigurazioneDocumento({ ID: id, TIPO: 'LIBERO', GENERATORE: GeneratoreAxis.CLASSE_DOCENTE, FORMATO: 'GDOC' })
+          : null
+    },
+    documenti,
+    teachingAssignments,
+    FIXED_NOW,
+    noopDipartimenti
+  );
+  return { service, generated, getResolveCalls: () => resolveCalls };
+}
+
+describe('DocumentBatchService.generateClasseDocente', () => {
+  test('emits one target per (classe, docente) pair, not per (classe, docente, materia)', () => {
+    const { service, generated } = wireClasseDocente();
+
+    const { checkpoints } = drain(
+      service.batchGenerateHandler({ confDocId: 'CLASSE_DOCENTE', jobId: 'job_cd' })
+    );
+
+    expect(generated).toEqual([
+      { classe: '5A', docente: 'bianchi@school.it' },
+      { classe: '1F', docente: 'rossi@school.it' }
+    ]);
+    expect(checkpoints[0]).toMatchObject({
+      classeDocenteTargets: [
+        { classe: '5A', docenteEmail: 'bianchi@school.it' },
+        { classe: '1F', docenteEmail: 'rossi@school.it' }
+      ]
+    });
+  });
+
+  test('resume from persisted classeDocenteTargets skips completed work', () => {
+    const { service, generated, getResolveCalls } = wireClasseDocente();
+
+    drain(
+      service.batchGenerateHandler({
+        confDocId: 'CLASSE_DOCENTE',
+        jobId: 'job_cd',
+        resumeState: {
+          confDocId: 'CLASSE_DOCENTE',
+          jobId: 'job_cd',
+          nextIndex: 1,
+          processed: ['5A:bianchi@school.it'],
+          errori: [],
+          classeDocenteTargets: [
+            { classe: '5A', docenteEmail: 'bianchi@school.it' },
+            { classe: '1F', docenteEmail: 'rossi@school.it' }
+          ]
+        }
+      })
+    );
+
+    expect(getResolveCalls()).toBe(0);
+    expect(generated).toEqual([{ classe: '1F', docente: 'rossi@school.it' }]);
+  });
+});
+
+function wireDocenti() {
+  const db = new FakeDatabase(fixtureTables());
+  const generated: Array<{ docente: string; classiCompetenza: string[] }> = [];
+  const documenti = {
+    generateForDocente: (docenteEmail: string, classiCompetenza: string[]) => {
+      generated.push({ docente: docenteEmail, classiCompetenza });
+      return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
+    }
+  } as unknown as DocumentGenerationService;
+  const teachingAssignments = {
+    resolveConsiglio: (classe: Classe) =>
+      classe.id === '5A'
+        ? [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')]
+        : classe.id === '1F'
+          ? [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'rossi@school.it')]
+          : [],
+    resolveMateria: () => []
+  } as unknown as ITeachingAssignmentResolver;
+  const service = new DocumentBatchService(
+    new ClasseRepository(db),
+    new AlunnoRepository(db),
+    {
+      findById: (id: string) =>
+        id === 'DOCENTE'
+          ? new ConfigurazioneDocumento({ ID: id, TIPO: 'LIBERO', GENERATORE: GeneratoreAxis.DOCENTE, FORMATO: 'GDOC' })
+          : null
+    },
+    documenti,
+    teachingAssignments,
+    FIXED_NOW,
+    noopDipartimenti
+  );
+  return { service, generated };
+}
+
+describe('DocumentBatchService.generateDocenti', () => {
+  test('emits one target per unique docente email across ALL active classes, with classiCompetenza aggregated', () => {
+    const { service, generated } = wireDocenti();
+
+    const { checkpoints } = drain(service.batchGenerateHandler({ confDocId: 'DOCENTE', jobId: 'job_d' }));
+
+    expect(generated).toEqual([
+      { docente: 'bianchi@school.it', classiCompetenza: ['5A', '1F'] },
+      { docente: 'rossi@school.it', classiCompetenza: ['1F'] }
+    ]);
+    expect(checkpoints[0]).toMatchObject({
+      docenteTargets: [
+        { docenteEmail: 'bianchi@school.it', classiCompetenza: ['5A', '1F'] },
+        { docenteEmail: 'rossi@school.it', classiCompetenza: ['1F'] }
+      ]
+    });
+  });
+});
+
+function wireAlunni() {
+  const generated: string[] = [];
+  const alunni = {
+    findAttivi: () => [
+      new Alunno({ EMAIL: 'alfa@school.it', COGNOMENOME: 'ALFA', CLASSE: '5A', RELIGIONE: 'IRC', ATTIVO: true }),
+      new Alunno({ EMAIL: 'beta@school.it', COGNOMENOME: 'BETA', CLASSE: '1F', RELIGIONE: 'IRC', ATTIVO: true })
+    ],
+    getPiani: () => []
+  } as unknown as IAlunnoRepository;
+  const documenti = {
+    generateForAlunno: (email: string) => {
+      generated.push(email);
+      return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
+    }
+  } as unknown as DocumentGenerationService;
+  const service = new DocumentBatchService(
+    { findAttive: () => [], filterPerGestioneArticolazione: () => [] } as unknown as IClasseRepository,
+    alunni,
+    {
+      findById: (id: string) =>
+        id === 'ALUNNO'
+          ? new ConfigurazioneDocumento({ ID: id, TIPO: 'LIBERO', GENERATORE: GeneratoreAxis.ALUNNO, FORMATO: 'GDOC' })
+          : null
+    },
+    documenti,
+    noopTeachingAssignments,
+    FIXED_NOW,
+    noopDipartimenti
+  );
+  return { service, generated };
+}
+
+describe('DocumentBatchService.generateAlunni', () => {
+  test('emits one target per active student, calling generateForAlunno', () => {
+    const { service, generated } = wireAlunni();
+
+    const { checkpoints, result } = drain(
+      service.batchGenerateHandler({ confDocId: 'ALUNNO', jobId: 'job_a' })
+    );
+
+    expect(generated).toEqual(['alfa@school.it', 'beta@school.it']);
+    expect(checkpoints[0]).toMatchObject({
+      alunnoTargets: [{ email: 'alfa@school.it' }, { email: 'beta@school.it' }]
+    });
+    expect(result).toMatchObject({ totale: 2, processed: ['alfa@school.it', 'beta@school.it'] });
+  });
+});
+
 /** Drains a batch generator to completion, returning every yielded checkpoint plus the final result. */
 function drain<T, R>(gen: Generator<T, R, void>): { checkpoints: T[]; result: R } {
   const checkpoints: T[] = [];
@@ -1159,7 +1338,7 @@ function wireDipartimenti(
     findById: (id: string) => {
       configIds.push(id);
       return id === 'VERBALE_DIPARTIMENTO'
-        ? new ConfigurazioneDocumento({ ID: id, TIPO: 'DIPARTIMENTO', GENERATORE: 'VERBALE_DIPARTIMENTO' })
+        ? new ConfigurazioneDocumento({ ID: id, TIPO: 'DIPARTIMENTO', GENERATORE: GeneratoreAxis.DIPARTIMENTO, FORMATO: 'GDOC' })
         : null;
     }
   };

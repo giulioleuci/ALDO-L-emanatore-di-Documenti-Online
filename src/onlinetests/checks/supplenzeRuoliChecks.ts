@@ -116,7 +116,7 @@ export function visibilitySnapshot(
   const permissionsRow = {
     ID: 'E2E_VISIBILITY',
     TIPO: 'ACL_VISIBILITY',
-    GENERATORE: 'DOCUMENTO_GENERICO',
+    GENERATORE: 'CLASSE',
     CONDIZIONE: null,
     MODELLI: '{"templateId":"visibility"}',
     FILE_NAME: 'visibility',
@@ -199,7 +199,7 @@ export function visibilitySnapshot(
   const sheetConfig = ConfigurazioneDocumento.fromData({
     ...permissionsRow,
     ID: 'E2E_VISIBILITY_SHEET',
-    GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+    GENERATORE: 'CLASSE',
     FORMATO: 'GSHEET',
     PERMESSI: JSON.stringify({ regolaSupplente: { file: mode } }),
     // Deliberately conflicting legacy/undocumented key: PERMESSI must win.

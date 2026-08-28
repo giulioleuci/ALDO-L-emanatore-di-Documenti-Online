@@ -214,7 +214,7 @@ function sheetConfiguration(): ConfigurazioneDocumento {
   return ConfigurazioneDocumento.fromData({
     ID: 'MATRIX_SHEET',
     TIPO: 'GRIGLIA',
-    GENERATORE: 'SHEET_CON_MATERIE_E_PERMESSI',
+    GENERATORE: 'CLASSE',
     CONDIZIONE: null,
     MODELLI: '{"templateId":"matrix"}',
     FILE_NAME: 'matrix',

@@ -108,7 +108,9 @@ function persistedArtifactContainer(): {
           findAll: () => [
             {
               [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
-              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA'
+              [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'ARTICOLATA',
+              [COL_CONF_DOC.GENERATORE]: 'CLASSE',
+              [COL_CONF_DOC.FORMATO]: 'GDOC'
             }
           ]
         };
@@ -580,7 +582,9 @@ test('DOCUMENTO_DOCENTE_CLASSE_MATERIA check rejects a base materia LOG_DOCS key
                   findAll: () => [
                     {
                       [COL_CONF_DOC.ID]: 'E2E_DOCENTE_CLASSE_MATERIA',
-                      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'
+                      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
+                      [COL_CONF_DOC.GENERATORE]: 'CLASSE_DOCENTE_MATERIA',
+                      [COL_CONF_DOC.FORMATO]: 'GDOC'
                     }
                   ]
                 }

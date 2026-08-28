@@ -1107,7 +1107,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO,
         [COL_CONF_DOC.TIPO]: 'RIEPILOGO_CLASSE',
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',
@@ -1124,7 +1124,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_COMPLESSO,
         [COL_CONF_DOC.TIPO]: 'REPORT_COMPLESSO',
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.anagrafica.nome}}',
@@ -1141,7 +1141,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_ARTICOLATA,
         [COL_CONF_DOC.TIPO]: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA',
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
@@ -1158,7 +1158,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_RIEPILOGO_FIRME_CDC,
         [COL_CONF_DOC.TIPO]: 'RIEPILOGO_FIRME_CDC',
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.cdcRiepilogo }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_RiepilogoFirmeCdc_{{focus.classe.anagrafica.nome}}',
@@ -1175,7 +1175,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
         [COL_CONF_DOC.TIPO]: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE_DOCENTE_MATERIA',
         // The batch axis is (docente, materia) over EVERY active class: unscoped this
         // produced 108 documents (~26 min) and killed batch 2 on the GAS execution limit
         // (2026-08-21). The assertion only needs the INTERPRET.CHITARRA composite row on
@@ -1201,7 +1201,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_SHEET_PERMESSI,
         [COL_CONF_DOC.TIPO]: 'SHEET_PERMESSI',
-        [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.anagrafica.nome}}',
@@ -1218,7 +1218,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_ACL_REALI,
         [COL_CONF_DOC.TIPO]: 'ACL_REALI',
-        [COL_CONF_DOC.GENERATORE]: 'SHEET_CON_MATERIE_E_PERMESSI',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_ACL_Reali_{{focus.classe.anagrafica.nome}}',
@@ -1239,7 +1239,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO,
         [COL_CONF_DOC.TIPO]: 'PIANO_LAVORO',
-        [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+        [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.pianoLavoro }),
         [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.anagrafica.nome}}',
@@ -1273,7 +1273,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_PIANI,
         [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-        [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+        [COL_CONF_DOC.GENERATORE]: 'PIANO_PERSONALIZZATO',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify(
           TIPI_PIANO.map((tipo) => ({
@@ -1303,7 +1303,7 @@ export class SharedTestDatabaseBuilder {
       {
         [COL_CONF_DOC.ID]: CONF_DOC_PIANI_NO_PEI,
         [COL_CONF_DOC.TIPO]: 'PIANO_PERS',
-        [COL_CONF_DOC.GENERATORE]: 'DOC_PERSONALIZZATO',
+        [COL_CONF_DOC.GENERATORE]: 'PIANO_PERSONALIZZATO',
         [COL_CONF_DOC.CONDIZIONE]: '{{focus.piano.tipo}} != "PEI"',
         [COL_CONF_DOC.MODELLI]: JSON.stringify(
           TIPI_PIANO.map((tipo) => ({

@@ -709,7 +709,7 @@ test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicat
   tables.CONF_DOC!.push({
     ID: 'PIANI_PERSONALIZZATI',
     TIPO: 'PIANO_PERS',
-    GENERATORE: 'DOC_PERSONALIZZATO',
+    GENERATORE: 'PIANO_PERSONALIZZATO',
     CONDIZIONE: null,
     MODELLI: JSON.stringify([
       { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },

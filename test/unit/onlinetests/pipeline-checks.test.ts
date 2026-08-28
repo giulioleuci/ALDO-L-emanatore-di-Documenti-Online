@@ -95,7 +95,7 @@ function sampleSeedTables(
           {
             ID: CONF_DOC_ID,
             TIPO: 'ONLINETEST',
-            GENERATORE: 'DOCUMENTO_GENERICO',
+            GENERATORE: 'CLASSE',
             CONDIZIONE: '',
             MODELLI: '{"templateId":"TEMPLATE_ONLINETEST"}',
             FILE_NAME: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
@@ -105,7 +105,7 @@ function sampleSeedTables(
             POST_PROCESSO: null,
             PARAMETRI: '',
             GESTIONE_ARTICOLAZIONE: '',
-            FORMATO: 'PDF',
+            FORMATO: 'GDOC',
             REGISTRA_DOC: '{}',
             REGISTRA_FOLD: '{}'
           }

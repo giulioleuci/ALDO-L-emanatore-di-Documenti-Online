@@ -2,7 +2,7 @@ import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/str
 import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
 import { DocPersonalizzatoGeneratorStrategy } from '../../../src/application/strategies/DocPersonalizzatoGeneratorStrategy';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
-import { TipoPiano } from '../../../src/domain/value-objects/enums';
+import { GeneratoreAxis, TipoPiano } from '../../../src/domain/value-objects/enums';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 
@@ -10,7 +10,7 @@ function confDoc(parametri: Record<string, unknown> | null = null): Configurazio
   return ConfigurazioneDocumento.fromData({
     ID: 'CD_X',
     TIPO: 'PIANO',
-    GENERATORE: 'DOC_PERSONALIZZATO',
+    GENERATORE: GeneratoreAxis.PIANO_PERSONALIZZATO,
     CONDIZIONE: null,
     MODELLI: '{"templateId":"tmpl"}',
     FILE_NAME: 'x',

@@ -85,7 +85,6 @@ export class ContextBuilder {
           target: params.target,
           tipoTarget: params.tipoTarget,
           materiaCorrente: params.materiaCorrente ?? null,
-          docenteCorrente: params.docenteCorrente ?? null,
           opzioni: { ...recipe.options }
         }
       },

@@ -1209,7 +1209,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
         [COL_CONF_DOC.POST_PROCESSO]: null,
-        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterieConPermessi: true }),
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GSHEET',
         [COL_CONF_DOC.REGISTRA_DOC]: '{}',
@@ -1230,7 +1230,7 @@ export class SharedTestDatabaseBuilder {
           regolaSupplente: { file: 'ENTRAMBI', folder: 'ENTRAMBI' }
         }),
         [COL_CONF_DOC.POST_PROCESSO]: null,
-        [COL_CONF_DOC.PARAMETRI]: '',
+        [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterieConPermessi: true }),
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GSHEET',
         [COL_CONF_DOC.REGISTRA_DOC]: '{}',

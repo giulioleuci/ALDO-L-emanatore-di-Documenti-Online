@@ -112,15 +112,45 @@ describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / C
     expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['prof@scuola.it']);
   });
 
-  test('DOCENTE_CORRENTE falls back to meta.parametriInput.docenteCorrente', () => {
-    const { cdu, service } = build({ docenteCorrente: 'prof@scuola.it' });
-    expect(cdu.meta.parametriInput.docenteCorrente).toBe('prof@scuola.it');
-    expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['prof@scuola.it']);
-  });
-
-  test('DOCENTE_CORRENTE is empty when focus and metadata are absent', () => {
+  test('DOCENTE_CORRENTE is empty when focus.docente is absent', () => {
     const { cdu, service } = build({});
     expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual([]);
+  });
+
+  test('DOCENTE_CORRENTE resolves on a class-less DOCENTE_AGGREGATO CDU without throwing (cdu.tech.entita.classe unset)', () => {
+    // Regression: contextFrom() used to eagerly call getClasseEntity(cdu), which
+    // throws EntityNotFoundError for class-less recipes -- ApplyPermissionsStep
+    // swallowed that (stopOnError: false), silently skipping ACL. classe must
+    // now be resolved lazily so a role that never reads ctx.classe still works.
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = composeContextBuilder(db).build(
+      {
+        target: 'bianchi@school.it',
+        tipoTarget: 'docente',
+        now: NOW,
+        classiCompetenza: ['5A', '1F'],
+        docenteCorrente: 'bianchi@school.it'
+      },
+      recipe('DOCENTE_AGGREGATO')
+    );
+    expect(cdu.tech.entita.classe).toBeUndefined();
+    const service = composeRisolutoreRuoli(db);
+    expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['bianchi@school.it']);
+  });
+
+  test('CAPO_DIPART and DOCENTI_DIPARTIMENTO resolve on a class-less DIPARTIMENTO_COMPLETO CDU without throwing', () => {
+    const db = new FakeDatabase(fixtureTables());
+    const cdu = composeContextBuilder(db).build(
+      { target: 'SCIENTIFICO_DIP', tipoTarget: 'dipartimento', now: NOW },
+      recipe('DIPARTIMENTO_COMPLETO')
+    );
+    expect(cdu.tech.entita.classe).toBeUndefined();
+    const service = composeRisolutoreRuoli(db);
+    expect(emails(service, 'CAPO_DIPART', cdu)).toEqual(['rossi@school.it']);
+    expect(emails(service, 'DOCENTI_DIPARTIMENTO', cdu)).toEqual([
+      'bianchi@school.it',
+      'rossi@school.it'
+    ]);
   });
 
   test('DOCENTI_DIPARTIMENTO resolves cdu.focus.dipartimento.docenti', () => {

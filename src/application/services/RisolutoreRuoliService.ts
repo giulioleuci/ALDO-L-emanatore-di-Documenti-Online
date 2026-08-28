@@ -130,9 +130,8 @@ export class RisolutoreRuoliService {
   private contextFrom(cdu: Cdu, options: RisolviOptions): RoleContext {
     const materiaRaw = cdu.meta.parametriInput.materiaCorrente;
     const gestione = options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI;
-    return {
+    const ctx = {
       cdu,
-      classe: getClasseEntity(cdu),
       data: new Date(cdu.meta.date.oggi.iso),
       materiaCorrente:
         materiaRaw !== null && materiaRaw.trim() !== '' ? MateriaId.of(materiaRaw) : null,
@@ -140,7 +139,12 @@ export class RisolutoreRuoliService {
       classeId: options.classeId?.trim() || null,
       specifica: options.specifica?.trim() || null,
       kind: options.kind ?? null
-    };
+    } as RoleContext;
+    // Class-less axes (DOCENTE_AGGREGATO, DIPARTIMENTO_COMPLETO) never set
+    // cdu.tech.entita.classe; only strategies that actually touch ctx.classe
+    // should trigger the throw, so resolution stays lazy.
+    Object.defineProperty(ctx, 'classe', { get: () => getClasseEntity(cdu), enumerable: true });
+    return ctx;
   }
 
   private buildRegistro(): Map<string, RoleStrategy> {
@@ -240,8 +244,7 @@ export class RisolutoreRuoliService {
   }
 
   private docenteCorrente(ctx: RoleContext): Email[] {
-    const focusEmail = ctx.cdu.focus.docente?.email;
-    const email = focusEmail?.trim() ? focusEmail : ctx.cdu.meta.parametriInput.docenteCorrente;
+    const email = ctx.cdu.focus.docente?.email;
     return email !== undefined && email !== null && email.trim() !== '' ? [Email.of(email)] : [];
   }
 

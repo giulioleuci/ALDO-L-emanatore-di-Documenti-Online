@@ -5,7 +5,8 @@ import {
   MENU_TITOLO,
   avvioConConferma,
   menuValidazioneDatabase,
-  vociMenu
+  vociMenu,
+  menuBloccaDocumenti
 } from '../../../src/presentation/Menu';
 import { FakeUiFacade } from '../../../test/fakes/FakeUiFacade';
 
@@ -107,4 +108,26 @@ test('menuValidazioneDatabase confirms then delegates', () => {
     return 'Report creato';
   });
   expect(chiamate).toBe(1);
+});
+
+test('menuBloccaDocumenti warns about irreversibility and requires CONFERMA', () => {
+  const ui = new FakeUiFacade();
+  ui.risposteInput.push('CONFERMA');
+  let chiamate = 0;
+  menuBloccaDocumenti(ui, () => {
+    chiamate += 1;
+    return 'Bloccati 10 documenti';
+  });
+  expect(chiamate).toBe(1);
+  expect(ui.messaggi[ui.messaggi.length - 1]!.messaggio).toBe('Bloccati 10 documenti');
+});
+
+test('menuBloccaDocumenti does nothing without confirmation', () => {
+  const ui = new FakeUiFacade();
+  let chiamate = 0;
+  menuBloccaDocumenti(ui, () => {
+    chiamate += 1;
+    return '';
+  });
+  expect(chiamate).toBe(0);
 });

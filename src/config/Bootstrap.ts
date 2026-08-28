@@ -66,6 +66,7 @@ import {
   SpreadsheetReportFacade,
   type ISpreadsheetReportFacade
 } from '../infrastructure/facades/SpreadsheetReportFacade';
+import { LockDocumentsService, type LockOutcome } from '../application/services/LockDocumentsService';
 
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
 interface BootstrapDeps {
@@ -329,6 +330,15 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   }
   c.register('aggregatoreDati', () => new AggregatoreDati(deps.db));
   c.register('alberoCartelle', () => new AlberoCartelle(deps.drive, deps.db));
+  c.register(
+    'lockDocumentsService',
+    (container) =>
+      new LockDocumentsService({
+        logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
+        drive: deps.drive,
+        logger
+      })
+  );
   return c;
 }
 
@@ -416,6 +426,11 @@ export function avviaValidazioneDatabase(c: ServiceContainer): ValidationReport 
     );
   }
   return c.get<DatabaseValidationService>('databaseValidationService').esegui();
+}
+
+/** Data-driven launcher (15 §4): downgrades write access on every LOG_DOCS document (Feature 3). Synchronous — no JobRunner. */
+export function avviaBloccoDocumenti(c: ServiceContainer): LockOutcome {
+  return c.get<LockDocumentsService>('lockDocumentsService').bloccaTutti();
 }
 
 /**

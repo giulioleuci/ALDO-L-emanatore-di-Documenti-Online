@@ -26,6 +26,13 @@ declare function avviaValidazioneDatabase(container: unknown): {
   spreadsheetId: string;
   nome: string;
 };
+declare function menuBloccaDocumenti(ui: unknown, esegui: () => string): void;
+declare function avviaBloccoDocumenti(container: unknown): {
+  totaleDocumenti: number;
+  documentiModificati: number;
+  permessiDeclassati: number;
+  falliti: unknown[];
+};
 declare const GasUiFacade: new () => unknown;
 
 /** Builds the MASTER spreadsheet's custom menu; no container is initialized here. */
@@ -74,10 +81,23 @@ function menu_validazioneDatabase(): void {
   });
 }
 
+/** Downgrades every write permission on this year's documents to read (Feature 3). */
+function menu_bloccaDocumenti(): void {
+  menuBloccaDocumenti(new GasUiFacade(), () => {
+    const esito = avviaBloccoDocumenti(initAldo());
+    return (
+      `Documenti elaborati: ${esito.totaleDocumenti}. ` +
+      `Permessi declassati: ${esito.permessiDeclassati}. ` +
+      `Errori: ${esito.falliti.length}.`
+    );
+  });
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).onOpen = onOpen;
 (globalThis as any).menu_avvioGenerazioneDocumenti = menu_avvioGenerazioneDocumenti;
 (globalThis as any).menu_avvioComunicazioniEmail = menu_avvioComunicazioniEmail;
 (globalThis as any).menu_avvioImportazioni = menu_avvioImportazioni;
 (globalThis as any).menu_validazioneDatabase = menu_validazioneDatabase;
+(globalThis as any).menu_bloccaDocumenti = menu_bloccaDocumenti;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

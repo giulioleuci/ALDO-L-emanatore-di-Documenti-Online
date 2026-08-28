@@ -5,6 +5,7 @@ import {
   avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
   avviaValidazioneDatabase,
+  avviaBloccoDocumenti,
   riprendiJobSospeso,
   initAldo,
   resetAldo,
@@ -371,6 +372,12 @@ describe('buildAldoContainer — optional generator strategies', () => {
 
     const con = buildAldoContainer({ ...baseDeps(), report: new FakeSpreadsheetReportFacade() });
     expect(con.has('databaseValidationService')).toBe(true);
+  });
+
+  test('lockDocumentsService is always registered and its launcher returns the outcome', () => {
+    const c = buildAldoContainer(baseDeps());
+    expect(c.has('lockDocumentsService')).toBe(true);
+    expect(typeof avviaBloccoDocumenti(c).totaleDocumenti).toBe('number');
   });
 });
 

@@ -115,3 +115,12 @@ export function menuValidazioneDatabase(ui: IUiFacade, esegui: () => string): vo
     esegui
   );
 }
+
+export function menuBloccaDocumenti(ui: IUiFacade, esegui: () => string): void {
+  avvioConConferma(
+    ui,
+    'BLOCCA DOCUMENTI',
+    "Tutti i permessi di scrittura sui documenti dell'anno corrente saranno declassati a sola lettura. L'operazione NON è reversibile dal sistema.",
+    esegui
+  );
+}

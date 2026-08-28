@@ -10,6 +10,7 @@ import {
   avviaImportazioneDataDriven,
   avviaImportazioneChunkedDataDriven,
   avviaValidazioneDatabase,
+  avviaBloccoDocumenti,
   riprendiJobSospeso
 } from './config/Bootstrap';
 import {
@@ -17,7 +18,8 @@ import {
   menuGenerazioneDocumenti,
   menuComunicazioniEmail,
   menuImportazioni,
-  menuValidazioneDatabase
+  menuValidazioneDatabase,
+  menuBloccaDocumenti
 } from './presentation/Menu';
 import { GasUiFacade } from './infrastructure/facades/UiFacade';
 
@@ -36,5 +38,7 @@ import { GasUiFacade } from './infrastructure/facades/UiFacade';
 (globalThis as any).menuImportazioni = menuImportazioni;
 (globalThis as any).avviaValidazioneDatabase = avviaValidazioneDatabase;
 (globalThis as any).menuValidazioneDatabase = menuValidazioneDatabase;
+(globalThis as any).avviaBloccoDocumenti = avviaBloccoDocumenti;
+(globalThis as any).menuBloccaDocumenti = menuBloccaDocumenti;
 (globalThis as any).GasUiFacade = GasUiFacade;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

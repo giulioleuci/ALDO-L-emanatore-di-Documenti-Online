@@ -689,6 +689,77 @@ describe('DocumentGenerationService.generateForClasseMateria', () => {
   });
 });
 
+describe('DocumentGenerationService.generateForClasseDocente', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  test('generateForClasseDocente builds a CDU with focus.docente set and no materia narrowing', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_CLASSE_DOCENTE',
+      TIPO: 'DOCUMENTO_CLASSE_DOCENTE',
+      GENERATORE: 'CLASSE_DOCENTE',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Verbale_{{focus.docente.email}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { strategy });
+
+    const result = service.generateForClasseDocente(
+      ClasseId.of('5A'),
+      'bianchi@school.it',
+      'CD_CLASSE_DOCENTE'
+    );
+
+    expect(strategy.cdu?.focus.docente?.email).toBe('bianchi@school.it');
+    expect(strategy.cdu?.focus.materia).toBeUndefined();
+    expect(strategy.cdu?.focus.classe?.consiglioDiClasse?.length).toBeGreaterThan(0);
+    expect(strategy.cdu?.focus.classe?.anagrafica.anno).toBe(5);
+    expect(result.status).toBe('GENERATO');
+  });
+
+  test('throws when the docente is not on the class council', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_CLASSE_DOCENTE',
+      TIPO: 'DOCUMENTO_CLASSE_DOCENTE',
+      GENERATORE: 'CLASSE_DOCENTE',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Verbale_{{focus.docente.email}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, { strategy });
+
+    expect(() =>
+      service.generateForClasseDocente(ClasseId.of('5A'), 'ignoto@school.it', 'CD_CLASSE_DOCENTE')
+    ).toThrow(/docente ignoto@school\.it non trovato nel consiglio di classe/);
+  });
+});
+
 describe('DocumentGenerationService.generateForDipartimento', () => {
   class CapturingStrategy implements GeneratorStrategy {
     cdu: Cdu | undefined;

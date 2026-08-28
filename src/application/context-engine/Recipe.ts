@@ -151,6 +151,22 @@ export const RECIPES: Record<string, string[]> = {
     'docenteClasseMateriaFocus'
   ],
   CLASSE_MATERIA: ['school', 'class', 'consiglio', 'classeMateriaFocus'],
+  CLASSE_DOCENTE: [
+    'school',
+    'class',
+    'students',
+    'tutor',
+    'consiglio',
+    'materie',
+    'esame',
+    'progetti',
+    'partner',
+    'rappresentanti',
+    'statistiche',
+    'storicoClasse',
+    'pianiPersClasse',
+    'docenteClasseFocus'
+  ],
   ALUNNO_DETTAGLIATO: [
     'school',
     'class',

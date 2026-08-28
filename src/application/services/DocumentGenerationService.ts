@@ -137,6 +137,22 @@ export class DocumentGenerationService {
     );
   }
 
+  /** One document per (classe, docente) pair — every subject that teacher holds in this class. */
+  generateForClasseDocente(
+    target: ClasseId,
+    docenteEmail: string,
+    confDocId: string,
+    jobId?: string
+  ): DocumentGenerationResult {
+    return this.generateForClasseWithRecipe(
+      target,
+      confDocId,
+      'CLASSE_DOCENTE',
+      { docenteCorrente: docenteEmail },
+      jobId
+    );
+  }
+
   private generateForClasseWithRecipe(
     target: ClasseId,
     confDocId: string,

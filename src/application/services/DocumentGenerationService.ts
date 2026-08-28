@@ -105,7 +105,7 @@ export class DocumentGenerationService {
   }
 
   /** One document per (docente, materia) cattedra of the class council — e.g. "programma svolto". */
-  generateForClasseDocenteClasseMateria(
+  generateForDocenteClasseMateria(
     target: ClasseId,
     docenteEmail: string,
     materiaId: string,

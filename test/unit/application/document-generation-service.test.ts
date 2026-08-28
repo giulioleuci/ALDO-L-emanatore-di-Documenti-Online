@@ -523,7 +523,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
   });
 });
 
-describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () => {
+describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
   class CapturingStrategy implements GeneratorStrategy {
     cdu: Cdu | undefined;
     render(_fileId: string, cdu: Cdu): void {
@@ -563,7 +563,7 @@ describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () =
     const strategy = new CapturingStrategy();
     const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
 
-    const result = service.generateForClasseDocenteClasseMateria(
+    const result = service.generateForDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
@@ -593,14 +593,14 @@ describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () =
       return pipeline;
     };
 
-    service.generateForClasseDocenteClasseMateria(
+    service.generateForDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
       'CD_DOCENTE_CLASSE_MATERIA',
       'job-1'
     );
-    service.generateForClasseDocenteClasseMateria(
+    service.generateForDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
@@ -610,7 +610,7 @@ describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () =
 
     expect(seen).toHaveLength(1);
 
-    service.generateForClasseDocenteClasseMateria(
+    service.generateForDocenteClasseMateria(
       ClasseId.of('5A'),
       'bianchi@school.it',
       'MATE',
@@ -634,7 +634,7 @@ describe('DocumentGenerationService.generateForClasseDocenteClasseMateria', () =
     const { service } = wire(tables, { registry: new Map([['CAPTURING', strategy]]) });
 
     expect(() =>
-      service.generateForClasseDocenteClasseMateria(
+      service.generateForDocenteClasseMateria(
         ClasseId.of('5A'),
         'ignoto@school.it',
         'MATE',

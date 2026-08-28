@@ -98,7 +98,8 @@ function isPianoPersonalizzato(ctx: PipelineContext): boolean {
  * RegisterDocumentStep's LOG_DOCS row (10 §4/§11): the focused plan subtype
  * for PIANO_PERS, the `materia::docente` cattedra pair for
  * DOCUMENTO_DOCENTE_CLASSE_MATERIA (one document per teacher/subject on the class
- * council), empty otherwise.
+ * council), the materia for DOCUMENTO_CLASSE_MATERIA (one document per
+ * class/subject), empty otherwise.
  */
 function sottotipo(ctx: PipelineContext): string {
   if (isPianoPersonalizzato(ctx)) return cdu(ctx).focus.piano?.tipo ?? '';
@@ -106,6 +107,9 @@ function sottotipo(ctx: PipelineContext): string {
     const materiaId = cdu(ctx).focus.materia?.sigla ?? '';
     const docenteEmail = cdu(ctx).focus.docente?.email ?? '';
     return `${materiaId}::${docenteEmail}`;
+  }
+  if (String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '') === 'DOCUMENTO_CLASSE_MATERIA') {
+    return cdu(ctx).focus.materia?.sigla ?? '';
   }
   return '';
 }

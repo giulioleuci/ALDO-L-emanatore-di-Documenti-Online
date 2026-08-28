@@ -78,6 +78,18 @@ function buildDocenteClasseMateriaCdu(
   );
 }
 
+function buildClasseMateriaCdu(db: FakeDatabase, materiaCorrente: string): Cdu {
+  return composeContextBuilder(db).build(
+    {
+      target: '5A',
+      tipoTarget: 'classe',
+      materiaCorrente,
+      now: new Date('2026-07-01T09:00:00Z')
+    },
+    recipe('CLASSE_MATERIA')
+  );
+}
+
 function pianoConfig(): Record<string, unknown> {
   return {
     ...fixtureTables().CONF_DOC[0]!,
@@ -805,6 +817,23 @@ test('RegisterDocumentStep writes SOTTOTIPO as materiaId::docenteEmail for DOCUM
   new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
   const row = db.table('LOG_DOCS').find((r) => r.ID === 'file_docmat');
   expect(row?.SOTTOTIPO).toBe('MATE::bianchi@school.it');
+});
+
+test('RegisterDocumentStep writes SOTTOTIPO as materiaId for DOCUMENTO_CLASSE_MATERIA', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const ctx = baseCtx(db);
+  const config = { ...fixtureTables().CONF_DOC[0]!, TIPO: 'DOCUMENTO_CLASSE_MATERIA' };
+  ctx.set('config', config);
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildClasseMateriaCdu(db, 'MATE'));
+  ctx.set('newFileId', 'file_classemat');
+  ctx.set('newFileLink', 'https://drive/file_classemat');
+  ctx.set('nomeFile', 'Programma_MATE');
+  ctx.set('destFolderPath', 'Docs');
+
+  new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+
+  expect(db.table('LOG_DOCS').find((r) => r.ID === 'file_classemat')?.SOTTOTIPO).toBe('MATE');
 });
 
 test('CheckDuplicatesStep: DOCUMENTO_DOCENTE_CLASSE_MATERIA identity includes the materia::docente SOTTOTIPO', () => {

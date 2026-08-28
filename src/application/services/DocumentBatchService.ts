@@ -28,6 +28,11 @@ export interface DocenteMateriaBatchTarget {
   materiaId: string;
 }
 
+export interface ClasseMateriaBatchTarget {
+  classe: string;
+  materiaId: string;
+}
+
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
 interface BatchResumeState {
   confDocId: string;
@@ -37,6 +42,7 @@ interface BatchResumeState {
   errori: string[];
   planTargets?: PianoBatchTarget[];
   docenteMateriaTargets?: DocenteMateriaBatchTarget[];
+  classeMateriaTargets?: ClasseMateriaBatchTarget[];
 }
 export interface BatchCheckpoint extends BatchResumeState {
   percentage: number;
@@ -107,6 +113,9 @@ export class DocumentBatchService {
     }
     if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
       return yield* this.generateDocentiMateria(config, confDocId, jobId, resume, processed, errori);
+    }
+    if (config.tipo === 'DOCUMENTO_CLASSE_MATERIA') {
+      return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
     }
     if (config.tipo === 'DIPARTIMENTO') {
       return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
@@ -346,6 +355,108 @@ export class DocumentBatchService {
     this.monitor?.completeJob(
       jobId,
       `${processed.length} documenti docente/materia elaborati, ${errori.length} errori`
+    );
+    return { success, totale: targets.length, processed, errori };
+  }
+
+  /** One document per (classe, materia), regardless of how many teachers hold that slot. */
+  private *generateClassiMateria(
+    config: ConfigurazioneDocumento,
+    confDocId: string,
+    jobId: string,
+    resume: BatchResumeState | null,
+    processed: string[],
+    errori: string[]
+  ): Generator<BatchCheckpoint, BatchResult, void> {
+    let targets: ClasseMateriaBatchTarget[];
+    if (resume === null) {
+      targets = [];
+      const seen = new Set<string>();
+      const attive = this.classi.filterPerGestioneArticolazione(
+        this.classi.findAttive(),
+        config.gestioneArticolazione
+      );
+      for (const classe of attive) {
+        const assignments = this.teachingAssignments.resolveConsiglio(classe, this.now, {
+          includeReligioneAlt: true
+        });
+        for (const assignment of assignments) {
+          const classeId = classe.id ?? '';
+          const materiaId =
+            assignment.slot.specifica === null
+              ? assignment.slot.materia.value
+              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
+          const key = `${classeId}:${materiaId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          targets.push({ classe: classeId, materiaId });
+        }
+      }
+    } else {
+      if (resume.classeMateriaTargets === undefined) {
+        throw new ConfigurationError(
+          `Stato di ripresa ${confDocId} privo dei target classe/materia persistiti`
+        );
+      }
+      targets = resume.classeMateriaTargets.map((target) => ({ ...target }));
+    }
+
+    if (resume === null) {
+      this.monitor?.registerJob(jobId);
+      this.monitor?.startJob(jobId);
+    }
+    this.logger?.logBatchStart(targets.length);
+
+    for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
+      const target = targets[i]!;
+      const targetId = `${target.classe}:${target.materiaId}`;
+      this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
+      let message: string;
+      const itemStartedAt = Date.now();
+      try {
+        const result = this.documenti.generateForClasseMateria(
+          ClasseId.of(target.classe),
+          target.materiaId,
+          confDocId,
+          jobId
+        );
+        const name = result.fileName ?? targetId;
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errori.push(`${targetId}: ${reason}`);
+        this.logger?.logSummary(
+          'Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${targetId}: ${reason}`,
+          { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+        );
+        message = `Errore ${i + 1}/${targets.length} ${targetId}: ${reason}`;
+      }
+      processed.push(targetId);
+      const percentage = ((i + 1) / targets.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, message);
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice(),
+        classeMateriaTargets: targets
+      };
+    }
+
+    const success = errori.length === 0;
+    this.monitor?.completeJob(
+      jobId,
+      `${processed.length} documenti classe/materia elaborati, ${errori.length} errori`
     );
     return { success, totale: targets.length, processed, errori };
   }

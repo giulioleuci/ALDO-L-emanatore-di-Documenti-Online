@@ -941,6 +941,128 @@ describe('DocumentBatchService.generateDocentiMateria', () => {
   });
 });
 
+function wireClassiMateria(options: { failFor?: string } = {}) {
+  const db = new FakeDatabase(fixtureTables());
+  const generated: Array<{ classe: string; materia: string; confDocId: string; jobId?: string }> = [];
+  const documenti = {
+    generateForClasseMateria: (target: ClasseId, materiaId: string, confDocId: string, jobId?: string) => {
+      const key = `${target.value}:${materiaId}`;
+      if (key === options.failFor) throw new Error('template non trovato');
+      generated.push({ classe: target.value, materia: materiaId, confDocId, jobId });
+      return {
+        fileId: `file_${target.value}_${materiaId}`,
+        fileName: `Doc_${target.value}_${materiaId}`,
+        fileLink: `https://docs.google.com/document/d/file_${target.value}_${materiaId}/edit`,
+        status: 'GENERATO',
+        durationMs: 8572
+      };
+    }
+  } as unknown as DocumentGenerationService;
+  const configs = {
+    findById: (id: string) =>
+      id === 'SCHEDA_MATERIA'
+        ? new ConfigurazioneDocumento({
+            ID: id,
+            TIPO: 'DOCUMENTO_CLASSE_MATERIA',
+            GENERATORE: 'SCHEDA_MATERIA'
+          })
+        : null
+  };
+  const councilByClasse: Record<string, TeachingAssignment[]> = {
+    '5A': [
+      fakeAssignment('MATE', 'bianchi@school.it'),
+      fakeAssignment('MATE', 'rossi@school.it'),
+      fakeAssignment('FISI', 'bianchi@school.it'),
+      fakeAssignment('IRC', 'verdi@school.it')
+    ],
+    '1F': [fakeAssignment('MATE', 'rossi@school.it')]
+  };
+  let resolveCalls = 0;
+  const resolvedClassIds: string[] = [];
+  const teachingAssignments = {
+    resolveConsiglio: (classe: Classe) => {
+      resolveCalls++;
+      resolvedClassIds.push(classe.id ?? '');
+      return councilByClasse[classe.id ?? ''] ?? [];
+    },
+    resolveMateria: () => []
+  } as unknown as ITeachingAssignmentResolver;
+  const service = new DocumentBatchService(
+    new ClasseRepository(db),
+    new AlunnoRepository(db),
+    configs,
+    documenti,
+    teachingAssignments,
+    FIXED_NOW,
+    noopDipartimenti
+  );
+  return { service, generated, getResolveCalls: () => resolveCalls, resolvedClassIds };
+}
+
+describe('DocumentBatchService.generateClassiMateria', () => {
+  test('DOCUMENTO_CLASSE_MATERIA emits one target per (classe, materia), not per docente', () => {
+    const { service, generated, resolvedClassIds } = wireClassiMateria();
+
+    drain(service.batchGenerateHandler({ confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }));
+
+    expect(generated).toEqual([
+      { classe: '5A', materia: 'MATE', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
+      { classe: '5A', materia: 'FISI', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
+      { classe: '5A', materia: 'IRC', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
+      { classe: '1F', materia: 'MATE', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }
+    ]);
+    expect(resolvedClassIds).toEqual(['5A', '1F']);
+  });
+
+  test('resumes persisted classe/materia targets without re-querying the teaching-assignment resolver', () => {
+    const { service, generated, getResolveCalls } = wireClassiMateria();
+
+    const { result } = drain(
+      service.batchGenerateHandler({
+        confDocId: 'SCHEDA_MATERIA',
+        jobId: 'job_cm',
+        resumeState: {
+          confDocId: 'SCHEDA_MATERIA',
+          jobId: 'job_cm',
+          nextIndex: 2,
+          processed: ['5A:MATE', '5A:FISI'],
+          errori: [],
+          classeMateriaTargets: [
+            { classe: '5A', materiaId: 'MATE' },
+            { classe: '5A', materiaId: 'FISI' },
+            { classe: '5A', materiaId: 'IRC' },
+            { classe: '1F', materiaId: 'MATE' }
+          ]
+        }
+      })
+    );
+
+    expect(getResolveCalls()).toBe(0);
+    expect(generated).toEqual([
+      { classe: '5A', materia: 'IRC', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
+      { classe: '1F', materia: 'MATE', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }
+    ]);
+    expect(result.processed).toEqual(['5A:MATE', '5A:FISI', '5A:IRC', '1F:MATE']);
+  });
+
+  test('a single classe/materia failure is isolated and the batch continues', () => {
+    const { service, generated } = wireClassiMateria({ failFor: '5A:FISI' });
+
+    const { result } = drain(service.batchGenerateHandler({ confDocId: 'SCHEDA_MATERIA' }));
+
+    expect(generated.map(({ classe, materia }) => `${classe}:${materia}`)).toEqual([
+      '5A:MATE',
+      '5A:IRC',
+      '1F:MATE'
+    ]);
+    expect(result).toMatchObject({
+      success: false,
+      errori: ['5A:FISI: template non trovato'],
+      processed: ['5A:MATE', '5A:FISI', '5A:IRC', '1F:MATE']
+    });
+  });
+});
+
 /** Drains a batch generator to completion, returning every yielded checkpoint plus the final result. */
 function drain<T, R>(gen: Generator<T, R, void>): { checkpoints: T[]; result: R } {
   const checkpoints: T[] = [];

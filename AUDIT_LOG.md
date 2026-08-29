@@ -26,8 +26,8 @@ non sono candidate a modifica.
 Decisione: mantenere `INFO` solo per confini operativi, lifecycle e risultati
 che l'operatore deve vedere con il livello predefinito; spostare a `DEBUG` la
 diagnostica di configurazione, i dettagli per riga/elemento e le informazioni
-già riassunte dalla riga di completamento. Nessuna modifica al codice è stata
-eseguita.
+già riassunte dalla riga di completamento. Le modifiche raccomandate in questo
+report sono state applicate il 2026-08-29.
 
 ## Regola di lettura della tabella
 
@@ -100,12 +100,12 @@ spazi vengono eliminati. Se la chiamata avviene dentro una `Pipeline`,
 I `console.*` rimanenti rilevati sono JSDoc o test mock e non producono log di
 runtime. Non sono inclusi nelle decisioni.
 
-## Implementazione consigliata
+## Modifiche applicate
 
-1. Applicare esclusivamente i cambi `INFO → DEBUG` indicati sopra, senza
+1. Applicati esclusivamente i cambi `INFO → DEBUG` indicati sopra, senza
    introdurre spazi davanti ai messaggi.
-2. Rimuovere i tre spazi manuali nelle cinque righe dry-run.
-3. Non sostituire i fallback di `Pipeline`/`JobRunner`: servono a preservare
+2. Rimossi i tre spazi manuali nelle cinque righe dry-run.
+3. I fallback di `Pipeline`/`JobRunner` non sono stati sostituiti: servono a preservare
    la compatibilità con logger minimi. Non aggiungere `withPosition` alle
    librerie di basso livello: quando ricevono `LoggerService`, l'indentazione
    si propaga già dal chiamante; quando non lo ricevono, non esiste un albero

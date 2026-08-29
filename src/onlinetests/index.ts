@@ -824,7 +824,7 @@ function purgeTable(db: SheetDbAdapter, table: string, pkColumn: string): number
  */
 export function dumpOnlineCoverage(): void {
   const coverage = (globalThis as { __coverage__?: unknown }).__coverage__ ?? {};
-  ServiceFactory.getLogger().info(JSON.stringify(coverage));
+  ServiceFactory.getLogger().debug(JSON.stringify(coverage));
 }
 
 export function creaDatiMockDrive(): SharedTestDatabase {

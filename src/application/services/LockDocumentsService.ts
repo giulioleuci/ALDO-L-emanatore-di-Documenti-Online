@@ -73,7 +73,7 @@ export class LockDocumentsService {
         if (riusciti > 0) {
           esito.documentiModificati += 1;
           esito.permessiDeclassati += riusciti;
-          this.logger.info(
+          this.logger.debug(
             `Blocco documenti: ${fileId} — ${riusciti} permessi da scrittura a lettura`
           );
         }

@@ -173,23 +173,23 @@ describe('dumpOnlineCoverage', () => {
   });
 
   it('logs the Istanbul coverage map when instrumentation populated it', () => {
-    const info = jest.fn();
-    const loggerSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ info } as never);
+    const debug = jest.fn();
+    const loggerSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ debug } as never);
     (globalThis as { __coverage__?: unknown }).__coverage__ = { 'src/foo.ts': { s: { '0': 1 } } };
 
     dumpOnlineCoverage();
 
-    expect(info).toHaveBeenCalledWith(JSON.stringify({ 'src/foo.ts': { s: { '0': 1 } } }));
+    expect(debug).toHaveBeenCalledWith(JSON.stringify({ 'src/foo.ts': { s: { '0': 1 } } }));
     loggerSpy.mockRestore();
   });
 
   it('logs an empty object when the bundle was not instrumented', () => {
-    const info = jest.fn();
-    const loggerSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ info } as never);
+    const debug = jest.fn();
+    const loggerSpy = jest.spyOn(ServiceFactory, 'getLogger').mockReturnValue({ debug } as never);
 
     dumpOnlineCoverage();
 
-    expect(info).toHaveBeenCalledWith('{}');
+    expect(debug).toHaveBeenCalledWith('{}');
     loggerSpy.mockRestore();
   });
 });

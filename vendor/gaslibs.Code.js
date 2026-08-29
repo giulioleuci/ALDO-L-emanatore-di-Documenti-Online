@@ -15796,7 +15796,7 @@ class DriveFileManager {
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would copy ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
-        this._logger.info(`[DRY-RUN]   - Copy ${req.fileId} as "${req.name || 'Copy'}"${req.destinationFolder ? ` to folder ${req.destinationFolder}` : ''}`);
+        this._logger.debug(`[DRY-RUN] - Copy ${req.fileId} as "${req.name || 'Copy'}"${req.destinationFolder ? ` to folder ${req.destinationFolder}` : ''}`);
       });
 
 
@@ -15860,7 +15860,7 @@ class DriveFileManager {
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would move ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
-        this._logger.info(`[DRY-RUN]   - Move ${req.fileId} to ${req.newParent}${req.removeFromOtherParents ? ' (removing from other parents)' : ''}`);
+        this._logger.debug(`[DRY-RUN] - Move ${req.fileId} to ${req.newParent}${req.removeFromOtherParents ? ' (removing from other parents)' : ''}`);
       });
 
 
@@ -15954,7 +15954,7 @@ class DriveFileManager {
     if (this._isDryRun(options)) {
       this._logger.info(`[DRY-RUN] Would rename ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
-        this._logger.info(`[DRY-RUN]   - Rename ${req.fileId} to "${req.newName}"`);
+        this._logger.debug(`[DRY-RUN] - Rename ${req.fileId} to "${req.newName}"`);
       });
 
 
@@ -16250,7 +16250,7 @@ class DriveMetadataService {
       this._logger.info(`[DRY-RUN] Would update metadata for ${reqsArray.length} file(s)`);
       reqsArray.forEach(req => {
         const metadataFields = Object.keys(req.metadata || {}).join(', ');
-        this._logger.info(`[DRY-RUN]   - Update ${req.fileId} metadata: ${metadataFields}`);
+        this._logger.debug(`[DRY-RUN] - Update ${req.fileId} metadata: ${metadataFields}`);
       });
 
 
@@ -16499,7 +16499,7 @@ class DriveService extends GoogleService {
 
     this._dryRun = options.dryRun || false;
     if (this._dryRun) {
-      this._logger.info('[DRY-RUN] DriveService initialized in dry-run mode. No mutations will be performed.');
+      this._logger.debug('[DRY-RUN] DriveService initialized in dry-run mode. No mutations will be performed.');
     }
 
 
@@ -19439,7 +19439,7 @@ class SpreadsheetGridManager {
         });
       });
     });
-    this._logger.info(`Found ${protectedRanges.length} protected range(s)`);
+    this._logger.debug(`Found ${protectedRanges.length} protected range(s)`);
     return protectedRanges;
   }
   deleteProtectedRanges(spreadsheetId, protectedRangeIds) {
@@ -19757,7 +19757,7 @@ class SpreadsheetService extends GoogleService {
       methods: ['createSpreadsheet', 'openStandard', 'getActiveStandard', 'getStandardApp', 'flushBatch', '_verifyAdvancedSheets']
     }]);
     if (this._dryRun) {
-      this._logger.info('[DRY-RUN] SpreadsheetService initialized in dry-run mode.');
+      this._logger.debug('[DRY-RUN] SpreadsheetService initialized in dry-run mode.');
     }
   }
 
@@ -26108,7 +26108,7 @@ class DocumentProcessorInjector {
   }
   _executeRowLoopOperation(documentId, op) {
     try {
-      this.facade.logger.info(`Executing row loop: ${op.dataArray.length} items at table ${op.tableIndex}, row ${op.rowIndex}`);
+      this.facade.logger.debug(`Executing row loop: ${op.dataArray.length} items at table ${op.tableIndex}, row ${op.rowIndex}`);
       const templateRow = this.facade.documentService.getTableRow(documentId, op.tableIndex, op.rowIndex);
       if (!templateRow || !templateRow.cells) {
         this.facade.logger.warn(`Could not get template row data for table ${op.tableIndex}, row ${op.rowIndex}`);
@@ -26149,7 +26149,7 @@ class DocumentProcessorInjector {
   }
   _executeColumnLoopOperation(documentId, op) {
     try {
-      this.facade.logger.info(`Executing column loop: ${op.dataArray.length} items at table ${op.tableIndex}, column ${op.cellIndex}`);
+      this.facade.logger.debug(`Executing column loop: ${op.dataArray.length} items at table ${op.tableIndex}, column ${op.cellIndex}`);
       const tableData = this.facade.documentService.getTableData(documentId, op.tableIndex);
       if (!tableData || tableData.numRows === 0) {
         this.facade.logger.warn(`Could not get table data for table ${op.tableIndex}`);
@@ -26363,7 +26363,7 @@ class DocumentProcessorInjector {
 
   _executeListLoopOperation(documentId, op) {
     try {
-      this.facade.logger.info(`Executing list loop: ${op.dataArray.length} items at paragraph ${op.paragraphIndex}`);
+      this.facade.logger.debug(`Executing list loop: ${op.dataArray.length} items at paragraph ${op.paragraphIndex}`);
       const doc = this.facade.documentService.openStandard(documentId);
       const body = doc.getBody();
       const rangeElement = body.findText(this._escapeForFindText(op.fullMatch));
@@ -26475,7 +26475,7 @@ class DocumentProcessorInjector {
 
   _executeTableInsertOperation(documentId, op) {
     try {
-      this.facade.logger.info(`Executing table insert: ${op.data.length} rows at marker "${op.placeholder}"`);
+      this.facade.logger.debug(`Executing table insert: ${op.data.length} rows at marker "${op.placeholder}"`);
       this.facade.documentService.insertTableAtMarker(documentId, op.placeholder, op.data, op.options);
 
 
@@ -26736,7 +26736,7 @@ class _DocumentProcessor {
       this.documentService._executeBatchUpdate(documentId, batchRequests);
       this.logger.debug(`Batch update completed successfully`);
     } else {
-      this.logger.info(`No batch operations to execute`);
+      this.logger.debug(`No batch operations to execute`);
     }
   }
 }
@@ -49921,10 +49921,10 @@ class DatabaseConnectionManager {
         if (pendingChanges.length > 0) {
           this._logger.info(`[DRY-RUN] Would save changes to ${pendingChanges.length} table(s):`);
           pendingChanges.forEach(change => {
-            this._logger.info(`[DRY-RUN]   - ${change.table}: ${change.inserts} inserts, ${change.updates} updates, ${change.deletes} deletes`);
+            this._logger.debug(`[DRY-RUN] - ${change.table}: ${change.inserts} inserts, ${change.updates} updates, ${change.deletes} deletes`);
           });
         } else {
-          this._logger.info('[DRY-RUN] No pending changes to save');
+          this._logger.debug('[DRY-RUN] No pending changes to save');
         }
         return {
           success: true,
@@ -50214,7 +50214,7 @@ class DatabaseService {
       methods: ['_isDryRun', 'getMetadata']
     }]);
     if (this._dryRun) {
-      this._logger.info('[DRY-RUN] DatabaseService initialized in dry-run mode.');
+      this._logger.debug('[DRY-RUN] DatabaseService initialized in dry-run mode.');
     }
     this._initialize();
   }
@@ -58950,7 +58950,7 @@ class ProducerStep extends Step {
 
 
     this.setResult(context, this._outputKey, result);
-    this._logger.info(`[${this._name}] Decision made: ${this._outputKey} = ${result}`);
+    this._logger.debug(`[${this._name}] Decision made: ${this._outputKey} = ${result}`);
   }
 }
 ;
@@ -59048,7 +59048,7 @@ class ConsumerStep extends Step {
     if (inputValue === null || inputValue === undefined) {
       throw new Error(`ConsumerStep (${this._name}): Input value '${this._inputKey}' is null or undefined. ` + `Ensure a ProducerStep has written this value to the context.`);
     }
-    this._logger.info(`[${this._name}] Performing action with input: ${inputValue}`);
+    this._logger.debug(`[${this._name}] Performing action with input: ${inputValue}`);
 
 
     const result = this.performAction(inputValue, context);
@@ -59056,9 +59056,9 @@ class ConsumerStep extends Step {
 
     if (this._outputKey) {
       this.setResult(context, this._outputKey, result);
-      this._logger.info(`[${this._name}] Action completed: ${this._outputKey} = ${JSON.stringify(result)}`);
+      this._logger.debug(`[${this._name}] Action completed: ${this._outputKey} = ${JSON.stringify(result)}`);
     } else {
-      this._logger.info(`[${this._name}] Action completed successfully`);
+      this._logger.debug(`[${this._name}] Action completed successfully`);
     }
   }
 }
@@ -64899,7 +64899,7 @@ class SourceStrategy {
 
 
   extract(config) {
-    this.logger.info(`[SourceStrategy] Extracting data with config:`, JSON.stringify(config));
+    this.logger.debug(`[SourceStrategy] Extracting data with config:`, JSON.stringify(config));
     try {
       const data = this._extractData(config);
       if (!Array.isArray(data)) {
@@ -64907,7 +64907,7 @@ class SourceStrategy {
           resultType: typeof data
         });
       }
-      this.logger.info(`[SourceStrategy] Successfully extracted ${data.length} rows`);
+      this.logger.debug(`[SourceStrategy] Successfully extracted ${data.length} rows`);
       return data;
     } catch (error) {
       if (error instanceof SourceError) {
@@ -65077,7 +65077,7 @@ class SheetByIdStrategy extends SourceStrategy {
     const hasHeaders = config.hasHeaders !== false; 
     const values = this._resolveValues(config);
     const data = this._arrayToObjects(values, hasHeaders);
-    this.logger.info(`[SheetByIdStrategy] Extracted ${data.length} rows from sheet`);
+    this.logger.debug(`[SheetByIdStrategy] Extracted ${data.length} rows from sheet`);
     return data;
   }
 
@@ -65361,7 +65361,7 @@ class FolderStrategy extends SourceStrategy {
     const fileNamePattern = config.fileNamePattern;
     try {
 
-      this.logger.info(`[FolderStrategy] Searching for spreadsheets in folder: ${folderId}`);
+      this.logger.debug(`[FolderStrategy] Searching for spreadsheets in folder: ${folderId}`);
 
 
       const query = `'${folderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
@@ -65393,10 +65393,10 @@ class FolderStrategy extends SourceStrategy {
 
 
         if (regex && !regex.test(fileName)) {
-          this.logger.info(`[FolderStrategy] Skipping file (pattern mismatch): ${fileName}`);
+          this.logger.debug(`[FolderStrategy] Skipping file (pattern mismatch): ${fileName}`);
           continue;
         }
-        this.logger.info(`[FolderStrategy] Processing file: ${fileName}`);
+        this.logger.debug(`[FolderStrategy] Processing file: ${fileName}`);
         try {
           const fileData = this._extractFromFile(fileId, fileName, range, tabName, hasHeaders, includeSourceFile);
           if (mergeData) {
@@ -65414,7 +65414,7 @@ class FolderStrategy extends SourceStrategy {
 
         }
       }
-      this.logger.info(`[FolderStrategy] Processed ${fileCount} files, extracted ${allData.length} total rows`);
+      this.logger.debug(`[FolderStrategy] Processed ${fileCount} files, extracted ${allData.length} total rows`);
       if (fileCount === 0) {
         this.logger.warn(`[FolderStrategy] No spreadsheet files found in folder`);
       }
@@ -65565,7 +65565,7 @@ class SourceStrategyFactory {
       this.logger.warn(`[SourceStrategyFactory] Overwriting existing strategy: ${name}`);
     }
     this._strategies.set(name, strategyClass);
-    this.logger.info(`[SourceStrategyFactory] Registered strategy: ${name}`);
+    this.logger.debug(`[SourceStrategyFactory] Registered strategy: ${name}`);
   }
 
 
@@ -66024,7 +66024,7 @@ class Transformer {
     const calculated = config.calculated || {};
     const normalization = config.normalization || {};
     const validation = config.validation || null;
-    this._logger.info(`[Transformer] Transforming ${sourceData.length} rows`);
+    this._logger.debug(`[Transformer] Transforming ${sourceData.length} rows`);
     try {
       const transformedData = sourceData.map((row, index) => {
         return this._transformRow(row, index, mapping, calculated, normalization, validation);
@@ -66033,7 +66033,7 @@ class Transformer {
       if (rejectedCount > 0) {
         this._logger.warn(`[Transformer] ${rejectedCount} rows rejected due to validation failures`);
       }
-      this._logger.info(`[Transformer] Successfully transformed ${transformedData.length} rows`);
+      this._logger.debug(`[Transformer] Successfully transformed ${transformedData.length} rows`);
       return transformedData;
     } catch (error) {
       if (error instanceof TransformError) {
@@ -66174,7 +66174,7 @@ class Loader {
     const conflictResolution = loadConfig.conflictResolution;
     const conflictKey = loadConfig.conflictKey;
     const updateIfNewer = loadConfig.updateIfNewer || {};
-    this.logger.info(`[Loader] Loading ${data.length} rows into table "${targetTable}" using strategy "${conflictResolution}"`);
+    this.logger.debug(`[Loader] Loading ${data.length} rows into table "${targetTable}" using strategy "${conflictResolution}"`);
     try {
 
       if (!this._db.tables[targetTable]) {
@@ -66207,7 +66207,7 @@ class Loader {
       }
 
 
-      this.logger.info('[Loader] Saving changes to database...');
+      this.logger.debug('[Loader] Saving changes to database...');
       this._db.save();
       this.logger.info(`[Loader] Load complete: ${JSON.stringify(result)}`);
       return result;
@@ -66258,7 +66258,7 @@ class Loader {
     const conflictResolution = loadConfig.conflictResolution;
     const conflictKey = loadConfig.conflictKey;
     const updateIfNewer = loadConfig.updateIfNewer || {};
-    this.logger.info(`[Loader] Loading chunk of ${data.length} rows into table "${targetTable}" using strategy "${conflictResolution}" (isFirstChunk=${isFirstChunk})`);
+    this.logger.debug(`[Loader] Loading chunk of ${data.length} rows into table "${targetTable}" using strategy "${conflictResolution}" (isFirstChunk=${isFirstChunk})`);
     try {
       if (!this._db.tables[targetTable]) {
         throw new LoadError(`Target table "${targetTable}" not found in database`, 'TABLE_NOT_FOUND', {
@@ -66308,9 +66308,9 @@ class Loader {
 
 
 
-      this.logger.info('[Loader] Saving chunk to database...');
+      this.logger.debug('[Loader] Saving chunk to database...');
       this._db.save();
-      this.logger.info(`[Loader] Chunk load complete: ${JSON.stringify(result)}`);
+      this.logger.debug(`[Loader] Chunk load complete: ${JSON.stringify(result)}`);
       return result;
     } catch (error) {
       if (error instanceof LoadError) {
@@ -66357,7 +66357,7 @@ class Loader {
       if (rowsToInsert.length > 0) {
         table.insertRows(rowsToInsert);
         inserted = rowsToInsert.length;
-        this.logger.info(`[Loader] Bulk inserted ${inserted} new rows`);
+        this.logger.debug(`[Loader] Bulk inserted ${inserted} new rows`);
       }
       return {
         success: true,
@@ -66483,7 +66483,7 @@ class Loader {
       if (rowsToInsert.length > 0) {
         table.insertRows(rowsToInsert);
         inserted = rowsToInsert.length;
-        this.logger.info(`[Loader] Bulk inserted ${inserted} new rows`);
+        this.logger.debug(`[Loader] Bulk inserted ${inserted} new rows`);
       }
 
 
@@ -66496,7 +66496,7 @@ class Loader {
         updated++;
       }
       if (updated > 0) {
-        this.logger.info(`[Loader] Updated ${updated} existing rows`);
+        this.logger.debug(`[Loader] Updated ${updated} existing rows`);
       }
       return {
         success: true,
@@ -66536,7 +66536,7 @@ class Loader {
         deleted++;
       }
       if (deleted > 0) {
-        this.logger.info(`[Loader] Deleted ${deleted} existing rows`);
+        this.logger.debug(`[Loader] Deleted ${deleted} existing rows`);
       }
 
 
@@ -66544,7 +66544,7 @@ class Loader {
       if (data.length > 0) {
         table.insertRows(data);
         inserted = data.length;
-        this.logger.info(`[Loader] Bulk inserted ${inserted} rows`);
+        this.logger.debug(`[Loader] Bulk inserted ${inserted} rows`);
       }
       return {
         success: true,
@@ -66586,7 +66586,7 @@ class Loader {
       if (data.length > 0) {
         table.insertRows(data);
         inserted = data.length;
-        this.logger.info(`[Loader] Bulk appended ${inserted} rows unconditionally (chunked OVERWRITE, non-first chunk)`);
+        this.logger.debug(`[Loader] Bulk appended ${inserted} rows unconditionally (chunked OVERWRITE, non-first chunk)`);
       }
       return {
         success: true,
@@ -66785,7 +66785,7 @@ class ImportPipelineExecutor {
 
   startImport(recipe, _options = {}) {
     const config = new ImportConfiguration(recipe, this.facade.logger);
-    this.facade.logger.info(`[ImportEngine] startImport: ${config.getName()}`);
+    this.facade.logger.debug(`[ImportEngine] startImport: ${config.getName()}`);
     return ImportCheckpoint.initial(config.getName());
   }
 
@@ -66961,7 +66961,7 @@ class ImportPipelineExecutor {
     try {
 
       const config = new ImportConfiguration(recipe, this.facade.logger);
-      this.facade.logger.info(`[ImportEngine] Configuration validated: ${JSON.stringify(config.getSummary())}`);
+      this.facade.logger.debug(`[ImportEngine] Configuration validated: ${JSON.stringify(config.getSummary())}`);
 
 
       const executeWithRetry = this.facade._exceptionService ? () => this.facade._exceptionService.executeWithRetry(() => this._executePipeline(config, dryRun, jobId, postTransform), {}, maxRetries) : () => this._executePipeline(config, dryRun, jobId, postTransform);
@@ -67044,29 +67044,29 @@ class ImportPipelineExecutor {
     }
   }
   _executeExtract(config) {
-    this.facade.logger.info('[ImportEngine] Phase 1: EXTRACT');
+    this.facade.logger.debug('[ImportEngine] Phase 1: EXTRACT');
     const sourceConfig = config.getSource();
     const strategy = this.facade._sourceFactory.createStrategy(sourceConfig.type);
     const data = strategy.extract(sourceConfig.config);
-    this.facade.logger.info(`[ImportEngine] Extracted ${data.length} rows`);
+    this.facade.logger.debug(`[ImportEngine] Extracted ${data.length} rows`);
     return data;
   }
   _executeTransform(data, config) {
-    this.facade.logger.info('[ImportEngine] Phase 2: TRANSFORM');
+    this.facade.logger.debug('[ImportEngine] Phase 2: TRANSFORM');
     const transformConfig = config.getTransform();
     const transformedData = this.facade._transformer.transform(data, transformConfig);
-    this.facade.logger.info(`[ImportEngine] Transformed ${transformedData.length} rows`);
+    this.facade.logger.debug(`[ImportEngine] Transformed ${transformedData.length} rows`);
     return transformedData;
   }
   _executeLoad(data, config) {
-    this.facade.logger.info('[ImportEngine] Phase 3: LOAD');
+    this.facade.logger.debug('[ImportEngine] Phase 3: LOAD');
     const loadConfig = config.getLoad();
     const result = this.facade._loader.load(data, loadConfig);
-    this.facade.logger.info(`[ImportEngine] Load complete: ${JSON.stringify(result)}`);
+    this.facade.logger.debug(`[ImportEngine] Load complete: ${JSON.stringify(result)}`);
     return result;
   }
   _generateDryRunLoadResult(data) {
-    this.facade.logger.info('[ImportEngine] Phase 3: LOAD (DRY RUN - skipped)');
+    this.facade.logger.debug('[ImportEngine] Phase 3: LOAD (DRY RUN - skipped)');
     return {
       success: true,
       inserted: 0,
@@ -67085,7 +67085,7 @@ class ImportStrategyRegistry {
     this.facade = facade;
   }
   registerCustomSource(name, strategyClass) {
-    this.facade.logger.info(`[ImportEngine] Registering custom source strategy: ${name}`);
+    this.facade.logger.debug(`[ImportEngine] Registering custom source strategy: ${name}`);
     this.facade._sourceFactory.registerStrategy(name, strategyClass);
 
 
@@ -67173,7 +67173,7 @@ class ImportEngine {
     this._sourceFactory = new SourceStrategyFactory(logger, driveService, spreadsheetService);
     this._transformer = new Transformer(logger, expressionEngine);
     this._loader = new Loader(logger, databaseService);
-    this.logger.info('[ImportEngine] Initialized successfully');
+    this.logger.debug('[ImportEngine] Initialized successfully');
 
 
     this._pipelineExecutor = new ImportPipelineExecutor(this);
@@ -69327,7 +69327,7 @@ class Repository {
 
     this._dryRun = options.dryRun || false;
     if (this._dryRun) {
-      this.logger.info(`[DRY-RUN] Repository for ${tableName} initialized in dry-run mode. Changes will not be persisted.`);
+      this.logger.debug(`[DRY-RUN] Repository for ${tableName} initialized in dry-run mode. Changes will not be persisted.`);
     }
 
 
@@ -69522,7 +69522,7 @@ class Repository {
       if (this._isDryRun(options)) {
         const operation = entity.id ? 'update' : 'insert';
         const simulatedId = entity.id || `dry-run-${Date.now()}`;
-        this.logger.info(`[DRY-RUN] Would ${operation} ${this.EntityClass.name}${entity.id ? ` with ID: ${entity.id}` : ''}`);
+        this.logger.debug(`[DRY-RUN] Would ${operation} ${this.EntityClass.name}${entity.id ? ` with ID: ${entity.id}` : ''}`);
         return {
           ...entity,
           id: simulatedId,
@@ -69532,12 +69532,12 @@ class Repository {
       if (entity.id) {
 
         this._table.updateRowById(entity.id, data);
-        this.logger.info(`Updated ${this.EntityClass.name} with ID: ${entity.id}`);
+        this.logger.debug(`Updated ${this.EntityClass.name} with ID: ${entity.id}`);
       } else {
 
         const newRow = this._table.insertRow(data);
         entity.id = newRow.id;
-        this.logger.info(`Inserted new ${this.EntityClass.name} with ID: ${entity.id}`);
+        this.logger.debug(`Inserted new ${this.EntityClass.name} with ID: ${entity.id}`);
       }
 
 
@@ -69594,7 +69594,7 @@ class Repository {
           this.hydrationService.storeOriginalData(entity, insertedRows[i]);
           savedEntities.push(entity);
         }
-        this.logger.info(`Bulk inserted ${newEntities.length} new ${this.EntityClass.name} entities`);
+        this.logger.debug(`Bulk inserted ${newEntities.length} new ${this.EntityClass.name} entities`);
       }
 
 
@@ -69608,7 +69608,7 @@ class Repository {
         savedEntities.push(entity);
       }
       if (existingEntities.length > 0) {
-        this.logger.info(`Updated ${existingEntities.length} existing ${this.EntityClass.name} entities`);
+        this.logger.debug(`Updated ${existingEntities.length} existing ${this.EntityClass.name} entities`);
       }
 
 
@@ -69653,7 +69653,7 @@ class Repository {
 
       this.hydrationService.clearDirtyFields(entity);
       this.hydrationService.storeOriginalData(entity, updatedRow);
-      this.logger.info(`Patched ${this.EntityClass.name} with ID: ${entity.id}`);
+      this.logger.debug(`Patched ${this.EntityClass.name} with ID: ${entity.id}`);
 
 
       this.database.save();
@@ -69697,7 +69697,7 @@ class Repository {
     this._executeWithRetry(() => {
       this._table.deleteRowById(id);
       this.database.save();
-      this.logger.info(`Deleted ${this.EntityClass.name} with ID: ${id}`);
+      this.logger.debug(`Deleted ${this.EntityClass.name} with ID: ${id}`);
 
 
       if (this.cache) {
@@ -69725,7 +69725,7 @@ class Repository {
 
 
       this.database.save();
-      this.logger.info(`Deleted ${entities.length} ${this.EntityClass.name} entities`);
+      this.logger.debug(`Deleted ${entities.length} ${this.EntityClass.name} entities`);
 
 
       if (this.cache) {

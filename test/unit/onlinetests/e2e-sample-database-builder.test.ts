@@ -933,9 +933,8 @@ test('E2E personalized-plan email template uses the readable label for every cur
   }>;
   const template = boxes.find((box) => box.TIPO_BOX === 'piani_pers_da_inviare')!
     .CONFIG_ARRICCHIMENTO?.TEMPLATE_RIGA;
-  expect(template).toContain('<strong>{{corrente.tipoLabel}}</strong>');
+  expect(template).toContain('{{corrente.studente.nomeCompleto}} - {{corrente.tipoLabel}}');
   expect(template).not.toContain('{{corrente.sottotipo}}');
-  expect(template).toContain('{{corrente.studente.nomeCompleto}}');
   expect(template).toContain('<a href="{{corrente.link}}"');
   expect(template).not.toContain('E2E_CURRENT=');
   expect(template).not.toContain('E2E_LINK=');

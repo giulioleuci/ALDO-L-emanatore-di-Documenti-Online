@@ -53,8 +53,7 @@ interface PianoPersonalizzatoRow {
 }
 
 const DEFAULT_PIANI_PERS_TEMPLATE =
-  '<li>{{corrente.tipoLabel}}{{#corrente.studente.nomeCompleto}} — {{corrente.studente.nomeCompleto}}{{/corrente.studente.nomeCompleto}}: ' +
-  '<a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>' +
+  '<li><a href="{{corrente.link}}" target="_blank">{{corrente.studente.nomeCompleto}} - {{corrente.tipoLabel}}</a>' +
   '{{#storico}} — Si invia anche il link al piano dell\'anno precedente: ' +
   '<a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}}){{/storico}}</li>';
 
@@ -248,10 +247,10 @@ function renderPianiPersBox(
   if (templateRiga === '') {
     const righe = items
       .map((d) => {
-        const nome = escapeHtml(d.nome);
         const href = escapeHtml(safeUrl(d.link));
-        const chi = d.studente !== undefined ? ` — ${escapeHtml(d.studente.nomeCompleto)}` : '';
-        return `<li>${escapeHtml(d.tipoLabel)}${chi}: <a href="${href}" target="_blank">${nome}</a></li>`;
+        const alunno = d.studente !== undefined ? escapeHtml(d.studente.nomeCompleto) : '';
+        const testo = `${alunno} - ${escapeHtml(d.tipoLabel)}`;
+        return `<li><a href="${href}" target="_blank">${testo}</a></li>`;
       })
       .join('');
     return wrapUl(righe);

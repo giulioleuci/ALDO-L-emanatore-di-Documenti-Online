@@ -702,9 +702,9 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   const html = out.boxes['piani_pers_da_inviare']!.html;
   expect((html.match(/Piani personalizzati da notificare/g) ?? [])).toHaveLength(1);
   const [peiRow, pdpRow] = html.split('</li>');
-  expect(html).toContain('PEI a1');
-  expect(html).toContain('PDP a2');
-  expect(html).not.toContain('<li>PDP_BES — VERDI ANNA:'); // NOTIFICATO, excluded
+  expect(html).toContain('VERDI ANNA - PEI');
+  expect(html).toContain('NERI PAOLO - PDP (BES)');
+  expect(html).not.toContain('VERDI ANNA - PDP (BES)'); // NOTIFICATO, excluded
   expect(out.boxes['piani_pers_da_inviare']!.html).toContain('Si invia anche il link al piano dell\'anno precedente');
   expect(peiRow).toContain('http://d/old-pei');
   expect(peiRow).not.toContain('http://d/old-pdp'); // same ID_GEN, wrong subtype
@@ -777,8 +777,7 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
     templates
   );
 
-  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP corrente');
-  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('PDP (BES)');
+  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('VERDI ANNA - PDP (BES)');
   expect(warn).toHaveBeenCalledWith(
     expect.stringContaining('Piani personalizzati: storico non disponibile')
   );
@@ -842,10 +841,9 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
     templates
   );
   const html = out.boxes['piani_pers_inviati']!.html;
-  expect(html).toContain('PDP a1');
-  expect(html).toContain('PDP (BES)');
-  expect(html).toContain('PEI a2');
-  expect(html).not.toContain('PEI a1'); // NOTIFICATO absent, excluded
+  expect(html).toContain('VERDI ANNA - PDP (BES)');
+  expect(html).toContain('NERI PAOLO - PEI');
+  expect(html).not.toContain('VERDI ANNA - PEI'); // NOTIFICATO absent, excluded
   expect(html).not.toContain('Si invia anche');
 });
 

@@ -1420,10 +1420,11 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
           {
             TIPO_BOX: 'piani_pers_da_inviare',
+            COLORE: '#C62828',
             ARRICCHISCI_CON_STORICO: true,
             CONFIG_ARRICCHIMENTO: {
               TEMPLATE_RIGA:
-                '<li><strong>{{corrente.tipoLabel}}</strong> — {{corrente.studente.nomeCompleto}}: <a href="{{corrente.link}}" target="_blank">{{corrente.nome}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
+                '<li><a href="{{corrente.link}}" target="_blank">{{corrente.studente.nomeCompleto}} - {{corrente.tipoLabel}}</a>{{#storico}}<br><span style="color:#666;">Disponibile anche il piano dell\'anno precedente: <a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}})</span>{{/storico}}</li>'
             }
           },
           { TIPO_BOX: 'piani_pers_inviati' }

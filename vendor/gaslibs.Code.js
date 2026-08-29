@@ -65092,7 +65092,7 @@ class SheetByIdStrategy extends SourceStrategy {
 
 
   extractRaw(config) {
-    this.logger.info(`[SheetByIdStrategy] Extracting raw grid with config:`, JSON.stringify(config));
+    this.logger.debug(`[SheetByIdStrategy] Extracting raw grid with config:`, JSON.stringify(config));
     return this._resolveValues(config);
   }
 
@@ -65251,7 +65251,7 @@ class SheetByIdStrategy extends SourceStrategy {
     const tabName = config.tabName;
     try {
 
-      this.logger.info(`[SheetByIdStrategy] Getting sheet info for spreadsheet: ${sheetId}`);
+      this.logger.debug(`[SheetByIdStrategy] Getting sheet info for spreadsheet: ${sheetId}`);
       const sheets = this._spreadsheetService.getSheetInfo(sheetId);
       if (!sheets || sheets.length === 0) {
         throw new SourceError('Spreadsheet has no sheets', 'NO_SHEETS_FOUND', {
@@ -65272,7 +65272,7 @@ class SheetByIdStrategy extends SourceStrategy {
       } else {
         targetSheet = sheets[0];
       }
-      this.logger.info(`[SheetByIdStrategy] Reading from sheet: ${targetSheet.name}`);
+      this.logger.debug(`[SheetByIdStrategy] Reading from sheet: ${targetSheet.name}`);
 
 
       let fullRange;

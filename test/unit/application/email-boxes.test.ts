@@ -711,7 +711,7 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   expect(pdpRow).not.toContain('http://d/old-pdp'); // same subtype, different student
 });
 
-test('piani_pers_da_inviare: exposes the readable label to row templates without changing historical subtype matching', () => {
+test('piani_pers_da_inviare: always uses its built-in row and dark-red border, ignoring row-template configuration', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = pianiPersCduRecord(
@@ -739,7 +739,7 @@ test('piani_pers_da_inviare: exposes the readable label to row templates without
       {
         TIPO_BOX: 'piani_pers_da_inviare',
         ARRICCHISCI_CON_STORICO: true,
-        CONFIG_ARRICCHIMENTO: { TEMPLATE_RIGA: '<li>{{corrente.tipoLabel}} {{#storico}}{{nome}}{{/storico}}</li>' }
+        CONFIG_ARRICCHIMENTO: { TEMPLATE_RIGA: '<li>{{tipoLabel}}</li>' }
       }
     ]),
     cdu,
@@ -747,9 +747,11 @@ test('piani_pers_da_inviare: exposes the readable label to row templates without
     templates
   );
   const html = out.boxes['piani_pers_da_inviare']!.html;
-  expect(html).toContain('PDP (BES)');
+  expect(html).toContain('VERDI ANNA - PDP (BES)');
+  expect(html).toContain('href="http://d/1"');
   expect(html).toContain('PDP a1 anno scorso');
   expect(html).not.toContain('PEI a1 anno scorso');
+  expect(html).toContain('border-left:4px solid #C62828');
 });
 
 test('piani_pers_da_inviare: keeps current plans visible when historical lookup fails', () => {

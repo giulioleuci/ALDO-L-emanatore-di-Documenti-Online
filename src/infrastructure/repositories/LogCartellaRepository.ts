@@ -24,7 +24,7 @@ export class LogCartellaRepository
     super(database, TABLE.LOG_FOLD, LogCartella);
     // O(1) hot-lookup index for findByTipo (ref ALDO_GLF_AUDIT_RESULTS.md D-3), matching
     // LogEmailRepository.findByPattern's pattern.
-    database.tables[TABLE.LOG_FOLD]!.createIndex(COL_LOG_FOLD.TIPO);
+    database.tables[TABLE.LOG_FOLD]!.createIndex(COL_LOG_FOLD.ID_GEN);
   }
 
   findByClasse(classe: Classe): LogCartella[] {
@@ -32,9 +32,9 @@ export class LogCartellaRepository
   }
 
   findByTipo(tipo: string): LogCartella[] {
-    const hits = this.database.tables[TABLE.LOG_FOLD]!.indexedLookup(COL_LOG_FOLD.TIPO, tipo);
+    const hits = this.database.tables[TABLE.LOG_FOLD]!.indexedLookup(COL_LOG_FOLD.ID_GEN, tipo);
     if (hits !== null) return hits.map((row) => LogCartella.fromData(row));
-    return this.findAll().filter((l) => l.tipo === tipo);
+    return this.findAll().filter((l) => l.idGen === tipo);
   }
 
   /** Appends a folder audit record (ref 06 §18). */
@@ -48,7 +48,7 @@ export class LogCartellaRepository
   ): LogCartella {
     const log = LogCartella.fromData({
       [COL_LOG_FOLD.ID]: driveFolderId,
-      [COL_LOG_FOLD.TIPO]: tipo,
+      [COL_LOG_FOLD.ID_GEN]: tipo,
       [COL_LOG_FOLD.NOME]: nome,
       [COL_LOG_FOLD.PATH]: path,
       [COL_LOG_FOLD.LINK]: link,

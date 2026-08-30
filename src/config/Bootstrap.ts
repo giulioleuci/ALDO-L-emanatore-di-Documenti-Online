@@ -248,8 +248,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     'documentBatchService',
     (container) =>
       new DocumentBatchService(
-        new ClasseRepository(deps.db),
-        new AlunnoRepository(deps.db),
+        container.get<ClasseRepository>('classi'),
+        container.get<AlunnoRepository>('alunni'),
         new ConfigurazioneDocumentoRepository(deps.db),
         container.get<DocumentGenerationService>('documentGenerationService'),
         container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
@@ -530,27 +530,6 @@ export function initAldo(
     null, // exceptionService — ALDO doesn't inject GasResilienceLib retry here today; out of scope for this task
     monitor
   );
-  // CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI (12 §3) are ALDO-specific source
-  // strategies, not part of the library's built-in vocabulary — registered
-  // here at the composition root so ImportRecipeMapper's recipes resolve.
-  importEngine.registerCustomSource(
-    'CERCA_CARTELLE_CLASSE',
-    createCercaCartelleClasseStrategy(
-      new ClasseRepository(db),
-      new LogCartellaRepository(db),
-      driveService,
-      spreadsheetService
-    )
-  );
-  importEngine.registerCustomSource(
-    'CERCA_DOCUMENTI',
-    createCercaDocumentiStrategy(
-      new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db))),
-      spreadsheetService,
-      driveService
-    )
-  );
-
   const driveFacade = new DriveServiceFacade(
     ServiceFactory.getDriveService(),
     ServiceFactory.getPermissionService(),
@@ -575,6 +554,29 @@ export function initAldo(
     logger,
     report: new SpreadsheetReportFacade(spreadsheetService)
   });
+
+  // CERCA_CARTELLE_CLASSE/CERCA_DOCUMENTI (12 §3) are ALDO-specific source
+  // strategies, not part of the library's built-in vocabulary — registered
+  // here at the composition root so ImportRecipeMapper's recipes resolve.
+  // Reuses the container's shared repositories rather than opening private
+  // ones, so import-source registration doesn't pay for its own MATERIE scan.
+  importEngine.registerCustomSource(
+    'CERCA_CARTELLE_CLASSE',
+    createCercaCartelleClasseStrategy(
+      container.get<ClasseRepository>('classi'),
+      new LogCartellaRepository(db),
+      driveService,
+      spreadsheetService
+    )
+  );
+  importEngine.registerCustomSource(
+    'CERCA_DOCUMENTI',
+    createCercaDocumentiStrategy(
+      container.get<LogDocumentoRepository>('logDocumenti'),
+      spreadsheetService,
+      driveService
+    )
+  );
 
   if (annoCorrente.testMode) {
     let ownerEmail: string | null;

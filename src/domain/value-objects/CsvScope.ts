@@ -1,4 +1,20 @@
 /**
+ * Splits a CSV cell into trimmed, non-empty values (order-preserving, no
+ * dedup). Domain-local — the equivalent GasLibraryFactory helper
+ * (`RowScopeExpansion.splitCsvList`) lives in the infrastructure layer, out
+ * of reach for domain code per this repo's "no GAS/library imports in
+ * domain" rule (CLAUDE.md), so this is the one place domain entities needing
+ * CSV-cell parsing (Dipartimento, RuoloSpeciale, LogDocumento, LogEmail,
+ * LogCartella) should import from instead of re-splitting inline.
+ */
+export function splitCsvValues(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+/**
  * A CSV-or-wildcard scope (ref 04 §14). Backs both ClassiScope and MaterieScope
  * of a Supplenza: the raw cell is either `*` (all) or a comma-separated list of
  * ids. Textual, order-insensitive membership (ref 01 note on CSV PK columns).
@@ -10,14 +26,7 @@ export class CsvScope {
   private constructor(raw: string) {
     const trimmed = raw.trim();
     this.wildcard = trimmed === '*';
-    this.values = new Set(
-      this.wildcard
-        ? []
-        : trimmed
-            .split(',')
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0)
-    );
+    this.values = new Set(this.wildcard ? [] : splitCsvValues(trimmed));
   }
 
   static of(raw: unknown): CsvScope {

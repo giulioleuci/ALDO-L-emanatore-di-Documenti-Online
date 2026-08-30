@@ -1,15 +1,12 @@
 import type { Classe } from '../../domain/entities/Classe';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ClasseRepository } from '../repositories/ClasseRepository';
+import { DocenteRepository } from '../repositories/DocenteRepository';
+import { MateriaRepository } from '../repositories/MateriaRepository';
+import { SupplenzaRepository } from '../repositories/SupplenzaRepository';
+import { VariazioneCattedraRepository } from '../repositories/VariazioneCattedraRepository';
 import { ANY, expandRowScope } from './RowScopeExpansion';
-import {
-  COL_CLASSI,
-  COL_DOCENTI,
-  COL_MATERIE,
-  COL_SUPPLENZE,
-  COL_VARIAZIONI_CATTEDRA,
-  TABLE
-} from '../../config/schema';
+import { COL_CLASSI, COL_DOCENTI, COL_SUPPLENZE, COL_VARIAZIONI_CATTEDRA } from '../../config/schema';
 
 const ADAPTER_ID = '__ALDO_ASSIGNMENT_ID';
 const ADAPTER_COLUMN = '__ALDO_SLOT';
@@ -147,11 +144,16 @@ export class AldoTeachingResolutionConfig {
 
   constructor(private readonly database: RepositoryDatabase) {
     this.classi = new ClasseRepository(database);
-    this.actorSource = new AldoActorSource(database.tables[TABLE.DOCENTI]!.getAllRows());
+    this.actorSource = new AldoActorSource(
+      new DocenteRepository(database)
+        .findAll()
+        .map((d) => d.toData())
+    );
+    const variazioni = new VariazioneCattedraRepository(database);
     this.overrideRows = this.withAdapterIds(
       expandRows(
         this.classi,
-        database.tables[TABLE.VARIAZIONI_CATTEDRA]!.getAllRows(),
+        variazioni.findAll().map((v) => v.toData()),
         COL_VARIAZIONI_CATTEDRA.TITOLARE,
         COL_VARIAZIONI_CATTEDRA.CLASSI,
         COL_VARIAZIONI_CATTEDRA.MATERIE
@@ -163,9 +165,11 @@ export class AldoTeachingResolutionConfig {
     // principal === delegate outright, so they're dropped here rather than
     // handed to a general-purpose library that has no business tolerating
     // degenerate school-data entry.
-    const supplenzeRows = database.tables[TABLE.SUPPLENZE]!.getAllRows().filter(
-      (row) => stringColumn(row, COL_SUPPLENZE.TITOLARE) !== stringColumn(row, COL_SUPPLENZE.SUPPLENTE)
-    );
+    const supplenze = new SupplenzaRepository(database);
+    const supplenzeRows = supplenze
+      .findAll()
+      .filter((s) => s.titolare !== s.supplente)
+      .map((s) => s.toData());
     this.delegationRows = this.withAdapterIds(
       expandRows(
         this.classi,
@@ -268,13 +272,13 @@ export class AldoTeachingResolutionConfig {
 
   getMaterie(): Array<{ materia: MateriaId; isReligioneAlt: boolean }> {
     const baseIds = new Map<string, boolean>();
-    for (const row of this.database.tables[TABLE.MATERIE]!.getAllRows()) {
-      const id = row[COL_MATERIE.ID];
+    for (const materia of new MateriaRepository(this.database).findAllCached()) {
+      const id = materia.id;
       if (typeof id !== 'string' || id === '') continue;
       const dot = id.indexOf('.');
       const baseId = dot === -1 ? id : id.slice(0, dot);
       if (!baseIds.has(baseId)) baseIds.set(baseId, false);
-      if (dot === -1 && row[COL_MATERIE.IS_RELIGIONE_ALT] === true) {
+      if (dot === -1 && materia.isReligioneAlt) {
         baseIds.set(baseId, true);
       }
     }

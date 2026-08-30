@@ -136,8 +136,9 @@ istituto:
       nomeCompleto: string       # Formato testuale per atti (es. "Prof.ssa Maria Bianchi")
 
   staff:
-    referenteBes: PersonVM | null       # Oggetto Persona standardizzato (§8.1)
-    animatoreDigitale: PersonVM | null  # Oggetto Persona standardizzato (§8.1)
+    referenteBes: PersonVM | null       # Oggetto Persona standardizzato (§8.1) — alias convenzionale per RUOLI.ID == "REF_BES"
+    animatoreDigitale: PersonVM | null  # Oggetto Persona standardizzato (§8.1) — alias convenzionale per RUOLI.ID == "AN_DIG"
+    <RUOLI.ID>: PersonVM | null         # una entry per OGNI riga di RUOLI, chiavata sull'ID grezzo (es. staff.RSPP)
 
   statistiche:                    # opzionale — assente se il provider statistiche non è nella recipe attiva
     totaleClassi: number
@@ -146,6 +147,8 @@ istituto:
 ```
 
 `istituto.organizzazione.annoScolastico` viene **copiato 1:1** in `focus.classe.anagrafica.annoScolastico` (Principio 2): dentro i template e i loop non è necessario risalire a `istituto.*`.
+
+`istituto.staff` espone **ogni** riga della tabella `RUOLI` come chiave grezza sul suo `ID` (es. `staff.REF_BES`, `staff.RSPP`, `staff.DSGA`), oltre ai due alias camelCase convenzionali (`referenteBes`, `animatoreDigitale`) mantenuti per compatibilità coi template esistenti — `REF_BES` e `AN_DIG` sono quindi raggiungibili sia via alias sia via ID grezzo. Ogni valore è risolto al `PersonVM` (§8.1) del **primo** titolare (colonna `DOCENTE`, CSV) o `null` se il ruolo non ha titolari/non risolve a un docente noto — coerente con `RisolutoreRuoliService.referente()` (14 §1) che usa lo stesso fallback su `RUOLI` per i permessi ACL (10 §10). Un nuovo ruolo istituzionale custom (es. `REF_BES` alternativo, un nuovo RSPP) non richiede modifiche a `SchoolProvider`: basta la riga in `RUOLI`.
 
 ---
 
@@ -234,16 +237,32 @@ focus.classe:
     # il proprio indirizzo di provenienza; per classi non articolate o partner, `indirizzo` è assente.
 
   # CONSIGLIO DI CLASSE COMPLETO (item arricchiti, §8.4)
+  # SEMPRE il docente effettivamente in carica (SUPPLENZE incluse, oltre a
+  # VARIAZIONI_CATTEDRA) — costruito con routingPolicy DELEGATE_OR_PRINCIPAL
+  # fissa, indipendente da `opzioni.gestioneSupplenti` (che pilota solo il
+  # routing email altrove, non questa proiezione). `stato.isSupplente`/
+  # `stato.sostituisce` qui riflettono quindi sempre la sostituzione reale.
   consiglioDiClasse: DocenteCdcVM[]
   # PARTIZIONI PRECALCOLATE (Principio 3): evita `| where:'tipoArticolazione','...'` — presenti
   # SOLO se isArticolata = true
   consiglioDiClasseComune: DocenteCdcVM[]    # Docenti con tipoArticolazione COMUNE
   consiglioDiClasseSeparato: DocenteCdcVM[]  # Docenti con tipoArticolazione SEPARATO_PRIMO o SEPARATO_SECONDO
 
+  # TITOLARE DI RUOLO (§8.4) — VARIAZIONI_CATTEDRA applicate, SUPPLENZE MAI
+  # applicate. Costruita con routingPolicy PRINCIPAL_ONLY fissa, indipendente
+  # da `opzioni.gestioneSupplenti`. `stato.isSupplente` qui è SEMPRE false e
+  # `stato.sostituisce` SEMPRE null — un titolare in supplenza resta
+  # visualizzato come se insegnasse regolarmente. Sempre popolata quando il
+  # provider `consiglio` gira (stessa condizione di `consiglioDiClasse`); per
+  # una classe articolata è scopata allo stesso ramo comune+SOLA quota propria
+  # di `consiglioDiClasse`, ma senza le partizioni comune/separato dedicate.
+  consiglioDiClasseTitolare: DocenteCdcVM[]
+
   # SUPPLENZE ATTIVE DI CLASSE (aggregate per coppia supplente/titolare — §8.12)
   # Sempre presente quando il provider `consiglio` gira; [] se nessuna supplenza attiva.
-  # Riflette le delegazioni reali (docenteEffettivo != titolare) anche con
-  # gestioneSupplenti = SOLO_TITOLARI, dove consiglioDiClasse[].stato.isSupplente resta false.
+  # Riflette le delegazioni reali (docenteEffettivo != titolare), indipendente
+  # da `opzioni.gestioneSupplenti` — stessa fonte dati di `consiglioDiClasse`/
+  # `consiglioDiClasseTitolare` sopra, solo aggregata diversamente.
   supplenze: SupplenzaAggregataVM[]
 
   # CATALOGO MATERIE DI CLASSE (Tutte le materie attive)
@@ -388,8 +407,22 @@ focus.alunno:
     indirizzoNome: string
 
   # CDC FILTRATO SUL CURRICULUM E RELIGIONE DELL'ALUNNO (item arricchiti, §8.4) — presente solo se
-  # il resolver di cattedre condiviso è disponibile (CDCFilterAlunnoStrategy, 14_SERVIZI_UTILITY.md §1.3)
+  # il resolver di cattedre condiviso è disponibile a `AlunnoProvider` (stesso `ITeachingAssignmentResolver`
+  # usato da `focus.classe.consiglioDiClasse`), tramite `resolveCouncilForProjection` +
+  # `prepareStudentCouncilAssignments`/`studentCouncilFilterOperations` (TeachingCouncilProjection.ts) —
+  # non un componente dedicato. **Unicità IRC/ALT:** a differenza di `focus.classe.consiglioDiClasse`
+  # (dove IRC e ALT compaiono SEMPRE come due membri distinti del CdC, essendo una proiezione di classe),
+  # qui il filtro `studentReligion` esclude a monte il ramo che non corrisponde a `status.religione`
+  # dell'alunno: un alunno con `religione = "IRC"` non vede MAI il docente ALT nel proprio CdC filtrato
+  # (e viceversa); con `religione = "NO"` non vede né l'uno né l'altro. Un secondo filtro esclude le
+  # materie con specificità (`CURRICULUM`) il cui valore non è tra quelli scelti dall'alunno.
   consiglioDiClasseFiltrato: DocenteCdcVM[]
+
+  # MATERIE DISTINTE DI `consiglioDiClasseFiltrato` (dedotte, non un provider indipendente) — sigle
+  # ordinate alfabeticamente, una per SubjectVM distinto tra i docenti del CdC filtrato sopra; colonne
+  # orizzontali per `tablecol_loop` nei template per-alunno (es. griglia misure PDP). Stessa condizione
+  # di presenza di `consiglioDiClasseFiltrato` (`materieDistinteConsiglioFiltrato`, TeachingCouncilProjection.ts).
+  elencoMaterieFiltrate: SubjectVM[]
 
   didattica:
     carenze:
@@ -929,8 +962,8 @@ PianoPersonalizzatoItem:
 Riga di `focus.classe.supplenze[]` (§4.1), costruita da `ConsiglioClasseProvider`
 sugli stessi `TeachingAssignment[]` del consiglio di classe: un item per coppia
 (supplente, titolare), con le materie coperte combinate e deduplicate per
-`sigla + specifica`. Sempre popolata (anche con `gestioneSupplenti =
-SOLO_TITOLARI`): riflette le delegazioni reali, non il routing email.
+`sigla + specifica`. Sempre popolata, indipendente da `opzioni.gestioneSupplenti`
+(quel campo pilota solo il routing email altrove): riflette le delegazioni reali.
 
 ```yaml
 SupplenzaAggregataVM:
@@ -1072,7 +1105,10 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
     "organizzazione": { "annoScolastico": "2025-2026", "dirigente": { "nomeCompleto": "Prof.ssa Maria Bianchi" } },
     "staff": {
       "referenteBes": { "nome": "Mario", "cognome": "Rossi", "email": "mario.rossi@scuola.edu.it", "genere": "M", "appellativo": "Prof.", "articolo": "il", "coordinatore": "coordinatore", "nomeCompleto": "Mario Rossi", "materia": null, "appellativoCompleto": "Prof. Mario Rossi", "appellativoCognome": "Prof. Rossi" },
-      "animatoreDigitale": null
+      "animatoreDigitale": null,
+      "REF_BES": { "nome": "Mario", "cognome": "Rossi", "email": "mario.rossi@scuola.edu.it", "genere": "M", "appellativo": "Prof.", "articolo": "il", "coordinatore": "coordinatore", "nomeCompleto": "Mario Rossi", "materia": null, "appellativoCompleto": "Prof. Mario Rossi", "appellativoCognome": "Prof. Rossi" },
+      "AN_DIG": null,
+      "RSPP": { "nome": "Luca", "cognome": "Verdi", "email": "luca.verdi@scuola.edu.it", "genere": "M", "appellativo": "Prof.", "articolo": "il", "coordinatore": "coordinatore", "nomeCompleto": "Luca Verdi", "materia": null, "appellativoCompleto": "Prof. Luca Verdi", "appellativoCognome": "Prof. Verdi" }
     },
     "statistiche": { "totaleClassi": 32, "totaleDocenti": 84, "totaleAlunni": 650 }
   },
@@ -1237,6 +1273,46 @@ Il seguente esempio illustra il CDU reale prodotto per una classe articolata, co
       ],
       "consiglioDiClasseComune": [],
       "consiglioDiClasseSeparato": [],
+      "consiglioDiClasseTitolare": [
+        {
+          "anagrafica": {
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "email": "mario.rossi@scuola.edu.it",
+            "genere": "M",
+            "appellativo": "Prof.",
+            "articolo": "il",
+            "coordinatore": "coordinatore",
+            "nomeCompleto": "Mario Rossi",
+            "materia": null,
+            "appellativoCompleto": "Prof. Mario Rossi",
+            "appellativoCognome": "Prof. Rossi"
+          },
+          "materie": [
+            {
+              "sigla": "ITA",
+              "nome": "Lingua e letteratura italiana",
+              "nomeSintetico": "Italiano",
+              "colore1": "#005A9C",
+              "colore2": "#E6F0FA",
+              "isMateriaPrimaProva": true,
+              "isMateriaSecondaProva": false,
+              "principale": null,
+              "specificita": null,
+              "isITP": false,
+              "evoluzione": null
+            }
+          ],
+          "materieDescrizione": "Italiano",
+          "materieSigle": "ITA",
+          "ruoli": { "isCoordinatore": false, "isTutorAsl": false, "isTutorOrientamento": false, "descrizione": ["Docente"] },
+          "stato": { "isSupplente": false, "sostituisce": null },
+          "tipoArticolazione": "COMUNE",
+          "gruppoNome": null,
+          "isITP": false,
+          "flags": { "isNotLast": true }
+        }
+      ],
       "supplenze": [
         {
           "supplente": {

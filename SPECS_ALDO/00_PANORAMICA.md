@@ -113,16 +113,7 @@ Nessun comportamento del sistema è hard-coded. Tipo di documento, template Driv
 | `01_SCHEMA_DATABASE.md`               | Schema fisico completo di tutte le tabelle                                                                                                              |
 | `02_CDU_STRUTTURA.md`                 | Struttura canonica del Contesto Dati Unificato                                                                                                          |
 | `03_VALUE_OBJECTS_ED_ENUM.md`         | Tutti i Value Object e gli Enum del dominio                                                                                                             |
-| `04_DOMINIO_ENTITA.md`                | Tutte le entità, ruoli, metodi di dominio, classificazione aggregate                                                                                    |
-| `05_AGGREGATI_E_CLASSI_ARTICOLATE.md` | Invarianti degli aggregati e gestione classi articolate                                                                                                 |
-| `06_REPOSITORY.md`                    | Contratti e implementazione dei 21 repository                                                                                                           |
-| `07_SPECIFICATIONS.md`                | Catalogo delle 64+ Specification con composizioni predefinite                                                                                           |
-| `08_ARCHITETTURA_DI_PATTERN.md`       | Architettura a layer, DI Container, Bootstrap, pattern utilizzati                                                                                       |
-| `09_CONTEXT_ENGINE.md`                | CDU Builder, Recipe, Provider, Interceptor, Mapper                                                                                                      |
-| `10_PIPELINE_DOCUMENTI.md`            | Pipeline di generazione documenti (10 step)                                                                                                             |
-| `11_PIPELINE_EMAIL.md`                | Pipeline email (8 step) e Box Rendering System                                                                                                          |
-| `12_SERVIZI_APPLICATIVI.md`           | Servizi applicativi: generazione, email, import, report                                                                                                 |
-| `13_SERVIZI_STORICI.md`               | Accesso ai dati degli anni scolastici precedenti                                                                                                        |
-| `14_SERVIZI_UTILITY.md`               | Servizi trasversali: ruoli, aggregatori, cartelle, motori                                                                                               |
-| `15_UI_E_JOB_RUNNER.md`               | Menu utente, entry point, Job Runner, monitoraggio                                                                                                      |
+| `GUIDA_USO_PLACEHOLDER.md`            | Sintassi placeholder/loop del `WorkspaceTemplateEngine` e regole d'uso nei template                                                                     |
 | `MAT_NON_STANDARD.md`                 | Specifica del placeholder `{{focus.classe.elencoMaterieConPermessi}}` per l'espansione orizzontale delle materie con permessi granulari (Google Sheets) |
+
+I documenti `04`–`15` (entità di dominio, aggregati, repository, specification, architettura a layer, context engine, pipeline documenti/email, servizi applicativi/storici/utility, UI/Job Runner) non esistono più come file separati: il loro contenuto rilevante è stato consolidato nei tre documenti sopra o vive direttamente nel codice sorgente (`src/domain/`, `src/application/`, `src/infrastructure/`) — usare la Knowledge Graph (`codebase-memory-mcp`) o una ricerca nel codice per quel livello di dettaglio.

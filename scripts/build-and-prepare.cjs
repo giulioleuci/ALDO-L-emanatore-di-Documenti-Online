@@ -777,19 +777,15 @@ gas-source-map.json
           'menu_bloccaDocumenti'
         ]
       ],
-      ['EntryPoints_User.gs', ['generaPagelle', 'inviaNotificaAssenze', 'importaAlunniChunked']]
+      ['EntryPoints_User.gs', []]
     ];
     // menu_avvioGenerazioneDocumenti/menu_avvioComunicazioniEmail legitimately
     // appear in Code.js as STRING data: src/presentation/Menu.ts's vociMenu()
     // (bundled into core) registers GAS menu items by function-name string
     // (menu.addItem(label, 'funcName')), and that file is part of core, not
-    // EntryPoints.ts. Only the two non-interactive example launchers — never
+    // EntryPoints.ts. Only the non-interactive example launchers — never
     // referenced anywhere in core — are safe to check by bare name.
-    const namesForbiddenInCodeJs = [
-      'generaPagelle',
-      'inviaNotificaAssenze',
-      'importaAlunniChunked'
-    ];
+    const namesForbiddenInCodeJs = [];
 
     const leakedIntoCodeJs = namesForbiddenInCodeJs.filter((name) => codeJsContent.includes(name));
     if (leakedIntoCodeJs.length > 0) {

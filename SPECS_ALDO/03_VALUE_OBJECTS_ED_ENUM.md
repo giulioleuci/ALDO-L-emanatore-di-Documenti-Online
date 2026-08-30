@@ -31,6 +31,23 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 **Default:** `COMPLETA` se non specificato.
 
+### `GeneratoreAxis`
+
+**Utilizzo:** `CONF_DOC.GENERATORE` — pilota esclusivamente l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`) e la recipe CDU attiva; non è un nome di strategia/registrazione (vedi nota "Semantica di `GENERATORE`" in `01_SCHEMA_DATABASE.md` §CONF_DOC).
+
+| Valore                   | Asse di iterazione                                                       |
+| ------------------------ | -------------------------------------------------------------------------- |
+| `CLASSE`                 | Una generazione per classe                                                 |
+| `DOCENTE`                | Una generazione per docente                                                |
+| `PIANO_PERSONALIZZATO`   | Una generazione per riga `PIANI` (studente × tipo)                         |
+| `CLASSE_MATERIA`         | Una generazione per coppia classe/materia                                  |
+| `CLASSE_DOCENTE`         | Una generazione per coppia classe/docente                                  |
+| `CLASSE_DOCENTE_MATERIA` | Una generazione per cattedra (classe/docente/materia)                      |
+| `DIPARTIMENTO`           | Una generazione per dipartimento                                           |
+| `ALUNNO`                 | Una generazione per alunno attivo                                          |
+
+Nessun valore ammette colonne materie (`PARAMETRI.aggiungiMaterie`/`aggiungiMaterieConPermessi`) sull'asse `DIPARTIMENTO` (nessun consiglio di classe da cui derivarle — vedi validazione costruttore in `01_SCHEMA_DATABASE.md` §CONF_DOC).
+
 ### `TipoIstituto`
 
 **Utilizzo:** `INDIRIZZI.TIPO`
@@ -52,7 +69,7 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 | `NEGATA`   | Default. Blocca la generazione se esiste la stessa identità `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`. Per calcolare `NOME_NORMALIZZATO`, ogni controllo sceglie un marker alfanumerico temporaneo assente dal `FILE_NAME` completo reso con lo stesso CDU e un valore-sonda non vuoto per `progressivo`, sostituisce solo i token esatti `{{progressivo}}`, rende il template completo e tratta solo il marker scelto come sequenza numerica. Il marker non è persistito. |
 | `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                         |
 
-Il controllo è applicato da `CheckDuplicatesStep` (vedi `10_PIPELINE_DOCUMENTI.md`, Step 2).
+Il controllo è applicato da `CheckDuplicatesStep` (`src/application/pipelines/documentSteps.ts`).
 Per i documenti `PIANO_PERS`, la corrispondenza richiede inoltre lo stesso studente risolto in
 `LOG_DOCS.UTENTI`, così piani dello stesso sottotipo appartenenti ad alunni diversi restano distinti.
 
@@ -200,14 +217,21 @@ Transizione tipica: `GENERATO` → `VERBALIZZATO/NOTIFICATO` → `ARCHIVIATO`.
 
 ---
 
-### `ArticolazioneRuolo`
+### Navigazione classi articolate (`IClasseRepository`)
 
-**Utilizzo:** parametro opzionale `articolazione?` in `DocenteRepository.getClassiInsegnate()` e `AlunnoRepository.getClasse()`
+Non esiste un parametro `articolazione?: 'partner' | 'parent'` su un metodo generico — la
+navigazione tra classe parent e classi partner è esposta da metodi dedicati su
+`IClasseRepository` (ref 06 §3), ciascuno con direzione fissa:
 
-| Valore      | Significato                                 |
-| ----------- | ------------------------------------------- |
-| `"partner"` | Restituisce la classe partner (es. `4A-LC`) |
-| `"parent"`  | Restituisce la classe parent (es. `4A`)     |
+| Metodo                          | Input → Output                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------- |
+| `getClasseParent(classe)`        | Da una classe partner (es. `4A-LC`) → la classe parent (`4A`), o `null` se non articolata    |
+| `getClassiPartner(classe)`       | Da una classe parent → le sue classi partner componenti                                      |
+| `orderedPartners(classe)`        | Da QUALSIASI classe del gruppo → `[primo, secondo]` partner in ordine canonico               |
+| `getGruppoArticolazione(classe)` | Da QUALSIASI classe del gruppo → tutte le classi del gruppo (parent + partner)               |
+| `isArticolata(classe)`           | La classe (parent o partner) appartiene a un gruppo articolato                               |
+
+`DocenteRepository`/`AlunnoRepository` non replicano questa navigazione: i consumatori applicativi (es. `tipoArticolazione()` in `TeachingCouncilProjection.ts`) usano direttamente `IClasseRepository`.
 
 ---
 
@@ -382,12 +406,12 @@ Transizione tipica: `GENERATO` → `VERBALIZZATO/NOTIFICATO` → `ARCHIVIATO`.
 }
 ```
 
-L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (vedi `05_AGGREGATI_E_CLASSI_ARTICOLATE.md`).
+L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (`IClasseRepository.orderedPartners`, `02_CDU_STRUTTURA.md`).
 
 - **Invarianti di configurazione:**
   - `partners`, quando presente, DEVE contenere ESATTAMENTE due `ClasseId`; un'articolazione con un numero diverso di partner NON è supportata.
 
-**Nota:** `materieCondivise`, `materieSeparatePrimoGruppo` e `materieSeparateSecondoGruppo` (esposti nel CDU come `focus.classe.articolazione.*`, vedi `02_CDU_STRUTTURA.md`) non sono campi persistiti in `CLASSI.ARTICOLAZIONE`: sono calcolati a runtime dal `ClasseRepository` confrontando le colonne docente delle classi partner (vedi `05_AGGREGATI_E_CLASSI_ARTICOLATE.md`). L'invariante "il calcolo delle materie condivise e separate deve produrre intersezioni sempre vuote" è quindi un invariante della `Classe`/`ClasseRepository`, non di questo Value Object.
+**Nota:** `materieCondivise`, `materieSeparatePrimoGruppo` e `materieSeparateSecondoGruppo` (esposti nel CDU come `focus.classe.articolazione.*`, vedi `02_CDU_STRUTTURA.md`) non sono campi persistiti in `CLASSI.ARTICOLAZIONE`: sono calcolati a runtime dal `ClasseRepository` confrontando le colonne docente delle classi partner. L'invariante "il calcolo delle materie condivise e separate deve produrre intersezioni sempre vuote" è quindi un invariante della `Classe`/`ClasseRepository`, non di questo Value Object.
 
 ---
 
@@ -604,8 +628,17 @@ fonte di verità del formato filtri: design doc
 | `TESTO_VUOTO`          | Mustache valutato sull'intera CDU                                                                                                   |
 | `COLORE`               | Bordo sinistro del contenitore; default `#ddd`                                                                                      |
 | `DISPLAY_MODE`          | Solo documenti/cartelle: `nome \| link \| nome+link \| sololink`; fallback a lista semplice                                          |
-| `ARRICCHISCI_CON_STORICO` / `CONFIG_ARRICCHIMENTO` | Arricchimento storico per riga (default on per `piani_pers_da_inviare`)                          |
+| `ARRICCHISCI_CON_STORICO` / `CONFIG_ARRICCHIMENTO` | Arricchimento storico per riga, configurabile per i tipi box che lo supportano                          |
 | `CONTENUTO`            | Solo `testo_dinamico`                                                                                                               |
+
+#### Invarianti di `piani_pers_da_inviare`
+
+Questo tipo box e' gestito direttamente dal codice: non legge `COLORE`,
+`ARRICCHISCI_CON_STORICO` o `CONFIG_ARRICCHIMENTO` da `CONF_MAIL.BOX_CFG`.
+Renderizza sempre il link con il testo `{{corrente.studente.nomeCompleto}} -
+{{corrente.tipoLabel}}`, usa il bordo sinistro rosso scuro `#C62828` e cerca
+sempre nello storico i piani dello stesso studente e sottotipo. Le chiavi di
+configurazione restano disponibili per gli altri tipi box.
 
 #### `DATI_SORGENTE` (solo `documenti` e `cartelle`)
 
@@ -632,7 +665,7 @@ Chiavi ammesse, camelCase:
 | Entità                | Chiavi                                                                                                    |
 | --------------------- | ---------------------------------------------------------------------------------------------------------- |
 | documenti (`LOG_DOCS`) | `tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`, `notificato`, `classi`, `utenti`, `materie`, `csv`, `not` |
-| cartelle (`LOG_FOLD`)  | `idGen` (→ colonna `TIPO`), `nome`, `path`, `classi`, `utenti`, `materie`, `csv`, `not`                    |
+| cartelle (`LOG_FOLD`)  | `idGen`, `tipo`, `nome`, `path`, `classi`, `utenti`, `materie`, `csv`, `not`                                |
 
 Semantica di matching:
 

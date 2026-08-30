@@ -45,10 +45,7 @@ export class DocenteRepository extends Repository<Docente> implements IDocenteRe
     for (const row of this.database.tables[TABLE.CLASSI]!.getAllRows()) {
       const coord = row[COL_CLASSI.COORD];
       if (typeof coord !== 'string') continue;
-      for (const e of coord
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)) {
+      for (const e of splitCsvList(coord)) {
         emails.add(e);
       }
     }

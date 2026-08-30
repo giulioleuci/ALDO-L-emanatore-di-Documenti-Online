@@ -415,7 +415,7 @@ export class DocumentGenerationService {
       .addStep(new SelectTemplateStep(this.logger, this.configs, this.expressionEngine))
       .addStep(new CloneTemplateStep(this.logger, this.drive))
       .addStep(new RenderTemplateStep(this.logger, this.strategyFactory))
-      .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver))
+      .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver, this.expressionEngine))
       .addStep(new RegisterDocumentStep(this.logger, this.db, this.templates))
       .addStep(new PostProcessStep(this.logger, this.db, this.templates, this.now));
 

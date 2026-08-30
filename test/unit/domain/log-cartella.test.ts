@@ -2,20 +2,23 @@ import { LogCartella } from '../../../src/domain/entities/LogCartella';
 import { COL_LOG_FOLD } from '../../../src/config/schema';
 
 describe('LogCartella construction', () => {
-  test('hydrates id/tipo/nome from known columns', () => {
+  test('hydrates id/idGen/tipo/nome from known columns', () => {
     const log = new LogCartella({
       [COL_LOG_FOLD.ID]: 'folder-123',
+      [COL_LOG_FOLD.ID_GEN]: 'PIANI_PERSONALIZZATI',
       [COL_LOG_FOLD.TIPO]: 'PIANI_PERS',
       [COL_LOG_FOLD.NOME]: 'Cartella 5A'
     });
     expect(log.id).toBe('folder-123');
+    expect(log.idGen).toBe('PIANI_PERSONALIZZATI');
     expect(log.tipo).toBe('PIANI_PERS');
     expect(log.nome).toBe('Cartella 5A');
   });
 
-  test('missing/non-string cells default id to null and tipo/nome to empty string', () => {
+  test('missing/non-string cells default id to null and idGen/tipo/nome to empty string', () => {
     const log = new LogCartella({});
     expect(log.id).toBeNull();
+    expect(log.idGen).toBe('');
     expect(log.tipo).toBe('');
     expect(log.nome).toBe('');
   });

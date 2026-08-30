@@ -1,6 +1,7 @@
 import { StatoDocumento } from '../value-objects/enums';
 import { COL_LOG_DOCS } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
+import { splitCsvValues } from '../value-objects/CsvScope';
 
 export type LogDocumentoData = {
   [COL_LOG_DOCS.ID]?: string;
@@ -20,12 +21,7 @@ export type LogDocumentoData = {
 };
 
 function csv(cell: unknown): string[] {
-  return typeof cell === 'string'
-    ? cell
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-    : [];
+  return typeof cell === 'string' ? splitCsvValues(cell) : [];
 }
 
 /**

@@ -115,7 +115,7 @@ test('perMetodo scopes every document and folder accessor before applying its sp
   tables.LOG_FOLD = [
     {
       ID: 'folder-classe',
-      TIPO: 'ARCHIVIO',
+      ID_GEN: 'ARCHIVIO',
       NOME: 'Documenti',
       PATH: 'Archivio/5A',
       LINK: '',
@@ -125,7 +125,7 @@ test('perMetodo scopes every document and folder accessor before applying its sp
     },
     {
       ID: 'folder-utente',
-      TIPO: 'UTENTE',
+      ID_GEN: 'UTENTE',
       NOME: 'Verbali personali',
       PATH: 'Privato',
       LINK: '',
@@ -135,7 +135,7 @@ test('perMetodo scopes every document and folder accessor before applying its sp
     },
     {
       ID: 'folder-dip',
-      TIPO: 'VERBALI',
+      ID_GEN: 'VERBALI',
       NOME: 'Verbali dipartimento',
       PATH: 'Dipartimento',
       LINK: '',
@@ -145,7 +145,7 @@ test('perMetodo scopes every document and folder accessor before applying its sp
     },
     {
       ID: 'folder-fuori-dip',
-      TIPO: 'VERBALI',
+      ID_GEN: 'VERBALI',
       NOME: 'Verbali lettere',
       PATH: 'Dipartimento',
       LINK: '',

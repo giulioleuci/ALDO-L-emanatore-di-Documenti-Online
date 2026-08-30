@@ -20,6 +20,7 @@ import { GestioneSupplenti, TipoPiano, TipoProgetto } from '../../domain/value-o
 import { composeRisolutoreRuoli } from '../../config/ApplicationComposition';
 import { resolveEffectiveDocenti } from '../../application/context-engine/TeachingCouncilProjection';
 import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps';
+import { ExpressionEngineFacade } from '../../infrastructure/facades/ExpressionEngineFacade';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
@@ -204,18 +205,32 @@ function councilTuple(
   ].join('|');
 }
 
+// consiglioDiClasse (effettivo-only) and consiglioDiClasseTitolare (titolare-only)
+// are each single-actor-per-slot; the same actor can appear in both (once per
+// list) when they hold some slots outright and are mid-substitution on others.
+// Group by actor across both lists to reconstruct the one-row-per-actor shape
+// the BOTH_EQUAL routing policy computes below.
+function councilTuplesByActor(cdu: ReturnType<ContextBuilder['build']>): Map<string, Set<string>> {
+  const byActor = new Map<string, Set<string>>();
+  for (const docente of [
+    ...(cdu.focus.classe?.consiglioDiClasse ?? []),
+    ...(cdu.focus.classe?.consiglioDiClasseTitolare ?? [])
+  ]) {
+    const email = docente.anagrafica.email ?? '';
+    const tuples = byActor.get(email) ?? new Set<string>();
+    for (const materia of docente.materie) tuples.add(councilTuple(docente, materia));
+    byActor.set(email, tuples);
+  }
+  return byActor;
+}
+
 function councilTuples(cdu: ReturnType<ContextBuilder['build']>): string[] {
-  return (cdu.focus.classe?.consiglioDiClasse ?? []).flatMap((docente) =>
-    docente.materie.map((materia) => councilTuple(docente, materia))
-  );
+  return [...councilTuplesByActor(cdu).values()].flatMap((tuples) => [...tuples]);
 }
 
 function councilRows(cdu: ReturnType<ContextBuilder['build']>): string[] {
-  return (cdu.focus.classe?.consiglioDiClasse ?? []).map((docente) =>
-    `${docente.anagrafica.email}:${docente.materie
-      .map((materia) => councilTuple(docente, materia))
-      .sort()
-      .join(',')}`
+  return [...councilTuplesByActor(cdu).entries()].map(
+    ([actor, tuples]) => `${actor}:${[...tuples].sort().join(',')}`
   );
 }
 
@@ -492,7 +507,9 @@ export function registerEffectiveAssignmentConsumerChecks(
       ctx.set('cdu', cdu);
       ctx.set('shouldGenerate', true);
       ctx.set('newFileId', 'matrix-document');
-      new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(ctx);
+      new ApplyPermissionsStep(new LoggerService(), drive, roles, new ExpressionEngineFacade()).execute(
+        ctx
+      );
       assertSameRecipients('document ACL recipients', expected, permissions, assignments);
     }
   );
@@ -709,7 +726,12 @@ export function registerEffectiveAssignmentConsumerChecks(
         documentCtx.set('cdu', partnerCdu);
         documentCtx.set('shouldGenerate', true);
         documentCtx.set('newFileId', `matrix-document-${classeId}`);
-        new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(documentCtx);
+        new ApplyPermissionsStep(
+          new LoggerService(),
+          drive,
+          roles,
+          new ExpressionEngineFacade()
+        ).execute(documentCtx);
         assertSameRecipients(`document ACL recipients ${classeId}`, expectedRecipients, permissions, partnerAssignments);
 
         const columnItems: Array<Record<string, unknown>> = [];

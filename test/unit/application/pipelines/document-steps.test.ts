@@ -238,7 +238,8 @@ describe('document pipeline operational log details', () => {
     const permissions = new ApplyPermissionsStep(
       logger,
       drive,
-      composeRisolutoreRuoli(db)
+      composeRisolutoreRuoli(db),
+      engine
     ).execute(ctx);
     const registration = new RegisterDocumentStep(
       logger,
@@ -537,7 +538,8 @@ test('PrepareInfrastructureStep creates folder and registers it in LOG_FOLD (10 
   expect(drive.folders.get('Verbali/5')).toBe(folderId);
   expect(ctx.get('destFolderPath')).toBe('Verbali/5');
   const row = db.table('LOG_FOLD').find((r) => r.ID === folderId);
-  expect(row?.TIPO).toBe('CD1');
+  expect(row?.ID_GEN).toBe('CD1');
+  expect(row?.TIPO).toBe('VERBALE');
   expect(row?.NOME).toBe('5');
   expect(row?.PATH).toBe('Verbali/5');
 });
@@ -573,7 +575,13 @@ test('PrepareInfrastructureStep logs a pre-existing folder so email boxes can re
   new PrepareInfrastructureStep(logger, drive, db, new FakeTemplateEngine()).execute(ctx);
   expect(ctx.get('destFolderId')).toBe(existing);
   expect(db.table('LOG_FOLD').findAll()).toEqual([
-    expect.objectContaining({ ID: existing, TIPO: 'CD1', NOME: '5', PATH: 'Verbali/5' })
+    expect.objectContaining({
+      ID: existing,
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      NOME: '5',
+      PATH: 'Verbali/5'
+    })
   ]);
 });
 
@@ -1072,7 +1080,7 @@ test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §1
   ctx.set('newFileId', 'file_1');
   ctx.set('destFolderId', 'folder_1');
   const drive = new FakeDriveFacade();
-  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
 
   const fileAcls = drive.permissions.filter((p) => p.fileId === 'file_1');
   expect(fileAcls).toEqual([{ fileId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }]);
@@ -1089,11 +1097,53 @@ test('ApplyPermissionsStep resolves roles and applies file + folder ACLs (10 §1
   expect(drive.setPermissionsCallCount).toBe(1);
 });
 
+test('ApplyPermissionsStep skips an ACL entry whose condizione evaluates false', () => {
+  const tables = fixtureTables();
+  tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PFP', PARAMETRI: '{}' });
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  const config = pianoConfig();
+  ctx.set('config', {
+    ...config,
+    PERMESSI: JSON.stringify({
+      folder: [{ ruolo: 'REF_BES', permesso: 'LETTURA', condizione: "{{focus.piano.tipo}} != 'PFP'" }]
+    })
+  });
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildPianoCdu(db, TipoPiano.PFP));
+  ctx.set('destFolderId', 'folder_pfp');
+  const drive = new FakeDriveFacade();
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
+  expect(drive.permissions).toEqual([]);
+});
+
+test('ApplyPermissionsStep applies an ACL entry whose condizione evaluates true', () => {
+  const db = new FakeDatabase(fixtureTables()); // a1 fixture plan TIPO is PEI
+  const ctx = baseCtx(db);
+  const config = pianoConfig();
+  ctx.set('config', {
+    ...config,
+    PERMESSI: JSON.stringify({
+      folder: [{ ruolo: 'REF_BES', permesso: 'LETTURA', condizione: "{{focus.piano.tipo}} != 'PFP'" }]
+    })
+  });
+  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+  ctx.set('cdu', buildPianoCdu(db, TipoPiano.PEI));
+  ctx.set('destFolderId', 'folder_pei');
+  const drive = new FakeDriveFacade();
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
+  const emails = drive.permissions
+    .filter((p) => p.fileId === 'folder_pei')
+    .map((p) => p.email)
+    .sort();
+  expect(emails).toEqual(['bianchi@school.it', 'rossi@school.it']);
+});
+
 test('ApplyPermissionsStep is skipped when PERMESSI is null', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db); // CD1 has PERMESSI null
   const drive = new FakeDriveFacade();
-  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
   expect(drive.permissions).toEqual([]);
 });
 
@@ -1102,7 +1152,7 @@ test("ApplyPermissionsStep is skipped when PERMESSI is an empty string (regressi
   const ctx = baseCtx(db);
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, PERMESSI: '' });
   const drive = new FakeDriveFacade();
-  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+  new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
   expect(drive.permissions).toEqual([]);
 });
 
@@ -1202,7 +1252,8 @@ describe('PrepareInfrastructureStep registration metadata options', () => {
       classi: '',
       utenti: '',
       materie: '',
-      tipo: 'CD1',
+      idGen: 'CD1',
+      tipo: 'VERBALE',
       nome: '5'
     });
     findOrCreateSpy.mockRestore();
@@ -1261,7 +1312,8 @@ describe('PrepareInfrastructureStep registration metadata options', () => {
       classi: '',
       utenti: '',
       materie: '',
-      tipo: 'CD1',
+      idGen: 'CD1',
+      tipo: 'VERBALE',
       nome: 'Fisso'
     });
     findOrCreateSpy.mockRestore();
@@ -1290,7 +1342,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     });
     ctx.set('destFolderId', 'folder_1'); // newFileId intentionally left unset (null)
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
     expect(drive.permissions).toEqual([]);
   });
 
@@ -1306,7 +1358,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     });
     ctx.set('newFileId', 'file_1'); // destFolderId intentionally left unset (null)
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
     expect(drive.permissions).toEqual([]);
   });
 
@@ -1331,7 +1383,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
       ctx.set('shouldGenerate', true);
       ctx.set('newFileId', 'file_1');
       const drive = new FakeDriveFacade();
-      new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+      new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
       const fileEmails = drive.permissions
         .filter((p) => p.fileId === 'file_1')
         .map((p) => p.email)
@@ -1356,7 +1408,8 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
       new ApplyPermissionsStep(
         logger,
         new FakeDriveFacade(),
-        composeRisolutoreRuoli(db)
+        composeRisolutoreRuoli(db),
+        engine
       ).execute(ctx)
     ).toThrow(/regolaSupplente non valida/);
   });
@@ -1383,7 +1436,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
       }
     };
 
-    new ApplyPermissionsStep(logger, new FakeDriveFacade(), roles).execute(ctx);
+    new ApplyPermissionsStep(logger, new FakeDriveFacade(), roles, engine).execute(ctx);
 
     expect(seen).toEqual([GestioneSupplenti.SOLO_TITOLARI]);
   });
@@ -1404,7 +1457,7 @@ describe('ApplyPermissionsStep — newFileId/destFolderId gates and parseRegola 
     ctx.set('newFileId', 'file_1');
     ctx.set('destFolderId', 'folder_1');
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db)).execute(ctx);
+    new ApplyPermissionsStep(logger, drive, composeRisolutoreRuoli(db), engine).execute(ctx);
 
     const fileEmails = drive.permissions
       .filter((p) => p.fileId === 'file_1')

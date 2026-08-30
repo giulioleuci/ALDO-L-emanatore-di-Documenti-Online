@@ -29,10 +29,14 @@ export interface IRoleResolver {
   risolvi(ruolo: string, cdu: Cdu, options?: { regolaSupplente?: GestioneSupplenti }): Email[];
 }
 
-/** One CONF_DOC.PERMESSI ACL entry (10 §10). */
+/** One CONF_DOC.PERMESSI ACL entry (10 §10). `condizione` (optional, evaluated
+ * by GasExpressionEngineLib like CONDIZIONE/MODELLI) lets a single CONF_DOC
+ * record grant a role only for some CDU states, e.g. excluding a role from a
+ * PIANO_PERSONALIZZATO subtype without splitting the record. */
 interface AclEntry {
   ruolo: string;
   permesso: string;
+  condizione?: string;
 }
 interface PermessiConfig {
   file?: AclEntry[];
@@ -125,11 +129,10 @@ function escapeRegExp(value: string): string {
 const PROGRESSIVO_MARKER_MAX_ATTEMPTS = 16;
 const PROGRESSIVO_PROBE = '1';
 
+const utils = new UtilsService();
+
 function randomProgressivoMarker(): string {
-  const randomPart = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-    .toString(36)
-    .toUpperCase();
-  return `ALDOPROGRESSIVO${randomPart}`;
+  return `ALDOPROGRESSIVO${utils.generateCustomId(20, '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')}`;
 }
 
 /** Type-aware Drive edit link per CONF_DOC.FORMATO (10 §8, item 1). ConfigurazioneDocumento's constructor
@@ -291,7 +294,8 @@ export class PrepareInfrastructureStep extends Step {
       classi: metadata.classi,
       utenti: metadata.utenti,
       materie: metadata.materie,
-      tipo: String(cfg(ctx)[COL_CONF_DOC.ID] ?? ''),
+      idGen: String(cfg(ctx)[COL_CONF_DOC.ID] ?? ''),
+      tipo: String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? ''),
       nome: nomeCartella(path)
     };
     const { folderId } = new AlberoCartelle(this.drive, this.db).findOrCreate(path, options);
@@ -409,7 +413,8 @@ export class ApplyPermissionsStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly drive: IDriveFacade,
-    private readonly roles: IRoleResolver
+    private readonly roles: IRoleResolver,
+    private readonly engine: IExpressionEngine
   ) {
     super('ApplyPermissions', logger, {
       shouldExecuteCondition: (ctx) =>
@@ -456,7 +461,14 @@ export class ApplyPermissionsStep extends Step {
     regola: GestioneSupplenti,
     grants: PermissionGrant[]
   ): void {
-    for (const { ruolo, permesso } of acl) {
+    for (const { ruolo, permesso, condizione } of acl) {
+      if (
+        condizione !== undefined &&
+        condizione !== 'true' &&
+        !this.engine.evaluateBoolean(condizione, cduObj as unknown as Record<string, unknown>)
+      ) {
+        continue;
+      }
       for (const email of this.roles.risolvi(ruolo, cduObj, { regolaSupplente: regola })) {
         grants.push({ targetId, email: email.value, permesso });
         const key = permesso === 'SCRITTURA' ? 'permissionEditors' : 'permissionViewers';

@@ -49,7 +49,7 @@ test('the spec FK map is covered', () => {
   expect(pairs).toContain('DIPART.MATERIE->MATERIE.ID');
   expect(pairs).toContain('SUPPLENZE.SUPPLENTE->DOCENTI.EMAIL');
   expect(pairs).toContain('LOG_MAIL.PATTERN->CONF_MAIL.ID');
-  expect(pairs).toContain('LOG_FOLD.TIPO->CONF_DOC.ID');
+  expect(pairs).toContain('LOG_FOLD.ID_GEN->CONF_DOC.ID');
   expect(fks.length).toBeGreaterThanOrEqual(28);
 });
 

@@ -79,6 +79,7 @@ export interface SourceScope {
 }
 
 const DEFAULT_BORDER = '#ddd';
+const PIANI_PERS_DA_INVIARE_BORDER = '#C62828';
 const INSTANCE_SOURCE_DATA_PATH = '__ALDO_SOURCE_DATA_PATH';
 const folderProjector = new CollectionProjector({ logger: new LoggerService() });
 
@@ -229,7 +230,8 @@ function renderPianiPersBox(
   data: unknown,
   options: { config: Record<string, unknown> },
   templates: ITemplateEngine,
-  logger: LoggerService
+  logger: LoggerService,
+  forceBuiltInTemplate = false
 ): string {
   const { items, storicoRef, defaultTemplate } = data as {
     items: PianoPersonalizzatoRow[];
@@ -242,7 +244,11 @@ function renderPianiPersBox(
     | undefined;
   const explicitTemplate = str(configArricchimento?.['TEMPLATE_RIGA']);
   const wantsHistorical = typeof arricchisci === 'boolean' ? arricchisci : defaultTemplate !== '';
-  const templateRiga = wantsHistorical ? (explicitTemplate !== '' ? explicitTemplate : defaultTemplate) : '';
+  const templateRiga = forceBuiltInTemplate
+    ? DEFAULT_PIANI_PERS_TEMPLATE
+    : wantsHistorical
+      ? (explicitTemplate !== '' ? explicitTemplate : defaultTemplate)
+      : '';
 
   if (templateRiga === '') {
     const righe = items
@@ -438,7 +444,7 @@ export function createBoxComposer(
         documenti_dipartimento: (data, options) => renderDocumentiBox(data, options, templates),
         cartelle: (data, options) => renderDocumentiBox(data, options, templates),
         piani_pers_da_inviare: (data, options) =>
-          renderPianiPersBox(data, options, templates, logger),
+          renderPianiPersBox(data, options, templates, logger, true),
         piani_pers_inviati: (data, options) => renderPianiPersBox(data, options, templates, logger),
         note: (data) => renderNoteBox(data),
         assenze: () => renderAssenzeBox(),
@@ -587,7 +593,7 @@ function cartellaItem(cartella: LogCartella): DocumentoItem {
     nome: cartella.nome,
     link: cartella.getLink(),
     tipo: 'CARTELLA',
-    idGen: cartella.tipo,
+    idGen: cartella.idGen,
     sottotipo: '',
     stato: '',
     notificato: false,
@@ -733,6 +739,7 @@ export function renderBoxes(
   logger?: LoggerService
 ): {
   ordered: string[];
+  hasTriggeringContent: boolean;
   boxes: Record<string, RenderedBox>;
   documentIds: string[];
   folderIds: string[];
@@ -748,6 +755,7 @@ export function renderBoxes(
   if (renderable.length === 0)
     return {
       ordered: [],
+      hasTriggeringContent: false,
       boxes: {},
       documentIds: [],
       folderIds: [],
@@ -797,6 +805,7 @@ export function renderBoxes(
 
   const byInstance = new Map(result.blocks.map((b) => [b.instanceId, b]));
   const ordered: string[] = [];
+  let hasTriggeringContent = false;
   const boxes: Record<string, RenderedBox> = {};
   const sourceContentTypes = new Set<string>();
   const renderedDocumentItems: DocumentoItem[] = [];
@@ -834,12 +843,22 @@ export function renderBoxes(
     const titoloCfg = str(cfg['TITOLO']);
     const titolo =
       titoloCfg !== '' ? templates.processString(titoloCfg, cdu) : DEFAULT_TITLES[tipo]!;
-    const coloreBordo = str(cfg['COLORE']) !== '' ? str(cfg['COLORE']) : DEFAULT_BORDER;
+    const coloreBordo =
+      tipo === 'piani_pers_da_inviare'
+        ? PIANI_PERS_DA_INVIARE_BORDER
+        : str(cfg['COLORE']) !== ''
+          ? str(cfg['COLORE'])
+          : DEFAULT_BORDER;
     const html = inner === '' ? '' : titolo === '' ? inner : wrapBox(titolo, coloreBordo, inner);
     const renderedBox = { id: instanceId, titolo, html, isEmpty, visibile: html !== '' };
     boxes[instanceId] = renderedBox;
     boxes[tipo] = renderedBox;
-    if (html !== '') ordered.push(html);
+    if (html !== '') {
+      ordered.push(html);
+      // piani_pers_inviati is context only (previously notified plans); it must
+      // never be the sole reason an email goes out (correction to 11 §11 new).
+      if (tipo !== 'piani_pers_inviati') hasTriggeringContent = true;
+    }
   }
   const ids = (items: Array<{ id?: string | undefined }>): string[] =>
     Array.from(new Set(items.map((item) => item.id).filter((id): id is string => id !== undefined && id !== '')));
@@ -854,6 +873,7 @@ export function renderBoxes(
     .filter((item) => item.id !== '');
   return {
     ordered,
+    hasTriggeringContent,
     boxes,
     documentIds: ids(documentIds),
     folderIds: ids(renderedFolderItems),

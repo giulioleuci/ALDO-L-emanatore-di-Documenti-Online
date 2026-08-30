@@ -6,6 +6,7 @@ import { ValidationError } from '../../domain/errors/DomainError';
 import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { ApplyPermissionsStep } from '../../application/pipelines/documentSteps';
+import { ExpressionEngineFacade } from '../../infrastructure/facades/ExpressionEngineFacade';
 import {
   SheetMaterieConPermessiGeneratorStrategy,
   protectionGestioneSupplenti
@@ -141,7 +142,9 @@ export function visibilitySnapshot(
   pipeline.set('shouldGenerate', true);
   pipeline.set('newFileId', 'visibility-file');
   pipeline.set('destFolderId', 'visibility-folder');
-  new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(pipeline);
+  new ApplyPermissionsStep(new LoggerService(), drive, roles, new ExpressionEngineFacade()).execute(
+    pipeline
+  );
 
   const protectionRequests: SpreadsheetProtectRequest[] = [];
   const capturedLayout: SheetColumnLayout[] = [];

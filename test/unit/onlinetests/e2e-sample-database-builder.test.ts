@@ -918,7 +918,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(String(mail![COL_CONF_MAIL.TESTO_START])).not.toMatch(/in allegato/i);
 });
 
-test('E2E personalized-plan email template uses the readable label for every current plan', () => {
+test('E2E personalized-plan email relies on the built-in box renderer', () => {
   const { spreadsheets, sheets, master } = factory();
   new SharedTestDatabaseBuilder(spreadsheets, new FakeDriveFacade(), testArtifactFactory()).build(
     TEMPLATE_IDS,
@@ -929,15 +929,10 @@ test('E2E personalized-plan email template uses the readable label for every cur
   const mail = sample.rows[TABLE.CONF_MAIL]!.find((r) => r[COL_CONF_MAIL.ID] === CONF_MAIL_PIANI)!;
   const boxes = JSON.parse(String(mail[COL_CONF_MAIL.BOX_CFG])) as Array<{
     TIPO_BOX: string;
-    CONFIG_ARRICCHIMENTO?: { TEMPLATE_RIGA?: string };
   }>;
-  const template = boxes.find((box) => box.TIPO_BOX === 'piani_pers_da_inviare')!
-    .CONFIG_ARRICCHIMENTO?.TEMPLATE_RIGA;
-  expect(template).toContain('{{corrente.studente.nomeCompleto}} - {{corrente.tipoLabel}}');
-  expect(template).not.toContain('{{corrente.sottotipo}}');
-  expect(template).toContain('<a href="{{corrente.link}}"');
-  expect(template).not.toContain('E2E_CURRENT=');
-  expect(template).not.toContain('E2E_LINK=');
+  expect(boxes.find((box) => box.TIPO_BOX === 'piani_pers_da_inviare')).toEqual({
+    TIPO_BOX: 'piani_pers_da_inviare'
+  });
 });
 
 test('seeds a CONF_IMP row importing the ASL sheet into TABLE.ASL, keyed on STUDENTE', () => {

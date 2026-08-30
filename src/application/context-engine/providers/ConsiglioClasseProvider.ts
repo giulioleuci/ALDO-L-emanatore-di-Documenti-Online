@@ -9,7 +9,8 @@ import {
   buildSupplenzeAggregate,
   createTeachingCouncilProjection,
   prepareCouncilAssignments,
-  resolveCouncilForProjection
+  resolveEffectiveCouncil,
+  resolveTitolareCouncil
 } from '../TeachingCouncilProjection';
 import { getClasseEntity } from '../techEntities';
 
@@ -35,16 +36,15 @@ export class ConsiglioClasseProvider implements ContextProvider {
     const focusClasse = cdu.focus.classe;
     if (focusClasse === undefined) return;
     const classe = getClasseEntity(cdu);
-    const assignments = resolveCouncilForProjection(
-      this.teachingAssignments,
-      classe,
-      new Date(cdu.meta.date.oggi.iso),
-      options.gestioneSupplenti
-    );
+    const date = new Date(cdu.meta.date.oggi.iso);
+    const assignments = resolveEffectiveCouncil(this.teachingAssignments, classe, date);
+    const titolareAssignments = resolveTitolareCouncil(this.teachingAssignments, classe, date);
     focusClasse.consiglioDiClasse = prepareCouncilAssignments(assignments) as never;
+    focusClasse.consiglioDiClasseTitolare = prepareCouncilAssignments(titolareAssignments) as never;
     focusClasse.supplenze = buildSupplenzeAggregate(assignments, this.materie, classe);
     this.projection.intercept('consiglio', cdu, cdu, options);
     attachCouncilProjectionMetadata(cdu, assignments);
+    attachCouncilProjectionMetadata(cdu, titolareAssignments, focusClasse.consiglioDiClasseTitolare ?? []);
 
     if (this.classi.isArticolata(classe)) {
       const consiglio: DocenteCdcVM[] = focusClasse.consiglioDiClasse ?? [];
@@ -62,6 +62,10 @@ export class ConsiglioClasseProvider implements ContextProvider {
         const ownSeparato = separato.filter((docente) => docente.tipoArticolazione === ownBranch);
         focusClasse.consiglioDiClasseSeparato = ownSeparato;
         focusClasse.consiglioDiClasse = [...comune, ...ownSeparato] as never;
+        const titolare: DocenteCdcVM[] = focusClasse.consiglioDiClasseTitolare ?? [];
+        focusClasse.consiglioDiClasseTitolare = titolare.filter(
+          (docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === ownBranch
+        );
       } else {
         focusClasse.consiglioDiClasseSeparato = separato;
       }

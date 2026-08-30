@@ -5,7 +5,7 @@ import { ConfigurationError } from '../../domain/errors/DomainError';
 export interface AldoImportConfig {
   searchStrategy: 'FILE_SINGOLO' | 'CERCA_CARTELLE_CLASSE' | 'CERCA_DOCUMENTI';
   fileId?: string;
-  /** CERCA_CARTELLE_CLASSE: LOG_FOLD.TIPO to scan for in each active class's folders. */
+  /** CERCA_CARTELLE_CLASSE: LOG_FOLD.ID_GEN to scan for in each active class's folders. */
   folderTipo?: string;
   /** CERCA_DOCUMENTI: LOG_DOCS.ID_GEN to search for. */
   idGen?: string;

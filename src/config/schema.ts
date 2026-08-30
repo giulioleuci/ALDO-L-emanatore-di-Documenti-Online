@@ -226,6 +226,7 @@ export const COL_LOG_DOCS = {
 
 export const COL_LOG_FOLD = {
   ID: 'ID',
+  ID_GEN: 'ID_GEN',
   TIPO: 'TIPO',
   NOME: 'NOME',
   PATH: 'PATH',

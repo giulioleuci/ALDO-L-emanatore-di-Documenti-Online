@@ -155,7 +155,12 @@ export interface RecipeOptionsView {
 
 export interface CduIstituto {
   organizzazione: { annoScolastico: string; dirigente: { nomeCompleto: string } };
-  staff: { referenteBes: PersonVM | null; animatoreDigitale: PersonVM | null };
+  /** Fixed aliases for the two conventional roles, plus one entry per `RUOLI` row keyed by its raw ID (02 §3). */
+  staff: {
+    referenteBes: PersonVM | null;
+    animatoreDigitale: PersonVM | null;
+    [ruoloId: string]: PersonVM | null;
+  };
   statistiche?: { totaleClassi: number; totaleDocenti: number; totaleAlunni: number };
 }
 
@@ -204,9 +209,12 @@ export interface CduClasse {
     studenti: Array<{ nomeCompleto: string; email: string; indirizzo?: { nome: string } }>;
     genitori: Array<{ nomeCompleto: string; studente: { nomeCompleto: string }; indirizzo?: { nome: string } }>;
   };
+  /** Always the docente effettivamente in carica (SUPPLENZE incluse, oltre a VARIAZIONI_CATTEDRA) — indipendente da `opzioni.gestioneSupplenti`. */
   consiglioDiClasse?: DocenteCdcVM[];
   consiglioDiClasseComune?: DocenteCdcVM[];
   consiglioDiClasseSeparato?: DocenteCdcVM[];
+  /** Docente titolare (VARIAZIONI_CATTEDRA incluse, SUPPLENZE escluse) — sempre popolato, indipendente da `opzioni.gestioneSupplenti`. */
+  consiglioDiClasseTitolare?: DocenteCdcVM[];
   /** Active supplenze aggregated per (supplente, titolare) pair (02 §4.1/§8.12) — always set when the `consiglio` provider runs (`[]` if none). */
   supplenze?: SupplenzaAggregataVM[];
   /** Disaggregated per-partner-class projection for an articulated parent (02 §2.5), only when `includiPartnerDettaglio` is true. */
@@ -308,6 +316,8 @@ export interface CduAlunno {
   curriculum: CurriculumVM[];
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
   consiglioDiClasseFiltrato?: DocenteCdcVM[];
+  /** Materie distinte di `consiglioDiClasseFiltrato`, per `tablecol_loop` nei Docs (02 §8.8). */
+  elencoMaterieFiltrate?: SubjectVM[];
   storico?: LazyRef<StudentStoricoVM>;
   didattica: {
     carenze: {

@@ -1,6 +1,7 @@
 import { Email } from '../value-objects/Email';
 import { COL_RUOLI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
+import { splitCsvValues } from '../value-objects/CsvScope';
 
 export type RuoloSpecialeData = {
   [COL_RUOLI.ID]?: string;
@@ -26,11 +27,7 @@ export class RuoloSpeciale extends AldoEntity {
 
   /** Emails of all teachers holding the role (CSV parsed). */
   getEmails(): Email[] {
-    return this.docenteRaw
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map((s) => Email.of(s));
+    return splitCsvValues(this.docenteRaw).map((s) => Email.of(s));
   }
 
   hasDocente(email: Email): boolean {

@@ -343,6 +343,38 @@ describe('email pipeline operational log details', () => {
     });
   });
 
+  test('piani_pers_inviati content alone (no new plans) does not trigger delivery', () => {
+    const tables = fixtureTables();
+    (tables['LOG_DOCS'] as Row[]).push({
+      ID: 'piano-notificato',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PEI',
+      NOME: 'PEI notificato',
+      STATO: 'GENERATO',
+      NOTIFICATO: '2025-11-14T09:00:00.000Z',
+      CLASSI: '5A',
+      UTENTI: 'a1@school.it'
+    });
+    const w = wire(
+      {
+        PROCESSO: 'PER_COORDINATORE',
+        BOX_CFG: JSON.stringify([
+          { TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false },
+          { TIPO_BOX: 'piani_pers_inviati', ARRICCHISCI_CON_STORICO: false }
+        ])
+      },
+      docenteTarget(),
+      tables
+    );
+
+    const ordered = runThroughRender(w);
+
+    expect(ordered).toHaveLength(1);
+    expect(ordered[0]).toContain('VERDI ANNA - PEI');
+    expect(w.ctx.get('shouldSend')).toBe(false);
+  });
+
   test('publishes the subject and attachment count without the composed HTML body', () => {
     const w = wire({ OGGETTO: 'Convocazione consiglio', ALLEGATI_STATICI: '["file-1","file-2"]' });
     runThroughRender(w);
@@ -930,7 +962,7 @@ test('BuildCDUStep leaves includiStorico false when no box wants historical data
   expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(false);
 });
 
-test('BuildCDUStep respects an explicit arricchisciConStorico:false override on piani_pers_da_inviare', () => {
+test('BuildCDUStep always enables history for piani_pers_da_inviare despite an explicit false configuration', () => {
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
@@ -940,7 +972,7 @@ test('BuildCDUStep respects an explicit arricchisciConStorico:false override on 
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(false);
+  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
 });
 
 // --- Step 2: ValutaCondizioniInvioStep ---

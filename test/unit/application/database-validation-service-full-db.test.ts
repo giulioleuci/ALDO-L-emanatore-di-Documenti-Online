@@ -165,13 +165,13 @@ test('the full ~60-rule table produces no violations on the realistic, fully-see
     'INDIRIZZI|2|TIPO|Valore non ammesso per TIPO: "Liceo" (ammessi: LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)',
     'INDIRIZZI|3|TIPO|Valore non ammesso per TIPO: "Liceo" (ammessi: LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)',
     'INDIRIZZI|4|TIPO|Valore non ammesso per TIPO: "Liceo" (ammessi: LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)',
-    'LOG_FOLD|2|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|3|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|4|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|5|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|6|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|7|TIPO|FK violata: TIPO "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
-    'LOG_FOLD|8|TIPO|FK violata: TIPO "E2E_FILTER_DECOY" non esiste in CONF_DOC.ID'
+    'LOG_FOLD|2|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
+    'LOG_FOLD|3|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
+    'LOG_FOLD|4|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
+    'LOG_FOLD|5|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
+    'LOG_FOLD|6|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
+    'LOG_FOLD|7|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
+    'LOG_FOLD|8|ID_GEN|FK violata: ID_GEN "E2E_FILTER_DECOY" non esiste in CONF_DOC.ID'
   ]);
 
   // The important assertion for this fix wave: no CLASSI/DOCENTI-cattedre

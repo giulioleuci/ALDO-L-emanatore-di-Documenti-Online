@@ -37,6 +37,30 @@ test('INSERISCI_TIMESTAMP stamps matching rows via template criteri (11 §10)', 
   expect(rows.find((r) => r['STUDENTE'] === 'a2@school.it')!['NOTIFICATO']).toBe('');
 });
 
+test('INSERISCI_TIMESTAMP does not overwrite an already-stamped row (first send wins)', () => {
+  const tables = fixtureTables();
+  tables['CARENZE'] = tables['CARENZE']!.map((r) =>
+    r['STUDENTE'] === 'a1@school.it' && r['DATA'] === '2026-02-15'
+      ? { ...r, NOTIFICATO: '2026-01-01T00:00:00.000Z' }
+      : r
+  );
+  const db = new FakeDatabase(tables);
+  const actions = JSON.stringify([
+    {
+      tipo: 'INSERISCI_TIMESTAMP',
+      tab: 'CARENZE',
+      col: 'NOTIFICATO',
+      criteri: { STUDENTE: '{{focus.alunno.anagrafica.email}}', DATA: '{{focus.carenza.data}}' }
+    }
+  ]);
+  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  expect(n).toBe(0);
+  const hit = db.tables['CARENZE']!
+    .getAllRows()
+    .find((r) => r['STUDENTE'] === 'a1@school.it' && r['DATA'] === '2026-02-15')!;
+  expect(hit['NOTIFICATO']).toBe('2026-01-01T00:00:00.000Z');
+});
+
 test('AGGIORNA_CAMPO writes a resolved value', () => {
   const db = new FakeDatabase(fixtureTables());
   const actions = JSON.stringify([

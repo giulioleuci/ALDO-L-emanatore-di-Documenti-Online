@@ -35,7 +35,7 @@ export class Piano extends AldoEntity {
   }
 
   getParametri(): Record<string, unknown> {
-    return this.parametriRaw === null
+    return this.parametriRaw === null || this.parametriRaw.trim() === ''
       ? {}
       : (JSON.parse(this.parametriRaw) as Record<string, unknown>);
   }

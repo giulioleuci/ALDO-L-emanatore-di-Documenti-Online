@@ -172,17 +172,23 @@ test('setPermission maps PermessoACL to the Drive v3 role and shares via Permiss
   );
 });
 
-test('setPermissions groups grants by permesso into one shareWithUsers call per Drive role, merging targets and deduping emails', () => {
+test('setPermissions groups grants by targetId+permesso into one shareWithUsers call per target/role pair, deduping emails but never merging targets', () => {
   const { drive, perms } = fakeDrive();
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
   facade.setPermissions([
     { targetId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' },
-    { targetId: 'folder_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }, // same email+role on 2nd target: still one call
+    { targetId: 'file_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }, // dup: still one email in the call
+    { targetId: 'folder_1', email: 'rossi@school.it', permesso: 'SCRITTURA' }, // same email+role, different target: separate call, never merged with file_1
     { targetId: 'folder_1', email: 'bianchi@school.it', permesso: 'LETTURA' }
   ]);
-  expect(perms.shareWithUsers).toHaveBeenCalledTimes(2);
+  expect(perms.shareWithUsers).toHaveBeenCalledTimes(3);
   expect(perms.shareWithUsers).toHaveBeenCalledWith(
-    ['file_1', 'folder_1'],
+    ['file_1'],
+    [{ type: 'user', role: 'writer', email: 'rossi@school.it' }],
+    { sendNotificationEmail: false }
+  );
+  expect(perms.shareWithUsers).toHaveBeenCalledWith(
+    ['folder_1'],
     [{ type: 'user', role: 'writer', email: 'rossi@school.it' }],
     { sendNotificationEmail: false }
   );
@@ -191,6 +197,27 @@ test('setPermissions groups grants by permesso into one shareWithUsers call per 
     [{ type: 'user', role: 'reader', email: 'bianchi@school.it' }],
     { sendNotificationEmail: false }
   );
+});
+
+test('setPermissions never lets a file-only grantee leak onto the folder (or vice versa) when both use the same permesso', () => {
+  const { drive, perms } = fakeDrive();
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  facade.setPermissions([
+    { targetId: 'file_1', email: 'file-only@school.it', permesso: 'LETTURA' },
+    { targetId: 'folder_1', email: 'folder-only@school.it', permesso: 'LETTURA' }
+  ]);
+  const fileCall = perms.shareWithUsers.mock.calls.find((c: unknown[]) =>
+    (c[0] as string[]).includes('file_1')
+  );
+  const folderCall = perms.shareWithUsers.mock.calls.find((c: unknown[]) =>
+    (c[0] as string[]).includes('folder_1')
+  );
+  expect(fileCall![0]).toEqual(['file_1']);
+  expect(fileCall![1]).toEqual([{ type: 'user', role: 'reader', email: 'file-only@school.it' }]);
+  expect(folderCall![0]).toEqual(['folder_1']);
+  expect(folderCall![1]).toEqual([
+    { type: 'user', role: 'reader', email: 'folder-only@school.it' }
+  ]);
 });
 
 test('setPermissions is a no-op when there is nothing to grant', () => {

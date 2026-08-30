@@ -53,5 +53,5 @@ export function resolveLogRegistration(
 }
 
 function normalizeCsv(value: string): string {
-  return [...new Set(value.split(',').map((part) => part.trim()).filter(Boolean))].join(',');
+  return [...new Set(splitCsvList(value))].join(',');
 }

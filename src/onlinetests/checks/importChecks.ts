@@ -288,7 +288,7 @@ function readCartelleClasseFolderTipo(
 function readEligibleClasses(logFoldRows: AslRow[], folderTipo: string, label: string): string[] {
   const classes = new Set<string>();
   for (const row of logFoldRows) {
-    if (row[COL_LOG_FOLD.TIPO] !== folderTipo) continue;
+    if (row[COL_LOG_FOLD.ID_GEN] !== folderTipo) continue;
     const classe = stringValue(row[COL_LOG_FOLD.CLASSI]).trim();
     if (classe !== '') classes.add(classe);
   }

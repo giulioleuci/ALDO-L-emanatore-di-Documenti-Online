@@ -45,7 +45,6 @@
     "babel-plugin-istanbul": "^8.0.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-jest": "^29.12.1",
     "gas-webpack-plugin": "^2.3.0",
     "globals": "^14.0.0",
     "istanbul-lib-coverage": "^3.2.2",

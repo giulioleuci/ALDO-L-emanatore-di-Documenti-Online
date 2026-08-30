@@ -118,7 +118,7 @@ test('LOG_DOCS exposes a parent-owned document to its direct partner only', () =
 
 test('LOG_FOLD: findByClasse / findByTipo + registraCartella (06 §18)', () => {
   const db = new FakeDatabase({
-    LOG_FOLD: [{ ID: 'd1', TIPO: 'CD1', NOME: 'Verbali', CLASSI: '5A' }]
+    LOG_FOLD: [{ ID: 'd1', ID_GEN: 'CD1', NOME: 'Verbali', CLASSI: '5A' }]
   });
   const r = new LogCartellaRepository(db);
   expect(r.findByClasse(classe5A).map((l) => l.id)).toEqual(['d1']);

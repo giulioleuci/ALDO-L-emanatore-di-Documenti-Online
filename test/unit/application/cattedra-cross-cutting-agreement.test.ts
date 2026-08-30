@@ -14,6 +14,7 @@ import { ClasseRepository } from '../../../src/infrastructure/repositories/Class
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { resolveEffectiveDocenti } from '../../../src/application/context-engine/TeachingCouncilProjection';
 import { ApplyPermissionsStep } from '../../../src/application/pipelines/documentSteps';
+import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { SheetMaterieConPermessiGeneratorStrategy } from '../../../src/application/strategies/SheetMaterieConPermessiGeneratorStrategy';
@@ -330,8 +331,15 @@ describe('complete effective-assignment acceptance matrix', () => {
         )
       )
     );
+    // consiglioDiClasse is now always effettivo-only and consiglioDiClasseTitolare
+    // always titolare-only (independent of gestioneSupplenti); their union
+    // reconstructs the full titolare+effettivo set the old ENTRAMBI-driven
+    // consiglioDiClasse used to carry in one array.
     const fullCduRecipients = sorted(
-      new Set(classCdu.focus.classe!.consiglioDiClasse.map((docente) => docente.anagrafica.email))
+      new Set([
+        ...classCdu.focus.classe!.consiglioDiClasse!.map((docente) => docente.anagrafica.email),
+        ...classCdu.focus.classe!.consiglioDiClasseTitolare!.map((docente) => docente.anagrafica.email)
+      ])
     );
     const roleRecipients = sorted(
       roles
@@ -383,7 +391,9 @@ describe('complete effective-assignment acceptance matrix', () => {
     documentCtx.set('shouldGenerate', true);
     documentCtx.set('newFileId', 'matrix-document');
     const drive = new FakeDriveFacade();
-    new ApplyPermissionsStep(new LoggerService(), drive, roles).execute(documentCtx);
+    new ApplyPermissionsStep(new LoggerService(), drive, roles, new ExpressionEngineFacade()).execute(
+      documentCtx
+    );
     const documentAclRecipients = sorted(
       drive.permissions
         .filter((permission) => permission.fileId === 'matrix-document')

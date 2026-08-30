@@ -6,7 +6,10 @@ import { fixtureTables, teachingSlotFixtureTables } from '../../../fixtures/tabl
 import type { Row } from '../../../../src/infrastructure/db/Database';
 import { MasterSheetRepository } from '../../../../src/infrastructure/repositories/MasterSheetRepository';
 import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
-import { studentCouncilFilterOperations } from '../../../../src/application/context-engine/TeachingCouncilProjection';
+import {
+  materieDistinteConsiglioFiltrato,
+  studentCouncilFilterOperations
+} from '../../../../src/application/context-engine/TeachingCouncilProjection';
 
 // IRC teacher distinct from any subject teacher of 5A, so religion filtering is observable.
 function tablesWithIrc(): Record<string, Row[]> {
@@ -108,4 +111,33 @@ test('Task 6 filters arbitrary specificities into their accepted composite catal
       ['INTERPRET.CHITARRA', null]
     ])
   );
+
+  expect(materieDistinteConsiglioFiltrato(consiglio)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ sigla: 'LAB.GRUPPO_A' }),
+      expect.objectContaining({ sigla: 'INTERPRET.CHITARRA' })
+    ])
+  );
+});
+
+describe('materieDistinteConsiglioFiltrato', () => {
+  function docente(materie: Array<{ sigla: string; nome: string }>): DocenteCdcVM {
+    return { materie } as unknown as DocenteCdcVM;
+  }
+
+  test('dedupes materie shared by multiple docenti and sorts by sigla', () => {
+    const result = materieDistinteConsiglioFiltrato([
+      docente([{ sigla: 'MAT', nome: 'Matematica' }]),
+      docente([
+        { sigla: 'ITA', nome: 'Italiano' },
+        { sigla: 'MAT', nome: 'Matematica' }
+      ])
+    ]);
+    expect(result.map((m) => m.sigla)).toEqual(['ITA', 'MAT']);
+    expect(result[0]).toEqual({ sigla: 'ITA', nome: 'Italiano' });
+  });
+
+  test('returns an empty array when the filtered CdC is empty', () => {
+    expect(materieDistinteConsiglioFiltrato([])).toEqual([]);
+  });
 });

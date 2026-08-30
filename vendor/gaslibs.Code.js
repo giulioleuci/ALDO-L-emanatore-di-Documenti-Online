@@ -18475,19 +18475,42 @@ class DocumentContentExtractor {
       const seenTextIndices = new Set();
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+      const tableOrdinalByStartIndex = new Map();
       let phase1IterationCount = 0;
       const PHASE1_MAX_ITERATIONS = 10000;
-      for (const element of structure.body.content) {
-        if (++phase1IterationCount > PHASE1_MAX_ITERATIONS) {
-          this._logger.warn(`Reached maximum iteration limit (${PHASE1_MAX_ITERATIONS}) while extracting tables`);
-          break;
-        }
-        if (element.type === 'TABLE') {
+      let phase1LimitReached = false;
+      const collectTables = elements => {
+        for (const element of elements) {
+          if (phase1LimitReached) {
+            return;
+          }
+          if (++phase1IterationCount > PHASE1_MAX_ITERATIONS) {
+            this._logger.warn(`Reached maximum iteration limit (${PHASE1_MAX_ITERATIONS}) while extracting tables`);
+            phase1LimitReached = true;
+            return;
+          }
+          if (element.type !== 'TABLE') {
+            continue;
+          }
           const tableData = {
             index: result.tables.length,
             startIndex: element.startIndex,
             rows: []
           };
+          tableOrdinalByStartIndex.set(element.startIndex, tableData.index);
           for (const tableRow of element.tableRows) {
             const rowData = {
               index: tableRow.rowIndex,
@@ -18503,17 +18526,21 @@ class DocumentContentExtractor {
             tableData.rows.push(rowData);
           }
           result.tables.push(tableData);
+          for (const tableRow of element.tableRows) {
+            for (const cell of tableRow.cells) {
+              if (cell.content && cell.content.length > 0) {
+                collectTables(cell.content);
+              }
+            }
+          }
         }
-      }
+      };
+      collectTables(structure.body.content);
 
 
       for (const pattern of textPatterns) {
         let iterationCount = 0;
         const MAX_ITERATIONS = 10000;
-
-
-
-        let tableOrdinal = -1;
         for (const element of structure.body.content) {
           if (++iterationCount > MAX_ITERATIONS) {
             this._logger.warn(`Reached maximum iteration limit (${MAX_ITERATIONS}) for pattern: ${pattern}`);
@@ -18533,7 +18560,11 @@ class DocumentContentExtractor {
               seenTextIndices.add(elementIndex);
             }
           } else if (element.type === 'TABLE') {
-            tableOrdinal++;
+
+
+
+
+            const tableOrdinal = tableOrdinalByStartIndex.get(element.startIndex);
             for (const tableRow of element.tableRows || []) {
               for (const cell of tableRow.cells) {
                 if (cell.text && cell.text.includes(pattern)) {

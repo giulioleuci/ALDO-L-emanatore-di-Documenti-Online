@@ -114,7 +114,7 @@ export function regoleValidazione(): DatasetValidationRule[] {
     fk('FK_LOG_DOCS_ID_GEN', TABLE.LOG_DOCS, COL_LOG_DOCS.ID_GEN, TABLE.CONF_DOC, COL_CONF_DOC.ID),
     fk('FK_LOG_DOCS_CLASSI', TABLE.LOG_DOCS, COL_LOG_DOCS.CLASSI, TABLE.CLASSI, COL_CLASSI.ID, { csv: true }),
     fk('FK_LOG_DOCS_MATERIE', TABLE.LOG_DOCS, COL_LOG_DOCS.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, { csv: true }),
-    fk('FK_LOG_FOLD_TIPO', TABLE.LOG_FOLD, COL_LOG_FOLD.TIPO, TABLE.CONF_DOC, COL_CONF_DOC.ID),
+    fk('FK_LOG_FOLD_ID_GEN', TABLE.LOG_FOLD, COL_LOG_FOLD.ID_GEN, TABLE.CONF_DOC, COL_CONF_DOC.ID),
     fk('FK_LOG_MAIL_PATTERN', TABLE.LOG_MAIL, COL_LOG_MAIL.PATTERN, TABLE.CONF_MAIL, COL_CONF_MAIL.ID),
 
     // CLASSI's dynamic per-subject/specifica columns (e.g. MAT, INF.itp,
@@ -129,7 +129,7 @@ export function regoleValidazione(): DatasetValidationRule[] {
         const statiche = new Set<string>(Object.values(COL_CLASSI));
         for (const [column, value] of Object.entries(row)) {
           if (statiche.has(column)) continue; // COORD/IRC/ALT already have their own FK rules
-          for (const email of scalarString(value).split(',').map((s) => s.trim()).filter((s) => s !== '')) {
+          for (const email of splitCsvList(scalarString(value))) {
             if (!docenti.has(email)) return { column, value: email };
           }
         }
@@ -219,7 +219,7 @@ export function regoleValidazione(): DatasetValidationRule[] {
         for (const [column, value] of Object.entries(row)) {
           if (!column.endsWith('.itp')) continue;
           const raw = scalarString(value);
-          for (const email of raw.split(',').map((s) => s.trim()).filter((s) => s !== '')) {
+          for (const email of splitCsvList(raw)) {
             itpEmails.add(`${column}|${email}`);
           }
         }

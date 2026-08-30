@@ -1,6 +1,6 @@
 import { composeContextBuilder } from '../../../../src/config/ApplicationComposition';
 import { recipe } from '../../../../src/application/context-engine/Recipe';
-import type { DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
+import type { CduClasse, DocenteCdcVM } from '../../../../src/application/context-engine/Cdu';
 import { GestioneSupplenti } from '../../../../src/domain/value-objects/enums';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
@@ -30,54 +30,57 @@ function tablesWith4B(): Record<string, Row[]> {
 
 const duringSupplenza = new Date('2025-11-15T09:00:00Z');
 
-function cdc(gestione?: GestioneSupplenti, now = duringSupplenza): DocenteCdcVM[] {
+function focusClasse(gestione?: GestioneSupplenti, now = duringSupplenza): CduClasse {
   const overrides = gestione === undefined ? {} : { gestioneSupplenti: gestione };
   const cdu = composeContextBuilder(new FakeDatabase(tablesWith4B())).build(
     { target: '4B', tipoTarget: 'classe', now },
     recipe('CLASSE_COMPLETA', overrides)
   );
-  return cdu.focus.classe!.consiglioDiClasse!;
+  return cdu.focus.classe!;
 }
 const rossiSlot = (list: DocenteCdcVM[]) =>
   list.find((d) => d.materie.some((m) => m.sigla === 'MATE'))!;
 
-test('SOLO_SUPPLENTI: the titolare VM becomes the chain-resolved supplente (09 §5)', () => {
-  const rossi = rossiSlot(cdc(GestioneSupplenti.SOLO_SUPPLENTI));
-  expect(rossi.anagrafica).toMatchObject({
-    nome: 'LUCIA',
-    cognome: 'BIANCHI',
-    email: 'bianchi@school.it',
-    genere: 'F',
-    appellativo: 'Prof.ssa'
-  });
-  expect(rossi.stato.isSupplente).toBe(true);
-  expect(rossi.stato.sostituisce).toMatchObject({
-    nomeCompleto: 'MARIO ROSSI',
-    email: 'rossi@school.it'
-  });
-  expect(rossi.materie.map((m) => m.sigla)).toEqual(['MATE']); // subject covered by the supplente
-});
+// gestioneSupplenti only steers email routing (EmailNotificationService) --
+// consiglioDiClasse/consiglioDiClasseTitolare are always built from fixed
+// policies (DELEGATE_OR_PRINCIPAL / PRINCIPAL_ONLY), independent of it.
+const anyGestione = [undefined, GestioneSupplenti.SOLO_TITOLARI, GestioneSupplenti.SOLO_SUPPLENTI, GestioneSupplenti.ENTRAMBI];
 
-test('ENTRAMBI: the GLF primary actor is projected first with the principal in sostituisce (09 §5)', () => {
-  const rossi = rossiSlot(cdc(GestioneSupplenti.ENTRAMBI));
-  expect(rossi.anagrafica.email).toBe('bianchi@school.it');
-  expect(rossi.stato.isSupplente).toBe(true);
-  expect(rossi.stato.sostituisce).toMatchObject({
-    nomeCompleto: 'MARIO ROSSI',
-    email: 'rossi@school.it'
-  });
-});
+test.each(anyGestione)(
+  'consiglioDiClasse always shows the effective actor, SUPPLENZE included (gestioneSupplenti=%s)',
+  (gestione) => {
+    const bianchi = rossiSlot(focusClasse(gestione).consiglioDiClasse!);
+    expect(bianchi.anagrafica).toMatchObject({
+      nome: 'LUCIA',
+      cognome: 'BIANCHI',
+      email: 'bianchi@school.it',
+      genere: 'F',
+      appellativo: 'Prof.ssa'
+    });
+    expect(bianchi.stato.isSupplente).toBe(true);
+    expect(bianchi.stato.sostituisce).toMatchObject({
+      nomeCompleto: 'MARIO ROSSI',
+      email: 'rossi@school.it'
+    });
+    expect(bianchi.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  }
+);
 
-test('default rule (SOLO_TITOLARI): no swap even during an active supplenza', () => {
-  const rossi = rossiSlot(cdc());
-  expect(rossi.anagrafica.email).toBe('rossi@school.it');
-  expect(rossi.stato).toEqual({ isSupplente: false, sostituisce: null });
-});
+test.each(anyGestione)(
+  'consiglioDiClasseTitolare stays on the titolare of record, SUPPLENZE excluded (gestioneSupplenti=%s)',
+  (gestione) => {
+    const rossi = rossiSlot(focusClasse(gestione).consiglioDiClasseTitolare!);
+    expect(rossi.anagrafica.email).toBe('rossi@school.it');
+    expect(rossi.stato).toEqual({ isSupplente: false, sostituisce: null });
+  }
+);
 
-test('SOLO_SUPPLENTI outside the supplenza window: no swap', () => {
-  const rossi = rossiSlot(cdc(GestioneSupplenti.SOLO_SUPPLENTI, new Date('2026-07-01T09:00:00Z')));
-  expect(rossi.anagrafica.email).toBe('rossi@school.it');
-  expect(rossi.stato.isSupplente).toBe(false);
+test('outside the supplenza window: consiglioDiClasse and consiglioDiClasseTitolare both show rossi', () => {
+  const fc = focusClasse(undefined, new Date('2026-07-01T09:00:00Z'));
+  const effettivo = rossiSlot(fc.consiglioDiClasse!);
+  expect(effettivo.anagrafica.email).toBe('rossi@school.it');
+  expect(effettivo.stato.isSupplente).toBe(false);
+  expect(rossiSlot(fc.consiglioDiClasseTitolare!).anagrafica.email).toBe('rossi@school.it');
 });
 
 test('focus.classe.supplenze aggregates active delegations even under the default SOLO_TITOLARI routing', () => {

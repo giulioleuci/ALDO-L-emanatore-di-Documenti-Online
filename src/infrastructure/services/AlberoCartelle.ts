@@ -8,6 +8,7 @@ interface FindOrCreateOptions {
   materie?: string;
   classe?: string;
   utente?: string;
+  idGen?: string;
   tipo?: string;
   nome?: string;
 }
@@ -66,6 +67,7 @@ export class AlberoCartelle {
     const row: Row = {
       ...(current ?? {}),
       [COL_LOG_FOLD.ID]: folderId,
+      [COL_LOG_FOLD.ID_GEN]: firstNonBlank(current?.[COL_LOG_FOLD.ID_GEN], options.idGen),
       [COL_LOG_FOLD.TIPO]: firstNonBlank(current?.[COL_LOG_FOLD.TIPO], options.tipo),
       [COL_LOG_FOLD.NOME]: firstNonBlank(
         current?.[COL_LOG_FOLD.NOME],
@@ -100,7 +102,7 @@ function folderName(path: string): string {
 }
 
 function mergeCsv(current: unknown, next: string | undefined): string {
-  const values = typeof current === 'string' ? current.split(',').map((value) => value.trim()) : [];
-  if (next !== undefined) values.push(...next.split(',').map((value) => value.trim()));
-  return [...new Set(values.filter((value) => value !== ''))].join(',');
+  const values = typeof current === 'string' ? splitCsvList(current) : [];
+  if (next !== undefined) values.push(...splitCsvList(next));
+  return [...new Set(values)].join(',');
 }

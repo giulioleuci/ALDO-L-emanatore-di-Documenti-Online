@@ -103,16 +103,25 @@ function updateMatching(
   db: PostProcessDb,
   tab: string,
   match: Record<string, string>,
-  patch: Record<string, unknown>
+  patch: Record<string, unknown>,
+  onlyIf?: (row: EntityData) => boolean
 ): number {
   const table = db.tables[tab];
   if (table === undefined) return 0;
   const keys = Object.keys(match);
-  const hits = findMatchingRows(table, keys, match);
+  const hits = findMatchingRows(table, keys, match).filter(
+    (row) => onlyIf === undefined || onlyIf(row)
+  );
   for (const row of hits) {
     table.updateRowWhere({ ...row }, { ...row, ...patch });
   }
   return hits.length;
+}
+
+/** Blank covers both an unset cell and the '' a live Sheets round-trip returns for it. */
+function isBlank(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  return typeof value === 'string' && value.trim() === '';
 }
 
 /** Runs every action in the POST_PROCESSO JSON array; returns the number of updated rows. */
@@ -129,11 +138,21 @@ export function executePostProcess(
   for (const action of actions) {
     const criteri = resolveCriteri(action.criteri ?? {}, cdu, templates);
     switch (action.tipo) {
-      case 'INSERISCI_TIMESTAMP':
-        updated += updateMatching(db, action.tab ?? '', criteri, {
-          [action.col ?? '']: now.toISOString()
-        });
+      case 'INSERISCI_TIMESTAMP': {
+        // Insert, not overwrite: only the first send stamps the column (e.g.
+        // LOG_DOCS.NOTIFICATO), so a later PIANI_PERSONALIZZATI email that
+        // also re-matches already-notified rows leaves their original
+        // timestamp untouched. AGGIORNA_CAMPO remains for unconditional writes.
+        const col = action.col ?? '';
+        updated += updateMatching(
+          db,
+          action.tab ?? '',
+          criteri,
+          { [col]: now.toISOString() },
+          (row) => isBlank(row[col])
+        );
         break;
+      }
       case 'AGGIORNA_CAMPO':
         updated += updateMatching(db, action.tab ?? '', criteri, {
           [action.col ?? '']: templates.processString(

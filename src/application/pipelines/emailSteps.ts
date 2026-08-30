@@ -84,17 +84,17 @@ const HISTORICAL_BOX_TYPES: ReadonlySet<string> = new Set([
   'cartelle',
   'piani_pers_da_inviare'
 ]);
-/** piani_pers_da_inviare wants historical enrichment by default (11 §11 new); the others only when explicitly configured. */
-const DEFAULT_ON_BOX_TYPES: ReadonlySet<string> = new Set(['piani_pers_da_inviare']);
+/** piani_pers_da_inviare always requires historical enrichment; the others opt in through BOX_CFG. */
+const ALWAYS_HISTORICAL_BOX_TYPES: ReadonlySet<string> = new Set(['piani_pers_da_inviare']);
 
 /** Derives includiStorico/profonditaAnniDocumenti from BOX_CFG (fixes the gap where these recipe options were never wired through the email pipeline). */
 function storicoOptionsFor(conf: ConfigurazioneEmail): Partial<RecipeOptions> {
   const wants = conf.getBoxes().some((b) => {
     const tipo = typeof b['TIPO_BOX'] === 'string' ? b['TIPO_BOX'] : '';
     if (!HISTORICAL_BOX_TYPES.has(tipo)) return false;
+    if (ALWAYS_HISTORICAL_BOX_TYPES.has(tipo)) return true;
     const explicit = b['ARRICCHISCI_CON_STORICO'];
-    if (typeof explicit === 'boolean') return explicit;
-    return DEFAULT_ON_BOX_TYPES.has(tipo);
+    return explicit === true;
   });
   return wants ? { includiStorico: true, profonditaAnniDocumenti: 1 } : {};
 }
@@ -264,8 +264,9 @@ export class BuildCDUStep extends Step {
   /**
    * Per-classe cattedra composition for a docente target (design
    * 2026-08-22): materie effettive alla data di invio, stesso resolver dei
-   * target (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), IRC/ALT esclusi di
-   * default. Classi senza materie effettive del destinatario sono escluse.
+   * target (SUPPLENZE → VARIAZIONI_CATTEDRA → CLASSI), IRC/ALT incluse (2026-08-29:
+   * un docente IRC/ALT-only altrimenti risultava senza cattedre). Classi senza
+   * materie effettive del destinatario sono escluse.
    *
    * Classi articolate (design 2026-08-22 follow-up): le classi che
    * appartengono allo stesso gruppo di articolazione (una classe parent e le
@@ -326,7 +327,9 @@ export class BuildCDUStep extends Step {
     const key = `${classe.id ?? ''}|${when.getTime()}`;
     const cached = this.consiglioCache.get(key);
     if (cached !== undefined) return cached;
-    const result = this.teachingAssignments.resolveConsiglio(classe, when);
+    const result = this.teachingAssignments.resolveConsiglio(classe, when, {
+      includeReligioneAlt: true
+    });
     this.consiglioCache.set(key, result);
     return result;
   }
@@ -440,7 +443,7 @@ export class RenderBoxesStep extends Step {
       ctx,
       'shouldSend',
       ctx.get('shouldSend') === true &&
-        (result.ordered.length > 0 || confMail(ctx).getAllegati().length > 0)
+        (result.hasTriggeringContent || confMail(ctx).getAllegati().length > 0)
     );
     this.setResult(ctx, 'oggettoRisolto', oggetto);
   }

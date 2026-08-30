@@ -57,7 +57,7 @@ export function createCercaCartelleClasseStrategy(
       };
       const out: Record<string, unknown>[] = [];
       for (const classe of classi.findAttive()) {
-        const cartelle = logFold.findByClasse(classe).filter((f) => f.tipo === folderTipo);
+        const cartelle = logFold.findByClasse(classe).filter((f) => f.idGen === folderTipo);
         for (const cartella of cartelle) {
           const files = drive.searchFiles(
             `'${cartella.id}' in parents and mimeType='${SPREADSHEET_MIME}' and trashed=false`

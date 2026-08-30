@@ -152,6 +152,23 @@ export function prepareStudentCouncilAssignments(
   );
 }
 
+/**
+ * Distinct materie taught across a student's filtered CdC (`consiglioDiClasseFiltrato`,
+ * built by `prepareStudentCouncilAssignments` above) — the horizontal column list for
+ * `tablecol_loop` in per-student Docs templates (e.g. the DSA measures grid), scoped
+ * to the docenti this specific student actually has. Unlike `focus.classe.elencoMaterieConPermessi`
+ * (a whole-class/Sheets-ACL projection), this returns the full `SubjectVM` per column.
+ */
+export function materieDistinteConsiglioFiltrato(consiglioDiClasseFiltrato: DocenteCdcVM[]): SubjectVM[] {
+  const bySigla = new Map<string, SubjectVM>();
+  for (const docente of consiglioDiClasseFiltrato) {
+    for (const materia of docente.materie) {
+      if (!bySigla.has(materia.sigla)) bySigla.set(materia.sigla, materia);
+    }
+  }
+  return [...bySigla.values()].sort((a, b) => a.sigla.localeCompare(b.sigla));
+}
+
 function specificityPattern(curriculum: CurriculumVM[], materiaId: string): string {
   const entry = curriculum.find((c) => c.materiaId === materiaId);
   const specifiche = entry?.specifiche.map((s) => s.nome) ?? [];
@@ -200,16 +217,10 @@ function gruppoNome(
   return partner === undefined ? null : classi.getIndirizzo(partner).nome;
 }
 
+const utils = new UtilsService();
+
 function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(items: T[]): T[] {
-  const seen = new Set<string>();
-  const result: T[] = [];
-  for (const item of items) {
-    const key = `${item.sigla} ${item.specificita ?? ''}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push(item);
-  }
-  return result;
+  return utils.uniqBy(items, (item) => `${item.sigla} ${item.specificita ?? ''}`);
 }
 
 /** MAIN precedes ITP for the same sigla, matching ClasseRepository.getMaterieDelDocente's legacy precedence rule. */
@@ -349,7 +360,7 @@ function personVmOf(teacher: ProjectionTeacher): PersonVM {
 
 /** Every subject in `materie`, names comma-joined (09 §10) — distinct from `SubjectVM.docentiDescrizione`, which joins people, not subjects. */
 function docentiDescrizioneMaterie(materie: SubjectVM[]): string {
-  return materie.map((m) => m.nomeSintetico).join(', ');
+  return materie.map((m) => m.nome).join(', ');
 }
 
 function councilVmStrategy(
@@ -435,7 +446,7 @@ export function createTeachingCouncilProjection(
   return {
     consiglio: new CollectionProjectionInterceptor(new LoggerService(), projector, {
       targetProviders: ['consiglio'],
-      targetPaths: ['focus.classe.consiglioDiClasse'],
+      targetPaths: ['focus.classe.consiglioDiClasse', 'focus.classe.consiglioDiClasseTitolare'],
       operations: councilProjectionOperations
     }),
     alunno: new CollectionProjectionInterceptor(new LoggerService(), projector, {
@@ -455,6 +466,38 @@ export function resolveCouncilForProjection(
   return resolver.resolveConsiglio(classe, date, {
     includeReligioneAlt: true,
     routingPolicy: routingPolicyByGestioneSupplenti[gestioneSupplenti]
+  });
+}
+
+/**
+ * `focus.classe.consiglioDiClasse` (02 §4.1): the docente actually in charge
+ * today — SUPPLENZE included — independent of `opzioni.gestioneSupplenti`
+ * (that option only steers email routing elsewhere).
+ */
+export function resolveEffectiveCouncil(
+  resolver: ITeachingAssignmentResolver,
+  classe: Classe,
+  date: Date
+): TeachingAssignment[] {
+  return resolver.resolveConsiglio(classe, date, {
+    includeReligioneAlt: true,
+    routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL
+  });
+}
+
+/**
+ * `focus.classe.consiglioDiClasseTitolare` (02 §4.1): the titolare of record —
+ * VARIAZIONI_CATTEDRA applied, SUPPLENZE never applied — independent of
+ * `opzioni.gestioneSupplenti`.
+ */
+export function resolveTitolareCouncil(
+  resolver: ITeachingAssignmentResolver,
+  classe: Classe,
+  date: Date
+): TeachingAssignment[] {
+  return resolver.resolveConsiglio(classe, date, {
+    includeReligioneAlt: true,
+    routingPolicy: RoutingPolicy.PRINCIPAL_ONLY
   });
 }
 
@@ -494,8 +537,15 @@ export function resolveEffectiveDocenti(
  * The GLF projector materializes fresh VM objects, so assignment identity is
  * attached only after interception. This remains internal metadata: templates
  * and serialized CDU data retain the canonical four-field materia shape.
+ * `docenti` defaults to `focus.classe.consiglioDiClasse`; pass
+ * `focus.classe.consiglioDiClasseTitolare` (with the matching titolare
+ * assignments) to attach identity there too.
  */
-export function attachCouncilProjectionMetadata(cdu: Cdu, assignments: TeachingAssignment[]): void {
+export function attachCouncilProjectionMetadata(
+  cdu: Cdu,
+  assignments: TeachingAssignment[],
+  docenti: DocenteCdcVM[] = cdu.focus.classe?.consiglioDiClasse ?? []
+): void {
   const candidatesByActor = new Map<string, TeachingAssignment[]>();
   for (const assignment of assignments) {
     for (const docente of assignment.routing.primary) {
@@ -505,7 +555,7 @@ export function attachCouncilProjectionMetadata(cdu: Cdu, assignments: TeachingA
       candidatesByActor.set(docente.id, candidates);
     }
   }
-  for (const docente of cdu.focus.classe?.consiglioDiClasse ?? []) {
+  for (const docente of docenti) {
     const candidates = [...(candidatesByActor.get(docente.anagrafica.email ?? '') ?? [])];
     for (const materia of docente.materie) {
       const index = candidates.findIndex((assignment) => {

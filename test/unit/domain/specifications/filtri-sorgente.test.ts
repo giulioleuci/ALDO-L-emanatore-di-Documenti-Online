@@ -29,7 +29,8 @@ function documento(overrides: Record<string, unknown> = {}): LogDocumento {
 function cartella(overrides: Record<string, unknown> = {}): LogCartella {
   return new LogCartella({
     [COL_LOG_FOLD.ID]: 'fold-1',
-    [COL_LOG_FOLD.TIPO]: 'VERBALI',
+    [COL_LOG_FOLD.ID_GEN]: 'VERBALI',
+    [COL_LOG_FOLD.TIPO]: 'VERBALE',
     [COL_LOG_FOLD.NOME]: 'Verbali CDC',
     [COL_LOG_FOLD.PATH]: 'Archivio/2026/Verbali',
     [COL_LOG_FOLD.CLASSI]: '5A,3B',
@@ -140,7 +141,7 @@ describe('parseFiltriSorgente', () => {
   it('rejects document-only and folder-only fields for the other entity', () => {
     for (const [raw, entita, offendingKey] of [
       [{ nome: 'Verbali' }, 'documenti', 'nome'],
-      [{ tipo: 'VERBALE' }, 'cartelle', 'tipo']
+      [{ sottotipo: 'CDC' }, 'cartelle', 'sottotipo']
     ] as const) {
       const result = parseFiltriSorgente(raw, entita);
       expect(result.filtri).toBeUndefined();
@@ -169,7 +170,7 @@ describe('source filter specifications', () => {
     cartella(),
     cartella({
       [COL_LOG_FOLD.ID]: 'fold-2',
-      [COL_LOG_FOLD.TIPO]: 'ALTRO',
+      [COL_LOG_FOLD.ID_GEN]: 'ALTRO',
       [COL_LOG_FOLD.NOME]: 'Archivio',
       [COL_LOG_FOLD.PATH]: 'archivio/2026',
       [COL_LOG_FOLD.CLASSI]: '4A',
@@ -253,6 +254,10 @@ describe('source filter specifications', () => {
     expect(matchingFolders({ nome: 'Verbali' })).toEqual(['fold-1']);
     expect(matchingFolders({ path: 'Archivio' })).toEqual(['fold-1']);
     expect(matchingFolders({ path: 'archivio' })).toEqual(['fold-2']);
+  });
+
+  it('matches folder tipo independently of idGen (broad CONF_DOC.TIPO match)', () => {
+    expect(matchingFolders({ tipo: 'VERBALE' })).toEqual(['fold-1', 'fold-2']);
   });
 
   it('preserves entity-specific specification types', () => {

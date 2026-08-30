@@ -167,7 +167,7 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   expect(sample.rows[TABLE.LOG_FOLD]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
-        [COL_LOG_FOLD.TIPO]: 'E2E_FILTER_DECOY',
+        [COL_LOG_FOLD.ID_GEN]: 'E2E_FILTER_DECOY',
         [COL_LOG_FOLD.CLASSI]: '1A'
       })
     ])

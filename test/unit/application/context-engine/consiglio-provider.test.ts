@@ -206,20 +206,40 @@ test('tipoArticolazione follows resolved partner assignments for replacements an
     MATERIE: 'MATE'
   });
 
-  const list = cdc(
-    '1F',
-    new Date('2026-02-15T09:00:00Z'),
-    tables,
-    GestioneSupplenti.ENTRAMBI
+  const db = new FakeDatabase(tables);
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-02-15T09:00:00Z') };
+  const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
+  const focusClasse = b.build(params, recipe).focus.classe!;
+
+  // consiglioDiClasse: always the effective actor -- replacement (mid-chain titolare,
+  // currently on supplenza) drops out in favour of substitute.
+  const effettivo = focusClasse.consiglioDiClasse!;
+  expect(byEmail(effettivo, 'rossi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO');
+  expect(effettivo.find((d) => d.anagrafica.email === 'replacement@school.test')).toBeUndefined();
+  expect(byEmail(effettivo, 'substitute@school.test').tipoArticolazione).toBe('SEPARATO_SECONDO');
+  expect(byEmail(effettivo, 'substitute@school.test').stato.isSupplente).toBe(true);
+  expect(byEmail(effettivo, 'substitute@school.test').stato.sostituisce?.email).toBe(
+    'replacement@school.test'
   );
 
-  expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO');
-  expect(byEmail(list, 'replacement@school.test').tipoArticolazione).toBe(
-    'SEPARATO_SECONDO'
-  );
-  expect(byEmail(list, 'substitute@school.test').tipoArticolazione).toBe(
-    'SEPARATO_SECONDO'
-  );
+  // consiglioDiClasseTitolare: VARIAZIONI_CATTEDRA applied (rossi -> replacement), the
+  // active SUPPLENZE ignored -- substitute never appears here.
+  const titolare = focusClasse.consiglioDiClasseTitolare!;
+  expect(byEmail(titolare, 'rossi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO');
+  expect(byEmail(titolare, 'replacement@school.test').tipoArticolazione).toBe('SEPARATO_SECONDO');
+  expect(byEmail(titolare, 'replacement@school.test').stato).toEqual({
+    isSupplente: false,
+    sostituisce: null
+  });
+  expect(titolare.find((d) => d.anagrafica.email === 'substitute@school.test')).toBeUndefined();
 });
 
 test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/separato (09 §10)', () => {

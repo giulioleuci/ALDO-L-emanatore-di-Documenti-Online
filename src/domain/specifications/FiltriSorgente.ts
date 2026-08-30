@@ -22,6 +22,7 @@ type FiltriDocumenti = FiltriComuni & {
 };
 type FiltriCartelle = FiltriComuni & {
   idGen?: string;
+  tipo?: string;
   nome?: string;
   path?: string;
 };
@@ -34,7 +35,7 @@ type Oggetto = Record<string, unknown>;
 
 const CAMPI_COMUNI = ['csv', 'classi', 'utenti', 'materie', 'not'] as const;
 const CAMPI_DOCUMENTI = ['tipo', 'stato', 'sottotipo', 'idGen', 'idOrig', 'notificato'] as const;
-const CAMPI_CARTELLE = ['idGen', 'nome', 'path'] as const;
+const CAMPI_CARTELLE = ['idGen', 'tipo', 'nome', 'path'] as const;
 const CAMPI_CSV = ['classi', 'utenti', 'materie'] as const;
 const STATI_DOCUMENTO = Object.values(StatoDocumento) as string[];
 
@@ -209,7 +210,11 @@ function folderCriteria(
   const cartelle = filtri as FiltriCartelle;
   const criteria: Specification<LogCartella>[] = [];
   if (cartelle.idGen !== undefined)
-    criteria.push(new FunctionSpecification<LogCartella>((item) => item.tipo === cartelle.idGen));
+    criteria.push(
+      new FunctionSpecification<LogCartella>((item) => item.idGen === cartelle.idGen)
+    );
+  if (cartelle.tipo !== undefined)
+    criteria.push(new FunctionSpecification<LogCartella>((item) => item.tipo === cartelle.tipo));
   if (cartelle.nome !== undefined)
     criteria.push(
       new FunctionSpecification<LogCartella>((item) => item.nome.includes(cartelle.nome!))

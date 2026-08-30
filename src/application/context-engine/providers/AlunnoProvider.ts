@@ -11,6 +11,7 @@ import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvi
 import { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
 import {
   createTeachingCouncilProjection,
+  materieDistinteConsiglioFiltrato,
   prepareStudentCouncilAssignments,
   resolveCouncilForProjection
 } from '../TeachingCouncilProjection';
@@ -117,6 +118,9 @@ export class AlunnoProvider implements ContextProvider {
     cdu.focus.alunno = focusAlunno;
     if (focusAlunno.consiglioDiClasseFiltrato !== undefined) {
       this.projection.intercept('student', cdu, cdu, options);
+      focusAlunno.elencoMaterieFiltrate = materieDistinteConsiglioFiltrato(
+        focusAlunno.consiglioDiClasseFiltrato
+      );
     }
   }
 

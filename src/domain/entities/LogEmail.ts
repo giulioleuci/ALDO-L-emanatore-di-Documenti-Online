@@ -1,6 +1,7 @@
 import { StatoEmail } from '../value-objects/enums';
 import { COL_LOG_MAIL } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
+import { splitCsvValues } from '../value-objects/CsvScope';
 
 export type LogEmailData = {
   [COL_LOG_MAIL.PATTERN]?: string;
@@ -51,10 +52,7 @@ export class LogEmail extends AldoEntity {
   }
 
   getDestinatari(): string[] {
-    return this.destinatariRaw
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    return splitCsvValues(this.destinatariRaw);
   }
 
   getAllegati(): Record<string, unknown> {

@@ -224,11 +224,7 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   getStorico(classe: Classe): ClasseId[] {
     const raw = this.rowOf(classe)[COL_CLASSI.STORICO];
     if (typeof raw !== 'string') return [];
-    return raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map((s) => ClasseId.of(s));
+    return splitCsvList(raw).map((s) => ClasseId.of(s));
   }
 
   getIndirizzo(classe: Classe): Indirizzo {
@@ -530,10 +526,7 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
   /** Emails from a CSV cell, trimmed and non-empty. */
   private csvEmails(cell: unknown): string[] {
     if (typeof cell !== 'string') return [];
-    return cell
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    return splitCsvList(cell);
   }
 
   /** Loads Docente entities from a CSV cell, skipping emails absent from DOCENTI. */

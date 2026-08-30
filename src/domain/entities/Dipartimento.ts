@@ -3,6 +3,7 @@ import { MateriaId } from '../value-objects/MateriaId';
 import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { COL_DIPART } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
+import { splitCsvValues } from '../value-objects/CsvScope';
 
 export type DipartimentoData = {
   [COL_DIPART.ID]?: string;
@@ -39,11 +40,7 @@ export class Dipartimento extends AldoEntity {
   }
 
   getMaterieIds(): MateriaId[] {
-    return this.materieRaw
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
-      .map((s) => MateriaId.of(s));
+    return splitCsvValues(this.materieRaw).map((s) => MateriaId.of(s));
   }
 
   override toData(): EntityData {

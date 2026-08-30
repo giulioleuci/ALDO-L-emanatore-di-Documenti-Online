@@ -196,7 +196,7 @@ function cartelleClasseContainer(aslRows: Array<Record<string, unknown>>): {
   get: jest.Mock;
 } {
   const logFoldRows = CARTELLE_ELIGIBLE_CLASSES.map((classe) => ({
-    [COL_LOG_FOLD.TIPO]: CARTELLE_FOLDER_TIPO,
+    [COL_LOG_FOLD.ID_GEN]: CARTELLE_FOLDER_TIPO,
     [COL_LOG_FOLD.CLASSI]: classe
   }));
   const confImpRows = [

@@ -26,7 +26,7 @@ import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
-import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL } from '../../config/schema';
+import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL, COL_ALUNNI } from '../../config/schema';
 import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
 import {
   ALL_CLASSI_E2E,
@@ -465,13 +465,13 @@ export function registerE2eScenarioChecks(
         .findAll()
         .filter((row) => row[COL_LOG_DOCS.ID_GEN] === configId);
     const verbaleDocs = rowsForConfig(TABLE.LOG_DOCS, CONF_DOC_VERBALE);
-    // LOG_FOLD.TIPO is a FK to CONF_DOC.ID (01 §LOG_FOLD) — PrepareInfrastructureStep
-    // writes CONF_DOC.ID there, not CONF_DOC.TIPO — and the folder is registered at
-    // exactly the PATH_OUT that RegisterDocumentStep copies into LOG_DOCS.PATH.
+    // LOG_FOLD.ID_GEN is a FK to CONF_DOC.ID (01 §LOG_FOLD) — PrepareInfrastructureStep
+    // writes CONF_DOC.ID there — and the folder is registered at exactly the
+    // PATH_OUT that RegisterDocumentStep copies into LOG_DOCS.PATH.
     const verbaleFolders = db
       .table(TABLE.LOG_FOLD)
       .findAll()
-      .filter((row) => row[COL_LOG_FOLD.TIPO] === CONF_DOC_VERBALE);
+      .filter((row) => row[COL_LOG_FOLD.ID_GEN] === CONF_DOC_VERBALE);
     const hasMate = (value: unknown): boolean => csvContains(value, 'MATE');
     for (const classe of ALL_CLASSI_E2E) {
       const doc = verbaleDocs.find((row) => csvContains(row[COL_LOG_DOCS.CLASSI], classe));
@@ -624,25 +624,35 @@ export function registerE2eScenarioChecks(
           row[COL_LOG_DOCS.SOTTOTIPO] === TipoPiano.PDP_BES
       );
       const partnerPlanName = String(partnerPlan?.[COL_LOG_DOCS.NOME] ?? '').trim();
+      const partnerAlunno = db
+        .table(TABLE.ALUNNI)
+        .findAll()
+        .find((row) => row[COL_ALUNNI.EMAIL] === PDP_BES_3C);
+      const partnerAlunnoNome = String(partnerAlunno?.[COL_ALUNNI.COGNOMENOME] ?? '').trim();
+      const partnerPlanFragment = `${partnerAlunnoNome} - ${tipoPianoLabel(TipoPiano.PDP_BES)}`;
       const scientificoEmail = planEmailsByLogicalTarget.get(`docente:${e2eDocenteEmail(3)}`) ?? '';
       const classicoEmail = planEmailsByLogicalTarget.get(`docente:${e2eDocenteEmail(4)}`) ?? '';
-      if (partnerPlanName === '' || !scientificoEmail.includes(partnerPlanName)) {
+      if (
+        partnerPlanName === '' ||
+        partnerAlunnoNome === '' ||
+        !scientificoEmail.includes(partnerPlanFragment)
+      ) {
         throw new ValidationError(
           "Invio piani: il piano PDP_BES della classe articolata 3C-S non è presente nell'email del coordinatore scientifico"
         );
       }
-      if (classicoEmail.includes(partnerPlanName)) {
+      if (classicoEmail.includes(partnerPlanFragment)) {
         throw new ValidationError(
           "Invio piani: il piano PDP_BES della classe articolata 3C-S è presente nell'email del coordinatore classico"
         );
       }
       const correctHistory = [
-        "PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026",
-        "PDP (BES) — Ricci Martina: E2E_Piano_PDP (BES)_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026"
+        "Ricci Martina - PEI Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026",
+        "Ricci Martina - PDP (BES) Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026"
       ];
       const crossedHistory = [
-        "PEI — Ricci Martina: E2E_Piano_PEI_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026",
-        "PDP (BES) — Ricci Martina: E2E_Piano_PDP (BES)_Ricci Martina Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026"
+        "Ricci Martina - PEI Disponibile anche il piano dell'anno precedente: E2E_Piano_PDP_BES_2025_2026",
+        "Ricci Martina - PDP (BES) Disponibile anche il piano dell'anno precedente: E2E_Piano_PEI_2025_2026"
       ];
       if (
         correctHistory.some((fragment) => !emailText.includes(fragment)) ||
@@ -1038,7 +1048,7 @@ export function registerE2eScenarioChecks(
         }
         if (
           (allegati.folders ?? []).some(
-            (id) => foldersById.get(id)?.[COL_LOG_FOLD.TIPO] !== CONF_DOC_VERBALE
+            (id) => foldersById.get(id)?.[COL_LOG_FOLD.ID_GEN] !== CONF_DOC_VERBALE
           )
         ) {
           throw new ValidationError(

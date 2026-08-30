@@ -18,7 +18,8 @@ describe('SchoolProvider', () => {
       findAllCached: () =>
         [
           { id: 'REF_BES', getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }] },
-          { id: 'AN_DIG', getEmails: () => [] }
+          { id: 'AN_DIG', getEmails: () => [] },
+          { id: 'RSPP', getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }] }
         ] as never
     };
     const docenti: Pick<IDocenteRepository, 'findById'> = {
@@ -36,5 +37,31 @@ describe('SchoolProvider', () => {
     });
     expect(cdu.istituto?.staff.referenteBes?.appellativoCompleto).toBe('Prof. Mario Rossi');
     expect(cdu.istituto?.staff.animatoreDigitale).toBeNull();
+  });
+
+  it('also exposes every RUOLI row under its raw ID, alongside the conventional aliases', () => {
+    const master: Pick<IMasterSheetRepository, 'findConfigAnnoCorrente'> = {
+      findConfigAnnoCorrente: () => ({ annoScolasticoRaw: '2025-2026', dirigente: '' }) as never
+    };
+    const ruoli: Pick<IRuoloSpecialeRepository, 'findAllCached'> = {
+      findAllCached: () =>
+        [
+          { id: 'REF_BES', getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }] },
+          { id: 'AN_DIG', getEmails: () => [] },
+          { id: 'RSPP', getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }] }
+        ] as never
+    };
+    const docenti: Pick<IDocenteRepository, 'findById'> = {
+      findById: (email: string) =>
+        (email === 'mario.rossi@scuola.edu.it'
+          ? { nome: 'Mario', cognome: 'Rossi', genere: 'M', id: email }
+          : null) as never
+    };
+    const provider = new SchoolProvider(master as never, ruoli as never, docenti as never);
+    const cdu = makeCdu();
+    provider.provide(cdu);
+    expect(cdu.istituto?.staff.REF_BES?.appellativoCompleto).toBe('Prof. Mario Rossi');
+    expect(cdu.istituto?.staff.AN_DIG).toBeNull();
+    expect(cdu.istituto?.staff.RSPP?.appellativoCompleto).toBe('Prof. Mario Rossi');
   });
 });

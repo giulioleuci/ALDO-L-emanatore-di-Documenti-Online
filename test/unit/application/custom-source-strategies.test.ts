@@ -62,7 +62,7 @@ function tablesWithFolders(): Record<string, Row[]> {
   tables.LOG_FOLD = [
     {
       ID: 'fold_5a',
-      TIPO: 'GRIGLIE_VOTI',
+      ID_GEN: 'GRIGLIE_VOTI',
       PATH: 'Griglie/5A',
       LINK: '',
       CLASSI: '5A',
@@ -71,14 +71,14 @@ function tablesWithFolders(): Record<string, Row[]> {
     },
     {
       ID: 'fold_3b',
-      TIPO: 'GRIGLIE_VOTI',
+      ID_GEN: 'GRIGLIE_VOTI',
       PATH: 'Griglie/3B',
       LINK: '',
       CLASSI: '3B',
       UTENTI: '',
       MATERIE: ''
     },
-    { ID: 'fold_other', TIPO: 'ALTRO', PATH: 'X', LINK: '', CLASSI: '5A', UTENTI: '', MATERIE: '' }
+    { ID: 'fold_other', ID_GEN: 'ALTRO', PATH: 'X', LINK: '', CLASSI: '5A', UTENTI: '', MATERIE: '' }
   ];
   return tables;
 }
@@ -117,7 +117,7 @@ describe('CERCA_CARTELLE_CLASSE custom SourceStrategy (12 §3)', () => {
     tables.LOG_FOLD = [
       {
         ID: 'fold_5a',
-        TIPO: 'GRIGLIE_VOTI',
+        ID_GEN: 'GRIGLIE_VOTI',
         PATH: 'Griglie/5A',
         LINK: '',
         CLASSI: '5A',

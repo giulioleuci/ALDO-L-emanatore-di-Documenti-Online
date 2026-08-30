@@ -1,5 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu } from '../Cdu';
+import type { Cdu, CduIstituto } from '../Cdu';
 import type { IMasterSheetRepository } from '../../../domain/repositories/IMasterSheetRepository';
 import type { IRuoloSpecialeRepository } from '../../../domain/repositories/IRuoloSpecialeRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
@@ -24,15 +24,21 @@ export class SchoolProvider implements ContextProvider {
 
   provide(cdu: Cdu): void {
     const cfg = this.master.findConfigAnnoCorrente();
+    const staff: CduIstituto['staff'] = {
+      referenteBes: this.personaRuolo(RUOLO_REFERENTE_BES),
+      animatoreDigitale: this.personaRuolo(RUOLO_ANIMATORE_DIGITALE)
+    };
+    // Every RUOLI row is also reachable by its raw ID (02 §3), so custom
+    // institute roles (e.g. RSPP) don't need a SchoolProvider code change.
+    for (const ruolo of this.ruoli.findAllCached()) {
+      if (ruolo.id !== null) staff[ruolo.id] = this.personaRuolo(ruolo.id);
+    }
     cdu.istituto = {
       organizzazione: {
         annoScolastico: cfg.annoScolasticoRaw,
         dirigente: { nomeCompleto: cfg.dirigente }
       },
-      staff: {
-        referenteBes: this.personaRuolo(RUOLO_REFERENTE_BES),
-        animatoreDigitale: this.personaRuolo(RUOLO_ANIMATORE_DIGITALE)
-      }
+      staff
     };
   }
 

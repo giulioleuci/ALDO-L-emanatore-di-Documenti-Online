@@ -379,7 +379,7 @@ export function seedLogFold(
     drive.deleteFile(decoy);
     logFoldRows.push({
       [COL_LOG_FOLD.ID]: folderId,
-      [COL_LOG_FOLD.TIPO]: ASL_FOLDER_TYPE,
+      [COL_LOG_FOLD.ID_GEN]: ASL_FOLDER_TYPE,
       [COL_LOG_FOLD.NOME]: `ASL ${classe}`,
       [COL_LOG_FOLD.PATH]: folderPath,
       [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${folderId}`,
@@ -399,7 +399,7 @@ export function seedLogFold(
   const filterDecoyId = drive.createFolder(filterDecoyPath);
   logFoldRows.push({
     [COL_LOG_FOLD.ID]: filterDecoyId,
-    [COL_LOG_FOLD.TIPO]: FILTER_DECOY_FOLDER_TYPE,
+    [COL_LOG_FOLD.ID_GEN]: FILTER_DECOY_FOLDER_TYPE,
     [COL_LOG_FOLD.NOME]: 'E2E cartella esclusa dal filtro sorgente',
     [COL_LOG_FOLD.PATH]: filterDecoyPath,
     [COL_LOG_FOLD.LINK]: `https://drive.google.com/drive/folders/${filterDecoyId}`,

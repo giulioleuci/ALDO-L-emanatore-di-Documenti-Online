@@ -985,6 +985,10 @@ declare global {
     formatISODate(date: Date): string | null;
     /** Basic `user@domain.tld` format validation (not a deliverability check). */
     isValidEmail(email: string): boolean;
+    /** Custom-alphabet random ID (ref CoreUtilsLib/src/utils/IdGenerator.js); GAS-aware entropy, rejection sampling, no modulo bias. */
+    generateCustomId(length?: number, alphabet?: string): string;
+    /** Dedupes `array` by the value `iteratee` returns for each item, keeping the first occurrence (ref CoreUtilsLib/src/utils/SystemUtils.js). */
+    uniqBy<T>(array: readonly T[], iteratee: (item: T) => unknown): T[];
   }
   /**
    * Generic date-range VO: containment/duration/overlap + an open-ended sentinel,

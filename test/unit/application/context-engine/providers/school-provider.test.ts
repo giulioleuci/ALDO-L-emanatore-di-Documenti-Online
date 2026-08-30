@@ -31,12 +31,10 @@ describe('SchoolProvider', () => {
     const provider = new SchoolProvider(master as never, ruoli as never, docenti as never);
     const cdu = makeCdu();
     provider.provide(cdu);
-    expect(cdu.istituto?.organizzazione).toEqual({
-      annoScolastico: '2025-2026',
-      dirigente: { nomeCompleto: 'Prof.ssa Maria Bianchi' }
-    });
-    expect(cdu.istituto?.staff.referenteBes?.appellativoCompleto).toBe('Prof. Mario Rossi');
-    expect(cdu.istituto?.staff.animatoreDigitale).toBeNull();
+    expect(cdu.istituto?.annoScolastico).toBe('2025-2026');
+    expect(cdu.istituto?.dirigente).toMatchObject({ nomeCompleto: 'Prof.ssa Maria Bianchi' });
+    expect(cdu.istituto?.staff.perId.REF_BES?.persona?.appellativoCompleto).toBe('Prof. Rossi Mario');
+    expect(cdu.istituto?.staff.perId.AN_DIG?.persona).toBeNull();
   });
 
   it('also exposes every RUOLI row under its raw ID, alongside the conventional aliases', () => {
@@ -60,8 +58,8 @@ describe('SchoolProvider', () => {
     const provider = new SchoolProvider(master as never, ruoli as never, docenti as never);
     const cdu = makeCdu();
     provider.provide(cdu);
-    expect(cdu.istituto?.staff.REF_BES?.appellativoCompleto).toBe('Prof. Mario Rossi');
-    expect(cdu.istituto?.staff.AN_DIG).toBeNull();
-    expect(cdu.istituto?.staff.RSPP?.appellativoCompleto).toBe('Prof. Mario Rossi');
+    expect(cdu.istituto?.staff.perId.REF_BES?.persona?.appellativoCompleto).toBe('Prof. Rossi Mario');
+    expect(cdu.istituto?.staff.perId.AN_DIG?.persona).toBeNull();
+    expect(cdu.istituto?.staff.perId.RSPP?.persona?.appellativoCompleto).toBe('Prof. Rossi Mario');
   });
 });

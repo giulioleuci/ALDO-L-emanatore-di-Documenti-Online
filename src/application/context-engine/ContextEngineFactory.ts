@@ -18,17 +18,14 @@ import { RappresentantiProvider } from './providers/RappresentantiProvider';
 import { StatisticheProvider } from './providers/StatisticheProvider';
 import { StoricoProvider } from './providers/StoricoProvider';
 import { StoricoClasseProvider } from './providers/StoricoClasseProvider';
-import { DocumentiStoricoProvider } from './providers/DocumentiStoricoProvider';
-import { PianiPersAlunnoProvider } from './providers/PianiPersAlunnoProvider';
-import { PianiPersAlunnoStoricoProvider } from './providers/PianiPersAlunnoStoricoProvider';
 import { PianiPersClasseProvider } from './providers/PianiPersClasseProvider';
-import { PianiPersClasseStoricoProvider } from './providers/PianiPersClasseStoricoProvider';
 import { DocumentiClasseProvider } from './providers/DocumentiClasseProvider';
 import { DocenteClasseMateriaFocusProvider } from './providers/DocenteClasseMateriaFocusProvider';
 import { DocenteClasseFocusProvider } from './providers/DocenteClasseFocusProvider';
 import { ClasseMateriaFocusProvider } from './providers/ClasseMateriaFocusProvider';
 import { DipartimentoProvider } from './providers/DipartimentoProvider';
 import { DocenteAggregatoFocusProvider } from './providers/DocenteAggregatoFocusProvider';
+import { MovimentiProvider } from './providers/MovimentiProvider';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import type { StoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
 import { MasterStoricoDatabaseProvider } from '../storico/StoricoDatabaseProvider';
@@ -39,6 +36,7 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IOreASLRepository } from '../../domain/repositories/IOreASLRepository';
+import type { IMovimentoAlunnoRepository } from '../../domain/repositories/IMovimentoAlunnoRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ProgettoRepository } from '../../infrastructure/repositories/ProgettoRepository';
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
@@ -52,6 +50,7 @@ export interface ContextEngineDependencies {
   alunni: IAlunnoRepository;
   materie: IMateriaRepository;
   oreAsl: IOreASLRepository;
+  movimenti: IMovimentoAlunnoRepository;
   logDocs: ILogDocumentoRepository;
   progetti: ProgettoRepository;
   dipartimenti: IDipartimentoRepository;
@@ -85,6 +84,7 @@ export class ContextEngineFactory {
     alunni,
     materie,
     oreAsl,
+    movimenti,
     logDocs,
     progetti,
     dipartimenti,
@@ -105,9 +105,10 @@ export class ContextEngineFactory {
     // `consiglioDiClasseComune`/`consiglioDiClasseSeparato` (written by the
     // 'consiglio' token, which always runs before 'partner').
     const classeProvider = new ClasseProvider(classi, alunni, materie);
-    const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
+    const studentiProvider = new StudentiProvider(classi, alunni, materie, oreAsl, storicoDb);
     const tutorProvider = new TutorProvider(classi);
     const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
+    const movimentiProvider = new MovimentiProvider(movimenti, alunni, classi);
 
     return new ContextBuilder()
       .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
@@ -117,6 +118,7 @@ export class ContextEngineFactory {
         'student',
         new AlunnoProvider(alunni, classi, oreAsl, materie, storicoDb, teachingAssignments)
       )
+      .registerProvider('movimenti', movimentiProvider)
       .registerProvider('tutor', tutorProvider)
       .registerProvider('consiglio', consiglioProvider)
       .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
@@ -127,24 +129,20 @@ export class ContextEngineFactory {
       .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
       .registerProvider(
         'partner',
-        new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider)
+        new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, movimentiProvider)
       )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))
       .registerProvider('pianoFocus', new PianoFocusProvider())
-      .registerProvider('documenti', new DocumentiProvider(logDocs))
+      .registerProvider('documenti', new DocumentiProvider(logDocs, storicoDb))
       .registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni))
       .registerProvider('rappresentanti', new RappresentantiProvider(classi))
       .registerProvider('statistiche', new StatisticheProvider(classi, docenti, alunni))
       .registerProvider('storicoClasse', new StoricoClasseProvider(storicoDb, classi))
       .registerProvider('storico', new StoricoProvider(storicoDb))
-      .registerProvider('documentiStorico', new DocumentiStoricoProvider(storicoDb))
-      .registerProvider('pianiPersAlunno', new PianiPersAlunnoProvider(logDocs))
-      .registerProvider('pianiPersAlunnoStorico', new PianiPersAlunnoStoricoProvider(storicoDb))
-      .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni))
-      .registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(storicoDb))
-      .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs))
-      .registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, logDocs))
+      .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni, storicoDb))
+      .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs, storicoDb))
+      .registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, materie, logDocs))
       .registerProvider(
         'docenteAggregatoFocus',
         new DocenteAggregatoFocusProvider(classi, materie, teachingAssignments)

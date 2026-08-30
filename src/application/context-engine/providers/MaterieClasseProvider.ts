@@ -1,10 +1,10 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu, DocenteCdcVM } from '../Cdu';
+import type { Cdu, DocenteCdcVM, MateriaVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
-import type { SubjectVM } from '../mappers/subjectVmMapper';
-import { docentiDescrizione as joinDocenti } from '../mappers/subjectVmMapper';
 import { buildMateriePerPrincipale } from '../mappers/materiePerPrincipaleMapper';
 import { buildContinuita } from '../mappers/continuitaMapper';
+import { descriviPersone, descriviPersoneEsteso } from '../mappers/personVmMapper';
+import { elencoVm } from '../mappers/elencoVm';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
@@ -12,21 +12,8 @@ import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvi
 import { StoricoClassiService } from '../../storico/StoricoClassiService';
 import { getClasseEntity } from '../techEntities';
 
-interface RuoliCorrente {
-  titolare: string | null;
-  itp: string | null;
-}
+interface RuoliCorrente { titolare: string | null; itp: string | null; }
 
-/**
- * Builds `focus.classe.materie[]` (02 §2.8, §4.1) — the flat, deduped subject
- * catalog of the class council — plus `materiePerPrincipale`. Runs AFTER
- * `consiglio` (Recipe.ts token order): it derives everything from
- * `focus.classe.consiglioDiClasse`, never re-queries teaching assignments.
- *
- * When `includiStorico` is true and `docenti`/`storicoDb`/`classi`/`materie`
- * are all supplied, also attaches `continuita` (02 §8.3) to every subject via
- * `ContinuitaVM` — teaching continuity across the last few prior years.
- */
 export class MaterieClasseProvider implements ContextProvider {
   constructor(
     private readonly materie?: IMateriaRepository,
@@ -36,83 +23,70 @@ export class MaterieClasseProvider implements ContextProvider {
   ) {}
 
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
-    const focusClasse = cdu.focus.classe;
-    if (focusClasse === undefined) return;
-    const consiglio = focusClasse.consiglioDiClasse ?? [];
-    const { materie, ruoli } = this.buildCatalog(consiglio);
-    focusClasse.materie = materie;
-    if (this.materie !== undefined) {
-      focusClasse.materiePerPrincipale = buildMateriePerPrincipale(materie);
-    }
-    this.attachContinuita(cdu, materie, ruoli, options);
+    const focus = cdu.focus.classe;
+    if (focus?.consiglio === undefined) return;
+    const { elenco, ruoli } = this.catalogo(focus.consiglio.elenco);
+    focus.materie = {
+      ...elencoVm(elenco),
+      elencoDescrizione: elenco.map((materia) => materia.nome).join(', '),
+      elencoDescrizioneSintesi: elenco.map((materia) => materia.nomeSintetico).join(', '),
+      sigle: elenco.map((materia) => materia.sigla).join(', ')
+    };
+    focus.materiePerPrincipale = buildMateriePerPrincipale(elenco);
+    this.continuita(cdu, elenco, ruoli, options);
   }
 
-  private buildCatalog(
-    consiglio: DocenteCdcVM[]
-  ): { materie: SubjectVM[]; ruoli: Map<string, RuoliCorrente> } {
-    const bySubject = new Map<string, SubjectVM>();
+  private catalogo(consiglio: DocenteCdcVM[]): { elenco: MateriaVM[]; ruoli: Map<string, RuoliCorrente> } {
+    const byKey = new Map<string, MateriaVM>();
     const ruoli = new Map<string, RuoliCorrente>();
     for (const docente of consiglio) {
       for (const materia of docente.materie) {
+        // Deliberately excludes isItp from the key: MAIN and ITP teachers of the
+        // same subject/specificita collapse into ONE catalog row (docenti carries
+        // both, hasCattedraItp flags that an ITP cattedra exists for it) — matches
+        // materiaVm's docenti-array + hasCattedraItp profile (Cdu.ts), not a
+        // separate row per ITP/non-ITP split.
         const key = `${materia.sigla}::${materia.specificita ?? ''}`;
-        const existing = bySubject.get(key);
-        const docenti = [...(existing?.docenti ?? []), docente.anagrafica];
-        bySubject.set(key, {
+        const existing = byKey.get(key);
+        const docenti = [...(existing?.docenti ?? []), docente]
+          .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
+          .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
+        byKey.set(key, {
           ...materia,
           docenti,
-          docentiDescrizione: joinDocenti(docenti),
-          hasItp: (existing?.hasItp ?? false) || materia.isITP
+          hasDocenti: docenti.length > 0,
+          docentiDescrizione: descriviPersone(docenti),
+          docentiDescrizioneEstesa: descriviPersoneEsteso(docenti),
+          hasCattedraItp: (existing?.hasCattedraItp ?? false) || materia.isItp
         });
-
-        const ruoliCorrente = ruoli.get(key) ?? { titolare: null, itp: null };
-        if (materia.isITP) {
-          if (ruoliCorrente.itp === null) ruoliCorrente.itp = docente.anagrafica.email;
-        } else if (ruoliCorrente.titolare === null) {
-          ruoliCorrente.titolare = docente.anagrafica.email;
-        }
-        ruoli.set(key, ruoliCorrente);
+        const corrente = ruoli.get(key) ?? { titolare: null, itp: null };
+        if (materia.isItp) corrente.itp ??= docente.email;
+        else corrente.titolare ??= docente.email;
+        ruoli.set(key, corrente);
       }
     }
-    return { materie: Array.from(bySubject.values()), ruoli };
+    return {
+      elenco: [...byKey.values()].sort((a, b) => a.nome.localeCompare(b.nome) || a.sigla.localeCompare(b.sigla)),
+      ruoli
+    };
   }
 
-  /** Resolves `anniStorici` once and attaches `continuita` per subject (02 §8.3), skipped entirely unless every dependency is available. */
-  private attachContinuita(
-    cdu: Cdu,
-    materie: SubjectVM[],
-    ruoli: Map<string, RuoliCorrente>,
-    options: RecipeOptions
-  ): void {
-    if (
-      !options.includiStorico ||
-      this.docenti === undefined ||
-      this.storicoDb === undefined ||
-      this.classi === undefined ||
-      this.materie === undefined ||
-      materie.length === 0
-    ) {
-      return;
-    }
+  private continuita(cdu: Cdu, materie: MateriaVM[], ruoli: Map<string, RuoliCorrente>, options: RecipeOptions): void {
+    if (!options.includiStorico || this.docenti === undefined || this.storicoDb === undefined || this.classi === undefined || this.materie === undefined) return;
     const classe = getClasseEntity(cdu);
-    const anniStorici = new StoricoClassiService(this.storicoDb).perClasse(
-      this.classi.getStorico(classe),
-      options.profonditaAnniStorico
-    );
-    const annoCorsoCorrente = classe.anno.value;
-
-    for (const subjectVm of materie) {
-      const materiaCorrente = this.materie.findById(subjectVm.sigla);
-      if (materiaCorrente === null) continue;
-      const key = `${subjectVm.sigla}::${subjectVm.specificita ?? ''}`;
-      const { titolare, itp } = ruoli.get(key) ?? { titolare: null, itp: null };
-      subjectVm.continuita = buildContinuita({
-        siglaCorrente: subjectVm.sigla,
-        hasItp: subjectVm.hasItp ?? false,
-        titolareCorrenteEmail: titolare,
-        itpCorrenteEmail: itp,
-        annoCorsoCorrente,
+    const anniStorici = new StoricoClassiService(this.storicoDb).perClasse(this.classi.getStorico(classe), options.profonditaAnniStorico);
+    for (const materiaVm of materie) {
+      const materia = this.materie.findById(materiaVm.sigla);
+      if (materia === null) continue;
+      const ruoliCorrenti = ruoli.get(`${materiaVm.sigla}::${materiaVm.specificita ?? ''}`) ?? { titolare: null, itp: null };
+      materiaVm.continuita = buildContinuita({
+        siglaCorrente: materiaVm.sigla,
+        hasItp: materiaVm.hasCattedraItp ?? false,
+        titolareCorrenteEmail: ruoliCorrenti.titolare,
+        itpCorrenteEmail: ruoliCorrenti.itp,
+        annoCorsoCorrente: classe.anno.value,
         anniStorici,
-        materiaCorrente,
+        materiaCorrente: materia,
         docenti: this.docenti
       });
     }

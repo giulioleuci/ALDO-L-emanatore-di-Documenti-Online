@@ -24,7 +24,7 @@ function filtrato(target: string): DocenteCdcVM[] {
     { target, tipoTarget: 'alunno', now: new Date('2026-07-01T09:00:00Z') },
     recipe('ALUNNO_COMPLETO')
   );
-  return cdu.focus.alunno!.consiglioDiClasseFiltrato!;
+  return cdu.focus.alunno!.consiglio!.elenco;
 }
 
 test('Task 6 declares religion and curriculum decisions directly as projection expressions', () => {
@@ -46,7 +46,7 @@ test('Task 6 declares religion and curriculum decisions directly as projection e
 // 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
 // bianchi -> rossi holds no subject in 5A and drops out of every filtered list below.
 test('CDCFilterAlunno: religione SI includes the IRC teacher (14 §1.3)', () => {
-  expect(filtrato('a1@school.it').map((d) => d.anagrafica.email)).toEqual([
+  expect(filtrato('a1@school.it').map((d) => d.email)).toEqual([
     'bianchi@school.it',
     'verdi@school.it'
   ]);
@@ -55,11 +55,11 @@ test('CDCFilterAlunno: religione SI includes the IRC teacher (14 §1.3)', () => 
 test('CDCFilterAlunno: religione NO excludes the IRC teacher (14 §1.3)', () => {
   // a2 chose NO → the IRC-only teacher (verdi) is dropped; the effective subject
   // teacher (bianchi) remains.
-  expect(filtrato('a2@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
+  expect(filtrato('a2@school.it').map((d) => d.email)).toEqual(['bianchi@school.it']);
 });
 
 test('CDCFilterAlunno: religione ALT excludes IRC (no ALT teacher configured)', () => {
-  expect(filtrato('a3@school.it').map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
+  expect(filtrato('a3@school.it').map((d) => d.email)).toEqual(['bianchi@school.it']);
 });
 
 test('Task 6 filters arbitrary specificities into their accepted composite catalog rows', () => {
@@ -84,14 +84,14 @@ test('Task 6 filters arbitrary specificities into their accepted composite catal
     },
     recipe('ALUNNO_COMPLETO')
   );
-  const consiglio = cdu.focus.alunno!.consiglioDiClasseFiltrato!;
+  const consiglio = cdu.focus.alunno!.consiglio!.elenco;
 
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.objectContaining({ id: '5A' }),
     new Date('2026-02-15'),
     expect.objectContaining({ includeReligioneAlt: true })
   );
-  expect(consiglio.map((row) => row.anagrafica.email)).toEqual(
+  expect(consiglio.map((row) => row.email)).toEqual(
     expect.arrayContaining([
       'main@school.test',
       'itp@school.test',
@@ -100,7 +100,7 @@ test('Task 6 filters arbitrary specificities into their accepted composite catal
       'irc@school.test'
     ])
   );
-  expect(consiglio.map((row) => row.anagrafica.email)).not.toContain('specific-b@school.test');
+  expect(consiglio.map((row) => row.email)).not.toContain('specific-b@school.test');
   expect(
     consiglio
       .flatMap((row) => row.materie)

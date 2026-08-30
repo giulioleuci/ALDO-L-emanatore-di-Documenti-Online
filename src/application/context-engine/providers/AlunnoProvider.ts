@@ -1,5 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu, CduAlunno } from '../Cdu';
+import type { AlunnoFocusVM, Cdu, PianoVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
@@ -9,44 +9,20 @@ import type { Alunno } from '../../../domain/entities/Alunno';
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRepository';
+import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
+import { TipoPiano } from '../../../domain/value-objects/enums';
+import { setAlunnoEntity } from '../techEntities';
+import { buildElencoCarenzeVm, curriculumArray } from '../mappers/carenzeMapper';
+import { religioneLabel, indirizzoTipoLabel } from '../mappers/labels';
+import { elencoVm } from '../mappers/elencoVm';
 import {
   createTeachingCouncilProjection,
   materieDistinteConsiglioFiltrato,
   prepareStudentCouncilAssignments,
   resolveCouncilForProjection
 } from '../TeachingCouncilProjection';
-import { AnnoScolastico } from '../../../domain/value-objects/AnnoScolastico';
-import { setAlunnoEntity } from '../techEntities';
-import { curriculumArray } from '../mappers/carenzeMapper';
-import { religioneLabel } from '../mappers/labels';
-import { presenteTuttoAnno } from '../../storico/presenza';
 import { EntityNotFoundError } from '../../../domain/errors/DomainError';
 
-/**
- * Populates `focus.alunno` anagrafica/status/curriculum/classe and the didattica
- * skeleton incl. ASL hours (09 §4). `status.isBes` is initialised to false as a
- * placeholder — PianiProvider (which reads PIANI, later in the recipe) flips it
- * to true when the student has a BES plan. Carenze and piani sub-sections are
- * filled by their own providers. Stashes the live Alunno entity in tech.entita.
- * `status.presenteAnnoPrecedente`/`presenteTuttoAnno` mirror the historical
- * per-year fields on `StudentStoricoVM.anni[]` (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md
- * §4/§5) but for the CURRENT year: presenteAnnoPrecedente looks one year back
- * through `storicoDb` (cheap — that provider caches opened databases by
- * spreadsheet id across the whole CDU build), presenteTuttoAnno reads this
- * year's own MOV_ALUNNI via `IAlunnoRepository.getStoricoMovimenti`.
- * presenteAnnoPrecedente is gated behind `options.includiStorico`, like every
- * other historical-data provider in the recipe (StoricoProvider,
- * DocumentiStoricoProvider, PianiPers*StoricoProvider) — `storicoDb` is only
- * ever touched when the caller opted into historical data, so a plain
- * ALUNNO_DETTAGLIATO/CLASSE_COMPLETA build (includiStorico defaults to false)
- * never opens a second database. Unlike those other providers it always looks
- * exactly one year back (`anniStorici(1)`) regardless of
- * `options.profonditaAnniStorico`, since "was the student here last year" is
- * intrinsically a depth-1 question. Stays a plain `boolean`, not a `LazyRef`
- * (unlike `focus.alunno.storico`) — per SPECS_ALDO/02_CDU_STRUTTURA.md:1584,
- * `status.*` fields must stay template-renderable plain values, so gating is
- * done in the provider, not by deferring resolution to the consumer.
- */
 export class AlunnoProvider implements ContextProvider {
   private readonly projection: CollectionProjectionInterceptor;
 
@@ -65,75 +41,98 @@ export class AlunnoProvider implements ContextProvider {
     const alunno = this.alunni.findById(params.target);
     if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
     setAlunnoEntity(cdu, alunno);
-
     const classe = this.classi.findById(alunno.classeId);
-    if (classe === null)
-      throw new EntityNotFoundError(
-        `Classe ${alunno.classe} dell'alunno ${params.target} non trovata`
-      );
+    if (classe === null) throw new EntityNotFoundError(`Classe ${alunno.classe} non trovata`);
     const indirizzo = this.classi.getIndirizzo(classe);
-
-    const focusAlunno: CduAlunno = {
-      anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
-      status: {
-        religione: alunno.religione,
-        religioneLabel: religioneLabel(alunno.religione),
-        isBes: false,
-        isRipetente: alunno.isRipetente(),
-        isRappresentante: alunno.isRappresentante(),
-        presenteAnnoPrecedente: this.presenteAnnoPrecedente(alunno, options),
-        presenteTuttoAnno: presenteTuttoAnno(this.alunni.getStoricoMovimenti(alunno))
-      },
-      curriculum: curriculumArray(alunno, this.materie),
+    const curriculum = curriculumArray(alunno, this.materie);
+    const piani = this.piani(alunno);
+    const precedente = this.precedente(alunno, options);
+    const focus: AlunnoFocusVM = {
+      nomeCompleto: alunno.cognomeNome,
+      email: alunno.email.value,
       classe: {
         nome: classe.nome,
-        indirizzoSigla: classe.indirizzo,
-        indirizzoNome: indirizzo.nome
+        indirizzo: {
+          sigla: classe.indirizzo,
+          nome: indirizzo.nome,
+          nomeSintetico: indirizzo.nomeSintetico,
+          tipo: indirizzo.tipo,
+          tipoLabel: indirizzoTipoLabel(indirizzo.tipo)
+        }
       },
-      didattica: {
-        carenze: { dettaglio: [], numero: 0, hasCarenze: false },
-        asl: {
-          oreCumulate: this.oreAsl.getTotaleOre(alunno),
-          oreAnnoCorrente: this.oreAnnoCorrente(cdu, alunno)
-        },
-        piani: { items: [], hasPiani: false, hasBes: false }
-      }
+      religione: alunno.religione,
+      religioneLabel: religioneLabel(alunno.religione),
+      isIrc: alunno.religione === 'IRC',
+      isAlt: alunno.religione === 'ALT',
+      isSenzaReligione: alunno.religione === 'NO',
+      isBes: piani.hasBes,
+      isDsa: piani.elenco.some((piano) => piano.tipo === TipoPiano.PDP_DSA),
+      isRipetente: alunno.isRipetente(),
+      isRappresentante: alunno.isRappresentante(),
+      presenza: {
+        annoPrecedente: precedente,
+        isPresenteTuttoAnno: true,
+        hasCambiatoClasse: false,
+        classePrecedente: null,
+        hasClassePrecedente: false
+      },
+      movimenti: elencoVm([]),
+      curriculum,
+      hasCurriculum: curriculum.length > 0,
+      curriculumDescrizione: curriculum.map((item) => `${item.materiaNome}${item.hasSpecifiche ? ` (${item.specificheDescrizione})` : ''}`).join(', '),
+      carenze: buildElencoCarenzeVm(this.alunni.getCarenze(alunno), this.materie.findAllSigle(), this.materie),
+      asl: {
+        oreCumulate: this.oreAsl.getTotaleOre(alunno),
+        oreAnnoCorrente: this.oreAnnoCorrente(cdu, alunno)
+      },
+      piani
     };
-    // Per-alunno filtered council (14 §1.3): built here because alunno recipes
-    // don't run the consiglio provider. Only when the shared port is wired in.
-    if (this.teachingAssignments !== undefined) {
-      const assignments = resolveCouncilForProjection(
-        this.teachingAssignments,
-        classe,
-        params.now,
-        options.gestioneSupplenti
-      );
-      focusAlunno.consiglioDiClasseFiltrato = prepareStudentCouncilAssignments(
-        assignments,
-        alunno.religione,
-        focusAlunno.curriculum
-      ) as never;
-    }
+    cdu.focus.alunno = focus;
+    if (this.teachingAssignments === undefined) return;
+    const assignments = resolveCouncilForProjection(this.teachingAssignments, classe, params.now, options.gestioneSupplenti);
+    focus.consiglio = {
+      elenco: prepareStudentCouncilAssignments(assignments, alunno.religione, curriculum) as never,
+      hasElenco: false,
+      numero: 0,
+      elencoDescrizione: '',
+      materie: [],
+      hasMaterie: false,
+      materieDescrizione: ''
+    };
+    this.projection.intercept('student', cdu, cdu, options);
+    focus.consiglio.hasElenco = focus.consiglio.elenco.length > 0;
+    focus.consiglio.numero = focus.consiglio.elenco.length;
+    focus.consiglio.elencoDescrizione = focus.consiglio.elenco.map((docente) => docente.appellativoCompleto).join(', ');
+    focus.consiglio.materie = materieDistinteConsiglioFiltrato(focus.consiglio.elenco);
+    focus.consiglio.hasMaterie = focus.consiglio.materie.length > 0;
+    focus.consiglio.materieDescrizione = focus.consiglio.materie.map((materia) => materia.nome).join(', ');
+  }
 
-    cdu.focus.alunno = focusAlunno;
-    if (focusAlunno.consiglioDiClasseFiltrato !== undefined) {
-      this.projection.intercept('student', cdu, cdu, options);
-      focusAlunno.elencoMaterieFiltrate = materieDistinteConsiglioFiltrato(
-        focusAlunno.consiglioDiClasseFiltrato
-      );
-    }
+  private piani(alunno: Alunno): AlunnoFocusVM['piani'] {
+    const elenco: PianoVM[] = this.alunni.getPiani(alunno)
+      .map((piano) => ({
+        tipo: piano.tipo,
+        tipoLabel: piano.tipo === TipoPiano.PDP_DSA ? 'PDP (DSA)' : piano.tipo === TipoPiano.PDP_BES ? 'PDP (BES)' : piano.tipo,
+        isBes: piano.isBES(),
+        link: null,
+        hasLink: false,
+        parametriGenerazione: piano.getParametri(),
+        hasParametriGenerazione: true
+      }))
+      .sort((a, b) => a.tipo.localeCompare(b.tipo));
+    return { ...elencoVm(elenco), elencoDescrizione: elenco.map((piano) => piano.tipoLabel).join(', '), hasBes: elenco.some((piano) => piano.isBes) };
   }
 
   private oreAnnoCorrente(cdu: Cdu, alunno: Alunno): number {
-    const anno = cdu.istituto?.organizzazione.annoScolastico;
-    if (anno === undefined || anno === '') return 0;
-    return this.oreAsl.getOrCreate(alunno, AnnoScolastico.of(anno)).getOre();
+    const anno = cdu.istituto?.annoScolastico;
+    return anno === undefined || anno === '' ? 0 : this.oreAsl.getOrCreate(alunno, AnnoScolastico.of(anno)).getOre();
   }
 
-  private presenteAnnoPrecedente(alunno: Alunno, options: RecipeOptions): boolean {
-    if (!options.includiStorico) return false;
-    const annoPrecedente = this.storicoDb.anniStorici(1)[0];
-    if (annoPrecedente === undefined) return false;
-    return new AlunnoRepository(annoPrecedente.db).findById(alunno.email.value) !== null;
+  private precedente(alunno: Alunno, options: RecipeOptions): { isCalcolato: boolean; isPresente: boolean } {
+    if (!options.includiStorico) return { isCalcolato: false, isPresente: false };
+    const anno = this.storicoDb.anniStorici(1)[0];
+    return anno === undefined
+      ? { isCalcolato: false, isPresente: false }
+      : { isCalcolato: true, isPresente: new AlunnoRepository(anno.db).findById(alunno.email.value) !== null };
   }
 }

@@ -2,6 +2,7 @@ import { PartnerProjectionProvider } from '../../../../../src/application/contex
 import { ClasseProvider } from '../../../../../src/application/context-engine/providers/ClasseProvider';
 import { StudentiProvider } from '../../../../../src/application/context-engine/providers/StudentiProvider';
 import { TutorProvider } from '../../../../../src/application/context-engine/providers/TutorProvider';
+import { MovimentiProvider } from '../../../../../src/application/context-engine/providers/MovimentiProvider';
 import { ConsiglioClasseProvider } from '../../../../../src/application/context-engine/providers/ConsiglioClasseProvider';
 import { SchoolProvider } from '../../../../../src/application/context-engine/providers/SchoolProvider';
 import { ContextBuilder } from '../../../../../src/application/context-engine/ContextBuilder';
@@ -11,6 +12,8 @@ import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
 import { ClasseRepository } from '../../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../../src/infrastructure/repositories/MateriaRepository';
+import { OreASLRepository } from '../../../../../src/infrastructure/repositories/OreASLRepository';
+import { MovimentoAlunnoRepository } from '../../../../../src/infrastructure/repositories/MovimentoAlunnoRepository';
 import { MasterSheetRepository } from '../../../../../src/infrastructure/repositories/MasterSheetRepository';
 import { RuoloSpecialeRepository } from '../../../../../src/infrastructure/repositories/RuoloSpecialeRepository';
 import { DocenteRepository } from '../../../../../src/infrastructure/repositories/DocenteRepository';
@@ -19,7 +22,7 @@ import { FakeDatabase } from '../../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../../fixtures/tables';
 import type { Row } from '../../../../../src/infrastructure/db/Database';
 
-/** Real ALUNNI rows for both '1F' partner classes, so listaCompleta is non-empty. */
+/** Real ALUNNI rows for both '1F' partner classes, so studenti.elenco is non-empty. */
 function tablesWithPartnerStudents(): Record<string, Row[]> {
   const tables = fixtureTables();
   (tables['ALUNNI'] as Row[]).push(
@@ -56,23 +59,23 @@ function makeHarness(tables: Record<string, Row[]>) {
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   const classeProvider = new ClasseProvider(classi, alunni, materie);
   const storicoDb = { anniStorici: () => [] };
-  const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
+  const studentiProvider = new StudentiProvider(classi, alunni, materie, new OreASLRepository(db), storicoDb);
   const tutorProvider = new TutorProvider(classi);
+  const movimentiProvider = new MovimentiProvider(new MovimentoAlunnoRepository(db), alunni, classi);
   // Not reused by PartnerProjectionProvider (fix round 1) -- kept here only to
   // run the 'consiglio' token on the OUTER cdu, exactly like CLASSE_COMPLETA
-  // does before 'partner', so focus.classe.consiglioDiClasseComune/Separato
-  // are populated for PartnerProjectionProvider to read.
+  // does before 'partner', so focus.classe.consiglio.{comune,separatoPrimo,
+  // separatoSecondo} are populated for PartnerProjectionProvider to read.
   const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
   // Runs the 'school' token on the OUTER cdu, exactly like CLASSE_COMPLETA does
   // before 'class' (fix round 2) -- without it, cdu.istituto is never populated
-  // on the outer cdu, which previously masked PartnerProjectionProvider silently
-  // building scratch CDUs with no istituto at all (annoScolastico always '').
+  // on the outer cdu.
   const schoolProvider = new SchoolProvider(
     new MasterSheetRepository(db),
     new RuoloSpecialeRepository(db),
     new DocenteRepository(db)
   );
-  const provider = new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider);
+  const provider = new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, movimentiProvider);
   return { classeProvider, studentiProvider, tutorProvider, consiglioProvider, schoolProvider, provider };
 }
 
@@ -98,7 +101,7 @@ function buildOuterCdu(
 }
 
 describe('PartnerProjectionProvider', () => {
-  it('builds primo/secondo SingleClassProjection only when isArticolata and includiPartnerDettaglio are both true', () => {
+  it('builds primo/secondo full ProiezioneClasseVM only when isArticolata and includiPartnerDettaglio are both true', () => {
     const tables = tablesWithPartnerStudents();
     const { classeProvider, consiglioProvider, schoolProvider, provider } = makeHarness(tables);
     const { cdu, params } = buildOuterCdu('1F', classeProvider, consiglioProvider, schoolProvider);
@@ -106,44 +109,35 @@ describe('PartnerProjectionProvider', () => {
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: true }));
 
     const partner = cdu.focus.classe!.partner!;
-    expect(partner.primo.anagrafica.nome).toBe('1F-LSO');
-    expect(partner.secondo.anagrafica.nome).toBe('1F-LSS');
-    expect(partner.primo.studenti.listaCompleta.map((a) => a.anagrafica.email)).toEqual([
-      's1@school.it'
-    ]);
-    expect(partner.secondo.studenti.listaCompleta.map((a) => a.anagrafica.email)).toEqual([
-      's2@school.it'
-    ]);
-    // Fix round 1: derived from the outer cdu's focus.classe.consiglioDiClasseComune
+    expect(partner.hasElenco).toBe(true);
+    expect(partner.primo.nome).toBe('1F-LSO');
+    expect(partner.secondo.nome).toBe('1F-LSS');
+    expect(partner.primo.studenti.elenco.map((a) => a.email)).toEqual(['s1@school.it']);
+    expect(partner.secondo.studenti.elenco.map((a) => a.email)).toEqual(['s2@school.it']);
+    // Fix round 1: derived from the outer cdu's focus.classe.consiglio.comune
     // (rossi, MATE shared by both partners) concatenated with the SEPARATO_PRIMO/
-    // SEPARATO_SECONDO subset of focus.classe.consiglioDiClasseSeparato (bianchi on
-    // 1F-LSO/FISI, verdi on 1F-LSS/FISI -- same fixture as
+    // SEPARATO_SECONDO subset of consiglio.separatoPrimo/separatoSecondo (bianchi
+    // on 1F-LSO/FISI, verdi on 1F-LSS/FISI -- same fixture as
     // consiglio-provider.test.ts's "CDC of an articulated parent" case). NOT
     // re-resolved per partner classe id (that would yield the same
-    // comune+separato roster both times, the bug this fix addresses), so primo
-    // and secondo must now be genuinely different.
-    expect(partner.primo.consiglioDiClasse.map((d) => d.anagrafica.email).sort()).toEqual([
+    // comune+separato roster both times), so primo and secondo must now be
+    // genuinely different.
+    expect(partner.primo.consiglio.elenco.map((d) => d.email).sort()).toEqual([
       'bianchi@school.it',
       'rossi@school.it'
     ]);
-    expect(partner.secondo.consiglioDiClasse.map((d) => d.anagrafica.email).sort()).toEqual([
+    expect(partner.secondo.consiglio.elenco.map((d) => d.email).sort()).toEqual([
       'rossi@school.it',
       'verdi@school.it'
     ]);
-    expect(
-      partner.primo.consiglioDiClasse.some((d) => d.anagrafica.email === 'verdi@school.it')
-    ).toBe(false);
-    expect(
-      partner.secondo.consiglioDiClasse.some((d) => d.anagrafica.email === 'bianchi@school.it')
-    ).toBe(false);
+    expect(partner.primo.consiglio.elenco.some((d) => d.email === 'verdi@school.it')).toBe(false);
+    expect(partner.secondo.consiglio.elenco.some((d) => d.email === 'bianchi@school.it')).toBe(false);
     expect(partner.primo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
     expect(partner.secondo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
-    // Fix round 2: the scratch Cdu per partner must carry the outer cdu's
-    // istituto through so ClasseProvider's `cdu.istituto?.organizzazione.annoScolastico`
-    // read resolves to the real school year instead of silently falling back to ''.
-    expect(cdu.istituto?.organizzazione.annoScolastico).toBe('2025-2026');
-    expect(partner.primo.anagrafica.annoScolastico).toBe('2025-2026');
-    expect(partner.secondo.anagrafica.annoScolastico).toBe('2025-2026');
+    // each side is a full class projection, including its own movimenti node:
+    expect(partner.primo.movimenti).toBeDefined();
+    expect(partner.secondo.movimenti).toBeDefined();
+    expect(cdu.istituto?.annoScolastico).toBe('2025-2026');
   });
 
   it('is omitted when includiPartnerDettaglio is false, even for an articulated class', () => {
@@ -173,23 +167,20 @@ describe('PartnerProjectionProvider', () => {
 
     const outerClasseEntityBefore = cdu.tech.entita.classe;
     const outerFocusClasseRef = cdu.focus.classe;
-    const outerAnagraficaRef = cdu.focus.classe!.anagrafica;
 
     provider.provide(cdu, params, makeOptions({ includiPartnerDettaglio: true }));
 
     // The outer cdu's own tech entity and focus.classe object identity are untouched --
-    // building the two scratch CDUs must not rebind the outer cdu's live entity/anagrafica.
+    // building the two scratch CDUs must not rebind the outer cdu's live entity/focus.
     expect(cdu.tech.entita.classe).toBe(outerClasseEntityBefore);
     expect(cdu.focus.classe).toBe(outerFocusClasseRef);
-    expect(cdu.focus.classe!.anagrafica).toBe(outerAnagraficaRef);
-    expect(cdu.focus.classe!.anagrafica.nome).toBe('1F'); // still the parent, not overwritten by a partner run
+    expect(cdu.focus.classe!.nome).toBe('1F'); // still the parent, not overwritten by a partner run
     expect(cdu.focus.classe!.studenti).toBeUndefined(); // 'students' token never ran on the outer cdu
 
     // The two partner projections are independent objects from the outer classe and from each other.
     const partner = cdu.focus.classe!.partner!;
     expect(partner.primo).not.toBe(cdu.focus.classe);
-    expect(partner.primo.anagrafica).not.toBe(cdu.focus.classe!.anagrafica);
     expect(partner.primo).not.toBe(partner.secondo);
-    expect(partner.primo.studenti.listaCompleta).not.toBe(partner.secondo.studenti.listaCompleta);
+    expect(partner.primo.studenti.elenco).not.toBe(partner.secondo.studenti.elenco);
   });
 });

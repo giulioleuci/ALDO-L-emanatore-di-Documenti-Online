@@ -19,7 +19,7 @@ import type {
 // empty history, so perAlunno never reaches the branch that reads it).
 function cduWithAlunno(email: string): Cdu {
   const cdu = {
-    focus: { alunno: { anagrafica: { email }, didattica: {} } },
+    focus: { alunno: { email } },
     tech: { entita: {} }
   } as unknown as Cdu;
   setAlunnoEntity(cdu, {} as Alunno);
@@ -83,10 +83,9 @@ test('reading the LazyRef resolves it against the empty-history fake databases i
   const ref = cdu.focus.alunno!.storico!;
   expect(ref.get()).toEqual({
     anni: [],
-    pianiPrimoAnnoPrecedente: [],
-    pianiSecondoAnnoPrecedente: [],
-    bocciature: [],
-    hasBocciature: false
+    hasAnni: false,
+    numeroAnni: 0,
+    bocciature: { elenco: [], hasElenco: false, numero: 0, elencoDescrizione: '' }
   });
   expect(ref.isResolved()).toBe(true);
 });

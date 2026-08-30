@@ -28,6 +28,14 @@ test('findByAlunno sorts by DATA DESC', () => {
   ).toEqual(['CAMBIO', 'IN']);
 });
 
+test('findEntro includes every student through the inclusive date, newest first', () => {
+  expect(
+    repo()
+      .findEntro('2026-01-10')
+      .map((m) => `${m.studente}:${m.tipo}`)
+  ).toEqual(['a2@school.it:CAMBIO', 'a2@school.it:IN']);
+});
+
 test('findByTipo filters by movement type', () => {
   expect(
     repo()

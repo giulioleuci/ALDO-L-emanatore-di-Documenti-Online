@@ -33,29 +33,27 @@ function cdc(
     target,
     tipoTarget: 'classe',
     now
-  };
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti })
   };
-  const result = b.build(params, recipe).focus.classe!.consiglioDiClasse!;
+  const result = b.build(params, recipe).focus.classe!.consiglio!.elenco;
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.objectContaining({ id: target }),
-    new Date(now.toISOString().slice(0, 10)),
+    now,
     expect.objectContaining({ includeReligioneAlt: true })
   );
   return result;
 }
-const byEmail = (list: DocenteCdcVM[], email: string) =>
-  list.find((d) => d.anagrafica.email === email)!;
+const byEmail = (list: DocenteCdcVM[], email: string) => list.find((d) => d.email === email)!;
 
 test('CDC of a standard class: one VM per subject teacher, sorted by surname (02 §4.1)', () => {
   const list = cdc('5A');
   // 5A: MATE's effective holder is bianchi (VARIAZIONI_CATTEDRA, decorsa since
   // 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
   // bianchi -> rossi holds no subject in 5A and drops out of the council.
-  expect(list.map((d) => d.anagrafica.email)).toEqual(['bianchi@school.it']);
-  expect(list[0]!.flags.isNotLast).toBe(false);
+  expect(list.map((d) => d.email)).toEqual(['bianchi@school.it']);
 });
 
 test('CDC coordinatore VM: materie, roles and descrizione', () => {
@@ -63,7 +61,7 @@ test('CDC coordinatore VM: materie, roles and descrizione', () => {
   // rossi (COORD/TUTOR_ASL of 5A) still holds MATE nominally — the point of this
   // test is the role-tagging on the VM, not the cattedra-resolution outcome.
   const rossi = byEmail(cdc('5A', new Date('2025-06-01T09:00:00Z')), 'rossi@school.it');
-  expect(rossi.anagrafica).toMatchObject({
+  expect(rossi).toMatchObject({
     nome: 'MARIO',
     cognome: 'ROSSI',
     email: 'rossi@school.it',
@@ -74,15 +72,14 @@ test('CDC coordinatore VM: materie, roles and descrizione', () => {
   expect(rossi.materieSigle).toBe('MATE');
   expect(rossi.materieDescrizione).toBe('Matematica');
   expect(rossi.gruppoNome).toBeNull();
-  expect(rossi.ruoli).toEqual({
-    isCoordinatore: true,
-    isTutorAsl: true,
-    isTutorOrientamento: false,
-    descrizione: ['Coordinatore', 'Tutor ASL', 'Docente']
-  });
-  expect(rossi.stato).toEqual({ isSupplente: false, sostituisce: null });
+  expect(rossi.isCoordinatore).toBe(true);
+  expect(rossi.isTutorAsl).toBe(true);
+  expect(rossi.isTutorOrientamento).toBe(false);
+  expect(rossi.ruoliDescrizione).toEqual(['Coordinatore', 'Tutor ASL', 'Docente']);
+  expect(rossi.isSupplente).toBe(false);
+  expect(rossi.sostituisce).toBeNull();
   expect(rossi.tipoArticolazione).toBeNull();
-  expect(rossi.isITP).toBe(false);
+  expect(rossi.isItp).toBe(false);
 });
 
 test('materiaVm resolves the composite specifica row directly, not the base subject', () => {
@@ -120,11 +117,7 @@ test('materiaVm resolves the composite specifica row directly, not the base subj
 
 test('CDC of an articulated parent: tipoArticolazione by partner membership (09 §9)', () => {
   const list = cdc('1F');
-  expect(list.map((d) => d.anagrafica.email)).toEqual([
-    'bianchi@school.it',
-    'rossi@school.it',
-    'verdi@school.it'
-  ]);
+  expect(list.map((d) => d.email)).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
   expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('COMUNE'); // MATE in both partners
   expect(byEmail(list, 'bianchi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO'); // FISI in 1F-LSO only
   expect(byEmail(list, 'verdi@school.it').tipoArticolazione).toBe('SEPARATO_SECONDO'); // FISI in 1F-LSS only
@@ -153,21 +146,21 @@ test('councilVmStrategy tutor flags stay consistent with focus.classe.tutor for 
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'tutor', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   };
   const focusClasse = b.build(params, recipe).focus.classe!;
 
-  // focus.classe.tutor is merged across partners (Task 3): bianchi shows up there.
+  // focus.classe.tutor is merged across partners: bianchi shows up there.
   expect(focusClasse.tutor!.asl.map((t) => t.email)).toEqual(['bianchi@school.it']);
 
-  // The CDU's own consiglioDiClasse entry for bianchi must agree -- not stay
+  // The CDU's own consiglio.elenco entry for bianchi must agree -- not stay
   // internally contradictory by reading TUTOR_ASL unexpanded off the parent row alone.
-  const bianchi = byEmail(focusClasse.consiglioDiClasse!, 'bianchi@school.it');
-  expect(bianchi.ruoli.isTutorAsl).toBe(true);
-  expect(bianchi.ruoli.descrizione).toContain('Tutor ASL');
+  const bianchi = byEmail(focusClasse.consiglio!.elenco, 'bianchi@school.it');
+  expect(bianchi.isTutorAsl).toBe(true);
+  expect(bianchi.ruoliDescrizione).toContain('Tutor ASL');
 });
 
 test('tipoArticolazione follows resolved partner assignments for replacements and substitutes', () => {
@@ -215,31 +208,27 @@ test('tipoArticolazione follows resolved partner assignments for replacements an
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-02-15T09:00:00Z') };
+  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-02-15T09:00:00Z') } as BuildParams;
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   const focusClasse = b.build(params, recipe).focus.classe!;
 
-  // consiglioDiClasse: always the effective actor -- replacement (mid-chain titolare,
+  // consiglio.elenco: always the effective actor -- replacement (mid-chain titolare,
   // currently on supplenza) drops out in favour of substitute.
-  const effettivo = focusClasse.consiglioDiClasse!;
+  const effettivo = focusClasse.consiglio!.elenco;
   expect(byEmail(effettivo, 'rossi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO');
-  expect(effettivo.find((d) => d.anagrafica.email === 'replacement@school.test')).toBeUndefined();
+  expect(effettivo.find((d) => d.email === 'replacement@school.test')).toBeUndefined();
   expect(byEmail(effettivo, 'substitute@school.test').tipoArticolazione).toBe('SEPARATO_SECONDO');
-  expect(byEmail(effettivo, 'substitute@school.test').stato.isSupplente).toBe(true);
-  expect(byEmail(effettivo, 'substitute@school.test').stato.sostituisce?.email).toBe(
-    'replacement@school.test'
-  );
+  expect(byEmail(effettivo, 'substitute@school.test').isSupplente).toBe(true);
+  expect(byEmail(effettivo, 'substitute@school.test').sostituisce?.email).toBe('replacement@school.test');
 
-  // consiglioDiClasseTitolare: VARIAZIONI_CATTEDRA applied (rossi -> replacement), the
+  // consiglio.titolari: VARIAZIONI_CATTEDRA applied (rossi -> replacement), the
   // active SUPPLENZE ignored -- substitute never appears here.
-  const titolare = focusClasse.consiglioDiClasseTitolare!;
+  const titolare = focusClasse.consiglio!.titolari;
   expect(byEmail(titolare, 'rossi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO');
   expect(byEmail(titolare, 'replacement@school.test').tipoArticolazione).toBe('SEPARATO_SECONDO');
-  expect(byEmail(titolare, 'replacement@school.test').stato).toEqual({
-    isSupplente: false,
-    sostituisce: null
-  });
-  expect(titolare.find((d) => d.anagrafica.email === 'substitute@school.test')).toBeUndefined();
+  expect(byEmail(titolare, 'replacement@school.test').isSupplente).toBe(false);
+  expect(byEmail(titolare, 'replacement@school.test').sostituisce).toBeNull();
+  expect(titolare.find((d) => d.email === 'substitute@school.test')).toBeUndefined();
 });
 
 test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/separato (09 §10)', () => {
@@ -252,21 +241,20 @@ test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/s
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   };
   const focusClasse = b.build(params, recipe).focus.classe!;
-  expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
-    'rossi@school.it'
+  expect(focusClasse.consiglio!.comune.map((d) => d.email)).toEqual(['rossi@school.it']);
+  expect(focusClasse.consiglio!.separato.map((d) => d.email).sort()).toEqual([
+    'bianchi@school.it',
+    'verdi@school.it'
   ]);
-  expect(
-    focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()
-  ).toEqual(['bianchi@school.it', 'verdi@school.it']);
 });
 
-test('ConsiglioClasseProvider: non-articulated class has no comune/separato split', () => {
+test('ConsiglioClasseProvider: non-articulated class has empty comune/separato split', () => {
   const db = new FakeDatabase(fixtureTables());
   const classi = new ClasseRepository(db);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
@@ -276,11 +264,13 @@ test('ConsiglioClasseProvider: non-articulated class has no comune/separato spli
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   const focusClasse = b.build(params, recipe).focus.classe!;
-  expect(focusClasse.consiglioDiClasseComune).toBeUndefined();
-  expect(focusClasse.consiglioDiClasseSeparato).toBeUndefined();
+  expect(focusClasse.consiglio!.comune).toEqual([]);
+  expect(focusClasse.consiglio!.separato).toEqual([]);
+  expect(focusClasse.consiglio!.hasComune).toBe(false);
+  expect(focusClasse.consiglio!.hasSeparato).toBe(false);
 });
 
 test('ConsiglioClasseProvider: partner-target build scopes consiglio to comune + own branch only', () => {
@@ -297,23 +287,19 @@ test('ConsiglioClasseProvider: partner-target build scopes consiglio to comune +
     target: '1F-LSO',
     tipoTarget: 'classe',
     now: new Date('2026-07-01T09:00:00Z')
-  };
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   };
   const focusClasse = b.build(params, recipe).focus.classe!;
 
-  expect(focusClasse.consiglioDiClasse!.map((d) => d.anagrafica.email).sort()).toEqual([
+  expect(focusClasse.consiglio!.elenco.map((d) => d.email).sort()).toEqual([
     'bianchi@school.it',
     'rossi@school.it'
   ]);
-  expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
-    'rossi@school.it'
-  ]);
-  expect(focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email)).toEqual([
-    'bianchi@school.it'
-  ]);
+  expect(focusClasse.consiglio!.comune.map((d) => d.email)).toEqual(['rossi@school.it']);
+  expect(focusClasse.consiglio!.separato.map((d) => d.email)).toEqual(['bianchi@school.it']);
 });
 
 test('ConsiglioClasseProvider: the other partner target scopes to its own branch, not the sibling', () => {
@@ -330,23 +316,19 @@ test('ConsiglioClasseProvider: the other partner target scopes to its own branch
     target: '1F-LSS',
     tipoTarget: 'classe',
     now: new Date('2026-07-01T09:00:00Z')
-  };
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   };
   const focusClasse = b.build(params, recipe).focus.classe!;
 
-  expect(focusClasse.consiglioDiClasse!.map((d) => d.anagrafica.email).sort()).toEqual([
+  expect(focusClasse.consiglio!.elenco.map((d) => d.email).sort()).toEqual([
     'rossi@school.it',
     'verdi@school.it'
   ]);
-  expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
-    'rossi@school.it'
-  ]);
-  expect(focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email)).toEqual([
-    'verdi@school.it'
-  ]);
+  expect(focusClasse.consiglio!.comune.map((d) => d.email)).toEqual(['rossi@school.it']);
+  expect(focusClasse.consiglio!.separato.map((d) => d.email)).toEqual(['verdi@school.it']);
 });
 
 test('ConsiglioClasseProvider: parent-target build keeps the full comune/separato split unscoped', () => {
@@ -363,32 +345,34 @@ test('ConsiglioClasseProvider: parent-target build keeps the full comune/separat
     target: '1F',
     tipoTarget: 'classe',
     now: new Date('2026-07-01T09:00:00Z')
-  };
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
   };
   const focusClasse = b.build(params, recipe).focus.classe!;
 
-  expect(focusClasse.consiglioDiClasse!.map((d) => d.anagrafica.email).sort()).toEqual([
+  expect(focusClasse.consiglio!.elenco.map((d) => d.email).sort()).toEqual([
     'bianchi@school.it',
     'rossi@school.it',
     'verdi@school.it'
   ]);
-  expect(
-    focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()
-  ).toEqual(['bianchi@school.it', 'verdi@school.it']);
+  expect(focusClasse.consiglio!.separato.map((d) => d.email).sort()).toEqual([
+    'bianchi@school.it',
+    'verdi@school.it'
+  ]);
 });
 
-test('builds anagrafica as a full PersonVM and materie as SubjectVM with materieSigle (Task 8)', () => {
+test('builds a full PersonaVM (nomeCompleto = cognome nome) and materie as MateriaVM with materieSigle', () => {
   const rossi = byEmail(cdc('5A', new Date('2025-06-01T09:00:00Z')), 'rossi@school.it');
-  expect(rossi.anagrafica.appellativoCompleto).toBe('Prof. MARIO ROSSI');
-  expect(rossi.anagrafica.appellativoCognome).toBe('Prof. ROSSI');
+  expect(rossi.nomeCompleto).toBe('ROSSI MARIO');
+  expect(rossi.appellativoCompleto).toBe('Prof. ROSSI MARIO');
+  expect(rossi.appellativoCognome).toBe('Prof. ROSSI');
   expect(rossi.materie[0]).toMatchObject({ sigla: 'MATE', nomeSintetico: 'Matematica' });
   expect(rossi.materieSigle).toBe('MATE');
 });
 
-test('exposes stato.sostituisce as a PersonVM when a supplente is displayed (Task 8)', () => {
+test('exposes sostituisce as a PersonaVM when a supplente is displayed', () => {
   // Same rossi->bianchi SUPPLENZE chain (5A,4B / MATERIE:'*') as
   // email-steps.test.ts's tablesWith4B()/docente4BTarget(), which already
   // confirms this window+class produces bianchi as SOLO_SUPPLENTI's displayed
@@ -404,17 +388,12 @@ test('exposes stato.sostituisce as a PersonVM when a supplente is displayed (Tas
     COORD: '',
     MATE: 'rossi@school.it'
   });
-  const list = cdc(
-    '4B',
-    new Date('2025-11-15T09:00:00Z'),
-    tables,
-    GestioneSupplenti.SOLO_SUPPLENTI
-  );
-  const docente = list.find((d) => d.stato.sostituisce !== null)!;
-  expect(docente.stato.sostituisce).toMatchObject({
+  const list = cdc('4B', new Date('2025-11-15T09:00:00Z'), tables, GestioneSupplenti.SOLO_SUPPLENTI);
+  const docente = list.find((d) => d.sostituisce !== null)!;
+  expect(docente.sostituisce).toMatchObject({
     email: 'rossi@school.it',
-    nomeCompleto: 'MARIO ROSSI',
-    appellativoCompleto: 'Prof. MARIO ROSSI'
+    nomeCompleto: 'ROSSI MARIO',
+    appellativoCompleto: 'Prof. ROSSI MARIO'
   });
 });
 

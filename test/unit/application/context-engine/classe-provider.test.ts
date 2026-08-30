@@ -34,7 +34,7 @@ function build(target: string, tables = fixtureTables()) {
     target,
     tipoTarget: 'classe',
     now: new Date('2026-07-01T09:00:00Z')
-  };
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['school', 'class', 'tutor', 'rappresentanti'],
     options: makeOptions()
@@ -42,49 +42,37 @@ function build(target: string, tables = fixtureTables()) {
   return b.build(params, recipe);
 }
 
-test('ClasseProvider: anagrafica + flags for a standard terminal class (02 §4.1)', () => {
+test('ClasseProvider: flat identity + flags for a standard terminal class (02 §4.1)', () => {
   const c = build('5A').focus.classe!;
-  expect(c.anagrafica).toEqual({
-    nome: '5A',
-    anno: 5,
-    sezione: 'A',
-    annoScolastico: '2025-2026',
-    indirizzo: {
-      nome: 'Liceo scientifico',
-      nomeSintetico: 'Scientifico',
-      sigla: 'SCIENTIFICO',
-      tipo: 'LICEO'
-    }
+  expect(c.nome).toBe('5A');
+  expect(c.anno).toBe(5);
+  expect(c.sezione).toBe('A');
+  expect(c.indirizzo).toEqual({
+    nome: 'Liceo scientifico',
+    nomeSintetico: 'Scientifico',
+    sigla: 'SCIENTIFICO',
+    tipo: 'LICEO',
+    tipoLabel: 'Liceo'
   });
-  expect(c.flags).toEqual({
-    isClassePrima: false,
-    isTriennio: true,
-    isPrimoBiennio: false,
-    isTerminale: true,
-    isArticolata: false
-  });
+  expect(c.isClassePrima).toBe(false);
+  expect(c.isTriennio).toBe(true);
+  expect(c.isPrimoBiennio).toBe(false);
+  expect(c.isTerminale).toBe(true);
+  expect(c.isArticolata).toBe(false);
   expect(c.articolazione).toBeUndefined();
 });
 
-test('ClasseProvider: coordinatori as a PersonVM elenco with aggregate declension and verbs (02 §4.1, §8.1)', () => {
+test('ClasseProvider: coordinatori as a PersonaVM elenco with aggregate declension in collettivo (02 §4.1, §8.1)', () => {
   const c = build('5A').focus.classe!;
-  expect(c.coordinatori).toEqual({
-    appellativo: 'prof.',
-    articolo: 'il',
-    coordina: 'coordina',
-    presiede: 'presiede',
-    elenco: [
-      expect.objectContaining({
-        nomeCompleto: 'MARIO ROSSI',
-        email: 'rossi@school.it',
-        materia: 'MATE',
-        appellativo: 'Prof.'
-      })
-    ]
-  });
+  expect(c.coordinatori?.collettivo).toEqual(
+    expect.objectContaining({ appellativo: 'Prof.', articolo: 'Il', coordinamento: 'Coordinatore' })
+  );
+  expect(c.coordinatori?.elenco).toEqual([
+    expect.objectContaining({ nomeCompleto: 'ROSSI MARIO', email: 'rossi@school.it', appellativo: 'Prof.' })
+  ]);
 });
 
-test('ClasseProvider: coordinatori omits aggregate fields entirely when there is no coordinator', () => {
+test('ClasseProvider: coordinatori.elenco is empty when there is no coordinator', () => {
   const tables = fixtureTables();
   (tables.CLASSI!.find((r) => r.ID === '5A')!).COORD = '';
   const db = new FakeDatabase(tables);
@@ -92,28 +80,29 @@ test('ClasseProvider: coordinatori omits aggregate fields entirely when there is
   const materie = new MateriaRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, undefined, materie));
-  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
   const recipe: Recipe = { providers: ['class'], options: makeOptions() };
   const c = b.build(params, recipe).focus.classe!;
-  expect(c.coordinatori).toEqual({ elenco: [] });
+  expect(c.coordinatori?.elenco).toEqual([]);
+  expect(c.coordinatori?.hasElenco).toBe(false);
 });
 
-test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI as PersonVM, with aggregate declension (02 §4.1, §8.1)', () => {
+test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI as PersonaVM, with aggregate declension (02 §4.1, §8.1)', () => {
   const c = build('5A').focus.classe!;
-  expect(c.tutor?.appellativo).toBe('prof.');
-  expect(c.tutor?.articolo).toBe('i');
-  expect(c.tutor?.tutor).toBe('tutor');
-  expect(c.tutor?.asl.map((t) => t.email)).toEqual(['rossi@school.it', 'bianchi@school.it']);
-  expect(c.tutor?.asl.map((t) => t.nomeCompleto)).toEqual(['MARIO ROSSI', 'LUCIA BIANCHI']);
+  expect(c.tutor?.collettivo.appellativo).toBe('Prof.');
+  expect(c.tutor?.collettivo.articolo).toBe('I');
+  expect(c.tutor?.collettivo.sostantivo).toBe('Tutor');
+  expect(c.tutor?.asl.map((t) => t.email)).toEqual(['bianchi@school.it', 'rossi@school.it']);
+  expect(c.tutor?.asl.map((t) => t.nomeCompleto)).toEqual(['BIANCHI LUCIA', 'ROSSI MARIO']);
   expect(c.tutor?.orientamento).toEqual([]);
 });
 
 test('RappresentantiProvider: student reps with email, no parent reps in fixtures (02 §4.1)', () => {
   const c = build('5A').focus.classe!;
-  expect(c.rappresentanti).toEqual({
-    studenti: [{ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }],
-    genitori: []
-  });
+  expect(c.rappresentanti?.studenti.elenco).toEqual([
+    { studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, indirizzo: null, hasIndirizzo: false }
+  ]);
+  expect(c.rappresentanti?.genitori.elenco).toEqual([]);
 });
 
 test('RappresentantiProvider: attaches studente.nomeCompleto to each genitore for ordinary classes', () => {
@@ -132,52 +121,57 @@ test('RappresentantiProvider: attaches studente.nomeCompleto to each genitore fo
     }
   ];
   const c = build('5A', tables).focus.classe!;
-  expect(c.rappresentanti).toEqual({
-    studenti: [],
-    genitori: [{ nomeCompleto: 'Giuseppe Neri', studente: { nomeCompleto: 'Marco Neri' } }]
-  });
+  expect(c.rappresentanti?.studenti.elenco).toEqual([]);
+  expect(c.rappresentanti?.genitori.elenco).toEqual([
+    {
+      nomeCompleto: 'Giuseppe Neri',
+      studente: { nomeCompleto: 'Marco Neri', email: 'marco@school.it' },
+      indirizzo: null,
+      hasIndirizzo: false,
+      descrizione: 'Giuseppe Neri (Marco Neri)'
+    }
+  ]);
 });
 
 test('ClasseProvider: articulated parent flags + materie split (02 §4.1, 09 §9)', () => {
   const c = build('1F').focus.classe!;
-  expect(c.anagrafica.anno).toBe(1);
-  expect(c.anagrafica.annoScolastico).toBe('2025-2026');
-  expect(c.flags.isArticolata).toBe(true);
-  expect(c.flags.isClassePrima).toBe(true);
-  expect(c.articolazione?.partner).toBeNull();
-  expect(c.articolazione?.partners).toEqual(['1F-LSO', '1F-LSS']);
+  expect(c.anno).toBe(1);
+  expect(c.isArticolata).toBe(true);
+  expect(c.isParent).toBe(true);
+  expect(c.isClassePrima).toBe(true);
+  expect(c.articolazione?.classeSorella).toBeNull();
+  expect(c.articolazione?.sottoClassi).toEqual([{ nome: '1F-LSO' }, { nome: '1F-LSS' }]);
   expect(c.articolazione?.parent).toBeNull();
-  expect(c.articolazione?.materieCondivise).toHaveLength(1);
-  expect(c.articolazione?.materieCondivise[0]).toMatchObject({ sigla: 'MATE', nome: 'Matematica' });
-  expect(c.articolazione?.materieSeparatePrimoGruppo).toHaveLength(1);
-  expect(c.articolazione?.materieSeparatePrimoGruppo[0]).toMatchObject({
-    sigla: 'FISI',
-    nome: 'Fisica'
-  });
-  expect(c.articolazione?.materieSeparateSecondoGruppo).toHaveLength(1);
-  expect(c.articolazione?.materieSeparateSecondoGruppo[0]).toMatchObject({
-    sigla: 'FISI',
-    nome: 'Fisica'
-  });
+  expect(c.articolazione?.materieComuni).toHaveLength(1);
+  expect(c.articolazione?.materieComuni[0]).toMatchObject({ sigla: 'MATE', nome: 'Matematica' });
+  expect(c.articolazione?.materieSeparatePrimo).toHaveLength(1);
+  expect(c.articolazione?.materieSeparatePrimo[0]).toMatchObject({ sigla: 'FISI', nome: 'Fisica' });
+  expect(c.articolazione?.materieSeparateSecondo).toHaveLength(1);
+  expect(c.articolazione?.materieSeparateSecondo[0]).toMatchObject({ sigla: 'FISI', nome: 'Fisica' });
 });
 
 test('ClasseProvider: articulated partner points to descriptive parent + counterpart (02 §4.1, 09 §9)', () => {
   const c = build('1F-LSO').focus.classe!;
+  expect(c.isParent).toBe(false);
+  expect(c.isSottoClasse).toBe(true);
   expect(c.articolazione?.parent).toEqual({
     nome: '1F',
     anno: 1,
     indirizzi: [
-      { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico', tipo: 'LICEO' },
+      { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico', tipo: 'LICEO', tipoLabel: 'Liceo' },
       {
         sigla: 'LSSA',
         nome: 'Liceo scientifico scienze applicate',
         nomeSintetico: 'Scienze applicate',
-        tipo: 'LICEO'
+        tipo: 'LICEO',
+        tipoLabel: 'Liceo'
       }
-    ]
+    ],
+    hasIndirizzi: true,
+    indirizziDescrizione: 'Liceo scientifico, Liceo scientifico scienze applicate'
   });
-  expect(c.articolazione?.partner).toBe('1F-LSS');
-  expect(c.articolazione?.partners).toBeNull();
+  expect(c.articolazione?.classeSorella).toEqual({ nome: '1F-LSS' });
+  expect(c.articolazione?.sottoClassi).toEqual([]);
 });
 
 test('RappresentantiProvider: articulated parent merges reps across partners, tagged by indirizzo (09 §10)', () => {
@@ -207,22 +201,30 @@ test('RappresentantiProvider: articulated parent merges reps across partners, ta
     }
   );
   const c = build('1F', tables).focus.classe!;
-  expect(c.rappresentanti).toEqual({
-    studenti: [
-      { nomeCompleto: 'UNO REP', email: 'r1@school.it', indirizzo: { nome: 'Liceo scientifico' } },
-      {
-        nomeCompleto: 'DUE REP',
-        email: 'r2@school.it',
-        indirizzo: { nome: 'Liceo scientifico scienze applicate' }
-      }
-    ],
-    genitori: [
-      { nomeCompleto: 'Tre Genitore', studente: { nomeCompleto: 'DUE REP' }, indirizzo: { nome: 'Liceo scientifico scienze applicate' } }
-    ]
-  });
+  expect(c.rappresentanti?.studenti.elenco).toEqual([
+    {
+      studente: { nomeCompleto: 'DUE REP', email: 'r2@school.it' },
+      indirizzo: expect.objectContaining({ nome: 'Liceo scientifico scienze applicate', tipoLabel: 'Liceo' }),
+      hasIndirizzo: true
+    },
+    {
+      studente: { nomeCompleto: 'UNO REP', email: 'r1@school.it' },
+      indirizzo: expect.objectContaining({ nome: 'Liceo scientifico', tipoLabel: 'Liceo' }),
+      hasIndirizzo: true
+    }
+  ]);
+  expect(c.rappresentanti?.genitori.elenco).toEqual([
+    {
+      nomeCompleto: 'Tre Genitore',
+      studente: { nomeCompleto: 'DUE REP', email: 'r2@school.it' },
+      indirizzo: expect.objectContaining({ nome: 'Liceo scientifico scienze applicate' }),
+      hasIndirizzo: true,
+      descrizione: 'Tre Genitore (DUE REP)'
+    }
+  ]);
 });
 
-test('ClasseProvider: articulated parent merges coordinatori across partners into one PersonVM elenco (09 §10)', () => {
+test('ClasseProvider: articulated parent merges coordinatori across partners into one PersonaVM elenco (09 §10)', () => {
   const tables = fixtureTables();
   const classi = tables['CLASSI'] as Row[];
   const parent = classi.find((r) => r['ID'] === '1F')!;
@@ -231,24 +233,8 @@ test('ClasseProvider: articulated parent merges coordinatori across partners int
   lss['COORD'] = 'verdi@school.it';
 
   const c = build('1F', tables).focus.classe!;
-  expect(c.coordinatori).toEqual({
-    appellativo: 'prof.',
-    articolo: 'i',
-    coordina: 'coordinano',
-    presiede: 'presiedono',
-    elenco: [
-      expect.objectContaining({
-        nomeCompleto: 'MARIO ROSSI',
-        email: 'rossi@school.it',
-        materia: 'MATE',
-        appellativo: 'Prof.'
-      }),
-      expect.objectContaining({
-        nomeCompleto: 'GIO VERDI',
-        email: 'verdi@school.it',
-        materia: 'FISI',
-        appellativo: 'Prof.'
-      })
-    ]
-  });
+  expect(c.coordinatori?.collettivo).toEqual(
+    expect.objectContaining({ appellativo: 'Prof.', articolo: 'I', coordinamento: 'Coordinatori' })
+  );
+  expect(c.coordinatori?.elenco.map((p) => p.email)).toEqual(['rossi@school.it', 'verdi@school.it']);
 });

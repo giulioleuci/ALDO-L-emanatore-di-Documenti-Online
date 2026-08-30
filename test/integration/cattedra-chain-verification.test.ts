@@ -21,7 +21,7 @@ import { GestioneSupplenti } from '../../src/domain/value-objects/enums';
 import { AldoTeachingAssignmentResolver } from '../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { COL_CONF_MAIL } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
-import type { CduClasse } from '../../src/application/context-engine/Cdu';
+import type { ClasseFocusVM } from '../../src/application/context-engine/Cdu';
 import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
 
 // --- Scenario A: 2-hop VARIAZIONI_CATTEDRA override chain (rossi -> hopA -> hopB)
@@ -92,12 +92,12 @@ test('doc-gen: 2-hop VARIAZIONI_CATTEDRA chain resolves the generated CDU to the
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
   expect(result.status).toBe('GENERATO');
 
-  const rendered = templates.contextFor(result.fileId!) as { focus: { classe: CduClasse } };
-  const mate = rendered.focus.classe.consiglioDiClasse.find((d) =>
+  const rendered = templates.contextFor(result.fileId!) as { focus: { classe: ClasseFocusVM } };
+  const mate = rendered.focus.classe.consiglio!.elenco.find((d) =>
     d.materie.some((m) => m.sigla === 'MATE')
   );
-  expect(mate?.anagrafica.email).toBe('hopB@school.test');
-  const allEmails = rendered.focus.classe.consiglioDiClasse.map((d) => d.anagrafica.email);
+  expect(mate?.email).toBe('hopB@school.test');
+  const allEmails = rendered.focus.classe.consiglio!.elenco.map((d) => d.email);
   expect(allEmails).not.toContain('rossi@school.it');
   expect(allEmails).not.toContain('hopA@school.test');
 });
@@ -202,10 +202,10 @@ test('CDU: restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE) subs
     { target: '2C', tipoTarget: 'classe', now: RESTRICTION_NOW },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.SOLO_SUPPLENTI })
   );
-  const mate = restricted.focus.classe!.consiglioDiClasse.find((d) =>
+  const mate = restricted.focus.classe!.consiglio!.elenco.find((d) =>
     d.materie.some((m) => m.sigla === 'MATE')
   );
-  expect(mate?.anagrafica.email).toBe('supplente-mate@school.test');
+  expect(mate?.email).toBe('supplente-mate@school.test');
 
   // bianchi also nominally holds FISI in 5A; MATERIE=MATE-scoped restriction
   // must not touch it (untouched control).
@@ -213,10 +213,10 @@ test('CDU: restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE) subs
     { target: '5A', tipoTarget: 'classe', now: RESTRICTION_NOW },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.SOLO_SUPPLENTI })
   );
-  const fisi = untouched.focus.classe!.consiglioDiClasse.find((d) =>
+  const fisi = untouched.focus.classe!.consiglio!.elenco.find((d) =>
     d.materie.some((m) => m.sigla === 'FISI')
   );
-  expect(fisi?.anagrafica.email).toBe('bianchi@school.it');
+  expect(fisi?.email).toBe('bianchi@school.it');
 });
 
 // --- Scenario C: ACL/permission application for a .SPECIFICA-targeted

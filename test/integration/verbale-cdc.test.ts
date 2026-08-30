@@ -52,11 +52,11 @@ test('generates a Verbale CdC end-to-end (ref 10 full pipeline)', () => {
 
   // Document: rendered with the assembled CDU as the template context
   const rendered = templates.contextFor(result.fileId!) as {
-    focus: { classe: { anagrafica: { nome: string } } };
-    meta: { date: { oggi: { breve: string } } };
+    focus: { classe: { nome: string } };
+    meta: { oggi: { breve: string } };
   };
-  expect(rendered.focus.classe.anagrafica.nome).toBe('5A');
-  expect(rendered.meta.date.oggi.breve).toBe('01/07/2026');
+  expect(rendered.focus.classe.nome).toBe('5A');
+  expect(rendered.meta.oggi.breve).toBe('01/07/2026');
 
   // LOG_DOCS: audit row persisted with correct columns (ref 01, 10 §11)
   const row = db.table('LOG_DOCS').find((r) => r[COL_LOG_DOCS.ID] === result.fileId);

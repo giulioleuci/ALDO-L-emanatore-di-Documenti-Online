@@ -3,14 +3,16 @@ import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
 import type { BuildParams } from '../../../../../src/application/context-engine/Recipe';
 import type { IDipartimentoRepository } from '../../../../../src/domain/repositories/IDipartimentoRepository';
 import type { IDocenteRepository } from '../../../../../src/domain/repositories/IDocenteRepository';
+import type { IMateriaRepository } from '../../../../../src/domain/repositories/IMateriaRepository';
 import type { ILogDocumentoRepository } from '../../../../../src/domain/repositories/ILogDocumentoRepository';
 import { Dipartimento } from '../../../../../src/domain/entities/Dipartimento';
 import { Docente } from '../../../../../src/domain/entities/Docente';
+import { Materia } from '../../../../../src/domain/entities/Materia';
 import { LogDocumento } from '../../../../../src/domain/entities/LogDocumento';
 import { PipelineError } from '../../../../../src/domain/errors/DomainError';
 
 function emptyCdu(): Cdu {
-  return { meta: { parametriInput: {} } as never, focus: {}, tech: {} as never };
+  return { meta: {} as never, focus: {}, tech: {} as never };
 }
 
 function fakeDipartimento(id: string, nome: string, capoEmail: string, materieIds: string[]): Dipartimento {
@@ -25,6 +27,12 @@ function fakeDocente(email: string, dipart = ''): Docente {
     GENERE: 'M',
     DIPART: dipart
   });
+}
+
+function fakeMaterie(): IMateriaRepository {
+  return {
+    findByIdCached: (id: { value: string }) => Materia.fromData({ ID: id.value, NOME: id.value })
+  } as unknown as IMateriaRepository;
 }
 
 function fakeLogDocumento(id: string, materie: string): LogDocumento {
@@ -43,7 +51,7 @@ function fakeLogDocumento(id: string, materie: string): LogDocumento {
 }
 
 describe('DipartimentoProvider', () => {
-  it('populates focus.dipartimento with anagrafica, capo, materie and docenti', () => {
+  it('populates focus.dipartimento with flat id/nome, capo, materie and docenti', () => {
     const dipartimento = fakeDipartimento('LETTERE', 'Lettere', 'rossi@scuola.it', ['ITA', 'STO']);
     const dipartimenti = {
       findAll: () => [dipartimento],
@@ -58,19 +66,26 @@ describe('DipartimentoProvider', () => {
     const logDocs = {
       findAll: () => [fakeLogDocumento('LD1', 'ITA,STO'), fakeLogDocumento('LD2', 'MAT')]
     } as unknown as ILogDocumentoRepository;
-    const provider = new DipartimentoProvider(dipartimenti, docenti, logDocs);
+    const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    provider.provide(cdu, { target: 'LETTERE' } as BuildParams);
+    provider.provide(cdu, { target: 'LETTERE' } as BuildParams, {} as never);
 
-    expect(cdu.focus.dipartimento!.anagrafica).toEqual({ id: 'LETTERE', nome: 'Lettere' });
-    expect(cdu.focus.dipartimento!.capo).toEqual(expect.objectContaining({ email: 'rossi@scuola.it' }));
-    expect(cdu.focus.dipartimento!.materie).toEqual([{ sigla: 'ITA' }, { sigla: 'STO' }]);
-    expect(cdu.focus.dipartimento!.docenti).toHaveLength(2);
-    expect(cdu.focus.dipartimento!.didattica.documenti.items).toHaveLength(1);
-    expect(cdu.focus.dipartimento!.didattica.documenti.items[0]!.id).toBe('LD1');
-    expect(cdu.focus.dipartimento!.didattica.documenti.items[0]!.sottotipo).toBe('ORDINARIO');
-    expect(cdu.focus.dipartimento!.didattica.documenti.items[0]!.notificato).toBe(true);
+    const d = cdu.focus.dipartimento!;
+    expect(d.id).toBe('LETTERE');
+    expect(d.nome).toBe('Lettere');
+    expect(d.capo).toEqual(expect.objectContaining({ email: 'rossi@scuola.it' }));
+    expect(d.hasCapo).toBe(true);
+    expect(d.materie.map((m) => m.sigla).sort()).toEqual(['ITA', 'STO']);
+    expect(d.numeroMaterie).toBe(2);
+    expect(d.docenti).toHaveLength(2);
+    expect(d.hasDocenti).toBe(true);
+    expect(d.documenti.hasElenco).toBe(true);
+    expect(d.documenti.elenco).toHaveLength(1);
+    expect(d.documenti.elenco[0]!.id).toBe('LD1');
+    expect(d.documenti.elenco[0]!.sottotipo).toBe('ORDINARIO');
+    expect(d.documenti.elenco[0]!.isNotificato).toBe(true);
+    expect(d.documenti.storico.get()).toEqual([]);
   });
 
   it('sets capo to null when the department has no CAPO', () => {
@@ -81,21 +96,22 @@ describe('DipartimentoProvider', () => {
       findById: () => null
     } as unknown as IDocenteRepository;
     const logDocs = { findAll: () => [] } as unknown as ILogDocumentoRepository;
-    const provider = new DipartimentoProvider(dipartimenti, docenti, logDocs);
+    const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    provider.provide(cdu, { target: 'SCIENZE' } as BuildParams);
+    provider.provide(cdu, { target: 'SCIENZE' } as BuildParams, {} as never);
 
     expect(cdu.focus.dipartimento!.capo).toBeNull();
+    expect(cdu.focus.dipartimento!.hasCapo).toBe(false);
   });
 
   it('throws PipelineError when the department is not found', () => {
     const dipartimenti = { findAll: () => [], findByMateria: () => null } as unknown as IDipartimentoRepository;
     const docenti = { findByDipartimento: () => [], findById: () => null } as unknown as IDocenteRepository;
     const logDocs = { findAll: () => [] } as unknown as ILogDocumentoRepository;
-    const provider = new DipartimentoProvider(dipartimenti, docenti, logDocs);
+    const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    expect(() => provider.provide(cdu, { target: 'IGNOTO' } as BuildParams)).toThrow(PipelineError);
+    expect(() => provider.provide(cdu, { target: 'IGNOTO' } as BuildParams, {} as never)).toThrow(PipelineError);
   });
 });

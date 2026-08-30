@@ -9,7 +9,6 @@ import type {
   AnnoStorico,
   StoricoDatabaseProvider
 } from '../../../../../src/application/storico/StoricoDatabaseProvider';
-import { ClasseRepository } from '../../../../../src/infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../../../../../src/infrastructure/repositories/AlunnoRepository';
 import { FakeDatabase } from '../../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../../fixtures/tables';
@@ -125,13 +124,14 @@ test("builds ClasseStoricoVM.statistiche/progetti per historical year, using CLA
     makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
   );
   const storico = cdu.focus.classe!.storico!.get();
-  expect(storico.statistiche).toHaveLength(1);
-  expect(storico.statistiche[0]!.annoScolastico).toBe('2024-2025');
-  expect(storico.statistiche[0]!.classe).toBe('4A');
-  expect(storico.statistiche[0]!.statistiche.totale).toBe(2);
-  expect(storico.progetti).toHaveLength(1);
-  expect(storico.progetti[0]!.annoScolastico).toBe('2024-2025');
-  expect(storico.progetti[0]!.classe).toBe('4A');
-  expect(storico.progetti[0]!.progetti).toHaveLength(1);
-  expect(storico.progetti[0]!.progetti[0]!.nome).toBe('Stage vecchio');
+  expect(storico.hasAnni).toBe(true);
+  expect(storico.numeroAnni).toBe(1);
+  expect(storico.anni).toHaveLength(1);
+  const annoEntry = storico.anni[0]!;
+  expect(annoEntry.annoScolastico).toBe('2024-2025');
+  expect(annoEntry.classe).toEqual({ nome: '4A' });
+  expect(annoEntry.statistiche.totale).toBe(2);
+  expect(annoEntry.hasProgetti).toBe(true);
+  expect(annoEntry.progetti).toHaveLength(1);
+  expect(annoEntry.progetti[0]!.nome).toBe('Stage vecchio');
 });

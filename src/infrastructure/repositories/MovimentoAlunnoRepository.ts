@@ -29,6 +29,12 @@ export class MovimentoAlunnoRepository
     return this.find(spec).sort((a, b) => b.data.localeCompare(a.data));
   }
 
+  findEntro(dataInclusiva: string): MovimentoAlunno[] {
+    return this.findAll()
+      .filter((movimento) => movimento.data <= dataInclusiva)
+      .sort((a, b) => b.data.localeCompare(a.data));
+  }
+
   /** Movements of a given type (ref 06 §15). */
   findByTipo(tipo: TipoMovimento): MovimentoAlunno[] {
     const spec = new MovimentiPerTipoSpec(tipo);

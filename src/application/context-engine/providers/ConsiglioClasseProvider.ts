@@ -1,11 +1,12 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu, DocenteCdcVM } from '../Cdu';
+import type { Cdu, ConsiglioClasseVM, DocenteCdcVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmentResolver';
 import {
   attachCouncilProjectionMetadata,
+  buildConsiglioClasseVm,
   buildSupplenzeAggregate,
   createTeachingCouncilProjection,
   prepareCouncilAssignments,
@@ -14,13 +15,6 @@ import {
 } from '../TeachingCouncilProjection';
 import { getClasseEntity } from '../techEntities';
 
-/**
- * Builds `focus.classe.consiglioDiClasse` — one docente-in-CDC view model per
- * teacher of the class council (09 §4, 02 §4.1) — delegating the VM assembly
- * (incl. articulated COMUNE/SEPARATO tagging and the SUPPLENZE/VARIAZIONI_
- * CATTEDRA/CLASSI resolution) to the shared teaching-assignment port and GLF
- * collection projection.
- */
 export class ConsiglioClasseProvider implements ContextProvider {
   private readonly projection: CollectionProjectionInterceptor;
 
@@ -33,43 +27,70 @@ export class ConsiglioClasseProvider implements ContextProvider {
   }
 
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
-    const focusClasse = cdu.focus.classe;
-    if (focusClasse === undefined) return;
+    const focus = cdu.focus.classe;
+    if (focus === undefined) return;
     const classe = getClasseEntity(cdu);
-    const date = new Date(cdu.meta.date.oggi.iso);
-    const assignments = resolveEffectiveCouncil(this.teachingAssignments, classe, date);
-    const titolareAssignments = resolveTitolareCouncil(this.teachingAssignments, classe, date);
-    focusClasse.consiglioDiClasse = prepareCouncilAssignments(assignments) as never;
-    focusClasse.consiglioDiClasseTitolare = prepareCouncilAssignments(titolareAssignments) as never;
-    focusClasse.supplenze = buildSupplenzeAggregate(assignments, this.materie, classe);
+    const data = new Date(cdu.meta.timestamp);
+    const effettivi = resolveEffectiveCouncil(this.teachingAssignments, classe, data);
+    const titolari = resolveTitolareCouncil(this.teachingAssignments, classe, data);
+    focus.consiglio = this.emptyConsiglio(
+      prepareCouncilAssignments(effettivi) as never,
+      prepareCouncilAssignments(titolari) as never,
+      buildSupplenzeAggregate(effettivi, this.materie, classe)
+    );
     this.projection.intercept('consiglio', cdu, cdu, options);
-    attachCouncilProjectionMetadata(cdu, assignments);
-    attachCouncilProjectionMetadata(cdu, titolareAssignments, focusClasse.consiglioDiClasseTitolare ?? []);
+    attachCouncilProjectionMetadata(cdu, effettivi, focus.consiglio.elenco);
+    attachCouncilProjectionMetadata(cdu, titolari, focus.consiglio.titolari);
+    this.partizioni(focus.consiglio, classe);
+  }
 
-    if (this.classi.isArticolata(classe)) {
-      const consiglio: DocenteCdcVM[] = focusClasse.consiglioDiClasse ?? [];
-      const comune = consiglio.filter((docente) => docente.tipoArticolazione === 'COMUNE');
-      const separato = consiglio.filter(
-        (docente) =>
-          docente.tipoArticolazione === 'SEPARATO_PRIMO' ||
-          docente.tipoArticolazione === 'SEPARATO_SECONDO'
-      );
+  private emptyConsiglio(
+    elenco: DocenteCdcVM[],
+    titolari: DocenteCdcVM[],
+    supplenze: ConsiglioClasseVM['supplenze']
+  ): ConsiglioClasseVM {
+    return {
+      elenco,
+      titolari,
+      hasElenco: false,
+      hasTitolari: false,
+      numero: 0,
+      elencoDescrizione: '',
+      elencoDescrizioneEstesa: '',
+      comune: [],
+      separato: [],
+      separatoPrimo: [],
+      separatoSecondo: [],
+      hasComune: false,
+      hasSeparato: false,
+      hasSeparatoPrimo: false,
+      hasSeparatoSecondo: false,
+      comuneDescrizione: '',
+      separatoPrimoDescrizione: '',
+      separatoSecondoDescrizione: '',
+      supplenze,
+      hasSupplenze: supplenze.length > 0
+    };
+  }
 
-      const config = this.classi.getArticolazione(classe);
-      if (config !== null && !config.isParent()) {
-        const partners = this.classi.orderedPartners(classe);
-        const ownBranch = partners[0]?.id === classe.id ? 'SEPARATO_PRIMO' : 'SEPARATO_SECONDO';
-        const ownSeparato = separato.filter((docente) => docente.tipoArticolazione === ownBranch);
-        focusClasse.consiglioDiClasseSeparato = ownSeparato;
-        focusClasse.consiglioDiClasse = [...comune, ...ownSeparato] as never;
-        const titolare: DocenteCdcVM[] = focusClasse.consiglioDiClasseTitolare ?? [];
-        focusClasse.consiglioDiClasseTitolare = titolare.filter(
-          (docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === ownBranch
-        );
-      } else {
-        focusClasse.consiglioDiClasseSeparato = separato;
-      }
-      focusClasse.consiglioDiClasseComune = comune;
-    }
+  /**
+   * Scopes `elenco`/`titolari` to this class's own articulation half (when it
+   * is itself a partner, not the parent) and rebuilds the full VM via the
+   * shared `buildConsiglioClasseVm` — same partitioning logic
+   * `PartnerProjectionProvider` reuses for per-partner-side projections.
+   */
+  private partizioni(consiglio: ConsiglioClasseVM, classe: ReturnType<typeof getClasseEntity>): void {
+    const config = this.classi.getArticolazione(classe);
+    const partners = this.classi.orderedPartners(classe);
+    const own = config !== null && !config.isParent()
+      ? partners[0]?.id === classe.id ? 'SEPARATO_PRIMO' : 'SEPARATO_SECONDO'
+      : null;
+    const scope = (docenti: DocenteCdcVM[]) =>
+      own === null
+        ? docenti
+        : docenti.filter((docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === own);
+    const scopedElenco = scope(consiglio.elenco);
+    const scopedTitolari = scope(consiglio.titolari);
+    Object.assign(consiglio, buildConsiglioClasseVm(scopedElenco, scopedTitolari, consiglio.supplenze));
   }
 }

@@ -1,47 +1,40 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu } from '../Cdu';
+import type { Cdu, PersonaVM } from '../Cdu';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
-import type { Docente } from '../../../domain/entities/Docente';
-import type { PersonVM } from '../mappers/personVmMapper';
-import { buildPersonVmFromDocente, declinePersonGroup } from '../mappers/personVmMapper';
 import { getClasseEntity } from '../techEntities';
+import { buildCollettivoPersone, buildPersonaVm, descriviPersone } from '../mappers/personVmMapper';
 
-/** RUOLI keys for the two tutor roles (02 §4.1). */
-const RUOLO_TUTOR_ASL = 'TUTOR_ASL';
-const RUOLO_TUTOR_ORIENT = 'TUTOR_ORIENT';
-
-/**
- * Populates `focus.classe.tutor` from CLASSI.RUOLI (09 §4), merged across an
- * articulated parent's partner classes via `getDocentiRuoloArticolato`, as
- * PersonVM lists plus the aggregate declension (appellativo/articolo/tutor)
- * computed over asl ∪ orientamento — omitted entirely when both lists are
- * empty (02 §8.1). The council projection (`TeachingCouncilProjection.
- * councilVmStrategy`) reads TUTOR_ASL/TUTOR_ORIENT from `ClasseRepository`
- * directly and does not depend on this provider's output (see `Recipe.ts`'s
- * recipe table note).
- */
 export class TutorProvider implements ContextProvider {
   constructor(private readonly classi: IClasseRepository) {}
 
   provide(cdu: Cdu): void {
+    const focus = cdu.focus.classe;
+    if (focus === undefined) return;
     const classe = getClasseEntity(cdu);
-    const focusClasse = cdu.focus.classe;
-    if (focusClasse === undefined) return;
-
-    const asl = this.tutorVm(classe, RUOLO_TUTOR_ASL);
-    const orientamento = this.tutorVm(classe, RUOLO_TUTOR_ORIENT);
-    const declension = declinePersonGroup([...asl, ...orientamento]);
-
-    focusClasse.tutor = {
-      ...(declension === undefined ? {} : { ...declension, tutor: 'tutor' }),
+    const asl = this.docenti(classe, 'TUTOR_ASL');
+    const orientamento = this.docenti(classe, 'TUTOR_ORIENT');
+    const elenco = [...asl, ...orientamento]
+      .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
+      .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
+    const collettivo = buildCollettivoPersone(elenco);
+    focus.tutor = {
       asl,
-      orientamento
+      orientamento,
+      elenco,
+      hasAsl: asl.length > 0,
+      hasOrientamento: orientamento.length > 0,
+      hasElenco: elenco.length > 0,
+      numero: elenco.length,
+      aslDescrizione: descriviPersone(asl),
+      orientamentoDescrizione: descriviPersone(orientamento),
+      elencoDescrizione: descriviPersone(elenco),
+      collettivo: { appellativo: collettivo.appellativo, articolo: collettivo.articolo, sostantivo: 'Tutor', numero: elenco.length }
     };
   }
 
-  private tutorVm(classe: ReturnType<typeof getClasseEntity>, ruolo: string): PersonVM[] {
-    return this.classi
-      .getDocentiRuoloArticolato(classe, ruolo)
-      .map((d: Docente) => buildPersonVmFromDocente(d));
+  private docenti(classe: ReturnType<typeof getClasseEntity>, ruolo: string): PersonaVM[] {
+    return this.classi.getDocentiRuoloArticolato(classe, ruolo)
+      .map((docente) => buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false }))
+      .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
   }
 }

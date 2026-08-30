@@ -1,64 +1,76 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu } from '../Cdu';
-import type { SubjectVM } from '../mappers/subjectVmMapper';
-import type { PersonVM } from '../mappers/personVmMapper';
+import type { Cdu, DocenteEsameVM, MateriaEsameVM, MateriaVM, PersonaVM } from '../Cdu';
+import { descriviPersone } from '../mappers/personVmMapper';
 
 type Prova = 'PRIMA_PROVA' | 'SECONDA_PROVA';
-type MateriaEsameVM = SubjectVM & { prova: Prova };
-type DocenteEsameVM = PersonVM & { prova: Prova; materie: SubjectVM[] };
 
-/**
- * Builds `focus.classe.esame` (02 §2.9, §4.1) — pre-split prima/seconda prova
- * partitions so templates never write `| where:'prova','PRIMA_PROVA'`. Runs
- * AFTER `materie` (Recipe.ts token order): reads `isMateriaPrimaProva`/
- * `isMateriaSecondaProva`, already resolved per the class's indirizzo by
- * MaterieClasseProvider/TeachingCouncilProjection.
- */
+const prova = (materia: MateriaVM, value: Prova): MateriaEsameVM => ({
+  ...materia,
+  docenti: materia.docenti ?? [],
+  hasDocenti: materia.hasDocenti ?? false,
+  docentiDescrizione: materia.docentiDescrizione ?? '',
+  docentiDescrizioneEstesa: materia.docentiDescrizioneEstesa ?? '',
+  hasCattedraItp: materia.hasCattedraItp ?? false,
+  prova: value,
+  provaLabel: value === 'PRIMA_PROVA' ? 'Prima prova' : 'Seconda prova',
+  isPrimaProva: value === 'PRIMA_PROVA',
+  isSecondaProva: value === 'SECONDA_PROVA'
+});
+
 export class EsameProvider implements ContextProvider {
   provide(cdu: Cdu): void {
-    const focusClasse = cdu.focus.classe;
-    if (focusClasse === undefined) return;
-    const catalogo = focusClasse.materie ?? [];
-
-    const materiePrimaProva = catalogo.filter((m) => m.isMateriaPrimaProva);
-    const materieSecondaProva = catalogo.filter((m) => m.isMateriaSecondaProva);
-    const materie: MateriaEsameVM[] = [
-      ...materiePrimaProva.map((m) => ({ ...m, prova: 'PRIMA_PROVA' as const })),
-      ...materieSecondaProva.map((m) => ({ ...m, prova: 'SECONDA_PROVA' as const }))
-    ];
-
-    focusClasse.esame = {
+    const focus = cdu.focus.classe;
+    if (focus?.materie === undefined) return;
+    const prima = focus.materie.elenco.filter((materia) => materia.isMateriaPrimaProva).map((materia) => prova(materia, 'PRIMA_PROVA'));
+    const seconda = focus.materie.elenco.filter((materia) => materia.isMateriaSecondaProva).map((materia) => prova(materia, 'SECONDA_PROVA'));
+    const docentiPrima = this.docenti(prima, 'PRIMA_PROVA');
+    const docentiSeconda = this.docenti(seconda, 'SECONDA_PROVA');
+    const materie = [...prima, ...seconda];
+    const docenti = [...docentiPrima, ...docentiSeconda];
+    focus.esame = {
       hasEsame: materie.length > 0,
       materie,
-      docenti: this.buildDocenti(materiePrimaProva, 'PRIMA_PROVA').concat(
-        this.buildDocenti(materieSecondaProva, 'SECONDA_PROVA')
-      ),
-      materiePrimaProva,
-      materieSecondaProva,
-      docentiPrimaProva: this.dedupeDocenti(materiePrimaProva),
-      docentiSecondaProva: this.dedupeDocenti(materieSecondaProva)
+      docenti,
+      hasMaterie: materie.length > 0,
+      hasDocenti: docenti.length > 0,
+      materiePrimaProva: prima,
+      materieSecondaProva: seconda,
+      docentiPrimaProva: docentiPrima,
+      docentiSecondaProva: docentiSeconda,
+      hasMateriePrimaProva: prima.length > 0,
+      hasMaterieSecondaProva: seconda.length > 0,
+      hasDocentiPrimaProva: docentiPrima.length > 0,
+      hasDocentiSecondaProva: docentiSeconda.length > 0,
+      materiePrimaProvaDescrizione: prima.map((materia) => materia.nome).join(', '),
+      materieSecondaProvaDescrizione: seconda.map((materia) => materia.nome).join(', '),
+      docentiPrimaProvaDescrizione: descriviPersone(docentiPrima),
+      docentiSecondaProvaDescrizione: descriviPersone(docentiSeconda)
     };
   }
 
-  private dedupeDocenti(materie: SubjectVM[]): PersonVM[] {
-    const seen = new Map<string, PersonVM>();
+  private docenti(materie: MateriaEsameVM[], provaEsame: Prova): DocenteEsameVM[] {
+    const byEmail = new Map<string, { persona: PersonaVM; materie: MateriaVM[] }>();
     for (const materia of materie) {
-      for (const docente of materia.docenti ?? []) {
-        if (docente.email !== null) seen.set(docente.email, docente);
-      }
-    }
-    return Array.from(seen.values());
-  }
-
-  private buildDocenti(materie: SubjectVM[], prova: Prova): DocenteEsameVM[] {
-    const byEmail = new Map<string, DocenteEsameVM>();
-    for (const materia of materie) {
-      for (const docente of materia.docenti ?? []) {
+      for (const docente of materia.docenti) {
         const key = docente.email ?? docente.nomeCompleto;
-        const existing = byEmail.get(key);
-        byEmail.set(key, { ...docente, prova, materie: [...(existing?.materie ?? []), materia] });
+        const item = byEmail.get(key) ?? { persona: docente, materie: [] };
+        item.materie.push(materia);
+        byEmail.set(key, item);
       }
     }
-    return Array.from(byEmail.values());
+    return [...byEmail.values()]
+      .map(({ persona, materie: materieDocente }): DocenteEsameVM => ({
+        ...persona,
+        prova: provaEsame,
+        provaLabel: provaEsame === 'PRIMA_PROVA' ? 'Prima prova' : 'Seconda prova',
+        isPrimaProva: provaEsame === 'PRIMA_PROVA',
+        isSecondaProva: provaEsame === 'SECONDA_PROVA',
+        materie: materieDocente,
+        hasMaterie: materieDocente.length > 0,
+        numeroMaterie: materieDocente.length,
+        materieDescrizione: materieDocente.map((materia) => materia.nome).join(', '),
+        materieSigle: materieDocente.map((materia) => materia.sigla).join(', ')
+      }))
+      .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
   }
 }

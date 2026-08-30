@@ -3,7 +3,7 @@ import type { Cdu } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { StoricoAlunniService } from '../../storico/StoricoAlunniService';
-import { buildStudentStoricoVm } from '../mappers/storicoMapper';
+import { buildStoricoAlunnoVm } from '../mappers/storicoMapper';
 import { getAlunnoEntity, withFocusAlunno } from '../techEntities';
 
 /**
@@ -22,12 +22,12 @@ export class StoricoProvider implements ContextProvider {
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
     if (!options.includiStorico || options.profonditaAnniStorico <= 0) return;
     withFocusAlunno(cdu, (alunno) => {
-      const email = alunno.anagrafica.email;
+      const email = alunno.email;
       const profondita = options.profonditaAnniStorico;
       const service = new StoricoAlunniService(this.databases);
       const alunnoCorrente = getAlunnoEntity(cdu);
       alunno.storico = new LazyRef(() =>
-        buildStudentStoricoVm(service.perAlunno(email, profondita, alunnoCorrente))
+        buildStoricoAlunnoVm(service.perAlunno(email, profondita, alunnoCorrente))
       );
     });
   }

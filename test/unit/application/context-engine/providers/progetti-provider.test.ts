@@ -34,16 +34,16 @@ describe('ProgettiProvider', () => {
     const provider = new ProgettiProvider(progetti as never, docenti as never);
     const cdu = emptyCdu();
     provider.provide(cdu);
-    expect(cdu.focus.classe!.hasProgetti).toBe(true);
-    expect(cdu.focus.classe!.progetti![0]).toMatchObject({
+    expect(cdu.focus.classe!.progetti!.hasElenco).toBe(true);
+    expect(cdu.focus.classe!.progetti!.elenco[0]).toMatchObject({
       tipo: TipoProgetto.ASL,
-      tipoLabel: 'PCTO/ASL',
+      tipoLabel: 'FSL',
       nome: 'PCTO Biblioteca',
       ore: 30,
       oreAsl: 30,
       isAsl: true
     });
-    expect(cdu.focus.classe!.progetti![0]!.referente.appellativoCompleto).toBe('Prof.ssa Anna Ferrari');
+    expect(cdu.focus.classe!.progetti!.elenco[0]!.referente.appellativoCompleto).toBe('Prof.ssa Ferrari Anna');
   });
 
   it('treats an unresolved referente as an external expert (raw name, no email/genere)', () => {
@@ -60,7 +60,7 @@ describe('ProgettiProvider', () => {
     const provider = new ProgettiProvider(progetti as never, docenti as never);
     const cdu = emptyCdu();
     provider.provide(cdu);
-    expect(cdu.focus.classe!.progetti![0]!.referente).toEqual(
+    expect(cdu.focus.classe!.progetti!.elenco[0]!.referente).toEqual(
       expect.objectContaining({ nomeCompleto: 'Studio Esterno XYZ', genere: null, email: null })
     );
   });

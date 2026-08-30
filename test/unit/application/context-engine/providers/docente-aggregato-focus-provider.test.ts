@@ -50,11 +50,12 @@ describe('DocenteAggregatoFocusProvider', () => {
     provider.provide(cdu, params);
 
     const docente = cdu.focus.docente!;
-    const cattedre = docente.cattedre!;
+    const cattedre = cdu.focus.cattedre!;
     expect(docente.email).toBe('bianchi@school.it');
+    expect(cdu.focus.hasCattedre).toBe(true);
     expect(cattedre).toHaveLength(2);
-    const cattedra5A = cattedre.find((c) => c.classeNome === '5A')!;
-    const cattedra1F = cattedre.find((c) => c.classeNome === '1F')!;
+    const cattedra5A = cattedre.find((c) => c.classe.nome === '5A')!;
+    const cattedra1F = cattedre.find((c) => c.classe.nome === '1F')!;
     expect(cattedra5A.materie.map((m) => m.sigla).sort()).toEqual(['FISI', 'IRC', 'MATE']);
     expect(cattedra1F.materie.map((m) => m.sigla)).toEqual(['FISI']);
   });
@@ -92,8 +93,8 @@ describe('DocenteAggregatoFocusProvider', () => {
       now: new Date('2026-07-01T09:00:00Z')
     } as BuildParams);
 
-    expect(cdu.focus.docente?.cattedre?.[0]?.materie).toEqual([
-      expect.objectContaining({ sigla: 'MATE', isITP: false })
+    expect(cdu.focus.cattedre?.[0]?.materie).toEqual([
+      expect.objectContaining({ sigla: 'MATE', isItp: false })
     ]);
   });
 });

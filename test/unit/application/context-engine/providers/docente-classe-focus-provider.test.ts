@@ -7,18 +7,25 @@ function cduWithConsiglio(consiglio: Array<{ email: string }>): Cdu {
   return {
     focus: {
       classe: {
-        consiglioDiClasse: consiglio.map((d) => ({
-          anagrafica: { email: d.email, nomeCompleto: d.email, genere: 'M' },
-          materie: [],
-          materieDescrizione: '',
-          materieSigle: '',
-          ruoli: { isCoordinatore: false, isTutorAsl: false, isTutorOrientamento: false, descrizione: [] },
-          stato: { isSupplente: false, sostituisce: null },
-          tipoArticolazione: null,
-          gruppoNome: null,
-          isITP: false,
-          flags: { isNotLast: true }
-        }))
+        consiglio: {
+          elenco: consiglio.map((d) => ({
+            email: d.email,
+            nomeCompleto: d.email,
+            genere: 'M',
+            materie: [],
+            materieDescrizione: '',
+            materieSigle: '',
+            isCoordinatore: false,
+            isTutorAsl: false,
+            isTutorOrientamento: false,
+            ruoliDescrizione: [],
+            isSupplente: false,
+            sostituisce: null,
+            tipoArticolazione: null,
+            gruppoNome: null,
+            isItp: false
+          }))
+        }
       }
     }
   } as unknown as Cdu;

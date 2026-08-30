@@ -1,58 +1,50 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu } from '../Cdu';
-import type { Progetto } from '../../../domain/entities/Progetto';
-import type { TipoProgetto } from '../../../domain/value-objects/enums';
+import type { Cdu, PersonaVM, ProgettoVM } from '../Cdu';
 import type { ProgettoRepository } from '../../../infrastructure/repositories/ProgettoRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
-import type { PersonVM } from '../mappers/personVmMapper';
-import { buildPersonVm, buildPersonVmFromDocente } from '../mappers/personVmMapper';
-import { tipoProgettoLabel } from '../mappers/labels';
 import { getClasseEntity } from '../techEntities';
+import { buildPersonaVm } from '../mappers/personVmMapper';
+import { elencoVm } from '../mappers/elencoVm';
+import { tipoProgettoLabel } from '../mappers/labels';
 
-export interface ProgettoVM {
-  tipo: TipoProgetto;
-  tipoLabel: string;
-  nome: string;
-  referente: PersonVM;
-  ore: number;
-  oreAsl: number;
-  isAsl: boolean;
-}
-
-/**
- * Builds `focus.classe.progetti[]`/`hasProgetti` from PROGETTI (02 §2.10,
- * §4.1). `REFERENTE` is a free-text cell that is usually a DOCENTI email but
- * may name an external expert — resolved to PersonVM either way, degrading
- * to an external-expert PersonVM (no email/genere) when the lookup misses.
- * Runs AFTER `class` (Recipe.ts token order): reads `tech.entita.classe`.
- */
 export class ProgettiProvider implements ContextProvider {
-  constructor(
-    private readonly progetti: ProgettoRepository,
-    private readonly docenti: IDocenteRepository
-  ) {}
+  constructor(private readonly progetti: ProgettoRepository, private readonly docenti: IDocenteRepository) {}
 
   provide(cdu: Cdu): void {
-    const focusClasse = cdu.focus.classe;
-    if (focusClasse === undefined) return;
-    const classe = getClasseEntity(cdu);
-    const rows: Progetto[] = this.progetti.findByClasse(classe);
-    const progetti: ProgettoVM[] = rows.map((p) => ({
-      tipo: p.tipo,
-      tipoLabel: tipoProgettoLabel(p.tipo),
-      nome: p.nome,
-      referente: this.resolveReferente(p.referente),
-      ore: p.getOre(),
-      oreAsl: p.getOreASLEffettive(),
-      isAsl: p.isASL()
-    }));
-    focusClasse.hasProgetti = progetti.length > 0;
-    focusClasse.progetti = progetti;
+    const focus = cdu.focus.classe;
+    if (focus === undefined) return;
+    const elenco: ProgettoVM[] = this.progetti.findByClasse(getClasseEntity(cdu))
+      .map((progetto) => ({
+        tipo: progetto.tipo,
+        tipoLabel: tipoProgettoLabel(progetto.tipo),
+        nome: progetto.nome,
+        referente: this.referente(progetto.referente),
+        ore: progetto.getOre(),
+        oreAsl: progetto.getOreASLEffettive(),
+        isAsl: progetto.isASL(),
+        isOrientamento: progetto.tipo === 'ORIENTAMENTO',
+        isAltro: progetto.tipo === 'ALTRO'
+      }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+    const asl = elenco.filter((progetto) => progetto.isAsl);
+    const orientamento = elenco.filter((progetto) => progetto.isOrientamento);
+    const altro = elenco.filter((progetto) => progetto.isAltro);
+    focus.progetti = {
+      ...elencoVm(elenco),
+      asl,
+      orientamento,
+      altro,
+      hasAsl: asl.length > 0,
+      hasOrientamento: orientamento.length > 0,
+      hasAltro: altro.length > 0,
+      oreAslTotali: elenco.reduce((totale, progetto) => totale + progetto.oreAsl, 0)
+    };
   }
 
-  private resolveReferente(raw: string): PersonVM {
+  private referente(raw: string): PersonaVM {
     const docente = this.docenti.findById(raw);
-    if (docente !== null) return buildPersonVmFromDocente(docente);
-    return buildPersonVm({ nome: raw, cognome: null, email: null, genere: null });
+    return docente === null
+      ? buildPersonaVm({ nome: raw, cognome: null, email: null, genere: null, isEsterno: true })
+      : buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false });
   }
 }

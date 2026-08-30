@@ -1,5 +1,4 @@
 import { PianiPersClasseProvider } from '../../../../src/application/context-engine/providers/PianiPersClasseProvider';
-import { PianiPersClasseStoricoProvider } from '../../../../src/application/context-engine/providers/PianiPersClasseStoricoProvider';
 import { ClasseProvider } from '../../../../src/application/context-engine/providers/ClasseProvider';
 import { ContextBuilder } from '../../../../src/application/context-engine/ContextBuilder';
 import { makeOptions, recipe } from '../../../../src/application/context-engine/Recipe';
@@ -64,26 +63,24 @@ function tablesWithClassePiani(): Record<string, Row[]> {
 }
 
 function build(
-  providers: string[],
-  databases: StoricoDatabaseProvider,
+  databases: StoricoDatabaseProvider = { anniStorici: () => [] },
   classiCompetenza?: string[],
   options = makeOptions()
-) {
+): Cdu {
   const db = new FakeDatabase(tablesWithClassePiani());
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);
   const logDocs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni));
-  b.registerProvider('pianiPersClasseStorico', new PianiPersClasseStoricoProvider(databases));
+  b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni, databases));
   const params: BuildParams = {
     target: '5A',
     tipoTarget: 'classe',
     now: new Date('2026-07-01T09:00:00Z'),
     ...(classiCompetenza !== undefined ? { classiCompetenza } : {})
   };
-  const recipe: Recipe = { providers, options };
+  const recipe: Recipe = { providers: ['class', 'pianiPersClasse'], options };
   return b.build(params, recipe);
 }
 
@@ -96,7 +93,10 @@ function buildPianiPers(rows: Row[]): Cdu {
   const logDocs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni));
+  b.registerProvider(
+    'pianiPersClasse',
+    new PianiPersClasseProvider(classi, logDocs, alunni, { anniStorici: () => [] })
+  );
   return b.build(
     { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') },
     { providers: ['class', 'pianiPersClasse'], options: makeOptions() }
@@ -104,21 +104,22 @@ function buildPianiPers(rows: Row[]): Cdu {
 }
 
 test('PianiPersClasseProvider: aggregates PIANO_PERS docs across the class, tags each with its student', () => {
-  const cdu = build(['class', 'pianiPersClasse'], { anniStorici: () => [] });
-  const items = cdu.focus.classe!.didattica!.pianiPersonalizzati.items;
-  expect(items).toHaveLength(2);
-  const a1Item = items.find((i) => i.idGen === 'PDP_BES')!;
-  expect(a1Item.tipoLabel).toBe('PDP (DSA)');
+  const cdu = build();
+  const elenco = cdu.focus.classe!.pianiPersonalizzati!.elenco;
+  expect(elenco).toHaveLength(2);
+  const a1Item = elenco.find((i) => i.generatoreId === 'PDP_BES')!;
   expect(a1Item.studente).toEqual({ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' });
-  expect(a1Item.notificato).toBe(false);
-  const a2Item = items.find((i) => i.idGen === 'PEI_DOC')!;
+  expect(a1Item.hasStudente).toBe(true);
+  expect(a1Item.isNotificato).toBe(false);
+  expect(a1Item.isVerbalizzato).toBe(false);
+  const a2Item = elenco.find((i) => i.generatoreId === 'PEI_DOC')!;
   expect(a2Item.studente).toEqual({ nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' });
-  expect(a2Item.notificato).toBe(true);
+  expect(a2Item.isNotificato).toBe(true);
 });
 
 test('PianiPersClasseProvider: falls back to params.target when classiCompetenza is absent', () => {
-  const cdu = build(['class', 'pianiPersClasse'], { anniStorici: () => [] }, undefined);
-  expect(cdu.focus.classe!.didattica!.pianiPersonalizzati.items).toHaveLength(2);
+  const cdu = build(undefined, undefined);
+  expect(cdu.focus.classe!.pianiPersonalizzati!.elenco).toHaveLength(2);
 });
 
 test('PianiPersClasseProvider: nonVerbalizzati excludes VERBALIZZATO and exposes the elenco subtree', () => {
@@ -150,11 +151,11 @@ test('PianiPersClasseProvider: nonVerbalizzati excludes VERBALIZZATO and exposes
       DATA_CREAZ: '2026-03-02'
     }
   ]);
-  const nv = cdu.focus.classe!.didattica!.pianiPersonalizzati.nonVerbalizzati!;
+  const nv = cdu.focus.classe!.pianiPersonalizzati!.nonVerbalizzati;
   expect(nv.hasElenco).toBe(true);
-  expect(nv.elenco).toEqual([
-    { studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, tipoLabel: 'PDP (DSA)' }
-  ]);
+  expect(nv.elenco).toHaveLength(1);
+  expect(nv.elenco[0]!.studente).toEqual({ nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' });
+  expect(nv.elenco[0]!.isVerbalizzato).toBe(false);
 });
 
 test('PianiPersClasseProvider: nonVerbalizzati.hasElenco is false when every item is VERBALIZZATO', () => {
@@ -173,12 +174,12 @@ test('PianiPersClasseProvider: nonVerbalizzati.hasElenco is false when every ite
       DATA_CREAZ: '2026-03-01'
     }
   ]);
-  const nv = cdu.focus.classe!.didattica!.pianiPersonalizzati.nonVerbalizzati!;
+  const nv = cdu.focus.classe!.pianiPersonalizzati!.nonVerbalizzati;
   expect(nv.hasElenco).toBe(false);
   expect(nv.elenco).toEqual([]);
 });
 
-test('DOCENTE_COMPLETO recipe populates nonVerbalizzati alongside items', () => {
+test('DOCENTE_COMPLETO recipe populates nonVerbalizzati alongside elenco', () => {
   const t = tablesWithClassePiani();
   (t['LOG_DOCS'] as Row[]).push({
     ID: 'doc_verb_pdp',
@@ -198,12 +199,12 @@ test('DOCENTE_COMPLETO recipe populates nonVerbalizzati alongside items', () => 
     { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') },
     recipe('DOCENTE_COMPLETO')
   );
-  const nv = cdu.focus.classe!.didattica!.pianiPersonalizzati.nonVerbalizzati!;
+  const nv = cdu.focus.classe!.pianiPersonalizzati!.nonVerbalizzati;
   expect(nv.hasElenco).toBe(true);
   expect(nv.elenco).toHaveLength(2); // both GENERATO rows; the VERBALIZZATO one excluded
 });
 
-test('PianiPersClasseStoricoProvider: includiStorico false ⇒ no storico key', () => {
+test('PianiPersClasseProvider: storico LazyRef resolves empty (no DB opened) when includiStorico is false', () => {
   let opened = false;
   const databases: StoricoDatabaseProvider = {
     anniStorici: () => {
@@ -211,12 +212,12 @@ test('PianiPersClasseStoricoProvider: includiStorico false ⇒ no storico key', 
       return [];
     }
   };
-  const cdu = build(['class', 'pianiPersClasse', 'pianiPersClasseStorico'], databases);
-  expect(cdu.focus.classe!.didattica!.pianiPersonalizzati.storico).toBeUndefined();
+  const cdu = build(databases);
+  expect(cdu.focus.classe!.pianiPersonalizzati!.storico.get()).toEqual([]);
   expect(opened).toBe(false);
 });
 
-test('PianiPersClasseStoricoProvider: resolves prior-year docs per distinct student in the current-year list', () => {
+test('PianiPersClasseProvider: storico resolves prior-year docs per distinct student in the current-year list', () => {
   const t = fixtureTables();
   (t['LOG_DOCS'] as Row[]).push({
     ID: 'old_pdp_a1',
@@ -237,22 +238,12 @@ test('PianiPersClasseStoricoProvider: resolves prior-year docs per distinct stud
     logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
   };
   const databases: StoricoDatabaseProvider = { anniStorici: () => [anno] };
-  const cdu = build(
-    ['class', 'pianiPersClasse', 'pianiPersClasseStorico'],
-    databases,
-    undefined,
-    makeOptions({ includiStorico: true, profonditaAnniDocumenti: 1 })
-  );
-  const storico = cdu.focus.classe!.didattica!.pianiPersonalizzati.storico!.get();
+  const cdu = build(databases, undefined, makeOptions({ includiStorico: true, profonditaAnniDocumenti: 1 }));
+  const storico = cdu.focus.classe!.pianiPersonalizzati!.storico.get();
   expect(storico).toEqual([
     {
-      anno: '2025-2026',
-      nome: 'PDP a1 anno scorso',
-      link: 'http://d/old',
-      tipo: 'PIANO_PERS',
-      sottotipo: 'PDP_DSA',
-      idGen: 'PDP_BES',
-      studenteEmail: 'a1@school.it'
+      annoScolastico: '2025-2026',
+      documento: expect.objectContaining({ nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'PIANO_PERS' })
     }
   ]);
 });

@@ -37,38 +37,36 @@ const params: BuildParams = {
   target: '5A',
   tipoTarget: 'classe',
   now: new Date('2026-07-01T09:00:00Z')
-};
+} as BuildParams;
 const recipe: Recipe = {
   providers: ['school', 'statistiche'],
   options: makeOptions({ includiStorico: true })
 };
 
-test('meta: dates (UTC) and input params (02 §2)', () => {
+test('meta: dates (UTC) and flat input params (02 §2)', () => {
   const cdu = builder().build(params, recipe);
-  expect(cdu.meta.date.oggi).toEqual({
+  expect(cdu.meta.oggi).toEqual({
     breve: '01/07/2026',
     estesa: '01 luglio 2026',
-    iso: '2026-07-01',
     giorno: '01',
     mese: '07',
+    meseNome: 'luglio',
     anno: '2026',
     ora: '09:00'
   });
   expect(cdu.meta.timestamp).toBe('2026-07-01T09:00:00.000Z');
-  expect(cdu.meta.parametriInput.target).toBe('5A');
-  expect(cdu.meta.parametriInput.tipoTarget).toBe('classe');
-  expect(cdu.meta.parametriInput.materiaCorrente).toBeNull();
-  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
+  expect(cdu.meta.target).toBe('5A');
+  expect(cdu.meta.tipoTarget).toBe('classe');
+  expect(cdu.meta.materiaCorrente).toBeNull();
+  expect(cdu.meta.opzioni.includiStorico).toBe(true);
 });
 
-test('istituto: SchoolProvider organisation + staff from Master/RUOLI (02 §3, 09 §4)', () => {
+test('istituto: SchoolProvider anagrafica + staff from Master/RUOLI (02 §3, 09 §4)', () => {
   const cdu = builder().build(params, recipe);
-  expect(cdu.istituto?.organizzazione).toEqual({
-    annoScolastico: '2025-2026',
-    dirigente: { nomeCompleto: 'prof.ssa MARIA BIANCHI' }
-  });
-  expect(cdu.istituto?.staff.referenteBes?.nomeCompleto).toBe('MARIO ROSSI');
-  expect(cdu.istituto?.staff.animatoreDigitale?.nomeCompleto).toBe('LUCIA BIANCHI');
+  expect(cdu.istituto?.annoScolastico).toBe('2025-2026');
+  expect(cdu.istituto?.dirigente).toMatchObject({ nomeCompleto: 'prof.ssa MARIA BIANCHI' });
+  expect(cdu.istituto?.staff.perId.REF_BES?.persona?.nomeCompleto).toBe('ROSSI MARIO');
+  expect(cdu.istituto?.staff.perId.AN_DIG?.persona?.nomeCompleto).toBe('BIANCHI LUCIA');
 });
 
 test('istituto.statistiche: aggregate counts (09 §11)', () => {
@@ -80,7 +78,7 @@ test('istituto.statistiche: aggregate counts (09 §11)', () => {
 test('tech is attached but NON-enumerable — never serialized (02 §7)', () => {
   const cdu = builder().build(params, recipe);
   expect(cdu.tech.pipeline.statoCorrente).toBe('IN_CORSO');
-  expect(JSON.stringify(cdu)).not.toContain('tech');
+  expect(JSON.stringify(cdu)).not.toContain('"tech"');
   expect(Object.keys(cdu)).not.toContain('tech');
 });
 

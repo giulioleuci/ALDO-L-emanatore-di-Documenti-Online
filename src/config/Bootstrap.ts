@@ -29,6 +29,7 @@ import { MateriaRepository } from '../infrastructure/repositories/MateriaReposit
 import { DocenteRepository } from '../infrastructure/repositories/DocenteRepository';
 import { RuoloSpecialeRepository } from '../infrastructure/repositories/RuoloSpecialeRepository';
 import { OreASLRepository } from '../infrastructure/repositories/OreASLRepository';
+import { MovimentoAlunnoRepository } from '../infrastructure/repositories/MovimentoAlunnoRepository';
 import { DipartimentoRepository } from '../infrastructure/repositories/DipartimentoRepository';
 import { CarenzaRepository } from '../infrastructure/repositories/CarenzaRepository';
 import { ConfigurazioneEmailRepository } from '../infrastructure/repositories/ConfigurazioneEmailRepository';
@@ -134,6 +135,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('ruoliSpeciali', () => new RuoloSpecialeRepository(deps.db));
   c.register('dipartimenti', () => new DipartimentoRepository(deps.db));
   c.register('oreAsl', () => new OreASLRepository(deps.db));
+  c.register('movimenti', () => new MovimentoAlunnoRepository(deps.db));
   c.register('carenze', () => new CarenzaRepository(deps.db));
   c.register(
     'logDocumenti',
@@ -172,6 +174,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       alunni: container.get<AlunnoRepository>('alunni'),
       materie: container.get<MateriaRepository>('materie'),
       oreAsl: container.get<OreASLRepository>('oreAsl'),
+      movimenti: container.get<MovimentoAlunnoRepository>('movimenti'),
       logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
       progetti: container.get<ProgettoRepository>('progetti'),
       dipartimenti: container.get<DipartimentoRepository>('dipartimenti')

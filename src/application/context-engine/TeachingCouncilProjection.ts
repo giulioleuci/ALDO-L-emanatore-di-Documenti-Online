@@ -1,4 +1,12 @@
-import type { Cdu, DocenteCdcVM, SupplenzaAggregataVM } from './Cdu';
+import type {
+  Cdu,
+  ConsiglioClasseVM,
+  CurriculumVM,
+  DocenteCdcVM,
+  MateriaVM,
+  PersonaVM,
+  SupplenzaAggregataVM
+} from './Cdu';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -12,9 +20,8 @@ import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { GestioneSupplenti, ReligioneScelta } from '../../domain/value-objects/enums';
 import { getClasseEntity } from './techEntities';
 import { attachCduMateriaAssignmentIdentity } from './CduInternalMetadata';
-import { buildPersonVm, buildPersonVmFromDocente, type PersonVM } from './mappers/personVmMapper';
-import { buildSubjectVm, type SubjectVM } from './mappers/subjectVmMapper';
-import type { CurriculumVM } from './mappers/carenzeMapper';
+import { buildPersonaVm, descriviPersone, descriviPersoneEsteso } from './mappers/personVmMapper';
+import { buildMateriaVm } from './mappers/subjectVmMapper';
 
 export type CollectionProjectionOperation = ProjectionOperation;
 
@@ -159,8 +166,8 @@ export function prepareStudentCouncilAssignments(
  * to the docenti this specific student actually has. Unlike `focus.classe.elencoMaterieConPermessi`
  * (a whole-class/Sheets-ACL projection), this returns the full `SubjectVM` per column.
  */
-export function materieDistinteConsiglioFiltrato(consiglioDiClasseFiltrato: DocenteCdcVM[]): SubjectVM[] {
-  const bySigla = new Map<string, SubjectVM>();
+export function materieDistinteConsiglioFiltrato(consiglioDiClasseFiltrato: DocenteCdcVM[]): MateriaVM[] {
+  const bySigla = new Map<string, MateriaVM>();
   for (const docente of consiglioDiClasseFiltrato) {
     for (const materia of docente.materie) {
       if (!bySigla.has(materia.sigla)) bySigla.set(materia.sigla, materia);
@@ -219,16 +226,16 @@ function gruppoNome(
 
 const utils = new UtilsService();
 
-function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(items: T[]): T[] {
-  return utils.uniqBy(items, (item) => `${item.sigla} ${item.specificita ?? ''}`);
+function dedupeMaterie<T extends { sigla: string; specificita: string | null; isItp: boolean }>(items: T[]): T[] {
+  return utils.uniqBy(items, (item) => `${item.sigla} ${item.specificita ?? ''} ${item.isItp}`);
 }
 
 /** MAIN precedes ITP for the same sigla, matching ClasseRepository.getMaterieDelDocente's legacy precedence rule. */
-export function dedupeSubjectsMainOverItp(vms: SubjectVM[]): SubjectVM[] {
-  const bySigla = new Map<string, SubjectVM>();
+export function dedupeSubjectsMainOverItp(vms: MateriaVM[]): MateriaVM[] {
+  const bySigla = new Map<string, MateriaVM>();
   for (const vm of vms) {
     const existing = bySigla.get(vm.sigla);
-    if (existing === undefined || (existing.isITP && !vm.isITP)) bySigla.set(vm.sigla, vm);
+    if (existing === undefined || (existing.isItp && !vm.isItp)) bySigla.set(vm.sigla, vm);
   }
   return [...bySigla.values()];
 }
@@ -245,7 +252,7 @@ export function materieDocenteInClasse(
   classe: Classe,
   assignments: TeachingAssignment[],
   docenteEmail: string
-): { assignmentsDelDocente: TeachingAssignment[]; materieVm: SubjectVM[] } {
+): { assignmentsDelDocente: TeachingAssignment[]; materieVm: MateriaVM[] } {
   const assignmentsDelDocente = assignments.filter(
     (a) => a.docenteEffettivo.email.value === docenteEmail
   );
@@ -258,7 +265,7 @@ export function materieDocenteInClasse(
           specifica: a.slot.specifica
         })
       )
-      .filter((vm): vm is SubjectVM => vm !== null)
+      .filter((vm): vm is MateriaVM => vm !== null)
   );
   return { assignmentsDelDocente, materieVm };
 }
@@ -267,7 +274,7 @@ export function materiaVmFromSlot(
   materie: IMateriaRepository,
   classe: Classe,
   slot: { materia: string; kind: string; specifica: string | null }
-): SubjectVM | null {
+): MateriaVM | null {
   const baseId = MateriaId.of(slot.materia);
   const specifica = slot.specifica;
   const materia =
@@ -276,9 +283,9 @@ export function materiaVmFromSlot(
       : (materie.findSpecifiche(baseId).find((m) => m.id === `${baseId.value}.${specifica}`) ??
         null);
   if (materia === null) return null;
-  return buildSubjectVm(materia, {
+  return buildMateriaVm(materia, 'BASE', {
     indirizzo: IndirizzoId.of(classe.indirizzo),
-    isITP: slot.kind === 'ITP',
+    isItp: slot.kind === 'ITP',
     principale: materia.principale,
     specificita: materia.specificita
   });
@@ -288,7 +295,7 @@ function materiaVm(
   materie: IMateriaRepository,
   classe: Classe,
   assignment: FlattenedProjectionAssignment
-): SubjectVM | null {
+): MateriaVM | null {
   return materiaVmFromSlot(materie, classe, assignment.slot);
 }
 
@@ -330,13 +337,18 @@ export function buildSupplenzeAggregate(
     byPair.set(key, pair);
   }
   const items = [...byPair.values()].map(({ supplente, titolare, slots }) => ({
-    supplente: buildPersonVmFromDocente(supplente),
-    titolare: buildPersonVmFromDocente(titolare),
-    dettaglioMaterie: dedupeMaterie(
+    supplente: buildPersonaVm({ nome: supplente.nome, cognome: supplente.cognome, email: supplente.id, genere: supplente.genere, isEsterno: false }),
+    titolare: buildPersonaVm({ nome: titolare.nome, cognome: titolare.cognome, email: titolare.id, genere: titolare.genere, isEsterno: false }),
+    materie: dedupeMaterie(
       slots
         .map((slot) => materiaVmFromSlot(materie, classe, slot))
-        .filter((vm): vm is SubjectVM => vm !== null)
+        .filter((vm): vm is MateriaVM => vm !== null)
     )
+  })).map((item) => ({
+    ...item,
+    hasMaterie: item.materie.length > 0,
+    materieDescrizione: item.materie.map((materia) => materia.nome).join(', '),
+    materieSigle: item.materie.map((materia) => materia.sigla).join(', ')
   }));
   items.sort((a, b) => {
     const bySupplente = (a.supplente.nomeCompleto ?? '').localeCompare(
@@ -349,8 +361,50 @@ export function buildSupplenzeAggregate(
   return items;
 }
 
-function personVmOf(teacher: ProjectionTeacher): PersonVM {
-  return buildPersonVm({
+/**
+ * Derives the full `ConsiglioClasseVM` (partitions + counts + descriptions)
+ * from an already-scoped `elenco`/`titolari` pair and their `supplenze`.
+ * Shared by `ConsiglioClasseProvider` (whole-class or self-scoped-partner
+ * focus) and `PartnerProjectionProvider` (per-partner-side projection built
+ * from the outer class's already-split comune/separato arrays) so the
+ * comune/separatoPrimo/separatoSecondo partitioning and description
+ * formatting is computed in exactly one place.
+ */
+export function buildConsiglioClasseVm(
+  elenco: DocenteCdcVM[],
+  titolari: DocenteCdcVM[],
+  supplenze: SupplenzaAggregataVM[]
+): ConsiglioClasseVM {
+  const comune = elenco.filter((docente) => docente.isComune);
+  const separatoPrimo = elenco.filter((docente) => docente.isSeparatoPrimo);
+  const separatoSecondo = elenco.filter((docente) => docente.isSeparatoSecondo);
+  const separato = [...separatoPrimo, ...separatoSecondo];
+  return {
+    elenco,
+    titolari,
+    hasElenco: elenco.length > 0,
+    hasTitolari: titolari.length > 0,
+    numero: elenco.length,
+    elencoDescrizione: descriviPersone(elenco),
+    elencoDescrizioneEstesa: descriviPersoneEsteso(elenco),
+    comune,
+    separato,
+    separatoPrimo,
+    separatoSecondo,
+    hasComune: comune.length > 0,
+    hasSeparato: separato.length > 0,
+    hasSeparatoPrimo: separatoPrimo.length > 0,
+    hasSeparatoSecondo: separatoSecondo.length > 0,
+    comuneDescrizione: descriviPersone(comune),
+    separatoPrimoDescrizione: descriviPersone(separatoPrimo),
+    separatoSecondoDescrizione: descriviPersone(separatoSecondo),
+    supplenze,
+    hasSupplenze: supplenze.length > 0
+  };
+}
+
+function personVmOf(teacher: ProjectionTeacher): PersonaVM {
+  return buildPersonaVm({
     nome: teacher.nome,
     cognome: teacher.cognome,
     email: teacher.id,
@@ -359,7 +413,7 @@ function personVmOf(teacher: ProjectionTeacher): PersonVM {
 }
 
 /** Every subject in `materie`, names comma-joined (09 §10) — distinct from `SubjectVM.docentiDescrizione`, which joins people, not subjects. */
-function docentiDescrizioneMaterie(materie: SubjectVM[]): string {
+function docentiDescrizioneMaterie(materie: MateriaVM[]): string {
   return materie.map((m) => m.nome).join(', ');
 }
 
@@ -379,7 +433,7 @@ function councilVmStrategy(
       classi.getDocentiRuoloArticolato(classe, 'TUTOR_ORIENT').map((docente) => docente.id ?? '')
     );
 
-    return groups.map((group, index) => {
+    return groups.map((group) => {
       const assignments = group.assignments;
       const first = assignments[0]!;
       const rowDocente = first;
@@ -399,28 +453,50 @@ function councilVmStrategy(
       const materieVm = dedupeMaterie(
         assignments
           .map((assignment) => materiaVm(materie, classe, assignment))
-          .filter((vm): vm is SubjectVM => vm !== null)
+          .filter((vm): vm is MateriaVM => vm !== null)
       );
       const tipoArt = tipoArticolazione(classi, classe, assignments);
+      const persona = personVmOf(rowDocente);
+      const materieConDocente = materieVm.map((materia) => ({
+        ...materia,
+        docenti: [persona],
+        hasDocenti: true,
+        docentiDescrizione: descriviPersone([persona]),
+        docentiDescrizioneEstesa: descriviPersoneEsteso([persona]),
+        hasCattedraItp: materia.isItp
+      }));
+      const ruoliDescrizione = descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento);
       return {
-        anagrafica: personVmOf(rowDocente),
-        materie: materieVm,
-        materieDescrizione: docentiDescrizioneMaterie(materieVm),
-        materieSigle: materieVm.map((m) => m.sigla).join(', '),
-        ruoli: {
-          isCoordinatore,
-          isTutorAsl,
-          isTutorOrientamento,
-          descrizione: descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
-        },
-        stato: {
-          isSupplente,
-          sostituisce: sostituisce === null ? null : personVmOf(sostituisce)
-        },
+        ...persona,
+        materie: materieConDocente,
+        hasMaterie: materieConDocente.length > 0,
+        numeroMaterie: materieConDocente.length,
+        materieDescrizione: docentiDescrizioneMaterie(materieConDocente),
+        materieDescrizioneSintesi: materieConDocente.map((m) => m.nomeSintetico).join(', '),
+        materieSigle: materieConDocente.map((m) => m.sigla).join(', '),
+        isCoordinatore,
+        isTutorAsl,
+        isTutorOrientamento,
+        isTutor: isTutorAsl || isTutorOrientamento,
+        isSupplente,
+        isItp: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
+        isComune: tipoArt === 'COMUNE',
+        isSeparatoPrimo: tipoArt === 'SEPARATO_PRIMO',
+        isSeparatoSecondo: tipoArt === 'SEPARATO_SECONDO',
+        ruoliDescrizione,
+        ruoliDescrizioneTesto: ruoliDescrizione.join(', '),
+        sostituisce: sostituisce === null ? null : personVmOf(sostituisce),
+        hasSostituisce: sostituisce !== null,
         tipoArticolazione: tipoArt,
+        tipoArticolazioneLabel:
+          tipoArt === 'COMUNE'
+            ? 'Comune'
+            : tipoArt === 'SEPARATO_PRIMO'
+              ? 'Separato primo'
+              : tipoArt === 'SEPARATO_SECONDO'
+                ? 'Separato secondo'
+                : '',
         gruppoNome: gruppoNome(classi, classe, tipoArt),
-        isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
-        flags: { isNotLast: index < groups.length - 1 }
       } satisfies DocenteCdcVM;
     });
   };
@@ -446,12 +522,12 @@ export function createTeachingCouncilProjection(
   return {
     consiglio: new CollectionProjectionInterceptor(new LoggerService(), projector, {
       targetProviders: ['consiglio'],
-      targetPaths: ['focus.classe.consiglioDiClasse', 'focus.classe.consiglioDiClasseTitolare'],
+      targetPaths: ['focus.classe.consiglio.elenco', 'focus.classe.consiglio.titolari'],
       operations: councilProjectionOperations
     }),
     alunno: new CollectionProjectionInterceptor(new LoggerService(), projector, {
       targetProviders: ['student'],
-      targetPaths: ['focus.alunno.consiglioDiClasseFiltrato'],
+      targetPaths: ['focus.alunno.consiglio.elenco'],
       operations: [...studentCouncilFilterOperations, ...councilProjectionOperations]
     })
   };
@@ -470,7 +546,7 @@ export function resolveCouncilForProjection(
 }
 
 /**
- * `focus.classe.consiglioDiClasse` (02 §4.1): the docente actually in charge
+ * `focus.classe.consiglio.elenco` (02 §4.1): the docente actually in charge
  * today — SUPPLENZE included — independent of `opzioni.gestioneSupplenti`
  * (that option only steers email routing elsewhere).
  */
@@ -486,7 +562,7 @@ export function resolveEffectiveCouncil(
 }
 
 /**
- * `focus.classe.consiglioDiClasseTitolare` (02 §4.1): the titolare of record —
+ * `focus.classe.consiglio.titolari` (02 §4.1): the titolare of record —
  * VARIAZIONI_CATTEDRA applied, SUPPLENZE never applied — independent of
  * `opzioni.gestioneSupplenti`.
  */
@@ -537,14 +613,14 @@ export function resolveEffectiveDocenti(
  * The GLF projector materializes fresh VM objects, so assignment identity is
  * attached only after interception. This remains internal metadata: templates
  * and serialized CDU data retain the canonical four-field materia shape.
- * `docenti` defaults to `focus.classe.consiglioDiClasse`; pass
- * `focus.classe.consiglioDiClasseTitolare` (with the matching titolare
+ * `docenti` defaults to `focus.classe.consiglio.elenco`; pass
+ * `focus.classe.consiglio.titolari` (with the matching titolare
  * assignments) to attach identity there too.
  */
 export function attachCouncilProjectionMetadata(
   cdu: Cdu,
   assignments: TeachingAssignment[],
-  docenti: DocenteCdcVM[] = cdu.focus.classe?.consiglioDiClasse ?? []
+  docenti: DocenteCdcVM[] = cdu.focus.classe?.consiglio?.elenco ?? []
 ): void {
   const candidatesByActor = new Map<string, TeachingAssignment[]>();
   for (const assignment of assignments) {
@@ -556,7 +632,7 @@ export function attachCouncilProjectionMetadata(
     }
   }
   for (const docente of docenti) {
-    const candidates = [...(candidatesByActor.get(docente.anagrafica.email ?? '') ?? [])];
+    const candidates = [...(candidatesByActor.get(docente.email ?? '') ?? [])];
     for (const materia of docente.materie) {
       const index = candidates.findIndex((assignment) => {
         const catalogId =

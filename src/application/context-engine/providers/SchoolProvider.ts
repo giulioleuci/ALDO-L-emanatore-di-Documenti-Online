@@ -1,20 +1,11 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu, CduIstituto } from '../Cdu';
+import type { Cdu, PersonaVM } from '../Cdu';
 import type { IMasterSheetRepository } from '../../../domain/repositories/IMasterSheetRepository';
 import type { IRuoloSpecialeRepository } from '../../../domain/repositories/IRuoloSpecialeRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
-import type { PersonVM } from '../mappers/personVmMapper';
-import { buildPersonVmFromDocente } from '../mappers/personVmMapper';
+import { buildPersonaVm } from '../mappers/personVmMapper';
+import { elencoVm } from '../mappers/elencoVm';
 
-/** Conventional RUOLI ids for the two institute-wide staff roles (02 §3). */
-const RUOLO_REFERENTE_BES = 'REF_BES';
-const RUOLO_ANIMATORE_DIGITALE = 'AN_DIG';
-
-/**
- * Populates `cdu.istituto` (02 §3 → SchoolProvider). Organisation data comes from
- * the current-year Master Sheet row; the two staff roles resolve to a full
- * PersonVM (or null when unassigned) through the DOCENTI registry.
- */
 export class SchoolProvider implements ContextProvider {
   constructor(
     private readonly master: IMasterSheetRepository,
@@ -23,32 +14,28 @@ export class SchoolProvider implements ContextProvider {
   ) {}
 
   provide(cdu: Cdu): void {
-    const cfg = this.master.findConfigAnnoCorrente();
-    const staff: CduIstituto['staff'] = {
-      referenteBes: this.personaRuolo(RUOLO_REFERENTE_BES),
-      animatoreDigitale: this.personaRuolo(RUOLO_ANIMATORE_DIGITALE)
-    };
-    // Every RUOLI row is also reachable by its raw ID (02 §3), so custom
-    // institute roles (e.g. RSPP) don't need a SchoolProvider code change.
-    for (const ruolo of this.ruoli.findAllCached()) {
-      if (ruolo.id !== null) staff[ruolo.id] = this.personaRuolo(ruolo.id);
-    }
+    const config = this.master.findConfigAnnoCorrente();
+    const elenco = this.ruoli.findAllCached().map((ruolo) => {
+      const persona = this.persona(ruolo.getEmails()[0]?.value);
+      return {
+        ruoloId: ruolo.id ?? '',
+        ruoloNome: ruolo.nome,
+        persona,
+        hasPersona: persona !== null
+      };
+    });
     cdu.istituto = {
-      organizzazione: {
-        annoScolastico: cfg.annoScolasticoRaw,
-        dirigente: { nomeCompleto: cfg.dirigente }
-      },
-      staff
+      annoScolastico: config.annoScolasticoRaw,
+      dirigente: buildPersonaVm({ nome: config.dirigente, cognome: null, email: null, genere: null, isEsterno: true }),
+      staff: { ...elencoVm(elenco), perId: Object.fromEntries(elenco.map((ruolo) => [ruolo.ruoloId, ruolo])) }
     };
   }
 
-  /** PersonVM of the first teacher holding `ruoloId`, or null if unassigned/unknown. */
-  private personaRuolo(ruoloId: string): PersonVM | null {
-    const ruolo = this.ruoli.findAllCached().find((r) => r.id === ruoloId);
-    if (ruolo === undefined) return null;
-    const emails = ruolo.getEmails();
-    if (emails.length === 0) return null;
-    const docente = this.docenti.findById(emails[0]!.value);
-    return docente === null ? null : buildPersonVmFromDocente(docente);
+  private persona(email: string | undefined): PersonaVM | null {
+    if (email === undefined) return null;
+    const docente = this.docenti.findById(email);
+    return docente === null
+      ? null
+      : buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false });
   }
 }

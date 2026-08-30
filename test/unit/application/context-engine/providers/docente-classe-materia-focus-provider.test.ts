@@ -4,15 +4,18 @@ import { PipelineError } from '../../../../../src/domain/errors/DomainError';
 
 function cduWithConsiglio(): Cdu {
   return {
-    meta: { parametriInput: {} } as never,
+    meta: {} as never,
     focus: {
       classe: {
-        consiglioDiClasse: [
-          {
-            anagrafica: { email: 'rossi@scuola.it', nomeCompleto: 'Mario Rossi' } as never,
-            materie: [{ sigla: 'MAT', nome: 'Matematica' } as never]
-          }
-        ]
+        consiglio: {
+          elenco: [
+            {
+              email: 'rossi@scuola.it',
+              nomeCompleto: 'Mario Rossi',
+              materie: [{ sigla: 'MAT', nome: 'Matematica' } as never]
+            }
+          ]
+        }
       } as never
     },
     tech: {} as never
@@ -26,7 +29,7 @@ describe('DocenteClasseMateriaFocusProvider', () => {
 
     provider.provide(cdu, { docenteCorrente: 'rossi@scuola.it', materiaCorrente: 'MAT' } as never);
 
-    expect(cdu.focus.docente).toEqual({ email: 'rossi@scuola.it', nomeCompleto: 'Mario Rossi' });
+    expect(cdu.focus.docente).toEqual({ email: 'rossi@scuola.it', nomeCompleto: 'Mario Rossi', materie: expect.any(Array) });
     expect(cdu.focus.materia).toEqual({ sigla: 'MAT', nome: 'Matematica' });
   });
 

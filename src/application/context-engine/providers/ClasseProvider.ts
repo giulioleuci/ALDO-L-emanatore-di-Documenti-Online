@@ -1,6 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import { attachCduArticolazionePartners } from '../CduInternalMetadata';
-import type { Cdu, CduClasse } from '../Cdu';
+import type { ArticolazioneClasseVM, ClasseFocusVM, ClasseParentVM, Cdu, IndirizzoVM, MateriaVM } from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
@@ -13,19 +12,33 @@ import { MateriaId } from '../../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
-import type { SubjectVM } from '../mappers/subjectVmMapper';
-import { buildSubjectVm } from '../mappers/subjectVmMapper';
-import type { PersonVM } from '../mappers/personVmMapper';
-import { buildPersonVmFromDocente, coordinatoriVerbs, declinePersonGroup } from '../mappers/personVmMapper';
+import { buildCollettivoPersone, buildPersonaVm, descriviPersone, descriviPersoneEsteso } from '../mappers/personVmMapper';
+import { buildMateriaVm } from '../mappers/subjectVmMapper';
+import { elencoVm } from '../mappers/elencoVm';
+import { indirizzoTipoLabel } from '../mappers/labels';
 
 /**
- * Populates `focus.classe.anagrafica`, `flags`, `articolazione` and
- * `coordinatori` (09 §4/§9). Resolves the focus class from `params.target` —
- * directly for a class target, or via the student's own class for an alunno
- * target (alunno recipes place `class` before `student`) — and stashes the live
- * Classe entity in `tech.entita.classe` for later providers (tutor, consiglio,
- * students).
+ * `ClasseSintesiVM.sezione` is "sezione pura, senza anno o sigle d'indirizzo"
+ * (08 §8.20/§4.1) — distinct from `CattedraVM.sezioneEstesa` (`Classe.sezione`,
+ * the class name minus its leading year digits, e.g. "F-LSO"). Articulated
+ * partner classes append their indirizzo code after a hyphen (e.g. "1F-LSO");
+ * the pure section is the leading segment before it.
  */
+export function sezionePura(classe: Classe): string {
+  return classe.sezione.split('-')[0] ?? classe.sezione;
+}
+
+function indirizzoVm(classe: Classe, classi: IClasseRepository): IndirizzoVM {
+  const indirizzo = classi.getIndirizzo(classe);
+  return {
+    sigla: classe.indirizzo,
+    nome: indirizzo.nome,
+    nomeSintetico: indirizzo.nomeSintetico,
+    tipo: indirizzo.tipo,
+    tipoLabel: indirizzoTipoLabel(indirizzo.tipo)
+  };
+}
+
 export class ClasseProvider implements ContextProvider {
   constructor(
     private readonly classi: IClasseRepository,
@@ -36,57 +49,34 @@ export class ClasseProvider implements ContextProvider {
   provide(cdu: Cdu, params: BuildParams): void {
     const classe = this.resolveClasse(params);
     setClasseEntity(cdu, classe);
-
-    const indirizzo = this.classi.getIndirizzo(classe);
-    const anno = classe.anno;
-    const isArticolata = this.classi.isArticolata(classe);
-    const annoScolastico = cdu.istituto?.organizzazione.annoScolastico ?? '';
-
-    const focusClasse: CduClasse = {
-      anagrafica: {
-        nome: classe.nome,
-        anno: anno.value,
-        sezione: classe.sezione,
-        annoScolastico,
-        indirizzo: {
-          nome: indirizzo.nome,
-          nomeSintetico: indirizzo.nomeSintetico,
-          sigla: classe.indirizzo,
-          tipo: indirizzo.tipo
-        }
-      },
-      flags: {
-        isClassePrima: anno.isPrima(),
-        isTriennio: anno.value >= 3,
-        isPrimoBiennio: anno.isPrimoBiennio(),
-        isTerminale: anno.isTerminale(),
-        isArticolata
-      },
-      coordinatori: this.buildCoordinatori(classe)
+    const config = this.classi.getArticolazione(classe);
+    const anno = classe.anno.value;
+    const focus: ClasseFocusVM = {
+      nome: classe.nome,
+      anno,
+      sezione: sezionePura(classe),
+      indirizzo: indirizzoVm(classe, this.classi),
+      isClassePrima: classe.anno.isPrima(),
+      isTriennio: anno >= 3,
+      isPrimoBiennio: classe.anno.isPrimoBiennio(),
+      isSecondoBiennio: anno === 3 || anno === 4,
+      isTerminale: classe.anno.isTerminale(),
+      isArticolata: config !== null,
+      isParent: config?.isParent() ?? false,
+      isSottoClasse: config?.isPartner() ?? false,
+      coordinatori: this.coordinatori(classe)
     };
-
-    if (isArticolata) {
-      const articolazione = this.buildArticolazione(classe);
-      focusClasse.articolazione = attachCduArticolazionePartners(
-        articolazione,
-        this.classi.orderedPartners(classe).map((partner) => partner.id ?? '')
-      );
-    }
-
-    cdu.focus.classe = focusClasse;
+    if (config !== null) focus.articolazione = this.articolazione(classe, config);
+    cdu.focus.classe = focus;
   }
 
   private resolveClasse(params: BuildParams): Classe {
     if (params.tipoTarget === 'alunno') {
-      if (this.alunni === undefined)
-        throw new ValidationError('ClasseProvider: un target alunno richiede AlunnoRepository');
+      if (this.alunni === undefined) throw new ValidationError('ClasseProvider richiede AlunnoRepository');
       const alunno = this.alunni.findById(params.target);
       if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
       const classe = this.classi.findById(alunno.classeId);
-      if (classe === null)
-        throw new EntityNotFoundError(
-          `Classe ${alunno.classe} dell'alunno ${params.target} non trovata`
-        );
+      if (classe === null) throw new EntityNotFoundError(`Classe ${alunno.classe} non trovata`);
       return classe;
     }
     const classe = this.classi.findById(ClasseId.of(params.target));
@@ -94,61 +84,65 @@ export class ClasseProvider implements ContextProvider {
     return classe;
   }
 
-  private buildCoordinatori(classe: Classe): NonNullable<CduClasse['coordinatori']> {
-    const config = this.classi.getArticolazione(classe);
-    const sources: Classe[] =
-      config?.isParent() === true ? [classe, ...this.classi.getClassiPartner(classe)] : [classe];
-    // Materia is resolved per-source (not against the parent `classe`): each partner
-    // holds its own MATE/FISI-style column, so a partner-only coordinator's subject
-    // would otherwise resolve to null when looked up against the parent's row.
-    const elenco: PersonVM[] = sources.flatMap((source) =>
-      this.classi
-        .getCoordinatori(source)
-        .map((d) => buildPersonVmFromDocente(d, this.classi.getMateriaDocente(source, d.id ?? '') ?? null))
-    );
-    const declension = declinePersonGroup(elenco);
+  private coordinatori(classe: Classe): NonNullable<ClasseFocusVM['coordinatori']> {
+    const sorgenti = this.classi.getArticolazione(classe)?.isParent()
+      ? [classe, ...this.classi.getClassiPartner(classe)]
+      : [classe];
+    const elenco = sorgenti
+      .flatMap((sorgente) => this.classi.getCoordinatori(sorgente))
+      .map((docente) => buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false }))
+      .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
+      .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
+    const collettivo = buildCollettivoPersone(elenco);
     return {
-      ...(declension === undefined ? {} : { ...declension, ...coordinatoriVerbs(elenco.length) }),
-      elenco
+      ...elencoVm(elenco),
+      elencoDescrizione: descriviPersone(elenco),
+      elencoDescrizioneEstesa: descriviPersoneEsteso(elenco),
+      descrizioneRuolo: elenco.length === 0 ? '' : `${collettivo.articolo} ${collettivo.coordinamento.toLocaleLowerCase('it-IT')} ${descriviPersone(elenco).toLocaleLowerCase('it-IT')}`,
+      collettivo
     };
   }
 
-  private buildArticolazione(classe: Classe): NonNullable<CduClasse['articolazione']> {
-    const config = this.classi.getArticolazione(classe);
+  private articolazione(classe: Classe, config: ArticolazioneConfig): ArticolazioneClasseVM {
     const materie = this.classi.getMaterieArticolazione(classe);
+    const comuni = this.materieVm(materie?.condivise ?? [], classe);
+    const primo = this.materieVm(materie?.separatePrimoGruppo ?? [], classe);
+    const secondo = this.materieVm(materie?.separateSecondoGruppo ?? [], classe);
+    const partners = config.isParent() ? this.classi.orderedPartners(classe) : [];
     return {
-      partner: config?.partner?.value ?? null,
-      partners: config?.isParent() === true ? config.partners.map((partner) => partner.value) : null,
-      parent: this.buildParent(config),
-      materieCondivise: this.buildMaterieVm(materie?.condivise ?? [], classe),
-      materieSeparatePrimoGruppo: this.buildMaterieVm(materie?.separatePrimoGruppo ?? [], classe),
-      materieSeparateSecondoGruppo: this.buildMaterieVm(materie?.separateSecondoGruppo ?? [], classe)
+      classeSorella: config.partner === null ? null : { nome: config.partner.value },
+      parent: this.parent(config),
+      sottoClassi: partners.map((partner) => ({ nome: partner.nome })),
+      hasSottoClassi: partners.length > 0,
+      materieComuni: comuni,
+      materieSeparatePrimo: primo,
+      materieSeparateSecondo: secondo,
+      hasMaterieComuni: comuni.length > 0,
+      hasMaterieSeparatePrimo: primo.length > 0,
+      hasMaterieSeparateSecondo: secondo.length > 0,
+      materieComuniDescrizione: comuni.map((materia) => materia.nome).join(', '),
+      materieComuniSigle: comuni.map((materia) => materia.sigla).join(', '),
+      materieSeparatePrimoDescrizione: primo.map((materia) => materia.nome).join(', '),
+      materieSeparatePrimoSigle: primo.map((materia) => materia.sigla).join(', '),
+      materieSeparateSecondoDescrizione: secondo.map((materia) => materia.nome).join(', '),
+      materieSeparateSecondoSigle: secondo.map((materia) => materia.sigla).join(', ')
     };
   }
 
-  /** Descriptive parent (id, anno, ordered partner indirizzi) for an articulated partner class. */
-  private buildParent(
-    config: ArticolazioneConfig | null
-  ): NonNullable<CduClasse['articolazione']>['parent'] {
-    const parentId = config?.parent?.value ?? null;
-    if (parentId === null) return null;
-    const parentClasse = this.classi.findById(ClasseId.of(parentId));
-    if (parentClasse === null) return null;
-    const indirizzi = this.classi.orderedPartners(parentClasse).map((partner) => {
-      const ind = this.classi.getIndirizzo(partner);
-      return { sigla: partner.indirizzo, nome: ind.nome, nomeSintetico: ind.nomeSintetico, tipo: ind.tipo };
-    });
-    return { nome: parentId, anno: parentClasse.anno.value, indirizzi };
+  private parent(config: ArticolazioneConfig): ClasseParentVM | null {
+    if (config.parent === null) return null;
+    const parent = this.classi.findById(config.parent);
+    if (parent === null) return null;
+    const indirizzi = this.classi.orderedPartners(parent).map((partner) => indirizzoVm(partner, this.classi));
+    return { nome: parent.nome, anno: parent.anno.value, indirizzi, hasIndirizzi: indirizzi.length > 0, indirizziDescrizione: indirizzi.map((indirizzo) => indirizzo.nome).join(', ') };
   }
 
-  /** Resolves articolazione subject sigle to SubjectVM via MATERIE, silently dropping unknown sigle. */
-  private buildMaterieVm(sigle: string[], classe: Classe): SubjectVM[] {
-    const materie = this.materie;
-    if (materie === undefined) return [];
-    const indirizzo = IndirizzoId.of(classe.indirizzo);
+  private materieVm(sigle: string[], classe: Classe): MateriaVM[] {
+    if (this.materie === undefined) return [];
     return sigle
-      .map((sigla) => materie.findByIdCached(MateriaId.of(sigla)))
+      .map((sigla) => this.materie!.findByIdCached(MateriaId.of(sigla)))
       .filter((materia): materia is Materia => materia !== null)
-      .map((materia) => buildSubjectVm(materia, { indirizzo }));
+      .map((materia) => buildMateriaVm(materia, 'BASE', { indirizzo: IndirizzoId.of(classe.indirizzo) }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
   }
 }

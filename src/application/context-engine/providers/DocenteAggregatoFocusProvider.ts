@@ -7,18 +7,19 @@ import type { ITeachingAssignmentResolver } from '../../ports/ITeachingAssignmen
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
 import { PipelineError } from '../../../domain/errors/DomainError';
 import { materieDocenteInClasse } from '../TeachingCouncilProjection';
-import { buildPersonVmFromDocente } from '../mappers/personVmMapper';
+import { buildPersonaVm } from '../mappers/personVmMapper';
+import { sezionePura } from './ClasseProvider';
 
 /**
  * DOCENTE axis (spec §4.1.2): one aggregate document per teacher, scoped to
- * `focus.docente` with subjects grouped per class across every class they
- * teach in (`params.classiCompetenza`, supplied by
+ * `focus.docente`/`focus.cattedre` with subjects grouped per class across
+ * every class they teach in (`params.classiCompetenza`, supplied by
  * `DocumentGenerationService.generateForDocente` — this provider does not
  * enumerate the teacher's classes itself). Deliberately independent of
  * `focus.classe`/the `consiglio` token: unlike every other class-scoped
  * recipe, DOCENTE_AGGREGATO has no single class in focus, so cattedre are
  * resolved directly off `ITeachingAssignmentResolver.resolveConsiglio` per
- * listed class rather than reading a pre-built `consiglioDiClasse`.
+ * listed class rather than reading a pre-built `focus.classe.consiglio`.
  */
 export class DocenteAggregatoFocusProvider implements ContextProvider {
   constructor(
@@ -50,19 +51,32 @@ export class DocenteAggregatoFocusProvider implements ContextProvider {
       );
       if (assignmentsDelDocente.length === 0) continue;
       if (anagrafica === undefined) {
-        anagrafica = buildPersonVmFromDocente(assignmentsDelDocente[0]!.docenteEffettivo);
+        const docente = assignmentsDelDocente[0]!.docenteEffettivo;
+        anagrafica = buildPersonaVm({
+          nome: docente.nome,
+          cognome: docente.cognome,
+          email: docente.id,
+          genere: docente.genere,
+          isEsterno: false
+        });
       }
       cattedre.push({
-        classeNome: classe.nome,
-        anno: classe.anno.value,
-        sezione: classe.sezione,
-        materie: materieVm
+        classe: { nome: classe.nome, anno: classe.anno.value, sezione: sezionePura(classe) },
+        sezioneEstesa: classe.sezione,
+        materie: materieVm,
+        hasMaterie: materieVm.length > 0,
+        numeroMaterie: materieVm.length,
+        materieDescrizione: materieVm.map((m) => m.nome).join(', '),
+        materieSigle: materieVm.map((m) => m.sigla).join(', ')
       });
     }
 
     if (anagrafica === undefined) {
       throw new PipelineError(`DOCENTE: nessuna cattedra trovata per ${docenteEmail}`);
     }
-    cdu.focus.docente = { ...anagrafica, cattedre };
+    cdu.focus.docente = anagrafica;
+    cdu.focus.cattedre = cattedre;
+    cdu.focus.hasCattedre = cattedre.length > 0;
+    cdu.focus.cattedreDescrizione = cattedre.map((c) => c.classe.nome).join(', ');
   }
 }

@@ -14,6 +14,7 @@ import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocume
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { MateriaRepository } from '../infrastructure/repositories/MateriaRepository';
+import { MovimentoAlunnoRepository } from '../infrastructure/repositories/MovimentoAlunnoRepository';
 import { OreASLRepository } from '../infrastructure/repositories/OreASLRepository';
 import { ProgettoRepository } from '../infrastructure/repositories/ProgettoRepository';
 import { RuoloSpecialeRepository } from '../infrastructure/repositories/RuoloSpecialeRepository';
@@ -52,6 +53,7 @@ function contextDependencies(
     alunni: new AlunnoRepository(db),
     materie: new MateriaRepository(db),
     oreAsl: new OreASLRepository(db),
+    movimenti: new MovimentoAlunnoRepository(db),
     logDocs: new LogDocumentoRepository(db, new LazyRef(() => classi)),
     progetti: new ProgettoRepository(db),
     dipartimenti: new DipartimentoRepository(db),

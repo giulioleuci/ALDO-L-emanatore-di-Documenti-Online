@@ -4,19 +4,23 @@ import { PipelineError } from '../../../../../src/domain/errors/DomainError';
 
 function cduWithConsiglio(): Cdu {
   return {
-    meta: { parametriInput: {} } as never,
+    meta: {} as never,
     focus: {
       classe: {
-        consiglioDiClasse: [
-          {
-            anagrafica: { email: 'rossi@scuola.it', nomeCompleto: 'Mario Rossi' } as never,
-            materie: [{ sigla: 'MATE', nome: 'Matematica' } as never]
-          },
-          {
-            anagrafica: { email: 'bianchi@scuola.it', nomeCompleto: 'Anna Bianchi' } as never,
-            materie: [{ sigla: 'MATE', nome: 'Matematica' } as never]
-          }
-        ]
+        consiglio: {
+          elenco: [
+            {
+              email: 'rossi@scuola.it',
+              nomeCompleto: 'Mario Rossi',
+              materie: [{ sigla: 'MATE', nome: 'Matematica' } as never]
+            },
+            {
+              email: 'bianchi@scuola.it',
+              nomeCompleto: 'Anna Bianchi',
+              materie: [{ sigla: 'MATE', nome: 'Matematica' } as never]
+            }
+          ]
+        }
       } as never
     },
     tech: {} as never
@@ -24,16 +28,12 @@ function cduWithConsiglio(): Cdu {
 }
 
 describe('ClasseMateriaFocusProvider', () => {
-  it('sets the requested materia and all its council teachers', () => {
+  it('sets the requested materia (from the first council teacher carrying it)', () => {
     const cdu = cduWithConsiglio();
 
     new ClasseMateriaFocusProvider().provide(cdu, { materiaCorrente: 'MATE' } as never);
 
     expect(cdu.focus.materia).toEqual({ sigla: 'MATE', nome: 'Matematica' });
-    expect(cdu.focus.classiMateria?.docenti).toEqual([
-      { email: 'rossi@scuola.it', nomeCompleto: 'Mario Rossi' },
-      { email: 'bianchi@scuola.it', nomeCompleto: 'Anna Bianchi' }
-    ]);
   });
 
   it('throws PipelineError when the materia is absent from the council', () => {

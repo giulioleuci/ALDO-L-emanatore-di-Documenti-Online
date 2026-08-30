@@ -70,43 +70,47 @@ export function makeOptions(overrides: Partial<RecipeOptions> = {}): RecipeOptio
  * Verified provider dependency table (src/application/context-engine/providers/*.ts),
  * current as of this audit — re-verify against provider source before reordering:
  *
- * | token         | writes                                              | reads (CDU-level; own repo lookups don't count) |
- * |---------------|------------------------------------------------------|--------------------------------------------------|
- * | school        | cdu.istituto                                          | —                                                  |
- * | class         | tech.entita.classe, focus.classe.{anagrafica,flags,articolazione,coordinatori} | — (resolves target via params/repos directly) |
- * | students      | focus.classe.studenti                                 | tech.entita.classe (class)                        |
- * | student       | tech.entita.alunno, focus.alunno.*                    | cdu.istituto.organizzazione.annoScolastico (school, soft dep — silently 0 if absent, used for `didattica.asl.oreAnnoCorrente`) |
- * | tutor         | focus.classe.tutor                                    | tech.entita.classe (class)                        |
- * | consiglio     | focus.classe.consiglioDiClasse                        | tech.entita.classe (class). The council projection reads TUTOR_ASL/TUTOR_ORIENT roles from `ClasseRepository` directly and does not depend on `focus.classe.tutor`. |
- * | materie       | focus.classe.materie, focus.classe.materiePerPrincipale (+ continuita per subject, only if includiStorico and docenti/storicoDb/classi are all supplied) | focus.classe.consiglioDiClasse (consiglio) — derives the catalog entirely from it, never re-queries teaching assignments |
- * | esame         | focus.classe.esame                                    | focus.classe.materie (materie) — reads isMateriaPrimaProva/isMateriaSecondaProva, already resolved per indirizzo by MaterieClasseProvider/TeachingCouncilProjection |
- * | progetti      | focus.classe.progetti, focus.classe.hasProgetti       | tech.entita.classe (class)                        |
- * | partner       | focus.classe.partner.{primo,secondo} (only if focus.classe.flags.isArticolata AND options.includiPartnerDettaglio) | focus.classe.flags.isArticolata, focus.classe.articolazione.partners (class); focus.classe.consiglioDiClasseComune, focus.classe.consiglioDiClasseSeparato (consiglio) — partitioned by tipoArticolazione into partners[0]=SEPARATO_PRIMO/partners[1]=SEPARATO_SECONDO, NOT re-resolved (ConsiglioClasseProvider.resolveConsiglio returns the whole group's roster for any partner classe id, so re-running it per partner would be a no-op duplication — fix round 1). Re-runs class/students/tutor (not consiglio) against a throwaway scratch CDU per partner class id for anagrafica/studenti/coordinatori — reads nothing from the outer focus.classe.studenti/tutor and writes nothing back into them (zero cross-contamination with the main projection) |
- * | rappresentanti| focus.classe.rappresentanti                           | tech.entita.classe (class)                        |
- * | statistiche   | cdu.istituto.statistiche (if school ran), focus.classe.studenti.statistiche (if present) | cdu.istituto (school, guarded — skips if absent); focus.classe.studenti (students, guarded — skips if absent) |
- * | storicoClasse | focus.classe.storico (LazyRef, only if options.includiStorico) | tech.entita.classe (class) via focus.classe guard |
- * | carenze       | focus.alunno.didattica.carenze                        | tech.entita.alunno (student)                      |
- * | piani         | focus.alunno.didattica.piani, flips focus.alunno.status.isBes | tech.entita.alunno (student); overwrites the `isBes=false` placeholder AlunnoProvider set — MUST run after student |
- * | documenti     | focus.alunno.didattica.documenti                      | tech.entita.alunno (student)                      |
- * | documentiStorico | focus.alunno.didattica.documenti.storico (LazyRef, only if options.includiStorico) | focus.alunno.didattica.documenti (documenti) — must run after it |
- * | storico       | focus.alunno.storico (LazyRef, only if options.includiStorico) | tech.entita.alunno (student) via focus.alunno guard |
- * | carenzaFocus  | focus.carenza                                         | tech.entita.alunno (student)                      |
+ * | token          | writes                                              | reads (CDU-level; own repo lookups don't count) |
+ * |----------------|------------------------------------------------------|--------------------------------------------------|
+ * | school         | cdu.istituto                                          | —                                                  |
+ * | class          | tech.entita.classe, focus.classe.{nome,anno,sezione,indirizzo,isArticolata,...,articolazione,coordinatori} | — (resolves target via params/repos directly) |
+ * | students       | focus.classe.studenti                                 | tech.entita.classe (class)                        |
+ * | student        | tech.entita.alunno, focus.alunno.*                    | cdu.istituto.annoScolastico (school, soft dep — silently 0 if absent, used for `asl.oreAnnoCorrente`) |
+ * | movimenti      | focus.alunno.{movimenti,presenza} (if focus.alunno present), focus.classe.movimenti + each focus.classe.studenti.elenco[].{movimenti,presenza} (if focus.classe present) | tech.entita.classe/alunno (class/student, via getClasseEntity guard); focus.classe.studenti (students, when present) |
+ * | tutor          | focus.classe.tutor                                    | tech.entita.classe (class)                        |
+ * | consiglio      | focus.classe.consiglio                                | tech.entita.classe (class). The council projection reads TUTOR_ASL/TUTOR_ORIENT roles from `ClasseRepository` directly and does not depend on `focus.classe.tutor`. |
+ * | materie        | focus.classe.materie, focus.classe.materiePerPrincipale (+ continuita per subject, only if includiStorico and docenti/storicoDb/classi are all supplied) | focus.classe.consiglio.elenco (consiglio) — derives the catalog entirely from it, never re-queries teaching assignments |
+ * | esame          | focus.classe.esame                                    | focus.classe.materie (materie) — reads isMateriaPrimaProva/isMateriaSecondaProva, already resolved per indirizzo by MaterieClasseProvider/TeachingCouncilProjection |
+ * | progetti       | focus.classe.progetti                                 | tech.entita.classe (class)                        |
+ * | partner        | focus.classe.partner.{primo,secondo} (only if focus.classe.isArticolata AND options.includiPartnerDettaglio) | focus.classe.isArticolata, focus.classe.articolazione.sottoClassi (class); focus.classe.consiglio.{comune,separatoPrimo,separatoSecondo,titolari,supplenze} (consiglio) — partitioned by tipoArticolazione into sottoClassi[0]=SEPARATO_PRIMO/sottoClassi[1]=SEPARATO_SECONDO, NOT re-resolved (re-running ConsiglioClasseProvider would re-resolve the whole group's roster twice for no gain). Re-runs class/students/tutor/movimenti (not consiglio) against a throwaway scratch CDU per partner class id — reads nothing from the outer focus.classe.studenti/tutor/movimenti and writes nothing back into them (zero cross-contamination with the main projection) |
+ * | rappresentanti | focus.classe.rappresentanti                           | tech.entita.classe (class)                        |
+ * | statistiche    | cdu.istituto.statistiche (if school ran), focus.classe.studenti.statistiche (if present) | cdu.istituto (school, guarded — skips if absent); focus.classe.studenti (students, guarded — skips if absent) |
+ * | storicoClasse  | focus.classe.storico (LazyRef, only if options.includiStorico) | tech.entita.classe (class) via focus.classe guard |
+ * | carenze        | focus.alunno.carenze                                  | tech.entita.alunno (student)                      |
+ * | piani          | focus.alunno.piani, flips focus.alunno.isBes          | tech.entita.alunno (student); overwrites the `isBes=false` placeholder AlunnoProvider set — MUST run after student |
+ * | documenti      | focus.alunno.documenti (elenco always populated; `storico` LazyRef always attached but only opens the historical DB when both dereferenced and includiStorico is true) | tech.entita.alunno (student) |
+ * | pianiPersClasse | focus.classe.pianiPersonalizzati (elenco + nonVerbalizzati + lazy storico) | tech.entita.classe (class) via focus.classe guard |
+ * | documentiClasse | focus.classe.documenti (elenco + lazy storico)       | tech.entita.classe (class) via focus.classe guard |
+ * | storico        | focus.alunno.storico (LazyRef, only if options.includiStorico) | tech.entita.alunno (student) via focus.alunno guard |
+ * | carenzaFocus   | focus.carenza                                         | tech.entita.alunno (student)                      |
+ * | dipartimentoFocus | focus.dipartimento                                 | — (resolves target via params/repos directly)     |
+ * | docenteAggregatoFocus | focus.docente, focus.cattedre                  | — (resolves params.classiCompetenza/docenteCorrente via repos directly) |
  *
  * Every recipe below places `school`/`class` first and, where used, `student`
  * before `carenze`/`piani`/`documenti`/`storico`/`carenzaFocus` and `class`
- * before `students`/`tutor`/`consiglio`/`materie`/`esame`/`progetti`/`partner`/
- * `rappresentanti`/`statistiche`, `consiglio` before `materie`, and `materie`
- * before `esame` — so all currently-declared orderings are consistent with
- * the table above. `partner` reads `class`'s output (`focus.classe.flags.
- * isArticolata`/`articolazione.partners`) AND `consiglio`'s output
- * (`focus.classe.consiglioDiClasseComune`/`consiglioDiClasseSeparato`, fix
- * round 1) — `CLASSE_COMPLETA` already places `consiglio` before `partner`,
- * so this is a real, currently-satisfied ordering dependency, not merely
- * where the token happened to land. A future edit that violates one of the
- * real reads above (e.g. moving `piani` before `student`, or `partner`
- * before `consiglio`) will not fail loudly here — it degrades silently or
- * throws a runtime `EntityNotFoundError`/`TypeError` deep inside a provider,
- * not at recipe-definition time. See the standalone-`DependencyResolver`
+ * before `students`/`movimenti`/`tutor`/`consiglio`/`materie`/`esame`/`progetti`/
+ * `partner`/`rappresentanti`/`statistiche`, `consiglio` before `materie`, and
+ * `materie` before `esame` — so all currently-declared orderings are
+ * consistent with the table above. `partner` reads `class`'s output
+ * (`focus.classe.isArticolata`/`articolazione.sottoClassi`) AND `consiglio`'s
+ * output (`focus.classe.consiglio.{comune,separatoPrimo,separatoSecondo}`) —
+ * `CLASSE_COMPLETA` already places `consiglio` before `partner`, so this is a
+ * real, currently-satisfied ordering dependency, not merely where the token
+ * happened to land. A future edit that violates one of the real reads above
+ * (e.g. moving `piani` before `student`, or `partner` before `consiglio`)
+ * will not fail loudly here — it degrades silently or throws a runtime
+ * `EntityNotFoundError`/`TypeError` deep inside a provider, not at
+ * recipe-definition time. See the standalone-`DependencyResolver`
  * investigation note further below for why this isn't currently backed by a
  * structural check.
  */
@@ -115,6 +119,7 @@ export const RECIPES: Record<string, string[]> = {
     'school',
     'class',
     'students',
+    'movimenti',
     'tutor',
     'consiglio',
     'materie',
@@ -130,6 +135,7 @@ export const RECIPES: Record<string, string[]> = {
     'school',
     'class',
     'students',
+    'movimenti',
     'tutor',
     'consiglio',
     'materie',
@@ -142,11 +148,12 @@ export const RECIPES: Record<string, string[]> = {
     'pianiPersClasse',
     'docenteClasseMateriaFocus'
   ],
-  CLASSE_MATERIA: ['school', 'class', 'consiglio', 'classeMateriaFocus'],
+  CLASSE_MATERIA: ['school', 'class', 'movimenti', 'consiglio', 'classeMateriaFocus'],
   CLASSE_DOCENTE: [
     'school',
     'class',
     'students',
+    'movimenti',
     'tutor',
     'consiglio',
     'materie',
@@ -163,53 +170,51 @@ export const RECIPES: Record<string, string[]> = {
     'school',
     'class',
     'student',
+    'movimenti',
     'carenze',
     'piani',
     'documenti',
-    'documentiStorico',
     'storico'
   ],
   DOCENTE_COMPLETO: [
     'school',
     'class',
+    'movimenti',
     'consiglio',
     'materie',
     'pianiPersClasse',
-    'pianiPersClasseStorico',
     'documentiClasse'
   ],
   ALUNNO_COMPLETO: [
     'school',
     'class',
     'student',
+    'movimenti',
     'carenze',
     'piani',
-    'pianiPersAlunno',
-    'pianiPersAlunnoStorico',
+    'documenti',
     'storico'
   ],
   PIANO_PERSONALIZZATO: [
     'school',
     'class',
     'student',
+    'movimenti',
     'carenze',
     'piani',
     'pianoFocus',
-    'pianiPersAlunno',
-    'pianiPersAlunnoStorico'
+    'documenti'
   ],
   FAMIGLIA_COMPLETO: [
     'school',
     'class',
     'student',
+    'movimenti',
     'carenze',
     'piani',
-    'documenti',
-    'documentiStorico',
-    'pianiPersAlunno',
-    'pianiPersAlunnoStorico'
+    'documenti'
   ],
-  CARENZA_COMPLETO: ['school', 'class', 'student', 'carenze', 'piani', 'carenzaFocus'],
+  CARENZA_COMPLETO: ['school', 'class', 'student', 'movimenti', 'carenze', 'piani', 'carenzaFocus'],
   /** Department-scoped recipe (11 §11 new) — a dipartimento has no class dimension, so this activates only 'school' + 'dipartimentoFocus'. */
   DIPARTIMENTO_COMPLETO: ['school', 'dipartimentoFocus'],
   /** DOCENTE axis (spec §4.1.2) — one aggregate document per teacher, spanning every class in `params.classiCompetenza`. No single class in focus, so this activates only 'school' + 'docenteAggregatoFocus'. */

@@ -1,5 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu } from '../Cdu';
+import type { Cdu, PersonaVM, ProgettoVM, StoricoClasseVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
@@ -8,17 +8,10 @@ import { AlunnoRepository } from '../../../infrastructure/repositories/AlunnoRep
 import { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
 import { ProgettoRepository } from '../../../infrastructure/repositories/ProgettoRepository';
 import { computeStatisticheAlunni } from '../mappers/statisticheAlunniMapper';
-import type { StatisticheAlunniVM } from '../mappers/statisticheAlunniMapper';
-import { buildPersonVm, buildPersonVmFromDocente } from '../mappers/personVmMapper';
-import type { PersonVM } from '../mappers/personVmMapper';
+import { buildPersonaVm } from '../mappers/personVmMapper';
 import { tipoProgettoLabel } from '../mappers/labels';
 import { getClasseEntity } from '../techEntities';
-import type { ProgettoVM } from './ProgettiProvider';
-
-export interface ClasseStoricoVM {
-  statistiche: Array<{ annoScolastico: string; classe: string; statistiche: StatisticheAlunniVM }>;
-  progetti: Array<{ annoScolastico: string; classe: string; progetti: ProgettoVM[] }>;
-}
+import { TipoProgetto } from '../../../domain/value-objects/enums';
 
 /**
  * Builds `focus.classe.storico` (02 §2.11, §8.6) — per-historical-year student
@@ -42,11 +35,10 @@ export class StoricoClasseProvider implements ContextProvider {
     const profondita = options.profonditaAnniStorico;
 
     focusClasse.storico = new LazyRef(() => {
-      const statistiche: ClasseStoricoVM['statistiche'] = [];
-      const progetti: ClasseStoricoVM['progetti'] = [];
-      const anni = this.databases.anniStorici(profondita);
-      for (let i = 0; i < anni.length; i++) {
-        const { anno, db } = anni[i]!;
+      const anni: StoricoClasseVM['anni'] = [];
+      const anniStorici = this.databases.anniStorici(profondita);
+      for (let i = 0; i < anniStorici.length; i++) {
+        const { anno, db } = anniStorici[i]!;
         const nomeStorico = storicoNomi[i];
         if (nomeStorico === undefined) continue;
         const classiStoriche = new ClasseRepository(db);
@@ -54,33 +46,37 @@ export class StoricoClasseProvider implements ContextProvider {
         if (classeStorica === null) continue;
         const alunniStorici = new AlunnoRepository(db);
         const attivi = classiStoriche.getStudenti(classeStorica, true);
-        statistiche.push({
-          annoScolastico: anno,
-          classe: nomeStorico.value,
-          statistiche: computeStatisticheAlunni(attivi, alunniStorici)
-        });
 
         const docentiStorici = new DocenteRepository(db);
         const progettiStorici = new ProgettoRepository(db);
-        const progettiVm = progettiStorici.findByClasse(classeStorica).map((p) => ({
+        const progetti: ProgettoVM[] = progettiStorici.findByClasse(classeStorica).map((p) => ({
           tipo: p.tipo,
           tipoLabel: tipoProgettoLabel(p.tipo),
           nome: p.nome,
           referente: this.resolveReferente(p.referente, docentiStorici),
           ore: p.getOre(),
           oreAsl: p.getOreASLEffettive(),
-          isAsl: p.isASL()
+          isAsl: p.isASL(),
+          isOrientamento: p.tipo === TipoProgetto.ORIENTAMENTO,
+          isAltro: p.tipo === TipoProgetto.ALTRO
         }));
-        progetti.push({ annoScolastico: anno, classe: nomeStorico.value, progetti: progettiVm });
+
+        anni.push({
+          annoScolastico: anno,
+          classe: { nome: nomeStorico.value },
+          statistiche: computeStatisticheAlunni(attivi, alunniStorici),
+          progetti,
+          hasProgetti: progetti.length > 0
+        });
       }
-      return { statistiche, progetti };
+      return { anni, hasAnni: anni.length > 0, numeroAnni: anni.length };
     });
   }
 
-  private resolveReferente(raw: string, docenti: DocenteRepository): PersonVM {
+  private resolveReferente(raw: string, docenti: DocenteRepository): PersonaVM {
     const docente = docenti.findById(raw);
     return docente === null
-      ? buildPersonVm({ nome: raw, cognome: null, email: null, genere: null })
-      : buildPersonVmFromDocente(docente);
+      ? buildPersonaVm({ nome: raw, cognome: null, email: null, genere: null, isEsterno: true })
+      : buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false });
   }
 }

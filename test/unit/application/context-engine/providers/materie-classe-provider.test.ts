@@ -15,26 +15,19 @@ import { FakeDatabase } from '../../../../fakes/FakeDatabase';
 import { ClasseId } from '../../../../../src/domain/value-objects/ClasseId';
 import type { Row } from '../../../../../src/infrastructure/db/Database';
 
-function docenteCdc(
-  nomeCompleto: string,
-  email: string,
-  sigla: string,
-  isITP = false
-): DocenteCdcVM {
+function docenteCdc(nomeCompleto: string, email: string, sigla: string, isItp = false): DocenteCdcVM {
   return {
-    anagrafica: {
-      nome: '',
-      cognome: '',
-      email,
-      genere: 'M',
-      appellativo: 'Prof.',
-      articolo: 'il',
-      coordinatore: 'coordinatore',
-      nomeCompleto,
-      materia: null,
-      appellativoCompleto: `Prof. ${nomeCompleto}`,
-      appellativoCognome: `Prof. ${nomeCompleto}`
-    },
+    nome: '',
+    cognome: '',
+    email,
+    genere: 'M',
+    appellativo: 'Prof.',
+    articolo: 'Il',
+    coordinatore: 'Coordinatore',
+    nomeCompleto,
+    appellativoCompleto: `Prof. ${nomeCompleto}`,
+    appellativoCognome: `Prof. ${nomeCompleto}`,
+    isEsterno: false,
     materie: [
       {
         sigla,
@@ -42,27 +35,37 @@ function docenteCdc(
         nomeSintetico: sigla,
         colore1: '',
         colore2: '',
-        isMateriaPrimaProva: false,
-        isMateriaSecondaProva: false,
         principale: null,
         specificita: null,
-        isITP,
-        evoluzione: null
+        hasSpecificita: false,
+        nomeConSpecificita: sigla,
+        isItp,
+        isMateriaPrimaProva: false,
+        isMateriaSecondaProva: false,
+        evoluzione: { siglePrecedenti: [], hasSiglePrecedenti: false }
       }
     ],
     materieDescrizione: sigla,
+    materieDescrizioneSintesi: sigla,
     materieSigle: sigla,
-    ruoli: {
-      isCoordinatore: false,
-      isTutorAsl: false,
-      isTutorOrientamento: false,
-      descrizione: []
-    },
-    stato: { isSupplente: false, sostituisce: null },
+    numeroMaterie: 1,
+    hasMaterie: true,
+    isCoordinatore: false,
+    isTutorAsl: false,
+    isTutorOrientamento: false,
+    isTutor: false,
+    isSupplente: false,
+    isItp,
+    isComune: false,
+    isSeparatoPrimo: false,
+    isSeparatoSecondo: false,
+    ruoliDescrizione: [],
+    ruoliDescrizioneTesto: '',
+    sostituisce: null,
+    hasSostituisce: false,
     tipoArticolazione: null,
-    gruppoNome: null,
-    isITP,
-    flags: { isNotLast: false }
+    tipoArticolazioneLabel: '',
+    gruppoNome: null
   };
 }
 
@@ -70,34 +73,36 @@ const params: BuildParams = {
   target: '3A',
   tipoTarget: 'classe',
   now: new Date('2026-08-06T09:00:00Z')
-};
+} as BuildParams;
 
 function cduConClasse(consiglio: DocenteCdcVM[]): Cdu {
   const classe = Classe.fromData({ ID: '3A', ANNO: 3, INDIRIZZO: 'SCIENTIFICO' });
   return {
-    focus: { classe: { consiglioDiClasse: consiglio } },
+    focus: { classe: { consiglio: { elenco: consiglio } } },
     tech: { entita: { classe } }
   } as unknown as Cdu;
 }
 
 describe('MaterieClasseProvider', () => {
-  it('groups the class council into a flat, deduped subject catalog with docentiDescrizione/hasItp', () => {
+  it('groups the class council into a flat, deduped subject catalog with docentiDescrizione/hasCattedraItp', () => {
     const cdu = {
       focus: {
         classe: {
-          consiglioDiClasse: [
-            docenteCdc('Mario Rossi', 'm@x.it', 'ITA'),
-            docenteCdc('Laura Gialli', 'l@x.it', 'ITA', true)
-          ]
+          consiglio: {
+            elenco: [
+              docenteCdc('Mario Rossi', 'm@x.it', 'ITA'),
+              docenteCdc('Laura Gialli', 'l@x.it', 'ITA', true)
+            ]
+          }
         }
       }
     } as unknown as Cdu;
     new MaterieClasseProvider().provide(cdu, params, makeOptions());
-    expect(cdu.focus.classe!.materie).toHaveLength(1);
-    const ita = cdu.focus.classe!.materie![0]!;
-    expect(ita.docenti?.map((d) => d.nomeCompleto)).toEqual(['Mario Rossi', 'Laura Gialli']);
-    expect(ita.docentiDescrizione).toBe('Mario Rossi, Laura Gialli');
-    expect(ita.hasItp).toBe(true);
+    expect(cdu.focus.classe!.materie!.elenco).toHaveLength(1);
+    const ita = cdu.focus.classe!.materie!.elenco[0]!;
+    expect(ita.docenti?.map((d) => d.nomeCompleto)).toEqual(['Laura Gialli', 'Mario Rossi']);
+    expect(ita.docentiDescrizione).toBe('Prof. Laura Gialli e prof. Mario Rossi');
+    expect(ita.hasCattedraItp).toBe(true);
   });
 
   describe('continuita attachment (includiStorico)', () => {
@@ -111,34 +116,29 @@ describe('MaterieClasseProvider', () => {
     it('attaches continuita to each subject only when includiStorico is true', () => {
       const provider = new MaterieClasseProvider(materie, docenti, storicoDb, classi);
       const cdu = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
-      provider.provide(
-        cdu,
-        params,
-        makeOptions({ includiStorico: true, profonditaAnniStorico: 2 })
-      );
-      expect(cdu.focus.classe!.materie![0]!.continuita).toEqual({
-        docentiAnniPrecedenti: [],
-        continuitaUltimiDueAnni: false,
-        continuitaUltimiTreAnni: false
+      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 2 }));
+      expect(cdu.focus.classe!.materie!.elenco[0]!.continuita).toEqual({
+        anniPrecedenti: [],
+        hasAnniPrecedenti: false,
+        isContinuitaUltimiDueAnni: false,
+        isContinuitaUltimiTreAnni: false,
+        isContinuitaItpUltimiDueAnni: false,
+        isContinuitaItpUltimiTreAnni: false
       });
 
       const cdu2 = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
       provider.provide(cdu2, params, makeOptions({ includiStorico: false }));
-      expect(cdu2.focus.classe!.materie![0]!.continuita).toBeUndefined();
+      expect(cdu2.focus.classe!.materie!.elenco[0]!.continuita).toBeUndefined();
     });
 
     it('does not attach continuita when a required dependency is missing, even with includiStorico true', () => {
       const provider = new MaterieClasseProvider(materie); // docenti/storicoDb/classi absent
       const cdu = cduConClasse([docenteCdc('Mario Rossi', 'm@x.it', 'ITA')]);
-      provider.provide(
-        cdu,
-        params,
-        makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
-      );
-      expect(cdu.focus.classe!.materie![0]!.continuita).toBeUndefined();
+      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
+      expect(cdu.focus.classe!.materie!.elenco[0]!.continuita).toBeUndefined();
     });
 
-    it('wires ruoli.itp end to end: hasItp subject gets a populated itp continuity from the historical cattedra matrix', () => {
+    it('wires the ITP role end to end: hasCattedraItp subject gets a populated itp continuity from the historical cattedra matrix', () => {
       // Historical year (2A, one year back from current 3A): MATE main = m@x.it,
       // MATE.itp = l@x.it — the same titolare/ITP pair as the current council.
       const historicalTables: Record<string, Row[]> = {
@@ -173,31 +173,22 @@ describe('MaterieClasseProvider', () => {
         ]
       };
 
-      const provider = new MaterieClasseProvider(
-        materie,
-        docentiConEmail,
-        storicoDbConItp,
-        classiConStorico
-      );
+      const provider = new MaterieClasseProvider(materie, docentiConEmail, storicoDbConItp, classiConStorico);
       const cdu = cduConClasse([
         docenteCdc('Mario Rossi', 'm@x.it', 'MATE', false),
         docenteCdc('Laura Gialli', 'l@x.it', 'MATE', true)
       ]);
-      provider.provide(
-        cdu,
-        params,
-        makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
-      );
+      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
 
-      const mate = cdu.focus.classe!.materie![0]!;
-      expect(mate.hasItp).toBe(true);
+      const mate = cdu.focus.classe!.materie!.elenco[0]!;
+      expect(mate.hasCattedraItp).toBe(true);
       const continuita = mate.continuita!;
-      expect(continuita.docentiAnniPrecedenti).toHaveLength(1);
-      const annoMeno1 = continuita.docentiAnniPrecedenti[0]!;
-      expect(annoMeno1.titolare?.nomeCompleto).toBe('Mario Rossi');
-      expect(annoMeno1.itp?.nomeCompleto).toBe('Laura Gialli');
-      expect(continuita.continuitaUltimiDueAnni).toBe(true);
-      expect(continuita.continuitaUltimiDueAnniItp).toBe(true);
+      expect(continuita.anniPrecedenti).toHaveLength(1);
+      const annoMeno1 = continuita.anniPrecedenti[0]!;
+      expect(annoMeno1.titolare?.nomeCompleto).toBe('Rossi Mario');
+      expect(annoMeno1.itp?.nomeCompleto).toBe('Gialli Laura');
+      expect(continuita.isContinuitaUltimiDueAnni).toBe(true);
+      expect(continuita.isContinuitaItpUltimiDueAnni).toBe(true);
     });
 
     it('preserves dotted subject identity and its ITP through historical continuity', () => {
@@ -247,18 +238,14 @@ describe('MaterieClasseProvider', () => {
         docenteCdc('Laura Gialli', 'guitar-itp@x.it', 'INTERPRET.CHITARRA', true)
       ]);
 
-      provider.provide(
-        cdu,
-        params,
-        makeOptions({ includiStorico: true, profonditaAnniStorico: 1 })
-      );
+      provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
 
-      const dotted = cdu.focus.classe!.materie![0]!;
+      const dotted = cdu.focus.classe!.materie!.elenco[0]!;
       expect(dotted.sigla).toBe('INTERPRET.CHITARRA');
-      expect(dotted.continuita?.docentiAnniPrecedenti[0]?.titolare?.email).toBe('guitar@x.it');
-      expect(dotted.continuita?.docentiAnniPrecedenti[0]?.itp?.email).toBe('guitar-itp@x.it');
-      expect(dotted.continuita?.continuitaUltimiDueAnni).toBe(true);
-      expect(dotted.continuita?.continuitaUltimiDueAnniItp).toBe(true);
+      expect(dotted.continuita?.anniPrecedenti[0]?.titolare?.email).toBe('guitar@x.it');
+      expect(dotted.continuita?.anniPrecedenti[0]?.itp?.email).toBe('guitar-itp@x.it');
+      expect(dotted.continuita?.isContinuitaUltimiDueAnni).toBe(true);
+      expect(dotted.continuita?.isContinuitaItpUltimiDueAnni).toBe(true);
     });
   });
 });

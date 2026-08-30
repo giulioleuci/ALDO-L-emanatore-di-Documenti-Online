@@ -1,13 +1,13 @@
 import { formatOggi } from '../../../../src/application/context-engine/dates';
 
-test('formatOggi builds all meta.date.oggi fields from a UTC date (02 §2)', () => {
+test('formatOggi builds the canonical meta.oggi fields from a UTC date', () => {
   const d = new Date('2026-03-05T14:32:00Z');
   expect(formatOggi(d)).toEqual({
     breve: '05/03/2026',
     estesa: '05 marzo 2026',
-    iso: '2026-03-05',
     giorno: '05',
     mese: '03',
+    meseNome: 'marzo',
     anno: '2026',
     ora: '14:32'
   });
@@ -24,5 +24,5 @@ test('formatOggi is timezone-independent: UTC components drive the output regard
   const d = new Date('2026-06-30T23:00:00Z');
   const out = formatOggi(d);
   expect(out.giorno).toBe('30');
-  expect(out.iso).toBe('2026-06-30');
+  expect(out.breve).toBe('30/06/2026');
 });

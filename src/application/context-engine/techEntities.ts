@@ -1,4 +1,4 @@
-import type { Cdu, CduAlunno as CduAlunnoFocus } from './Cdu';
+import type { AlunnoFocusVM, Cdu } from './Cdu';
 import type { Classe } from '../../domain/entities/Classe';
 import type { Alunno } from '../../domain/entities/Alunno';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
@@ -16,7 +16,7 @@ export function setClasseEntity(cdu: Cdu, classe: Classe): void {
 
 export function getClasseEntity(cdu: Cdu): Classe {
   const classe = cdu.tech.entita.classe;
-  if (classe === undefined) {
+  if (classe === null) {
     throw new EntityNotFoundError(
       'CDU: entità classe non disponibile (ClasseProvider non eseguito prima?)'
     );
@@ -30,7 +30,7 @@ export function setAlunnoEntity(cdu: Cdu, alunno: Alunno): void {
 
 export function getAlunnoEntity(cdu: Cdu): Alunno {
   const alunno = cdu.tech.entita.alunno;
-  if (alunno === undefined) {
+  if (alunno === null) {
     throw new EntityNotFoundError(
       'CDU: entità alunno non disponibile (AlunnoProvider non eseguito prima?)'
     );
@@ -39,7 +39,7 @@ export function getAlunnoEntity(cdu: Cdu): Alunno {
 }
 
 /** Esegue `fn` solo quando il CDU ha un alunno in focus. */
-export function withFocusAlunno(cdu: Cdu, fn: (alunno: CduAlunnoFocus) => void): void {
+export function withFocusAlunno(cdu: Cdu, fn: (alunno: AlunnoFocusVM) => void): void {
   const alunno = cdu.focus.alunno;
   if (alunno !== undefined) fn(alunno);
 }

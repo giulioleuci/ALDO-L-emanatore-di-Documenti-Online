@@ -15,7 +15,7 @@ describe('labels', () => {
   });
 
   it('maps every TipoProgetto to a readable label', () => {
-    expect(tipoProgettoLabel(TipoProgetto.ASL)).toBe('PCTO/ASL');
+    expect(tipoProgettoLabel(TipoProgetto.ASL)).toBe('FSL');
     expect(tipoProgettoLabel(TipoProgetto.ORIENTAMENTO)).toBe('Orientamento');
     expect(tipoProgettoLabel(TipoProgetto.ALTRO)).toBe('Altro');
   });

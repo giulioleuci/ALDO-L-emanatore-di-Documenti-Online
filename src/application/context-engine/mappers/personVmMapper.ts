@@ -1,109 +1,103 @@
-import type { Docente } from '../../../domain/entities/Docente';
-import { Genere, appellativo as appellativoDiGenere } from '../../../domain/value-objects/enums';
+import type { CollettivoPersoneVM, PersonaVM } from '../Cdu';
 
-export interface PersonVM {
+export interface PersonaVmInput {
   nome: string;
   cognome: string | null;
   email: string | null;
   genere: 'M' | 'F' | null;
-  appellativo: string | null;
-  articolo: string | null;
-  coordinatore: string | null;
-  nomeCompleto: string;
-  materia: string | null;
-  appellativoCompleto: string;
-  appellativoCognome: string;
+  isEsterno?: boolean;
 }
 
-interface PersonVmInput {
-  nome: string;
-  cognome: string | null;
-  email: string | null;
-  genere: 'M' | 'F' | null;
-  materia?: string | null;
-}
-
-/**
- * Builds the standardized PersonVM (02 §8.1). External experts (genere null)
- * collapse appellativo/articolo/coordinatore/appellativoCompleto/appellativoCognome
- * to null/nomeCompleto per the target spec.
- */
-export function buildPersonVm(input: PersonVmInput): PersonVM {
-  const { nome, cognome, email, genere } = input;
-  const materia = input.materia ?? null;
-  const nomeCompleto = cognome === null ? nome : `${nome} ${cognome}`.trim();
-
-  if (genere === null) {
-    return {
-      nome,
-      cognome,
-      email,
-      genere: null,
-      appellativo: null,
-      articolo: null,
-      coordinatore: null,
-      nomeCompleto,
-      materia,
-      appellativoCompleto: nomeCompleto,
-      appellativoCognome: nomeCompleto
-    };
-  }
-
-  const appellativo = appellativoDiGenere(genere as Genere);
-  const articolo = genere === 'M' ? 'il' : 'la';
-  const coordinatore = genere === 'M' ? 'coordinatore' : 'coordinatrice';
-  const appellativoCompleto = `${appellativo} ${nomeCompleto}`;
-  const appellativoCognome = cognome === null ? nomeCompleto : `${appellativo} ${cognome}`;
+export function buildPersonaVm(input: PersonaVmInput): PersonaVM {
+  const nomeCompleto =
+    input.cognome === null ? input.nome : `${input.cognome} ${input.nome}`.trim();
+  const appellativo =
+    input.genere === null ? null : input.genere === 'F' ? 'Prof.ssa' : 'Prof.';
+  const articolo = input.genere === null ? null : input.genere === 'F' ? 'La' : 'Il';
+  const coordinatore =
+    input.genere === null ? null : input.genere === 'F' ? 'Coordinatrice' : 'Coordinatore';
 
   return {
-    nome,
-    cognome,
-    email,
-    genere,
+    nome: input.nome,
+    cognome: input.cognome,
+    nomeCompleto,
+    email: input.email,
+    genere: input.genere,
     appellativo,
     articolo,
     coordinatore,
-    nomeCompleto,
-    materia,
-    appellativoCompleto,
-    appellativoCognome
+    appellativoCompleto: appellativo === null ? nomeCompleto : `${appellativo} ${nomeCompleto}`,
+    appellativoCognome:
+      appellativo === null || input.cognome === null
+        ? nomeCompleto
+        : `${appellativo} ${input.cognome}`,
+    isEsterno: input.isEsterno ?? input.email === null
   };
 }
 
-export function buildPersonVmFromDocente(docente: Docente, materia: string | null = null): PersonVM {
-  return buildPersonVm({
-    nome: docente.nome,
-    cognome: docente.cognome,
-    email: docente.id,
-    genere: docente.genere,
-    materia
-  });
-}
-
-interface PersonGroupDeclension {
-  appellativo: string;
-  articolo: string;
-}
-
-/**
- * Aggregate salutation/article over a group of people (02 §8.1, §2.6):
- * tutte F e ≥2 → prof.sse/le; tutte F e 1 → prof.ssa/la; altrimenti prof./i (≥2) o il (1).
- * Returns undefined for an empty group — callers must omit the field rather than expose it.
- */
-export function declinePersonGroup(persone: PersonVM[]): PersonGroupDeclension | undefined {
-  if (persone.length === 0) return undefined;
-  const tutteF = persone.every((p) => p.genere === 'F');
-  if (tutteF) {
-    return persone.length >= 2
-      ? { appellativo: 'prof.sse', articolo: 'le' }
-      : { appellativo: 'prof.ssa', articolo: 'la' };
+export function buildCollettivoPersone(persone: PersonaVM[]): CollettivoPersoneVM {
+  const numero = persone.length;
+  if (numero === 0) {
+    return {
+      appellativo: '',
+      articolo: '',
+      coordinamento: '',
+      coordina: '',
+      presiede: '',
+      numero
+    };
   }
-  return { appellativo: 'prof.', articolo: persone.length >= 2 ? 'i' : 'il' };
+  const femminile = persone.every((persona) => persona.genere === 'F');
+  if (numero === 1) {
+    return {
+      appellativo: femminile ? 'Prof.ssa' : 'Prof.',
+      articolo: femminile ? 'La' : 'Il',
+      coordinamento: femminile ? 'Coordinatrice' : 'Coordinatore',
+      coordina: 'Coordina',
+      presiede: 'Presiede',
+      numero
+    };
+  }
+  return {
+    appellativo: femminile ? 'Prof.sse' : 'Prof.',
+    articolo: femminile ? 'Le' : 'I',
+    coordinamento: femminile ? 'Coordinatrici' : 'Coordinatori',
+    coordina: 'Coordinano',
+    presiede: 'Presiedono',
+    numero
+  };
 }
 
-/** "coordina"/"presiede" for 1 person, "coordinano"/"presiedono" for ≥2 (02 §8.1). */
-export function coordinatoriVerbs(count: number): { coordina: string; presiede: string } {
-  return count >= 2
-    ? { coordina: 'coordinano', presiede: 'presiedono' }
-    : { coordina: 'coordina', presiede: 'presiede' };
+function minuscolaIniziale(value: string): string {
+  return value === '' ? '' : value[0]!.toLocaleLowerCase('it-IT') + value.slice(1);
+}
+
+function unisciFrase(parti: string[]): string {
+  if (parti.length < 2) return parti[0] ?? '';
+  if (parti.length === 2) return `${parti[0]} e ${parti[1]}`;
+  return `${parti.slice(0, -1).join(', ')} e ${parti[parti.length - 1]}`;
+}
+
+export function descriviPersone(persone: PersonaVM[]): string {
+  return unisciFrase(
+    persone.map((persona, index) => {
+      const testo =
+        persona.appellativo === null
+          ? persona.nomeCompleto
+          : `${persona.appellativo} ${persona.nomeCompleto}`;
+      return index === 0 ? testo : minuscolaIniziale(testo);
+    })
+  );
+}
+
+export function descriviPersoneEsteso(persone: PersonaVM[]): string {
+  return unisciFrase(
+    persone.map((persona, index) => {
+      const testo =
+        persona.articolo === null || persona.appellativo === null
+          ? persona.nomeCompleto
+          : `${persona.articolo} ${minuscolaIniziale(persona.appellativo)} ${persona.nomeCompleto}`;
+      return index === 0 ? testo : minuscolaIniziale(testo);
+    })
+  );
 }

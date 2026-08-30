@@ -14,7 +14,7 @@ import { EntityNotFoundError } from '../../../../src/domain/errors/DomainError';
 import { COL_ALUNNI } from '../../../../src/config/schema';
 
 function emptyCdu(): Cdu {
-  return { tech: { entita: {}, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } } } as unknown as Cdu;
+  return { tech: { entita: { classe: null, alunno: null, docente: null, patternEmail: null, documentoMetadato: null }, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } } } as unknown as Cdu;
 }
 
 describe('techEntities: classe entity slot', () => {

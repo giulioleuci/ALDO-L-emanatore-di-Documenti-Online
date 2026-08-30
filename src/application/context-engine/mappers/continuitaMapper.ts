@@ -1,24 +1,11 @@
 import type { AnnoClasseStorico } from '../../storico/StoricoClassiService';
 import type { Materia } from '../../../domain/entities/Materia';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
-import type { PersonVM } from './personVmMapper';
-import { buildPersonVmFromDocente } from './personVmMapper';
+import type { ContinuitaVM, PersonaVM } from '../Cdu';
+import { buildPersonaVm } from './personVmMapper';
 import { reconcileSigla } from '../../storico/reconcileSigla';
 
-export interface ContinuitaVM {
-  docentiAnniPrecedenti: Array<{
-    annoIndietro: number;
-    annoScolastico: string;
-    titolare: PersonVM | null;
-    itp?: PersonVM | null;
-  }>;
-  continuitaUltimiTreAnni: boolean;
-  continuitaUltimiDueAnni: boolean;
-  continuitaUltimiTreAnniItp?: boolean;
-  continuitaUltimiDueAnniItp?: boolean;
-}
-
-interface BuildContinuitaInput {
+export interface BuildContinuitaInput {
   siglaCorrente: string;
   hasItp: boolean;
   titolareCorrenteEmail: string | null;
@@ -29,57 +16,74 @@ interface BuildContinuitaInput {
   docenti: IDocenteRepository;
 }
 
-/**
- * Builds ContinuitaVM (02 §8.3) for one subject: for each historical year,
- * reconciles that year's teaching sigle to the current canonical id via
- * `reconcileSigla` (course year = current course year minus years back — a
- * student's cattedra sigla is keyed to the course year it was taught in, not
- * the calendar year) and picks the titolare/ITP docente(s) matching the
- * current subject. When `hasItp` is false, the `itp` fields inside
- * `docentiAnniPrecedenti` and the top-level `continuitaUltimiTreAnniItp`/
- * `continuitaUltimiDueAnniItp` booleans are entirely omitted from the object
- * shape, not generated as `null`/`false` (02 §8.3 note).
- */
+function resolveDocente(
+  email: string | undefined,
+  docenti: IDocenteRepository
+): PersonaVM | null {
+  if (email === undefined) return null;
+  const docente = docenti.findById(email);
+  return docente === null
+    ? null
+    : buildPersonaVm({
+        nome: docente.nome,
+        cognome: docente.cognome,
+        email: docente.id,
+        genere: docente.genere,
+        isEsterno: false
+      });
+}
+
 export function buildContinuita(input: BuildContinuitaInput): ContinuitaVM {
-  const docentiAnniPrecedenti = input.anniStorici.map((anno, index) => {
+  const anniPrecedenti = input.anniStorici.map((anno, index) => {
     const annoIndietro = index + 1;
-    const annoCorsoStorico = input.annoCorsoCorrente - annoIndietro;
     const matches = anno.docenti.filter(
-      (d) => reconcileSigla(d.materia, annoCorsoStorico, [input.materiaCorrente]) === input.siglaCorrente
+      (docente) =>
+        reconcileSigla(
+          docente.materia,
+          input.annoCorsoCorrente - annoIndietro,
+          [input.materiaCorrente]
+        ) === input.siglaCorrente
     );
-    const titolareMatch = matches.find((m) => !m.isItp);
-    const itpMatch = input.hasItp ? matches.find((m) => m.isItp) : undefined;
+    const titolare = resolveDocente(
+      matches.find((docente) => !docente.isItp)?.docenteEmail,
+      input.docenti
+    );
+    const itp = input.hasItp
+      ? resolveDocente(
+          matches.find((docente) => docente.isItp)?.docenteEmail,
+          input.docenti
+        )
+      : null;
     return {
       annoIndietro,
       annoScolastico: anno.anno,
-      titolare: resolveDocente(titolareMatch?.docenteEmail, input.docenti),
-      ...(input.hasItp ? { itp: resolveDocente(itpMatch?.docenteEmail, input.docenti) } : {})
+      titolare,
+      hasTitolare: titolare !== null,
+      itp,
+      hasItp: itp !== null
     };
   });
 
-  const sameTitolare = (annoIndietro: number): boolean => {
-    const entry = docentiAnniPrecedenti.find((d) => d.annoIndietro === annoIndietro);
-    return entry?.titolare !== null && entry?.titolare !== undefined && entry.titolare.email === input.titolareCorrenteEmail;
-  };
-  const sameItp = (annoIndietro: number): boolean => {
-    const entry = docentiAnniPrecedenti.find((d) => d.annoIndietro === annoIndietro);
-    return entry?.itp !== null && entry?.itp !== undefined && entry.itp.email === input.itpCorrenteEmail;
-  };
+  const stesso = (
+    annoIndietro: number,
+    ruolo: 'titolare' | 'itp',
+    email: string | null
+  ): boolean =>
+    email !== null &&
+    anniPrecedenti.find((anno) => anno.annoIndietro === annoIndietro)?.[ruolo]?.email === email;
 
-  const result: ContinuitaVM = {
-    docentiAnniPrecedenti,
-    continuitaUltimiDueAnni: input.titolareCorrenteEmail !== null && sameTitolare(1),
-    continuitaUltimiTreAnni: input.titolareCorrenteEmail !== null && sameTitolare(1) && sameTitolare(2)
+  return {
+    anniPrecedenti,
+    hasAnniPrecedenti: anniPrecedenti.length > 0,
+    isContinuitaUltimiDueAnni: stesso(1, 'titolare', input.titolareCorrenteEmail),
+    isContinuitaUltimiTreAnni:
+      stesso(1, 'titolare', input.titolareCorrenteEmail) &&
+      stesso(2, 'titolare', input.titolareCorrenteEmail),
+    isContinuitaItpUltimiDueAnni:
+      input.hasItp && stesso(1, 'itp', input.itpCorrenteEmail),
+    isContinuitaItpUltimiTreAnni:
+      input.hasItp &&
+      stesso(1, 'itp', input.itpCorrenteEmail) &&
+      stesso(2, 'itp', input.itpCorrenteEmail)
   };
-  if (input.hasItp) {
-    result.continuitaUltimiDueAnniItp = input.itpCorrenteEmail !== null && sameItp(1);
-    result.continuitaUltimiTreAnniItp = input.itpCorrenteEmail !== null && sameItp(1) && sameItp(2);
-  }
-  return result;
-}
-
-function resolveDocente(email: string | undefined, docenti: IDocenteRepository): PersonVM | null {
-  if (email === undefined) return null;
-  const docente = docenti.findById(email);
-  return docente === null ? null : buildPersonVmFromDocente(docente);
 }

@@ -1,4 +1,4 @@
-import type { CduMeta } from './Cdu';
+import type { DataStampabileVM } from './Cdu';
 
 const MESI = [
   'gennaio',
@@ -23,14 +23,14 @@ const utils = new UtilsService();
  * deterministic and independent of the host timezone; only the Italian
  * extended-month wording required by the spec is domain knowledge here.
  */
-export function formatOggi(d: Date): CduMeta['date']['oggi'] {
+export function formatOggi(d: Date): DataStampabileVM {
   const fmt = (pattern: string): string => utils.formatDate(d, pattern, { utc: true }) ?? '';
   return {
     breve: fmt('DD/MM/YYYY'),
     estesa: `${fmt('DD')} ${MESI[d.getUTCMonth()]} ${fmt('YYYY')}`,
-    iso: fmt('YYYY-MM-DD'),
     giorno: fmt('DD'),
     mese: fmt('MM'),
+    meseNome: MESI[d.getUTCMonth()]!,
     anno: fmt('YYYY'),
     ora: fmt('HH:mm')
   };

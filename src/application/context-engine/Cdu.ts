@@ -1,147 +1,20 @@
-/**
- * Contesto Dati Unificato (CDU) — the aggregated context every document/email
- * operation reads from. Shape is the authoritative one described in
- * `SPECS_ALDO/02_CDU_STRUTTURA.md`; every access path used in templates, boxes
- * and expressions MUST correspond exactly to a path in this type.
- *
- * Sections other than `meta` are optional because a recipe activates only the
- * providers it needs (e.g. `focus.alunno` is absent in class-only recipes), so
- * the CDU is progressively filled as providers run. `tech` holds live entities
- * and is attached NON-enumerable (never serialized — see 02 §7).
- */
-
-import type { TipoPiano } from '../../domain/value-objects/enums';
-import type { PersonVM } from './mappers/personVmMapper';
-import type { SubjectVM } from './mappers/subjectVmMapper';
-import type { CurriculumVM } from './mappers/carenzeMapper';
-import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';
-import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMapper';
-import type { StudentStoricoVM } from './mappers/storicoMapper';
-import type { ProgettoVM } from './providers/ProgettiProvider';
-import type { ClasseStoricoVM } from './providers/StoricoClasseProvider';
-import type { SingleClassProjection } from './providers/PartnerProjectionProvider';
-
-/** Docente-in-CDC view model, shared by `focus.classe.consiglioDiClasse` and `focus.alunno.consiglioDiClasseFiltrato` (02 §4.1/§4.2). */
-export interface DocenteCdcVM {
-  anagrafica: PersonVM;
-  materie: SubjectVM[];
-  /** Every subject in `materie`, names comma-joined (09 §10 — for flat, template-simple display). */
-  materieDescrizione: string;
-  /** `materie` sigle, comma-joined, for flat/compact display. */
-  materieSigle: string;
-  ruoli: {
-    isCoordinatore: boolean;
-    isTutorAsl: boolean;
-    isTutorOrientamento: boolean;
-    descrizione: string[];
-  };
-  stato: { isSupplente: boolean; sostituisce: PersonVM | null };
-  tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null;
-  /** Resolved major name for SEPARATO_PRIMO/SEPARATO_SECONDO; null for COMUNE and non-articulated classes (09 §10). */
-  gruppoNome: string | null;
-  isITP: boolean;
-  flags: { isNotLast: boolean };
+export interface ElencoVM<T> {
+  elenco: T[];
+  hasElenco: boolean;
+  numero: number;
 }
 
-/**
- * Alunno-in-context view model inside `focus.classe.studenti.listaCompleta`
- * (02 §4.1/§8.7). Self-contained (Principle 2): carries its own `classe`/
- * `indirizzo` so templates never navigate back to `focus.classe.anagrafica`
- * inside a loop. For the parent of an articulated class these always reflect
- * the FOCUSED (parent) class, not each student's own partner class.
- */
-export interface AlunnoContestoVM {
-  anagrafica: { nomeCompleto: string; email: string };
-  classe: { nome: string };
-  indirizzo: { nome: string; nomeSintetico: string };
-  status: {
-    isBes: boolean;
-    isRipetente: boolean;
-    isRappresentante: boolean;
-    religione: string;
-    religioneLabel: string;
-    presenteAnnoPrecedente: boolean;
-    presenteTuttoAnno: boolean;
-  };
-  curriculum: CurriculumVM[];
-  didattica: {
-    carenze: {
-      hasCarenze: boolean;
-      numero: number;
-      dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
-    };
-    piani: {
-      hasPiani: boolean;
-      hasBes: boolean;
-      items: Array<{ tipo: string; tipoLabel: string; isBes: boolean }>;
-    };
-    pcto: { oreCumulate: number };
-  };
+export interface DataStampabileVM {
+  breve: string;
+  estesa: string;
+  giorno: string;
+  mese: string;
+  meseNome: string;
+  anno: string;
+  ora: string;
 }
 
-/** One row of `focus.alunno.didattica.pianiPersonalizzati.items` / `focus.classe.didattica.pianiPersonalizzati.items` (11 §11 new). */
-export interface PianoPersonalizzatoItem {
-  id?: string | undefined;
-  nome: string;
-  link: string;
-  tipo: string;
-  sottotipo: string;
-  tipoLabel: string;
-  idGen: string;
-  stato: string;
-  dataCreazione: string;
-  notificato: boolean;
-  /** Only set by the classe-scoped provider — multiple students appear in one class-wide list. */
-  studente?: { nomeCompleto: string; email: string };
-}
-
-/**
- * One aggregated active supplenza row of `focus.classe.supplenze` (02 §4.1/§8.12):
- * one item per (supplente, titolare) pair, materie combined. Populated from the
- * raw teaching assignments, so it reflects actual delegations regardless of the
- * `gestioneSupplenti` routing policy.
- */
-export interface SupplenzaAggregataVM {
-  /** Docente effettivamente attivo (chain-resolved supplente, §8.1). */
-  supplente: PersonVM;
-  /** Titolare sostituito (`assignment.titolare`, §8.1). */
-  titolare: PersonVM;
-  /** Materie coperte — base SubjectVM (§8.2), no `docenti`/`continuita` fields. */
-  dettaglioMaterie: SubjectVM[];
-}
-
-export interface CduMeta {
-  timestamp: string;
-  idConfigurazione: string;
-  tipoOperazione: string;
-  idEsecuzione: string;
-  progressivo?: number;
-  date: {
-    oggi: {
-      breve: string;
-      estesa: string;
-      iso: string;
-      giorno: string;
-      mese: string;
-      anno: string;
-      ora: string;
-    };
-  };
-  configurazioneBox?: {
-    boxAttivi: string[];
-    boxVuotiNascosti: string[];
-    ordineVisualizzazione: string[];
-  };
-  parametriInput: {
-    target: string;
-    tipoTarget: 'classe' | 'alunno' | 'dipartimento' | 'docente';
-    materiaCorrente: string | null;
-    opzioni: RecipeOptionsView;
-  };
-}
-
-/** Snapshot of the recipe options copied into `meta.parametriInput.opzioni` (02 §2). */
-export interface RecipeOptionsView {
+export interface OpzioniCduVM {
   includiStorico: boolean;
   profonditaAnniStorico: number;
   profonditaAnniAsl: number;
@@ -149,336 +22,825 @@ export interface RecipeOptionsView {
   includiSupplenti: boolean;
   notificaSoloCoordinatori: boolean;
   includiPartnerDettaglio: boolean;
-  gestioneSupplenti: string;
-  [key: string]: unknown;
+  gestioneSupplenti: 'SOLO_TITOLARI' | 'SOLO_SUPPLENTI' | 'ENTRAMBI';
 }
 
-export interface CduIstituto {
-  organizzazione: { annoScolastico: string; dirigente: { nomeCompleto: string } };
-  /** Fixed aliases for the two conventional roles, plus one entry per `RUOLI` row keyed by its raw ID (02 §3). */
-  staff: {
-    referenteBes: PersonVM | null;
-    animatoreDigitale: PersonVM | null;
-    [ruoloId: string]: PersonVM | null;
-  };
-  statistiche?: { totaleClassi: number; totaleDocenti: number; totaleAlunni: number };
+export interface ConfigurazioneBoxVM extends ElencoVM<{
+  boxId: string;
+  ordine: number;
+  isAttivo: boolean;
+  isNascostoPercheVuoto: boolean;
+}> {}
+
+export interface MetadatiVM {
+  timestamp: string;
+  configurazioneId: string;
+  esecuzioneId: string;
+  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA';
+  tipoOperazioneLabel: 'Generazione documento' | 'Invio notifica';
+  oggi: DataStampabileVM;
+  target: string;
+  tipoTarget:
+    | 'classe'
+    | 'alunno'
+    | 'docente'
+    | 'piano'
+    | 'carenza'
+    | 'materia'
+    | 'dipartimento';
+  materiaCorrente: string | null;
+  opzioni: OpzioniCduVM;
+  progressivo?: number;
+  configurazioneBox?: ConfigurazioneBoxVM;
 }
 
-export interface CduClasse {
-  anagrafica: {
-    nome: string;
-    anno: number;
-    sezione: string;
-    annoScolastico: string;
-    indirizzo: { nome: string; nomeSintetico: string; sigla: string; tipo: string };
-  };
-  flags: {
-    isClassePrima: boolean;
-    isTriennio: boolean;
-    isPrimoBiennio: boolean;
-    isTerminale: boolean;
-    isArticolata: boolean;
-  };
-  articolazione?: {
-    partner: string | null;
-    partners: string[] | null;
-    parent: {
-      nome: string;
-      anno: number;
-      indirizzi: Array<{ sigla: string; nome: string; nomeSintetico: string; tipo: string }>;
-    } | null;
-    materieCondivise: SubjectVM[];
-    materieSeparatePrimoGruppo: SubjectVM[];
-    materieSeparateSecondoGruppo: SubjectVM[];
-  };
-  coordinatori?: {
-    appellativo?: string;
-    articolo?: string;
-    coordina?: string;
-    presiede?: string;
-    elenco: PersonVM[];
-  };
-  tutor?: {
-    appellativo?: string;
-    articolo?: string;
-    tutor?: string;
-    asl: PersonVM[];
-    orientamento: PersonVM[];
-  };
-  rappresentanti?: {
-    studenti: Array<{ nomeCompleto: string; email: string; indirizzo?: { nome: string } }>;
-    genitori: Array<{ nomeCompleto: string; studente: { nomeCompleto: string }; indirizzo?: { nome: string } }>;
-  };
-  /** Always the docente effettivamente in carica (SUPPLENZE incluse, oltre a VARIAZIONI_CATTEDRA) — indipendente da `opzioni.gestioneSupplenti`. */
-  consiglioDiClasse?: DocenteCdcVM[];
-  consiglioDiClasseComune?: DocenteCdcVM[];
-  consiglioDiClasseSeparato?: DocenteCdcVM[];
-  /** Docente titolare (VARIAZIONI_CATTEDRA incluse, SUPPLENZE escluse) — sempre popolato, indipendente da `opzioni.gestioneSupplenti`. */
-  consiglioDiClasseTitolare?: DocenteCdcVM[];
-  /** Active supplenze aggregated per (supplente, titolare) pair (02 §4.1/§8.12) — always set when the `consiglio` provider runs (`[]` if none). */
-  supplenze?: SupplenzaAggregataVM[];
-  /** Disaggregated per-partner-class projection for an articulated parent (02 §2.5), only when `includiPartnerDettaglio` is true. */
-  partner?: { primo: SingleClassProjection; secondo: SingleClassProjection };
-  /** Flat, deduped subject catalog of the class council (02 §2.8, §4.1). */
-  materie?: SubjectVM[];
-  /** `materie` grouped by base materia id, for composite-specificità display (02 §2.8). */
-  materiePerPrincipale?: MateriaPerPrincipaleVM[];
-  /** Pre-split prima/seconda prova partitions of `materie` (02 §2.9, §4.1) — runs after `materie`. */
-  esame?: {
-    hasEsame: boolean;
-    materie: Array<SubjectVM & { prova: 'PRIMA_PROVA' | 'SECONDA_PROVA' }>;
-    docenti: Array<PersonVM & { prova: 'PRIMA_PROVA' | 'SECONDA_PROVA'; materie: SubjectVM[] }>;
-    materiePrimaProva: SubjectVM[];
-    materieSecondaProva: SubjectVM[];
-    docentiPrimaProva: PersonVM[];
-    docentiSecondaProva: PersonVM[];
-  };
-  /** PROGETTI assigned to the class (02 §2.10, §4.1). */
-  hasProgetti?: boolean;
-  progetti?: ProgettoVM[];
-  /** Lazy prior-years history (13 §2/§5), populated only when `includiStorico` is true (02 §2.11, §8.6). */
-  storico?: LazyRef<ClasseStoricoVM>;
-  /** Sheet-expansion column list (MAT_NON_STANDARD) — built on demand by SheetMaterieConPermessiGeneratorStrategy, not a standard provider output. */
-  elencoMaterieConPermessi?: import('./ElencoMaterieConPermessi').ElencoMateriaConPermessiVM[];
-  /**
-   * Printable projection of the `materieColonne` groups already computed by
-   * `SheetMaterieGeneratorStrategy.buildGroups`/its `_E_PERMESSI` override —
-   * built on demand by those strategies, not a standard provider output. This
-   * CDU-facing shape is intentionally narrower than the strategy's internal
-   * `MateriaColumn` (drops the ACL-only `classeId`/`specificita`/`kind`
-   * fields from the printable contract).
-   */
-  sheet?: {
-    materieColonne: {
-      group1: Array<{ sigla: string; header: string; isSpecial?: boolean; roles?: string[] }>;
-      group2: Array<{ sigla: string; header: string; isSpecial?: boolean; roles?: string[] }>;
-      group3: Array<{ sigla: string; header: string; isSpecial?: boolean; roles?: string[] }>;
-      group2Label?: string;
-      group3Label?: string;
-    };
-  };
-  studenti?: {
-    listaCompleta: AlunnoContestoVM[];
-    statistiche?: {
-      totale: number;
-      conPianiDidattici: number;
-      conBes: number;
-      conDsa: number;
-      ripetenti: number;
-      rappresentanti: number;
-    };
-    perSpecificita: SpecificitaAlunniVM[];
-  };
-  didattica?: {
-    pianiPersonalizzati: {
-      items: PianoPersonalizzatoItem[];
-      storico?: LazyRef<
-        import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
-      >;
-      /** Precomputed partition of `items` with stato !== VERBALIZZATO (02 §4.1) — templates MUST NOT filter on `stato`. */
-      nonVerbalizzati?: {
-        hasElenco: boolean;
-        elenco: Array<{
-          studente: { nomeCompleto: string; email: string };
-          tipoLabel: string;
-        }>;
-      };
-    };
-    /** Class-wide LOG_DOCS aggregation (mirrors `CduAlunno.didattica.documenti`, 11 §11 new). */
-    documenti?: {
-      items: Array<{
-        id?: string | undefined;
-        nome: string;
-        link: string;
-        tipo: string;
-        idGen: string;
-        sottotipo: string;
-        stato: string;
-        notificato: boolean;
-        dataCreazione: string;
-      }>;
-      hasDocumenti: boolean;
-    };
-  };
+export interface PersonaRiferimentoVM {
+  nomeCompleto: string;
+  email: string;
 }
 
-export interface CduAlunno {
-  anagrafica: { nomeCompleto: string; email: string };
-  status: {
-    religione: string;
-    religioneLabel: string;
-    isBes: boolean;
-    isRipetente: boolean;
-    isRappresentante: boolean;
-    presenteAnnoPrecedente: boolean;
-    presenteTuttoAnno: boolean;
-  };
-  curriculum: CurriculumVM[];
-  classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
-  consiglioDiClasseFiltrato?: DocenteCdcVM[];
-  /** Materie distinte di `consiglioDiClasseFiltrato`, per `tablecol_loop` nei Docs (02 §8.8). */
-  elencoMaterieFiltrate?: SubjectVM[];
-  storico?: LazyRef<StudentStoricoVM>;
-  didattica: {
-    carenze: {
-      dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
-      numero: number;
-      hasCarenze: boolean;
-    };
-    asl: { oreCumulate: number; oreAnnoCorrente: number };
-    piani: {
-      items: Array<{
-        tipo: string;
-        tipoLabel: string;
-        isBes: boolean;
-        link: string;
-        parametriGenerazione: Record<string, unknown>;
-      }>;
-      hasPiani: boolean;
-      hasBes: boolean;
-    };
-    documenti?: {
-      items: Array<{
-        id?: string | undefined;
-        nome: string;
-        link: string;
-        tipo: string;
-        idGen: string;
-        sottotipo: string;
-        stato: string;
-        notificato: boolean;
-        dataCreazione: string;
-      }>;
-      hasDocumenti: boolean;
-      /** Lazy prior-year documents grouped by ID_GEN at render time (11 §11 arricchisciConStorico, 13 §4). */
-      storico?: LazyRef<
-        import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
-      >;
-    };
-    pianiPersonalizzati?: {
-      items: PianoPersonalizzatoItem[];
-      /** Lazy prior-year PIANO_PERS documents, matched to rows by SOTTOTIPO. */
-      storico?: LazyRef<
-        import('../storico/StoricoDocumentiService').DocumentoStoricoConTipo[]
-      >;
-    };
-  };
+export interface PersonaVM {
+  nome: string;
+  cognome: string | null;
+  nomeCompleto: string;
+  email: string | null;
+  genere: 'M' | 'F' | null;
+  appellativo: string | null;
+  articolo: string | null;
+  coordinatore: string | null;
+  appellativoCompleto: string;
+  appellativoCognome: string;
+  isEsterno: boolean;
 }
 
-/**
- * `focus.dipartimento` — anagrafica/capo/materie/docenti of a DIPART row plus
- * its LOG_DOCS aggregation (11 §11 new, department-scoped batch generation).
- * `materie` is a light `{ sigla }` projection, not the full `SubjectVM`: a
- * `MateriaId` alone doesn't carry a `SubjectVM`'s other fields (`nome`,
- * `colore1`, etc.) without a lookup against `IMateriaRepository`, and nothing
- * in this extension's templates needs more than the sigla. `didattica.
- * documenti.items` uses the canonical 9-field `documenti.items[]` shape
- * shared by `CduClasse`/`CduAlunno`/`CduDipartimentoFocus` — 8 template-facing
- * fields (`nome, link, tipo, idGen, sottotipo, stato, notificato,
- * dataCreazione`) plus the internal-only `id?` (Drive file ID, not for
- * template use — it feeds `boxes.ts`'s attachment resolution) — filtered by
- * materia overlap instead of `findByClasse` since a department has no class
- * dimension.
- */
-export interface CduDipartimentoFocus {
-  anagrafica: { id: string; nome: string };
-  capo: PersonVM | null;
-  materie: Array<{ sigla: string }>;
-  docenti: PersonVM[];
-  didattica: {
-    documenti: {
-      items: Array<{
-        id?: string | undefined;
-        nome: string;
-        link: string;
-        tipo: string;
-        idGen: string;
-        sottotipo: string;
-        stato: string;
-        notificato: boolean;
-        dataCreazione: string;
-      }>;
-    };
-  };
+export interface CollettivoPersoneVM {
+  appellativo: string;
+  articolo: string;
+  coordinamento: string;
+  coordina: string;
+  presiede: string;
+  numero: number;
 }
 
-export interface CduCarenzaFocus {
-  studente: string;
-  progressivo: number;
-  data: string;
-  classe: string;
-  hasAssenze: boolean;
-  note: string;
+export interface ClasseRiferimentoVM {
+  nome: string;
 }
 
-/** The selected personalized plan, available only during plan generation. */
-export interface CduPianoFocus {
-  tipo: TipoPiano;
-  tipoLabel: string;
-  isBes: boolean;
-  parametriGenerazione: Record<string, unknown>;
-}
-
-/** One row of `destinatario.contesto.cattedre[]` (02 §5/§8.13): the docente target's effective materie, grouped per class. */
-export interface CattedraVM {
-  classeNome: string;
+export interface ClasseSintesiVM extends ClasseRiferimentoVM {
   anno: number;
   sezione: string;
-  materie: SubjectVM[];
 }
 
-export interface CduDestinatario {
-  anagrafica: PersonVM;
+export interface IndirizzoVM {
+  sigla: string;
+  nome: string;
+  nomeSintetico: string;
+  tipo: string;
+  tipoLabel: string;
+}
+
+export interface MateriaVM {
+  sigla: string;
+  nome: string;
+  nomeSintetico: string;
+  colore1: string;
+  colore2: string;
+  principale: string | null;
+  specificita: string | null;
+  hasSpecificita: boolean;
+  nomeConSpecificita: string;
+  isItp: boolean;
+  isMateriaPrimaProva: boolean;
+  isMateriaSecondaProva: boolean;
+  evoluzione: {
+    siglePrecedenti: Array<{
+      sigla: string;
+      anni: number[];
+      anniDescrizione: string;
+    }>;
+    hasSiglePrecedenti: boolean;
+  };
+  docenti?: PersonaVM[];
+  hasDocenti?: boolean;
+  docentiDescrizione?: string;
+  docentiDescrizioneEstesa?: string;
+  hasCattedraItp?: boolean;
+  continuita?: ContinuitaVM;
+}
+
+export interface ContinuitaVM {
+  anniPrecedenti: Array<{
+    annoIndietro: number;
+    annoScolastico: string;
+    titolare: PersonaVM | null;
+    hasTitolare: boolean;
+    itp: PersonaVM | null;
+    hasItp: boolean;
+  }>;
+  hasAnniPrecedenti: boolean;
+  isContinuitaUltimiDueAnni: boolean;
+  isContinuitaUltimiTreAnni: boolean;
+  isContinuitaItpUltimiDueAnni: boolean;
+  isContinuitaItpUltimiTreAnni: boolean;
+}
+
+export interface CurriculumVM {
+  materiaId: string;
+  materiaSigla: string;
+  materiaNome: string;
+  materiaNomeSintetico: string;
+  specifiche: Array<{ nome: string; nomeCapitalizzato: string }>;
+  hasSpecifiche: boolean;
+  specificheDescrizione: string;
+}
+
+export interface SpecificitaAlunniVM {
+  materiaId: string;
+  materiaSigla: string;
+  materiaNome: string;
+  materiaNomeSintetico: string;
+  specifiche: Array<{
+    nome: string;
+    nomeCapitalizzato: string;
+    alunni: PersonaRiferimentoVM[];
+    hasAlunni: boolean;
+    numero: number;
+    alunniDescrizione: string;
+  }>;
+  hasSpecifiche: boolean;
+}
+
+export interface PresenzaAlunnoVM {
+  annoPrecedente: {
+    isCalcolato: boolean;
+    isPresente: boolean;
+  };
+  isPresenteTuttoAnno: boolean;
+  hasCambiatoClasse: boolean;
+  classePrecedente: ClasseRiferimentoVM | null;
+  hasClassePrecedente: boolean;
+}
+
+export interface ProvenienzaDestinazioneVM {
+  valore: string;
+  descrizione: string;
+  classe: ClasseRiferimentoVM | null;
+  scuolaEsterna: string | null;
+  isClasse: boolean;
+  isScuolaEsterna: boolean;
+}
+
+export interface MovimentoAlunnoVM {
+  tipo: 'IN' | 'OUT' | 'RITIRATO' | 'CAMBIO';
+  tipoLabel: 'Ingresso' | 'Trasferimento in uscita' | 'Ritiro' | 'Cambio di classe';
+  data: string;
+  dataBreve: string;
+  dataEstesa: string;
+  provenienza: ProvenienzaDestinazioneVM | null;
+  destinazione: ProvenienzaDestinazioneVM | null;
+  isIngresso: boolean;
+  isUscita: boolean;
+  isRitirato: boolean;
+  isCambioClasse: boolean;
+  descrizione: string;
+}
+
+export interface ElencoMovimentiAlunnoVM extends ElencoVM<MovimentoAlunnoVM> {}
+
+export interface MovimentoClasseVM extends MovimentoAlunnoVM {
+  studente: PersonaRiferimentoVM;
+  direzione: 'ENTRATA' | 'USCITA' | 'INTERNA';
+  direzioneLabel: 'In entrata' | 'In uscita' | 'Movimento interno';
+  isEntrata: boolean;
+  isUscita: boolean;
+  isMovimentoInterno: boolean;
+}
+
+export interface ClasseContestoVM extends ClasseRiferimentoVM {
+  indirizzo: IndirizzoVM;
+}
+
+export interface AslAlunnoVM {
+  oreCumulate: number;
+  oreAnnoCorrente: number;
+}
+
+export interface CarenzaVM {
+  materiaSigla: string;
+  materiaNome: string;
+  materiaNomeSintetico: string;
+  voto: string;
+  descrizione: string;
+}
+
+export interface ElencoCarenzeVM extends ElencoVM<CarenzaVM> {
+  elencoDescrizione: string;
+}
+
+export interface PianoVM {
+  tipo: string;
+  tipoLabel: string;
+  isBes: boolean;
+  link: string | null;
+  hasLink: boolean;
+  parametriGenerazione: object | null;
+  hasParametriGenerazione: boolean;
+}
+
+export interface ElencoPianiVM extends ElencoVM<PianoVM> {
+  elencoDescrizione: string;
+  hasBes: boolean;
+}
+
+export interface AlunnoVM extends PersonaRiferimentoVM {
+  classe: ClasseContestoVM;
+  religione: 'IRC' | 'ALT' | 'NO';
+  religioneLabel: string;
+  isIrc: boolean;
+  isAlt: boolean;
+  isSenzaReligione: boolean;
+  isBes: boolean;
+  isDsa: boolean;
+  isRipetente: boolean;
+  isRappresentante: boolean;
+  presenza: PresenzaAlunnoVM;
+  movimenti: ElencoMovimentiAlunnoVM;
+  curriculum: CurriculumVM[];
+  hasCurriculum: boolean;
+  curriculumDescrizione: string;
+  carenze: ElencoCarenzeVM;
+  piani: ElencoPianiVM;
+  asl: AslAlunnoVM;
+}
+
+export interface DocenteCdcVM extends PersonaVM {
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  numeroMaterie: number;
+  materieDescrizione: string;
+  materieDescrizioneSintesi: string;
+  materieSigle: string;
+  isCoordinatore: boolean;
+  isTutorAsl: boolean;
+  isTutorOrientamento: boolean;
+  isTutor: boolean;
+  isSupplente: boolean;
+  isItp: boolean;
+  isComune: boolean;
+  isSeparatoPrimo: boolean;
+  isSeparatoSecondo: boolean;
+  ruoliDescrizione: string[];
+  ruoliDescrizioneTesto: string;
+  sostituisce: PersonaVM | null;
+  hasSostituisce: boolean;
+  tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null;
+  tipoArticolazioneLabel: string;
+  gruppoNome: string | null;
+}
+
+export interface ProgettoVM {
+  tipo: 'ASL' | 'ORIENTAMENTO' | 'ALTRO';
+  tipoLabel: 'FSL' | 'Orientamento' | 'Altro';
+  nome: string;
+  referente: PersonaVM;
+  ore: number;
+  oreAsl: number;
+  isAsl: boolean;
+  isOrientamento: boolean;
+  isAltro: boolean;
+}
+
+export interface StatisticheAlunniVM {
+  totale: number;
+  conPiani: number;
+  conBes: number;
+  conDsa: number;
+  ripetenti: number;
+  rappresentanti: number;
+}
+
+export interface StatisticheIstitutoVM {
+  totaleClassi: number;
+  totaleDocenti: number;
+  totaleAlunni: number;
+}
+
+export interface CarenzaStoricaVM {
+  materiaSigla: string;
+  valore: string;
+}
+
+export interface PianoStoricoVM {
+  tipo: string;
+  tipoLabel: string;
+}
+
+export interface StoricoClasseVM {
+  anni: Array<{
+    annoScolastico: string;
+    classe: ClasseRiferimentoVM;
+    statistiche: StatisticheAlunniVM;
+    progetti: ProgettoVM[];
+    hasProgetti: boolean;
+  }>;
+  hasAnni: boolean;
+  numeroAnni: number;
+}
+
+export interface StoricoAlunnoVM {
+  anni: Array<{
+    annoScolastico: string;
+    classe: ClasseRiferimentoVM | null;
+    esito: 'PROMOSSO' | 'NON_PROMOSSO' | 'TRASFERITO' | 'RITIRATO' | 'SCONOSCIUTO';
+    esitoLabel: string;
+    isPromosso: boolean;
+    isNonPromosso: boolean;
+    carenze: CarenzaStoricaVM[];
+    hasCarenze: boolean;
+    carenzeDescrizione: string;
+    piani: PianoStoricoVM[];
+    hasPiani: boolean;
+    presenza: PresenzaAlunnoVM;
+    movimenti: ElencoMovimentiAlunnoVM;
+  }>;
+  hasAnni: boolean;
+  numeroAnni: number;
+  bocciature: ElencoVM<{
+    annoScolastico: string;
+    classe: ClasseRiferimentoVM;
+  }> & { elencoDescrizione: string };
+}
+
+export interface DocumentoLogVM {
+  id: string | null;
+  hasId: boolean;
+  nome: string;
+  link: string;
+  tipo: string;
+  tipoLabel: string;
+  sottotipo: string;
+  sottotipoLabel: string;
+  hasSottotipo: boolean;
+  generatoreId: string;
+  stato: string;
+  statoLabel: string;
+  isNotificato: boolean;
+  dataCreazione: string;
+  dataCreazioneBreve: string;
+}
+
+export interface DocumentoStoricoVM {
+  annoScolastico: string;
+  documento: DocumentoLogVM;
+}
+
+export interface PianoPersonalizzatoVM extends DocumentoLogVM {
+  isVerbalizzato: boolean;
+  studente: PersonaRiferimentoVM | null;
+  hasStudente: boolean;
+}
+
+export interface SupplenzaAggregataVM {
+  supplente: PersonaVM;
+  titolare: PersonaVM;
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  materieDescrizione: string;
+  materieSigle: string;
+}
+
+export interface CattedraVM {
+  classe: ClasseSintesiVM;
+  sezioneEstesa: string;
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  numeroMaterie: number;
+  materieDescrizione: string;
+  materieSigle: string;
+}
+
+export interface RappresentanteStudenteVM {
+  studente: PersonaRiferimentoVM;
+  indirizzo: IndirizzoVM | null;
+  hasIndirizzo: boolean;
+}
+
+export interface RappresentanteGenitoreVM {
+  nomeCompleto: string;
+  studente: PersonaRiferimentoVM;
+  indirizzo: IndirizzoVM | null;
+  hasIndirizzo: boolean;
+  descrizione: string;
+}
+
+export interface MateriaEsameVM extends MateriaVM {
+  prova: 'PRIMA_PROVA' | 'SECONDA_PROVA';
+  provaLabel: 'Prima prova' | 'Seconda prova';
+  isPrimaProva: boolean;
+  isSecondaProva: boolean;
+}
+
+export interface DocenteEsameVM extends PersonaVM {
+  prova: 'PRIMA_PROVA' | 'SECONDA_PROVA';
+  provaLabel: 'Prima prova' | 'Seconda prova';
+  isPrimaProva: boolean;
+  isSecondaProva: boolean;
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  numeroMaterie: number;
+  materieDescrizione: string;
+  materieSigle: string;
+}
+
+export interface RuoloStaffVM {
+  ruoloId: string;
+  ruoloNome: string;
+  persona: PersonaVM | null;
+  hasPersona: boolean;
+}
+
+export interface IstitutoVM {
+  annoScolastico: string;
+  dirigente: PersonaVM;
+  staff: ElencoVM<RuoloStaffVM> & { perId: Record<string, RuoloStaffVM> };
+  statistiche?: StatisticheIstitutoVM;
+}
+
+export interface CoordinatoriVM extends ElencoVM<PersonaVM> {
+  elencoDescrizione: string;
+  elencoDescrizioneEstesa: string;
+  descrizioneRuolo: string;
+  collettivo: CollettivoPersoneVM;
+}
+
+export interface TutorClasseVM {
+  asl: PersonaVM[];
+  orientamento: PersonaVM[];
+  elenco: PersonaVM[];
+  hasAsl: boolean;
+  hasOrientamento: boolean;
+  hasElenco: boolean;
+  numero: number;
+  aslDescrizione: string;
+  orientamentoDescrizione: string;
+  elencoDescrizione: string;
+  collettivo: {
+    appellativo: string;
+    articolo: string;
+    sostantivo: 'Tutor';
+    numero: number;
+  };
+}
+
+export interface RappresentantiClasseVM {
+  studenti: ElencoVM<RappresentanteStudenteVM> & { elencoDescrizione: string };
+  genitori: ElencoVM<RappresentanteGenitoreVM> & { elencoDescrizione: string };
+}
+
+export interface ConsiglioClasseVM {
+  elenco: DocenteCdcVM[];
+  titolari: DocenteCdcVM[];
+  hasElenco: boolean;
+  hasTitolari: boolean;
+  numero: number;
+  elencoDescrizione: string;
+  elencoDescrizioneEstesa: string;
+  comune: DocenteCdcVM[];
+  separato: DocenteCdcVM[];
+  separatoPrimo: DocenteCdcVM[];
+  separatoSecondo: DocenteCdcVM[];
+  hasComune: boolean;
+  hasSeparato: boolean;
+  hasSeparatoPrimo: boolean;
+  hasSeparatoSecondo: boolean;
+  comuneDescrizione: string;
+  separatoPrimoDescrizione: string;
+  separatoSecondoDescrizione: string;
+  supplenze: SupplenzaAggregataVM[];
+  hasSupplenze: boolean;
+}
+
+export interface MaterieClasseVM extends ElencoVM<MateriaVM> {
+  elencoDescrizione: string;
+  elencoDescrizioneSintesi: string;
+  sigle: string;
+}
+
+export interface MateriaPerPrincipaleItemVM {
+  principaleId: string;
+  nome: string;
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  numero: number;
+  materieDescrizione: string;
+}
+
+export interface MateriePerPrincipaleVM extends ElencoVM<MateriaPerPrincipaleItemVM> {}
+
+export interface EsameClasseVM {
+  hasEsame: boolean;
+  materie: MateriaEsameVM[];
+  docenti: DocenteEsameVM[];
+  hasMaterie: boolean;
+  hasDocenti: boolean;
+  materiePrimaProva: MateriaEsameVM[];
+  materieSecondaProva: MateriaEsameVM[];
+  docentiPrimaProva: DocenteEsameVM[];
+  docentiSecondaProva: DocenteEsameVM[];
+  hasMateriePrimaProva: boolean;
+  hasMaterieSecondaProva: boolean;
+  hasDocentiPrimaProva: boolean;
+  hasDocentiSecondaProva: boolean;
+  materiePrimaProvaDescrizione: string;
+  materieSecondaProvaDescrizione: string;
+  docentiPrimaProvaDescrizione: string;
+  docentiSecondaProvaDescrizione: string;
+}
+
+export interface ProgettiClasseVM extends ElencoVM<ProgettoVM> {
+  asl: ProgettoVM[];
+  orientamento: ProgettoVM[];
+  altro: ProgettoVM[];
+  hasAsl: boolean;
+  hasOrientamento: boolean;
+  hasAltro: boolean;
+  oreAslTotali: number;
+}
+
+export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
+  elencoDescrizione: string;
+  statistiche: StatisticheAlunniVM;
+  perStato: {
+    bes: AlunnoVM[];
+    dsa: AlunnoVM[];
+    pfp: AlunnoVM[];
+    pei: AlunnoVM[];
+    ripetenti: AlunnoVM[];
+    rappresentanti: AlunnoVM[];
+    conPiani: AlunnoVM[];
+    hasBes: boolean;
+    hasDsa: boolean;
+    hasPfp: boolean;
+    hasPei: boolean;
+    hasRipetenti: boolean;
+    hasRappresentanti: boolean;
+    hasConPiani: boolean;
+  };
+  perReligione: {
+    irc: AlunnoVM[];
+    alt: AlunnoVM[];
+    no: AlunnoVM[];
+    hasIrc: boolean;
+    hasAlt: boolean;
+    hasNo: boolean;
+    ircDescrizione: string;
+    altDescrizione: string;
+    noDescrizione: string;
+    elenco: Array<{
+      codice: 'IRC' | 'ALT' | 'NO';
+      label: string;
+      alunni: AlunnoVM[];
+      hasAlunni: boolean;
+      numero: number;
+    }>;
+  };
+  perSpecificita: SpecificitaAlunniVM[];
+  hasPerSpecificita: boolean;
+}
+
+export interface MovimentiClasseVM extends ElencoVM<MovimentoClasseVM> {
+  entrate: MovimentoClasseVM[];
+  uscite: MovimentoClasseVM[];
+  interni: MovimentoClasseVM[];
+  hasEntrate: boolean;
+  hasUscite: boolean;
+  hasInterni: boolean;
+  numeroEntrate: number;
+  numeroUscite: number;
+  numeroInterni: number;
+}
+
+export interface PianiPersonalizzatiClasseVM extends ElencoVM<PianoPersonalizzatoVM> {
+  nonVerbalizzati: ElencoVM<PianoPersonalizzatoVM>;
+  storico: LazyRef<DocumentoStoricoVM[]>;
+}
+
+export interface ElencoDocumentiVM extends ElencoVM<DocumentoLogVM> {
+  storico: LazyRef<DocumentoStoricoVM[]>;
+}
+
+export interface ColonnaMateriaVM {
+  sigla: string;
+  header: string;
+  isSpeciale: boolean;
+  ruoli: string[];
+}
+
+export interface FoglioClasseVM {
+  materieConPermessi: ElencoVM<ColonnaMateriaVM>;
+  materieColonne: {
+    gruppi: Array<{
+      indice: number;
+      label: string;
+      colonne: ColonnaMateriaVM[];
+      hasColonne: boolean;
+      numero: number;
+    }>;
+  };
+}
+
+export interface ClasseParentVM extends ClasseRiferimentoVM {
+  anno: number;
+  indirizzi: IndirizzoVM[];
+  hasIndirizzi: boolean;
+  indirizziDescrizione: string;
+}
+
+export interface ArticolazioneClasseVM {
+  classeSorella: ClasseRiferimentoVM | null;
+  parent: ClasseParentVM | null;
+  sottoClassi: ClasseRiferimentoVM[];
+  hasSottoClassi: boolean;
+  materieComuni: MateriaVM[];
+  materieSeparatePrimo: MateriaVM[];
+  materieSeparateSecondo: MateriaVM[];
+  hasMaterieComuni: boolean;
+  hasMaterieSeparatePrimo: boolean;
+  hasMaterieSeparateSecondo: boolean;
+  materieComuniDescrizione: string;
+  materieComuniSigle: string;
+  materieSeparatePrimoDescrizione: string;
+  materieSeparatePrimoSigle: string;
+  materieSeparateSecondoDescrizione: string;
+  materieSeparateSecondoSigle: string;
+}
+
+export interface ProiezioneClasseVM extends ClasseSintesiVM {
+  indirizzo: IndirizzoVM;
+  consiglio: ConsiglioClasseVM;
+  studenti: StudentiClasseVM;
+  coordinatori: CoordinatoriVM;
+  movimenti: MovimentiClasseVM;
+}
+
+export interface PartnerClasseVM extends ElencoVM<ProiezioneClasseVM> {
+  primo: ProiezioneClasseVM;
+  secondo: ProiezioneClasseVM;
+}
+
+export interface ClasseFocusVM extends ClasseSintesiVM {
+  indirizzo: IndirizzoVM;
+  isClassePrima: boolean;
+  isTriennio: boolean;
+  isPrimoBiennio: boolean;
+  isSecondoBiennio: boolean;
+  isTerminale: boolean;
+  isArticolata: boolean;
+  isParent: boolean;
+  isSottoClasse: boolean;
+  articolazione?: ArticolazioneClasseVM;
+  partner?: PartnerClasseVM;
+  coordinatori?: CoordinatoriVM;
+  tutor?: TutorClasseVM;
+  rappresentanti?: RappresentantiClasseVM;
+  consiglio?: ConsiglioClasseVM;
+  materie?: MaterieClasseVM;
+  materiePerPrincipale?: MateriePerPrincipaleVM;
+  esame?: EsameClasseVM;
+  progetti?: ProgettiClasseVM;
+  studenti?: StudentiClasseVM;
+  movimenti?: MovimentiClasseVM;
+  storico?: LazyRef<StoricoClasseVM>;
+  pianiPersonalizzati?: PianiPersonalizzatiClasseVM;
+  documenti?: ElencoDocumentiVM;
+  sheet?: FoglioClasseVM;
+}
+
+export interface ConsiglioAlunnoVM extends ElencoVM<DocenteCdcVM> {
+  elencoDescrizione: string;
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  materieDescrizione: string;
+}
+
+export interface AlunnoFocusVM extends AlunnoVM {
+  consiglio?: ConsiglioAlunnoVM;
+  documenti?: ElencoDocumentiVM;
+  storico?: LazyRef<StoricoAlunnoVM>;
+}
+
+export interface PianoFocusVM {
+  tipo: string;
+  tipoLabel: string;
+  isBes: boolean;
+  parametriGenerazione: object;
+}
+
+export interface CarenzaFocusVM {
+  studente: PersonaRiferimentoVM;
+  classe: ClasseRiferimentoVM;
+  progressivo: number;
+  data: string;
+  dataBreve: string;
+  dataEstesa: string;
+  hasAssenze: boolean;
+  note: string;
+  hasNote: boolean;
+}
+
+export interface DipartimentoFocusVM {
+  id: string;
+  nome: string;
+  capo: PersonaVM | null;
+  hasCapo: boolean;
+  materie: MateriaVM[];
+  hasMaterie: boolean;
+  numeroMaterie: number;
+  materieDescrizione: string;
+  materieDescrizioneSintesi: string;
+  materieSigle: string;
+  docenti: PersonaVM[];
+  hasDocenti: boolean;
+  numeroDocenti: number;
+  docentiDescrizione: string;
+  documenti: ElencoDocumentiVM;
+}
+
+export interface ContestoFocusVM {
+  classe?: ClasseFocusVM;
+  alunno?: AlunnoFocusVM;
+  piano?: PianoFocusVM;
+  carenza?: CarenzaFocusVM;
+  docente?: PersonaVM;
+  materia?: MateriaVM;
+  cattedre?: CattedraVM[];
+  hasCattedre?: boolean;
+  cattedreDescrizione?: string;
+  dipartimento?: DipartimentoFocusVM;
+}
+
+export interface DestinatarioVM extends PersonaVM {
   ruoliAttivi: string[];
-  flags: {
-    isCoordinatore: boolean;
-    isTutor: boolean;
-    isTutorAsl: boolean;
-    isDocenteSostegno: boolean;
-    isSupplente: boolean;
+  hasRuoliAttivi: boolean;
+  isCoordinatore: boolean;
+  isTutor: boolean;
+  isTutorAsl: boolean;
+  isDocenteSostegno: boolean;
+  isSupplente: boolean;
+  sostituisce: PersonaVM | null;
+  hasSostituisce: boolean;
+  classi: ElencoVM<ClasseSintesiVM> & { elencoDescrizione: string };
+  materie: ElencoVM<MateriaVM> & { elencoDescrizione: string; sigle: string };
+  cattedre: ElencoVM<CattedraVM> & { elencoDescrizione: string };
+  comunicazione: {
+    salutoIniziale: string;
+    oggetto: string;
+    testoContenutoPuro: string;
   };
-  contesto: {
-    sostituisce: PersonVM | null;
-    classiCompetenza: string[];
-    materieCompetenza: SubjectVM[];
-    cattedre: CattedraVM[];
-  };
-  comunicazione: { salutoIniziale: string; oggettoCalcolato: string; testoContenutoPuro: string };
 }
 
-/** Live entities & pipeline state — attached NON-enumerable so it never appears in JSON.stringify (02 §7). */
-export interface CduTech {
-  entita: Record<string, unknown>;
-  servizi: unknown[];
+export interface BoxRenderizzatoVM {
+  id: string;
+  titolo: string;
+  html: string;
+  isVuoto: boolean;
+  isVisibile: boolean;
+}
+
+export interface RenderingVM {
+  boxes: ElencoVM<BoxRenderizzatoVM> & {
+    perId: Record<string, BoxRenderizzatoVM>;
+    visibili: BoxRenderizzatoVM[];
+    hasVisibili: boolean;
+  };
+  body: {
+    htmlCompleto: string;
+    htmlSoloContenuto: string;
+  };
+}
+
+export interface ContestoTecnico {
+  entita: {
+    classe: object | null;
+    alunno: object | null;
+    docente: object | null;
+    patternEmail: object | null;
+    documentoMetadato: object | null;
+  };
+  servizi: object[];
   pipeline: {
     statoCorrente: string;
     stepEseguiti: string[];
-    errori: unknown[];
+    errori: string[];
     logEsecuzione: string[];
   };
 }
 
 export interface Cdu {
-  meta: CduMeta;
-  progressivo?: number;
-  istituto?: CduIstituto;
-  focus: {
-    classe?: CduClasse;
-    alunno?: CduAlunno;
-    dipartimento?: CduDipartimentoFocus;
-    carenza?: CduCarenzaFocus;
-    piano?: CduPianoFocus;
-    docente?: PersonVM & { cattedre?: CattedraVM[] };
-    materia?: SubjectVM;
-    classiMateria?: { docenti: PersonVM[] };
-  };
-  destinatario?: CduDestinatario;
-  render?: {
-    boxes: Record<
-      string,
-      { id: string; titolo: string; html: string; isEmpty: boolean; visibile: boolean }
-    >;
-    body: { htmlCompleto: string; htmlSoloContenuto: string };
-  };
-  tech: CduTech;
+  meta: MetadatiVM;
+  istituto?: IstitutoVM;
+  focus: ContestoFocusVM;
+  destinatario?: DestinatarioVM;
+  render?: RenderingVM;
+  readonly tech: ContestoTecnico;
 }

@@ -1,69 +1,77 @@
 import type { Materia } from '../../../domain/entities/Materia';
 import type { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
-import type { PersonVM } from './personVmMapper';
-import type { ContinuitaVM } from './continuitaMapper';
+import type { ContinuitaVM, MateriaVM, PersonaVM } from '../Cdu';
+import { descriviPersone, descriviPersoneEsteso } from './personVmMapper';
 
-interface SubjectVmEvoluzione {
-  siglePrecedenti: Array<{ sigla: string; nome: string | null; anni: number[] }>;
-}
+export type ProfiloMateriaVM = 'BASE' | 'CON_DOCENTI' | 'CON_CONTINUITA';
 
-export interface SubjectVM {
-  sigla: string;
-  nome: string;
-  nomeSintetico: string;
-  colore1: string;
-  colore2: string;
-  isMateriaPrimaProva: boolean;
-  isMateriaSecondaProva: boolean;
-  principale: string | null;
-  specificita: string | null;
-  isITP: boolean;
-  hasItp?: boolean;
-  evoluzione: SubjectVmEvoluzione | null;
-  docenti?: PersonVM[];
-  docentiDescrizione?: string;
+export interface MateriaVmContesto {
+  indirizzo?: IndirizzoId;
+  isItp?: boolean;
+  principale?: string | null;
+  specificita?: string | null;
+  docenti?: PersonaVM[];
+  hasCattedraItp?: boolean;
   continuita?: ContinuitaVM;
 }
 
-interface BuildSubjectVmOptions {
-  indirizzo?: IndirizzoId;
-  isITP?: boolean;
-  principale?: string | null;
-  specificita?: string | null;
-}
-
-/** Builds a standardized SubjectVM (02 §8.2) from a Materia entity. */
-export function buildSubjectVm(materia: Materia, opts: BuildSubjectVmOptions = {}): SubjectVM {
-  const config = materia.esameConfig;
-  const indirizzo = opts.indirizzo;
-  const isMateriaPrimaProva =
-    config !== null && indirizzo !== undefined && config.isPrimaProvaPerIndirizzo(indirizzo);
-  const isMateriaSecondaProva =
-    config !== null && indirizzo !== undefined && config.isSecondaProvaPerIndirizzo(indirizzo);
-
-  const evoluzioneRaw = materia.getEvoluzione();
-  const siglePrecedenti = Object.entries(evoluzioneRaw).map(([sigla, anni]) => ({
-    sigla,
-    nome: null,
-    anni
-  }));
-
-  return {
+export function buildMateriaVm(
+  materia: Materia,
+  profilo: ProfiloMateriaVM,
+  contesto: MateriaVmContesto
+): MateriaVM {
+  const specificita = contesto.specificita ?? materia.specificita;
+  const principale = contesto.principale ?? materia.principale;
+  const siglePrecedenti = Object.entries(materia.getEvoluzione())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([sigla, anni]) => {
+      const anniOrdinati = [...anni].sort((a, b) => a - b);
+      return { sigla, anni: anniOrdinati, anniDescrizione: anniOrdinati.join(', ') };
+    });
+  const esame = materia.esameConfig;
+  const result: MateriaVM = {
     sigla: materia.id ?? '',
     nome: materia.nome,
     nomeSintetico: materia.sintesi,
     colore1: materia.colore1,
     colore2: materia.colore2,
-    isMateriaPrimaProva,
-    isMateriaSecondaProva,
-    principale: opts.principale ?? null,
-    specificita: opts.specificita ?? null,
-    isITP: opts.isITP ?? false,
-    evoluzione: siglePrecedenti.length > 0 ? { siglePrecedenti } : null
+    principale,
+    specificita,
+    hasSpecificita: specificita !== null,
+    nomeConSpecificita:
+      specificita === null ? materia.nome : `${principale ?? materia.nome} (${specificita})`,
+    isItp: contesto.isItp ?? false,
+    isMateriaPrimaProva:
+      esame !== null &&
+      contesto.indirizzo !== undefined &&
+      esame.isPrimaProvaPerIndirizzo(contesto.indirizzo),
+    isMateriaSecondaProva:
+      esame !== null &&
+      contesto.indirizzo !== undefined &&
+      esame.isSecondaProvaPerIndirizzo(contesto.indirizzo),
+    evoluzione: {
+      siglePrecedenti,
+      hasSiglePrecedenti: siglePrecedenti.length > 0
+    }
   };
-}
 
-/** Precomputed "Mario Rossi, Laura Gialli" join (02 §8.2, principle P4). */
-export function docentiDescrizione(docenti: PersonVM[]): string {
-  return docenti.map((d) => d.nomeCompleto).join(', ');
+  if (profilo !== 'BASE') {
+    const docenti = [...(contesto.docenti ?? [])].sort((a, b) =>
+      a.nomeCompleto.localeCompare(b.nomeCompleto)
+    );
+    Object.assign(result, {
+      docenti,
+      hasDocenti: docenti.length > 0,
+      docentiDescrizione: descriviPersone(docenti),
+      docentiDescrizioneEstesa: descriviPersoneEsteso(docenti),
+      hasCattedraItp: contesto.hasCattedraItp ?? false
+    });
+  }
+  if (profilo === 'CON_CONTINUITA') {
+    if (contesto.continuita === undefined) {
+      throw new Error('MateriaVM CON_CONTINUITA richiede continuita');
+    }
+    result.continuita = contesto.continuita;
+  }
+  return result;
 }

@@ -35,15 +35,17 @@ describe('buildContinuita', () => {
       materiaCorrente,
       docenti
     });
-    expect(vm.docentiAnniPrecedenti).toHaveLength(1);
-    const entry = vm.docentiAnniPrecedenti[0]!;
+    expect(vm.anniPrecedenti).toHaveLength(1);
+    const entry = vm.anniPrecedenti[0]!;
     expect(entry.annoIndietro).toBe(1);
     expect(entry.annoScolastico).toBe('2024-2025');
-    expect(entry.titolare?.nomeCompleto).toBe('Mario Rossi');
-    expect(entry).not.toHaveProperty('itp');
-    expect(vm.continuitaUltimiDueAnni).toBe(true);
-    expect(vm.continuitaUltimiTreAnni).toBe(false);
-    expect(vm).not.toHaveProperty('continuitaUltimiTreAnniItp');
+    expect(entry.titolare?.nomeCompleto).toBe('Rossi Mario');
+    expect(entry.hasTitolare).toBe(true);
+    expect(entry.itp).toBeNull();
+    expect(entry.hasItp).toBe(false);
+    expect(vm.isContinuitaUltimiDueAnni).toBe(true);
+    expect(vm.isContinuitaUltimiTreAnni).toBe(false);
+    expect(vm.isContinuitaItpUltimiTreAnni).toBe(false);
   });
 
   it('includes the itp field per-year and computes the *Itp continuity booleans when hasItp is true', () => {
@@ -91,15 +93,16 @@ describe('buildContinuita', () => {
       materiaCorrente,
       docenti
     });
-    expect(vm.docentiAnniPrecedenti).toHaveLength(2);
-    const [annoMeno1, annoMeno2] = vm.docentiAnniPrecedenti;
-    expect(annoMeno1!.titolare?.nomeCompleto).toBe('Mario Rossi');
-    expect(annoMeno1!.itp?.nomeCompleto).toBe('Laura Gialli');
-    expect(annoMeno2!.titolare?.nomeCompleto).toBe('Mario Rossi');
-    expect(annoMeno2!.itp?.nomeCompleto).toBe('Laura Gialli');
-    expect(vm.continuitaUltimiDueAnni).toBe(true);
-    expect(vm.continuitaUltimiTreAnni).toBe(true);
-    expect(vm.continuitaUltimiDueAnniItp).toBe(true);
-    expect(vm.continuitaUltimiTreAnniItp).toBe(true);
+    expect(vm.anniPrecedenti).toHaveLength(2);
+    expect(vm.hasAnniPrecedenti).toBe(true);
+    const [annoMeno1, annoMeno2] = vm.anniPrecedenti;
+    expect(annoMeno1!.titolare?.nomeCompleto).toBe('Rossi Mario');
+    expect(annoMeno1!.itp?.nomeCompleto).toBe('Gialli Laura');
+    expect(annoMeno2!.titolare?.nomeCompleto).toBe('Rossi Mario');
+    expect(annoMeno2!.itp?.nomeCompleto).toBe('Gialli Laura');
+    expect(vm.isContinuitaUltimiDueAnni).toBe(true);
+    expect(vm.isContinuitaUltimiTreAnni).toBe(true);
+    expect(vm.isContinuitaItpUltimiDueAnni).toBe(true);
+    expect(vm.isContinuitaItpUltimiTreAnni).toBe(true);
   });
 });

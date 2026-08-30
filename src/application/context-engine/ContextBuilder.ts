@@ -1,4 +1,4 @@
-import type { Cdu, CduTech } from './Cdu';
+import type { Cdu, ContestoTecnico } from './Cdu';
 import type { ContextProvider } from './ContextProvider';
 import type { BuildParams, Recipe } from './Recipe';
 import { formatOggi } from './dates';
@@ -66,10 +66,12 @@ export class ContextBuilder {
     const libRecipe: ContextAssemblerRecipe = {
       providers: recipe.providers.map((token) => ({ name: token, type: token }))
     };
-    this.assembler.assembleInto(cdu, libRecipe, params, {
-      ...recipe.options,
-      logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
-    });
+    if (libRecipe.providers.length > 0) {
+      this.assembler.assembleInto(cdu, libRecipe, params, {
+        ...recipe.options,
+        logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
+      });
+    }
     return cdu;
   }
 
@@ -77,21 +79,29 @@ export class ContextBuilder {
     const base: Omit<Cdu, 'tech'> = {
       meta: {
         timestamp: params.now.toISOString(),
-        idConfigurazione: params.idConfigurazione ?? '',
-        tipoOperazione: params.tipoOperazione ?? '',
-        idEsecuzione: params.idEsecuzione ?? '',
-        date: { oggi: formatOggi(params.now) },
-        parametriInput: {
-          target: params.target,
-          tipoTarget: params.tipoTarget,
-          materiaCorrente: params.materiaCorrente ?? null,
-          opzioni: { ...recipe.options }
-        }
+        configurazioneId: params.configurazioneId,
+        esecuzioneId: params.esecuzioneId,
+        tipoOperazione: params.tipoOperazione,
+        tipoOperazioneLabel:
+          params.tipoOperazione === 'GENERAZIONE_DOCUMENTO'
+            ? 'Generazione documento'
+            : 'Invio notifica',
+        oggi: formatOggi(params.now),
+        target: params.target,
+        tipoTarget: params.tipoTarget,
+        materiaCorrente: params.materiaCorrente ?? null,
+        opzioni: { ...recipe.options }
       },
       focus: {}
     };
-    const tech: CduTech = {
-      entita: {},
+    const tech: ContestoTecnico = {
+      entita: {
+        classe: null,
+        alunno: null,
+        docente: null,
+        patternEmail: null,
+        documentoMetadato: null
+      },
       servizi: [],
       pipeline: { statoCorrente: 'IN_CORSO', stepEseguiti: [], errori: [], logEsecuzione: [] }
     };

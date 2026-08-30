@@ -1,4 +1,4 @@
-import type { RecipeOptionsView } from './Cdu';
+import type { OpzioniCduVM } from './Cdu';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { GestioneSupplenti, type TipoPiano } from '../../domain/value-objects/enums';
 
@@ -6,16 +6,8 @@ import { GestioneSupplenti, type TipoPiano } from '../../domain/value-objects/en
  * A Recipe declares which providers to activate (ordered tokens, see 09 §3/§4)
  * and the loading options copied into `cdu.meta.parametriInput.opzioni`.
  */
-export interface RecipeOptions extends Omit<RecipeOptionsView, 'gestioneSupplenti'> {
-  includiStorico: boolean;
-  profonditaAnniStorico: number;
-  profonditaAnniAsl: number;
-  profonditaAnniDocumenti: number;
-  includiSupplenti: boolean;
-  notificaSoloCoordinatori: boolean;
-  includiPartnerDettaglio: boolean;
+export interface RecipeOptions extends Omit<OpzioniCduVM, 'gestioneSupplenti'> {
   gestioneSupplenti: GestioneSupplenti;
-  [key: string]: unknown;
 }
 
 export interface Recipe {
@@ -30,11 +22,11 @@ export interface Recipe {
  */
 export interface BuildParams {
   target: string;
-  tipoTarget: 'classe' | 'alunno' | 'dipartimento' | 'docente';
+  tipoTarget: 'classe' | 'alunno' | 'docente' | 'piano' | 'carenza' | 'materia' | 'dipartimento';
   now: Date;
-  idConfigurazione?: string;
-  tipoOperazione?: string;
-  idEsecuzione?: string;
+  configurazioneId: string;
+  esecuzioneId: string;
+  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA';
   materiaCorrente?: string | null;
   /** For the PER_CARENZA_GENITORI* pipelines: which CARENZE progressivo of the student is in focus (02 §4.3). */
   carenzaProgressivo?: number;

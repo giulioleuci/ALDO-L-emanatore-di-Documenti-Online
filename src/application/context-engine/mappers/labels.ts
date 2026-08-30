@@ -23,7 +23,7 @@ export function religioneLabel(religione: ReligioneScelta): string {
 }
 
 const TIPO_PROGETTO_LABELS: Record<TipoProgetto, string> = {
-  [TipoProgetto.ASL]: 'PCTO/ASL',
+  [TipoProgetto.ASL]: 'FSL',
   [TipoProgetto.ORIENTAMENTO]: 'Orientamento',
   [TipoProgetto.ALTRO]: 'Altro'
 };

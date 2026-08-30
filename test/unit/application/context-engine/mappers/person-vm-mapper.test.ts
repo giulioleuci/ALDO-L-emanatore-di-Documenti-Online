@@ -1,82 +1,35 @@
 import {
-  buildPersonVm,
-  buildPersonVmFromDocente,
-  declinePersonGroup
+  buildCollettivoPersone,
+  buildPersonaVm,
+  descriviPersone,
+  descriviPersoneEsteso
 } from '../../../../../src/application/context-engine/mappers/personVmMapper';
-import { Docente } from '../../../../../src/domain/entities/Docente';
-import { Email } from '../../../../../src/domain/value-objects/Email';
-import { Genere } from '../../../../../src/domain/value-objects/enums';
 
-describe('personVmMapper', () => {
-  it('builds a complete PersonVM for a male internal docente', () => {
-    const docente = Docente.create(Email.of('mario.rossi@scuola.edu.it'), 'Rossi', 'Mario', Genere.M);
-    const vm = buildPersonVmFromDocente(docente);
-    expect(vm).toEqual({
-      nome: 'Mario',
-      cognome: 'Rossi',
-      email: 'mario.rossi@scuola.edu.it',
-      genere: 'M',
-      appellativo: 'Prof.',
-      articolo: 'il',
-      coordinatore: 'coordinatore',
-      nomeCompleto: 'Mario Rossi',
-      materia: null,
-      appellativoCompleto: 'Prof. Mario Rossi',
-      appellativoCognome: 'Prof. Rossi'
+describe('buildPersonaVm', () => {
+  it('builds the canonical flat internal-person VM with capitalized atomic grammar', () => {
+    expect(buildPersonaVm({ nome: 'Mario', cognome: 'Rossi', email: 'mario@x.it', genere: 'M' })).toEqual({
+      nome: 'Mario', cognome: 'Rossi', nomeCompleto: 'Rossi Mario', email: 'mario@x.it', genere: 'M',
+      appellativo: 'Prof.', articolo: 'Il', coordinatore: 'Coordinatore',
+      appellativoCompleto: 'Prof. Rossi Mario', appellativoCognome: 'Prof. Rossi', isEsterno: false
     });
   });
 
-  it('builds a complete PersonVM for a female internal docente with a materia tag', () => {
-    const docente = Docente.create(Email.of('laura.gialli@scuola.edu.it'), 'Gialli', 'Laura', Genere.F);
-    const vm = buildPersonVmFromDocente(docente, 'Greco');
-    expect(vm.genere).toBe('F');
-    expect(vm.appellativo).toBe('Prof.ssa');
-    expect(vm.articolo).toBe('la');
-    expect(vm.coordinatore).toBe('coordinatrice');
-    expect(vm.nomeCompleto).toBe('Laura Gialli');
-    expect(vm.materia).toBe('Greco');
-    expect(vm.appellativoCompleto).toBe('Prof.ssa Laura Gialli');
-    expect(vm.appellativoCognome).toBe('Prof.ssa Gialli');
-  });
-
-  it('degrades gracefully for an external expert (no cognome, no genere)', () => {
-    const vm = buildPersonVm({ nome: 'Studio Legale Bianchi', cognome: null, email: null, genere: null });
-    expect(vm).toEqual({
-      nome: 'Studio Legale Bianchi',
-      cognome: null,
-      email: null,
-      genere: null,
-      appellativo: null,
-      articolo: null,
-      coordinatore: null,
-      nomeCompleto: 'Studio Legale Bianchi',
-      materia: null,
-      appellativoCompleto: 'Studio Legale Bianchi',
-      appellativoCognome: 'Studio Legale Bianchi'
+  it('keeps a title-less external person printable', () => {
+    expect(buildPersonaVm({ nome: 'Studio Bianchi', cognome: null, email: null, genere: null, isEsterno: true })).toEqual({
+      nome: 'Studio Bianchi', cognome: null, nomeCompleto: 'Studio Bianchi', email: null, genere: null,
+      appellativo: null, articolo: null, coordinatore: null,
+      appellativoCompleto: 'Studio Bianchi', appellativoCognome: 'Studio Bianchi', isEsterno: true
     });
   });
 });
 
-describe('declinePersonGroup', () => {
-  it('returns undefined for an empty group', () => {
-    expect(declinePersonGroup([])).toBeUndefined();
+test('collective grammar and descriptions follow sentence capitalization', () => {
+  const mario = buildPersonaVm({ nome: 'Mario', cognome: 'Rossi', email: 'm@x.it', genere: 'M' });
+  const anna = buildPersonaVm({ nome: 'Anna', cognome: 'Bianchi', email: 'a@x.it', genere: 'F' });
+  expect(buildCollettivoPersone([mario, anna])).toEqual({
+    appellativo: 'Prof.', articolo: 'I', coordinamento: 'Coordinatori', coordina: 'Coordinano', presiede: 'Presiedono', numero: 2
   });
-
-  it('returns prof.ssa/la for a single female', () => {
-    const f = buildPersonVm({ nome: 'Laura', cognome: 'Gialli', email: null, genere: 'F' });
-    expect(declinePersonGroup([f])).toEqual({ appellativo: 'prof.ssa', articolo: 'la' });
-  });
-
-  it('returns prof.sse/le for two or more females', () => {
-    const f1 = buildPersonVm({ nome: 'Laura', cognome: 'Gialli', email: null, genere: 'F' });
-    const f2 = buildPersonVm({ nome: 'Anna', cognome: 'Verdi', email: null, genere: 'F' });
-    expect(declinePersonGroup([f1, f2])).toEqual({ appellativo: 'prof.sse', articolo: 'le' });
-  });
-
-  it('returns prof./il for a single male, prof./i for a mixed or all-male group of 2+', () => {
-    const m = buildPersonVm({ nome: 'Mario', cognome: 'Rossi', email: null, genere: 'M' });
-    const f = buildPersonVm({ nome: 'Laura', cognome: 'Gialli', email: null, genere: 'F' });
-    expect(declinePersonGroup([m])).toEqual({ appellativo: 'prof.', articolo: 'il' });
-    expect(declinePersonGroup([m, f])).toEqual({ appellativo: 'prof.', articolo: 'i' });
-  });
+  expect(descriviPersone([mario, anna])).toBe('Prof. Rossi Mario e prof.ssa Bianchi Anna');
+  expect(descriviPersoneEsteso([mario, anna])).toBe('Il prof. Rossi Mario e la prof.ssa Bianchi Anna');
+  expect(buildCollettivoPersone([])).toEqual({ appellativo: '', articolo: '', coordinamento: '', coordina: '', presiede: '', numero: 0 });
 });

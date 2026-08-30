@@ -3,6 +3,7 @@ import { tipoPianoLabel } from './labels';
 import type { TipoPiano } from '../../../domain/value-objects/enums';
 import type { StoricoAlunnoVM } from '../Cdu';
 import { elencoVm } from './elencoVm';
+import { buildMovimentoAlunnoVm, buildPresenzaAlunnoVm } from './movimentoVmMapper';
 
 const ESITO_LABELS: Record<AnnoAlunnoStorico['esito'], string> = {
   PROMOSSO: 'Promosso',
@@ -26,6 +27,20 @@ export function buildStoricoAlunnoVm(anni: AnnoAlunnoStorico[]): StoricoAlunnoVM
         .sort((a, b) => a.localeCompare(b))
         .map((tipo) => ({ tipo, tipoLabel: tipoPianoLabel(tipo as TipoPiano) }));
       const classe = anno.classe === null || anno.classe === '' ? null : { nome: anno.classe };
+      const classiInterne = new Set(anno.classiInterne);
+      const movimenti = [...anno.movimenti]
+        .sort(
+          (a, b) =>
+            b.data.localeCompare(a.data) ||
+            a.tipo.localeCompare(b.tipo) ||
+            a.da.localeCompare(b.da) ||
+            a.a.localeCompare(b.a)
+        )
+        .map((movimento) =>
+          buildMovimentoAlunnoVm(movimento, (id) =>
+            classiInterne.has(id) ? { nome: id } : null
+          )
+        );
       return {
         annoScolastico: anno.anno,
         classe,
@@ -38,14 +53,15 @@ export function buildStoricoAlunnoVm(anni: AnnoAlunnoStorico[]): StoricoAlunnoVM
         carenzeDescrizione: carenze.map((carenza) => `${carenza.materiaSigla}: ${carenza.valore}`).join(', '),
         piani,
         hasPiani: piani.length > 0,
-        presenza: {
-          annoPrecedente: { isCalcolato: true, isPresente: anno.presenteAnnoPrecedente },
-          isPresenteTuttoAnno: anno.presenteTuttoAnno,
-          hasCambiatoClasse: false,
-          classePrecedente: null,
-          hasClassePrecedente: false
-        },
-        movimenti: elencoVm([])
+        presenza: buildPresenzaAlunnoVm(
+          movimenti,
+          {
+            isCalcolato: anno.annoPrecedenteCalcolato,
+            isPresente: anno.presenteAnnoPrecedente
+          },
+          anno.classe ?? ''
+        ),
+        movimenti: elencoVm(movimenti)
       };
     });
   const bocciature = mapped.flatMap((anno) =>

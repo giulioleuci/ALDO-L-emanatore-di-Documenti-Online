@@ -18,7 +18,7 @@ const MESI = [
 const utils = new UtilsService();
 
 /**
- * Formats the CDU `meta.date.oggi` block (02 §2). Token formatting is delegated
+ * Formats the CDU `meta.oggi` block (02 §2). Token formatting is delegated
  * to CoreUtilsLib's UtilsService.formatDate with `utc:true`, so assembly is
  * deterministic and independent of the host timezone; only the Italian
  * extended-month wording required by the spec is domain knowledge here.

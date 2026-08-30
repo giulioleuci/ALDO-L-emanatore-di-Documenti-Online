@@ -5,6 +5,7 @@
   },
   "include": [
     "../../types/gaslibs/index.d.ts",
+    "cdu-contract.contract.ts",
     "function-specification.contract.ts",
     "specification-contract.contract.ts"
   ]

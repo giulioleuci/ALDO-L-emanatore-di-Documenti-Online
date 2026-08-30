@@ -4,7 +4,7 @@ import { GestioneSupplenti, type TipoPiano } from '../../domain/value-objects/en
 
 /**
  * A Recipe declares which providers to activate (ordered tokens, see 09 §3/§4)
- * and the loading options copied into `cdu.meta.parametriInput.opzioni`.
+ * and the loading options copied into `cdu.meta.opzioni`.
  */
 export interface RecipeOptions extends Omit<OpzioniCduVM, 'gestioneSupplenti'> {
   gestioneSupplenti: GestioneSupplenti;

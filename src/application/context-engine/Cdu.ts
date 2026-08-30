@@ -434,6 +434,11 @@ export interface RappresentanteGenitoreVM {
 }
 
 export interface MateriaEsameVM extends MateriaVM {
+  docenti: PersonaVM[];
+  hasDocenti: boolean;
+  docentiDescrizione: string;
+  docentiDescrizioneEstesa: string;
+  hasCattedraItp: boolean;
   prova: 'PRIMA_PROVA' | 'SECONDA_PROVA';
   provaLabel: 'Prima prova' | 'Seconda prova';
   isPrimaProva: boolean;

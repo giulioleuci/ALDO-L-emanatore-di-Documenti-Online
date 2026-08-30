@@ -31,10 +31,16 @@ export interface AnnoAlunnoStorico {
   esito: Esito;
   carenze: CarenzaStorica[];
   piani: string[];
-  /** Era già iscritto in questa scuola nell'anno immediatamente precedente a questo? Al confine della profondità storica configurata (profonditaAnniStorico) non esiste un anno ulteriore da verificare, quindi il valore ricade su false di default — non una conferma reale di assenza. */
+  /** Era già iscritto in questa scuola nell'anno immediatamente precedente a questo? */
   presenteAnnoPrecedente: boolean;
+  /** L'anno immediatamente precedente è stato incluso nella consultazione storica. */
+  annoPrecedenteCalcolato: boolean;
   /** Nessun IN/CAMBIO datato entro questo anno? (ANALYSIS_HISTORIC_ENRICH_EXTENSION.md §5) */
   presenteTuttoAnno: boolean;
+  /** Movimenti effettivi dell'anno della fotografia. */
+  movimenti: MovimentoAlunno[];
+  /** Identificativi delle classi interne nell'anno della fotografia. */
+  classiInterne: string[];
 }
 
 interface AnnoRisolto {
@@ -89,6 +95,11 @@ export class StoricoAlunniService {
 
     return risolti.map((corrente, i) => {
       const { anno, alunno, classi, carenze, piani, movimenti, materie } = corrente;
+      const annoPrecedenteCalcolato = i + 1 < risolti.length;
+      const classiInterne = classi
+        .findAll()
+        .map((classe) => classe.nome)
+        .sort((a, b) => a.localeCompare(b));
 
       if (alunno === null) {
         return {
@@ -98,7 +109,10 @@ export class StoricoAlunniService {
           carenze: [],
           piani: [],
           presenteAnnoPrecedente: false,
-          presenteTuttoAnno: false
+          annoPrecedenteCalcolato,
+          presenteTuttoAnno: false,
+          movimenti: [],
+          classiInterne
         };
       }
 
@@ -127,7 +141,10 @@ export class StoricoAlunniService {
         carenze: carenzeStoriche,
         piani: piani.findByAlunno(Email.of(alunno.id ?? alunnoEmail)).map((p) => p.tipo),
         presenteAnnoPrecedente: precedente !== null,
-        presenteTuttoAnno: presenteTuttoAnno(movimenti)
+        annoPrecedenteCalcolato,
+        presenteTuttoAnno: presenteTuttoAnno(movimenti),
+        movimenti,
+        classiInterne
       };
     });
   }

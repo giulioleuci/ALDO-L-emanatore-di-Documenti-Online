@@ -193,6 +193,8 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
     expect(record!.carenze).toEqual([{ materiaSigla: 'MATE', valore: '4' }]);
     expect(record!.piani).toEqual(['PDP_DSA']);
     expect(record!.presenteTuttoAnno).toBe(false); // the inert CAMBIO row still counts as a mid-year entry
+    expect(record!.movimenti).toHaveLength(1);
+    expect(record!.classiInterne).toEqual(['4A']);
   });
 
   test('esito NON_PROMOSSO when the current-year record exists and is RIPETENTE', () => {
@@ -255,7 +257,10 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
       carenze: [],
       piani: [],
       presenteAnnoPrecedente: false,
-      presenteTuttoAnno: false
+      annoPrecedenteCalcolato: false,
+      presenteTuttoAnno: false,
+      movimenti: [],
+      classiInterne: ['4A']
     });
   });
 
@@ -282,6 +287,8 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
     expect(records[1]!.esito).toBe('PROMOSSO'); // resolved from anni[0]'s own RIPETENTE=false
     expect(records[0]!.presenteAnnoPrecedente).toBe(true); // anni[1] has a matching ALUNNI row
     expect(records[1]!.presenteAnnoPrecedente).toBe(false); // no anni[2] fetched -> boundary default
+    expect(records[0]!.annoPrecedenteCalcolato).toBe(true);
+    expect(records[1]!.annoPrecedenteCalcolato).toBe(false);
   });
 });
 

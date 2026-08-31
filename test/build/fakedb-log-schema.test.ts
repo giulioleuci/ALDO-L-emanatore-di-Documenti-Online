@@ -84,7 +84,7 @@ test('FAKEDB represents all personalized plans with one conditional PIANI_PERSON
     }
   ]);
   expect(JSON.parse(piani[0]!['REGISTRA_DOC']!)).toMatchObject({
-    utenti: '{{focus.alunno.anagrafica.email}}'
+    utenti: '{{focus.alunno.email}}'
   });
 });
 

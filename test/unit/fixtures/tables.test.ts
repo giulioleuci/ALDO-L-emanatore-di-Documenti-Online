@@ -17,6 +17,6 @@ test('fixture tables expose one personalized-plan configuration with subtype sel
     { condizione: '{{focus.piano.tipo}} == "PFP"', templateId: 'tmpl_pfp' }
   ]);
   expect(JSON.parse(String(piani[0]!['REGISTRA_DOC']))).toMatchObject({
-    utenti: '{{focus.alunno.anagrafica.email}}'
+    utenti: '{{focus.alunno.email}}'
   });
 });

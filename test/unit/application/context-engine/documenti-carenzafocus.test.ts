@@ -15,6 +15,7 @@ import { AlunnoRepository } from '../../../../src/infrastructure/repositories/Al
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
+import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import type { Row } from '../../../../src/infrastructure/db/Database';
@@ -35,7 +36,14 @@ function build(
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider(
     'student',
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), noHistory)
+    new AlunnoProvider(
+      alunni,
+      classi,
+      new OreASLRepository(db),
+      new MateriaRepository(db),
+      noHistory,
+      new AldoTeachingAssignmentResolver(db)
+    )
   );
   b.registerProvider(
     'documenti',

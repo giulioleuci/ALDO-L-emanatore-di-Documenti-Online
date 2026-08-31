@@ -12,7 +12,7 @@ import { MateriaId } from '../../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
-import { buildCollettivoPersone, buildPersonaVm, descriviPersone, descriviPersoneEsteso } from '../mappers/personVmMapper';
+import { buildCollettivoPersone, buildPersonaVm, descriviPersone, descriviPersoneEsteso, minuscolaIniziale } from '../mappers/personVmMapper';
 import { buildMateriaVm } from '../mappers/subjectVmMapper';
 import { elencoVm } from '../mappers/elencoVm';
 import { indirizzoTipoLabel } from '../mappers/labels';
@@ -94,11 +94,22 @@ export class ClasseProvider implements ContextProvider {
       .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
       .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
     const collettivo = buildCollettivoPersone(elenco);
+    const personeNelRuolo = minuscolaIniziale(descriviPersone(elenco));
     return {
       ...elencoVm(elenco),
       elencoDescrizione: descriviPersone(elenco),
       elencoDescrizioneEstesa: descriviPersoneEsteso(elenco),
-      descrizioneRuolo: elenco.length === 0 ? '' : `${collettivo.articolo} ${collettivo.coordinamento.toLocaleLowerCase('it-IT')} ${descriviPersone(elenco).toLocaleLowerCase('it-IT')}`,
+      elencoDescrizioneElenco: elenco
+        .map((persona, index) =>
+          index === 0 ? persona.appellativoCompleto : minuscolaIniziale(persona.appellativoCompleto)
+        )
+        .join(', '),
+      descrizioneRuolo:
+        elenco.length === 0 ? '' : `${collettivo.coordinamento} ${personeNelRuolo}`,
+      descrizioneRuoloEstesa:
+        elenco.length === 0
+          ? ''
+          : `${collettivo.articolo} ${minuscolaIniziale(collettivo.coordinamento)} ${personeNelRuolo}`,
       collettivo
     };
   }

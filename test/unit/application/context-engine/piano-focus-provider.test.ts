@@ -9,6 +9,7 @@ import { ClasseRepository } from '../../../../src/infrastructure/repositories/Cl
 import { AlunnoRepository } from '../../../../src/infrastructure/repositories/AlunnoRepository';
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
+import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import { PipelineError } from '../../../../src/domain/errors/DomainError';
@@ -24,7 +25,14 @@ function build(pianoTipo: TipoPiano) {
     .registerProvider('class', new ClasseProvider(classi, alunni))
     .registerProvider(
       'student',
-      new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), storicoDb)
+      new AlunnoProvider(
+        alunni,
+        classi,
+        new OreASLRepository(db),
+        new MateriaRepository(db),
+        storicoDb,
+        new AldoTeachingAssignmentResolver(db)
+      )
     )
     .registerProvider('piani', new PianiProvider(alunni))
     .registerProvider('pianoFocus', new PianoFocusProvider());

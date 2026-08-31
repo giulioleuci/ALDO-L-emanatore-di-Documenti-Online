@@ -10,7 +10,9 @@ describe('buildPersonaVm', () => {
     expect(buildPersonaVm({ nome: 'Mario', cognome: 'Rossi', email: 'mario@x.it', genere: 'M' })).toEqual({
       nome: 'Mario', cognome: 'Rossi', nomeCompleto: 'Rossi Mario', email: 'mario@x.it', genere: 'M',
       appellativo: 'Prof.', articolo: 'Il', coordinatore: 'Coordinatore',
-      appellativoCompleto: 'Prof. Rossi Mario', appellativoCognome: 'Prof. Rossi', isEsterno: false
+      appellativoCompleto: 'Prof. Rossi Mario', appellativoCognome: 'Prof. Rossi',
+      appellativoCompletoEsteso: 'Il prof. Rossi Mario', appellativoCognomeEsteso: 'Il prof. Rossi',
+      isEsterno: false
     });
   });
 
@@ -18,7 +20,9 @@ describe('buildPersonaVm', () => {
     expect(buildPersonaVm({ nome: 'Studio Bianchi', cognome: null, email: null, genere: null, isEsterno: true })).toEqual({
       nome: 'Studio Bianchi', cognome: null, nomeCompleto: 'Studio Bianchi', email: null, genere: null,
       appellativo: null, articolo: null, coordinatore: null,
-      appellativoCompleto: 'Studio Bianchi', appellativoCognome: 'Studio Bianchi', isEsterno: true
+      appellativoCompleto: 'Studio Bianchi', appellativoCognome: 'Studio Bianchi',
+      appellativoCompletoEsteso: 'Studio Bianchi', appellativoCognomeEsteso: 'Studio Bianchi',
+      isEsterno: true
     });
   });
 });

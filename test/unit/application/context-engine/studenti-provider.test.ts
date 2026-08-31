@@ -78,6 +78,8 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
     email: 'a1@school.it',
     classe: { nome: '5A' },
     isBes: true,
+    isPei: true,
+    isPfp: false,
     isRipetente: false,
     isRappresentante: true,
     religione: 'IRC',

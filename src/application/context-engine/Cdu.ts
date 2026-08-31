@@ -70,6 +70,8 @@ export interface PersonaVM {
   coordinatore: string | null;
   appellativoCompleto: string;
   appellativoCognome: string;
+  appellativoCompletoEsteso: string;
+  appellativoCognomeEsteso: string;
   isEsterno: boolean;
 }
 
@@ -261,6 +263,8 @@ export interface AlunnoVM extends PersonaRiferimentoVM {
   isSenzaReligione: boolean;
   isBes: boolean;
   isDsa: boolean;
+  isPei: boolean;
+  isPfp: boolean;
   isRipetente: boolean;
   isRappresentante: boolean;
   presenza: PresenzaAlunnoVM;
@@ -474,7 +478,9 @@ export interface IstitutoVM {
 export interface CoordinatoriVM extends ElencoVM<PersonaVM> {
   elencoDescrizione: string;
   elencoDescrizioneEstesa: string;
+  elencoDescrizioneElenco: string;
   descrizioneRuolo: string;
+  descrizioneRuoloEstesa: string;
   collettivo: CollettivoPersoneVM;
 }
 

@@ -30,5 +30,7 @@ export class PianiProvider implements ContextProvider {
     };
     focus.isBes = focus.piani.hasBes;
     focus.isDsa = elenco.some((piano) => piano.tipo === TipoPiano.PDP_DSA);
+    focus.isPei = elenco.some((piano) => piano.tipo === TipoPiano.PEI);
+    focus.isPfp = elenco.some((piano) => piano.tipo === TipoPiano.PFP);
   }
 }

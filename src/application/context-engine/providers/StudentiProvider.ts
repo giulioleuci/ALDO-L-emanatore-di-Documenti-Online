@@ -49,12 +49,8 @@ export class StudentiProvider implements ContextProvider {
     const perStato = {
       bes: elenco.filter((alunno) => alunno.isBes),
       dsa: elenco.filter((alunno) => alunno.isDsa),
-      pfp: elenco.filter((alunno) =>
-        alunno.piani.elenco.some((piano) => piano.tipo === TipoPiano.PFP)
-      ),
-      pei: elenco.filter((alunno) =>
-        alunno.piani.elenco.some((piano) => piano.tipo === TipoPiano.PEI)
-      ),
+      pfp: elenco.filter((alunno) => alunno.isPfp),
+      pei: elenco.filter((alunno) => alunno.isPei),
       ripetenti: elenco.filter((alunno) => alunno.isRipetente),
       rappresentanti: elenco.filter((alunno) => alunno.isRappresentante),
       conPiani: elenco.filter((alunno) => alunno.piani.hasElenco)
@@ -165,6 +161,8 @@ export class StudentiProvider implements ContextProvider {
       isSenzaReligione: alunno.religione === 'NO',
       isBes: piani.some((piano) => piano.isBes),
       isDsa: piani.some((piano) => piano.tipo === TipoPiano.PDP_DSA),
+      isPei: piani.some((piano) => piano.tipo === 'PEI'),
+      isPfp: piani.some((piano) => piano.tipo === 'PFP'),
       isRipetente: alunno.isRipetente(),
       isRappresentante: alunno.isRappresentante(),
       presenza: {

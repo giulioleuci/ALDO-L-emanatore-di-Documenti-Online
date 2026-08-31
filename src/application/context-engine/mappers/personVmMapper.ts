@@ -31,6 +31,14 @@ export function buildPersonaVm(input: PersonaVmInput): PersonaVM {
       appellativo === null || input.cognome === null
         ? nomeCompleto
         : `${appellativo} ${input.cognome}`,
+    appellativoCompletoEsteso:
+      articolo === null || appellativo === null
+        ? nomeCompleto
+        : `${articolo} ${minuscolaIniziale(appellativo)} ${nomeCompleto}`,
+    appellativoCognomeEsteso:
+      articolo === null || appellativo === null || input.cognome === null
+        ? nomeCompleto
+        : `${articolo} ${minuscolaIniziale(appellativo)} ${input.cognome}`,
     isEsterno: input.isEsterno ?? input.email === null
   };
 }
@@ -68,7 +76,7 @@ export function buildCollettivoPersone(persone: PersonaVM[]): CollettivoPersoneV
   };
 }
 
-function minuscolaIniziale(value: string): string {
+export function minuscolaIniziale(value: string): string {
   return value === '' ? '' : value[0]!.toLocaleLowerCase('it-IT') + value.slice(1);
 }
 

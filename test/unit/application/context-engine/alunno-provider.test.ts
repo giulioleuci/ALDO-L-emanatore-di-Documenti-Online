@@ -16,6 +16,7 @@ import { AlunnoRepository } from '../../../../src/infrastructure/repositories/Al
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { MovimentoAlunnoRepository } from '../../../../src/infrastructure/repositories/MovimentoAlunnoRepository';
+import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import type { AnnoStorico, StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
@@ -46,7 +47,17 @@ function build(
     )
   );
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, materie, storicoDb));
+  b.registerProvider(
+    'student',
+    new AlunnoProvider(
+      alunni,
+      classi,
+      oreAsl,
+      materie,
+      storicoDb,
+      new AldoTeachingAssignmentResolver(db)
+    )
+  );
   b.registerProvider('movimenti', new MovimentiProvider(new MovimentoAlunnoRepository(db), alunni, classi));
   b.registerProvider('carenze', new CarenzeProvider(alunni, materie));
   b.registerProvider('piani', new PianiProvider(alunni));
@@ -89,6 +100,10 @@ test('AlunnoProvider: flat identity/religione/curriculum/classe + ASL hours (02 
   expect(a.asl).toEqual({ oreCumulate: 100, oreAnnoCorrente: 60 });
 });
 
+test('AlunnoProvider: exposes the student council subjects as an array', () => {
+  expect(Array.isArray(build('a1@school.it').focus.alunno!.consiglio?.materie)).toBe(true);
+});
+
 test('AlunnoProvider: empty-string CURRICULUM cell (not null) does not crash JSON.parse (regression)', () => {
   const tables = fixtureTables();
   (tables['ALUNNI'] as Row[]).find((r) => r['EMAIL'] === 'a3@school.it')!['CURRICULUM'] = '';
@@ -122,11 +137,13 @@ test('PianiProvider: elenco + isBes update of the placeholder AlunnoProvider set
   ]);
   expect(a.piani.hasBes).toBe(true);
   expect(a.isBes).toBe(true);
+  expect(a).toMatchObject({ isPei: true, isPfp: false });
 });
 
 test('a non-BES student (PFP): isBes stays false, class resolved for alunno target', () => {
   const a = build('a3@school.it').focus.alunno!;
   expect(a.isBes).toBe(false);
+  expect(a).toMatchObject({ isPei: false, isPfp: true });
   expect(a.piani.elenco).toEqual([
     { tipo: 'PFP', tipoLabel: 'PFP', isBes: false, link: null, hasLink: false, parametriGenerazione: {}, hasParametriGenerazione: true }
   ]);

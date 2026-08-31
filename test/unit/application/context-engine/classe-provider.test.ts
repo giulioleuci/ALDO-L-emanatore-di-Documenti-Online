@@ -70,6 +70,11 @@ test('ClasseProvider: coordinatori as a PersonaVM elenco with aggregate declensi
   expect(c.coordinatori?.elenco).toEqual([
     expect.objectContaining({ nomeCompleto: 'ROSSI MARIO', email: 'rossi@school.it', appellativo: 'Prof.' })
   ]);
+  expect(c.coordinatori).toMatchObject({
+    elencoDescrizioneElenco: 'Prof. ROSSI MARIO',
+    descrizioneRuolo: 'Coordinatore prof. ROSSI MARIO',
+    descrizioneRuoloEstesa: 'Il coordinatore prof. ROSSI MARIO'
+  });
 });
 
 test('ClasseProvider: coordinatori.elenco is empty when there is no coordinator', () => {
@@ -230,11 +235,15 @@ test('ClasseProvider: articulated parent merges coordinatori across partners int
   const parent = classi.find((r) => r['ID'] === '1F')!;
   const lss = classi.find((r) => r['ID'] === '1F-LSS')!;
   parent['COORD'] = '';
-  lss['COORD'] = 'verdi@school.it';
+  lss['COORD'] = 'bianchi@school.it';
 
   const c = build('1F', tables).focus.classe!;
   expect(c.coordinatori?.collettivo).toEqual(
     expect.objectContaining({ appellativo: 'Prof.', articolo: 'I', coordinamento: 'Coordinatori' })
   );
-  expect(c.coordinatori?.elenco.map((p) => p.email)).toEqual(['rossi@school.it', 'verdi@school.it']);
+  expect(c.coordinatori).toMatchObject({
+    elencoDescrizioneElenco: 'Prof.ssa BIANCHI LUCIA, prof. ROSSI MARIO',
+    descrizioneRuolo: 'Coordinatori prof.ssa BIANCHI LUCIA e prof. ROSSI MARIO',
+    descrizioneRuoloEstesa: 'I coordinatori prof.ssa BIANCHI LUCIA e prof. ROSSI MARIO'
+  });
 });

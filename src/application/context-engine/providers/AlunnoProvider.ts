@@ -31,7 +31,7 @@ export class AlunnoProvider implements ContextProvider {
     private readonly oreAsl: IOreASLRepository,
     private readonly materie: IMateriaRepository,
     private readonly storicoDb: StoricoDatabaseProvider,
-    private readonly teachingAssignments?: ITeachingAssignmentResolver
+    private readonly teachingAssignments: ITeachingAssignmentResolver
   ) {
     this.projection = createTeachingCouncilProjection(classi, materie).alunno;
   }
@@ -65,6 +65,8 @@ export class AlunnoProvider implements ContextProvider {
       isSenzaReligione: alunno.religione === 'NO',
       isBes: false,
       isDsa: false,
+      isPei: false,
+      isPfp: false,
       isRipetente: alunno.isRipetente(),
       isRappresentante: alunno.isRappresentante(),
       presenza: {
@@ -91,7 +93,6 @@ export class AlunnoProvider implements ContextProvider {
       piani: { ...elencoVm([]), elencoDescrizione: '', hasBes: false }
     };
     cdu.focus.alunno = focus;
-    if (this.teachingAssignments === undefined) return;
     const assignments = resolveCouncilForProjection(
       this.teachingAssignments,
       classe,

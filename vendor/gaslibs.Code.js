@@ -6,8 +6,6 @@ function __nativeCacheService__() {
 function __nativePropertiesService__() {
 }
 function initializeServices() {
-}
-function exampleUsage() {
 } (() => { 
  	var __webpack_modules__ = ({
 
@@ -474,7 +472,6 @@ __webpack_require__.d(__webpack_exports__, {
   RoleResolutionLib: () => ( RoleResolutionLib_namespaceObject_0),
   SheetDBLib: () => ( SheetDBLib_namespaceObject_0),
   WorkspaceTemplateEngine: () => ( WorkspaceTemplateEngine_namespaceObject_0),
-  exampleUsage: () => ( exampleUsage),
   initializeServices: () => ( initializeServices)
 });
 
@@ -490,41 +487,25 @@ var CoreUtilsLib_namespaceObject_0 = {};
 __webpack_require__.r(CoreUtilsLib_namespaceObject_0);
 __webpack_require__.d(CoreUtilsLib_namespaceObject_0, {
   BaseError: () => (BaseError),
-  BoundedMap: () => (BoundedMap),
-  CacheInterface: () => (CacheInterface),
-  CacheUtils: () => (CacheUtils),
   CellValueCoercion: () => (CellValueCoercion),
-  ConfigurationBuilder: () => (ConfigurationBuilder),
   ConfigurationError: () => (ConfigurationError),
-  DataProviderInterface: () => (DataProviderInterface),
   DateRange: () => (DateRange),
   Delegation: () => (Delegation),
-  ExceptionServiceInterface: () => (ExceptionServiceInterface),
-  ExpressionEngineInterface: () => (ExpressionEngineInterface),
   HashUtils: () => (HashUtils),
   HtmlSanitizer: () => (HtmlSanitizer),
-  InterfaceRegistry: () => (InterfaceRegistry),
   LazyRef: () => (LazyRef),
   LazyServiceContainer: () => (LazyServiceContainer),
   LodashFacade: () => (LodashFacade),
-  LoggerInterface: () => (LoggerInterface),
   LoggerService: () => (LoggerService),
-  MonitorInterface: () => (MonitorInterface),
   MyUtilsService: () => (MyUtilsService),
   OperationError: () => (OperationError),
   PiiRedactor: () => (PiiRedactor),
-  PlaceholderUtils: () => (PlaceholderUtils),
-  ProviderRegistryInterface: () => (ProviderRegistryInterface),
   RegexUtils: () => (RegexUtils),
   Registry: () => (Registry),
   Result: () => (Result),
-  ServiceValidator: () => (ServiceValidator),
-  SpreadsheetServiceInterface: () => (SpreadsheetServiceInterface),
-  StepInterface: () => (StepInterface),
   TimeConstants: () => (TimeConstants),
   TypeGuards: () => (TypeGuards),
   UtilsService: () => (MyUtilsService),
-  UtilsServiceInterface: () => (UtilsServiceInterface),
   ValidationError: () => (ValidationError),
   ValidationUtils: () => (ValidationUtils),
   camelCase: () => (camelCase_camelCase),
@@ -547,7 +528,6 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject_0, {
   groupBy: () => (groupBy_groupBy),
   has: () => (has),
   humanisePath: () => (humanisePath),
-  implementsInterface: () => (implementsInterface),
   intersection: () => (intersection_intersection),
   isArray: () => (isArray),
   isArrayOf: () => (isArrayOf),
@@ -607,8 +587,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject_0, {
   testing: () => (empty_mocks_namespaceObject),
   truncate: () => (LodashFacade_truncate),
   uniq: () => (LodashFacade_uniq),
-  uniqBy: () => (uniqBy_uniqBy),
-  validateInterface: () => (validateInterface)
+  uniqBy: () => (uniqBy_uniqBy)
 });
 
 
@@ -616,41 +595,25 @@ var CoreUtilsLib_namespaceObject = {};
 __webpack_require__.r(CoreUtilsLib_namespaceObject);
 __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   BaseError: () => (BaseError),
-  BoundedMap: () => (BoundedMap),
-  CacheInterface: () => (CacheInterface),
-  CacheUtils: () => (CacheUtils),
   CellValueCoercion: () => (CellValueCoercion),
-  ConfigurationBuilder: () => (ConfigurationBuilder),
   ConfigurationError: () => (ConfigurationError),
-  DataProviderInterface: () => (DataProviderInterface),
   DateRange: () => (DateRange),
   Delegation: () => (Delegation),
-  ExceptionServiceInterface: () => (ExceptionServiceInterface),
-  ExpressionEngineInterface: () => (ExpressionEngineInterface),
   HashUtils: () => (HashUtils),
   HtmlSanitizer: () => (HtmlSanitizer),
-  InterfaceRegistry: () => (InterfaceRegistry),
   LazyRef: () => (LazyRef),
   LazyServiceContainer: () => (LazyServiceContainer),
   LodashFacade: () => (LodashFacade),
-  LoggerInterface: () => (LoggerInterface),
   LoggerService: () => (LoggerService),
-  MonitorInterface: () => (MonitorInterface),
   MyUtilsService: () => (MyUtilsService),
   OperationError: () => (OperationError),
   PiiRedactor: () => (PiiRedactor),
-  PlaceholderUtils: () => (PlaceholderUtils),
-  ProviderRegistryInterface: () => (ProviderRegistryInterface),
   RegexUtils: () => (RegexUtils),
   Registry: () => (Registry),
   Result: () => (Result),
-  ServiceValidator: () => (ServiceValidator),
-  SpreadsheetServiceInterface: () => (SpreadsheetServiceInterface),
-  StepInterface: () => (StepInterface),
   TimeConstants: () => (TimeConstants),
   TypeGuards: () => (TypeGuards),
   UtilsService: () => (MyUtilsService),
-  UtilsServiceInterface: () => (UtilsServiceInterface),
   ValidationError: () => (ValidationError),
   ValidationUtils: () => (ValidationUtils),
   camelCase: () => (camelCase_camelCase),
@@ -673,7 +636,6 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   groupBy: () => (groupBy_groupBy),
   has: () => (has),
   humanisePath: () => (humanisePath),
-  implementsInterface: () => (implementsInterface),
   intersection: () => (intersection_intersection),
   isArray: () => (isArray),
   isArrayOf: () => (isArrayOf),
@@ -733,8 +695,7 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   testing: () => (empty_mocks_namespaceObject),
   truncate: () => (LodashFacade_truncate),
   uniq: () => (LodashFacade_uniq),
-  uniqBy: () => (uniqBy_uniqBy),
-  validateInterface: () => (validateInterface)
+  uniqBy: () => (uniqBy_uniqBy)
 });
 
 
@@ -776,21 +737,14 @@ __webpack_require__.d(GoogleApiWrapper_namespaceObject_0, {
   DialogBuilder: () => (DialogBuilder),
   DocumentService: () => (DocumentService),
   DriveService: () => (DriveService),
-  ErrorHandler: () => (ErrorHandler),
   GoogleService: () => (GoogleService),
   LockService: () => (LockService),
   LoggerService: () => (LoggerService),
   MailService: () => (MailService),
   MenuBuilder: () => (MenuBuilder),
-  PermissionDeniedError: () => (PermissionDeniedError),
   PermissionService: () => (PermissionService),
   PropertiesService: () => (PropertiesService),
-  QuotaExceededError: () => (QuotaExceededError),
-  RateLimiter: () => (RateLimiter),
-  ResourceNotFoundError: () => (ResourceNotFoundError),
-  ServiceError: () => (ServiceError),
   ServiceFactory: () => (ServiceFactory),
-  ServiceUnavailableError: () => (ServiceUnavailableError),
   SidebarBuilder: () => (SidebarBuilder),
   SpreadsheetService: () => (SpreadsheetService),
   TextStyleMapper: () => (TextStyleMapper),
@@ -799,7 +753,6 @@ __webpack_require__.d(GoogleApiWrapper_namespaceObject_0, {
   UserService: () => (UserService),
   UtilitiesService: () => (UtilitiesService),
   UtilsService: () => (MyUtilsService),
-  ValidationError: () => (ErrorHandler_ValidationError),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -812,21 +765,14 @@ __webpack_require__.d(GoogleApiWrapper_namespaceObject, {
   DialogBuilder: () => (DialogBuilder),
   DocumentService: () => (DocumentService),
   DriveService: () => (DriveService),
-  ErrorHandler: () => (ErrorHandler),
   GoogleService: () => (GoogleService),
   LockService: () => (LockService),
   LoggerService: () => (LoggerService),
   MailService: () => (MailService),
   MenuBuilder: () => (MenuBuilder),
-  PermissionDeniedError: () => (PermissionDeniedError),
   PermissionService: () => (PermissionService),
   PropertiesService: () => (PropertiesService),
-  QuotaExceededError: () => (QuotaExceededError),
-  RateLimiter: () => (RateLimiter),
-  ResourceNotFoundError: () => (ResourceNotFoundError),
-  ServiceError: () => (ServiceError),
   ServiceFactory: () => (ServiceFactory),
-  ServiceUnavailableError: () => (ServiceUnavailableError),
   SidebarBuilder: () => (SidebarBuilder),
   SpreadsheetService: () => (SpreadsheetService),
   TextStyleMapper: () => (TextStyleMapper),
@@ -835,7 +781,6 @@ __webpack_require__.d(GoogleApiWrapper_namespaceObject, {
   UserService: () => (UserService),
   UtilitiesService: () => (UtilitiesService),
   UtilsService: () => (MyUtilsService),
-  ValidationError: () => (ErrorHandler_ValidationError),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -1943,31 +1888,8 @@ var SheetDBLib_namespaceObject_0 = {};
 __webpack_require__.r(SheetDBLib_namespaceObject_0);
 __webpack_require__.d(SheetDBLib_namespaceObject_0, {
   AdvancedQueryBuilder: () => (AdvancedQueryBuilder),
-  AggregationType: () => (AggregationType),
-  ColumnFamily: () => (ColumnFamily),
-  ColumnType: () => (ColumnType),
-  CrossPartitionDisabledError: () => (CrossPartitionDisabledError),
-  CrossPartitionQuery: () => (CrossPartitionQuery),
-  CrossPartitionQueryError: () => (CrossPartitionQueryError),
-  DatabasePartition: () => (DatabasePartition),
   DatabaseService: () => (DatabaseService),
-  DynamicColumnAccessor: () => (DynamicColumnAccessor),
-  FamilyAggregator: () => (FamilyAggregator),
-  MemberSourceType: () => (MemberSourceType),
-  MultiDatabaseError: () => (MultiDatabaseError),
-  MultiDatabaseManager: () => (MultiDatabaseManager),
-  PartitionConfiguration: () => (PartitionConfiguration),
-  PartitionConnectionError: () => (PartitionConnectionError),
-  PartitionNotFoundError: () => (PartitionNotFoundError),
-  PartitionRouter: () => (PartitionRouter),
-  ReadOnlyPartitionError: () => (ReadOnlyPartitionError),
-  RoutingStrategy: () => (RoutingStrategy),
-  SchemaResolver: () => (SchemaResolver),
-  SchemaTemplate: () => (SchemaTemplate),
   TableService: () => (TableService),
-  coerceToType: () => (coerceToType),
-  getRoutingStrategies: () => (getRoutingStrategies),
-  isValidRoutingStrategy: () => (isValidRoutingStrategy),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -1976,31 +1898,8 @@ var SheetDBLib_namespaceObject = {};
 __webpack_require__.r(SheetDBLib_namespaceObject);
 __webpack_require__.d(SheetDBLib_namespaceObject, {
   AdvancedQueryBuilder: () => (AdvancedQueryBuilder),
-  AggregationType: () => (AggregationType),
-  ColumnFamily: () => (ColumnFamily),
-  ColumnType: () => (ColumnType),
-  CrossPartitionDisabledError: () => (CrossPartitionDisabledError),
-  CrossPartitionQuery: () => (CrossPartitionQuery),
-  CrossPartitionQueryError: () => (CrossPartitionQueryError),
-  DatabasePartition: () => (DatabasePartition),
   DatabaseService: () => (DatabaseService),
-  DynamicColumnAccessor: () => (DynamicColumnAccessor),
-  FamilyAggregator: () => (FamilyAggregator),
-  MemberSourceType: () => (MemberSourceType),
-  MultiDatabaseError: () => (MultiDatabaseError),
-  MultiDatabaseManager: () => (MultiDatabaseManager),
-  PartitionConfiguration: () => (PartitionConfiguration),
-  PartitionConnectionError: () => (PartitionConnectionError),
-  PartitionNotFoundError: () => (PartitionNotFoundError),
-  PartitionRouter: () => (PartitionRouter),
-  ReadOnlyPartitionError: () => (ReadOnlyPartitionError),
-  RoutingStrategy: () => (RoutingStrategy),
-  SchemaResolver: () => (SchemaResolver),
-  SchemaTemplate: () => (SchemaTemplate),
   TableService: () => (TableService),
-  coerceToType: () => (coerceToType),
-  getRoutingStrategies: () => (getRoutingStrategies),
-  isValidRoutingStrategy: () => (isValidRoutingStrategy),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -2028,42 +1927,12 @@ __webpack_require__.d(JobRunnerLib_namespaceObject, {
 var PipelineFramework_namespaceObject_0 = {};
 __webpack_require__.r(PipelineFramework_namespaceObject_0);
 __webpack_require__.d(PipelineFramework_namespaceObject_0, {
-  BaseUpdatePostProcessor: () => (BaseUpdatePostProcessor),
-  CellUpdatePostProcessor: () => (CellUpdatePostProcessor),
-  ConfigurationError: () => (PostProcessorError_ConfigurationError),
-  ConsumerStep: () => (ConsumerStep),
   ContextValidationError: () => (ContextValidationError),
-  CounterOperation: () => (CounterOperation),
-  CounterUpdatePostProcessor: () => (CounterUpdatePostProcessor),
-  ExecutionError: () => (ExecutionError),
-  FieldUpdatePostProcessor: () => (FieldUpdatePostProcessor),
-  GenerateDocumentStep: () => (GenerateDocumentStep),
-  LogAuditPostProcessor: () => (LogAuditPostProcessor),
   Pipeline: () => (Pipeline),
   PipelineContext: () => (PipelineContext),
   PipelineError: () => (PipelineError),
-  PostProcessableStep: () => (PostProcessableStep),
-  PostProcessor: () => (PostProcessor),
-  PostProcessorChain: () => (PostProcessorChain),
-  PostProcessorContext: () => (PostProcessorContext),
-  PostProcessorError: () => (PostProcessorError),
-  PostProcessorRegistry: () => (PostProcessorRegistry),
-  PostProcessorResult: () => (PostProcessorResult),
-  ProcessorNotFoundError: () => (ProcessorNotFoundError),
-  ProducerStep: () => (ProducerStep),
-  RecordIdentifierStrategy: () => (RecordIdentifierStrategy),
-  RecordNotFoundError: () => (RecordNotFoundError),
   Step: () => (Step),
   StepExecutionError: () => (StepExecutionError),
-  TemplateSelectorStep: () => (TemplateSelectorStep),
-  ValueResolutionError: () => (ValueResolutionError),
-  ValueResolver: () => (ValueResolver),
-  ValueSource: () => (ValueSource),
-  ValueSourceType: () => (ValueSourceType),
-  WhenCondition: () => (WhenCondition),
-  createDefaultRegistry: () => (createDefaultRegistry),
-  isValidValueSourceType: () => (isValidValueSourceType),
-  isValidWhenCondition: () => (isValidWhenCondition),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -2071,42 +1940,12 @@ __webpack_require__.d(PipelineFramework_namespaceObject_0, {
 var PipelineFramework_namespaceObject = {};
 __webpack_require__.r(PipelineFramework_namespaceObject);
 __webpack_require__.d(PipelineFramework_namespaceObject, {
-  BaseUpdatePostProcessor: () => (BaseUpdatePostProcessor),
-  CellUpdatePostProcessor: () => (CellUpdatePostProcessor),
-  ConfigurationError: () => (PostProcessorError_ConfigurationError),
-  ConsumerStep: () => (ConsumerStep),
   ContextValidationError: () => (ContextValidationError),
-  CounterOperation: () => (CounterOperation),
-  CounterUpdatePostProcessor: () => (CounterUpdatePostProcessor),
-  ExecutionError: () => (ExecutionError),
-  FieldUpdatePostProcessor: () => (FieldUpdatePostProcessor),
-  GenerateDocumentStep: () => (GenerateDocumentStep),
-  LogAuditPostProcessor: () => (LogAuditPostProcessor),
   Pipeline: () => (Pipeline),
   PipelineContext: () => (PipelineContext),
   PipelineError: () => (PipelineError),
-  PostProcessableStep: () => (PostProcessableStep),
-  PostProcessor: () => (PostProcessor),
-  PostProcessorChain: () => (PostProcessorChain),
-  PostProcessorContext: () => (PostProcessorContext),
-  PostProcessorError: () => (PostProcessorError),
-  PostProcessorRegistry: () => (PostProcessorRegistry),
-  PostProcessorResult: () => (PostProcessorResult),
-  ProcessorNotFoundError: () => (ProcessorNotFoundError),
-  ProducerStep: () => (ProducerStep),
-  RecordIdentifierStrategy: () => (RecordIdentifierStrategy),
-  RecordNotFoundError: () => (RecordNotFoundError),
   Step: () => (Step),
   StepExecutionError: () => (StepExecutionError),
-  TemplateSelectorStep: () => (TemplateSelectorStep),
-  ValueResolutionError: () => (ValueResolutionError),
-  ValueResolver: () => (ValueResolver),
-  ValueSource: () => (ValueSource),
-  ValueSourceType: () => (ValueSourceType),
-  WhenCondition: () => (WhenCondition),
-  createDefaultRegistry: () => (createDefaultRegistry),
-  isValidValueSourceType: () => (isValidValueSourceType),
-  isValidWhenCondition: () => (isValidWhenCondition),
   testing: () => (empty_mocks_namespaceObject)
 });
 
@@ -2120,7 +1959,7 @@ __webpack_require__.d(ContextEngine_namespaceObject_0, {
   ContextAssembler: () => (ContextAssembler),
   ContextEngineError: () => (ContextEngineError),
   ContextInterceptor: () => (ContextInterceptor),
-  ContextPostProcessor: () => (PostProcessor_PostProcessor),
+  ContextPostProcessor: () => (PostProcessor),
   DataProvider: () => (DataProvider),
   DependencyResolutionError: () => (DependencyResolutionError),
   DependencyResolver: () => (DependencyResolver),
@@ -2144,7 +1983,7 @@ __webpack_require__.d(ContextEngine_namespaceObject, {
   ContextAssembler: () => (ContextAssembler),
   ContextEngineError: () => (ContextEngineError),
   ContextInterceptor: () => (ContextInterceptor),
-  ContextPostProcessor: () => (PostProcessor_PostProcessor),
+  ContextPostProcessor: () => (PostProcessor),
   DataProvider: () => (DataProvider),
   DependencyResolutionError: () => (DependencyResolutionError),
   DependencyResolver: () => (DependencyResolver),
@@ -2202,19 +2041,13 @@ __webpack_require__.d(GasDataImporter_namespaceObject, {
 var DomainRepositoryLib_namespaceObject_0 = {};
 __webpack_require__.r(DomainRepositoryLib_namespaceObject_0);
 __webpack_require__.d(DomainRepositoryLib_namespaceObject_0, {
-  Aggregate: () => (Aggregate),
   CompositeSpecification: () => (CompositeSpecification),
-  DomainEvent: () => (DomainEvent),
   DomainException: () => (DomainException),
   DynamicFieldMapping: () => (DynamicFieldMapping),
   Entity: () => (Entity),
-  EntityCreatedEvent: () => (EntityCreatedEvent),
-  EntityDeletedEvent: () => (EntityDeletedEvent),
   EntityMapper: () => (EntityMapper),
   EntityNotFoundException: () => (EntityNotFoundException),
-  EntityUpdatedEvent: () => (EntityUpdatedEvent),
   EqualityFieldSpec: () => (EqualityFieldSpec),
-  EventDispatcher: () => (EventDispatcher),
   ExpressionSpecification: () => (ExpressionSpecification),
   FieldSpecification: () => (FieldSpecification),
   FunctionSpecification: () => (FunctionSpecification),
@@ -2238,19 +2071,13 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject_0, {
 var DomainRepositoryLib_namespaceObject = {};
 __webpack_require__.r(DomainRepositoryLib_namespaceObject);
 __webpack_require__.d(DomainRepositoryLib_namespaceObject, {
-  Aggregate: () => (Aggregate),
   CompositeSpecification: () => (CompositeSpecification),
-  DomainEvent: () => (DomainEvent),
   DomainException: () => (DomainException),
   DynamicFieldMapping: () => (DynamicFieldMapping),
   Entity: () => (Entity),
-  EntityCreatedEvent: () => (EntityCreatedEvent),
-  EntityDeletedEvent: () => (EntityDeletedEvent),
   EntityMapper: () => (EntityMapper),
   EntityNotFoundException: () => (EntityNotFoundException),
-  EntityUpdatedEvent: () => (EntityUpdatedEvent),
   EqualityFieldSpec: () => (EqualityFieldSpec),
-  EventDispatcher: () => (EventDispatcher),
   ExpressionSpecification: () => (ExpressionSpecification),
   FieldSpecification: () => (FieldSpecification),
   FunctionSpecification: () => (FunctionSpecification),
@@ -2299,7 +2126,6 @@ var RoleResolutionLib_namespaceObject_0 = {};
 __webpack_require__.r(RoleResolutionLib_namespaceObject_0);
 __webpack_require__.d(RoleResolutionLib_namespaceObject_0, {
   Actor: () => (Actor),
-  ActorNotFoundError: () => (ActorNotFoundError),
   ActorSource: () => (ActorSource),
   ActorType: () => (ActorType),
   AmbiguousAssignmentOverrideError: () => (AmbiguousAssignmentOverrideError),
@@ -2368,7 +2194,6 @@ var RoleResolutionLib_namespaceObject = {};
 __webpack_require__.r(RoleResolutionLib_namespaceObject);
 __webpack_require__.d(RoleResolutionLib_namespaceObject, {
   Actor: () => (Actor),
-  ActorNotFoundError: () => (ActorNotFoundError),
   ActorSource: () => (ActorSource),
   ActorType: () => (ActorType),
   AmbiguousAssignmentOverrideError: () => (AmbiguousAssignmentOverrideError),
@@ -7627,18 +7452,13 @@ class SystemScriptSettings {
 }
 ;
 
-const unique = a => Array.isArray(a) ? [...new Set(a)] : [];
-const collections_compact = a => Array.isArray(a) ? a.filter(Boolean) : [];
-const collections_flatten = (a, depth = 1) => Array.isArray(a) ? a.flat(depth) : [];
+
+
+
+
 const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi);
 
-;
-
-
-
-
-
-
+const SystemUtils_flatten = (a, depth = 1) => Array.isArray(a) ? a.flat(depth) : [];
 class SystemUtils {
   constructor(sleepFn = null) {
     this._environmentUtils = new SystemEnvironmentUtils(sleepFn);
@@ -7684,19 +7504,19 @@ class SystemUtils {
     return chunk_chunk(...args);
   }
   unique(...args) {
-    return unique(...args);
+    return LodashFacade_uniq(...args);
   }
   flatten(...args) {
-    return collections_flatten(...args);
+    return SystemUtils_flatten(...args);
   }
   flattenShallow(array) {
-    return collections_flatten(array);
+    return SystemUtils_flatten(array);
   }
   flattenDeep(array) {
-    return collections_flatten(array, Infinity);
+    return flattenDeep(array);
   }
   compact(...args) {
-    return collections_compact(...args);
+    return compact(...args);
   }
   difference(...args) {
     return difference_difference(...args);
@@ -7717,7 +7537,7 @@ class SystemUtils {
     return orderBy(...args);
   }
   uniq(...args) {
-    return unique(...args);
+    return LodashFacade_uniq(...args);
   }
   uniqBy(...args) {
     return uniqBy_uniqBy(...args);
@@ -7983,902 +7803,8 @@ class RegexUtils {
       throw new Error(`Invalid regex pattern: ${err.message}`);
     }
   }
-
-
-
-
-
-
-
-
-
-
-  static testSafe(str, pattern, flags = '', logger = null) {
-    const regex = RegexUtils.createSafeRegex(pattern, flags, logger);
-    return regex.test(str);
-  }
-
-
-
-
-
-
-
-
-
-
-  static matchSafe(str, pattern, flags = '', logger = null) {
-    const regex = RegexUtils.createSafeRegex(pattern, flags, logger);
-    return str.match(regex);
-  }
-
-
-
-
-
-
-  static checkSafety(pattern) {
-    const warnings = [];
-    let safe = true;
-
-
-    const MAX_REGEX_LENGTH = 500;
-    if (pattern.length > MAX_REGEX_LENGTH) {
-      warnings.push(`Pattern too long: ${pattern.length} characters (max ${MAX_REGEX_LENGTH})`);
-      safe = false;
-    }
-
-
-    const nestedQuantifiers = /(\([^)]*[*+?]\)[*+?{])|(\[[^\]]*[*+?]\][*+?{])/;
-    if (nestedQuantifiers.test(pattern)) {
-      warnings.push('Nested quantifiers detected (can cause ReDoS)');
-      safe = false;
-    }
-
-
-    const excessiveRepetition = /\{(\d+),?\d*\}/g;
-    let match;
-    while ((match = excessiveRepetition.exec(pattern)) !== null) {
-      const min = parseInt(match[1], 10);
-      if (min > 100) {
-        warnings.push(`Excessive quantifier: {${match[1]}} (max 100)`);
-        safe = false;
-      }
-    }
-
-
-    const dangerousAlternation = /\([^)]*\|[^)]*\)[*+]/;
-    if (dangerousAlternation.test(pattern)) {
-      warnings.push('Alternation with quantifiers (may cause performance issues)');
-
-    }
-    return {
-      safe,
-      warnings
-    };
-  }
 }
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function validateInterfaceShape(obj, iface) {
-  if (!obj || typeof obj !== 'object') {
-    throw new Error(`${iface.name}: implementation must be a non-null object`);
-  }
-  const missing = iface.requiredMethods.filter(m => typeof obj[m] !== 'function');
-  if (missing.length > 0) {
-    throw new Error(`${iface.name}: missing required methods: ${missing.join(', ')}`);
-  }
-  return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const LoggerInterface = {
-  name: 'LoggerInterface',
-  description: 'Interface for logger services with level-based logging',
-  requiredMethods: ['debug', 'info', 'warn', 'error'],
-  optionalMethods: ['getLevel', 'setLevel', 'createChild'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const CacheInterface = {
-  name: 'CacheInterface',
-  description: 'Interface for cache services with TTL support',
-  requiredMethods: ['get', 'put', 'remove'],
-  optionalMethods: ['removeByPrefix', 'getAll', 'putAll', 'removeAll'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const UtilsServiceInterface = {
-  name: 'UtilsServiceInterface',
-  description: 'Interface for utility services (minimum: sleep method)',
-  requiredMethods: ['sleep'],
-  optionalMethods: ['deepClone', 'deepMerge', 'generateUuid', 'formatDate', 'parseDate', 'isEmpty', 'isEqual', 'chunk', 'groupBy', 'keyBy'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const ExceptionServiceInterface = {
-  name: 'ExceptionServiceInterface',
-  description: 'Interface for exception handling with retry capabilities',
-  requiredMethods: ['executeWithRetry'],
-  optionalMethods: ['executeWithBypass', 'executeWithAdvancedHandling', 'getErrorSummary'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const MonitorInterface = {
-  name: 'MonitorInterface',
-  description: 'Interface for process monitoring (optional visualization)',
-  requiredMethods: ['logJobStart', 'logJobComplete', 'logStepStart', 'logStepComplete'],
-  optionalMethods: ['logStepSkipped', 'updateProgress', 'logError'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const DataProviderInterface = {
-  name: 'DataProviderInterface',
-  description: 'Interface for data providers in ContextEngine',
-  requiredMethods: ['provide'],
-  optionalMethods: ['initialize', 'dispose'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const StepInterface = {
-  name: 'StepInterface',
-  description: 'Interface for pipeline steps',
-  requiredMethods: ['getName', 'execute'],
-  optionalMethods: ['getDescription', 'shouldExecute', 'onError'],
-
-
-
-
-
-
-
-
-
-  executeReturnSchema: {
-    success: 'boolean (required)',
-    skipped: 'boolean (optional)',
-    durationMs: 'number (optional)',
-    error: 'Error (optional, present when success=false)',
-    data: 'any (optional, step output data)'
-  },
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const ExpressionEngineInterface = {
-  name: 'ExpressionEngineInterface',
-  description: 'Interface for expression evaluation engines',
-  requiredMethods: ['evaluate'],
-  optionalMethods: ['parseExpression', 'validateExpression'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const ProviderRegistryInterface = {
-  name: 'ProviderRegistryInterface',
-  description: 'Interface for provider registries',
-  requiredMethods: ['get', 'getRegisteredTypes'],
-  optionalMethods: ['register', 'registerSingleton', 'registerFactory', 'has'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const SpreadsheetServiceInterface = {
-  name: 'SpreadsheetServiceInterface',
-  description: 'Interface for spreadsheet operations',
-  requiredMethods: ['getSheetData'],
-  optionalMethods: ['appendRow', 'updateRange', 'clearSheet', 'getSheetNames', 'createSheet'],
-
-
-
-
-
-
-  validate(obj) {
-    return validateInterfaceShape(obj, this);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const InterfaceRegistry = {
-  LoggerInterface,
-  CacheInterface,
-  UtilsServiceInterface,
-  ExceptionServiceInterface,
-  MonitorInterface,
-  DataProviderInterface,
-  StepInterface,
-  ExpressionEngineInterface,
-  ProviderRegistryInterface,
-  SpreadsheetServiceInterface
-};
-
-
-
-
-
-
-
-
-function validateInterface(obj, interfaceName) {
-  const interfaceDef = InterfaceRegistry[interfaceName];
-  if (!interfaceDef) {
-    throw new Error(`Unknown interface: ${interfaceName}`);
-  }
-  return interfaceDef.validate(obj);
-}
-
-
-
-
-
-
-
-function implementsInterface(obj, interfaceName) {
-  try {
-    return validateInterface(obj, interfaceName);
-  } catch {
-    return false;
-  }
-}
-;
-
-
-
 
 
 
@@ -8977,261 +7903,6 @@ class ValidationUtils {
       }
     }
     return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateRequired(value, name, context = 'ValidationUtils') {
-    if (value === null || value === undefined) {
-      throw new Error(`${context}: ${name} is required`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateNonEmptyString(value, name, context = 'ValidationUtils') {
-    if (typeof value !== 'string' || value.trim().length === 0) {
-      throw new Error(`${context}: ${name} must be a non-empty string`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validatePositiveInteger(value, name, context = 'ValidationUtils') {
-    if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
-      throw new Error(`${context}: ${name} must be a positive integer`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateFunction(value, name, context = 'ValidationUtils') {
-    if (typeof value !== 'function') {
-      throw new Error(`${context}: ${name} must be a function`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateArray(value, name, context = 'ValidationUtils', allowEmpty = true) {
-    if (!Array.isArray(value)) {
-      throw new Error(`${context}: ${name} must be an array`);
-    }
-    if (!allowEmpty && value.length === 0) {
-      throw new Error(`${context}: ${name} must be a non-empty array`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateObject(value, name, context = 'ValidationUtils') {
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      throw new Error(`${context}: ${name} must be a plain object`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateEnum(value, allowedValues, name, context = 'ValidationUtils') {
-    if (!allowedValues.includes(value)) {
-      const allowed = allowedValues.map(v => `'${v}'`).join(', ');
-      throw new Error(`${context}: ${name} must be one of: ${allowed}`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateAll(validations, context = 'ValidationUtils') {
-    const errors = [];
-    for (const [condition, errorMessage] of validations) {
-      if (!condition) {
-        errors.push(errorMessage);
-      }
-    }
-    if (errors.length > 0) {
-      throw new Error(`${context}: Validation failed:\n- ${errors.join('\n- ')}`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateInterface(obj, interfaceName, context = 'ValidationUtils', required = true) {
-
-    if (!required && (obj === null || obj === undefined)) {
-      return true;
-    }
-    const interfaceDef = InterfaceRegistry[interfaceName];
-    if (!interfaceDef) {
-      throw new Error(`${context}: Unknown interface: ${interfaceName}`);
-    }
-    if (!obj || typeof obj !== 'object') {
-      throw new Error(`${context}: ${interfaceName} implementation is required and must be an object`);
-    }
-    const missing = interfaceDef.requiredMethods.filter(m => typeof obj[m] !== 'function');
-    if (missing.length > 0) {
-      throw new Error(`${context}: Object does not implement ${interfaceName}. Missing methods: ${missing.join(', ')}`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static implementsInterface(obj, interfaceName) {
-    try {
-      return ValidationUtils.validateInterface(obj, interfaceName, 'check', true);
-    } catch {
-      return false;
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-  static getAvailableInterfaces() {
-    return Object.keys(InterfaceRegistry);
   }
 }
 
@@ -10656,411 +9327,6 @@ const isFalsy = TypeGuards.isFalsy;
 
 
 
-
-
-class CacheUtils {
-
-
-
-
-
-  static get KEY_SEPARATOR() {
-    return '_';
-  }
-
-
-
-
-
-
-  static get MAX_TTL_SECONDS() {
-    return 21600; 
-  }
-
-
-
-
-
-
-
-  static generateKey(prefix, ...parts) {
-    const allParts = [prefix, ...parts].filter(part => part !== null && part !== undefined).map(part => String(part));
-    return allParts.join(CacheUtils.KEY_SEPARATOR);
-  }
-
-
-
-
-
-
-
-  static generateHashKey(prefix, obj) {
-    const hash = HashUtils.hashObject(obj);
-    return `${prefix}${CacheUtils.KEY_SEPARATOR}${hash}`;
-  }
-
-
-
-
-
-
-
-
-  static generateVersionedKey(prefix, version, ...parts) {
-    return CacheUtils.generateKey(prefix, version, ...parts);
-  }
-
-
-
-
-
-
-
-  static hasPrefix(key, prefix) {
-    return key.startsWith(prefix + CacheUtils.KEY_SEPARATOR);
-  }
-
-
-
-
-
-
-  static getPrefix(key) {
-    const separatorIndex = key.indexOf(CacheUtils.KEY_SEPARATOR);
-    return separatorIndex > -1 ? key.substring(0, separatorIndex) : key;
-  }
-
-
-
-
-
-
-  static calculateTtl(requestedTtl) {
-    return Math.min(requestedTtl, CacheUtils.MAX_TTL_SECONDS);
-  }
-
-
-
-
-
-
-  static msToSeconds(milliseconds) {
-    return Math.floor(milliseconds / 1000);
-  }
-
-
-
-
-
-
-  static secondsToMs(seconds) {
-    return seconds * 1000;
-  }
-
-
-
-
-
-
-  static parseKey(key) {
-    return key.split(CacheUtils.KEY_SEPARATOR);
-  }
-
-
-
-
-
-
-
-  static createPattern(prefix, ...parts) {
-    return CacheUtils.generateKey(prefix, ...parts);
-  }
-
-
-
-
-
-
-
-  static matchesPattern(key, pattern) {
-
-    const regexPattern = pattern.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-    return new RegExp(`^${regexPattern}$`).test(key);
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-class BoundedMap extends Map {
-
-
-
-
-
-  static get DEFAULT_MAX_SIZE() {
-    return 1000;
-  }
-
-
-
-
-
-
-  constructor(maxSize = BoundedMap.DEFAULT_MAX_SIZE, onEvict = null) {
-    super();
-    if (typeof maxSize !== 'number' || maxSize < 1 || !Number.isInteger(maxSize)) {
-      throw new Error('BoundedMap: maxSize must be a positive integer');
-    }
-    if (onEvict !== null && typeof onEvict !== 'function') {
-      throw new Error('BoundedMap: onEvict must be a function or null');
-    }
-
-
-
-
-
-
-    this._maxSize = maxSize;
-
-
-
-
-
-
-    this._onEvict = onEvict;
-
-
-
-
-
-
-    this._evictionCount = 0;
-  }
-
-
-
-
-
-
-  get maxSize() {
-    return this._maxSize;
-  }
-
-
-
-
-
-
-  get evictionCount() {
-    return this._evictionCount;
-  }
-
-
-
-
-
-
-  get isFull() {
-    return this.size >= this._maxSize;
-  }
-
-
-
-
-
-
-  get available() {
-    return Math.max(0, this._maxSize - this.size);
-  }
-
-
-
-
-
-
-
-  set(key, value) {
-
-    if (this.has(key)) {
-      super.set(key, value);
-      return this;
-    }
-
-
-    if (this.size >= this._maxSize) {
-      this._evictOldest();
-    }
-    super.set(key, value);
-    return this;
-  }
-
-
-
-
-
-  _evictOldest() {
-    const firstKey = this.keys().next().value;
-    if (firstKey !== undefined) {
-      const value = this.get(firstKey);
-      this.delete(firstKey);
-      this._evictionCount++;
-      if (this._onEvict) {
-        try {
-          this._onEvict(firstKey, value);
-        } catch {
-
-        }
-      }
-    }
-  }
-
-
-
-
-
-
-  setAll(entries) {
-    for (const [key, value] of entries) {
-      this.set(key, value);
-    }
-    return this;
-  }
-
-
-
-
-
-
-
-  getOrCompute(key, factory) {
-    if (this.has(key)) {
-      return this.get(key);
-    }
-    if (factory) {
-      const value = factory(key);
-      this.set(key, value);
-      return value;
-    }
-    return undefined;
-  }
-
-
-
-
-  clear() {
-    super.clear();
-    this._evictionCount = 0;
-  }
-
-
-
-
-  resetEvictionCount() {
-    this._evictionCount = 0;
-  }
-
-
-
-
-
-  getStats() {
-    return {
-      size: this.size,
-      maxSize: this._maxSize,
-      available: this.available,
-      isFull: this.isFull,
-      evictionCount: this._evictionCount,
-      utilizationPercent: Math.round(this.size / this._maxSize * 100)
-    };
-  }
-
-
-
-
-
-  clone() {
-    return new BoundedMap(this._maxSize, this._onEvict);
-  }
-
-
-
-
-
-  copy() {
-    const copy = new BoundedMap(this._maxSize, this._onEvict);
-    for (const [key, value] of this) {
-      copy.set(key, value);
-    }
-    return copy;
-  }
-
-
-
-
-
-
-  resize(newMaxSize) {
-    if (typeof newMaxSize !== 'number' || newMaxSize < 1 || !Number.isInteger(newMaxSize)) {
-      throw new Error('BoundedMap: newMaxSize must be a positive integer');
-    }
-    const evictedCount = Math.max(0, this.size - newMaxSize);
-
-
-    while (this.size > newMaxSize) {
-      this._evictOldest();
-    }
-    this._maxSize = newMaxSize;
-    return evictedCount;
-  }
-
-
-
-
-
-  toJSON() {
-    return {
-      entries: Array.from(this.entries()),
-      maxSize: this._maxSize,
-      evictionCount: this._evictionCount
-    };
-  }
-
-
-
-
-
-
-
-  static fromJSON(json, onEvict = null) {
-    const map = new BoundedMap(json.maxSize || BoundedMap.DEFAULT_MAX_SIZE, onEvict);
-    if (json.entries) {
-      map.setAll(json.entries);
-    }
-    return map;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
 class PiiRedactor {
 
 
@@ -11122,1123 +9388,10 @@ class PiiRedactor {
     sanitized = sanitized.replace(patterns.SESSION_ID, labels.SESSION_ID);
     return sanitized;
   }
-
-
-
-
-
-
-
-  static redactEmails(message, label = PiiRedactor.REDACTION_LABELS.EMAIL) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.EMAIL, label);
-  }
-
-
-
-
-
-
-
-  static redactTokens(message, label = PiiRedactor.REDACTION_LABELS.TOKEN) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.TOKEN, '$1 ' + label);
-  }
-
-
-
-
-
-
-
-  static redactApiKeys(message, label = PiiRedactor.REDACTION_LABELS.API_KEY) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.API_KEY, '$1=' + label);
-  }
-
-
-
-
-
-
-
-  static redactUrlParams(message, label = PiiRedactor.REDACTION_LABELS.URL_PARAMS) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.URL_PARAMS, '$1?' + label);
-  }
-
-
-
-
-
-
-
-  static redactJwt(message, label = PiiRedactor.REDACTION_LABELS.JWT) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.JWT, label);
-  }
-
-
-
-
-
-
-
-  static redactCreditCards(message, label = PiiRedactor.REDACTION_LABELS.CREDIT_CARD) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.CREDIT_CARD, label);
-  }
-
-
-
-
-
-
-
-  static redactPhones(message, label = PiiRedactor.REDACTION_LABELS.PHONE) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.PHONE, label);
-  }
-
-
-
-
-
-
-
-  static redactSessionIds(message, label = PiiRedactor.REDACTION_LABELS.SESSION_ID) {
-    if (typeof message !== 'string') {
-      return String(message);
-    }
-    return message.replace(PiiRedactor.PATTERNS.SESSION_ID, label);
-  }
-
-
-
-
-
-
-  static containsPii(message) {
-    if (typeof message !== 'string') {
-      return false;
-    }
-    const patterns = PiiRedactor.PATTERNS;
-    return patterns.EMAIL.test(message) || patterns.TOKEN.test(message) || patterns.API_KEY.test(message) || patterns.JWT.test(message) || patterns.CREDIT_CARD.test(message) || patterns.PHONE.test(message) || patterns.SESSION_ID.test(message);
-  }
-
-
-
-
-
-
-  static detectPiiTypes(message) {
-    if (typeof message !== 'string') {
-      return [];
-    }
-    const detected = [];
-    const patterns = PiiRedactor.PATTERNS;
-
-
-    Object.keys(patterns).forEach(key => {
-      patterns[key].lastIndex = 0;
-    });
-    if (patterns.EMAIL.test(message)) {
-      detected.push('EMAIL');
-    }
-    patterns.EMAIL.lastIndex = 0;
-    if (patterns.TOKEN.test(message)) {
-      detected.push('TOKEN');
-    }
-    patterns.TOKEN.lastIndex = 0;
-    if (patterns.API_KEY.test(message)) {
-      detected.push('API_KEY');
-    }
-    patterns.API_KEY.lastIndex = 0;
-    if (patterns.JWT.test(message)) {
-      detected.push('JWT');
-    }
-    patterns.JWT.lastIndex = 0;
-    if (patterns.CREDIT_CARD.test(message)) {
-      detected.push('CREDIT_CARD');
-    }
-    patterns.CREDIT_CARD.lastIndex = 0;
-    if (patterns.PHONE.test(message)) {
-      detected.push('PHONE');
-    }
-    patterns.PHONE.lastIndex = 0;
-    if (patterns.SESSION_ID.test(message)) {
-      detected.push('SESSION_ID');
-    }
-    patterns.SESSION_ID.lastIndex = 0;
-    return detected;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-class PlaceholderUtils {
-
-
-
-
-
-  static get PLACEHOLDER_PATTERN() {
-    return /\{\{([^}]+)\}\}/g;
-  }
-
-
-
-
-
-
-  static get PARAM_PATTERN() {
-    return /@(\w+)/g;
-  }
-
-
-
-
-
-
-  static get PROVIDER_PATTERN() {
-    return /\$(\w+)(?:\.(\w+(?:\.\w+)*))?/g;
-  }
-
-
-
-
-
-
-  static extractPlaceholders(template) {
-    if (typeof template !== 'string') {
-      return [];
-    }
-    const matches = [];
-    const regex = new RegExp(PlaceholderUtils.PLACEHOLDER_PATTERN.source, 'g');
-    let match;
-    while ((match = regex.exec(template)) !== null) {
-      matches.push(match[1].trim());
-    }
-    return matches;
-  }
-
-
-
-
-
-
-  static extractPlaceholderNames(template) {
-    const placeholders = PlaceholderUtils.extractPlaceholders(template);
-    return placeholders.map(p => {
-
-      const pipeIndex = p.indexOf('|');
-      return (pipeIndex >= 0 ? p.substring(0, pipeIndex) : p).trim();
-    });
-  }
-
-
-
-
-
-
-  static extractUniquePlaceholderNames(template) {
-    const names = PlaceholderUtils.extractPlaceholderNames(template);
-    return [...new Set(names)];
-  }
-
-
-
-
-
-
-  static hasPlaceholders(str) {
-    if (typeof str !== 'string') {
-      return false;
-    }
-    return PlaceholderUtils.PLACEHOLDER_PATTERN.test(str);
-  }
-
-
-
-
-
-
-  static countPlaceholders(str) {
-    return PlaceholderUtils.extractPlaceholders(str).length;
-  }
-
-
-
-
-
-
-  static extractParamReferences(value) {
-    const refs = [];
-    if (typeof value === 'string') {
-      const regex = new RegExp(PlaceholderUtils.PARAM_PATTERN.source, 'g');
-      let match;
-      while ((match = regex.exec(value)) !== null) {
-        refs.push(match[1]);
-      }
-    } else if (value && typeof value === 'object') {
-      for (const key of Object.keys(value)) {
-        refs.push(...PlaceholderUtils.extractParamReferences(value[key]));
-      }
-    }
-    return refs;
-  }
-
-
-
-
-
-
-  static extractProviderReferences(value) {
-    const refs = [];
-    if (typeof value === 'string') {
-      const regex = new RegExp(PlaceholderUtils.PROVIDER_PATTERN.source, 'g');
-      let match;
-      while ((match = regex.exec(value)) !== null) {
-        refs.push({
-          provider: match[1],
-          property: match[2] || null
-        });
-      }
-    } else if (value && typeof value === 'object') {
-      for (const key of Object.keys(value)) {
-        refs.push(...PlaceholderUtils.extractProviderReferences(value[key]));
-      }
-    }
-    return refs;
-  }
-
-
-
-
-
-
-  static hasParamReferences(value) {
-    return PlaceholderUtils.extractParamReferences(value).length > 0;
-  }
-
-
-
-
-
-
-  static hasProviderReferences(value) {
-    return PlaceholderUtils.extractProviderReferences(value).length > 0;
-  }
-
-
-
-
-
-
-
-
-  static replacePlaceholders(template, context, options = {}) {
-    if (typeof template !== 'string') {
-      return template;
-    }
-    const {
-      undefinedValue = '',
-      keepUndefined = false
-    } = options;
-    return template.replace(PlaceholderUtils.PLACEHOLDER_PATTERN, (match, placeholder) => {
-      const fieldName = placeholder.trim().split('|')[0].trim();
-      const value = PlaceholderUtils._getNestedValue(context, fieldName);
-      if (value === undefined) {
-        return keepUndefined ? match : undefinedValue;
-      }
-      return String(value);
-    });
-  }
-
-
-
-
-
-
-
-
-  static _getNestedValue(obj, path) {
-    if (!obj || typeof obj !== 'object') {
-      return undefined;
-    }
-    const parts = path.split('.');
-    let current = obj;
-    for (const part of parts) {
-      if (current === null || current === undefined) {
-        return undefined;
-      }
-      current = current[part];
-    }
-    return current;
-  }
-
-
-
-
-
-
-
-  static validatePlaceholders(template, context) {
-    const names = PlaceholderUtils.extractUniquePlaceholderNames(template);
-    const missing = [];
-    for (const name of names) {
-      const value = PlaceholderUtils._getNestedValue(context, name);
-      if (value === undefined) {
-        missing.push(name);
-      }
-    }
-    return {
-      valid: missing.length === 0,
-      missing
-    };
-  }
-
-
-
-
-
-
-  static escapePlaceholders(str) {
-    if (typeof str !== 'string') {
-      return str;
-    }
-    return str.replace(/\{\{/g, '\\{\\{').replace(/\}\}/g, '\\}\\}');
-  }
-
-
-
-
-
-
-  static unescapePlaceholders(str) {
-    if (typeof str !== 'string') {
-      return str;
-    }
-    return str.replace(/\\\{\\\{/g, '{{').replace(/\\\}\\\}/g, '}}');
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ServiceValidator {
-
-
-
-
-
-  static get UTILS_METHODS() {
-    return ['sleep'];
-  }
-
-
-
-
-
-
-  static get CACHE_METHODS() {
-    return ['get', 'put', 'remove'];
-  }
-
-
-
-
-
-
-  static get EXCEPTION_SERVICE_METHODS() {
-    return ['executeWithRetry', 'classifyException'];
-  }
-
-
-
-
-
-
-  static get SPREADSHEET_METHODS() {
-    return ['getSpreadsheet', 'getSheet', 'getRange'];
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateLogger(logger, context = 'ServiceValidator') {
-    return ValidationUtils.validateLogger(logger, context);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateUtils(utils, context = 'ServiceValidator', additionalMethods = [], required = true) {
-    const methods = [...ServiceValidator.UTILS_METHODS, ...additionalMethods];
-    return ValidationUtils.validateDependency(utils, 'utils', context, methods, required);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateCache(cache, context = 'ServiceValidator', required = false) {
-    return ValidationUtils.validateDependency(cache, 'cache', context, ServiceValidator.CACHE_METHODS, required);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateExceptionService(exceptionService, context = 'ServiceValidator', required = false) {
-    return ValidationUtils.validateDependency(exceptionService, 'exceptionService', context, ServiceValidator.EXCEPTION_SERVICE_METHODS, required);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateSpreadsheetService(spreadsheetService, context = 'ServiceValidator', required = true) {
-    return ValidationUtils.validateDependency(spreadsheetService, 'spreadsheetService', context, ServiceValidator.SPREADSHEET_METHODS, required);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateServiceDependencies(deps, context = 'ServiceValidator', options = {}) {
-    const {
-      requireCache = false,
-      requireExceptionService = false
-    } = options;
-    ServiceValidator.validateLogger(deps.logger, context);
-    ServiceValidator.validateUtils(deps.utils, context);
-    ServiceValidator.validateCache(deps.cache, context, requireCache);
-    ServiceValidator.validateExceptionService(deps.exceptionService, context, requireExceptionService);
-    return true;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateService(service, name, requiredMethods, context = 'ServiceValidator', required = true) {
-    return ValidationUtils.validateDependency(service, name, context, requiredMethods, required);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static createValidator(name, requiredMethods) {
-    return (service, context = 'ServiceValidator', required = true) => {
-      return ServiceValidator.validateService(service, name, requiredMethods, context, required);
-    };
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static validateConstructorOptions(options, requirements, context = 'ServiceValidator') {
-    const opts = options || {};
-    for (const [key, spec] of Object.entries(requirements)) {
-      const value = opts[key];
-      const required = spec.required !== false; 
-      const methods = spec.methods || [];
-      ValidationUtils.validateDependency(value, key, context, methods, required);
-    }
-    return true;
-  }
-}
-;
-
-
-
-
-
-
-
-class ConfigMergeStrategy {
-
-
-
-
-
-
-  mergeWithDefaults(provided, defaults) {
-    if (!provided) {
-      return cloneDeep_cloneDeep(defaults);
-    }
-    return merge(cloneDeep_cloneDeep(defaults), cloneDeep_cloneDeep(provided));
-  }
-
-
-
-
-
-
-
-
-
-  normalizeOptions(options, schema, context, validator) {
-    const normalized = {};
-    const providedOptions = options || {};
-    for (const [key, spec] of Object.entries(schema)) {
-      let value = key in providedOptions ? providedOptions[key] : spec.default;
-
-
-      if (value !== undefined && value !== null && spec.type) {
-        value = validator.coerceType(value, spec.type, key, context);
-      }
-
-
-      if (spec.transform && typeof spec.transform === 'function') {
-        value = spec.transform(value);
-      }
-      normalized[key] = value;
-    }
-    return normalized;
-  }
-}
-;
-
-
-
-
-
-
-class ConfigValidator {
-
-
-
-
-
-
-
-  validateConfiguration(config, rules, context) {
-    const errors = [];
-    for (const [key, rule] of Object.entries(rules)) {
-      const value = config ? config[key] : undefined;
-      const keyErrors = this.validateField(key, value, rule, context);
-      errors.push(...keyErrors);
-    }
-    return {
-      valid: errors.length === 0,
-      errors
-    };
-  }
-
-
-
-
-
-
-
-
-  assertValid(config, rules, context) {
-    const result = this.validateConfiguration(config, rules, context);
-    if (!result.valid) {
-      throw new Error(`${context}: Configuration validation failed:\n- ${result.errors.join('\n- ')}`);
-    }
-  }
-
-
-
-
-
-
-
-
-
-  coerceType(value, type, key, context) {
-    switch (type) {
-      case 'string':
-        return String(value);
-      case 'number':
-        {
-          const num = Number(value);
-          if (Number.isNaN(num)) {
-            throw new Error(`${context}: ${key} must be a valid number, got: ${value}`);
-          }
-          return num;
-        }
-      case 'integer':
-        {
-          const int = parseInt(value, 10);
-          if (Number.isNaN(int)) {
-            throw new Error(`${context}: ${key} must be a valid integer, got: ${value}`);
-          }
-          return int;
-        }
-      case 'boolean':
-        if (typeof value === 'boolean') {
-          return value;
-        }
-        if (typeof value === 'string') {
-          const lower = value.toLowerCase();
-          if (lower === 'true' || lower === '1' || lower === 'yes') {
-            return true;
-          }
-          if (lower === 'false' || lower === '0' || lower === 'no') {
-            return false;
-          }
-        }
-        return Boolean(value);
-      case 'array':
-        if (Array.isArray(value)) {
-          return value;
-        }
-        return [value];
-      case 'object':
-        if (typeof value === 'object' && value !== null) {
-          return value;
-        }
-        if (typeof value === 'string') {
-          try {
-            return JSON.parse(value);
-          } catch {
-            throw new Error(`${context}: ${key} must be a valid JSON object`);
-          }
-        }
-        throw new Error(`${context}: ${key} must be an object`);
-      default:
-        return value;
-    }
-  }
-
-
-
-
-
-
-
-
-
-  validateField(key, value, rule, _context) {
-    const errors = [];
-
-
-    if (rule.required && (value === undefined || value === null)) {
-      errors.push(`${key} is required`);
-      return errors; 
-    }
-
-
-    if (value === undefined || value === null) {
-      return errors;
-    }
-
-
-    if (rule.type) {
-      const typeValid = this.checkType(value, rule.type);
-      if (!typeValid) {
-        errors.push(`${key} must be of type ${rule.type}`);
-      }
-    }
-
-
-    if (rule.enum && !rule.enum.includes(value)) {
-      const allowed = rule.enum.map(v => `'${v}'`).join(', ');
-      errors.push(`${key} must be one of: ${allowed}`);
-    }
-
-
-    if (rule.type === 'number' || rule.type === 'integer') {
-      if (rule.min !== undefined && value < rule.min) {
-        errors.push(`${key} must be >= ${rule.min}`);
-      }
-      if (rule.max !== undefined && value > rule.max) {
-        errors.push(`${key} must be <= ${rule.max}`);
-      }
-    }
-
-
-    if (rule.type === 'string' && typeof value === 'string') {
-      if (rule.minLength !== undefined && value.length < rule.minLength) {
-        errors.push(`${key} must have at least ${rule.minLength} characters`);
-      }
-      if (rule.maxLength !== undefined && value.length > rule.maxLength) {
-        errors.push(`${key} must have at most ${rule.maxLength} characters`);
-      }
-    }
-
-
-    if (rule.pattern && typeof value === 'string') {
-      const regex = rule.pattern instanceof RegExp ? rule.pattern : new RegExp(rule.pattern);
-      if (!regex.test(value)) {
-        errors.push(`${key} must match pattern: ${rule.pattern}`);
-      }
-    }
-
-
-    if (rule.validator && typeof rule.validator === 'function') {
-      const customError = rule.validator(value, key);
-      if (customError) {
-        errors.push(customError);
-      }
-    }
-    return errors;
-  }
-
-
-
-
-
-
-
-  checkType(value, type) {
-    switch (type) {
-      case 'string':
-        return typeof value === 'string';
-      case 'number':
-        return typeof value === 'number' && !Number.isNaN(value);
-      case 'integer':
-        return Number.isInteger(value);
-      case 'boolean':
-        return typeof value === 'boolean';
-      case 'array':
-        return Array.isArray(value);
-      case 'object':
-        return typeof value === 'object' && value !== null && !Array.isArray(value);
-      case 'function':
-        return typeof value === 'function';
-      default:
-        return true;
-    }
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const mergeStrategy = new ConfigMergeStrategy();
-const validator = new ConfigValidator();
-
-
-
-
-
-class ConfigurationBuilder {
-
-
-
-
-
-
-  static mergeWithDefaults(provided, defaults) {
-    return mergeStrategy.mergeWithDefaults(provided, defaults);
-  }
-
-
-
-
-
-
-
-
-  static normalizeOptions(options, schema, context = 'ConfigurationBuilder') {
-    return mergeStrategy.normalizeOptions(options, schema, context, validator);
-  }
-
-
-
-
-
-
-
-
-  static validateConfiguration(config, rules, context = 'ConfigurationBuilder') {
-    return validator.validateConfiguration(config, rules, context);
-  }
-
-
-
-
-
-
-
-
-  static assertValid(config, rules, context = 'ConfigurationBuilder') {
-    validator.assertValid(config, rules, context);
-  }
-
-
-
-
-
-
-  static create(defaults = {}) {
-    let config = cloneDeep_cloneDeep(defaults);
-    const builder = {
-
-
-
-
-
-
-      set(key, value) {
-        config[key] = value;
-        return builder;
-      },
-
-
-
-
-
-
-      setIfDefined(key, value) {
-        if (value !== undefined) {
-          config[key] = value;
-        }
-        return builder;
-      },
-
-
-
-
-
-
-      setDefault(key, value) {
-        if (!(key in config)) {
-          config[key] = value;
-        }
-        return builder;
-      },
-
-
-
-
-
-      merge(additional) {
-        config = merge(config, cloneDeep_cloneDeep(additional));
-        return builder;
-      },
-
-
-
-
-
-
-
-      validate(rules, context) {
-        ConfigurationBuilder.assertValid(config, rules, context);
-        return builder;
-      },
-
-
-
-
-      build() {
-        return cloneDeep_cloneDeep(config);
-      },
-
-
-
-
-      freeze() {
-        return Object.freeze(cloneDeep_cloneDeep(config));
-      }
-    };
-    return builder;
-  }
 }
 ;
 const testing = {};
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12636,16 +9789,6 @@ class ErrorClassifier {
   clearCache() {
     this._classificationCache.clear();
   }
-
-
-
-
-
-
-
-  _hashString(str) {
-    return HashUtils.generateHash(str);
-  }
 }
 ;
 
@@ -12735,39 +9878,6 @@ class ErrorReporterStatistics {
   }
 }
 ;
-
-
-
-
-
-
-class ErrorReporterSanitizer {
-  constructor(facade) {
-    this.facade = facade;
-  }
-
-
-
-
-
-
-
-  _sanitizeMessage(message) {
-    return PiiRedactor.redact(message);
-  }
-
-
-
-
-
-
-
-  _parseStackTrace(stack) {
-
-    return stack;
-  }
-}
-;
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -12778,7 +9888,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 
 ;
-
 
 
 class ErrorReporter {
@@ -12812,7 +9921,6 @@ class ErrorReporter {
 
     this._recorder = new ErrorReporterRecorder(this);
     this._statistics = new ErrorReporterStatistics(this);
-    this._sanitizer = new ErrorReporterSanitizer(this);
 
 
     Delegation.delegateMethods(this, [{
@@ -12821,9 +9929,6 @@ class ErrorReporter {
     }, {
       manager: this._statistics,
       methods: ['getSummary']
-    }, {
-      manager: this._sanitizer,
-      methods: ['_parseStackTrace']
     }]);
   }
 }
@@ -14134,180 +11239,6 @@ class ResilienceConfiguration {
 
 
 
-const DEFAULT_REQUESTS_PER_MINUTE = 60;
-const DEFAULT_BURST_CAPACITY = 10;
-const DEFAULT_MAX_WAIT_THRESHOLD_MS = 5000;
-class RateLimiter {
-  constructor(config = {}, logger = null, utils = null) {
-    if (config === null || typeof config !== 'object' || Array.isArray(config)) {
-      throw new Error('RateLimiter: config must be an object');
-    }
-    let refillRate;
-    if (config.requestsPerSecond !== undefined && config.requestsPerSecond !== 0) {
-      refillRate = config.requestsPerSecond;
-    } else {
-      const rpm = config.requestsPerMinute || DEFAULT_REQUESTS_PER_MINUTE;
-      refillRate = rpm / 60;
-    }
-    if (refillRate <= 0) {
-      throw new Error('RateLimiter: refill rate must be greater than 0');
-    }
-    const burstCapacity = config.burstCapacity || DEFAULT_BURST_CAPACITY;
-    if (burstCapacity < 1) {
-      throw new Error('RateLimiter: burst capacity must be at least 1');
-    }
-    const maxWaitThresholdMs = config.maxWaitThresholdMs !== undefined ? config.maxWaitThresholdMs : DEFAULT_MAX_WAIT_THRESHOLD_MS;
-    if (maxWaitThresholdMs < 0) {
-      throw new Error('RateLimiter: maxWaitThresholdMs must be non-negative');
-    }
-    if (utils !== null && utils !== undefined) {
-      if (typeof utils !== 'object' || typeof utils.sleep !== 'function') {
-        throw new Error('RateLimiter: utils must be a valid UtilitiesService with sleep() method');
-      }
-    }
-    this._refillRate = refillRate;
-    this._burstCapacity = burstCapacity;
-    this._autoRefill = config.autoRefill !== undefined ? Boolean(config.autoRefill) : true;
-    this._maxWaitThresholdMs = maxWaitThresholdMs;
-    this._logger = logger;
-    this._utils = utils;
-    this._buckets = {};
-    this._stats = {
-      totalRequests: 0,
-      throttledRequests: 0,
-      totalWaitTime: 0
-    };
-  }
-  _validateOpName(method, name) {
-    if (typeof name !== 'string' || name.length === 0) {
-      throw new Error(`RateLimiter.${method}: operationName must be a non-empty string`);
-    }
-  }
-  _getBucket(operationName) {
-    if (!this._buckets[operationName]) {
-      this._buckets[operationName] = {
-        tokens: this._burstCapacity,
-        lastRefillTime: Date.now(),
-        requestCount: 0,
-        throttledCount: 0
-      };
-    }
-    return this._buckets[operationName];
-  }
-  _refillTokens(bucket) {
-    if (!this._autoRefill) return;
-    const now = Date.now();
-    const elapsedSec = (now - bucket.lastRefillTime) / 1000;
-    if (elapsedSec <= 0) return;
-    const refill = elapsedSec * this._refillRate;
-    bucket.tokens = Math.min(this._burstCapacity, bucket.tokens + refill);
-    bucket.lastRefillTime = now;
-  }
-  tryAcquire(operationName, tokensRequired = 1) {
-    this._validateOpName('tryAcquire', operationName);
-    if (typeof tokensRequired !== 'number' || tokensRequired < 1) {
-      throw new Error('RateLimiter.tryAcquire: tokensRequired must be at least 1');
-    }
-    const bucket = this._getBucket(operationName);
-    this._refillTokens(bucket);
-    bucket.requestCount += 1;
-    this._stats.totalRequests += 1;
-    if (bucket.tokens >= tokensRequired) {
-      bucket.tokens -= tokensRequired;
-      return true;
-    }
-    bucket.throttledCount += 1;
-    this._stats.throttledRequests += 1;
-    this._log(`Rate limit reached for '${operationName}' (need ${tokensRequired}, have ${bucket.tokens.toFixed(2)})`);
-    return false;
-  }
-  waitForToken(operationName, tokensRequired = 1, _maxWaitMs = 30000) {
-    this._validateOpName('waitForToken', operationName);
-    const bucket = this._getBucket(operationName);
-    this._refillTokens(bucket);
-    if (bucket.tokens >= tokensRequired) {
-      bucket.tokens -= tokensRequired;
-      bucket.requestCount += 1;
-      this._stats.totalRequests += 1;
-      return true;
-    }
-    const tokensNeeded = tokensRequired - bucket.tokens;
-    const requiredWaitMs = Math.ceil(tokensNeeded / this._refillRate * 1000);
-    if (requiredWaitMs > this._maxWaitThresholdMs || !this._utils) {
-      throw new RateLimitExceededException(operationName, requiredWaitMs);
-    }
-    this._utils.sleep(requiredWaitMs);
-    this._stats.totalWaitTime += requiredWaitMs;
-    const bucket2 = this._getBucket(operationName);
-    this._refillTokens(bucket2);
-    bucket2.tokens = Math.max(0, bucket2.tokens - tokensRequired);
-    bucket2.requestCount += 1;
-    this._stats.totalRequests += 1;
-    return true;
-  }
-  acquire(operationName, tokensRequired = 1) {
-    if (!this.tryAcquire(operationName, tokensRequired)) {
-      throw new Error(`Rate limit exceeded for operation '${operationName}'. Please try again later.`);
-    }
-  }
-  reset(operationName) {
-    this._validateOpName('reset', operationName);
-    this._buckets[operationName] = {
-      tokens: this._burstCapacity,
-      lastRefillTime: Date.now(),
-      requestCount: 0,
-      throttledCount: 0
-    };
-    this._log(`Rate limiter reset for '${operationName}'`);
-  }
-  resetAll() {
-    for (const name of Object.keys(this._buckets)) {
-      this.reset(name);
-    }
-  }
-  getStats(operationName) {
-    this._validateOpName('getStats', operationName);
-    const bucket = this._getBucket(operationName);
-    this._refillTokens(bucket);
-    const throttleRate = bucket.requestCount === 0 ? '0%' : `${(bucket.throttledCount / bucket.requestCount * 100).toFixed(2)}%`;
-    return {
-      tokensAvailable: bucket.tokens,
-      maxCapacity: this._burstCapacity,
-      requestCount: bucket.requestCount,
-      throttledCount: bucket.throttledCount,
-      throttleRate
-    };
-  }
-  getGlobalStats() {
-    const {
-      totalRequests,
-      throttledRequests,
-      totalWaitTime
-    } = this._stats;
-    const throttleRate = totalRequests === 0 ? '0%' : `${(throttledRequests / totalRequests * 100).toFixed(2)}%`;
-    const avgWaitTime = totalRequests === 0 ? '0ms' : `${(totalWaitTime / totalRequests).toFixed(2)}ms`;
-    return {
-      totalRequests,
-      throttledRequests,
-      totalWaitTime,
-      throttleRate,
-      avgWaitTime
-    };
-  }
-  _log(message) {
-    if (this._logger && typeof this._logger.debug === 'function') {
-      this._logger.debug(`[RateLimiter] ${message}`);
-    }
-  }
-}
-;
-
-
-
-
-
-
-
 
 
 
@@ -14763,43 +11694,10 @@ class GoogleService {
 
   constructor(logger, cache, utils, exceptionService) {
 
-    if (logger == null) {
-      throw new Error('GoogleService: logger is required and cannot be null or undefined');
-    }
-    if (typeof logger !== 'object') {
-      throw new Error('GoogleService: logger must be of type object');
-    }
-    for (const method of ['debug', 'info', 'warn', 'error']) {
-      if (typeof logger[method] !== 'function') {
-        throw new Error('GoogleService: logger must have method: ' + method);
-      }
-    }
-    if (cache == null) {
-      throw new Error('GoogleService: cache is required and cannot be null or undefined');
-    }
-    if (typeof cache !== 'object') {
-      throw new Error('GoogleService: cache must be of type object');
-    }
-    for (const method of ['get', 'put', 'remove']) {
-      if (typeof cache[method] !== 'function') {
-        throw new Error('GoogleService: cache must have method: ' + method);
-      }
-    }
-    if (utils == null) {
-      throw new Error('GoogleService: utils is required and cannot be null or undefined');
-    }
-    if (typeof utils !== 'object') {
-      throw new Error('GoogleService: utils must be of type object');
-    }
-    if (exceptionService == null) {
-      throw new Error('GoogleService: exceptionService is required and cannot be null or undefined');
-    }
-    if (typeof exceptionService !== 'object') {
-      throw new Error('GoogleService: exceptionService must be of type object');
-    }
-    if (typeof exceptionService.executeWithRetry !== 'function') {
-      throw new Error('GoogleService: exceptionService must have method: executeWithRetry');
-    }
+    ValidationUtils.validateDependency(logger, 'logger', 'GoogleService', ['debug', 'info', 'warn', 'error']);
+    ValidationUtils.validateDependency(cache, 'cache', 'GoogleService', ['get', 'put', 'remove']);
+    ValidationUtils.validateDependency(utils, 'utils', 'GoogleService');
+    ValidationUtils.validateDependency(exceptionService, 'exceptionService', 'GoogleService', ['executeWithRetry']);
 
 
 
@@ -16379,9 +13277,13 @@ class DriveMetadataService {
           pageSize: 100,
           supportsAllDrives: true
         };
-        if (pageToken) options.pageToken = pageToken;
+        if (pageToken) {
+          options.pageToken = pageToken;
+        }
         const page = this._exceptionService.executeWithRetry(() => Drive.Permissions.list(fileId, options), {}, 3);
-        if (Array.isArray(page.permissions)) permissions.push(...page.permissions);
+        if (Array.isArray(page.permissions)) {
+          permissions.push(...page.permissions);
+        }
         pageToken = page.nextPageToken || null;
       } while (pageToken);
       results[fileId] = permissions;
@@ -22678,335 +19580,6 @@ ServiceFactory_defineProperty(ServiceFactory, "_config", {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ServiceError extends BaseError {
-
-
-
-
-
-
-
-
-
-  constructor(message, serviceName, operation, originalError = null, context = {}) {
-    super(message, context, originalError);
-
-    this.name = 'ServiceError';
-    this.serviceName = serviceName;
-    this.operation = operation;
-  }
-
-
-
-
-
-
-  toLogObject() {
-    return {
-      name: this.name,
-      message: this.message,
-      serviceName: this.serviceName,
-      operation: this.operation,
-      timestamp: this.timestamp,
-      context: this.context,
-      originalError: this.originalError ? {
-        message: this.originalError.message,
-        stack: this.originalError.stack
-      } : null
-    };
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-class QuotaExceededError extends ServiceError {
-
-
-
-
-
-
-
-
-
-  constructor(message, serviceName, operation, originalError, context) {
-    super(message, serviceName, operation, originalError, context);
-    this.name = 'QuotaExceededError';
-    this.retryable = true;
-    this.retryAfter = 60000; 
-  }
-}
-
-
-
-
-
-
-
-
-
-
-class PermissionDeniedError extends ServiceError {
-
-
-
-
-
-
-
-
-
-  constructor(message, serviceName, operation, originalError, context) {
-    super(message, serviceName, operation, originalError, context);
-    this.name = 'PermissionDeniedError';
-    this.retryable = false;
-  }
-}
-
-
-
-
-
-
-
-
-
-
-class ResourceNotFoundError extends ServiceError {
-
-
-
-
-
-
-
-
-
-  constructor(message, serviceName, operation, originalError, context) {
-    super(message, serviceName, operation, originalError, context);
-    this.name = 'ResourceNotFoundError';
-    this.retryable = false;
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-class ServiceUnavailableError extends ServiceError {
-
-
-
-
-
-
-
-
-
-  constructor(message, serviceName, operation, originalError, context) {
-    super(message, serviceName, operation, originalError, context);
-    this.name = 'ServiceUnavailableError';
-    this.retryable = true;
-    this.retryAfter = 5000; 
-  }
-}
-
-
-
-
-
-
-
-
-
-
-class ErrorHandler_ValidationError extends ServiceError {
-
-
-
-
-
-
-
-
-
-  constructor(message, serviceName, operation, originalError, context) {
-    super(message, serviceName, operation, originalError, context);
-    this.name = 'ValidationError';
-    this.retryable = false;
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ErrorHandler {
-
-
-
-
-
-
-  constructor(serviceName, logger) {
-    this.serviceName = serviceName;
-    this.logger = logger || new LoggerService();
-  }
-
-
-
-
-
-
-
-
-
-
-  classifyError(error, operation, context = {}) {
-    const message = error.message || String(error);
-
-
-    if (/quota|limit.*exceeded|too many requests/i.test(message)) {
-      return new QuotaExceededError(message, this.serviceName, operation, error, context);
-    }
-
-
-    if (/permission.*denied|unauthorized|forbidden/i.test(message)) {
-      return new PermissionDeniedError(message, this.serviceName, operation, error, context);
-    }
-
-
-    if (/not found|does not exist|404/i.test(message)) {
-      return new ResourceNotFoundError(message, this.serviceName, operation, error, context);
-    }
-
-
-    if (/service.*unavailable|503|502|timeout/i.test(message)) {
-      return new ServiceUnavailableError(message, this.serviceName, operation, error, context);
-    }
-
-
-    return new ServiceError(message, this.serviceName, operation, error, context);
-  }
-
-
-
-
-
-
-
-
-
-
-  wrap(func, operation, context = {}) {
-    try {
-      return func();
-    } catch (error) {
-      const classifiedError = this.classifyError(error, operation, context);
-      this.logger.error(`[${this.serviceName}] ${operation} failed:`, classifiedError.toLogObject());
-      throw classifiedError;
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  withRetry(func, operation, options = {}) {
-    const maxAttempts = options.maxAttempts || 3;
-    const baseDelay = options.baseDelay || 1000;
-    const context = options.context || {};
-    let lastError = null;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        return func();
-      } catch (error) {
-        const classifiedError = this.classifyError(error, operation, context);
-        lastError = classifiedError;
-
-
-        if (!classifiedError.retryable || attempt === maxAttempts) {
-          this.logger.error(`[${this.serviceName}] ${operation} failed after ${attempt} attempts:`, classifiedError.toLogObject());
-          throw classifiedError;
-        }
-
-
-
-        const retryDelay = classifiedError.retryAfter || baseDelay * (1 << attempt - 1);
-        this.logger.warn(`[${this.serviceName}] ${operation} failed (attempt ${attempt}/${maxAttempts}), retrying in ${retryDelay}ms...`);
-        Utilities.sleep(retryDelay);
-      }
-    }
-    throw lastError;
-  }
-}
-
-
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class LockService {
 
 
@@ -23420,40 +19993,6 @@ class MockLock {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;
 
 
@@ -23567,62 +20106,427 @@ class FilterRegistry {
   get(name) {
     return this._filters.get(name) || null;
   }
-
-
-
-
-
-
-  has(name) {
-    return this._filters.has(name);
-  }
-
-
-
-
-
-
-  unregister(name) {
-    const existed = this._filters.delete(name);
-    if (existed) {
-      this._logger.debug(`FilterRegistry: Unregistered filter '${name}'`);
-    }
-    return existed;
-  }
-
-
-
-
-
-  getAllNames() {
-    return Array.from(this._filters.keys());
-  }
-
-
-
-
-
-  getAll() {
-    return Array.from(this._filters.values());
-  }
-
-
-
-
-  clear() {
-    this._filters.clear();
-    this._logger.debug('FilterRegistry: Cleared all filters');
-  }
-
-
-
-
-
-  count() {
-    return this._filters.size;
-  }
 }
 ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class DefaultFilter extends FilterStrategy {
+
+
+
+
+  constructor(name = 'default') {
+    super();
+    this._name = name;
+  }
+  getName() {
+    return this._name;
+  }
+  getDescription() {
+    return 'Returns the argument if value is null/undefined/empty';
+  }
+  execute(value, defaultValue = '') {
+
+    if (value === null || value === undefined || value === '') {
+      return defaultValue;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      return defaultValue;
+    }
+    return value;
+  }
+}
+
+
+
+
+
+class YesNoFilter extends FilterStrategy {
+  getName() {
+    return 'yesno';
+  }
+  getDescription() {
+    return 'Converts boolean to "YesString,NoString"';
+  }
+  execute(value, yesNoString = 'Yes,No') {
+    const parts = yesNoString.split(',');
+    const yesString = parts[0] || 'Yes';
+    const noString = parts[1] || 'No';
+    return value ? yesString : noString;
+  }
+}
+
+
+
+
+
+
+
+class TruncateFilter extends FilterStrategy {
+  getName() {
+    return 'truncate';
+  }
+  getDescription() {
+    return 'Truncates string to N chars with optional suffix';
+  }
+  execute(value, length = 50, suffix = '...') {
+    const str = String(value);
+    const len = parseInt(length, 10);
+    if (isNaN(len) || len <= 0) {
+      return str;
+    }
+    if (str.length <= len) {
+      return str;
+    }
+    return str.substring(0, len) + suffix;
+  }
+}
+
+
+
+
+
+class SplitFilter extends FilterStrategy {
+  getName() {
+    return 'split';
+  }
+  getDescription() {
+    return 'Splits string by separator into an array';
+  }
+  execute(value, separator = ',') {
+    return String(value).split(separator);
+  }
+}
+
+
+
+
+
+class ReplaceFilter extends FilterStrategy {
+  getName() {
+    return 'replace';
+  }
+  getDescription() {
+    return 'Replaces occurrences of a string';
+  }
+  execute(value, searchValue, replaceValue = '') {
+    if (!searchValue) {
+      return value;
+    }
+
+
+    const str = String(value);
+    return str.split(searchValue).join(replaceValue);
+  }
+}
+
+
+
+
+
+class UrlEncodeFilter extends FilterStrategy {
+  getName() {
+    return 'url_encode';
+  }
+  getDescription() {
+    return 'Encodes URI components';
+  }
+  execute(value) {
+    try {
+      return encodeURIComponent(String(value));
+    } catch (_e) {
+      return String(value);
+    }
+  }
+}
+
+
+
+
+
+
+
+class MapFilter extends FilterStrategy {
+  getName() {
+    return 'map';
+  }
+  getDescription() {
+    return 'Extracts a specific property from an array of objects';
+  }
+  _isDangerousKey(key) {
+    return key === '__proto__' || key === 'constructor' || key === 'prototype';
+  }
+  execute(array, propertyName) {
+    if (!Array.isArray(array)) {
+      return array;
+    }
+    if (!propertyName || this._isDangerousKey(propertyName)) {
+      return array;
+    }
+    return array.map(item => {
+      if (item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(item, propertyName)) {
+        return item[propertyName];
+      }
+      return undefined;
+    });
+  }
+}
+
+
+
+
+
+class LimitFilter extends FilterStrategy {
+  getName() {
+    return 'limit';
+  }
+  getDescription() {
+    return 'Returns the first N items';
+  }
+  execute(array, count = 10) {
+    if (!Array.isArray(array)) {
+      return array;
+    }
+    const n = parseInt(count, 10);
+    if (isNaN(n) || n <= 0) {
+      return array;
+    }
+    return array.slice(0, n);
+  }
+}
+
+
+
+
+
+class SkipFilter extends FilterStrategy {
+  getName() {
+    return 'skip';
+  }
+  getDescription() {
+    return 'Skips the first N items';
+  }
+  execute(array, count = 0) {
+    if (!Array.isArray(array)) {
+      return array;
+    }
+    const n = parseInt(count, 10);
+    if (isNaN(n) || n <= 0) {
+      return array;
+    }
+    return array.slice(n);
+  }
+}
+
+
+
+
+
+class SortFilter extends FilterStrategy {
+
+
+
+
+  constructor(name = 'sort') {
+    super();
+    this._name = name;
+  }
+  getName() {
+    return this._name;
+  }
+  getDescription() {
+    return 'Sorts array by property (optional: "desc")';
+  }
+  _isDangerousKey(key) {
+    return key === '__proto__' || key === 'constructor' || key === 'prototype';
+  }
+  execute(array, propertyOrDirection, direction) {
+    if (!Array.isArray(array)) {
+      return array;
+    }
+
+
+    if (array.length === 0) {
+      return array;
+    }
+
+
+    let property = null;
+    let isDescending = false;
+
+
+    if (propertyOrDirection === 'desc' || propertyOrDirection === 'asc') {
+      isDescending = propertyOrDirection === 'desc';
+    } else if (propertyOrDirection) {
+      property = propertyOrDirection;
+      isDescending = direction === 'desc';
+    } else {
+
+      isDescending = false;
+    }
+
+
+    const sorted = [...array];
+    sorted.sort((a, b) => {
+      let valA, valB;
+      if (property && !this._isDangerousKey(property)) {
+
+        valA = a && typeof a === 'object' && Object.prototype.hasOwnProperty.call(a, property) ? a[property] : null;
+        valB = b && typeof b === 'object' && Object.prototype.hasOwnProperty.call(b, property) ? b[property] : null;
+      } else {
+
+        valA = a;
+        valB = b;
+      }
+
+
+      if (valA == null && valB != null) {
+        return 1;
+      }
+      if (valA != null && valB == null) {
+        return -1;
+      }
+      if (valA == null && valB == null) {
+        return 0;
+      }
+
+
+      if (typeof valA === 'string' || typeof valB === 'string') {
+        const result = String(valA).localeCompare(String(valB), 'en', {
+          sensitivity: 'base'
+        });
+        return isDescending ? -result : result;
+      }
+
+
+      if (valA < valB) {
+        return isDescending ? 1 : -1;
+      }
+      if (valA > valB) {
+        return isDescending ? -1 : 1;
+      }
+      return 0;
+    });
+    return sorted;
+  }
+}
+
+
+
+
+
+class ReverseFilter extends FilterStrategy {
+  getName() {
+    return 'reverse';
+  }
+  getDescription() {
+    return 'Reverses array order';
+  }
+  execute(array) {
+    if (!Array.isArray(array)) {
+      return array;
+    }
+    return [...array].reverse();
+  }
+}
+
+
+
+
+
+
+
+class PlusFilter extends FilterStrategy {
+  getName() {
+    return 'plus';
+  }
+  getDescription() {
+    return 'Adds N to the value';
+  }
+  execute(value, addend = 0) {
+    const num = Number(value);
+    const add = Number(addend);
+    if (isNaN(num) || isNaN(add)) {
+      return value;
+    }
+    return num + add;
+  }
+}
+
+
+
+
+
+class MinusFilter extends FilterStrategy {
+  getName() {
+    return 'minus';
+  }
+  getDescription() {
+    return 'Subtracts N from the value';
+  }
+  execute(value, subtrahend = 0) {
+    const num = Number(value);
+    const sub = Number(subtrahend);
+    if (isNaN(num) || isNaN(sub)) {
+      return value;
+    }
+    return num - sub;
+  }
+}
+
+
+
+
+
+class JsonFilter extends FilterStrategy {
+  getName() {
+    return 'json';
+  }
+  getDescription() {
+    return 'Serializes object to JSON string';
+  }
+  execute(value, indent) {
+    try {
+      const indentValue = indent ? parseInt(indent, 10) : 0;
+      return JSON.stringify(value, null, indentValue || undefined);
+    } catch (_e) {
+      return String(value);
+    }
+  }
+}
+
+
+
+
+
+
+
+function createAdvancedFilters() {
+  return [
+
+  new DefaultFilter(), new YesNoFilter(), new DefaultFilter('fallback'),
+
+  new TruncateFilter(), new SplitFilter(), new ReplaceFilter(), new UrlEncodeFilter(),
+
+  new MapFilter(), new LimitFilter(), new SkipFilter(), new SortFilter(), new ReverseFilter(),
+
+  new PlusFilter(), new MinusFilter(), new JsonFilter()];
+}
+;
+
 
 
 
@@ -23827,56 +20731,6 @@ class PluralizeFilter extends FilterStrategy {
 
 
 
-class SortByFilter extends FilterStrategy {
-  getName() {
-    return 'sortBy';
-  }
-  getDescription() {
-    return 'Sorts an array by a property';
-  }
-  _isDangerousKey(key) {
-    return key === '__proto__' || key === 'constructor' || key === 'prototype';
-  }
-  execute(array, key) {
-    if (!Array.isArray(array)) {
-      return array;
-    }
-
-    if (this._isDangerousKey(key)) {
-      return array;
-    }
-    return [...array].sort((a, b) => {
-      const valA = a && typeof a === 'object' && Object.prototype.hasOwnProperty.call(a, key) ? a[key] : null;
-      const valB = b && typeof b === 'object' && Object.prototype.hasOwnProperty.call(b, key) ? b[key] : null;
-      if (valA == null && valB != null) {
-        return 1;
-      }
-      if (valA != null && valB == null) {
-        return -1;
-      }
-      if (valA == null && valB == null) {
-        return 0;
-      }
-      if (typeof valA !== 'string' || typeof valB !== 'string') {
-        if (valA < valB) {
-          return -1;
-        }
-        if (valA > valB) {
-          return 1;
-        }
-        return 0;
-      }
-      return valA.localeCompare(valB, 'en', {
-        sensitivity: 'base'
-      });
-    });
-  }
-}
-
-
-
-
-
 class WhereFilter extends FilterStrategy {
   getName() {
     return 'where';
@@ -23937,428 +20791,7 @@ class ExcludeFilter extends FilterStrategy {
 
 
 function createBuiltInFilters(utils) {
-  return [new UppercaseFilter(), new LowercaseFilter(), new CapitalizeFilter(), new DateFilter(utils), new NumberFilter(), new JoinFilter(), new PluralizeFilter(), new SortByFilter(), new WhereFilter(), new ExcludeFilter()];
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class DefaultFilter extends FilterStrategy {
-  getName() {
-    return 'default';
-  }
-  getDescription() {
-    return 'Returns the argument if value is null/undefined/empty';
-  }
-  execute(value, defaultValue = '') {
-
-    if (value === null || value === undefined || value === '') {
-      return defaultValue;
-    }
-    if (Array.isArray(value) && value.length === 0) {
-      return defaultValue;
-    }
-    return value;
-  }
-}
-
-
-
-
-
-class YesNoFilter extends FilterStrategy {
-  getName() {
-    return 'yesno';
-  }
-  getDescription() {
-    return 'Converts boolean to "YesString,NoString"';
-  }
-  execute(value, yesNoString = 'Yes,No') {
-    const parts = yesNoString.split(',');
-    const yesString = parts[0] || 'Yes';
-    const noString = parts[1] || 'No';
-    return value ? yesString : noString;
-  }
-}
-
-
-
-
-
-class FallbackFilter extends FilterStrategy {
-  getName() {
-    return 'fallback';
-  }
-  getDescription() {
-    return 'Returns fallback value if main value is missing';
-  }
-  execute(value, fallbackValue = '') {
-    if (value === null || value === undefined || value === '') {
-      return fallbackValue;
-    }
-    return value;
-  }
-}
-
-
-
-
-
-
-
-class TruncateFilter extends FilterStrategy {
-  getName() {
-    return 'truncate';
-  }
-  getDescription() {
-    return 'Truncates string to N chars with optional suffix';
-  }
-  execute(value, length = 50, suffix = '...') {
-    const str = String(value);
-    const len = parseInt(length, 10);
-    if (isNaN(len) || len <= 0) {
-      return str;
-    }
-    if (str.length <= len) {
-      return str;
-    }
-    return str.substring(0, len) + suffix;
-  }
-}
-
-
-
-
-
-class SplitFilter extends FilterStrategy {
-  getName() {
-    return 'split';
-  }
-  getDescription() {
-    return 'Splits string by separator into an array';
-  }
-  execute(value, separator = ',') {
-    return String(value).split(separator);
-  }
-}
-
-
-
-
-
-class ReplaceFilter extends FilterStrategy {
-  getName() {
-    return 'replace';
-  }
-  getDescription() {
-    return 'Replaces occurrences of a string';
-  }
-  execute(value, searchValue, replaceValue = '') {
-    if (!searchValue) {
-      return value;
-    }
-
-
-    const str = String(value);
-    return str.split(searchValue).join(replaceValue);
-  }
-}
-
-
-
-
-
-class UrlEncodeFilter extends FilterStrategy {
-  getName() {
-    return 'url_encode';
-  }
-  getDescription() {
-    return 'Encodes URI components';
-  }
-  execute(value) {
-    try {
-      return encodeURIComponent(String(value));
-    } catch (_e) {
-      return String(value);
-    }
-  }
-}
-
-
-
-
-
-
-
-class MapFilter extends FilterStrategy {
-  getName() {
-    return 'map';
-  }
-  getDescription() {
-    return 'Extracts a specific property from an array of objects';
-  }
-  _isDangerousKey(key) {
-    return key === '__proto__' || key === 'constructor' || key === 'prototype';
-  }
-  execute(array, propertyName) {
-    if (!Array.isArray(array)) {
-      return array;
-    }
-    if (!propertyName || this._isDangerousKey(propertyName)) {
-      return array;
-    }
-    return array.map(item => {
-      if (item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(item, propertyName)) {
-        return item[propertyName];
-      }
-      return undefined;
-    });
-  }
-}
-
-
-
-
-
-class LimitFilter extends FilterStrategy {
-  getName() {
-    return 'limit';
-  }
-  getDescription() {
-    return 'Returns the first N items';
-  }
-  execute(array, count = 10) {
-    if (!Array.isArray(array)) {
-      return array;
-    }
-    const n = parseInt(count, 10);
-    if (isNaN(n) || n <= 0) {
-      return array;
-    }
-    return array.slice(0, n);
-  }
-}
-
-
-
-
-
-class SkipFilter extends FilterStrategy {
-  getName() {
-    return 'skip';
-  }
-  getDescription() {
-    return 'Skips the first N items';
-  }
-  execute(array, count = 0) {
-    if (!Array.isArray(array)) {
-      return array;
-    }
-    const n = parseInt(count, 10);
-    if (isNaN(n) || n <= 0) {
-      return array;
-    }
-    return array.slice(n);
-  }
-}
-
-
-
-
-
-class SortFilter extends FilterStrategy {
-  getName() {
-    return 'sort';
-  }
-  getDescription() {
-    return 'Sorts array by property (optional: "desc")';
-  }
-  _isDangerousKey(key) {
-    return key === '__proto__' || key === 'constructor' || key === 'prototype';
-  }
-  execute(array, propertyOrDirection, direction) {
-    if (!Array.isArray(array)) {
-      return array;
-    }
-
-
-    if (array.length === 0) {
-      return array;
-    }
-
-
-    let property = null;
-    let isDescending = false;
-
-
-    if (propertyOrDirection === 'desc' || propertyOrDirection === 'asc') {
-      isDescending = propertyOrDirection === 'desc';
-    } else if (propertyOrDirection) {
-      property = propertyOrDirection;
-      isDescending = direction === 'desc';
-    } else {
-
-      isDescending = false;
-    }
-
-
-    const sorted = [...array];
-    sorted.sort((a, b) => {
-      let valA, valB;
-      if (property && !this._isDangerousKey(property)) {
-
-        valA = a && typeof a === 'object' && Object.prototype.hasOwnProperty.call(a, property) ? a[property] : null;
-        valB = b && typeof b === 'object' && Object.prototype.hasOwnProperty.call(b, property) ? b[property] : null;
-      } else {
-
-        valA = a;
-        valB = b;
-      }
-
-
-      if (valA == null && valB != null) {
-        return 1;
-      }
-      if (valA != null && valB == null) {
-        return -1;
-      }
-      if (valA == null && valB == null) {
-        return 0;
-      }
-
-
-      if (typeof valA === 'string' || typeof valB === 'string') {
-        const result = String(valA).localeCompare(String(valB), 'en', {
-          sensitivity: 'base'
-        });
-        return isDescending ? -result : result;
-      }
-
-
-      if (valA < valB) {
-        return isDescending ? 1 : -1;
-      }
-      if (valA > valB) {
-        return isDescending ? -1 : 1;
-      }
-      return 0;
-    });
-    return sorted;
-  }
-}
-
-
-
-
-
-class ReverseFilter extends FilterStrategy {
-  getName() {
-    return 'reverse';
-  }
-  getDescription() {
-    return 'Reverses array order';
-  }
-  execute(array) {
-    if (!Array.isArray(array)) {
-      return array;
-    }
-    return [...array].reverse();
-  }
-}
-
-
-
-
-
-
-
-class PlusFilter extends FilterStrategy {
-  getName() {
-    return 'plus';
-  }
-  getDescription() {
-    return 'Adds N to the value';
-  }
-  execute(value, addend = 0) {
-    const num = Number(value);
-    const add = Number(addend);
-    if (isNaN(num) || isNaN(add)) {
-      return value;
-    }
-    return num + add;
-  }
-}
-
-
-
-
-
-class MinusFilter extends FilterStrategy {
-  getName() {
-    return 'minus';
-  }
-  getDescription() {
-    return 'Subtracts N from the value';
-  }
-  execute(value, subtrahend = 0) {
-    const num = Number(value);
-    const sub = Number(subtrahend);
-    if (isNaN(num) || isNaN(sub)) {
-      return value;
-    }
-    return num - sub;
-  }
-}
-
-
-
-
-
-class JsonFilter extends FilterStrategy {
-  getName() {
-    return 'json';
-  }
-  getDescription() {
-    return 'Serializes object to JSON string';
-  }
-  execute(value, indent) {
-    try {
-      const indentValue = indent ? parseInt(indent, 10) : 0;
-      return JSON.stringify(value, null, indentValue || undefined);
-    } catch (_e) {
-      return String(value);
-    }
-  }
-}
-
-
-
-
-
-
-
-function createAdvancedFilters() {
-  return [
-
-  new DefaultFilter(), new YesNoFilter(), new FallbackFilter(),
-
-  new TruncateFilter(), new SplitFilter(), new ReplaceFilter(), new UrlEncodeFilter(),
-
-  new MapFilter(), new LimitFilter(), new SkipFilter(), new SortFilter(), new ReverseFilter(),
-
-  new PlusFilter(), new MinusFilter(), new JsonFilter()];
+  return [new UppercaseFilter(), new LowercaseFilter(), new CapitalizeFilter(), new DateFilter(utils), new NumberFilter(), new JoinFilter(), new PluralizeFilter(), new SortFilter('sortBy'), new WhereFilter(), new ExcludeFilter()];
 }
 ;
 
@@ -29128,9 +25561,8 @@ const unsafeMemberNames = new Set(['__proto__', 'prototype', 'constructor']);
 
 
 const defaultPolicy = Object.freeze({
-  allowedNodeTypes: new Set(['Literal', 'Identifier', 'MemberExpression', 'BinaryExpression', 'LogicalExpression', 'UnaryExpression', 'CallExpression', 'ArrayExpression']),
+  allowedNodeTypes: new Set(['Literal', 'Identifier', 'MemberExpression', 'BinaryExpression', 'UnaryExpression', 'CallExpression', 'ArrayExpression']),
   binaryOperators: new Set(['==', '!=', '>', '<', '>=', '<=', 'in', 'match', '+', '-', '*', '/', '%', '&&', '||']),
-  logicalOperators: new Set(['&&', '||']),
   unaryOperators: new Set(['!']),
   callNames: new Set(['len', 'upper', 'lower', 'trim', 'substring', 'replace', 'split', 'abs', 'round', 'ceil', 'floor', 'min', 'max', 'sqrt', 'pow', 'between', 'length', 'contains', 'indexOf', 'first', 'last'])
 });
@@ -29167,9 +25599,6 @@ function assertNode(node, policy) {
       return;
     case 'BinaryExpression':
       assertOperator(node, policy, policy.binaryOperators, 'binary');
-      return;
-    case 'LogicalExpression':
-      assertOperator(node, policy, policy.logicalOperators, 'logical');
       return;
     case 'UnaryExpression':
       if (!policy.unaryOperators.has(node.operator)) {
@@ -29319,38 +25748,6 @@ class ExpressionParserService {
     assertAllowedExpressionAst(ast, defaultPolicy);
     return ast;
   }
-
-
-
-
-
-
-
-
-  _configureJSEP() {
-    this._astBuilder._configureJSEP();
-  }
-
-
-
-
-  _convertNumericPathSegments(expression) {
-    return this._tokenScanner._convertNumericPathSegments(expression);
-  }
-
-
-
-
-  _convertPlaceholders(expression) {
-    return this._tokenScanner._convertPlaceholders(expression);
-  }
-
-
-
-
-  _convertBetweenOperator(expression) {
-    return this._tokenScanner._convertBetweenOperator(expression);
-  }
 }
 ;
 class AstNodeEvaluator {
@@ -29370,8 +25767,6 @@ class AstNodeEvaluator {
         return this._evaluateLiteral(node, context);
       case 'BinaryExpression':
         return this.facade._evaluateBinaryExpression(node, context);
-      case 'LogicalExpression':
-        return this.facade._evaluateLogicalExpression(node, context);
       case 'UnaryExpression':
         return this.facade._evaluateUnaryExpression(node, context);
       case 'CallExpression':
@@ -29549,24 +25944,6 @@ class EvaluationContextHandler {
 class OperatorHandler {
   constructor(facade) {
     this.facade = facade;
-  }
-  _evaluateLogicalExpression(node, context) {
-    const operator = node.operator;
-    if (operator === '&&') {
-      const left = this.facade._evaluateNode(node.left, context);
-      if (!left) {
-        return false;
-      }
-      return Boolean(this.facade._evaluateNode(node.right, context));
-    }
-    if (operator === '||') {
-      const left = this.facade._evaluateNode(node.left, context);
-      if (left) {
-        return true;
-      }
-      return Boolean(this.facade._evaluateNode(node.right, context));
-    }
-    throw new Error(`Unsupported logical operator: ${operator}`);
   }
   _evaluateBinaryExpression(node, context) {
     const operator = node.operator;
@@ -30362,11 +26739,6 @@ class ExpressionEvaluatorService {
 
 
 
-  _evaluateLogicalExpression(...args) {
-    return this._operatorHandler._evaluateLogicalExpression(...args);
-  }
-
-
   _evaluateBinaryExpression(...args) {
     return this._operatorHandler._evaluateBinaryExpression(...args);
   }
@@ -30601,59 +26973,12 @@ class ExpressionEngineService {
 
 
 
-
-  getInfo() {
-    return {
-      name: 'GasExpressionEngineLib',
-      version: '1.0.0',
-      description: 'Expression parser and evaluator for dynamic business logic',
-      dependencies: ['WorkspaceTemplateEngine']
-    };
-  }
-
-
-
-
-
-
-
-
-
-  getCacheStats() {
-    return {
-      size: this._astCache.size,
-      enabled: this._astCacheEnabled,
-      maxSize: 1000
-    };
-  }
-
-
-
-
   clearCache() {
     this._astCache.clear();
     this.logger.debug('AST cache cleared');
   }
-
-
-
-
-
-
-
-  setCacheEnabled(enabled) {
-
-    if (typeof enabled !== 'boolean') {
-      throw new Error('Invalid enabled value: must be a boolean');
-    }
-    this._astCacheEnabled = enabled;
-    this.logger.debug(`AST cache ${this._astCacheEnabled ? 'enabled' : 'disabled'}`);
-  }
 }
 ;
-
-
-
 
 
 
@@ -50268,3525 +46593,6 @@ class DatabaseService {
 
 
 
-const ColumnType = Object.freeze({
-
-  STRING: 'STRING',
-
-  NUMBER: 'NUMBER',
-
-  BOOLEAN: 'BOOLEAN',
-
-  DATE: 'DATE',
-
-  JSON: 'JSON'
-});
-
-
-
-
-
-
-
-function isValidColumnType(value) {
-  return Object.values(ColumnType).includes(value);
-}
-
-
-
-
-
-
-
-
-function coerceToType(value, type) {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  switch (type) {
-    case ColumnType.STRING:
-      return String(value);
-    case ColumnType.NUMBER:
-      const num = Number(value);
-      return isNaN(num) ? null : num;
-    case ColumnType.BOOLEAN:
-      if (typeof value === 'boolean') {
-        return value;
-      }
-      if (typeof value === 'string') {
-        return value.toLowerCase() === 'true' || value === '1';
-      }
-      return Boolean(value);
-    case ColumnType.DATE:
-      if (value instanceof Date) {
-        return value;
-      }
-      const date = new Date(value);
-      return isNaN(date.getTime()) ? null : date;
-    case ColumnType.JSON:
-      if (typeof value === 'object') {
-        return value;
-      }
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    default:
-      return value;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const MemberSourceType = Object.freeze({
-
-  STATIC: 'STATIC',
-
-  CONFIG: 'CONFIG',
-
-  QUERY: 'QUERY'
-});
-
-
-
-
-
-class ColumnFamily {
-
-
-
-
-
-
-
-
-
-
-
-
-  constructor(definition) {
-    if (!definition || typeof definition !== 'object') {
-      throw new Error('ColumnFamily definition is required');
-    }
-    const {
-      id,
-      namePattern,
-      type = ColumnType.STRING,
-      nullable = true,
-      defaultValue = null,
-      members = [],
-      memberSource = null,
-      metadata = {}
-    } = definition;
-
-
-    if (!id || typeof id !== 'string') {
-      throw new Error('ColumnFamily requires an id');
-    }
-    if (!namePattern || typeof namePattern !== 'string') {
-      throw new Error('ColumnFamily requires a namePattern');
-    }
-    if (!namePattern.includes('{{key}}')) {
-      throw new Error('namePattern must contain {{key}} placeholder');
-    }
-    if (!isValidColumnType(type)) {
-      throw new Error(`Invalid column type: ${type}`);
-    }
-
-
-    this.id = id;
-
-
-    this.namePattern = namePattern;
-
-
-    this.type = type;
-
-
-    this.nullable = nullable;
-
-
-    this.defaultValue = cloneDeep_cloneDeep(defaultValue);
-
-
-    this.members = Array.isArray(members) ? [...members] : [];
-
-
-    this.memberSource = memberSource ? cloneDeep_cloneDeep(memberSource) : null;
-
-
-    this.metadata = cloneDeep_cloneDeep(metadata);
-    Object.freeze(this);
-    Object.freeze(this.members);
-    Object.freeze(this.metadata);
-  }
-
-
-
-
-
-
-
-  generateColumnName(memberKey) {
-    return this.namePattern.replace('{{key}}', memberKey);
-  }
-
-
-
-
-
-
-
-  parseMemberKey(columnName) {
-
-    const patternParts = this.namePattern.split('{{key}}');
-    const prefix = patternParts[0] || '';
-    const suffix = patternParts[1] || '';
-    if (!columnName.startsWith(prefix) || !columnName.endsWith(suffix)) {
-      return null;
-    }
-    const key = columnName.slice(prefix.length, columnName.length - suffix.length || undefined);
-    return key || null;
-  }
-
-
-
-
-
-
-
-  matchesColumn(columnName) {
-    return this.parseMemberKey(columnName) !== null;
-  }
-
-
-
-
-
-
-  generateAllColumnNames() {
-    return this.members.map(key => this.generateColumnName(key));
-  }
-
-
-
-
-
-
-  getColumnNames() {
-    return this.generateAllColumnNames();
-  }
-
-
-
-
-
-  isStatic() {
-    return !this.memberSource || this.memberSource.type === MemberSourceType.STATIC;
-  }
-
-
-
-
-
-  isConfigBased() {
-    var _this$memberSource;
-    return ((_this$memberSource = this.memberSource) === null || _this$memberSource === void 0 ? void 0 : _this$memberSource.type) === MemberSourceType.CONFIG;
-  }
-
-
-
-
-
-  isQueryBased() {
-    var _this$memberSource2;
-    return ((_this$memberSource2 = this.memberSource) === null || _this$memberSource2 === void 0 ? void 0 : _this$memberSource2.type) === MemberSourceType.QUERY;
-  }
-
-
-
-
-
-  getMemberCount() {
-    return this.members.length;
-  }
-
-
-
-
-
-
-  hasMember(key) {
-    return this.members.includes(key);
-  }
-
-
-
-
-
-
-
-  withMembers(newMembers) {
-    const mergedMembers = [...new Set([...this.members, ...newMembers])];
-    return new ColumnFamily({
-      id: this.id,
-      namePattern: this.namePattern,
-      type: this.type,
-      nullable: this.nullable,
-      defaultValue: this.defaultValue,
-      members: mergedMembers,
-      memberSource: this.memberSource,
-      metadata: this.metadata
-    });
-  }
-
-
-
-
-
-
-  toJSON() {
-    return {
-      id: this.id,
-      namePattern: this.namePattern,
-      type: this.type,
-      nullable: this.nullable,
-      defaultValue: this.defaultValue,
-      members: [...this.members],
-      memberSource: this.memberSource ? {
-        ...this.memberSource
-      } : null
-    };
-  }
-
-
-
-
-
-
-
-
-  static fromJSON(obj) {
-    if (!obj || typeof obj !== 'object') {
-      throw new Error('Invalid column family object');
-    }
-    return new ColumnFamily(obj);
-  }
-
-
-
-
-
-  toString() {
-    return `ColumnFamily[${this.id}] ${this.namePattern} (${this.type}, ${this.members.length} members)`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-const templateDefinitionSchema = object({
-  tableId: schemas_string(),
-  fixedColumns: array(object({}).passthrough()).optional(),
-  dynamicColumns: array(object({}).passthrough()).optional(),
-  metadata: record(schemas_string(), unknown()).optional()
-});
-function parseTemplateDefinition(definition) {
-  const result = templateDefinitionSchema.safeParse(definition);
-  if (!result.success) {
-    throw SchemaValidator.toValidationException(result.error, 'SchemaTemplate');
-  }
-  return result.data;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-class SchemaTemplate {
-
-
-
-
-
-
-
-
-  constructor(definition) {
-    definition = parseTemplateDefinition(definition);
-    const {
-      tableId,
-      fixedColumns = [],
-      dynamicColumns = [],
-      metadata = {}
-    } = definition;
-    if (!tableId || typeof tableId !== 'string') {
-      throw new Error('SchemaTemplate tableId is required and must be a string');
-    }
-
-
-
-
-
-
-    this.tableId = tableId;
-
-
-
-
-
-
-    this.fixedColumns = cloneDeep_cloneDeep(fixedColumns);
-
-
-
-
-
-
-    this.dynamicColumns = cloneDeep_cloneDeep(dynamicColumns);
-
-
-
-
-
-
-    this.metadata = cloneDeep_cloneDeep(metadata);
-    Object.freeze(this);
-    Object.freeze(this.fixedColumns);
-    Object.freeze(this.dynamicColumns);
-    Object.freeze(this.metadata);
-  }
-
-
-
-
-
-  getPrimaryKeyColumn() {
-    const pkColumn = this.fixedColumns.find(col => col.primaryKey === true);
-    return pkColumn ? pkColumn.name : null;
-  }
-
-
-
-
-
-  getFixedColumnNames() {
-    return this.fixedColumns.map(col => col.name);
-  }
-
-
-
-
-
-  getDynamicFamilyIds() {
-    return this.dynamicColumns.map(dc => dc.familyId);
-  }
-
-
-
-
-
-  hasDynamicColumns() {
-    return this.dynamicColumns.length > 0;
-  }
-
-
-
-
-
-
-  getFixedColumn(name) {
-    return this.fixedColumns.find(col => col.name === name) || null;
-  }
-
-
-
-
-
-
-  validate() {
-    const errors = [];
-
-
-    const fixedNames = this.getFixedColumnNames();
-    const uniqueNames = new Set(fixedNames);
-    if (uniqueNames.size !== fixedNames.length) {
-      errors.push('Duplicate fixed column names found');
-    }
-
-
-    if (!this.getPrimaryKeyColumn()) {
-      errors.push('No primary key column defined');
-    }
-
-
-    this.dynamicColumns.forEach((dc, index) => {
-      if (!dc.familyId) {
-        errors.push(`Dynamic column at index ${index} is missing familyId`);
-      }
-    });
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }
-
-
-
-
-
-  toJSON() {
-    return {
-      tableId: this.tableId,
-      fixedColumns: this.fixedColumns.map(c => ({
-        ...c
-      })),
-      dynamicColumns: this.dynamicColumns.map(c => ({
-        ...c
-      })),
-      metadata: {
-        ...this.metadata
-      }
-    };
-  }
-
-
-
-
-
-
-
-
-  static fromJSON(obj) {
-    if (!obj || typeof obj !== 'object') {
-      throw new Error('Invalid schema template object');
-    }
-    return new SchemaTemplate(obj);
-  }
-
-
-
-
-
-  toString() {
-    const fixedCount = this.fixedColumns.length;
-    const dynamicCount = this.dynamicColumns.length;
-    return `SchemaTemplate[${this.tableId}] ${fixedCount} fixed, ${dynamicCount} dynamic column families`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-const resolverOptionsSchema = object({
-  familyRegistry: union([_instanceof(Map), record(schemas_string(), unknown())]).optional(),
-  memberLoader: union([schemas_null(), object({}).passthrough()]).optional(),
-  logger: object({}).passthrough().optional()
-});
-const resolveOptionsSchema = object({
-  useCache: schemas_boolean().optional(),
-  context: object({}).passthrough().optional()
-});
-function parseResolverOptions(options) {
-  const result = resolverOptionsSchema.safeParse(options);
-  if (!result.success) {
-    throw SchemaValidator.toValidationException(result.error, 'SchemaResolver');
-  }
-  return result.data;
-}
-function parseResolveOptions(options) {
-  const result = resolveOptionsSchema.safeParse(options);
-  if (!result.success) {
-    throw SchemaValidator.toValidationException(result.error, 'SchemaResolver');
-  }
-  return result.data;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class SchemaResolver {
-
-
-
-
-
-
-  constructor(options = {}) {
-    options = parseResolverOptions(options);
-    const {
-      familyRegistry = new Map(),
-      memberLoader = null,
-      logger = console
-    } = options;
-
-
-
-
-
-
-    this._familyRegistry = familyRegistry instanceof Map ? familyRegistry : new Map(Object.entries(familyRegistry));
-
-
-
-
-
-
-    this._memberLoader = memberLoader;
-
-
-
-
-
-
-    this._logger = logger;
-
-
-
-
-
-
-    this._schemaCache = new Map();
-  }
-
-
-
-
-
-
-
-  registerFamily(family) {
-    if (!(family instanceof ColumnFamily)) {
-      throw new Error('Family must be a ColumnFamily instance');
-    }
-    this._familyRegistry.set(family.id, family);
-    this._invalidateCache();
-    return this;
-  }
-
-
-
-
-
-
-
-  registerFamilies(families) {
-    families.forEach(f => this.registerFamily(f));
-    return this;
-  }
-
-
-
-
-
-
-  getFamily(familyId) {
-    return this._familyRegistry.get(familyId) || null;
-  }
-
-
-
-
-
-  getFamilyIds() {
-    return Array.from(this._familyRegistry.keys());
-  }
-
-
-
-
-
-
-  setMemberLoader(loader) {
-    this._memberLoader = loader;
-    this._invalidateCache();
-    return this;
-  }
-
-
-
-
-
-
-
-
-
-
-  resolve(template, options = {}) {
-    var _this$_logger$debug2, _this$_logger2, _this$_logger$info, _this$_logger3;
-    options = parseResolveOptions(options);
-    const {
-      useCache = true,
-      context = {}
-    } = options;
-    if (!(template instanceof SchemaTemplate)) {
-      throw new Error('Template must be a SchemaTemplate instance');
-    }
-
-
-    const cacheKey = this._getCacheKey(template, context);
-    if (useCache && this._schemaCache.has(cacheKey)) {
-      var _this$_logger$debug, _this$_logger;
-      (_this$_logger$debug = (_this$_logger = this._logger).debug) === null || _this$_logger$debug === void 0 || _this$_logger$debug.call(_this$_logger, `SchemaResolver: Using cached schema for ${template.tableId}`);
-      return this._schemaCache.get(cacheKey);
-    }
-    (_this$_logger$debug2 = (_this$_logger2 = this._logger).debug) === null || _this$_logger$debug2 === void 0 || _this$_logger$debug2.call(_this$_logger2, `SchemaResolver: Resolving schema for ${template.tableId}`);
-
-
-    const columns = template.fixedColumns.map(col => ({
-      ...cloneDeep_cloneDeep(col),
-      familyId: null,
-      memberKey: null
-    }));
-
-
-    for (const dynamicConfig of template.dynamicColumns) {
-      const familyId = dynamicConfig.familyId;
-      const family = this._familyRegistry.get(familyId);
-      if (!family) {
-        throw new Error(`Column family not found: ${familyId}`);
-      }
-
-
-      const members = this._resolveMembers(family, dynamicConfig, context);
-
-
-      for (const memberKey of members) {
-        const columnName = family.generateColumnName(memberKey);
-
-
-        const finalName = dynamicConfig.prefix ? `${dynamicConfig.prefix}${columnName}` : columnName;
-        columns.push({
-          name: finalName,
-          type: family.type,
-          nullable: family.nullable,
-          defaultValue: family.defaultValue,
-          familyId: familyId,
-          memberKey: memberKey
-        });
-      }
-    }
-
-
-    const columnNames = columns.map(c => c.name);
-    const uniqueNames = new Set(columnNames);
-    if (uniqueNames.size !== columnNames.length) {
-      const duplicates = columnNames.filter((name, index) => columnNames.indexOf(name) !== index);
-      throw new Error(`Duplicate column names in resolved schema: ${duplicates.join(', ')}`);
-    }
-
-
-    const resolvedSchema = {
-      tableId: template.tableId,
-      columns: columns,
-      primaryKeyColumn: template.getPrimaryKeyColumn(),
-      metadata: cloneDeep_cloneDeep(template.metadata),
-      resolvedAt: new Date()
-    };
-
-
-    if (useCache) {
-      this._schemaCache.set(cacheKey, resolvedSchema);
-    }
-    (_this$_logger$info = (_this$_logger3 = this._logger).info) === null || _this$_logger$info === void 0 || _this$_logger$info.call(_this$_logger3, `SchemaResolver: Resolved ${template.tableId} with ${columns.length} columns`);
-    return resolvedSchema;
-  }
-
-
-
-
-
-
-
-
-
-  _resolveMembers(family, dynamicConfig, context) {
-    var _this$_logger$warn, _this$_logger4;
-
-    if (family.isStatic() && family.members.length > 0) {
-      return family.members;
-    }
-
-
-    if (dynamicConfig.members && dynamicConfig.members.length > 0) {
-      return dynamicConfig.members;
-    }
-
-
-    if (family.memberSource) {
-      return this._loadExternalMembers(family.memberSource, context);
-    }
-
-
-    (_this$_logger$warn = (_this$_logger4 = this._logger).warn) === null || _this$_logger$warn === void 0 || _this$_logger$warn.call(_this$_logger4, `SchemaResolver: No members found for family ${family.id}`);
-    return [];
-  }
-
-
-
-
-
-
-
-
-
-  _loadExternalMembers(memberSource, context) {
-    if (!this._memberLoader) {
-      throw new Error('Member loader required for external member sources');
-    }
-    const sourceType = memberSource.type;
-    switch (sourceType) {
-      case MemberSourceType.CONFIG:
-        if (!this._memberLoader.loadFromConfig) {
-          throw new Error('Member loader does not support config loading');
-        }
-        return this._memberLoader.loadFromConfig(memberSource.configPath, context);
-      case MemberSourceType.QUERY:
-        if (!this._memberLoader.loadFromQuery) {
-          throw new Error('Member loader does not support query loading');
-        }
-        return this._memberLoader.loadFromQuery(memberSource.query, context);
-      default:
-        throw new Error(`Unknown member source type: ${sourceType}`);
-    }
-  }
-
-
-
-
-
-
-
-
-  _getCacheKey(template, context) {
-    const contextKey = JSON.stringify(context);
-    return `${template.tableId}:${contextKey}`;
-  }
-
-
-
-
-
-
-  _invalidateCache(tableId = null) {
-    if (tableId) {
-      for (const key of this._schemaCache.keys()) {
-        if (key.startsWith(`${tableId}:`)) {
-          this._schemaCache.delete(key);
-        }
-      }
-    } else {
-      this._schemaCache.clear();
-    }
-  }
-
-
-
-
-
-  clearCache() {
-    this._schemaCache.clear();
-    return this;
-  }
-
-
-
-
-
-
-
-  static getDynamicColumns(schema) {
-    return schema.columns.filter(col => col.familyId !== null);
-  }
-
-
-
-
-
-
-
-  static getFixedColumns(schema) {
-    return schema.columns.filter(col => col.familyId === null);
-  }
-
-
-
-
-
-
-
-
-  static getColumnsByFamily(schema, familyId) {
-    return schema.columns.filter(col => col.familyId === familyId);
-  }
-
-
-
-
-
-
-
-  static createColumnMap(schema) {
-    return new Map(schema.columns.map(col => [col.name, col]));
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function getFamilyOrThrow(familyMap, familyId) {
-  const family = familyMap.get(familyId);
-  if (!family) {
-    throw new Error(`Column family not found: ${familyId}`);
-  }
-  return family;
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class DynamicColumnAccessor {
-
-
-
-
-
-
-
-
-
-  constructor(row, options = {}) {
-    const {
-      families = [],
-      familyMap = null,
-      coerceTypes = true,
-      useDefaults = true
-    } = options;
-
-
-    this._row = row;
-
-
-    this._familyMap = familyMap || new Map(families.map(f => [f.id, f]));
-
-
-    this._coerceTypes = coerceTypes;
-
-
-    this._useDefaults = useDefaults;
-  }
-
-
-
-
-
-  getRow() {
-    return this._row;
-  }
-
-
-
-
-
-
-
-
-
-  get(familyId, memberKey) {
-    const family = this._getFamily(familyId);
-    const columnName = family.generateColumnName(memberKey);
-    let value = this._row[columnName];
-
-
-    if (value === undefined || value === null) {
-      if (this._useDefaults) {
-        value = family.defaultValue;
-      } else {
-        return null;
-      }
-    }
-
-
-    if (this._coerceTypes && value !== null) {
-      value = coerceToType(value, family.type);
-    }
-    return value;
-  }
-
-
-
-
-
-
-
-
-  getAll(familyId) {
-    const family = this._getFamily(familyId);
-    const result = {};
-    for (const memberKey of family.members) {
-      result[memberKey] = this.get(familyId, memberKey);
-    }
-    return result;
-  }
-
-
-
-
-
-
-  getAllAsArray(familyId) {
-    const family = this._getFamily(familyId);
-    return family.members.map(memberKey => ({
-      key: memberKey,
-      value: this.get(familyId, memberKey)
-    }));
-  }
-
-
-
-
-
-
-
-  getMembers(familyId, memberKeys) {
-    const result = {};
-    for (const memberKey of memberKeys) {
-      result[memberKey] = this.get(familyId, memberKey);
-    }
-    return result;
-  }
-
-
-
-
-
-
-
-
-  has(familyId, memberKey) {
-    const family = this._getFamily(familyId);
-    const columnName = family.generateColumnName(memberKey);
-    const value = this._row[columnName];
-    return value !== undefined && value !== null;
-  }
-
-
-
-
-
-
-  hasAny(familyId) {
-    const family = this._getFamily(familyId);
-    return family.members.some(key => this.has(familyId, key));
-  }
-
-
-
-
-
-
-  hasAll(familyId) {
-    const family = this._getFamily(familyId);
-    return family.members.every(key => this.has(familyId, key));
-  }
-
-
-
-
-
-
-
-
-
-
-  set(familyId, memberKey, value) {
-    const family = this._getFamily(familyId);
-    const columnName = family.generateColumnName(memberKey);
-
-
-    let finalValue = value;
-    if (this._coerceTypes && value !== null && value !== undefined) {
-      finalValue = coerceToType(value, family.type);
-    }
-    this._row[columnName] = finalValue;
-    return this;
-  }
-
-
-
-
-
-
-
-
-  setAll(familyId, values) {
-    for (const [memberKey, value] of Object.entries(values)) {
-      this.set(familyId, memberKey, value);
-    }
-    return this;
-  }
-
-
-
-
-
-
-
-
-  clear(familyId, memberKey) {
-    const family = this._getFamily(familyId);
-    const columnName = family.generateColumnName(memberKey);
-    this._row[columnName] = null;
-    return this;
-  }
-
-
-
-
-
-
-
-  clearAll(familyId) {
-    const family = this._getFamily(familyId);
-    for (const memberKey of family.members) {
-      this.clear(familyId, memberKey);
-    }
-    return this;
-  }
-
-
-
-
-
-  count(familyId) {
-    const family = this._getFamily(familyId);
-    return family.members.filter(key => this.has(familyId, key)).length;
-  }
-
-
-
-
-
-  getFilledMembers(familyId) {
-    const family = this._getFamily(familyId);
-    return family.members.filter(key => this.has(familyId, key));
-  }
-
-
-
-
-
-  getEmptyMembers(familyId) {
-    const family = this._getFamily(familyId);
-    return family.members.filter(key => !this.has(familyId, key));
-  }
-
-
-
-
-
-
-
-
-  _getFamily(familyId) {
-    return getFamilyOrThrow(this._familyMap, familyId);
-  }
-
-
-
-
-
-
-
-
-
-  static forRow(row, families, options = {}) {
-    return new DynamicColumnAccessor(row, {
-      families,
-      ...options
-    });
-  }
-
-
-
-
-
-
-
-
-
-  static forRows(rows, families, options = {}) {
-    const familyMap = new Map(families.map(f => [f.id, f]));
-    return rows.map(row => new DynamicColumnAccessor(row, {
-      familyMap,
-      ...options
-    }));
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const AggregationType = Object.freeze({
-
-  SUM: 'SUM',
-
-  AVG: 'AVG',
-
-  MIN: 'MIN',
-
-  MAX: 'MAX',
-
-  COUNT: 'COUNT',
-
-  COUNT_DISTINCT: 'COUNT_DISTINCT',
-
-  FIRST: 'FIRST',
-
-  LAST: 'LAST',
-
-  CONCAT: 'CONCAT',
-
-  COLLECT: 'COLLECT'
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class FamilyAggregator {
-
-
-
-
-
-
-
-  constructor(options = {}) {
-    const {
-      families = [],
-      familyMap = null,
-      ignoreNulls = true,
-      logger = console
-    } = options;
-
-
-
-
-
-
-    this._familyMap = familyMap || new Map(families.map(f => [f.id, f]));
-
-
-
-
-
-
-    this._ignoreNulls = ignoreNulls;
-
-
-
-
-
-
-    this._logger = logger;
-  }
-
-
-
-
-
-
-
-  registerFamily(family) {
-    if (!(family instanceof ColumnFamily)) {
-      throw new Error('Family must be a ColumnFamily instance');
-    }
-    this._familyMap.set(family.id, family);
-    return this;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  aggregateRow(row, familyId, aggregationType, options = {}) {
-    const family = this._getFamily(familyId);
-    const memberKeys = options.memberKeys || family.members;
-
-
-    const values = [];
-    let nullCount = 0;
-    for (const memberKey of memberKeys) {
-      const columnName = family.generateColumnName(memberKey);
-      let value = row[columnName];
-      if (value === null || value === undefined) {
-        nullCount++;
-        if (!this._ignoreNulls) {
-          values.push(null);
-        }
-      } else {
-
-        if (this._isNumericAggregation(aggregationType)) {
-          value = coerceToType(value, ColumnType.NUMBER);
-        }
-        values.push(value);
-      }
-    }
-    const aggregatedValue = this._performAggregation(values, aggregationType, options);
-    return {
-      familyId,
-      aggregationType,
-      value: aggregatedValue,
-      inputCount: memberKeys.length,
-      nullCount
-    };
-  }
-
-
-
-
-
-
-
-
-
-
-
-  aggregateRows(rows, familyId, aggregationType, options = {}) {
-    const family = this._getFamily(familyId);
-    const memberKeys = options.memberKeys || family.members;
-    const result = {};
-    for (const memberKey of memberKeys) {
-      const columnName = family.generateColumnName(memberKey);
-      const values = [];
-      for (const row of rows) {
-        let value = row[columnName];
-        if (value === null || value === undefined) {
-          if (!this._ignoreNulls) {
-            values.push(null);
-          }
-        } else {
-          if (this._isNumericAggregation(aggregationType)) {
-            value = coerceToType(value, ColumnType.NUMBER);
-          }
-          values.push(value);
-        }
-      }
-      result[memberKey] = this._performAggregation(values, aggregationType, options);
-    }
-    return result;
-  }
-
-
-
-
-
-
-
-
-
-
-  aggregateAll(rows, familyId, aggregationType, options = {}) {
-    const family = this._getFamily(familyId);
-    const memberKeys = options.memberKeys || family.members;
-    const allValues = [];
-    let nullCount = 0;
-    for (const row of rows) {
-      for (const memberKey of memberKeys) {
-        const columnName = family.generateColumnName(memberKey);
-        let value = row[columnName];
-        if (value === null || value === undefined) {
-          nullCount++;
-          if (!this._ignoreNulls) {
-            allValues.push(null);
-          }
-        } else {
-          if (this._isNumericAggregation(aggregationType)) {
-            value = coerceToType(value, ColumnType.NUMBER);
-          }
-          allValues.push(value);
-        }
-      }
-    }
-    return {
-      familyId,
-      aggregationType,
-      value: this._performAggregation(allValues, aggregationType, options),
-      inputCount: rows.length * memberKeys.length,
-      nullCount
-    };
-  }
-
-
-
-
-
-
-
-
-
-  multiAggregate(row, familyId, aggregationTypes) {
-    const result = {};
-    for (const aggType of aggregationTypes) {
-      result[aggType] = this.aggregateRow(row, familyId, aggType);
-    }
-    return result;
-  }
-
-
-
-
-
-
-
-
-
-
-
-  groupAggregate(rows, familyId, groupByMember, aggregateMember, aggregationType) {
-    const family = this._getFamily(familyId);
-    const groupByColumn = family.generateColumnName(groupByMember);
-    const aggregateColumn = family.generateColumnName(aggregateMember);
-
-
-    const groups = new Map();
-    for (const row of rows) {
-      const groupKey = String(row[groupByColumn] ?? 'null');
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, []);
-      }
-      let value = row[aggregateColumn];
-      if (value !== null && value !== undefined) {
-        if (this._isNumericAggregation(aggregationType)) {
-          value = coerceToType(value, ColumnType.NUMBER);
-        }
-        groups.get(groupKey).push(value);
-      } else if (!this._ignoreNulls) {
-        groups.get(groupKey).push(null);
-      }
-    }
-
-
-    const result = {};
-    for (const [groupKey, values] of groups) {
-      result[groupKey] = this._performAggregation(values, aggregationType);
-    }
-    return result;
-  }
-
-
-
-
-
-
-
-
-
-
-  _performAggregation(values, aggregationType, options = {}) {
-    if (values.length === 0) {
-      return null;
-    }
-
-
-    const nonNullValues = values.filter(v => v !== null && v !== undefined);
-    if (nonNullValues.length === 0 && aggregationType !== AggregationType.COUNT) {
-      return null;
-    }
-    switch (aggregationType) {
-      case AggregationType.SUM:
-        return nonNullValues.reduce((sum, v) => sum + v, 0);
-      case AggregationType.AVG:
-        if (nonNullValues.length === 0) {
-          return null;
-        }
-        return nonNullValues.reduce((sum, v) => sum + v, 0) / nonNullValues.length;
-      case AggregationType.MIN:
-        return Math.min(...nonNullValues);
-      case AggregationType.MAX:
-        return Math.max(...nonNullValues);
-      case AggregationType.COUNT:
-        return nonNullValues.length;
-      case AggregationType.COUNT_DISTINCT:
-        return new Set(nonNullValues).size;
-      case AggregationType.FIRST:
-        return nonNullValues[0] ?? null;
-      case AggregationType.LAST:
-        return nonNullValues[nonNullValues.length - 1] ?? null;
-      case AggregationType.CONCAT:
-        const separator = options.separator ?? ', ';
-        return nonNullValues.join(separator);
-      case AggregationType.COLLECT:
-        return [...nonNullValues];
-      default:
-        throw new Error(`Unknown aggregation type: ${aggregationType}`);
-    }
-  }
-
-
-
-
-
-
-
-  _isNumericAggregation(aggregationType) {
-    return [AggregationType.SUM, AggregationType.AVG, AggregationType.MIN, AggregationType.MAX].includes(aggregationType);
-  }
-
-
-
-
-
-
-
-
-  _getFamily(familyId) {
-    return getFamilyOrThrow(this._familyMap, familyId);
-  }
-
-
-
-
-
-
-
-
-  static forFamilies(families, options = {}) {
-    return new FamilyAggregator({
-      families,
-      ...options
-    });
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-const RoutingStrategy = Object.freeze({
-
-  EXPLICIT: 'EXPLICIT',
-
-  TAG_BASED: 'TAG_BASED',
-
-  ROUND_ROBIN: 'ROUND_ROBIN',
-
-  PRIORITY: 'PRIORITY',
-
-  CUSTOM: 'CUSTOM'
-});
-
-
-
-
-
-
-function isValidRoutingStrategy(value) {
-  return Object.values(RoutingStrategy).includes(value);
-}
-
-
-
-
-
-function getRoutingStrategies() {
-  return Object.values(RoutingStrategy);
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class DatabasePartition {
-
-
-
-
-
-
-
-
-
-
-
-
-  constructor(definition) {
-    if (!definition || typeof definition !== 'object') {
-      throw new Error('DatabasePartition definition is required');
-    }
-    const {
-      id,
-      spreadsheetId,
-      label = '',
-      tags = [],
-      metadata = {},
-      connectionOptions = {},
-      isReadOnly = false,
-      priority = 0
-    } = definition;
-
-
-    if (!id || typeof id !== 'string') {
-      throw new Error('DatabasePartition id is required and must be a string');
-    }
-    if (!spreadsheetId || typeof spreadsheetId !== 'string') {
-      throw new Error('DatabasePartition spreadsheetId is required and must be a string');
-    }
-    if (!Array.isArray(tags)) {
-      throw new Error('DatabasePartition tags must be an array');
-    }
-    if (typeof priority !== 'number' || !isFinite(priority)) {
-      throw new Error('DatabasePartition priority must be a valid number');
-    }
-
-
-
-
-
-
-    this.id = id;
-
-
-
-
-
-
-    this.spreadsheetId = spreadsheetId;
-
-
-
-
-
-
-    this.label = label || id;
-
-
-
-
-
-
-    this.tags = Object.freeze([...tags]);
-
-
-
-
-
-
-    this.metadata = Object.freeze(cloneDeep_cloneDeep(metadata));
-
-
-
-
-
-
-    this.connectionOptions = Object.freeze(cloneDeep_cloneDeep(connectionOptions));
-
-
-
-
-
-
-    this.isReadOnly = Boolean(isReadOnly);
-
-
-
-
-
-
-    this.priority = priority;
-    Object.freeze(this);
-  }
-
-
-
-
-
-
-  hasTag(tag) {
-    return this.tags.includes(tag);
-  }
-
-
-
-
-
-
-  hasAllTags(requiredTags) {
-    return requiredTags.every(tag => this.tags.includes(tag));
-  }
-
-
-
-
-
-
-  hasAnyTag(anyTags) {
-    return anyTags.some(tag => this.tags.includes(tag));
-  }
-
-
-
-
-
-
-
-  getMetadata(key, defaultValue = null) {
-    return key in this.metadata ? this.metadata[key] : defaultValue;
-  }
-
-
-
-
-
-
-  withTags(newTags) {
-    const mergedTags = [...new Set([...this.tags, ...newTags])];
-    return new DatabasePartition({
-      id: this.id,
-      spreadsheetId: this.spreadsheetId,
-      label: this.label,
-      tags: mergedTags,
-      metadata: this.metadata,
-      connectionOptions: this.connectionOptions,
-      isReadOnly: this.isReadOnly,
-      priority: this.priority
-    });
-  }
-
-
-
-
-
-
-  withPriority(newPriority) {
-    return new DatabasePartition({
-      id: this.id,
-      spreadsheetId: this.spreadsheetId,
-      label: this.label,
-      tags: this.tags,
-      metadata: this.metadata,
-      connectionOptions: this.connectionOptions,
-      isReadOnly: this.isReadOnly,
-      priority: newPriority
-    });
-  }
-
-
-
-
-
-  toJSON() {
-    return {
-      id: this.id,
-      spreadsheetId: this.spreadsheetId,
-      label: this.label,
-      tags: [...this.tags],
-      metadata: {
-        ...this.metadata
-      },
-      connectionOptions: {
-        ...this.connectionOptions
-      },
-      isReadOnly: this.isReadOnly,
-      priority: this.priority
-    };
-  }
-
-
-
-
-
-
-
-
-  static fromJSON(obj) {
-    if (!obj || typeof obj !== 'object') {
-      throw new Error('Invalid partition object');
-    }
-    return new DatabasePartition(obj);
-  }
-
-
-
-
-
-  toString() {
-    const readOnlyStr = this.isReadOnly ? ' (read-only)' : '';
-    return `DatabasePartition[${this.id}] "${this.label}" [${this.tags.join(', ')}]${readOnlyStr}`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PartitionConfiguration {
-
-
-
-
-
-
-
-
-
-
-  constructor(config) {
-    if (!config || typeof config !== 'object') {
-      throw new Error('PartitionConfiguration requires a config object');
-    }
-    const {
-      partitions = [],
-      defaultPartition = null,
-      routingStrategy = RoutingStrategy.EXPLICIT,
-      aliases = {},
-      crossPartitionEnabled = true,
-      globalConnectionOptions = {}
-    } = config;
-
-
-    if (!Array.isArray(partitions) || partitions.length === 0) {
-      throw new Error('At least one partition must be provided');
-    }
-
-
-
-
-
-
-    this._partitions = new Map();
-    for (const p of partitions) {
-      const partition = p instanceof DatabasePartition ? p : new DatabasePartition(p);
-      if (this._partitions.has(partition.id)) {
-        throw new Error(`Duplicate partition ID: ${partition.id}`);
-      }
-      this._partitions.set(partition.id, partition);
-    }
-
-
-    if (defaultPartition && !this._partitions.has(defaultPartition)) {
-      throw new Error(`Default partition not found: ${defaultPartition}`);
-    }
-
-
-
-
-
-
-    this.defaultPartition = defaultPartition || this._partitions.keys().next().value;
-
-
-    if (!isValidRoutingStrategy(routingStrategy)) {
-      throw new Error(`Invalid routing strategy: ${routingStrategy}`);
-    }
-
-
-
-
-
-
-    this.routingStrategy = routingStrategy;
-
-
-    for (const [alias, partitionId] of Object.entries(aliases)) {
-      if (!this._partitions.has(partitionId)) {
-        throw new Error(`Alias "${alias}" references unknown partition: ${partitionId}`);
-      }
-    }
-
-
-
-
-
-
-    this.aliases = Object.freeze({
-      ...aliases
-    });
-
-
-
-
-
-
-    this.crossPartitionEnabled = Boolean(crossPartitionEnabled);
-
-
-
-
-
-
-    this.globalConnectionOptions = Object.freeze(cloneDeep_cloneDeep(globalConnectionOptions));
-    Object.freeze(this);
-  }
-
-
-
-
-
-
-  getPartition(idOrAlias) {
-
-    if (this._partitions.has(idOrAlias)) {
-      return this._partitions.get(idOrAlias);
-    }
-
-    const aliasedId = this.aliases[idOrAlias];
-    if (aliasedId && this._partitions.has(aliasedId)) {
-      return this._partitions.get(aliasedId);
-    }
-    return null;
-  }
-
-
-
-
-
-  getDefaultPartition() {
-    return this._partitions.get(this.defaultPartition);
-  }
-
-
-
-
-
-  getAllPartitions() {
-    return Array.from(this._partitions.values());
-  }
-
-
-
-
-
-  getPartitionIds() {
-    return Array.from(this._partitions.keys());
-  }
-
-
-
-
-
-
-  getPartitionsByTag(tag) {
-    return this.getAllPartitions().filter(p => p.hasTag(tag));
-  }
-
-
-
-
-
-
-
-  getPartitionsByTags(tags, matchMode = 'ALL') {
-    const partitions = this.getAllPartitions();
-    if (matchMode === 'ALL') {
-      return partitions.filter(p => p.hasAllTags(tags));
-    }
-    return partitions.filter(p => p.hasAnyTag(tags));
-  }
-
-
-
-
-
-  getPartitionsByPriority() {
-    return this.getAllPartitions().sort((a, b) => b.priority - a.priority);
-  }
-
-
-
-
-
-  getReadOnlyPartitions() {
-    return this.getAllPartitions().filter(p => p.isReadOnly);
-  }
-
-
-
-
-
-  getWritablePartitions() {
-    return this.getAllPartitions().filter(p => !p.isReadOnly);
-  }
-
-
-
-
-
-
-  hasPartition(idOrAlias) {
-    return this.getPartition(idOrAlias) !== null;
-  }
-
-
-
-
-
-
-  resolveAlias(alias) {
-    return this.aliases[alias] || null;
-  }
-
-
-
-
-
-  size() {
-    return this._partitions.size;
-  }
-
-
-
-
-
-  getAllTags() {
-    const tags = new Set();
-    for (const partition of this._partitions.values()) {
-      for (const tag of partition.tags) {
-        tags.add(tag);
-      }
-    }
-    return Array.from(tags).sort();
-  }
-
-
-
-
-
-  toJSON() {
-    return {
-      partitions: this.getAllPartitions().map(p => p.toJSON()),
-      defaultPartition: this.defaultPartition,
-      routingStrategy: this.routingStrategy,
-      aliases: {
-        ...this.aliases
-      },
-      crossPartitionEnabled: this.crossPartitionEnabled,
-      globalConnectionOptions: {
-        ...this.globalConnectionOptions
-      }
-    };
-  }
-
-
-
-
-
-
-
-
-  static fromJSON(obj) {
-    if (!obj || typeof obj !== 'object') {
-      throw new Error('Invalid configuration object');
-    }
-    return new PartitionConfiguration(obj);
-  }
-
-
-
-
-
-  toString() {
-    return `PartitionConfiguration[${this._partitions.size} partitions, default: ${this.defaultPartition}]`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PartitionRouter {
-
-
-
-
-
-
-  constructor(configuration, options = {}) {
-    if (!configuration) {
-      throw new Error('PartitionConfiguration is required');
-    }
-
-
-
-
-
-
-    this._configuration = configuration;
-
-
-
-
-
-
-    this._logger = options.logger || console;
-
-
-
-
-
-
-    this._customRouter = options.customRouter || null;
-
-
-
-
-
-
-    this._roundRobinCounter = 0;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  route(context = {}) {
-    var _this$_logger$debug, _this$_logger;
-    const strategy = context.strategy || this._configuration.routingStrategy;
-    (_this$_logger$debug = (_this$_logger = this._logger).debug) === null || _this$_logger$debug === void 0 || _this$_logger$debug.call(_this$_logger, `PartitionRouter: Routing with strategy ${strategy}`, context);
-    let partitions;
-    switch (strategy) {
-      case RoutingStrategy.EXPLICIT:
-        partitions = this._routeExplicit(context);
-        break;
-      case RoutingStrategy.TAG_BASED:
-        partitions = this._routeByTag(context);
-        break;
-      case RoutingStrategy.ROUND_ROBIN:
-        partitions = this._routeRoundRobin(context);
-        break;
-      case RoutingStrategy.PRIORITY:
-        partitions = this._routeByPriority(context);
-        break;
-      case RoutingStrategy.CUSTOM:
-        partitions = this._routeCustom(context);
-        break;
-      default:
-        throw new Error(`Unknown routing strategy: ${strategy}`);
-    }
-    if (!partitions || partitions.length === 0) {
-      throw new Error(`No partitions found for routing context: ${JSON.stringify(context)}`);
-    }
-    return partitions;
-  }
-
-
-
-
-
-
-
-  routeSingle(context = {}) {
-    const partitions = this.route(context);
-    return partitions[0];
-  }
-
-
-
-
-
-
-
-  _routeExplicit(context) {
-    if (!context.partitionId) {
-
-      const defaultPartition = this._configuration.getDefaultPartition();
-      return defaultPartition ? [defaultPartition] : [];
-    }
-    const partition = this._configuration.getPartition(context.partitionId);
-    return partition ? [partition] : [];
-  }
-
-
-
-
-
-
-
-  _routeByTag(context) {
-    if (context.tag) {
-      return this._configuration.getPartitionsByTag(context.tag);
-    }
-    if (context.tags && context.tags.length > 0) {
-      const matchMode = context.tagMatchMode || 'ALL';
-      return this._configuration.getPartitionsByTags(context.tags, matchMode);
-    }
-
-
-    return this._configuration.getAllPartitions();
-  }
-
-
-
-
-
-
-
-  _routeRoundRobin(context) {
-    let candidates = this._configuration.getAllPartitions();
-
-
-    if (context.tag) {
-      candidates = candidates.filter(p => p.hasTag(context.tag));
-    } else if (context.tags && context.tags.length > 0) {
-      const matchMode = context.tagMatchMode || 'ALL';
-      candidates = matchMode === 'ALL' ? candidates.filter(p => p.hasAllTags(context.tags)) : candidates.filter(p => p.hasAnyTag(context.tags));
-    }
-    if (candidates.length === 0) {
-      return [];
-    }
-    const index = this._roundRobinCounter % candidates.length;
-    this._roundRobinCounter++;
-    return [candidates[index]];
-  }
-
-
-
-
-
-
-
-  _routeByPriority(context) {
-    let candidates = this._configuration.getAllPartitions();
-
-
-    if (context.tag) {
-      candidates = candidates.filter(p => p.hasTag(context.tag));
-    } else if (context.tags && context.tags.length > 0) {
-      const matchMode = context.tagMatchMode || 'ALL';
-      candidates = matchMode === 'ALL' ? candidates.filter(p => p.hasAllTags(context.tags)) : candidates.filter(p => p.hasAnyTag(context.tags));
-    }
-    if (candidates.length === 0) {
-      return [];
-    }
-
-
-    candidates.sort((a, b) => b.priority - a.priority);
-    return [candidates[0]];
-  }
-
-
-
-
-
-
-
-
-  _routeCustom(context) {
-    if (!this._customRouter) {
-      throw new Error('Custom routing strategy requires a customRouter function');
-    }
-    const result = this._customRouter(context, this._configuration);
-
-
-    if (Array.isArray(result)) {
-      return result;
-    }
-    if (result) {
-      return [result];
-    }
-    return [];
-  }
-
-
-
-
-
-
-
-  setCustomRouter(routerFn) {
-    if (typeof routerFn !== 'function') {
-      throw new Error('Custom router must be a function');
-    }
-    this._customRouter = routerFn;
-    return this;
-  }
-
-
-
-
-
-  resetRoundRobin() {
-    this._roundRobinCounter = 0;
-    return this;
-  }
-
-
-
-
-
-  getRoundRobinCounter() {
-    return this._roundRobinCounter;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class CrossPartitionQuery {
-
-
-
-
-
-  constructor(manager, tableName) {
-    if (!manager) {
-      throw new Error('MultiDatabaseManager is required');
-    }
-    if (!tableName || typeof tableName !== 'string') {
-      throw new Error('Table name is required');
-    }
-
-
-
-
-
-
-    this._manager = manager;
-
-
-
-
-
-
-    this._tableName = tableName;
-
-
-
-
-
-
-    this._partitionIds = null;
-
-
-
-
-
-
-    this._tag = null;
-
-
-
-
-
-
-    this._tags = null;
-
-
-
-
-
-
-    this._tagMatchMode = 'ALL';
-
-
-
-
-
-
-    this._queryAll = false;
-
-
-
-
-
-
-    this._columns = null;
-
-
-
-
-
-
-    this._whereConditions = [];
-
-
-
-
-
-
-    this._orderBy = null;
-
-
-
-
-
-
-    this._limit = null;
-
-
-
-
-
-
-    this._continueOnError = true;
-  }
-
-
-
-
-
-
-
-  fromPartitions(partitionIds) {
-    if (!Array.isArray(partitionIds) || partitionIds.length === 0) {
-      throw new Error('Partition IDs must be a non-empty array');
-    }
-    this._partitionIds = [...partitionIds];
-    this._queryAll = false;
-    this._tag = null;
-    this._tags = null;
-    return this;
-  }
-
-
-
-
-
-
-
-  fromTag(tag) {
-    if (!tag || typeof tag !== 'string') {
-      throw new Error('Tag must be a non-empty string');
-    }
-    this._tag = tag;
-    this._tags = null;
-    this._partitionIds = null;
-    this._queryAll = false;
-    return this;
-  }
-
-
-
-
-
-
-
-
-  fromTags(tags, matchMode = 'ALL') {
-    if (!Array.isArray(tags) || tags.length === 0) {
-      throw new Error('Tags must be a non-empty array');
-    }
-    this._tags = [...tags];
-    this._tagMatchMode = matchMode;
-    this._tag = null;
-    this._partitionIds = null;
-    this._queryAll = false;
-    return this;
-  }
-
-
-
-
-
-  fromAll() {
-    this._queryAll = true;
-    this._partitionIds = null;
-    this._tag = null;
-    this._tags = null;
-    return this;
-  }
-
-
-
-
-
-
-  select(columns) {
-    this._columns = Array.isArray(columns) ? [...columns] : null;
-    return this;
-  }
-
-
-
-
-
-
-
-
-  where(column, operator, value) {
-    this._whereConditions.push({
-      column,
-      operator,
-      value
-    });
-    return this;
-  }
-
-
-
-
-
-
-
-  orderBy(column, direction = 'ASC') {
-    this._orderBy = {
-      column,
-      direction
-    };
-    return this;
-  }
-
-
-
-
-
-
-  limit(count) {
-    this._limit = count;
-    return this;
-  }
-
-
-
-
-
-
-  setContinueOnError(continueOnError) {
-    this._continueOnError = Boolean(continueOnError);
-    return this;
-  }
-
-
-
-
-
-
-
-  execute() {
-    const startTime = Date.now();
-
-
-    const partitions = this._resolvePartitions();
-    if (partitions.length === 0) {
-      throw new Error('No partitions selected for cross-partition query');
-    }
-
-
-    const allRecords = [];
-
-    const partitionResults = new Map();
-
-    const errors = new Map();
-
-    const partitionsQueried = [];
-
-
-    for (const partition of partitions) {
-      try {
-        const db = this._manager.getPartition(partition.id);
-        const records = this._executeOnPartition(db, partition.id);
-        partitionResults.set(partition.id, records);
-        partitionsQueried.push(partition.id);
-
-
-        for (const record of records) {
-          record._partitionId = partition.id;
-          allRecords.push(record);
-        }
-      } catch (error) {
-        errors.set(partition.id, error);
-        partitionsQueried.push(partition.id);
-        if (!this._continueOnError) {
-          throw new Error(`Cross-partition query failed on partition ${partition.id}: ${error.message}`);
-        }
-      }
-    }
-
-
-    if (this._orderBy) {
-      const {
-        column,
-        direction
-      } = this._orderBy;
-      const multiplier = direction === 'DESC' ? -1 : 1;
-      allRecords.sort((a, b) => {
-        const aVal = a[column];
-        const bVal = b[column];
-        if (aVal === bVal) {
-          return 0;
-        }
-        if (aVal === null || aVal === undefined) {
-          return 1;
-        }
-        if (bVal === null || bVal === undefined) {
-          return -1;
-        }
-        return (aVal < bVal ? -1 : 1) * multiplier;
-      });
-    }
-    return {
-      records: allRecords,
-      partitionResults,
-      totalRecords: allRecords.length,
-      partitionsQueried,
-      errors,
-      executionTime: Date.now() - startTime
-    };
-  }
-
-
-
-
-
-  executeParallel() {
-
-    return this.execute();
-  }
-
-
-
-
-
-
-
-  _resolvePartitions() {
-    const config = this._manager.getConfiguration();
-    if (this._partitionIds) {
-      return this._partitionIds.reduce((acc, id) => {
-        const partition = config.getPartition(id);
-        if (partition) {
-          acc.push(partition);
-        }
-        return acc;
-      }, []);
-    }
-    if (this._tag) {
-      return config.getPartitionsByTag(this._tag);
-    }
-    if (this._tags) {
-      return config.getPartitionsByTags(this._tags, this._tagMatchMode);
-    }
-    if (this._queryAll) {
-      return config.getAllPartitions();
-    }
-
-
-    return config.getAllPartitions();
-  }
-
-
-
-
-
-
-
-
-
-
-  _executeOnPartition(db, partitionId) {
-
-    let query = db.select(this._columns).from(this._tableName);
-
-
-    for (const condition of this._whereConditions) {
-      query = query.where(condition.column, condition.operator, condition.value);
-    }
-
-
-    if (this._orderBy) {
-      query = query.orderBy(this._orderBy.column, this._orderBy.direction);
-    }
-
-
-    if (this._limit) {
-      query = query.limit(this._limit);
-    }
-    return query.execute();
-  }
-
-
-
-
-
-  toString() {
-    let partitionStr = 'all';
-    if (this._partitionIds) {
-      partitionStr = `[${this._partitionIds.join(', ')}]`;
-    } else if (this._tag) {
-      partitionStr = `tag:${this._tag}`;
-    } else if (this._tags) {
-      partitionStr = `tags:${this._tags.join(',')}`;
-    }
-    return `CrossPartitionQuery[${this._tableName}] from ${partitionStr}`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class MultiDatabaseError extends BaseError {
-
-
-
-
-  constructor(message, details = {}) {
-    super(message, details);
-
-    this.name = 'MultiDatabaseError';
-    this.details = details;
-  }
-}
-
-
-
-
-
-
-class PartitionNotFoundError extends MultiDatabaseError {
-
-
-
-  constructor(partitionId) {
-    super(`Partition not found: ${partitionId}`, {
-      partitionId
-    });
-    this.name = 'PartitionNotFoundError';
-    this.partitionId = partitionId;
-  }
-}
-
-
-
-
-
-
-class PartitionConnectionError extends MultiDatabaseError {
-
-
-
-
-  constructor(partitionId, cause) {
-    super(`Failed to connect to partition: ${partitionId}`, {
-      partitionId,
-      cause: (cause === null || cause === void 0 ? void 0 : cause.message) || String(cause)
-    });
-    this.name = 'PartitionConnectionError';
-    this.partitionId = partitionId;
-    this.cause = cause;
-  }
-}
-
-
-
-
-
-
-class ReadOnlyPartitionError extends MultiDatabaseError {
-
-
-
-
-  constructor(partitionId, operation) {
-    super(`Cannot perform ${operation} on read-only partition: ${partitionId}`, {
-      partitionId,
-      operation
-    });
-    this.name = 'ReadOnlyPartitionError';
-    this.partitionId = partitionId;
-    this.operation = operation;
-  }
-}
-
-
-
-
-
-
-class CrossPartitionQueryError extends MultiDatabaseError {
-
-
-
-
-  constructor(message, partitionErrors = new Map()) {
-    super(message, {
-      partitionErrors: Object.fromEntries(Array.from(partitionErrors.entries()).map(([k, v]) => [k, v.message]))
-    });
-    this.name = 'CrossPartitionQueryError';
-    this.partitionErrors = partitionErrors;
-  }
-}
-
-
-
-
-
-
-class CrossPartitionDisabledError extends MultiDatabaseError {
-
-
-
-  constructor() {
-    super('Cross-partition queries are disabled in configuration');
-    this.name = 'CrossPartitionDisabledError';
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PartitionCoordinator {
-
-
-
-
-
-
-
-
-  constructor(configuration, context) {
-    this._configuration = configuration;
-    this._logger = context.logger || console;
-    this._utils = context.utils || null;
-    this._cache = context.cache || null;
-    this._defaultConnectionOptions = cloneDeep_cloneDeep(context.defaultConnectionOptions || {});
-    this._connections = new Map();
-    this._statistics = new Map();
-
-
-    for (const partition of this._configuration.getAllPartitions()) {
-      this._statistics.set(partition.id, {
-        queries: 0,
-        hits: 0,
-        misses: 0,
-        lastAccess: null,
-        isConnected: false
-      });
-    }
-  }
-
-
-
-
-
-
-
-
-  getPartition(partitionIdOrAlias) {
-    const partition = this._configuration.getPartition(partitionIdOrAlias);
-    if (!partition) {
-      throw new PartitionNotFoundError(partitionIdOrAlias);
-    }
-    if (this._connections.has(partition.id)) {
-      this.updateStatistics(partition.id, 'access');
-      return this._connections.get(partition.id);
-    }
-    return this._createConnection(partition);
-  }
-
-
-
-
-
-
-
-
-
-  _createConnection(partition) {
-    var _this$_logger$debug, _this$_logger;
-    (_this$_logger$debug = (_this$_logger = this._logger).debug) === null || _this$_logger$debug === void 0 || _this$_logger$debug.call(_this$_logger, `Creating connection to partition: ${partition.id}`);
-    try {
-      var _this$_logger$info, _this$_logger2;
-      const connectionOptions = {
-        ...this._configuration.globalConnectionOptions,
-        ...partition.connectionOptions,
-        ...this._defaultConnectionOptions
-      };
-      const db = new DatabaseService(partition.spreadsheetId, this._logger, this._utils, this._cache, null,
-
-      connectionOptions);
-      this._connections.set(partition.id, db);
-      this.updateStatistics(partition.id, 'connect');
-      (_this$_logger$info = (_this$_logger2 = this._logger).info) === null || _this$_logger$info === void 0 || _this$_logger$info.call(_this$_logger2, `Connected to partition: ${partition.id}`);
-      return db;
-    } catch (error) {
-      throw new PartitionConnectionError(partition.id, error);
-    }
-  }
-
-
-
-
-
-
-  isConnected(partitionIdOrAlias) {
-    const partition = this._configuration.getPartition(partitionIdOrAlias);
-    return partition ? this._connections.has(partition.id) : false;
-  }
-
-
-
-
-
-  getConnectedPartitions() {
-    return Array.from(this._connections.keys());
-  }
-
-
-
-
-
-  getConnectionsEntries() {
-    return this._connections.entries();
-  }
-
-
-
-
-
-
-  closePartition(partitionIdOrAlias) {
-    var _this$_logger$debug2, _this$_logger3;
-    const partition = this._configuration.getPartition(partitionIdOrAlias);
-    if (!partition || !this._connections.has(partition.id)) {
-      return false;
-    }
-    this._connections.delete(partition.id);
-    this.updateStatistics(partition.id, 'disconnect');
-    (_this$_logger$debug2 = (_this$_logger3 = this._logger).debug) === null || _this$_logger$debug2 === void 0 || _this$_logger$debug2.call(_this$_logger3, `Closed connection to partition: ${partition.id}`);
-    return true;
-  }
-
-
-
-
-
-  closeAll() {
-    var _this$_logger$info2, _this$_logger4;
-    const count = this._connections.size;
-    for (const partitionId of this._connections.keys()) {
-      this.updateStatistics(partitionId, 'disconnect');
-    }
-    this._connections.clear();
-    (_this$_logger$info2 = (_this$_logger4 = this._logger).info) === null || _this$_logger$info2 === void 0 || _this$_logger$info2.call(_this$_logger4, `Closed all ${count} partition connections`);
-    return count;
-  }
-
-
-
-
-
-  getStatistics() {
-    const stats = {};
-    for (const [partitionId, partitionStats] of this._statistics.entries()) {
-      stats[partitionId] = {
-        ...partitionStats
-      };
-    }
-    return stats;
-  }
-
-
-
-
-
-
-  getPartitionStatistics(partitionIdOrAlias) {
-    const partition = this._configuration.getPartition(partitionIdOrAlias);
-    if (!partition) return null;
-    const stats = this._statistics.get(partition.id);
-    return stats ? {
-      ...stats
-    } : null;
-  }
-
-
-
-
-  resetStatistics() {
-    for (const partitionId of this._statistics.keys()) {
-      const isConnected = this._connections.has(partitionId);
-      this._statistics.set(partitionId, {
-        queries: 0,
-        hits: 0,
-        misses: 0,
-        lastAccess: isConnected ? new Date() : null,
-        isConnected
-      });
-    }
-  }
-
-
-
-
-
-
-  updateStatistics(partitionId, event) {
-    const stats = this._statistics.get(partitionId);
-    if (!stats) return;
-    switch (event) {
-      case 'access':
-      case 'query':
-        stats.queries++;
-        stats.lastAccess = new Date();
-        break;
-      case 'connect':
-        stats.isConnected = true;
-        stats.lastAccess = new Date();
-        break;
-      case 'disconnect':
-        stats.isConnected = false;
-        break;
-    }
-  }
-
-
-
-
-
-
-  get activeConnectionsCount() {
-    return this._connections.size;
-  }
-}
-;
-
-
-
-
-
-
-class CrossPartitionAggregator {
-
-
-
-
-
-
-
-
-  static saveAll(coordinator, options = {}) {
-
-
-    const results = {};
-    const config = coordinator._configuration;
-    for (const [partitionId, db] of coordinator.getConnectionsEntries()) {
-      const partition = config.getPartition(partitionId);
-      if (partition !== null && partition !== void 0 && partition.isReadOnly && !options.dryRun) {
-        results[partitionId] = {
-          success: false,
-          error: 'Partition is read-only',
-          skipped: true
-        };
-        continue;
-      }
-      try {
-        db.save(options);
-        results[partitionId] = {
-          success: true
-        };
-      } catch (error) {
-        results[partitionId] = {
-          success: false,
-          error: error.message
-        };
-      }
-    }
-    return results;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class MultiDatabaseManager {
-
-
-
-
-
-
-
-
-
-  constructor(configuration, options = {}) {
-    var _info, _ref;
-
-
-
-
-
-
-    this._configuration = configuration instanceof PartitionConfiguration ? configuration : new PartitionConfiguration(configuration);
-
-
-
-
-
-
-    this._router = new PartitionRouter(this._configuration, {
-      logger: options.logger || console,
-      customRouter: options.customRouter
-    });
-
-
-
-
-
-
-    this._coordinator = new PartitionCoordinator(this._configuration, options);
-    (_info = (_ref = options.logger || console).info) === null || _info === void 0 || _info.call(_ref, `MultiDatabaseManager initialized with ${this._configuration.size()} partitions`);
-  }
-
-
-
-
-
-
-
-  getPartition(partitionIdOrAlias) {
-    return this._coordinator.getPartition(partitionIdOrAlias);
-  }
-
-
-
-
-
-
-  getDefault() {
-    return this.getPartition(this._configuration.defaultPartition);
-  }
-
-
-
-
-
-
-  getByTag(tag) {
-    const partitions = this._configuration.getPartitionsByTag(tag);
-    return partitions.map(p => this.getPartition(p.id));
-  }
-
-
-
-
-
-
-
-  getByTags(tags, matchMode = 'ALL') {
-    const partitions = this._configuration.getPartitionsByTags(tags, matchMode);
-    return partitions.map(p => this.getPartition(p.id));
-  }
-
-
-
-
-
-
-  route(routingContext) {
-    const partitions = this._router.route(routingContext);
-    if (partitions.length === 1) {
-      return this.getPartition(partitions[0].id);
-    }
-    return partitions.map(p => this.getPartition(p.id));
-  }
-
-
-
-
-
-
-
-  query(tableName) {
-    if (!this._configuration.crossPartitionEnabled) {
-      throw new CrossPartitionDisabledError();
-    }
-    return new CrossPartitionQuery(this, tableName);
-  }
-
-
-
-
-
-  getConfiguration() {
-    return this._configuration;
-  }
-
-
-
-
-
-  getRouter() {
-    return this._router;
-  }
-
-
-
-
-
-
-  isConnected(partitionIdOrAlias) {
-    return this._coordinator.isConnected(partitionIdOrAlias);
-  }
-
-
-
-
-
-  getConnectedPartitions() {
-    return this._coordinator.getConnectedPartitions();
-  }
-
-
-
-
-
-
-
-  saveAll(options = {}) {
-    return CrossPartitionAggregator.saveAll(this._coordinator, options);
-  }
-
-
-
-
-
-
-  closePartition(partitionIdOrAlias) {
-    return this._coordinator.closePartition(partitionIdOrAlias);
-  }
-
-
-
-
-
-  closeAll() {
-    return this._coordinator.closeAll();
-  }
-
-
-
-
-
-  getStatistics() {
-    return this._coordinator.getStatistics();
-  }
-
-
-
-
-
-
-  getPartitionStatistics(partitionIdOrAlias) {
-    return this._coordinator.getPartitionStatistics(partitionIdOrAlias);
-  }
-
-
-
-
-  resetStatistics() {
-    this._coordinator.resetStatistics();
-  }
-
-
-
-
-
-  toString() {
-    const connected = this._coordinator.activeConnectionsCount;
-    const total = this._configuration.size();
-    return `MultiDatabaseManager[${connected}/${total} connected]`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -54182,8 +46988,8 @@ class JobDefinitionRegistry {
 
 
   register(jobNameOrDefinition, jobDefinition) {
-    let jobName = jobNameOrDefinition;
-    let definition = jobDefinition;
+    const jobName = jobNameOrDefinition;
+    const definition = jobDefinition;
     if (typeof jobName !== 'string' || jobName.length === 0) {
       throw new Error('JobDefinitionRegistry.register: Job name must be a non-empty string');
     }
@@ -54220,24 +47026,10 @@ class JobDefinitionRegistry {
 
 
 
-  get(jobName) {
-    return this.getDefinition(jobName);
-  }
-
-
-
-
   listRegisteredJobs() {
     const jobs = Array.from(this.definitions.keys());
     this.logger.debug(`JobDefinitionRegistry.listRegisteredJobs: ${jobs.length} jobs registered`);
     return jobs;
-  }
-
-
-
-
-  listAll() {
-    return this.listRegisteredJobs();
   }
 
 
@@ -54248,36 +47040,6 @@ class JobDefinitionRegistry {
       return false;
     }
     return this.definitions.has(jobName);
-  }
-
-
-
-
-  removeJob(jobName) {
-    if (typeof jobName !== 'string' || jobName.length === 0) {
-      this.logger.error('JobDefinitionRegistry.removeJob: Job name must be a non-empty string');
-      return false;
-    }
-    if (!this.definitions.has(jobName)) {
-      this.logger.warn(`JobDefinitionRegistry.removeJob: Job '${jobName}' did not exist in registry`);
-      return false;
-    }
-    this.definitions.unregister(jobName);
-    this.logger.debug(`JobDefinitionRegistry.removeJob: Job '${jobName}' removed from registry`);
-    return true;
-  }
-
-
-
-
-  getStatistics() {
-    const stats = {
-      totalJobs: this.definitions.size,
-      jobsByCategory: this._calculateJobsByCategory(),
-      jobsWithParameters: this._countJobsWithParameters()
-    };
-    this.logger.debug(`JobDefinitionRegistry.getStatistics: ${stats.totalJobs} total jobs in registry`);
-    return stats;
   }
 
 
@@ -54303,45 +47065,6 @@ class JobDefinitionRegistry {
       throw new Error(`JobDefinitionRegistry.register: Field 'finalAction' must be a function for job '${jobName}'`);
     }
   }
-
-
-
-
-  _calculateJobsByCategory() {
-    const categories = {};
-    for (const def of this.definitions.values()) {
-      const description = String(def.description || '').toLowerCase();
-      const name = String(def.name || '').toLowerCase();
-      const text = `${name} ${description}`;
-      let category;
-      if (/generat/.test(text)) {
-        category = 'Generation';
-      } else if (/email|mail/.test(text)) {
-        category = 'Email';
-      } else if (/import/.test(text)) {
-        category = 'Import';
-      } else if (/structur|folder|infrastructure/.test(text)) {
-        category = 'Infrastructure';
-      } else {
-        category = 'Other';
-      }
-      categories[category] = (categories[category] || 0) + 1;
-    }
-    return categories;
-  }
-
-
-
-
-  _countJobsWithParameters() {
-    let count = 0;
-    for (const def of this.definitions.values()) {
-      if (Array.isArray(def.requiredParameters) && def.requiredParameters.length > 0) {
-        count++;
-      }
-    }
-    return count;
-  }
 }
 ;
 
@@ -54365,9 +47088,6 @@ class QueueStateManager {
   }
   static get STATE_PENDING() {
     return 'pending';
-  }
-  static get LOCK_RETRY_DELAY_MS() {
-    return 100;
   }
   constructor(jobName, propertiesService, utils, lockService) {
     if (!jobName || typeof jobName !== 'string') {
@@ -54859,9 +47579,6 @@ class JobStateManager {
   }
   static get STATE_PENDING() {
     return QueueStateManager.STATE_PENDING;
-  }
-  static get LOCK_RETRY_DELAY_MS() {
-    return QueueStateManager.LOCK_RETRY_DELAY_MS;
   }
   static get LARGE_STATE_THRESHOLD() {
     return QueuePersistenceHandler.LARGE_STATE_THRESHOLD;
@@ -55602,7 +48319,9 @@ class CapturingLogger {
 
 
 
-  debug(message, context = null) {
+
+
+  _proxy(level, message, context = null) {
 
     const evaluatedMessage = typeof message === 'function' ? message() : message;
     const evaluatedContext = context && typeof context === 'function' ? context() : context;
@@ -55611,11 +48330,21 @@ class CapturingLogger {
     const messageStr = typeof evaluatedMessage === 'object' ? JSON.stringify(evaluatedMessage) : String(evaluatedMessage);
 
 
-    this._capture('DEBUG', messageStr, evaluatedContext);
+    this._capture(level.toUpperCase(), messageStr, evaluatedContext);
 
 
-    this._realLogger.debug(message, context);
+    this._realLogger[level](message, context);
     return this;
+  }
+
+
+
+
+
+
+
+  debug(message, context = null) {
+    return this._proxy('debug', message, context);
   }
 
 
@@ -55625,12 +48354,7 @@ class CapturingLogger {
 
 
   info(message, context = null) {
-    const evaluatedMessage = typeof message === 'function' ? message() : message;
-    const evaluatedContext = context && typeof context === 'function' ? context() : context;
-    const messageStr = typeof evaluatedMessage === 'object' ? JSON.stringify(evaluatedMessage) : String(evaluatedMessage);
-    this._capture('INFO', messageStr, evaluatedContext);
-    this._realLogger.info(message, context);
-    return this;
+    return this._proxy('info', message, context);
   }
 
 
@@ -55640,12 +48364,7 @@ class CapturingLogger {
 
 
   warn(message, context = null) {
-    const evaluatedMessage = typeof message === 'function' ? message() : message;
-    const evaluatedContext = context && typeof context === 'function' ? context() : context;
-    const messageStr = typeof evaluatedMessage === 'object' ? JSON.stringify(evaluatedMessage) : String(evaluatedMessage);
-    this._capture('WARN', messageStr, evaluatedContext);
-    this._realLogger.warn(message, context);
-    return this;
+    return this._proxy('warn', message, context);
   }
 
 
@@ -55655,12 +48374,7 @@ class CapturingLogger {
 
 
   error(message, context = null) {
-    const evaluatedMessage = typeof message === 'function' ? message() : message;
-    const evaluatedContext = context && typeof context === 'function' ? context() : context;
-    const messageStr = typeof evaluatedMessage === 'object' ? JSON.stringify(evaluatedMessage) : String(evaluatedMessage);
-    this._capture('ERROR', messageStr, evaluatedContext);
-    this._realLogger.error(message, context);
-    return this;
+    return this._proxy('error', message, context);
   }
 
 
@@ -55752,15 +48466,6 @@ class CapturingLogger {
 
 
 
-  getCapturedLogs() {
-
-    return [...this._capturedLogs];
-  }
-
-
-
-
-
 
   getLogsAsText(separator = '\n') {
     return this._capturedLogs.map(entry => {
@@ -55807,13 +48512,6 @@ class CapturingLogger {
 
   _escapeHtml(text) {
     return HtmlSanitizer.escapeHtml(text);
-  }
-
-
-
-
-  clearCapturedLogs() {
-    this._capturedLogs = [];
   }
 
 
@@ -56227,10 +48925,6 @@ class MyJobRunnerService {
 }
 
 ;
-
-
-
-
 
 
 
@@ -57646,3322 +50340,6 @@ class Step {
 
 
 
-class PostProcessorContext {
-
-
-
-
-
-
-
-
-  constructor(options = {}) {
-    if (!options.step) {
-      throw new Error('PostProcessorContext: step is required');
-    }
-    if (!options.stepResult) {
-      throw new Error('PostProcessorContext: stepResult is required');
-    }
-    if (!options.pipelineContext) {
-      throw new Error('PostProcessorContext: pipelineContext is required');
-    }
-
-
-
-
-
-    this.step = options.step;
-
-
-
-
-
-    this.stepResult = options.stepResult;
-
-
-
-
-
-    this.pipelineContext = options.pipelineContext;
-
-
-
-
-
-    this.metadata = options.metadata || {};
-  }
-
-
-
-
-
-
-
-
-  getStepOutput(key, defaultValue = null) {
-    if (!this.stepResult.output) {
-      return defaultValue;
-    }
-    return Object.prototype.hasOwnProperty.call(this.stepResult.output, key) ? this.stepResult.output[key] : defaultValue;
-  }
-
-
-
-
-
-
-
-
-  getPipelineData(path, defaultValue = null) {
-    if (!path || typeof path !== 'string') {
-      return defaultValue;
-    }
-    const parts = path.split('.');
-    let current = this.pipelineContext.getData();
-    for (const part of parts) {
-      if (current === null || current === undefined) {
-        return defaultValue;
-      }
-      if (typeof current !== 'object') {
-        return defaultValue;
-      }
-      current = current[part];
-    }
-    return current !== undefined ? current : defaultValue;
-  }
-
-
-
-
-  wasSuccessful() {
-    return this.stepResult.success === true && !this.stepResult.skipped;
-  }
-
-
-
-
-  wasSkipped() {
-    return this.stepResult.skipped === true;
-  }
-
-
-
-
-  getError() {
-    return this.stepResult.error || null;
-  }
-
-
-
-
-  getStepName() {
-    return this.step.getName ? this.step.getName() : 'unknown';
-  }
-
-
-
-
-  getDurationMs() {
-    return this.stepResult.durationMs || 0;
-  }
-
-
-
-
-
-
-  getMetadata(key, defaultValue = null) {
-    return Object.prototype.hasOwnProperty.call(this.metadata, key) ? this.metadata[key] : defaultValue;
-  }
-
-
-
-
-
-  toExpressionContext() {
-    return {
-      step: {
-        name: this.getStepName(),
-        success: this.wasSuccessful(),
-        skipped: this.wasSkipped(),
-        durationMs: this.getDurationMs(),
-        error: this.getError() ? this.getError().message : null
-      },
-      stepResult: this.stepResult,
-      stepOutput: this.stepResult.output || {},
-      pipeline: this.pipelineContext.getData(),
-      metadata: this.metadata
-    };
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PostProcessorResult extends Result {
-
-
-
-
-
-
-
-
-
-  constructor(options = {}) {
-
-    super({
-      error: options.error || null
-    });
-
-
-
-
-
-    this.success = options.success === true;
-
-
-
-
-
-    this.processorId = options.processorId || 'unknown';
-
-
-
-
-
-    this.duration = options.duration || 0;
-
-
-
-
-
-    this.changes = options.changes || [];
-
-
-
-
-
-
-
-    this.metadata = options.metadata || {};
-  }
-
-
-
-
-
-
-
-
-
-
-  static success(processorId, changes = [], duration = 0, metadata = {}) {
-    return new PostProcessorResult({
-      success: true,
-      processorId,
-      changes,
-      duration,
-      metadata
-    });
-  }
-
-
-
-
-
-
-
-
-
-
-  static failure(processorId, error, duration = 0, metadata = {}) {
-    return new PostProcessorResult({
-      success: false,
-      processorId,
-      error,
-      duration,
-      metadata
-    });
-  }
-
-
-
-
-
-
-
-
-  static skipped(processorId, reason = 'Condition not met') {
-    return new PostProcessorResult({
-      success: true,
-      processorId,
-      duration: 0,
-      metadata: {
-        skipped: true,
-        skipReason: reason
-      }
-    });
-  }
-
-
-
-
-  wasSkipped() {
-    return this.metadata.skipped === true;
-  }
-
-
-
-
-
-
-
-
-
-
-  addChange(type, target, newValue, oldValue = undefined) {
-    const change = {
-      type,
-      target,
-      newValue
-    };
-    if (oldValue !== undefined) {
-      change.oldValue = oldValue;
-    }
-    this.changes.push(change);
-    return this;
-  }
-
-
-
-
-  getSummary() {
-    return {
-      processorId: this.processorId,
-      success: this.success,
-      skipped: this.wasSkipped(),
-      duration: this.duration,
-      changeCount: this.changes.length,
-      error: this.error ? this.error.message : null
-    };
-  }
-
-
-
-
-  toObject() {
-    return {
-      success: this.success,
-      processorId: this.processorId,
-      duration: this.duration,
-      changes: [...this.changes],
-      error: this.error ? {
-        message: this.error.message,
-        stack: this.error.stack
-      } : null,
-      metadata: {
-        ...this.metadata
-      }
-    };
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-const WhenCondition = Object.freeze({
-
-  ALWAYS: 'ALWAYS',
-
-  ON_SUCCESS: 'ON_SUCCESS',
-
-  ON_ERROR: 'ON_ERROR',
-
-  CUSTOM: 'CUSTOM'
-});
-
-
-
-
-
-
-
-function isValidWhenCondition(value) {
-  return Object.values(WhenCondition).includes(value);
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ChainExecutor {
-
-
-
-
-  constructor(facade) {
-    this._facade = facade;
-  }
-
-
-
-
-
-  get _logger() {
-    return this._facade._logger;
-  }
-
-
-
-
-
-  get _expressionEngine() {
-    return this._facade._expressionEngine;
-  }
-
-
-
-
-
-
-
-
-  shouldExecute(config, context) {
-    switch (config.when) {
-      case WhenCondition.ALWAYS:
-        return true;
-      case WhenCondition.ON_SUCCESS:
-        return context.wasSuccessful();
-      case WhenCondition.ON_ERROR:
-        return !context.wasSuccessful() && !context.wasSkipped();
-      case WhenCondition.CUSTOM:
-        return this.evaluateCustomCondition(config.customCondition, context);
-      default:
-        this._logger.warn(`[PostProcessorChain] Unknown when condition: ${config.when}, defaulting to ALWAYS`);
-        return true;
-    }
-  }
-
-
-
-
-
-
-
-
-  evaluateCustomCondition(condition, context) {
-    if (!condition) {
-      this._logger.warn('[PostProcessorChain] CUSTOM condition specified but no expression provided');
-      return false;
-    }
-    if (!this._expressionEngine) {
-      this._logger.warn('[PostProcessorChain] CUSTOM condition requires expressionEngine but none provided');
-      return false;
-    }
-    try {
-      const expressionContext = context.toExpressionContext();
-      const result = this._expressionEngine.evaluate(condition, expressionContext);
-      return Boolean(result);
-    } catch (error) {
-      this._logger.error(`[PostProcessorChain] Failed to evaluate custom condition: ${error.message}`);
-      return false;
-    }
-  }
-
-
-
-
-
-
-
-
-  executeChain(entries, context) {
-    const startTime = Date.now();
-    const results = [];
-    let chainStopped = false;
-    let executed = 0;
-    let skipped = 0;
-    let failed = 0;
-    this._logger.debug(`[PostProcessorChain] Executing ${entries.length} processors`);
-    for (const entry of entries) {
-      const {
-        processor,
-        config
-      } = entry;
-      const processorId = processor.getId();
-
-
-      if (chainStopped) {
-        this._logger.debug(`[PostProcessorChain] Chain stopped, skipping: ${processorId}`);
-        results.push(PostProcessorResult.skipped(processorId, 'Chain stopped'));
-        skipped++;
-        continue;
-      }
-
-
-      if (!this.shouldExecute(config, context)) {
-        this._logger.debug(`[PostProcessorChain] Condition not met (${config.when}), skipping: ${processorId}`);
-        results.push(PostProcessorResult.skipped(processorId, `Condition ${config.when} not met`));
-        skipped++;
-        continue;
-      }
-
-
-      const result = processor.execute(context);
-      results.push(result);
-      if (result.wasSkipped()) {
-        skipped++;
-      } else if (result.success) {
-        executed++;
-      } else {
-        executed++;
-        failed++;
-
-
-        if (!config.continueOnError) {
-          this._logger.error(`[PostProcessorChain] Stopping chain due to failure: ${processorId}`);
-          chainStopped = true;
-        } else {
-          this._logger.warn(`[PostProcessorChain] Continuing despite failure (continueOnError=true): ${processorId}`);
-        }
-      }
-    }
-    const totalDuration = Date.now() - startTime;
-    this._logger.debug(`[PostProcessorChain] Completed: executed=${executed}, skipped=${skipped}, failed=${failed}, duration=${totalDuration}ms`);
-    return {
-      success: failed === 0 || !chainStopped,
-      results,
-      totalDuration,
-      executed,
-      skipped,
-      failed,
-      chainStopped
-    };
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PostProcessorChain {
-
-
-
-
-
-  constructor(options = {}) {
-
-
-
-
-
-    const fallback = console;
-    if (typeof fallback.debug !== 'function') {
-      fallback.debug = fallback.log;
-    }
-    this._logger = options.logger || fallback;
-
-
-
-
-
-
-    this._expressionEngine = options.expressionEngine || null;
-
-
-
-
-
-
-    this._entries = [];
-
-
-
-
-
-
-    this._chainExecutor = new ChainExecutor(this);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  add(processor, config = {}) {
-    if (!processor || typeof processor.execute !== 'function') {
-      throw new Error('PostProcessorChain.add: processor must have an execute method');
-    }
-    const entry = {
-      processor,
-      config: {
-        when: config.when || WhenCondition.ALWAYS,
-        customCondition: config.customCondition || null,
-        continueOnError: config.continueOnError !== false
-      }
-    };
-
-
-    if (!isValidWhenCondition(entry.config.when)) {
-      throw new Error(`PostProcessorChain.add: invalid when condition '${entry.config.when}'`);
-    }
-    this._entries.push(entry);
-    this._logger.debug(`[PostProcessorChain] Added processor: ${processor.getId()} (when: ${entry.config.when})`);
-    return this;
-  }
-
-
-
-
-
-
-
-  remove(processorId) {
-    const initialLength = this._entries.length;
-    this._entries = this._entries.filter(entry => entry.processor.getId() !== processorId);
-    return this._entries.length < initialLength;
-  }
-
-
-
-
-
-
-  get length() {
-    return this._entries.length;
-  }
-
-
-
-
-  isEmpty() {
-    return this._entries.length === 0;
-  }
-
-
-
-
-
-  clear() {
-    this._entries = [];
-    return this;
-  }
-
-
-
-
-
-
-
-
-  execute(context) {
-    if (!(context instanceof PostProcessorContext)) {
-      throw new Error('PostProcessorChain.execute: context must be a PostProcessorContext');
-    }
-    return this._chainExecutor.executeChain(this._entries, context);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  static createContext(step, stepResult, pipelineContext, metadata = {}) {
-    return new PostProcessorContext({
-      step,
-      stepResult,
-      pipelineContext,
-      metadata
-    });
-  }
-
-
-
-
-  getSummary() {
-    return this._entries.map(entry => ({
-      id: entry.processor.getId(),
-      name: entry.processor.getName(),
-      when: entry.config.when,
-      continueOnError: entry.config.continueOnError
-    }));
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PostProcessorError extends BaseError {
-
-
-
-
-
-
-  constructor(message, context = {}, cause = null) {
-    super(message, 'POST_PROCESSOR_ERROR', context, cause);
-    this.name = 'PostProcessorError';
-  }
-}
-
-
-
-
-
-
-class PostProcessorError_ConfigurationError extends PostProcessorError {
-
-
-
-
-
-
-  constructor(message, context = {}, cause = null) {
-    super(message, context, cause);
-    this.name = 'ConfigurationError';
-    this.code = 'PP_CONFIGURATION_ERROR';
-  }
-}
-
-
-
-
-
-
-class ExecutionError extends PostProcessorError {
-
-
-
-
-
-
-  constructor(message, context = {}, cause = null) {
-    super(message, context, cause);
-    this.name = 'ExecutionError';
-    this.code = 'PP_EXECUTION_ERROR';
-  }
-}
-
-
-
-
-
-
-class RecordNotFoundError extends PostProcessorError {
-
-
-
-
-
-
-  constructor(table, identifier, context = {}) {
-    super(`Record not found in table '${table}'`, {
-      ...context,
-      table,
-      identifier
-    });
-    this.name = 'RecordNotFoundError';
-    this.code = 'PP_RECORD_NOT_FOUND';
-    this.table = table;
-    this.identifier = identifier;
-  }
-}
-
-
-
-
-
-
-class ValueResolutionError extends PostProcessorError {
-
-
-
-
-
-
-
-  constructor(sourceType, source, context = {}, cause = null) {
-    super(`Failed to resolve value from ${sourceType}: '${source}'`, {
-      ...context,
-      sourceType,
-      source
-    }, cause);
-    this.name = 'ValueResolutionError';
-    this.code = 'PP_VALUE_RESOLUTION_ERROR';
-    this.sourceType = sourceType;
-    this.source = source;
-  }
-}
-
-
-
-
-
-
-class ProcessorNotFoundError extends PostProcessorError {
-
-
-
-
-
-  constructor(processorType, availableTypes = []) {
-    super(`Post-processor type '${processorType}' not found`, {
-      processorType,
-      availableTypes
-    });
-    this.name = 'ProcessorNotFoundError';
-    this.code = 'PP_PROCESSOR_NOT_FOUND';
-    this.processorType = processorType;
-    this.availableTypes = availableTypes;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PostProcessorRegistry {
-
-
-
-
-  constructor(options = {}) {
-
-
-
-
-
-    this._processors = new Registry({
-      entityName: 'post-processor'
-    });
-
-
-
-
-
-
-    const fallback = console;
-    if (typeof fallback.debug !== 'function') {
-      fallback.debug = fallback.log;
-    }
-    this._logger = options.logger || fallback;
-  }
-
-
-
-
-
-
-
-
-
-  register(type, constructor) {
-    if (!type || typeof type !== 'string') {
-      throw new Error('PostProcessorRegistry.register: type must be a non-empty string');
-    }
-    if (typeof constructor !== 'function') {
-      throw new Error('PostProcessorRegistry.register: constructor must be a function');
-    }
-    this._processors.set(type, constructor);
-    this._logger.debug(`[PostProcessorRegistry] Registered processor type: ${type}`);
-    return this;
-  }
-
-
-
-
-
-
-
-  unregister(type) {
-    const existed = this._processors.unregister(type);
-    if (existed) {
-      this._logger.debug(`[PostProcessorRegistry] Unregistered processor type: ${type}`);
-    }
-    return existed;
-  }
-
-
-
-
-
-  has(type) {
-    return this._processors.has(type);
-  }
-
-
-
-
-
-  get(type) {
-    return this._processors.get(type);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  create(config, services = {}) {
-    if (!config || typeof config !== 'object') {
-      throw new Error('PostProcessorRegistry.create: config must be an object');
-    }
-    const {
-      processorType,
-      instanceId,
-      config: processorConfig = {}
-    } = config;
-    if (!processorType) {
-      throw new Error('PostProcessorRegistry.create: config.processorType is required');
-    }
-    if (!this.has(processorType)) {
-      throw new ProcessorNotFoundError(processorType, this.getRegisteredTypes());
-    }
-    const Constructor = this._processors.get(processorType);
-    const id = instanceId || `${processorType}-${Date.now()}`;
-    this._logger.debug(`[PostProcessorRegistry] Creating processor: ${id} (type: ${processorType})`);
-    return new Constructor(id, processorConfig, services);
-  }
-
-
-
-
-
-
-
-
-
-  createAll(configs, services = {}) {
-    if (!Array.isArray(configs)) {
-      throw new Error('PostProcessorRegistry.createAll: configs must be an array');
-    }
-    return configs.map(config => this.create(config, services));
-  }
-
-
-
-
-  getRegisteredTypes() {
-    return Array.from(this._processors.keys());
-  }
-
-
-
-
-
-
-  get size() {
-    return this._processors.size;
-  }
-
-
-
-
-
-  clear() {
-    this._processors.clear();
-    this._logger.debug('[PostProcessorRegistry] Cleared all registered types');
-    return this;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PostProcessableStep extends Step {
-
-
-
-
-
-
-
-
-
-  constructor(name, logger, options = {}, services = {}) {
-    super(name, logger, options);
-    this._services = services || {};
-    this._processorChain = null;
-    this._lastPostProcessorResults = null;
-  }
-
-
-
-
-
-
-
-
-
-  getPostProcessors() {
-    return [];
-  }
-
-
-
-
-
-
-  _buildPostProcessorChain() {
-    const configs = this.getPostProcessors();
-    if (!Array.isArray(configs) || configs.length === 0) {
-      return null;
-    }
-    const registry = this._services.processorRegistry;
-    if (!registry || typeof registry.create !== 'function') {
-      return null;
-    }
-    const chain = new PostProcessorChain({
-      logger: this._logger,
-      expressionEngine: this._services.expressionEngine
-    });
-    for (const config of configs) {
-      try {
-        const processor = registry.create(config, this._services);
-        chain.add(processor, {
-          when: config.when
-        });
-      } catch (e) {
-        this._logger.error(`[${this._name}] Failed to build post-processor: ${e.message}`);
-      }
-    }
-    return chain;
-  }
-
-
-
-
-
-
-  _getPostProcessorChain() {
-    if (this._processorChain === null) {
-      this._processorChain = this._buildPostProcessorChain();
-    }
-    return this._processorChain;
-  }
-
-
-
-
-
-
-
-
-  _executePostProcessors(stepResult, pipelineContext) {
-    const chain = this._getPostProcessorChain();
-    if (!chain) return null;
-    const ppContext = new PostProcessorContext({
-      stepName: this._name,
-      stepResult,
-      pipelineContext,
-      services: this._services
-    });
-    try {
-      this._lastPostProcessorResults = chain.execute(ppContext);
-    } catch (e) {
-      this._logger.error(`[${this._name}] Post-processor chain threw: ${e.message}`);
-      this._lastPostProcessorResults = {
-        success: false,
-        chainStopped: true,
-        error: e.message
-      };
-    }
-    return this._lastPostProcessorResults;
-  }
-
-
-  getLastPostProcessorResults() {
-    return this._lastPostProcessorResults;
-  }
-
-
-
-
-
-
-  execute(context) {
-
-    const stepResult = super.execute(context);
-
-
-
-    const postProcessorResults = this._executePostProcessors(stepResult, context);
-
-
-    if (postProcessorResults) {
-      stepResult.postProcessors = postProcessorResults;
-
-
-      if (postProcessorResults.chainStopped) {
-        this._logger.error(`[${this._name}] Post-processor chain was stopped due to failure`);
-      }
-    }
-    return stepResult;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ProducerStep extends Step {
-
-
-
-
-
-
-
-
-  constructor(name, logger, expressionEngine, options = {}) {
-
-    if (!expressionEngine || typeof expressionEngine !== 'object') {
-      throw new Error('ProducerStep: expressionEngine is required and must be an object');
-    }
-    if (typeof expressionEngine.evaluate !== 'function') {
-      throw new Error('ProducerStep: expressionEngine must have an evaluate method');
-    }
-
-
-    if (!options.outputKey || typeof options.outputKey !== 'string') {
-      throw new Error('ProducerStep: options.outputKey is required and must be a non-empty string');
-    }
-    super(name, logger, options);
-
-
-
-
-
-
-    this._expressionEngine = expressionEngine;
-
-
-
-
-
-
-    this._outputKey = options.outputKey;
-  }
-
-
-
-
-
-  get expressionEngine() {
-    return this._expressionEngine;
-  }
-
-
-
-
-
-  get outputKey() {
-    return this._outputKey;
-  }
-
-
-
-
-
-
-
-
-
-
-  evaluateRules(_context) {
-    throw new Error(`ProducerStep.evaluateRules must be implemented by subclass: ${this._name}`);
-  }
-
-
-
-
-
-
-
-
-
-  _validateScalarResult(result) {
-
-    if (result === null || result === undefined) {
-      throw new Error(`ProducerStep (${this._name}): evaluateRules must not return null or undefined`);
-    }
-    const resultType = typeof result;
-    if (resultType !== 'string' && resultType !== 'number' && resultType !== 'boolean') {
-      throw new Error(`ProducerStep (${this._name}): evaluateRules must return a scalar value (string/number/boolean), got ${resultType}`);
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-
-  _executeLogic(context) {
-    this._logger.debug(`[${this._name}] Evaluating business rules...`);
-
-
-    const result = this.evaluateRules(context);
-
-
-    this._validateScalarResult(result);
-    this._logger.debug(`[${this._name}] Evaluated result: ${result} (type: ${typeof result})`);
-
-
-    this.setResult(context, this._outputKey, result);
-    this._logger.debug(`[${this._name}] Decision made: ${this._outputKey} = ${result}`);
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ConsumerStep extends Step {
-
-
-
-
-
-
-
-
-
-
-  constructor(name, logger, options = {}) {
-    if (!options.inputKey || typeof options.inputKey !== 'string') {
-      throw new Error('ConsumerStep: options.inputKey is required and must be a non-empty string');
-    }
-    super(name, logger, options);
-
-
-
-
-
-    this._inputKey = options.inputKey;
-
-
-
-
-
-    this._outputKey = options.outputKey || null;
-  }
-
-
-  get inputKey() {
-    return this._inputKey;
-  }
-
-
-  get outputKey() {
-    return this._outputKey;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  performAction(_inputValue, _context) {
-    throw new Error(`ConsumerStep.performAction must be implemented by subclass: ${this._name}`);
-  }
-
-
-
-
-
-
-
-
-
-
-
-  _executeLogic(context) {
-
-    const inputValue = context.get(this._inputKey);
-    this._logger.debug(`[${this._name}] Reading input from '${this._inputKey}': ${inputValue} (type: ${typeof inputValue})`);
-
-
-    if (inputValue === null || inputValue === undefined) {
-      throw new Error(`ConsumerStep (${this._name}): Input value '${this._inputKey}' is null or undefined. ` + `Ensure a ProducerStep has written this value to the context.`);
-    }
-    this._logger.debug(`[${this._name}] Performing action with input: ${inputValue}`);
-
-
-    const result = this.performAction(inputValue, context);
-
-
-    if (this._outputKey) {
-      this.setResult(context, this._outputKey, result);
-      this._logger.debug(`[${this._name}] Action completed: ${this._outputKey} = ${JSON.stringify(result)}`);
-    } else {
-      this._logger.debug(`[${this._name}] Action completed successfully`);
-    }
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class TemplateSelectorStep extends ProducerStep {
-
-
-
-
-
-
-
-
-  constructor(logger, expressionEngine, options = {}) {
-
-    const defaultOptions = {
-      requiredKeys: ['grade', 'absences'],
-      ...options
-    };
-    super('TemplateSelector', logger, expressionEngine, defaultOptions);
-
-
-
-
-
-
-
-    this._rules = options.rules || [{
-      condition: '{{grade}} >= 6 && {{absences}} < 5',
-      value: 'TEMPLATE_PASS'
-    }, {
-      condition: '{{grade}} < 6',
-      value: 'TEMPLATE_FAIL'
-    }, {
-      condition: '{{absences}} >= 5',
-      value: 'TEMPLATE_TOO_MANY_ABSENCES'
-    }];
-
-
-
-
-
-
-    this._defaultTemplate = 'TEMPLATE_DEFAULT';
-  }
-
-
-
-
-
-
-
-
-
-  evaluateRules(context) {
-    const contextData = context.getData();
-    this._logger.debug(`[${this._name}] Evaluating ${this._rules.length} rules against context: ` + `grade=${contextData.grade}, absences=${contextData.absences}`);
-
-
-    for (const rule of this._rules) {
-      try {
-        const matches = this._expressionEngine.evaluate(rule.condition, contextData);
-        this._logger.debug(`[${this._name}] Rule: "${rule.condition}" => ${matches} (value: ${rule.value})`);
-        if (matches) {
-          this._logger.info(`[${this._name}] Rule matched: "${rule.condition}" => ${rule.value}`);
-          return rule.value;
-        }
-      } catch (error) {
-        this._logger.error(`[${this._name}] Error evaluating rule "${rule.condition}": ${error.message}`);
-
-      }
-    }
-
-
-    this._logger.warn(`[${this._name}] No rules matched, using default template: ${this._defaultTemplate}`);
-    return this._defaultTemplate;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class GenerateDocumentStep extends ConsumerStep {
-
-
-
-
-
-
-
-
-
-
-  constructor(logger, driveService, options = {}) {
-    super('GenerateDocument', logger, options);
-
-
-    if (!driveService || typeof driveService !== 'object') {
-      throw new Error('GenerateDocumentStep: driveService is required and must be an object');
-    }
-
-
-
-
-
-
-    this._driveService = driveService;
-
-
-
-
-
-
-
-    this._templateMapping = options.templateMapping || {
-      TEMPLATE_PASS: 'MOCK_TEMPLATE_PASS_ID',
-      TEMPLATE_FAIL: 'MOCK_TEMPLATE_FAIL_ID',
-      TEMPLATE_TOO_MANY_ABSENCES: 'MOCK_TEMPLATE_ABSENCES_ID',
-      TEMPLATE_DEFAULT: 'MOCK_TEMPLATE_DEFAULT_ID'
-    };
-
-
-
-
-
-
-    this._targetFolderId = options.targetFolderId || null;
-  }
-
-
-
-
-
-
-
-
-
-
-  performAction(templateId, context) {
-    this._logger.info(`[${this._name}] Creating document from template: ${templateId}`);
-
-
-    const templateFileId = this._templateMapping[templateId];
-    if (!templateFileId) {
-      throw new Error(`GenerateDocumentStep: Unknown template ID '${templateId}'. ` + `Available templates: ${Object.keys(this._templateMapping).join(', ')}`);
-    }
-    this._logger.debug(`[${this._name}] Resolved template '${templateId}' to file ID: ${templateFileId}`);
-
-
-    const studentName = context.get('student_name', 'Unknown Student');
-    const documentName = `${studentName} - ${templateId.replace('TEMPLATE_', '')} Report`;
-
-
-    this._logger.debug(`[${this._name}] Creating document: "${documentName}" from template ${templateFileId}`);
-
-
-
-
-
-
-
-    const documentId = `GENERATED_DOC_${Date.now()}`;
-    const documentUrl = `https://docs.google.com/document/d/${documentId}`;
-    this._logger.info(`[${this._name}] Document created successfully: ${documentName} (${documentId})`);
-    return {
-      id: documentId,
-      url: documentUrl,
-      name: documentName,
-      templateId: templateId,
-      templateFileId: templateFileId,
-      createdAt: new Date().toISOString()
-    };
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-const ValueSourceType = Object.freeze({
-
-  LITERAL: 'LITERAL',
-
-  CONTEXT: 'CONTEXT',
-
-  STEP_OUTPUT: 'STEP_OUTPUT',
-
-  EXPRESSION: 'EXPRESSION',
-
-  TIMESTAMP: 'TIMESTAMP'
-});
-
-
-
-
-
-
-
-function isValidValueSourceType(value) {
-  return Object.values(ValueSourceType).includes(value);
-}
-
-
-
-
-
-
-
-
-
-
-
-class ValueSource {
-
-
-
-
-
-
-
-  constructor(type, config = {}) {
-    if (!isValidValueSourceType(type)) {
-      throw new Error(`ValueSource: Invalid type '${type}'`);
-    }
-
-
-    this.type = type;
-
-
-    this.literal = config.literal;
-
-
-    this.contextPath = config.contextPath;
-
-
-    this.outputKey = config.outputKey;
-
-
-    this.expression = config.expression;
-
-
-    this.format = config.format || null;
-  }
-
-
-
-
-
-
-
-  static literal(value) {
-    return new ValueSource(ValueSourceType.LITERAL, {
-      literal: value
-    });
-  }
-
-
-
-
-
-
-
-
-  static context(path) {
-    if (!path || typeof path !== 'string') {
-      throw new Error('ValueSource.context: path must be a non-empty string');
-    }
-    return new ValueSource(ValueSourceType.CONTEXT, {
-      contextPath: path
-    });
-  }
-
-
-
-
-
-
-
-
-  static stepOutput(key) {
-    if (!key || typeof key !== 'string') {
-      throw new Error('ValueSource.stepOutput: key must be a non-empty string');
-    }
-    return new ValueSource(ValueSourceType.STEP_OUTPUT, {
-      outputKey: key
-    });
-  }
-
-
-
-
-
-
-
-
-  static expression(expr) {
-    if (!expr || typeof expr !== 'string') {
-      throw new Error('ValueSource.expression: expr must be a non-empty string');
-    }
-    return new ValueSource(ValueSourceType.EXPRESSION, {
-      expression: expr
-    });
-  }
-
-
-
-
-
-
-
-  static timestamp(format = null) {
-    return new ValueSource(ValueSourceType.TIMESTAMP, {
-      format
-    });
-  }
-
-
-
-
-
-
-
-
-
-  static fromConfig(config) {
-    if (!config || typeof config !== 'object') {
-      throw new Error('ValueSource.fromConfig: config must be an object');
-    }
-    if (!config.type) {
-      throw new Error('ValueSource.fromConfig: config.type is required');
-    }
-    return new ValueSource(config.type, config);
-  }
-
-
-
-
-
-
-  toObject() {
-    const obj = {
-      type: this.type
-    };
-    switch (this.type) {
-      case ValueSourceType.LITERAL:
-        obj.literal = this.literal;
-        break;
-      case ValueSourceType.CONTEXT:
-        obj.contextPath = this.contextPath;
-        break;
-      case ValueSourceType.STEP_OUTPUT:
-        obj.outputKey = this.outputKey;
-        break;
-      case ValueSourceType.EXPRESSION:
-        obj.expression = this.expression;
-        break;
-      case ValueSourceType.TIMESTAMP:
-        if (this.format) {
-          obj.format = this.format;
-        }
-        break;
-    }
-    return obj;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class PostProcessor {
-
-
-
-
-
-
-
-
-  constructor(id, name, config = {}, services = {}) {
-    if (!id || typeof id !== 'string') {
-      throw new Error('PostProcessor: id is required and must be a non-empty string');
-    }
-    if (!name || typeof name !== 'string') {
-      throw new Error('PostProcessor: name is required and must be a non-empty string');
-    }
-
-
-
-
-
-    this.id = id;
-
-
-
-
-
-    this.name = name;
-
-
-
-
-
-
-    this._config = config;
-
-
-
-
-
-
-    this._logger = services.logger || console;
-
-
-
-
-
-
-    this._services = services;
-  }
-
-
-
-
-  getId() {
-    return this.id;
-  }
-
-
-
-
-  getName() {
-    return this.name;
-  }
-
-
-
-
-  getConfig() {
-    return this._config;
-  }
-
-
-
-
-
-
-
-  shouldRun(_context) {
-    return true;
-  }
-
-
-
-
-
-
-
-  _validateConfig() {
-
-
-  }
-
-
-
-
-
-
-
-
-
-
-  _executeImpl(_context) {
-    throw new Error(`PostProcessor._executeImpl must be implemented by subclass: ${this.name}`);
-  }
-
-
-
-
-
-
-
-  execute(context) {
-    const startTime = Date.now();
-    try {
-
-      this._validateConfig();
-
-
-      if (!this.shouldRun(context)) {
-        this._logger.debug(`[${this.id}] Skipped (condition not met)`);
-        return PostProcessorResult.skipped(this.id);
-      }
-      this._logger.debug(`[${this.id}] Executing...`);
-
-
-      const result = this._executeImpl(context);
-
-
-      if (result && typeof result.duration === 'number' && result.duration === 0) {
-        result.duration = Date.now() - startTime;
-      }
-      this._logger.debug(`[${this.id}] Completed in ${(result === null || result === void 0 ? void 0 : result.duration) || 0}ms`);
-      return result;
-    } catch (error) {
-      var _context$getStepName;
-      const duration = Date.now() - startTime;
-      this._logger.error(`[${this.id}] Failed after ${duration}ms: ${error.message}`);
-      return PostProcessorResult.failure(this.id, error, duration, {
-        stepName: (context === null || context === void 0 || (_context$getStepName = context.getStepName) === null || _context$getStepName === void 0 ? void 0 : _context$getStepName.call(context)) || 'unknown'
-      });
-    }
-  }
-
-
-
-
-  getConfigSummary() {
-    return {
-      id: this.id,
-      name: this.name,
-      type: this.constructor.name
-    };
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ValueResolver {
-
-
-
-
-
-
-  constructor(services = {}) {
-
-
-
-
-
-    const fallback = console;
-    if (typeof fallback.debug !== 'function') {
-      fallback.debug = fallback.log;
-    }
-    this._logger = services.logger || fallback;
-
-
-
-
-
-
-    this._expressionEngine = services.expressionEngine || null;
-
-
-
-
-
-
-    this._utils = services.utils || null;
-  }
-
-
-
-
-
-
-
-
-
-  resolve(source, context) {
-
-    const valueSource = source instanceof ValueSource ? source : ValueSource.fromConfig(source);
-    switch (valueSource.type) {
-      case ValueSourceType.LITERAL:
-        return this._resolveLiteral(valueSource);
-      case ValueSourceType.CONTEXT:
-        return this._resolveContext(valueSource, context);
-      case ValueSourceType.STEP_OUTPUT:
-        return this._resolveStepOutput(valueSource, context);
-      case ValueSourceType.EXPRESSION:
-        return this._resolveExpression(valueSource, context);
-      case ValueSourceType.TIMESTAMP:
-        return this._resolveTimestamp(valueSource);
-      default:
-        throw new ValueResolutionError(valueSource.type, 'unknown', {
-          message: `Unknown value source type: ${valueSource.type}`
-        });
-    }
-  }
-
-
-
-
-
-
-
-
-  resolveAll(sources, context) {
-    const result = {};
-    for (const [key, source] of Object.entries(sources)) {
-      result[key] = this.resolve(source, context);
-    }
-    return result;
-  }
-
-
-
-
-
-
-  _resolveLiteral(source) {
-    return source.literal;
-  }
-
-
-
-
-
-
-
-
-  _resolveContext(source, context) {
-    const path = source.contextPath;
-    if (!path) {
-      throw new ValueResolutionError(ValueSourceType.CONTEXT, 'undefined', {
-        message: 'Context path is required for CONTEXT value source'
-      });
-    }
-
-
-    let resolvedPath = path;
-
-
-    if (path.startsWith('pipeline.')) {
-      resolvedPath = path.substring('pipeline.'.length);
-    }
-    const value = context.getPipelineData(resolvedPath);
-    this._logger.debug(`[ValueResolver] Resolved context path '${path}' to:`, value);
-    return value;
-  }
-
-
-
-
-
-
-
-
-  _resolveStepOutput(source, context) {
-    const key = source.outputKey;
-    if (!key) {
-      throw new ValueResolutionError(ValueSourceType.STEP_OUTPUT, 'undefined', {
-        message: 'Output key is required for STEP_OUTPUT value source'
-      });
-    }
-    const value = context.getStepOutput(key);
-    this._logger.debug(`[ValueResolver] Resolved step output '${key}' to:`, value);
-    return value;
-  }
-
-
-
-
-
-
-
-
-  _resolveExpression(source, context) {
-    const expression = source.expression;
-    if (!expression) {
-      throw new ValueResolutionError(ValueSourceType.EXPRESSION, 'undefined', {
-        message: 'Expression is required for EXPRESSION value source'
-      });
-    }
-    if (!this._expressionEngine) {
-      throw new ValueResolutionError(ValueSourceType.EXPRESSION, expression, {
-        message: 'Expression engine is required for EXPRESSION value source but was not provided'
-      });
-    }
-    try {
-
-      const expressionContext = context.toExpressionContext();
-      const value = this._expressionEngine.evaluate(expression, expressionContext);
-      this._logger.debug(`[ValueResolver] Evaluated expression '${expression}' to:`, value);
-      return value;
-    } catch (error) {
-      throw new ValueResolutionError(ValueSourceType.EXPRESSION, expression, {
-        evaluationError: error.message
-      }, error);
-    }
-  }
-
-
-
-
-
-
-  _resolveTimestamp(source) {
-    const now = new Date();
-
-
-    if (!source.format) {
-      return now.toISOString();
-    }
-
-
-    if (this._utils && typeof this._utils.formatDate === 'function') {
-      return this._utils.formatDate(now, source.format);
-    }
-
-
-    return this._basicFormatDate(now, source.format);
-  }
-
-
-
-
-
-
-
-  _basicFormatDate(date, format) {
-
-    const pad = n => n.toString().padStart(2, '0');
-    return format.replace('yyyy', date.getFullYear()).replace('MM', pad(date.getMonth() + 1)).replace('dd', pad(date.getDate())).replace('HH', pad(date.getHours())).replace('mm', pad(date.getMinutes())).replace('ss', pad(date.getSeconds()));
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const RecordIdentifierStrategy = Object.freeze({
-
-  PRIMARY_KEY: 'PRIMARY_KEY',
-
-  FILTER: 'FILTER',
-
-  CONTEXT_REF: 'CONTEXT_REF'
-});
-
-
-
-
-
-
-
-class BaseUpdatePostProcessor extends PostProcessor {
-
-
-
-
-
-
-
-
-
-
-
-
-  constructor(id, name, config = {}, services = {}) {
-    super(id, name, config, services);
-
-
-    this._database = services.database || null;
-
-
-    this._valueResolver = new ValueResolver({
-      logger: this._logger,
-      expressionEngine: services.expressionEngine,
-      utils: services.utils
-    });
-  }
-
-
-
-
-
-
-
-  _validateConfig() {
-    const {
-      table,
-      recordIdentifier
-    } = this._config;
-    if (!table || typeof table !== 'string') {
-      throw new PostProcessorError_ConfigurationError('table is required and must be a string', {
-        processorId: this.id,
-        field: 'table'
-      });
-    }
-    if (!recordIdentifier || typeof recordIdentifier !== 'object') {
-      throw new PostProcessorError_ConfigurationError('recordIdentifier is required and must be an object', {
-        processorId: this.id,
-        field: 'recordIdentifier'
-      });
-    }
-    const {
-      strategy
-    } = recordIdentifier;
-    if (!strategy || !Object.values(RecordIdentifierStrategy).includes(strategy)) {
-      throw new PostProcessorError_ConfigurationError(`recordIdentifier.strategy must be one of: ${Object.values(RecordIdentifierStrategy).join(', ')}`, {
-        processorId: this.id,
-        field: 'recordIdentifier.strategy',
-        actual: strategy
-      });
-    }
-
-
-    this._validateRecordIdentifier(recordIdentifier);
-  }
-
-
-
-
-
-
-
-
-  _validateRecordIdentifier(identifier) {
-    const {
-      strategy
-    } = identifier;
-    switch (strategy) {
-      case RecordIdentifierStrategy.PRIMARY_KEY:
-        if (!identifier.primaryKeySource) {
-          throw new PostProcessorError_ConfigurationError('recordIdentifier.primaryKeySource is required for PRIMARY_KEY strategy', {
-            processorId: this.id,
-            field: 'recordIdentifier.primaryKeySource'
-          });
-        }
-        break;
-      case RecordIdentifierStrategy.FILTER:
-        if (!identifier.filter) {
-          throw new PostProcessorError_ConfigurationError('recordIdentifier.filter is required for FILTER strategy', {
-            processorId: this.id,
-            field: 'recordIdentifier.filter'
-          });
-        }
-        break;
-      case RecordIdentifierStrategy.CONTEXT_REF:
-        if (!identifier.contextPath) {
-          throw new PostProcessorError_ConfigurationError('recordIdentifier.contextPath is required for CONTEXT_REF strategy', {
-            processorId: this.id,
-            field: 'recordIdentifier.contextPath'
-          });
-        }
-        break;
-    }
-  }
-
-
-
-
-
-
-
-
-  _findRecord(context) {
-    var _this$_database$table;
-    const {
-      table,
-      recordIdentifier
-    } = this._config;
-    if (!this._database) {
-      this._logger.warn(`[${this.id}] No database service provided, cannot find record`);
-      return null;
-    }
-    const tableService = (_this$_database$table = this._database.tables) === null || _this$_database$table === void 0 ? void 0 : _this$_database$table[table];
-    if (!tableService) {
-      this._logger.warn(`[${this.id}] Table '${table}' not found in database`);
-      return null;
-    }
-    switch (recordIdentifier.strategy) {
-      case RecordIdentifierStrategy.PRIMARY_KEY:
-        return this._findByPrimaryKey(tableService, recordIdentifier, context);
-      case RecordIdentifierStrategy.FILTER:
-        return this._findByFilter(tableService, recordIdentifier, context);
-      case RecordIdentifierStrategy.CONTEXT_REF:
-        return this._findByContextRef(recordIdentifier, context);
-      default:
-        return null;
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-  _findByPrimaryKey(tableService, identifier, context) {
-    const primaryKey = this._valueResolver.resolve({
-      type: 'CONTEXT',
-      contextPath: identifier.primaryKeySource
-    }, context);
-    if (!primaryKey) {
-      this._logger.warn(`[${this.id}] Could not resolve primary key from: ${identifier.primaryKeySource}`);
-      return null;
-    }
-    if (typeof tableService.getRowById === 'function') {
-      return tableService.getRowById(primaryKey) || null;
-    } else if (typeof tableService.getByPK === 'function') {
-      return tableService.getByPK(primaryKey) || null;
-    } else if (typeof tableService.getByPrimaryKey === 'function') {
-      return tableService.getByPrimaryKey(primaryKey) || null;
-    }
-    return null;
-  }
-
-
-
-
-
-
-
-
-
-
-  _findByFilter(tableService, identifier, context) {
-    var _tableService$select, _tableService$select$, _tableService$select$2;
-    const {
-      filter
-    } = identifier;
-    const value = filter.valueSource ? this._valueResolver.resolve(filter.valueSource, context) : filter.value;
-    const results = (_tableService$select = tableService.select) === null || _tableService$select === void 0 || (_tableService$select$ = (_tableService$select$2 = _tableService$select.call(tableService, ['*']).where(filter.column, filter.operator || '=', value)).execute) === null || _tableService$select$ === void 0 ? void 0 : _tableService$select$.call(_tableService$select$2);
-    return results && results.length > 0 ? results[0] : null;
-  }
-
-
-
-
-
-
-
-
-
-  _findByContextRef(identifier, context) {
-    return context.getPipelineData(identifier.contextPath);
-  }
-
-
-
-
-
-
-
-
-
-  _getPrimaryKeyValue(record, tableService) {
-
-    const pkFields = ['id', 'ID', '_id', 'pk', 'primaryKey'];
-
-
-    if (tableService.getPrimaryKeyColumn) {
-      const pkColumn = tableService.getPrimaryKeyColumn();
-      if (pkColumn && record[pkColumn] !== undefined) {
-        return record[pkColumn];
-      }
-    }
-
-
-    for (const field of pkFields) {
-      if (record[field] !== undefined) {
-        return record[field];
-      }
-    }
-    return null;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  _performUpdate(_record, _tableService, _context) {
-    throw new Error(`BaseUpdatePostProcessor._performUpdate must be implemented by subclass: ${this.name}`);
-  }
-
-
-
-
-
-
-
-
-
-
-  _executeImpl(context) {
-    var _this$_database;
-    const {
-      table
-    } = this._config;
-
-
-    const record = this._findRecord(context);
-    if (!record) {
-      throw new RecordNotFoundError(table, this._config.recordIdentifier);
-    }
-
-
-    const tableService = (_this$_database = this._database) === null || _this$_database === void 0 || (_this$_database = _this$_database.tables) === null || _this$_database === void 0 ? void 0 : _this$_database[table];
-    if (!tableService) {
-      throw new PostProcessorError_ConfigurationError(`Table '${table}' not found in database`, {
-        processorId: this.id,
-        table
-      });
-    }
-
-
-    return this._performUpdate(record, tableService, context);
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class CellUpdatePostProcessor extends BaseUpdatePostProcessor {
-
-
-
-
-
-
-
-
-
-  constructor(id, config = {}, services = {}) {
-    super(id, 'CellUpdatePostProcessor', config, services);
-  }
-
-
-
-
-
-
-
-  _validateConfig() {
-
-    super._validateConfig();
-    const {
-      updates
-    } = this._config;
-
-
-    if (!Array.isArray(updates) || updates.length === 0) {
-      throw new PostProcessorError_ConfigurationError('updates is required and must be a non-empty array', {
-        processorId: this.id,
-        field: 'updates'
-      });
-    }
-
-
-    updates.forEach((update, index) => {
-      if (!update.column || typeof update.column !== 'string') {
-        throw new PostProcessorError_ConfigurationError(`updates[${index}].column is required and must be a string`, {
-          processorId: this.id,
-          field: `updates[${index}].column`
-        });
-      }
-      if (!update.value) {
-        throw new PostProcessorError_ConfigurationError(`updates[${index}].value is required`, {
-          processorId: this.id,
-          field: `updates[${index}].value`
-        });
-      }
-    });
-  }
-
-
-
-
-
-
-
-
-
-
-  _performUpdate(record, tableService, context) {
-    var _this$_database;
-    const {
-      updates,
-      table
-    } = this._config;
-    const result = PostProcessorResult.success(this.id);
-    const primaryKey = this._getPrimaryKeyValue(record, tableService);
-    this._logger.debug(`[${this.id}] Updating ${updates.length} cells in ${table}`);
-
-
-    for (const update of updates) {
-      const {
-        column
-      } = update;
-      const oldValue = record[column];
-
-
-      const newValue = this._valueResolver.resolve(update.value, context);
-
-
-      record[column] = newValue;
-
-
-      result.addChange('CELL_UPDATE', `${table}.${column}`, newValue, oldValue);
-      this._logger.debug(`[${this.id}] Updated ${table}.${column}: ${JSON.stringify(oldValue)} -> ${JSON.stringify(newValue)}`);
-    }
-
-
-    if (tableService.updateRow && primaryKey !== null) {
-      tableService.updateRow(primaryKey, record);
-      this._logger.debug(`[${this.id}] Persisted changes to database`);
-    } else if ((_this$_database = this._database) !== null && _this$_database !== void 0 && _this$_database.save) {
-
-      this._database.save();
-      this._logger.debug(`[${this.id}] Saved database changes`);
-    }
-    result.metadata.table = table;
-    result.metadata.primaryKey = primaryKey;
-    result.metadata.updateCount = updates.length;
-    return result;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class LogAuditPostProcessor extends PostProcessor {
-
-
-
-
-
-
-
-
-
-
-
-  constructor(id, config = {}, services = {}) {
-    super(id, 'LogAuditPostProcessor', config, services);
-
-
-    this._database = services.database || null;
-
-
-    this._valueResolver = new ValueResolver({
-      logger: this._logger,
-      expressionEngine: services.expressionEngine,
-      utils: services.utils
-    });
-  }
-
-
-
-
-
-
-
-  _validateConfig() {
-    const {
-      table,
-      fields
-    } = this._config;
-    if (!table || typeof table !== 'string') {
-      throw new PostProcessorError_ConfigurationError('table is required and must be a string', {
-        processorId: this.id,
-        field: 'table'
-      });
-    }
-    if (!Array.isArray(fields) || fields.length === 0) {
-      throw new PostProcessorError_ConfigurationError('fields is required and must be a non-empty array', {
-        processorId: this.id,
-        field: 'fields'
-      });
-    }
-
-
-    fields.forEach((field, index) => {
-      if (!field.column || typeof field.column !== 'string') {
-        throw new PostProcessorError_ConfigurationError(`fields[${index}].column is required and must be a string`, {
-          processorId: this.id,
-          field: `fields[${index}].column`
-        });
-      }
-      if (!field.value) {
-        throw new PostProcessorError_ConfigurationError(`fields[${index}].value is required`, {
-          processorId: this.id,
-          field: `fields[${index}].value`
-        });
-      }
-    });
-  }
-
-
-
-
-
-
-
-
-  _executeImpl(context) {
-    var _this$_database, _this$_database2;
-    const {
-      table,
-      fields
-    } = this._config;
-    const result = PostProcessorResult.success(this.id);
-    this._logger.debug(`[${this.id}] Inserting audit record into ${table}`);
-
-
-    const record = {};
-    for (const field of fields) {
-      const {
-        column,
-        value
-      } = field;
-      try {
-        record[column] = this._valueResolver.resolve(value, context);
-      } catch (error) {
-        this._logger.warn(`[${this.id}] Failed to resolve value for column '${column}': ${error.message}`);
-        record[column] = null;
-      }
-    }
-
-
-    if (!record.timestamp && !record.createdAt) {
-      record.createdAt = new Date().toISOString();
-    }
-
-
-    let insertedId = null;
-    if ((_this$_database = this._database) !== null && _this$_database !== void 0 && (_this$_database = _this$_database.tables) !== null && _this$_database !== void 0 && _this$_database[table]) {
-      const tableService = this._database.tables[table];
-      if (tableService.insertRow) {
-        const inserted = tableService.insertRow(record);
-        insertedId = (inserted === null || inserted === void 0 ? void 0 : inserted.id) || (inserted === null || inserted === void 0 ? void 0 : inserted._id) || null;
-      }
-    } else if ((_this$_database2 = this._database) !== null && _this$_database2 !== void 0 && _this$_database2.insert) {
-
-      insertedId = this._database.insert(table, record);
-    } else {
-      this._logger.warn(`[${this.id}] No database service or table '${table}' not found`);
-    }
-
-
-    result.addChange('LOG_INSERT', table, record);
-    result.metadata.table = table;
-    result.metadata.insertedId = insertedId;
-    result.metadata.fieldCount = fields.length;
-    this._logger.debug(`[${this.id}] Inserted audit record: ${JSON.stringify(record)}`);
-    return result;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const CounterOperation = Object.freeze({
-
-  INCREMENT: 'INCREMENT',
-
-  DECREMENT: 'DECREMENT',
-
-  SET: 'SET'
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-class CounterUpdatePostProcessor extends BaseUpdatePostProcessor {
-
-
-
-
-
-
-
-
-
-
-
-
-  constructor(id, config = {}, services = {}) {
-    super(id, 'CounterUpdatePostProcessor', config, services);
-  }
-
-
-
-
-
-
-
-  _validateConfig() {
-
-    super._validateConfig();
-    const {
-      counter
-    } = this._config;
-    if (!counter || typeof counter !== 'object') {
-      throw new PostProcessorError_ConfigurationError('counter is required and must be an object', {
-        processorId: this.id,
-        field: 'counter'
-      });
-    }
-    if (!counter.column || typeof counter.column !== 'string') {
-      throw new PostProcessorError_ConfigurationError('counter.column is required and must be a string', {
-        processorId: this.id,
-        field: 'counter.column'
-      });
-    }
-    if (!counter.operation || !Object.values(CounterOperation).includes(counter.operation)) {
-      throw new PostProcessorError_ConfigurationError(`counter.operation must be one of: ${Object.values(CounterOperation).join(', ')}`, {
-        processorId: this.id,
-        field: 'counter.operation',
-        actual: counter.operation
-      });
-    }
-  }
-
-
-
-
-
-
-
-
-  _resolveAmount(context) {
-    const {
-      counter
-    } = this._config;
-    const amount = counter.amount;
-
-
-    if (amount === undefined || amount === null) {
-      return 1;
-    }
-
-
-    if (typeof amount === 'number') {
-      return amount;
-    }
-
-
-    if (typeof amount === 'object') {
-      const resolved = this._valueResolver.resolve(amount, context);
-      return Number(resolved) || 0;
-    }
-    return 1;
-  }
-
-
-
-
-
-
-
-
-
-
-  _performUpdate(record, tableService, context) {
-    var _this$_database;
-    const {
-      counter,
-      table
-    } = this._config;
-    const {
-      column,
-      operation
-    } = counter;
-    const result = PostProcessorResult.success(this.id);
-    const primaryKey = this._getPrimaryKeyValue(record, tableService);
-
-
-    const currentValue = Number(record[column]) || 0;
-    const amount = this._resolveAmount(context);
-
-
-    let newValue;
-    switch (operation) {
-      case CounterOperation.INCREMENT:
-        newValue = currentValue + amount;
-        break;
-      case CounterOperation.DECREMENT:
-        newValue = currentValue - amount;
-        break;
-      case CounterOperation.SET:
-        newValue = amount;
-        break;
-      default:
-        newValue = currentValue;
-    }
-    this._logger.debug(`[${this.id}] Counter ${operation}: ${column} ${currentValue} -> ${newValue} (amount: ${amount})`);
-
-
-    record[column] = newValue;
-
-
-    result.addChange(`COUNTER_${operation}`, `${table}.${column}`, newValue, currentValue);
-
-
-    if (tableService.updateRowById && primaryKey !== null) {
-      tableService.updateRowById(primaryKey, record);
-    } else if (tableService.updateRow && primaryKey !== null) {
-      tableService.updateRow(primaryKey, record);
-    } else if ((_this$_database = this._database) !== null && _this$_database !== void 0 && _this$_database.save) {
-      this._database.save();
-    }
-    result.metadata.table = table;
-    result.metadata.column = column;
-    result.metadata.operation = operation;
-    result.metadata.previousValue = currentValue;
-    result.metadata.newValue = newValue;
-    result.metadata.amount = amount;
-    return result;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class FieldUpdatePostProcessor extends BaseUpdatePostProcessor {
-
-
-
-
-
-
-
-
-
-  constructor(id, config = {}, services = {}) {
-    super(id, 'FieldUpdatePostProcessor', config, services);
-  }
-
-
-
-
-
-
-
-  _validateConfig() {
-
-    super._validateConfig();
-    const {
-      fields
-    } = this._config;
-    if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
-      throw new PostProcessorError_ConfigurationError('fields is required and must be an object', {
-        processorId: this.id,
-        field: 'fields'
-      });
-    }
-    if (Object.keys(fields).length === 0) {
-      throw new PostProcessorError_ConfigurationError('fields must contain at least one field', {
-        processorId: this.id,
-        field: 'fields'
-      });
-    }
-  }
-
-
-
-
-
-
-
-
-  _parseShorthand(value) {
-
-    if (value instanceof ValueSource) {
-      return value;
-    }
-    if (value && typeof value === 'object' && value.type) {
-      return ValueSource.fromConfig(value);
-    }
-
-
-    if (typeof value !== 'string') {
-      return ValueSource.literal(value);
-    }
-
-
-    const trimmed = value.trim();
-
-
-    if (trimmed.startsWith('$timestamp')) {
-      const parts = trimmed.split(':');
-      const format = parts.length > 1 ? parts.slice(1).join(':') : null;
-      return ValueSource.timestamp(format);
-    }
-
-
-    if (trimmed.startsWith('$step.output.')) {
-      const key = trimmed.substring('$step.output.'.length);
-      return ValueSource.stepOutput(key);
-    }
-
-
-    if (trimmed.startsWith('$step.')) {
-      const key = trimmed.substring('$step.'.length);
-      return ValueSource.stepOutput(key);
-    }
-
-
-    if (trimmed.startsWith('$context.')) {
-      const path = trimmed.substring('$context.'.length);
-      return ValueSource.context(path);
-    }
-
-
-    if (trimmed.startsWith('$pipeline.')) {
-      const path = trimmed.substring('$pipeline.'.length);
-      return ValueSource.context(path);
-    }
-
-
-    if (trimmed.startsWith('$expr:')) {
-      const expr = trimmed.substring('$expr:'.length);
-      return ValueSource.expression(expr);
-    }
-
-
-    return ValueSource.literal(value);
-  }
-
-
-
-
-
-
-
-
-
-
-  _performUpdate(record, tableService, context) {
-    var _this$_database;
-    const {
-      fields,
-      table
-    } = this._config;
-    const result = PostProcessorResult.success(this.id);
-    const primaryKey = this._getPrimaryKeyValue(record, tableService);
-    const fieldEntries = Object.entries(fields);
-    this._logger.debug(`[${this.id}] Updating ${fieldEntries.length} fields in ${table}`);
-
-
-    for (const [column, rawValue] of fieldEntries) {
-      const oldValue = record[column];
-
-
-      const valueSource = this._parseShorthand(rawValue);
-      const newValue = this._valueResolver.resolve(valueSource, context);
-
-
-      record[column] = newValue;
-
-
-      result.addChange('FIELD_UPDATE', `${table}.${column}`, newValue, oldValue);
-      this._logger.debug(`[${this.id}] Updated ${table}.${column}: ${JSON.stringify(oldValue)} -> ${JSON.stringify(newValue)}`);
-    }
-
-
-    if (tableService.updateRowById && primaryKey !== null) {
-      tableService.updateRowById(primaryKey, record);
-    } else if (tableService.updateRow && primaryKey !== null) {
-      tableService.updateRow(primaryKey, record);
-    } else if ((_this$_database = this._database) !== null && _this$_database !== void 0 && _this$_database.save) {
-      this._database.save();
-    }
-    result.metadata.table = table;
-    result.metadata.primaryKey = primaryKey;
-    result.metadata.fieldCount = fieldEntries.length;
-    return result;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function createDefaultRegistry(options = {}) {
-  const registry = new PostProcessorRegistry(options);
-  registry.register('CellUpdate', CellUpdatePostProcessor).register('LogAudit', LogAuditPostProcessor).register('CounterUpdate', CounterUpdatePostProcessor).register('FieldUpdate', FieldUpdatePostProcessor);
-  return registry;
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -61675,7 +51053,7 @@ class RecipeParser {
 
 
 
-class PostProcessor_PostProcessor {
+class PostProcessor {
 
 
 
@@ -62394,7 +51772,7 @@ class ContextAssembler {
 
 
 
-    this._postProcessor = new PostProcessor_PostProcessor(logger);
+    this._postProcessor = new PostProcessor(logger);
 
 
     this._stepExecutor = new ContextStepExecutor(this);
@@ -62452,6 +51830,158 @@ class ContextAssembler {
 
   get postProcessor() {
     return this._postProcessor;
+  }
+}
+;
+
+
+
+
+
+
+
+
+
+
+
+class TypedRegistry {
+
+
+
+
+
+
+
+
+
+
+
+  constructor(logger, {
+    label,
+    requiredMethod,
+    noun,
+    article = 'a',
+    notFoundError
+  }) {
+    if (!TypeGuards.isObject(logger)) {
+      throw new Error(`${label}: logger is required and must be an object`);
+    }
+    if (ValidationUtils.LOGGER_METHODS.some(method => !TypeGuards.isFunction(logger[method]))) {
+      throw new Error(`${label}: logger must have debug, info, warn, and error methods`);
+    }
+    this._logger = logger;
+    this._label = label;
+    this._requiredMethod = requiredMethod;
+    this._noun = noun;
+    this._article = article;
+    this._notFoundError = notFoundError;
+    this._singletons = new Map();
+    this._factories = new Map();
+  }
+
+
+
+
+
+
+  get logger() {
+    return this._logger;
+  }
+
+
+
+
+
+
+
+
+  registerSingleton(type, instance) {
+    if (!TypeGuards.isNonEmptyString(type)) {
+      throw new Error(`${this._label}.registerSingleton: type is required and must be a non-empty string`);
+    }
+    if (!TypeGuards.isObject(instance)) {
+      throw new Error(`${this._label}.registerSingleton: instance is required and must be an object`);
+    }
+    if (!TypeGuards.isFunction(instance[this._requiredMethod])) {
+      throw new Error(`${this._label}.registerSingleton: instance must have ${this._article} ${this._requiredMethod} method`);
+    }
+    this._singletons.set(type, instance);
+    this._logger.debug(`Registered singleton ${this._noun}: ${type}`);
+    return this;
+  }
+
+
+
+
+
+
+
+
+  registerFactory(type, factory) {
+    if (!TypeGuards.isNonEmptyString(type)) {
+      throw new Error(`${this._label}.registerFactory: type is required and must be a non-empty string`);
+    }
+    if (!TypeGuards.isFunction(factory)) {
+      throw new Error(`${this._label}.registerFactory: factory is required and must be a function`);
+    }
+    this._factories.set(type, factory);
+    this._logger.debug(`Registered factory ${this._noun}: ${type}`);
+    return this;
+  }
+
+
+
+
+
+
+
+  get(type) {
+    if (!TypeGuards.isNonEmptyString(type)) {
+      throw new Error(`${this._label}.get: type is required and must be a non-empty string`);
+    }
+    if (this._singletons.has(type)) {
+      this._logger.debug(`Retrieved singleton ${this._noun}: ${type}`);
+      return this._singletons.get(type);
+    }
+    if (this._factories.has(type)) {
+      const factory = this._factories.get(type);
+      const instance = factory();
+      if (!TypeGuards.isObject(instance)) {
+        throw new Error(`${this._label}.get: Factory for '${type}' did not return a valid object`);
+      }
+      if (!TypeGuards.isFunction(instance[this._requiredMethod])) {
+        throw new Error(`${this._label}.get: Factory for '${type}' returned an object without ${this._article} ${this._requiredMethod} method`);
+      }
+      this._logger.debug(`Created ${this._noun} instance from factory: ${type}`);
+      return instance;
+    }
+    throw this._notFoundError(type, this.getRegisteredTypes());
+  }
+
+
+
+
+
+  getAll() {
+    const instances = [];
+    for (const instance of this._singletons.values()) {
+      instances.push(instance);
+    }
+    for (const factory of this._factories.values()) {
+      const instance = factory();
+      if (instance && typeof instance[this._requiredMethod] === 'function') {
+        instances.push(instance);
+      }
+    }
+    return instances;
+  }
+
+
+
+
+
+  getRegisteredTypes() {
+    return [...this._singletons.keys(), ...this._factories.keys()];
   }
 }
 ;
@@ -62544,200 +52074,22 @@ class ProviderNotFoundError extends ContextEngineError {
 
 
 
-class ProviderRegistry {
+
+class ProviderRegistry extends TypedRegistry {
 
 
 
 
 
   constructor(logger) {
-
-    if (!TypeGuards.isObject(logger)) {
-      throw new Error('ProviderRegistry: logger is required and must be an object');
-    }
-    if (ValidationUtils.LOGGER_METHODS.some(method => !TypeGuards.isFunction(logger[method]))) {
-      throw new Error('ProviderRegistry: logger must have debug, info, warn, and error methods');
-    }
-
-
-
-
-
-
-    this._logger = logger;
-
-
-
-
-
-
-    this._singletons = new Map();
-
-
-
-
-
-
-    this._factories = new Map();
-  }
-
-
-
-
-
-
-  get logger() {
-    return this._logger;
-  }
-
-
-
-
-
-
-
-
-  registerSingleton(type, instance) {
-
-    if (!TypeGuards.isNonEmptyString(type)) {
-      throw new Error('ProviderRegistry.registerSingleton: type is required and must be a non-empty string');
-    }
-    if (!TypeGuards.isObject(instance)) {
-      throw new Error('ProviderRegistry.registerSingleton: instance is required and must be an object');
-    }
-    if (!TypeGuards.isFunction(instance.provide)) {
-      throw new Error('ProviderRegistry.registerSingleton: instance must have a provide method');
-    }
-    this._singletons.set(type, instance);
-    this._logger.debug(`Registered singleton provider: ${type}`);
-    return this;
-  }
-
-
-
-
-
-
-
-
-  registerFactory(type, factory) {
-
-    if (!TypeGuards.isNonEmptyString(type)) {
-      throw new Error('ProviderRegistry.registerFactory: type is required and must be a non-empty string');
-    }
-    if (!TypeGuards.isFunction(factory)) {
-      throw new Error('ProviderRegistry.registerFactory: factory is required and must be a function');
-    }
-    this._factories.set(type, factory);
-    this._logger.debug(`Registered factory provider: ${type}`);
-    return this;
-  }
-
-
-
-
-
-
-
-
-
-  get(type) {
-
-    if (!TypeGuards.isNonEmptyString(type)) {
-      throw new Error('ProviderRegistry.get: type is required and must be a non-empty string');
-    }
-
-
-    if (this._singletons.has(type)) {
-      this._logger.debug(`Retrieved singleton provider: ${type}`);
-      return this._singletons.get(type);
-    }
-
-
-    if (this._factories.has(type)) {
-      const factory = this._factories.get(type);
-      const instance = factory();
-
-
-      if (!TypeGuards.isObject(instance)) {
-        throw new Error(`ProviderRegistry.get: Factory for '${type}' did not return a valid object`);
-      }
-      if (!TypeGuards.isFunction(instance.provide)) {
-        throw new Error(`ProviderRegistry.get: Factory for '${type}' returned an object without a provide method`);
-      }
-      this._logger.debug(`Created provider instance from factory: ${type}`);
-      return instance;
-    }
-
-
-    throw new ProviderNotFoundError(type, {
-      registeredProviders: this.getRegisteredTypes()
+    super(logger, {
+      label: 'ProviderRegistry',
+      requiredMethod: 'provide',
+      noun: 'provider',
+      notFoundError: (type, registeredTypes) => new ProviderNotFoundError(type, {
+        registeredProviders: registeredTypes
+      })
     });
-  }
-
-
-
-
-
-
-  has(type) {
-    if (!TypeGuards.isNonEmptyString(type)) {
-      return false;
-    }
-    return this._singletons.has(type) || this._factories.has(type);
-  }
-
-
-
-
-
-
-  unregister(type) {
-    if (!TypeGuards.isNonEmptyString(type)) {
-      throw new Error('ProviderRegistry.unregister: type is required and must be a non-empty string');
-    }
-    const hadSingleton = this._singletons.delete(type);
-    const hadFactory = this._factories.delete(type);
-    if (hadSingleton || hadFactory) {
-      this._logger.debug(`Unregistered provider: ${type}`);
-      return true;
-    }
-    return false;
-  }
-
-
-
-
-
-  clear() {
-    this._singletons.clear();
-    this._factories.clear();
-    this._logger.debug('Cleared all registered providers');
-    return this;
-  }
-
-
-
-
-
-  getRegisteredTypes() {
-    const singletonTypes = Array.from(this._singletons.keys());
-    const factoryTypes = Array.from(this._factories.keys());
-    return [...singletonTypes, ...factoryTypes];
-  }
-
-
-
-
-
-  getSummary() {
-    return {
-      singletonCount: this._singletons.size,
-      factoryCount: this._factories.size,
-      totalProviders: this._singletons.size + this._factories.size,
-      singletonTypes: Array.from(this._singletons.keys()),
-      factoryTypes: Array.from(this._factories.keys())
-    };
   }
 }
 ;
@@ -63230,218 +52582,23 @@ class ContextInterceptor {
 
 
 
-class InterceptorRegistry {
+
+
+
+class InterceptorRegistry extends TypedRegistry {
 
 
 
 
 
   constructor(logger) {
-
-    if (!logger || typeof logger !== 'object') {
-      throw new Error('InterceptorRegistry: logger is required and must be an object');
-    }
-    if (typeof logger.debug !== 'function' || typeof logger.info !== 'function' || typeof logger.warn !== 'function' || typeof logger.error !== 'function') {
-      throw new Error('InterceptorRegistry: logger must have debug, info, warn, and error methods');
-    }
-
-
-
-
-
-
-    this._logger = logger;
-
-
-
-
-
-
-    this._singletons = new Map();
-
-
-
-
-
-
-    this._factories = new Map();
-  }
-
-
-
-
-
-
-  get logger() {
-    return this._logger;
-  }
-
-
-
-
-
-
-
-
-  registerSingleton(type, instance) {
-
-    if (!type || typeof type !== 'string') {
-      throw new Error('InterceptorRegistry.registerSingleton: type is required and must be a non-empty string');
-    }
-    if (!instance || typeof instance !== 'object') {
-      throw new Error('InterceptorRegistry.registerSingleton: instance is required and must be an object');
-    }
-    if (typeof instance.intercept !== 'function') {
-      throw new Error('InterceptorRegistry.registerSingleton: instance must have an intercept method');
-    }
-    this._singletons.set(type, instance);
-    this._logger.debug(`Registered singleton interceptor: ${type}`);
-    return this;
-  }
-
-
-
-
-
-
-
-
-  registerFactory(type, factory) {
-
-    if (!type || typeof type !== 'string') {
-      throw new Error('InterceptorRegistry.registerFactory: type is required and must be a non-empty string');
-    }
-    if (typeof factory !== 'function') {
-      throw new Error('InterceptorRegistry.registerFactory: factory is required and must be a function');
-    }
-    this._factories.set(type, factory);
-    this._logger.debug(`Registered factory interceptor: ${type}`);
-    return this;
-  }
-
-
-
-
-
-
-
-  get(type) {
-
-    if (!type || typeof type !== 'string') {
-      throw new Error('InterceptorRegistry.get: type is required and must be a non-empty string');
-    }
-
-
-    if (this._singletons.has(type)) {
-      this._logger.debug(`Retrieved singleton interceptor: ${type}`);
-      return this._singletons.get(type);
-    }
-
-
-    if (this._factories.has(type)) {
-      const factory = this._factories.get(type);
-      const instance = factory();
-
-
-      if (!instance || typeof instance !== 'object') {
-        throw new Error(`InterceptorRegistry.get: Factory for '${type}' did not return a valid object`);
-      }
-      if (typeof instance.intercept !== 'function') {
-        throw new Error(`InterceptorRegistry.get: Factory for '${type}' returned an object without an intercept method`);
-      }
-      this._logger.debug(`Created interceptor instance from factory: ${type}`);
-      return instance;
-    }
-
-
-    throw new Error(`InterceptorRegistry.get: Interceptor type '${type}' not found. ` + `Registered types: ${this.getRegisteredTypes().join(', ') || 'none'}`);
-  }
-
-
-
-
-
-  getAll() {
-    const instances = [];
-
-
-    for (const instance of this._singletons.values()) {
-      instances.push(instance);
-    }
-
-
-    for (const factory of this._factories.values()) {
-      const instance = factory();
-      if (instance && typeof instance.intercept === 'function') {
-        instances.push(instance);
-      }
-    }
-    return instances;
-  }
-
-
-
-
-
-
-  has(type) {
-    if (!type || typeof type !== 'string') {
-      return false;
-    }
-    return this._singletons.has(type) || this._factories.has(type);
-  }
-
-
-
-
-
-
-  unregister(type) {
-    if (!type || typeof type !== 'string') {
-      throw new Error('InterceptorRegistry.unregister: type is required and must be a non-empty string');
-    }
-    const hadSingleton = this._singletons.delete(type);
-    const hadFactory = this._factories.delete(type);
-    if (hadSingleton || hadFactory) {
-      this._logger.debug(`Unregistered interceptor: ${type}`);
-      return true;
-    }
-    return false;
-  }
-
-
-
-
-
-  clear() {
-    this._singletons.clear();
-    this._factories.clear();
-    this._logger.debug('Cleared all registered interceptors');
-    return this;
-  }
-
-
-
-
-
-  getRegisteredTypes() {
-    const singletonTypes = Array.from(this._singletons.keys());
-    const factoryTypes = Array.from(this._factories.keys());
-    return [...singletonTypes, ...factoryTypes];
-  }
-
-
-
-
-
-  getSummary() {
-    return {
-      singletonCount: this._singletons.size,
-      factoryCount: this._factories.size,
-      totalInterceptors: this._singletons.size + this._factories.size,
-      singletonTypes: Array.from(this._singletons.keys()),
-      factoryTypes: Array.from(this._factories.keys())
-    };
+    super(logger, {
+      label: 'InterceptorRegistry',
+      requiredMethod: 'intercept',
+      noun: 'interceptor',
+      article: 'an',
+      notFoundError: (type, registeredTypes) => new Error(`InterceptorRegistry.get: Interceptor type '${type}' not found. ` + `Registered types: ${registeredTypes.join(', ') || 'none'}`)
+    });
   }
 }
 ;
@@ -64773,8 +53930,7 @@ class ImportConfiguration {
 
 
 
-
-  get name() {
+  getName() {
     return this._recipe.name;
   }
 
@@ -64782,16 +53938,7 @@ class ImportConfiguration {
 
 
 
-  getName() {
-    return this.name;
-  }
-
-
-
-
-
-
-  get source() {
+  getSource() {
     return this._recipe.source;
   }
 
@@ -64799,16 +53946,7 @@ class ImportConfiguration {
 
 
 
-  getSource() {
-    return this.source;
-  }
-
-
-
-
-
-
-  get transform() {
+  getTransform() {
     return this._recipe.transform || {};
   }
 
@@ -64816,25 +53954,8 @@ class ImportConfiguration {
 
 
 
-  getTransform() {
-    return this.transform;
-  }
-
-
-
-
-
-
-  get load() {
-    return this._recipe.load;
-  }
-
-
-
-
-
   getLoad() {
-    return this.load;
+    return this._recipe.load;
   }
 
 
@@ -65925,7 +55046,6 @@ class TransformerNumberSanitizer {
 
 
 
-
 class TransformerValidationGuard {
   constructor(facade) {
     this.facade = facade;
@@ -65941,7 +55061,9 @@ class TransformerValidationGuard {
 
 
   _applyValidation(row, validation, rowIndex) {
-    if (!validation) return true;
+    if (!validation) {
+      return true;
+    }
     const rules = Array.isArray(validation) ? validation : [validation];
     for (const rule of rules) {
       try {
@@ -65953,30 +55075,6 @@ class TransformerValidationGuard {
       } catch (error) {
         this._logger.error(`[Transformer] Validation rule evaluation failed for row ${rowIndex}: ${error.message}`);
         return false;
-      }
-    }
-    return true;
-  }
-
-
-
-
-
-
-
-  validateConfig(config) {
-    if (config.mapping && typeof config.mapping !== 'object') {
-      throw new TransformError('Transform mapping must be an object', 'INVALID_MAPPING_CONFIG');
-    }
-    if (config.calculated && typeof config.calculated !== 'object') {
-      throw new TransformError('Transform calculated must be an object', 'INVALID_CALCULATED_CONFIG');
-    }
-    if (config.normalization && typeof config.normalization !== 'object') {
-      throw new TransformError('Transform normalization must be an object', 'INVALID_NORMALIZATION_CONFIG');
-    }
-    if (config.validation) {
-      if (typeof config.validation !== 'string' && !Array.isArray(config.validation)) {
-        throw new TransformError('Transform validation must be a string or an array of strings', 'INVALID_VALIDATION_CONFIG');
       }
     }
     return true;
@@ -66029,7 +55127,7 @@ class Transformer {
       methods: ['_applyNormalization']
     }, {
       manager: this._validationGuard,
-      methods: ['_applyValidation', 'validateConfig']
+      methods: ['_applyValidation']
     }]);
   }
 
@@ -69823,209 +58921,6 @@ class Repository {
   }
 }
 ;
-
-
-
-
-
-
-
-class InvariantViolationException extends DomainException {
-
-
-
-
-
-  constructor(aggregateType, violations = []) {
-    const message = violations.length > 0 ? `invariant violation in ${aggregateType}: ${violations.join(', ')}` : `invariant violation in ${aggregateType}`;
-    super(message, 'Aggregate', {
-      aggregateType,
-      violations
-    });
-    this.name = 'InvariantViolationException';
-    this.aggregateType = aggregateType;
-    this.violations = violations;
-  }
-
-
-
-
-
-  getAggregateType() {
-    return this.aggregateType;
-  }
-
-
-
-
-
-  getViolations() {
-    return this.violations;
-  }
-
-
-
-
-
-  hasViolations() {
-    return this.violations && this.violations.length > 0;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-class Aggregate extends Entity {
-
-
-
-
-
-  constructor(data = {}) {
-    super(data);
-    if (new.target === Aggregate) {
-      throw new TypeError('Cannot construct Aggregate instances directly - must use a subclass');
-    }
-    this._children = [];
-    this._invariantViolations = [];
-  }
-
-
-
-
-
-  getChildren() {
-    return [...this._children];
-  }
-
-
-
-
-
-
-  addChild(child) {
-    if (child && !this._children.includes(child)) {
-      this._children.push(child);
-      this.markDirty('_children');
-    }
-  }
-
-
-
-
-
-
-  removeChild(child) {
-    const index = this._children.indexOf(child);
-    if (index > -1) {
-      this._children.splice(index, 1);
-      this.markDirty('_children');
-    }
-  }
-
-
-
-
-
-
-  validateInvariants() {
-    this._invariantViolations = [];
-    return true;
-  }
-
-
-
-
-
-
-  addInvariantViolation(message) {
-    this._invariantViolations.push(message);
-  }
-
-
-
-
-
-  getInvariantViolations() {
-    return [...this._invariantViolations];
-  }
-
-
-
-
-
-  hasInvariantViolations() {
-    return this._invariantViolations.length > 0;
-  }
-
-
-
-
-
-  validate() {
-
-    const entityValid = super.validate();
-
-
-    const invariantsValid = this.validateInvariants();
-    return entityValid && invariantsValid && !this.hasInvariantViolations();
-  }
-
-
-
-
-
-  validateInvariantsOrThrow() {
-    if (!this.validateInvariants() || this.hasInvariantViolations()) {
-      throw new InvariantViolationException(this.constructor.name, Array.from(this._invariantViolations));
-    }
-  }
-
-
-
-
-
-
-  validateOrThrow() {
-
-    super.validateOrThrow();
-
-
-    this.validateInvariantsOrThrow();
-  }
-
-
-
-
-
-  getChildCount() {
-    return this._children.length;
-  }
-
-
-
-
-
-  hasChildren() {
-    return this._children.length > 0;
-  }
-
-
-
-
-
-  clearChildren() {
-    this._children = [];
-    this.markDirty('_children');
-  }
-}
-;
 let _CompositeSpecificationClass = null;
 
 
@@ -71075,321 +59970,49 @@ function assertSpecificationContract(spec, rows, hydrate) {
 
 
 
-class DomainEvent {
 
+class InvariantViolationException extends DomainException {
 
 
 
 
 
-  constructor(eventType, payload, occurredAt = null) {
-    this.eventType = eventType;
-    this.payload = payload;
-    this.occurredAt = occurredAt || new Date();
-    this.eventId = this._generateId();
-  }
-
-
-
-
-
-
-  _generateId() {
-    const utils = new MyUtilsService();
-    return `${this.eventType}_${utils.generateCompactId(12)}`;
-  }
-
-
-
-
-
-  getEventType() {
-    return this.eventType;
-  }
-
-
-
-
-
-  getEventName() {
-    return this.eventType;
-  }
-
-
-
-
-
-
-  get eventName() {
-    return this.eventType;
-  }
-
-
-
-
-
-  getPayload() {
-    return this.payload;
-  }
-
-
-
-
-
-  getOccurredAt() {
-    return this.occurredAt;
-  }
-
-
-
-
-
-  getEventId() {
-    return this.eventId;
-  }
-
-
-
-
-
-  toObject() {
-    return {
-      eventId: this.eventId,
-      eventType: this.eventType,
-      eventName: this.eventType,
-      payload: this.payload,
-      occurredAt: this.occurredAt.toISOString()
-    };
-  }
-
-
-
-
-
-  toJSON() {
-    return this.toObject();
-  }
-
-
-
-
-
-  toString() {
-    return `${this.eventType}(${this.eventId})`;
-  }
-}
-
-
-
-
-
-
-class EntityCreatedEvent extends DomainEvent {
-
-
-
-
-
-
-  constructor(entityType, entityId, data) {
-    const payload = {
-      entityType,
-      entityId
-    };
-    if (data !== undefined) {
-      payload.entityData = data;
-    }
-    super('EntityCreated', payload);
-  }
-}
-
-
-
-
-
-
-class EntityUpdatedEvent extends DomainEvent {
-
-
-
-
-
-
-  constructor(entityType, entityId, changes) {
-    const payload = {
-      entityType,
-      entityId
-    };
-    if (changes !== undefined) {
-      payload.changes = changes;
-    }
-    super('EntityUpdated', payload);
-  }
-}
-
-
-
-
-
-
-class EntityDeletedEvent extends DomainEvent {
-
-
-
-
-
-
-  constructor(entityType, entityId, reason) {
-    const payload = {
-      entityType,
-      entityId
-    };
-    if (reason !== undefined) {
-      payload.reason = reason;
-    }
-    super('EntityDeleted', payload);
-  }
-}
-;
-
-
-
-
-
-
-class EventDispatcher {
-
-
-
-
-  constructor(logger = null) {
-    this.logger = logger || new LoggerService();
-    this._handlers = new Map();
-  }
-
-
-
-
-
-
-
-
-  on(eventType, handler, handlerName = null) {
-    if (typeof handler !== 'function') {
-      throw new Error('Handler must be a function');
-    }
-    if (!this._handlers.has(eventType)) {
-      this._handlers.set(eventType, []);
-    }
-    this._handlers.get(eventType).push({
-      handler,
-      name: handlerName || `handler_${this._handlers.get(eventType).length}`
+  constructor(aggregateType, violations = []) {
+    const message = violations.length > 0 ? `invariant violation in ${aggregateType}: ${violations.join(', ')}` : `invariant violation in ${aggregateType}`;
+    super(message, 'Aggregate', {
+      aggregateType,
+      violations
     });
-    this.logger.debug(`Registered handler for event: ${eventType}`);
+    this.name = 'InvariantViolationException';
+    this.aggregateType = aggregateType;
+    this.violations = violations;
   }
 
 
 
 
 
-
-  off(eventType, handler) {
-    if (!this._handlers.has(eventType)) {
-      return;
-    }
-
-
-    if (!handler) {
-      this._handlers.delete(eventType);
-      this.logger.debug(`Removed all handlers for event: ${eventType}`);
-      return;
-    }
-
-
-    const handlers = this._handlers.get(eventType);
-    const index = handlers.findIndex(h => h.handler === handler);
-    if (index > -1) {
-      handlers.splice(index, 1);
-      this.logger.debug(`Removed handler for event: ${eventType}`);
-    }
+  getAggregateType() {
+    return this.aggregateType;
   }
 
 
 
 
 
-  dispatch(event) {
-    const eventType = event.getEventType();
-    this.logger.debug(`Dispatching event: ${eventType}`);
-    if (!this._handlers.has(eventType)) {
-      this.logger.debug(`No handlers registered for event: ${eventType}`);
-      return;
-    }
-    const handlers = this._handlers.get(eventType);
-    for (const {
-      handler,
-      name
-    } of handlers) {
-      try {
-        this.logger.debug(`Executing handler: ${name} for event: ${eventType}`);
-        handler(event);
-      } catch (error) {
-        this.logger.error(`Error in event handler ${name} for ${eventType}: ${error.message}`);
-      }
-    }
+  getViolations() {
+    return this.violations;
   }
 
 
 
 
 
-  dispatchMany(events) {
-    for (const event of events) {
-      this.dispatch(event);
-    }
-  }
-
-
-
-
-
-
-  getHandlers(eventType) {
-    return this._handlers.get(eventType) || [];
-  }
-
-
-
-
-
-  clearHandlers(eventType) {
-    this._handlers.delete(eventType);
-  }
-
-
-
-
-  clearAll() {
-    this._handlers.clear();
-  }
-
-
-
-
-
-
-  getHandlerCount(eventType) {
-    return this.getHandlers(eventType).length;
+  hasViolations() {
+    return this.violations && this.violations.length > 0;
   }
 }
 ;
-
-
-
-
-
-
-
 
 
 
@@ -73609,27 +62232,6 @@ class NoActorFoundError extends RoleResolutionError {
     this.name = 'NoActorFoundError';
     this.roleId = roleId;
     this.scope = scope;
-  }
-}
-
-
-
-
-
-
-class ActorNotFoundError extends RoleResolutionError {
-
-
-
-
-
-  constructor(actorId, context = {}) {
-    super(`Actor not found: ${actorId}`, {
-      ...context,
-      actorId
-    });
-    this.name = 'ActorNotFoundError';
-    this.actorId = actorId;
   }
 }
 
@@ -76284,11 +64886,12 @@ function matchesContextDimensions(context, dimensions = {}) {
 
 
 
+
 function getPath(value, path) {
   if (typeof path !== 'string' || !path.trim()) {
     return undefined;
   }
-  return path.split('.').reduce((current, part) => current == null ? undefined : current[part], value);
+  return get(value, path);
 }
 function mapped(row, definition) {
   if (definition && typeof definition === 'object' && !Array.isArray(definition) && 'from' in definition) {
@@ -76997,6 +65600,7 @@ class ResolutionPolicy {
 
 
 
+
 function append(trace, stage, decision, candidateId, actorId, reason, metadata = {}) {
   return trace.append({
     stage,
@@ -77011,9 +65615,6 @@ function withTrace(error, trace) {
   error.resolutionTrace = trace;
   return error;
 }
-function EffectiveAssignmentResolver_getPath(value, path) {
-  return String(path).split('.').reduce((current, part) => current == null ? undefined : current[part], value);
-}
 function resultIdentityValue(result, field) {
   if (field === 'slot') {
     return result.slot.key;
@@ -77021,7 +65622,7 @@ function resultIdentityValue(result, field) {
   if (field === 'principalActor') {
     return result.permanentActor && result.permanentActor.id;
   }
-  const value = EffectiveAssignmentResolver_getPath(result, field);
+  const value = get(result, field);
   if (value && typeof value === 'object') {
     if (typeof value.key === 'string') {
       return value.key;
@@ -79211,37 +67812,8 @@ class BlockDataContext {
 
 
 
-
-  getMultiple(paths) {
-    const result = {};
-    for (const path of paths) {
-      result[path] = this.get(path);
-    }
-    return result;
-  }
-
-
-
-
-
   getAll() {
     return cloneDeep_cloneDeep(this._merged);
-  }
-
-
-
-
-
-  getRawData() {
-    return cloneDeep_cloneDeep(this._data);
-  }
-
-
-
-
-
-  getGlobalContext() {
-    return cloneDeep_cloneDeep(this._globalContext);
   }
 
 
@@ -79275,43 +67847,6 @@ class BlockDataContext {
 
 
 
-
-  withData(additionalData) {
-    return new BlockDataContext({
-      ...this._data,
-      ...additionalData
-    }, this._globalContext);
-  }
-
-
-
-
-
-
-  withGlobalContext(additionalGlobal) {
-    return new BlockDataContext(this._data, {
-      ...this._globalContext,
-      ...additionalGlobal
-    });
-  }
-
-
-
-
-
-
-
-  scope(path) {
-    const scopedData = this.get(path, {});
-    return new BlockDataContext(typeof scopedData === 'object' ? scopedData : {
-      value: scopedData
-    }, this._globalContext);
-  }
-
-
-
-
-
   isEmpty() {
     return Object.keys(this._merged).length === 0;
   }
@@ -79322,24 +67857,6 @@ class BlockDataContext {
 
   keys() {
     return Object.keys(this._merged);
-  }
-
-
-
-
-
-
-  hasAll(requiredKeys) {
-    return requiredKeys.every(key => this.has(key));
-  }
-
-
-
-
-
-
-  getMissingKeys(requiredKeys) {
-    return requiredKeys.filter(key => !this.has(key));
   }
 
 
@@ -79994,43 +68511,6 @@ class BlockRenderer {
 
 
 
-class HtmlRenderer extends BlockRenderer {
-
-
-
-
-  getFormat() {
-    return 'html';
-  }
-
-
-
-
-
-
-
-
-
-  _wrapInContainer(content, containerType, options) {
-    const blockType = options.blockType || 'block';
-    switch (containerType) {
-      case ContainerType.BOX:
-        return `<div class="content-block content-block--${blockType}">${content}</div>`;
-      case ContainerType.CARD:
-        return `<div class="content-card content-card--${blockType}"><div class="content-card__body">${content}</div></div>`;
-      case ContainerType.SECTION:
-        return `<section class="content-section content-section--${blockType}">${content}</section>`;
-      default:
-        return content;
-    }
-  }
-}
-
-
-
-
-
-
 class MarkdownRenderer extends BlockRenderer {
 
 
@@ -80091,6 +68571,43 @@ class PlainTextRenderer extends BlockRenderer {
         return `[${content}]`;
       case ContainerType.SECTION:
         return `\n${content}\n`;
+      default:
+        return content;
+    }
+  }
+}
+
+
+
+
+
+
+class HtmlRenderer extends BlockRenderer {
+
+
+
+
+  getFormat() {
+    return 'html';
+  }
+
+
+
+
+
+
+
+
+
+  _wrapInContainer(content, containerType, options) {
+    const blockType = options.blockType || 'block';
+    switch (containerType) {
+      case ContainerType.BOX:
+        return `<div class="content-block content-block--${blockType}">${content}</div>`;
+      case ContainerType.CARD:
+        return `<div class="content-card content-card--${blockType}"><div class="content-card__body">${content}</div></div>`;
+      case ContainerType.SECTION:
+        return `<section class="content-section content-section--${blockType}">${content}</section>`;
       default:
         return content;
     }
@@ -81602,20 +70119,7 @@ function initializeServices() {
     cacheService: factory.getCacheService()
   };
 }
-function exampleUsage() {
-  const {
-    logger,
-    spreadsheetService
-  } = initializeServices();
-  const spreadsheetId = 'YOUR_SPREADSHEET_ID';
-  const sheetName = 'Sheet1';
-  const range = `${sheetName}!A1:B10`;
-  const values = spreadsheetService.getRanges(spreadsheetId, range);
-  logger.info('Data retrieved: ' + JSON.stringify(values));
-  return values;
-}
 __webpack_require__.g.initializeServices = initializeServices;
-__webpack_require__.g.exampleUsage = exampleUsage;
 
 })();
 

@@ -961,18 +961,34 @@ export function registerEffectiveAssignmentConsumerChecks(
       const pianoTipoLabel = conPiano?.piani.elenco.find(
         (item) => item.tipo === (TipoPiano.PDP_BES as string)
       )?.tipoLabel;
+      const pei = buildCdu(contextBuilder,
+        { target: e2eAlunnoEmail(25), tipoTarget: 'alunno', now: new Date() },
+        recipe('ALUNNO_COMPLETO')
+      ).focus.alunno;
+      const pfp = buildCdu(contextBuilder,
+        { target: e2eAlunnoEmail(30), tipoTarget: 'alunno', now: new Date() },
+        recipe('ALUNNO_COMPLETO')
+      ).focus.alunno;
       if (
         primoCoordinatore === undefined ||
-        primoCoordinatore.appellativoCompleto.trim() === '' ||
+        primoCoordinatore.appellativoCompletoEsteso !== 'Il prof. Rossi Marco' ||
+        primoCoordinatore.appellativoCognomeEsteso !== 'Il prof. Rossi' ||
+        focusClasse?.coordinatori?.elencoDescrizioneElenco !== 'Prof. Rossi Marco' ||
+        focusClasse.coordinatori.descrizioneRuolo !== 'Coordinatore prof. Rossi Marco' ||
+        focusClasse.coordinatori.descrizioneRuoloEstesa !== 'Il coordinatore prof. Rossi Marco' ||
         focusClasse?.progetti?.hasElenco !== true ||
         primoProgetto === undefined ||
         primoProgetto.tipoLabel !== 'FSL' ||
         primoProgetto.referente.appellativoCompleto.trim() === '' ||
         nonAvvale?.religioneLabel !== 'Non si avvale' ||
-        pianoTipoLabel !== 'PDP (BES)'
+        pianoTipoLabel !== 'PDP (BES)' ||
+        pei?.isPei !== true ||
+        pei.isPfp !== false ||
+        pfp?.isPei !== false ||
+        pfp.isPfp !== true
       ) {
         throw new ValidationError(
-          `Atteso coordinatori.elenco[0].appellativoCompleto, progetti[ASL].tipoLabel="FSL", religioneLabel="Non si avvale" per ${e2eAlunnoEmail(1)} e piani tipoLabel="PDP (BES)" per ${e2eAlunnoEmail(5)}; ricevuto coordinatore=${JSON.stringify(primoCoordinatore)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}`
+          `Contratto CDU precomposto non valido: coordinatori=${JSON.stringify(focusClasse?.coordinatori)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}, pei=${JSON.stringify(pei)}, pfp=${JSON.stringify(pfp)}`
         );
       }
     }

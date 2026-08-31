@@ -52,10 +52,12 @@ Le descrizioni di docenti usano l'appellativo individuale davanti a ogni nome. U
 ```text
 elencoDescrizione:        Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA
 elencoDescrizioneEstesa: Il prof. ROSSI MARIO e la prof.ssa BIANCHI ANNA
-descrizioneRuolo:         I coordinatori prof. ROSSI MARIO e prof.ssa BIANCHI ANNA
+elencoDescrizioneElenco: Prof. ROSSI MARIO, prof.ssa BIANCHI ANNA
+descrizioneRuolo:        Coordinatori prof. ROSSI MARIO e prof.ssa BIANCHI ANNA
+descrizioneRuoloEstesa:  I coordinatori prof. ROSSI MARIO e prof.ssa BIANCHI ANNA
 ```
 
-Il valore atomico `appellativoCompleto` resta invece `Prof. ROSSI MARIO`: inizia con la maiuscola perché è utilizzabile autonomamente. Eventuali trasformazioni richieste dal contesto del template sono applicate tramite filtri pipe. Per una persona con `genere = null`, i campi grammaticali individuali valgono `null` se non esiste un titolo configurato.
+I valori atomici `appellativoCompleto` e `appellativoCompletoEsteso` restano rispettivamente `Prof. ROSSI MARIO` e `Il prof. ROSSI MARIO`: iniziano con la maiuscola perché sono utilizzabili autonomamente. Eventuali trasformazioni richieste dal contesto del template sono applicate tramite filtri pipe. Nome e cognome mantengono sempre la forma presente nel database. Per una persona con `genere = null`, i campi grammaticali individuali valgono `null` se non esiste un titolo configurato.
 
 ### 0.3 Budget dei percorsi
 
@@ -85,24 +87,24 @@ cdu:
 
 ```yaml
 MetadatiVM:
-  timestamp: string              # Istante ISO 8601 di costruzione del CDU
+  timestamp: string              # Istante ISO 8601 di costruzione del CDU; es. "2026-08-31T09:30:00+02:00"
   configurazioneId: string       # ID della configurazione documento o email attiva
   esecuzioneId: string           # UUID del job; comune a tutte le operazioni dello stesso job
   tipoOperazione: "GENERAZIONE_DOCUMENTO" | "INVIO_NOTIFICA" # Valore tecnico per il routing
   tipoOperazioneLabel: "Generazione documento" | "Invio notifica" # Forma stampabile
 
   oggi:
-    breve: string                # DD/MM/YYYY
-    estesa: string               # DD mese YYYY, con mese in italiano
-    giorno: string               # DD
-    mese: string                 # MM
-    meseNome: string             # Nome italiano del mese
-    anno: string                 # YYYY
-    ora: string                  # HH:MM nel fuso dell'istituto
+    breve: string                # DD/MM/YYYY; es. "31/08/2026"
+    estesa: string               # DD mese YYYY, con mese in italiano; es. "31 agosto 2026"
+    giorno: string               # DD; es. "31"
+    mese: string                 # MM; es. "08"
+    meseNome: string             # Nome italiano del mese; es. "agosto"
+    anno: string                 # YYYY; es. "2026"
+    ora: string                  # HH:MM nel fuso dell'istituto; es. "09:30"
 
   target: string                 # Identificativo dell'entità richiesta alla recipe
   tipoTarget: "classe" | "alunno" | "docente" | "piano" | "carenza" | "materia" | "dipartimento" # Tipo del target
-  materiaCorrente: string | null # Sigla materia quando l'asse è materia o cattedra
+  materiaCorrente: string | null # Sigla materia quando l'asse è materia o cattedra; es. "MAT"
 
   opzioni:
     includiStorico: boolean       # Abilita i provider storici e i relativi LazyRef
@@ -134,7 +136,7 @@ MetadatiVM:
 
 ```yaml
 IstitutoVM:
-  annoScolastico: string # Formato YYYY-YYYY
+  annoScolastico: string # Formato YYYY-YYYY; es. "2026-2027"
   dirigente: PersonaVM # Dirigente in carica per l'anno scolastico
 
   staff:
@@ -152,7 +154,7 @@ IstitutoVM:
 ```yaml
 RuoloStaffVM:
   ruoloId: string # Identificativo configurato del ruolo
-  ruoloNome: string # Denominazione leggibile del ruolo
+  ruoloNome: string # Denominazione leggibile del ruolo; es. "Coordinatore di classe"
   persona: PersonaVM | null # Primo titolare risolto; null se non assegnato
   hasPersona: boolean # true se persona è valorizzata
 ```
@@ -175,7 +177,7 @@ ContestoFocusVM:
   materia: MateriaVM # opzionale
   cattedre: CattedraVM[] # opzionale
   hasCattedre: boolean # presente con cattedre
-  cattedreDescrizione: string # presente con cattedre
+  cattedreDescrizione: string # Classi e materie in forma stampabile; es. "3A — Matematica, Fisica"
   dipartimento: DipartimentoFocusVM # opzionale
 ```
 
@@ -185,7 +187,7 @@ ContestoFocusVM:
 ClasseFocusVM:
   nome: string # Identificativo completo della classe
   anno: number # Anno di corso, normalmente da 1 a 5
-  sezione: string # Sezione pura, senza anno o sigle d'indirizzo
+  sezione: string # Sezione pura, senza anno o sigle d'indirizzo; es. "A"
   indirizzo: IndirizzoVM # Percorso di studi della classe focalizzata
 
   isClassePrima: boolean # true se anno = 1
@@ -238,12 +240,12 @@ ArticolazioneClasseVM:
   hasMaterieSeparatePrimo: boolean # true se materieSeparatePrimo non è vuoto
   hasMaterieSeparateSecondo: boolean # true se materieSeparateSecondo non è vuoto
 
-  materieComuniDescrizione: string # Nomi delle materie comuni separati da virgola
-  materieComuniSigle: string # Sigle delle materie comuni separate da virgola
-  materieSeparatePrimoDescrizione: string # Nomi delle materie della prima partner
-  materieSeparatePrimoSigle: string # Sigle delle materie della prima partner
-  materieSeparateSecondoDescrizione: string # Nomi delle materie della seconda partner
-  materieSeparateSecondoSigle: string # Sigle delle materie della seconda partner
+  materieComuniDescrizione: string # Nomi delle materie comuni separati da virgola; es. "Italiano, Storia"
+  materieComuniSigle: string # Sigle delle materie comuni separate da virgola; es. "ITA, STO"
+  materieSeparatePrimoDescrizione: string # Nomi delle materie della prima partner; es. "Laboratorio di elettronica"
+  materieSeparatePrimoSigle: string # Sigle delle materie della prima partner; es. "L-ELE"
+  materieSeparateSecondoDescrizione: string # Nomi delle materie della seconda partner; es. "Laboratorio di informatica"
+  materieSeparateSecondoSigle: string # Sigle delle materie della seconda partner; es. "L-INF"
 ```
 
 ```yaml
@@ -252,7 +254,7 @@ ClasseParentVM:
   anno: number # Anno di corso comune al gruppo
   indirizzi: IndirizzoVM[] # Indirizzi rappresentati dalle partner
   hasIndirizzi: boolean # true se indirizzi non è vuoto
-  indirizziDescrizione: string # Nomi degli indirizzi separati da virgola
+  indirizziDescrizione: string # Nomi degli indirizzi separati da virgola; es. "Informatica, Elettronica"
 ```
 
 #### Partner
@@ -275,9 +277,11 @@ CoordinatoriVM:
   elenco: PersonaVM[] # Coordinatori ordinati per nome completo
   hasElenco: boolean # true se è stato risolto almeno un coordinatore
   numero: number # Numero dei coordinatori
-  elencoDescrizione: string # Appellativo individuale davanti a ogni nome; formato frase
-  elencoDescrizioneEstesa: string # Articolo e appellativo individuali davanti a ogni nome; formato frase
-  descrizioneRuolo: string # Articolo, ruolo e persone; es. "I coordinatori prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
+  elencoDescrizione: string # Appellativo individuale davanti a ogni nome; formato frase; es. "Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
+  elencoDescrizioneEstesa: string # Articolo e appellativo individuali davanti a ogni nome; formato frase; es. "Il prof. ROSSI MARIO e la prof.ssa BIANCHI ANNA"
+  elencoDescrizioneElenco: string # Appellativo individuale davanti a ogni nome; formato elenco; es. "Prof. ROSSI MARIO, prof.ssa BIANCHI ANNA"
+  descrizioneRuolo: string # Ruolo e persone; es. "Coordinatori prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
+  descrizioneRuoloEstesa: string # Articolo, ruolo e persone; es. "I coordinatori prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
 
   collettivo:
     appellativo: string # Prof.ssa/Prof./Prof.sse/Prof. secondo genere e numero
@@ -301,9 +305,9 @@ TutorClasseVM:
   hasElenco: boolean # true se elenco non è vuoto
   numero: number # Cardinalità dell'elenco deduplicato
 
-  aslDescrizione: string # Appellativi individuali e nomi dei tutor ASL/FSL; formato frase
-  orientamentoDescrizione: string # Appellativi individuali e nomi dei tutor orientamento; formato frase
-  elencoDescrizione: string # Appellativi individuali e nomi di tutti i tutor deduplicati; formato frase
+  aslDescrizione: string # Appellativi individuali e nomi dei tutor ASL/FSL; formato frase; es. "Prof. ROSSI MARIO"
+  orientamentoDescrizione: string # Appellativi individuali e nomi dei tutor orientamento; formato frase; es. "Prof.ssa BIANCHI ANNA"
+  elencoDescrizione: string # Appellativi individuali e nomi di tutti i tutor deduplicati; formato frase; es. "Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
 
   collettivo:
     appellativo: string # Prof.ssa/Prof./Prof.sse/Prof. secondo genere e numero
@@ -322,13 +326,13 @@ RappresentantiClasseVM:
     elenco: RappresentanteStudenteVM[] # Rappresentanti degli studenti
     hasElenco: boolean # true se l'elenco non è vuoto
     numero: number # Numero dei rappresentanti studenti
-    elencoDescrizione: string # Nomi completi separati da virgola
+    elencoDescrizione: string # Nomi completi separati da virgola; es. "ROSSI MARIO, BIANCHI ANNA"
 
   genitori:
     elenco: RappresentanteGenitoreVM[] # Rappresentanti dei genitori
     hasElenco: boolean # true se l'elenco non è vuoto
     numero: number # Numero dei rappresentanti genitori
-    elencoDescrizione: string # Nomi completi separati da virgola
+    elencoDescrizione: string # Nomi completi separati da virgola; es. "VERDI LUCA, NERI GIULIA"
 ```
 
 #### Consiglio di classe
@@ -341,8 +345,8 @@ ConsiglioClasseVM:
   hasElenco: boolean # true se elenco non è vuoto
   hasTitolari: boolean # true se titolari non è vuoto
   numero: number # Cardinalità dei docenti effettivi in elenco
-  elencoDescrizione: string # Appellativi individuali e nomi dei docenti effettivi; formato frase
-  elencoDescrizioneEstesa: string # Articoli, appellativi individuali e nomi; formato frase
+  elencoDescrizione: string # Appellativi individuali e nomi dei docenti effettivi; formato frase; es. "Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
+  elencoDescrizioneEstesa: string # Articoli, appellativi individuali e nomi; formato frase; es. "Il prof. ROSSI MARIO e la prof.ssa BIANCHI ANNA"
 
   comune: DocenteCdcVM[] # Docenti delle materie comuni
   separato: DocenteCdcVM[] # Unione delle due quote separate
@@ -354,9 +358,9 @@ ConsiglioClasseVM:
   hasSeparatoPrimo: boolean # true se separatoPrimo non è vuoto
   hasSeparatoSecondo: boolean # true se separatoSecondo non è vuoto
 
-  comuneDescrizione: string # Appellativi individuali e nomi dei docenti della quota comune
-  separatoPrimoDescrizione: string # Appellativi individuali e nomi dei docenti della prima partner
-  separatoSecondoDescrizione: string # Appellativi individuali e nomi dei docenti della seconda partner
+  comuneDescrizione: string # Appellativi individuali e nomi dei docenti della quota comune; es. "Prof. ROSSI MARIO"
+  separatoPrimoDescrizione: string # Appellativi individuali e nomi dei docenti della prima partner; es. "Prof.ssa BIANCHI ANNA"
+  separatoSecondoDescrizione: string # Appellativi individuali e nomi dei docenti della seconda partner; es. "Prof. VERDI LUCA"
 
   supplenze: SupplenzaAggregataVM[] # Sostituzioni attive aggregate per coppia docente/titolare
   hasSupplenze: boolean # true se esiste almeno una sostituzione attiva
@@ -371,9 +375,9 @@ MaterieClasseVM:
   elenco: MateriaVM[] # Materie della classe ordinate per nome
   hasElenco: boolean # true se la classe possiede materie
   numero: number # Numero delle materie
-  elencoDescrizione: string # Nomi estesi separati da virgola
-  elencoDescrizioneSintesi: string # Nomi sintetici separati da virgola
-  sigle: string # Sigle separate da virgola
+  elencoDescrizione: string # Nomi estesi separati da virgola; es. "Matematica, Fisica"
+  elencoDescrizioneSintesi: string # Nomi sintetici separati da virgola; es. "Mat., Fis."
+  sigle: string # Sigle separate da virgola; es. "MAT, FIS"
 ```
 
 Gli elementi usano il profilo `CON_DOCENTI` o `CON_CONTINUITA` di `MateriaVM`.
@@ -386,7 +390,7 @@ MateriePerPrincipaleVM:
       materie: MateriaVM[] # Specificità o materia base del gruppo
       hasMaterie: boolean # true se il gruppo contiene materie
       numero: number # Numero delle materie nel gruppo
-      materieDescrizione: string # Nomi delle materie del gruppo
+      materieDescrizione: string # Nomi delle materie del gruppo; es. "Clarinetto, Flauto"
   hasElenco: boolean # true se esiste almeno un gruppo
   numero: number # Numero dei gruppi
 ```
@@ -412,10 +416,10 @@ EsameClasseVM:
   hasDocentiPrimaProva: boolean # true se docentiPrimaProva non è vuoto
   hasDocentiSecondaProva: boolean # true se docentiSecondaProva non è vuoto
 
-  materiePrimaProvaDescrizione: string # Nomi delle materie della prima prova
-  materieSecondaProvaDescrizione: string # Nomi delle materie della seconda prova
-  docentiPrimaProvaDescrizione: string # Appellativi individuali e nomi dei docenti della prima prova
-  docentiSecondaProvaDescrizione: string # Appellativi individuali e nomi dei docenti della seconda prova
+  materiePrimaProvaDescrizione: string # Nomi delle materie della prima prova; es. "Italiano"
+  materieSecondaProvaDescrizione: string # Nomi delle materie della seconda prova; es. "Matematica"
+  docentiPrimaProvaDescrizione: string # Appellativi individuali e nomi dei docenti della prima prova; es. "Prof.ssa BIANCHI ANNA"
+  docentiSecondaProvaDescrizione: string # Appellativi individuali e nomi dei docenti della seconda prova; es. "Prof. ROSSI MARIO"
 ```
 
 Il nodo è presente soltanto per una classe terminale quando la recipe richiede i dati d'esame.
@@ -445,7 +449,7 @@ StudentiClasseVM:
   elenco: AlunnoVM[]              # Studenti attivi nello scope della classe
   hasElenco: boolean              # true se il roster non è vuoto
   numero: number                  # Numero degli studenti attivi
-  elencoDescrizione: string       # Nomi completi separati da virgola
+  elencoDescrizione: string       # Nomi completi separati da virgola; es. "ROSSI MARIO, BIANCHI ANNA"
 
   statistiche: StatisticheAlunniVM # Conteggi calcolati sullo stesso elenco
 
@@ -475,13 +479,13 @@ StudentiClasseVM:
     hasAlt: boolean              # true se alt non è vuoto
     hasNo: boolean               # true se no non è vuoto
 
-    ircDescrizione: string       # Nomi degli studenti IRC separati da virgola
-    altDescrizione: string       # Nomi degli studenti ALT separati da virgola
-    noDescrizione: string        # Nomi degli studenti NO separati da virgola
+    ircDescrizione: string       # Nomi degli studenti IRC separati da virgola; es. "ROSSI MARIO, BIANCHI ANNA"
+    altDescrizione: string       # Nomi degli studenti ALT separati da virgola; es. "VERDI LUCA"
+    noDescrizione: string        # Nomi degli studenti NO separati da virgola; es. "NERI GIULIA"
 
     elenco:
       - codice: "IRC" | "ALT" | "NO" # Codice tecnico della scelta
-        label: string                   # Etichetta italiana della scelta
+        label: string                   # Etichetta italiana della scelta; es. "Insegnamento della religione cattolica"
         alunni: AlunnoVM[]              # Studenti appartenenti alla partizione
         hasAlunni: boolean              # true se alunni non è vuoto
         numero: number                  # Cardinalità della partizione
@@ -548,7 +552,7 @@ FoglioClasseVM:
   materieColonne:
     gruppi:
       - indice: number # Posizione 1-based del gruppo
-        label: string # Intestazione strutturale del gruppo
+        label: string # Intestazione strutturale del gruppo; es. "Materie comuni"
         colonne: ColonnaMateriaVM[] # Colonne da espandere orizzontalmente
         hasColonne: boolean # true se il gruppo contiene colonne
         numero: number # Numero delle colonne nel gruppo
@@ -557,28 +561,30 @@ FoglioClasseVM:
 ```yaml
 ColonnaMateriaVM:
   sigla: string # Sigla della materia rappresentata
-  header: string # Testo dell'intestazione di colonna
+  header: string # Testo dell'intestazione di colonna; es. "MAT — Matematica"
   isSpeciale: boolean # true per colonne sintetiche non ordinarie
-  ruoli: string[] # Ruoli autorizzati sulla colonna
+  ruoli: string[] # Ruoli autorizzati sulla colonna; es. ["DOCENTE", "COORDINATORE"]
 ```
 
 ### 4.2 `focus.alunno` — `AlunnoFocusVM`
 
 ```yaml
 AlunnoFocusVM:
-  nomeCompleto: string           # Cognome e nome nella forma ufficiale dell'istituto
+  nomeCompleto: string           # Cognome e nome nella forma ufficiale dell'istituto; es. "ROSSI MARIO"
   email: string                  # Chiave primaria dello studente
 
   classe: ClasseContestoVM       # Classe frequentata alla data di riferimento
 
   religione: "IRC" | "ALT" | "NO" # Scelta tecnica relativa all'insegnamento religioso
-  religioneLabel: string         # Etichetta italiana pronta per la stampa
+  religioneLabel: string         # Etichetta italiana pronta per la stampa; es. "Attività alternativa"
   isIrc: boolean                 # true se religione = IRC
   isAlt: boolean                 # true se religione = ALT
   isSenzaReligione: boolean      # true se religione = NO
 
   isBes: boolean                 # true se almeno una condizione o piano implica BES
   isDsa: boolean                 # true se lo studente rientra nello scope DSA
+  isPei: boolean                 # true se lo studente ha almeno un PEI associato
+  isPfp: boolean                 # true se lo studente ha almeno un PFP associato
   isRipetente: boolean           # Stato di ripetenza nell'anno corrente
   isRappresentante: boolean      # true se rappresentante degli studenti
 
@@ -587,7 +593,7 @@ AlunnoFocusVM:
 
   curriculum: CurriculumVM[]     # Specificità disciplinari scelte dallo studente
   hasCurriculum: boolean         # true se curriculum non è vuoto
-  curriculumDescrizione: string  # Materie e specificità in forma stampabile
+  curriculumDescrizione: string  # Materie e specificità in forma stampabile; es. "Musica — Clarinetto, Pianoforte"
 
   consiglio: ConsiglioAlunnoVM   # Consiglio filtrato sul curriculum; opzionale
   carenze: ElencoCarenzeVM       # Carenze dell'anno corrente
@@ -608,11 +614,11 @@ ConsiglioAlunnoVM:
   elenco: DocenteCdcVM[] # Docenti pertinenti allo specifico studente
   hasElenco: boolean # true se è stato risolto almeno un docente
   numero: number # Numero dei docenti filtrati
-  elencoDescrizione: string # Appellativi individuali e nomi dei docenti; formato frase
+  elencoDescrizione: string # Appellativi individuali e nomi dei docenti; formato frase; es. "Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
 
   materie: MateriaVM[] # Materie risultanti dal consiglio filtrato
   hasMaterie: boolean # true se materie non è vuoto
-  materieDescrizione: string # Nomi delle materie separati da virgola
+  materieDescrizione: string # Nomi delle materie separati da virgola; es. "Matematica, Fisica"
 ```
 
 Il consiglio dell'alunno contiene soltanto le materie compatibili con il suo curriculum e con la sua scelta relativa alla religione.
@@ -628,7 +634,7 @@ AslAlunnoVM:
 ```yaml
 PianoFocusVM:
   tipo: string # Codice tecnico del tipo di piano
-  tipoLabel: string # Denominazione leggibile del piano
+  tipoLabel: string # Denominazione leggibile del piano; es. "Piano didattico personalizzato"
   isBes: boolean # Indica se il tipo di piano implica BES
   parametriGenerazione: object # Parametri JSON interpretati dal generatore del piano
 ```
@@ -641,9 +647,9 @@ CarenzaFocusVM:
   classe: ClasseRiferimentoVM # Classe al momento della rilevazione
 
   progressivo: number # Progressivo della rilevazione per lo studente
-  data: string # Data tecnica YYYY-MM-DD
-  dataBreve: string # Data DD/MM/YYYY
-  dataEstesa: string # Data con mese in lettere
+  data: string # Data tecnica YYYY-MM-DD; es. "2026-08-31"
+  dataBreve: string # Data DD/MM/YYYY; es. "31/08/2026"
+  dataEstesa: string # Data con mese in lettere; es. "31 agosto 2026"
 
   hasAssenze: boolean # true se sono segnalate assenze rilevanti
   note: string # Annotazioni del consiglio di classe
@@ -675,7 +681,7 @@ focus:
   docente: PersonaVM # Docente comune a tutte le cattedre
   cattedre: CattedraVM[] # Raggruppamento delle materie per classe
   hasCattedre: boolean # true se il docente possiede almeno una cattedra
-  cattedreDescrizione: string # Classi e materie in forma stampabile
+  cattedreDescrizione: string # Classi e materie in forma stampabile; es. "3A — Matematica, Fisica"
 ```
 
 ### 4.6 `focus.dipartimento` — `DipartimentoFocusVM`
@@ -690,14 +696,14 @@ DipartimentoFocusVM:
   materie: MateriaVM[] # Materie afferenti al dipartimento
   hasMaterie: boolean # true se materie non è vuoto
   numeroMaterie: number # Cardinalità di materie
-  materieDescrizione: string # Nomi estesi separati da virgola
-  materieDescrizioneSintesi: string # Nomi sintetici separati da virgola
-  materieSigle: string # Sigle separate da virgola
+  materieDescrizione: string # Nomi estesi separati da virgola; es. "Matematica, Fisica"
+  materieDescrizioneSintesi: string # Nomi sintetici separati da virgola; es. "Mat., Fis."
+  materieSigle: string # Sigle separate da virgola; es. "MAT, FIS"
 
   docenti: PersonaVM[] # Docenti assegnati alle materie del dipartimento
   hasDocenti: boolean # true se docenti non è vuoto
   numeroDocenti: number # Cardinalità di docenti
-  docentiDescrizione: string # Appellativi individuali e nomi dei docenti; formato frase
+  docentiDescrizione: string # Appellativi individuali e nomi dei docenti; formato frase; es. "Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
 
   documenti: ElencoDocumentiVM # Documenti associati per sovrapposizione di materia
 ```
@@ -712,17 +718,19 @@ Il destinatario è un `PersonaVM` piatto arricchito con dati di invio.
 DestinatarioVM:
   nome: string                   # Nome proprio o denominazione del destinatario
   cognome: string | null         # Null per soggetti esterni non scomponibili
-  nomeCompleto: string           # Forma ufficiale usata nei documenti
+  nomeCompleto: string           # Forma ufficiale usata nei documenti; es. "ROSSI MARIO"
   email: string | null           # Indirizzo di consegna; null se non disponibile
   genere: "M" | "F" | null      # Genere grammaticale usato per le formule
   appellativo: string | null     # Prof.ssa per F, Prof. per M; iniziale maiuscola
   articolo: string | null        # La per F, Il per M; iniziale maiuscola
   coordinatore: string | null    # Coordinatrice per F, Coordinatore per M
   appellativoCompleto: string    # Titolo e nome, es. "Prof. ROSSI MARIO"
-  appellativoCognome: string     # Titolo e cognome, adatto ai saluti
+  appellativoCognome: string     # Titolo e cognome, adatto ai saluti; es. "Prof. ROSSI"
+  appellativoCompletoEsteso: string # Articolo, titolo e nome; es. "Il prof. ROSSI MARIO"
+  appellativoCognomeEsteso: string # Articolo, titolo e cognome; es. "Il prof. ROSSI"
   isEsterno: boolean             # true per esperti o soggetti esterni all'archivio docenti
 
-  ruoliAttivi: string[]          # Ruoli effettivi alla data di invio
+  ruoliAttivi: string[]          # Ruoli effettivi alla data di invio; es. ["COORDINATORE", "TUTOR_ASL"]
   hasRuoliAttivi: boolean        # true se ruoliAttivi non è vuoto
 
   isCoordinatore: boolean        # Coordinatore di almeno una classe nello scope
@@ -738,25 +746,25 @@ DestinatarioVM:
     elenco: ClasseSintesiVM[]    # Classi di competenza del destinatario
     hasElenco: boolean           # true se esiste almeno una classe
     numero: number               # Numero delle classi
-    elencoDescrizione: string    # Nomi classe separati da virgola
+    elencoDescrizione: string    # Nomi classe separati da virgola; es. "3A, 4B"
 
   materie:
     elenco: MateriaVM[]          # Materie effettive deduplicate su tutte le classi
     hasElenco: boolean           # true se esiste almeno una materia
     numero: number               # Numero delle materie
-    elencoDescrizione: string    # Nomi delle materie separati da virgola
-    sigle: string                # Sigle separate da virgola
+    elencoDescrizione: string    # Nomi delle materie separati da virgola; es. "Matematica, Fisica"
+    sigle: string                # Sigle separate da virgola; es. "MAT, FIS"
 
   cattedre:
     elenco: CattedraVM[]         # Materie del destinatario raggruppate per classe
     hasElenco: boolean           # true se esiste almeno una cattedra
     numero: number               # Numero delle cattedre
-    elencoDescrizione: string    # Classi e materie in forma stampabile
+    elencoDescrizione: string    # Classi e materie in forma stampabile; es. "3A — Matematica, Fisica"
 
   comunicazione:
-    salutoIniziale: string       # Formula completa di apertura dell'email
-    oggetto: string              # Oggetto finale dopo il rendering dei placeholder
-    testoContenutoPuro: string   # Contenuto testuale senza involucro HTML, per audit
+    salutoIniziale: string       # Formula completa di apertura dell'email; es. "Gentile prof.ssa BIANCHI,"
+    oggetto: string              # Oggetto finale dopo il rendering dei placeholder; es. "Convocazione consiglio di classe 3A"
+    testoContenutoPuro: string   # Contenuto testuale senza involucro HTML, per audit; es. "La classe 3A è convocata il 31 agosto 2026."
 ```
 
 Tutti i campi di ruolo devono essere calcolati. Il CDU non espone valori fittizi indistinguibili da risultati reali.
@@ -777,15 +785,15 @@ RenderingVM:
     numero: number # Numero totale dei box
 
   body:
-    htmlCompleto: string # Documento HTML finale con intestazione e piè di pagina
-    htmlSoloContenuto: string # Solo la parte centrale composta dai box
+    htmlCompleto: string # Documento HTML finale con intestazione e piè di pagina; es. "<html><body>…</body></html>"
+    htmlSoloContenuto: string # Solo la parte centrale composta dai box; es. "<section>…</section>"
 ```
 
 ```yaml
 BoxRenderizzatoVM:
   id: string # ID configurato del box
-  titolo: string # Titolo già renderizzato
-  html: string # Contenuto HTML interno già renderizzato
+  titolo: string # Titolo già renderizzato; es. "Riepilogo della classe"
+  html: string # Contenuto HTML interno già renderizzato; es. "<p>La classe conta 24 studenti.</p>"
   isVuoto: boolean # true se il box non contiene dati utili
   isVisibile: boolean # Risultato finale delle regole di visibilità
 ```
@@ -824,7 +832,7 @@ ContestoTecnico:
 
 ```yaml
 PersonaRiferimentoVM:
-  nomeCompleto: string # Nome sufficiente per la stampa in elenchi compatti
+  nomeCompleto: string # Nome sufficiente per la stampa in elenchi compatti; es. "ROSSI MARIO"
   email: string # Identificativo stabile della persona nel dominio scolastico
 ```
 
@@ -836,7 +844,7 @@ PersonaRiferimentoVM:
 PersonaVM:
   nome: string                   # Nome proprio o denominazione non scomponibile
   cognome: string | null         # Null per esperti esterni o denominazioni libere
-  nomeCompleto: string           # Forma ufficiale pronta per la stampa
+  nomeCompleto: string           # Forma ufficiale pronta per la stampa; es. "ROSSI MARIO"
   email: string | null           # Null quando il soggetto non ha un account noto
   genere: "M" | "F" | null      # Genere grammaticale per titoli e concordanze
 
@@ -845,7 +853,9 @@ PersonaVM:
   coordinatore: string | null    # Coordinatrice per F, Coordinatore per M
 
   appellativoCompleto: string    # Appellativo e nome, es. "Prof. ROSSI MARIO"
-  appellativoCognome: string     # Appellativo e cognome, adatto ai saluti
+  appellativoCognome: string     # Appellativo e cognome, adatto ai saluti; es. "Prof. ROSSI"
+  appellativoCompletoEsteso: string # Articolo, appellativo e nome, es. "Il prof. ROSSI MARIO"
+  appellativoCognomeEsteso: string # Articolo, appellativo e cognome, es. "Il prof. ROSSI"
   isEsterno: boolean             # true quando non esiste una persona interna completa
 ```
 
@@ -862,16 +872,16 @@ ClasseRiferimentoVM:
 ClasseSintesiVM:
   nome: string # Identificativo completo della classe
   anno: number # Anno di corso
-  sezione: string # Sezione pura, senza anno e indirizzo
+  sezione: string # Sezione pura, senza anno e indirizzo; es. "A"
 ```
 
 ```yaml
 IndirizzoVM:
-  sigla: string # Codice breve dell'indirizzo
-  nome: string # Denominazione estesa ufficiale
-  nomeSintetico: string # Denominazione breve per tabelle e testi compatti
+  sigla: string # Codice breve dell'indirizzo; es. "INF"
+  nome: string # Denominazione estesa ufficiale; es. "Informatica e telecomunicazioni"
+  nomeSintetico: string # Denominazione breve per tabelle e testi compatti; es. "Informatica"
   tipo: string # Categoria tecnica dell'indirizzo
-  tipoLabel: string # Categoria in forma leggibile
+  tipoLabel: string # Categoria in forma leggibile; es. "Tecnico tecnologico"
 ```
 
 ### 8.4 `MateriaVM`
@@ -887,15 +897,15 @@ IndirizzoVM:
 ```yaml
 MateriaVM:
   sigla: string # Identificativo canonico della materia
-  nome: string # Denominazione estesa
-  nomeSintetico: string # Denominazione breve
-  colore1: string # Colore primario esadecimale per le proiezioni grafiche
-  colore2: string # Colore secondario esadecimale
+  nome: string # Denominazione estesa; es. "Matematica"
+  nomeSintetico: string # Denominazione breve; es. "Mat."
+  colore1: string # Colore primario esadecimale per le proiezioni grafiche; es. "#1A73E8"
+  colore2: string # Colore secondario esadecimale; es. "#D2E3FC"
 
   principale: string | null # Materia principale della specificità; null per materie base
   specificita: string | null # Disciplina o strumento specifico
   hasSpecificita: boolean # true se specificita è valorizzata
-  nomeConSpecificita: string # Nome completo con specificità già composta
+  nomeConSpecificita: string # Nome completo con specificità già composta; es. "Musica — Clarinetto"
 
   isItp: boolean # Ruolo ITP nel contesto specifico della proiezione
   isMateriaPrimaProva: boolean # Materia configurata per la prima prova
@@ -905,13 +915,13 @@ MateriaVM:
     siglePrecedenti:
       - sigla: string # Sigla storica riconducibile alla materia corrente
         anni: number[] # Anni di corso nei quali la sigla era valida
-        anniDescrizione: string # Anni separati da virgola
+        anniDescrizione: string # Anni separati da virgola; es. "3, 4, 5"
     hasSiglePrecedenti: boolean # true se esiste almeno una sigla storica
 
   docenti: PersonaVM[] # Docenti assegnati; profili CON_DOCENTI e CON_CONTINUITA
   hasDocenti: boolean # true se docenti non è vuoto; stessi profili
-  docentiDescrizione: string # Appellativi individuali e nomi dei docenti; stessi profili
-  docentiDescrizioneEstesa: string # Articoli, appellativi individuali e nomi; stessi profili
+  docentiDescrizione: string # Appellativi individuali e nomi dei docenti; stessi profili; es. "Prof. ROSSI MARIO e prof.ssa BIANCHI ANNA"
+  docentiDescrizioneEstesa: string # Articoli, appellativi individuali e nomi; stessi profili; es. "Il prof. ROSSI MARIO e la prof.ssa BIANCHI ANNA"
   hasCattedraItp: boolean # Esistenza di una componente ITP; stessi profili
 
   continuita: ContinuitaVM # Storico di titolare e ITP; profilo CON_CONTINUITA
@@ -923,7 +933,7 @@ MateriaVM:
 ContinuitaVM:
   anniPrecedenti:
     - annoIndietro: number # 1 per l'anno precedente, 2 per due anni prima
-      annoScolastico: string # Anno scolastico YYYY-YYYY
+      annoScolastico: string # Anno scolastico YYYY-YYYY; es. "2025-2026"
       titolare: PersonaVM | null # Titolare principale ricostruito per quell'anno
       hasTitolare: boolean # true se titolare è valorizzato
       itp: PersonaVM | null # Docente ITP ricostruito per quell'anno
@@ -946,14 +956,14 @@ CurriculumVM:
   materiaId: string # ID della materia principale cui appartengono le specificità
   materiaSigla: string # Sigla canonica usata nei documenti
   materiaNome: string # Nome esteso della materia
-  materiaNomeSintetico: string # Nome breve della materia
+  materiaNomeSintetico: string # Nome breve della materia; es. "Mus."
 
   specifiche:
     - nome: string # Valore normalizzato della specificità
-      nomeCapitalizzato: string # Forma pronta per l'inizio di frase
+      nomeCapitalizzato: string # Forma pronta per l'inizio di frase; es. "Clarinetto"
 
   hasSpecifiche: boolean # true se specifiche non è vuoto
-  specificheDescrizione: string # Specificità separate da virgola
+  specificheDescrizione: string # Specificità separate da virgola; es. "Clarinetto, Pianoforte"
 ```
 
 ### 8.7 `SpecificitaAlunniVM`
@@ -963,15 +973,15 @@ SpecificitaAlunniVM:
   materiaId: string # ID della materia principale
   materiaSigla: string # Sigla canonica
   materiaNome: string # Nome esteso
-  materiaNomeSintetico: string # Nome breve
+  materiaNomeSintetico: string # Nome breve; es. "Mus."
 
   specifiche:
     - nome: string # Specificità condivisa dagli alunni del gruppo
-      nomeCapitalizzato: string # Forma pronta per la stampa
+      nomeCapitalizzato: string # Forma pronta per la stampa; es. "Clarinetto"
       alunni: PersonaRiferimentoVM[] # Alunni iscritti alla specificità
       hasAlunni: boolean # true se alunni non è vuoto
       numero: number # Cardinalità di alunni
-      alunniDescrizione: string # Nomi completi separati da virgola
+      alunniDescrizione: string # Nomi completi separati da virgola; es. "ROSSI MARIO, BIANCHI ANNA"
 
   hasSpecifiche: boolean # true se esiste almeno un gruppo di specificità
 ```
@@ -997,8 +1007,8 @@ PresenzaAlunnoVM:
 
 ```yaml
 ProvenienzaDestinazioneVM:
-  valore: string # Valore originario registrato nel movimento
-  descrizione: string # Forma normalizzata pronta per la stampa
+  valore: string # Valore originario registrato nel movimento; es. "3A" oppure "Liceo Artistico Verdi"
+  descrizione: string # Forma normalizzata pronta per la stampa; es. "3A" oppure "Liceo Artistico Verdi"
   classe: ClasseRiferimentoVM | null # Classe interna quando il valore è un ID classe
   scuolaEsterna: string | null # Denominazione esterna quando non è una classe interna
   isClasse: boolean # true se classe è valorizzata
@@ -1014,9 +1024,9 @@ MovimentoAlunnoVM:
   tipo: "IN" | "OUT" | "RITIRATO" | "CAMBIO" # Tipo tecnico registrato in MOV_ALUNNI
   tipoLabel: "Ingresso" | "Trasferimento in uscita" | "Ritiro" | "Cambio di classe" # Forma stampabile
 
-  data: string                   # Data effettiva YYYY-MM-DD
-  dataBreve: string              # Data DD/MM/YYYY
-  dataEstesa: string             # Data con mese in lettere
+  data: string                   # Data effettiva YYYY-MM-DD; es. "2026-08-31"
+  dataBreve: string              # Data DD/MM/YYYY; es. "31/08/2026"
+  dataEstesa: string             # Data con mese in lettere; es. "31 agosto 2026"
 
   provenienza: ProvenienzaDestinazioneVM | null # Origine del movimento
   destinazione: ProvenienzaDestinazioneVM | null # Destinazione; null per RITIRATO
@@ -1026,7 +1036,7 @@ MovimentoAlunnoVM:
   isRitirato: boolean            # true se tipo = RITIRATO
   isCambioClasse: boolean        # true se tipo = CAMBIO
 
-  descrizione: string            # Frase completa che descrive origine, destinazione e tipo
+  descrizione: string            # Frase completa che descrive origine, destinazione e tipo; es. "Trasferito da 3A al Liceo Artistico Verdi"
 ```
 
 I movimenti sono ordinati dal più recente al meno recente.
@@ -1063,19 +1073,21 @@ La direzione è relativa allo scope della classe focalizzata:
 
 ```yaml
 AlunnoVM:
-  nomeCompleto: string           # Nome ufficiale dello studente
+  nomeCompleto: string           # Nome ufficiale dello studente; es. "ROSSI MARIO"
   email: string                  # Chiave primaria dello studente
 
   classe: ClasseContestoVM       # Classe effettiva nella proiezione corrente
 
   religione: "IRC" | "ALT" | "NO" # Scelta tecnica relativa alla religione
-  religioneLabel: string         # Etichetta italiana pronta
+  religioneLabel: string         # Etichetta italiana pronta; es. "Non si avvale"
   isIrc: boolean                 # true se religione = IRC
   isAlt: boolean                 # true se religione = ALT
   isSenzaReligione: boolean      # true se religione = NO
 
   isBes: boolean                 # Stato BES calcolato dai piani e dal profilo
   isDsa: boolean                 # Stato DSA
+  isPei: boolean                 # true se l'alunno ha almeno un PEI associato
+  isPfp: boolean                 # true se l'alunno ha almeno un PFP associato
   isRipetente: boolean           # Stato di ripetenza nell'anno
   isRappresentante: boolean      # Rappresentante degli studenti
 
@@ -1084,7 +1096,7 @@ AlunnoVM:
 
   curriculum: CurriculumVM[]     # Specificità disciplinari dello studente
   hasCurriculum: boolean         # true se curriculum non è vuoto
-  curriculumDescrizione: string  # Materie e specificità in forma stampabile
+  curriculumDescrizione: string  # Materie e specificità in forma stampabile; es. "Musica — Clarinetto, Pianoforte"
 
   carenze: ElencoCarenzeVM       # Carenze nello scope temporale della proiezione
   piani: ElencoPianiVM           # Piani personalizzati nello stesso scope
@@ -1102,9 +1114,9 @@ DocenteCdcVM:
   materie: MateriaVM[]           # Materie insegnate dal docente nella classe
   hasMaterie: boolean            # true se materie non è vuoto
   numeroMaterie: number          # Cardinalità di materie
-  materieDescrizione: string     # Nomi estesi separati da virgola
-  materieDescrizioneSintesi: string # Nomi sintetici separati da virgola
-  materieSigle: string           # Sigle separate da virgola
+  materieDescrizione: string     # Nomi estesi separati da virgola; es. "Matematica, Fisica"
+  materieDescrizioneSintesi: string # Nomi sintetici separati da virgola; es. "Mat., Fis."
+  materieSigle: string           # Sigle separate da virgola; es. "MAT, FIS"
 
   isCoordinatore: boolean        # Coordinatore della classe
   isTutorAsl: boolean            # Tutor ASL/FSL della classe
@@ -1116,15 +1128,15 @@ DocenteCdcVM:
   isSeparatoPrimo: boolean       # Assegnazione della prima partner
   isSeparatoSecondo: boolean     # Assegnazione della seconda partner
 
-  ruoliDescrizione: string[]     # Etichette dei ruoli posseduti nella classe
-  ruoliDescrizioneTesto: string  # Etichette concatenate in forma stampabile
+  ruoliDescrizione: string[]     # Etichette dei ruoli posseduti nella classe; es. ["Coordinatore", "Tutor ASL/FSL"]
+  ruoliDescrizioneTesto: string  # Etichette concatenate in forma stampabile; es. "Coordinatore, Tutor ASL/FSL"
 
   sostituisce: PersonaVM | null  # Titolare sostituito dal supplente
   hasSostituisce: boolean        # true se sostituisce è valorizzato
 
   tipoArticolazione: "COMUNE" | "SEPARATO_PRIMO" | "SEPARATO_SECONDO" | null # Quota del gruppo
-  tipoArticolazioneLabel: string # Etichetta italiana della quota
-  gruppoNome: string | null      # Nome dell'indirizzo partner per le quote separate
+  tipoArticolazioneLabel: string # Etichetta italiana della quota; es. "Parte comune"
+  gruppoNome: string | null      # Nome dell'indirizzo partner per le quote separate; es. "Informatica"
 ```
 
 Le materie usano il profilo `CON_DOCENTI`; `MateriaVM.isItp` indica il ruolo del docente sulla singola materia.
@@ -1149,7 +1161,7 @@ ProgettoVM:
 ```yaml
 StoricoClasseVM:
   anni:
-    - annoScolastico: string # Anno cui appartiene la fotografia
+    - annoScolastico: string # Anno cui appartiene la fotografia; es. "2025-2026"
       classe: ClasseRiferimentoVM # Nome della classe in quell'anno
       statistiche: StatisticheAlunniVM # Conteggi del roster storico
       progetti: ProgettoVM[] # Progetti svolti in quell'anno
@@ -1162,16 +1174,16 @@ StoricoClasseVM:
 ```yaml
 StoricoAlunnoVM:
   anni:
-    - annoScolastico: string      # Anno della fotografia storica
+    - annoScolastico: string      # Anno della fotografia storica; es. "2025-2026"
       classe: ClasseRiferimentoVM | null # Classe frequentata; null se non ricostruibile
       esito: "PROMOSSO" | "NON_PROMOSSO" | "TRASFERITO" | "RITIRATO" | "SCONOSCIUTO" # Esito tecnico
-      esitoLabel: string          # Esito in forma leggibile
+      esitoLabel: string          # Esito in forma leggibile; es. "Promosso"
       isPromosso: boolean         # true se esito = PROMOSSO
       isNonPromosso: boolean      # true se esito = NON_PROMOSSO
 
       carenze: CarenzaStoricaVM[] # Carenze registrate in quell'anno
       hasCarenze: boolean         # true se carenze non è vuoto
-      carenzeDescrizione: string  # Sigle e valori in forma stampabile
+      carenzeDescrizione: string  # Sigle e valori in forma stampabile; es. "MAT: 5, FIS: 4"
 
       piani: PianoStoricoVM[]     # Tipi di piano posseduti in quell'anno
       hasPiani: boolean           # true se piani non è vuoto
@@ -1184,23 +1196,23 @@ StoricoAlunnoVM:
 
   bocciature:
     elenco:
-      - annoScolastico: string    # Anno con esito NON_PROMOSSO
+      - annoScolastico: string    # Anno con esito NON_PROMOSSO; es. "2025-2026"
         classe: ClasseRiferimentoVM # Classe frequentata in quell'anno
     hasElenco: boolean            # true se esiste almeno una bocciatura
     numero: number                # Numero delle bocciature
-    elencoDescrizione: string     # Anni e classi in forma stampabile
+    elencoDescrizione: string     # Anni e classi in forma stampabile; es. "2024-2025 — 2A, 2025-2026 — 3A"
 ```
 
 ```yaml
 CarenzaStoricaVM:
   materiaSigla: string # Sigla riconciliata alla materia canonica
-  valore: string # Voto o giudizio registrato
+  valore: string # Voto o giudizio registrato; es. "5" oppure "Insufficiente"
 ```
 
 ```yaml
 PianoStoricoVM:
   tipo: string # Codice tecnico del piano
-  tipoLabel: string # Denominazione leggibile
+  tipoLabel: string # Denominazione leggibile; es. "Piano educativo individualizzato"
 ```
 
 ### 8.16 `ProiezioneClasseVM`
@@ -1209,7 +1221,7 @@ PianoStoricoVM:
 ProiezioneClasseVM:
   nome: string # Identificativo della classe proiettata
   anno: number # Anno di corso
-  sezione: string # Sezione pura
+  sezione: string # Sezione pura; es. "A"
   indirizzo: IndirizzoVM # Indirizzo della partner
 
   consiglio: ConsiglioClasseVM # Consiglio scopato sulla partner
@@ -1224,24 +1236,24 @@ ProiezioneClasseVM:
 DocumentoLogVM:
   id: string | null # ID del file Drive; null se non disponibile
   hasId: boolean # true se id è valorizzato
-  nome: string # Nome assegnato al documento
-  link: string # URL del file o della risorsa generata
+  nome: string # Nome assegnato al documento; es. "PDP ROSSI MARIO - 2026-2027"
+  link: string # URL del file o della risorsa generata; es. "https://drive.google.com/open?id=..."
   tipo: string # Tipo tecnico del documento
-  tipoLabel: string # Denominazione leggibile del tipo
-  sottotipo: string # Sottotipo tecnico; stringa vuota se assente
-  sottotipoLabel: string # Denominazione leggibile del sottotipo
+  tipoLabel: string # Denominazione leggibile del tipo; es. "Piano didattico personalizzato"
+  sottotipo: string # Sottotipo tecnico; stringa vuota se assente; es. "ANNUALE"
+  sottotipoLabel: string # Denominazione leggibile del sottotipo; es. "Aggiornamento annuale"
   hasSottotipo: boolean # true se sottotipo non è vuoto
   generatoreId: string # Configurazione che ha generato il documento
   stato: string # Stato tecnico del ciclo documentale
-  statoLabel: string # Stato in forma leggibile
+  statoLabel: string # Stato in forma leggibile; es. "Generato"
   isNotificato: boolean # true se il documento è già stato notificato
-  dataCreazione: string # Data tecnica YYYY-MM-DD
-  dataCreazioneBreve: string # Data DD/MM/YYYY
+  dataCreazione: string # Data tecnica YYYY-MM-DD; es. "2026-08-31"
+  dataCreazioneBreve: string # Data DD/MM/YYYY; es. "31/08/2026"
 ```
 
 ```yaml
 DocumentoStoricoVM:
-  annoScolastico: string # Anno scolastico di provenienza del log
+  annoScolastico: string # Anno scolastico di provenienza del log; es. "2025-2026"
   documento: DocumentoLogVM # Documento ricostruito con forma canonica
 ```
 
@@ -1266,8 +1278,8 @@ SupplenzaAggregataVM:
   titolare: PersonaVM # Titolare originario sostituito
   materie: MateriaVM[] # Materie coperte dalla coppia supplente/titolare
   hasMaterie: boolean # true se materie non è vuoto
-  materieDescrizione: string # Nomi delle materie separati da virgola
-  materieSigle: string # Sigle separate da virgola
+  materieDescrizione: string # Nomi delle materie separati da virgola; es. "Matematica, Fisica"
+  materieSigle: string # Sigle separate da virgola; es. "MAT, FIS"
 ```
 
 Una catena di supplenze espone il docente effettivo finale e il titolare originario.
@@ -1277,13 +1289,13 @@ Una catena di supplenze espone il docente effettivo finale e il titolare origina
 ```yaml
 CattedraVM:
   classe: ClasseSintesiVM # Classe o parent cui appartiene la cattedra
-  sezioneEstesa: string # Nome classe privo delle cifre iniziali dell'anno
+  sezioneEstesa: string # Nome classe privo delle cifre iniziali dell'anno; es. "A INF"
 
   materie: MateriaVM[] # Materie effettive raggruppate per classe
   hasMaterie: boolean # true se materie non è vuoto
   numeroMaterie: number # Cardinalità di materie
-  materieDescrizione: string # Nomi delle materie separati da virgola
-  materieSigle: string # Sigle separate da virgola
+  materieDescrizione: string # Nomi delle materie separati da virgola; es. "Matematica, Fisica"
+  materieSigle: string # Sigle separate da virgola; es. "MAT, FIS"
 ```
 
 `classe.sezione` è sempre la sezione pura. `sezioneEstesa` è il nome classe senza le cifre iniziali dell'anno.
@@ -1296,9 +1308,9 @@ Le classi appartenenti alla stessa articolazione producono una sola cattedra rif
 CarenzaVM:
   materiaSigla: string # Sigla canonica della materia
   materiaNome: string # Nome esteso della materia
-  materiaNomeSintetico: string # Nome breve della materia
-  voto: string # Valutazione o giudizio registrato
-  descrizione: string # Materia e valore già composti per la stampa
+  materiaNomeSintetico: string # Nome breve della materia; es. "Mat."
+  voto: string # Valutazione o giudizio registrato; es. "5" oppure "Insufficiente"
+  descrizione: string # Materia e valore già composti per la stampa; es. "Matematica: 5"
 ```
 
 ```yaml
@@ -1306,7 +1318,7 @@ ElencoCarenzeVM:
   elenco: CarenzaVM[] # Carenze ordinate per materia
   hasElenco: boolean # true se elenco non è vuoto
   numero: number # Cardinalità di elenco
-  elencoDescrizione: string # Descrizioni separate da virgola
+  elencoDescrizione: string # Descrizioni separate da virgola; es. "Matematica: 5, Fisica: 4"
 ```
 
 ### 8.22 `PianoVM`
@@ -1314,9 +1326,9 @@ ElencoCarenzeVM:
 ```yaml
 PianoVM:
   tipo: string # Codice tecnico del piano
-  tipoLabel: string # Denominazione leggibile
+  tipoLabel: string # Denominazione leggibile; es. "Piano didattico personalizzato"
   isBes: boolean # true se il tipo di piano implica BES
-  link: string | null # URL del documento associato
+  link: string | null # URL del documento associato; es. "https://drive.google.com/open?id=..."
   hasLink: boolean # true se link è valorizzato
   parametriGenerazione: object | null # Parametri JSON interpretati dal generatore
   hasParametriGenerazione: boolean # true se i parametri sono disponibili
@@ -1327,7 +1339,7 @@ ElencoPianiVM:
   elenco: PianoVM[] # Piani ordinati per tipo
   hasElenco: boolean # true se elenco non è vuoto
   numero: number # Cardinalità di elenco
-  elencoDescrizione: string # Etichette dei piani separate da virgola
+  elencoDescrizione: string # Etichette dei piani separate da virgola; es. "PDP, PEI"
   hasBes: boolean # true se almeno un piano implica BES
 ```
 
@@ -1367,7 +1379,7 @@ RappresentanteGenitoreVM:
   studente: PersonaRiferimentoVM # Figlio cui si riferisce la rappresentanza
   indirizzo: IndirizzoVM | null # Indirizzo del figlio nella parent articolata
   hasIndirizzo: boolean # true se indirizzo è valorizzato
-  descrizione: string # Genitore e studente in forma stampabile
+  descrizione: string # Genitore e studente in forma stampabile; es. "Maria Rossi (genitore di ROSSI MARIO)"
 ```
 
 L'indirizzo è valorizzato quando serve distinguere la provenienza all'interno di una parent articolata.
@@ -1396,8 +1408,8 @@ DocenteEsameVM:
   materie: MateriaVM[]           # Materie insegnate dal docente per la prova
   hasMaterie: boolean            # true se materie non è vuoto
   numeroMaterie: number          # Cardinalità di materie
-  materieDescrizione: string     # Nomi separati da virgola
-  materieSigle: string           # Sigle separate da virgola
+  materieDescrizione: string     # Nomi separati da virgola; es. "Italiano, Storia"
+  materieSigle: string           # Sigle separate da virgola; es. "ITA, STO"
 ```
 
 I docenti d'esame sono deduplicati per email all'interno di ogni prova.

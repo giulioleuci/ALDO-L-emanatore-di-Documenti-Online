@@ -63,10 +63,10 @@ La sintassi fondamentale adotta la convenzione **Mustache** a doppie graffe: `{{
 I segnali scalari vengono estratti dall'oggetto di contesto (il CDU) navigando lungo il percorso con la notazione del punto:
 
 ```mustache
-Nome classe: {{focus.classe.anagrafica.nome}}
-Anno scolastico: {{focus.classe.anagrafica.annoScolastico}}
-Dirigente Scolastico: {{istituto.organizzazione.dirigente.nomeCompleto}}
-Data di oggi: {{meta.date.oggi.estesa}}
+Nome classe: {{focus.classe.nome}}
+Anno scolastico: {{istituto.annoScolastico}}
+Dirigente Scolastico: {{istituto.dirigente.nomeCompleto}}
+Data di oggi: {{meta.oggi.estesa}}
 ```
 
 ### 2.2 Escaping HTML vs Unescaped Output
@@ -92,7 +92,7 @@ Il motore mantiene una **pila dei contesti** (`_MustacheContext`). Quando si ent
 [ Root CDU Context ] (istituto, meta, focus, destinatario)
          |
          v
-[ Sezione / Loop Context ] (item corrente di focus.classe.studenti.listaCompleta)
+[ Sezione / Loop Context ] (item corrente di focus.classe.studenti.elenco)
 ```
 
 ### 3.1 Risoluzione Automatica dal Basso verso l'Alto (Fallback)
@@ -102,27 +102,27 @@ Se un identificatore viene cercato all'interno di un blocco e non viene trovato 
 _Esempio:_
 
 ```mustache
-{{#focus.classe.studenti.listaCompleta}}
-  Alunno: {{anagrafica.nomeCompleto}} - Classe: {{focus.classe.anagrafica.nome}}
-{{/focus.classe.studenti.listaCompleta}}
+{{#focus.classe.studenti.elenco}}
+  Alunno: {{nomeCompleto}} - Classe: {{focus.classe.nome}}
+{{/focus.classe.studenti.elenco}}
 ```
 
-_Spiegazione:_ `anagrafica.nomeCompleto` appartiene all'alunno corrente. `focus.classe.anagrafica.nome` non esiste nell'alunno, quindi il motore risale al CDU principale e lo risolve correttamente.
+_Spiegazione:_ `nomeCompleto` appartiene all'alunno corrente. `focus.classe.nome` non esiste nell'alunno, quindi il motore risale al CDU principale e lo risolve correttamente.
 
 ### 3.2 Navigazione Esplicita al Genitore (`../`)
 
 Per risalire esplicitamente di uno o più livelli nella gerarchia senza fare affidamento sul fallback automatico, è possibile utilizzare la sintassi Handlebars **`../`**:
 
 ```mustache
-{{#focus.classe.studenti.listaCompleta}}
+{{#focus.classe.studenti.elenco}}
   {{#curriculum}}
-    Materia: {{materiaNome}} - Alunno: {{../anagrafica.nomeCompleto}} - Anno: {{../../focus.classe.anagrafica.anno}}
+    Materia: {{materiaNome}} - Alunno: {{../nomeCompleto}} - Anno: {{../../focus.classe.anno}}
   {{/curriculum}}
-{{/focus.classe.studenti.listaCompleta}}
+{{/focus.classe.studenti.elenco}}
 ```
 
-- `../anagrafica.nomeCompleto`: Sale di 1 livello (dall'item del curriculum all'alunno).
-- `../../focus.classe.anagrafica.anno`: Sale di 2 livelli (dall'item del curriculum, all'alunno, fino al contesto CDU root).
+- `../nomeCompleto`: Sale di 1 livello (dall'item del curriculum all'alunno).
+- `../../focus.classe.anno`: Sale di 2 livelli (dall'item del curriculum, all'alunno, fino al contesto CDU root).
 
 ---
 
@@ -134,7 +134,7 @@ Iterano su collezioni o agiscono come blocchi condizionali se il valore è un bo
 
 ```mustache
 {{#focus.classe.coordinatori.elenco}}
-  - {{appellativoCompleto}} (Materia: {{materia}})
+  - {{appellativoCompleto}} (Materia: {{materieDescrizione}})
 {{/focus.classe.coordinatori.elenco}}
 ```
 
@@ -143,12 +143,12 @@ Iterano su collezioni o agiscono come blocchi condizionali se il valore è un bo
 Vengono eseguite quando l'array è vuoto, il valore è `null`, `undefined` oppure `false`.
 
 ```mustache
-{{#focus.classe.didattica.carenze.hasCarenze}}
+{{#focus.alunno.carenze.hasElenco}}
   Attenzione: Sono presenti carenze formative per la classe.
-{{/focus.classe.didattica.carenze.hasCarenze}}
-{{^focus.classe.didattica.carenze.hasCarenze}}
+{{/focus.alunno.carenze.hasElenco}}
+{{^focus.alunno.carenze.hasElenco}}
   Nessuna carenza segnalata.
-{{/focus.classe.didattica.carenze.hasCarenze}}
+{{/focus.alunno.carenze.hasElenco}}
 ```
 
 ### 4.3 Meta-Variabili di Loop
@@ -164,15 +164,15 @@ Durante l'iterazione su array, il motore rende disponibili le seguenti meta-vari
 
 #### Gestione del "Separatore di Fine" (Virgole e Delimitatori)
 
-In ALDO, per facilitare i template nei documenti Google, ogni item di un array principale (es. `consiglioDiClasse`) include anche il flag precalcolato `flags.isNotLast` (`true` se l'elemento non è l'ultimo).
+In ALDO, per facilitare i template nei documenti Google, usare la meta-variabile `@last` per riconoscere l'ultimo elemento.
 
-_Esempio con `@last` e `flags.isNotLast`:_
+_Esempio con `@last`:_
 
 ```mustache
 Docenti presenti:
-{{#focus.classe.consiglioDiClasse}}
-  {{anagrafica.nomeCompleto}}{{#flags.isNotLast}}, {{/flags.isNotLast}}
-{{/focus.classe.consiglioDiClasse}}
+{{#focus.classe.consiglio.elenco}}
+  {{nomeCompleto}}{{^@last}}, {{/@last}}
+{{/focus.classe.consiglio.elenco}}
 ```
 
 ---
@@ -186,21 +186,21 @@ I documenti Google Docs richiedono marcatori strutturali specifici per generare 
 Genera un elenco puntato nativo in Google Docs per ogni elemento dell'array indicato.
 
 ```mustache
-{{#bullet_list:focus.classe.consiglioDiClasse}}
-{{anagrafica.appellativoCompleto}} — {{materieDescrizione}}
+{{#bullet_list:focus.classe.consiglio.elenco}}
+{{appellativoCompleto}} — {{materieDescrizione}}
 {{/bullet_list}}
 ```
 
 **Elenco puntato delle supplenze attive:**
 ```mustache
-{{#bullet_list:focus.classe.supplenze}}
+{{#bullet_list:focus.classe.consiglio.supplenze}}
 {{supplente.appellativoCompleto}} sostituisce {{titolare.appellativoCompleto}} ({{dettaglioMaterie | map:'nomeSintetico' | join:', '}})
 {{/bullet_list}}
 ```
 
 **Elenco puntato dei piani non verbalizzati:**
 ```mustache
-{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.elenco}}
+{{#bullet_list:focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco}}
 {{studente.nomeCompleto}} — {{tipoLabel}}
 {{/bullet_list}}
 ```
@@ -210,8 +210,8 @@ Genera un elenco puntato nativo in Google Docs per ogni elemento dell'array indi
 Genera un elenco numerato progressivo nativo in Google Docs.
 
 ```mustache
-{{#number_list:focus.classe.studenti.listaCompleta}}
-{{anagrafica.nomeCompleto}} (Indirizzo: {{indirizzo.nomeSintetico}})
+{{#number_list:focus.classe.studenti.elenco}}
+{{nomeCompleto}} (Indirizzo: {{classe.indirizzo.nomeSintetico}})
 {{/number_list}}
 ```
 
@@ -220,7 +220,7 @@ Genera un elenco numerato progressivo nativo in Google Docs.
 Posizionato all'interno delle celle di una riga di tabella in Google Docs, clona e popola la riga per ogni elemento dell'array. Le colonne sono separate da virgola.
 
 ```mustache
-{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}},{{status.religioneLabel}},{{anagrafica.email}}
+{{#tablerow_loop:focus.classe.studenti.elenco}}{{nomeCompleto}},{{religioneLabel}},{{email}}
 ```
 
 ---
@@ -234,7 +234,7 @@ In Google Sheets le direttive vengono scritte all'interno di celle singole racch
 Espande verticalmente un array di dati a partire dalla riga corrente.
 
 ```text
-{{dynamic_rows[source=focus.classe.studenti.listaCompleta,value=anagrafica.nomeCompleto]}}
+{{dynamic_rows[source=focus.classe.studenti.elenco,value=nomeCompleto]}}
 ```
 
 #### B. Colonne Dinamiche Multi-Gruppo (`dynamic_columns`)
@@ -242,7 +242,7 @@ Espande verticalmente un array di dati a partire dalla riga corrente.
 Effettua l'espansione orizzontale delle colonne (es. per materie articolate o valutazioni per gruppo).
 
 ```text
-{{dynamic_columns[source=focus.classe.sheet.materieColonne.group1,value=header,source2=focus.classe.sheet.materieColonne.group2,value2=header,label2=focus.classe.sheet.materieColonne.group2Label]}}
+{{dynamic_columns[source=focus.classe.sheet.materieColonne.gruppi.0.colonne,value=header,source2=focus.classe.sheet.materieColonne.gruppi.1.colonne,value2=header,label2=focus.classe.sheet.materieColonne.gruppi.1.label]}}
 ```
 
 #### C. Placeholder speciale Materie con Permessi (`{{focus.classe.elencoMaterieConPermessi}}`)
@@ -269,13 +269,13 @@ _Esempi di Espressioni Valide:_
 
 ```javascript
 // Verifica se la classe è del triennio e ha progetti ASL/PCTO attivi
-'{{focus.classe.flags.isTriennio}} && {{focus.classe.hasProgetti}}';
+'{{focus.classe.isTriennio}} && {{focus.classe.progetti.hasAsl}}';
 
 // Verifica presenza di bocciature nello storico dell'alunno
-'{{focus.alunno.storico.hasBocciature}} == true';
+'{{focus.alunno.storico.bocciature.hasElenco}} == true';
 
 // Valutazione condizionale numerica sul numero di carenze
-'{{focus.alunno.didattica.carenze.numero}} > 2';
+'{{focus.alunno.carenze.numero}} > 2';
 ```
 
 ---
@@ -343,7 +343,7 @@ I filtri possono essere combinati in catena sequenziale da sinistra a destra:
 
 ```mustache
 Elenco docenti ordinato e formattato:
-{{focus.classe.consiglioDiClasse | map:'anagrafica' | map:'nomeCompleto' | sort | join:', ' | uppercase}}
+{{focus.classe.consiglio.elenco | map:'nomeCompleto' | sort | join:', ' | uppercase}}
 ```
 
 ---
@@ -363,13 +363,13 @@ Nello sviluppo di SGSA / ALDO si applicano vincoli stringenti derivati dalle spe
 3. **Stringhe Pronte per la Stampa**:
    - Il CDU espone già le forme testuali pronte (`appellativoCompleto`, `materieDescrizione`, `religioneLabel`, `tipoLabel`). I template non devono concatenare stringhe.
 4. **Partizioni Precalcolate**:
-   - I raggruppamenti per il dominio (es. `consiglioDiClasseComune`, `consiglioDiClasseSeparato`, `esame.materiePrimaProva`) sono precalcolati dal `ContextEngine` nel CDU.
+   - I raggruppamenti per il dominio (es. `consiglio.comune`, `consiglio.separato`, `esame.materiePrimaProva`) sono precalcolati dal `ContextEngine` nel CDU.
    - La partizione `pianiPersonalizzati.nonVerbalizzati` (stato ≠ verbalizzato) è precalcolata nel CDU: i template non devono filtrare su `stato`.
 
 ### 7.2 Budget di Lunghezza dei Placeholder (Principio 6)
 
-- **Dentro i loop**: Massimo 2–3 segmenti (es. `{{anagrafica.nomeCompleto}}`, `{{status.religioneLabel}}`).
-- **Fuori dai loop**: Massimo 4 segmenti (es. `{{focus.classe.anagrafica.nome}}`).
+- **Dentro i loop**: Massimo 2–3 segmenti (es. `{{nomeCompleto}}`, `{{religioneLabel}}`).
+- **Fuori dai loop**: Massimo 4 segmenti (es. `{{focus.classe.nome}}`).
 - _Nota_: Qualsiasi violazione del budget va risolta denormalizzando i dati nel CDU a monte, mai allungando la catena del placeholder.
 
 ### 7.3 Separazione tra Filtri Ammessi e Vietati nei Template
@@ -380,7 +380,7 @@ Nello sviluppo di SGSA / ALDO si applicano vincoli stringenti derivati dalle spe
 
 ### 7.4 Risoluzione di `LazyRef<T>`
 
-I nodi dello storico (`focus.classe.storico`, `focus.alunno.storico`, `*.didattica.documenti.storico`) sono gestiti tramite `LazyRef<T>` (`CoreUtilsLib`). Il servizio chiamante o lo step del pipeline deve invocare `.get()` per materializzare il nodo **prima** che il CDU venga passato al `WorkspaceTemplateEngine`.
+I nodi dello storico (`focus.classe.storico`, `focus.alunno.storico`, `*.documenti.storico`) sono gestiti tramite `LazyRef<T>` (`CoreUtilsLib`). Il servizio chiamante o lo step del pipeline deve invocare `.get()` per materializzare il nodo **prima** che il CDU venga passato al `WorkspaceTemplateEngine`.
 
 ---
 
@@ -392,28 +392,28 @@ Estratto da un modello di verbale in `CONF_DOC` per classe articolata:
 
 ```mustache
 ISTITUTO D'ISTRUZIONE SUPERIORE
-Anno Scolastico {{focus.classe.anagrafica.annoScolastico}}
+Anno Scolastico {{istituto.annoScolastico}}
 
-VERBALE DEL CONSIGLIO DELLA CLASSE {{focus.classe.anagrafica.nome}}
-Indirizzo: {{focus.classe.anagrafica.indirizzo.nome}}
+VERBALE DEL CONSIGLIO DELLA CLASSE {{focus.classe.nome}}
+Indirizzo: {{focus.classe.indirizzo.nome}}
 
-In data {{meta.date.oggi.estesa}}, si è riunito il Consiglio di Classe presieduto da {{focus.classe.coordinatori.appellativo}} {{focus.classe.coordinatori.elenco.0.nomeCompleto}}.
+In data {{meta.oggi.estesa}}, si è riunito il Consiglio di Classe presieduto da {{focus.classe.coordinatori.collettivo.appellativo}} {{focus.classe.coordinatori.elenco.0.nomeCompleto}}.
 
 DOCENTI COMPONENTI IL CONSIGLIO DI CLASSE:
-{{#bullet_list:focus.classe.consiglioDiClasse}}
-{{anagrafica.appellativoCompleto}} — {{materieDescrizione}} ({{tipoArticolazione}})
+{{#bullet_list:focus.classe.consiglio.elenco}}
+{{appellativoCompleto}} — {{materieDescrizione}} ({{tipoArticolazioneLabel}})
 {{/bullet_list}}
 
 ELENCO STUDENTI E RELIGIONE:
 [Tabella Google Docs con header: Alunno | Opzione Religione | Email]
-{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}},{{status.religioneLabel}},{{anagrafica.email}}
+{{#tablerow_loop:focus.classe.studenti.elenco}}{{nomeCompleto}},{{religioneLabel}},{{email}}
 
-{{#focus.classe.flags.isTerminale}}
+{{#focus.classe.isTerminale}}
 MATERIE OGGETTO DI PRIMA PROVA D'ESAME:
 {{#bullet_list:focus.classe.esame.materiePrimaProva}}
 {{nome}} (Docente: {{docentiDescrizione}})
 {{/bullet_list}}
-{{/focus.classe.flags.isTerminale}}
+{{/focus.classe.isTerminale}}
 ```
 
 ---
@@ -425,13 +425,13 @@ Configurazione cella $A1$ e $B1$ per un foglio di calcolo generato con `SheetPro
 - **Cella A2 (Generazione Righe Roster Alunni)**:
 
 ```text
-{{dynamic_rows[source=focus.classe.studenti.listaCompleta,value=anagrafica.nomeCompleto]}}
+{{dynamic_rows[source=focus.classe.studenti.elenco,value=nomeCompleto]}}
 ```
 
 - **Cella B1 (Espansione Colonne Materie Multi-Gruppo)**:
 
 ```text
-{{dynamic_columns[source=focus.classe.sheet.materieColonne.group1,value=header,source2=focus.classe.sheet.materieColonne.group2,value2=header,label2=focus.classe.sheet.materieColonne.group2Label]}}
+{{dynamic_columns[source=focus.classe.sheet.materieColonne.gruppi.0.colonne,value=header,source2=focus.classe.sheet.materieColonne.gruppi.1.colonne,value2=header,label2=focus.classe.sheet.materieColonne.gruppi.1.label]}}
 ```
 
 ---
@@ -445,38 +445,38 @@ Template HTML memorizzato nel campo `TESTO_START` della tabella `CONF_MAIL`:
 
 <p>
   Si comunica che è stata convocata la riunione del Consiglio per la classe
-  <strong>{{focus.classe.anagrafica.nome}}</strong> per il giorno {{meta.date.oggi.estesa}}.
+  <strong>{{focus.classe.nome}}</strong> per il giorno {{meta.oggi.estesa}}.
 </p>
 
-{{#destinatario.flags.isCoordinatore}}
+{{#destinatario.isCoordinatore}}
 <p style="color: #005A9C;">
   <strong>Nota per il Coordinatore:</strong> Le ricordiamo di verificare la presenza dei verbali
   precedenti.
 </p>
-{{/destinatario.flags.isCoordinatore}}
+{{/destinatario.isCoordinatore}}
 
 <p>Le tue cattedre:</p>
 <ul>
-  {{#destinatario.contesto.cattedre}}
-  <li><strong>{{classeNome}}</strong> —
+  {{#destinatario.cattedre.elenco}}
+  <li><strong>{{classe.nome}}</strong> —
     {{#materie}}{{nome}}{{^@last}}, {{/@last}}{{/materie}}
   </li>
-  {{/destinatario.contesto.cattedre}}
+  {{/destinatario.cattedre.elenco}}
 </ul>
 
 <p>Oppure, per la lista piatta deduplicata su tutte le classi, usa il box standard
 <code>cattedre</code> (BOX_CFG <code>{"TIPO_BOX":"cattedre"}</code>, titolo default "Le tue cattedre")
-oppure itera direttamente <code>destinatario.contesto.materieCompetenza</code>:</p>
+oppure itera direttamente <code>destinatario.materie.elenco</code>:</p>
 <ul>
-  {{#destinatario.contesto.materieCompetenza}}
+  {{#destinatario.materie.elenco}}
   <li>{{nome}}</li>
-  {{/destinatario.contesto.materieCompetenza}}
+  {{/destinatario.materie.elenco}}
 </ul>
 
 <p>
   Cordiali saluti,<br />
-  {{istituto.organizzazione.dirigente.nomeCompleto}}<br />
-  <em>{{meta.date.oggi.breve}}</em>
+  {{istituto.dirigente.nomeCompleto}}<br />
+  <em>{{meta.oggi.breve}}</em>
 </p>
 ```
 
@@ -506,7 +506,7 @@ Generazione di una lista separata da virgole con nomi in maiuscolo e fallback:
 
 ```mustache
 Studenti Rappresentanti di Classe:
-{{focus.classe.rappresentanti.studenti | map:'nomeCompleto' | sort | join:', ' | uppercase | default:'Nessun rappresentante eletto'}}
+{{focus.classe.rappresentanti.studenti.elenco | map:'nomeCompleto' | sort | join:', ' | uppercase | default:'Nessun rappresentante eletto'}}
 ```
 
 Se la lista dei rappresentanti è popolata: `MARCO NERI, GIUSEPPE ROSSI`.

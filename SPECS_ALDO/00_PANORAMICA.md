@@ -72,7 +72,7 @@ SGSA non reimplementa funzionalità già offerte da queste librerie. Le referenz
 Tutta la documentazione di SGSA si valida rispetto a due sorgenti autorevoli:
 
 - **`01_SCHEMA_DATABASE.md`** — Schema fisico del database (tabelle, colonne, tipi, vincoli, relazioni FK). Nomi di colonne e tabelle sono sempre in UPPERCASE.
-- **`02_CDU_STRUTTURA.md`** — Struttura canonica del Contesto Dati Unificato. Tutti i percorsi di accesso ai dati del contesto (es. `focus.classe.anagrafica.nome`) derivano da questo schema.
+- **`02_CDU_STRUTTURA.md`** — Struttura canonica del Contesto Dati Unificato. Tutti i percorsi di accesso ai dati del contesto (es. `focus.classe.nome`) derivano da questo schema.
 
 In caso di incoerenza tra qualsiasi documento di SGSA e queste due fonti, prevalgono `01_SCHEMA_DATABASE.md` e `02_CDU_STRUTTURA.md`.
 

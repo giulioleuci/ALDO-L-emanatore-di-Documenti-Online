@@ -527,7 +527,7 @@ Seleziona il template Drive da usare per la generazione. Supporta due forme:
 
 ```json
 [
-  { "condizione": "{{focus.classe.anagrafica.anno}} == 5", "templateId": "1abc_esame" },
+  { "condizione": "{{focus.classe.anno}} == 5", "templateId": "1abc_esame" },
   { "condizione": "true", "templateId": "1abc_default" }
 ]
 ```

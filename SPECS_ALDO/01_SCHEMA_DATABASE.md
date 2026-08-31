@@ -123,7 +123,7 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 
 **Nota IRC/ALT:** Le colonne `IRC` e `ALT` in `CLASSI` corrispondono a righe `MATERIE` con `IS_RELIGIONE_ALT = true` (`ID = 'IRC'`, `ID = 'ALT'`) — questo permette a `VARIAZIONI_CATTEDRA`/`SUPPLENZE` di applicarsi anche a IRC/ALT come a qualsiasi altra materia. Il flag `IS_RELIGIONE_ALT` esiste per preservare la distinzione di ruolo esistente (es. `CDC` le include sempre, `DOCENTI_NO_RELIGIONE` le esclude sempre) — senza di esso, ogni consumatore del fan-out generico vedrebbe IRC/ALT mescolate a risultati che prima non le includevano mai. **Univocità non enforced a livello DB:** `IRC` e `ALT` sono elencate come colonne statiche di `COL_CLASSI` (non colonne dinamiche materia); la regola `DYN_CLASSI` che verifica che ogni colonna dinamica di `CLASSI` corrisponda a un `MATERIE.ID` esistente le esclude esplicitamente (sono già note al validatore), quindi `regoleValidazione()` NON verifica che le righe `MATERIE` con `ID='IRC'`/`ID='ALT'` esistano davvero. L'esistenza è enforced solo indirettamente: se una riga `SUPPLENZE`/`VARIAZIONI_CATTEDRA` referenzia `IRC`/`ALT` in `MATERIE` (CSV), `FK_SUPPLENZE_MATERIE`/`FK_VARIAZIONI_MATERIE` la richiede. Un DB privo di righe `MATERIE` per `IRC`/`ALT` ma con le colonne `CLASSI.IRC`/`CLASSI.ALT` valorizzate passa quindi la validazione, ma `ITeachingAssignmentResolver` — che richiede sempre la riga `MATERIE` per risolvere la cattedra (v. `MAT_NON_STANDARD.md` §2 nota di implementazione) — fallirà a runtime.
 
-**Univocità nel CDU:** a livello di `focus.classe.consiglioDiClasse` (proiezione di classe) IRC e ALT compaiono SEMPRE come due membri distinti del CdC quando entrambe le cattedre sono coperte — non c'è nulla da deduplicare, sono due materie diverse. L'unicità rilevante è invece per-alunno: `focus.alunno.consiglioDiClasseFiltrato` (02 §4.2) esclude a monte il ramo che non corrisponde a `ALUNNI.RELIGIONE` dell'alunno focalizzato, cosicché un alunno veda al più UNO tra il docente IRC e il docente ALT, mai entrambi.
+**Univocità nel CDU:** a livello di `focus.classe.consiglio.elenco` (proiezione di classe) IRC e ALT compaiono SEMPRE come due membri distinti del CdC quando entrambe le cattedre sono coperte — non c'è nulla da deduplicare, sono due materie diverse. L'unicità rilevante è invece per-alunno: `focus.alunno.consiglio.elenco` (02 §4.2) esclude a monte il ramo che non corrisponde a `ALUNNI.RELIGIONE` dell'alunno focalizzato, cosicché un alunno veda al più UNO tra il docente IRC e il docente ALT, mai entrambi.
 
 **Invariante ITP:** Ogni docente presente in una colonna `*[MATERIA.itp]*` DEVE avere `DOCENTI.ITP = true`.
 
@@ -357,7 +357,7 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 > `focus.piano.tipo`, uno per ciascun valore di `TipoPiano`. Il sottotipo non si
 > ricava da `CONF_DOC.PARAMETRI`: è il `PIANI.TIPO` del piano focalizzato. Per
 > rendere stabile l'identità del documento, `REGISTRA_DOC.utenti` DEVE risolvere
-> a `{{focus.alunno.anagrafica.email}}`; il log risultante usa sempre
+> a `{{focus.alunno.email}}`; il log risultante usa sempre
 > `ID_GEN=PIANI_PERSONALIZZATI`, `TIPO=PIANO_PERS` e
 > `SOTTOTIPO=focus.piano.tipo`.
 >

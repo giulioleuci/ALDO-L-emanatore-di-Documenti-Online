@@ -41,15 +41,14 @@ function materieConNomeDistintoDaSintesi(): MateriaRepository {
 
 function cduRecord(): Record<string, unknown> {
   return {
-    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    meta: { oggi: { breve: '05/07/2026' } },
     focus: {
-      classe: { anagrafica: { nome: '5A' } },
+      classe: { nome: '5A' },
       alunno: {
-        anagrafica: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
-        didattica: {
-          carenze: { dettaglio: [{ materia: 'MATE', voto: '4' }], numero: 1, hasCarenze: true },
-          documenti: {
-            items: [
+        nomeCompleto: 'VERDI ANNA', email: 'a1@school.it',
+        carenze: { elenco: [{ materiaSigla: 'MATE', voto: '4' }], numero: 1, hasElenco: true },
+        documenti: {
+            elenco: [
               {
                 nome: 'PDP Anna',
                 link: 'https://drive/x',
@@ -58,15 +57,15 @@ function cduRecord(): Record<string, unknown> {
                 dataCreazione: '01/06/2026'
               }
             ],
-            hasDocumenti: true
+            hasElenco: true, numero: 1,
+            storico: { get: () => [] }
           }
-        }
       },
       carenza: {
-        studente: 'a1@school.it',
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
         progressivo: 1,
         data: '2026-02-15',
-        classe: '5A',
+        classe: { nome: '5A' },
         hasAssenze: true,
         note: 'Studio discontinuo'
       }
@@ -116,9 +115,9 @@ test('mapCarenzeFormatoB enriches with MATERIE colours/symbol, default #ddd for 
 
 test('carenze box renders one coloured sub-box per materia (11 §11)', () => {
   const out = render([{ TIPO_BOX: 'carenze', TITOLO: 'Carenze rilevate' }]);
-  const box = out.boxes['carenze']!;
-  expect(box.visibile).toBe(true);
-  expect(box.isEmpty).toBe(false);
+  const box = out.boxes.perId['carenze_0']!;
+  expect(box.isVisibile).toBe(true);
+  expect(box.isVuoto).toBe(false);
   expect(box.html).toContain('border-left:4px solid #c0392b');
   expect(box.html).toContain('📐 Matematica');
   expect(box.html).toContain('Voto 4');
@@ -135,7 +134,7 @@ test('carenze box title uses MATERIE.NOME (full name), not SINTESI, and has no b
     materieConNomeDistintoDaSintesi(),
     templates
   );
-  const box = out.boxes['carenze']!;
+  const box = out.boxes.perId['carenze_0']!;
   expect(box.html).toContain('📐 Matematica e Informatica');
   expect(box.html).not.toContain('📐 MAT<'); // not the short SINTESI form
   expect(box.html).not.toContain('background-color:#fdecea');
@@ -147,10 +146,10 @@ test('documenti box lists links; cartelle box empty ⇒ hidden', () => {
     { TIPO_BOX: 'documenti', TITOLO: 'Documenti' },
     { TIPO_BOX: 'cartelle', TITOLO: 'Cartelle' }
   ]);
-  expect(out.boxes['documenti']!.html).toContain('<a href="https://drive/x"');
-  expect(out.boxes['documenti']!.html).toContain('PDP Anna');
-  expect(out.boxes['cartelle']!.visibile).toBe(false);
-  expect(out.boxes['cartelle']!.html).toBe('');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('<a href="https://drive/x"');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('PDP Anna');
+  expect(out.boxes.perId['cartelle_1']!.isVisibile).toBe(false);
+  expect(out.boxes.perId['cartelle_1']!.html).toBe('');
 });
 
 test('boxes keeps every same-type instance under its stable instance key', () => {
@@ -159,9 +158,8 @@ test('boxes keeps every same-type instance under its stable instance key', () =>
     { TIPO_BOX: 'note', TITOLO: 'Seconda nota' }
   ]);
 
-  expect(out.boxes['note_0']!.titolo).toBe('Prima nota');
-  expect(out.boxes['note_1']!.titolo).toBe('Seconda nota');
-  expect(out.boxes['note']!.titolo).toBe('Seconda nota');
+  expect(out.boxes.perId['note_0']!.titolo).toBe('Prima nota');
+  expect(out.boxes.perId['note_1']!.titolo).toBe('Seconda nota');
 });
 
 test('renderBoxes returns the IDs of document and personalized-plan links rendered in the email body', () => {
@@ -170,9 +168,8 @@ test('renderBoxes returns the IDs of document and personalized-plan links render
   const cdu = cduRecord();
   const focus = cdu['focus'] as Record<string, unknown>;
   const alunno = focus['alunno'] as Record<string, unknown>;
-  const didattica = alunno['didattica'] as Record<string, unknown>;
-  didattica['documenti'] = {
-    items: [
+  alunno['documenti'] = {
+    elenco: [
       {
         id: 'work-plan-1',
         nome: 'Piano di lavoro 5A',
@@ -184,15 +181,15 @@ test('renderBoxes returns the IDs of document and personalized-plan links render
       }
     ]
   };
-  didattica['pianiPersonalizzati'] = {
-    items: [
+  (focus['classe'] as Record<string, unknown>)['pianiPersonalizzati'] = {
+    elenco: [
       {
         id: 'personal-plan-1',
         nome: 'PDP Anna',
         link: 'https://drive/personal-plan-1',
         sottotipo: 'PDP_BES',
         idGen: 'PIANI_PERSONALIZZATI',
-        notificato: false
+        isNotificato: false
       }
     ]
   };
@@ -208,22 +205,20 @@ test('renderBoxes returns the IDs of document and personalized-plan links render
   expect(out.documentIds).toEqual(['work-plan-1', 'personal-plan-1']);
 });
 
-test('documenti/cartelle boxes fall back to focus.classe.didattica.documenti when focus.alunno is absent (coordinatore/CdC emails, 11 §11 new)', () => {
+test('documenti/cartelle boxes fall back to focus.classe.documenti when focus.alunno is absent (coordinatore/CdC emails, 11 §11 new)', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu: Record<string, unknown> = {
-    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    meta: { oggi: { breve: '05/07/2026' } },
     focus: {
       classe: {
-        anagrafica: { nome: '5A' },
-        didattica: {
-          documenti: {
-            items: [
+        nome: '5A',
+        documenti: {
+            elenco: [
               { nome: 'Verbale 5A', link: 'https://drive/verbale', tipo: 'VERBALE', idGen: 'VERBALE_CDC', stato: 'GENERATO', dataCreazione: '01/07/2026' },
               { nome: 'Cartella 5A', link: 'https://drive/cartella', tipo: 'CARTELLA', idGen: 'CARTELLA_5A', stato: 'GENERATO', dataCreazione: '01/07/2026' }
             ],
-            hasDocumenti: true
-          }
+            hasElenco: true, numero: 2, storico: { get: () => [] }
         }
       }
     }
@@ -235,20 +230,20 @@ test('documenti/cartelle boxes fall back to focus.classe.didattica.documenti whe
     materie(),
     templates
   );
-  expect(out.boxes['documenti']!.html).toContain('Verbale 5A');
-  expect(out.boxes['documenti']!.html).not.toContain('Cartella 5A');
-  expect(out.boxes['cartelle']!.visibile).toBe(true);
-  expect(out.boxes['cartelle']!.html).toContain('Cartella 5A');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('Verbale 5A');
+  expect(out.boxes.perId['documenti_0']!.html).not.toContain('Cartella 5A');
+  expect(out.boxes.perId['cartelle_1']!.isVisibile).toBe(true);
+  expect(out.boxes.perId['cartelle_1']!.html).toContain('Cartella 5A');
 });
 
 test('documenti_dipartimento box is hidden when focus.dipartimento has no documents', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu: Record<string, unknown> = {
-    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    meta: { oggi: { breve: '05/07/2026' } },
     focus: {
       dipartimento: {
-        didattica: { documenti: { items: [] } }
+        documenti: { elenco: [], hasElenco: false, numero: 0, storico: { get: () => [] } }
       }
     }
   };
@@ -259,20 +254,19 @@ test('documenti_dipartimento box is hidden when focus.dipartimento has no docume
     materie(),
     templates
   );
-  expect(out.boxes['documenti_dipartimento']!.isEmpty).toBe(true);
-  expect(out.boxes['documenti_dipartimento']!.visibile).toBe(false);
+  expect(out.boxes.perId['documenti_dipartimento_0']!.isVuoto).toBe(true);
+  expect(out.boxes.perId['documenti_dipartimento_0']!.isVisibile).toBe(false);
 });
 
-test('documenti_dipartimento box shows items from focus.dipartimento.didattica.documenti', () => {
+test('documenti_dipartimento box shows items from focus.dipartimento.documenti', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu: Record<string, unknown> = {
-    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    meta: { oggi: { breve: '05/07/2026' } },
     focus: {
       dipartimento: {
-        didattica: {
-          documenti: {
-            items: [
+        documenti: {
+            elenco: [
               {
                 nome: 'Verbale',
                 link: 'https://drive/verbale-dip',
@@ -281,8 +275,7 @@ test('documenti_dipartimento box shows items from focus.dipartimento.didattica.d
                 stato: 'GENERATO',
                 dataCreazione: '01/01/2026'
               }
-            ]
-          }
+            ], hasElenco: true, numero: 1, storico: { get: () => [] }
         }
       }
     }
@@ -294,14 +287,14 @@ test('documenti_dipartimento box shows items from focus.dipartimento.didattica.d
     materie(),
     templates
   );
-  expect(out.boxes['documenti_dipartimento']!.isEmpty).toBe(false);
-  expect(out.boxes['documenti_dipartimento']!.html).toContain('Verbale');
+  expect(out.boxes.perId['documenti_dipartimento_0']!.isVuoto).toBe(false);
+  expect(out.boxes.perId['documenti_dipartimento_0']!.html).toContain('Verbale');
 });
 
 test('note + assenze boxes read focus.carenza (11 §11)', () => {
   const out = render([{ TIPO_BOX: 'note' }, { TIPO_BOX: 'assenze' }]);
-  expect(out.boxes['note']!.html).toContain('Studio discontinuo');
-  expect(out.boxes['assenze']!.html).toContain('assenze');
+  expect(out.boxes.perId['note_0']!.html).toContain('Studio discontinuo');
+  expect(out.boxes.perId['assenze_1']!.html).toContain('assenze');
 });
 
 function cattedraVm(overrides: Partial<{ nome: string; sigla: string; isITP: boolean }> = {}) {
@@ -315,7 +308,7 @@ function cattedraVm(overrides: Partial<{ nome: string; sigla: string; isITP: boo
     isMateriaSecondaProva: false,
     principale: null,
     specificita: null,
-    isITP: overrides.isITP ?? false,
+    isITP: overrides.isItp ?? false,
     evoluzione: null
   };
 }
@@ -325,29 +318,24 @@ test('cattedre box renders one row per classe with its materie (design 2026-08-2
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-    contesto: {
-      cattedre: [
+      cattedre: { elenco: [
         {
-          classeId: '5A',
-          classeNome: '5A',
-          anno: 5,
-          sezione: 'A',
-          materie: [cattedraVm({ nome: 'Matematica' }), cattedraVm({ nome: 'Fisica', sigla: 'FISI', isITP: true })]
+          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: 'Matematica' }), cattedraVm({ nome: 'Fisica', sigla: 'FISI', isITP: true })], hasMaterie: true, numeroMaterie: 2, materieDescrizione: 'Matematica, Fisica', materieSigle: 'MATE, FISI'
         }
-      ]
-    }
+      ], hasElenco: true, numero: 1, elencoDescrizione: '5A' }
   };
   const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
-  expect(out.boxes['cattedre']!.visibile).toBe(true);
-  expect(out.boxes['cattedre']!.html).toContain('5A');
-  expect(out.boxes['cattedre']!.html).toContain('Matematica');
-  expect(out.boxes['cattedre']!.html).toContain('Fisica');
+  expect(out.boxes.perId['cattedre_0']!.isVisibile).toBe(true);
+  expect(out.boxes.perId['cattedre_0']!.html).toContain('5A');
+  expect(out.boxes.perId['cattedre_0']!.html).toContain('Matematica');
+  expect(out.boxes.perId['cattedre_0']!.html).toContain('Fisica');
 });
 
 test('cattedre box is hidden when destinatario.contesto.cattedre is absent/empty (design 2026-08-22)', () => {
   const out = render([{ TIPO_BOX: 'cattedre' }]);
-  expect(out.boxes['cattedre']!.visibile).toBe(false);
-  expect(out.boxes['cattedre']!.html).toBe('');
+  expect(out.boxes.perId['cattedre_0']!.isVisibile).toBe(false);
+  expect(out.boxes.perId['cattedre_0']!.html).toBe('');
 });
 
 test('cattedre box HTML-escapes a hostile materia nome (design 2026-08-22)', () => {
@@ -355,29 +343,24 @@ test('cattedre box HTML-escapes a hostile materia nome (design 2026-08-22)', () 
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-    contesto: {
-      cattedre: [
+      cattedre: { elenco: [
         {
-          classeId: '5A',
-          classeNome: '5A',
-          anno: 5,
-          sezione: 'A',
-          materie: [cattedraVm({ nome: '<script>alert(1)</script>' })]
+          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: '<script>alert(1)</script>' })], hasMaterie: true, numeroMaterie: 1, materieDescrizione: '', materieSigle: 'MATE'
         }
-      ]
-    }
+      ], hasElenco: true, numero: 1, elencoDescrizione: '5A' }
   };
   const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
-  expect(out.boxes['cattedre']!.html).not.toContain('<script>');
-  expect(out.boxes['cattedre']!.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+  expect(out.boxes.perId['cattedre_0']!.html).not.toContain('<script>');
+  expect(out.boxes.perId['cattedre_0']!.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
 
 test('testo_dinamico always visible, resolves CONTENUTO placeholders', () => {
   const out = render([
-    { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Classe {{focus.classe.anagrafica.nome}}</p>' }
+    { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Classe {{focus.classe.nome}}</p>' }
   ]);
-  const box = out.boxes['testo_dinamico']!;
-  expect(box.visibile).toBe(true);
+  const box = out.boxes.perId['testo_dinamico_0']!;
+  expect(box.isVisibile).toBe(true);
   expect(box.html).toContain('Classe 5A');
 });
 
@@ -385,21 +368,21 @@ test('testo_dinamico HTML-escapes raw CDU string values (REVIEW_ALDO.md #2)', ()
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
-  (cdu['focus'] as { alunno: { anagrafica: { nomeCompleto: string } } }).alunno.anagrafica.nomeCompleto =
+  (cdu['focus'] as { alunno: { anagrafica: { nomeCompleto: string } } }).alunno.nomeCompleto =
     '<script>alert(1)</script>';
   const out = renderBoxes(
     composer,
     confMail([
       {
         TIPO_BOX: 'testo_dinamico',
-        CONTENUTO: '<p>Ciao {{focus.alunno.anagrafica.nomeCompleto}}</p>'
+        CONTENUTO: '<p>Ciao {{focus.alunno.nomeCompleto}}</p>'
       }
     ]),
     cdu,
     materie(),
     templates
   );
-  const html = out.boxes['testo_dinamico']!.html;
+  const html = out.boxes.perId['testo_dinamico_0']!.html;
   expect(html).not.toContain('<script>');
   expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
@@ -412,23 +395,23 @@ test('boxes ordered by ORDINE; MOSTRA_SE_VUOTO falls back to TESTO_VUOTO', () =>
       TIPO_BOX: 'cartelle',
       ORDINE: 3,
       MOSTRA_SE_VUOTO: true,
-      TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.anagrafica.nome}}'
+      TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.nome}}'
     }
   ]);
   expect(out.ordered).toHaveLength(3);
   expect(out.ordered[0]).toContain('Voto 4'); // carenze first
   expect(out.ordered[1]).toContain('Studio discontinuo');
   expect(out.ordered[2]).toContain('Nessuna cartella per 5A'); // fallback
-  const cartelle = out.boxes['cartelle']!;
-  expect(cartelle.isEmpty).toBe(true); // renderer output was empty
-  expect(cartelle.visibile).toBe(true); // but fallback made it visible
+  const cartelle = out.boxes.perId['cartelle_2']!;
+  expect(cartelle.isVuoto).toBe(true); // renderer output was empty
+  expect(cartelle.isVisibile).toBe(true); // but fallback made it visible
 });
 
 test('TESTO_VUOTO fallback HTML-escapes raw CDU string values (REVIEW_ALDO.md #2)', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
-  (cdu['focus'] as { classe: { anagrafica: { nome: string } } }).classe.anagrafica.nome =
+  (cdu['focus'] as { classe: { anagrafica: { nome: string } } }).classe.nome =
     '<b>5A</b>';
   const out = renderBoxes(
     composer,
@@ -436,22 +419,22 @@ test('TESTO_VUOTO fallback HTML-escapes raw CDU string values (REVIEW_ALDO.md #2
       {
         TIPO_BOX: 'cartelle',
         MOSTRA_SE_VUOTO: true,
-        TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.anagrafica.nome}}'
+        TESTO_VUOTO: 'Nessuna cartella per {{focus.classe.nome}}'
       }
     ]),
     cdu,
     materie(),
     templates
   );
-  const html = out.boxes['cartelle']!.html;
+  const html = out.boxes.perId['cartelle_0']!.html;
   expect(html).not.toContain('<b>5A</b>');
   expect(html).toContain('&lt;b&gt;5A&lt;/b&gt;');
 });
 
 test('unknown TIPO_BOX is skipped with empty html (11 §5)', () => {
   const out = render([{ TIPO_BOX: 'inesistente' }, { TIPO_BOX: 'note' }]);
-  expect(out.boxes['inesistente']).toBeUndefined();
-  expect(out.boxes['note']!.visibile).toBe(true);
+  expect(out.boxes.perId['inesistente']).toBeUndefined();
+  expect(out.boxes.perId['note_1']!.isVisibile).toBe(true);
 });
 
 test('wrapBox produces the standard container (11 §11)', () => {
@@ -484,17 +467,16 @@ test('note box escapes free-text HTML from CARENZE.NOTE', () => {
   const cdu = cduRecord();
   (cdu['focus'] as { carenza: { note: string } }).carenza.note = '<script>alert(1)</script>';
   const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'note' }]), cdu, materie(), templates);
-  expect(out.boxes['note']!.html).toContain('&lt;script&gt;');
-  expect(out.boxes['note']!.html).not.toContain('<script>');
+  expect(out.boxes.perId['note_0']!.html).toContain('&lt;script&gt;');
+  expect(out.boxes.perId['note_0']!.html).not.toContain('<script>');
 });
 
 test('documenti box neutralises javascript: links and hostile colours', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
-  const didattica = (cdu['focus'] as { alunno: { didattica: { documenti: { items: unknown[] } } } })
-    .alunno.didattica;
-  didattica.documenti.items = [
+  const alunno = (cdu['focus'] as { alunno: { documenti: { elenco: unknown[] } } }).alunno;
+  alunno.documenti.elenco = [
     { nome: 'Doc', link: 'javascript:alert(1)', tipo: 'PDP', stato: 'GENERATO', dataCreazione: '' }
   ];
   const out = renderBoxes(
@@ -504,21 +486,21 @@ test('documenti box neutralises javascript: links and hostile colours', () => {
     materie(),
     templates
   );
-  expect(out.boxes['documenti']!.html).toContain('href="#"');
-  expect(out.boxes['documenti']!.html).not.toContain('javascript:');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('href="#"');
+  expect(out.boxes.perId['documenti_0']!.html).not.toContain('javascript:');
 });
 
 function cduWithStorico(
   storico: Array<{ anno: string; nome: string; link: string; tipo: string; sottotipo: string; idGen: string }>
 ) {
   const cdu = cduRecord();
-  const didattica = (
+  const alunno = (
     cdu['focus'] as {
-      alunno: { didattica: { documenti: { items: Array<Record<string, unknown>>; storico?: unknown } } };
+      alunno: { documenti: { elenco: Array<Record<string, unknown>>; storico?: unknown } };
     }
-  ).alunno.didattica;
-  didattica.documenti.items[0]!['idGen'] = 'CD_PDP';
-  didattica.documenti.storico = { get: () => storico, isResolved: () => true };
+  ).alunno;
+  alunno.documenti.elenco[0]!['idGen'] = 'CD_PDP';
+  alunno.documenti.storico = { get: () => storico, isResolved: () => true };
   return cdu;
 }
 
@@ -550,7 +532,7 @@ test('documenti box in arricchisciConStorico mode renders templateRiga, matching
     materie(),
     templates
   );
-  const html = out.boxes['documenti']!.html;
+  const html = out.boxes.perId['documenti_0']!.html;
   expect(html).toContain('PDP Anna — storico: PDP Anna (vecchio) (2025-2026)');
   expect(html).not.toContain('Altro doc'); // different idGen, must not match
 });
@@ -569,8 +551,8 @@ test('documenti box falls back to standard rendering when templateRiga is empty 
     materie(),
     templates
   );
-  expect(out.boxes['documenti']!.html).toContain('<a href="https://drive/x"');
-  expect(out.boxes['documenti']!.html).toContain('PDP Anna'); // current item's plain markup, unchanged
+  expect(out.boxes.perId['documenti_0']!.html).toContain('<a href="https://drive/x"');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('PDP Anna'); // current item's plain markup, unchanged
 });
 
 test('documenti box falls back to standard rendering when includiStorico was false (no LazyRef attached)', () => {
@@ -589,7 +571,7 @@ test('documenti box falls back to standard rendering when includiStorico was fal
     materie(),
     templates
   );
-  expect(out.boxes['documenti']!.html).toContain('<a href="https://drive/x"');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('<li>PDP Anna</li>');
 });
 
 test('documenti box arricchisciConStorico templateRiga escapes hostile storico nome (security parity with standard mode)', () => {
@@ -614,46 +596,49 @@ test('documenti box arricchisciConStorico templateRiga escapes hostile storico n
     materie(),
     templates
   );
-  expect(out.boxes['documenti']!.html).toContain('&lt;script&gt;');
-  expect(out.boxes['documenti']!.html).not.toContain('<script>alert(1)</script>');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('&lt;script&gt;');
+  expect(out.boxes.perId['documenti_0']!.html).not.toContain('<script>alert(1)</script>');
 });
 
 test('documenti box displayMode "link" shows the URL as link text', () => {
   const out = render([{ TIPO_BOX: 'documenti', DISPLAY_MODE: 'link' }]);
-  const html = out.boxes['documenti']!.html;
+  const html = out.boxes.perId['documenti_0']!.html;
   expect(html).toContain('<a href="https://drive/x" target="_blank">https://drive/x</a>');
   expect(html).not.toContain('PDP Anna');
 });
 
 test('documenti box displayMode "nome+link" shows both nome and the link', () => {
   const out = render([{ TIPO_BOX: 'documenti', DISPLAY_MODE: 'nome+link' }]);
-  const html = out.boxes['documenti']!.html;
+  const html = out.boxes.perId['documenti_0']!.html;
   expect(html).toContain('PDP Anna');
   expect(html).toContain('<a href="https://drive/x" target="_blank">https://drive/x</a>');
 });
 
 test('documenti box displayMode "sololink" shows a generic "Apri" label', () => {
   const out = render([{ TIPO_BOX: 'documenti', DISPLAY_MODE: 'sololink' }]);
-  const html = out.boxes['documenti']!.html;
+  const html = out.boxes.perId['documenti_0']!.html;
   expect(html).toContain('<a href="https://drive/x" target="_blank">Apri</a>');
   expect(html).not.toContain('PDP Anna');
 });
 
 test('documenti box with no displayMode keeps the current default markup ("nome")', () => {
   const out = render([{ TIPO_BOX: 'documenti' }]);
-  expect(out.boxes['documenti']!.html).toContain(
+  expect(out.boxes.perId['documenti_0']!.html).toContain(
     '<a href="https://drive/x" target="_blank">PDP Anna</a>'
   );
 });
 
-function pianiPersCduRecord(items: unknown[], storico?: unknown): Record<string, unknown> {
+function pianiPersCduRecord(elenco: unknown[], storico?: unknown): Record<string, unknown> {
   return {
-    meta: { date: { oggi: { breve: '05/07/2026' } } },
+    meta: { oggi: { breve: '05/07/2026' } },
     focus: {
       classe: {
-        anagrafica: { nome: '5A' },
-        didattica: {
-          pianiPersonalizzati: storico !== undefined ? { items, storico } : { items }
+        nome: '5A',
+        pianiPersonalizzati: {
+          elenco,
+          hasElenco: elenco.length > 0,
+          numero: elenco.length,
+          ...(storico !== undefined ? { storico } : {})
         }
       }
     }
@@ -666,18 +651,18 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', tipoLabel: 'PEI',
-        idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: 'PDP (BES)',
-        idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', notificato: true,
+        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', isNotificato: true,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PDP a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: 'PDP (BES)',
-        idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', notificato: false,
+        nome: 'PDP a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', isNotificato: false,
         studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
       }
     ],
@@ -699,13 +684,13 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
     materie(),
     templates
   );
-  const html = out.boxes['piani_pers_da_inviare']!.html;
+  const html = out.boxes.perId['piani_pers_da_inviare_0']!.html;
   expect((html.match(/Piani personalizzati da notificare/g) ?? [])).toHaveLength(1);
   const [peiRow, pdpRow] = html.split('</li>');
   expect(html).toContain('VERDI ANNA - PEI');
   expect(html).toContain('NERI PAOLO - PDP (BES)');
   expect(html).not.toContain('VERDI ANNA - PDP (BES)'); // NOTIFICATO, excluded
-  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('Si invia anche il link al piano dell\'anno precedente');
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('Si invia anche il link al piano dell\'anno precedente');
   expect(peiRow).toContain('http://d/old-pei');
   expect(peiRow).not.toContain('http://d/old-pdp'); // same ID_GEN, wrong subtype
   expect(pdpRow).not.toContain('http://d/old-pdp'); // same subtype, different student
@@ -718,7 +703,7 @@ test('piani_pers_da_inviare: always uses its built-in row and dark-red border, i
     [
       {
         nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
-        tipoLabel: 'PDP (BES)', idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        sottotipoLabel: 'PDP (BES)', generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       }
     ],
@@ -746,7 +731,7 @@ test('piani_pers_da_inviare: always uses its built-in row and dark-red border, i
     materie(),
     templates
   );
-  const html = out.boxes['piani_pers_da_inviare']!.html;
+  const html = out.boxes.perId['piani_pers_da_inviare_0']!.html;
   expect(html).toContain('VERDI ANNA - PDP (BES)');
   expect(html).toContain('href="http://d/1"');
   expect(html).toContain('PDP a1 anno scorso');
@@ -762,7 +747,7 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
     [
       {
         nome: 'PDP corrente', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
-        tipoLabel: 'PDP (BES)', idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        sottotipoLabel: 'PDP (BES)', generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       }
     ],
@@ -779,7 +764,7 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
     templates
   );
 
-  expect(out.boxes['piani_pers_da_inviare']!.html).toContain('VERDI ANNA - PDP (BES)');
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('VERDI ANNA - PDP (BES)');
   expect(warn).toHaveBeenCalledWith(
     expect.stringContaining('Piani personalizzati: storico non disponibile')
   );
@@ -792,8 +777,8 @@ test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in 
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: '<script>alert(1)</script>',
-        idGen: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: '<script>alert(1)</script>',
+        generatoreId: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
         studente: { nomeCompleto: '<img src=x onerror=alert(1)>', email: 'a1@school.it' }
       }
     ],
@@ -806,7 +791,7 @@ test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in 
     materie(),
     templates
   );
-  const html = out.boxes['piani_pers_da_inviare']!.html;
+  const html = out.boxes.perId['piani_pers_da_inviare_0']!.html;
   expect(html).not.toContain('<script>alert(1)</script>');
   expect(html).not.toContain('<img src=x onerror=alert(1)>');
   expect(html).toContain('&lt;script&gt;');
@@ -819,18 +804,18 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', tipoLabel: 'PEI',
-        idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', notificato: false,
+        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', tipoLabel: 'PDP (BES)',
-        idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', notificato: true,
+        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', isNotificato: true,
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
       },
       {
-        nome: 'PEI a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PEI', tipoLabel: 'PEI',
-        idGen: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', notificato: true,
+        nome: 'PEI a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', isNotificato: true,
         studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
       }
     ]
@@ -842,7 +827,7 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
     materie(),
     templates
   );
-  const html = out.boxes['piani_pers_inviati']!.html;
+  const html = out.boxes.perId['piani_pers_inviati_0']!.html;
   expect(html).toContain('VERDI ANNA - PDP (BES)');
   expect(html).toContain('NERI PAOLO - PEI');
   expect(html).not.toContain('VERDI ANNA - PEI'); // NOTIFICATO absent, excluded
@@ -866,8 +851,8 @@ test('piani_pers_da_inviare: empty when items list is empty', () => {
   // 'documenti box lists links; cartelle box empty ⇒ hidden' test above
   // demonstrates for `cartelle`. Only genuinely *unknown* TIPO_BOX values
   // (see 'unknown TIPO_BOX is skipped...' test) are absent from `boxes`.
-  expect(out.boxes['piani_pers_da_inviare']!.visibile).toBe(false);
-  expect(out.boxes['piani_pers_da_inviare']!.html).toBe('');
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.isVisibile).toBe(false);
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toBe('');
 });
 
 test('documenti box renders only the valid DATI_SORGENTE.filtri result and returns its rendered ID', () => {
@@ -910,9 +895,9 @@ test('documenti box renders only the valid DATI_SORGENTE.filtri result and retur
     logger
   );
 
-  expect(out.boxes['documenti']!.html).toContain('Verbale CDC');
-  expect(out.boxes['documenti']!.html).not.toContain('Verbale archiviato');
-  expect(out.boxes['documenti']!.html).not.toContain('Verbale altra tipologia');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('Verbale CDC');
+  expect(out.boxes.perId['documenti_0']!.html).not.toContain('Verbale archiviato');
+  expect(out.boxes.perId['documenti_0']!.html).not.toContain('Verbale altra tipologia');
   expect(out.documentIds).toEqual(['doc-ammesso']);
 });
 
@@ -941,8 +926,8 @@ test('documenti box with DATI_SORGENTE and no filtri keeps every item in its sco
     logger
   );
 
-  expect(out.boxes['documenti']!.html).toContain('Verbale A');
-  expect(out.boxes['documenti']!.html).toContain('Piano B');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('Verbale A');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('Piano B');
   expect(out.documentIds).toEqual(['doc-a', 'doc-b']);
 });
 
@@ -980,8 +965,8 @@ test('source IDs are not recorded when a prerequisite hides source content and T
     { classiCompetenza: ['5A'] }, logger
   );
 
-  expect(out.boxes['documenti']!.html).toContain('Documenti non disponibili');
-  expect(out.boxes['cartelle']!.html).toContain('Cartelle non disponibili');
+  expect(out.boxes.perId['documenti_0']!.html).toContain('Documenti non disponibili');
+  expect(out.boxes.perId['cartelle_1']!.html).toContain('Cartelle non disponibili');
   expect(out.documentIds).toEqual([]);
   expect(out.folderIds).toEqual([]);
 });
@@ -996,7 +981,7 @@ test('a per-classe source without competence or focus class warns and skips its 
     {}, logger
   );
 
-  expect(out.boxes['documenti']).toBeUndefined();
+  expect(out.boxes.perId['documenti_0']).toBeUndefined();
   expect(warn).toHaveBeenCalledWith(
     expect.stringContaining('classeId mancante o non risolvibile')
   );
@@ -1016,7 +1001,7 @@ test('legacy document filters make only that box invisible and log a CONF_MAIL c
     logger
   );
 
-  expect(out.boxes['documenti']).toBeUndefined();
+  expect(out.boxes.perId['documenti_0']).toBeUndefined();
   expect(out.documentIds).toEqual([]);
   expect(error).toHaveBeenCalledWith(
     expect.stringContaining('CONF_MAIL P1')
@@ -1059,8 +1044,8 @@ test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_
     { classiCompetenza: ['5A'] }
   );
 
-  expect(out.boxes['cartelle']!.html).toContain('https://drive.google.com/drive/folders/folder1');
-  expect(out.boxes['cartelle']!.html).toContain('Verbali 5A');
+  expect(out.boxes.perId['cartelle_0']!.html).toContain('https://drive.google.com/drive/folders/folder1');
+  expect(out.boxes.perId['cartelle_0']!.html).toContain('Verbali 5A');
   expect(out.folderIds).toEqual(['folder1']);
 });
 
@@ -1113,8 +1098,8 @@ test('cartellePerClasse includes folders for all competent classes and deduplica
   );
 
   expect(out.folderIds.sort()).toEqual(['folder1', 'folder2']);
-  expect(out.boxes['cartelle']!.html).toContain('Verbali 5A');
-  expect(out.boxes['cartelle']!.html).toContain('Verbali 3B');
+  expect(out.boxes.perId['cartelle_0']!.html).toContain('Verbali 5A');
+  expect(out.boxes.perId['cartelle_0']!.html).toContain('Verbali 3B');
 });
 
 test('cartelle boxes use validated class, user, and department sources with filters and deduplicate rendered folder IDs', () => {
@@ -1166,8 +1151,8 @@ test('cartelle boxes use validated class, user, and department sources with filt
     { dipartimentoId: 'SCIENTIFICO_DIP' }, logger
   );
 
-  expect(perClasse.boxes['cartelle']!.html).toContain('Verbali consiglio');
-  expect(perClasse.boxes['cartelle']!.html).not.toContain('Verbali archivio');
+  expect(perClasse.boxes.perId['cartelle_0']!.html).toContain('Verbali consiglio');
+  expect(perClasse.boxes.perId['cartelle_0']!.html).not.toContain('Verbali archivio');
   expect(perClasse.folderIds).toEqual(['folder-classe']);
   expect(perUtente.folderIds).toEqual(['folder-utente']);
   expect(perDipartimento.folderIds).toEqual(['folder-dipartimento']);
@@ -1186,8 +1171,8 @@ test('a cartelle box with a document-only filter is skipped without suppressing 
     { classiCompetenza: ['5A'] }, logger
   );
 
-  expect(out.boxes['carenze']!.visibile).toBe(true);
-  expect(out.boxes['cartelle']).toBeUndefined();
+  expect(out.boxes.perId['carenze_0']!.isVisibile).toBe(true);
+  expect(out.boxes.perId['cartelle_0']).toBeUndefined();
   expect(out.folderIds).toEqual([]);
   expect(error).toHaveBeenCalledWith(expect.stringContaining('CONF_MAIL P1'));
   error.mockRestore();
@@ -1205,14 +1190,14 @@ test('BOX_CFG.TITOLO is interpolated against the CDU (11 §5)', () => {
     [COL_CONF_MAIL.ID]: 'T1',
     [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
     [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-      { TIPO_BOX: 'note', TITOLO: 'Note per {{focus.classe.anagrafica.nome}}' }
+      { TIPO_BOX: 'note', TITOLO: 'Note per {{focus.classe.nome}}' }
     ])
   });
   const cdu = cduRecord();
   (cdu['focus'] as Record<string, unknown>)['carenza'] = { note: 'Testo libero' };
 
-  const { boxes } = renderBoxes(composer, conf, cdu, materie(), templates);
+  const { boxes: { perId: boxes } } = renderBoxes(composer, conf, cdu, materie(), templates);
 
-  expect(boxes['note']!.titolo).toBe('Note per 5A');
-  expect(boxes['note']!.html).toContain('Note per 5A');
+  expect(boxes['note_0']!.titolo).toBe('Note per 5A');
+  expect(boxes['note_0']!.html).toContain('Note per 5A');
 });

@@ -202,24 +202,24 @@ export function fixtureTables(): Record<string, Row[]> {
         GENERATORE: 'CLASSE',
         CONDIZIONE: null,
         MODELLI: '{"templateId":"tmpl_verbale"}',
-        FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
-        PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}',
+        FILE_NAME: 'Verbale_{{focus.classe.nome}}_{{meta.oggi.breve}}',
+        PATH_OUT: 'Verbali/{{focus.classe.anno}}',
         DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,
         POST_PROCESSO: null,
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GDOC',
-        REGISTRA_DOC: '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"","materie":""}',
+        REGISTRA_DOC: '{"classi":"{{focus.classe.nome}}","utenti":"","materie":""}',
         REGISTRA_FOLD: '{}'
       },
       {
         ID: 'CD_ESAME',
         TIPO: 'VERBALE',
         GENERATORE: 'CLASSE',
-        CONDIZIONE: '{{focus.classe.anagrafica.anno}} == 5',
+        CONDIZIONE: '{{focus.classe.isTerminale}}',
         MODELLI:
-          '[{"condizione":"{{focus.classe.anagrafica.anno}} == 5","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
+          '[{"condizione":"{{focus.classe.isTerminale}}","templateId":"tmpl_esame"},{"condizione":"true","templateId":"tmpl_default"}]',
         FILE_NAME: null,
         PATH_OUT: null,
         DUPLICAZIONE: 'NEGATA',
@@ -239,8 +239,8 @@ export function fixtureTables(): Record<string, Row[]> {
         MODELLI:
           '[{"condizione":"{{focus.piano.tipo}} == \\"PDP_DSA\\"","templateId":"tmpl_pdp_dsa"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_BES\\"","templateId":"tmpl_pdp_bes"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_STRANIERI\\"","templateId":"tmpl_pdp_stranieri"},{"condizione":"{{focus.piano.tipo}} == \\"PEI\\"","templateId":"tmpl_pei"},{"condizione":"{{focus.piano.tipo}} == \\"PFP\\"","templateId":"tmpl_pfp"}]',
         FILE_NAME:
-          'Piano_{{focus.piano.tipo}}_{{focus.alunno.anagrafica.nomeCompleto}}',
-        PATH_OUT: 'Piani personalizzati/{{focus.classe.anagrafica.nome}}',
+          'Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.nomeCompleto}}',
+        PATH_OUT: 'Piani personalizzati/{{focus.classe.nome}}',
         DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,
         POST_PROCESSO: null,
@@ -248,7 +248,7 @@ export function fixtureTables(): Record<string, Row[]> {
         GESTIONE_ARTICOLAZIONE: 'COMPLETA',
         FORMATO: 'GDOC',
         REGISTRA_DOC:
-          '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"{{focus.alunno.anagrafica.email}}","materie":""}',
+          '{"classi":"{{focus.classe.nome}}","utenti":"{{focus.alunno.email}}","materie":""}',
         REGISTRA_FOLD: '{}'
       },
       {
@@ -257,22 +257,22 @@ export function fixtureTables(): Record<string, Row[]> {
         GENERATORE: 'CLASSE',
         CONDIZIONE: null,
         MODELLI: '{"templateId":"tmpl_verbale"}',
-        FILE_NAME: 'Verbale_{{focus.classe.anagrafica.nome}}_{{meta.date.oggi.breve}}',
-        PATH_OUT: 'Verbali/{{focus.classe.anagrafica.anno}}',
+        FILE_NAME: 'Verbale_{{focus.classe.nome}}_{{meta.oggi.breve}}',
+        PATH_OUT: 'Verbali/{{focus.classe.anno}}',
         DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,
         POST_PROCESSO: null,
         PARAMETRI: null,
         GESTIONE_ARTICOLAZIONE: 'ARTICOLATA',
         FORMATO: 'GDOC',
-        REGISTRA_DOC: '{"classi":"{{focus.classe.anagrafica.nome}}","utenti":"","materie":""}',
+        REGISTRA_DOC: '{"classi":"{{focus.classe.nome}}","utenti":"","materie":""}',
         REGISTRA_FOLD: '{}'
       }
     ],
     CONF_MAIL: [
       {
         ID: 'CDC_OTTOBRE',
-        OGGETTO: 'Convocazione CdC {{focus.classe.anagrafica.nome}}',
+        OGGETTO: 'Convocazione CdC {{focus.classe.nome}}',
         PROCESSO: 'PER_CDC',
         BOX_CFG:
           '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Comunicazione del consiglio di classe.</p>"},{"TIPO_BOX":"carenze"}]',
@@ -307,11 +307,11 @@ export function fixtureTables(): Record<string, Row[]> {
       },
       {
         ID: 'CARENZE_NOTIFICA',
-        OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}',
+        OGGETTO: 'Carenze di {{focus.alunno.nomeCompleto}}',
         PROCESSO: 'PER_CARENZA_GENITORI',
         BOX_CFG:
           '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
-        TESTO_START: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe}}.</p>',
+        TESTO_START: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe.nome}}.</p>',
         TESTO_END: '',
         RISPONDI_A: '',
         SUPPLENTI: 'SOLO_TITOLARI',
@@ -319,7 +319,7 @@ export function fixtureTables(): Record<string, Row[]> {
         COLORE_HEADER: '',
         CONDIZIONE: null,
         POST_PROCESSO:
-          '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]',
+          '[{"tipo":"INSERISCI_TIMESTAMP","tab":"CARENZE","col":"NOTIFICATO","criteri":{"STUDENTE":"{{focus.carenza.studente.email}}","PROGRESSIVO":"{{focus.carenza.progressivo}}"}}]',
         [COL_CONF_MAIL.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
         [COL_CONF_MAIL.ALLEGATI_STATICI]: '[]'

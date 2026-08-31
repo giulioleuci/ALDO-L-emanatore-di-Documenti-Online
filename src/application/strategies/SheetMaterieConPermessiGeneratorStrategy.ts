@@ -3,7 +3,7 @@ import {
   columnIndexToLetters
 } from './SheetMaterieGeneratorStrategy';
 import type { MateriaColumn, MaterieGroups } from './SheetMaterieGeneratorStrategy';
-import type { Cdu, CduClasse } from '../context-engine/Cdu';
+import type { Cdu, ClasseFocusVM } from '../context-engine/Cdu';
 import { buildElencoMaterieConPermessi } from '../context-engine/ElencoMaterieConPermessi';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
@@ -44,23 +44,25 @@ export function protectionGestioneSupplenti(config: ConfigurazioneDocumento): Ge
  * template rendering) is intentionally left untouched; only what's attached
  * to `classe.sheet` is narrowed.
  */
-function toPrintableColumn(column: MateriaColumn): NonNullable<CduClasse['sheet']>['materieColonne']['group1'][number] {
-  const printable: NonNullable<CduClasse['sheet']>['materieColonne']['group1'][number] = {
+function toPrintableColumn(column: MateriaColumn): NonNullable<ClasseFocusVM['sheet']>['materieConPermessi']['elenco'][number] {
+  const printable: NonNullable<ClasseFocusVM['sheet']>['materieConPermessi']['elenco'][number] = {
     sigla: column.sigla,
-    header: column.header
+    header: column.header,
+    isSpeciale: column.isSpecial ?? false,
+    ruoli: column.roles ?? []
   };
-  if (column.isSpecial !== undefined) printable.isSpecial = column.isSpecial;
-  if (column.roles !== undefined) printable.roles = column.roles;
   return printable;
 }
 
-function toPrintableGroups(groups: MaterieGroups): NonNullable<CduClasse['sheet']>['materieColonne'] {
+function toPrintableGroups(groups: MaterieGroups): NonNullable<ClasseFocusVM['sheet']>['materieColonne'] {
   return {
-    group1: groups.group1.map(toPrintableColumn),
-    group2: groups.group2.map(toPrintableColumn),
-    group3: groups.group3.map(toPrintableColumn),
-    ...(groups.group2Label === undefined ? {} : { group2Label: groups.group2Label }),
-    ...(groups.group3Label === undefined ? {} : { group3Label: groups.group3Label })
+    gruppi: [groups.group1, groups.group2, groups.group3].map((colonne, index) => ({
+      indice: index + 1,
+      label: index === 1 ? groups.group2Label ?? '' : index === 2 ? groups.group3Label ?? '' : '',
+      colonne: colonne.map(toPrintableColumn),
+      hasColonne: colonne.length > 0,
+      numero: colonne.length
+    }))
   };
 }
 
@@ -96,29 +98,32 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   }
 
   override render(fileId: string, cdu: Cdu, config: ConfigurazioneDocumento): void {
-    const { sheetName, layout } = this.renderColumns(fileId, cdu, config);
+    const { sheetName, layout, groups } = this.renderColumns(fileId, cdu, config);
     this.protectColumns(
       fileId,
       cdu,
       sheetName,
       layout,
+      groups,
       protectionGestioneSupplenti(config)
     );
   }
 
-  protected override buildGroups(classe: CduClasse): MaterieGroups {
-    const consiglio = classe.consiglioDiClasse ?? [];
+  protected override buildGroups(classe: ClasseFocusVM): MaterieGroups {
+    const consiglio = classe.consiglio?.elenco ?? [];
     if (consiglio.length === 0) {
-      classe.elencoMaterieConPermessi = [];
       const groups = super.buildGroups(classe);
-      classe.sheet = { materieColonne: toPrintableGroups(groups) };
+      classe.sheet = {
+        materieConPermessi: { elenco: [], hasElenco: false, numero: 0 },
+        materieColonne: toPrintableGroups(groups)
+      };
       return groups;
     }
     const hasAlt = consiglio.some((docente) =>
       docente.materie.some((materia) => materia.sigla === 'ALT')
     );
     const elenco = buildElencoMaterieConPermessi(consiglio, hasAlt);
-    classe.elencoMaterieConPermessi = elenco;
+    const printable = elenco.map((item) => ({ sigla: item.sigla, header: item.nome, isSpeciale: item.isSpecial, ruoli: item.roles }));
     const special = elenco.find((item) => item.isSpecial);
     const groups = super.buildGroups(classe);
     const finalGroups: MaterieGroups =
@@ -136,7 +141,10 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
               ...groups.group1
             ]
           };
-    classe.sheet = { materieColonne: toPrintableGroups(finalGroups) };
+    classe.sheet = {
+      materieConPermessi: { elenco: printable, hasElenco: printable.length > 0, numero: printable.length },
+      materieColonne: toPrintableGroups(finalGroups)
+    };
     return finalGroups;
   }
 
@@ -157,13 +165,26 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     cdu: Cdu,
     sheetName: string,
     layout: SheetColumnLayout[],
-    gestioneSupplenti: GestioneSupplenti
+    gestioneSupplenti: GestioneSupplenti,
+    groups?: MaterieGroups
   ): SpreadsheetProtectRequest[] {
     const coordinatori = this.roles.risolvi('COORDINATORI', cdu).map((e) => e.value);
+    const sourceItems =
+      groups === undefined
+        ? (cdu.focus.classe?.sheet?.materieColonne.gruppi.flatMap((group) => group.colonne) ?? []).map(
+            (item) => ({
+              sigla: item.sigla,
+              header: item.header,
+              isSpecial: item.isSpeciale,
+              roles: item.ruoli
+            })
+          )
+        : [...groups.group1, ...groups.group2, ...groups.group3];
+    let sourceIndex = 0;
     return layout
       .map((column) => {
         if (column.isLabel) return null;
-        const item = column.item as MateriaColumn | null;
+        const item = sourceItems[sourceIndex++] ?? null;
         if (item === null) return null;
         const sigla = item.sigla;
         const docenti = item.isSpecial
@@ -192,11 +213,12 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     cdu: Cdu,
     sheetName: string,
     layout: SheetColumnLayout[],
+    groups: MaterieGroups,
     gestioneSupplenti: GestioneSupplenti
   ): void {
     const hasDataColumn = layout.some((c) => !c.isLabel);
     if (!hasDataColumn) return;
-    const allRequests = this.resolveColumnRequests(cdu, sheetName, layout, gestioneSupplenti);
+    const allRequests = this.resolveColumnRequests(cdu, sheetName, layout, gestioneSupplenti, groups);
     // Sheets rejects every @onlinetest.aldo.local principal with "Utente non valido",
     // and GasResilienceLib retries three times with backoff before giving up: 58 doomed
     // calls and ~90 s per suite in the 2026-08-21 run. Skip them, log once, keep every
@@ -220,7 +242,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     }
   }
 
-  /** DOCENTE_MATERIA resolution needs `meta.parametriInput.materiaCorrente` set per column — RisolutoreRuoliService reads it off the CDU it's given. */
+  /** DOCENTE_MATERIA resolution needs `meta.materiaCorrente` set per column. */
   private resolveDocentiMateria(
     cdu: Cdu,
     item: MateriaColumn,
@@ -229,7 +251,7 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     const sigla = item.sigla;
     const variant: Cdu = {
       ...cdu,
-      meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: sigla } }
+      meta: { ...cdu.meta, materiaCorrente: sigla }
     };
     Object.defineProperty(variant, 'tech', {
       value: cdu.tech,

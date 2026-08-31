@@ -128,11 +128,11 @@ export class RisolutoreRuoliService {
   }
 
   private contextFrom(cdu: Cdu, options: RisolviOptions): RoleContext {
-    const materiaRaw = cdu.meta.parametriInput.materiaCorrente;
+    const materiaRaw = cdu.meta.materiaCorrente;
     const gestione = options.regolaSupplente ?? GestioneSupplenti.SOLO_TITOLARI;
     const ctx = {
       cdu,
-      data: new Date(cdu.meta.date.oggi.iso),
+      data: new Date(cdu.meta.timestamp),
       materiaCorrente:
         materiaRaw !== null && materiaRaw.trim() !== '' ? MateriaId.of(materiaRaw) : null,
       routingPolicy: routingPolicyByGestioneSupplenti[gestione],
@@ -211,8 +211,8 @@ export class RisolutoreRuoliService {
   }
 
   private cdcFiltrato(ctx: RoleContext): Email[] {
-    return (ctx.cdu.focus.alunno?.consiglioDiClasseFiltrato ?? []).map((vm) =>
-      Email.of(vm.anagrafica.email ?? '')
+    return (ctx.cdu.focus.alunno?.consiglio?.elenco ?? []).map((vm) =>
+      Email.of(vm.email ?? '')
     );
   }
 
@@ -306,12 +306,12 @@ export class RisolutoreRuoliService {
   }
 
   private alunnoEmail(ctx: RoleContext): Email[] {
-    const email = ctx.cdu.focus.alunno?.anagrafica.email;
+    const email = ctx.cdu.focus.alunno?.email;
     return email !== undefined && email.trim() !== '' ? [Email.of(email)] : [];
   }
 
   private famiglia(ctx: RoleContext): Email[] {
-    const email = ctx.cdu.focus.alunno?.anagrafica.email;
+    const email = ctx.cdu.focus.alunno?.email;
     if (email === undefined) return [];
     return this.alunni.findById(email)?.getTutors() ?? [];
   }

@@ -1,6 +1,5 @@
 import type { ITemplateEngine } from '../../src/infrastructure/facades/TemplateEngineFacade';
 import { TemplateEngineFacade } from '../../src/infrastructure/facades/TemplateEngineFacade';
-import type { MaterieGroups } from '../../src/application/strategies/SheetMaterieGeneratorStrategy';
 
 /**
  * Test double for ITemplateEngine: string rendering goes through the REAL
@@ -8,17 +7,9 @@ import type { MaterieGroups } from '../../src/application/strategies/SheetMateri
  * document/sheet rendering — a Google-API operation — is recorded instead of
  * executed.
  *
- * `processSheet` additionally SIMULATES the real GLF `dynamic_columns`
- * numbered-suffix group resolution (`WorkspaceTemplateEngine/src/processors
- * /SheetProcessor.js`, `_bucketDynamicColumnGroups`/
- * `_prepareDynamicColumnRequests`) against the `materieColonne` convention
- * `SheetMaterieGeneratorStrategy` places on the context (see that class's
- * doc comment for the full placeholder syntax): group 1 = `materieColonne
- * .group1` (unlabeled), group 2/3 = `materieColonne.group2`/`group3`
- * (preceded by a non-ACL label column resolved once from `group2Label`/
- * `group3Label`), each omitted entirely when absent — mirroring
- * `SheetProcessor.js`'s "empty 2nd+ group renders nothing, no label either"
- * rule. Columns are placed sequentially starting at column 1 (a fixed,
+ * `processSheet` additionally simulates the canonical CDU group envelope
+ * at `focus.classe.sheet.materieColonne.gruppi`. Columns are placed
+ * sequentially starting at column 1 (a fixed,
  * fake-only stand-in for wherever a real Drive template's placeholder cell
  * would sit — no such template content exists in this repo, 10 §9).
  */
@@ -49,7 +40,8 @@ export class FakeTemplateEngine implements ITemplateEngine {
     sheetName?: string
   ): SheetColumnLayout[] {
     this.renderedSheets.push({ sheetId, context, sheetName });
-    return this.resolveDynamicColumns(context['materieColonne']);
+    const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
+    return this.resolveDynamicColumns(focus?.classe?.sheet?.materieColonne);
   }
 
   contextFor(fileId: string): Record<string, unknown> | null {
@@ -62,14 +54,8 @@ export class FakeTemplateEngine implements ITemplateEngine {
 
   private resolveDynamicColumns(materieColonne: unknown): SheetColumnLayout[] {
     if (materieColonne === null || typeof materieColonne !== 'object') return [];
-    const groups = materieColonne as MaterieGroups;
-    const buckets: Array<{ items: { sigla: string; header: string }[]; label?: string }> = [
-      { items: groups.group1 }
-    ];
-    if (groups.group2 !== undefined)
-      buckets.push({ items: groups.group2, label: groups.group2Label });
-    if (groups.group3 !== undefined)
-      buckets.push({ items: groups.group3, label: groups.group3Label });
+    const groups = (materieColonne as { gruppi?: Array<{ colonne: { sigla: string; header: string }[]; label: string }> }).gruppi ?? [];
+    const buckets = groups.map((group) => ({ items: group.colonne, label: group.label }));
 
     const columns: SheetColumnLayout[] = [];
     let col = 1;

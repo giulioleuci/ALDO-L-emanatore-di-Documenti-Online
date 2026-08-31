@@ -178,7 +178,7 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     tables.CLASSI.push({ ...tables.CLASSI[0]!, ID: '4B', ANNO: 4 });
     tables.CONF_DOC[0] = {
       ...tables.CONF_DOC[0]!,
-      FILE_NAME: 'E2E_{{focus.classe.anagrafica.nome}}_{{progressivo}}',
+      FILE_NAME: 'E2E_{{focus.classe.nome}}_{{meta.progressivo}}',
       PATH_OUT: 'Output'
     };
     const { service } = wire(tables);
@@ -217,7 +217,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
         )
       ).toEqual({
         fileId: 'file_2',
-        fileName: 'Piano_PDP_DSA_NERI PAOLO',
+        fileName: 'Piano_PDP (DSA)_NERI PAOLO',
         fileLink: 'https://docs.google.com/document/d/file_2/edit',
         status: 'GENERATO',
         durationMs: 8572
@@ -239,7 +239,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
         { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
         { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
       ]),
-      FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+      FILE_NAME: 'Piano_{{focus.alunno.nomeCompleto}}',
       PATH_OUT: 'Piani',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
@@ -248,8 +248,8 @@ describe('DocumentGenerationService.generateForPiano', () => {
       GESTIONE_ARTICOLAZIONE: '',
       FORMATO: 'GDOC',
       REGISTRA_DOC: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.alunno.anagrafica.email}}',
+        classi: '{{focus.classe.nome}}',
+        utenti: '{{focus.alunno.email}}',
         materie: ''
       })
     });
@@ -368,7 +368,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
         { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
         { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
       ]),
-      FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+      FILE_NAME: 'Piano_{{focus.alunno.nomeCompleto}}',
       PATH_OUT: 'Piani',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
@@ -377,8 +377,8 @@ describe('DocumentGenerationService.generateForPiano', () => {
       GESTIONE_ARTICOLAZIONE: '',
       FORMATO: 'GDOC',
       REGISTRA_DOC: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.alunno.anagrafica.email}}',
+        classi: '{{focus.classe.nome}}',
+        utenti: '{{focus.alunno.email}}',
         materie: ''
       })
     });
@@ -413,7 +413,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       GENERATORE: 'CLASSE',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
-      FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
+      FILE_NAME: 'Doc_{{focus.classe.nome}}',
       PATH_OUT: 'Docs',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
@@ -445,7 +445,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
 
     service.generateForClasse(ClasseId.of('1F'), 'CD_CLASSE_COMPLETA');
 
-    expect(strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items.map((i) => i.id)).toEqual([
+    expect(strategy.cdu?.focus.classe?.pianiPersonalizzati?.elenco.map((i) => i.id)).toEqual([
       'LD1'
     ]);
   });
@@ -458,7 +458,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       GENERATORE: 'CLASSE',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
-      FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
+      FILE_NAME: 'Doc_{{focus.classe.nome}}',
       PATH_OUT: 'Docs',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
@@ -490,7 +490,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
 
     service.generateForClasse(ClasseId.of('1F-LSO'), 'CD_PARTNER');
 
-    expect(strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items).toEqual([]);
+    expect(strategy.cdu?.focus.classe?.pianiPersonalizzati?.elenco).toEqual([]);
   });
 
   test('standard (non-articulated) class is unaffected: classiCompetenza is just the target', () => {
@@ -501,7 +501,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       GENERATORE: 'CLASSE',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
-      FILE_NAME: 'Doc_{{focus.classe.anagrafica.nome}}',
+      FILE_NAME: 'Doc_{{focus.classe.nome}}',
       PATH_OUT: 'Docs',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
@@ -517,8 +517,8 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
 
     service.generateForClasse(ClasseId.of('5A'), 'CD_5A');
 
-    expect(strategy.cdu?.meta.parametriInput.target).toBe('5A');
-    expect(strategy.cdu?.focus.classe?.flags.isArticolata).toBe(false);
+    expect(strategy.cdu?.meta.target).toBe('5A');
+    expect(strategy.cdu?.focus.classe?.isArticolata).toBe(false);
   });
 });
 
@@ -639,7 +639,7 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
         'MATE',
         'CD_DOCENTE_CLASSE_MATERIA'
       )
-    ).toThrow(/docente ignoto@school\.it non trovato nel consiglio di classe/);
+    ).toThrow(/Cattedra docente\/materia non trovata/);
   });
 });
 
@@ -680,11 +680,13 @@ describe('DocumentGenerationService.generateForClasseMateria', () => {
     );
 
     expect(strategy.cdu?.focus.materia?.sigla).toBe('MATE');
-    expect(strategy.cdu?.focus.classiMateria?.docenti.map((docente) => docente.email)).toEqual([
-      'bianchi@school.it'
-    ]);
-    expect(strategy.cdu?.focus.classe?.anagrafica.anno).toBe(5);
-    expect(strategy.cdu?.focus.classe?.anagrafica.indirizzo?.sigla).toBe('SCIENTIFICO');
+    expect(
+      strategy.cdu?.focus.classe?.consiglio?.elenco
+        .filter((docente) => docente.materie.some((materia) => materia.sigla === 'MATE'))
+        .map((docente) => docente.email)
+    ).toEqual(['bianchi@school.it']);
+    expect(strategy.cdu?.focus.classe?.anno).toBe(5);
+    expect(strategy.cdu?.focus.classe?.indirizzo?.sigla).toBe('SCIENTIFICO');
     expect(result.status).toBe('GENERATO');
   });
 });
@@ -727,8 +729,8 @@ describe('DocumentGenerationService.generateForClasseDocente', () => {
 
     expect(strategy.cdu?.focus.docente?.email).toBe('bianchi@school.it');
     expect(strategy.cdu?.focus.materia).toBeUndefined();
-    expect(strategy.cdu?.focus.classe?.consiglioDiClasse?.length).toBeGreaterThan(0);
-    expect(strategy.cdu?.focus.classe?.anagrafica.anno).toBe(5);
+    expect(strategy.cdu?.focus.classe?.consiglio?.elenco?.length).toBeGreaterThan(0);
+    expect(strategy.cdu?.focus.classe?.anno).toBe(5);
     expect(result.status).toBe('GENERATO');
   });
 
@@ -756,7 +758,7 @@ describe('DocumentGenerationService.generateForClasseDocente', () => {
 
     expect(() =>
       service.generateForClasseDocente(ClasseId.of('5A'), 'ignoto@school.it', 'CD_CLASSE_DOCENTE')
-    ).toThrow(/docente ignoto@school\.it non trovato nel consiglio di classe/);
+    ).toThrow(/Docente ignoto@school.it non trovato/);
   });
 });
 
@@ -775,7 +777,7 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
       GENERATORE: 'DIPARTIMENTO',
       CONDIZIONE: null,
       MODELLI: '{"templateId":"tmpl_generico"}',
-      FILE_NAME: 'Verbale_{{focus.dipartimento.anagrafica.nome}}',
+      FILE_NAME: 'Verbale_{{focus.dipartimento.nome}}',
       PATH_OUT: 'Docs',
       DUPLICAZIONE: 'NEGATA',
       PERMESSI: null,
@@ -800,12 +802,12 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
 
     const result = service.generateForDipartimento('SCIENTIFICO_DIP', 'CD_DIPARTIMENTO');
 
-    expect(strategy.cdu?.meta.parametriInput.target).toBe('SCIENTIFICO_DIP');
-    expect(strategy.cdu?.meta.parametriInput.tipoTarget).toBe('dipartimento');
-    expect(strategy.cdu?.focus.dipartimento?.anagrafica).toEqual({
+    expect(strategy.cdu?.meta.target).toBe('SCIENTIFICO_DIP');
+    expect(strategy.cdu?.meta.tipoTarget).toBe('dipartimento');
+    expect(strategy.cdu?.focus.dipartimento).toEqual(expect.objectContaining({
       id: 'SCIENTIFICO_DIP',
       nome: 'Dipartimento scientifico'
-    });
+    }));
     expect(strategy.cdu?.focus.dipartimento?.capo).toEqual(
       expect.objectContaining({ email: 'rossi@school.it' })
     );
@@ -874,11 +876,11 @@ describe('DocumentGenerationService.generateForDocente', () => {
 
     const result = service.generateForDocente('bianchi@school.it', ['5A', '1F'], 'CD_DOCENTE');
 
-    expect(strategy.cdu?.meta.parametriInput.target).toBe('bianchi@school.it');
-    expect(strategy.cdu?.meta.parametriInput.tipoTarget).toBe('docente');
+    expect(strategy.cdu?.meta.target).toBe('bianchi@school.it');
+    expect(strategy.cdu?.meta.tipoTarget).toBe('docente');
     expect(strategy.cdu?.focus.classe).toBeUndefined();
     expect(strategy.cdu?.focus.docente?.email).toBe('bianchi@school.it');
-    expect(strategy.cdu?.focus.docente?.cattedre).toHaveLength(2);
+    expect(strategy.cdu?.focus.cattedre).toHaveLength(2);
     expect(result.status).toBe('GENERATO');
   });
 

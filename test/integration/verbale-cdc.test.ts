@@ -80,8 +80,8 @@ test('second run is deduplicated by CheckDuplicatesStep (10 §4)', () => {
 test('conditional CONF_DOC (CD_ESAME) evaluates CONDIZIONE and conditional MODELLI via the expression engine', () => {
   const tables = fixtureTables();
   // CD_ESAME has FILE_NAME/PATH_OUT null in the fixture; give it renderable values.
-  tables.CONF_DOC![1]!.FILE_NAME = 'Esame_{{focus.classe.anagrafica.nome}}';
-  tables.CONF_DOC![1]!.PATH_OUT = 'Esami/{{focus.classe.anagrafica.anno}}';
+  tables.CONF_DOC![1]!.FILE_NAME = 'Esame_{{focus.classe.nome}}';
+  tables.CONF_DOC![1]!.PATH_OUT = 'Esami/{{focus.classe.anno}}';
   const { drive, service } = wire(tables);
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD_ESAME');
   expect(result.status).toBe('GENERATO');

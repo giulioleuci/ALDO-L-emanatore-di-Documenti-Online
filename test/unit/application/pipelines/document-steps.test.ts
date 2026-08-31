@@ -108,12 +108,12 @@ function pianoConfig(): Record<string, unknown> {
       { condizione: "{{focus.piano.tipo}} == 'PEI'", templateId: 'tmpl_pei' },
       { condizione: "{{focus.piano.tipo}} == 'PDP_BES'", templateId: 'tmpl_pdp_bes' }
     ]),
-    FILE_NAME: 'Piano_{{focus.alunno.anagrafica.nomeCompleto}}',
+    FILE_NAME: 'Piano_{{focus.alunno.nomeCompleto}}',
     PATH_OUT: 'Piani',
     PARAMETRI: '',
     REGISTRA_DOC: JSON.stringify({
-      classi: '{{focus.classe.anagrafica.nome}}',
-      utenti: '{{focus.alunno.anagrafica.email}}',
+      classi: '{{focus.classe.nome}}',
+      utenti: '{{focus.alunno.email}}',
       materie: ''
     })
   };
@@ -290,7 +290,7 @@ test('AnalyzeContextStep: empty CONDIZIONE => shouldGenerate true (via Expressio
 
 test('AnalyzeContextStep: CONDIZIONE evaluated by GasExpressionEngineLib over the CDU (10 §1)', () => {
   const db = new FakeDatabase(fixtureTables());
-  const ctx = baseCtx(db, 1); // CD_ESAME: {{focus.classe.anagrafica.anno}} == 5
+  const ctx = baseCtx(db, 1); // CD_ESAME: {{focus.classe.anno}} == 5
   new AnalyzeContextStep(logger, new ConfigurazioneDocumentoRepository(db), engine).execute(ctx);
   expect(ctx.get('shouldGenerate')).toBe(true); // 5A is anno 5
 });
@@ -336,7 +336,7 @@ test('CheckDuplicatesStep compares a filename with progressivo masked only for d
   const ctx = baseCtx(db);
   ctx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: 'E2E_{{focus.classe.anagrafica.nome}}_{{progressivo}}',
+    FILE_NAME: 'E2E_{{focus.classe.nome}}_{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
 
@@ -347,7 +347,7 @@ test('CheckDuplicatesStep compares a filename with progressivo masked only for d
   const differentNameCtx = baseCtx(db);
   differentNameCtx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: 'E2E_4B_{{progressivo}}',
+    FILE_NAME: 'E2E_4B_{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
   new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(differentNameCtx);
@@ -370,7 +370,7 @@ test('CheckDuplicatesStep renders a Mustache section spanning the progressivo sl
   const ctx = baseCtx(db);
   ctx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: '{{#flag}}Doc-{{progressivo}}{{/flag}}',
+    FILE_NAME: '{{#flag}}Doc-{{meta.progressivo}}{{/flag}}',
     PATH_OUT: 'Output'
   });
   ctx.set('cdu', { ...buildCdu(db), flag: true });
@@ -396,7 +396,7 @@ test('CheckDuplicatesStep retries a marker assembled only after Mustache renderi
   const ctx = baseCtx(db);
   ctx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: '_PRO{{#flag}}GRESSIVO{{/flag}}_PH_-{{progressivo}}',
+    FILE_NAME: '_PRO{{#flag}}GRESSIVO{{/flag}}_PH_-{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
   ctx.set('cdu', { ...buildCdu(db), flag: true });
@@ -416,7 +416,7 @@ test('CheckDuplicatesStep fails meaningfully when every generated marker collide
   const ctx = baseCtx(db);
   ctx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: '{{#progressivo}}COL{{/progressivo}}LISION-{{progressivo}}',
+    FILE_NAME: '{{#meta.progressivo}}COL{{/meta.progressivo}}LISION-{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
   const markerSupplier = jest.fn<() => string>().mockReturnValue('COLLISION');
@@ -442,7 +442,7 @@ test('CheckDuplicatesStep keeps a literal _PROGRESSIVO_PH_ filename fragment sta
   const ctx = baseCtx(db);
   ctx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: 'Literal-_PROGRESSIVO_PH_-{{progressivo}}',
+    FILE_NAME: 'Literal-_PROGRESSIVO_PH_-{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
 
@@ -452,7 +452,7 @@ test('CheckDuplicatesStep keeps a literal _PROGRESSIVO_PH_ filename fragment sta
   const differentLiteralCtx = baseCtx(db);
   differentLiteralCtx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: 'Literal-123-{{progressivo}}',
+    FILE_NAME: 'Literal-123-{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
   new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(differentLiteralCtx);
@@ -475,7 +475,7 @@ test('CheckDuplicatesStep matches regex punctuation in filename text literally',
   const ctx = baseCtx(db);
   ctx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: 'A[5].(final)+?-{{progressivo}}',
+    FILE_NAME: 'A[5].(final)+?-{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
 
@@ -485,7 +485,7 @@ test('CheckDuplicatesStep matches regex punctuation in filename text literally',
   const punctuationMismatchCtx = baseCtx(db);
   punctuationMismatchCtx.set('config', {
     ...fixtureTables().CONF_DOC[0]!,
-    FILE_NAME: 'A5.final-{{progressivo}}',
+    FILE_NAME: 'A5.final-{{meta.progressivo}}',
     PATH_OUT: 'Output'
   });
   new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(punctuationMismatchCtx);
@@ -585,7 +585,7 @@ test('PrepareInfrastructureStep logs a pre-existing folder so email boxes can re
   ]);
 });
 
-test('sets cdu.meta.progressivo and the root alias from countFilesInFolder + 1', () => {
+test('sets cdu.meta.progressivo after folder resolution', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   const drive = new FakeDriveFacade();
@@ -594,7 +594,7 @@ test('sets cdu.meta.progressivo and the root alias from countFilesInFolder + 1',
 
   const cduResult = ctx.get<Cdu>('cdu')!;
   expect(cduResult.meta.progressivo).toBe(4);
-  expect((cduResult as unknown as { progressivo: number }).progressivo).toBe(4);
+  expect(cduResult).not.toHaveProperty('progressivo');
 });
 
 test('GenerateNameStep resolves FILE_NAME via WorkspaceTemplateEngine (10 §6)', () => {
@@ -721,7 +721,7 @@ test('RenderTemplateStep delegates to strategy → WorkspaceTemplateEngine with 
   const rendered = templates.contextFor('file_1') as {
     focus: { classe: { anagrafica: { nome: string } } };
   };
-  expect(rendered.focus.classe.anagrafica.nome).toBe('5A');
+  expect(rendered.focus.classe.nome).toBe('5A');
 });
 
 test('RegisterDocumentStep writes LOG_DOCS row with STATO GENERATO (persisted at commit)', () => {
@@ -743,7 +743,7 @@ test('RegisterDocumentStep stores only REGISTRA_DOC-rendered metadata', () => {
   const config = {
     ...fixtureTables().CONF_DOC[0]!,
     REGISTRA_DOC: JSON.stringify({
-      classi: '{{focus.classe.anagrafica.nome}}',
+      classi: '{{focus.classe.nome}}',
       utenti: 'destinatario@scuola.it',
       materie: 'MATE,FISI'
     })
@@ -882,9 +882,11 @@ test('CLASSE_MATERIA exposes the active SUPPLENZE actor, not the nominal holder'
     '4B'
   );
 
-  expect(cdu.focus.classiMateria?.docenti.map((docente) => docente.email)).toEqual([
-    'bianchi@school.it'
-  ]);
+  expect(
+    cdu.focus.classe?.consiglio?.elenco
+      .filter((docente) => docente.materie.some((materia) => materia.sigla === 'MATE'))
+      .map((docente) => docente.email)
+  ).toEqual(['bianchi@school.it']);
 });
 
 test('CLASSE_DOCENTE_MATERIA resolves the active SUPPLENZE substitute as focus.docente, not just the nominal titolare', () => {
@@ -1207,7 +1209,7 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
     expect(ctx.get('shouldGenerate')).toBe(true);
   });
 
-  test('NEGATA recognizes a duplicate even when {{progressivo}} makes the rendered name differ from the stored NOME', () => {
+  test('NEGATA recognizes a duplicate even when {{meta.progressivo}} makes the rendered name differ from the stored NOME', () => {
     const tables = fixtureTables();
     tables.LOG_DOCS = [
       {
@@ -1225,7 +1227,7 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
     const ctx = baseCtx(db);
     ctx.set('config', {
       ...fixtureTables().CONF_DOC[0]!,
-      FILE_NAME: 'Verbale_{{progressivo}}', // today's render would produce e.g. "Verbale_2" (unresolved/different number)
+      FILE_NAME: 'Verbale_{{meta.progressivo}}', // today's render would produce e.g. "Verbale_2" (unresolved/different number)
       DUPLICAZIONE: DuplicazioneDocumento.NEGATA
     });
 
@@ -1238,7 +1240,7 @@ describe('CheckDuplicatesStep — DUPLICAZIONE policy', () => {
 describe('PrepareInfrastructureStep registration metadata options', () => {
   test('passes the configured metadata rather than an implicit class fallback', () => {
     const db = new FakeDatabase(fixtureTables());
-    const ctx = baseCtx(db); // buildCdu targets classe '5A' -> focus.classe.anagrafica.nome === '5A'
+    const ctx = baseCtx(db); // buildCdu targets classe '5A' -> focus.classe.nome === '5A'
     const findOrCreateSpy = jest
       .spyOn(AlberoCartelle.prototype, 'findOrCreate')
       .mockReturnValue({ folderId: 'f1', created: true });

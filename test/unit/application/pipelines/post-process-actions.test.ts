@@ -12,7 +12,7 @@ const NOW = new Date('2026-07-05T10:00:00.000Z');
 function cdu(): Record<string, unknown> {
   return {
     focus: {
-      alunno: { anagrafica: { email: 'a1@school.it' } },
+      alunno: { email: 'a1@school.it' },
       carenza: { studente: 'a1@school.it', progressivo: 1, data: '2026-02-15' }
     }
   };
@@ -25,7 +25,7 @@ test('INSERISCI_TIMESTAMP stamps matching rows via template criteri (11 §10)', 
       tipo: 'INSERISCI_TIMESTAMP',
       tab: 'CARENZE',
       col: 'NOTIFICATO',
-      criteri: { STUDENTE: '{{focus.alunno.anagrafica.email}}', DATA: '{{focus.carenza.data}}' }
+      criteri: { STUDENTE: '{{focus.alunno.email}}', DATA: '{{focus.carenza.data}}' }
     }
   ]);
   const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
@@ -50,7 +50,7 @@ test('INSERISCI_TIMESTAMP does not overwrite an already-stamped row (first send 
       tipo: 'INSERISCI_TIMESTAMP',
       tab: 'CARENZE',
       col: 'NOTIFICATO',
-      criteri: { STUDENTE: '{{focus.alunno.anagrafica.email}}', DATA: '{{focus.carenza.data}}' }
+      criteri: { STUDENTE: '{{focus.alunno.email}}', DATA: '{{focus.carenza.data}}' }
     }
   ]);
   const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
@@ -69,7 +69,7 @@ test('AGGIORNA_CAMPO writes a resolved value', () => {
       tab: 'ALUNNI',
       col: 'NOTE',
       valore: 'Notificato il {{focus.carenza.data}}',
-      criteri: { EMAIL: '{{focus.alunno.anagrafica.email}}' }
+      criteri: { EMAIL: '{{focus.alunno.email}}' }
     }
   ]);
   const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
@@ -141,7 +141,7 @@ test('multi-column criteri still fall back to a full scan', () => {
       tipo: 'INSERISCI_TIMESTAMP',
       tab: 'CARENZE',
       col: 'NOTIFICATO',
-      criteri: { STUDENTE: '{{focus.alunno.anagrafica.email}}', DATA: '{{focus.carenza.data}}' }
+      criteri: { STUDENTE: '{{focus.alunno.email}}', DATA: '{{focus.carenza.data}}' }
     }
   ]);
   executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
@@ -228,19 +228,19 @@ describe('postProcessActions — CSV containment matching', () => {
       {
         tipo: 'AGGIORNA_STATO_DOC',
         stato: 'VERBALIZZATO',
-        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{focus.classe.anagrafica.nome}}' }
+        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{focus.classe.nome}}' }
       },
       {
         tipo: 'AGGIORNA_STATO_DOC',
         stato: 'VERBALIZZATO',
-        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{focus.classe.articolazione.partners | join}}' }
+        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{focus.classe.articolazione.sottoClassi.0.nome}}' }
       }
     ]);
     const parentCdu = {
       focus: {
         classe: {
-          anagrafica: { nome: '3C' },
-          articolazione: { partners: ['3C-LC'] }
+          nome: '3C',
+          articolazione: { sottoClassi: [{ nome: '3C-LC' }] }
         }
       }
     };
@@ -375,7 +375,7 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
         tab: 'ALUNNI',
         col: 'NOTE',
         valore: 'Notificato il {{focus.carenza.data}}',
-        criteri: { EMAIL: '{{focus.alunno.anagrafica.email}}' }
+        criteri: { EMAIL: '{{focus.alunno.email}}' }
       }
     ]);
     const n = executePostProcess(actions, cdu(), db, templates, NOW, logger);

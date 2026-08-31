@@ -1,5 +1,5 @@
 import type { GeneratorStrategy } from './GeneratorStrategy';
-import type { Cdu, CduClasse } from '../context-engine/Cdu';
+import type { Cdu, ClasseFocusVM } from '../context-engine/Cdu';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
@@ -7,7 +7,6 @@ import type { TeachingSlotKind } from '../../domain/repositories/IClasseReposito
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import {
-  getCduArticolazionePartners,
   getCduMateriaAssignmentIdentity
 } from '../context-engine/CduInternalMetadata';
 
@@ -56,6 +55,28 @@ export interface MaterieGroups {
   group2Label?: string;
   group3: MateriaColumn[];
   group3Label?: string;
+}
+
+function toPrintableGroups(groups: MaterieGroups) {
+  const rows = [
+    { label: '', colonne: groups.group1 },
+    { label: groups.group2Label ?? '', colonne: groups.group2 },
+    { label: groups.group3Label ?? '', colonne: groups.group3 }
+  ];
+  return {
+    gruppi: rows.map(({ label, colonne }, index) => ({
+      indice: index + 1,
+      label,
+      colonne: colonne.map(({ sigla, header, isSpecial, roles }) => ({
+        sigla,
+        header,
+        isSpeciale: isSpecial === true,
+        ruoli: roles ?? []
+      })),
+      hasColonne: colonne.length > 0,
+      numero: colonne.length
+    }))
+  };
 }
 
 type MateriaColumnInput = Omit<MateriaColumn, 'header'>;
@@ -125,7 +146,7 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
     fileId: string,
     cdu: Cdu,
     config: ConfigurazioneDocumento
-  ): { sheetName: string; layout: SheetColumnLayout[] } {
+  ): { sheetName: string; layout: SheetColumnLayout[]; groups: MaterieGroups } {
     const classe = cdu.focus.classe;
     if (classe === undefined) {
       throw new ConfigurationError(
@@ -142,25 +163,29 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
     const resolvedSheetName = params.sheetName ?? sheetInfo[0]?.name ?? '';
 
     const groups = this.buildGroups(classe);
-    const context: Record<string, unknown> = {
-      ...(cdu as unknown as Record<string, unknown>),
-      materieColonne: groups
+    classe.sheet = {
+      materieConPermessi: classe.sheet?.materieConPermessi ?? {
+        elenco: [],
+        hasElenco: false,
+        numero: 0
+      },
+      materieColonne: toPrintableGroups(groups)
     };
-    const layout = this.templates.processSheet(fileId, context, params.sheetName);
-    return { sheetName: resolvedSheetName, layout };
+    const layout = this.templates.processSheet(fileId, cdu as unknown as Record<string, unknown>, params.sheetName);
+    return { sheetName: resolvedSheetName, layout, groups };
   }
 
   /** Ordered groups for the class's subjects (articulated: shared -> per-partner; non-articulated: one dedup+sorted group). */
-  protected buildGroups(classe: CduClasse): MaterieGroups {
-    if (classe.flags.isArticolata && classe.articolazione !== undefined) {
+  protected buildGroups(classe: ClasseFocusVM): MaterieGroups {
+    if (classe.isArticolata && classe.articolazione !== undefined) {
       const a = classe.articolazione;
-      const partners = getCduArticolazionePartners(a) ?? a.partners ?? [];
-      const group1 = this.resolveMateriaColumns(a.materieCondivise.map((m) => this.columnForId(m.sigla)));
+      const partners = a.sottoClassi.map((partner) => partner.nome);
+      const group1 = this.resolveMateriaColumns(a.materieComuni.map((m) => this.columnForId(m.sigla)));
       const group2 = this.resolveMateriaColumns(
-        a.materieSeparatePrimoGruppo.map((m) => this.columnForId(m.sigla, partners[0]))
+        a.materieSeparatePrimo.map((m) => this.columnForId(m.sigla, partners[0]))
       );
       const group3 = this.resolveMateriaColumns(
-        a.materieSeparateSecondoGruppo.map((m) => this.columnForId(m.sigla, partners[1]))
+        a.materieSeparateSecondo.map((m) => this.columnForId(m.sigla, partners[1]))
       );
       return {
         group1,
@@ -171,7 +196,7 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
       };
     }
     const columns = new Map<string, MateriaColumnInput>();
-    for (const d of classe.consiglioDiClasse ?? []) {
+    for (const d of classe.consiglio?.elenco ?? []) {
       for (const m of d.materie) {
         const identity = getCduMateriaAssignmentIdentity(m);
         const column: MateriaColumnInput = {

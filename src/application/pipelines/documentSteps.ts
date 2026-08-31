@@ -209,8 +209,11 @@ export class CheckDuplicatesStep extends Step {
     const fileNameTemplate = String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? '');
     const templateContext = cduRecord(ctx);
     let namePattern: RegExp;
-    if (fileNameTemplate.includes('{{progressivo}}')) {
-      const renderContext = { ...templateContext, progressivo: PROGRESSIVO_PROBE };
+    if (fileNameTemplate.includes('{{meta.progressivo}}')) {
+      const renderContext = {
+        ...templateContext,
+        meta: { ...(templateContext['meta'] as Record<string, unknown>), progressivo: PROGRESSIVO_PROBE }
+      };
       const collisionSource = this.templates.processString(fileNameTemplate, renderContext);
       let progressivoMarker: string | null = null;
       for (let attempt = 0; attempt < PROGRESSIVO_MARKER_MAX_ATTEMPTS; attempt += 1) {
@@ -226,7 +229,7 @@ export class CheckDuplicatesStep extends Step {
         );
       }
       const renderedName = this.templates.processString(
-        fileNameTemplate.split('{{progressivo}}').join(progressivoMarker),
+        fileNameTemplate.split('{{meta.progressivo}}').join(progressivoMarker),
         renderContext
       );
       namePattern = new RegExp(
@@ -304,7 +307,6 @@ export class PrepareInfrastructureStep extends Step {
     const progressivo = this.drive.countFilesInFolder(folderId) + 1;
     const cduObj = cdu(ctx);
     cduObj.meta.progressivo = progressivo;
-    cduObj.progressivo = progressivo;
   }
 
   protected override _getLogDetails(ctx: PipelineContext): { Folder: string; Path: string; Id: string } {
@@ -519,7 +521,7 @@ export class RegisterDocumentStep extends Step {
       [COL_LOG_DOCS.CLASSI]: metadata.classi,
       [COL_LOG_DOCS.UTENTI]: metadata.utenti,
       [COL_LOG_DOCS.MATERIE]: metadata.materie,
-      [COL_LOG_DOCS.DATA_CREAZ]: cdu(ctx).meta.date.oggi.breve
+      [COL_LOG_DOCS.DATA_CREAZ]: cdu(ctx).meta.oggi.breve
     };
     // Persisted by the service's transaction commit (10 §11).
     this.db.table(TABLE.LOG_DOCS).insert(row);

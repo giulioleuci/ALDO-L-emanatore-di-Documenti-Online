@@ -1,5 +1,4 @@
-import type { Cdu, CduDestinatario, CattedraVM } from '../context-engine/Cdu';
-import type { SubjectVM } from '../context-engine/mappers/subjectVmMapper';
+import type { Cdu, DestinatarioVM, CattedraVM, MateriaVM, ClasseSintesiVM } from '../context-engine/Cdu';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { BuildParams, RecipeOptions } from '../context-engine/Recipe';
 import { emailTargetId, type EmailTarget } from '../email/saluto';
@@ -45,7 +44,7 @@ import {
   resolveEffectiveDocenti,
   materieDocenteInClasse
 } from '../context-engine/TeachingCouncilProjection';
-import { buildPersonVm } from '../context-engine/mappers/personVmMapper';
+import { buildPersonaVm } from '../context-engine/mappers/personVmMapper';
 
 /**
  * NotificaPipeline steps (ref 11) on the PipelineFramework `Step` base, same
@@ -129,14 +128,14 @@ function sourceScopeFor(built: Cdu, emailTarget: EmailTarget): SourceScope {
       : focusClasseId === undefined
         ? undefined
         : [focusClasseId];
-  const utenteEmail = built.focus.alunno?.anagrafica.email ?? built.focus.docente?.email;
+  const utenteEmail = built.focus.alunno?.email ?? built.focus.docente?.email;
   return {
     ...(classeIds === undefined ? {} : { classiCompetenza: classeIds }),
     ...(focusClasseId === undefined ? {} : { classeId: focusClasseId }),
     ...(utenteEmail === undefined || utenteEmail === null ? {} : { utenteEmail }),
     ...(built.focus.dipartimento === undefined
       ? {}
-      : { dipartimentoId: built.focus.dipartimento.anagrafica.id })
+      : { dipartimentoId: built.focus.dipartimento.id })
   };
 }
 
@@ -172,9 +171,10 @@ export class BuildCDUStep extends Step {
       target: t.target,
       tipoTarget: t.tipoTarget,
       now: now(ctx),
-      tipoOperazione: 'INVIO_EMAIL'
+      tipoOperazione: 'INVIO_NOTIFICA',
+      configurazioneId: conf.id ?? '',
+      esecuzioneId: ''
     };
-    if (conf.id !== null) params.idConfigurazione = conf.id;
     if (t.carenzaProgressivo !== undefined) params.carenzaProgressivo = t.carenzaProgressivo;
     if (t.classiCompetenza.length > 0) params.classiCompetenza = t.classiCompetenza;
 
@@ -205,21 +205,21 @@ export class BuildCDUStep extends Step {
     };
   }
 
-  private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget, when: Date): CduDestinatario {
+  private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget, when: Date): DestinatarioVM {
     const docente = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
     const titolare = t.titolareEmail !== undefined ? this.docenti.findById(t.titolareEmail) : null;
     const alunno = t.tipoTarget === 'alunno' ? this.alunni.findById(t.target) : null;
-    const anagrafica =
+    const persona =
       docente !== null
-        ? buildPersonVm({
+        ? buildPersonaVm({
             nome: docente.nome,
             cognome: docente.cognome,
             email: docente.id ?? '',
             genere: docente.genere
           })
         : t.tipo === 'alunno' && alunno !== null
-          ? buildPersonVm({ nome: alunno.cognomeNome, cognome: null, email: alunno.id ?? '', genere: null })
-          : buildPersonVm({ nome: '', cognome: null, email: t.emails[0] ?? '', genere: null });
+          ? buildPersonaVm({ nome: alunno.cognomeNome, cognome: null, email: alunno.id ?? '', genere: null })
+          : buildPersonaVm({ nome: '', cognome: null, email: t.emails[0] ?? '', genere: null });
 
     const classiCompetenza =
       t.classiCompetenza.length > 0
@@ -229,33 +229,24 @@ export class BuildCDUStep extends Step {
           : [];
     const { cattedre, materieCompetenza } = this.buildCattedre(t, classiCompetenza, when);
 
+    const classi = classiCompetenza.map((nome): ClasseSintesiVM => ({ nome, anno: 0, sezione: '' }));
     return {
-      anagrafica,
+      ...persona,
       ruoliAttivi: [],
-      flags: {
-        isCoordinatore: conf.processo === ProcessoInvio.PER_COORDINATORE,
-        isTutor: false,
-        isTutorAsl: false,
-        isDocenteSostegno: false,
-        isSupplente: false
-      },
-      contesto: {
-        sostituisce:
-          titolare !== null
-            ? buildPersonVm({
-                nome: titolare.nome,
-                cognome: titolare.cognome,
-                email: titolare.id ?? '',
-                genere: titolare.genere
-              })
-            : null,
-        classiCompetenza,
-        materieCompetenza,
-        cattedre
-      },
+      hasRuoliAttivi: false,
+      isCoordinatore: conf.processo === ProcessoInvio.PER_COORDINATORE,
+      isTutor: false,
+      isTutorAsl: false,
+      isDocenteSostegno: false,
+      isSupplente: titolare !== null,
+      sostituisce: titolare === null ? null : buildPersonaVm({ nome: titolare.nome, cognome: titolare.cognome, email: titolare.id, genere: titolare.genere }),
+      hasSostituisce: titolare !== null,
+      classi: { elenco: classi, hasElenco: classi.length > 0, numero: classi.length, elencoDescrizione: classi.map((classe) => classe.nome).join(', ') },
+      materie: { elenco: materieCompetenza, hasElenco: materieCompetenza.length > 0, numero: materieCompetenza.length, elencoDescrizione: materieCompetenza.map((materia) => materia.nome).join(', '), sigle: materieCompetenza.map((materia) => materia.sigla).join(', ') },
+      cattedre: { elenco: cattedre, hasElenco: cattedre.length > 0, numero: cattedre.length, elencoDescrizione: cattedre.map((cattedra) => cattedra.sezioneEstesa).join(', ') },
       comunicazione: {
         salutoIniziale: salutoPerTarget(t, docente, alunno),
-        oggettoCalcolato: '',
+        oggetto: '',
         testoContenutoPuro: ''
       }
     };
@@ -281,17 +272,17 @@ export class BuildCDUStep extends Step {
     t: EmailTarget,
     classiCompetenza: string[],
     when: Date
-  ): { cattedre: CattedraVM[]; materieCompetenza: SubjectVM[] } {
+  ): { cattedre: CattedraVM[]; materieCompetenza: MateriaVM[] } {
     if (t.tipo !== 'docente' || t.docenteEmail === undefined) {
       return { cattedre: [], materieCompetenza: [] };
     }
     const docenteEmail = t.docenteEmail;
-    const gruppi = new Map<string, { classe: Classe; materie: SubjectVM[] }>();
-    let flat: SubjectVM[] = [];
+    const gruppi = new Map<string, { classe: Classe; materie: MateriaVM[] }>();
+    let flat: MateriaVM[] = [];
     for (const classeId of classiCompetenza) {
       const classe = this.classi.findById(ClasseId.of(classeId));
       if (classe === null) continue;
-      let materie: SubjectVM[];
+      let materie: MateriaVM[];
       try {
         const assignments = this.resolveConsiglioCached(classe, when);
         materie = materieDocenteInClasse(this.materie, classe, assignments, docenteEmail).materieVm;
@@ -313,12 +304,18 @@ export class BuildCDUStep extends Step {
       }
       flat = flat.concat(materie);
     }
-    const cattedre: CattedraVM[] = [...gruppi.values()].map(({ classe, materie }) => ({
-      classeNome: classe.nome,
-      anno: classe.anno.value,
-      sezione: classe.sezione,
-      materie: dedupeSubjectsMainOverItp(materie)
-    }));
+    const cattedre: CattedraVM[] = [...gruppi.values()].map(({ classe, materie }) => {
+      const elenco = dedupeSubjectsMainOverItp(materie);
+      return {
+        classe: { nome: classe.nome, anno: classe.anno.value, sezione: classe.sezione },
+        sezioneEstesa: `${classe.anno.value}${classe.sezione}`,
+        materie: elenco,
+        hasMaterie: elenco.length > 0,
+        numeroMaterie: elenco.length,
+        materieDescrizione: elenco.map((materia) => materia.nome).join(', '),
+        materieSigle: elenco.map((materia) => materia.sigla).join(', ')
+      };
+    });
     return { cattedre, materieCompetenza: dedupeSubjectsMainOverItp(flat) };
   }
 
@@ -433,8 +430,7 @@ export class RenderBoxesStep extends Step {
     );
     built.render = { boxes: result.boxes, body: { htmlCompleto: '', htmlSoloContenuto: '' } };
     const oggetto = this.templates.processString(confMail(ctx).oggetto, cduRecord(ctx));
-    if (built.destinatario !== undefined)
-      built.destinatario.comunicazione.oggettoCalcolato = oggetto;
+    if (built.destinatario !== undefined) built.destinatario.comunicazione.oggetto = oggetto;
     this.setResult(ctx, 'boxHtmlOrdered', result.ordered);
     this.setResult(ctx, 'documentIds', result.documentIds);
     this.setResult(ctx, 'cartelleFolderIds', result.folderIds);
@@ -455,15 +451,12 @@ export class RenderBoxesStep extends Step {
     PianiNotificati: number;
   } {
     const built = cdu(ctx);
-    const piani =
-      built.focus.classe?.didattica?.pianiPersonalizzati.items ??
-      built.focus.alunno?.didattica.pianiPersonalizzati?.items ??
-      [];
+    const piani = built.focus.classe?.pianiPersonalizzati?.elenco ?? [];
     return {
       Boxes: (ctx.get<string[]>('boxHtmlOrdered') ?? []).length,
       PianiCdu: piani.length,
-      PianiDaNotificare: piani.filter((piano) => !piano.notificato).length,
-      PianiNotificati: piani.filter((piano) => piano.notificato).length
+      PianiDaNotificare: piani.filter((piano) => !piano.isNotificato).length,
+      PianiNotificati: piani.filter((piano) => piano.isNotificato).length
     };
   }
 }

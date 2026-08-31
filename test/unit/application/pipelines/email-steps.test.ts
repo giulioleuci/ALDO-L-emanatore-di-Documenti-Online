@@ -51,7 +51,7 @@ const NOW = new Date('2025-11-15T09:00:00Z'); // inside the rossi→bianchi supp
 
 const PATTERN_ROW: Row = {
   ID: 'TEST_PATTERN',
-  OGGETTO: 'Carenze di {{focus.alunno.anagrafica.nomeCompleto}}',
+  OGGETTO: 'Carenze di {{focus.alunno.nomeCompleto}}',
   PROCESSO: 'PER_GENITORI_ALUNNO',
   BOX_CFG: '[{"TIPO_BOX":"carenze","TITOLO":"Carenze"},{"TIPO_BOX":"assenze","ORDINE":5}]',
   TESTO_START: '<p>Si comunica quanto segue per la classe {{focus.alunno.classe.nome}}.</p>',
@@ -227,7 +227,7 @@ function logDetails(result: StepExecutionResult): unknown {
 
 describe('email pipeline operational log details', () => {
   test('publishes the built CDU target and the send-condition decision', () => {
-    const w = wire({ CONDIZIONE: '{{focus.alunno.didattica.carenze.numero}} > 99' });
+    const w = wire({ CONDIZIONE: '{{focus.alunno.carenze.numero}} > 99' });
 
     const built = buildStep(w).execute(w.ctx);
     const decision = new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(
@@ -482,7 +482,7 @@ describe('email pipeline operational log details', () => {
         tab: 'CARENZE',
         col: 'NOTIFICATO',
         criteri: {
-          STUDENTE: '{{focus.carenza.studente}}',
+          STUDENTE: '{{focus.carenza.studente.email}}',
           PROGRESSIVO: '{{focus.carenza.progressivo}}'
         }
       }
@@ -504,33 +504,33 @@ test('BuildCDUStep PER_GENITORI_ALUNNO builds FAMIGLIA_COMPLETO CDU and enriches
   const w = wire();
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.focus.alunno?.anagrafica.email).toBe('a1@school.it');
+  expect(cdu.focus.alunno?.email).toBe('a1@school.it');
   // FAMIGLIA_COMPLETO includes documenti — a1@school.it has no PIANI/documents seeded.
-  expect(cdu.focus.alunno?.didattica.documenti).toEqual({ items: [], hasDocumenti: false });
+  expect(cdu.focus.alunno?.documenti).toEqual(
+    expect.objectContaining({ elenco: [], hasElenco: false, numero: 0 })
+  );
   expect(cdu.destinatario?.comunicazione.salutoIniziale).toBe('Gentili Genitori');
-  expect(cdu.destinatario?.anagrafica.email).toBe('genitore1@x.it');
+  expect(cdu.destinatario?.email).toBe('genitore1@x.it');
 });
 
 test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafica (11 §3)', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.focus.classe?.anagrafica.nome).toBe('5A');
-  expect(cdu.focus.classe?.consiglioDiClasse).toEqual([
+  expect(cdu.focus.classe?.nome).toBe('5A');
+  expect(cdu.focus.classe?.consiglio?.elenco).toEqual([
     expect.objectContaining<Partial<DocenteCdcVM>>({
-      anagrafica: expect.objectContaining({
-        cognome: 'BIANCHI',
-        nome: 'LUCIA',
-        email: 'bianchi@school.it'
-      }) as PersonVM
+      cognome: 'BIANCHI',
+      nome: 'LUCIA',
+      email: 'bianchi@school.it'
     })
   ]);
   const d = cdu.destinatario!;
   // PersonVM.nomeCompleto is "Nome Cognome" (02 §8.1), the reverse order of
   // Docente.getNomeCompleto()'s "${cognome} ${nome}" — the latter still drives
   // comunicazione.salutoIniziale below via salutoPerTarget/Docente directly.
-  expect(d.anagrafica.nomeCompleto).toBe('MARIO ROSSI');
-  expect(d.anagrafica.appellativo).toBe('Prof.');
+  expect(d.nomeCompleto).toBe('ROSSI MARIO');
+  expect(d.appellativo).toBe('Prof.');
   expect(d.comunicazione.salutoIniziale).toBe('Gentile Prof. ROSSI MARIO');
 });
 
@@ -539,15 +539,15 @@ test('BuildCDUStep destinatario.anagrafica is a full PersonVM (Task 9)', () => {
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   const d = cdu.destinatario!;
-  expect(d.anagrafica.appellativoCompleto).toBe('Prof. MARIO ROSSI');
-  expect(d.anagrafica.appellativoCognome).toBe('Prof. ROSSI');
+  expect(d.appellativoCompleto).toBe('Prof. ROSSI MARIO');
+  expect(d.appellativoCognome).toBe('Prof. ROSSI');
 });
 
 test('BuildCDUStep destinatario.contesto.sostituisce stays null when there is no supplenza context (Task 9)', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.destinatario?.contesto.sostituisce).toBeNull();
+  expect(cdu.destinatario?.sostituisce).toBeNull();
 });
 
 test('BuildCDUStep destinatario matches the resolved supplente and records sostituisce when the target was split off a titolare (titolare/supplente content-mismatch fix)', () => {
@@ -561,9 +561,9 @@ test('BuildCDUStep destinatario matches the resolved supplente and records sosti
   const d = cdu.destinatario!;
   // The physical recipient is bianchi (the supplente) — content/greeting must
   // address bianchi, not rossi (the nominal titolare this target was split from).
-  expect(d.anagrafica.email).toBe('bianchi@school.it');
+  expect(d.email).toBe('bianchi@school.it');
   expect(d.comunicazione.salutoIniziale).toContain('BIANCHI');
-  expect(d.contesto.sostituisce?.email).toBe('rossi@school.it');
+  expect(d.sostituisce?.email).toBe('rossi@school.it');
 });
 
 test('BuildCDUStep forwards CONF_MAIL.SUPPLENTI as gestioneSupplenti (regression: was silently dropped when includiStorico wiring was added)', () => {
@@ -574,13 +574,13 @@ test('BuildCDUStep forwards CONF_MAIL.SUPPLENTI as gestioneSupplenti (regression
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  const rossiSlot = cdu.focus.classe!.consiglioDiClasse!.find((d) =>
+  const rossiSlot = cdu.focus.classe!.consiglio?.elenco!.find((d) =>
     d.materie.some((m) => m.sigla === 'MATE')
   )!;
   // NOW (2025-11-15) is inside the rossi->bianchi->verdi supplenza chain window (see swap-supplenti.test.ts).
   // SOLO_SUPPLENTI must swap the titolare VM for the chain-resolved supplente.
-  expect(rossiSlot.anagrafica.email).toBe('bianchi@school.it');
-  expect(rossiSlot.stato.isSupplente).toBe(true);
+  expect(rossiSlot.email).toBe('bianchi@school.it');
+  expect(rossiSlot.isSupplente).toBe(true);
 });
 
 test('BuildCDUStep PER_CARENZA_GENITORI uses CARENZA_COMPLETO and sets carenza focus (11 §3, 02 §4.3)', () => {
@@ -655,13 +655,13 @@ test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  const contesto = cdu.destinatario!.contesto;
-  expect(contesto.cattedre.map((c) => c.classeNome)).toEqual(['1F']);
-  expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
-  expect(contesto.cattedre[0]!.anno).toBe(1);
-  expect(contesto.cattedre[0]!.sezione).toBe('F');
+  const destinatario = cdu.destinatario!;
+  expect(destinatario.cattedre.elenco.map((c) => c.classe.nome)).toEqual(['1F']);
+  expect(destinatario.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(destinatario.cattedre.elenco[0]!.classe.anno).toBe(1);
+  expect(destinatario.cattedre.elenco[0]!.classe.sezione).toBe('F');
   // rossi teaches MATE in both 1F and 1F-LSO: flat list dedupes to one entry.
-  expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(destinatario.materie.elenco.map((m) => m.sigla)).toEqual(['MATE']);
 });
 
 test('BuildCDUStep collapses all three classes of an articolazione group (parent + both partners) into a single cattedra row (design 2026-08-22 articolata dedupe)', () => {
@@ -678,15 +678,15 @@ test('BuildCDUStep collapses all three classes of an articolazione group (parent
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  const contesto = cdu.destinatario!.contesto;
+  const destinatario = cdu.destinatario!;
   // Three classes in classiCompetenza, all in the same articolazione group,
   // all resolving MATE for rossi (COMUNE subject) -> a single row, not three.
-  expect(contesto.cattedre).toHaveLength(1);
-  expect(contesto.cattedre.map((c) => c.classeNome)).toEqual(['1F']);
-  expect(contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
-  expect(contesto.cattedre[0]!.anno).toBe(1);
-  expect(contesto.cattedre[0]!.sezione).toBe('F');
-  expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(destinatario.cattedre.elenco).toHaveLength(1);
+  expect(destinatario.cattedre.elenco.map((c) => c.classe.nome)).toEqual(['1F']);
+  expect(destinatario.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(destinatario.cattedre.elenco[0]!.classe.anno).toBe(1);
+  expect(destinatario.cattedre.elenco[0]!.classe.sezione).toBe('F');
+  expect(destinatario.materie.elenco.map((m) => m.sigla)).toEqual(['MATE']);
 });
 
 test('BuildCDUStep excludes a class from cattedre when the docente has no effective materia there, email still buildable (design 2026-08-22)', () => {
@@ -703,18 +703,18 @@ test('BuildCDUStep excludes a class from cattedre when the docente has no effect
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  const contesto = cdu.destinatario!.contesto;
-  expect(contesto.cattedre).toEqual([]);
-  expect(contesto.materieCompetenza).toEqual([]);
-  expect(cdu.destinatario!.anagrafica.email).toBe('verdi@school.it');
+  const destinatario = cdu.destinatario!;
+  expect(destinatario.cattedre.elenco).toEqual([]);
+  expect(destinatario.materie.elenco).toEqual([]);
+  expect(cdu.destinatario!.email).toBe('verdi@school.it');
 });
 
 test('BuildCDUStep only computes cattedre for docente-type targets, not genitori/alunno (design 2026-08-22)', () => {
   const w = wire();
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.destinatario!.contesto.cattedre).toEqual([]);
-  expect(cdu.destinatario!.contesto.materieCompetenza).toEqual([]);
+  expect(cdu.destinatario!.cattedre.elenco).toEqual([]);
+  expect(cdu.destinatario!.materie.elenco).toEqual([]);
 });
 
 test('BuildCDUStep dedupes MAIN over ITP on the flat materieCompetenza list (legacy precedence, design 2026-08-22)', () => {
@@ -744,10 +744,10 @@ test('BuildCDUStep dedupes MAIN over ITP on the flat materieCompetenza list (leg
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  const materie = cdu.destinatario!.contesto.cattedre[0]!.materie;
+  const materie = cdu.destinatario!.cattedre.elenco[0]!.materie;
   expect(materie).toHaveLength(1);
   expect(materie[0]!.sigla).toBe('MATE');
-  expect(materie[0]!.isITP).toBe(false);
+  expect(materie[0]!.isItp).toBe(false);
 });
 
 test('BuildCDUStep supplenza ENTRAMBI: the resolved supplente sees the covered materia, the titolare does not (design 2026-08-22)', () => {
@@ -763,7 +763,7 @@ test('BuildCDUStep supplenza ENTRAMBI: the resolved supplente sees the covered m
   );
   buildStep(wSupplente).execute(wSupplente.ctx);
   const supplenteCdu = wSupplente.ctx.get<Cdu>('cdu')!;
-  expect(supplenteCdu.destinatario!.contesto.materieCompetenza.map((m) => m.sigla)).toContain('MATE');
+  expect(supplenteCdu.destinatario!.materie.elenco.map((m) => m.sigla)).toContain('MATE');
 
   const wTitolare = wire(
     { PROCESSO: 'PER_DOCENTE', SUPPLENTI: 'ENTRAMBI' },
@@ -772,7 +772,7 @@ test('BuildCDUStep supplenza ENTRAMBI: the resolved supplente sees the covered m
   );
   buildStep(wTitolare).execute(wTitolare.ctx);
   const titolareCdu = wTitolare.ctx.get<Cdu>('cdu')!;
-  expect(titolareCdu.destinatario!.contesto.cattedre).toEqual([]);
+  expect(titolareCdu.destinatario!.cattedre.elenco).toEqual([]);
 });
 
 /**
@@ -857,13 +857,13 @@ test('BuildCDUStep tolerates a resolver error on one competenza class: that clas
   step.execute(w.ctx);
 
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  const contesto = cdu.destinatario!.contesto;
+  const destinatario = cdu.destinatario!;
   // '1F' throws (excluded); '1F-LSO' succeeds and groups under its
   // articolazione parent '1F' (design 2026-08-22 articolata dedupe), so the
   // single surviving cattedra row is keyed by the parent's classeNome, not by
   // '1F-LSO' itself.
-  expect(contesto.cattedre.map((c) => c.classeNome)).toEqual(['1F']);
-  expect(contesto.materieCompetenza.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(destinatario.cattedre.elenco.map((c) => c.classe.nome)).toEqual(['1F']);
+  expect(destinatario.materie.elenco.map((m) => m.sigla)).toEqual(['MATE']);
   expect(warnSpy).toHaveBeenCalledWith(
     expect.stringContaining('rossi@school.it')
   );
@@ -923,8 +923,8 @@ test('BuildCDUStep memoizes resolveConsiglio per (classe, when) across docente t
   // The cache must not corrupt per-docente results: each still sees only their own materia.
   const rossiCdu = ctxRossi.get<Cdu>('cdu')!;
   const bianchiCdu = ctxBianchi.get<Cdu>('cdu')!;
-  expect(rossiCdu.destinatario!.contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
-  expect(bianchiCdu.destinatario!.contesto.cattedre[0]!.materie.map((m) => m.sigla)).toEqual(['FISI']);
+  expect(rossiCdu.destinatario!.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
+  expect(bianchiCdu.destinatario!.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual(['FISI']);
 });
 
 test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {
@@ -933,7 +933,7 @@ test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchis
   }); // default PROCESSO PER_GENITORI_ALUNNO, default target genitoriTarget()
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
+  expect(cdu.meta.opzioni.includiStorico).toBe(true);
 });
 
 test('BuildCDUStep enables includiStorico by default for piani_pers_da_inviare even with no explicit key', () => {
@@ -946,7 +946,7 @@ test('BuildCDUStep enables includiStorico by default for piani_pers_da_inviare e
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
+  expect(cdu.meta.opzioni.includiStorico).toBe(true);
 });
 
 test('BuildCDUStep leaves includiStorico false when no box wants historical data', () => {
@@ -959,7 +959,7 @@ test('BuildCDUStep leaves includiStorico false when no box wants historical data
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(false);
+  expect(cdu.meta.opzioni.includiStorico).toBe(false);
 });
 
 test('BuildCDUStep always enables history for piani_pers_da_inviare despite an explicit false configuration', () => {
@@ -972,7 +972,7 @@ test('BuildCDUStep always enables history for piani_pers_da_inviare despite an e
   );
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.parametriInput.opzioni.includiStorico).toBe(true);
+  expect(cdu.meta.opzioni.includiStorico).toBe(true);
 });
 
 // --- Step 2: ValutaCondizioniInvioStep ---
@@ -985,7 +985,7 @@ test('empty CONDIZIONE ⇒ shouldSend true (11 §4)', () => {
 });
 
 test('CONDIZIONE evaluated on the recipient CDU; false ⇒ silent skip (11 §4)', () => {
-  const w = wire({ CONDIZIONE: '{{focus.alunno.didattica.carenze.numero}} > 99' });
+  const w = wire({ CONDIZIONE: '{{focus.alunno.carenze.numero}} > 99' });
   buildStep(w).execute(w.ctx);
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   expect(w.ctx.get('shouldSend')).toBe(false);
@@ -998,8 +998,8 @@ test('RenderBoxesStep writes cdu.render.boxes and resolves OGGETTO (11 §5)', ()
   runThroughCompose(w);
   const cdu = w.ctx.get<Cdu>('cdu')!;
   expect(w.ctx.get('oggettoRisolto')).toBe('Carenze di VERDI ANNA');
-  expect(cdu.render?.boxes['carenze']?.visibile).toBe(true);
-  expect(cdu.render?.boxes['carenze']?.html).toContain('Voto 4.5');
+  expect(cdu.render?.boxes.perId['carenze_0']?.isVisibile).toBe(true);
+  expect(cdu.render?.boxes.perId['carenze_0']?.html).toContain('Voto 4.5');
 });
 
 test('RenderBoxesStep: one visible non-empty document box keeps delivery eligible', () => {
@@ -1186,11 +1186,11 @@ test('ComposeEmailStep appends TESTO_END after the boxes and before the footer',
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO_END', () => {
   const w = wire({
     OGGETTO: 'Oggetto statico',
-    TESTO_END: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>'
+    TESTO_END: '<p>Alunno: {{focus.alunno.nomeCompleto}}</p>'
   });
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';
+  cdu.focus.alunno!.nomeCompleto = '<script>alert(1)</script>';
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
   new ComposeEmailStep(
@@ -1237,7 +1237,7 @@ test('ComposeEmailStep leaves replyTo unset when RISPONDI_A is blank', () => {
 });
 
 test('ComposeEmailStep warns and omits replyTo when RISPONDI_A resolves to an invalid address, send still proceeds', () => {
-  const w = wire({ RISPONDI_A: '{{focus.alunno.anagrafica.nomeCompleto}}' }); // resolves to a name, not an email
+  const w = wire({ RISPONDI_A: '{{focus.alunno.nomeCompleto}}' }); // resolves to a name, not an email
   runThroughRender(w);
   const warnMock = jest.fn();
   const mockLogger = {
@@ -1267,11 +1267,11 @@ test('ComposeEmailStep warns and omits replyTo when RISPONDI_A resolves to an in
 test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TESTO (REVIEW_ALDO.md #2)', () => {
   const w = wire({
     OGGETTO: 'Oggetto statico',
-    TESTO_START: '<p>Alunno: {{focus.alunno.anagrafica.nomeCompleto}}</p>'
+    TESTO_START: '<p>Alunno: {{focus.alunno.nomeCompleto}}</p>'
   });
   buildStep(w).execute(w.ctx);
   const cdu = w.ctx.get<Cdu>('cdu')!;
-  cdu.focus.alunno!.anagrafica.nomeCompleto = '<script>alert(1)</script>';
+  cdu.focus.alunno!.nomeCompleto = '<script>alert(1)</script>';
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
   new ComposeEmailStep(
@@ -2342,7 +2342,7 @@ test('PostProcessEmailStep stamps CARENZE.NOTIFICATO only after a successful sen
       tab: 'CARENZE',
       col: 'NOTIFICATO',
       criteri: {
-        STUDENTE: '{{focus.carenza.studente}}',
+        STUDENTE: '{{focus.carenza.studente.email}}',
         PROGRESSIVO: '{{focus.carenza.progressivo}}'
       }
     }
@@ -2417,7 +2417,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
       new AldoTeachingAssignmentResolver(w.db)
     ).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
-    expect(cdu.destinatario?.anagrafica.email).toBe('');
+    expect(cdu.destinatario?.email).toBe('');
   });
 
   test('BuildCDUStep falls back to "" for alunno.id when tipo is alunno and the alunno lookup returns one with no id', () => {
@@ -2444,7 +2444,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
       new AldoTeachingAssignmentResolver(w.db)
     ).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
-    expect(cdu.destinatario?.anagrafica.email).toBe('');
+    expect(cdu.destinatario?.email).toBe('');
   });
 
   test('BuildCDUStep uses the real alunno id when tipo is alunno and the alunno is found', () => {
@@ -2460,7 +2460,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     );
     buildStep(w).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
-    expect(cdu.destinatario?.anagrafica.email).toBe('a1@school.it');
+    expect(cdu.destinatario?.email).toBe('a1@school.it');
   });
 
   test('BuildCDUStep falls back to "" for destinatario email when the target has no emails at all', () => {
@@ -2476,7 +2476,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     );
     buildStep(w).execute(w.ctx);
     const cdu = w.ctx.get<Cdu>('cdu')!;
-    expect(cdu.destinatario?.anagrafica.email).toBe('');
+    expect(cdu.destinatario?.email).toBe('');
   });
 
   // --- Steps 3-4: RenderBoxesStep + ComposeEmailStep ---

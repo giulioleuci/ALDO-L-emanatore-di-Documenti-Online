@@ -46,14 +46,14 @@ interface PianoPersonalizzatoRow {
   nome: string;
   link: string;
   sottotipo: string;
-  tipoLabel: string;
-  idGen: string;
-  notificato: boolean;
+  sottotipoLabel: string;
+  generatoreId: string;
+  isNotificato: boolean;
   studente?: { nomeCompleto: string; email: string };
 }
 
 const DEFAULT_PIANI_PERS_TEMPLATE =
-  '<li><a href="{{corrente.link}}" target="_blank">{{corrente.studente.nomeCompleto}} - {{corrente.tipoLabel}}</a>' +
+  '<li><a href="{{corrente.link}}" target="_blank">{{corrente.studente.nomeCompleto}} - {{corrente.sottotipoLabel}}</a>' +
   '{{#storico}} — Si invia anche il link al piano dell\'anno precedente: ' +
   '<a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}}){{/storico}}</li>';
 
@@ -65,8 +65,8 @@ export interface RenderedBox {
   id: string;
   titolo: string;
   html: string;
-  isEmpty: boolean;
-  visibile: boolean;
+  isVuoto: boolean;
+  isVisibile: boolean;
 }
 
 /** Scope resolved by RenderBoxesStep before invoking a DATI_SORGENTE accessor. */
@@ -255,7 +255,7 @@ function renderPianiPersBox(
       .map((d) => {
         const href = escapeHtml(safeUrl(d.link));
         const alunno = d.studente !== undefined ? escapeHtml(d.studente.nomeCompleto) : '';
-        const testo = `${alunno} - ${escapeHtml(d.tipoLabel)}`;
+        const testo = `${alunno} - ${escapeHtml(d.sottotipoLabel)}`;
         return `<li><a href="${href}" target="_blank">${testo}</a></li>`;
       })
       .join('');
@@ -286,7 +286,7 @@ function renderPianiPersBox(
           nome: escapeHtml(corrente.nome),
           link: escapeHtml(safeUrl(corrente.link)),
           sottotipo: escapeHtml(corrente.sottotipo),
-          tipoLabel: escapeHtml(corrente.tipoLabel),
+          sottotipoLabel: escapeHtml(corrente.sottotipoLabel),
           ...(corrente.studente !== undefined
             ? {
                 studente: {
@@ -323,10 +323,10 @@ function renderCattedreBox(data: unknown): string {
       const materie = c.materie
         .map(
           (m) =>
-            `${escapeHtml(m.nome)}${m.isITP ? ' <span style="font-size:11px;color:#888;">(ITP)</span>' : ''}`
+            `${escapeHtml(m.nome)}${m.isItp ? ' <span style="font-size:11px;color:#888;">(ITP)</span>' : ''}`
         )
         .join(', ');
-      return `<li><strong>${escapeHtml(c.classeNome)}</strong> — ${materie}</li>`;
+      return `<li><strong>${escapeHtml(c.classe.nome)}</strong> — ${materie}</li>`;
     })
     .join('');
   return wrapUl(righe);
@@ -414,7 +414,7 @@ export function createBoxComposer(
   simple(
     'cattedre',
     'Cattedre',
-    (ctx) => ctx.get('destinatario.contesto.cattedre', []),
+    (ctx) => ctx.get('destinatario.cattedre.elenco', []),
     (d) => (d as unknown[]).length === 0
   );
   // testo_dinamico: sempre visibile (MOSTRA_SE_VUOTO implicito, 11 §11); data = whole CDU.
@@ -487,68 +487,29 @@ function aggregaDati(
   documentiSorgente?: DocumentoItem[],
   cartelleSorgente?: DocumentoItem[]
 ): Record<string, unknown> {
-  const focus = cdu['focus'] as
-    | {
-        alunno?: {
-          didattica?: {
-            carenze?: { dettaglio?: Array<{ materia: string; voto: string }> };
-            documenti?: {
-              items?: DocumentoItem[];
-              storico?: LazyRef<DocumentoStoricoConTipo[]>;
-            };
-            pianiPersonalizzati?: {
-              items?: PianoPersonalizzatoRow[];
-              storico?: LazyRef<DocumentoStoricoConTipo[]>;
-            };
-          };
-        };
-        classe?: {
-          didattica?: {
-            documenti?: {
-              items?: DocumentoItem[];
-              storico?: LazyRef<DocumentoStoricoConTipo[]>;
-            };
-            pianiPersonalizzati?: {
-              items?: PianoPersonalizzatoRow[];
-              storico?: LazyRef<DocumentoStoricoConTipo[]>;
-            };
-          };
-        };
-        dipartimento?: {
-          didattica?: {
-            documenti?: {
-              items?: DocumentoItem[];
-              storico?: LazyRef<DocumentoStoricoConTipo[]>;
-            };
-          };
-        };
-      }
-    | undefined;
-  const dettaglio = focus?.alunno?.didattica?.carenze?.dettaglio ?? [];
-  const documenti =
-    focus?.classe?.didattica?.documenti ??
-    focus?.alunno?.didattica?.documenti ??
-    focus?.dipartimento?.didattica?.documenti;
-  const items = documenti?.items ?? [];
+  const focus = cdu['focus'] as import('../context-engine/Cdu').ContestoFocusVM | undefined;
+  const dettaglio = (focus?.alunno?.carenze?.elenco ?? []).map(({ materiaSigla, voto }) => ({ materia: materiaSigla, voto }));
+  const documenti = focus?.classe?.documenti ?? focus?.alunno?.documenti ?? focus?.dipartimento?.documenti;
+  const items = documenti?.elenco ?? [];
   const storicoRef = documenti?.storico;
-  const pianiPers = focus?.classe?.didattica?.pianiPersonalizzati ?? focus?.alunno?.didattica?.pianiPersonalizzati;
-  const pianiItems = pianiPers?.items ?? [];
+  const pianiPers = focus?.classe?.pianiPersonalizzati;
+  const pianiItems = pianiPers?.elenco ?? [];
   const pianiStoricoRef = pianiPers?.storico;
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
     documenti: { items: documentiSorgente ?? items.filter((i) => i.tipo !== 'CARTELLA'), storicoRef },
-    documentiDipartimento: { items: focus?.dipartimento?.didattica?.documenti?.items ?? [] },
+    documentiDipartimento: { items: focus?.dipartimento?.documenti?.elenco ?? [] },
     cartelle: {
       items: cartelleSorgente ?? items.filter((i) => i.tipo === 'CARTELLA'),
       storicoRef: undefined
     },
     pianiPersDaInviare: {
-      items: pianiItems.filter((i) => !i.notificato),
+      items: pianiItems.filter((i) => !i.isNotificato),
       storicoRef: pianiStoricoRef,
       defaultTemplate: DEFAULT_PIANI_PERS_TEMPLATE
     },
     pianiPersInviati: {
-      items: pianiItems.filter((i) => i.notificato),
+      items: pianiItems.filter((i) => i.isNotificato),
       storicoRef: pianiStoricoRef,
       defaultTemplate: ''
     }
@@ -726,7 +687,7 @@ function resolveBoxConfigurations(
  * Runs the Box Rendering System for one CONF_MAIL pattern (11 §5): BOX_CFG →
  * CompositionRecipe → ContentComposer; applies the FormattatoreDatiEmail
  * container and the MOSTRA_SE_VUOTO/TESTO_VUOTO fallback; returns both the
- * ordered HTML fragments for ComposeEmailStep and the `cdu.render.boxes` map.
+ * ordered HTML fragments for ComposeEmailStep and the canonical `cdu.render.boxes` view.
  */
 export function renderBoxes(
   composer: ContentComposer,
@@ -740,7 +701,14 @@ export function renderBoxes(
 ): {
   ordered: string[];
   hasTriggeringContent: boolean;
-  boxes: Record<string, RenderedBox>;
+  boxes: {
+    perId: Record<string, RenderedBox>;
+    elenco: RenderedBox[];
+    visibili: RenderedBox[];
+    hasElenco: boolean;
+    hasVisibili: boolean;
+    numero: number;
+  };
   documentIds: string[];
   folderIds: string[];
   dynamicAttachments: Array<{ id: string; link: string }>;
@@ -756,7 +724,7 @@ export function renderBoxes(
     return {
       ordered: [],
       hasTriggeringContent: false,
-      boxes: {},
+      boxes: { perId: {}, elenco: [], visibili: [], hasElenco: false, hasVisibili: false, numero: 0 },
       documentIds: [],
       folderIds: [],
       dynamicAttachments: []
@@ -820,7 +788,10 @@ export function renderBoxes(
   for (const { cfg, index, tipo, sourceItems } of orderedCfg) {
     const instanceId = `${tipo}_${index}`;
     const block = byInstance.get(instanceId);
-    if (block === undefined) continue;
+    if (block === undefined) {
+      boxes[instanceId] = { id: instanceId, titolo: DEFAULT_TITLES[tipo]!, html: '', isVuoto: true, isVisibile: false };
+      continue;
+    }
     if (block.isVisible && block.content !== '') {
       sourceContentTypes.add(tipo);
       if (tipo === 'documenti') {
@@ -850,9 +821,8 @@ export function renderBoxes(
           ? str(cfg['COLORE'])
           : DEFAULT_BORDER;
     const html = inner === '' ? '' : titolo === '' ? inner : wrapBox(titolo, coloreBordo, inner);
-    const renderedBox = { id: instanceId, titolo, html, isEmpty, visibile: html !== '' };
+    const renderedBox = { id: instanceId, titolo, html, isVuoto: isEmpty, isVisibile: html !== '' };
     boxes[instanceId] = renderedBox;
-    boxes[tipo] = renderedBox;
     if (html !== '') {
       ordered.push(html);
       // piani_pers_inviati is context only (previously notified plans); it must
@@ -871,10 +841,19 @@ export function renderBoxes(
   const dynamicAttachments = uniqueById(dynamicAttachmentItems)
     .map((item) => ({ id: item.id ?? '', link: item.link }))
     .filter((item) => item.id !== '');
+  const elenco = Object.values(boxes);
+  const visibili = elenco.filter((box) => box.isVisibile);
   return {
     ordered,
     hasTriggeringContent,
-    boxes,
+    boxes: {
+      perId: boxes,
+      elenco,
+      visibili,
+      hasElenco: elenco.length > 0,
+      hasVisibili: visibili.length > 0,
+      numero: elenco.length
+    },
     documentIds: ids(documentIds),
     folderIds: ids(renderedFolderItems),
     dynamicAttachments

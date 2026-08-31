@@ -14,8 +14,8 @@ import { DocenteRepository } from '../../../src/infrastructure/repositories/Doce
 import { Docente } from '../../../src/domain/entities/Docente';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
-import { buildPersonVm } from '../../../src/application/context-engine/mappers/personVmMapper';
-import type { CduDipartimentoFocus } from '../../../src/application/context-engine/Cdu';
+import { buildPersonaVm } from '../../../src/application/context-engine/mappers/personVmMapper';
+import type { DipartimentoFocusVM } from '../../../src/application/context-engine/Cdu';
 
 const NOW = new Date('2026-07-01T09:00:00Z'); // outside every supplenza window
 
@@ -90,19 +90,20 @@ describe('RisolutoreRuoliService — single-teacher roles (14 §1.1)', () => {
   });
 });
 
-function dipartimentoFocus(overrides: Partial<CduDipartimentoFocus>): CduDipartimentoFocus {
+function dipartimentoFocus(overrides: Partial<DipartimentoFocusVM>): DipartimentoFocusVM {
   return {
-    anagrafica: { id: 'DIP', nome: 'Dipartimento' },
+    id: 'DIP',
+    nome: 'Dipartimento',
     capo: null,
     materie: [],
     docenti: [],
-    didattica: { documenti: { items: [] } },
+    documenti: { elenco: [], hasElenco: false, numero: 0 },
     ...overrides
   };
 }
 
 function person(email: string) {
-  return buildPersonVm({ nome: 'Nome', cognome: 'Cognome', email, genere: 'M' });
+  return buildPersonaVm({ nome: 'Nome', cognome: 'Cognome', email, genere: 'M' });
 }
 
 describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / CAPO_DIPART (Task 4)', () => {
@@ -133,7 +134,7 @@ describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / C
       },
       recipe('DOCENTE_AGGREGATO')
     );
-    expect(cdu.tech.entita.classe).toBeUndefined();
+    expect(cdu.tech.entita.classe).toBeNull();
     const service = composeRisolutoreRuoli(db);
     expect(emails(service, 'DOCENTE_CORRENTE', cdu)).toEqual(['bianchi@school.it']);
   });
@@ -144,7 +145,7 @@ describe('RisolutoreRuoliService — DOCENTE_CORRENTE / DOCENTI_DIPARTIMENTO / C
       { target: 'SCIENTIFICO_DIP', tipoTarget: 'dipartimento', now: NOW },
       recipe('DIPARTIMENTO_COMPLETO')
     );
-    expect(cdu.tech.entita.classe).toBeUndefined();
+    expect(cdu.tech.entita.classe).toBeNull();
     const service = composeRisolutoreRuoli(db);
     expect(emails(service, 'CAPO_DIPART', cdu)).toEqual(['rossi@school.it']);
     expect(emails(service, 'DOCENTI_DIPARTIMENTO', cdu)).toEqual([
@@ -279,7 +280,7 @@ describe('RisolutoreRuoliService — supplenza routing (14 §1.2)', () => {
 
     expect(resolveSpy).toHaveBeenCalledWith(
       expect.objectContaining({ id: '5A' }),
-      new Date('2025-11-15'),
+      INSIDE_WINDOW,
       expect.objectContaining({
         includeReligioneAlt: true,
         routingPolicy: RoutingPolicy.BOTH_EQUAL

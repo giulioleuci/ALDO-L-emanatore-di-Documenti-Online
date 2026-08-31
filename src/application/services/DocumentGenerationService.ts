@@ -177,7 +177,8 @@ export class DocumentGenerationService {
         target: target.value,
         tipoTarget: 'classe',
         now: this.now,
-        idConfigurazione: confDocId,
+        configurazioneId: confDocId,
+        esecuzioneId: '',
         tipoOperazione: 'GENERAZIONE_DOCUMENTO',
         classiCompetenza,
         ...extraParams
@@ -229,7 +230,8 @@ export class DocumentGenerationService {
         target: dipartimentoId,
         tipoTarget: 'dipartimento',
         now: this.now,
-        idConfigurazione: confDocId,
+        configurazioneId: confDocId,
+        esecuzioneId: '',
         tipoOperazione: 'GENERAZIONE_DOCUMENTO'
       },
       recipe('DIPARTIMENTO_COMPLETO')
@@ -275,7 +277,8 @@ export class DocumentGenerationService {
         target: docenteEmail,
         tipoTarget: 'docente',
         now: this.now,
-        idConfigurazione: confDocId,
+        configurazioneId: confDocId,
+        esecuzioneId: '',
         tipoOperazione: 'GENERAZIONE_DOCUMENTO',
         classiCompetenza,
         docenteCorrente: docenteEmail
@@ -349,7 +352,8 @@ export class DocumentGenerationService {
         target,
         tipoTarget: 'alunno',
         now: this.now,
-        idConfigurazione: confDocId,
+        configurazioneId: confDocId,
+        esecuzioneId: '',
         tipoOperazione: 'GENERAZIONE_DOCUMENTO',
         ...(pianoTipo === undefined ? {} : { pianoTipo })
       },

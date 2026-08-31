@@ -383,9 +383,9 @@ test('seedConfMail seeds the ELENCO_MATERIE pattern (Feature 1)', () => {
   expect(elenco!['TESTO_START']).toBe('');
   expect(elenco!['TESTO_END']).toBe('');
   expect(JSON.parse(String(elenco!['BOX_CFG']))).toEqual([
-    { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+    { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.nome}}' }
   ]);
-  expect(String(elenco!['OGGETTO'])).toContain('{{destinatario.anagrafica.cognome}}');
+  expect(String(elenco!['OGGETTO'])).toContain('{{destinatario.cognome}}');
 });
 
 test('MATERIE headers carry one curriculum column per indirizzo (Feature 4)', () => {

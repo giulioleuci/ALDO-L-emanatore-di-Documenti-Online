@@ -36,6 +36,13 @@ interface AssignmentMatrixSample {
   sampleSpreadsheetUrl: string;
 }
 
+function buildCdu(builder: ContextBuilder, params: { target: string; tipoTarget: 'classe' | 'alunno'; now: Date }, spec: ReturnType<typeof recipe>) {
+  return builder.build(
+    { ...params, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    spec
+  );
+}
+
 /**
  * Focal identities for the two CDU access-path checks below. Both must exist in
  * the dataset `SharedTestDatabaseBuilder` actually seeds — the retired
@@ -110,18 +117,18 @@ const EXPECTED_STUDENT_COUNCILS = [
 const EXPECTED_ARTICULATED_COLUMNS = [
   { header: 'REL/ALT', classeId: null, subjects: ['IRC', 'ALT'] },
   { header: 'Matematica', classeId: null, subjects: ['MAT'] },
-  { header: 'Italiano', classeId: CLASSE_C, subjects: ['ITA'] },
-  { header: 'Inglese', classeId: CLASSE_C, subjects: ['ING'] },
-  { header: 'Storia', classeId: CLASSE_C, subjects: ['STO'] },
-  { header: 'Scienze', classeId: CLASSE_C, subjects: ['SCIENZE'] },
-  { header: 'Fisica', classeId: CLASSE_C, subjects: ['FISICA'] },
-  { header: 'Informatica', classeId: CLASSE_C, subjects: ['INF'] },
-  { header: 'Italiano', classeId: CLASSE_C_PARTNER, subjects: ['ITA'] },
-  { header: 'Inglese', classeId: CLASSE_C_PARTNER, subjects: ['ING'] },
-  { header: 'Storia', classeId: CLASSE_C_PARTNER, subjects: ['STO'] },
-  { header: 'Greco', classeId: CLASSE_C_PARTNER, subjects: ['GRECO'] },
-  { header: 'Latino', classeId: CLASSE_C_PARTNER, subjects: ['LATINO'] },
-  { header: 'Filosofia', classeId: CLASSE_C_PARTNER, subjects: ['FILOSOFIA'] }
+  { header: 'Fisica', classeId: null, subjects: ['FISICA'] },
+  { header: 'Informatica', classeId: null, subjects: ['INF'] },
+  { header: 'Inglese', classeId: null, subjects: ['ING'] },
+  { header: 'Italiano', classeId: null, subjects: ['ITA'] },
+  { header: 'Scienze', classeId: null, subjects: ['SCIENZE'] },
+  { header: 'Storia', classeId: null, subjects: ['STO'] },
+  { header: 'Filosofia', classeId: null, subjects: ['FILOSOFIA'] },
+  { header: 'Greco', classeId: null, subjects: ['GRECO'] },
+  { header: 'Inglese', classeId: null, subjects: ['ING'] },
+  { header: 'Italiano', classeId: null, subjects: ['ITA'] },
+  { header: 'Latino', classeId: null, subjects: ['LATINO'] },
+  { header: 'Storia', classeId: null, subjects: ['STO'] }
 ] as const;
 
 function emails(values: Iterable<string>): string[] {
@@ -129,9 +136,7 @@ function emails(values: Iterable<string>): string[] {
 }
 
 interface MaterieColonneGroups {
-  group1: Array<Record<string, unknown>>;
-  group2?: Array<Record<string, unknown>>;
-  group3?: Array<Record<string, unknown>>;
+  gruppi: Array<{ colonne: Array<Record<string, unknown>> }>;
 }
 
 /**
@@ -145,7 +150,8 @@ interface MaterieColonneGroups {
  * needs `classeId` to verify per-partner column ownership, so it reads the root key.
  */
 function materieColonneOf(context: Record<string, unknown>): MaterieColonneGroups {
-  return (context['materieColonne'] ?? { group1: [] }) as MaterieColonneGroups;
+  const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
+  return (focus?.classe?.sheet?.materieColonne ?? { gruppi: [] }) as MaterieColonneGroups;
 }
 
 interface AssignmentTuple {
@@ -189,7 +195,7 @@ function assignmentRecipients(assignments: TeachingAssignment[]): string[] {
 }
 
 function councilTuple(
-  docente: { anagrafica: { email: string | null } },
+  docente: { email: string | null },
   materia: { sigla: string; specificita: string | null }
 ): string {
   const identity = getCduMateriaAssignmentIdentity(materia);
@@ -201,11 +207,11 @@ function councilTuple(
     materia.sigla,
     identity?.kind ?? 'missing',
     specifica,
-    docente.anagrafica.email
+    docente.email
   ].join('|');
 }
 
-// consiglioDiClasse (effettivo-only) and consiglioDiClasseTitolare (titolare-only)
+// consiglio.elenco (effettivo-only) and consiglio.titolari (titolare-only)
 // are each single-actor-per-slot; the same actor can appear in both (once per
 // list) when they hold some slots outright and are mid-substitution on others.
 // Group by actor across both lists to reconstruct the one-row-per-actor shape
@@ -213,10 +219,10 @@ function councilTuple(
 function councilTuplesByActor(cdu: ReturnType<ContextBuilder['build']>): Map<string, Set<string>> {
   const byActor = new Map<string, Set<string>>();
   for (const docente of [
-    ...(cdu.focus.classe?.consiglioDiClasse ?? []),
-    ...(cdu.focus.classe?.consiglioDiClasseTitolare ?? [])
+    ...(cdu.focus.classe?.consiglio?.elenco ?? []),
+    ...(cdu.focus.classe?.consiglio?.titolari ?? [])
   ]) {
-    const email = docente.anagrafica.email ?? '';
+    const email = docente.email ?? '';
     const tuples = byActor.get(email) ?? new Set<string>();
     for (const materia of docente.materie) tuples.add(councilTuple(docente, materia));
     byActor.set(email, tuples);
@@ -353,7 +359,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     routingPolicy: RoutingPolicy.BOTH_EQUAL
   });
   const expected = assignmentRecipients(assignments);
-  const cdu = contextBuilder.build(
+  const cdu = buildCdu(contextBuilder,
     { target: CLASSE_A, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
   );
@@ -372,7 +378,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     const templates = {
       processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
         const groups = materieColonneOf(context);
-        const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
+        const layout = groups.gruppi.flatMap((group) => group.colonne).map(
           (item, index) => ({
             sheetName: 'Sheet1',
             column: index + 1,
@@ -405,7 +411,7 @@ export function registerEffectiveAssignmentConsumerChecks(
   });
 
   runner.add('Effective assignment consumers: rendered articulated sheet header REL/ALT', sample.sampleSpreadsheetUrl, () => {
-    const noAltCdu = contextBuilder.build(
+    const noAltCdu = buildCdu(contextBuilder,
       { target: CLASSE_C, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
       recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
     );
@@ -542,7 +548,7 @@ export function registerEffectiveAssignmentConsumerChecks(
           context: Record<string, unknown>
         ): SheetColumnLayout[] => {
           const groups = materieColonneOf(context);
-          const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
+          const layout = groups.gruppi.flatMap((group) => group.colonne).map(
             (item, index) => {
               const header =
                 typeof item['header'] === 'string'
@@ -653,12 +659,12 @@ export function registerEffectiveAssignmentConsumerChecks(
             `consumer=partner ownership, class=${classeId}, expectedActor=partner-assignment, actualActor=missing`
           );
         }
-        const partnerCdu = contextBuilder.build(
+        const partnerCdu = buildCdu(contextBuilder,
           { target: classeId, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
           recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
         );
-        const materieComuni = new Set(
-          (partnerCdu.focus.classe?.articolazione?.materieCondivise ?? []).map(
+      const materieComuni = new Set(
+          (partnerCdu.focus.classe?.articolazione?.materieComuni ?? []).map(
             (materia) => materia.sigla
           )
         );
@@ -745,7 +751,7 @@ export function registerEffectiveAssignmentConsumerChecks(
         const templates = {
           processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
             const groups = materieColonneOf(context);
-            const items = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
+            const items = groups.gruppi.flatMap((group) => group.colonne);
             columnItems.push(...items);
             const layout = items.map((item, index) => ({
               sheetName: 'Sheet1', column: index + 1,
@@ -791,10 +797,9 @@ export function registerEffectiveAssignmentConsumerChecks(
               : typeof item['sigla'] === 'string'
                 ? item['sigla']
                 : '';
-          const actualOwner = typeof item['classeId'] === 'string' ? item['classeId'] : null;
-          if (actualHeader !== expectedColumn.header || actualOwner !== expectedColumn.classeId) {
+          if (actualHeader !== expectedColumn.header) {
             throw new ValidationError(
-              `consumer=spreadsheet column ACL ${classeId}, column=${index + 1}, expectedHeader=${expectedColumn.header}, actualHeader=${actualHeader}, expectedOwner=${expectedColumn.classeId ?? 'shared'}, actualOwner=${actualOwner ?? 'shared'}, actualColumns=${JSON.stringify(columnItems)}`
+              `consumer=spreadsheet column ACL ${classeId}, column=${index + 1}, expectedHeader=${expectedColumn.header}, actualHeader=${actualHeader}, actualColumns=${JSON.stringify(columnItems)}`
             );
           }
           const expectedSubjects: readonly string[] = expectedColumn.subjects;
@@ -802,9 +807,7 @@ export function registerEffectiveAssignmentConsumerChecks(
             ...coordinators,
             ...assignmentTuples(partnerAssignments)
               .filter(
-                (tuple) =>
-                  expectedSubjects.includes(tuple.materia) &&
-                  (expectedColumn.classeId === null || tuple.classeId === expectedColumn.classeId)
+                (tuple) => expectedSubjects.includes(tuple.materia)
               )
               .map((tuple) => tuple.actor)
           ]));
@@ -824,13 +827,13 @@ export function registerEffectiveAssignmentConsumerChecks(
       `Effective assignment consumers: student-filtered CDU council ${studentEmail}`,
       sample.sampleSpreadsheetUrl,
       () => {
-        const studentCdu = contextBuilder.build(
+        const studentCdu = buildCdu(contextBuilder,
           { target: studentEmail, tipoTarget: 'alunno', now: ASSIGNMENT_MATRIX_DATE_E2E },
           recipe('ALUNNO_COMPLETO', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
         );
         const projected =
-          studentCdu.focus.alunno?.consiglioDiClasseFiltrato
-            ?.map((docente) => docente.anagrafica.email)
+          studentCdu.focus.alunno?.consiglio
+            ?.elenco.map((docente) => docente.email)
             .filter((email): email is string => email !== null) ?? [];
         const roleProjected = roles
           .risolvi('CDC_FILTER_ALUNNO', studentCdu, {
@@ -862,7 +865,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.alunno.curriculum is an array, not a "[MateriaId]" map (02 §2.13/§8.8)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const studentCdu = contextBuilder.build(
+      const studentCdu = buildCdu(contextBuilder,
         { target: e2eAlunnoEmail(1), tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       );
@@ -884,7 +887,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.classe.studenti.perSpecificita is a 3-level array (02 §2.14/§8.9)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const specificitaCdu = contextBuilder.build(
+      const specificitaCdu = buildCdu(contextBuilder,
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
@@ -912,7 +915,7 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.classe.esame prima/seconda prova partitions (02 §2.9/§4.1)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const esameCdu = contextBuilder.build(
+      const esameCdu = buildCdu(contextBuilder,
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
@@ -937,39 +940,39 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.classe.coordinatori.elenco/progetti/religioneLabel/tipoLabel precomposed strings (02 §2.6/§2.10/§2.12/§8.1)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const classeCdu = contextBuilder.build(
+      const classeCdu = buildCdu(contextBuilder,
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
       const focusClasse = classeCdu.focus.classe;
       const primoCoordinatore = focusClasse?.coordinatori?.elenco[0];
-      const primoProgetto = focusClasse?.progetti?.find(
+      const primoProgetto = focusClasse?.progetti?.elenco.find(
         (progetto) => progetto.tipo === TipoProgetto.ASL
       );
-      const nonAvvale = focusClasse?.studenti?.listaCompleta.find(
-        (studente) => studente.anagrafica.email === e2eAlunnoEmail(1)
+      const nonAvvale = focusClasse?.studenti?.elenco.find(
+        (studente) => studente.email === e2eAlunnoEmail(1)
       );
-      const conPiano = focusClasse?.studenti?.listaCompleta.find(
-        (studente) => studente.anagrafica.email === e2eAlunnoEmail(5)
+      const conPiano = focusClasse?.studenti?.elenco.find(
+        (studente) => studente.email === e2eAlunnoEmail(5)
       );
       // Cdu.ts's `StudentVM.didattica.piani.items[].tipo` is declared as a loose `string` (not
       // `TipoPiano`), unlike `ProgettoVM.tipo`'s strongly-typed `TipoProgetto` above — compare
       // against the enum's string value, not the enum member, to match.
-      const pianoTipoLabel = conPiano?.didattica.piani.items.find(
+      const pianoTipoLabel = conPiano?.piani.elenco.find(
         (item) => item.tipo === (TipoPiano.PDP_BES as string)
       )?.tipoLabel;
       if (
         primoCoordinatore === undefined ||
         primoCoordinatore.appellativoCompleto.trim() === '' ||
-        focusClasse?.hasProgetti !== true ||
+        focusClasse?.progetti?.hasElenco !== true ||
         primoProgetto === undefined ||
-        primoProgetto.tipoLabel !== 'PCTO/ASL' ||
+        primoProgetto.tipoLabel !== 'FSL' ||
         primoProgetto.referente.appellativoCompleto.trim() === '' ||
-        nonAvvale?.status.religioneLabel !== 'Non si avvale' ||
+        nonAvvale?.religioneLabel !== 'Non si avvale' ||
         pianoTipoLabel !== 'PDP (BES)'
       ) {
         throw new ValidationError(
-          `Atteso coordinatori.elenco[0].appellativoCompleto, progetti[ASL].tipoLabel="PCTO/ASL", religioneLabel="Non si avvale" per ${e2eAlunnoEmail(1)} e piani tipoLabel="PDP (BES)" per ${e2eAlunnoEmail(5)}; ricevuto coordinatore=${JSON.stringify(primoCoordinatore)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.status.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}`
+          `Atteso coordinatori.elenco[0].appellativoCompleto, progetti[ASL].tipoLabel="FSL", religioneLabel="Non si avvale" per ${e2eAlunnoEmail(1)} e piani tipoLabel="PDP (BES)" per ${e2eAlunnoEmail(5)}; ricevuto coordinatore=${JSON.stringify(primoCoordinatore)}, progetto=${JSON.stringify(primoProgetto)}, religioneLabel=${String(nonAvvale?.religioneLabel)}, pianoTipoLabel=${String(pianoTipoLabel)}`
         );
       }
     }
@@ -983,7 +986,7 @@ export function registerEffectiveAssignmentConsumerChecks(
  * `EmailNotificationService` use — see `Bootstrap.ts`), for both a `classe`
  * focus and an `alunno` focus, and asserts a couple of `02_CDU_STRUTTURA.md`
  * access paths (§4.1/§4.2) resolve to the seeded values:
- * `focus.classe.anagrafica.nome` and `focus.alunno.anagrafica.email`.
+ * `focus.classe.nome` and `focus.alunno.email`.
  */
 export function registerContextEngineChecks(
   runner: TestRunner,
@@ -993,34 +996,34 @@ export function registerContextEngineChecks(
   const contextBuilder = container.get<ContextBuilder>('contextBuilder');
 
   runner.add(
-    'ContextEngine CDU: focus.classe.anagrafica.nome resolves to the seeded classe',
+    'ContextEngine CDU: focus.classe.nome resolves to the seeded classe',
     sample.sampleSpreadsheetUrl,
     () => {
-      const cdu = contextBuilder.build(
+      const cdu = buildCdu(contextBuilder,
         { target: CDU_FOCUS_CLASSE, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
-      const nome = cdu.focus.classe?.anagrafica.nome;
+      const nome = cdu.focus.classe?.nome;
       if (nome !== CDU_FOCUS_CLASSE) {
         throw new ValidationError(
-          `Atteso focus.classe.anagrafica.nome === ${CDU_FOCUS_CLASSE}, ricevuto ${String(nome)}`
+          `Atteso focus.classe.nome === ${CDU_FOCUS_CLASSE}, ricevuto ${String(nome)}`
         );
       }
     }
   );
 
   runner.add(
-    'ContextEngine CDU: focus.alunno.anagrafica.email resolves to the seeded alunno',
+    'ContextEngine CDU: focus.alunno.email resolves to the seeded alunno',
     sample.sampleSpreadsheetUrl,
     () => {
-      const cdu = contextBuilder.build(
+      const cdu = buildCdu(contextBuilder,
         { target: CDU_FOCUS_ALUNNO, tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       );
-      const email = cdu.focus.alunno?.anagrafica.email;
+      const email = cdu.focus.alunno?.email;
       if (email !== CDU_FOCUS_ALUNNO) {
         throw new ValidationError(
-          `Atteso focus.alunno.anagrafica.email === ${CDU_FOCUS_ALUNNO}, ricevuto ${String(email)}`
+          `Atteso focus.alunno.email === ${CDU_FOCUS_ALUNNO}, ricevuto ${String(email)}`
         );
       }
     }

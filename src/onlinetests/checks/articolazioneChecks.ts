@@ -67,7 +67,7 @@ function classCdu(
   gestioneSupplenti = GestioneSupplenti.ENTRAMBI
 ) {
   return contextBuilder.build(
-    { target, tipoTarget: 'classe', now },
+    { target, tipoTarget: 'classe', now, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
     recipe('CLASSE_COMPLETA', {
       includiSupplenti: true,
       gestioneSupplenti
@@ -131,15 +131,15 @@ export function registerArticolazioneChecks(
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const duringSubstitution = classCdu(contextBuilder, CLASSE_A, new Date('2026-08-05'));
       const afterSubstitution = classCdu(contextBuilder, CLASSE_A, new Date('2026-08-11'));
-      const current = duringSubstitution.focus.classe?.consiglioDiClasse ?? [];
-      const after = afterSubstitution.focus.classe?.consiglioDiClasse ?? [];
-      const seminar = current.find((docente) => docente.anagrafica.email === e2eDocenteEmail(18));
-      const original = after.find((docente) => docente.anagrafica.email === e2eDocenteEmail(4));
+      const current = duringSubstitution.focus.classe?.consiglio?.elenco ?? [];
+      const after = afterSubstitution.focus.classe?.consiglio?.elenco ?? [];
+      const seminar = current.find((docente) => docente.email === e2eDocenteEmail(18));
+      const original = after.find((docente) => docente.email === e2eDocenteEmail(4));
       const replacementAfterBoundary = after.find(
-        (docente) => docente.anagrafica.email === e2eDocenteEmail(18)
+        (docente) => docente.email === e2eDocenteEmail(18)
       );
       const finalHolder = current.find(
-        (docente) => docente.anagrafica.email === e2eDocenteEmail(16)
+        (docente) => docente.email === e2eDocenteEmail(16)
       );
 
       if (
@@ -178,12 +178,12 @@ export function registerArticolazioneChecks(
       const atBoundary = new Date('2026-09-01');
       const classe4A = classCdu(contextBuilder, '4A', atBoundary);
       const classe2B = classCdu(contextBuilder, '2B', atBoundary);
-      const council4A = classe4A.focus.classe?.consiglioDiClasse ?? [];
-      const council2B = classe2B.focus.classe?.consiglioDiClasse ?? [];
+      const council4A = classe4A.focus.classe?.consiglio?.elenco ?? [];
+      const council2B = classe2B.focus.classe?.consiglio?.elenco ?? [];
       const hasMateria = (council: typeof council4A, email: string, materia: string): boolean =>
         council.some(
           (docente) =>
-            docente.anagrafica.email === email &&
+            docente.email === email &&
             docente.materie.some((candidate) => candidate.sigla === materia)
         );
 
@@ -225,9 +225,9 @@ export function registerArticolazioneChecks(
         GestioneSupplenti.ENTRAMBI
       );
       const hasLab = (cdu: ReturnType<ContextBuilder['build']>, email: string): boolean =>
-        (cdu.focus.classe?.consiglioDiClasse ?? []).some(
+        (cdu.focus.classe?.consiglio?.elenco ?? []).some(
           (docente) =>
-            docente.anagrafica.email === email &&
+            docente.email === email &&
             docente.materie.some((materia) => materia.sigla === 'LAB.SEMINARIO_POMERIDIANO')
         );
       const titolare = e2eDocenteEmail(4);
@@ -254,9 +254,9 @@ export function registerArticolazioneChecks(
     () => {
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const cdu = classCdu(contextBuilder, CLASSE_A);
-      const consiglio = cdu.focus.classe?.consiglioDiClasse ?? [];
+      const consiglio = cdu.focus.classe?.consiglio?.elenco ?? [];
       const docente5 = consiglio.find(
-        (docente) => docente.anagrafica.email === e2eDocenteEmail(5)
+        (docente) => docente.email === e2eDocenteEmail(5)
       );
       const chitarra = docente5?.materie.find((materia) => materia.sigla === 'INTERPRET.CHITARRA');
       if (
@@ -322,8 +322,8 @@ export function registerArticolazioneChecks(
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const cdu = classCdu(contextBuilder, CLASSE_C_PARENT);
       const classe = cdu.focus.classe;
-      const council = classe?.consiglioDiClasse ?? [];
-      const emails = council.map((docente) => docente.anagrafica.email);
+      const council = classe?.consiglio?.elenco ?? [];
+      const emails = council.map((docente) => docente.email);
       let serialized: string;
       try {
         serialized = JSON.stringify(cdu);
@@ -336,8 +336,8 @@ export function registerArticolazioneChecks(
         serialized.trim() === '' ||
         new Set(emails).size !== emails.length ||
         council.some((docente) => docente.materieDescrizione.trim() === '') ||
-        classe?.anagrafica.indirizzo.sigla !== INDIRIZZO_E2E ||
-        classe.anagrafica.indirizzo.nomeSintetico !== 'SCI'
+        classe?.indirizzo.sigla !== INDIRIZZO_E2E ||
+        classe.indirizzo.nomeSintetico !== 'SCI'
       ) {
         throw new ValidationError(
           'CDU articolazione non serializzabile o con CdC/descrizioni materie/indirizzo incoerenti.'
@@ -368,10 +368,10 @@ export function registerArticolazioneChecks(
         JSON.stringify(partners) !== JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
         parentIds.some((id) => id !== CLASSE_C_PARENT) ||
         articolazione === undefined ||
-        JSON.stringify(articolazione.partners) !== JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
-        !articolazione.materieCondivise.some((materia) => materia.sigla === 'MAT') ||
-        !articolazione.materieSeparatePrimoGruppo.some((materia) => materia.sigla === 'ITA') ||
-        !articolazione.materieSeparateSecondoGruppo.some((materia) => materia.sigla === 'ITA')
+        JSON.stringify(articolazione.sottoClassi.map((classe) => classe.nome)) !== JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
+        !articolazione.materieComuni.some((materia) => materia.sigla === 'MAT') ||
+        !articolazione.materieSeparatePrimo.some((materia) => materia.sigla === 'ITA') ||
+        !articolazione.materieSeparateSecondo.some((materia) => materia.sigla === 'ITA')
       ) {
         throw new ValidationError(
           'Round trip partner-parent o split comune/separato della CDU non valido.'
@@ -533,16 +533,16 @@ export function registerArticolazioneChecks(
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const parentCdu = classCdu(contextBuilder, CLASSE_C_PARENT);
       const parentClasse = parentCdu.focus.classe;
-      const comune = parentClasse?.consiglioDiClasseComune ?? [];
-      const separato = parentClasse?.consiglioDiClasseSeparato ?? [];
+      const comune = parentClasse?.consiglio?.comune ?? [];
+      const separato = parentClasse?.consiglio?.separato ?? [];
       const primo = separato.filter((docente) => docente.tipoArticolazione === 'SEPARATO_PRIMO');
       const secondo = separato.filter(
         (docente) => docente.tipoArticolazione === 'SEPARATO_SECONDO'
       );
 
-      const comuneEmails = comune.map((docente) => docente.anagrafica.email).sort();
-      const primoEmails = primo.map((docente) => docente.anagrafica.email).sort();
-      const secondoEmails = secondo.map((docente) => docente.anagrafica.email).sort();
+      const comuneEmails = comune.map((docente) => docente.email).sort();
+      const primoEmails = primo.map((docente) => docente.email).sort();
+      const secondoEmails = secondo.map((docente) => docente.email).sort();
 
       if (
         JSON.stringify(comuneEmails) !== JSON.stringify([e2eDocenteEmail(1)]) ||
@@ -580,8 +580,8 @@ export function registerArticolazioneChecks(
       }
 
       const primaryCdu = classCdu(contextBuilder, CLASSE_C);
-      const primaryEmails = (primaryCdu.focus.classe?.consiglioDiClasse ?? [])
-        .map((docente) => docente.anagrafica.email)
+      const primaryEmails = (primaryCdu.focus.classe?.consiglio?.elenco ?? [])
+        .map((docente) => docente.email)
         .sort();
       const expectedPrimary = [
         e2eDocenteEmail(1),
@@ -596,8 +596,8 @@ export function registerArticolazioneChecks(
       }
 
       const partnerCdu = classCdu(contextBuilder, CLASSE_C_PARTNER);
-      const partnerEmails = (partnerCdu.focus.classe?.consiglioDiClasse ?? [])
-        .map((docente) => docente.anagrafica.email)
+      const partnerEmails = (partnerCdu.focus.classe?.consiglio?.elenco ?? [])
+        .map((docente) => docente.email)
         .sort();
       // Same restriction-by-omission STO row as CLASSE_C_PARENT's secondo
       // group above (docente8's SUPPLENZE row, empty CLASSI/MATERIE=STO)

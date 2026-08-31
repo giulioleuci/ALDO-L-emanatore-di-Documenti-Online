@@ -55,14 +55,14 @@ function buildAlunno(
   }
 ): Cdu {
   return builder.build(
-    { target: email, tipoTarget: 'alunno', now: NOW },
+    { target: email, tipoTarget: 'alunno', now: NOW, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
     recipe('ALUNNO_COMPLETO', options)
   );
 }
 
 function buildClasse(builder: ContextBuilder, classe: string, depth: number): Cdu {
   return builder.build(
-    { target: classe, tipoTarget: 'classe', now: NOW },
+    { target: classe, tipoTarget: 'classe', now: NOW, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
     recipe('CLASSE_COMPLETA', {
       includiStorico: true,
       profonditaAnniStorico: depth,
@@ -76,7 +76,7 @@ export function assertAlunnoStorico(value: unknown): void {
   const anni = asArray(storico.anni, 'focus.alunno.storico.anni');
   if (anni.length !== 2) fail(`attesi due anni, ricevuti ${anni.length}`);
   const signatures = anni.map(
-    (anno) => `${String(anno.annoScolastico)}:${String(anno.classe)}:${String(anno.esito)}`
+    (anno) => `${String(anno.annoScolastico)}:${String(asRecord(anno.classe, 'classe anno').nome)}:${String(anno.esito)}`
   );
   if (!signatures.includes('2025-2026:2C:PROMOSSO')) fail('anno promosso 2025-2026/2C mancante');
   if (!signatures.includes('2024-2025:1C:NON_PROMOSSO')) {
@@ -95,33 +95,30 @@ export function assertAlunnoStorico(value: unknown): void {
       fail(`carenza GST non riconciliata in STO per ${annoScolastico}`);
     }
   }
-  if (storico.hasBocciature !== true) fail('hasBocciature deve essere true');
-  const bocciature = asArray(storico.bocciature, 'focus.alunno.storico.bocciature');
-  if (!bocciature.some((b) => b.annoScolastico === '2024-2025' && b.classe === '1C')) {
+  const bocciature = asArray(asRecord(storico.bocciature, 'bocciature').elenco, 'focus.alunno.storico.bocciature.elenco');
+  if (!bocciature.some((b) => b.annoScolastico === '2024-2025' && asRecord(b.classe, 'classe bocciatura').nome === '1C')) {
     fail('bocciatura distintiva 2024-2025/1C mancante');
   }
-  for (const key of ['pianiPrimoAnnoPrecedente', 'pianiSecondoAnnoPrecedente']) {
-    if (!asArray(storico[key], key).some((piano) => piano.tipo === 'PDP_BES')) {
-      fail(`${key} non contiene PDP_BES`);
+  for (const anno of anni) {
+    if (!asArray(anno.piani, `piani ${anno.annoScolastico}`).some((piano) => piano.tipo === 'PDP_BES')) {
+      fail(`piani ${anno.annoScolastico} non contiene PDP_BES`);
     }
   }
 }
 
 export function assertClasseStorico(storicoValue: unknown, materieValue: unknown): void {
   const storico = asRecord(storicoValue, 'focus.classe.storico');
-  const statistiche = asArray(storico.statistiche, 'focus.classe.storico.statistiche');
+  const statistiche = asArray(storico.anni, 'focus.classe.storico.anni');
   const statisticheAttese = ['2025-2026:2C:1', '2024-2025:1C:1'];
   const statisticheReali = statistiche.map((anno) => {
     const counts = asRecord(anno.statistiche, 'statistiche anno');
-    return `${String(anno.annoScolastico)}:${String(anno.classe)}:${String(counts.totale)}`;
+    return `${String(anno.annoScolastico)}:${String(asRecord(anno.classe, 'classe anno').nome)}:${String(counts.totale)}`;
   });
   for (const expected of statisticheAttese) {
     if (!statisticheReali.includes(expected)) fail(`statistica distintiva ${expected} mancante`);
   }
 
-  const progetti = asArray(storico.progetti, 'focus.classe.storico.progetti').flatMap((anno) =>
-    asArray(anno.progetti, 'progetti anno')
-  );
+  const progetti = statistiche.flatMap((anno) => asArray(anno.progetti, 'progetti anno'));
   const asl = progetti.find((progetto) => progetto.isAsl === true);
   const orientamento = progetti.find((progetto) => progetto.isAsl === false);
   if (asl === undefined || !String(asl.nome).startsWith('ASL storico ')) {
@@ -147,25 +144,25 @@ export function assertClasseStorico(storicoValue: unknown, materieValue: unknown
     return materia;
   };
   const inf = asRecord(bySigla('INF').continuita, 'continuità INF');
-  const infAnni = asArray(inf.docentiAnniPrecedenti, 'continuità INF anni');
+  const infAnni = asArray(inf.anniPrecedenti, 'continuità INF anni');
   if (asRecord(infAnni[0]?.itp, 'ITP INF anno 1').email !== 'e2edocente11@onlinetest.aldo.local') {
     fail('ITP storico cambiato di INF non risolto');
   }
   if (infAnni[1]?.itp !== null) fail('ITP storico assente di INF deve essere null');
 
   const mat = asRecord(bySigla('MAT').continuita, 'continuità MAT');
-  for (const anno of asArray(mat.docentiAnniPrecedenti, 'continuità MAT anni')) {
+  for (const anno of asArray(mat.anniPrecedenti, 'continuità MAT anni')) {
     if (Object.prototype.hasOwnProperty.call(anno, 'itp')) fail('MAT senza ITP espone campo itp');
   }
   if (
-    Object.prototype.hasOwnProperty.call(mat, 'continuitaUltimiDueAnniItp') ||
-    Object.prototype.hasOwnProperty.call(mat, 'continuitaUltimiTreAnniItp')
+    Object.prototype.hasOwnProperty.call(mat, 'isContinuitaItpUltimiDueAnni') ||
+    Object.prototype.hasOwnProperty.call(mat, 'isContinuitaItpUltimiTreAnni')
   ) {
     fail('MAT senza ITP espone flag di continuità ITP');
   }
 
   const sto = asRecord(bySigla('STO').continuita, 'continuità STO');
-  const stoAnni = asArray(sto.docentiAnniPrecedenti, 'continuità STO anni');
+  const stoAnni = asArray(sto.anniPrecedenti, 'continuità STO anni');
   if (
     stoAnni.length !== 2 ||
     stoAnni.some(
@@ -178,7 +175,7 @@ export function assertClasseStorico(storicoValue: unknown, materieValue: unknown
 }
 
 export function assertDocumentiStorici(value: unknown): void {
-  const docs = asArray(value, 'focus.alunno.didattica.pianiPersonalizzati.storico');
+  const docs = asArray(value, 'focus.alunno.documenti.storico');
   for (const anno of ['2025-2026', '2024-2025']) {
     for (const sottotipo of ['PEI', 'PDP_BES']) {
       const matches = docs.filter(
@@ -293,7 +290,7 @@ export function registerStoricoChecks(
           profonditaAnniStorico: 2,
           profonditaAnniDocumenti: 0
         });
-        if (ripetente.focus.alunno?.status.isRipetente !== true) {
+  if (ripetente.focus.alunno?.isRipetente !== true) {
           fail('flag ripetenza corrente non preservato');
         }
       }
@@ -307,7 +304,7 @@ export function registerStoricoChecks(
       () => {
         const cdu = buildClasse(builder, CLASSE_C_PARENT, 2);
         const storico = materializeClassHistory(cdu);
-        assertClasseStorico(storico, cdu.focus.classe?.materie);
+        assertClasseStorico(storico, cdu.focus.classe?.materie?.elenco);
       }
     );
     runner.add(
@@ -315,7 +312,7 @@ export function registerStoricoChecks(
       sample.priorSampleSpreadsheetUrl2,
       () => {
         const cdu = buildClasse(builder, CLASSE_C_PARENT, 2);
-        assertClasseStorico(materializeClassHistory(cdu), cdu.focus.classe?.materie);
+        assertClasseStorico(materializeClassHistory(cdu), cdu.focus.classe?.materie?.elenco);
         const missingChain = buildClasse(builder, CLASSE_A, 2);
         const empty = asRecord(
           materializeClassHistory(missingChain),
@@ -342,7 +339,7 @@ export function registerStoricoChecks(
           profonditaAnniDocumenti: 2
         });
         const pianoHistory = materializeLazyRef(
-          pianoCdu.focus.alunno?.didattica.pianiPersonalizzati?.storico
+          pianoCdu.focus.alunno?.documenti?.storico
         );
         assertDocumentiStorici(pianoHistory);
 
@@ -352,7 +349,7 @@ export function registerStoricoChecks(
           profonditaAnniDocumenti: 2
         });
         const genericHistory = asArray(
-          materializeLazyRef(genericCdu.focus.alunno?.didattica.pianiPersonalizzati?.storico),
+          materializeLazyRef(genericCdu.focus.alunno?.documenti?.storico),
           'documenti CONF_DOC_STORICO'
         );
         if (

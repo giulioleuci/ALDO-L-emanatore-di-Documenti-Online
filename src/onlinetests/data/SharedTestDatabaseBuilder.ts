@@ -1035,7 +1035,7 @@ export class SharedTestDatabaseBuilder {
 
   private seedConfDoc(sample: ISampleSpreadsheet, templateIds: E2eTemplateIds): void {
     const classRegistration = JSON.stringify({
-      classi: '{{focus.classe.anagrafica.nome}}',
+      classi: '{{focus.classe.nome}}',
       utenti: '',
       materie: ''
     });
@@ -1046,8 +1046,8 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.verbale }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.anagrafica.nome}}',
-        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/VERBALI/{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Verbale_{{focus.classe.nome}}',
+        [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/VERBALI/{{focus.classe.nome}}',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
         [COL_CONF_DOC.POST_PROCESSO]: JSON.stringify([
@@ -1056,7 +1056,7 @@ export class SharedTestDatabaseBuilder {
             stato: StatoDocumento.VERBALIZZATO,
             criteri: {
               [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-              [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
+              [COL_LOG_DOCS.CLASSI]: '{{focus.classe.nome}}'
             }
           },
           {
@@ -1064,7 +1064,7 @@ export class SharedTestDatabaseBuilder {
             stato: StatoDocumento.VERBALIZZATO,
             criteri: {
               [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-              [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.partners | join}}'
+              [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.sottoClassi | join}}'
             }
           }
         ]),
@@ -1072,7 +1072,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}}',
+          classi: '{{focus.classe.nome}}',
           utenti: '',
           materie: 'MATE'
         }),
@@ -1082,7 +1082,7 @@ export class SharedTestDatabaseBuilder {
         // coordinatore di partner separatamente via cartellePerClasse); il join
         // gestisce con grazia il caso "non articolata" (log-registration.test.ts).
         [COL_CONF_DOC.REGISTRA_FOLD]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+          classi: '{{focus.classe.nome}},{{focus.classe.articolazione.sottoClassi | join}}',
           utenti: '',
           materie: 'MATE'
         })
@@ -1093,7 +1093,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.condotta }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_Condotta_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Condotta_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/CONDOTTA',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1110,7 +1110,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Riepilogo_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1127,7 +1127,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docComplesso }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Complesso_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ESEMPI_COMPLESSI',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1144,7 +1144,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ARTICOLATA',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1161,7 +1161,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.cdcRiepilogo }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_RiepilogoFirmeCdc_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_RiepilogoFirmeCdc_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/RIEPILOGHI_FIRME_CDC',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1180,7 +1180,7 @@ export class SharedTestDatabaseBuilder {
         // produced 108 documents (~26 min) and killed batch 2 on the GAS execution limit
         // (2026-08-21). The assertion only needs the INTERPRET.CHITARRA composite row on
         // CLASSE_A, so the other classes are gated out at AnalyzeContext.
-        [COL_CONF_DOC.CONDIZIONE]: `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`,
+        [COL_CONF_DOC.CONDIZIONE]: `{{focus.classe.nome}} == '${CLASSE_A}'`,
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.riepilogo }),
         [COL_CONF_DOC.FILE_NAME]:
           'E2E_DocenteClasseMateria_{{focus.materia.sigla}}_{{focus.docente.email}}',
@@ -1192,7 +1192,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}}',
+          classi: '{{focus.classe.nome}}',
           utenti: '{{focus.docente.email}}',
           materie: '{{focus.materia.sigla}}'
         }),
@@ -1204,7 +1204,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_Permessi_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_PERS',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1221,7 +1221,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.sheetPermessi }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_ACL_Reali_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_ACL_Reali_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ACL_REALI',
         [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
         [COL_CONF_DOC.PERMESSI]: JSON.stringify({
@@ -1242,7 +1242,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GENERATORE]: 'CLASSE',
         [COL_CONF_DOC.CONDIZIONE]: '',
         [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.pianoLavoro }),
-        [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.anagrafica.nome}}',
+        [COL_CONF_DOC.FILE_NAME]: 'E2E_PianoLavoro_{{focus.classe.nome}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/PIANI_LAVORO',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1261,7 +1261,7 @@ export class SharedTestDatabaseBuilder {
         // separatamente). I coordinatori (fusi tra le partner da
         // ClasseProvider.buildCoordinatori per il parent) vanno in UTENTI.
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+          classi: '{{focus.classe.nome}},{{focus.classe.articolazione.sottoClassi | join}}',
           // coordinatori is a { appellativo, articolo, coordina, presiede, elenco: PersonVM[] }
           // container, not a bare array (02 §2.6) — iterate .elenco.
           utenti:
@@ -1282,7 +1282,7 @@ export class SharedTestDatabaseBuilder {
           }))
         ),
         [COL_CONF_DOC.FILE_NAME]:
-          'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+          'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.nomeCompleto}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1291,8 +1291,8 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}}',
-          utenti: '{{focus.alunno.anagrafica.email}}',
+          classi: '{{focus.classe.nome}}',
+          utenti: '{{focus.alunno.email}}',
           materie: ''
         }),
         [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
@@ -1312,7 +1312,7 @@ export class SharedTestDatabaseBuilder {
           }))
         ),
         [COL_CONF_DOC.FILE_NAME]:
-          'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.anagrafica.nomeCompleto}}',
+          'E2E_Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.nomeCompleto}}',
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -1321,8 +1321,8 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}}',
-          utenti: '{{focus.alunno.anagrafica.email}}',
+          classi: '{{focus.classe.nome}}',
+          utenti: '{{focus.alunno.email}}',
           materie: ''
         }),
         [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
@@ -1368,7 +1368,7 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_MAIL.ID]: CONF_MAIL_CONDOTTA,
         // PER_CDC always targets exactly one class (targetsPerCdc) — no multi-class
         // ambiguity, so the class name stays (unlike VERBALE/PIANI, item 2).
-        [COL_CONF_MAIL.OGGETTO]: '[E2E] Scheda condotta {{focus.classe.anagrafica.nome}}',
+        [COL_CONF_MAIL.OGGETTO]: '[E2E] Scheda condotta {{focus.classe.nome}}',
         [COL_CONF_MAIL.PROCESSO]: 'PER_CDC',
         [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
           {
@@ -1508,10 +1508,10 @@ export class SharedTestDatabaseBuilder {
         // focus.destinatario — the design doc's path was wrong.
         [COL_CONF_MAIL.OGGETTO]:
           "[E2E] Ipotesi assegnazione cattedre per l'anno scolastico appena iniziato " +
-          '(prof/prof.ssa {{destinatario.anagrafica.nome}} {{destinatario.anagrafica.cognome}})',
+          '(prof/prof.ssa {{destinatario.nome}} {{destinatario.cognome}})',
         [COL_CONF_MAIL.PROCESSO]: 'PER_DOCENTE',
         [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-          { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+          { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.nome}}' }
         ]),
         [COL_CONF_MAIL.TESTO_START]: '',
         [COL_CONF_MAIL.TESTO_END]: '',

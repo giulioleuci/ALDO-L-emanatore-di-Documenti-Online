@@ -453,7 +453,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GENERATORE]: 'ALUNNO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.storico }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Storico_{{focus.alunno.anagrafica.nomeCompleto}}',
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_Storico_{{focus.alunno.nomeCompleto}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/STORICO',
       [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -474,7 +474,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.dotted }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Dotted_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_Dotted_{{focus.classe.nome}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOTTED',
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -486,7 +486,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
+        classi: '{{focus.classe.nome}}',
         utenti: '',
         materie: '{{#focus.classe.materie}}{{sigla}},{{/focus.classe.materie}}'
       }),
@@ -498,7 +498,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GENERATORE]: 'PIANO_PERSONALIZZATO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_DuplicazionePermessa_{{focus.alunno.anagrafica.nomeCompleto}}',
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_DuplicazionePermessa_{{focus.alunno.nomeCompleto}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DUPLICAZIONE_DOCUMENTI',
       [COL_CONF_DOC.DUPLICAZIONE]: 'PERMESSA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -507,8 +507,8 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.alunno.anagrafica.email}}',
+        classi: '{{focus.classe.nome}}',
+        utenti: '{{focus.alunno.email}}',
         materie: ''
       }),
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
@@ -519,7 +519,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GENERATORE]: 'PIANO_PERSONALIZZATO',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.piani.PDP_BES }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_JobRunner_{{focus.alunno.anagrafica.nomeCompleto}}',
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_JobRunner_{{focus.alunno.nomeCompleto}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/JOBRUNNER_DOC',
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -528,8 +528,8 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
-        utenti: '{{focus.alunno.anagrafica.email}}',
+        classi: '{{focus.classe.nome}}',
+        utenti: '{{focus.alunno.email}}',
         materie: ''
       }),
       [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
@@ -540,7 +540,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.aslImportSheet }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_ImportSource_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_ImportSource_{{focus.classe.nome}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/IMPORT_SOURCE',
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -549,7 +549,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
+        classi: '{{focus.classe.nome}}',
         utenti: '',
         materie: ''
       }),
@@ -561,7 +561,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GENERATORE]: 'CLASSE',
       [COL_CONF_DOC.CONDIZIONE]: '',
       [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.tabelleImportate }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Tabelle_{{focus.classe.anagrafica.nome}}',
+      [COL_CONF_DOC.FILE_NAME]: 'E2E_Tabelle_{{focus.classe.nome}}',
       [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/TABELLE_IMPORTATE',
       [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
       [COL_CONF_DOC.PERMESSI]: '',
@@ -570,7 +570,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
       [COL_CONF_DOC.FORMATO]: 'GDOC',
       [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-        classi: '{{focus.classe.anagrafica.nome}}',
+        classi: '{{focus.classe.nome}}',
         utenti: '',
         materie: ''
       }),
@@ -720,7 +720,7 @@ export function seedConfDedicated(sample: ISampleSpreadsheet, templateIds: E2eTe
       ]),
       [COL_CONF_MAIL.TESTO_START]:
         id === CONF_MAIL_STORICO
-          ? '<p>Storico {{focus.classe.anagrafica.nome}}</p><p>{{#focus.classe.storico.statistiche}}{{annoScolastico}} {{classe}} {{statistiche.totale}}; {{/focus.classe.storico.statistiche}}</p><p>{{#focus.alunno.storico.anni}}{{annoScolastico}} {{classe}} {{esito}}; {{/focus.alunno.storico.anni}}</p>'
+          ? '<p>Storico {{focus.classe.nome}}</p><p>{{#focus.classe.storico.anni}}{{annoScolastico}} {{classe.nome}} {{statistiche.totale}}; {{/focus.classe.storico.anni}}</p><p>{{#focus.alunno.storico.anni}}{{annoScolastico}} {{classe.nome}} {{esito}}; {{/focus.alunno.storico.anni}}</p>'
           : `<p>Scenario ${subject}: ${EMAIL_TEST_SAFE}</p>`,
       [COL_CONF_MAIL.TESTO_END]: '',
       [COL_CONF_MAIL.RISPONDI_A]: '',

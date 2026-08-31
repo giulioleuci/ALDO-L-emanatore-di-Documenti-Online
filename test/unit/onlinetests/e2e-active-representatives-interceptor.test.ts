@@ -27,8 +27,11 @@ function cduWithStudentRepresentatives(): Cdu {
           isArticolata: false
         },
         rappresentanti: {
-          studenti: [{ nomeCompleto: 'Rossi Anna', email: 'anna@example.test' }],
-          genitori: [{ nomeCompleto: 'Rossi Mario' }]
+          studenti: {
+            elenco: [{ nomeCompleto: 'Rossi Anna', email: 'anna@example.test' }],
+            elencoDescrizione: ''
+          },
+          genitori: { elenco: [{ nomeCompleto: 'Rossi Mario' }], elencoDescrizione: '' }
         }
       }
     }
@@ -40,10 +43,10 @@ test('marks E2E student-representative view-model entries active after the repre
 
   e2eActiveRepresentativesInterceptor.intercept('rappresentanti', undefined, cdu);
 
-  expect(cdu.focus.classe?.rappresentanti?.studenti).toEqual([
+  expect(cdu.focus.classe?.rappresentanti?.studenti.elenco).toEqual([
     { nomeCompleto: 'Rossi Anna', email: 'anna@example.test', active: true }
   ]);
-  expect(cdu.focus.classe?.rappresentanti?.genitori).toEqual([{ nomeCompleto: 'Rossi Mario' }]);
+  expect(cdu.focus.classe?.rappresentanti?.genitori.elenco).toEqual([{ nomeCompleto: 'Rossi Mario' }]);
 });
 
 test('leaves the E2E context untouched for providers other than rappresentanti', () => {
@@ -51,7 +54,7 @@ test('leaves the E2E context untouched for providers other than rappresentanti',
 
   e2eActiveRepresentativesInterceptor.intercept('students', undefined, cdu);
 
-  expect(cdu.focus.classe?.rappresentanti?.studenti).toEqual([
+  expect(cdu.focus.classe?.rappresentanti?.studenti.elenco).toEqual([
     { nomeCompleto: 'Rossi Anna', email: 'anna@example.test' }
   ]);
 });

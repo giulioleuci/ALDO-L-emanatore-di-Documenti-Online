@@ -54,6 +54,13 @@ function runCheck(container: ServiceContainer, name: string): void {
 }
 
 function classCdu(council: Array<Record<string, unknown>>): ReturnType<ContextBuilder['build']> {
+  const canonicalCouncil = council.map((docente) => {
+    const anagrafica = docente.anagrafica as { email?: unknown } | undefined;
+    return {
+      ...docente,
+      email: typeof docente.email === 'string' ? docente.email : anagrafica?.email
+    };
+  });
   return {
     focus: {
       classe: {
@@ -63,7 +70,7 @@ function classCdu(council: Array<Record<string, unknown>>): ReturnType<ContextBu
           sezione: 'A',
           indirizzo: { nome: 'Liceo', nomeSintetico: 'SCI', sigla: 'IND_E2E', tipo: 'Liceo' }
         },
-        consiglioDiClasse: council
+        consiglio: { elenco: canonicalCouncil }
       }
     }
   } as unknown as ReturnType<ContextBuilder['build']>;

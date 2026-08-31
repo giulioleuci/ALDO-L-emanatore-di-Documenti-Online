@@ -35,7 +35,7 @@ const CHECK_DATE = new Date('2026-07-15T09:00:00Z');
 
 function classCdu(contextBuilder: ContextBuilder, target: string, now = CHECK_DATE) {
   return contextBuilder.build(
-    { target, tipoTarget: 'classe', now },
+    { target, tipoTarget: 'classe', now, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
     recipe('CLASSE_COMPLETA', {
       includiStorico: true,
       profonditaAnniStorico: 2,
@@ -200,38 +200,38 @@ export function registerItpDottedChecks(
     () => {
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const classe = classCdu(contextBuilder, FOCAL_CLASS).focus.classe;
-      const chitarra = classe?.materie?.find((materia) => materia.sigla === DOTTED_ID);
-      const classTuples = (classe?.consiglioDiClasse ?? []).flatMap((docente) =>
+      const chitarra = classe?.materie?.elenco.find((materia) => materia.sigla === DOTTED_ID);
+      const classTuples = (classe?.consiglio?.elenco ?? []).flatMap((docente) =>
         docente.materie
           .filter((materia) => materia.sigla === DOTTED_ID)
           .map((materia) => ({
-            email: docente.anagrafica.email,
-            isITP: materia.isITP,
+            email: docente.email,
+            isITP: materia.isItp,
             identity: getCduMateriaAssignmentIdentity(materia)
           }))
       );
       const student = contextBuilder.build(
-        { target: e2eAlunnoEmail(4), tipoTarget: 'alunno', now: CHECK_DATE },
+        { target: e2eAlunnoEmail(4), tipoTarget: 'alunno', now: CHECK_DATE, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
         recipe('ALUNNO_COMPLETO', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
       );
-      const studentChitarra = (student.focus.alunno?.consiglioDiClasseFiltrato ?? []).flatMap(
+      const studentChitarra = (student.focus.alunno?.consiglio?.elenco ?? []).flatMap(
         (docente) =>
           docente.materie
             .filter((materia) => materia.sigla === DOTTED_ID)
-            .map((materia) => `${docente.anagrafica.email}:${materia.isITP ? 'ITP' : 'SPECIFICA'}`)
+            .map((materia) => `${docente.email}:${materia.isItp ? 'ITP' : 'SPECIFICA'}`)
       );
       const parent = classCdu(contextBuilder, '3C').focus.classe;
-      const parentInf = (parent?.consiglioDiClasse ?? []).flatMap((docente) =>
+      const parentInf = (parent?.consiglio?.elenco ?? []).flatMap((docente) =>
         docente.materie
           .filter((materia) => materia.sigla === 'INF')
-          .map((materia) => `${docente.anagrafica.email}:${materia.isITP ? 'ITP' : 'MAIN'}`)
+          .map((materia) => `${docente.email}:${materia.isItp ? 'ITP' : 'MAIN'}`)
       );
 
       if (
         chitarra?.principale !== 'Interpretazione ed esecuzione' ||
         chitarra.specificita !== 'Chitarra' ||
         chitarra.nome !== 'Interpretazione ed esecuzione (Chitarra)' ||
-        chitarra.hasItp !== true ||
+        chitarra.isItp !== true ||
         classTuples.length !== 2 ||
         !classTuples.some(
           (tuple) =>
@@ -300,40 +300,40 @@ export function registerItpDottedChecks(
     sample.sampleSpreadsheetUrl,
     () => {
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
-      const materie = classCdu(contextBuilder, '3C').focus.classe?.materie ?? [];
+      const materie = classCdu(contextBuilder, '3C').focus.classe?.materie?.elenco ?? [];
       const inf = materie.find((materia) => materia.sigla === 'INF');
       const mat = materie.find((materia) => materia.sigla === 'MAT');
       const continuitaInf = inf?.continuita;
       const continuitaMat = mat?.continuita;
-      const infYears = continuitaInf?.docentiAnniPrecedenti ?? [];
-      const dotted = classCdu(contextBuilder, FOCAL_CLASS).focus.classe?.materie?.find(
+      const infYears = continuitaInf?.anniPrecedenti ?? [];
+      const dotted = classCdu(contextBuilder, FOCAL_CLASS).focus.classe?.materie?.elenco.find(
         (materia) => materia.sigla === DOTTED_ID
       );
       const dottedContinuity = dotted?.continuita;
-      const dottedYears = dottedContinuity?.docentiAnniPrecedenti ?? [];
+      const dottedYears = dottedContinuity?.anniPrecedenti ?? [];
       const matHasItpKeys =
         continuitaMat !== undefined &&
         ('continuitaUltimiDueAnniItp' in continuitaMat ||
           'continuitaUltimiTreAnniItp' in continuitaMat ||
-          continuitaMat.docentiAnniPrecedenti.some((anno) => 'itp' in anno));
+          continuitaMat.anniPrecedenti.some((anno) => 'itp' in anno));
       if (
-        inf?.hasItp !== true ||
-        continuitaInf?.continuitaUltimiDueAnni !== true ||
-        continuitaInf.continuitaUltimiTreAnni !== true ||
-        continuitaInf.continuitaUltimiDueAnniItp !== false ||
-        continuitaInf.continuitaUltimiTreAnniItp !== false ||
+        inf?.isItp !== true ||
+        continuitaInf?.isContinuitaUltimiDueAnni !== true ||
+        continuitaInf.isContinuitaUltimiTreAnni !== true ||
+        continuitaInf.isContinuitaItpUltimiDueAnni !== false ||
+        continuitaInf.isContinuitaItpUltimiTreAnni !== false ||
         infYears[0]?.itp?.email !== e2eDocenteEmail(11) ||
         infYears[1]?.itp !== null ||
-        dotted?.hasItp !== true ||
-        dottedContinuity?.continuitaUltimiDueAnni !== true ||
-        dottedContinuity.continuitaUltimiTreAnni !== false ||
-        dottedContinuity.continuitaUltimiDueAnniItp !== true ||
-        dottedContinuity.continuitaUltimiTreAnniItp !== false ||
+        dotted?.isItp !== true ||
+        dottedContinuity?.isContinuitaUltimiDueAnni !== true ||
+        dottedContinuity.isContinuitaUltimiTreAnni !== false ||
+        dottedContinuity.isContinuitaItpUltimiDueAnni !== true ||
+        dottedContinuity.isContinuitaItpUltimiTreAnni !== false ||
         dottedYears[0]?.titolare?.email !== e2eDocenteEmail(5) ||
         dottedYears[0]?.itp?.email !== e2eDocenteEmail(11) ||
         dottedYears[1]?.titolare?.email !== e2eDocenteEmail(12) ||
         dottedYears[1]?.itp?.email !== e2eDocenteEmail(13) ||
-        mat?.hasItp !== false ||
+        mat?.isItp !== false ||
         matHasItpKeys
       ) {
         throw new ValidationError(
@@ -374,7 +374,7 @@ export function registerItpDottedChecks(
         'Interpretazione ed esecuzione — indirizzo flauto'
       ];
       const cdu = classCdu(container.get<ContextBuilder>('contextBuilder'), FOCAL_CLASS);
-      const chitarra = cdu.focus.classe?.materie?.find((materia) => materia.sigla === DOTTED_ID);
+      const chitarra = cdu.focus.classe?.materie?.elenco.find((materia) => materia.sigla === DOTTED_ID);
       if (
         names.some((name) => countOccurrences(text, name) !== 1) ||
         chitarra?.docentiDescrizione === undefined ||

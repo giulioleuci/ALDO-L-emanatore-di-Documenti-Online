@@ -80,16 +80,16 @@ function classCdu(
   mode: GestioneSupplenti
 ): Cdu {
   return builder.build(
-    { target: classeId, tipoTarget: 'classe', now },
+    { target: classeId, tipoTarget: 'classe', now, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: mode })
   );
 }
 
 function subjectActors(cdu: Cdu, subject: string): string[] {
-  return (cdu.focus.classe?.consiglioDiClasse ?? []).flatMap((docente) =>
+  return (cdu.focus.classe?.consiglio?.elenco ?? []).flatMap((docente) =>
     docente.materie.some((materia) => materia.sigla === subject) &&
-    docente.anagrafica.email !== null
-      ? [docente.anagrafica.email]
+    docente.email !== null
+      ? [docente.email]
       : []
   );
 }
@@ -176,12 +176,11 @@ export function visibilitySnapshot(
       _spreadsheetId: string,
       context: Record<string, unknown>
     ): SheetColumnLayout[] => {
-      const groups = context['materieColonne'] as {
-        group1: Array<Record<string, unknown>>;
-        group2?: Array<Record<string, unknown>>;
-        group3?: Array<Record<string, unknown>>;
+      const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } };
+      const groups = focus.classe?.sheet?.materieColonne as {
+        gruppi: Array<{ colonne: Array<Record<string, unknown>> }>;
       };
-      const layout = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])].map(
+      const layout = groups.gruppi.flatMap((group) => group.colonne).map(
         (item, index) => ({
           sheetName: 'Sheet1',
           column: index + 1,

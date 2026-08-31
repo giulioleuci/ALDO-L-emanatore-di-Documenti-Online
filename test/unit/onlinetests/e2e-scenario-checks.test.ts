@@ -360,12 +360,12 @@ function recordingHarness(
       if (key === 'contextBuilder') {
         return {
           build: () => ({
-            meta: { parametriInput: {} },
+            meta: { materiaCorrente: null },
             tech: {},
             focus: {
               classe: {
-                flags: { isArticolata: false },
-                consiglioDiClasse: [{ materie: [{ sigla: 'MAT' }] }]
+                isArticolata: false,
+                consiglio: { elenco: [{ materie: [{ sigla: 'MAT' }] }] }
               }
             }
           })
@@ -925,18 +925,18 @@ function scenario11WithArticulatedColumnEvidence(
   const base = recordingHarness();
   const roleCalls: Array<{ role: string; options: Record<string, unknown> }> = [];
   const cdu = {
-    meta: { parametriInput: {} },
+    meta: { materiaCorrente: null },
     tech: {},
     focus: {
       classe: {
-        flags: { isArticolata: true },
+        isArticolata: true,
         articolazione: {
-          partners: ['3C-S', '3C-C'],
-          materieCondivise: [{ sigla: 'MAT' }],
-          materieSeparatePrimoGruppo: [{ sigla: 'FIS' }],
-          materieSeparateSecondoGruppo: [{ sigla: 'FIS' }, { sigla: 'LAB.GRUPPO_A' }]
+          sottoClassi: [{ nome: '3C-S' }, { nome: '3C-C' }],
+          materieComuni: [{ sigla: 'MAT' }],
+          materieSeparatePrimo: [{ sigla: 'FIS' }],
+          materieSeparateSecondo: [{ sigla: 'FIS' }, { sigla: 'LAB.GRUPPO_A' }]
         },
-        consiglioDiClasse: [{ materie: [{ sigla: 'ALT' }] }]
+        consiglio: { elenco: [{ materie: [{ sigla: 'ALT' }] }] }
       }
     }
   };
@@ -974,11 +974,11 @@ function scenario11WithArticulatedColumnEvidence(
       }
       if (key === 'risolutoreRuoli') {
         return {
-          risolvi: (role: string, subjectCdu: { meta: { parametriInput: { materiaCorrente?: string } } }, options: Record<string, unknown> = {}) => {
+          risolvi: (role: string, subjectCdu: { meta: { materiaCorrente?: string | null } }, options: Record<string, unknown> = {}) => {
             roleCalls.push({ role, options });
             if (role === 'COORDINATORI') return [];
             if (role === 'DOCENTI_IRC_ALT') return [{ value: 'special@onlinetest.aldo.local' }];
-            const subject = subjectCdu.meta.parametriInput.materiaCorrente ?? '';
+            const subject = subjectCdu.meta.materiaCorrente ?? '';
             if (subject === 'FIS' && options.classeId === '3C-S') {
               return [{ value: 'first@onlinetest.aldo.local' }];
             }
@@ -1052,15 +1052,15 @@ test('registered Scenario 11 mirrors non-articulated generator sorting when mapp
   const base = recordingHarness();
   const resolvedSubjects: string[] = [];
   const cdu = {
-    meta: { parametriInput: {} },
+    meta: { materiaCorrente: null },
     tech: {},
     focus: {
       classe: {
-        flags: { isArticolata: false },
-        consiglioDiClasse: [
+        isArticolata: false,
+        consiglio: { elenco: [
           { materie: [{ sigla: 'STO' }, { sigla: 'MAT' }] },
           { materie: [{ sigla: 'LAB.GRUPPO_A' }] }
-        ]
+        ] }
       }
     }
   };
@@ -1088,10 +1088,10 @@ test('registered Scenario 11 mirrors non-articulated generator sorting when mapp
       }
       if (key === 'risolutoreRuoli') {
         return {
-          risolvi: (role: string, subjectCdu: { meta: { parametriInput: { materiaCorrente?: string } } }) => {
+          risolvi: (role: string, subjectCdu: { meta: { materiaCorrente?: string | null } }) => {
             if (role === 'COORDINATORI') return [];
             if (role === 'DOCENTI_IRC_ALT') return [{ value: 'special@onlinetest.aldo.local' }];
-            const subject = subjectCdu.meta.parametriInput.materiaCorrente ?? '';
+            const subject = subjectCdu.meta.materiaCorrente ?? '';
             resolvedSubjects.push(subject);
             return [{ value: `${subject.toLowerCase()}@onlinetest.aldo.local` }];
           }

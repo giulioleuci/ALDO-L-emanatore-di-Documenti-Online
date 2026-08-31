@@ -361,7 +361,7 @@ export class SampleDatabaseBuilder {
         // ref 06 §8): a bare templateId string throws "MODELLI privo di
         // templateId" — the {"templateId": "..."} object form is required.
         [COL_CONF_DOC.MODELLI]: '{"templateId":"TEMPLATE_ONLINETEST"}',
-        [COL_CONF_DOC.FILE_NAME]: `ONLINETEST_{{focus.classe.anagrafica.nome}}`,
+        [COL_CONF_DOC.FILE_NAME]: `ONLINETEST_{{focus.classe.nome}}`,
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_ONLINETEST_OUTPUT',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
@@ -370,7 +370,7 @@ export class SampleDatabaseBuilder {
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',
         [COL_CONF_DOC.REGISTRA_DOC]: JSON.stringify({
-          classi: '{{focus.classe.anagrafica.nome}}',
+          classi: '{{focus.classe.nome}}',
           utenti: '',
           materie: ''
         }),

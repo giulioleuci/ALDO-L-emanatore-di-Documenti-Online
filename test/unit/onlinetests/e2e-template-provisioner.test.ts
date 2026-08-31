@@ -92,7 +92,7 @@ test('authors table-import markers with their source IDs, surrounding CDU conten
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   const text = documentText(docContent[ids.tabelleImportate] ?? []);
-  expect(text).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(text).toContain('{{focus.classe.nome}}');
   expect(text).toContain(`{{TABELLA:${ids.tabellaSorgenteDati}}}`);
   expect(text).toContain(`{{TABELLA:${ids.tabellaSorgenteVuota}}}`);
   expect(text).toContain('Testo dopo la tabella con dati');
@@ -142,24 +142,24 @@ test('authors the history, dotted/ITP, and history-email templates against canon
 
   const storico = documentText(docContent[ids.storico] ?? []);
   expect(storico).toContain('{{#focus.alunno.storico.anni}}');
-  expect(storico).toContain('{{#focus.classe.storico.statistiche}}');
+  expect(storico).toContain('{{#focus.classe.storico.anni}}');
   expect(storico).toContain('{{statistiche.totale}}');
   expect(storico).toContain(
-    '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
+    '{{#focus.classe.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.anni}}'
   );
 
   const dotted = documentText(docContent[ids.dotted] ?? []);
-  expect(dotted).toContain('{{#bullet_list:focus.classe.materie}}');
+  expect(dotted).toContain('{{#bullet_list:focus.classe.materie.elenco}}');
   expect(dotted).toContain('{{sigla}}');
   expect(dotted).toContain('{{specificita}}');
-  expect(dotted).toContain('{{#hasItp}}');
+  expect(dotted).toContain('{{#isItp}}');
   expect(dotted).toContain('{{docentiDescrizione}}');
   expect(dotted).not.toContain('focus.classe.didattica.assegnazioni');
 
   const storicoEmail = documentText(docContent[ids.storicoEmail] ?? []);
-  expect(storicoEmail).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(storicoEmail).toContain('{{focus.classe.nome}}');
   expect(storicoEmail).toContain(
-    '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
+    '{{#focus.classe.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.anni}}'
   );
 });
 
@@ -197,7 +197,7 @@ test('does not reuse the v1 imported-table template after the heading fixture ch
   const tabelleImportateParagraphs = docContent[ids.tabelleImportate] ?? [];
   expect(tabelleImportateParagraphs).toHaveLength(5);
   expect(documentText(tabelleImportateParagraphs)).toContain(
-    'Tabelle importate per la classe {{focus.classe.anagrafica.nome}}'
+    'Tabelle importate per la classe {{focus.classe.nome}}'
   );
   expect(docContent).not.toHaveProperty(existing.storico);
   expect(sheetContent).not.toHaveProperty(existing.tabellaSorgenteDati);
@@ -209,14 +209,14 @@ test('authors the CDC signature-summary template with a row-loop council table',
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   expect(documentText(docContent[ids.cdcRiepilogo] ?? [])).toContain(
-    'Riepilogo firme del Consiglio di Classe {{focus.classe.anagrafica.nome}}'
+    'Riepilogo firme del Consiglio di Classe {{focus.classe.nome}}'
   );
   expect(docTables[ids.cdcRiepilogo]).toEqual([
     {
       data: [
         ['Docente', 'Materie', 'Firma'],
         [
-          '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}}',
+          '{{#tablerow_loop:focus.classe.consiglio.elenco}}{{appellativoCompleto}}',
           '{{materieDescrizione}}',
           '________________'
         ]
@@ -232,7 +232,7 @@ test('verbale template renders the generated custom-plan list through the class 
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   expect(documentText(docContent[ids.verbale]!)).toContain(
-    '{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.items}}'
+    '{{#bullet_list:focus.classe.pianiPersonalizzati.elenco}}'
   );
 });
 
@@ -277,13 +277,13 @@ test('authors real CDU-path placeholder content into newly-created templates, no
 
   const verbaleParagraphs = docContent[ids.verbale] ?? [];
   expect(verbaleParagraphs).toHaveLength(9);
-  expect(documentText(verbaleParagraphs)).toContain('{{focus.classe.anagrafica.nome}}');
-  expect(documentText(verbaleParagraphs)).toContain('consiglioDiClasse');
+  expect(documentText(verbaleParagraphs)).toContain('{{focus.classe.nome}}');
+  expect(documentText(verbaleParagraphs)).toContain('consiglio.elenco');
 
   const condottaUpdates = sheetContent[ids.condotta] ?? [];
   expect(condottaUpdates).toHaveLength(32); // header + roster placeholder row + 30 AVERAGE() rows
   const condottaText = JSON.stringify(condottaUpdates);
-  expect(condottaText).toContain('dynamic_rows[source=focus.classe.studenti.listaCompleta');
+  expect(condottaText).toContain('dynamic_rows[source=focus.classe.studenti.elenco');
   expect(condottaText).toContain('AVERAGE(');
 
   const riepilogoParagraphs = docContent[ids.riepilogo] ?? [];
@@ -295,26 +295,26 @@ test('authors real CDU-path placeholder content into newly-created templates, no
       data: [
         ['Alunno', 'Religione', 'Email', 'Piani'],
         [
-          '{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}',
-          '{{status.religione}}',
-          '{{anagrafica.email}}',
-          '{{didattica.piani.hasPiani}}'
+          '{{#tablerow_loop:focus.classe.studenti.elenco}}{{nomeCompleto}}',
+          '{{religione}}',
+          '{{email}}',
+          '{{piani.hasElenco}}'
         ]
       ],
       options: { headerRow: true, alternatingRows: true }
     }
   ]);
-  expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti}}');
-  expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori}}');
+  expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti.elenco}}');
+  expect(riepilogoText).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori.elenco}}');
   expect(riepilogoText).toContain('{{focus.classe.studenti.statistiche.totale}}');
   expect(riepilogoParagraphs).toEqual(
     expect.arrayContaining([
       {
-        text: '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
+        text: '{{#bullet_list:focus.classe.rappresentanti.studenti.elenco}}{{nomeCompleto}}{{/bullet_list}}',
         listType: 'bullet'
       },
       {
-        text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}',
+        text: '{{#bullet_list:focus.classe.rappresentanti.genitori.elenco}}{{nomeCompleto}}{{/bullet_list}}',
         listType: 'bullet'
       }
     ])
@@ -324,7 +324,7 @@ test('authors real CDU-path placeholder content into newly-created templates, no
     const pianoParagraphs = docContent[ids.piani[tipo]] ?? [];
     expect(pianoParagraphs).toHaveLength(7);
     const pianoText = documentText(pianoParagraphs);
-    expect(pianoText).toContain('{{focus.alunno.anagrafica.nomeCompleto}}');
+    expect(pianoText).toContain('{{focus.alunno.nomeCompleto}}');
     expect(pianoText).toContain('{{focus.piano.tipoLabel}}');
     expect(pianoText).not.toContain('{{focus.piano.tipo}}');
     expect(pianoText).toContain('{{focus.piano.parametriGenerazione.note}}');
@@ -356,13 +356,13 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   const text = documentText(docContent[ids.docComplesso] ?? []);
   expect(text).toContain("{{#bullet_list:focus.classe.coordinatori.elenco | sortBy:'nome'}}");
   expect(text).toContain(
-    "{{#number_list:focus.classe.rappresentanti.studenti | filter:'active',true}}"
+    "{{#number_list:focus.classe.rappresentanti.studenti.elenco | filter:'active',true}}"
   );
   expect(text).toContain('| uppercase');
   expect(text).toContain('{{#bullet_list:focus.classe.esame.materiePrimaProva}}');
   expect(text).toContain('{{focus.classe.coordinatori.elenco.0.appellativoCompleto}}');
-  expect(text).toContain('{{#bullet_list:focus.classe.progetti}}');
-  expect(text).toContain('{{status.religioneLabel}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.progetti.elenco}}');
+  expect(text).toContain('{{religioneLabel}}');
   expect(text).toContain('Specificità per materia (sempre disponibile nel CDU classe; 3 livelli):');
   expect(text).toContain('{{#focus.classe.studenti.perSpecificita}}');
   expect(docContent[ids.docComplesso]).toEqual(
@@ -374,9 +374,9 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   const tables = docTables[ids.docComplesso] ?? [];
   const tableText = JSON.stringify(tables);
   expect(tableText).toContain(
-    "tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'"
+    "tablerow_loop:focus.classe.studenti.elenco | sortBy:'nomeCompleto'"
   );
-  expect(tableText).toContain('tablecol_loop:focus.classe.consiglioDiClasse');
+  expect(tableText).toContain('tablecol_loop:focus.classe.consiglio.elenco');
 });
 
 test('authors the articulated-class template with 4 flat bullet lists, no nested loops or filter pipes', () => {
@@ -385,14 +385,14 @@ test('authors the articulated-class template with 4 flat bullet lists, no nested
   const ids = new E2eTemplateProvisioner(artifacts, drive).provision('FOLDER_1');
 
   const text = documentText(docContent[ids.docArticolata] ?? []);
-  expect(text).toContain('{{#bullet_list:focus.classe.studenti.listaCompleta');
-  expect(text).toContain('{{anagrafica.nomeCompleto}} ({{indirizzo.nome}})');
-  expect(text).toContain('{{#bullet_list:focus.classe.consiglioDiClasseComune}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.studenti.elenco');
+  expect(text).toContain('{{nomeCompleto}} ({{classe.indirizzo.nome}})');
+  expect(text).toContain('{{#bullet_list:focus.classe.consiglio.comune}}');
   expect(text).toContain('({{materieDescrizione}})');
-  expect(text).toContain('{{#bullet_list:focus.classe.consiglioDiClasseSeparato}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.consiglio.separato}}');
   expect(text).toContain('({{gruppoNome}})');
-  expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti}}');
-  expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.studenti.elenco}}');
+  expect(text).toContain('{{#bullet_list:focus.classe.rappresentanti.genitori.elenco}}');
   expect(text).toContain('{{#bullet_list:focus.classe.coordinatori.elenco}}');
   expect(text).not.toMatch(/\|\s*where/);
   expect(text).not.toMatch(/\|\s*map/);
@@ -405,14 +405,14 @@ test('authors the sheet-with-permessi template with the multi-group dynamic_colu
 
   const text = JSON.stringify(sheetContent[ids.sheetPermessi] ?? []);
   expect(text).toContain('dynamic_columns[');
-  expect(text).toContain('source=focus.classe.sheet.materieColonne.group1,value=header');
+  expect(text).toContain('source=focus.classe.sheet.materieColonne.gruppi.0.colonne,value=header');
   expect(text).toContain(
-    'source2=focus.classe.sheet.materieColonne.group2,value2=header,' +
-      'label2=focus.classe.sheet.materieColonne.group2Label'
+    'source2=focus.classe.sheet.materieColonne.gruppi.1.colonne,value2=header,' +
+      'label2=focus.classe.sheet.materieColonne.gruppi.1.label'
   );
   expect(text).toContain(
-    'source3=focus.classe.sheet.materieColonne.group3,value3=header,' +
-      'label3=focus.classe.sheet.materieColonne.group3Label'
+    'source3=focus.classe.sheet.materieColonne.gruppi.2.colonne,value3=header,' +
+      'label3=focus.classe.sheet.materieColonne.gruppi.2.label'
   );
 });
 
@@ -424,8 +424,8 @@ test('authors the work-plan (piano di lavoro) template', () => {
   const pianoLavoroParagraphs = docContent[ids.pianoLavoro] ?? [];
   expect(pianoLavoroParagraphs).toHaveLength(3);
   const text = documentText(pianoLavoroParagraphs);
-  expect(text).toContain('{{focus.classe.anagrafica.nome}}');
-  expect(text).toContain('{{focus.classe.anagrafica.indirizzo.nomeSintetico}}');
+  expect(text).toContain('{{focus.classe.nome}}');
+  expect(text).toContain('{{focus.classe.indirizzo.nomeSintetico}}');
 });
 
 test('does not re-author content for a reused (found, not created) template', () => {

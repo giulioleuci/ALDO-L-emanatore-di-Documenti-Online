@@ -69,11 +69,11 @@ function namePiano(tipo: string): string {
  */
 const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Verbale del Consiglio di Classe',
-  'Classe: {{focus.classe.anagrafica.nome}} — Indirizzo: {{focus.classe.anagrafica.indirizzo.nomeSintetico}}',
-  'Data: {{meta.date.oggi.breve}}',
+  'Classe: {{focus.classe.nome}} — Indirizzo: {{focus.classe.indirizzo.nomeSintetico}}',
+  'Data: {{meta.oggi.breve}}',
   'Composizione del Consiglio di Classe:',
   {
-    text: '{{#bullet_list:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.consiglio.elenco}}{{appellativoCompleto}}{{/bullet_list}}',
     listType: 'bullet'
   },
   'Coordinatori:',
@@ -83,7 +83,7 @@ const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   },
   'Piani personalizzati generati:',
   {
-    text: '{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.items}}{{studente.nomeCompleto}} - {{sottotipo}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.pianiPersonalizzati.elenco}}{{studente.nomeCompleto}} - {{tipo}}{{/bullet_list}}',
     listType: 'bullet'
   }
 ];
@@ -94,9 +94,9 @@ const VERBALE_PARAGRAPHS: E2eDocumentParagraphInput[] = [
 function pianoParagraphs(tipo: string): string[] {
   return [
     `Modello E2E ${tipo}`,
-    'Studente: {{focus.alunno.anagrafica.nomeCompleto}}',
+    'Studente: {{focus.alunno.nomeCompleto}}',
     'Classe: {{focus.alunno.classe.nome}}',
-    'Data: {{meta.date.oggi.breve}}',
+    'Data: {{meta.oggi.breve}}',
     'Tipo piano: {{focus.piano.tipoLabel}}',
     'Note: {{focus.piano.parametriGenerazione.note}}',
     // Looped focus.alunno.curriculum (§2.13, array not a map, PROMPT_MODIFY_CDU.md action item
@@ -108,17 +108,17 @@ function pianoParagraphs(tipo: string): string[] {
 }
 
 const RIEPILOGO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Riepilogo Classe {{focus.classe.anagrafica.nome}}',
+  'Riepilogo Classe {{focus.classe.nome}}',
   'Elenco studenti:',
   'Numero totale studenti: {{focus.classe.studenti.statistiche.totale}}',
   'Rappresentanti degli studenti:',
   {
-    text: '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.rappresentanti.studenti.elenco}}{{nomeCompleto}}{{/bullet_list}}',
     listType: 'bullet'
   },
   'Rappresentanti dei genitori:',
   {
-    text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.rappresentanti.genitori.elenco}}{{nomeCompleto}}{{/bullet_list}}',
     listType: 'bullet'
   }
 ];
@@ -128,10 +128,10 @@ const RIEPILOGO_TABLES: E2eDocumentTable[] = [
     data: [
       ['Alunno', 'Religione', 'Email', 'Piani'],
       [
-        '{{#tablerow_loop:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}}',
-        '{{status.religione}}',
-        '{{anagrafica.email}}',
-        '{{didattica.piani.hasPiani}}'
+        '{{#tablerow_loop:focus.classe.studenti.elenco}}{{nomeCompleto}}',
+        '{{religione}}',
+        '{{email}}',
+        '{{piani.hasElenco}}'
       ]
     ],
     options: { headerRow: true, alternatingRows: true }
@@ -157,7 +157,7 @@ function condottaUpdates(): SheetValueUpdate[] {
       range: 'A2',
       values: [
         [
-          '{{dynamic_rows[source=focus.classe.studenti.listaCompleta,value=anagrafica.nomeCompleto]}}'
+          '{{dynamic_rows[source=focus.classe.studenti.elenco,value=nomeCompleto]}}'
         ]
       ]
     }
@@ -250,8 +250,8 @@ function carenzeImportTimestampUpdates(): SheetValueUpdate[] {
  * Exercises bullet/number lists, tablerow/tablecol loops, and pipe filters (sortBy/filter/
  * uppercase) against real CDU paths (`SPECS_ALDO/02_CDU_STRUTTURA.md` §4.1) already confirmed
  * elsewhere in this file: `focus.classe.coordinatori.elenco` (VERBALE_PARAGRAPHS), `focus.classe.
- * rappresentanti.studenti` (RIEPILOGO_PARAGRAPHS), `focus.classe.studenti.listaCompleta`
- * (RIEPILOGO_TABLES), and `focus.classe.consiglioDiClasse` (VERBALE_PARAGRAPHS, also in
+ * rappresentanti.studenti.elenco` (RIEPILOGO_PARAGRAPHS), `focus.classe.studenti.elenco`
+ * (RIEPILOGO_TABLES), and `focus.classe.consiglio.elenco` (VERBALE_PARAGRAPHS, also in
  * production via `SheetMaterieGeneratorStrategy.buildGroups`). `sortBy`/`filter` are piped
  * directly onto each loop directive's own source expression (`{{#loop:path | filter:args}}`);
  * whether that composition actually renders is only provable by a live online run — this test
@@ -265,7 +265,7 @@ function carenzeImportTimestampUpdates(): SheetValueUpdate[] {
 // Il ramo perSpecificita è un array CDU standard: il documento complesso
 // prova rendering Mustache a tre livelli su una generazione normale.
 const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Report Complesso — {{focus.classe.anagrafica.nome}}',
+  'Report Complesso — {{focus.classe.nome}}',
   'Link di interoperabilità: https://www.example.com/aldo-e2e',
   'Coordinatori, ordinati per nome (elenco puntato, con filtro sortBy sul source del loop):',
   {
@@ -274,7 +274,7 @@ const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   },
   'Rappresentanti degli studenti (elenco numerato, con filtro active sul source del loop):',
   {
-    text: "{{#number_list:focus.classe.rappresentanti.studenti | filter:'active',true}}{{nomeCompleto}}{{/number_list}}",
+    text: "{{#number_list:focus.classe.rappresentanti.studenti.elenco | filter:'active',true}}{{nomeCompleto}}{{/number_list}}",
     listType: 'number'
   },
   "Materie di prima prova d'esame:",
@@ -285,12 +285,12 @@ const DOC_COMPLESSO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
   'Coordinatore principale: {{focus.classe.coordinatori.elenco.0.appellativoCompleto}}',
   'Progetti extracurricolari:',
   {
-    text: '{{#bullet_list:focus.classe.progetti}}{{tipoLabel}}: {{nome}} ({{referente.appellativoCompleto}}, {{ore}}h){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.progetti.elenco}}{{tipoLabel}}: {{nome}} ({{referente.appellativoCompleto}}, {{ore}}h){{/bullet_list}}',
     listType: 'bullet'
   },
   'Alunni e situazione religione:',
   {
-    text: '{{#bullet_list:focus.classe.studenti.listaCompleta}}{{anagrafica.nomeCompleto}} — {{status.religioneLabel}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.studenti.elenco}}{{nomeCompleto}} — {{religioneLabel}}{{/bullet_list}}',
     listType: 'bullet'
   },
   'Specificità per materia (sempre disponibile nel CDU classe; 3 livelli):',
@@ -305,14 +305,14 @@ const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
     data: [
       ['Alunno', 'Email'],
       [
-        "{{#tablerow_loop:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'}}{{anagrafica.nomeCompleto}}",
-        '{{anagrafica.email}}'
+        "{{#tablerow_loop:focus.classe.studenti.elenco | sortBy:'nomeCompleto'}}{{nomeCompleto}}",
+        '{{email}}'
       ]
     ],
     options: { headerRow: true, alternatingRows: true }
   },
   {
-    data: [['{{#tablecol_loop:focus.classe.consiglioDiClasse}}{{materie.0.sigla | uppercase}}']],
+    data: [['{{#tablecol_loop:focus.classe.consiglio.elenco}}{{materie.0.sigla | uppercase}}']],
     options: { headerRow: true }
   }
 ];
@@ -325,30 +325,30 @@ const DOC_COMPLESSO_TABLES: E2eDocumentTable[] = [
  * WorkspaceTemplateEngine pipe-chaining behavior.
  */
 const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Documento Complesso Classe Articolata — {{focus.classe.anagrafica.nome}}',
+  'Documento Complesso Classe Articolata — {{focus.classe.nome}}',
   'Elenco studenti (indirizzo tra parentesi):',
   {
-    text: "{{#bullet_list:focus.classe.studenti.listaCompleta | sortBy:'anagrafica.nomeCompleto'}}{{anagrafica.nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}",
+    text: "{{#bullet_list:focus.classe.studenti.elenco | sortBy:'nomeCompleto'}}{{nomeCompleto}} ({{classe.indirizzo.nome}}){{/bullet_list}}",
     listType: 'bullet'
   },
   'Docenti comuni a tutta la classe (materie tra parentesi):',
   {
-    text: '{{#bullet_list:focus.classe.consiglioDiClasseComune}}{{anagrafica.appellativoCompleto}} ({{materieDescrizione}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.consiglio.comune}}{{appellativoCompleto}} ({{materieDescrizione}}){{/bullet_list}}',
     listType: 'bullet'
   },
   'Docenti per indirizzo (materie e indirizzo tra parentesi):',
   {
-    text: '{{#bullet_list:focus.classe.consiglioDiClasseSeparato}}{{materieDescrizione}} ({{gruppoNome}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.consiglio.separato}}{{materieDescrizione}} ({{gruppoNome}}){{/bullet_list}}',
     listType: 'bullet'
   },
   'Rappresentanti degli studenti (indirizzo tra parentesi):',
   {
-    text: '{{#bullet_list:focus.classe.rappresentanti.studenti}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.rappresentanti.studenti.elenco}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
     listType: 'bullet'
   },
   'Rappresentanti dei genitori (indirizzo tra parentesi):',
   {
-    text: '{{#bullet_list:focus.classe.rappresentanti.genitori}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.rappresentanti.genitori.elenco}}{{nomeCompleto}} ({{indirizzo.nome}}){{/bullet_list}}',
     listType: 'bullet'
   },
   // No `(indirizzo)` parenthetical here (unlike the rappresentanti/studenti loops above):
@@ -363,13 +363,13 @@ const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
 ];
 
 const CDC_RIEPILOGO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Riepilogo firme del Consiglio di Classe {{focus.classe.anagrafica.nome}}',
-  'Indirizzo: {{focus.classe.anagrafica.indirizzo.nomeSintetico}}',
-  'Data: {{meta.date.oggi.breve}}',
+  'Riepilogo firme del Consiglio di Classe {{focus.classe.nome}}',
+  'Indirizzo: {{focus.classe.indirizzo.nomeSintetico}}',
+  'Data: {{meta.oggi.breve}}',
   'Docenti presenti:'
 ];
 
-/** The existing verbale template already renders `consiglioDiClasse` for every generated
+/** The existing verbale template already renders `consiglio.elenco` for every generated
  * class, while the riepilogo template proves the row-loop table contract. Reusing their
  * common CDU shape keeps this signature table valid for both plain classes and articulated
  * partners selected by ARTICOLATA. */
@@ -378,7 +378,7 @@ const CDC_RIEPILOGO_TABLES: E2eDocumentTable[] = [
     data: [
       ['Docente', 'Materie', 'Firma'],
       [
-        '{{#tablerow_loop:focus.classe.consiglioDiClasse}}{{anagrafica.appellativoCompleto}}',
+        '{{#tablerow_loop:focus.classe.consiglio.elenco}}{{appellativoCompleto}}',
         '{{materieDescrizione}}',
         '________________'
       ]
@@ -391,7 +391,7 @@ const CDC_RIEPILOGO_TABLES: E2eDocumentTable[] = [
  * Single header cell carrying the whole multi-group `{{dynamic_columns[...]}}` placeholder
  * (`WorkspaceTemplateEngine_docs.md` "Sintassi multi-gruppo"): 3 sequential column groups,
  * groups 2/3 each preceded by a structural label column (`label2`/`label3`), resolved against
- * `focus.classe.sheet.materieColonne.group1/2/3` (+ `group2Label`/`group3Label`) — Task 22
+ * `focus.classe.sheet.materieColonne.gruppi[].colonne[]` (+ `gruppi[].label`) — Task 22
  * attached the multi-group projection under `focus.classe.sheet`, not a bare `materieColonne`
  * root (02 §2.17/§9.3) — the SHEET_CON_MATERIE_E_PERMESSI generator's per-subject column layout
  * for scenario C.
@@ -403,11 +403,11 @@ function sheetPermessiUpdates(): SheetValueUpdate[] {
       values: [
         [
           '{{dynamic_columns[' +
-            'source=focus.classe.sheet.materieColonne.group1,value=header,' +
-            'source2=focus.classe.sheet.materieColonne.group2,value2=header,' +
-            'label2=focus.classe.sheet.materieColonne.group2Label,' +
-            'source3=focus.classe.sheet.materieColonne.group3,value3=header,' +
-            'label3=focus.classe.sheet.materieColonne.group3Label' +
+            'source=focus.classe.sheet.materieColonne.gruppi.0.colonne,value=header,' +
+            'source2=focus.classe.sheet.materieColonne.gruppi.1.colonne,value2=header,' +
+            'label2=focus.classe.sheet.materieColonne.gruppi.1.label,' +
+            'source3=focus.classe.sheet.materieColonne.gruppi.2.colonne,value3=header,' +
+            'label3=focus.classe.sheet.materieColonne.gruppi.2.label' +
             ']}}'
         ]
       ]
@@ -416,11 +416,11 @@ function sheetPermessiUpdates(): SheetValueUpdate[] {
 }
 
 /** Scenario D (coordinatore's work-plan doc): a minimal per-class template, same CDU paths
- * already confirmed elsewhere in this file (VERBALE_PARAGRAPHS `focus.classe.anagrafica.*`). */
+ * already confirmed elsewhere in this file (VERBALE_PARAGRAPHS `focus.classe.*`). */
 const PIANO_LAVORO_PARAGRAPHS = [
-  'Piano di Lavoro Annuale — {{focus.classe.anagrafica.nome}}',
-  'Indirizzo: {{focus.classe.anagrafica.indirizzo.nomeSintetico}}',
-  'Anno scolastico: {{meta.date.oggi.breve}}'
+  'Piano di Lavoro Annuale — {{focus.classe.nome}}',
+  'Indirizzo: {{focus.classe.indirizzo.nomeSintetico}}',
+  'Anno scolastico: {{meta.oggi.breve}}'
 ];
 
 const STATIC_ATTACHMENT_PARAGRAPHS = [
@@ -445,7 +445,7 @@ function tabelleImportateParagraphs(
   tabellaSorgenteVuota: string
 ): E2eDocumentParagraphInput[] {
   return [
-    'Tabelle importate per la classe {{focus.classe.anagrafica.nome}}',
+    'Tabelle importate per la classe {{focus.classe.nome}}',
     `{{TABELLA:${tabellaSorgenteDati}}}`,
     'Testo dopo la tabella con dati',
     `{{TABELLA:${tabellaSorgenteVuota}}}`,
@@ -471,28 +471,28 @@ function tabellaSorgenteVuotaUpdates(): SheetValueUpdate[] {
 }
 
 const STORICO_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Storico dell’alunno {{focus.alunno.anagrafica.nomeCompleto}}',
-  '{{#focus.alunno.storico.anni}}{{annoScolastico}} — {{classe}}: {{esito}}{{/focus.alunno.storico.anni}}',
-  '{{#focus.alunno.storico.bocciature}}Bocciatura {{annoScolastico}} — {{classe}}{{/focus.alunno.storico.bocciature}}',
-  'Storico della classe {{focus.classe.anagrafica.nome}}',
-  '{{#focus.classe.storico.statistiche}}{{annoScolastico}} — {{classe}}: {{statistiche.totale}} alunni{{/focus.classe.storico.statistiche}}',
-  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
+  'Storico dell’alunno {{focus.alunno.nomeCompleto}}',
+  '{{#focus.alunno.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{esito}}{{/focus.alunno.storico.anni}}',
+  '{{#focus.alunno.storico.bocciature.elenco}}Bocciatura {{annoScolastico}} — {{classe.nome}}{{/focus.alunno.storico.bocciature.elenco}}',
+  'Storico della classe {{focus.classe.nome}}',
+  '{{#focus.classe.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{statistiche.totale}} alunni{{/focus.classe.storico.anni}}',
+  '{{#focus.classe.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.anni}}'
 ];
 
 /** `focus.classe.materie` is the canonical SubjectVM catalog (02 §4.1/§8.2), including
- * dotted `specificita`, `hasItp`, and the preformatted assigned-teacher description. */
+ * dotted `specificita`, `isItp`, and the preformatted assigned-teacher description. */
 const DOTTED_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Materie dotted e ITP della classe {{focus.classe.anagrafica.nome}}',
+  'Materie dotted e ITP della classe {{focus.classe.nome}}',
   {
-    text: '{{#bullet_list:focus.classe.materie}}{{sigla}} — {{nome}} ({{specificita}}); {{#hasItp}}ITP presente; {{/hasItp}}{{docentiDescrizione}}{{/bullet_list}}',
+    text: '{{#bullet_list:focus.classe.materie.elenco}}{{sigla}} — {{nome}} ({{specificita}}); {{#isItp}}ITP presente; {{/isItp}}{{docentiDescrizione}}{{/bullet_list}}',
     listType: 'bullet'
   }
 ];
 
 const STORICO_EMAIL_PARAGRAPHS: E2eDocumentParagraphInput[] = [
-  'Allegato storico per la classe {{focus.classe.anagrafica.nome}}',
-  '{{#focus.classe.storico.statistiche}}{{annoScolastico}} — {{classe}}: {{statistiche.totale}} alunni{{/focus.classe.storico.statistiche}}',
-  '{{#focus.classe.storico.progetti}}{{annoScolastico}} — {{classe}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.progetti}}'
+  'Allegato storico per la classe {{focus.classe.nome}}',
+  '{{#focus.classe.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{statistiche.totale}} alunni{{/focus.classe.storico.anni}}',
+  '{{#focus.classe.storico.anni}}{{annoScolastico}} — {{classe.nome}}: {{#progetti}}{{nome}}{{/progetti}}{{/focus.classe.storico.anni}}'
 ];
 
 /**

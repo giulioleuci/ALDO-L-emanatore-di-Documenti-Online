@@ -102,12 +102,12 @@ function sampleFixture(): { sampleSpreadsheetUrl: string } {
 }
 
 describe('registerContextEngineChecks', () => {
-  it('registers a passing check when focus.classe.anagrafica.nome resolves to the seeded classe', () => {
+  it('registers a passing check when focus.classe.nome resolves to the seeded classe', () => {
     const runner = new TestRunner();
     registerContextEngineChecks(runner, buildFakeContainer(), sampleFixture());
     const result = runner
       .report()
-      .results.find((r) => r.name.includes('focus.classe.anagrafica.nome'));
+      .results.find((r) => r.name.includes('focus.classe.nome'));
     expect(result?.status).toBe('pass');
   });
 
@@ -120,17 +120,17 @@ describe('registerContextEngineChecks', () => {
     );
     const result = runner
       .report()
-      .results.find((r) => r.name.includes('focus.classe.anagrafica.nome'));
+      .results.find((r) => r.name.includes('focus.classe.nome'));
     expect(result?.status).toBe('fail');
     expect(result?.message).toMatch(/Classe 1A non trovata/);
   });
 
-  it('registers a passing check when focus.alunno.anagrafica.email resolves to the seeded alunno', () => {
+  it('registers a passing check when focus.alunno.email resolves to the seeded alunno', () => {
     const runner = new TestRunner();
     registerContextEngineChecks(runner, buildFakeContainer(), sampleFixture());
     const result = runner
       .report()
-      .results.find((r) => r.name.includes('focus.alunno.anagrafica.email'));
+      .results.find((r) => r.name.includes('focus.alunno.email'));
     expect(result?.status).toBe('pass');
   });
 

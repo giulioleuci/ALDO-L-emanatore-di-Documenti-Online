@@ -101,7 +101,7 @@ export function assertProtectedRangePrincipals(
 
 function currentCdu(container: ServiceContainer): Cdu {
   return container.get<ContextBuilder>('contextBuilder').build(
-    { target: '4A', tipoTarget: 'classe', now: new Date() },
+    { target: '4A', tipoTarget: 'classe', now: new Date(), configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
     recipe('CLASSE_COMPLETA')
   );
 }
@@ -131,7 +131,7 @@ function subjectVariant(cdu: Cdu, subject: string): Cdu {
     ...cdu,
     meta: {
       ...cdu.meta,
-      parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: subject }
+      materiaCorrente: subject
     }
   };
   Object.defineProperty(variant, 'tech', {

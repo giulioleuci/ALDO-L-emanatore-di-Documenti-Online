@@ -341,12 +341,12 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     templateId: 'tmpl_verbale'
   });
   expect(JSON.parse(String(verbale[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}}',
+    classi: '{{focus.classe.nome}}',
     utenti: '',
     materie: 'MATE'
   });
   expect(JSON.parse(String(verbale[COL_CONF_DOC.REGISTRA_FOLD]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+    classi: '{{focus.classe.nome}},{{focus.classe.articolazione.sottoClassi | join}}',
     utenti: '',
     materie: 'MATE'
   });
@@ -362,7 +362,7 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   ]) {
     const row = confDoc.find((candidate) => candidate[COL_CONF_DOC.ID] === id)!;
     expect(JSON.parse(String(row[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-      classi: '{{focus.classe.anagrafica.nome}}',
+      classi: '{{focus.classe.nome}}',
       utenti: '',
       materie: ''
     });
@@ -388,10 +388,10 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
   )!;
   expect(docenteClasseMateria[COL_CONF_DOC.TIPO]).toBe('DOCUMENTO_DOCENTE_CLASSE_MATERIA');
   expect(docenteClasseMateria[COL_CONF_DOC.CONDIZIONE]).toBe(
-    `{{focus.classe.anagrafica.nome}} == '${CLASSE_A}'`
+    `{{focus.classe.nome}} == '${CLASSE_A}'`
   );
   expect(JSON.parse(String(docenteClasseMateria[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}}',
+    classi: '{{focus.classe.nome}}',
     utenti: '{{focus.docente.email}}',
     materie: '{{focus.materia.sigla}}'
   });
@@ -414,8 +414,8 @@ test('seeds one PIANI_PERSONALIZZATI CONF_DOC with five conditional models and s
     { condizione: '{{focus.piano.tipo}} == "PFP"', templateId: 'tmpl_pfp' }
   ]);
   expect(JSON.parse(String(piano[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}}',
-    utenti: '{{focus.alunno.anagrafica.email}}',
+    classi: '{{focus.classe.nome}}',
+    utenti: '{{focus.alunno.email}}',
     materie: ''
   });
   const pianiNoPei = confDoc.filter((c) => c[COL_CONF_DOC.ID] === CONF_DOC_PIANI_NO_PEI);
@@ -814,7 +814,7 @@ test('seeds an articulated generic CDC signature-summary document with registrat
     templateId: 'tmpl_cdc_riepilogo'
   });
   expect(JSON.parse(String(row?.[COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}}',
+    classi: '{{focus.classe.nome}}',
     utenti: '',
     materie: ''
   });
@@ -843,7 +843,7 @@ test('CONF_DOC_VERBALE PATH_OUT is per-class, so each class gets its own LOG_FOL
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
   const verbale = sample.rows[TABLE.CONF_DOC]!.find((r) => r[COL_CONF_DOC.ID] === 'E2E_VERBALE')!;
-  expect(String(verbale[COL_CONF_DOC.PATH_OUT])).toContain('{{focus.classe.anagrafica.nome}}');
+  expect(String(verbale[COL_CONF_DOC.PATH_OUT])).toContain('{{focus.classe.nome}}');
 });
 
 test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans through AGGIORNA_STATO_DOC', () => {
@@ -869,7 +869,7 @@ test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans 
     stato: 'VERBALIZZATO',
     criteri: {
       [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-      [COL_LOG_DOCS.CLASSI]: '{{focus.classe.anagrafica.nome}}'
+      [COL_LOG_DOCS.CLASSI]: '{{focus.classe.nome}}'
     }
   });
   expect(postProcesso).toContainEqual({
@@ -877,7 +877,7 @@ test('CONF_DOC_VERBALE verbalizes the focus class and articulated-partner plans 
     stato: 'VERBALIZZATO',
     criteri: {
       [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-      [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.partners | join}}'
+      [COL_LOG_DOCS.CLASSI]: '{{focus.classe.articolazione.sottoClassi | join}}'
     }
   });
 });
@@ -896,7 +896,7 @@ test('seeds E2E_PIANO_LAVORO CONF_DOC and E2E_MAIL_LAVORO CONF_MAIL (documenti +
   expect(doc).toEqual(expect.objectContaining({ [COL_CONF_DOC.ID]: CONF_DOC_PIANO_LAVORO }));
   expect(doc![COL_CONF_DOC.GENERATORE]).toBe('CLASSE');
   expect(JSON.parse(String(doc![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-    classi: '{{focus.classe.anagrafica.nome}},{{focus.classe.articolazione.partners | join}}',
+    classi: '{{focus.classe.nome}},{{focus.classe.articolazione.sottoClassi | join}}',
     utenti: '{{#focus.classe.coordinatori.elenco}}{{email}},{{/focus.classe.coordinatori.elenco}}',
     materie: ''
   });

@@ -14,10 +14,10 @@ type E2eStudentRepresentative = {
 class E2eActiveRepresentativesInterceptor implements LibContextInterceptor {
   intercept(name: string, data: unknown, context: unknown): unknown {
     if (name !== 'rappresentanti') return data;
-    const representatives = (context as Cdu).focus.classe?.rappresentanti?.studenti;
+    const representatives = (context as Cdu).focus.classe?.rappresentanti?.studenti.elenco;
     if (representatives === undefined) return data;
 
-    for (const representative of representatives as E2eStudentRepresentative[]) {
+    for (const representative of representatives as unknown as E2eStudentRepresentative[]) {
       representative.active = true;
     }
     return data;

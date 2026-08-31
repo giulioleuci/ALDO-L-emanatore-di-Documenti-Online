@@ -60,21 +60,23 @@ test('student assertion requires two distinctive years, outcomes and plans', () 
     anni: [
       {
         annoScolastico: '2025-2026',
-        classe: '2C',
+        classe: { nome: '2C' },
         esito: 'PROMOSSO',
-        carenze: [{ materiaSigla: 'STO', valore: '4' }]
+        carenze: [{ materiaSigla: 'STO', valore: '4' }],
+        piani: [{ tipo: 'PDP_BES', tipoLabel: 'PDP BES' }]
       },
       {
         annoScolastico: '2024-2025',
-        classe: '1C',
+        classe: { nome: '1C' },
         esito: 'NON_PROMOSSO',
-        carenze: [{ materiaSigla: 'STO', valore: '5' }]
+        carenze: [{ materiaSigla: 'STO', valore: '5' }],
+        piani: [{ tipo: 'PDP_BES', tipoLabel: 'PDP BES' }]
       }
     ],
-    pianiPrimoAnnoPrecedente: [{ tipo: 'PDP_BES', tipoLabel: 'PDP BES' }],
-    pianiSecondoAnnoPrecedente: [{ tipo: 'PDP_BES', tipoLabel: 'PDP BES' }],
-    bocciature: [{ annoScolastico: '2024-2025', classe: '1C' }],
-    hasBocciature: true
+    bocciature: {
+      elenco: [{ annoScolastico: '2024-2025', classe: { nome: '1C' } }],
+      elencoDescrizione: ''
+    }
   };
 
   assertAlunnoStorico(storico);
@@ -94,14 +96,11 @@ test('student assertion requires two distinctive years, outcomes and plans', () 
 
 test('class assertion distinguishes real and fallback referees plus ITP omission', () => {
   const storico = {
-    statistiche: [
-      { annoScolastico: '2025-2026', classe: '2C', statistiche: { totale: 1 } },
-      { annoScolastico: '2024-2025', classe: '1C', statistiche: { totale: 1 } }
-    ],
-    progetti: [
+    anni: [
       {
         annoScolastico: '2025-2026',
-        classe: '2C',
+        classe: { nome: '2C' },
+        statistiche: { totale: 1 },
         progetti: [
           {
             nome: 'ASL storico 2025-2026',
@@ -115,7 +114,7 @@ test('class assertion distinguishes real and fallback referees plus ITP omission
           }
         ]
       },
-      { annoScolastico: '2024-2025', classe: '1C', progetti: [] }
+      { annoScolastico: '2024-2025', classe: { nome: '1C' }, statistiche: { totale: 1 }, progetti: [] }
     ]
   };
   const materie = [
@@ -123,7 +122,7 @@ test('class assertion distinguishes real and fallback referees plus ITP omission
       sigla: 'INF',
       hasItp: true,
       continuita: {
-        docentiAnniPrecedenti: [
+        anniPrecedenti: [
           { annoIndietro: 1, itp: { email: 'e2edocente11@onlinetest.aldo.local' } },
           { annoIndietro: 2, itp: null }
         ],
@@ -134,12 +133,12 @@ test('class assertion distinguishes real and fallback referees plus ITP omission
     {
       sigla: 'MAT',
       hasItp: false,
-      continuita: { docentiAnniPrecedenti: [{ annoIndietro: 1 }, { annoIndietro: 2 }] }
+      continuita: { anniPrecedenti: [{ annoIndietro: 1 }, { annoIndietro: 2 }] }
     },
     {
       sigla: 'STO',
       continuita: {
-        docentiAnniPrecedenti: [
+        anniPrecedenti: [
           { annoIndietro: 1, titolare: { email: 'e2edocente4@onlinetest.aldo.local' } },
           { annoIndietro: 2, titolare: { email: 'e2edocente4@onlinetest.aldo.local' } }
         ]
@@ -148,7 +147,7 @@ test('class assertion distinguishes real and fallback referees plus ITP omission
   ];
 
   assertClasseStorico(storico, materie);
-  const matConItpNull = { ...materie[1], continuita: { docentiAnniPrecedenti: [{ itp: null }] } };
+  const matConItpNull = { ...materie[1], continuita: { anniPrecedenti: [{ itp: null }] } };
   expect(() => assertClasseStorico(storico, [materie[0], matConItpNull, materie[2]])).toThrow(
     /MAT.*itp/i
   );

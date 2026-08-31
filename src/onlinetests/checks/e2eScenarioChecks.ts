@@ -3,10 +3,7 @@ import type { ContextBuilder } from '../../application/context-engine/ContextBui
 import type { Cdu } from '../../application/context-engine/Cdu';
 import { recipe } from '../../application/context-engine/Recipe';
 import type { RisolutoreRuoliService } from '../../application/services/RisolutoreRuoliService';
-import {
-  getCduArticolazionePartners,
-  getCduMateriaAssignmentIdentity
-} from '../../application/context-engine/CduInternalMetadata';
+import { getCduMateriaAssignmentIdentity } from '../../application/context-engine/CduInternalMetadata';
 import {
   type OnlineTestSkippedOutcome,
   type TestRunner
@@ -178,22 +175,22 @@ function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumn
   if (classe === undefined) throw new ValidationError('CDU privo di focus.classe per le protezioni.');
   const groups: ProtectedColumnInput[][] = [[], [], []];
   const articolazione = classe.articolazione;
-  if (classe.flags.isArticolata && articolazione !== undefined) {
-    const partners = getCduArticolazionePartners(articolazione) ?? articolazione.partners ?? [];
-    groups[0]!.push(...articolazione.materieCondivise.map((materia) => columnFromId(materia.sigla)));
+  if (classe.isArticolata && articolazione !== undefined) {
+    const partners = articolazione.sottoClassi.map((partner) => partner.nome);
+    groups[0]!.push(...articolazione.materieComuni.map((materia) => columnFromId(materia.sigla)));
     groups[1]!.push(
-      ...articolazione.materieSeparatePrimoGruppo.map((materia) =>
+      ...articolazione.materieSeparatePrimo.map((materia) =>
         columnFromId(materia.sigla, partners[0])
       )
     );
     groups[2]!.push(
-      ...articolazione.materieSeparateSecondoGruppo.map((materia) =>
+      ...articolazione.materieSeparateSecondo.map((materia) =>
         columnFromId(materia.sigla, partners[1])
       )
     );
   } else {
     const unique = new Map<string, ProtectedColumnInput>();
-    for (const docente of classe.consiglioDiClasse ?? []) {
+    for (const docente of classe.consiglio?.elenco ?? []) {
       for (const materia of docente.materie) {
         const identity = getCduMateriaAssignmentIdentity(materia);
         const column = {
@@ -209,7 +206,7 @@ function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumn
       )
     );
   }
-  const hasAlt = (classe.consiglioDiClasse ?? []).some((docente) =>
+  const hasAlt = (classe.consiglio?.elenco ?? []).some((docente) =>
     docente.materie.some((materia) => materia.sigla === 'ALT')
   );
   const special: UnindexedProtectedColumn = {
@@ -233,7 +230,7 @@ function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumn
 function cduForSubject(cdu: Cdu, subject: string): Cdu {
   const variant: Cdu = {
     ...cdu,
-    meta: { ...cdu.meta, parametriInput: { ...cdu.meta.parametriInput, materiaCorrente: subject } }
+    meta: { ...cdu.meta, materiaCorrente: subject }
   };
   Object.defineProperty(variant, 'tech', {
     value: cdu.tech,
@@ -944,7 +941,7 @@ export function registerE2eScenarioChecks(
       const materie = container.get<MateriaRepository>('materie');
       const expectationProvider: ProtectedRangeExpectationProvider = (classe) => {
         const cdu = contextBuilder.build(
-          { target: classe, tipoTarget: 'classe', now: new Date() },
+          { target: classe, tipoTarget: 'classe', now: new Date(), configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
           recipe('CLASSE_COMPLETA')
         );
         return {

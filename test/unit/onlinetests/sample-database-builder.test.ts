@@ -123,7 +123,7 @@ describe('SampleDatabaseBuilder', () => {
     expect(COL_LOG_FOLD).not.toHaveProperty('MATERIA');
 
     expect(JSON.parse(String(confDoc[0]![COL_CONF_DOC.REGISTRA_DOC]))).toEqual({
-      classi: '{{focus.classe.anagrafica.nome}}',
+      classi: '{{focus.classe.nome}}',
       utenti: '',
       materie: ''
     });

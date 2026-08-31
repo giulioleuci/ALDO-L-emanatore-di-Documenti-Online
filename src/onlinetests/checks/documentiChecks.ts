@@ -172,7 +172,7 @@ function registerTabelleImportateCheck(
 
       const text = drive.getFileText(fileId);
       const expectedHeading = 'Tabelle importate per la classe 1A';
-      const headingPlaceholder = '{{focus.classe.anagrafica.nome}}';
+      const headingPlaceholder = '{{focus.classe.nome}}';
       const expectedFragments = [
         expectedHeading,
         'Nome',

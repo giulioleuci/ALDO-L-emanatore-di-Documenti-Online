@@ -237,7 +237,7 @@ test('imported-table check reports only bounded heading diagnostics on content f
       if (key === 'db') return { table: () => ({ findAll: () => rows }) } as T;
       if (key === 'drive') {
         return {
-          getFileText: () => 'Nome Valore {{focus.classe.anagrafica.nome}} {{residuo}}'
+          getFileText: () => 'Nome Valore {{focus.classe.nome}} {{residuo}}'
         } as T;
       }
       return {} as T;

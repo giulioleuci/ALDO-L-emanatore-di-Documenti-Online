@@ -239,8 +239,8 @@ describe('CDU / RisolutoreRuoliService agreement across the resolution layers (1
       recipe('CLASSE_COMPLETA')
     );
     const cdcEmails = cdu.focus
-      .classe!.consiglioDiClasse.filter((d) => d.materie.some((m) => m.sigla === 'MATE'))
-      .map((d) => d.anagrafica.email);
+      .classe!.consiglio!.elenco.filter((d) => d.materie.some((m) => m.sigla === 'MATE'))
+      .map((d) => d.email);
     const service = composeRisolutoreRuoli(db, teachingAssignments);
     const roleEmails = service.risolvi('DOCENTE_MATERIA', cdu).map((e) => e.value);
 
@@ -337,8 +337,8 @@ describe('complete effective-assignment acceptance matrix', () => {
     // consiglioDiClasse used to carry in one array.
     const fullCduRecipients = sorted(
       new Set([
-        ...classCdu.focus.classe!.consiglioDiClasse!.map((docente) => docente.anagrafica.email),
-        ...classCdu.focus.classe!.consiglioDiClasseTitolare!.map((docente) => docente.anagrafica.email)
+        ...classCdu.focus.classe!.consiglio!.elenco.map((docente) => docente.email),
+        ...classCdu.focus.classe!.consiglio!.titolari.map((docente) => docente.email)
       ])
     );
     const roleRecipients = sorted(
@@ -418,24 +418,30 @@ describe('complete effective-assignment acceptance matrix', () => {
     expect(sorted(emailRecipients)).toEqual(expectedAll);
     expect(documentAclRecipients).toEqual(expectedAll);
     expect(sheetAclRecipients).toEqual(expectedAll);
-    const groups = templateEngine.sheetContextFor('matrix-sheet')?.['materieColonne'] as {
-      group1: Array<{ sigla: string; specificita?: string; roles?: string[]; classeId?: string }>;
-      group2?: Array<{ sigla: string; specificita?: string; roles?: string[]; classeId?: string }>;
-      group3?: Array<{ sigla: string; specificita?: string; roles?: string[]; classeId?: string }>;
-    };
-    const columns = [...groups.group1, ...(groups.group2 ?? []), ...(groups.group3 ?? [])];
+    const groups = (templateEngine.sheetContextFor('matrix-sheet')?.['focus'] as {
+      classe: { sheet: { materieColonne: { gruppi: Array<{ colonne: Array<{ sigla: string; header: string }> }> } } };
+    }).classe.sheet.materieColonne;
+    const columns = groups.gruppi.flatMap((group) => group.colonne);
     expect(sheets.protectCalls).toHaveLength(columns.length);
     const coordinators = classi.getCoordinatori(classe).flatMap((docente) =>
       docente.id === null ? [] : [docente.id]
     );
     for (const [index, column] of columns.entries()) {
-      const subjects = column.roles ?? [column.sigla];
+      const specificita =
+        column.header === 'Lab A'
+          ? 'GRUPPO_A'
+          : column.header === 'Lab B'
+            ? 'GRUPPO_B'
+              : column.header === 'Chitarra'
+                ? 'CHITARRA'
+                : column.header === 'LAB.GRUPPO.A'
+                  ? 'GRUPPO.A'
+                : undefined;
+      const subjects = column.sigla === 'REL/ALT' ? ['IRC', 'ALT'] : [column.sigla];
       const expectedEditors = sorted(
         [...coordinators, ...assignments.flatMap((assignment) =>
           subjects.includes(assignment.slot.materia.value) &&
-          (column.specificita === undefined ||
-            assignment.slot.specifica === column.specificita) &&
-          (column.classeId === undefined || assignment.classeId.value === column.classeId)
+          (specificita === undefined || assignment.slot.specifica === specificita)
             ? assignment.routing.primary.flatMap((docente) => (docente.id === null ? [] : [docente.id]))
             : []
         )].filter((email, position, all) => all.indexOf(email) === position)
@@ -485,7 +491,7 @@ describe('complete effective-assignment acceptance matrix', () => {
         recipe('ALUNNO_COMPLETO', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
       );
       const filtered = new Set(
-        cdu.focus.alunno!.consiglioDiClasseFiltrato.map((docente) => docente.anagrafica.email)
+        cdu.focus.alunno!.consiglio!.elenco.map((docente) => docente.email)
       );
       for (const email of expectation.includes) expect(filtered).toContain(email);
       for (const email of expectation.excludes) expect(filtered).not.toContain(email);

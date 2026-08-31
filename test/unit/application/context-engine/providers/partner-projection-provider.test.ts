@@ -59,9 +59,16 @@ function makeHarness(tables: Record<string, Row[]>) {
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   const classeProvider = new ClasseProvider(classi, alunni, materie);
   const storicoDb = { anniStorici: () => [] };
-  const studentiProvider = new StudentiProvider(classi, alunni, materie, new OreASLRepository(db), storicoDb);
+  const studentiProvider = new StudentiProvider(
+    classi,
+    alunni,
+    materie,
+    new OreASLRepository(db),
+    storicoDb
+  );
   const tutorProvider = new TutorProvider(classi);
-  const movimentiProvider = new MovimentiProvider(new MovimentoAlunnoRepository(db), alunni, classi);
+  const movimenti = new MovimentoAlunnoRepository(db);
+  const movimentiProvider = new MovimentiProvider(movimenti, alunni, classi);
   // Not reused by PartnerProjectionProvider (fix round 1) -- kept here only to
   // run the 'consiglio' token on the OUTER cdu, exactly like CLASSE_COMPLETA
   // does before 'partner', so focus.classe.consiglio.{comune,separatoPrimo,
@@ -75,8 +82,23 @@ function makeHarness(tables: Record<string, Row[]>) {
     new RuoloSpecialeRepository(db),
     new DocenteRepository(db)
   );
-  const provider = new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, movimentiProvider);
-  return { classeProvider, studentiProvider, tutorProvider, consiglioProvider, schoolProvider, provider };
+  const provider = new PartnerProjectionProvider(
+    classeProvider,
+    studentiProvider,
+    tutorProvider,
+    movimentiProvider
+  );
+  return {
+    classeProvider,
+    studentiProvider,
+    tutorProvider,
+    consiglioProvider,
+    schoolProvider,
+    provider,
+    movimentiProvider,
+    movimenti,
+    alunni
+  };
 }
 
 /**
@@ -101,6 +123,121 @@ function buildOuterCdu(
 }
 
 describe('PartnerProjectionProvider', () => {
+  it('scopes date-filtered movements before resolving students for ordinary, partner, and parent classes', () => {
+    const tables = fixtureTables();
+    (tables['ALUNNI'] as Row[]).push(
+      {
+        EMAIL: 'uscito@scuola.it',
+        COGNOMENOME: 'USCITO UNO',
+        CLASSE: '1F-LSO',
+        RELIGIONE: 'IRC',
+        ATTIVO: false,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        CURRICULUM: null
+      },
+      {
+        EMAIL: 'entrato@scuola.it',
+        COGNOMENOME: 'ENTRATO DUE',
+        CLASSE: '1F-LSS',
+        RELIGIONE: 'IRC',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        CURRICULUM: null
+      },
+      {
+        EMAIL: 'interno@scuola.it',
+        COGNOMENOME: 'INTERNO TRE',
+        CLASSE: '1F-LSS',
+        RELIGIONE: 'IRC',
+        ATTIVO: false,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        CURRICULUM: null
+      },
+      {
+        EMAIL: 'estraneo@scuola.it',
+        COGNOMENOME: 'ESTRANEO QUATTRO',
+        CLASSE: '5A',
+        RELIGIONE: 'IRC',
+        ATTIVO: true,
+        RIPETENTE: false,
+        RAPPR_STUD: false,
+        CURRICULUM: null
+      }
+    );
+    (tables['MOV_ALUNNI'] as Row[]).push(
+      { STUDENTE: 'a1@school.it', TIPO: 'CAMBIO', DATA: '2026-06-01', DA: '5A', A: '5A' },
+      { STUDENTE: 'uscito@scuola.it', TIPO: 'OUT', DATA: '2026-06-05', DA: '1F-LSO', A: '' },
+      {
+        STUDENTE: 'entrato@scuola.it',
+        TIPO: 'IN',
+        DATA: '2026-06-04',
+        DA: 'ALTRO ISTITUTO',
+        A: '1F-LSS'
+      },
+      {
+        STUDENTE: 'interno@scuola.it',
+        TIPO: 'CAMBIO',
+        DATA: '2026-06-03',
+        DA: '1F-LSO',
+        A: '1F-LSS'
+      },
+      { STUDENTE: 'estraneo@scuola.it', TIPO: 'CAMBIO', DATA: '2026-06-05', DA: '9X', A: '9Y' }
+    );
+    const harness = makeHarness(tables);
+
+    const ordinary = buildOuterCdu(
+      '5A',
+      harness.classeProvider,
+      harness.consiglioProvider,
+      harness.schoolProvider
+    );
+    harness.movimentiProvider.provide(ordinary.cdu);
+    expect(ordinary.cdu.focus.classe!.movimenti!.interni[0]).toMatchObject({
+      direzione: 'INTERNA',
+      isMovimentoInterno: true
+    });
+
+    const sourcePartner = buildOuterCdu(
+      '1F-LSO',
+      harness.classeProvider,
+      harness.consiglioProvider,
+      harness.schoolProvider
+    );
+    harness.movimentiProvider.provide(sourcePartner.cdu);
+    expect(sourcePartner.cdu.focus.classe!.movimenti!.uscite[0]!.studente.email).toBe(
+      'uscito@scuola.it'
+    );
+
+    const destinationPartner = buildOuterCdu(
+      '1F-LSS',
+      harness.classeProvider,
+      harness.consiglioProvider,
+      harness.schoolProvider
+    );
+    harness.movimentiProvider.provide(destinationPartner.cdu);
+    expect(destinationPartner.cdu.focus.classe!.movimenti!.entrate[0]).toMatchObject({
+      isEntrata: true
+    });
+
+    const parent = buildOuterCdu(
+      '1F',
+      harness.classeProvider,
+      harness.consiglioProvider,
+      harness.schoolProvider
+    );
+    const findById = jest.spyOn(harness.alunni, 'findById');
+    harness.movimentiProvider.provide(parent.cdu);
+    expect(parent.cdu.focus.classe!.movimenti!.interni[0]).toMatchObject({
+      direzione: 'INTERNA',
+      isMovimentoInterno: true
+    });
+    expect(findById).toHaveBeenCalledTimes(3);
+    expect(findById).not.toHaveBeenCalledWith('estraneo@scuola.it');
+  });
+
   it('builds primo/secondo full ProiezioneClasseVM only when isArticolata and includiPartnerDettaglio are both true', () => {
     const tables = tablesWithPartnerStudents();
     const { classeProvider, consiglioProvider, schoolProvider, provider } = makeHarness(tables);
@@ -131,7 +268,9 @@ describe('PartnerProjectionProvider', () => {
       'verdi@school.it'
     ]);
     expect(partner.primo.consiglio.elenco.some((d) => d.email === 'verdi@school.it')).toBe(false);
-    expect(partner.secondo.consiglio.elenco.some((d) => d.email === 'bianchi@school.it')).toBe(false);
+    expect(partner.secondo.consiglio.elenco.some((d) => d.email === 'bianchi@school.it')).toBe(
+      false
+    );
     expect(partner.primo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
     expect(partner.secondo.coordinatori.elenco.map((c) => c.email)).toEqual(['rossi@school.it']);
     // each side is a full class projection, including its own movimenti node:

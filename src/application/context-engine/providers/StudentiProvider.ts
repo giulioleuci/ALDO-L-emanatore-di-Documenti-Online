@@ -15,7 +15,6 @@ import { getClasseEntity } from '../techEntities';
 import { buildElencoCarenzeVm, curriculumArray } from '../mappers/carenzeMapper';
 import { tipoPianoLabel, religioneLabel, indirizzoTipoLabel } from '../mappers/labels';
 import { buildPerSpecificita } from '../mappers/specificitaAlunniMapper';
-import { computeStatisticheAlunni } from '../mappers/statisticheAlunniMapper';
 import { elencoVm } from '../mappers/elencoVm';
 
 export class StudentiProvider implements ContextProvider {
@@ -36,7 +35,12 @@ export class StudentiProvider implements ContextProvider {
       ? this.classi.getClassiPartner(classeFocus)
       : [classeFocus];
     const elenco = classi
-      .flatMap((classe) => this.classi.getStudenti(classe).filter((alunno) => alunno.isAttivo()).map((alunno) => this.studente(alunno, classe, cdu, storico)))
+      .flatMap((classe) =>
+        this.classi
+          .getStudenti(classe)
+          .filter((alunno) => alunno.isAttivo())
+          .map((alunno) => this.studente(alunno, classe, cdu, storico))
+      )
       .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
     focus.studenti = this.container(elenco);
   }
@@ -45,8 +49,12 @@ export class StudentiProvider implements ContextProvider {
     const perStato = {
       bes: elenco.filter((alunno) => alunno.isBes),
       dsa: elenco.filter((alunno) => alunno.isDsa),
-      pfp: elenco.filter((alunno) => alunno.piani.elenco.some((piano) => piano.tipo === TipoPiano.PFP)),
-      pei: elenco.filter((alunno) => alunno.piani.elenco.some((piano) => piano.tipo === TipoPiano.PEI)),
+      pfp: elenco.filter((alunno) =>
+        alunno.piani.elenco.some((piano) => piano.tipo === TipoPiano.PFP)
+      ),
+      pei: elenco.filter((alunno) =>
+        alunno.piani.elenco.some((piano) => piano.tipo === TipoPiano.PEI)
+      ),
       ripetenti: elenco.filter((alunno) => alunno.isRipetente),
       rappresentanti: elenco.filter((alunno) => alunno.isRappresentante),
       conPiani: elenco.filter((alunno) => alunno.piani.hasElenco)
@@ -65,16 +73,41 @@ export class StudentiProvider implements ContextProvider {
       altDescrizione: alt.map((alunno) => alunno.nomeCompleto).join(', '),
       noDescrizione: no.map((alunno) => alunno.nomeCompleto).join(', '),
       elenco: [
-        { codice: 'IRC' as const, label: 'Religione cattolica', alunni: irc, hasAlunni: irc.length > 0, numero: irc.length },
-        { codice: 'ALT' as const, label: 'Attività alternativa', alunni: alt, hasAlunni: alt.length > 0, numero: alt.length },
-        { codice: 'NO' as const, label: 'Non si avvale', alunni: no, hasAlunni: no.length > 0, numero: no.length }
+        {
+          codice: 'IRC' as const,
+          label: 'Religione cattolica',
+          alunni: irc,
+          hasAlunni: irc.length > 0,
+          numero: irc.length
+        },
+        {
+          codice: 'ALT' as const,
+          label: 'Attività alternativa',
+          alunni: alt,
+          hasAlunni: alt.length > 0,
+          numero: alt.length
+        },
+        {
+          codice: 'NO' as const,
+          label: 'Non si avvale',
+          alunni: no,
+          hasAlunni: no.length > 0,
+          numero: no.length
+        }
       ]
     };
     const perSpecificita = buildPerSpecificita(elenco);
     return {
       ...elencoVm(elenco),
       elencoDescrizione: elenco.map((alunno) => alunno.nomeCompleto).join(', '),
-      statistiche: computeStatisticheAlunni(elenco.map((alunno) => this.alunni.findById(alunno.email)).filter((alunno): alunno is Alunno => alunno !== null), this.alunni),
+      statistiche: {
+        totale: 0,
+        conPiani: 0,
+        conBes: 0,
+        conDsa: 0,
+        ripetenti: 0,
+        rappresentanti: 0
+      },
       perStato: {
         ...perStato,
         hasBes: perStato.bes.length > 0,
@@ -91,17 +124,40 @@ export class StudentiProvider implements ContextProvider {
     };
   }
 
-  private studente(alunno: Alunno, classe: Classe, cdu: Cdu, storico: IAlunnoRepository | null): AlunnoVM {
+  private studente(
+    alunno: Alunno,
+    classe: Classe,
+    cdu: Cdu,
+    storico: IAlunnoRepository | null
+  ): AlunnoVM {
     const indirizzo = this.classi.getIndirizzo(classe);
     const curriculum = curriculumArray(alunno, this.materie);
-    const piani: PianoVM[] = this.alunni.getPiani(alunno)
-      .map((piano) => ({ tipo: piano.tipo, tipoLabel: tipoPianoLabel(piano.tipo), isBes: piano.isBES(), link: null, hasLink: false, parametriGenerazione: null, hasParametriGenerazione: false }))
+    const piani: PianoVM[] = this.alunni
+      .getPiani(alunno)
+      .map((piano) => ({
+        tipo: piano.tipo,
+        tipoLabel: tipoPianoLabel(piano.tipo),
+        isBes: piano.isBES(),
+        link: null,
+        hasLink: false,
+        parametriGenerazione: null,
+        hasParametriGenerazione: false
+      }))
       .sort((a, b) => a.tipo.localeCompare(b.tipo));
     const anno = cdu.istituto?.annoScolastico;
     return {
       nomeCompleto: alunno.cognomeNome,
       email: alunno.email.value,
-      classe: { nome: classe.nome, indirizzo: { sigla: classe.indirizzo, nome: indirizzo.nome, nomeSintetico: indirizzo.nomeSintetico, tipo: indirizzo.tipo, tipoLabel: indirizzoTipoLabel(indirizzo.tipo) } },
+      classe: {
+        nome: classe.nome,
+        indirizzo: {
+          sigla: classe.indirizzo,
+          nome: indirizzo.nome,
+          nomeSintetico: indirizzo.nomeSintetico,
+          tipo: indirizzo.tipo,
+          tipoLabel: indirizzoTipoLabel(indirizzo.tipo)
+        }
+      },
       religione: alunno.religione,
       religioneLabel: religioneLabel(alunno.religione),
       isIrc: alunno.religione === 'IRC',
@@ -111,14 +167,40 @@ export class StudentiProvider implements ContextProvider {
       isDsa: piani.some((piano) => piano.tipo === TipoPiano.PDP_DSA),
       isRipetente: alunno.isRipetente(),
       isRappresentante: alunno.isRappresentante(),
-      presenza: { annoPrecedente: { isCalcolato: storico !== null, isPresente: storico !== null && storico.findById(alunno.email.value) !== null }, isPresenteTuttoAnno: true, hasCambiatoClasse: false, classePrecedente: null, hasClassePrecedente: false },
+      presenza: {
+        annoPrecedente: {
+          isCalcolato: storico !== null,
+          isPresente: storico !== null && storico.findById(alunno.email.value) !== null
+        },
+        isPresenteTuttoAnno: true,
+        hasCambiatoClasse: false,
+        classePrecedente: null,
+        hasClassePrecedente: false
+      },
       movimenti: elencoVm([]),
       curriculum,
       hasCurriculum: curriculum.length > 0,
-      curriculumDescrizione: curriculum.map((item) => `${item.materiaNome}${item.hasSpecifiche ? ` (${item.specificheDescrizione})` : ''}`).join(', '),
-      carenze: buildElencoCarenzeVm(this.alunni.getCarenze(alunno), this.materie.findAllSigle(), this.materie),
-      piani: { ...elencoVm(piani), elencoDescrizione: piani.map((piano) => piano.tipoLabel).join(', '), hasBes: piani.some((piano) => piano.isBes) },
-      asl: { oreCumulate: this.oreAsl.getTotaleOre(alunno), oreAnnoCorrente: anno === undefined ? 0 : this.oreAsl.getOrCreate(alunno, AnnoScolastico.of(anno)).getOre() }
+      curriculumDescrizione: curriculum
+        .map(
+          (item) =>
+            `${item.materiaNome}${item.hasSpecifiche ? ` (${item.specificheDescrizione})` : ''}`
+        )
+        .join(', '),
+      carenze: buildElencoCarenzeVm(
+        this.alunni.getCarenze(alunno),
+        this.materie.findAllSigle(),
+        this.materie
+      ),
+      piani: {
+        ...elencoVm(piani),
+        elencoDescrizione: piani.map((piano) => piano.tipoLabel).join(', '),
+        hasBes: piani.some((piano) => piano.isBes)
+      },
+      asl: {
+        oreCumulate: this.oreAsl.getTotaleOre(alunno),
+        oreAnnoCorrente:
+          anno === undefined ? 0 : this.oreAsl.getOrCreate(alunno, AnnoScolastico.of(anno)).getOre()
+      }
     };
   }
 

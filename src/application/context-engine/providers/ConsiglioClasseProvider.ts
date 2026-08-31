@@ -30,7 +30,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
     const focus = cdu.focus.classe;
     if (focus === undefined) return;
     const classe = getClasseEntity(cdu);
-    const data = new Date(cdu.meta.timestamp);
+    const data = new Date(`${cdu.meta.timestamp.slice(0, 10)}T00:00:00.000Z`);
     const effettivi = resolveEffectiveCouncil(this.teachingAssignments, classe, data);
     const titolari = resolveTitolareCouncil(this.teachingAssignments, classe, data);
     focus.consiglio = this.emptyConsiglio(
@@ -79,18 +79,29 @@ export class ConsiglioClasseProvider implements ContextProvider {
    * shared `buildConsiglioClasseVm` — same partitioning logic
    * `PartnerProjectionProvider` reuses for per-partner-side projections.
    */
-  private partizioni(consiglio: ConsiglioClasseVM, classe: ReturnType<typeof getClasseEntity>): void {
+  private partizioni(
+    consiglio: ConsiglioClasseVM,
+    classe: ReturnType<typeof getClasseEntity>
+  ): void {
     const config = this.classi.getArticolazione(classe);
     const partners = this.classi.orderedPartners(classe);
-    const own = config !== null && !config.isParent()
-      ? partners[0]?.id === classe.id ? 'SEPARATO_PRIMO' : 'SEPARATO_SECONDO'
-      : null;
+    const own =
+      config !== null && !config.isParent()
+        ? partners[0]?.id === classe.id
+          ? 'SEPARATO_PRIMO'
+          : 'SEPARATO_SECONDO'
+        : null;
     const scope = (docenti: DocenteCdcVM[]) =>
       own === null
         ? docenti
-        : docenti.filter((docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === own);
+        : docenti.filter(
+            (docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === own
+          );
     const scopedElenco = scope(consiglio.elenco);
     const scopedTitolari = scope(consiglio.titolari);
-    Object.assign(consiglio, buildConsiglioClasseVm(scopedElenco, scopedTitolari, consiglio.supplenze));
+    Object.assign(
+      consiglio,
+      buildConsiglioClasseVm(scopedElenco, scopedTitolari, consiglio.supplenze)
+    );
   }
 }

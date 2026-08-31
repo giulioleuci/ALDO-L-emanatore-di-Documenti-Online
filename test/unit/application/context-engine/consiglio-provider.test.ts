@@ -41,7 +41,7 @@ function cdc(
   const result = b.build(params, recipe).focus.classe!.consiglio!.elenco;
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.objectContaining({ id: target }),
-    now,
+    new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000Z`),
     expect.objectContaining({ includeReligioneAlt: true })
   );
   return result;
@@ -54,6 +54,33 @@ test('CDC of a standard class: one VM per subject teacher, sorted by surname (02
   // 2025-10-01, `now` here is 2026-07-01); FISI's nominal holder is also
   // bianchi -> rossi holds no subject in 5A and drops out of the council.
   expect(list.map((d) => d.email)).toEqual(['bianchi@school.it']);
+});
+
+test('ConsiglioClasseProvider resolves the target calendar day, not the timestamp time', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
+  const teachingAssignments = new AldoTeachingAssignmentResolver(db);
+  const resolveConsiglio = jest.spyOn(teachingAssignments, 'resolveConsiglio');
+  const b = new ContextBuilder();
+  b.registerProvider('class', new ClasseProvider(classi));
+  b.registerProvider(
+    'consiglio',
+    new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
+  );
+  b.build(
+    {
+      target: '5A',
+      tipoTarget: 'classe',
+      now: new Date('2026-07-01T23:59:59.999Z')
+    } as BuildParams,
+    { providers: ['class', 'consiglio'], options: makeOptions() }
+  );
+
+  expect(resolveConsiglio).toHaveBeenCalledWith(
+    expect.objectContaining({ id: '5A' }),
+    new Date('2026-07-01T00:00:00.000Z'),
+    expect.any(Object)
+  );
 });
 
 test('CDC coordinatore VM: materie, roles and descrizione', () => {
@@ -117,7 +144,11 @@ test('materiaVm resolves the composite specifica row directly, not the base subj
 
 test('CDC of an articulated parent: tipoArticolazione by partner membership (09 §9)', () => {
   const list = cdc('1F');
-  expect(list.map((d) => d.email)).toEqual(['bianchi@school.it', 'rossi@school.it', 'verdi@school.it']);
+  expect(list.map((d) => d.email)).toEqual([
+    'bianchi@school.it',
+    'rossi@school.it',
+    'verdi@school.it'
+  ]);
   expect(byEmail(list, 'rossi@school.it').tipoArticolazione).toBe('COMUNE'); // MATE in both partners
   expect(byEmail(list, 'bianchi@school.it').tipoArticolazione).toBe('SEPARATO_PRIMO'); // FISI in 1F-LSO only
   expect(byEmail(list, 'verdi@school.it').tipoArticolazione).toBe('SEPARATO_SECONDO'); // FISI in 1F-LSS only
@@ -146,7 +177,11 @@ test('councilVmStrategy tutor flags stay consistent with focus.classe.tutor for 
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
+  const params: BuildParams = {
+    target: '1F',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'tutor', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
@@ -208,7 +243,11 @@ test('tipoArticolazione follows resolved partner assignments for replacements an
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-02-15T09:00:00Z') } as BuildParams;
+  const params: BuildParams = {
+    target: '1F',
+    tipoTarget: 'classe',
+    now: new Date('2026-02-15T09:00:00Z')
+  } as BuildParams;
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   const focusClasse = b.build(params, recipe).focus.classe!;
 
@@ -219,7 +258,9 @@ test('tipoArticolazione follows resolved partner assignments for replacements an
   expect(effettivo.find((d) => d.email === 'replacement@school.test')).toBeUndefined();
   expect(byEmail(effettivo, 'substitute@school.test').tipoArticolazione).toBe('SEPARATO_SECONDO');
   expect(byEmail(effettivo, 'substitute@school.test').isSupplente).toBe(true);
-  expect(byEmail(effettivo, 'substitute@school.test').sostituisce?.email).toBe('replacement@school.test');
+  expect(byEmail(effettivo, 'substitute@school.test').sostituisce?.email).toBe(
+    'replacement@school.test'
+  );
 
   // consiglio.titolari: VARIAZIONI_CATTEDRA applied (rossi -> replacement), the
   // active SUPPLENZE ignored -- substitute never appears here.
@@ -241,7 +282,11 @@ test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/s
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
+  const params: BuildParams = {
+    target: '1F',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  } as BuildParams;
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
@@ -264,7 +309,11 @@ test('ConsiglioClasseProvider: non-articulated class has empty comune/separato s
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
+  const params: BuildParams = {
+    target: '5A',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  } as BuildParams;
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   const focusClasse = b.build(params, recipe).focus.classe!;
   expect(focusClasse.consiglio!.comune).toEqual([]);
@@ -388,7 +437,12 @@ test('exposes sostituisce as a PersonaVM when a supplente is displayed', () => {
     COORD: '',
     MATE: 'rossi@school.it'
   });
-  const list = cdc('4B', new Date('2025-11-15T09:00:00Z'), tables, GestioneSupplenti.SOLO_SUPPLENTI);
+  const list = cdc(
+    '4B',
+    new Date('2025-11-15T09:00:00Z'),
+    tables,
+    GestioneSupplenti.SOLO_SUPPLENTI
+  );
   const docente = list.find((d) => d.sostituisce !== null)!;
   expect(docente.sostituisce).toMatchObject({
     email: 'rossi@school.it',

@@ -9445,8 +9445,8 @@ class ErrorClassifier {
 
   constructor(config) {
 
-    if (config !== undefined && config !== null && typeof config !== 'object') {
-      throw new Error('ErrorClassifier: config must be an object or null');
+    if (!config || typeof config.getErrorPatterns !== 'function') {
+      throw new Error('ErrorClassifier: config is required and must implement getErrorPatterns()');
     }
 
 
@@ -9454,59 +9454,7 @@ class ErrorClassifier {
 
 
 
-
-    if (config && typeof config.getErrorPatterns === 'function') {
-      this._classifiers = config.getErrorPatterns();
-    } else {
-
-
-      this._classifiers = {
-
-        AUTH_REQUIRED: {
-          pattern: /authorization is required|access_token/i,
-          category: 'FATAL',
-          recoverable: false
-        },
-        SCRIPT_ERROR: {
-          pattern: /script error|syntax error|reference error|type error|is not a function/i,
-          category: 'FATAL',
-          recoverable: false
-        },
-
-
-
-        TIMEOUT: {
-          pattern: /timeout|time.*limit|execution.*time.*exceeded|exceeded.*time/i,
-          category: 'TIMEOUT',
-          recoverable: false
-        },
-        QUOTA_EXCEEDED: {
-          pattern: /quota|limit.*exceeded|too many (requests|times)|service invoked too many/i,
-          category: 'QUOTA',
-          recoverable: true
-        },
-        PERMISSION_DENIED: {
-          pattern: /permission.*(denied|to access)|unauthorized|you do not have permission/i,
-          category: 'PERMISSIONS',
-          recoverable: false
-        },
-        SERVICE_UNAVAILABLE: {
-          pattern: /service.*(unavailable|error|failed)|503/i,
-          category: 'SERVICE',
-          recoverable: true
-        },
-        NOT_FOUND: {
-          pattern: /not found|(?:^|\s)404(?:\s|$)/i,
-          category: 'NOT_FOUND',
-          recoverable: false
-        },
-        NETWORK_ERROR: {
-          pattern: /network.*error|connection.*(refused|failed)|failed to establish connection/i,
-          category: 'NETWORK',
-          recoverable: true
-        }
-      };
-    }
+    this._classifiers = config.getErrorPatterns();
 
 
     this._classificationCache = new Map();
@@ -9590,93 +9538,6 @@ class ErrorClassifier {
   }
 }
 ;
-
-
-
-
-
-class ErrorReporterRecorder {
-  constructor(facade) {
-    this.facade = facade;
-    this._logger = facade._logger;
-  }
-  reset() {
-    this.facade._sessionErrors = [];
-    this.facade._counters = {
-      total: 0,
-      recovered: 0,
-      notRecovered: 0,
-      byType: {}
-    };
-  }
-  record(details) {
-    if (!details || typeof details !== 'object') {
-      throw new Error('ErrorReporter.record: details must be an object');
-    }
-    if (!details.type || typeof details.type !== 'string') {
-      throw new Error('ErrorReporter.record: details.type is required and must be a string');
-    }
-    if (!details.operation || typeof details.operation !== 'string') {
-      throw new Error('ErrorReporter.record: details.operation is required and must be a string');
-    }
-    if (details.type === 'FAILURE') {
-      if (!details.classification || typeof details.classification !== 'object') {
-        throw new Error('ErrorReporter.record: details.classification is required for FAILURE type');
-      }
-      if (!details.classification.type || typeof details.classification.type !== 'string') {
-        throw new Error('ErrorReporter.record: details.classification.type is required');
-      }
-    } else if (details.type === 'RECOVERED') {
-      if (typeof details.attempt !== 'number' || details.attempt < 1) {
-        throw new Error('ErrorReporter.record: details.attempt is required for RECOVERED type and must be >= 1');
-      }
-    } else {
-      throw new Error(`ErrorReporter.record: invalid type "${details.type}". Must be "FAILURE" or "RECOVERED"`);
-    }
-    this.facade._sessionErrors.push({
-      timestamp: new Date(),
-      ...details
-    });
-    const MAX_SESSION_ERRORS = this.facade.constructor.MAX_SESSION_ERRORS || 1000;
-    if (this.facade._sessionErrors.length > MAX_SESSION_ERRORS) {
-      this.facade._sessionErrors.shift();
-      this._logger.warn(`[MEMORY_LIMIT] Session error log exceeded ${MAX_SESSION_ERRORS} entries. ` + 'Oldest entry removed. Counters remain accurate.');
-    }
-    if (details.type === 'FAILURE') {
-      this.facade._counters.total++;
-      this.facade._counters.notRecovered++;
-      const errorType = details.classification.type;
-      this.facade._counters.byType[errorType] = (this.facade._counters.byType[errorType] || 0) + 1;
-      const originalMessage = details.classification.originalMessage || 'Unknown error';
-      const sanitizedMessage = this.facade.constructor._sanitizeMessage(originalMessage);
-      this._logger.error(`[FAILURE] ${details.operation}: ${sanitizedMessage}`);
-    } else if (details.type === 'RECOVERED') {
-      this.facade._counters.total++;
-      this.facade._counters.recovered++;
-      this._logger.warn(`[RECOVERED] ${details.operation} after ${details.attempt} attempts.`);
-    }
-  }
-}
-;
-
-
-
-
-
-class ErrorReporterStatistics {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  getSummary() {
-    const counters = this.facade._counters;
-    const recoveryRate = counters.total > 0 ? Math.round(counters.recovered / counters.total * 100) : 100;
-    return {
-      counters: counters,
-      recoveryRate
-    };
-  }
-}
-;
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -9687,8 +9548,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 
 ;
-
-
 class ErrorReporter {
 
 
@@ -9716,19 +9575,89 @@ class ErrorReporter {
       notRecovered: 0,
       byType: {}
     };
+  }
 
 
-    this._recorder = new ErrorReporterRecorder(this);
-    this._statistics = new ErrorReporterStatistics(this);
 
 
-    Delegation.delegateMethods(this, [{
-      manager: this._recorder,
-      methods: ['reset', 'record']
-    }, {
-      manager: this._statistics,
-      methods: ['getSummary']
-    }]);
+  reset() {
+    this._sessionErrors = [];
+    this._counters = {
+      total: 0,
+      recovered: 0,
+      notRecovered: 0,
+      byType: {}
+    };
+  }
+
+
+
+
+
+
+
+
+
+
+  record(details) {
+    if (!details || typeof details !== 'object') {
+      throw new Error('ErrorReporter.record: details must be an object');
+    }
+    if (!details.type || typeof details.type !== 'string') {
+      throw new Error('ErrorReporter.record: details.type is required and must be a string');
+    }
+    if (!details.operation || typeof details.operation !== 'string') {
+      throw new Error('ErrorReporter.record: details.operation is required and must be a string');
+    }
+    if (details.type === 'FAILURE') {
+      if (!details.classification || typeof details.classification !== 'object') {
+        throw new Error('ErrorReporter.record: details.classification is required for FAILURE type');
+      }
+      if (!details.classification.type || typeof details.classification.type !== 'string') {
+        throw new Error('ErrorReporter.record: details.classification.type is required');
+      }
+    } else if (details.type === 'RECOVERED') {
+      if (typeof details.attempt !== 'number' || details.attempt < 1) {
+        throw new Error('ErrorReporter.record: details.attempt is required for RECOVERED type and must be >= 1');
+      }
+    } else {
+      throw new Error(`ErrorReporter.record: invalid type "${details.type}". Must be "FAILURE" or "RECOVERED"`);
+    }
+    this._sessionErrors.push({
+      timestamp: new Date(),
+      ...details
+    });
+    const MAX_SESSION_ERRORS = this.constructor.MAX_SESSION_ERRORS || 1000;
+    if (this._sessionErrors.length > MAX_SESSION_ERRORS) {
+      this._sessionErrors.shift();
+      this._logger.warn(`[MEMORY_LIMIT] Session error log exceeded ${MAX_SESSION_ERRORS} entries. ` + 'Oldest entry removed. Counters remain accurate.');
+    }
+    if (details.type === 'FAILURE') {
+      this._counters.total++;
+      this._counters.notRecovered++;
+      const errorType = details.classification.type;
+      this._counters.byType[errorType] = (this._counters.byType[errorType] || 0) + 1;
+      const originalMessage = details.classification.originalMessage || 'Unknown error';
+      const sanitizedMessage = this.constructor._sanitizeMessage(originalMessage);
+      this._logger.error(`[FAILURE] ${details.operation}: ${sanitizedMessage}`);
+    } else if (details.type === 'RECOVERED') {
+      this._counters.total++;
+      this._counters.recovered++;
+      this._logger.warn(`[RECOVERED] ${details.operation} after ${details.attempt} attempts.`);
+    }
+  }
+
+
+
+
+
+  getSummary() {
+    const counters = this._counters;
+    const recoveryRate = counters.total > 0 ? Math.round(counters.recovered / counters.total * 100) : 100;
+    return {
+      counters: counters,
+      recoveryRate
+    };
   }
 }
 
@@ -9771,8 +9700,8 @@ class RecoveryManager {
     }
 
 
-    if (config !== undefined && config !== null && typeof config !== 'object') {
-      throw new Error('RecoveryManager: config must be an object or null');
+    if (!config || typeof config.getRecoveryStrategies !== 'function') {
+      throw new Error('RecoveryManager: config is required and must implement getRecoveryStrategies()');
     }
     this._utils = utils;
 
@@ -9781,44 +9710,8 @@ class RecoveryManager {
 
 
 
-
-    if (config && typeof config.getRecoveryStrategies === 'function') {
-      this._strategies = config.getRecoveryStrategies();
-      this._config = config;
-    } else {
-
-      this._strategies = {
-        DEFAULT: {
-          action: 'RETRY_BACKOFF',
-          maxAttempts: 3,
-          interval: 2000 
-        },
-        FATAL: {
-          action: 'NOTIFY_ADMIN',
-          maxAttempts: 1
-        },
-        QUOTA: {
-          action: 'RETRY_BACKOFF_LONG',
-          maxAttempts: 3,
-          interval: 60000 
-        },
-        SERVICE: {
-          action: 'RETRY_BACKOFF',
-          maxAttempts: 5,
-          interval: 5000 
-        },
-        NETWORK: {
-          action: 'RETRY_IMMEDIATE',
-          maxAttempts: 3,
-          interval: 2000 
-        },
-        PERMISSIONS: {
-          action: 'NOTIFY_ADMIN',
-          maxAttempts: 1
-        }
-      };
-      this._config = null;
-    }
+    this._strategies = config.getRecoveryStrategies();
+    this._config = config;
   }
 
 
@@ -10201,254 +10094,182 @@ class CircuitBreaker {
 }
 ;
 
-class ResilienceExecutionHandler {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  _generateCorrelationId() {
 
-    const utils = new MyUtilsService();
-    return utils.generateCompactId(21);
-  }
-  executeWithAdvancedHandling(func, parameters = {}, options = {}) {
 
-    if (typeof func !== 'function') {
-      throw new Error('ExceptionService.executeWithAdvancedHandling: func must be a function');
+
+
+
+
+
+class ResilienceConfiguration {
+
+
+
+
+
+
+
+
+  constructor(overrides = {}) {
+
+    if (overrides !== null && typeof overrides !== 'object') {
+      throw new Error('ResilienceConfiguration: overrides must be an object or null');
     }
-    if (parameters !== null && typeof parameters !== 'object') {
-      throw new Error('ExceptionService.executeWithAdvancedHandling: parameters must be an object or null');
-    }
-    if (typeof options !== 'object') {
-      throw new Error('ExceptionService.executeWithAdvancedHandling: options must be an object');
-    }
-    if (options.maxAttempts !== undefined) {
-      if (typeof options.maxAttempts !== 'number' || options.maxAttempts < 1 || !Number.isInteger(options.maxAttempts)) {
-        throw new Error('ExceptionService.executeWithAdvancedHandling: options.maxAttempts must be a positive integer');
+
+
+
+    this.errorPatterns = Object.assign({
+
+      AUTH_REQUIRED: {
+        pattern: /authorization is required|access_token/i,
+        category: 'FATAL',
+        recoverable: false
+      },
+      SCRIPT_ERROR: {
+        pattern: /script error|syntax error|reference error|type error|is not a function/i,
+        category: 'FATAL',
+        recoverable: false
+      },
+
+
+
+      TIMEOUT: {
+        pattern: /timeout|time.*limit|execution.*time.*exceeded|exceeded.*time/i,
+        category: 'TIMEOUT',
+        recoverable: false
+      },
+      QUOTA_EXCEEDED: {
+        pattern: /quota|limit.*exceeded|too many (requests|times)|service invoked too many/i,
+        category: 'QUOTA',
+        recoverable: true
+      },
+      PERMISSION_DENIED: {
+        pattern: /permission.*(denied|to access)|unauthorized|you do not have permission/i,
+        category: 'PERMISSIONS',
+        recoverable: false
+      },
+      SERVICE_UNAVAILABLE: {
+        pattern: /service.*(unavailable|error|failed)|503/i,
+        category: 'SERVICE',
+        recoverable: true
+      },
+      NOT_FOUND: {
+        pattern: /not found|(?:^|\s)404(?:\s|$)/i,
+        category: 'NOT_FOUND',
+        recoverable: false
+      },
+      NETWORK_ERROR: {
+        pattern: /network.*error|connection.*(refused|failed)|failed to establish connection/i,
+        category: 'NETWORK',
+        recoverable: true
       }
-    }
-    if (options.correlationId !== undefined && typeof options.correlationId !== 'string') {
-      throw new Error('ExceptionService.executeWithAdvancedHandling: options.correlationId must be a string');
-    }
-    const operationName = options.operationName || 'Operation';
-    const mode = options.mode || 'RECOVERY';
-    const maxAttempts = options.maxAttempts; 
-    const correlationId = options.correlationId || this._generateCorrelationId(); 
-    const useCircuitBreaker = options.useCircuitBreaker !== false; 
-    let attempt = 0;
-    let lastError = null;
-    let classification = null;
+    }, overrides && overrides.errorPatterns || {});
 
 
-    if (useCircuitBreaker && this.facade._circuitBreaker && !this.facade._circuitBreaker.allowRequest(operationName)) {
-      this.facade._logger.warn(`[CircuitBreaker] Request blocked for '${operationName}' - circuit is OPEN`);
-      return {
-        success: false,
-        result: null,
-        attempts: 0,
-        correlationId,
-        error: {
-          message: 'Circuit breaker is OPEN - operation blocked',
-          type: 'CIRCUIT_OPEN',
-          category: 'CIRCUIT_BREAKER',
-          recoverable: false,
-          originalMessage: 'Circuit breaker is OPEN'
-        }
-      };
-    }
-
-
-    const absoluteMaxAttempts = this.facade._config ? this.facade._config.getLimit('ABSOLUTE_MAX_ATTEMPTS') : this.facade.constructor.ABSOLUTE_MAX_ATTEMPTS;
-    while (attempt < absoluteMaxAttempts) {
-      attempt++;
-      try {
-
-        const result = func(parameters);
-
-
-        if (useCircuitBreaker && this.facade._circuitBreaker) {
-          this.facade._circuitBreaker.recordSuccess(operationName);
-        }
-
-
-        const recovered = attempt > 1;
-        if (recovered) {
-          this.facade._reporter.record({
-            type: 'RECOVERED',
-            operation: operationName,
-            attempt,
-            correlationId 
-          });
-          this.facade._logger.debug(`[${operationName}] Operation recovered successfully after ${attempt} attempt(s)`);
-        } else {
-          this.facade._logger.debug(`[${operationName}] Operation completed successfully on attempt ${attempt}`);
-        }
-        return {
-          success: true,
-          result,
-          attempts: attempt,
-          recovered,
-          correlationId,
-
-          error: null
-        };
-      } catch (e) {
-
-        if (!(e instanceof Error)) {
-          lastError = new Error(String(e));
-          lastError.originalValue = e;
-        } else {
-          lastError = e;
-        }
-        classification = this.facade._classifier.classify(lastError);
-
-
-        if (!this.facade._recoveryManager.applyStrategy(classification, attempt, mode, maxAttempts)) {
-          break; 
-        }
-
-
-        this.facade._logger.warn(`[${operationName}] Retry attempt ${attempt} after error: ${lastError.message}`);
+    this.recoveryStrategies = Object.assign({
+      DEFAULT: {
+        action: 'RETRY_BACKOFF',
+        maxAttempts: 3,
+        interval: 2000 
+      },
+      FATAL: {
+        action: 'NOTIFY_ADMIN',
+        maxAttempts: 1
+      },
+      QUOTA: {
+        action: 'RETRY_BACKOFF_LONG',
+        maxAttempts: 3,
+        interval: 60000 
+      },
+      SERVICE: {
+        action: 'RETRY_BACKOFF',
+        maxAttempts: 5,
+        interval: 5000 
+      },
+      NETWORK: {
+        action: 'RETRY_IMMEDIATE',
+        maxAttempts: 3,
+        interval: 2000 
+      },
+      PERMISSIONS: {
+        action: 'NOTIFY_ADMIN',
+        maxAttempts: 1
       }
-    }
+    }, overrides && overrides.recoveryStrategies || {});
 
 
-    if (useCircuitBreaker && this.facade._circuitBreaker) {
-      this.facade._circuitBreaker.recordFailure(operationName);
-    }
+    this.limits = Object.assign({
+      ABSOLUTE_MAX_ATTEMPTS: 100,
 
+      MAX_JITTER_MS: 1000,
 
-    this.facade._reporter.record({
-      type: 'FAILURE',
-      operation: operationName,
-      classification,
-      correlationId 
-    });
+      MAX_WAIT_TIME_MS: 300000,
 
-
-    this.facade._logger.error(`[${operationName}] Operation failed after ${attempt} attempt(s): ${lastError.message}`);
-    return {
-      success: false,
-      result: null,
-      attempts: attempt,
-      correlationId,
-
-      error: {
-        message: lastError.message,
-        ...classification
-      }
-    };
+      MAX_SESSION_ERRORS: 1000 
+    }, overrides && overrides.limits || {});
   }
-  executeWithRetry(func, parameters = {}, maxAttempts = 3) {
-
-    if (typeof func !== 'function') {
-      throw new Error('ExceptionService.executeWithRetry: func must be a function');
-    }
-    if (parameters !== null && typeof parameters !== 'object') {
-      throw new Error('ExceptionService.executeWithRetry: parameters must be an object or null');
-    }
-    if (typeof maxAttempts !== 'number' || maxAttempts < 1 || !Number.isInteger(maxAttempts)) {
-      throw new Error('ExceptionService.executeWithRetry: maxAttempts must be a positive integer');
-    }
 
 
 
-    const result = this.facade.executeWithAdvancedHandling(func, parameters, {
-      mode: 'RECOVERY',
-      maxAttempts
-    });
-    if (result.success) {
-      return result.result;
-    }
-    throw new Error(result.error.message);
+
+
+  getErrorPatterns() {
+    return this.errorPatterns;
   }
-  executeWithBypass(func, parameters, defaultValue) {
-
-    if (parameters === undefined) {
-      parameters = {};
-    }
-    if (arguments.length < 3) {
-      defaultValue = null;
-    }
 
 
-    if (typeof func !== 'function') {
-      throw new Error('ExceptionService.executeWithBypass: func must be a function');
-    }
-    if (parameters !== null && typeof parameters !== 'object') {
-      throw new Error('ExceptionService.executeWithBypass: parameters must be an object or null');
-    }
-    const result = this.facade.executeWithAdvancedHandling(func, parameters, {
-      mode: 'LENIENT'
-    });
-    if (result.success) {
-      return result.result;
-    } else {
-      this.facade._logger.warn(`Operation failed, returning fallback value`);
-      return defaultValue;
-    }
+
+
+
+  getRecoveryStrategies() {
+    return this.recoveryStrategies;
+  }
+
+
+
+
+
+  getLimits() {
+    return this.limits;
+  }
+
+
+
+
+
+
+  getErrorPattern(type) {
+    return this.errorPatterns[type];
+  }
+
+
+
+
+
+
+  getRecoveryStrategy(category) {
+    return this.recoveryStrategies[category] || this.recoveryStrategies.DEFAULT;
+  }
+
+
+
+
+
+
+  getLimit(limitName) {
+    return this.limits[limitName];
+  }
+
+
+
+
+
+
+  static createDefault() {
+    return new ResilienceConfiguration();
   }
 }
 ;
-class ResilienceStatsTracker {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  classifyError(error) {
-
-    if (error === null || error === undefined) {
-      throw new Error('ExceptionService.classifyError: error is required');
-    }
-
-
-    const errorToClassify = error instanceof Error ? error : new Error(String(error));
-    return this.facade._classifier.classify(errorToClassify);
-  }
-  resetStatistics() {
-    this.facade._reporter.reset();
-  }
-  getErrorSummary() {
-    return this.facade._reporter.getSummary();
-  }
-  printErrorAnalysis() {
-    const summary = this.facade._reporter.getSummary();
-    this.facade._logger.warn('=== Error Analysis Report ===');
-    this.facade._logger.warn(`Total Errors: ${summary.counters.total}`);
-    this.facade._logger.warn(`Recovered: ${summary.counters.recovered}`);
-    this.facade._logger.warn(`Failed: ${summary.counters.notRecovered}`);
-    this.facade._logger.warn(`Recovery Rate: ${summary.recoveryRate}%`);
-    this.facade._logger.warn('Errors by Type:', summary.counters.byType);
-  }
-  getStatistics() {
-    const summary = this.facade._reporter.getSummary();
-    return {
-      totalAttempts: summary.counters.total,
-      recoveryRate: summary.recoveryRate,
-      counters: summary.counters
-    };
-  }
-  getCircuitBreaker() {
-    return this.facade._circuitBreaker;
-  }
-  getCircuitBreakerStatistics() {
-    if (!this.facade._circuitBreaker) {
-      return {};
-    }
-    return this.facade._circuitBreaker.getStatistics();
-  }
-  resetCircuit(operationName) {
-    if (!operationName || typeof operationName !== 'string') {
-      throw new Error('ExceptionService.resetCircuit: operationName must be a non-empty string');
-    }
-    if (!this.facade._circuitBreaker) {
-      this.facade._logger.warn('ExceptionService.resetCircuit: No circuit breaker configured');
-      return false;
-    }
-    this.facade._circuitBreaker.reset(operationName);
-    return true;
-  }
-}
-;
-
 
 
 
@@ -10530,7 +10351,8 @@ class ExceptionService {
     this._cache = dependencies.cache || null; 
 
 
-    const config = dependencies.config || null;
+
+    const config = dependencies.config || ResilienceConfiguration.createDefault();
     this._config = config;
 
 
@@ -10547,18 +10369,327 @@ class ExceptionService {
     } else {
       this._circuitBreaker = null; 
     }
+  }
 
 
-    this._executionHandler = new ResilienceExecutionHandler(this);
-    this._statsTracker = new ResilienceStatsTracker(this);
-    const executionMethods = ['executeWithAdvancedHandling', 'executeWithRetry', 'executeWithBypass', '_generateCorrelationId'];
-    executionMethods.forEach(m => {
-      this[m] = this._executionHandler[m].bind(this._executionHandler);
+
+
+
+  _generateCorrelationId() {
+
+    const utils = new MyUtilsService();
+    return utils.generateCompactId(21);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  executeWithAdvancedHandling(func, parameters = {}, options = {}) {
+
+    if (typeof func !== 'function') {
+      throw new Error('ExceptionService.executeWithAdvancedHandling: func must be a function');
+    }
+    if (parameters !== null && typeof parameters !== 'object') {
+      throw new Error('ExceptionService.executeWithAdvancedHandling: parameters must be an object or null');
+    }
+    if (typeof options !== 'object') {
+      throw new Error('ExceptionService.executeWithAdvancedHandling: options must be an object');
+    }
+    if (options.maxAttempts !== undefined) {
+      if (typeof options.maxAttempts !== 'number' || options.maxAttempts < 1 || !Number.isInteger(options.maxAttempts)) {
+        throw new Error('ExceptionService.executeWithAdvancedHandling: options.maxAttempts must be a positive integer');
+      }
+    }
+    if (options.correlationId !== undefined && typeof options.correlationId !== 'string') {
+      throw new Error('ExceptionService.executeWithAdvancedHandling: options.correlationId must be a string');
+    }
+    const operationName = options.operationName || 'Operation';
+    const mode = options.mode || 'RECOVERY';
+    const maxAttempts = options.maxAttempts; 
+    const correlationId = options.correlationId || this._generateCorrelationId(); 
+    const useCircuitBreaker = options.useCircuitBreaker !== false; 
+    let attempt = 0;
+    let lastError = null;
+    let classification = null;
+
+
+    if (useCircuitBreaker && this._circuitBreaker && !this._circuitBreaker.allowRequest(operationName)) {
+      this._logger.warn(`[CircuitBreaker] Request blocked for '${operationName}' - circuit is OPEN`);
+      return {
+        success: false,
+        result: null,
+        attempts: 0,
+        correlationId,
+        error: {
+          message: 'Circuit breaker is OPEN - operation blocked',
+          type: 'CIRCUIT_OPEN',
+          category: 'CIRCUIT_BREAKER',
+          recoverable: false,
+          originalMessage: 'Circuit breaker is OPEN'
+        }
+      };
+    }
+
+
+    const absoluteMaxAttempts = this._config ? this._config.getLimit('ABSOLUTE_MAX_ATTEMPTS') : this.constructor.ABSOLUTE_MAX_ATTEMPTS;
+    while (attempt < absoluteMaxAttempts) {
+      attempt++;
+      try {
+
+        const result = func(parameters);
+
+
+        if (useCircuitBreaker && this._circuitBreaker) {
+          this._circuitBreaker.recordSuccess(operationName);
+        }
+
+
+        const recovered = attempt > 1;
+        if (recovered) {
+          this._reporter.record({
+            type: 'RECOVERED',
+            operation: operationName,
+            attempt,
+            correlationId 
+          });
+          this._logger.debug(`[${operationName}] Operation recovered successfully after ${attempt} attempt(s)`);
+        } else {
+          this._logger.debug(`[${operationName}] Operation completed successfully on attempt ${attempt}`);
+        }
+        return {
+          success: true,
+          result,
+          attempts: attempt,
+          recovered,
+          correlationId,
+
+          error: null
+        };
+      } catch (e) {
+
+        if (!(e instanceof Error)) {
+          lastError = new Error(String(e));
+          lastError.originalValue = e;
+        } else {
+          lastError = e;
+        }
+        classification = this._classifier.classify(lastError);
+
+
+        if (!this._recoveryManager.applyStrategy(classification, attempt, mode, maxAttempts)) {
+          break; 
+        }
+
+
+        this._logger.warn(`[${operationName}] Retry attempt ${attempt} after error: ${lastError.message}`);
+      }
+    }
+
+
+    if (useCircuitBreaker && this._circuitBreaker) {
+      this._circuitBreaker.recordFailure(operationName);
+    }
+
+
+    this._reporter.record({
+      type: 'FAILURE',
+      operation: operationName,
+      classification,
+      correlationId 
     });
-    const statsMethods = ['resetStatistics', 'getErrorSummary', 'printErrorAnalysis', 'getStatistics', 'getCircuitBreaker', 'getCircuitBreakerStatistics', 'resetCircuit', 'classifyError'];
-    statsMethods.forEach(m => {
-      this[m] = this._statsTracker[m].bind(this._statsTracker);
+
+
+    this._logger.error(`[${operationName}] Operation failed after ${attempt} attempt(s): ${lastError.message}`);
+    return {
+      success: false,
+      result: null,
+      attempts: attempt,
+      correlationId,
+
+      error: {
+        message: lastError.message,
+        ...classification
+      }
+    };
+  }
+
+
+
+
+
+
+
+
+
+  executeWithRetry(func, parameters = {}, maxAttempts = 3) {
+
+    if (typeof func !== 'function') {
+      throw new Error('ExceptionService.executeWithRetry: func must be a function');
+    }
+    if (parameters !== null && typeof parameters !== 'object') {
+      throw new Error('ExceptionService.executeWithRetry: parameters must be an object or null');
+    }
+    if (typeof maxAttempts !== 'number' || maxAttempts < 1 || !Number.isInteger(maxAttempts)) {
+      throw new Error('ExceptionService.executeWithRetry: maxAttempts must be a positive integer');
+    }
+
+
+
+    const result = this.executeWithAdvancedHandling(func, parameters, {
+      mode: 'RECOVERY',
+      maxAttempts
     });
+    if (result.success) {
+      return result.result;
+    }
+    throw new Error(result.error.message);
+  }
+
+
+
+
+
+
+
+
+
+  executeWithBypass(func, parameters, defaultValue) {
+
+    if (parameters === undefined) {
+      parameters = {};
+    }
+    if (arguments.length < 3) {
+      defaultValue = null;
+    }
+
+
+    if (typeof func !== 'function') {
+      throw new Error('ExceptionService.executeWithBypass: func must be a function');
+    }
+    if (parameters !== null && typeof parameters !== 'object') {
+      throw new Error('ExceptionService.executeWithBypass: parameters must be an object or null');
+    }
+    const result = this.executeWithAdvancedHandling(func, parameters, {
+      mode: 'LENIENT'
+    });
+    if (result.success) {
+      return result.result;
+    } else {
+      this._logger.warn(`Operation failed, returning fallback value`);
+      return defaultValue;
+    }
+  }
+
+
+
+
+
+
+
+  classifyError(error) {
+
+    if (error === null || error === undefined) {
+      throw new Error('ExceptionService.classifyError: error is required');
+    }
+    if (error instanceof Error) {
+      return this._classifier.classify(error);
+    }
+
+
+
+
+    const wrapped = new Error(String(error));
+    wrapped.stack = '';
+    return this._classifier.classify(wrapped);
+  }
+
+
+
+
+  resetStatistics() {
+    this._reporter.reset();
+  }
+
+
+
+
+
+  getErrorSummary() {
+    return this._reporter.getSummary();
+  }
+
+
+
+
+  printErrorAnalysis() {
+    const summary = this._reporter.getSummary();
+    this._logger.warn('=== Error Analysis Report ===');
+    this._logger.warn(`Total Errors: ${summary.counters.total}`);
+    this._logger.warn(`Recovered: ${summary.counters.recovered}`);
+    this._logger.warn(`Failed: ${summary.counters.notRecovered}`);
+    this._logger.warn(`Recovery Rate: ${summary.recoveryRate}%`);
+    this._logger.warn('Errors by Type:', summary.counters.byType);
+  }
+
+
+
+
+
+  getStatistics() {
+    const summary = this._reporter.getSummary();
+    return {
+      totalAttempts: summary.counters.total,
+      recoveryRate: summary.recoveryRate,
+      counters: summary.counters
+    };
+  }
+
+
+
+
+
+  getCircuitBreaker() {
+    return this._circuitBreaker;
+  }
+
+
+
+
+
+  getCircuitBreakerStatistics() {
+    if (!this._circuitBreaker) {
+      return {};
+    }
+    return this._circuitBreaker.getStatistics();
+  }
+
+
+
+
+
+
+
+  resetCircuit(operationName) {
+    if (!operationName || typeof operationName !== 'string') {
+      throw new Error('ExceptionService.resetCircuit: operationName must be a non-empty string');
+    }
+    if (!this._circuitBreaker) {
+      this._logger.warn('ExceptionService.resetCircuit: No circuit breaker configured');
+      return false;
+    }
+    this._circuitBreaker.reset(operationName);
+    return true;
   }
 
 
@@ -10685,326 +10816,6 @@ class RateLimitExceededException extends Error {
   }
 }
 ;
-
-
-
-
-
-
-
-
-class ResilienceConfiguration {
-
-
-
-
-
-
-
-
-  constructor(overrides = {}) {
-
-    if (overrides !== null && typeof overrides !== 'object') {
-      throw new Error('ResilienceConfiguration: overrides must be an object or null');
-    }
-
-
-
-    this.errorPatterns = Object.assign({
-
-      AUTH_REQUIRED: {
-        pattern: /authorization is required|access_token/i,
-        category: 'FATAL',
-        recoverable: false
-      },
-      SCRIPT_ERROR: {
-        pattern: /script error|syntax error|reference error/i,
-        category: 'FATAL',
-        recoverable: false
-      },
-
-      QUOTA_EXCEEDED: {
-        pattern: /quota|limit.*exceeded|too many requests|too many times|service invoked too many/i,
-        category: 'QUOTA',
-        recoverable: true
-      },
-      PERMISSION_DENIED: {
-        pattern: /permission.*denied|unauthorized/i,
-        category: 'PERMISSIONS',
-        recoverable: false
-      },
-      SERVICE_UNAVAILABLE: {
-        pattern: /service.*unavailable|service.*error|service.*failed|503/i,
-        category: 'SERVICE',
-        recoverable: true
-      },
-      NOT_FOUND: {
-        pattern: /not found|404/i,
-        category: 'NOT_FOUND',
-        recoverable: false
-      },
-      TIMEOUT: {
-        pattern: /timeout|execution.*time.*exceeded|exceeded.*maximum.*execution.*time/i,
-        category: 'TIMEOUT',
-        recoverable: false
-      },
-      NETWORK_ERROR: {
-        pattern: /network.*error|connection.*refused/i,
-        category: 'NETWORK',
-        recoverable: true
-      }
-    }, overrides && overrides.errorPatterns || {});
-
-
-    this.recoveryStrategies = Object.assign({
-      DEFAULT: {
-        action: 'RETRY_BACKOFF',
-        maxAttempts: 3,
-        interval: 2000 
-      },
-      FATAL: {
-        action: 'NOTIFY_ADMIN',
-        maxAttempts: 1
-      },
-      QUOTA: {
-        action: 'RETRY_BACKOFF_LONG',
-        maxAttempts: 3,
-        interval: 60000 
-      },
-      SERVICE: {
-        action: 'RETRY_BACKOFF',
-        maxAttempts: 5,
-        interval: 5000 
-      },
-      NETWORK: {
-        action: 'RETRY_IMMEDIATE',
-        maxAttempts: 3,
-        interval: 2000 
-      },
-      PERMISSIONS: {
-        action: 'NOTIFY_ADMIN',
-        maxAttempts: 1
-      }
-    }, overrides && overrides.recoveryStrategies || {});
-
-
-    this.limits = Object.assign({
-      ABSOLUTE_MAX_ATTEMPTS: 100,
-
-      MAX_JITTER_MS: 1000,
-
-      MAX_WAIT_TIME_MS: 300000,
-
-      MAX_SESSION_ERRORS: 1000 
-    }, overrides && overrides.limits || {});
-  }
-
-
-
-
-
-  getErrorPatterns() {
-    return this.errorPatterns;
-  }
-
-
-
-
-
-  getRecoveryStrategies() {
-    return this.recoveryStrategies;
-  }
-
-
-
-
-
-  getLimits() {
-    return this.limits;
-  }
-
-
-
-
-
-
-  getErrorPattern(type) {
-    return this.errorPatterns[type];
-  }
-
-
-
-
-
-
-  getRecoveryStrategy(category) {
-    return this.recoveryStrategies[category] || this.recoveryStrategies.DEFAULT;
-  }
-
-
-
-
-
-
-  getLimit(limitName) {
-    return this.limits[limitName];
-  }
-
-
-
-
-
-
-  static createDefault() {
-    return new ResilienceConfiguration();
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -2,8 +2,6 @@ import { studentiDellaClasse } from '../../../../src/application/context-engine/
 import type { IClasseRepository } from '../../../../src/domain/repositories/IClasseRepository';
 import { Classe } from '../../../../src/domain/entities/Classe';
 import { Alunno } from '../../../../src/domain/entities/Alunno';
-import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
-import { AnnoCorso } from '../../../../src/domain/value-objects/AnnoCorso';
 import { ArticolazioneConfig } from '../../../../src/domain/value-objects/ArticolazioneConfig';
 import { COL_ALUNNI } from '../../../../src/config/schema';
 
@@ -12,7 +10,7 @@ function alunno(email: string): Alunno {
 }
 
 function classe(id: string): Classe {
-  return Classe.create(ClasseId.of(id), AnnoCorso.of(1), 'SCIENTIFICO');
+  return new Classe({ ID: id, ANNO: 1, INDIRIZZO: 'SCIENTIFICO' });
 }
 
 function fakeRepo(overrides: Partial<IClasseRepository>): IClasseRepository {

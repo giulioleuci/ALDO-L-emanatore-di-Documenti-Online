@@ -13,10 +13,8 @@ test('rejects malformed or non-consecutive years', () => {
   expect(() => AnnoScolastico.of('2024-2026')).toThrow(ValidationError);
 });
 
-test('successivo / precedente / equals', () => {
+test('equals', () => {
   const a = AnnoScolastico.of('2024-2025');
-  expect(a.getAnnoSuccessivo().value).toBe('2025-2026');
-  expect(a.getAnnoPrecedente().value).toBe('2023-2024');
   expect(a.equals(AnnoScolastico.of('2024-2025'))).toBe(true);
   expect(a.equals(AnnoScolastico.of('2025-2026'))).toBe(false);
 });

@@ -1,12 +1,16 @@
 import { ConsiglioDiClasse } from '../../../src/domain/entities/ConsiglioDiClasse';
 import { Docente } from '../../../src/domain/entities/Docente';
-import { Email } from '../../../src/domain/value-objects/Email';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { Genere } from '../../../src/domain/value-objects/enums';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 
-const rossi = Docente.create(Email.of('rossi@school.it'), 'ROSSI', 'MARIO', Genere.M);
-const bianchi = Docente.create(Email.of('bianchi@school.it'), 'BIANCHI', 'LUCIA', Genere.F);
+const rossi = new Docente({ EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: Genere.M });
+const bianchi = new Docente({
+  EMAIL: 'bianchi@school.it',
+  COGNOME: 'BIANCHI',
+  NOME: 'LUCIA',
+  GENERE: Genere.F
+});
 
 test('exposes materie and unique docenti', () => {
   const cdc = new ConsiglioDiClasse([

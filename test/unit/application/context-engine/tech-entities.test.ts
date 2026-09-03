@@ -8,8 +8,6 @@ import {
 import type { Cdu } from '../../../../src/application/context-engine/Cdu';
 import { Classe } from '../../../../src/domain/entities/Classe';
 import { Alunno } from '../../../../src/domain/entities/Alunno';
-import { ClasseId } from '../../../../src/domain/value-objects/ClasseId';
-import { AnnoCorso } from '../../../../src/domain/value-objects/AnnoCorso';
 import { EntityNotFoundError } from '../../../../src/domain/errors/DomainError';
 import { COL_ALUNNI } from '../../../../src/config/schema';
 
@@ -25,14 +23,14 @@ describe('techEntities: classe entity slot', () => {
 
   test('setClasseEntity then getClasseEntity round-trips the same instance', () => {
     const cdu = emptyCdu();
-    const classe = Classe.create(ClasseId.of('5A'), AnnoCorso.of(5), 'SCIENTIFICO');
+    const classe = new Classe({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO' });
     setClasseEntity(cdu, classe);
     expect(getClasseEntity(cdu)).toBe(classe);
   });
 
   test('cdu.tech.entita.classe carries the raw entity (not serialized)', () => {
     const cdu = emptyCdu();
-    const classe = Classe.create(ClasseId.of('1F'), AnnoCorso.of(1), 'LICEO');
+    const classe = new Classe({ ID: '1F', ANNO: 1, INDIRIZZO: 'LICEO' });
     setClasseEntity(cdu, classe);
     expect(cdu.tech.entita.classe).toBe(classe);
   });
@@ -53,7 +51,7 @@ describe('techEntities: alunno entity slot', () => {
 
   test('classe and alunno slots are independent', () => {
     const cdu = emptyCdu();
-    const classe = Classe.create(ClasseId.of('5A'), AnnoCorso.of(5), 'SCIENTIFICO');
+    const classe = new Classe({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO' });
     const alunno = new Alunno({ [COL_ALUNNI.EMAIL]: 'a1@school.it' });
     setClasseEntity(cdu, classe);
     expect(() => getAlunnoEntity(cdu)).toThrow(EntityNotFoundError);

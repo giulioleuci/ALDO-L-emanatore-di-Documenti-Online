@@ -4,8 +4,6 @@ import { TipoProgetto } from '../../../../../src/domain/value-objects/enums';
 import { COL_PROGETTI } from '../../../../../src/config/schema';
 import { setClasseEntity } from '../../../../../src/application/context-engine/techEntities';
 import { Classe } from '../../../../../src/domain/entities/Classe';
-import { ClasseId } from '../../../../../src/domain/value-objects/ClasseId';
-import { AnnoCorso } from '../../../../../src/domain/value-objects/AnnoCorso';
 import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
 
 function emptyCdu(): Cdu {
@@ -13,7 +11,7 @@ function emptyCdu(): Cdu {
     focus: { classe: {} },
     tech: { entita: {}, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } }
   } as unknown as Cdu;
-  setClasseEntity(cdu, Classe.create(ClasseId.of('5A'), AnnoCorso.of(5), 'SCIENTIFICO'));
+  setClasseEntity(cdu, new Classe({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO' }));
   return cdu;
 }
 

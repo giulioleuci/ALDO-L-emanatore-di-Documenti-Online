@@ -103,11 +103,6 @@ export class ConfigurazioneDocumento extends AldoEntity {
     return this.condizioneRaw.trim() === '' ? null : this.condizioneRaw;
   }
 
-  /** True when no condition is set — the unconditional case (ref 06 §8). */
-  hasNoCondizione(): boolean {
-    return this.getCondizione() === null;
-  }
-
   getParametri(): Record<string, unknown> {
     // A live Sheets round-trip never preserves an unset cell as `null` — it
     // comes back as `''` — so a bare `=== null` check lets that empty string
@@ -124,11 +119,6 @@ export class ConfigurazioneDocumento extends AldoEntity {
     return this.permessiRaw === null || this.permessiRaw.trim() === ''
       ? {}
       : (JSON.parse(this.permessiRaw) as Record<string, unknown>);
-  }
-
-  /** Reserved PARAMETRI.overwrite flag — skips the duplicate check (ref 01, 10 Step 2). */
-  isOverwrite(): boolean {
-    return (this.getParametri() as DocumentoParametriFlags).overwrite === true;
   }
 
   getModelli(): Record<string, unknown> {

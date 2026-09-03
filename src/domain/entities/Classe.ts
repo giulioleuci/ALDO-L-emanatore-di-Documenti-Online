@@ -75,13 +75,4 @@ export class Classe extends AldoEntity {
   static getKnownColumns(): string[] {
     return [COL_CLASSI.ID, COL_CLASSI.ANNO, COL_CLASSI.INDIRIZZO];
   }
-
-  /** Ergonomic constructor from domain values (tests, in-memory building). */
-  static create(id: ClasseId, anno: AnnoCorso, indirizzo: string): Classe {
-    return new Classe({
-      [COL_CLASSI.ID]: id.value,
-      [COL_CLASSI.ANNO]: anno.value,
-      [COL_CLASSI.INDIRIZZO]: indirizzo
-    });
-  }
 }

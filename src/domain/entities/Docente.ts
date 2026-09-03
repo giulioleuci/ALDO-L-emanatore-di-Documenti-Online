@@ -78,14 +78,4 @@ export class Docente extends AldoEntity {
   static fromData(data: Record<string, unknown>): Docente {
     return new Docente(data);
   }
-
-  /** Ergonomic constructor from domain values (tests, in-memory building). */
-  static create(email: Email, cognome: string, nome: string, genere: Genere): Docente {
-    return new Docente({
-      [COL_DOCENTI.EMAIL]: email.value,
-      [COL_DOCENTI.COGNOME]: cognome,
-      [COL_DOCENTI.NOME]: nome,
-      [COL_DOCENTI.GENERE]: genere
-    });
-  }
 }

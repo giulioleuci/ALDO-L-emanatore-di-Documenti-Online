@@ -5,13 +5,11 @@ import {
   ClassiArticolateSpec
 } from '../../../src/domain/specifications/ClasseSpecs';
 import { Classe } from '../../../src/domain/entities/Classe';
-import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
-import { AnnoCorso } from '../../../src/domain/value-objects/AnnoCorso';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import { COL_CLASSI } from '../../../src/config/schema';
 
 function classe(): Classe {
-  return Classe.create(ClasseId.of('5A'), AnnoCorso.of(5), 'SCIENTIFICO');
+  return new Classe({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO' });
 }
 
 describe('ClassiAttiveSpec', () => {
@@ -103,7 +101,7 @@ describe('specification composition (Task 8: and()/or()/not() via GLF Specificat
     const inattivaAnno5 = classe(); // ATTIVA left absent/false
     expect(composed.isSatisfiedBy(inattivaAnno5)).toBe(false); // fails the ATTIVA leg
 
-    const attivaAnno1 = Classe.create(ClasseId.of('1A'), AnnoCorso.of(1), 'SCIENTIFICO');
+    const attivaAnno1 = new Classe({ ID: '1A', ANNO: 1, INDIRIZZO: 'SCIENTIFICO' });
     attivaAnno1.setDynamicColumn(COL_CLASSI.ATTIVA, true);
     expect(composed.isSatisfiedBy(attivaAnno1)).toBe(false); // fails the anno leg
 

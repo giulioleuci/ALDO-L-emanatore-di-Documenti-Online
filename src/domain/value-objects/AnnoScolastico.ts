@@ -29,16 +29,6 @@ export class AnnoScolastico {
     return Number(ANNO_RE.exec(this.value)![2]);
   }
 
-  getAnnoSuccessivo(): AnnoScolastico {
-    const i = this.getAnnoInizio() + 1;
-    return AnnoScolastico.of(`${i}-${i + 1}`);
-  }
-
-  getAnnoPrecedente(): AnnoScolastico {
-    const i = this.getAnnoInizio() - 1;
-    return AnnoScolastico.of(`${i}-${i + 1}`);
-  }
-
   equals(other: AnnoScolastico): boolean {
     return this.value === other.value;
   }

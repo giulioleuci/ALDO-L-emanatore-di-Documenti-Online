@@ -39,19 +39,8 @@ export class PeriodoSupplenza {
     return this.range.contains(data);
   }
 
-  durata(): number {
-    return this.range.durationInDays();
-  }
-
   /** True when this period and `other` share at least one instant. */
   overlaps(other: PeriodoSupplenza): boolean {
     return this.range.overlaps(other.range);
-  }
-
-  isAttiva(oggi: Date): boolean {
-    return this.contiene(oggi);
-  }
-  isTerminata(oggi: Date): boolean {
-    return this.al.getTime() < oggi.getTime();
   }
 }

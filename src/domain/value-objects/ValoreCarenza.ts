@@ -43,9 +43,6 @@ export class ValoreCarenza {
     return Number.isFinite(n) && s !== '' ? ValoreCarenza.voto(n) : ValoreCarenza.nota(s);
   }
 
-  isVoto(): boolean {
-    return this.tipo === 'VOTO';
-  }
   isNota(): boolean {
     return this.tipo === 'NOTA';
   }

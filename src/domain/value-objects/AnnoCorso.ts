@@ -11,9 +11,6 @@ export class AnnoCorso {
   isPrima(): boolean {
     return this.value === 1;
   }
-  isSeconda(): boolean {
-    return this.value === 2;
-  }
   isPrimoBiennio(): boolean {
     return this.value === 1 || this.value === 2;
   }
@@ -22,11 +19,5 @@ export class AnnoCorso {
   }
   isTerminale(): boolean {
     return this.value === 5;
-  }
-  getAnnoSuccessivo(): AnnoCorso | null {
-    return this.isTerminale() ? null : AnnoCorso.of(this.value + 1);
-  }
-  getAnnoPrecedente(): AnnoCorso | null {
-    return this.isPrima() ? null : AnnoCorso.of(this.value - 1);
   }
 }

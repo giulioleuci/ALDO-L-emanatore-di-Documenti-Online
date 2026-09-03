@@ -67,7 +67,7 @@ test('getCarenzePerMateria builds VOTO/NOTA from dynamic subject columns', () =>
   const map = repo().getCarenzePerMateria(prog1);
   expect(prog1.getNumeroCarenze(map)).toBe(2);
   const byId = new Map([...map].map(([m, v]) => [m.value, v]));
-  expect(byId.get('MATE')!.isVoto()).toBe(true);
+  expect(byId.get('MATE')!.tipo).toBe('VOTO');
   expect(byId.get('MATE')!.valore).toBe(4.5);
   expect(byId.get('FISI')!.isNota()).toBe(true);
   expect(prog1.hasCarenzaMateria(MateriaId.of('MATE'), map)).toBe(true);

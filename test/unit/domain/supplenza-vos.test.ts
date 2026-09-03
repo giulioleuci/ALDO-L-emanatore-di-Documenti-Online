@@ -2,13 +2,10 @@ import { PeriodoSupplenza } from '../../../src/domain/value-objects/PeriodoSuppl
 import { CsvScope } from '../../../src/domain/value-objects/CsvScope';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 
-test('PeriodoSupplenza: contiene / durata / attiva / terminata (03)', () => {
+test('PeriodoSupplenza: contiene (03)', () => {
   const p = PeriodoSupplenza.of(new Date('2025-11-01'), new Date('2025-11-30'));
   expect(p.contiene(new Date('2025-11-15'))).toBe(true);
   expect(p.contiene(new Date('2025-12-01'))).toBe(false);
-  expect(p.durata()).toBe(29);
-  expect(p.isAttiva(new Date('2025-11-10'))).toBe(true);
-  expect(p.isTerminata(new Date('2025-12-05'))).toBe(true);
 });
 
 test('PeriodoSupplenza: open-ended AL is always active after DAL; DAL>AL throws', () => {

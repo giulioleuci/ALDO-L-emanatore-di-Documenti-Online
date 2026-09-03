@@ -3,7 +3,7 @@ import { ValidationError } from '../../../src/domain/errors/DomainError';
 
 test('fromCella classifies numeric cells as VOTO, text as NOTA', () => {
   const voto = ValoreCarenza.fromCella('4.5');
-  expect(voto?.isVoto()).toBe(true);
+  expect(voto?.tipo).toBe('VOTO');
   expect(voto?.valore).toBe(4.5);
 
   const nota = ValoreCarenza.fromCella('Studio scarso');

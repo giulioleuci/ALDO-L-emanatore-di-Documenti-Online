@@ -24,10 +24,8 @@
     "build:testing": "node scripts/build-and-prepare.cjs --mode=online",
     "build:testoffline": "node scripts/build-and-prepare.cjs --mode=testoffline",
     "build:production": "node scripts/build-and-prepare.cjs --mode=production",
-    "build:online": "node scripts/build-and-prepare.cjs --mode=online",
     "push:testing": "npm run build:testing && clasp push",
-    "push:production": "npm run build:production && clasp push",
-    "push:online": "npm run build:online && clasp push"
+    "push:production": "npm run build:production && clasp push"
   },
   "engines": {
     "node": ">=18.0.0",

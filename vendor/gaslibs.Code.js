@@ -11409,21 +11409,6 @@ class GoogleService {
 
 
 
-  _invalidateCacheByPrefix(prefix) {
-
-    if (typeof this._cache.removeByPrefix === 'function') {
-      this._cache.removeByPrefix(prefix);
-      this._logger.debug(`Invalidated cache with prefix: ${prefix}`);
-    } else {
-      this._logger.warn('Cache service does not support prefix-based invalidation');
-    }
-  }
-
-
-
-
-
-
 
 
 
@@ -11554,8 +11539,6 @@ class CacheService {
 
 
 
-
-
 class Cache {
 
 
@@ -11567,19 +11550,6 @@ class Cache {
     this._cache = gasCache;
     this._logger = logger;
     this._type = type;
-
-
-
-
-
-
-    this._trackedKeys = new Set();
-
-
-
-
-
-    this._autoTrackKeys = false;
   }
 
 
@@ -11633,11 +11603,6 @@ class Cache {
 
       const cappedExpiration = Math.min(expirationInSeconds, 21600);
       this._cache.put(key, stringValue, cappedExpiration);
-
-
-      if (this._autoTrackKeys) {
-        this._trackedKeys.add(key);
-      }
       this._logger.debug(`Cached (${this._type}): ${key} (expires in ${cappedExpiration}s)`);
     } catch (error) {
       this._logger.error(`Error caching key ${key}: ${error.message}`);
@@ -11662,11 +11627,6 @@ class Cache {
 
       const cappedExpiration = Math.min(expirationInSeconds, 21600);
       this._cache.putAll(stringValues, cappedExpiration);
-
-
-      if (this._autoTrackKeys) {
-        Object.keys(values).forEach(key => this._trackedKeys.add(key));
-      }
       this._logger.debug(`Cached ${Object.keys(values).length} keys (${this._type})`);
     } catch (error) {
       this._logger.error(`Error caching multiple keys: ${error.message}`);
@@ -11682,8 +11642,6 @@ class Cache {
   remove(key) {
     try {
       this._cache.remove(key);
-
-      this._trackedKeys.delete(key);
       this._logger.debug(`Removed from ${this._type} cache: ${key}`);
     } catch (error) {
       this._logger.error(`Error removing cache key ${key}: ${error.message}`);
@@ -11700,8 +11658,6 @@ class Cache {
     try {
       if (keys && keys.length > 0) {
         this._cache.removeAll(keys);
-
-        keys.forEach(key => this._trackedKeys.delete(key));
         this._logger.debug(`Removed ${keys.length} keys from ${this._type} cache`);
       } else {
 
@@ -11711,92 +11667,6 @@ class Cache {
       this._logger.error(`Error removing multiple cache keys: ${error.message}`);
       throw error;
     }
-  }
-
-
-
-
-
-
-
-  removeByPrefix(prefix) {
-    try {
-      if (this._trackedKeys.size === 0) {
-        this._logger.debug(`removeByPrefix: No tracked keys in ${this._type} cache`);
-        return 0;
-      }
-
-
-      const keysToRemove = [];
-      for (const key of this._trackedKeys) {
-        if (key.startsWith(prefix)) {
-          keysToRemove.push(key);
-        }
-      }
-      if (keysToRemove.length === 0) {
-        this._logger.debug(`removeByPrefix: No keys matching prefix '${prefix}' in ${this._type} cache`);
-        return 0;
-      }
-
-
-      this._cache.removeAll(keysToRemove);
-
-
-      keysToRemove.forEach(key => this._trackedKeys.delete(key));
-      this._logger.debug(`Removed ${keysToRemove.length} keys with prefix '${prefix}' from ${this._type} cache`);
-      return keysToRemove.length;
-    } catch (error) {
-      this._logger.error(`Error removing cache keys by prefix '${prefix}': ${error.message}`);
-      throw error;
-    }
-  }
-
-
-
-
-
-  enableKeyTracking() {
-    this._autoTrackKeys = true;
-    this._logger.debug(`Key tracking enabled for ${this._type} cache`);
-    return this;
-  }
-
-
-
-
-
-  disableKeyTracking() {
-    this._autoTrackKeys = false;
-    this._logger.debug(`Key tracking disabled for ${this._type} cache`);
-    return this;
-  }
-
-
-
-
-
-
-  trackKey(key) {
-    this._trackedKeys.add(key);
-    return this;
-  }
-
-
-
-
-
-  getTrackedKeyCount() {
-    return this._trackedKeys.size;
-  }
-
-
-
-
-
-  clearTrackedKeys() {
-    this._trackedKeys.clear();
-    this._logger.debug(`Cleared tracked keys for ${this._type} cache`);
-    return this;
   }
 
 
@@ -16640,17 +16510,6 @@ class PermissionService extends GoogleService {
 
 
 
-
-  shareFilesWithUsers(fileIds, userPermissions, options = {}) {
-    return this.shareWithUsers(fileIds, userPermissions, options);
-  }
-
-
-
-
-
-
-
   removeAccess(fileIds, emailsOrPermissionIds, _options = {}) {
     const fileIdsArray = Array.isArray(fileIds) ? fileIds : [fileIds];
     const idsArray = Array.isArray(emailsOrPermissionIds) ? emailsOrPermissionIds : [emailsOrPermissionIds];
@@ -17670,123 +17529,6 @@ class PropertiesService {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   setObjectProperty(key, object) {
     try {
       const json = JSON.stringify(object);
@@ -17797,110 +17539,6 @@ class PropertiesService {
       throw error;
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -17931,101 +17569,6 @@ class PropertiesService {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   _dateReviver(key, value) {
 
     const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
@@ -18037,18 +17580,6 @@ class PropertiesService {
       }
     }
     return value;
-  }
-
-
-
-
-
-
-
-
-
-  getScriptPropertyJSON(key) {
-    return this.getObjectProperty(key);
   }
 
 
@@ -19391,157 +18922,6 @@ class MockLock {
   }
 }
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

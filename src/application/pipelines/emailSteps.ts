@@ -20,7 +20,6 @@ import type {
 } from '../ports/ITeachingAssignmentResolver';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { ILogEmailRepository } from '../../domain/repositories/ILogEmailRepository';
-import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
 import type { AggregatoreDati } from '../services/AggregatoreDati';
@@ -466,7 +465,6 @@ export class ComposeEmailStep extends Step {
   constructor(
     logger: LoggerService,
     private readonly templates: ITemplateEngine,
-    _logDocs: ILogDocumentoRepository,
     private readonly drive: IDriveFacade
   ) {
     super('ComposeEmail', logger, {

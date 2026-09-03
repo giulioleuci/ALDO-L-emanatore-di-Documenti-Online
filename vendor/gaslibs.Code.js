@@ -58186,14 +58186,7 @@ class EnhancedTestRunner {
       skipped: 0,
       errors: []
     };
-    this.hooks = {
-      beforeAll: [],
-      afterAll: [],
-      beforeEach: [],
-      afterEach: []
-    };
   }
-
 
 
 
@@ -58207,22 +58200,8 @@ class EnhancedTestRunner {
     this.registry.push({
       path: path,
       fn: fn,
-      skip: options.skip || false,
-      timeout: options.timeout || 30000
+      skip: options.skip || false
     });
-    return this;
-  }
-
-
-
-
-
-
-
-  addHook(type, fn) {
-    if (this.hooks[type]) {
-      this.hooks[type].push(fn);
-    }
     return this;
   }
 
@@ -58240,7 +58219,6 @@ class EnhancedTestRunner {
     });
     this._log(`Running ${testsToRun.length} tests matching filter: ${filter || 'NONE'}`);
     try {
-      this._runHooks('beforeAll');
       for (const test of testsToRun) {
         if (test.skip) {
           this._log(`[TEST:SKIP] ${test.path}`);
@@ -58252,8 +58230,6 @@ class EnhancedTestRunner {
     } catch (error) {
       this._log(`[FATAL:ERROR] ${error.message}`);
       this._log(`[ERROR:STACK] ${error.stack}`);
-    } finally {
-      this._runHooks('afterAll');
     }
     this._printSummary();
     return this.results;
@@ -58268,8 +58244,6 @@ class EnhancedTestRunner {
     this._log(`[TEST:START] ${test.path}`);
     const startTime = new Date().getTime();
     try {
-      this._runHooks('beforeEach');
-
 
       test.fn();
       const duration = new Date().getTime() - startTime;
@@ -58288,23 +58262,6 @@ class EnhancedTestRunner {
         message: error.message,
         stack: error.stack
       });
-    } finally {
-      try {
-        this._runHooks('afterEach');
-      } catch (hookError) {
-        this._log(`[HOOK:ERROR] afterEach failed for ${test.path}: ${hookError.message}`);
-      }
-    }
-  }
-
-
-
-
-
-
-  _runHooks(type) {
-    for (const hook of this.hooks[type]) {
-      hook();
     }
   }
 
@@ -58675,15 +58632,6 @@ class TestContext {
     this._rootFolder = null;
     this._spreadsheet = null;
     this._document = null;
-    this.apiCallCount = 0;
-  }
-
-
-
-
-
-  _trackApiCall() {
-    this.apiCallCount++;
   }
 
 
@@ -58707,12 +58655,10 @@ class TestContext {
 
 
   getOrCreateNamedFolder(name, parentFolder = null) {
-    this._trackApiCall();
     const folders = parentFolder ? parentFolder.getFoldersByName(name) : DriveApp.getFoldersByName(name);
     if (folders.hasNext()) {
       return folders.next();
     }
-    this._trackApiCall();
     return parentFolder ? parentFolder.createFolder(name) : DriveApp.createFolder(name);
   }
 
@@ -58739,16 +58685,13 @@ class TestContext {
 
 
   getOrCreateNamedSpreadsheet(name, parentFolder = null) {
-    this._trackApiCall();
     const files = parentFolder ? parentFolder.getFilesByName(name) : DriveApp.getFilesByName(name);
     if (files.hasNext()) {
       return SpreadsheetApp.openById(files.next().getId());
     }
-    this._trackApiCall();
     const spreadsheet = SpreadsheetApp.create(name);
     if (parentFolder) {
       const file = DriveApp.getFileById(spreadsheet.getId());
-      this._trackApiCall();
       file.moveTo(parentFolder);
     }
     return spreadsheet;
@@ -58765,21 +58708,17 @@ class TestContext {
         return this._document;
       } catch (_e) {
 
-        this._trackApiCall();
         this._document = DocumentApp.openById(this._document.getId());
         return this._document;
       }
     }
-    this._trackApiCall();
     const files = DriveApp.getFilesByName(this.TEST_DOC_NAME);
     if (files.hasNext()) {
       const file = files.next();
       this._document = DocumentApp.openById(file.getId());
     } else {
-      this._trackApiCall();
       this._document = DocumentApp.create(this.TEST_DOC_NAME);
       const file = DriveApp.getFileById(this._document.getId());
-      this._trackApiCall();
       file.moveTo(this.getRootFolder());
     }
     return this._document;
@@ -58791,19 +58730,16 @@ class TestContext {
 
   resetSpreadsheet(ss) {
     const targetSs = ss || this.getSpreadsheet();
-    this._trackApiCall();
 
 
     const protections = targetSs.getProtections(SpreadsheetApp.ProtectionType.RANGE);
     protections.forEach(p => {
-      this._trackApiCall();
       p.remove();
     });
 
 
     targetSs.getSheets().forEach(sheet => {
       sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(p => {
-        this._trackApiCall();
         p.remove();
       });
     });
@@ -58811,7 +58747,6 @@ class TestContext {
 
     const namedRanges = targetSs.getNamedRanges();
     namedRanges.forEach(nr => {
-      this._trackApiCall();
       nr.remove();
     });
     const sheets = targetSs.getSheets();
@@ -58822,12 +58757,10 @@ class TestContext {
     } else {
       const firstSheet = sheets[0];
       firstSheet.setName('TEMP_RESET_' + new Date().getTime());
-      this._trackApiCall();
       firstSheet.clear().clearContents().clearFormats().clearNotes();
 
 
       for (let i = 1; i < sheets.length; i++) {
-        this._trackApiCall();
         targetSs.deleteSheet(sheets[i]);
       }
       firstSheet.setName('Sheet1');
@@ -58855,7 +58788,6 @@ class TestContext {
 
 
   buildSampleSpreadsheetById(spreadsheetId) {
-    this._trackApiCall();
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     this.resetSpreadsheet(spreadsheet);
     return new SampleSpreadsheetBuilder(spreadsheet);
@@ -58866,7 +58798,6 @@ class TestContext {
 
   resetDocument() {
     const doc = this.getDocument();
-    this._trackApiCall();
     try {
       this._clearBodySafely(doc.getBody());
     } catch (_e) {
@@ -58904,8 +58835,7 @@ class TestContext {
   resetAll() {
     this.resetSpreadsheet();
     this.resetDocument();
-    this._log(`TestContext reset completed. API calls in this session: ${this.apiCallCount}`);
-    this.apiCallCount = 0;
+    this._log('TestContext reset completed.');
   }
 
 

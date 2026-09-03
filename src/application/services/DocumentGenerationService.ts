@@ -1,5 +1,5 @@
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
-import type { IDatabase } from '../../infrastructure/db/Database';
+import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
@@ -7,6 +7,7 @@ import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonito
 import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
+import type { Cdu } from '../context-engine/Cdu';
 import type { DocumentStrategyFactory } from '../factories/DocumentStrategyFactory';
 import { recipe, type BuildParams } from '../context-engine/Recipe';
 import {
@@ -190,23 +191,7 @@ export class DocumentGenerationService {
     // by the steps (LOG_FOLD, LOG_DOCS) is committed only when the pipeline ran
     // to completion; a critical failure reverts the DB alongside the Drive
     // rollback performed in the onError hook.
-    this.db.beginTransaction();
-    let ctx: PipelineContext;
-    try {
-      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
-    } catch (e) {
-      this.db.rollback();
-      throw e;
-    }
-
-    const critical = ctx.getFlag<string>('criticalError');
-    if (critical !== null) {
-      this.db.rollback();
-      throw new PipelineError(critical);
-    }
-    this.db.commit();
-
-    return this.resultFromContext(ctx, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
   }
 
   /**
@@ -237,23 +222,7 @@ export class DocumentGenerationService {
       recipe('DIPARTIMENTO_COMPLETO')
     );
 
-    this.db.beginTransaction();
-    let ctx: PipelineContext;
-    try {
-      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
-    } catch (e) {
-      this.db.rollback();
-      throw e;
-    }
-
-    const critical = ctx.getFlag<string>('criticalError');
-    if (critical !== null) {
-      this.db.rollback();
-      throw new PipelineError(critical);
-    }
-    this.db.commit();
-
-    return this.resultFromContext(ctx, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
   }
 
   /**
@@ -286,23 +255,7 @@ export class DocumentGenerationService {
       recipe('DOCENTE_AGGREGATO')
     );
 
-    this.db.beginTransaction();
-    let ctx: PipelineContext;
-    try {
-      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
-    } catch (e) {
-      this.db.rollback();
-      throw e;
-    }
-
-    const critical = ctx.getFlag<string>('criticalError');
-    if (critical !== null) {
-      this.db.rollback();
-      throw new PipelineError(critical);
-    }
-    this.db.commit();
-
-    return this.resultFromContext(ctx, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
   }
 
   /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
@@ -360,6 +313,22 @@ export class DocumentGenerationService {
       recipe(cduRecipe)
     );
 
+    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
+  }
+
+  /**
+   * Shared transactional pipeline execution (10 §11, 10 §8): every
+   * generateFor* variant differs only in how it assembles `row`/`config`/`cdu`
+   * — the SheetDBLib transaction boundary, pipeline execute/rollback, the
+   * critical-flag check, commit, and result extraction are identical.
+   */
+  private runTransactionalPipeline(
+    row: Row,
+    config: ConfigurazioneDocumento,
+    cdu: Cdu,
+    jobId: string | undefined,
+    startedAt: number
+  ): DocumentGenerationResult {
     this.db.beginTransaction();
     let ctx: PipelineContext;
     try {

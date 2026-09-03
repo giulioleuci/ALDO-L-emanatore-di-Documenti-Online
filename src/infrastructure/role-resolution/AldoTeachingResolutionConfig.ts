@@ -13,10 +13,6 @@ const ADAPTER_COLUMN = '__ALDO_SLOT';
 const SLOT_KIND_COLUMN = '__ALDO_SLOT_KIND';
 const SLOT_SPECIFICA_COLUMN = '__ALDO_SLOT_SPECIFICA';
 
-interface ResolutionConfiguration {
-  resolve(asOfDate: Date, routingPolicy: RoutingPolicyValue | null): EffectiveAssignmentResult[];
-}
-
 interface TargetResolution {
   resolver: EffectiveAssignmentResolver;
   context: Record<string, unknown>;
@@ -68,7 +64,7 @@ class EffectiveResultSource extends EffectiveAssignmentSource {
   }
 }
 
-class ArticulatedResolutionConfiguration implements ResolutionConfiguration {
+class ArticulatedResolutionConfiguration {
   constructor(private readonly targets: readonly TargetResolution[]) {}
 
   resolve(asOfDate: Date, routingPolicy: RoutingPolicyValue | null): EffectiveAssignmentResult[] {
@@ -182,7 +178,7 @@ export class AldoTeachingResolutionConfig {
     );
   }
 
-  create(classe: Classe, materia: MateriaId): ResolutionConfiguration {
+  create(classe: Classe, materia: MateriaId): ArticulatedResolutionConfiguration {
     const resolutionClasses = this.resolutionClasses(classe);
     const mappedOverrides = new MappedOverrideSource({
       rows: this.overrideRows,

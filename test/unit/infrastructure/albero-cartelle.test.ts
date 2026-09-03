@@ -12,7 +12,7 @@ function wire() {
 test('creates a new folder and registers it in LOG_FOLD (14 §4)', () => {
   const { drive, db, albero } = wire();
   const res = albero.findOrCreate('Verbali/5', {
-    classe: '5A',
+    classi: '5A',
     tipo: 'CONF_VERBALE',
     nome: '5'
   });
@@ -34,7 +34,7 @@ test('reuses a folder already recorded in LOG_FOLD without touching Drive (findO
     CLASSI: '5A',
     UTENTI: ''
   });
-  const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
+  const res = albero.findOrCreate('Verbali/5', { classi: '5A' });
   expect(res).toEqual({ folderId: 'existing_fold', created: false });
   expect(drive.folders.size).toBe(0); // never created on Drive
 });
@@ -42,7 +42,7 @@ test('reuses a folder already recorded in LOG_FOLD without touching Drive (findO
 test('reuses a folder that exists on Drive and records its audit metadata', () => {
   const { drive, db, albero } = wire();
   const existing = drive.createFolder('Verbali/5');
-  const res = albero.findOrCreate('Verbali/5', { classe: '5A', tipo: 'CONF_VERBALE' });
+  const res = albero.findOrCreate('Verbali/5', { classi: '5A', tipo: 'CONF_VERBALE' });
   expect(res).toEqual({ folderId: existing, created: false });
   expect(db.table('LOG_FOLD').findAll()).toEqual([
     expect.objectContaining({
@@ -69,7 +69,7 @@ test('repairs incomplete LOG_FOLD metadata and merges a newly associated class',
   });
 
   const res = albero.findOrCreate('Verbali/5', {
-    classe: '5A',
+    classi: '5A',
     tipo: 'CONF_VERBALE',
     nome: '5'
   });
@@ -112,7 +112,7 @@ test('a LOG_FOLD row for the same path is reused and receives the additional cla
     CLASSI: '3B',
     UTENTI: ''
   });
-  const res = albero.findOrCreate('Verbali/5', { classe: '5A' });
+  const res = albero.findOrCreate('Verbali/5', { classi: '5A' });
   expect(res).toEqual({ folderId: 'other', created: false });
   expect(db.table('LOG_FOLD').findAll()[0]).toMatchObject({ CLASSI: '3B,5A' });
 });

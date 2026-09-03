@@ -6,16 +6,9 @@ interface FindOrCreateOptions {
   classi?: string;
   utenti?: string;
   materie?: string;
-  classe?: string;
-  utente?: string;
   idGen?: string;
   tipo?: string;
   nome?: string;
-}
-
-interface CartellaResult {
-  folderId: string;
-  created: boolean;
 }
 
 /**
@@ -32,7 +25,7 @@ export class AlberoCartelle {
     private readonly db: IDatabase
   ) {}
 
-  findOrCreate(path: string, options: FindOrCreateOptions = {}): CartellaResult {
+  findOrCreate(path: string, options: FindOrCreateOptions = {}) {
     const table = this.db.table(TABLE.LOG_FOLD);
     const logged = table.find((r) => String(r[COL_LOG_FOLD.PATH]) === path);
     if (logged !== null) {
@@ -79,8 +72,8 @@ export class AlberoCartelle {
         current?.[COL_LOG_FOLD.LINK],
         `https://drive.google.com/drive/folders/${folderId}`
       ),
-      [COL_LOG_FOLD.CLASSI]: mergeCsv(current?.[COL_LOG_FOLD.CLASSI], options.classi ?? options.classe),
-      [COL_LOG_FOLD.UTENTI]: mergeCsv(current?.[COL_LOG_FOLD.UTENTI], options.utenti ?? options.utente),
+      [COL_LOG_FOLD.CLASSI]: mergeCsv(current?.[COL_LOG_FOLD.CLASSI], options.classi),
+      [COL_LOG_FOLD.UTENTI]: mergeCsv(current?.[COL_LOG_FOLD.UTENTI], options.utenti),
       [COL_LOG_FOLD.MATERIE]: mergeCsv(current?.[COL_LOG_FOLD.MATERIE], options.materie)
     };
     if (current === null) table.insert(row);

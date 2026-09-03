@@ -27,31 +27,6 @@ export interface ConcretePair {
   specifica: string;
 }
 
-// splitCsvList and groupMateriaEntriesBySlot are pure, ALDO-independent CSV
-// parsing helpers now owned by RoleResolutionLib (ref
-// DOCS_LIBS/RoleResolutionLib.md "Materia slot CSV parsing") and consumed here
-// as ambient globals (vendor bundle flattens the library's exports onto
-// `global` — no import statement, same convention as LoggerService,
-// ExpressionEngineService, etc. — ref types/gaslibs/index.d.ts). Thin
-// pass-through wrappers (not a re-implementation) so existing ALDO callers
-// importing these names from this module keep working unchanged.
-//
-// The internal function identifier MUST differ from the ambient global name
-// it delegates to — `globalThis.<name>` property access alone is not enough.
-// webpack.config.cjs's onlinetestsConfig builds with `iife: false` (GAS must
-// call test functions by bare name), so nothing wraps that bundle in a
-// closure: production-mode scope hoisting dumps every reachable module's
-// top-level declarations straight into the file's top level. A wrapper
-// declared as `function groupMateriaEntriesBySlot` there becomes itself the
-// literal `globalThis.groupMateriaEntriesBySlot` — GLF's vendor bundle
-// assigns the same global name via `Object.assign(global, RoleResolutionLib)`,
-// but the locally-declared function wins the slot and the wrapper recurses
-// into itself (`RangeError: Maximum call stack size exceeded`), which is
-// exactly what happened when `RowScopeExpansion.ts` was reachable from the
-// OnlineTests entry. Declaring under a distinct local name and re-exporting
-// under the original one keeps every real importer (which resolves via
-// webpack module linking, never `globalThis`) working unchanged while
-// leaving the ambient global name free for GLF's assignment to win.
 function callSplitCsvList(raw: string): string[] {
   return globalThis.splitCsvList(raw);
 }
@@ -187,9 +162,6 @@ export function expandRowToPairs(
   );
 }
 
-// slotCompatible and pairsOverlap are likewise pure and now owned by
-// RoleResolutionLib (same ambient-global consumption, same distinct-local-name
-// requirement, as splitCsvList/groupMateriaEntriesBySlot above).
 function callSlotCompatible(
   a: { kind: string; specifica: string },
   b: { kind: string; specifica: string }

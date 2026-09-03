@@ -538,7 +538,6 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject_0, {
   isEmptyValue: () => (TypeGuards_isEmpty),
   isEqual: () => (isEqual),
   isError: () => (isError),
-  isFalsy: () => (isFalsy),
   isFiniteNumber: () => (isFiniteNumber),
   isFunction: () => (isFunction),
   isInteger: () => (isInteger),
@@ -556,10 +555,8 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject_0, {
   isPromise: () => (isPromise),
   isRegExp: () => (isRegExp),
   isString: () => (TypeGuards_isString),
-  isTruthy: () => (isTruthy),
   isUndefined: () => (isUndefined),
   isValidNumber: () => (TypeGuards_isNumber),
-  isValidObject: () => (isValidObject),
   kebabCase: () => (kebabCase_kebabCase),
   keyBy: () => (keyBy),
   map: () => (map),
@@ -646,7 +643,6 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   isEmptyValue: () => (TypeGuards_isEmpty),
   isEqual: () => (isEqual),
   isError: () => (isError),
-  isFalsy: () => (isFalsy),
   isFiniteNumber: () => (isFiniteNumber),
   isFunction: () => (isFunction),
   isInteger: () => (isInteger),
@@ -664,10 +660,8 @@ __webpack_require__.d(CoreUtilsLib_namespaceObject, {
   isPromise: () => (isPromise),
   isRegExp: () => (isRegExp),
   isString: () => (TypeGuards_isString),
-  isTruthy: () => (isTruthy),
   isUndefined: () => (isUndefined),
   isValidNumber: () => (TypeGuards_isNumber),
-  isValidObject: () => (isValidObject),
   kebabCase: () => (kebabCase_kebabCase),
   keyBy: () => (keyBy),
   map: () => (map),
@@ -7454,210 +7448,72 @@ class SystemScriptSettings {
 
 
 
+
+
+
+
+
+
+
 const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi);
 
-const SystemUtils_flatten = (a, depth = 1) => Array.isArray(a) ? a.flat(depth) : [];
-class SystemUtils {
-  constructor(sleepFn = null) {
-    this._environmentUtils = new SystemEnvironmentUtils(sleepFn);
-    this._scriptSettings = new SystemScriptSettings();
-  }
-  sleep(...args) {
-    return this._environmentUtils.sleep(...args);
-  }
-  delay(...args) {
-    return this._environmentUtils.delay(...args);
-  }
-  isValidEmail(...args) {
-    return this._environmentUtils.isValidEmail(...args);
-  }
-  isValidUrl(...args) {
-    return this._environmentUtils.isValidUrl(...args);
-  }
-  isEqual(...args) {
-    return this._environmentUtils.isEqual(...args);
-  }
-  isNil(...args) {
-    return this._environmentUtils.isNil(...args);
-  }
-  isNumber(...args) {
-    return this._environmentUtils.isNumber(...args);
-  }
-  isString(...args) {
-    return this._environmentUtils.isString(...args);
-  }
-  isEmptyValue(...args) {
-    return this._environmentUtils.isEmptyValue(...args);
-  }
-  debounce(...args) {
-    return this._environmentUtils.debounce(...args);
-  }
-  once(...args) {
-    return this._environmentUtils.once(...args);
-  }
-  noop(...args) {
-    return this._environmentUtils.noop(...args);
-  }
-  chunk(...args) {
-    return chunk_chunk(...args);
-  }
-  unique(...args) {
-    return LodashFacade_uniq(...args);
-  }
-  flatten(...args) {
-    return SystemUtils_flatten(...args);
-  }
-  flattenShallow(array) {
-    return SystemUtils_flatten(array);
-  }
-  flattenDeep(array) {
-    return flattenDeep(array);
-  }
-  compact(...args) {
-    return compact(...args);
-  }
-  difference(...args) {
-    return difference_difference(...args);
-  }
-  differenceBy(...args) {
-    return differenceBy_differenceBy(...args);
-  }
-  groupBy(...args) {
-    return groupBy_groupBy(...args);
-  }
-  intersection(...args) {
-    return intersection_intersection(...args);
-  }
-  keyBy(...args) {
-    return keyBy(...args);
-  }
-  orderBy(...args) {
-    return orderBy(...args);
-  }
-  uniq(...args) {
-    return LodashFacade_uniq(...args);
-  }
-  uniqBy(...args) {
-    return uniqBy_uniqBy(...args);
-  }
-  randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-  round(number, decimals = 0) {
-    const multiplier = Math.pow(10, decimals);
-    return Math.round(number * multiplier) / multiplier;
-  }
-  clamp(...args) {
-    return clamp(...args);
-  }
-  maxBy(...args) {
-    return maxBy_maxBy(...args);
-  }
-  minBy(...args) {
-    return minBy_minBy(...args);
-  }
-  sumBy(...args) {
-    return sumBy_sumBy(...args);
-  }
-  meanBy(...args) {
-    return meanBy_meanBy(...args);
-  }
-  every(...args) {
-    return every(...args);
-  }
-  filter(...args) {
-    return filter(...args);
-  }
-  find(...args) {
-    return find(...args);
-  }
-  forEach(...args) {
-    return forEach(...args);
-  }
-  map(...args) {
-    return map(...args);
-  }
-  reduce(...args) {
-    return reduce(...args);
-  }
-  size(...args) {
-    return size(...args);
-  }
-  some(...args) {
-    return some(...args);
-  }
-  deepClone(...args) {
-    return this._scriptSettings.deepClone(...args);
-  }
-  deepMerge(...args) {
-    return this._scriptSettings.deepMerge(...args);
-  }
-  getNestedProperty(...args) {
-    return this._scriptSettings.getNestedProperty(...args);
-  }
-  setNestedProperty(...args) {
-    return this._scriptSettings.setNestedProperty(...args);
-  }
-  has(...args) {
-    return this._scriptSettings.has(...args);
-  }
-  pick(...args) {
-    return this._scriptSettings.pick(...args);
-  }
-  omit(...args) {
-    return this._scriptSettings.omit(...args);
-  }
-  mapKeys(...args) {
-    return this._scriptSettings.mapKeys(...args);
-  }
-  mapValues(...args) {
-    return this._scriptSettings.mapValues(...args);
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
+const UtilsService_flatten = (a, depth = 1) => Array.isArray(a) ? a.flat(depth) : [];
 class MyUtilsService {
-  static get MILLIS_PER_DAY() {
-    return DateUtils.MILLIS_PER_DAY;
-  }
-  static get MILLIS_PER_HOUR() {
-    return DateUtils.MILLIS_PER_HOUR;
-  }
-  static get MILLIS_PER_MINUTE() {
-    return DateUtils.MILLIS_PER_MINUTE;
-  }
-  static get MILLIS_PER_SECOND() {
-    return DateUtils.MILLIS_PER_SECOND;
-  }
   constructor(sleepFn = null) {
     this._sleepFn = sleepFn;
     this._idGenerator = new IdGenerator();
     this._dateUtils = new DateUtils();
     this._stringUtils = new StringUtils();
-    this._systemUtils = new SystemUtils(sleepFn);
-    const managers = [this._idGenerator, this._dateUtils, this._stringUtils, this._systemUtils];
+    this._environmentUtils = new SystemEnvironmentUtils(sleepFn);
+    this._scriptSettings = new SystemScriptSettings();
+    const managers = [this._idGenerator, this._dateUtils, this._stringUtils, this._environmentUtils, this._scriptSettings];
     managers.forEach(manager => {
 
       const protoMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(manager)).filter(name => name !== 'constructor' && typeof manager[name] === 'function');
 
 
-      const ownMethods = Object.getOwnPropertyNames(manager).filter(name => typeof manager[name] === 'function');
+
+
+
+      const ownMethods = Object.getOwnPropertyNames(manager).filter(name => !name.startsWith('_') && typeof manager[name] === 'function');
       const allMethods = [...new Set([...protoMethods, ...ownMethods])];
       allMethods.forEach(name => {
         this[name] = manager[name].bind(manager);
       });
     });
     this.isEmpty = isEmpty;
+    this.chunk = chunk_chunk;
+    this.unique = LodashFacade_uniq;
+    this.flatten = UtilsService_flatten;
+    this.flattenShallow = array => UtilsService_flatten(array);
+    this.flattenDeep = flattenDeep;
+    this.compact = compact;
+    this.difference = difference_difference;
+    this.differenceBy = differenceBy_differenceBy;
+    this.groupBy = groupBy_groupBy;
+    this.intersection = intersection_intersection;
+    this.keyBy = keyBy;
+    this.orderBy = orderBy;
+    this.uniq = LodashFacade_uniq;
+    this.uniqBy = uniqBy_uniqBy;
+    this.randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    this.round = (number, decimals = 0) => {
+      const multiplier = Math.pow(10, decimals);
+      return Math.round(number * multiplier) / multiplier;
+    };
+    this.clamp = clamp;
+    this.maxBy = maxBy_maxBy;
+    this.minBy = minBy_minBy;
+    this.sumBy = sumBy_sumBy;
+    this.meanBy = meanBy_meanBy;
+    this.every = every;
+    this.filter = filter;
+    this.find = find;
+    this.forEach = forEach;
+    this.map = map;
+    this.reduce = reduce;
+    this.size = size;
+    this.some = some;
   }
 }
 
@@ -9025,21 +8881,6 @@ class TypeGuards {
 
 
 
-  static isValidObject(value) {
-    return value !== null && typeof value === 'object';
-  }
-
-
-
-
-
-
-
-
-
-
-
-
   static isNonEmptyObject(value) {
     return TypeGuards.isPlainObject(value) && Object.keys(value).length > 0;
   }
@@ -9263,26 +9104,6 @@ class TypeGuards {
     }
     return false;
   }
-
-
-
-
-
-
-
-  static isTruthy(value) {
-    return Boolean(value);
-  }
-
-
-
-
-
-
-
-  static isFalsy(value) {
-    return !value;
-  }
 }
 
 
@@ -9296,7 +9117,6 @@ const isNonNegativeInteger = TypeGuards.isNonNegativeInteger;
 const isBoolean = TypeGuards.isBoolean;
 const TypeGuards_isPlainObject = TypeGuards.isPlainObject;
 const TypeGuards_isObject = TypeGuards.isObject;
-const isValidObject = TypeGuards.isValidObject;
 const isNonEmptyObject = TypeGuards.isNonEmptyObject;
 const isArray = TypeGuards.isArray;
 const isNonEmptyArray = TypeGuards.isNonEmptyArray;
@@ -9311,8 +9131,6 @@ const isRegExp = TypeGuards.isRegExp;
 const isPromise = TypeGuards.isPromise;
 const isError = TypeGuards.isError;
 const TypeGuards_isEmpty = TypeGuards.isEmpty;
-const isTruthy = TypeGuards.isTruthy;
-const isFalsy = TypeGuards.isFalsy;
 ;
 
 
@@ -9390,17 +9208,6 @@ class PiiRedactor {
 ;
 const testing = {};
 ;
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -35,12 +35,10 @@ import {
   STUDENT_TOTALE,
   ANNI_PRECEDENTI
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
-import type {
-  ISampleSpreadsheet,
-  ISampleSpreadsheetFactory
-} from '../../../src/onlinetests/SampleDatabaseBuilder';
+import type { ISampleSpreadsheetFactory } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { testArtifactFactory } from './testArtifactFactory';
+import { RecordingSpreadsheet } from './recordingSpreadsheet';
 import {
   TABLE,
   COL_CLASSI,
@@ -56,28 +54,6 @@ import {
   COL_CONF_IMP,
   COL_MATERIE
 } from '../../../src/config/schema';
-
-class RecordingSpreadsheet implements ISampleSpreadsheet {
-  id: string;
-  rows: Record<string, Record<string, unknown>[]> = {};
-  headers: Record<string, string[]> = {};
-  constructor(id: string) {
-    this.id = id;
-  }
-  addSheet(name: string, headerRow: string[]): void {
-    this.rows[name] = [];
-    this.headers[name] = headerRow;
-  }
-  appendRow(sheetName: string, row: Record<string, unknown>): void {
-    (this.rows[sheetName] ??= []).push(row);
-  }
-  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
-    (this.rows[sheetName] ??= []).push(...rows);
-  }
-  getUrl(): string {
-    return `https://example.test/${this.id}`;
-  }
-}
 
 function factory(): {
   spreadsheets: ISampleSpreadsheetFactory;

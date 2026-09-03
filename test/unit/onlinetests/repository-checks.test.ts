@@ -16,6 +16,7 @@ import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { testArtifactFactory } from './testArtifactFactory';
+import { RecordingSpreadsheet } from './recordingSpreadsheet';
 import { FakeGmailFacade } from '../../fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
@@ -33,10 +34,7 @@ import {
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
 import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
-import type {
-  ISampleSpreadsheet,
-  ISampleSpreadsheetFactory
-} from '../../../src/onlinetests/SampleDatabaseBuilder';
+import type { ISampleSpreadsheetFactory } from '../../../src/onlinetests/SampleDatabaseBuilder';
 import {
   TABLE,
   COL_ALUNNI,
@@ -59,28 +57,6 @@ const DOCENTE_1 = e2eDocenteEmail(1);
 const DOCENTE_2 = e2eDocenteEmail(9);
 const DOCENTE_3 = e2eDocenteEmail(10);
 const ALUNNO_PARTNER_EMAIL = e2eAlunnoEmail(49);
-
-class RecordingSpreadsheet implements ISampleSpreadsheet {
-  readonly rows: Record<string, Record<string, unknown>[]> = {};
-
-  constructor(readonly id: string) {}
-
-  addSheet(name: string): void {
-    this.rows[name] = [];
-  }
-
-  appendRow(sheetName: string, row: Record<string, unknown>): void {
-    (this.rows[sheetName] ??= []).push(row);
-  }
-
-  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
-    (this.rows[sheetName] ??= []).push(...rows);
-  }
-
-  getUrl(): string {
-    return `https://example.test/${this.id}`;
-  }
-}
 
 function e2eRecordingFactory(): {
   spreadsheets: ISampleSpreadsheetFactory;

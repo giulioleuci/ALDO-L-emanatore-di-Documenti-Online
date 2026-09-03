@@ -2,11 +2,7 @@ import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
-import {
-  e2eAlunnoEmail,
-  HEADERS,
-  type E2eTemplateIds
-} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import { e2eAlunnoEmail, HEADERS } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import type {
   IArtifactFactory,
   SheetValueUpdate
@@ -47,32 +43,8 @@ import { toLibraryRecipe } from '../../../src/application/import/ImportRecipeMap
 import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
-
-class RecordingSpreadsheet implements ISampleSpreadsheet {
-  public readonly rows: Record<string, Record<string, unknown>[]> = {};
-  public readonly headers: Record<string, string[]> = {};
-  public readonly batches: string[] = [];
-
-  constructor(public readonly id: string) {}
-
-  addSheet(name: string, headerRow: string[]): void {
-    this.headers[name] = headerRow;
-    this.rows[name] = [];
-  }
-
-  appendRow(sheetName: string, row: Record<string, unknown>): void {
-    (this.rows[sheetName] ??= []).push(row);
-  }
-
-  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
-    this.batches.push(sheetName);
-    (this.rows[sheetName] ??= []).push(...rows);
-  }
-
-  getUrl(): string {
-    return `https://example.test/${this.id}`;
-  }
-}
+import { RecordingSpreadsheet } from './recordingSpreadsheet';
+import { TEMPLATE_IDS } from './testArtifactFactory';
 
 function spreadsheetFactory(): {
   factory: ISampleSpreadsheetFactory;
@@ -93,35 +65,6 @@ function spreadsheetFactory(): {
     }
   };
 }
-
-const TEMPLATE_IDS: E2eTemplateIds = {
-  verbale: 'tmpl_verbale',
-  condotta: 'tmpl_condotta',
-  riepilogo: 'tmpl_riepilogo',
-  aslImportSheet: 'tmpl_asl_import',
-  aslImportPolicySheet: 'tmpl_asl_import_policy',
-  aslImportNoHeaderSheet: 'tmpl_asl_import_noheader',
-  carenzeImportTimestampSheet: 'tmpl_carenze_import_timestamp',
-  docComplesso: 'tmpl_doc_complesso',
-  docArticolata: 'tmpl_doc_articolata',
-  cdcRiepilogo: 'tmpl_cdc_riepilogo',
-  sheetPermessi: 'tmpl_sheet_permessi',
-  pianoLavoro: 'tmpl_piano_lavoro',
-  staticAttachment: 'tmpl_attachment',
-  tabelleImportate: 'tmpl_tabelle_importate',
-  tabellaSorgenteDati: 'tmpl_tabella_sorgente_dati',
-  tabellaSorgenteVuota: 'tmpl_tabella_sorgente_vuota',
-  storico: 'tmpl_storico',
-  dotted: 'tmpl_dotted',
-  storicoEmail: 'tmpl_storico_email',
-  piani: {
-    PDP_DSA: 'tmpl_pdp_dsa',
-    PDP_BES: 'tmpl_pdp_bes',
-    PDP_STRANIERI: 'tmpl_pdp_stranieri',
-    PEI: 'tmpl_pei',
-    PFP: 'tmpl_pfp'
-  }
-};
 
 function recordingArtifacts(): {
   artifacts: IArtifactFactory;

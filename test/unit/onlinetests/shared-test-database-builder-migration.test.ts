@@ -2,7 +2,6 @@ import type {
   ISampleSpreadsheet,
   ISampleSpreadsheetFactory
 } from '../../../src/onlinetests/SampleDatabaseBuilder';
-import type { IArtifactFactory } from '../../../src/onlinetests/E2eTemplateProvisioner';
 import {
   SharedTestDatabaseBuilder,
   CARENZA_ALUNNO_2,
@@ -17,8 +16,7 @@ import {
   RIPETENTE_3C,
   buildMaterieRows,
   e2eAlunnoEmail,
-  e2eDocenteEmail,
-  type E2eTemplateIds
+  e2eDocenteEmail
 } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import {
   ALL_CLASSI,
@@ -45,30 +43,8 @@ import {
   COL_SUPPLENZE,
   TABLE
 } from '../../../src/config/schema';
-
-class RecordingSpreadsheet implements ISampleSpreadsheet {
-  readonly rows: Record<string, Record<string, unknown>[]> = {};
-  readonly headers: Record<string, string[]> = {};
-
-  constructor(readonly id: string) {}
-
-  addSheet(name: string, headerRow: string[]): void {
-    this.headers[name] = headerRow;
-    this.rows[name] = [];
-  }
-
-  appendRow(sheetName: string, row: Record<string, unknown>): void {
-    (this.rows[sheetName] ??= []).push(row);
-  }
-
-  appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void {
-    (this.rows[sheetName] ??= []).push(...rows);
-  }
-
-  getUrl(): string {
-    return `https://example.test/${this.id}`;
-  }
-}
+import { RecordingSpreadsheet } from './recordingSpreadsheet';
+import { recordingArtifacts, TEMPLATE_IDS } from './testArtifactFactory';
 
 function recordingFactory(): {
   spreadsheets: ISampleSpreadsheetFactory;
@@ -89,48 +65,6 @@ function recordingFactory(): {
     }
   };
 }
-
-function recordingArtifacts(): IArtifactFactory {
-  let sequence = 0;
-  return {
-    createDocument(): string {
-      throw new Error('not used by builder migration test');
-    },
-    createSheet(): string {
-      sequence += 1;
-      return `artifact_${sequence}`;
-    }
-  };
-}
-
-const TEMPLATE_IDS: E2eTemplateIds = {
-  verbale: 'tmpl_verbale',
-  condotta: 'tmpl_condotta',
-  riepilogo: 'tmpl_riepilogo',
-  aslImportSheet: 'tmpl_asl_import',
-  aslImportPolicySheet: 'tmpl_asl_import_policy',
-  aslImportNoHeaderSheet: 'tmpl_asl_import_noheader',
-  carenzeImportTimestampSheet: 'tmpl_carenze_import_timestamp',
-  docComplesso: 'tmpl_doc_complesso',
-  docArticolata: 'tmpl_doc_articolata',
-  cdcRiepilogo: 'tmpl_cdc_riepilogo',
-  sheetPermessi: 'tmpl_sheet_permessi',
-  pianoLavoro: 'tmpl_piano_lavoro',
-  staticAttachment: 'tmpl_attachment',
-  tabelleImportate: 'tmpl_tabelle_importate',
-  tabellaSorgenteDati: 'tmpl_tabella_sorgente_dati',
-  tabellaSorgenteVuota: 'tmpl_tabella_sorgente_vuota',
-  storico: 'tmpl_storico',
-  dotted: 'tmpl_dotted',
-  storicoEmail: 'tmpl_storico_email',
-  piani: {
-    PDP_DSA: 'tmpl_pdp_dsa',
-    PDP_BES: 'tmpl_pdp_bes',
-    PDP_STRANIERI: 'tmpl_pdp_stranieri',
-    PEI: 'tmpl_pei',
-    PFP: 'tmpl_pfp'
-  }
-};
 
 test('keeps INTERPRET.FLAUTO in the canonical MATERIE rows used by builds and migrations', () => {
   expect(

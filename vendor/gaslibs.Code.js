@@ -2268,7 +2268,6 @@ __webpack_require__.d(ComposableContentLib_namespaceObject_0, {
   BlockRenderer: () => (BlockRenderer),
   BlockResult: () => (BlockResult),
   ComposableContentError: () => (ComposableContentError),
-  CompositionError: () => (CompositionError),
   CompositionRecipe: () => (CompositionRecipe),
   CompositionResult: () => (CompositionResult),
   ContainerType: () => (ContainerType),
@@ -2302,7 +2301,6 @@ __webpack_require__.d(ComposableContentLib_namespaceObject, {
   BlockRenderer: () => (BlockRenderer),
   BlockResult: () => (BlockResult),
   ComposableContentError: () => (ComposableContentError),
-  CompositionError: () => (CompositionError),
   CompositionRecipe: () => (CompositionRecipe),
   CompositionResult: () => (CompositionResult),
   ContainerType: () => (ContainerType),
@@ -20574,6 +20572,27 @@ class LowercaseFilter extends FilterStrategy {
 
 
 
+class UncapitalizeFilter extends FilterStrategy {
+  getName() {
+    return 'uncapitalize';
+  }
+  getDescription() {
+    return 'Lowercases the first character of text';
+  }
+  execute(value) {
+    if (!value) {
+      return '';
+    }
+    value = String(value);
+    const chars = Array.from(value);
+    return chars[0].toLowerCase() + value.slice(chars[0].length);
+  }
+}
+
+
+
+
+
 class CapitalizeFilter extends FilterStrategy {
   getName() {
     return 'capitalize';
@@ -20791,7 +20810,7 @@ class ExcludeFilter extends FilterStrategy {
 
 
 function createBuiltInFilters(utils) {
-  return [new UppercaseFilter(), new LowercaseFilter(), new CapitalizeFilter(), new DateFilter(utils), new NumberFilter(), new JoinFilter(), new PluralizeFilter(), new SortFilter('sortBy'), new WhereFilter(), new ExcludeFilter()];
+  return [new UppercaseFilter(), new LowercaseFilter(), new UncapitalizeFilter(), new CapitalizeFilter(), new DateFilter(utils), new NumberFilter(), new JoinFilter(), new PluralizeFilter(), new SortFilter('sortBy'), new WhereFilter(), new ExcludeFilter()];
 }
 ;
 
@@ -66156,13 +66175,7 @@ function isValidOutputFormat(value) {
 
 
 
-
-
 class BlockDefinition {
-
-
-
-
 
 
 
@@ -66182,13 +66195,9 @@ class BlockDefinition {
       id,
       name,
       description = '',
-      dataRequirements = [],
-      defaultVisibility = 'always',
-      defaultOrder = 0,
       supportedFormats = [OutputFormat.HTML, OutputFormat.MARKDOWN, OutputFormat.TEXT],
       emptyBehavior = EmptyBehavior.HIDE,
-      containerType = ContainerType.NONE,
-      metadata = {}
+      containerType = ContainerType.NONE
     } = definition;
 
 
@@ -66197,9 +66206,6 @@ class BlockDefinition {
     }
     if (!name || typeof name !== 'string') {
       throw new Error('BlockDefinition name is required and must be a string');
-    }
-    if (!Array.isArray(dataRequirements)) {
-      throw new Error('BlockDefinition dataRequirements must be an array');
     }
     if (!Array.isArray(supportedFormats) || supportedFormats.length === 0) {
       throw new Error('BlockDefinition supportedFormats must be a non-empty array');
@@ -66242,27 +66248,6 @@ class BlockDefinition {
 
 
 
-    this.dataRequirements = Object.freeze([...dataRequirements]);
-
-
-
-
-
-
-    this.defaultVisibility = defaultVisibility;
-
-
-
-
-
-
-    this.defaultOrder = defaultOrder;
-
-
-
-
-
-
     this.supportedFormats = Object.freeze([...supportedFormats]);
 
 
@@ -66278,13 +66263,6 @@ class BlockDefinition {
 
 
     this.containerType = containerType;
-
-
-
-
-
-
-    this.metadata = Object.freeze(cloneDeep_cloneDeep(metadata));
     Object.freeze(this);
   }
 
@@ -66301,51 +66279,8 @@ class BlockDefinition {
 
 
 
-
-  requiresData(key) {
-    return this.dataRequirements.includes(key);
-  }
-
-
-
-
-
-  hasDataRequirements() {
-    return this.dataRequirements.length > 0;
-  }
-
-
-
-
-
   hidesWhenEmpty() {
     return this.emptyBehavior === EmptyBehavior.HIDE;
-  }
-
-
-
-
-
-  isAlwaysVisible() {
-    return this.defaultVisibility === 'always';
-  }
-
-
-
-
-
-
-
-  getMetadata(key, defaultValue) {
-    return this.metadata.hasOwnProperty(key) ? this.metadata[key] : defaultValue;
-  }
-
-
-
-
-
-  isNeverVisible() {
-    return this.defaultVisibility === 'never';
   }
 
 
@@ -66357,15 +66292,9 @@ class BlockDefinition {
       id: this.id,
       name: this.name,
       description: this.description,
-      dataRequirements: [...this.dataRequirements],
-      defaultVisibility: this.defaultVisibility,
-      defaultOrder: this.defaultOrder,
       supportedFormats: [...this.supportedFormats],
       emptyBehavior: this.emptyBehavior,
-      containerType: this.containerType,
-      metadata: {
-        ...this.metadata
-      }
+      containerType: this.containerType
     };
   }
 
@@ -66896,25 +66825,19 @@ class CompositionResult {
 
 
 
-
-
   constructor(result) {
     if (!result || typeof result !== 'object') {
       throw new Error('CompositionResult requires a result object');
     }
     const {
       recipeId,
-      outputFormat: _outputFormat,
-      format,
+      outputFormat,
       content,
-      blocks: _blocks,
-      blockResults,
+      blocks = [],
       errors = [],
       processingTime = 0,
       metadata = {}
     } = result;
-    const outputFormat = _outputFormat || format;
-    const blocks = _blocks || blockResults || [];
     if (!recipeId || typeof recipeId !== 'string') {
       throw new Error('CompositionResult recipeId is required');
     }
@@ -66938,13 +66861,6 @@ class CompositionResult {
 
 
     this.outputFormat = outputFormat;
-
-
-
-
-
-
-    this.format = outputFormat;
 
 
 
@@ -67010,15 +66926,6 @@ class CompositionResult {
 
   isSuccess() {
     return this.errors.length === 0 && !this.blocks.some(b => b.isError && b.isError());
-  }
-
-
-
-
-
-
-  getBlockResult(instanceId) {
-    return this.getBlockById(instanceId);
   }
 
 
@@ -67209,29 +67116,6 @@ class RenderingError extends ComposableContentError {
     this.name = 'RenderingError';
     this.blockType = blockType;
     this.format = format;
-    this.cause = cause;
-  }
-}
-
-
-
-
-
-
-class CompositionError extends ComposableContentError {
-
-
-
-
-
-
-  constructor(message, recipeId, cause = null) {
-    super(message, {
-      recipeId,
-      cause: (cause === null || cause === void 0 ? void 0 : cause.message) || null
-    });
-    this.name = 'CompositionError';
-    this.recipeId = recipeId;
     this.cause = cause;
   }
 }

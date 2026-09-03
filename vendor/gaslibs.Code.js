@@ -67286,22 +67286,6 @@ class ProcessMonitorService {
     this._logger.info(`[ProcessMonitorService] Job state cleared: ${jobId}`);
     return this;
   }
-
-
-
-
-
-
-
-
-
-  getConfigSummary() {
-    return {
-      cachePrefix: ProcessMonitorService.CACHE_PREFIX,
-      propsPrefix: ProcessMonitorService.PROPS_PREFIX,
-      cacheExpirationSeconds: ProcessMonitorService.CACHE_EXPIRATION
-    };
-  }
 }
 ;
 
@@ -67830,116 +67814,8 @@ class DashboardUi {
     })();
   </script>`;
   }
-
-
-
-
-
-  getConfigSummary() {
-    return {
-      defaultPollingInterval: DashboardUi.DEFAULT_POLLING_INTERVAL,
-      defaultWidth: DashboardUi.DEFAULT_WIDTH
-    };
-  }
 }
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

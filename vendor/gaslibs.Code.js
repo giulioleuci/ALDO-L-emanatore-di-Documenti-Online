@@ -806,7 +806,6 @@ __webpack_require__.d(WorkspaceTemplateEngine_namespaceObject, {
 var GasExpressionEngineLib_namespaceObject_0 = {};
 __webpack_require__.r(GasExpressionEngineLib_namespaceObject_0);
 __webpack_require__.d(GasExpressionEngineLib_namespaceObject_0, {
-  ErrorHelper: () => (ErrorHelper),
   ExpressionEngineService: () => (ExpressionEngineService),
   ExpressionEvaluatorService: () => (ExpressionEvaluatorService),
   ExpressionParserService: () => (ExpressionParserService)
@@ -816,7 +815,6 @@ __webpack_require__.d(GasExpressionEngineLib_namespaceObject_0, {
 var GasExpressionEngineLib_namespaceObject = {};
 __webpack_require__.r(GasExpressionEngineLib_namespaceObject);
 __webpack_require__.d(GasExpressionEngineLib_namespaceObject, {
-  ErrorHelper: () => (ErrorHelper),
   ExpressionEngineService: () => (ExpressionEngineService),
   ExpressionEvaluatorService: () => (ExpressionEvaluatorService),
   ExpressionParserService: () => (ExpressionParserService)
@@ -24046,155 +24044,6 @@ class PlaceholderService {
 
 
 
-
-
-
-
-
-class ErrorHelper {
-
-
-
-
-
-
-
-  static create(component, errorType, details) {
-    let message = `[${component}] ${errorType}`;
-    if (details) {
-      message += `: ${details}`;
-    }
-    return new Error(message);
-  }
-
-
-
-
-
-
-
-
-
-  static createWithPosition(component, errorType, value, position) {
-    const valueStr = typeof value === 'string' ? `"${value}"` : String(value);
-    const message = `[${component}] ${errorType}: ${valueStr} at position ${position}`;
-    return new Error(message);
-  }
-
-
-
-
-
-
-
-
-  static createValidation(component, paramName, expectedType) {
-    const message = `[${component}] Invalid parameter '${paramName}': must be ${expectedType}`;
-    return new Error(message);
-  }
-
-
-
-
-
-
-
-
-  static createUnsupported(component, operation, value) {
-    const valueStr = typeof value === 'string' ? `"${value}"` : String(value);
-    const message = `[${component}] Unsupported ${operation}: ${valueStr}`;
-    return new Error(message);
-  }
-
-
-
-
-
-
-
-
-
-  static createLimitExceeded(component, limitType, actual, max) {
-    const message = `[${component}] Limit exceeded: ${limitType} is ${actual} (maximum: ${max})`;
-    return new Error(message);
-  }
-}
-;
-
-
-
-
-
-
-
-class TokenScanner {
-
-
-
-
-
-  preprocess(expressionString) {
-    let result = expressionString;
-
-
-    result = this._convertPlaceholders(result);
-
-
-    result = this._convertNumericPathSegments(result);
-
-
-    result = this._convertBetweenOperator(result);
-    return result;
-  }
-
-
-
-
-
-
-
-  _convertNumericPathSegments(expression) {
-    return expression.replace(/(?<=[a-zA-Z_\]])\.\s*(\d+)/g, '[$1]');
-  }
-
-
-
-
-
-
-
-  _convertPlaceholders(expression) {
-    let result = expression;
-    let hasChanges = true;
-    while (hasChanges) {
-      const before = result;
-
-
-      result = result.replace(/\{\{([^{}]+)\}\}/g, (match, content) => {
-        return content.trim();
-      });
-      hasChanges = result !== before;
-    }
-    return result;
-  }
-
-
-
-
-
-
-
-  _convertBetweenOperator(expression) {
-    const betweenPattern = /\b(\S+(?:\s*\([^)]*\))?)\s+between\s+(\S+(?:\s*\([^)]*\))?)\s*,\s*(\S+(?:\s*\([^)]*\))?)\b/gi;
-    return expression.replace(betweenPattern, (match, value, min, max) => {
-      return `between(${value}, ${min}, ${max})`;
-    });
-  }
-}
-;
-
-
-
 class Hooks {
 
 
@@ -25327,54 +25176,6 @@ jsep.plugins.register(ternary);
 
 
 
-
-class AstBuilder {
-
-
-
-
-  constructor(logger) {
-    this._logger = logger;
-    this._configureJSEP();
-  }
-
-
-
-
-
-  _configureJSEP() {
-
-    jsep.addBinaryOp('in', 6);
-
-
-    jsep.addBinaryOp('match', 6);
-    this._logger.debug('JSEP configured with custom operators: in, match');
-  }
-
-
-
-
-
-
-
-  buildAst(preprocessedExpression) {
-    try {
-      const ast = jsep(preprocessedExpression);
-      this._logger.debug(`AST generated successfully`);
-      return ast;
-    } catch (error) {
-      throw new Error(`Failed to parse expression: ${error.message}`);
-    }
-  }
-}
-;
-
-
-
-
-
-
-
 const unsafeMemberNames = new Set(['__proto__', 'prototype', 'constructor']);
 
 
@@ -25496,7 +25297,6 @@ function assertCallExpression(node, policy) {
 
 
 
-
 class ExpressionParserService {
 
 
@@ -25529,18 +25329,7 @@ class ExpressionParserService {
     this.logger = logger;
 
     this.MAX_INPUT_LENGTH = 10000;
-
-
-
-
-
-    this._tokenScanner = new TokenScanner();
-
-
-
-
-
-    this._astBuilder = new AstBuilder(this.logger);
+    this._configureJSEP();
   }
 
 
@@ -25561,378 +25350,116 @@ class ExpressionParserService {
     this.logger.debug(`Parsing expression: "${expressionString}"`);
 
 
-    const preprocessed = this._tokenScanner.preprocess(expressionString);
+    const preprocessed = this._preprocess(expressionString);
     this.logger.debug(`Preprocessed expression: "${preprocessed}"`);
 
 
 
-    const ast = this._astBuilder.buildAst(preprocessed);
+    const ast = this._buildAst(preprocessed);
     assertAllowedExpressionAst(ast, defaultPolicy);
     return ast;
   }
-}
-;
-class AstNodeEvaluator {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  _evaluateNode(node, context) {
-    if (!node || typeof node !== 'object' || !node.type) {
-      throw new Error('Invalid AST node');
-    }
-    switch (node.type) {
-      case 'Identifier':
-        return this._evaluateIdentifier(node, context);
-      case 'MemberExpression':
-        return this._evaluateMemberExpression(node, context);
-      case 'Literal':
-        return this._evaluateLiteral(node, context);
-      case 'BinaryExpression':
-        return this.facade._evaluateBinaryExpression(node, context);
-      case 'UnaryExpression':
-        return this.facade._evaluateUnaryExpression(node, context);
-      case 'CallExpression':
-        return this._evaluateCallExpression(node, context);
-      case 'ArrayExpression':
-        return this._evaluateArrayExpression(node, context);
-      default:
-        throw new Error(`Unsupported AST node type: ${node.type}`);
-    }
-  }
-  _evaluateIdentifier(node, context) {
-    const identifierName = node.name;
-    const placeholderString = `{{${identifierName}}}`;
-    try {
-      const result = this.facade.placeholderService.processString(placeholderString, context);
-      if (result === placeholderString) {
-        this.facade.logger.warn(`Unresolved identifier: ${identifierName}`);
-        return undefined;
-      }
-      return this.facade._parseValue(result);
-    } catch (error) {
-      this.facade.logger.error(`Error resolving identifier ${identifierName}: ${error.message}`);
-      throw new Error(`Failed to resolve identifier ${identifierName}: ${error.message}`);
-    }
-  }
-  _evaluateMemberExpression(node, context) {
-    const path = this._buildPathFromMemberExpression(node);
-    const placeholderString = `{{${path}}}`;
-    try {
-      const result = this.facade.placeholderService.processString(placeholderString, context);
-      if (result === placeholderString) {
-        this.facade.logger.warn(`Unresolved member expression: ${path}`);
-        return undefined;
-      }
-      return this.facade._parseValue(result);
-    } catch (error) {
-      this.facade.logger.error(`Error resolving member expression ${path}: ${error.message}`);
-      throw new Error(`Failed to resolve member expression ${path}: ${error.message}`);
-    }
-  }
-  _buildPathFromMemberExpression(node) {
-    if (node.type === 'Identifier') {
-      return node.name;
-    }
-    if (node.type === 'MemberExpression') {
-      const objectPath = this._buildPathFromMemberExpression(node.object);
-      const propertyName = node.computed ? this.facade._evaluateNode(node.property, {}) : node.property.name;
-      return `${objectPath}.${propertyName}`;
-    }
-    throw new Error(`Unexpected node type in member expression: ${node.type}`);
-  }
-  _evaluateLiteral(node, _context) {
-    return node.value;
-  }
-  _evaluateArrayExpression(node, context) {
-    return node.elements.map(elem => this.facade._evaluateNode(elem, context));
-  }
-  _evaluateCallExpression(node, context) {
-    const funcName = node.callee.name || node.callee.value;
-    const args = node.arguments.map(arg => this.facade._evaluateNode(arg, context));
-    const func = this.facade._builtInFunctions[funcName];
-    if (!func) {
-      throw new Error(`Unknown function: ${funcName}`);
-    }
-    try {
-      return func.apply(this.facade, args);
-    } catch (error) {
-      throw new Error(`Error in function ${funcName}(): ${error.message}`);
-    }
-  }
-}
-;
-class EvaluationContextHandler {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  _areBothNullOrUndefined(a, b) {
-    return a == null && b == null;
-  }
-  _hasCircularReference(obj, seen = new Set()) {
-    if (obj === null || typeof obj !== 'object') {
-      return false;
-    }
-    if (seen.has(obj)) {
-      return true;
-    }
-    seen.add(obj);
-    try {
-      if (Array.isArray(obj)) {
-        for (const item of obj) {
-          if (this._hasCircularReference(item, seen)) {
-            return true;
-          }
-        }
-      } else {
-        for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            if (this._hasCircularReference(obj[key], seen)) {
-              return true;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      this.facade.logger.warn(`Error checking circular reference: ${e.message}`);
-      return false;
-    }
-    seen.delete(obj);
-    return false;
-  }
-  evaluate(expressionString, context = {}) {
-    if (!expressionString || typeof expressionString !== 'string') {
-      throw new Error('Invalid expression: must be a non-empty string');
-    }
-    if (this._hasCircularReference(context)) {
-      throw new Error('Context contains circular references which cannot be safely evaluated');
-    }
-    this.facade.logger.debug(`Evaluating expression: "${expressionString}"`);
-    try {
-      const ast = this.facade.parser.parse(expressionString);
-      return this.evaluateAst(ast, context);
-    } catch (error) {
-      this.facade.logger.error(`Error evaluating expression: ${error.message}`);
-      throw error;
-    }
-  }
-  evaluateAst(ast, context = {}) {
-    if (!ast || typeof ast !== 'object') {
-      throw new Error('Invalid AST: must be a non-null object');
-    }
-    if (!ast.type || typeof ast.type !== 'string') {
-      throw new Error('Invalid AST: must have a type property');
-    }
-    if (context !== null && typeof context !== 'object') {
-      throw new Error('Invalid context: must be an object or null');
-    }
-    try {
-      const result = this.facade._evaluateNode(ast, context);
-      if (typeof result !== 'boolean') {
-        this.facade.logger.warn(`Expression does not return a boolean -> ${result}`);
-        return Boolean(result);
-      }
-      this.facade.logger.debug(`Evaluation result: ${result}`);
-      return result;
-    } catch (error) {
-      this.facade.logger.error(`Error evaluating AST: ${error.message}`);
-      throw error;
-    }
-  }
-  _parseValue(value) {
-    if (typeof value !== 'string') {
-      return value;
-    }
-    const trimmed = value.trim();
-    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
-      const num = parseFloat(trimmed);
-      if (!isNaN(num)) {
-        return num;
-      }
-    }
-    if (trimmed.toLowerCase() === 'true') {
-      return true;
-    }
-    if (trimmed.toLowerCase() === 'false') {
-      return false;
-    }
-    if (trimmed.toLowerCase() === 'null') {
-      return null;
-    }
-    return value;
-  }
-}
-;
 
-class OperatorHandler {
-  constructor(facade) {
-    this.facade = facade;
+
+
+
+
+
+
+
+
+
+
+  _preprocess(expressionString) {
+    let result = expressionString;
+
+
+    result = this._convertPlaceholders(result);
+
+
+    result = this._convertNumericPathSegments(result);
+
+
+    result = this._convertBetweenOperator(result);
+    return result;
   }
-  _evaluateBinaryExpression(node, context) {
-    const operator = node.operator;
-    if (operator === '&&') {
-      const left = this.facade._evaluateNode(node.left, context);
-      if (!left) {
-        return false;
-      }
-      return Boolean(this.facade._evaluateNode(node.right, context));
-    }
-    if (operator === '||') {
-      const left = this.facade._evaluateNode(node.left, context);
-      if (left) {
-        return true;
-      }
-      return Boolean(this.facade._evaluateNode(node.right, context));
-    }
-    const left = this.facade._evaluateNode(node.left, context);
-    const right = this.facade._evaluateNode(node.right, context);
-    switch (operator) {
-      case '==':
-        return this.facade._equals(left, right);
-      case '!=':
-        return !this.facade._equals(left, right);
-      case '>':
-        return this.facade._compare(left, right) > 0;
-      case '<':
-        return this.facade._compare(left, right) < 0;
-      case '>=':
-        return this.facade._compare(left, right) >= 0;
-      case '<=':
-        return this.facade._compare(left, right) <= 0;
-      case 'in':
-        if (!Array.isArray(right)) {
-          throw new Error(`"in" operator requires an array on the right side, received: ${typeof right}`);
-        }
-        if (right.length === 0) {
-          return false;
-        }
-        return right.some(elem => this.facade._equals(left, elem));
-      case 'match':
-        if (typeof left !== 'string') {
-          this.facade.logger.warn(`"match" operator applied to a non-string: ${typeof left}`);
-          return false;
-        }
-        if (typeof right !== 'string') {
-          throw new Error(`"match" operator requires a regex string on the right side, received: ${typeof right}`);
-        }
-        RegexUtils.validateSafety(right, this.facade.logger);
-        try {
-          const regex = new RegExp(right);
-          return regex.test(left);
-        } catch (error) {
-          throw new Error(`Invalid regex for "match" operator: ${right} (${error.message})`);
-        }
-      case '+':
-        if (typeof left === 'string' || typeof right === 'string') {
-          return String(left) + String(right);
-        }
-        if (typeof left === 'number' && !isNaN(left) && typeof right === 'number' && !isNaN(right)) {
-          return left + right;
-        }
-        throw new Error(`Invalid operands for + operator: ${typeof left} and ${typeof right}`);
-      case '-':
-        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
-          throw new Error(`Subtraction operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
-        }
-        return left - right;
-      case '*':
-        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
-          throw new Error(`Multiplication operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
-        }
-        return left * right;
-      case '/':
-        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
-          throw new Error(`Division operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
-        }
-        if (right === 0) {
-          throw new Error('Division by zero');
-        }
-        return left / right;
-      case '%':
-        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
-          throw new Error(`Modulo operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
-        }
-        if (right === 0) {
-          throw new Error('Modulo by zero');
-        }
-        return left % right;
-      default:
-        throw new Error(`Unsupported binary operator: ${operator}`);
-    }
+
+
+
+
+
+
+
+  _convertNumericPathSegments(expression) {
+    return expression.replace(/(?<=[a-zA-Z_\]])\.\s*(\d+)/g, '[$1]');
   }
-  _evaluateUnaryExpression(node, context) {
-    const operator = node.operator;
-    if (operator === '!') {
-      const argument = this.facade._evaluateNode(node.argument, context);
-      return !argument;
+
+
+
+
+
+
+
+  _convertPlaceholders(expression) {
+    let result = expression;
+    let hasChanges = true;
+    while (hasChanges) {
+      const before = result;
+
+
+      result = result.replace(/\{\{([^{}]+)\}\}/g, (match, content) => {
+        return content.trim();
+      });
+      hasChanges = result !== before;
     }
-    throw new Error(`Unsupported unary operator: ${operator}`);
+    return result;
   }
-  _compare(a, b) {
-    if (this.facade._areBothNullOrUndefined(a, b)) {
-      return 0;
-    }
-    if (a == null) {
-      return -1;
-    }
-    if (b == null) {
-      return 1;
-    }
-    if (typeof a === 'number' && isNaN(a)) {
-      throw new Error('Cannot compare NaN values');
-    }
-    if (typeof b === 'number' && isNaN(b)) {
-      throw new Error('Cannot compare NaN values');
-    }
-    const typeA = typeof a;
-    const typeB = typeof b;
-    const isDateA = a instanceof Date;
-    const isDateB = b instanceof Date;
-    if (isDateA && isDateB) {
-      return a.getTime() - b.getTime();
-    }
-    if (isDateA || isDateB) {
-      throw new Error(`[STRICT MODE] Cannot compare Date with ${isDateA ? typeB : typeA}. Both operands must be Dates.`);
-    }
-    if (typeA !== typeB) {
-      throw new Error(`[STRICT MODE] Cannot compare different types: ${typeA} (${JSON.stringify(a)}) vs ${typeB} (${JSON.stringify(b)}). Both operands must be the same type.`);
-    }
-    if (typeof a === 'number' && !isNaN(a) && typeof b === 'number' && !isNaN(b)) {
-      return a - b;
-    }
-    if (typeof a === 'string' && typeof b === 'string') {
-      return a.localeCompare(b);
-    }
-    if (typeof a === 'boolean' && typeof b === 'boolean') {
-      return a === b ? 0 : a ? 1 : -1;
-    }
-    throw new Error(`[STRICT MODE] Cannot compare values of type ${typeA}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
+
+
+
+
+
+
+
+  _convertBetweenOperator(expression) {
+    const betweenPattern = /\b(\S+(?:\s*\([^)]*\))?)\s+between\s+(\S+(?:\s*\([^)]*\))?)\s*,\s*(\S+(?:\s*\([^)]*\))?)\b/gi;
+    return expression.replace(betweenPattern, (match, value, min, max) => {
+      return `between(${value}, ${min}, ${max})`;
+    });
   }
-  _equals(a, b) {
-    if (a === b) {
-      return true;
+
+
+
+
+
+
+
+
+
+  _configureJSEP() {
+
+    jsep.addBinaryOp('in', 6);
+
+
+    jsep.addBinaryOp('match', 6);
+    this.logger.debug('JSEP configured with custom operators: in, match');
+  }
+
+
+
+
+
+
+
+
+  _buildAst(preprocessedExpression) {
+    try {
+      const ast = jsep(preprocessedExpression);
+      this.logger.debug(`AST generated successfully`);
+      return ast;
+    } catch (error) {
+      throw new Error(`Failed to parse expression: ${error.message}`);
     }
-    if (this.facade._areBothNullOrUndefined(a, b)) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return false;
-    }
-    if (typeof a === 'number' && isNaN(a)) {
-      return false;
-    }
-    if (typeof b === 'number' && isNaN(b)) {
-      return false;
-    }
-    const typeA = typeof a;
-    const typeB = typeof b;
-    if (typeA !== typeB) {
-      this.facade.logger.warn(`[STRICT MODE] Type mismatch in equality comparison: ${typeA} (${JSON.stringify(a)}) vs ${typeB} (${JSON.stringify(b)}). Returning false.`);
-      return false;
-    }
-    if (typeof a === 'string' && typeof b === 'string') {
-      return a === b;
-    }
-    return a === b;
   }
 }
 ;
@@ -26453,9 +25980,6 @@ function createBuiltInFunctions(evaluator) {
 
 
 
-
-
-
 class ExpressionEvaluatorService {
 
 
@@ -26485,99 +26009,6 @@ class ExpressionEvaluatorService {
     this.logger = logger;
     this.parser = parserService;
     this.placeholderService = placeholderService;
-
-
-
-
-    this._astEvaluator = new AstNodeEvaluator(this);
-    this._contextHandler = new EvaluationContextHandler(this);
-    this._operatorHandler = new OperatorHandler(this);
-  }
-
-
-
-
-  _evaluateNode(...args) {
-    return this._astEvaluator._evaluateNode(...args);
-  }
-
-
-  _evaluateIdentifier(...args) {
-    return this._astEvaluator._evaluateIdentifier(...args);
-  }
-
-
-  _evaluateMemberExpression(...args) {
-    return this._astEvaluator._evaluateMemberExpression(...args);
-  }
-
-
-  _buildPathFromMemberExpression(...args) {
-    return this._astEvaluator._buildPathFromMemberExpression(...args);
-  }
-
-
-  _evaluateLiteral(...args) {
-    return this._astEvaluator._evaluateLiteral(...args);
-  }
-
-
-  _evaluateArrayExpression(...args) {
-    return this._astEvaluator._evaluateArrayExpression(...args);
-  }
-
-
-  _evaluateCallExpression(...args) {
-    return this._astEvaluator._evaluateCallExpression(...args);
-  }
-
-
-
-
-  _areBothNullOrUndefined(...args) {
-    return this._contextHandler._areBothNullOrUndefined(...args);
-  }
-
-
-  _hasCircularReference(...args) {
-    return this._contextHandler._hasCircularReference(...args);
-  }
-
-
-  evaluate(...args) {
-    return this._contextHandler.evaluate(...args);
-  }
-
-
-  evaluateAst(...args) {
-    return this._contextHandler.evaluateAst(...args);
-  }
-
-
-  _parseValue(...args) {
-    return this._contextHandler._parseValue(...args);
-  }
-
-
-
-
-  _evaluateBinaryExpression(...args) {
-    return this._operatorHandler._evaluateBinaryExpression(...args);
-  }
-
-
-  _evaluateUnaryExpression(...args) {
-    return this._operatorHandler._evaluateUnaryExpression(...args);
-  }
-
-
-  _compare(...args) {
-    return this._operatorHandler._compare(...args);
-  }
-
-
-  _equals(...args) {
-    return this._operatorHandler._equals(...args);
   }
 
 
@@ -26585,6 +26016,148 @@ class ExpressionEvaluatorService {
 
 
 
+  evaluate(expressionString, context = {}) {
+    if (!expressionString || typeof expressionString !== 'string') {
+      throw new Error('Invalid expression: must be a non-empty string');
+    }
+    if (this._hasCircularReference(context)) {
+      throw new Error('Context contains circular references which cannot be safely evaluated');
+    }
+    this.logger.debug(`Evaluating expression: "${expressionString}"`);
+    try {
+      const ast = this.parser.parse(expressionString);
+      return this.evaluateAst(ast, context);
+    } catch (error) {
+      this.logger.error(`Error evaluating expression: ${error.message}`);
+      throw error;
+    }
+  }
+
+
+  evaluateAst(ast, context = {}) {
+    if (!ast || typeof ast !== 'object') {
+      throw new Error('Invalid AST: must be a non-null object');
+    }
+    if (!ast.type || typeof ast.type !== 'string') {
+      throw new Error('Invalid AST: must have a type property');
+    }
+    if (context !== null && typeof context !== 'object') {
+      throw new Error('Invalid context: must be an object or null');
+    }
+    try {
+      const result = this._evaluateNode(ast, context);
+      if (typeof result !== 'boolean') {
+        this.logger.warn(`Expression does not return a boolean -> ${result}`);
+        return Boolean(result);
+      }
+      this.logger.debug(`Evaluation result: ${result}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error evaluating AST: ${error.message}`);
+      throw error;
+    }
+  }
+
+
+
+
+
+
+  _evaluateNode(node, context) {
+    if (!node || typeof node !== 'object' || !node.type) {
+      throw new Error('Invalid AST node');
+    }
+    switch (node.type) {
+      case 'Identifier':
+        return this._evaluateIdentifier(node, context);
+      case 'MemberExpression':
+        return this._evaluateMemberExpression(node, context);
+      case 'Literal':
+        return this._evaluateLiteral(node, context);
+      case 'BinaryExpression':
+        return this._evaluateBinaryExpression(node, context);
+      case 'UnaryExpression':
+        return this._evaluateUnaryExpression(node, context);
+      case 'CallExpression':
+        return this._evaluateCallExpression(node, context);
+      case 'ArrayExpression':
+        return this._evaluateArrayExpression(node, context);
+      default:
+        throw new Error(`Unsupported AST node type: ${node.type}`);
+    }
+  }
+
+
+  _evaluateIdentifier(node, context) {
+    const identifierName = node.name;
+    const placeholderString = `{{${identifierName}}}`;
+    try {
+      const result = this.placeholderService.processString(placeholderString, context);
+      if (result === placeholderString) {
+        this.logger.warn(`Unresolved identifier: ${identifierName}`);
+        return undefined;
+      }
+      return this._parseValue(result);
+    } catch (error) {
+      this.logger.error(`Error resolving identifier ${identifierName}: ${error.message}`);
+      throw new Error(`Failed to resolve identifier ${identifierName}: ${error.message}`);
+    }
+  }
+
+
+  _evaluateMemberExpression(node, context) {
+    const path = this._buildPathFromMemberExpression(node);
+    const placeholderString = `{{${path}}}`;
+    try {
+      const result = this.placeholderService.processString(placeholderString, context);
+      if (result === placeholderString) {
+        this.logger.warn(`Unresolved member expression: ${path}`);
+        return undefined;
+      }
+      return this._parseValue(result);
+    } catch (error) {
+      this.logger.error(`Error resolving member expression ${path}: ${error.message}`);
+      throw new Error(`Failed to resolve member expression ${path}: ${error.message}`);
+    }
+  }
+
+
+  _buildPathFromMemberExpression(node) {
+    if (node.type === 'Identifier') {
+      return node.name;
+    }
+    if (node.type === 'MemberExpression') {
+      const objectPath = this._buildPathFromMemberExpression(node.object);
+      const propertyName = node.computed ? this._evaluateNode(node.property, {}) : node.property.name;
+      return `${objectPath}.${propertyName}`;
+    }
+    throw new Error(`Unexpected node type in member expression: ${node.type}`);
+  }
+
+
+  _evaluateLiteral(node, _context) {
+    return node.value;
+  }
+
+
+  _evaluateArrayExpression(node, context) {
+    return node.elements.map(elem => this._evaluateNode(elem, context));
+  }
+
+
+  _evaluateCallExpression(node, context) {
+    const funcName = node.callee.name || node.callee.value;
+    const args = node.arguments.map(arg => this._evaluateNode(arg, context));
+    const func = this._builtInFunctions[funcName];
+    if (!func) {
+      throw new Error(`Unknown function: ${funcName}`);
+    }
+    try {
+      return func.apply(this, args);
+    } catch (error) {
+      throw new Error(`Error in function ${funcName}(): ${error.message}`);
+    }
+  }
 
 
 
@@ -26593,6 +26166,70 @@ class ExpressionEvaluatorService {
 
 
 
+
+
+
+
+  _areBothNullOrUndefined(a, b) {
+    return a == null && b == null;
+  }
+
+
+  _hasCircularReference(obj, seen = new Set()) {
+    if (obj === null || typeof obj !== 'object') {
+      return false;
+    }
+    if (seen.has(obj)) {
+      return true;
+    }
+    seen.add(obj);
+    try {
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          if (this._hasCircularReference(item, seen)) {
+            return true;
+          }
+        }
+      } else {
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            if (this._hasCircularReference(obj[key], seen)) {
+              return true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      this.logger.warn(`Error checking circular reference: ${e.message}`);
+      return false;
+    }
+    seen.delete(obj);
+    return false;
+  }
+
+
+  _parseValue(value) {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const trimmed = value.trim();
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      if (!isNaN(num)) {
+        return num;
+      }
+    }
+    if (trimmed.toLowerCase() === 'true') {
+      return true;
+    }
+    if (trimmed.toLowerCase() === 'false') {
+      return false;
+    }
+    if (trimmed.toLowerCase() === 'null') {
+      return null;
+    }
+    return value;
+  }
 
 
 
@@ -26613,6 +26250,108 @@ class ExpressionEvaluatorService {
 
 
 
+  _evaluateBinaryExpression(node, context) {
+    const operator = node.operator;
+    if (operator === '&&') {
+      const left = this._evaluateNode(node.left, context);
+      if (!left) {
+        return false;
+      }
+      return Boolean(this._evaluateNode(node.right, context));
+    }
+    if (operator === '||') {
+      const left = this._evaluateNode(node.left, context);
+      if (left) {
+        return true;
+      }
+      return Boolean(this._evaluateNode(node.right, context));
+    }
+    const left = this._evaluateNode(node.left, context);
+    const right = this._evaluateNode(node.right, context);
+    switch (operator) {
+      case '==':
+        return this._equals(left, right);
+      case '!=':
+        return !this._equals(left, right);
+      case '>':
+        return this._compare(left, right) > 0;
+      case '<':
+        return this._compare(left, right) < 0;
+      case '>=':
+        return this._compare(left, right) >= 0;
+      case '<=':
+        return this._compare(left, right) <= 0;
+      case 'in':
+        if (!Array.isArray(right)) {
+          throw new Error(`"in" operator requires an array on the right side, received: ${typeof right}`);
+        }
+        if (right.length === 0) {
+          return false;
+        }
+        return right.some(elem => this._equals(left, elem));
+      case 'match':
+        if (typeof left !== 'string') {
+          this.logger.warn(`"match" operator applied to a non-string: ${typeof left}`);
+          return false;
+        }
+        if (typeof right !== 'string') {
+          throw new Error(`"match" operator requires a regex string on the right side, received: ${typeof right}`);
+        }
+        RegexUtils.validateSafety(right, this.logger);
+        try {
+          const regex = new RegExp(right);
+          return regex.test(left);
+        } catch (error) {
+          throw new Error(`Invalid regex for "match" operator: ${right} (${error.message})`);
+        }
+      case '+':
+        if (typeof left === 'string' || typeof right === 'string') {
+          return String(left) + String(right);
+        }
+        if (typeof left === 'number' && !isNaN(left) && typeof right === 'number' && !isNaN(right)) {
+          return left + right;
+        }
+        throw new Error(`Invalid operands for + operator: ${typeof left} and ${typeof right}`);
+      case '-':
+        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
+          throw new Error(`Subtraction operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
+        }
+        return left - right;
+      case '*':
+        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
+          throw new Error(`Multiplication operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
+        }
+        return left * right;
+      case '/':
+        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
+          throw new Error(`Division operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
+        }
+        if (right === 0) {
+          throw new Error('Division by zero');
+        }
+        return left / right;
+      case '%':
+        if (typeof left !== 'number' || isNaN(left) || typeof right !== 'number' || isNaN(right)) {
+          throw new Error(`Modulo operator requires numeric operands, received: ${typeof left} and ${typeof right}`);
+        }
+        if (right === 0) {
+          throw new Error('Modulo by zero');
+        }
+        return left % right;
+      default:
+        throw new Error(`Unsupported binary operator: ${operator}`);
+    }
+  }
+
+
+  _evaluateUnaryExpression(node, context) {
+    const operator = node.operator;
+    if (operator === '!') {
+      const argument = this._evaluateNode(node.argument, context);
+      return !argument;
+    }
+    throw new Error(`Unsupported unary operator: ${operator}`);
+  }
 
 
 
@@ -26635,6 +26374,77 @@ class ExpressionEvaluatorService {
 
 
 
+
+
+  _compare(a, b) {
+    if (this._areBothNullOrUndefined(a, b)) {
+      return 0;
+    }
+    if (a == null) {
+      return -1;
+    }
+    if (b == null) {
+      return 1;
+    }
+    if (typeof a === 'number' && isNaN(a)) {
+      throw new Error('Cannot compare NaN values');
+    }
+    if (typeof b === 'number' && isNaN(b)) {
+      throw new Error('Cannot compare NaN values');
+    }
+    const typeA = typeof a;
+    const typeB = typeof b;
+    const isDateA = a instanceof Date;
+    const isDateB = b instanceof Date;
+    if (isDateA && isDateB) {
+      return a.getTime() - b.getTime();
+    }
+    if (isDateA || isDateB) {
+      throw new Error(`[STRICT MODE] Cannot compare Date with ${isDateA ? typeB : typeA}. Both operands must be Dates.`);
+    }
+    if (typeA !== typeB) {
+      throw new Error(`[STRICT MODE] Cannot compare different types: ${typeA} (${JSON.stringify(a)}) vs ${typeB} (${JSON.stringify(b)}). Both operands must be the same type.`);
+    }
+    if (typeof a === 'number' && !isNaN(a) && typeof b === 'number' && !isNaN(b)) {
+      return a - b;
+    }
+    if (typeof a === 'string' && typeof b === 'string') {
+      return a.localeCompare(b);
+    }
+    if (typeof a === 'boolean' && typeof b === 'boolean') {
+      return a === b ? 0 : a ? 1 : -1;
+    }
+    throw new Error(`[STRICT MODE] Cannot compare values of type ${typeA}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
+  }
+
+
+  _equals(a, b) {
+    if (a === b) {
+      return true;
+    }
+    if (this._areBothNullOrUndefined(a, b)) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    if (typeof a === 'number' && isNaN(a)) {
+      return false;
+    }
+    if (typeof b === 'number' && isNaN(b)) {
+      return false;
+    }
+    const typeA = typeof a;
+    const typeB = typeof b;
+    if (typeA !== typeB) {
+      this.logger.warn(`[STRICT MODE] Type mismatch in equality comparison: ${typeA} (${JSON.stringify(a)}) vs ${typeB} (${JSON.stringify(b)}). Returning false.`);
+      return false;
+    }
+    if (typeof a === 'string' && typeof b === 'string') {
+      return a === b;
+    }
+    return a === b;
+  }
 }
 ;
 
@@ -26801,8 +26611,6 @@ class ExpressionEngineService {
   }
 }
 ;
-
-
 
 
 

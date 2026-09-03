@@ -11,7 +11,8 @@ import {
   createTeachingCouncilProjection,
   prepareCouncilAssignments,
   resolveEffectiveCouncil,
-  resolveTitolareCouncil
+  resolveTitolareCouncil,
+  scopeByArticolazione
 } from '../TeachingCouncilProjection';
 import { getClasseEntity } from '../techEntities';
 
@@ -91,12 +92,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
           ? 'SEPARATO_PRIMO'
           : 'SEPARATO_SECONDO'
         : null;
-    const scope = (docenti: DocenteCdcVM[]) =>
-      own === null
-        ? docenti
-        : docenti.filter(
-            (docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === own
-          );
+    const scope = (docenti: DocenteCdcVM[]) => scopeByArticolazione(docenti, own);
     const scopedElenco = scope(consiglio.elenco);
     const scopedTitolari = scope(consiglio.titolari);
     Object.assign(

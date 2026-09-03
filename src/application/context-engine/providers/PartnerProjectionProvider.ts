@@ -5,7 +5,7 @@ import type { ClasseProvider } from './ClasseProvider';
 import type { StudentiProvider } from './StudentiProvider';
 import type { TutorProvider } from './TutorProvider';
 import type { MovimentiProvider } from './MovimentiProvider';
-import { buildConsiglioClasseVm } from '../TeachingCouncilProjection';
+import { buildConsiglioClasseVm, scopeByArticolazione } from '../TeachingCouncilProjection';
 import { elencoVm } from '../mappers/elencoVm';
 
 /**
@@ -74,9 +74,7 @@ export class PartnerProjectionProvider implements ContextProvider {
     consiglio: ConsiglioClasseVM,
     tipo: 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO'
   ): DocenteCdcVM[] {
-    return consiglio.titolari.filter(
-      (docente) => docente.tipoArticolazione === 'COMUNE' || docente.tipoArticolazione === tipo
-    );
+    return scopeByArticolazione(consiglio.titolari, tipo);
   }
 
   private supplenzeScope(

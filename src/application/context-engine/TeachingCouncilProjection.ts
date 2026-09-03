@@ -362,6 +362,23 @@ export function buildSupplenzeAggregate(
 }
 
 /**
+ * Filters a collection of teachers by articulation type, returning all when
+ * no target articulation is specified, or only those with `tipoArticolazione ===
+ * 'COMUNE'` or `tipoArticolazione === tipo` when a target is given.
+ * Shared by `ConsiglioClasseProvider` and `PartnerProjectionProvider` to
+ * scope council membership to articulation-specific or whole-class views.
+ */
+export function scopeByArticolazione<
+  T extends { tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null }
+>(
+  docenti: T[],
+  tipo: 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null
+): T[] {
+  if (tipo === null) return docenti;
+  return docenti.filter((d) => d.tipoArticolazione === 'COMUNE' || d.tipoArticolazione === tipo);
+}
+
+/**
  * Derives the full `ConsiglioClasseVM` (partitions + counts + descriptions)
  * from an already-scoped `elenco`/`titolari` pair and their `supplenze`.
  * Shared by `ConsiglioClasseProvider` (whole-class or self-scoped-partner

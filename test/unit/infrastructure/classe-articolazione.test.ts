@@ -3,8 +3,6 @@ import { ArticolazioneConfig } from '../../../src/domain/value-objects/Articolaz
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
-import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
-import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 
@@ -74,21 +72,6 @@ test('getAllDocentiCDCArticolata merges parent + partners CDC, deduped', () => {
       .getAllDocentiCDCArticolata(classe('1F'))
       .map((d) => d.cognome)
   ).toEqual(['BIANCHI', 'ROSSI', 'VERDI']);
-});
-
-test('getDocentiPerMateriaArticolata resolves by student indirizzo', () => {
-  const r = repo();
-  const parent = classe('1F');
-  // FISI differs per partner: SCIENTIFICO→bianchi (1F-LSO), LSSA→verdi (1F-LSS)
-  expect(
-    r
-      .getDocentiPerMateriaArticolata(parent, MateriaId.of('FISI'), IndirizzoId.of('LSSA'))
-      .map((d) => d.id)
-  ).toEqual(['verdi@school.it']);
-  // no indirizzo → plain lookup on the given class (parent has no FISI column)
-  expect(r.getDocentiPerMateriaArticolata(parent, MateriaId.of('MATE')).map((d) => d.id)).toEqual([
-    'rossi@school.it'
-  ]);
 });
 
 test('filterPerGestioneArticolazione: COMPLETA excludes partners, keeps parent + standalone (default)', () => {

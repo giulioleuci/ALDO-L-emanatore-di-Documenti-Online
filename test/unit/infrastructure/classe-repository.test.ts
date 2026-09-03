@@ -6,7 +6,6 @@ import { fixtureTables, teachingSlotFixtureTables } from '../../../test/fixtures
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { MateriaSpecificaId } from '../../../src/domain/value-objects/MateriaSpecificaId';
-import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import {
   EntityNotFoundError,
   MateriaNotFoundError,
@@ -435,17 +434,6 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     expect(result.map((d) => d.id)).toEqual(r.getAllDocentiCDC(classe).map((d) => d.id));
   });
 
-  test('getDocentiPerMateriaArticolata returns [] when no group class matches the given indirizzo', () => {
-    const r = repo();
-    const classe = r.findById(ClasseId.of('1F'))!;
-    const result = r.getDocentiPerMateriaArticolata(
-      classe,
-      MateriaId.of('MATE'),
-      IndirizzoId.of('ITI')
-    );
-    expect(result).toEqual([]);
-  });
-
   test('getMaterieArticolazione returns null for a non-articulated class', () => {
     const r = repo();
     expect(r.getMaterieArticolazione(r.findById(ClasseId.of('5A'))!)).toBeNull();
@@ -643,11 +631,11 @@ describe('ClasseRepository — remaining uncovered branches (A16)', () => {
     const db = new FakeDatabase({
       ...fixtureTables(),
       CLASSI: fixtureTables().CLASSI.map((c) =>
-        c.ID === '5A' ? { ...c, IRC: 'bianchi@school.it,ghost@school.it' } : c
+        c.ID === '5A' ? { ...c, COORD: 'rossi@school.it,ghost@school.it' } : c
       )
     });
     const r = new ClasseRepository(db);
     const classe = r.findById(ClasseId.of('5A'))!;
-    expect(r.getDocentiIRC(classe).map((d) => d.id)).toEqual(['bianchi@school.it']);
+    expect(r.getCoordinatori(classe).map((d) => d.id)).toEqual(['rossi@school.it']);
   });
 });

@@ -83,11 +83,9 @@ test('getAllDocentiCDC dedupes and sorts by surname', () => {
   ).toEqual(['BIANCHI', 'ROSSI']);
 });
 
-test('IRC / coordinatori / ruoli (single + multi holder)', () => {
+test('coordinatori / ruoli (single + multi holder)', () => {
   const r = repo();
   const c5a = classe('5A');
-  expect(r.getDocentiIRC(c5a).map((d) => d.id)).toEqual(['bianchi@school.it']);
-  expect(r.getDocentiALT(c5a)).toEqual([]);
   expect(r.getCoordinatori(c5a).map((d) => d.id)).toEqual(['rossi@school.it']);
   expect(r.getRuolo(c5a, 'SEGRETARIO')!.id).toBe('rossi@school.it');
   expect(

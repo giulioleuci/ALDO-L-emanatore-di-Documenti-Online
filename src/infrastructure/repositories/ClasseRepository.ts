@@ -178,14 +178,6 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return this.loadDocentiFromEmails(emails).sort((a, b) => a.cognome.localeCompare(b.cognome));
   }
 
-  getDocentiIRC(classe: Classe): Docente[] {
-    return this.loadDocenti(this.rowOf(classe)[COL_CLASSI.IRC]);
-  }
-
-  getDocentiALT(classe: Classe): Docente[] {
-    return this.loadDocenti(this.rowOf(classe)[COL_CLASSI.ALT]);
-  }
-
   // --- Coordinators and special roles (ref 06 §3) ---
 
   getCoordinatori(classe: Classe): Docente[] {
@@ -312,26 +304,6 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
       }
     }
     return [...byEmail.values()].sort((a, b) => a.cognome.localeCompare(b.cognome));
-  }
-
-  /**
-   * Cattedra teacher resolved across an articulation: with no articolazione it
-   * is the plain getDocentiPerMateria; otherwise, when a student indirizzo is
-   * given, the group class of that indirizzo is used (ref 05 §3, 06 §3).
-   */
-  getDocentiPerMateriaArticolata(
-    classe: Classe,
-    materia: MateriaId,
-    indirizzoStudente?: IndirizzoId
-  ): Docente[] {
-    const config = this.getArticolazione(classe);
-    if (config === null || indirizzoStudente === undefined) {
-      return this.getDocentiPerMateria(classe, materia);
-    }
-    const target = this.getGruppoArticolazione(classe).find(
-      (c) => c.indirizzo === indirizzoStudente.value
-    );
-    return target === undefined ? [] : this.getDocentiPerMateria(target, materia);
   }
 
   /**

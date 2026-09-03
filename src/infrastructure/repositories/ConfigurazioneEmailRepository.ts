@@ -29,9 +29,4 @@ export class ConfigurazioneEmailRepository
   findByProcesso(processo: ProcessoInvio): ConfigurazioneEmail[] {
     return this.all().filter((c) => c.processo === processo);
   }
-
-  /** BoxConfig array parsed from BOX_CFG (ref 06 §9). */
-  getBoxes(config: ConfigurazioneEmail): Record<string, unknown>[] {
-    return config.getBoxes();
-  }
 }

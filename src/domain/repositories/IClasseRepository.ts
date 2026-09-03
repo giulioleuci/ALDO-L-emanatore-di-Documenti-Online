@@ -34,8 +34,6 @@ export interface IClasseRepository {
   /** Classes where the docente holds any teaching slot (MAIN/ITP/SPECIFICA), across all subjects. */
   findByDocenteAssegnato(docenteEmail: string): Classe[];
   getAllDocentiCDC(classe: Classe): Docente[];
-  getDocentiIRC(classe: Classe): Docente[];
-  getDocentiALT(classe: Classe): Docente[];
   getCoordinatori(classe: Classe): Docente[];
   getDocentiRuolo(classe: Classe, nomeRuolo: string): Docente[];
   /** Merges a RUOLI-based role across an articulated parent's partner classes; plain getDocentiRuolo otherwise. */

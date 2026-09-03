@@ -54044,293 +54044,6 @@ class TransformError extends ImportError {
 
 
 
-class TransformerMappingEngine {
-  constructor(facade) {
-    this.facade = facade;
-    this._logger = facade._logger;
-    this._expressionEngine = facade._expressionEngine;
-  }
-
-
-
-
-
-
-
-
-  _applyMapping(sourceRow, mapping) {
-    const mappedRow = {};
-    if (!mapping || Object.keys(mapping).length === 0) {
-      return {
-        ...sourceRow
-      };
-    }
-    for (const [sourceCol, destCol] of Object.entries(mapping)) {
-      if (Object.prototype.hasOwnProperty.call(sourceRow, sourceCol)) {
-        mappedRow[destCol] = sourceRow[sourceCol];
-      } else {
-        mappedRow[destCol] = null;
-        this._logger.warn(`[Transformer] Source column "${sourceCol}" not found in row, setting "${destCol}" to null`);
-      }
-    }
-    for (const [key, value] of Object.entries(sourceRow)) {
-      if (!Object.prototype.hasOwnProperty.call(mapping, key) && !Object.prototype.hasOwnProperty.call(mappedRow, key)) {
-        mappedRow[key] = value;
-      }
-    }
-    return mappedRow;
-  }
-
-
-
-
-
-
-
-
-
-  _applyCalculated(row, calculated) {
-    if (!calculated || Object.keys(calculated).length === 0) {
-      return row;
-    }
-    const result = {
-      ...row
-    };
-    const dependencies = this._buildDependencyGraph(calculated);
-    const executionOrder = this._topologicalSort(dependencies);
-    for (const fieldName of executionOrder) {
-      const expression = calculated[fieldName];
-      try {
-        result[fieldName] = this.facade._evaluateExpression(expression, result);
-      } catch (error) {
-        this._logger.error(`[Transformer] Failed to calculate field "${fieldName}": ${error.message}`);
-        throw new TransformError(`Failed to calculate field "${fieldName}": ${error.message}`, 'CALCULATED_FIELD_ERROR', {
-          fieldName,
-          expression,
-          row,
-          originalError: error.message
-        });
-      }
-    }
-    return result;
-  }
-  _buildDependencyGraph(calculated) {
-    const graph = new Map();
-    for (const [fieldName, expression] of Object.entries(calculated)) {
-      const dependencies = this.facade._extractPlaceholders(expression);
-      graph.set(fieldName, new Set(dependencies));
-    }
-    return graph;
-  }
-  _extractPlaceholders(expression) {
-    if (!expression || typeof expression !== 'string') return [];
-    const placeholders = [];
-    const regex = /\{\{([^}]+)\}\}/g;
-    let match;
-    while ((match = regex.exec(expression)) !== null) {
-      const placeholder = match[1].trim();
-      const fieldName = placeholder.split('.')[0].split('|')[0].trim();
-      if (fieldName && !placeholders.includes(fieldName)) {
-        placeholders.push(fieldName);
-      }
-    }
-    return placeholders;
-  }
-  _topologicalSort(graph) {
-    const sorted = [];
-    const visited = new Set();
-    const visiting = new Set();
-    const visit = (node, path = []) => {
-      if (visited.has(node)) return;
-      if (visiting.has(node)) {
-        const cycle = [...path, node].join(' -> ');
-        throw new TransformError(`Circular dependency detected in calculated fields: ${cycle}`, 'CIRCULAR_DEPENDENCY', {
-          cycle,
-          path: [...path, node]
-        });
-      }
-      visiting.add(node);
-      const dependencies = graph.get(node) || new Set();
-      for (const dep of dependencies) {
-        if (graph.has(dep)) visit(dep, [...path, node]);
-      }
-      visiting.delete(node);
-      visited.add(node);
-      sorted.push(node);
-    };
-    for (const node of graph.keys()) {
-      if (!visited.has(node)) visit(node, []);
-    }
-    return sorted;
-  }
-  _evaluateExpression(expression, context) {
-    if (!expression) return null;
-    if (this._expressionEngine) {
-      try {
-        return this._expressionEngine.evaluate(expression, context);
-      } catch (error) {
-        this._logger.warn(`[Transformer] ExpressionEngine evaluation failed, falling back to template substitution: ${error.message}`);
-      }
-    }
-    return this.facade._simpleTemplateSubstitution(expression, context);
-  }
-  _simpleTemplateSubstitution(template, context) {
-    return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-      const trimmedKey = key.trim();
-      const value = context[trimmedKey];
-      return value !== undefined && value !== null ? String(value) : '';
-    });
-  }
-}
-;
-
-
-
-
-
-class TransformerDateStyler {
-  constructor(facade) {
-    this._logger = facade._logger;
-    this._utils = facade._utils;
-  }
-
-
-
-
-
-
-
-
-  _formatDate(value, format) {
-    try {
-      const date = this._utils.parseDate(value);
-      if (!date) {
-        this._logger.warn(`[Transformer] Invalid date value: ${value}`);
-        return value;
-      }
-      return this._utils.formatDate(date, format);
-    } catch (error) {
-      this._logger.warn(`[Transformer] Date formatting failed for value "${value}": ${error.message}`);
-      return value;
-    }
-  }
-}
-;
-
-
-
-
-
-class TransformerNumberSanitizer {
-  constructor(facade) {
-    this.facade = facade;
-  }
-
-
-
-
-
-
-
-
-  _applyNormalization(row, normalization) {
-    const normalized = {
-      ...row
-    };
-
-
-    if (normalization.trim === true) {
-      for (const [key, value] of Object.entries(normalized)) {
-        if (typeof value === 'string') {
-          normalized[key] = value.trim();
-        }
-      }
-    }
-
-
-    if (normalization.dateColumns && Array.isArray(normalization.dateColumns)) {
-      const dateFormat = normalization.dateFormat || 'yyyy-MM-dd';
-      for (const col of normalization.dateColumns) {
-        if (normalized[col]) {
-          normalized[col] = this.facade._formatDate(normalized[col], dateFormat);
-        }
-      }
-    }
-
-
-    if (normalization.uppercaseColumns && Array.isArray(normalization.uppercaseColumns)) {
-      for (const col of normalization.uppercaseColumns) {
-        if (normalized[col] && typeof normalized[col] === 'string') {
-          normalized[col] = normalized[col].toUpperCase();
-        }
-      }
-    }
-
-
-    if (normalization.lowercaseColumns && Array.isArray(normalization.lowercaseColumns)) {
-      for (const col of normalization.lowercaseColumns) {
-        if (normalized[col] && typeof normalized[col] === 'string') {
-          normalized[col] = normalized[col].toLowerCase();
-        }
-      }
-    }
-
-
-    return normalized;
-  }
-}
-;
-
-
-
-
-
-class TransformerValidationGuard {
-  constructor(facade) {
-    this.facade = facade;
-    this._logger = facade._logger;
-  }
-
-
-
-
-
-
-
-
-
-  _applyValidation(row, validation, rowIndex) {
-    if (!validation) {
-      return true;
-    }
-    const rules = Array.isArray(validation) ? validation : [validation];
-    for (const rule of rules) {
-      try {
-        const isValid = this.facade._evaluateExpression(rule, row);
-        if (isValid === false) {
-          this._logger.warn(`[Transformer] Row ${rowIndex} rejected by validation rule: "${rule}"`);
-          return false;
-        }
-      } catch (error) {
-        this._logger.error(`[Transformer] Validation rule evaluation failed for row ${rowIndex}: ${error.message}`);
-        return false;
-      }
-    }
-    return true;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -54342,32 +54055,10 @@ class Transformer {
 
 
 
-
   constructor(logger = console, expressionEngine = null, utils = null) {
     this._logger = logger;
     this._expressionEngine = expressionEngine;
     this._utils = utils || new MyUtilsService();
-
-
-    this._mappingEngine = new TransformerMappingEngine(this);
-    this._dateStyler = new TransformerDateStyler(this);
-    this._numberSanitizer = new TransformerNumberSanitizer(this);
-    this._validationGuard = new TransformerValidationGuard(this);
-
-
-    Delegation.delegateMethods(this, [{
-      manager: this._mappingEngine,
-      methods: ['_applyMapping', '_applyCalculated', '_buildDependencyGraph', '_extractPlaceholders', '_topologicalSort', '_evaluateExpression', '_simpleTemplateSubstitution']
-    }, {
-      manager: this._dateStyler,
-      methods: ['_formatDate']
-    }, {
-      manager: this._numberSanitizer,
-      methods: ['_applyNormalization']
-    }, {
-      manager: this._validationGuard,
-      methods: ['_applyValidation']
-    }]);
   }
 
 
@@ -54454,6 +54145,269 @@ class Transformer {
         originalError: error.message
       });
     }
+  }
+
+
+
+
+
+
+
+
+  _applyMapping(sourceRow, mapping) {
+    const mappedRow = {};
+    if (!mapping || Object.keys(mapping).length === 0) {
+      return {
+        ...sourceRow
+      };
+    }
+    for (const [sourceCol, destCol] of Object.entries(mapping)) {
+      if (Object.prototype.hasOwnProperty.call(sourceRow, sourceCol)) {
+        mappedRow[destCol] = sourceRow[sourceCol];
+      } else {
+        mappedRow[destCol] = null;
+        this._logger.warn(`[Transformer] Source column "${sourceCol}" not found in row, setting "${destCol}" to null`);
+      }
+    }
+    for (const [key, value] of Object.entries(sourceRow)) {
+      if (!Object.prototype.hasOwnProperty.call(mapping, key) && !Object.prototype.hasOwnProperty.call(mappedRow, key)) {
+        mappedRow[key] = value;
+      }
+    }
+    return mappedRow;
+  }
+
+
+
+
+
+
+
+
+
+  _applyCalculated(row, calculated) {
+    if (!calculated || Object.keys(calculated).length === 0) {
+      return row;
+    }
+    const result = {
+      ...row
+    };
+    const dependencies = this._buildDependencyGraph(calculated);
+    const executionOrder = this._topologicalSort(dependencies);
+    for (const fieldName of executionOrder) {
+      const expression = calculated[fieldName];
+      try {
+        result[fieldName] = this._evaluateExpression(expression, result);
+      } catch (error) {
+        this._logger.error(`[Transformer] Failed to calculate field "${fieldName}": ${error.message}`);
+        throw new TransformError(`Failed to calculate field "${fieldName}": ${error.message}`, 'CALCULATED_FIELD_ERROR', {
+          fieldName,
+          expression,
+          row,
+          originalError: error.message
+        });
+      }
+    }
+    return result;
+  }
+
+
+
+
+  _buildDependencyGraph(calculated) {
+    const graph = new Map();
+    for (const [fieldName, expression] of Object.entries(calculated)) {
+      const dependencies = this._extractPlaceholders(expression);
+      graph.set(fieldName, new Set(dependencies));
+    }
+    return graph;
+  }
+
+
+
+
+  _extractPlaceholders(expression) {
+    if (!expression || typeof expression !== 'string') {
+      return [];
+    }
+    const placeholders = [];
+    const regex = /\{\{([^}]+)\}\}/g;
+    let match;
+    while ((match = regex.exec(expression)) !== null) {
+      const placeholder = match[1].trim();
+      const fieldName = placeholder.split('.')[0].split('|')[0].trim();
+      if (fieldName && !placeholders.includes(fieldName)) {
+        placeholders.push(fieldName);
+      }
+    }
+    return placeholders;
+  }
+
+
+
+
+  _topologicalSort(graph) {
+    const sorted = [];
+    const visited = new Set();
+    const visiting = new Set();
+    const visit = (node, path = []) => {
+      if (visited.has(node)) {
+        return;
+      }
+      if (visiting.has(node)) {
+        const cycle = [...path, node].join(' -> ');
+        throw new TransformError(`Circular dependency detected in calculated fields: ${cycle}`, 'CIRCULAR_DEPENDENCY', {
+          cycle,
+          path: [...path, node]
+        });
+      }
+      visiting.add(node);
+      const dependencies = graph.get(node) || new Set();
+      for (const dep of dependencies) {
+        if (graph.has(dep)) {
+          visit(dep, [...path, node]);
+        }
+      }
+      visiting.delete(node);
+      visited.add(node);
+      sorted.push(node);
+    };
+    for (const node of graph.keys()) {
+      if (!visited.has(node)) {
+        visit(node, []);
+      }
+    }
+    return sorted;
+  }
+
+
+
+
+  _evaluateExpression(expression, context) {
+    if (!expression) {
+      return null;
+    }
+    if (this._expressionEngine) {
+      try {
+        return this._expressionEngine.evaluate(expression, context);
+      } catch (error) {
+        this._logger.warn(`[Transformer] ExpressionEngine evaluation failed, falling back to template substitution: ${error.message}`);
+      }
+    }
+    return this._simpleTemplateSubstitution(expression, context);
+  }
+
+
+
+
+  _simpleTemplateSubstitution(template, context) {
+    return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+      const trimmedKey = key.trim();
+      const value = context[trimmedKey];
+      return value !== undefined && value !== null ? String(value) : '';
+    });
+  }
+
+
+
+
+
+
+
+
+  _formatDate(value, format) {
+    try {
+      const date = this._utils.parseDate(value);
+      if (!date) {
+        this._logger.warn(`[Transformer] Invalid date value: ${value}`);
+        return value;
+      }
+      return this._utils.formatDate(date, format);
+    } catch (error) {
+      this._logger.warn(`[Transformer] Date formatting failed for value "${value}": ${error.message}`);
+      return value;
+    }
+  }
+
+
+
+
+
+
+
+
+  _applyNormalization(row, normalization) {
+    const normalized = {
+      ...row
+    };
+
+
+    if (normalization.trim === true) {
+      for (const [key, value] of Object.entries(normalized)) {
+        if (typeof value === 'string') {
+          normalized[key] = value.trim();
+        }
+      }
+    }
+
+
+    if (normalization.dateColumns && Array.isArray(normalization.dateColumns)) {
+      const dateFormat = normalization.dateFormat || 'yyyy-MM-dd';
+      for (const col of normalization.dateColumns) {
+        if (normalized[col]) {
+          normalized[col] = this._formatDate(normalized[col], dateFormat);
+        }
+      }
+    }
+
+
+    if (normalization.uppercaseColumns && Array.isArray(normalization.uppercaseColumns)) {
+      for (const col of normalization.uppercaseColumns) {
+        if (normalized[col] && typeof normalized[col] === 'string') {
+          normalized[col] = normalized[col].toUpperCase();
+        }
+      }
+    }
+
+
+    if (normalization.lowercaseColumns && Array.isArray(normalization.lowercaseColumns)) {
+      for (const col of normalization.lowercaseColumns) {
+        if (normalized[col] && typeof normalized[col] === 'string') {
+          normalized[col] = normalized[col].toLowerCase();
+        }
+      }
+    }
+
+
+    return normalized;
+  }
+
+
+
+
+
+
+
+
+
+  _applyValidation(row, validation, rowIndex) {
+    if (!validation) {
+      return true;
+    }
+    const rules = Array.isArray(validation) ? validation : [validation];
+    for (const rule of rules) {
+      try {
+        const isValid = this._evaluateExpression(rule, row);
+        if (isValid === false) {
+          this._logger.warn(`[Transformer] Row ${rowIndex} rejected by validation rule: "${rule}"`);
+          return false;
+        }
+      } catch (error) {
+        this._logger.error(`[Transformer] Validation rule evaluation failed for row ${rowIndex}: ${error.message}`);
+        return false;
+      }
+    }
+    return true;
   }
 }
 
@@ -55448,58 +55402,6 @@ class ImportPipelineExecutor {
 }
 ;
 
-class ImportStrategyRegistry {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  registerCustomSource(name, strategyClass) {
-    this.facade.logger.debug(`[ImportEngine] Registering custom source strategy: ${name}`);
-    this.facade._sourceFactory.registerStrategy(name, strategyClass);
-
-
-
-    ImportConfiguration.registerSourceType(name);
-  }
-  getAvailableSourceTypes() {
-    return this.facade._sourceFactory.getAvailableStrategies();
-  }
-  getConfigSummary() {
-    return {
-      sourceStrategies: this.facade._sourceFactory.getAvailableStrategies(),
-      hasExpressionEngine: !!this.facade._transformer._expressionEngine,
-      hasExceptionService: !!this.facade._exceptionService,
-      hasMonitor: !!this.facade._monitor
-    };
-  }
-}
-;
-
-class ImportRecipeValidator {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  validateRecipe(recipe) {
-    try {
-      const config = new ImportConfiguration(recipe, this.facade.logger);
-      const summary = config.getSummary();
-      return {
-        valid: true,
-        summary,
-        message: 'Recipe is valid'
-      };
-    } catch (error) {
-      return {
-        valid: false,
-        error: error.message,
-        code: error.code || 'VALIDATION_ERROR'
-      };
-    }
-  }
-}
-;
-
-
-
 
 
 
@@ -55545,17 +55447,66 @@ class ImportEngine {
 
 
     this._pipelineExecutor = new ImportPipelineExecutor(this);
-    this._strategyRegistry = new ImportStrategyRegistry(this);
-    this._recipeValidator = new ImportRecipeValidator(this);
     const pipelineMethods = ['runImport', '_executePipeline', '_executeExtract', '_executeTransform', '_executeLoad', '_generateDryRunLoadResult', 'startImport', 'runImportChunk'];
     pipelineMethods.forEach(m => {
       this[m] = this._pipelineExecutor[m].bind(this._pipelineExecutor);
     });
-    const registryMethods = ['registerCustomSource', 'getAvailableSourceTypes', 'getConfigSummary'];
-    registryMethods.forEach(m => {
-      this[m] = this._strategyRegistry[m].bind(this._strategyRegistry);
-    });
-    this.validateRecipe = this._recipeValidator.validateRecipe.bind(this._recipeValidator);
+  }
+
+
+
+
+
+
+  registerCustomSource(name, strategyClass) {
+    this.logger.debug(`[ImportEngine] Registering custom source strategy: ${name}`);
+    this._sourceFactory.registerStrategy(name, strategyClass);
+
+
+
+    ImportConfiguration.registerSourceType(name);
+  }
+
+
+
+
+  getAvailableSourceTypes() {
+    return this._sourceFactory.getAvailableStrategies();
+  }
+
+
+
+
+  getConfigSummary() {
+    return {
+      sourceStrategies: this._sourceFactory.getAvailableStrategies(),
+      hasExpressionEngine: !!this._transformer._expressionEngine,
+      hasExceptionService: !!this._exceptionService,
+      hasMonitor: !!this._monitor
+    };
+  }
+
+
+
+
+
+
+  validateRecipe(recipe) {
+    try {
+      const config = new ImportConfiguration(recipe, this.logger);
+      const summary = config.getSummary();
+      return {
+        valid: true,
+        summary,
+        message: 'Recipe is valid'
+      };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error.message,
+        code: error.code || 'VALIDATION_ERROR'
+      };
+    }
   }
 
 
@@ -55575,477 +55526,6 @@ class ImportEngine {
 }
 
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

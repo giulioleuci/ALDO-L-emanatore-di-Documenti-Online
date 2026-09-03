@@ -28,7 +28,6 @@ import { ClasseRepository } from '../../../../src/infrastructure/repositories/Cl
 import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { MasterSheetRepository } from '../../../../src/infrastructure/repositories/MasterSheetRepository';
 import { LogEmailRepository } from '../../../../src/infrastructure/repositories/LogEmailRepository';
-import { LogDocumentoRepository } from '../../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';

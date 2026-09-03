@@ -354,10 +354,21 @@ export function verifyProtectedRangeScenario(
 export function registerE2eScenarioChecks(
   runner: TestRunner,
   container: ServiceContainer,
-  sample: SharedTestDatabase & { testMode: boolean }
+  sample: SharedTestDatabase & { testMode: boolean },
+  selected?: Set<string>
 ): void {
+  const add = (
+    name: string,
+    artifactUrl: string | undefined,
+    callback: () => void | OnlineTestSkippedOutcome
+  ): void => {
+    if (selected === undefined || selected.size === 0 || selected.has(name)) {
+      runner.add(name, artifactUrl, callback);
+    }
+  };
+
   if (!sample.testMode) {
-    runner.add('E2E scenarios: MASTER.TEST_MODE guard', sample.sampleSpreadsheetUrl, () => {
+    add('E2E scenarios: MASTER.TEST_MODE guard', sample.sampleSpreadsheetUrl, () => {
       throw new ValidationError(
         'E2E scenario checks refuse to run: sample MASTER.TEST_MODE is not true (would risk sending real emails).'
       );
@@ -486,7 +497,7 @@ export function registerE2eScenarioChecks(
     }
   };
 
-  runner.add(
+  add(
     'E2E scenario 3: piani personalizzati con modello condizionale, dedupe e storico per sottotipo',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -681,7 +692,7 @@ export function registerE2eScenarioChecks(
   // Every entry-point class needs both doc types (ALL_CLASSI_E2E doc comment):
   // each of the 4 coordinatori and each of the 6 CdC gets its own email
   // (scenari 4/5), so a class missing a doc gets an email with an empty box.
-  runner.add(
+  add(
     'E2E scenario 1: genera verbale consiglio di classe (tutte le classi)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -702,7 +713,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 2: genera foglio valutazione condotta (tutte le classi)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -721,7 +732,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 8: genera riepilogo classe (tutte le classi)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -749,7 +760,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -782,7 +793,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 10: genera documento complesso (placeholder loops/filtri, tutte le classi)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -822,7 +833,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 10b: genera documento complesso classe articolata (3C)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -875,7 +886,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 10c: genera riepiloghi firme CDC per classi ARTICOLATA',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -931,7 +942,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 11: verifica protezione colonne materie (SHEET_CON_MATERIE_E_PERMESSI)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -973,7 +984,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E prerequisite: genera piano di lavoro per gli invii ai coordinatori',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -991,7 +1002,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 12: invia piano di lavoro (file) + cartella verbali (folder) ai coordinatori (TEST_MODE)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -1061,7 +1072,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 13: invia allegato statico non rappresentato da box (TEST_MODE)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -1100,7 +1111,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 4: invia verbale ai coordinatori (TEST_MODE)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -1117,7 +1128,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 5: invia scheda condotta a tutto il CdC (TEST_MODE)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -1129,7 +1140,7 @@ export function registerE2eScenarioChecks(
     }
   );
 
-  runner.add(
+  add(
     'E2E scenario 6: invia comunicazione carenza alle famiglie (TEST_MODE, 2 studenti)',
     sample.sampleSpreadsheetUrl,
     () => {
@@ -1146,12 +1157,6 @@ export function registerE2eScenarioChecks(
 
 export type E2eDocumentScenarioScope = 'standard' | 'articolati';
 export type LegacyE2eScenarioScope = 'email' | 'import';
-
-interface CapturedScenarioCheck {
-  name: string;
-  artifactUrl: string | undefined;
-  callback: () => void | OnlineTestSkippedOutcome;
-}
 
 const STANDARD_DOCUMENT_SCENARIO_NAMES = new Set([
   'E2E scenario 3: piani personalizzati con modello condizionale, dedupe e storico per sottotipo',
@@ -1180,36 +1185,8 @@ const IMPORT_SCENARIO_NAMES = new Set([
   'E2E scenario 9: importa ore ASL/PCTO da sheet (3rd-year only)'
 ]);
 
-function captureExistingScenarioChecks(
-  container: ServiceContainer,
-  sample: SharedTestDatabase & { testMode: boolean }
-): CapturedScenarioCheck[] {
-  const captured: CapturedScenarioCheck[] = [];
-  const captureRunner = {
-    add(
-      name: string,
-      artifactUrl: string | undefined,
-      callback: () => void | OnlineTestSkippedOutcome
-    ): void {
-      captured.push({ name, artifactUrl, callback });
-    }
-  };
-  registerE2eScenarioChecks(captureRunner as TestRunner, container, sample);
-  return captured;
-}
-
-function replayNamedChecks(
-  runner: TestRunner,
-  checks: CapturedScenarioCheck[],
-  allowed: Set<string>
-): void {
-  for (const check of checks) {
-    if (allowed.has(check.name)) runner.add(check.name, check.artifactUrl, check.callback);
-  }
-}
-
 /**
- * Replays the existing green document callbacks under a narrower scenario boundary.
+ * Registers the existing document check callbacks under a narrower scenario boundary.
  * The legacy registrar remains the source of truth until its unrelated mail/import
  * scenarios are migrated to their dedicated groups.
  */
@@ -1221,10 +1198,10 @@ export function registerE2eDocumentScenarioChecks(
 ): void {
   const allowed =
     scope === 'standard' ? STANDARD_DOCUMENT_SCENARIO_NAMES : ARTICOLATI_DOCUMENT_SCENARIO_NAMES;
-  replayNamedChecks(runner, captureExistingScenarioChecks(container, sample), allowed);
+  registerE2eScenarioChecks(runner, container, sample, allowed);
 }
 
-/** Replays legacy E2E checks into their actual transitional aggregate group. */
+/** Registers legacy E2E checks into their actual transitional aggregate group. */
 export function registerE2eLegacyScenarioChecks(
   runner: TestRunner,
   container: ServiceContainer,
@@ -1232,7 +1209,7 @@ export function registerE2eLegacyScenarioChecks(
   scope: LegacyE2eScenarioScope
 ): void {
   const allowed = scope === 'email' ? EMAIL_SCENARIO_NAMES : IMPORT_SCENARIO_NAMES;
-  replayNamedChecks(runner, captureExistingScenarioChecks(container, sample), allowed);
+  registerE2eScenarioChecks(runner, container, sample, allowed);
 }
 
 function csvContains(raw: unknown, value: string): boolean {

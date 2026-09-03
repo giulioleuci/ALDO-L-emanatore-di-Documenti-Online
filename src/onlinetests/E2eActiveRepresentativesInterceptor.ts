@@ -11,7 +11,7 @@ type E2eStudentRepresentative = {
  * representative identity fields only; Scenario 10 additionally needs a stable
  * boolean for its supported `filter:'active',true` list expression.
  */
-class E2eActiveRepresentativesInterceptor implements LibContextInterceptor {
+export const e2eActiveRepresentativesInterceptor: LibContextInterceptor = {
   intercept(name: string, data: unknown, context: unknown): unknown {
     if (name !== 'rappresentanti') return data;
     const representatives = (context as Cdu).focus.classe?.rappresentanti?.studenti.elenco;
@@ -22,6 +22,4 @@ class E2eActiveRepresentativesInterceptor implements LibContextInterceptor {
     }
     return data;
   }
-}
-
-export const e2eActiveRepresentativesInterceptor = new E2eActiveRepresentativesInterceptor();
+};

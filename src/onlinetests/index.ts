@@ -1075,7 +1075,8 @@ function executePersistedStoricoChecks(
   return runner.report();
 }
 
-function executePersistedArticolazioneChecks(
+function executePersistedHistoricalChecks(
+  register: (runner: TestRunner, container: ServiceContainer, sample: SharedTestDatabase) => void,
   overrides: Partial<E2eTestDeps> = {}
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
@@ -1113,49 +1114,19 @@ function executePersistedArticolazioneChecks(
     staticAttachmentFileId: ''
   };
   const runner = new TestRunner();
-  registerArticolazioneChecks(runner, container, sample);
+  register(runner, container, sample);
   return runner.report();
+}
+
+function executePersistedArticolazioneChecks(
+  overrides: Partial<E2eTestDeps> = {}
+): OnlineTestReport {
+  return executePersistedHistoricalChecks(registerArticolazioneChecks, overrides);
 }
 
 /** Runs the dotted-materia/ITP scenario against the persisted shared fixture. */
 export function executeITPeMateriePuntate(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
-  const properties = overrides.properties ?? new ScriptPropertiesFacade();
-  const masterSpreadsheetId = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
-  if (masterSpreadsheetId === undefined || masterSpreadsheetId === '') {
-    throw new ConfigurationError('Dataset online non disponibile: esegui prima creaDatiMockDrive.');
-  }
-  const master = readCurrentMasterConfig(masterSpreadsheetId);
-  if (master.historicalSpreadsheetIds.length < 2) {
-    throw new ConfigurationError(
-      'Dataset online incompleto: servono due database storici; riesegui creaDatiMockDrive.'
-    );
-  }
-  const resetAldoFn = overrides.resetAldo ?? resetAldo;
-  const initAldoFn = overrides.initAldo ?? initAldo;
-  const clock = overrides.clock ?? ((): Date => new Date());
-
-  resetAldoFn();
-  const container = initAldoFn(clock(), properties, masterSpreadsheetId, true);
-  container
-    .get<ContextBuilder>('contextBuilder')
-    .registerInterceptor(e2eActiveRepresentativesInterceptor);
-  const sample: SharedTestDatabase = {
-    masterSpreadsheetId,
-    sampleSpreadsheetId: master.idSpreadsheet,
-    sampleSpreadsheetUrl: `https://docs.google.com/spreadsheets/d/${master.idSpreadsheet}`,
-    sampleFolderUrl: `https://drive.google.com/drive/folders/${master.idCartellaRoot}`,
-    priorSampleSpreadsheetId: master.historicalSpreadsheetIds[0]!,
-    priorSampleSpreadsheetUrl: master.historicalSpreadsheetUrls[0]!,
-    priorSampleSpreadsheetId2: master.historicalSpreadsheetIds[1]!,
-    priorSampleSpreadsheetUrl2: master.historicalSpreadsheetUrls[1]!,
-    logFoldFolderUrl: '',
-    jobRunnerDocConfigId: '',
-    masterTestMode: master.testMode,
-    staticAttachmentFileId: ''
-  };
-  const runner = new TestRunner();
-  registerItpDottedChecks(runner, container, sample);
-  return runner.report();
+  return executePersistedHistoricalChecks(registerItpDottedChecks, overrides);
 }
 
 export function executeRecuperoStoricoAlunno(

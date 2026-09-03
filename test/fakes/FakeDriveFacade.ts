@@ -35,9 +35,6 @@ export class FakeDriveFacade implements IDriveFacade {
     this.copies.push({ templateId, name, folderId, fileId });
     return fileId;
   }
-  setPermission(fileId: string, email: string, permesso: string): void {
-    this.permissions.push({ fileId, email, permesso });
-  }
   setPermissions(grants: PermissionGrant[]): void {
     this.setPermissionsCallCount++;
     for (const { targetId, email, permesso } of grants) {

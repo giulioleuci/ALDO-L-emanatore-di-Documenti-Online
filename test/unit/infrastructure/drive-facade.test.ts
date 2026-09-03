@@ -149,29 +149,6 @@ test('copyFile delegates to copyFiles and returns the new file id', () => {
   expect(fileId).toMatch(/^id_/);
 });
 
-test('setPermission maps PermessoACL to the Drive v3 role and shares via PermissionService', () => {
-  const { drive, perms } = fakeDrive();
-  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
-  facade.setPermission('file_1', 'rossi@school.it', 'SCRITTURA');
-  expect(perms.shareWithUsers).toHaveBeenCalledWith(
-    ['file_1'],
-    [{ type: 'user', role: 'writer', email: 'rossi@school.it' }],
-    { sendNotificationEmail: false }
-  );
-  facade.setPermission('file_1', 'bianchi@school.it', 'LETTURA');
-  expect(perms.shareWithUsers).toHaveBeenLastCalledWith(
-    ['file_1'],
-    [{ type: 'user', role: 'reader', email: 'bianchi@school.it' }],
-    { sendNotificationEmail: false }
-  );
-  facade.setPermission('file_1', 'verdi@school.it', 'COMMENTO');
-  expect(perms.shareWithUsers).toHaveBeenLastCalledWith(
-    ['file_1'],
-    [{ type: 'user', role: 'commenter', email: 'verdi@school.it' }],
-    { sendNotificationEmail: false }
-  );
-});
-
 test('setPermissions groups grants by targetId+permesso into one shareWithUsers call per target/role pair, deduping emails but never merging targets', () => {
   const { drive, perms } = fakeDrive();
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
@@ -308,20 +285,6 @@ describe('countFilesInFolder', () => {
       expect.stringContaining("'folder123' in parents")
     );
     expect(drive.searchFiles).toHaveBeenCalledWith(expect.stringContaining('trashed=false'));
-  });
-});
-
-describe('DriveServiceFacade — setPermission default role', () => {
-  test('defaults to reader for an unrecognized permesso value', () => {
-    const { drive } = fakeDrive();
-    const perms = { shareWithUsers: jest.fn() };
-    const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
-    facade.setPermission('FILE1', 'a@b.com', 'RUOLO_INESISTENTE');
-    expect(perms.shareWithUsers).toHaveBeenCalledWith(
-      ['FILE1'],
-      [{ type: 'user', role: 'reader', email: 'a@b.com' }],
-      { sendNotificationEmail: false }
-    );
   });
 });
 

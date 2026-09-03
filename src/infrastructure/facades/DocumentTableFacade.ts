@@ -9,8 +9,6 @@ export interface IDocumentTableFacade {
   findTablePlaceholders(fileId: string): TablePlaceholder[];
   /** Strips the literal marker text before generic `{{...}}` substitution runs, so it isn't mistaken for a CDU path. */
   removeText(fileId: string, marker: string): void;
-  /** Appends a table at the END of the document body (see `insertTableAtMarker` for positional insertion). */
-  appendTable(fileId: string, data: string[][], options?: { headerRow?: boolean }): void;
   /**
    * Inserts a table immediately after the paragraph containing `marker`, so it lands exactly
    * where the `{{TABELLA:...}}` tag sat rather than at the document's end. Does not remove the
@@ -58,13 +56,6 @@ export class DocumentTableFacade implements IDocumentTableFacade {
     const result = this.documents.document(fileId).replaceText(marker, '').execute();
     if (!result.success)
       throw new Error(`DocumentTableFacade.removeText(${fileId}): ${String(result.error)}`);
-  }
-
-  appendTable(fileId: string, data: string[][], options: { headerRow?: boolean } = {}): void {
-    if (data.length === 0) return;
-    const result = this.documents.document(fileId).createTable(data, options).execute();
-    if (!result.success)
-      throw new Error(`DocumentTableFacade.appendTable(${fileId}): ${String(result.error)}`);
   }
 
   insertTableAtMarker(

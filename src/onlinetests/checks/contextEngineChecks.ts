@@ -479,9 +479,6 @@ export function registerEffectiveAssignmentConsumerChecks(
     () => {
       const permissions: string[] = [];
       const drive = {
-        setPermission: (_fileId: string, email: string): void => {
-          permissions.push(email);
-        },
         setPermissions: (grants: Array<{ email: string }>): void => {
           permissions.push(...grants.map((g) => g.email));
         }
@@ -711,9 +708,6 @@ export function registerEffectiveAssignmentConsumerChecks(
 
         const permissions: string[] = [];
         const drive = {
-          setPermission: (_fileId: string, email: string): void => {
-            permissions.push(email);
-          },
           setPermissions: (grants: Array<{ email: string }>): void => {
             permissions.push(...grants.map((g) => g.email));
           }

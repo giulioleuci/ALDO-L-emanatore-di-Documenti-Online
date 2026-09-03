@@ -83,18 +83,6 @@ describe('DocumentTableFacade (10 §9)', () => {
     ]);
   });
 
-  test('appendTable creates a table and skips the call entirely for empty data', () => {
-    const documents = new FakeDocumentService();
-    const facade = new DocumentTableFacade(documents);
-
-    facade.appendTable('doc1', [['a', 'b']], { headerRow: true });
-    facade.appendTable('doc1', []);
-
-    expect(documents.builders['doc1']?.ops).toEqual([
-      { type: 'createTable', args: [[['a', 'b']], { headerRow: true }] }
-    ]);
-  });
-
   test('insertTableAtMarker delegates directly to DocumentService.insertTableAtMarker (imperative call, bypasses the op-queue)', () => {
     const documents = new FakeDocumentService();
     const facade = new DocumentTableFacade(documents);

@@ -8,7 +8,6 @@ import type { Cdu } from '../../../src/application/context-engine/Cdu';
 
 class FakeDocumentTableFacade implements IDocumentTableFacade {
   removed: Array<{ fileId: string; marker: string }> = [];
-  appended: Array<{ fileId: string; data: string[][]; options?: { headerRow?: boolean } }> = [];
   insertedAtMarker: Array<{
     fileId: string;
     marker: string;
@@ -28,9 +27,6 @@ class FakeDocumentTableFacade implements IDocumentTableFacade {
     this.removed.push({ fileId, marker });
     this.callOrder.push(`remove:${marker}`);
     this.documentText = this.documentText.replace(marker, '');
-  }
-  appendTable(fileId: string, data: string[][], options?: { headerRow?: boolean }): void {
-    this.appended.push({ fileId, data, options });
   }
   flush(): void {
     this.callOrder.push('flush');
@@ -143,7 +139,6 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     expect(tables.removed).toEqual([{ fileId: 'doc1', marker: '{{TABELLA:sheet_1}}' }]);
     // Insertion (which relies on findText locating the marker) must happen before removal.
     expect(tables.callOrder).toEqual(['insert:{{TABELLA:sheet_1}}', 'flush', 'remove:{{TABELLA:sheet_1}}']);
-    expect(tables.appended).toEqual([]);
     expect(templates.contextFor('doc1')).toEqual(cdu);
   });
 
@@ -202,7 +197,6 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
       findTablePlaceholders: () => [{ marker: '{{TABELLA:s1}}', sheetFileId: 's1' }],
       insertTableAtMarker: () => calls.push('insert'),
       removeText: () => calls.push('remove'),
-      appendTable: () => calls.push('append'),
       flush: () => calls.push('flush')
     };
     const templates = { processDocument: () => calls.push('render') } as never;

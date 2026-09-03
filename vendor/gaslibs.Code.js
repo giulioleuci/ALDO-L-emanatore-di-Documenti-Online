@@ -2042,7 +2042,6 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject_0, {
   EntityMapper: () => (EntityMapper),
   EntityNotFoundException: () => (EntityNotFoundException),
   EqualityFieldSpec: () => (EqualityFieldSpec),
-  ExpressionSpecification: () => (ExpressionSpecification),
   FieldSpecification: () => (FieldSpecification),
   FunctionSpecification: () => (FunctionSpecification),
   HydrationService: () => (HydrationService),
@@ -2052,7 +2051,6 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject_0, {
   QueryTranslator: () => (QueryTranslator),
   Repository: () => (Repository),
   Specification: () => (Specification),
-  SpecificationBuilder: () => (SpecificationBuilder),
   SpecificationException: () => (SpecificationException),
   ValidationException: () => (ValidationException),
   ValueObject: () => (ValueObject),
@@ -2072,7 +2070,6 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject, {
   EntityMapper: () => (EntityMapper),
   EntityNotFoundException: () => (EntityNotFoundException),
   EqualityFieldSpec: () => (EqualityFieldSpec),
-  ExpressionSpecification: () => (ExpressionSpecification),
   FieldSpecification: () => (FieldSpecification),
   FunctionSpecification: () => (FunctionSpecification),
   HydrationService: () => (HydrationService),
@@ -2082,7 +2079,6 @@ __webpack_require__.d(DomainRepositoryLib_namespaceObject, {
   QueryTranslator: () => (QueryTranslator),
   Repository: () => (Repository),
   Specification: () => (Specification),
-  SpecificationBuilder: () => (SpecificationBuilder),
   SpecificationException: () => (SpecificationException),
   ValidationException: () => (ValidationException),
   ValueObject: () => (ValueObject),
@@ -56109,7 +56105,6 @@ class Entity {
     this._updatedAt = this._parseDate(data.updatedAt) || new Date();
     this._dirtyFields = new Set();
     this._originalData = {};
-    this._domainEvents = [];
     this._validationErrors = [];
     this._dynamicColumns = {};
   }
@@ -56288,31 +56283,6 @@ class Entity {
   setDynamicColumn(column, value) {
     this._dynamicColumns[column] = value;
     this.markDirty(column);
-  }
-
-
-
-
-
-
-  addDomainEvent(event) {
-    this._domainEvents.push(event);
-  }
-
-
-
-
-
-
-  getDomainEvents() {
-    return [...this._domainEvents];
-  }
-
-
-
-
-  clearDomainEvents() {
-    this._domainEvents = [];
   }
 
 
@@ -57093,14 +57063,6 @@ class EntityMapper {
   configureJsonExpansion(config) {
     this._mappingConfig.addJsonExpansionMapping(config);
     return this;
-  }
-
-
-
-
-
-  getMappingConfiguration() {
-    return this._mappingConfig;
   }
 
 
@@ -58743,142 +58705,6 @@ class FieldSpecification extends Specification {
 
 
 
-class ExpressionSpecification extends Specification {
-
-
-
-
-
-
-  constructor(expression, expressionEngine) {
-    super();
-
-
-    if (!expression || typeof expression !== 'string' || expression.trim() === '') {
-      throw new SpecificationException('Expression must be a non-empty string', 'ExpressionSpecification');
-    }
-
-
-    if (!expressionEngine) {
-      throw new SpecificationException('Expression engine is required', 'ExpressionSpecification');
-    }
-    this.expression = expression;
-    this.expressionEngine = expressionEngine;
-  }
-
-
-
-
-
-
-
-  _getExpressionEngine() {
-    if (this.expressionEngine) {
-      return this.expressionEngine;
-    }
-
-
-    try {
-      const {
-        ExpressionEngineService
-      } = require('@GasExpressionEngineLib');
-      this.expressionEngine = new ExpressionEngineService({
-        logger: console
-      });
-      return this.expressionEngine;
-    } catch (error) {
-      throw new SpecificationException('GasExpressionEngineLib is required for ExpressionSpecification but could not be loaded', 'ExpressionSpecification', {
-        error: error.message
-      });
-    }
-  }
-
-
-
-
-
-
-
-  isSatisfiedBy(entity) {
-    try {
-      const engine = this._getExpressionEngine();
-      return engine.evaluate(this.expression, entity);
-    } catch (error) {
-      throw new SpecificationException(`Failed to evaluate expression: ${error.message}`, 'ExpressionSpecification', {
-        expression: this.expression,
-        error: error.message
-      });
-    }
-  }
-
-
-
-
-
-
-
-  toQuery(queryBuilder) {
-
-    const simplePattern = /\{\{(\w+)\}\}\s*(==|!=|>|<|>=|<=)\s*(.+)/;
-    const match = this.expression.match(simplePattern);
-    if (!match) {
-      throw new SpecificationException('Complex expressions cannot be translated to database queries', 'ExpressionSpecification', {
-        expression: this.expression
-      });
-    }
-    const [, field, operator, valueStr] = match;
-    let value = valueStr.trim();
-
-
-    if (value.startsWith("'") && value.endsWith("'")) {
-      value = value.slice(1, -1);
-    } else if (!isNaN(value)) {
-      value = Number(value);
-    } else if (value === 'true') {
-      value = true;
-    } else if (value === 'false') {
-      value = false;
-    }
-
-
-    const operatorMap = {
-      '==': '=',
-      '!=': '!=',
-      '>': '>',
-      '<': '<',
-      '>=': '>=',
-      '<=': '<='
-    };
-    return queryBuilder.where(field, operatorMap[operator], value);
-  }
-
-
-
-
-
-  canBeTranslatedToQuery() {
-    const simplePattern = /\{\{(\w+)\}\}\s*(==|!=|>|<|>=|<=)\s*(.+)/;
-    return simplePattern.test(this.expression);
-  }
-
-
-
-
-
-  toString() {
-    return `Expression(${this.expression})`;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
 class FunctionSpecification extends Specification {
 
 
@@ -58933,248 +58759,6 @@ class FunctionSpecification extends Specification {
 
   toString() {
     return this.description ? `Function(${this.description})` : 'Function(custom predicate)';
-  }
-}
-;
-
-
-
-
-
-
-class SpecificationBuilder {
-
-
-
-
-  constructor() {
-    this._specifications = [];
-    this._currentOperator = 'AND';
-  }
-
-
-
-
-
-
-
-  static create() {
-    return new SpecificationBuilder();
-  }
-
-
-
-
-
-
-
-
-  static field(field) {
-    return new FieldSpecificationBuilder(field, new SpecificationBuilder());
-  }
-
-
-
-
-
-
-  field(field) {
-    return new FieldSpecificationBuilder(field, this);
-  }
-
-
-
-
-
-  and() {
-    this._currentOperator = 'AND';
-    return this;
-  }
-
-
-
-
-
-  or() {
-    this._currentOperator = 'OR';
-    return this;
-  }
-
-
-
-
-
-
-  _addSpecification(specification) {
-    this._specifications.push({
-      spec: specification,
-      operator: this._currentOperator
-    });
-  }
-
-
-
-
-
-
-  build() {
-    if (this._specifications.length === 0) {
-      throw new Error('Cannot build specification - no specifications added');
-    }
-    if (this._specifications.length === 1) {
-      return this._specifications[0].spec;
-    }
-
-
-    let result = this._specifications[0].spec;
-    for (let i = 1; i < this._specifications.length; i++) {
-      const item = this._specifications[i];
-      if (item.operator === 'AND') {
-        result = result.and(item.spec);
-      } else {
-        result = result.or(item.spec);
-      }
-    }
-    return result;
-  }
-}
-
-
-
-
-
-
-class FieldSpecificationBuilder {
-
-
-
-
-
-  constructor(field, parentBuilder) {
-    this._field = field;
-    this._parentBuilder = parentBuilder;
-  }
-
-
-
-
-
-
-  equals(value) {
-    const spec = new FieldSpecification(this._field, 'equals', value);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  notEquals(value) {
-    const spec = new FieldSpecification(this._field, 'notEquals', value);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  greaterThan(value) {
-    const spec = new FieldSpecification(this._field, 'greaterThan', value);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  lessThan(value) {
-    const spec = new FieldSpecification(this._field, 'lessThan', value);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  greaterThanOrEqual(value) {
-    const spec = new FieldSpecification(this._field, 'greaterThanOrEqual', value);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  lessThanOrEqual(value) {
-    const spec = new FieldSpecification(this._field, 'lessThanOrEqual', value);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  in(values) {
-    const spec = new FieldSpecification(this._field, 'in', values);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  notIn(values) {
-    const spec = new FieldSpecification(this._field, 'notIn', values);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-
-  between(min, max) {
-    const spec = new FieldSpecification(this._field, 'between', min, max);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  like(pattern) {
-    const spec = new FieldSpecification(this._field, 'like', pattern);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
-  }
-
-
-
-
-
-
-  notLike(pattern) {
-    const spec = new FieldSpecification(this._field, 'notLike', pattern);
-    this._parentBuilder._addSpecification(spec);
-    return this._parentBuilder;
   }
 }
 ;
@@ -59256,8 +58840,6 @@ class InvariantViolationException extends DomainException {
   }
 }
 ;
-
-
 
 
 

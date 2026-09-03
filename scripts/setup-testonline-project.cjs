@@ -88,7 +88,7 @@ function createProject() {
 
     console.log(`Created. scriptId=${scratchClasp.scriptId} masterSpreadsheetId=${masterSpreadsheetId}`);
     console.log(
-      'Next steps: npm run push:online, then open the MASTER sheet -> Extensions -> Apps Script -> ' +
+      'Next steps: npm run push:testing, then open the MASTER sheet -> Extensions -> Apps Script -> ' +
         'Run -> impostaMasterSpreadsheetId (once).'
     );
     return true;

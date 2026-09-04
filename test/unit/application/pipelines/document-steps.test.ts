@@ -273,7 +273,10 @@ describe('document pipeline operational log details', () => {
       logger,
       db,
       new FakeTemplateEngine(),
-      new Date('2026-07-05T10:00:00Z')
+      new Date('2026-07-05T10:00:00Z'),
+      new FakeDriveFacade(),
+      { risolvi: jest.fn(() => []) },
+      { idsMatching: jest.fn(() => []) } as unknown as StoricoDocumentiService
     ).execute(ctx);
 
     expect(logDetails(result)).toEqual({
@@ -1051,7 +1054,10 @@ test('PostProcessStep runs shared POST_PROCESSO actions (10 §12)', () => {
     logger,
     db,
     new FakeTemplateEngine(),
-    new Date('2026-07-05T10:00:00Z')
+    new Date('2026-07-05T10:00:00Z'),
+    new FakeDriveFacade(),
+    { risolvi: jest.fn(() => []) },
+    { idsMatching: jest.fn(() => []) } as unknown as StoricoDocumentiService
   ).execute(ctx);
   expect(db.tables['LOG_DOCS']!.getByPK('file_9')!['STATO']).toBe('ARCHIVIATO');
   expect(ctx.get('postProcessUpdated')).toBe(1);
@@ -1157,7 +1163,15 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
 test('PostProcessStep skipped when POST_PROCESSO is null', () => {
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db); // fixture CD1 has POST_PROCESSO null
-  new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx);
+  new PostProcessStep(
+    logger,
+    db,
+    new FakeTemplateEngine(),
+    new Date(),
+    new FakeDriveFacade(),
+    { risolvi: jest.fn(() => []) },
+    { idsMatching: jest.fn(() => []) } as unknown as StoricoDocumentiService
+  ).execute(ctx);
   expect(ctx.get('postProcessUpdated')).toBeNull();
 });
 
@@ -1165,7 +1179,15 @@ test("PostProcessStep skipped when POST_PROCESSO is an empty string (regression:
   const db = new FakeDatabase(fixtureTables());
   const ctx = baseCtx(db);
   ctx.set('config', { ...fixtureTables().CONF_DOC[0]!, POST_PROCESSO: '' });
-  new PostProcessStep(logger, db, new FakeTemplateEngine(), new Date()).execute(ctx);
+  new PostProcessStep(
+    logger,
+    db,
+    new FakeTemplateEngine(),
+    new Date(),
+    new FakeDriveFacade(),
+    { risolvi: jest.fn(() => []) },
+    { idsMatching: jest.fn(() => []) } as unknown as StoricoDocumentiService
+  ).execute(ctx);
   expect(ctx.get('postProcessUpdated')).toBeNull();
 });
 

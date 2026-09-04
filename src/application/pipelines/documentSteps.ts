@@ -542,9 +542,9 @@ export class PostProcessStep extends Step {
     private readonly db: IDatabase & PostProcessDb,
     private readonly templates: ITemplateEngine,
     private readonly now: Date,
-    private readonly drive?: IDriveFacade,
-    private readonly roles?: IRoleResolver,
-    private readonly storico?: StoricoDocumentiService
+    private readonly drive: IDriveFacade,
+    private readonly roles: IRoleResolver,
+    private readonly storico: StoricoDocumentiService
   ) {
     super('PostProcess', logger, {
       shouldExecuteCondition: (ctx) =>
@@ -590,11 +590,11 @@ export class PostProcessStep extends Step {
     if (typeof profondita !== 'number' || !Number.isFinite(profondita) || profondita <= 0) {
       throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.profondita deve essere positiva');
     }
-    if (this.drive === undefined || this.roles === undefined || this.storico === undefined) {
-      this.logger.warn('POST_PROCESSO: AGGIORNA_PERMESSI_STORICI non disponibile — saltata');
-      return 0;
-    }
     const newFileId = ctx.get<string>('newFileId');
+    // Defensive only: idsMatching() scans historical years via findAnniStorici(), which
+    // slices off index 0 (the current year — see MasterSheetRepository.findAnniStorici),
+    // so newFileId (always written to the current year's LOG_DOCS) can never appear here
+    // in production. Kept as a guard in case that exclusion mechanism ever changes.
     const ids = this.storico
       .idsMatching({ ...criteri, ID_GEN: target }, profondita)
       .filter((id) => id !== newFileId);
@@ -615,6 +615,8 @@ export class PostProcessStep extends Step {
   protected override _getLogDetails(ctx: PipelineContext): { Actions: string[]; Updated: number } {
     return {
       Actions: ctx.get<string[]>('postProcessActions') ?? [],
+      // Mixes "rows updated" (DB actions) and "files granted" (AGGIORNA_PERMESSI_STORICI)
+      // into one number — see postProcessActions.ts's `updated` counter.
       Updated: ctx.get<number>('postProcessUpdated') ?? 0
     };
   }

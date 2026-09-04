@@ -60405,155 +60405,8 @@ class RoutingResult {
 
 
 
-
-
-  static allPrimary(actors) {
-    return new RoutingResult({
-      primary: actors
-    });
-  }
-
-
-
-
-
   isEmpty() {
     return this.primary.length === 0 && this.cc.length === 0 && this.bcc.length === 0;
-  }
-
-
-
-
-
-  getTotalRecipientCount() {
-    return this.primary.length + this.cc.length + this.bcc.length;
-  }
-
-
-
-
-
-  getAllRecipients() {
-    return [...this.primary, ...this.cc, ...this.bcc];
-  }
-
-
-
-
-
-  getUniqueRecipientIds() {
-    const ids = new Set();
-    this.getAllRecipients().forEach(r => {
-      if (r && r.id) {
-        ids.add(r.id);
-      }
-    });
-    return Array.from(ids);
-  }
-
-
-
-
-
-
-  containsRecipient(actorId) {
-    return this.getAllRecipients().some(r => r && r.id === actorId);
-  }
-
-
-
-
-
-
-  getRecipientCategory(actorId) {
-    if (this.primary.some(r => r && r.id === actorId)) {
-      return 'primary';
-    }
-    if (this.cc.some(r => r && r.id === actorId)) {
-      return 'cc';
-    }
-    if (this.bcc.some(r => r && r.id === actorId)) {
-      return 'bcc';
-    }
-    return null;
-  }
-
-
-
-
-
-
-
-  withPrimary(actor) {
-    return new RoutingResult({
-      primary: [...this.primary, actor],
-      cc: this.cc,
-      bcc: this.bcc,
-      metadata: this.metadata
-    });
-  }
-
-
-
-
-
-
-
-  withCC(actor) {
-    return new RoutingResult({
-      primary: this.primary,
-      cc: [...this.cc, actor],
-      bcc: this.bcc,
-      metadata: this.metadata
-    });
-  }
-
-
-
-
-
-
-
-  withBCC(actor) {
-    return new RoutingResult({
-      primary: this.primary,
-      cc: this.cc,
-      bcc: [...this.bcc, actor],
-      metadata: this.metadata
-    });
-  }
-
-
-
-
-
-
-
-  merge(other) {
-    if (!(other instanceof RoutingResult)) {
-      return this;
-    }
-
-
-    const dedup = (arr1, arr2) => {
-      const seen = new Set();
-      return [...arr1, ...arr2].filter(actor => {
-        if (!actor || !actor.id || seen.has(actor.id)) {
-          return false;
-        }
-        seen.add(actor.id);
-        return true;
-      });
-    };
-    return new RoutingResult({
-      primary: dedup(this.primary, other.primary),
-      cc: dedup(this.cc, other.cc),
-      bcc: dedup(this.bcc, other.bcc),
-      metadata: {
-        ...this.metadata,
-        ...other.metadata
-      }
-    });
   }
 
 
@@ -60823,15 +60676,6 @@ class RoutingResolver {
 
 
     if (delegationChain && !delegationChain.isEmpty()) {
-
-      delegationChain.forEach(delegation => {
-
-
-      });
-
-
-      const actorIds = delegationChain.getAllActorIds();
-
 
 
 
@@ -61216,39 +61060,8 @@ class InMemoryDelegationSource extends DelegationSource {
 
 
 
-
-
-  _isValidDelegation(delegation, asOfDate) {
-    if (typeof delegation.isValidAt === 'function') {
-      return delegation.isValidAt(asOfDate);
-    }
-
-
-    if (delegation.isActive === false) {
-      return false;
-    }
-    if (delegation.validFrom && asOfDate < new Date(delegation.validFrom)) {
-      return false;
-    }
-    if (delegation.validTo && asOfDate > new Date(delegation.validTo)) {
-      return false;
-    }
-    return true;
-  }
-
-
-
-
-
-
-
   getActiveDelegationsForPrincipal(principalId, asOfDate = new Date()) {
-    return this._delegations.filter(delegation => {
-      if (delegation.principalId !== principalId) {
-        return false;
-      }
-      return this._isValidDelegation(delegation, asOfDate);
-    });
+    return this._delegations.filter(delegation => delegation.principalId === principalId && delegation.isValidAt(asOfDate));
   }
 
 
@@ -61258,12 +61071,7 @@ class InMemoryDelegationSource extends DelegationSource {
 
 
   getActiveDelegationsForDelegate(delegateId, asOfDate = new Date()) {
-    return this._delegations.filter(delegation => {
-      if (delegation.delegateId !== delegateId) {
-        return false;
-      }
-      return this._isValidDelegation(delegation, asOfDate);
-    });
+    return this._delegations.filter(delegation => delegation.delegateId === delegateId && delegation.isValidAt(asOfDate));
   }
 
 
@@ -61286,26 +61094,7 @@ class InMemoryDelegationSource extends DelegationSource {
       const delegations = this.getActiveDelegationsForPrincipal(currentActorId, asOfDate);
 
 
-      const applicableDelegation = delegations.find(delegation => {
-
-        if (typeof delegation.appliesToRole === 'function') {
-          if (!delegation.appliesToRole(roleId)) {
-            return false;
-          }
-        } else {
-          var _delegation$roleIds;
-
-          if (delegation.roleIds !== '*' && !((_delegation$roleIds = delegation.roleIds) !== null && _delegation$roleIds !== void 0 && _delegation$roleIds.includes(roleId))) {
-            return false;
-          }
-        }
-
-
-        if (typeof delegation.appliesToScope === 'function') {
-          return delegation.appliesToScope(scope);
-        }
-        return true;
-      });
+      const applicableDelegation = delegations.find(delegation => delegation.appliesToRole(roleId) && delegation.appliesToScope(scope));
       if (applicableDelegation) {
         chain.push(applicableDelegation);
         currentActorId = applicableDelegation.delegateId;
@@ -61435,53 +61224,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
 
 
   getAssignmentsForRole(roleId, scope, asOfDate = new Date()) {
-    return this._assignments.filter(assignment => {
-      var _assignment$scope;
-
-      if (assignment.roleId !== roleId) {
-        return false;
-      }
-
-
-      if (typeof assignment.isValidAt === 'function') {
-        if (!assignment.isValidAt(asOfDate)) {
-          return false;
-        }
-      } else {
-
-        if (assignment.isActive === false) {
-          return false;
-        }
-        if (assignment.validFrom && asOfDate < new Date(assignment.validFrom)) {
-          return false;
-        }
-        if (assignment.validTo && asOfDate > new Date(assignment.validTo)) {
-          return false;
-        }
-      }
-
-
-      if (typeof ((_assignment$scope = assignment.scope) === null || _assignment$scope === void 0 ? void 0 : _assignment$scope.contains) === 'function') {
-        return assignment.scope.contains(scope) || assignment.scope.matches(scope);
-      }
-
-
-      if (assignment.scope) {
-        const assignmentScope = assignment.scope;
-        const queryScope = scope;
-
-
-        if (assignmentScope.type === 'GLOBAL') {
-          return true;
-        }
-
-
-        if (assignmentScope.type === queryScope.type) {
-          return assignmentScope.value === queryScope.value;
-        }
-      }
-      return true;
-    });
+    return this._assignments.filter(assignment => assignment.matches(roleId, scope, asOfDate));
   }
 
 
@@ -61492,28 +61235,7 @@ class InMemoryAssignmentSource extends AssignmentSource {
 
 
   getAssignmentsForActor(actorId, asOfDate = new Date()) {
-    return this._assignments.filter(assignment => {
-      if (assignment.actorId !== actorId) {
-        return false;
-      }
-
-
-      if (typeof assignment.isValidAt === 'function') {
-        return assignment.isValidAt(asOfDate);
-      }
-
-
-      if (assignment.isActive === false) {
-        return false;
-      }
-      if (assignment.validFrom && asOfDate < new Date(assignment.validFrom)) {
-        return false;
-      }
-      if (assignment.validTo && asOfDate > new Date(assignment.validTo)) {
-        return false;
-      }
-      return true;
-    });
+    return this._assignments.filter(assignment => assignment.actorId === actorId && assignment.isValidAt(asOfDate));
   }
 
 
@@ -61795,7 +61517,6 @@ class CompositeAssignmentSource extends EffectiveAssignmentSource {
 
 
 
-
 class RoleResolver {
 
 
@@ -61840,12 +61561,6 @@ class RoleResolver {
 
 
     this._throwOnNotFound = options.throwOnNotFound === true;
-
-
-    this._delegationValidator = new DelegationValidator({
-      maxDelegationDepth: this._maxDelegationDepth,
-      logger: this._logger
-    });
 
 
     this._routingResolver = new RoutingResolver({

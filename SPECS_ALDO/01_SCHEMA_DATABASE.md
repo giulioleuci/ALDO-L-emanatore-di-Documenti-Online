@@ -388,17 +388,23 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 | `INSERISCI_TIMESTAMP` | Scrive data/ora corrente in `tab.col` dove i criteri corrispondono |
 | `AGGIORNA_CAMPO`      | Imposta `tab.col = val` dove i criteri corrispondono               |
 | `AGGIORNA_STATO_DOC`  | Cambia `LOG_DOCS.STATO` di un documento già registrato             |
-| `AGGIORNA_PERMESSI_STORICI` | Aggiorna i permessi dei documenti storici in `LOG_DOCS` per il target indicato |
+| `AGGIORNA_PERMESSI_STORICI` | Aggiorna i permessi Drive dei documenti storici individuati tramite `LOG_DOCS` per il target indicato |
 
 `AGGIORNA_PERMESSI_STORICI` usa implicitamente `ID_GEN=target`; `target` è un
 `ID` di `CONF_DOC`. `criteri` è un oggetto opzionale che supporta cinque
 campi: `UTENTI`, `CLASSI`, `MATERIE` (corrispondenza CSV — vero se il valore
 compare come elemento esatto nella colonna `LOG_DOCS` corrispondente, mai come
-substring) e `TIPO`, `SOTTOTIPO` (uguaglianza esatta contro `LOG_DOCS.TIPO` /
-`LOG_DOCS.SOTTOTIPO`). `profondita` è obbligatoria e deve essere un intero
-positivo. L'errore dell'azione è non critico: viene registrato e non
-interrompe la generazione del documento, e il documento/record `LOG_DOCS` già
-registrato non viene eliminato né annullato (rollback).
+substring; un valore risolto vuoto non corrisponde mai a nessun documento) e
+`TIPO`, `SOTTOTIPO` (uguaglianza esatta contro `LOG_DOCS.TIPO` /
+`LOG_DOCS.SOTTOTIPO`). A differenza degli altri criteri POST_PROCESSO, qui
+`UTENTI`/`CLASSI`/`MATERIE` sono confrontati come valore singolo, non come
+intersezione CSV. Oltre a `criteri`, l'azione richiede anche `ruolo` (nome di
+ruolo risolto tramite `RisolutoreRuoliService`, es. `COORDINATORI`, contro
+l'email dei cui titolari vengono applicati i permessi) e `permesso` (livello
+ACL: `LETTURA`, `SCRITTURA` o `COMMENTO`). `profondita` è obbligatoria e deve
+essere un intero positivo. L'errore dell'azione è non critico: viene
+registrato e non interrompe la generazione del documento, e il documento/record
+`LOG_DOCS` già registrato non viene eliminato né annullato (rollback).
 
 ---
 

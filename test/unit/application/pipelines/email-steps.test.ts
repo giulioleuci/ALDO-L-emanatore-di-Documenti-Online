@@ -293,6 +293,7 @@ describe('email pipeline operational log details', () => {
 
   test('publishes CDU personalized-plan counts split by notification state', () => {
     const tables = fixtureTables();
+    (tables['PIANI'] as Row[]).push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_DSA', PARAMETRI: null });
     (tables['LOG_DOCS'] as Row[]).push(
       {
         ID: 'piano-nuovo',

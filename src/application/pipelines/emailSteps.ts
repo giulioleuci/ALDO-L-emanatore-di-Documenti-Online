@@ -454,7 +454,7 @@ export class RenderBoxesStep extends Step {
     return {
       Boxes: (ctx.get<string[]>('boxHtmlOrdered') ?? []).length,
       PianiCdu: piani.length,
-      PianiDaNotificare: piani.filter((piano) => !piano.isNotificato).length,
+      PianiDaNotificare: piani.filter((piano) => piano.hasId && !piano.isNotificato).length,
       PianiNotificati: piani.filter((piano) => piano.isNotificato).length
     };
   }

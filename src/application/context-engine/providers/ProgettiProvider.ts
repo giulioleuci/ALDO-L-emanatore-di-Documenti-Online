@@ -22,8 +22,8 @@ export class ProgettiProvider implements ContextProvider {
         ore: progetto.getOre(),
         oreAsl: progetto.getOreASLEffettive(),
         isAsl: progetto.isASL(),
-        isOrientamento: progetto.tipo === 'ORIENTAMENTO',
-        isAltro: progetto.tipo === 'ALTRO'
+        isOrientamento: String(progetto.tipo) === 'ORIENTAMENTO',
+        isAltro: String(progetto.tipo) === 'ALTRO'
       }))
       .sort((a, b) => a.nome.localeCompare(b.nome));
     const asl = elenco.filter((progetto) => progetto.isAsl);

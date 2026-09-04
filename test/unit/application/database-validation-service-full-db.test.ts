@@ -71,10 +71,9 @@ test('the full ~60-rule table produces no violations on the realistic, fully-see
   // The shared E2E fixture (used by many onlinetests, not owned by this fix
   // wave) carries a handful of KNOWN, deliberate violations baked in by its
   // own test design — not database-structure bugs:
-  //  - ASL riga 8 / INDIRIZZI righe 2-4 / LOG_FOLD righe 2-8: deliberate
+  //  - ASL riga 8 / LOG_FOLD righe 2-8: deliberate
   //    unknown-student and decoy-folder rows used by importChecks/cartelle
-  //    filtering tests (src/onlinetests/data/Seeders.ts) plus a genuine
-  //    'Liceo' vs 'LICEO' casing mismatch in seedIndirizzi.
+  //    filtering tests (src/onlinetests/data/Seeders.ts).
   //  - CONF_MAIL righe 9-10: two dedicated rows hardcode SUPPLENTI: false
   //    instead of a GestioneSupplenti enum value (Seeders.ts ~line 723).
   // (MATERIE righe 17-19 — LAB.GRUPPO_A, LAB.SEMINARIO_POMERIDIANO,
@@ -92,9 +91,6 @@ test('the full ~60-rule table produces no violations on the realistic, fully-see
     'ASL|8|STUDENTE|FK violata: STUDENTE "sconosciuto@onlinetest.aldo.local" non esiste in ALUNNI.EMAIL',
     'CONF_MAIL|9|SUPPLENTI|Valore non ammesso per SUPPLENTI: "false" (ammessi: SOLO_TITOLARI, SOLO_SUPPLENTI, ENTRAMBI)',
     'CONF_MAIL|10|SUPPLENTI|Valore non ammesso per SUPPLENTI: "false" (ammessi: SOLO_TITOLARI, SOLO_SUPPLENTI, ENTRAMBI)',
-    'INDIRIZZI|2|TIPO|Valore non ammesso per TIPO: "Liceo" (ammessi: LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)',
-    'INDIRIZZI|3|TIPO|Valore non ammesso per TIPO: "Liceo" (ammessi: LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)',
-    'INDIRIZZI|4|TIPO|Valore non ammesso per TIPO: "Liceo" (ammessi: LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)',
     'LOG_FOLD|2|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
     'LOG_FOLD|3|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',
     'LOG_FOLD|4|ID_GEN|FK violata: ID_GEN "E2E_ASL_CARTELLE" non esiste in CONF_DOC.ID',

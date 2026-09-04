@@ -1,7 +1,6 @@
 import { Indirizzo } from '../../domain/entities/Indirizzo';
 import { IndirizziPerTipoSpec } from '../../domain/specifications/IndirizziPerTipoSpec';
 import type { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
-import type { TipoIstituto } from '../../domain/value-objects/enums';
 import { TABLE } from '../../config/schema';
 
 /**
@@ -33,7 +32,7 @@ export class IndirizzoRepository extends Repository<Indirizzo> {
     return this.all().find((i) => i.id === id.value) ?? null;
   }
 
-  findByTipo(tipo: TipoIstituto): Indirizzo[] {
+  findByTipo(tipo: string): Indirizzo[] {
     const spec = new IndirizziPerTipoSpec(tipo);
     return this.all().filter((i) => spec.isSatisfiedBy(i));
   }

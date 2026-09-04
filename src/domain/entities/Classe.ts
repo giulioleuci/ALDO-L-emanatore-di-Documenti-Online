@@ -53,6 +53,11 @@ export class Classe extends AldoEntity {
     return ClasseId.of(this.id ?? '');
   }
 
+  /** CLASSI.ASL — true se la classe è abilitata all'Alternanza Scuola Lavoro (PCTO). */
+  get asl(): boolean {
+    return Boolean(this.getDynamicColumns()[COL_CLASSI.ASL]);
+  }
+
   override toData(): EntityData {
     return {
       [COL_CLASSI.ID]: this.id,

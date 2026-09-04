@@ -141,7 +141,8 @@ export const COL_CLASSI = {
   ALT: 'ALT',
   SEZ: 'SEZ',
   TERMINALE: 'TERMINALE',
-  STORICO: 'STORICO'
+  STORICO: 'STORICO',
+  ASL: 'ASL'
 } as const;
 
 export const COL_DOCENTI = {

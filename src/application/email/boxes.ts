@@ -466,7 +466,7 @@ const DEFAULT_TITLES: Record<string, string> = {
   cartelle: 'Cartelle',
   note: 'Note',
   assenze: 'Assenze',
-  cattedre: 'Le tue cattedre',
+  cattedre: '',
   testo_dinamico: '',
   piani_pers_da_inviare: 'Piani personalizzati da notificare',
   piani_pers_inviati: 'Piani personalizzati notificati'

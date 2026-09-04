@@ -37,13 +37,6 @@ export enum FormatoOutput {
   PDF = 'PDF',
   TEXT = 'TEXT'
 }
-export enum TipoIstituto {
-  LICEO = 'LICEO',
-  ITS = 'ITS',
-  IEFP = 'IEFP',
-  PROFESSIONALE = 'PROFESSIONALE',
-  TECNICO = 'TECNICO'
-}
 export enum ReligioneScelta {
   IRC = 'IRC',
   ALT = 'ALT',

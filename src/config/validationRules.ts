@@ -31,7 +31,6 @@ import {
   GestioneSupplenti,
   ProcessoInvio,
   StatoEmail,
-  TipoIstituto,
   TipoPiano,
   TipoProgetto,
   TipoMovimento
@@ -184,7 +183,6 @@ export function regoleValidazione(): DatasetValidationRule[] {
     enumRule('ENUM_CONF_MAIL_SUPPLENTI', TABLE.CONF_MAIL, COL_CONF_MAIL.SUPPLENTI, Object.values(GestioneSupplenti)),
     enumRule('ENUM_CONF_MAIL_PROCESSO', TABLE.CONF_MAIL, COL_CONF_MAIL.PROCESSO, Object.values(ProcessoInvio)),
     enumRule('ENUM_LOG_MAIL_STATO', TABLE.LOG_MAIL, COL_LOG_MAIL.STATO, Object.values(StatoEmail)),
-    enumRule('ENUM_INDIRIZZI_TIPO', TABLE.INDIRIZZI, COL_INDIRIZZI.TIPO, Object.values(TipoIstituto)),
     enumRule('ENUM_PIANI_TIPO', TABLE.PIANI, COL_PIANI.TIPO, Object.values(TipoPiano)),
     enumRule('ENUM_PROGETTI_TIPO', TABLE.PROGETTI, COL_PROGETTI.TIPO, Object.values(TipoProgetto)),
     enumRule('ENUM_MOV_ALUNNI_TIPO', TABLE.MOV_ALUNNI, COL_MOV_ALUNNI.TIPO, Object.values(TipoMovimento)),

@@ -2,6 +2,7 @@ import type { Materia } from '../../../domain/entities/Materia';
 import type { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import type { ContinuitaVM, MateriaVM, PersonaVM } from '../Cdu';
 import { descriviPersone, descriviPersoneEsteso } from './personVmMapper';
+import { PipelineError } from '../../../domain/errors/DomainError';
 
 export type ProfiloMateriaVM = 'BASE' | 'CON_DOCENTI' | 'CON_CONTINUITA';
 
@@ -69,7 +70,7 @@ export function buildMateriaVm(
   }
   if (profilo === 'CON_CONTINUITA') {
     if (contesto.continuita === undefined) {
-      throw new Error('MateriaVM CON_CONTINUITA richiede continuita');
+      throw new PipelineError('MateriaVM CON_CONTINUITA richiede continuita');
     }
     result.continuita = contesto.continuita;
   }

@@ -25,12 +25,12 @@ export interface OpzioniCduVM {
   gestioneSupplenti: 'SOLO_TITOLARI' | 'SOLO_SUPPLENTI' | 'ENTRAMBI';
 }
 
-export interface ConfigurazioneBoxVM extends ElencoVM<{
+export type ConfigurazioneBoxVM = ElencoVM<{
   boxId: string;
   ordine: number;
   isAttivo: boolean;
   isNascostoPercheVuoto: boolean;
-}> {}
+}>;
 
 export interface MetadatiVM {
   timestamp: string;
@@ -207,7 +207,7 @@ export interface MovimentoAlunnoVM {
   descrizione: string;
 }
 
-export interface ElencoMovimentiAlunnoVM extends ElencoVM<MovimentoAlunnoVM> {}
+export type ElencoMovimentiAlunnoVM = ElencoVM<MovimentoAlunnoVM>;
 
 export interface MovimentoClasseVM extends MovimentoAlunnoVM {
   studente: PersonaRiferimentoVM;
@@ -546,7 +546,7 @@ export interface MateriaPerPrincipaleItemVM {
   materieDescrizione: string;
 }
 
-export interface MateriePerPrincipaleVM extends ElencoVM<MateriaPerPrincipaleItemVM> {}
+export type MateriePerPrincipaleVM = ElencoVM<MateriaPerPrincipaleItemVM>;
 
 export interface EsameClasseVM {
   hasEsame: boolean;
@@ -709,6 +709,7 @@ export interface ClasseFocusVM extends ClasseSintesiVM {
   isArticolata: boolean;
   isParent: boolean;
   isSottoClasse: boolean;
+  hasAsl: boolean;
   articolazione?: ArticolazioneClasseVM;
   partner?: PartnerClasseVM;
   coordinatori?: CoordinatoriVM;

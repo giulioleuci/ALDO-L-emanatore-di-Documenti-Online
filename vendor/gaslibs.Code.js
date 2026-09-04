@@ -3067,7 +3067,9 @@ class IdGenerator {
         const byte = bytes[i] & mask;
         if (alphabet[byte]) {
           id += alphabet[byte];
-          if (id.length === length) return id;
+          if (id.length === length) {
+            return id;
+          }
         }
       }
     }
@@ -6764,10 +6766,18 @@ const isString = val => typeof val === 'string';
 const isNumber = val => typeof val === 'number'; 
 const LodashFacade_isNil = val => val == null;
 const isEmpty = val => {
-  if (val == null) return true;
-  if (typeof val === 'string' || Array.isArray(val)) return val.length === 0;
-  if (val instanceof Map || val instanceof Set) return val.size === 0;
-  if (typeof val === 'object') return Object.keys(val).length === 0;
+  if (val == null) {
+    return true;
+  }
+  if (typeof val === 'string' || Array.isArray(val)) {
+    return val.length === 0;
+  }
+  if (val instanceof Map || val instanceof Set) {
+    return val.size === 0;
+  }
+  if (typeof val === 'object') {
+    return Object.keys(val).length === 0;
+  }
   return false;
 };
 
@@ -15002,7 +15012,9 @@ class DocumentBatchUpdateHandler {
   getOrCreateHeader(documentId) {
     const doc = this.facade.openStandard(documentId);
     let header = doc.getHeader();
-    if (!header) header = doc.addHeader();
+    if (!header) {
+      header = doc.addHeader();
+    }
     return header;
   }
 
@@ -15014,7 +15026,9 @@ class DocumentBatchUpdateHandler {
   getOrCreateFooter(documentId) {
     const doc = this.facade.openStandard(documentId);
     let footer = doc.getFooter();
-    if (!footer) footer = doc.addFooter();
+    if (!footer) {
+      footer = doc.addFooter();
+    }
     return footer;
   }
 
@@ -15193,10 +15207,12 @@ class DocumentBatchUpdateHandler {
     const ids = Array.isArray(documentIds) ? documentIds : [documentIds];
     const successful = [];
     const failed = [];
-    if (ids.length === 0) return {
-      successful,
-      failed
-    };
+    if (ids.length === 0) {
+      return {
+        successful,
+        failed
+      };
+    }
     for (const docId of ids) {
       try {
         const result = this.facade._executeWithRetry(() => Drive.Files.update({
@@ -15234,7 +15250,9 @@ class DocumentBatchUpdateHandler {
     try {
       const doc = this.facade.openStandard(documentId);
       let header = doc.getHeader();
-      if (!header) header = doc.addHeader();
+      if (!header) {
+        header = doc.addHeader();
+      }
       if (op.text) {
         header.clear();
         header.appendParagraph(op.text);
@@ -15259,7 +15277,9 @@ class DocumentBatchUpdateHandler {
     try {
       const doc = this.facade.openStandard(documentId);
       let footer = doc.getFooter();
-      if (!footer) footer = doc.addFooter();
+      if (!footer) {
+        footer = doc.addFooter();
+      }
       if (op.text) {
         footer.clear();
         footer.appendParagraph(op.text);
@@ -15398,7 +15418,9 @@ class SpreadsheetRangeManager {
         totalRows += rows;
         totalColumns = Math.max(totalColumns, cols);
         const sheetMatch = update.range.match(/^([^!]+)!/);
-        if (sheetMatch) sheetsAffected.add(sheetMatch[1]);
+        if (sheetMatch) {
+          sheetsAffected.add(sheetMatch[1]);
+        }
       });
       this._logger.info(`[DRY-RUN] Would update ${updatesArray.length} range(s) in spreadsheet ${spreadsheetId}`);
       return {
@@ -15443,7 +15465,9 @@ class SpreadsheetRangeManager {
       spreadsheetId,
       rangeCount: rangesArray.length
     }, 3);
-    if (isSingleRange) return result.valueRanges[0].values || [];
+    if (isSingleRange) {
+      return result.valueRanges[0].values || [];
+    }
     const dataMap = {};
     result.valueRanges.forEach((vr, index) => {
       dataMap[rangesArray[index]] = vr.values || [];
@@ -15452,12 +15476,14 @@ class SpreadsheetRangeManager {
   }
   appendRows(spreadsheetId, appends, options = {}) {
     const appendsArray = Array.isArray(appends) ? appends : [appends];
-    if (appendsArray.length === 0) return {
-      totalUpdatedCells: 0,
-      totalUpdatedRows: 0,
-      successful: [],
-      failed: []
-    };
+    if (appendsArray.length === 0) {
+      return {
+        totalUpdatedCells: 0,
+        totalUpdatedRows: 0,
+        successful: [],
+        failed: []
+      };
+    }
     const valueInputOption = options.valueInputOption || 'USER_ENTERED';
     const sheets = this.facade._getCachedSheetMetadata(spreadsheetId);
     const sheetMap = {};
@@ -15493,23 +15519,35 @@ class SpreadsheetRangeManager {
     const requests = appendsArray.map(append => {
       const sheetName = append.range.includes('!') ? append.range.split('!')[0].replace(/'/g, '') : append.range;
       const sheetId = sheetMap[sheetName];
-      if (sheetId === undefined) throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+      if (sheetId === undefined) {
+        throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+      }
       const rows = (append.values || []).map(row => ({
         values: row.map(cellValue => {
           const cellData = {};
-          if (cellValue == null || cellValue === '') cellData.userEnteredValue = {
-            stringValue: ''
-          };else if (typeof cellValue === 'number') cellData.userEnteredValue = {
-            numberValue: cellValue
-          };else if (typeof cellValue === 'boolean') cellData.userEnteredValue = {
-            boolValue: cellValue
-          };else {
-            const stringVal = String(cellValue);
-            if (stringVal.startsWith('=') && valueInputOption === 'USER_ENTERED') cellData.userEnteredValue = {
-              formulaValue: stringVal
-            };else cellData.userEnteredValue = {
-              stringValue: stringVal
+          if (cellValue == null || cellValue === '') {
+            cellData.userEnteredValue = {
+              stringValue: ''
             };
+          } else if (typeof cellValue === 'number') {
+            cellData.userEnteredValue = {
+              numberValue: cellValue
+            };
+          } else if (typeof cellValue === 'boolean') {
+            cellData.userEnteredValue = {
+              boolValue: cellValue
+            };
+          } else {
+            const stringVal = String(cellValue);
+            if (stringVal.startsWith('=') && valueInputOption === 'USER_ENTERED') {
+              cellData.userEnteredValue = {
+                formulaValue: stringVal
+              };
+            } else {
+              cellData.userEnteredValue = {
+                stringValue: stringVal
+              };
+            }
           }
           return cellData;
         })
@@ -15728,7 +15766,9 @@ class SpreadsheetGridManager {
   deleteRow(spreadsheetId, sheetName, rowIndex) {
     const sheets = this.facade._getCachedSheetMetadata(spreadsheetId);
     const sheetMeta = sheets.find(s => s.properties.title === sheetName);
-    if (!sheetMeta) throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+    if (!sheetMeta) {
+      throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+    }
     const requests = [{
       deleteDimension: {
         range: {
@@ -15783,10 +15823,14 @@ class SpreadsheetGridManager {
     return result;
   }
   deleteRows(spreadsheetId, sheetName, rowIndices) {
-    if (!rowIndices || rowIndices.length === 0) return null;
+    if (!rowIndices || rowIndices.length === 0) {
+      return null;
+    }
     const sheets = this.facade._getCachedSheetMetadata(spreadsheetId);
     const sheetMeta = sheets.find(s => s.properties.title === sheetName);
-    if (!sheetMeta) throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+    if (!sheetMeta) {
+      throw new Error(`Sheet '${sheetName}' not found in spreadsheet ${spreadsheetId}`);
+    }
     const sortedIndices = [...rowIndices].sort((a, b) => b - a);
     const requests = sortedIndices.map(rowIndex => ({
       deleteDimension: {
@@ -15837,7 +15881,9 @@ class SpreadsheetGridManager {
     }, 3);
     const protectedRanges = [];
     (metadata.sheets || []).forEach(sheet => {
-      if (sheetName && sheet.properties.title !== sheetName) return;
+      if (sheetName && sheet.properties.title !== sheetName) {
+        return;
+      }
       (sheet.protectedRanges || []).forEach(pr => {
         protectedRanges.push({
           id: pr.protectedRangeId,
@@ -15887,9 +15933,15 @@ class SpreadsheetGridManager {
         groups: [...(((_req$editors2 = req.editors) === null || _req$editors2 === void 0 ? void 0 : _req$editors2.groups) || []), ...(globalEditors.groups || [])],
         domainUsersCanEdit: ((_req$editors3 = req.editors) === null || _req$editors3 === void 0 ? void 0 : _req$editors3.domainUsersCanEdit) !== undefined ? req.editors.domainUsersCanEdit : globalEditors.domainUsersCanEdit
       };
-      if (editors.users.length === 0) delete editors.users;
-      if (editors.groups.length === 0) delete editors.groups;
-      if (editors.domainUsersCanEdit === undefined) delete editors.domainUsersCanEdit;
+      if (editors.users.length === 0) {
+        delete editors.users;
+      }
+      if (editors.groups.length === 0) {
+        delete editors.groups;
+      }
+      if (editors.domainUsersCanEdit === undefined) {
+        delete editors.domainUsersCanEdit;
+      }
       const protection = {
         range: gridRange,
         description: req.description || '',
@@ -16014,7 +16066,9 @@ class SpreadsheetMetadataCache {
     const sheetName = parts[0].replace(/'/g, '');
     const range = parts[1] || 'A1';
     const sheet = sheets.find(s => s.properties.title === sheetName);
-    if (!sheet) throw new Error(`Sheet ${sheetName} not found`);
+    if (!sheet) {
+      throw new Error(`Sheet ${sheetName} not found`);
+    }
     const gridRange = {
       sheetId: sheet.properties.sheetId
     };
@@ -16039,7 +16093,9 @@ class SpreadsheetMetadataCache {
   }
   _parseCell(cellRef) {
     const match = cellRef.match(/^([A-Z]+)(\d+)$/);
-    if (!match) throw new Error(`Invalid cell reference: ${cellRef}`);
+    if (!match) {
+      throw new Error(`Invalid cell reference: ${cellRef}`);
+    }
     const col = this._columnToIndex(match[1]);
     const row = parseInt(match[2], 10) - 1;
     return {
@@ -16080,9 +16136,15 @@ class SpreadsheetHybridManager {
         title: title
       }
     };
-    if (options.locale) request.properties.locale = options.locale;
-    if (options.timeZone) request.properties.timeZone = options.timeZone;
-    if (options.autoRecalc) request.properties.autoRecalc = options.autoRecalc;
+    if (options.locale) {
+      request.properties.locale = options.locale;
+    }
+    if (options.timeZone) {
+      request.properties.timeZone = options.timeZone;
+    }
+    if (options.autoRecalc) {
+      request.properties.autoRecalc = options.autoRecalc;
+    }
     if (options.sheets) {
       request.sheets = options.sheets.map(sheet => ({
         properties: sheet
@@ -16304,7 +16366,9 @@ class MailService {
           error: result.error
         });
       }
-      if (i < emails.length - 1) this._utils.sleep(this._rateLimitMs);
+      if (i < emails.length - 1) {
+        this._utils.sleep(this._rateLimitMs);
+      }
     }
     return results;
   }
@@ -16368,7 +16432,11 @@ class MailService {
         to: recipient.email,
         subject
       };
-      if (isHtml) emailOptions.htmlBody = body;else emailOptions.body = body;
+      if (isHtml) {
+        emailOptions.htmlBody = body;
+      } else {
+        emailOptions.body = body;
+      }
       const result = this.send(emailOptions);
       if (result.success) {
         results.sent++;
@@ -16380,7 +16448,9 @@ class MailService {
           error: result.error
         });
       }
-      if (i < recipientData.length - 1) this._utils.sleep(this._rateLimitMs);
+      if (i < recipientData.length - 1) {
+        this._utils.sleep(this._rateLimitMs);
+      }
     });
     return results;
   }
@@ -18297,7 +18367,7 @@ class UiService extends GoogleService {
 
   alert(title, message, buttonSet) {
     this._logger.debug(`UiService.alert: Showing alert "${title}"`);
-    return this._executeWithRetry(() => this._ui.alert(title, message, buttonSet), {
+    return this._executeWithRetry(() => buttonSet ? this._ui.alert(title, message, buttonSet) : this._ui.alert(title, message), {
       title,
       message
     }, 1 
@@ -18313,7 +18383,7 @@ class UiService extends GoogleService {
 
   prompt(title, message, buttonSet) {
     this._logger.debug(`UiService.prompt: Showing prompt "${title}"`);
-    return this._executeWithRetry(() => this._ui.prompt(title, message, buttonSet), {
+    return this._executeWithRetry(() => buttonSet ? this._ui.prompt(title, message, buttonSet) : this._ui.prompt(title, message), {
       title,
       message
     }, 1 
@@ -21392,14 +21462,20 @@ class DocumentProcessorValueResolver {
     this.facade = facade;
   }
   _applyFilters(array, filters) {
-    if (!Array.isArray(array) || !filters || filters.length === 0) return array;
+    if (!Array.isArray(array) || !filters || filters.length === 0) {
+      return array;
+    }
     let result = array;
     for (const filter of filters) {
       try {
         switch (filter.name) {
           case 'sortBy':
-            if (filter.args.length > 0) result = this._sortByProperty(result, filter.args[0]);else {
-              if (this.facade.strictFilters) throw new Error("Filter 'sortBy' requires a property name argument");
+            if (filter.args.length > 0) {
+              result = this._sortByProperty(result, filter.args[0]);
+            } else {
+              if (this.facade.strictFilters) {
+                throw new Error("Filter 'sortBy' requires a property name argument");
+              }
               this.facade.logger.warn("Filter 'sortBy' requires a property name argument, filter ignored.");
             }
             break;
@@ -21410,11 +21486,17 @@ class DocumentProcessorValueResolver {
             if (filter.args.length > 0) {
               const limit = parseInt(filter.args[0], 10);
               if (isNaN(limit) || limit < 0) {
-                if (this.facade.strictFilters) throw new Error(`Filter 'limit' requires a valid non-negative integer, got: ${filter.args[0]}`);
+                if (this.facade.strictFilters) {
+                  throw new Error(`Filter 'limit' requires a valid non-negative integer, got: ${filter.args[0]}`);
+                }
                 this.facade.logger.warn(`Filter 'limit' requires a valid non-negative integer, got: ${filter.args[0]}, filter ignored.`);
-              } else result = result.slice(0, limit);
+              } else {
+                result = result.slice(0, limit);
+              }
             } else {
-              if (this.facade.strictFilters) throw new Error("Filter 'limit' requires a number argument");
+              if (this.facade.strictFilters) {
+                throw new Error("Filter 'limit' requires a number argument");
+              }
               this.facade.logger.warn("Filter 'limit' requires a number argument, filter ignored.");
             }
             break;
@@ -21424,16 +21506,22 @@ class DocumentProcessorValueResolver {
                 expectedValue = filter.args[1];
               result = result.filter(item => item[propName] === expectedValue);
             } else {
-              if (this.facade.strictFilters) throw new Error(`Filter 'filter' requires two arguments (property and value), got ${filter.args.length}`);
+              if (this.facade.strictFilters) {
+                throw new Error(`Filter 'filter' requires two arguments (property and value), got ${filter.args.length}`);
+              }
               this.facade.logger.warn(`Filter 'filter' requires two arguments, filter ignored.`);
             }
             break;
           default:
-            if (this.facade.strictFilters) throw new Error(`Filter '${filter.name}' not supported`);
+            if (this.facade.strictFilters) {
+              throw new Error(`Filter '${filter.name}' not supported`);
+            }
             this.facade.logger.warn(`Filter '${filter.name}' not supported, ignored.`);
         }
       } catch (error) {
-        if (this.facade.strictFilters) throw new Error(`Error applying filter '${filter.name}': ${error.message}`);
+        if (this.facade.strictFilters) {
+          throw new Error(`Error applying filter '${filter.name}': ${error.message}`);
+        }
         this.facade.logger.warn(`Error applying filter '${filter.name}': ${error.message}, filter ignored.`);
       }
     }
@@ -21443,14 +21531,26 @@ class DocumentProcessorValueResolver {
     return [...array].sort((a, b) => {
       const valueA = this.facade._getNestedProperty(a, propName);
       const valueB = this.facade._getNestedProperty(b, propName);
-      if (valueA == null && valueB == null) return 0;
-      if (valueA == null) return 1;
-      if (valueB == null) return -1;
-      if (typeof valueA === 'string' && typeof valueB === 'string') return valueA.localeCompare(valueB, 'en', {
-        sensitivity: 'base'
-      });
-      if (valueA < valueB) return -1;
-      if (valueA > valueB) return 1;
+      if (valueA == null && valueB == null) {
+        return 0;
+      }
+      if (valueA == null) {
+        return 1;
+      }
+      if (valueB == null) {
+        return -1;
+      }
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return valueA.localeCompare(valueB, 'en', {
+          sensitivity: 'base'
+        });
+      }
+      if (valueA < valueB) {
+        return -1;
+      }
+      if (valueA > valueB) {
+        return 1;
+      }
       return 0;
     });
   }
@@ -25550,16 +25650,6 @@ class ExpressionEngineService {
   }
 }
 ;
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -55929,9 +56019,15 @@ class EnhancedTestRunner {
 
   run(filter = null) {
     const testsToRun = this.registry.filter(test => {
-      if (!filter) return true;
-      if (typeof filter === 'string') return test.path.includes(filter);
-      if (filter instanceof RegExp) return filter.test(test.path);
+      if (!filter) {
+        return true;
+      }
+      if (typeof filter === 'string') {
+        return test.path.includes(filter);
+      }
+      if (filter instanceof RegExp) {
+        return filter.test(test.path);
+      }
       return true;
     });
     this._log(`Running ${testsToRun.length} tests matching filter: ${filter || 'NONE'}`);
@@ -56034,7 +56130,9 @@ class SmartAssert {
 
 
   static _safeStringify(value) {
-    if (value === undefined) return 'undefined';
+    if (value === undefined) {
+      return 'undefined';
+    }
     try {
       return JSON.stringify(value);
     } catch (_e) {
@@ -56042,7 +56140,9 @@ class SmartAssert {
       try {
         return JSON.stringify(value, (_k, v) => {
           if (v && typeof v === 'object') {
-            if (seen.has(v)) return '[Circular]';
+            if (seen.has(v)) {
+              return '[Circular]';
+            }
             seen.add(v);
           }
           return v;
@@ -56315,7 +56415,9 @@ class SampleSpreadsheetBuilder {
 
 
   appendRows(sheetName, rows) {
-    if (rows.length === 0) return;
+    if (rows.length === 0) {
+      return;
+    }
     const sheet = this.spreadsheet.getSheetByName(sheetName);
     if (sheet === null) {
       throw new Error(`Sheet "${sheetName}" not found in spreadsheet "${this.spreadsheet.getName()}".`);
@@ -61598,7 +61700,9 @@ function isValidEmptyBehavior(value) {
 
 
 function isValidContainerType(value) {
-  if (typeof value !== 'string') return false;
+  if (typeof value !== 'string') {
+    return false;
+  }
   return Object.values(ContainerType).includes(value.toUpperCase());
 }
 

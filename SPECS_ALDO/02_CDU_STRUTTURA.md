@@ -198,6 +198,7 @@ ClasseFocusVM:
   isArticolata: boolean # true se partecipa a un gruppo articolato
   isParent: boolean # true per la classe contenitore del gruppo
   isSottoClasse: boolean # true per una classe partner del gruppo
+  hasAsl: boolean # da colonna CLASSI.ASL: true se la classe è abilitata all'ASL/PCTO
 
   articolazione: ArticolazioneClasseVM # presente se isArticolata
   partner: PartnerClasseVM # opzionale

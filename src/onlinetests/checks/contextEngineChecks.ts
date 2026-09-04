@@ -941,7 +941,7 @@ export function registerEffectiveAssignmentConsumerChecks(
       const focusClasse = classeCdu.focus.classe;
       const primoCoordinatore = focusClasse?.coordinatori?.elenco[0];
       const primoProgetto = focusClasse?.progetti?.elenco.find(
-        (progetto) => progetto.tipo === TipoProgetto.ASL
+        (progetto) => progetto.tipo === String(TipoProgetto.ASL)
       );
       const nonAvvale = focusClasse?.studenti?.elenco.find(
         (studente) => studente.email === e2eAlunnoEmail(1)

@@ -96,13 +96,13 @@ npm test                    # unit tests (test/unit/**, jest.config.cjs)
 npm run test:integration    # test/integration/**, jest.integration.config.cjs
 npm run test:build          # test/build/**, jest.build.config.cjs — validates build output shape
 
-npm run build:testing       # scripts/build-and-prepare.cjs --mode=testing (default)
+npm run build:readable       # scripts/build-and-prepare.cjs --mode=testing (readable output, for debugging in the Apps Script editor)
+npm run build:testing       # --mode=online — despite the name, NOT --mode=testing; see note below
 npm run build:testoffline   # --mode=testoffline
 npm run build:production    # --mode=production
-npm run build:online        # --mode=online (also runs the offline test suite as a push gate)
 
-npm run push:testing        # build:testing then clasp push
-npm run push:online         # build:online then clasp push
+npm run push:testing        # build:testing then clasp push — since build:testing runs --mode=online, this also runs the offline test suite as a push gate
+npm run push:production     # build:production then clasp push
 
 npm run refresh:vendor      # scripts/refresh-vendor.cjs — pulls GasLibraryFactory's built bundle into vendor/
 npm run verify:vendor       # scripts/verify-vendor.cjs
@@ -117,7 +117,9 @@ All four jest configs share `test/setup/load-gaslibs.cjs` as a setup file and us
 `scripts/build-and-prepare.cjs --mode=<production|testing|testoffline|online>` bundles `src/` (via webpack) together with the prebuilt `vendor/gaslibs.Code.js` library bundle into `dist/Code.js`, plus `dist/EntryPoints.js` from `src/entrypoints/EntryPoints.ts`. Key differences:
 
 - `testing`/`testoffline`/`production` build only the main webpack entry; `online` additionally builds the `onlinetests` entry into `OnlineTests.js` and applies V8-compat patches to it, then discards it for every other mode.
-- `online` mode generates `gas-source-map.json`, mapping minified `Code.js`/`OnlineTests.js` lines back to original TS source, and runs the full offline test suite as a pre-push gate (`push:online` fails if offline tests fail).
+- `online` mode generates `gas-source-map.json`, mapping minified `Code.js`/`OnlineTests.js` lines back to original TS source, and runs the full offline test suite as a pre-push gate (`push:testing` fails if offline tests fail, since it runs `build:testing` → `--mode=online`).
 - `production` mode minifies via Terser; `testing`/`testoffline` keep readable output for debugging in the Apps Script editor.
 
 `clasp push` excludes `gas-source-map.json` (it's a debugging artifact, not a deployable file).
+
+**Known naming inconsistency:** the `build:testing`/`push:testing` npm scripts run `--mode=online`, not `--mode=testing` — a pre-existing mismatch between the script name and what it does, not yet fixed. For a genuinely readable `--mode=testing` build (no online-tests entry, no offline-suite gate), use `npm run build:readable` instead. There is currently no `push:*` script that pairs with `--mode=testing`/`build:readable`.

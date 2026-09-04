@@ -64,6 +64,7 @@ export class ClasseProvider implements ContextProvider {
       isArticolata: config !== null,
       isParent: config?.isParent() ?? false,
       isSottoClasse: config?.isPartner() ?? false,
+      hasAsl: classe.asl,
       coordinatori: this.coordinatori(classe)
     };
     if (config !== null) focus.articolazione = this.articolazione(classe, config);

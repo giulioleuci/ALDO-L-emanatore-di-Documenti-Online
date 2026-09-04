@@ -69,7 +69,7 @@ describe('DipartimentoProvider', () => {
     const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    provider.provide(cdu, { target: 'LETTERE' } as BuildParams, {} as never);
+    provider.provide(cdu, { target: 'LETTERE' } as BuildParams, {});
 
     const d = cdu.focus.dipartimento!;
     expect(d.id).toBe('LETTERE');
@@ -99,7 +99,7 @@ describe('DipartimentoProvider', () => {
     const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    provider.provide(cdu, { target: 'SCIENZE' } as BuildParams, {} as never);
+    provider.provide(cdu, { target: 'SCIENZE' } as BuildParams, {});
 
     expect(cdu.focus.dipartimento!.capo).toBeNull();
     expect(cdu.focus.dipartimento!.hasCapo).toBe(false);
@@ -112,6 +112,6 @@ describe('DipartimentoProvider', () => {
     const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    expect(() => provider.provide(cdu, { target: 'IGNOTO' } as BuildParams, {} as never)).toThrow(PipelineError);
+    expect(() => provider.provide(cdu, { target: 'IGNOTO' } as BuildParams, {})).toThrow(PipelineError);
   });
 });

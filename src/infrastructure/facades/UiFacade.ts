@@ -45,7 +45,7 @@ export class GasUiFacade implements IUiFacade {
     } else if (normalized.includes('annullata')) {
       this.logger.warn(safeMessage);
     }
-    this.ui.alert(titolo, messaggio, undefined);
+    this.ui.alert(titolo, messaggio);
   }
 
   mostraSidebarMonitoraggio(jobId: string, titolo: string): void {

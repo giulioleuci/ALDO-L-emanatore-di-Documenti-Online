@@ -8,6 +8,18 @@ declare function avviaRetryEmailDataDriven(
   runner: JobRunnerService,
   maxDurationMs?: number
 ): unknown;
+declare function avviaGenerazioneDataDriven(
+  container: unknown,
+  configId: string,
+  runner: JobRunnerService,
+  maxDurationMs?: number
+): unknown;
+declare function avviaInvioNotificheDataDriven(
+  container: unknown,
+  patternId: string,
+  runner: JobRunnerService,
+  maxDurationMs?: number
+): unknown;
 declare function avviaImportazioneChunkedDataDriven(
   container: unknown,
   configId: string,
@@ -44,6 +56,26 @@ function menu_avvioRetryEmail(): void {
   avviaRetryEmailDataDriven(initAldo(), creaJobRunner(), MAX_JOB_EXECUTION_TIME_MS);
 }
 
+/** Starts batch document generation for a CONF_DOC id. Use a zero-argument User wrapper for triggers. */
+function menu_avvioGenerazioneChunked(configId: string): void {
+  avviaGenerazioneDataDriven(
+    initAldo(),
+    configId,
+    creaJobRunner(),
+    MAX_JOB_EXECUTION_TIME_MS
+  );
+}
+
+/** Starts mass email send for a CONF_MAIL pattern. Use a zero-argument User wrapper for triggers. */
+function menu_avvioComunicazioniChunked(patternId: string): void {
+  avviaInvioNotificheDataDriven(
+    initAldo(),
+    patternId,
+    creaJobRunner(),
+    MAX_JOB_EXECUTION_TIME_MS
+  );
+}
+
 /** Starts a configured resumable import. Use a zero-argument User wrapper for triggers. */
 function menu_avvioImportazioneChunked(configId: string): void {
   avviaImportazioneChunkedDataDriven(
@@ -59,5 +91,7 @@ function menu_avvioImportazioneChunked(configId: string): void {
 (globalThis as any).aldoPing = aldoPing;
 (globalThis as any).resumeJob = resumeJob;
 (globalThis as any).menu_avvioRetryEmail = menu_avvioRetryEmail;
+(globalThis as any).menu_avvioGenerazioneChunked = menu_avvioGenerazioneChunked;
+(globalThis as any).menu_avvioComunicazioniChunked = menu_avvioComunicazioniChunked;
 (globalThis as any).menu_avvioImportazioneChunked = menu_avvioImportazioneChunked;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

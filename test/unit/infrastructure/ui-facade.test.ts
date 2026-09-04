@@ -30,10 +30,10 @@ describe('GasUiFacade', () => {
     expect(ui.prompt).toHaveBeenCalledWith('T', 'M');
   });
 
-  it('mostraMessaggio delegates to ui.alert', () => {
+  it('mostraMessaggio delegates to ui.alert without a null buttons arg', () => {
     const ui = fakeUi();
     new GasUiFacade(ui as never, { info: jest.fn() } as never).mostraMessaggio('T', 'M');
-    expect(ui.alert).toHaveBeenCalledWith('T', 'M', undefined);
+    expect(ui.alert).toHaveBeenCalledWith('T', 'M');
   });
 
   it('logs cancellation warnings and errors with default level formatting', () => {

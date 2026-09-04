@@ -100,8 +100,8 @@ export function assertAlunnoStorico(value: unknown): void {
     fail('bocciatura distintiva 2024-2025/1C mancante');
   }
   for (const anno of anni) {
-    if (!asArray(anno.piani, `piani ${anno.annoScolastico}`).some((piano) => piano.tipo === 'PDP_BES')) {
-      fail(`piani ${anno.annoScolastico} non contiene PDP_BES`);
+    if (!asArray(anno.piani, `piani ${String(anno.annoScolastico)}`).some((piano) => piano.tipo === 'PDP_BES')) {
+      fail(`piani ${String(anno.annoScolastico)} non contiene PDP_BES`);
     }
   }
 }

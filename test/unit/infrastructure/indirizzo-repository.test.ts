@@ -4,7 +4,6 @@ import { IndirizziPerTipoSpec } from '../../../src/domain/specifications/Indiriz
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
-import { TipoIstituto } from '../../../src/domain/value-objects/enums';
 
 function repo(): IndirizzoRepository {
   return new IndirizzoRepository(new FakeDatabase(fixtureTables()));
@@ -19,41 +18,39 @@ test('Indirizzo hydrates from a flat row', () => {
   });
   expect(i.id).toBe('SCIENTIFICO');
   expect(i.nomeSintetico).toBe('Scientifico');
-  expect(i.tipo).toBe(TipoIstituto.LICEO);
+  expect(i.tipo).toBe('LICEO');
   expect(i.indirizzoId.value).toBe('SCIENTIFICO');
 });
 
 test('findById (base) returns a hydrated Indirizzo', () => {
-  expect(repo().findById('LSSA')?.tipo).toBe(TipoIstituto.LICEO);
+  expect(repo().findById('LSSA')?.tipo).toBe('LICEO');
   expect(repo().findById('NOPE')).toBeNull();
 });
 
 test('findByIdCached resolves via the session cache', () => {
-  expect(repo().findByIdCached(IndirizzoId.of('ITI'))?.tipo).toBe(TipoIstituto.TECNICO);
+  expect(repo().findByIdCached(IndirizzoId.of('ITI'))?.tipo).toBe('TECNICO');
 });
 
 test('findByTipo filters via IndirizziPerTipoSpec', () => {
   expect(
     repo()
-      .findByTipo(TipoIstituto.LICEO)
+      .findByTipo('LICEO')
       .map((i) => i.id)
       .sort()
   ).toEqual(['LSSA', 'SCIENTIFICO']);
   expect(
     repo()
-      .findByTipo(TipoIstituto.TECNICO)
+      .findByTipo('TECNICO')
       .map((i) => i.id)
   ).toEqual(['ITI']);
 });
 
 test('IndirizziPerTipoSpec preserves TIPO defaults in memory (07 §5)', () => {
-  const spec = new IndirizziPerTipoSpec(TipoIstituto.TECNICO);
+  const spec = new IndirizziPerTipoSpec('TECNICO');
   expect(spec.toQueryObject()).toBeNull();
   expect(spec.isSatisfiedBy(Indirizzo.fromData({ ID: 'ITI', TIPO: 'TECNICO' }))).toBe(true);
   expect(spec.isSatisfiedBy(Indirizzo.fromData({ ID: 'LSSA', TIPO: 'LICEO' }))).toBe(false);
-  expect(new IndirizziPerTipoSpec(TipoIstituto.LICEO).isSatisfiedBy(Indirizzo.fromData({}))).toBe(
-    true
-  );
+  expect(new IndirizziPerTipoSpec('').isSatisfiedBy(Indirizzo.fromData({}))).toBe(true);
 });
 
 test('lookup table is cached for the session (06 §Caching)', () => {

@@ -48,18 +48,6 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 Nessun valore ammette colonne materie (`PARAMETRI.aggiungiMaterie`/`aggiungiMaterieConPermessi`) sull'asse `DIPARTIMENTO` (nessun consiglio di classe da cui derivarle — vedi validazione costruttore in `01_SCHEMA_DATABASE.md` §CONF_DOC).
 
-### `TipoIstituto`
-
-**Utilizzo:** `INDIRIZZI.TIPO`
-
-| Valore          | Significato                                                |
-| --------------- | ---------------------------------------------------------- |
-| `LICEO`         | Liceo (classico, scientifico, linguistico, musicale, ecc.) |
-| `ITS`           | Istituto Tecnico Superiore                                 |
-| `IEFP`          | Istruzione e Formazione Professionale                      |
-| `PROFESSIONALE` | Istituto Professionale                                     |
-| `TECNICO`       | Istituto Tecnico                                           |
-
 ### `DuplicazioneDocumento`
 
 **Utilizzo:** `CONF_DOC.DUPLICAZIONE`

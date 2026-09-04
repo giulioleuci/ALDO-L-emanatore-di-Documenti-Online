@@ -55,7 +55,6 @@ import { Email } from '../../../src/domain/value-objects/Email';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import {
   ReligioneScelta,
-  TipoIstituto,
   TipoMovimento,
   TipoPiano,
   TipoProgetto
@@ -226,7 +225,7 @@ it.each(SPEC_PUSHDOWN)('%s: pushdown e in-memory concordano', (_name, spec, rows
 
 it.each([
   ['AlunniPerReligioneSpec', new AlunniPerReligioneSpec(ReligioneScelta.IRC), {}, hydrateAlunno],
-  ['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(TipoIstituto.LICEO), {}, hydrateIndirizzo]
+  ['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(''), {}, hydrateIndirizzo]
 ])('%s resta in memoria quando la colonna assente usa il valore predefinito', (_name, spec, row, hydrate) => {
   expect(spec.toQueryObject()).toBeNull();
   expect(spec.isSatisfiedBy(hydrate(row))).toBe(true);

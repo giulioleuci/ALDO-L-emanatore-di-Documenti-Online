@@ -1,5 +1,4 @@
 import { IndirizzoId } from '../value-objects/IndirizzoId';
-import { TipoIstituto } from '../value-objects/enums';
 import { COL_INDIRIZZI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -14,14 +13,14 @@ export type IndirizzoData = {
 export class Indirizzo extends AldoEntity {
   public readonly nome: string;
   public readonly nomeSintetico: string;
-  public readonly tipo: TipoIstituto;
+  public readonly tipo: string;
 
   constructor(data: IndirizzoData = {}) {
     super(data);
     this.id = data[COL_INDIRIZZI.ID] ?? null;
     this.nome = data[COL_INDIRIZZI.NOME] ?? '';
     this.nomeSintetico = data[COL_INDIRIZZI.NOME_SINTETICO] ?? '';
-    this.tipo = (data[COL_INDIRIZZI.TIPO] as TipoIstituto) ?? TipoIstituto.LICEO;
+    this.tipo = data[COL_INDIRIZZI.TIPO] ?? '';
   }
 
   get indirizzoId(): IndirizzoId {

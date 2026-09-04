@@ -8,6 +8,7 @@ import type {
   ProvenienzaDestinazioneVM
 } from '../Cdu';
 import { formatOggi } from '../dates';
+import { PipelineError } from '../../../domain/errors/DomainError';
 
 const TIPO_LABEL = {
   IN: 'Ingresso',
@@ -86,7 +87,7 @@ export function buildMovimentoClasseVm(
     movimento.destinazione?.classe !== undefined &&
     scopeClassi.has(movimento.destinazione.classe.nome);
   if (!daInterna && !aInterna) {
-    throw new Error('Il movimento non appartiene allo scope della classe');
+    throw new PipelineError('Il movimento non appartiene allo scope della classe');
   }
   const direzione = daInterna && aInterna ? 'INTERNA' : aInterna ? 'ENTRATA' : 'USCITA';
   return {

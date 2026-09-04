@@ -1310,8 +1310,10 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
       },
       // 01_SCHEMA_DATABASE.md "Eccezione ammessa — famiglia NO_PEI": identical
-      // to CONF_DOC_PIANI in every column except ID and CONDIZIONE, which
-      // excludes PEI targets before AnalyzeContextStep ever reaches MODELLI.
+      // to CONF_DOC_PIANI in every column except ID, CONDIZIONE (which
+      // excludes PEI targets before AnalyzeContextStep ever reaches MODELLI)
+      // and POST_PROCESSO (left null here; only CONF_DOC_PIANI seeds the
+      // AGGIORNA_PERMESSI_STORICI action).
       {
         [COL_CONF_DOC.ID]: CONF_DOC_PIANI_NO_PEI,
         [COL_CONF_DOC.TIPO]: 'PIANO_PERS',

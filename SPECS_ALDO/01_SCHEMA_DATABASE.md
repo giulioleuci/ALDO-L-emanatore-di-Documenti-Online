@@ -392,11 +392,14 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 | `AGGIORNA_PERMESSI_STORICI` | Aggiorna i permessi dei documenti storici in `LOG_DOCS` per il target indicato |
 
 `AGGIORNA_PERMESSI_STORICI` usa implicitamente `ID_GEN=target`; `target` è un
-`ID` di `CONF_DOC`. I criteri supportati sono opzionali e includono `UTENTI` e
-`SOTTOTIPO`; i valori CSV usano corrispondenza esatta per elemento (non
-substring). `profondita` è obbligatoria e deve essere un intero positivo. Un
-errore nell'aggiornamento è non critico: viene registrato e non interrompe la
-generazione del documento.
+`ID` di `CONF_DOC`. `criteri` è un oggetto opzionale che supporta cinque
+campi: `UTENTI`, `CLASSI`, `MATERIE` (corrispondenza CSV — vero se il valore
+compare come elemento esatto nella colonna `LOG_DOCS` corrispondente, mai come
+substring) e `TIPO`, `SOTTOTIPO` (uguaglianza esatta contro `LOG_DOCS.TIPO` /
+`LOG_DOCS.SOTTOTIPO`). `profondita` è obbligatoria e deve essere un intero
+positivo. L'errore dell'azione è non critico: viene registrato e non
+interrompe la generazione del documento, e il documento/record `LOG_DOCS` già
+registrato non viene eliminato né annullato (rollback).
 
 ---
 

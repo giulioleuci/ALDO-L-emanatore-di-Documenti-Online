@@ -27,6 +27,8 @@ import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
 import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { AlberoCartelle } from '../../../../src/infrastructure/services/AlberoCartelle';
+import { StoricoDocumentiService } from '../../../../src/application/storico/StoricoDocumentiService';
+import { Email } from '../../../../src/domain/value-objects/Email';
 import {
   DuplicazioneDocumento,
   FormatoOutput,
@@ -1053,6 +1055,103 @@ test('PostProcessStep runs shared POST_PROCESSO actions (10 §12)', () => {
   ).execute(ctx);
   expect(db.tables['LOG_DOCS']!.getByPK('file_9')!['STATO']).toBe('ARCHIVIATO');
   expect(ctx.get('postProcessUpdated')).toBe(1);
+});
+
+describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
+  const now = new Date('2026-07-05T10:00:00Z');
+  const action = (overrides: Record<string, unknown> = {}) => ({
+    tipo: 'AGGIORNA_PERMESSI_STORICI',
+    target: 'PIANI_PERSONALIZZATI',
+    ruolo: 'COORDINATORI',
+    permesso: 'LETTURA',
+    profondita: 1,
+    criteri: { UTENTI: '{{focus.alunno.email}}', SOTTOTIPO: '{{focus.piano.tipo}}' },
+    ...overrides
+  });
+  const storico = (ids: string[]) => {
+    const idsMatching = jest.fn(() => ids);
+    return {
+      service: { idsMatching } as unknown as StoricoDocumentiService,
+      idsMatching
+    };
+  };
+  const roles = { risolvi: jest.fn(() => [Email.of('coord4d@school.it')]) };
+  const setup = (configuredAction = action()) => {
+    const db = new FakeDatabase(fixtureTables());
+    const ctx = baseCtx(db);
+    const current = buildCdu(db);
+    ctx.set('cdu', {
+      ...current,
+      focus: {
+        ...current.focus,
+        classe: { ...current.focus.classe, nome: '4D' },
+        alunno: { email: 'a1@school.it' },
+        piano: { tipo: 'PDP_BES' }
+      }
+    });
+    ctx.set('newFileId', 'new-pdp');
+    ctx.set('config', {
+      ...fixtureTables().CONF_DOC[0]!,
+      POST_PROCESSO: JSON.stringify([configuredAction])
+    });
+    return { db, ctx };
+  };
+
+  test('grants the current class coordinator only the historical matching plan', () => {
+    const { db, ctx } = setup();
+    const drive = new FakeDriveFacade();
+    const history = storico(['old-pdp', 'new-pdp']);
+
+    new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, history.service).execute(ctx);
+
+    expect(drive.permissions).toEqual([
+      { fileId: 'old-pdp', email: 'coord4d@school.it', permesso: 'LETTURA' }
+    ]);
+    expect(drive.setPermissionsCallCount).toBe(1);
+    expect(history.idsMatching).toHaveBeenCalledWith(
+      { UTENTI: 'a1@school.it', SOTTOTIPO: 'PDP_BES', ID_GEN: 'PIANI_PERSONALIZZATI' },
+      1
+    );
+    expect(roles.risolvi).toHaveBeenCalledWith('COORDINATORI', expect.any(Object));
+  });
+
+  test('does not call Drive when no historical file matches', () => {
+    const { db, ctx } = setup();
+    const drive = new FakeDriveFacade();
+    new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, storico([]).service).execute(ctx);
+    expect(drive.setPermissionsCallCount).toBe(0);
+    expect(ctx.get('postProcessUpdated')).toBe(0);
+  });
+
+  test('uses the implicit generator criterion when criteri is absent', () => {
+    const { db, ctx } = setup(action({ criteri: undefined }));
+    const history = storico([]);
+    new PostProcessStep(logger, db, new FakeTemplateEngine(), now, new FakeDriveFacade(), roles, history.service).execute(ctx);
+    expect(history.idsMatching).toHaveBeenCalledWith({ ID_GEN: 'PIANI_PERSONALIZZATI' }, 1);
+  });
+
+  test.each(['target', 'ruolo', 'permesso', 'profondita'])('rejects a missing %s', (key) => {
+    const { db, ctx } = setup(action({ [key]: undefined }));
+    expect(() =>
+      new PostProcessStep(logger, db, new FakeTemplateEngine(), now, new FakeDriveFacade(), roles, storico([]).service).execute(ctx)
+    ).toThrow();
+  });
+
+  test('does not roll back the already registered document when Drive permissions fail', () => {
+    const { db, ctx } = setup();
+    ctx.set('nomeFile', 'Piano');
+    ctx.set('destFolderPath', 'Piani');
+    new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+    const drive = new FakeDriveFacade();
+    jest.spyOn(drive, 'setPermissions').mockImplementation(() => {
+      throw new Error('Drive unavailable');
+    });
+
+    expect(() =>
+      new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, storico(['old-pdp']).service).execute(ctx)
+    ).toThrow();
+    expect(db.table('LOG_DOCS').find((row) => row.ID === 'new-pdp')).toBeDefined();
+  });
 });
 
 test('PostProcessStep skipped when POST_PROCESSO is null', () => {

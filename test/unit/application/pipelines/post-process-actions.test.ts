@@ -162,6 +162,40 @@ test('unknown action type is skipped with a warning, others still run', () => {
   expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(1);
 });
 
+test('AGGIORNA_PERMESSI_STORICI resolves criteri and delegates to the document handler', () => {
+  const db = new FakeDatabase(fixtureTables());
+  const handler = jest.fn(() => 1);
+  const actions = JSON.stringify([
+    {
+      tipo: 'AGGIORNA_PERMESSI_STORICI',
+      target: 'PIANI_PERSONALIZZATI',
+      ruolo: 'COORDINATORI',
+      permesso: 'LETTURA',
+      profondita: 1,
+      criteri: {
+        UTENTI: '{{focus.alunno.email}}',
+        SOTTOTIPO: '{{focus.piano.tipo}}'
+      }
+    }
+  ]);
+
+  expect(
+    executePostProcess(
+      actions,
+      { focus: { alunno: { email: 'a1@school.it' }, piano: { tipo: 'PDP_BES' } } },
+      db,
+      new FakeTemplateEngine(),
+      NOW,
+      logger,
+      handler
+    )
+  ).toBe(1);
+  expect(handler).toHaveBeenCalledWith(
+    expect.objectContaining({ target: 'PIANI_PERSONALIZZATI' }),
+    { UTENTI: 'a1@school.it', SOTTOTIPO: 'PDP_BES' }
+  );
+});
+
 // --- CSV containment matching (multi-class POST_PROCESSO criteria, e.g. PER_COORDINATORE piani) ---
 
 describe('postProcessActions — CSV containment matching', () => {

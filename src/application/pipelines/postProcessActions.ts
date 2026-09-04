@@ -11,14 +11,23 @@ import { TABLE, COL_LOG_DOCS } from '../../config/schema';
  * inside the document pipeline the service transaction commits; the email
  * pipeline calls `save()` right after (11 §10).
  */
-interface PostProcessAction {
+export interface PostProcessAction {
   tipo: string;
   tab?: string;
   col?: string;
   valore?: unknown;
   stato?: string;
   criteri?: Record<string, string>;
+  target?: string;
+  ruolo?: string;
+  permesso?: string;
+  profondita?: number;
 }
+
+export type PostProcessActionHandler = (
+  action: PostProcessAction,
+  criteri: Record<string, string>
+) => number;
 
 /** The slice of the database the executor needs (satisfied by FakeDatabase and the SheetDB adapter). */
 export type PostProcessDb = Pick<RepositoryDatabase, 'tables'>;
@@ -131,7 +140,8 @@ export function executePostProcess(
   db: PostProcessDb,
   templates: ITemplateEngine,
   now: Date,
-  logger: LoggerService
+  logger: LoggerService,
+  handler?: PostProcessActionHandler
 ): number {
   const actions = JSON.parse(rawJson) as PostProcessAction[];
   let updated = 0;
@@ -165,6 +175,13 @@ export function executePostProcess(
         updated += updateMatching(db, action.tab ?? TABLE.LOG_DOCS, criteri, {
           [COL_LOG_DOCS.STATO]: action.stato ?? ''
         });
+        break;
+      case 'AGGIORNA_PERMESSI_STORICI':
+        if (handler === undefined) {
+          logger.warn('POST_PROCESSO: AGGIORNA_PERMESSI_STORICI non disponibile — saltata');
+          break;
+        }
+        updated += handler(action, criteri);
         break;
       default:
         logger.warn(`POST_PROCESSO: azione sconosciuta "${action.tipo}" — saltata`);

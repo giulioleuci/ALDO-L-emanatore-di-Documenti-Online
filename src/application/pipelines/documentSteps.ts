@@ -17,8 +17,10 @@ import {
 } from '../../domain/value-objects/enums';
 import { ConfigurationError, PipelineError } from '../../domain/errors/DomainError';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
+import type { PostProcessAction } from './postProcessActions';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 import { resolveLogRegistration } from './logRegistration';
+import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 
 /**
  * Role-resolution port consumed by ApplyPermissionsStep (10 §10). Satisfied
@@ -539,7 +541,10 @@ export class PostProcessStep extends Step {
     logger: LoggerService,
     private readonly db: IDatabase & PostProcessDb,
     private readonly templates: ITemplateEngine,
-    private readonly now: Date
+    private readonly now: Date,
+    private readonly drive?: IDriveFacade,
+    private readonly roles?: IRoleResolver,
+    private readonly storico?: StoricoDocumentiService
   ) {
     super('PostProcess', logger, {
       shouldExecuteCondition: (ctx) =>
@@ -556,7 +561,8 @@ export class PostProcessStep extends Step {
       this.db,
       this.templates,
       this.now,
-      this.logger
+      this.logger,
+      (action, criteri) => this.aggiornaPermessiStorici(ctx, action, criteri)
     );
     this.setResult(ctx, 'postProcessUpdated', updated);
     this.setResult(
@@ -564,6 +570,46 @@ export class PostProcessStep extends Step {
       'postProcessActions',
       actions.flatMap((action) => (typeof action.tipo === 'string' ? [action.tipo] : []))
     );
+  }
+
+  private aggiornaPermessiStorici(
+    ctx: PipelineContext,
+    action: PostProcessAction,
+    criteri: Record<string, string>
+  ): number {
+    const { target, ruolo, permesso, profondita } = action;
+    if (target === undefined || target.trim() === '') {
+      throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.target obbligatorio');
+    }
+    if (ruolo === undefined || ruolo.trim() === '') {
+      throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.ruolo obbligatorio');
+    }
+    if (permesso === undefined || permesso.trim() === '') {
+      throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.permesso obbligatorio');
+    }
+    if (typeof profondita !== 'number' || !Number.isFinite(profondita) || profondita <= 0) {
+      throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.profondita deve essere positiva');
+    }
+    if (this.drive === undefined || this.roles === undefined || this.storico === undefined) {
+      this.logger.warn('POST_PROCESSO: AGGIORNA_PERMESSI_STORICI non disponibile — saltata');
+      return 0;
+    }
+    const newFileId = ctx.get<string>('newFileId');
+    const ids = this.storico
+      .idsMatching({ ...criteri, ID_GEN: target }, profondita)
+      .filter((id) => id !== newFileId);
+    if (ids.length === 0) return 0;
+    const emails = this.roles.risolvi(ruolo, cdu(ctx));
+    const grants = ids.flatMap((targetId) =>
+      emails.map((email) => ({
+        targetId,
+        email: email.value,
+        permesso
+      }))
+    );
+    if (grants.length === 0) return 0;
+    this.drive.setPermissions(grants);
+    return ids.length;
   }
 
   protected override _getLogDetails(ctx: PipelineContext): { Actions: string[]; Updated: number } {

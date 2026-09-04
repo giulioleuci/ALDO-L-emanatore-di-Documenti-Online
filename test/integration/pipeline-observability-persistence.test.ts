@@ -23,6 +23,7 @@ import { FakeGmailFacade } from '../fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../fakes/FakeTemplateEngine';
 import { fixtureTables } from '../fixtures/tables';
 import type { Row } from '../../src/infrastructure/db/Database';
+import { StoricoDocumentiService } from '../../src/application/storico/StoricoDocumentiService';
 
 type NativeSheets = {
   Spreadsheets: {
@@ -201,9 +202,14 @@ test('pipeline observability survives real SheetDB commit and dynamic job execut
       configs: new ConfigurazioneDocumentoRepository(sheetDb.db),
       roleResolver: composeRisolutoreRuoli(sheetDb.db),
       classi: new ClasseRepository(sheetDb.db),
+      storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
       logger,
       now: new Date('2026-07-01T09:00:00Z')
     });
+    expect(
+      (documentService as unknown as { storicoDocumenti?: StoricoDocumentiService })
+        .storicoDocumenti
+    ).toBeInstanceOf(StoricoDocumentiService);
     const gmail = new FakeGmailFacade();
     const emailService = composeEmailNotificationService(
       sheetDb.db,

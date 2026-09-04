@@ -23,6 +23,7 @@ import { COL_CONF_MAIL } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
 import type { ClasseFocusVM } from '../../src/application/context-engine/Cdu';
 import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
+import { StoricoDocumentiService } from '../../src/application/storico/StoricoDocumentiService';
 
 // --- Scenario A: 2-hop VARIAZIONI_CATTEDRA override chain (rossi -> hopA -> hopB)
 // on 5A/MATE. Verifies the final holder, not an intermediate hop, is what
@@ -87,8 +88,12 @@ test('doc-gen: 2-hop VARIAZIONI_CATTEDRA chain resolves the generated CDU to the
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
+    storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
     now: CHAIN_NOW
   });
+  expect(
+    (service as unknown as { storicoDocumenti?: StoricoDocumentiService }).storicoDocumenti
+  ).toBeInstanceOf(StoricoDocumentiService);
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
   expect(result.status).toBe('GENERATO');
 

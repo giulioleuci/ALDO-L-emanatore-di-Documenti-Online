@@ -16,6 +16,7 @@ import { ClasseId } from '../../src/domain/value-objects/ClasseId';
 import { COL_LOG_DOCS } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
+import { StoricoDocumentiService } from '../../src/application/storico/StoricoDocumentiService';
 
 function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: GeneratorStrategy) {
   const db = new FakeDatabase(tables);
@@ -33,6 +34,7 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
+    storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
     now: new Date('2026-07-01T09:00:00Z')
   });
   return { db, drive, templates, service };
@@ -40,6 +42,9 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
 
 test('generates a Verbale CdC end-to-end (ref 10 full pipeline)', () => {
   const { db, drive, templates, service } = wire();
+  expect(
+    (service as unknown as { storicoDocumenti?: StoricoDocumentiService }).storicoDocumenti
+  ).toBeInstanceOf(StoricoDocumentiService);
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
 
   expect(result.status).toBe('GENERATO');

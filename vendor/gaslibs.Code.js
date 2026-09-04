@@ -19016,15 +19016,6 @@ class FilterStrategy {
 
 
 
-  getDescription() {
-    throw new Error('FilterStrategy.getDescription() must be implemented by subclass');
-  }
-
-
-
-
-
-
 
 
   execute(_value, ..._args) {
@@ -20217,30 +20208,6 @@ class MyMustache {
 
 
 
-  clearCache() {
-    this.templateCache = {};
-  }
-
-
-
-
-
-
-  addPartial(name, template) {
-    this.partials[name] = template;
-  }
-
-
-
-
-
-  addPartials(partialsObject) {
-    Object.assign(this.partials, partialsObject);
-  }
-
-
-
-
 
 
 
@@ -20257,15 +20224,6 @@ class MyMustache {
       throw new Error('registerFilter: Expected a FilterStrategy instance. Create a class extending FilterStrategy.');
     }
     this.filterRegistry.register(filterStrategyOrName);
-  }
-
-
-
-
-
-
-  compile(template) {
-    return data => this.render(template, data);
   }
 
 
@@ -22005,12 +21963,9 @@ class _DocumentProcessor {
       executeWithRetry: fn => fn()
     };
     this.documentService = new DocumentService(this.logger, simpleCache, simpleUtils, simpleExceptionService);
-    this.MAX_TEMPLATE_SIZE = 1000000;
-    this.MAX_NESTING_DEPTH = 100;
     this.MAX_ITERATIONS = 10000;
     this.MAX_TEMPLATE_MATCH_SIZE = 100000;
     this.strictFilters = options.strictFilters || false;
-    this._currentDepth = 0;
 
 
     this._tagScanner = new DocumentProcessorTagScanner(this);
@@ -22873,14 +22828,10 @@ class PlaceholderService {
 
 
 
-
-
   constructor(options = {}) {
 
     this.logger = options.logger || console;
     this.mustache = options.mustache;
-    this.utils = options.utils;
-    this.cache = options.cache;
 
 
     if (!this.mustache) {
@@ -23014,207 +22965,6 @@ class PlaceholderService {
 
 
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

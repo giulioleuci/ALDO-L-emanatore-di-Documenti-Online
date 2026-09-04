@@ -53,13 +53,13 @@ test('critical semantics — onError hook rolls back and requestStop halts the p
     .addStep(new SetFlag())
     .onError((step, ctx, error) => {
       rolledBack.push(String(ctx.get('newFileId')));
-      ctx.setFlag('criticalError', `${step.getName()}: ${error.message}`);
+      ctx.set('criticalError', `${step.getName()}: ${error.message}`);
       ctx.requestStop('critical');
     });
   const ctx = pipeline.execute({ newFileId: 'file_9' });
   expect(rolledBack).toEqual(['file_9']);
   // the library wraps the failure in a StepExecutionError
-  expect(ctx.getFlag('criticalError')).toBe("CloneTemplate: Step 'CloneTemplate' failed: kaboom");
+  expect(ctx.get('criticalError')).toBe("CloneTemplate: Step 'CloneTemplate' failed: kaboom");
   expect(ctx.get('ran')).toBeNull(); // steps after the stop never ran
   expect(ctx.getSummary().stopRequested).toBe(true);
 });

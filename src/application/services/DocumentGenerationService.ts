@@ -338,7 +338,7 @@ export class DocumentGenerationService {
       throw e;
     }
 
-    const critical = ctx.getFlag<string>('criticalError');
+    const critical = ctx.get<string>('criticalError');
     if (critical !== null) {
       this.db.rollback();
       throw new PipelineError(critical);
@@ -396,7 +396,7 @@ export class DocumentGenerationService {
       if (!CRITICAL_STEPS.has(step.getName())) return;
       const orphan = ctx.get<string>('newFileId');
       if (orphan !== null) this.drive.deleteFile(orphan); // rollback of the clone (10 §8)
-      ctx.setFlag('criticalError', `${step.getName()}: ${error.message}`);
+      ctx.set('criticalError', `${step.getName()}: ${error.message}`);
       ctx.requestStop(`critical step failed: ${step.getName()}`);
     });
 

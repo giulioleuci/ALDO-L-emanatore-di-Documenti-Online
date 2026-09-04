@@ -47777,8 +47777,7 @@ class PipelineContext {
       endTime: null,
       stopRequested: false,
       stopReason: null,
-      executionHistory: [],
-      flags: {}
+      executionHistory: []
     };
   }
 
@@ -47876,35 +47875,6 @@ class PipelineContext {
   }
 
 
-
-
-
-
-
-
-  setFlag(name, value) {
-    if (typeof name !== 'string') {
-      throw new Error('PipelineContext.setFlag: name must be a string');
-    }
-    this._metadata.flags[name] = value;
-    return this;
-  }
-
-
-
-
-
-
-
-
-  getFlag(name, defaultValue = null) {
-    if (typeof name !== 'string') {
-      throw new Error('PipelineContext.getFlag: name must be a string');
-    }
-    return Object.prototype.hasOwnProperty.call(this._metadata.flags, name) ? this._metadata.flags[name] : defaultValue;
-  }
-
-
   getMetadata() {
     return this._metadata;
   }
@@ -47988,9 +47958,6 @@ class Pipeline {
     this._name = options.name || 'Pipeline';
     this._stopOnError = options.stopOnError !== undefined ? options.stopOnError : true;
     this._maxRetries = options.maxRetries !== undefined ? options.maxRetries : 3;
-    this._monitor = options.monitor || null;
-    this._jobId = options.jobId || null;
-    this._dryRun = options.dryRun || false;
     this._logPosition = this._normalizeLogPosition(options.logPosition);
     this._steps = [];
     this._hooks = {
@@ -47999,15 +47966,6 @@ class Pipeline {
       onError: [],
       onComplete: []
     };
-  }
-
-
-
-
-
-
-  _isDryRun(options = {}) {
-    return options.dryRun !== undefined ? Boolean(options.dryRun) : Boolean(this._dryRun);
   }
   _normalizeLogPosition(position) {
     const value = position && typeof position === 'object' ? position : {};
@@ -48219,25 +48177,13 @@ class Pipeline {
 
 
 
-
-  execute(initialData = {}, options = {}) {
+  execute(initialData = {}) {
     if (initialData !== null && (typeof initialData !== 'object' || Array.isArray(initialData))) {
       throw new Error('Pipeline.execute: initialData must be an object or null');
     }
     const context = new PipelineContext(initialData);
-    const dryRun = this._isDryRun(options);
     let pipelineSuccess = true;
     this._logPipelineStart();
-    if (dryRun) {
-      const stepNames = this._steps.map(s => s.getName());
-      context.set('dryRun', true);
-      context.set('simulatedSteps', stepNames);
-      this._logger.info(`[${this._name}] [DRY-RUN] Would execute ${this._steps.length} steps: ${stepNames.join(', ')}`);
-      context.markCompleted();
-      this._invokeHooks(this._hooks.onComplete, context, true);
-      this._logPipelineSummary(context, 'dry run');
-      return context;
-    }
     for (let stepIndex = 0; stepIndex < this._steps.length; stepIndex++) {
       var _result$error;
       const step = this._steps[stepIndex];
@@ -48251,13 +48197,6 @@ class Pipeline {
       }
       const stepName = step.getName();
       this._invokeHooks(this._hooks.beforeStep, step, context);
-      if (this._monitor && this._jobId && typeof this._monitor.logStepStart === 'function') {
-        try {
-          this._monitor.logStepStart(this._jobId, stepName);
-        } catch (_e) {
-          this._logger.debug(`[${this._name}] monitor.logStepStart failed: ${_e.message}`);
-        }
-      }
       let result;
       try {
         const executeStep = () => this._executeStep(step, context);
@@ -48272,13 +48211,6 @@ class Pipeline {
           reason: error.message || 'step failed',
           durationMs: 0
         }, this._stepLogPosition(stepIndex));
-        if (this._monitor && this._jobId && typeof this._monitor.logStepComplete === 'function') {
-          try {
-            this._monitor.logStepComplete(this._jobId, stepName, false);
-          } catch (_e) {
-            this._logger.debug(`[${this._name}] monitor.logStepComplete failed: ${_e.message}`);
-          }
-        }
         if (this._stopOnError) {
           break;
         }
@@ -48299,17 +48231,6 @@ class Pipeline {
         durationMs: result.durationMs || 0
       };
       this._logPipelineStep(stepName, semanticStatus, details, this._stepLogPosition(stepIndex));
-      if (this._monitor && this._jobId) {
-        try {
-          if (status === 'skipped' && typeof this._monitor.logStepSkipped === 'function') {
-            this._monitor.logStepSkipped(this._jobId, stepName);
-          } else if (typeof this._monitor.logStepComplete === 'function') {
-            this._monitor.logStepComplete(this._jobId, stepName, status === 'completed');
-          }
-        } catch (_e) {
-          this._logger.debug(`[${this._name}] monitor.logStepSkipped/Complete failed: ${_e.message}`);
-        }
-      }
       if (status === 'failed') {
         pipelineSuccess = false;
         this._invokeHooks(this._hooks.onError, step, context, result.error);
@@ -48331,28 +48252,6 @@ class Pipeline {
   clearSteps() {
     this._steps = [];
     return this;
-  }
-
-
-
-
-  getConfigSummary() {
-    return {
-      name: this._name,
-      stepCount: this._steps.length,
-      steps: this._steps.map(step => step.getName()),
-      stopOnError: this._stopOnError,
-      maxRetries: this._maxRetries,
-      hasExceptionService: this._exceptionService !== null,
-      hasMonitor: this._monitor !== null,
-      jobId: this._jobId,
-      hooks: {
-        beforeStep: this._hooks.beforeStep.length > 0,
-        afterStep: this._hooks.afterStep.length > 0,
-        onError: this._hooks.onError.length > 0,
-        onComplete: this._hooks.onComplete.length > 0
-      }
-    };
   }
 }
 ;
@@ -48387,17 +48286,6 @@ class PipelineError extends BaseError {
     super(message, context);
 
     this.name = 'PipelineError';
-  }
-
-
-
-
-  toString() {
-    let message = `${this.name}: ${this.message}`;
-    if (this.context && Object.keys(this.context).length > 0) {
-      message += '\nContext: ' + JSON.stringify(this.context, null, 2);
-    }
-    return message;
   }
 }
 ;

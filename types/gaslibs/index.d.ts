@@ -549,8 +549,6 @@ declare global {
     shouldStop(): boolean;
     getStopReason(): string | null;
     getExecutionHistory(): StepExecutionRecord[];
-    setFlag(name: string, value: unknown): this;
-    getFlag<T = unknown>(name: string, defaultValue?: T | null): T | null;
     getTotalDuration(): number;
     getSummary(): {
       startTime: number;
@@ -589,9 +587,6 @@ declare global {
         name?: string;
         stopOnError?: boolean;
         maxRetries?: number;
-        monitor?: unknown;
-        jobId?: string | null;
-        dryRun?: boolean;
         logPosition?: TreePosition;
       }
     );
@@ -604,10 +599,7 @@ declare global {
     ): this;
     onError(callback: (step: Step, context: PipelineContext, error: Error) => void): this;
     onComplete(callback: (context: PipelineContext, success: boolean) => void): this;
-    execute(
-      initialData?: Record<string, unknown> | null,
-      options?: { dryRun?: boolean }
-    ): PipelineContext;
+    execute(initialData?: Record<string, unknown> | null): PipelineContext;
     clearSteps(): this;
   }
   class StepExecutionError extends Error {}

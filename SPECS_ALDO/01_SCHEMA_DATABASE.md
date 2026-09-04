@@ -115,7 +115,6 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 | `ATTIVA`                  | Boolean      | —   | —             | —                                | Classe attiva nell'anno corrente                                                                                                                                                                                                                  |
 | `ARTICOLAZIONE`           | JSON         | —   | —             | —                                | Configurazione classi articolate (struttura `ArticolazioneConfig`, `03_VALUE_OBJECTS_ED_ENUM.md`); una classe articolata ha tre righe nel DB: la classe completa e le due "sottoclassi" componenti.                                                                   |
 | `STORICO`                 | String (CSV) | —   | —             | —                                | Nomi che la classe ha avuto negli anni precedenti (es. `4ALC` per l'attuale `5ALC`)                                                                                                                                                               |
-| `ASL`                     | Boolean      | —   | —             | —                                | Indica se la classe è abilitata all'Alternanza Scuola Lavoro (PCTO)                                                                                                                                                                              |
 | `*[MATERIA]*`             | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonne dinamiche: una per materia, contiene email docenti titolari. Rappresenta Priority 3.                                                                                                                                                      |
 | `*[MATERIA.itp]*`         | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonne dinamiche: docenti ITP per la materia                                                                                                                                                                                                     |
 | `*[MATERIA.[SPECIFICA]]*` | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonne dinamiche: docenti per la specifica della materia (es. `Esecuzione e interpretazione` nel liceo musicale può avere `Chitarra`, `Pianoforte`, eccetera, e ogni studente può seguirne solo un sottoinsieme differente dagli altri studenti) |
@@ -168,7 +167,7 @@ Lookup table dei percorsi di studio. Stabile, cachata completamente in memoria.
 | `ID`             | String | ✅  | —                   | Codice (es. `LC`, `LS`, `LSSA`)                                        |
 | `NOME`           | String | —   | —                   | Descrizione estesa (es. `Liceo scientifico opzione scienze applicate`) |
 | `NOME_SINTETICO` | String | —   | —                   | Descrizione estesa (es. `Scientifico scienze applicate`)               |
-| `TIPO`           | String | —   | —                   | Tipo di istituto (testo libero, es. Liceo, Tecnico, Professionale)      |
+| `TIPO`           | String | —   | Enum (TipoIstituto) | Tipo di istituto (es. LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)        |
 
 ---
 

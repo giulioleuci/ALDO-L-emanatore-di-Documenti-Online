@@ -552,6 +552,19 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       REGISTRA_DOC: null,
       REGISTRA_FOLD: null
     });
+    tables.ALUNNI!.push({
+      EMAIL: 'altro-studente@school.test',
+      COGNOMENOME: 'ALTRO STUDENTE',
+      CLASSE: '1F-LSS',
+      RELIGIONE: 'NO',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: false,
+      TUTOR_1: '',
+      TUTOR_2: '',
+      CURRICULUM: null
+    });
+    tables.PIANI!.push({ STUDENTE: 'altro-studente@school.test', TIPO: 'PDP_DSA', PARAMETRI: null });
     tables.LOG_DOCS!.push({
       ID: 'LD_SIBLING',
       ID_GEN: 'CD_PARTNER',

@@ -79,7 +79,7 @@ export class PianiPersClasseProvider implements ContextProvider {
   private itemsPerPiano(alunno: Alunno, piano: Piano, studente: StudenteRef): PianoPersonalizzatoVM[] {
     const matches = this.logDocs
       .findByUtente(alunno.email)
-      .filter((l) => l.tipo === TIPO_PIANO_PERS && l.getSottotipo() === piano.tipo);
+      .filter((l) => l.tipo === TIPO_PIANO_PERS && l.getSottotipo() === String(piano.tipo));
     if (matches.length === 0) return [this.placeholder(piano, studente)];
     return matches.map((l) => ({
       ...buildDocumentoLogVm(l),

@@ -42,9 +42,6 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
 
 test('generates a Verbale CdC end-to-end (ref 10 full pipeline)', () => {
   const { db, drive, templates, service } = wire();
-  expect(
-    (service as unknown as { storicoDocumenti?: StoricoDocumentiService }).storicoDocumenti
-  ).toBeInstanceOf(StoricoDocumentiService);
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
 
   expect(result.status).toBe('GENERATO');

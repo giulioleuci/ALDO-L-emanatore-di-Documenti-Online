@@ -1082,6 +1082,9 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
     };
   };
   const roles = { risolvi: jest.fn(() => [Email.of('coord4d@school.it')]) };
+  beforeEach(() => {
+    roles.risolvi.mockClear();
+  });
   const setup = (configuredAction = action()) => {
     const db = new FakeDatabase(fixtureTables());
     const ctx = baseCtx(db);
@@ -1106,6 +1109,10 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
   test('grants the current class coordinator only the historical matching plan', () => {
     const { db, ctx } = setup();
     const drive = new FakeDriveFacade();
+    // 'new-pdp' models a defensive scenario the real StoricoDatabaseProvider can never
+    // produce (idsMatching only scans historical years, which exclude the current year —
+    // see documentSteps.ts's comment above the newFileId filter); kept as a cheap
+    // regression check on the filter's own logic in isolation.
     const history = storico(['old-pdp', 'new-pdp']);
 
     new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, history.service).execute(ctx);

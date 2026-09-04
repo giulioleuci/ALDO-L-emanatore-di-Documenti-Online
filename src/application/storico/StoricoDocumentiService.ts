@@ -1,4 +1,5 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
+import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import { Email } from '../../domain/value-objects/Email';
 import { ValidationError } from '../../domain/errors/DomainError';
 
@@ -29,11 +30,7 @@ const SUPPORTED_LOG_DOCS_CRITERIA = new Set([
   'SOTTOTIPO'
 ]);
 
-function matchesLogDocsCriterion(
-  doc: import('../../domain/entities/LogDocumento').LogDocumento,
-  column: string,
-  value: string
-): boolean {
+function matchesLogDocsCriterion(doc: LogDocumento, column: string, value: string): boolean {
   switch (column) {
     case 'UTENTI':
       return doc.containsUtente(value);
@@ -81,16 +78,20 @@ export class StoricoDocumentiService {
         throw new ValidationError(`Unsupported LOG_DOCS criterion: ${column}`);
       }
     }
-    return this.provider.anniStorici(profondita).flatMap(({ logDocs }) =>
-      logDocs.findAll().flatMap((doc) =>
-        doc.id !== null &&
-        Object.entries(criteri).every(([column, value]) =>
-          matchesLogDocsCriterion(doc, column, value)
-        )
-          ? [doc.id]
-          : []
-      )
-    );
+    return this.provider
+      .anniStorici(profondita)
+      .flatMap(({ logDocs }) =>
+        logDocs
+          .findAll()
+          .flatMap((doc) =>
+            doc.id !== null &&
+            Object.entries(criteri).every(([column, value]) =>
+              matchesLogDocsCriterion(doc, column, value)
+            )
+              ? [doc.id]
+              : []
+          )
+      );
   }
 
   private tutti(alunnoEmail: string, profondita: number): DocumentoStoricoConTipo[] {

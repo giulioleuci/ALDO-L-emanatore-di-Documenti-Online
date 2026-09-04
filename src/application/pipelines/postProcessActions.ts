@@ -144,6 +144,9 @@ export function executePostProcess(
   handler?: PostProcessActionHandler
 ): number {
   const actions = JSON.parse(rawJson) as PostProcessAction[];
+  // Mixes two different units: rows updated by DB actions (INSERISCI_TIMESTAMP,
+  // AGGIORNA_CAMPO, AGGIORNA_STATO_DOC) and files granted by AGGIORNA_PERMESSI_STORICI's
+  // handler, summed into one counter — see documentSteps.ts's `Updated` log-detail field.
   let updated = 0;
   for (const action of actions) {
     const criteri = resolveCriteri(action.criteri ?? {}, cdu, templates);

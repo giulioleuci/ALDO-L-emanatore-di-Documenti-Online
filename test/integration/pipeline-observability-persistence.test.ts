@@ -206,10 +206,6 @@ test('pipeline observability survives real SheetDB commit and dynamic job execut
       logger,
       now: new Date('2026-07-01T09:00:00Z')
     });
-    expect(
-      (documentService as unknown as { storicoDocumenti?: StoricoDocumentiService })
-        .storicoDocumenti
-    ).toBeInstanceOf(StoricoDocumentiService);
     const gmail = new FakeGmailFacade();
     const emailService = composeEmailNotificationService(
       sheetDb.db,

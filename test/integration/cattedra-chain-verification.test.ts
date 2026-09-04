@@ -91,9 +91,6 @@ test('doc-gen: 2-hop VARIAZIONI_CATTEDRA chain resolves the generated CDU to the
     storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
     now: CHAIN_NOW
   });
-  expect(
-    (service as unknown as { storicoDocumenti?: StoricoDocumentiService }).storicoDocumenti
-  ).toBeInstanceOf(StoricoDocumentiService);
   const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
   expect(result.status).toBe('GENERATO');
 

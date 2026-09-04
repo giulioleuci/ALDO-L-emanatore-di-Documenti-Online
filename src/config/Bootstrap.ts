@@ -67,6 +67,11 @@ import {
   type ISpreadsheetReportFacade
 } from '../infrastructure/facades/SpreadsheetReportFacade';
 import { LockDocumentsService, type LockOutcome } from '../application/services/LockDocumentsService';
+import {
+  MasterStoricoDatabaseProvider,
+  type StoricoDatabaseProvider
+} from '../application/storico/StoricoDatabaseProvider';
+import { StoricoDocumentiService } from '../application/storico/StoricoDocumentiService';
 
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
 interface BootstrapDeps {
@@ -128,6 +133,11 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('logger', () => logger);
   c.register('db', () => deps.db);
   c.register('drive', () => deps.drive);
+  c.register('storicoDb', () => new MasterStoricoDatabaseProvider(deps.master, logger));
+  c.register(
+    'storicoDocumenti',
+    (container) => new StoricoDocumentiService(container.get<StoricoDatabaseProvider>('storicoDb'))
+  );
   c.register('classi', () => new ClasseRepository(deps.db));
   c.register('docenti', () => new DocenteRepository(deps.db));
   c.register('alunni', () => new AlunnoRepository(deps.db));
@@ -177,7 +187,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       movimenti: container.get<MovimentoAlunnoRepository>('movimenti'),
       logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
       progetti: container.get<ProgettoRepository>('progetti'),
-      dipartimenti: container.get<DipartimentoRepository>('dipartimenti')
+      dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
+      storicoDb: container.get<StoricoDatabaseProvider>('storicoDb')
     })
   );
   if (deps.spreadsheets !== undefined) {
@@ -242,6 +253,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         configs: new ConfigurazioneDocumentoRepository(deps.db),
         roleResolver: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
         classi: container.get<ClasseRepository>('classi'),
+        storicoDocumenti: container.get<StoricoDocumentiService>('storicoDocumenti'),
         now: deps.now,
         monitor: deps.monitor,
         logger

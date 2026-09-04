@@ -29,6 +29,7 @@ import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDoc
 import { TABLE, COL_CONF_DOC } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { TipoPiano } from '../../domain/value-objects/enums';
+import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 
 export interface DocumentGenerationDeps {
   /** Persistence port + the RepositoryDatabase seam (POST_PROCESSO row updates). */
@@ -46,6 +47,7 @@ export interface DocumentGenerationDeps {
   classi: IClasseRepository;
   /** Role -> Email resolver for ACL application (14 §1); RisolutoreRuoliService satisfies it. */
   roleResolver: IRoleResolver;
+  storicoDocumenti: StoricoDocumentiService;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
   now: Date;
   /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
@@ -79,6 +81,7 @@ export class DocumentGenerationService {
   private readonly configs: IConfigurazioneDocumentoRepository;
   private readonly classi: IClasseRepository;
   private readonly roleResolver: IRoleResolver;
+  private readonly storicoDocumenti: StoricoDocumentiService;
   private readonly now: Date;
   private readonly monitor: IProcessMonitor | undefined;
   private readonly logger: LoggerService;
@@ -95,6 +98,7 @@ export class DocumentGenerationService {
     this.configs = deps.configs;
     this.classi = deps.classi;
     this.roleResolver = deps.roleResolver;
+    this.storicoDocumenti = deps.storicoDocumenti;
     this.now = deps.now;
     this.monitor = deps.monitor;
     this.logger = deps.logger ?? new LoggerService();
@@ -390,7 +394,17 @@ export class DocumentGenerationService {
       .addStep(new RenderTemplateStep(this.logger, this.strategyFactory))
       .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver, this.expressionEngine))
       .addStep(new RegisterDocumentStep(this.logger, this.db, this.templates))
-      .addStep(new PostProcessStep(this.logger, this.db, this.templates, this.now));
+      .addStep(
+        new PostProcessStep(
+          this.logger,
+          this.db,
+          this.templates,
+          this.now,
+          this.drive,
+          this.roleResolver,
+          this.storicoDocumenti
+        )
+      );
 
     pipeline.onError((step, ctx, error) => {
       if (!CRITICAL_STEPS.has(step.getName())) return;

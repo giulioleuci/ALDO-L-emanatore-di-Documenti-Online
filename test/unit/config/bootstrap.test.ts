@@ -44,6 +44,13 @@ import { DocumentoGenericoGeneratorStrategy } from '../../../src/application/str
 import { FoglioGenericoGeneratorStrategy } from '../../../src/application/strategies/FoglioGenericoGeneratorStrategy';
 import { COL_CONF_DOC } from '../../../src/config/schema';
 import { confDocFixture as strategyConfig } from '../../fixtures/confDoc';
+import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
+import type { ContextBuilder } from '../../../src/application/context-engine/ContextBuilder';
+import {
+  MasterStoricoDatabaseProvider,
+  type StoricoDatabaseProvider
+} from '../../../src/application/storico/StoricoDatabaseProvider';
+import { StoricoDocumentiService } from '../../../src/application/storico/StoricoDocumentiService';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -141,6 +148,33 @@ test('container injects one role and teaching resolver graph into every document
       }
     ).roleResolver
   ).toBe(roles);
+});
+
+test('container shares one historical database provider between CDU and document post-processing', () => {
+  const createSpy = jest.spyOn(ContextEngineFactory, 'create');
+  try {
+    const c = container();
+    const storicoDb = c.get<StoricoDatabaseProvider>('storicoDb');
+    const storicoDocumenti = c.get<StoricoDocumentiService>('storicoDocumenti');
+
+    expect(storicoDb).toBeInstanceOf(MasterStoricoDatabaseProvider);
+    expect(c.get<StoricoDatabaseProvider>('storicoDb')).toBe(storicoDb);
+    expect((storicoDocumenti as unknown as { provider: StoricoDatabaseProvider }).provider).toBe(
+      storicoDb
+    );
+
+    c.get<ContextBuilder>('contextBuilder');
+    expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ storicoDb }));
+    expect(
+      (
+        c.get<DocumentGenerationService>('documentGenerationService') as unknown as {
+          storicoDocumenti: StoricoDocumentiService;
+        }
+      ).storicoDocumenti
+    ).toBe(storicoDocumenti);
+  } finally {
+    createSpy.mockRestore();
+  }
 });
 
 test('notification council enumeration consumes the registered GLF teaching resolver', () => {

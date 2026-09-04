@@ -20,6 +20,8 @@ import { TABLE } from '../../../src/config/schema';
 import { ConfigurationError, PipelineError } from '../../../src/domain/errors/DomainError';
 import type { Row, IReadableTable } from '../../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
+import { StoricoDocumentiService } from '../../../src/application/storico/StoricoDocumentiService';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
 
 function stubFactory(strategy: GeneratorStrategy): DocumentStrategyFactory {
@@ -53,6 +55,7 @@ function wire(
     db?: FakeDatabase;
     now?: Date;
     monitor?: FakeProcessMonitor;
+    storicoDocumenti?: StoricoDocumentiService;
   } = {}
 ) {
   const db = options.db ?? new FakeDatabase(tables);
@@ -60,7 +63,7 @@ function wire(
   const templates = new FakeTemplateEngine();
   const strategyFactory =
     options.strategyFactory ?? stubFactory(options.strategy ?? new DocumentoGenericoGeneratorStrategy(templates));
-  const service = new DocumentGenerationService({
+  const deps = {
     db,
     drive,
     contextBuilder: composeContextBuilder(db),
@@ -70,9 +73,12 @@ function wire(
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
+    storicoDocumenti:
+      options.storicoDocumenti ?? new StoricoDocumentiService({ anniStorici: () => [] }),
     now: options.now ?? new Date('2026-07-01T09:00:00Z'),
     monitor: options.monitor
-  });
+  };
+  const service = new DocumentGenerationService(deps);
   return { db, drive, templates, service };
 }
 
@@ -198,6 +204,70 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
 });
 
 describe('DocumentGenerationService.generateForPiano', () => {
+  test('grants the configured role access to matching historical plans after registering the new plan', () => {
+    const tables = fixtureTables();
+    tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: null });
+    const config = tables.CONF_DOC.find((row) => row.ID === 'PIANI_PERSONALIZZATI')!;
+    config.POST_PROCESSO = JSON.stringify([
+      {
+        tipo: 'AGGIORNA_PERMESSI_STORICI',
+        target: 'PIANI_PERSONALIZZATI',
+        ruolo: 'COORDINATORI',
+        permesso: 'LETTURA',
+        profondita: 1,
+        criteri: {
+          UTENTI: '{{focus.alunno.email}}',
+          SOTTOTIPO: '{{focus.piano.tipo}}'
+        }
+      }
+    ]);
+    const historicalDb = new FakeDatabase({
+      CLASSI: [],
+      LOG_DOCS: [
+        {
+          ID: 'pdp-bes-storico',
+          ID_GEN: 'PIANI_PERSONALIZZATI',
+          TIPO: 'PIANO_PERS',
+          SOTTOTIPO: 'PDP_BES',
+          UTENTI: 'a1@school.it',
+          CLASSI: '4A',
+          MATERIE: ''
+        }
+      ]
+    });
+    const storicoDocumenti = new StoricoDocumentiService({
+      anniStorici: () => [
+        {
+          anno: '2024-2025',
+          db: historicalDb,
+          logDocs: new LogDocumentoRepository(
+            historicalDb,
+            new LazyRef(() => new ClasseRepository(historicalDb))
+          )
+        }
+      ]
+    });
+    const { db, drive, service } = wire(tables, {
+      strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine()),
+      storicoDocumenti
+    });
+
+    service.generateForPiano('a1@school.it', TipoPiano.PDP_BES, 'PIANI_PERSONALIZZATI');
+
+    expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual([
+      expect.objectContaining({
+        ID_GEN: 'PIANI_PERSONALIZZATI',
+        SOTTOTIPO: 'PDP_BES',
+        UTENTI: 'a1@school.it'
+      })
+    ]);
+    expect(drive.permissions).toContainEqual({
+      fileId: 'pdp-bes-storico',
+      email: 'rossi@school.it',
+      permesso: 'LETTURA'
+    });
+  });
+
   test('returns the generated document metadata and measured duration from the completed pipeline context', () => {
     const { service } = wire(fixtureTables(), {
       strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())

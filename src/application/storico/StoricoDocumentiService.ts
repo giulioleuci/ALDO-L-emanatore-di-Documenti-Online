@@ -1,5 +1,6 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { Email } from '../../domain/value-objects/Email';
+import { ValidationError } from '../../domain/errors/DomainError';
 
 export interface DocumentoStorico {
   anno: string;
@@ -17,6 +18,29 @@ export interface DocumentoStoricoConTipo extends DocumentoStorico {
   idGen: string;
   /** Set by class-level aggregation to retain the source student's identity. */
   studenteEmail?: string;
+}
+
+function matchesLogDocsCriterion(
+  doc: import('../../domain/entities/LogDocumento').LogDocumento,
+  column: string,
+  value: string
+): boolean {
+  switch (column) {
+    case 'UTENTI':
+      return value === '' || doc.containsUtente(value);
+    case 'CLASSI':
+      return value === '' || doc.containsClasse(value);
+    case 'MATERIE':
+      return value === '' || doc.containsMateria(value);
+    case 'ID_GEN':
+      return doc.idGen === value;
+    case 'TIPO':
+      return doc.tipo === value;
+    case 'SOTTOTIPO':
+      return doc.getSottotipo() === value;
+    default:
+      throw new ValidationError(`Unsupported LOG_DOCS criterion: ${column}`);
+  }
 }
 
 /**
@@ -40,6 +64,19 @@ export class StoricoDocumentiService {
   /** Every prior-year document, with family, subtype and generator id kept separate. */
   perAlunnoConTipo(alunnoEmail: string, profondita = 1): DocumentoStoricoConTipo[] {
     return this.tutti(alunnoEmail, profondita);
+  }
+
+  idsMatching(criteri: Record<string, string>, profondita: number): string[] {
+    return this.provider.anniStorici(profondita).flatMap(({ logDocs }) =>
+      logDocs.findAll().flatMap((doc) =>
+        doc.id !== null &&
+        Object.entries(criteri).every(([column, value]) =>
+          matchesLogDocsCriterion(doc, column, value)
+        )
+          ? [doc.id]
+          : []
+      )
+    );
   }
 
   private tutti(alunnoEmail: string, profondita: number): DocumentoStoricoConTipo[] {

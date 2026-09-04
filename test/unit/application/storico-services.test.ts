@@ -18,6 +18,7 @@ import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import { ValidationError } from '../../../src/domain/errors/DomainError';
 
 // --- LazyRef ---
 
@@ -365,6 +366,75 @@ test('reads historical documents from the minimal CLASSI/ALUNNI/LOG_DOCS databas
     utilsSpy.mockRestore();
     (global as unknown as { DatabaseService: unknown }).DatabaseService = originalDatabaseService;
   }
+});
+
+test('StoricoDocumentiService.idsMatching applies LOG_DOCS criteria with historical depth', () => {
+  const firstYear = annoPrecedente();
+  firstYear.LOG_DOCS = [
+    {
+      ID: 'pdp-bes-3d',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_BES',
+      UTENTI: 'a1@school.it',
+      CLASSI: '3D',
+      MATERIE: ''
+    },
+    {
+      ID: 'pei-3d',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PEI',
+      UTENTI: '',
+      CLASSI: '2D',
+      MATERIE: ''
+    }
+  ];
+  const secondYear = annoPrecedente();
+  secondYear.LOG_DOCS = [
+    {
+      ID: 'pdp-bes-2d',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_BES',
+      UTENTI: 'a1@school.it',
+      CLASSI: '2D',
+      MATERIE: ''
+    }
+  ];
+  const service = new StoricoDocumentiService(
+    fakeProvider([annoStorico('2025-2026', firstYear), annoStorico('2024-2025', secondYear)])
+  );
+
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', UTENTI: 'a1@school.it' }, 1)).toEqual([
+    'pdp-bes-3d'
+  ]);
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', SOTTOTIPO: 'PDP_BES' }, 1)).toEqual([
+    'pdp-bes-3d'
+  ]);
+  expect(
+    service.idsMatching(
+      { ID_GEN: 'PIANI_PERSONALIZZATI', TIPO: 'PIANO_PERS', CLASSI: '3D', MATERIE: '' },
+      1
+    )
+  ).toEqual(['pdp-bes-3d']);
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI' }, 1)).toEqual([
+    'pdp-bes-3d',
+    'pei-3d'
+  ]);
+  expect(service.idsMatching({}, 1)).toEqual(['pdp-bes-3d', 'pei-3d']);
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI' }, 2)).toEqual([
+    'pdp-bes-3d',
+    'pei-3d',
+    'pdp-bes-2d'
+  ]);
+});
+
+test('StoricoDocumentiService.idsMatching rejects unsupported LOG_DOCS criteria', () => {
+  const service = new StoricoDocumentiService(
+    fakeProvider([annoStorico('2025-2026', annoPrecedente())])
+  );
+  expect(() => service.idsMatching({ STATO: 'GENERATO' }, 1)).toThrow(ValidationError);
 });
 
 // --- StoricoClassiService ---

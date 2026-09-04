@@ -437,6 +437,11 @@ test('StoricoDocumentiService.idsMatching rejects unsupported LOG_DOCS criteria'
   expect(() => service.idsMatching({ STATO: 'GENERATO' }, 1)).toThrow(ValidationError);
 });
 
+test('StoricoDocumentiService.idsMatching rejects unsupported criteria before scanning empty history', () => {
+  const service = new StoricoDocumentiService(fakeProvider([]));
+  expect(() => service.idsMatching({ STATO: 'GENERATO' }, 1)).toThrow(ValidationError);
+});
+
 // --- StoricoClassiService ---
 
 describe('StoricoClassiService (13 §5)', () => {

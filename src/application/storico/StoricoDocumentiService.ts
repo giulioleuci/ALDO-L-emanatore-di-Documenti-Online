@@ -20,6 +20,15 @@ export interface DocumentoStoricoConTipo extends DocumentoStorico {
   studenteEmail?: string;
 }
 
+const SUPPORTED_LOG_DOCS_CRITERIA = new Set([
+  'UTENTI',
+  'CLASSI',
+  'MATERIE',
+  'ID_GEN',
+  'TIPO',
+  'SOTTOTIPO'
+]);
+
 function matchesLogDocsCriterion(
   doc: import('../../domain/entities/LogDocumento').LogDocumento,
   column: string,
@@ -67,6 +76,11 @@ export class StoricoDocumentiService {
   }
 
   idsMatching(criteri: Record<string, string>, profondita: number): string[] {
+    for (const column of Object.keys(criteri)) {
+      if (!SUPPORTED_LOG_DOCS_CRITERIA.has(column)) {
+        throw new ValidationError(`Unsupported LOG_DOCS criterion: ${column}`);
+      }
+    }
     return this.provider.anniStorici(profondita).flatMap(({ logDocs }) =>
       logDocs.findAll().flatMap((doc) =>
         doc.id !== null &&

@@ -26090,329 +26090,6 @@ class ExpressionEngineService {
 
 ;
 
-
-
-
-
-
-class TableDataModifier {
-
-
-
-
-  constructor(facade) {
-    this.facade = facade;
-  }
-
-
-
-
-
-
-
-
-  insertRow(rowObj) {
-    const results = this.insertRows([rowObj]);
-    return results.length > 0 ? results[0] : null;
-  }
-
-
-
-
-
-
-
-
-  insertRows(rowsArray) {
-    if (!Array.isArray(rowsArray) || rowsArray.length === 0) {
-      this.facade._logger.warn('insertRows called with empty or invalid array');
-      return [];
-    }
-    this.facade._ensureDataLoaded();
-    const completeRows = [];
-    const physicalColumns = this.facade.columns.filter(col => !this.facade._virtualColumns[col]);
-
-
-    for (const rowObj of rowsArray) {
-
-      const validatedRow = this.facade.schemaValidator.validateRow(rowObj, false);
-      const completeRow = {
-        ...validatedRow
-      };
-
-
-      if (this.facade._keyField && !completeRow[this.facade._keyField]) {
-        completeRow[this.facade._keyField] = this.facade.utils.generateUuid();
-      }
-
-
-      this.facade._applyVirtualColumns(completeRow);
-      completeRows.push(completeRow);
-    }
-    try {
-      this.facade._logger.debug(`Queuing batch insert of ${rowsArray.length} rows for '${this.facade.sheetName}'`);
-
-
-      this.facade._insertQueue.push(...completeRows);
-      this.facade._logger.debug(`Successfully queued ${completeRows.length} rows for '${this.facade.sheetName}'`);
-
-
-      this.facade._rowsCache.push(...completeRows);
-
-      this.facade._processedRowsCache = null;
-
-      this.facade.searchEngine.invalidateIndex();
-
-
-      for (const row of completeRows) {
-        this.facade._storeOriginalRowData(row);
-      }
-      return completeRows;
-    } catch (e) {
-      this.facade._logger.error(`Failed to queue batch insert rows in '${this.facade.sheetName}': ${e.message}`);
-      throw e;
-    }
-  }
-
-
-
-
-
-
-
-
-
-
-  updateRowById(id, rowObj) {
-    this.facade._logger.debug(`Starting update of row with ${this.facade._keyField}=${id} in '${this.facade.sheetName}'`);
-    this.facade._ensureDataLoaded();
-
-
-    const validatedRow = this.facade.schemaValidator.validateRow(rowObj, true);
-    const targetRowIndex = this.facade._findRowIndexById(id);
-    if (targetRowIndex === -1) {
-      this.facade._logger.error(`No row found with ${this.facade._keyField}=${id} in ${this.facade.sheetName}`);
-      throw new OperationError(`No row found with ${this.facade._keyField}=${id} in ${this.facade.sheetName}`, 'updateRowById', false, {
-        keyField: this.facade._keyField,
-        id,
-        sheetName: this.facade.sheetName
-      });
-    }
-    const originalRow = this.facade._rowsCache[targetRowIndex];
-    const rowToUpdate = {
-      ...originalRow,
-      ...validatedRow
-    };
-    this.facade._applyVirtualColumns(rowToUpdate);
-    const physicalColumns = this.facade.columns.filter(col => !this.facade._virtualColumns[col]);
-
-
-    const newPhysicalData = {};
-    for (const col of physicalColumns) {
-      newPhysicalData[col] = rowToUpdate[col] ?? '';
-    }
-
-
-    const originalData = this.facade._originalRowData.get(id);
-    if (originalData && isEqual(originalData, newPhysicalData)) {
-      this.facade._logger.debug(`No changes detected for row ${id}, skipping API call`);
-      return rowToUpdate;
-    }
-
-
-    try {
-      this.facade._logger.debug(`Queuing update for row ${id} in '${this.facade.sheetName}'`);
-      this.facade._updateQueue.set(id, rowToUpdate);
-      this.facade._logger.debug(`Row update queued successfully in '${this.facade.sheetName}'`);
-
-
-      this.facade._rowsCache[targetRowIndex] = rowToUpdate;
-
-      this.facade._processedRowsCache = null;
-
-      this.facade.searchEngine.invalidateIndex();
-      return rowToUpdate;
-    } catch (e) {
-      this.facade._logger.error(`Error queuing row update in '${this.facade.sheetName}': ${e.message}`);
-      throw e;
-    }
-  }
-
-
-
-
-
-
-
-
-
-  patchRow(id, partialObj) {
-    this.facade._logger.debug(`Starting patch of row with ${this.facade._keyField}=${id} in '${this.facade.sheetName}'`);
-    this.facade._ensureDataLoaded();
-
-
-    const validatedPartial = this.facade.schemaValidator.validateRow(partialObj, true);
-    const targetRowIndex = this.facade._findRowIndexById(id);
-    if (targetRowIndex === -1) {
-      this.facade._logger.error(`No row found with ${this.facade._keyField}=${id} in ${this.facade.sheetName}`);
-      throw new OperationError(`No row found with ${this.facade._keyField}=${id} in ${this.facade.sheetName}`, 'patchRow', false, {
-        keyField: this.facade._keyField,
-        id,
-        sheetName: this.facade.sheetName
-      });
-    }
-    const originalRow = this.facade._rowsCache[targetRowIndex];
-    const physicalColumns = this.facade.columns.filter(col => !this.facade._virtualColumns[col]);
-
-
-    const changedColumns = [];
-    const changedValues = [];
-    for (const [key, newValue] of Object.entries(validatedPartial)) {
-
-      if (this.facade._virtualColumns[key]) {
-        continue;
-      }
-
-
-      if (!physicalColumns.includes(key)) {
-        this.facade._logger.warn(`Column '${key}' not found in table schema, skipping`);
-        continue;
-      }
-
-
-      const oldValue = originalRow[key];
-      if (oldValue !== newValue) {
-        changedColumns.push(key);
-        changedValues.push(newValue);
-      }
-    }
-
-
-    if (changedColumns.length === 0) {
-      this.facade._logger.debug(`No changes detected for row ${id}, skipping update`);
-      const rowToReturn = {
-        ...originalRow
-      };
-      return this.facade._applyVirtualColumns(rowToReturn);
-    }
-
-
-    this.facade._logger.debug(`Patching ${changedColumns.length} columns for row ${id}: ${changedColumns.join(', ')}`);
-    try {
-
-      const updatedRow = {
-        ...originalRow,
-        ...validatedPartial
-      };
-      this.facade._applyVirtualColumns(updatedRow);
-      this.facade._updateQueue.set(id, updatedRow);
-      this.facade._logger.debug(`Successfully queued patch row in '${this.facade.sheetName}'`);
-
-
-      this.facade._rowsCache[targetRowIndex] = updatedRow;
-
-      this.facade._processedRowsCache = null;
-
-      this.facade.searchEngine.invalidateIndex();
-      return updatedRow;
-    } catch (e) {
-      this.facade._logger.error(`Error queuing patched row in '${this.facade.sheetName}': ${e.message}`);
-      throw e;
-    }
-  }
-
-
-
-
-
-
-
-
-  deleteRowById(id) {
-    this.facade._logger.debug(`Starting deletion of row with ${this.facade._keyField}=${id} in '${this.facade.sheetName}'`);
-    this.facade._ensureDataLoaded();
-    const targetRowIndex = this.facade._findRowIndexById(id);
-    if (targetRowIndex === -1) {
-      this.facade._logger.warn(`No row found with ${this.facade._keyField}=${id} in ${this.facade.sheetName} for deletion.`);
-      return null; 
-    }
-
-
-    const deletedRow = {
-      ...this.facade._rowsCache[targetRowIndex]
-    };
-    try {
-      this.facade._logger.debug(`Queuing deletion for row in sheet '${this.facade.sheetName}'`);
-
-
-      this.facade._deleteQueue.add(id);
-      this.facade._updateQueue.delete(id); 
-
-      const insertIndex = this.facade._insertQueue.findIndex(r => r[this.facade._keyField] === id);
-      if (insertIndex !== -1) {
-        this.facade._insertQueue.splice(insertIndex, 1);
-        this.facade._deleteQueue.delete(id); 
-      }
-
-
-      this.facade._rowsCache.splice(targetRowIndex, 1);
-
-      this.facade._processedRowsCache = null;
-
-      this.facade.searchEngine.invalidateIndex();
-
-
-      this.facade._originalRowData.delete(id);
-      this.facade._logger.debug(`Row deletion queued successfully from '${this.facade.sheetName}'`);
-      return deletedRow; 
-    } catch (e) {
-      this.facade._logger.error(`Error queuing row deletion from '${this.facade.sheetName}': ${e.message}`);
-      throw e;
-    }
-  }
-
-
-
-
-
-
-
-  updateRowsByIds(updatesObj) {
-    if (!updatesObj || Object.keys(updatesObj).length === 0) return [];
-    const updatedRows = [];
-    for (const [id, updates] of Object.entries(updatesObj)) {
-      try {
-        const result = this.patchRow(id, updates);
-        updatedRows.push(result);
-      } catch (e) {
-        this.facade._logger.warn(`Failed to process bulk update for ID ${id}: ${e.message}`);
-      }
-    }
-    return updatedRows;
-  }
-
-
-
-
-
-
-
-  deleteRowsByIds(ids) {
-    if (!ids || ids.length === 0) return [];
-    const deletedRows = [];
-    for (const id of ids) {
-      try {
-        const result = this.deleteRowById(id);
-        if (result) deletedRows.push(result);
-      } catch (e) {
-        this.facade._logger.warn(`Failed to process bulk delete for ID ${id}: ${e.message}`);
-      }
-    }
-    return deletedRows;
-  }
-}
-;
-
 class ValidationException extends BaseError {
   constructor(message, entityType = null, errors = []) {
     super(message, {
@@ -41295,53 +40972,6 @@ config(en());
 ;
 
 
-const zodSchemaProtocol = object({
-  safeParse: _function()
-});
-class TableSchemaValidator {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  setSchema(zodSchema) {
-    if (!zodSchemaProtocol.safeParse(zodSchema).success) {
-      throw new ConfigurationError('setSchema() requires a Zod schema');
-    }
-    this.facade._schema = zodSchema;
-    this.facade._schemaValidationEnabled = true;
-    this.facade._logger.debug(`Schema validation enabled for table '${this.facade.sheetName}'`);
-    return this.facade;
-  }
-  disableSchemaValidation() {
-    this.facade._schemaValidationEnabled = false;
-    this.facade._logger.debug(`Schema validation disabled for table '${this.facade.sheetName}'`);
-    return this.facade;
-  }
-  enableSchemaValidation() {
-    if (!this.facade._schema) {
-      throw new ConfigurationError('Cannot enable schema validation: no schema has been set');
-    }
-    this.facade._schemaValidationEnabled = true;
-    this.facade._logger.debug(`Schema validation enabled for table '${this.facade.sheetName}'`);
-    return this.facade;
-  }
-  validateRow(rowObj, isUpdate = false) {
-    if (!this.facade._schemaValidationEnabled || !this.facade._schema) {
-      return rowObj;
-    }
-    if (!this.facade._schemaValidator) {
-      throw new ConfigurationError('Schema validation requires a SchemaValidator instance');
-    }
-    const schema = isUpdate ? this.facade._schema.partial() : this.facade._schema;
-    const result = this.facade._schemaValidator.safeValidate(schema, rowObj);
-    if (!result.success) {
-      throw new ValidationException('Row validation failed', this.facade.sheetName, result.errors);
-    }
-    return result.data;
-  }
-}
-;
-
-
 
 
 
@@ -42985,14 +42615,10 @@ var entry_default = Fuse;
 
 
 
-class TableSearchEngine {
 
 
 
 
-  constructor(facade) {
-    this.facade = facade;
-  }
 
 
 
@@ -43004,148 +42630,10 @@ class TableSearchEngine {
 
 
 
-  fuzzySearch(query, fields, threshold = 0.3, options = {}) {
-    if (!query || typeof query !== 'string') {
-      throw new Error('Query must be a non-empty string');
-    }
-    if (!fields || !Array.isArray(fields) || fields.length === 0) {
-      throw new Error('Fields must be a non-empty array of field names');
-    }
 
-
-    if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
-      throw new Error('Threshold must be a number between 0 and 1');
-    }
-    this.facade._ensureDataLoaded();
-
-
-    const rows = this.facade.getRows();
-    const results = this.fuzzySearchRows(rows, query, fields, threshold, options);
-    this.facade._logger.debug(`Fuzzy search for "${query}" in fields [${fields.join(', ')}] ` + `returned ${results.length} results (threshold: ${threshold})`);
-    return results;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-  fuzzySearchRows(rows, query, fields, threshold = 0.3, options = {}) {
-    if (!Array.isArray(rows)) {
-      throw new Error('Rows must be an array');
-    }
-    if (!query || typeof query !== 'string') {
-      throw new Error('Query must be a non-empty string');
-    }
-    if (!fields || !Array.isArray(fields) || fields.length === 0) {
-      throw new Error('Fields must be a non-empty array of field names');
-    }
-    if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
-      throw new Error('Threshold must be a number between 0 and 1');
-    }
-    return new entry_default(rows, {
-      keys: fields,
-      threshold,
-      includeScore: true,
-      ...options
-    }).search(query);
-  }
-
-
-
-
-
-
-
-
-  createIndex(columnName) {
-    if (!this.facade.columns.includes(columnName)) {
-      throw new Error(`Cannot create index on non-existent column: ${columnName}`);
-    }
-    this.facade._ensureDataLoaded();
-
-
-    const index = new Map();
-    this.facade._rowsCache.forEach((row, rowIndex) => {
-      const value = row[columnName];
-      if (value !== null && value !== undefined) {
-        if (!index.has(value)) {
-          index.set(value, []);
-        }
-        index.get(value).push(rowIndex);
-      }
-    });
-    this.facade._indices[columnName] = index;
-    this.facade._logger.debug(`Index created on column "${columnName}" with ${index.size} unique values`);
-    return this.facade;
-  }
-
-
-
-
-
-
-
-
-  indexedLookup(columnName, value) {
-    if (!this.facade._indices[columnName]) {
-      return null; 
-    }
-    const index = this.facade._indices[columnName];
-    const rowIndices = index.get(value);
-    if (!rowIndices) {
-      return []; 
-    }
-
-
-    return rowIndices.map(idx => this.facade._applyVirtualColumns({
-      ...this.facade._rowsCache[idx]
-    }));
-  }
-
-
-
-
-
-
-  invalidateIndex(columnName = null) {
-    if (columnName) {
-      delete this.facade._indices[columnName];
-    } else {
-      this.facade._indices = {};
-    }
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+const zodSchemaProtocol = object({
+  safeParse: _function()
+});
 
 
 
@@ -43190,13 +42678,6 @@ class TableService {
     this._insertQueue = [];
     this._updateQueue = new Map();
     this._deleteQueue = new Set();
-
-
-
-
-    this.dataModifier = new TableDataModifier(this);
-    this.schemaValidator = new TableSchemaValidator(this);
-    this.searchEngine = new TableSearchEngine(this);
     if (preloadedData) {
       this._logger.debug('EAGER initialization for table: ' + this.sheetName);
       const {
@@ -43223,73 +42704,478 @@ class TableService {
 
 
 
-  insertRow(...args) {
-    return this.dataModifier.insertRow(...args);
+
+
+
+
+  insertRow(rowObj) {
+    const results = this.insertRows([rowObj]);
+    return results.length > 0 ? results[0] : null;
   }
 
 
-  insertRows(...args) {
-    return this.dataModifier.insertRows(...args);
+
+
+
+
+
+
+  insertRows(rowsArray) {
+    if (!Array.isArray(rowsArray) || rowsArray.length === 0) {
+      this._logger.warn('insertRows called with empty or invalid array');
+      return [];
+    }
+    this._ensureDataLoaded();
+    const completeRows = [];
+
+
+    for (const rowObj of rowsArray) {
+
+      const validatedRow = this._validateRow(rowObj, false);
+      const completeRow = {
+        ...validatedRow
+      };
+
+
+      if (this._keyField && !completeRow[this._keyField]) {
+        completeRow[this._keyField] = this.utils.generateUuid();
+      }
+
+
+      this._applyVirtualColumns(completeRow);
+      completeRows.push(completeRow);
+    }
+    try {
+      this._logger.debug(`Queuing batch insert of ${rowsArray.length} rows for '${this.sheetName}'`);
+
+
+      this._insertQueue.push(...completeRows);
+      this._logger.debug(`Successfully queued ${completeRows.length} rows for '${this.sheetName}'`);
+
+
+      this._rowsCache.push(...completeRows);
+
+      this._processedRowsCache = null;
+
+      this.invalidateIndex();
+
+
+      for (const row of completeRows) {
+        this._storeOriginalRowData(row);
+      }
+      return completeRows;
+    } catch (e) {
+      this._logger.error(`Failed to queue batch insert rows in '${this.sheetName}': ${e.message}`);
+      throw e;
+    }
   }
 
 
-  updateRowById(...args) {
-    return this.dataModifier.updateRowById(...args);
+
+
+
+
+
+
+
+
+  updateRowById(id, rowObj) {
+    this._logger.debug(`Starting update of row with ${this._keyField}=${id} in '${this.sheetName}'`);
+    this._ensureDataLoaded();
+
+
+    const validatedRow = this._validateRow(rowObj, true);
+    const targetRowIndex = this._findRowIndexById(id);
+    if (targetRowIndex === -1) {
+      this._logger.error(`No row found with ${this._keyField}=${id} in ${this.sheetName}`);
+      throw new OperationError(`No row found with ${this._keyField}=${id} in ${this.sheetName}`, 'updateRowById', false, {
+        keyField: this._keyField,
+        id,
+        sheetName: this.sheetName
+      });
+    }
+    const originalRow = this._rowsCache[targetRowIndex];
+    const rowToUpdate = {
+      ...originalRow,
+      ...validatedRow
+    };
+    this._applyVirtualColumns(rowToUpdate);
+    const physicalColumns = this.columns.filter(col => !this._virtualColumns[col]);
+
+
+    const newPhysicalData = {};
+    for (const col of physicalColumns) {
+      newPhysicalData[col] = rowToUpdate[col] ?? '';
+    }
+
+
+    const originalData = this._originalRowData.get(id);
+    if (originalData && isEqual(originalData, newPhysicalData)) {
+      this._logger.debug(`No changes detected for row ${id}, skipping API call`);
+      return rowToUpdate;
+    }
+
+
+    try {
+      this._logger.debug(`Queuing update for row ${id} in '${this.sheetName}'`);
+      this._updateQueue.set(id, rowToUpdate);
+      this._logger.debug(`Row update queued successfully in '${this.sheetName}'`);
+
+
+      this._rowsCache[targetRowIndex] = rowToUpdate;
+
+      this._processedRowsCache = null;
+
+      this.invalidateIndex();
+      return rowToUpdate;
+    } catch (e) {
+      this._logger.error(`Error queuing row update in '${this.sheetName}': ${e.message}`);
+      throw e;
+    }
   }
 
 
-  patchRow(...args) {
-    return this.dataModifier.patchRow(...args);
+
+
+
+
+
+
+
+  patchRow(id, partialObj) {
+    this._logger.debug(`Starting patch of row with ${this._keyField}=${id} in '${this.sheetName}'`);
+    this._ensureDataLoaded();
+
+
+    const validatedPartial = this._validateRow(partialObj, true);
+    const targetRowIndex = this._findRowIndexById(id);
+    if (targetRowIndex === -1) {
+      this._logger.error(`No row found with ${this._keyField}=${id} in ${this.sheetName}`);
+      throw new OperationError(`No row found with ${this._keyField}=${id} in ${this.sheetName}`, 'patchRow', false, {
+        keyField: this._keyField,
+        id,
+        sheetName: this.sheetName
+      });
+    }
+    const originalRow = this._rowsCache[targetRowIndex];
+    const physicalColumns = this.columns.filter(col => !this._virtualColumns[col]);
+
+
+    const changedColumns = [];
+    const changedValues = [];
+    for (const [key, newValue] of Object.entries(validatedPartial)) {
+
+      if (this._virtualColumns[key]) {
+        continue;
+      }
+
+
+      if (!physicalColumns.includes(key)) {
+        this._logger.warn(`Column '${key}' not found in table schema, skipping`);
+        continue;
+      }
+
+
+      const oldValue = originalRow[key];
+      if (oldValue !== newValue) {
+        changedColumns.push(key);
+        changedValues.push(newValue);
+      }
+    }
+
+
+    if (changedColumns.length === 0) {
+      this._logger.debug(`No changes detected for row ${id}, skipping update`);
+      const rowToReturn = {
+        ...originalRow
+      };
+      return this._applyVirtualColumns(rowToReturn);
+    }
+
+
+    this._logger.debug(`Patching ${changedColumns.length} columns for row ${id}: ${changedColumns.join(', ')}`);
+    try {
+
+      const updatedRow = {
+        ...originalRow,
+        ...validatedPartial
+      };
+      this._applyVirtualColumns(updatedRow);
+      this._updateQueue.set(id, updatedRow);
+      this._logger.debug(`Successfully queued patch row in '${this.sheetName}'`);
+
+
+      this._rowsCache[targetRowIndex] = updatedRow;
+
+      this._processedRowsCache = null;
+
+      this.invalidateIndex();
+      return updatedRow;
+    } catch (e) {
+      this._logger.error(`Error queuing patched row in '${this.sheetName}': ${e.message}`);
+      throw e;
+    }
   }
 
 
-  deleteRowById(...args) {
-    return this.dataModifier.deleteRowById(...args);
+
+
+
+
+
+
+  deleteRowById(id) {
+    this._logger.debug(`Starting deletion of row with ${this._keyField}=${id} in '${this.sheetName}'`);
+    this._ensureDataLoaded();
+    const targetRowIndex = this._findRowIndexById(id);
+    if (targetRowIndex === -1) {
+      this._logger.warn(`No row found with ${this._keyField}=${id} in ${this.sheetName} for deletion.`);
+      return null; 
+    }
+
+
+    const deletedRow = {
+      ...this._rowsCache[targetRowIndex]
+    };
+    try {
+      this._logger.debug(`Queuing deletion for row in sheet '${this.sheetName}'`);
+
+
+      this._deleteQueue.add(id);
+      this._updateQueue.delete(id); 
+
+      const insertIndex = this._insertQueue.findIndex(r => r[this._keyField] === id);
+      if (insertIndex !== -1) {
+        this._insertQueue.splice(insertIndex, 1);
+        this._deleteQueue.delete(id); 
+      }
+
+
+      this._rowsCache.splice(targetRowIndex, 1);
+
+      this._processedRowsCache = null;
+
+      this.invalidateIndex();
+
+
+      this._originalRowData.delete(id);
+      this._logger.debug(`Row deletion queued successfully from '${this.sheetName}'`);
+      return deletedRow; 
+    } catch (e) {
+      this._logger.error(`Error queuing row deletion from '${this.sheetName}': ${e.message}`);
+      throw e;
+    }
   }
 
 
-  updateRowsByIds(...args) {
-    return this.dataModifier.updateRowsByIds(...args);
+
+
+
+
+
+  updateRowsByIds(updatesObj) {
+    if (!updatesObj || Object.keys(updatesObj).length === 0) {
+      return [];
+    }
+    const updatedRows = [];
+    for (const [id, updates] of Object.entries(updatesObj)) {
+      try {
+        const result = this.patchRow(id, updates);
+        updatedRows.push(result);
+      } catch (e) {
+        this._logger.warn(`Failed to process bulk update for ID ${id}: ${e.message}`);
+      }
+    }
+    return updatedRows;
   }
 
 
-  deleteRowsByIds(...args) {
-    return this.dataModifier.deleteRowsByIds(...args);
+
+
+
+
+
+  deleteRowsByIds(ids) {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    const deletedRows = [];
+    for (const id of ids) {
+      try {
+        const result = this.deleteRowById(id);
+        if (result) {
+          deletedRows.push(result);
+        }
+      } catch (e) {
+        this._logger.warn(`Failed to process bulk delete for ID ${id}: ${e.message}`);
+      }
+    }
+    return deletedRows;
   }
 
 
-  setSchema(...args) {
-    return this.schemaValidator.setSchema(...args);
+
+  setSchema(zodSchema) {
+    if (!zodSchemaProtocol.safeParse(zodSchema).success) {
+      throw new ConfigurationError('setSchema() requires a Zod schema');
+    }
+    this._schema = zodSchema;
+    this._schemaValidationEnabled = true;
+    this._logger.debug(`Schema validation enabled for table '${this.sheetName}'`);
+    return this;
+  }
+  disableSchemaValidation() {
+    this._schemaValidationEnabled = false;
+    this._logger.debug(`Schema validation disabled for table '${this.sheetName}'`);
+    return this;
+  }
+  enableSchemaValidation() {
+    if (!this._schema) {
+      throw new ConfigurationError('Cannot enable schema validation: no schema has been set');
+    }
+    this._schemaValidationEnabled = true;
+    this._logger.debug(`Schema validation enabled for table '${this.sheetName}'`);
+    return this;
   }
 
 
-  disableSchemaValidation(...args) {
-    return this.schemaValidator.disableSchemaValidation(...args);
+  _validateRow(rowObj, isUpdate = false) {
+    if (!this._schemaValidationEnabled || !this._schema) {
+      return rowObj;
+    }
+    if (!this._schemaValidator) {
+      throw new ConfigurationError('Schema validation requires a SchemaValidator instance');
+    }
+    const schema = isUpdate ? this._schema.partial() : this._schema;
+    const result = this._schemaValidator.safeValidate(schema, rowObj);
+    if (!result.success) {
+      throw new ValidationException('Row validation failed', this.sheetName, result.errors);
+    }
+    return result.data;
   }
 
 
-  enableSchemaValidation(...args) {
-    return this.schemaValidator.enableSchemaValidation(...args);
+
+
+
+
+
+
+
+
+
+
+
+  fuzzySearch(query, fields, threshold = 0.3, options = {}) {
+    if (!query || typeof query !== 'string') {
+      throw new Error('Query must be a non-empty string');
+    }
+    if (!fields || !Array.isArray(fields) || fields.length === 0) {
+      throw new Error('Fields must be a non-empty array of field names');
+    }
+
+
+    if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
+      throw new Error('Threshold must be a number between 0 and 1');
+    }
+    this._ensureDataLoaded();
+
+
+    const rows = this.getRows();
+    const results = this.fuzzySearchRows(rows, query, fields, threshold, options);
+    this._logger.debug(`Fuzzy search for "${query}" in fields [${fields.join(', ')}] ` + `returned ${results.length} results (threshold: ${threshold})`);
+    return results;
   }
 
 
-  fuzzySearch(...args) {
-    return this.searchEngine.fuzzySearch(...args);
+
+
+
+
+
+
+
+
+
+
+  fuzzySearchRows(rows, query, fields, threshold = 0.3, options = {}) {
+    if (!Array.isArray(rows)) {
+      throw new Error('Rows must be an array');
+    }
+    if (!query || typeof query !== 'string') {
+      throw new Error('Query must be a non-empty string');
+    }
+    if (!fields || !Array.isArray(fields) || fields.length === 0) {
+      throw new Error('Fields must be a non-empty array of field names');
+    }
+    if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
+      throw new Error('Threshold must be a number between 0 and 1');
+    }
+    return new entry_default(rows, {
+      keys: fields,
+      threshold,
+      includeScore: true,
+      ...options
+    }).search(query);
   }
 
 
-  createIndex(...args) {
-    return this.searchEngine.createIndex(...args);
+
+
+
+
+
+
+  createIndex(columnName) {
+    if (!this.columns.includes(columnName)) {
+      throw new Error(`Cannot create index on non-existent column: ${columnName}`);
+    }
+    this._ensureDataLoaded();
+
+
+    const index = new Map();
+    this._rowsCache.forEach((row, rowIndex) => {
+      const value = row[columnName];
+      if (value !== null && value !== undefined) {
+        if (!index.has(value)) {
+          index.set(value, []);
+        }
+        index.get(value).push(rowIndex);
+      }
+    });
+    this._indices[columnName] = index;
+    this._logger.debug(`Index created on column "${columnName}" with ${index.size} unique values`);
+    return this;
   }
 
 
-  _validateRow(...args) {
-    return this.schemaValidator.validateRow(...args);
+  _indexedLookup(columnName, value) {
+    if (!this._indices[columnName]) {
+      return null; 
+    }
+    const index = this._indices[columnName];
+    const rowIndices = index.get(value);
+    if (!rowIndices) {
+      return []; 
+    }
+
+
+    return rowIndices.map(idx => this._applyVirtualColumns({
+      ...this._rowsCache[idx]
+    }));
   }
 
 
-  _indexedLookup(...args) {
-    return this.searchEngine.indexedLookup(...args);
+
+
+
+
+  invalidateIndex(columnName = null) {
+    if (columnName) {
+      delete this._indices[columnName];
+    } else {
+      this._indices = {};
+    }
   }
 
 
@@ -43853,86 +43739,6 @@ function _compareValues(leftValue, operator, rightValue) {
 
 
 
-class QueryCondition {
-
-
-
-
-
-
-  constructor(field, operator, value, type = 'AND') {
-    this.field = field;
-    this.operator = operator || '=';
-    this.value = value;
-    this.type = type.toUpperCase();
-    this.subConditions = [];
-  }
-
-
-
-
-
-
-  compareValue(rowValue) {
-    return _compareValues(rowValue, this.operator, this.value);
-  }
-
-
-
-
-
-
-  addSubCondition(condition) {
-    this.subConditions.push(condition);
-    return this;
-  }
-
-
-
-
-
-
-
-  evaluate(row) {
-    if (this.subConditions.length === 0) {
-      if (!this.field || !this.operator) {
-        return true;
-      }
-      let rowValue = row[this.field];
-      if (rowValue === undefined) {
-        const suffix = `.${this.field}`;
-        for (const key in row) {
-          if (key.endsWith(suffix)) {
-            rowValue = row[key];
-            break;
-          }
-        }
-      }
-      return this.compareValue(rowValue);
-    }
-    let result = true;
-    if (this.field && this.operator) {
-      const rowValue = row[this.field];
-      result = this.compareValue(rowValue);
-    }
-    for (const subCondition of this.subConditions) {
-      if (this.type === 'AND') {
-        result = result && subCondition.evaluate(row);
-        if (!result) break;
-      } else {
-        result = result || subCondition.evaluate(row);
-        if (result) break;
-      }
-    }
-    return result;
-  }
-}
-
-
-
-
-
-
 class QueryAggregation {
 
 
@@ -43991,105 +43797,6 @@ class QueryAggregation {
       default:
         return null;
     }
-  }
-}
-
-
-
-
-
-
-class QueryGroup {
-
-
-
-  constructor(fields) {
-    this.fields = Array.isArray(fields) ? fields : [fields];
-    this.aggregations = [];
-    this.condition = null;
-  }
-
-
-
-
-
-
-
-
-  _getFieldValue(row, field) {
-    if (Object.prototype.hasOwnProperty.call(row, field)) {
-      return row[field];
-    }
-    for (const key in row) {
-      if (key.endsWith(`.${field}`)) {
-        return row[key];
-      }
-    }
-    return undefined;
-  }
-
-
-
-
-
-
-
-  _calculateKey(row) {
-    return this.fields.map(field => {
-      const value = this._getFieldValue(row, field);
-      return _isNullOrUndefined(value) ? 'NULL' : value.toString();
-    }).join('|');
-  }
-
-
-
-
-
-  addAggregation(aggregation) {
-    this.aggregations.push(aggregation);
-  }
-
-
-
-
-
-  setCondition(condition) {
-    this.condition = condition;
-  }
-
-
-
-
-
-
-  group(rows) {
-    if (!rows || rows.length === 0) {
-      return [];
-    }
-    const groups = {};
-    for (const row of rows) {
-      const key = this._calculateKey(row);
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(row);
-    }
-    const results = [];
-    for (const key in groups) {
-      const group = groups[key];
-      const resultRow = {};
-      const firstRow = group[0];
-      for (const field of this.fields) {
-        resultRow[field] = this._getFieldValue(firstRow, field);
-      }
-      for (const agg of this.aggregations) {
-        resultRow[agg.alias] = agg.calculate(group);
-      }
-      if (!this.condition || this.condition.evaluate(resultRow)) {
-        results.push(resultRow);
-      }
-    }
-    return results;
   }
 }
 
@@ -44198,11 +43905,35 @@ class AdvancedQueryValidator {
 
 
 
+
 const {
-  _isNullOrUndefined: AdvancedQueryCompiler_isNullOrUndefined,
-  _safeParseFloat: AdvancedQueryCompiler_safeParseFloat,
-  _compareValues: AdvancedQueryCompiler_compareValues
+  _isNullOrUndefined: AdvancedQueryBuilder_isNullOrUndefined,
+  _compareValues: AdvancedQueryBuilder_compareValues
 } = AdvancedQueryParser;
+
+
+
+
+
+
+
+
+
+
+
+
+function _createFuzzyCondition(field, query, options = {}, type) {
+  return Object.freeze({
+    kind: 'FUZZY',
+    field,
+    query,
+    options: Object.freeze({
+      threshold: 0.4,
+      ...options
+    }),
+    type
+  });
+}
 
 
 
@@ -44247,10 +43978,14 @@ class QueryCache {
 
 
   get(query) {
-    if (!this.service) return null;
+    if (!this.service) {
+      return null;
+    }
     const key = this._generateKey(query);
     const cached = this.service.get(key);
-    if (cached === null || cached === undefined) return null;
+    if (cached === null || cached === undefined) {
+      return null;
+    }
     try {
       return JSON.parse(cached);
     } catch (e) {
@@ -44265,7 +44000,9 @@ class QueryCache {
 
 
   store(query, result) {
-    if (!this.service) return false;
+    if (!this.service) {
+      return false;
+    }
     const key = this._generateKey(query);
     return this.service.put(key, JSON.stringify(result), this.expiration);
   }
@@ -44275,458 +44012,13 @@ class QueryCache {
 
 
   invalidateTable() {
-    if (!this.service) return false;
+    if (!this.service) {
+      return false;
+    }
     this.service.removeAll();
     return true;
   }
-
-
-
-
-
-  clear() {
-    if (!this.service) return false;
-    return this.service.removeAll();
-  }
 }
-
-
-
-
-
-
-class AdvancedQueryCompiler {
-
-
-
-  constructor(facade) {
-    this.facade = facade;
-  }
-
-
-
-
-
-
-
-
-  _extractFieldValue(row, fieldSpec) {
-    if (Object.prototype.hasOwnProperty.call(row, fieldSpec)) {
-      return row[fieldSpec];
-    }
-    if (fieldSpec.includes('.')) {
-      const parts = fieldSpec.split('.');
-      const fieldName = parts[parts.length - 1];
-      if (Object.prototype.hasOwnProperty.call(row, fieldName)) {
-        return row[fieldName];
-      }
-    }
-    const suffix = fieldSpec.includes('.') ? fieldSpec.split('.').pop() : fieldSpec;
-    for (const key in row) {
-      if (key === suffix || key.endsWith(`.${suffix}`)) {
-        return row[key];
-      }
-    }
-    return undefined;
-  }
-
-
-
-
-
-
-
-
-
-
-  _performJoin(leftRows, joinConfig) {
-    const {
-      type,
-      table: tableName,
-      localField,
-      operator,
-      foreignField
-    } = joinConfig;
-    const rightTable = this.facade.dbService.tables[tableName];
-    if (!rightTable) throw new Error(`Join table ${tableName} not found.`);
-    const rightRows = rightTable.getRows();
-    const prefixRow = (row, tableName) => {
-      const prefixed = {};
-      for (const key in row) {
-        prefixed[`${tableName}.${key}`] = row[key];
-      }
-      return prefixed;
-    };
-    const result = [];
-    const matchedRightIndices = new Set();
-    const useHashJoin = operator === '=' || operator === '==';
-    let rightHashMap = null;
-    if (useHashJoin) {
-      rightHashMap = new Map();
-      for (let i = 0; i < rightRows.length; i++) {
-        const rightRow = rightRows[i];
-        const foreignValue = rightRow[foreignField.includes('.') ? foreignField.split('.').pop() : foreignField];
-        if (!rightHashMap.has(foreignValue)) rightHashMap.set(foreignValue, []);
-        rightHashMap.get(foreignValue).push({
-          row: rightRow,
-          index: i
-        });
-      }
-    }
-    for (const leftRow of leftRows) {
-      const localValue = this._extractFieldValue(leftRow, localField);
-      let hasMatch = false;
-      if (useHashJoin) {
-        const matchingRightRows = rightHashMap.get(localValue) || [];
-        for (const {
-          row: rightRow,
-          index: rightIndex
-        } of matchingRightRows) {
-          if (AdvancedQueryCompiler_compareValues(localValue, operator, rightRow[foreignField.includes('.') ? foreignField.split('.').pop() : foreignField])) {
-            hasMatch = true;
-            const mergedRow = {
-              ...leftRow,
-              ...prefixRow(rightRow, tableName)
-            };
-            result.push(mergedRow);
-            matchedRightIndices.add(rightIndex);
-          }
-        }
-      } else {
-        for (let i = 0; i < rightRows.length; i++) {
-          const rightRow = rightRows[i];
-          const foreignValue = rightRow[foreignField.includes('.') ? foreignField.split('.').pop() : foreignField];
-          if (AdvancedQueryCompiler_compareValues(localValue, operator, foreignValue)) {
-            hasMatch = true;
-            const mergedRow = {
-              ...leftRow,
-              ...prefixRow(rightRow, tableName)
-            };
-            result.push(mergedRow);
-            matchedRightIndices.add(i);
-          }
-        }
-      }
-      if (!hasMatch && (type === 'LEFT' || type === 'FULL')) {
-        const mergedRow = {
-          ...leftRow
-        };
-        if (rightRows.length > 0) {
-          const firstRightRow = rightRows[0];
-          for (const key in firstRightRow) {
-            const prefixedKey = `${tableName}.${key}`;
-            if (!Object.prototype.hasOwnProperty.call(mergedRow, prefixedKey)) {
-              mergedRow[prefixedKey] = null;
-            }
-          }
-        }
-        result.push(mergedRow);
-      }
-    }
-    if (type === 'RIGHT' || type === 'FULL') {
-      for (let i = 0; i < rightRows.length; i++) {
-        if (!matchedRightIndices.has(i)) {
-          const rightRow = rightRows[i];
-          const prefixedRight = prefixRow(rightRow, tableName);
-          const mergedRow = {
-            ...prefixedRight
-          };
-          if (leftRows.length > 0) {
-            for (const key in leftRows[0]) {
-              if (!Object.prototype.hasOwnProperty.call(mergedRow, key)) {
-                mergedRow[key] = null;
-              }
-            }
-          }
-          result.push(mergedRow);
-        }
-      }
-    }
-    return result;
-  }
-
-
-
-
-
-
-
-
-  _tryIndexOptimization(table, conditions = this.facade.conditions) {
-    if (conditions.length === 0) return null;
-    const allAndEquality = conditions.every(cond => cond.type === 'AND' && (cond.operator === '=' || cond.operator === '=='));
-    if (!allAndEquality) {
-      if (conditions.length !== 1) return null;
-      const condition = conditions[0];
-      if ((condition.operator === '=' || condition.operator === '==') && condition.field === table._keyField) {
-        const row = table.getRowById(condition.value);
-        this.facade._optimizedField = condition.field;
-        return row ? [row] : [];
-      }
-      if (table._indices[condition.field] && (condition.operator === '=' || condition.operator === '==')) {
-        const index = table._indices[condition.field];
-        const rowIndices = index.get(condition.value) || [];
-        this.facade._optimizedField = condition.field;
-        table._ensureDataLoaded();
-        return rowIndices.map(idx => ({
-          ...table._rowsCache[idx]
-        }));
-      }
-      return null;
-    }
-    let bestCondition = null;
-    let bestIndex = null;
-    let smallestCardinality = Infinity;
-    for (const condition of conditions) {
-      if (condition.field === table._keyField) {
-        const row = table.getRowById(condition.value);
-        this.facade._optimizedField = condition.field;
-        return row ? [row] : [];
-      }
-      if (table._indices[condition.field]) {
-        const index = table._indices[condition.field];
-        const rowIndices = index.get(condition.value);
-        const cardinality = rowIndices ? rowIndices.length : 0;
-        if (cardinality < smallestCardinality) {
-          smallestCardinality = cardinality;
-          bestCondition = condition;
-          bestIndex = rowIndices;
-        }
-      }
-    }
-    if (bestCondition && bestIndex) {
-      table._ensureDataLoaded();
-      this.facade._optimizedField = bestCondition.field;
-      const candidateRows = bestIndex.map(idx => ({
-        ...table._rowsCache[idx]
-      }));
-      const remainingConditions = conditions.filter(c => c.field !== bestCondition.field);
-      if (remainingConditions.length === 0) return candidateRows;
-      return this._applyConditionsFiltered(candidateRows, remainingConditions);
-    }
-    return null;
-  }
-
-
-
-
-
-
-  _getRemainingConditions(conditions = this.facade.conditions) {
-    if (!this.facade._optimizedField) return conditions;
-    return conditions.filter(cond => cond.field !== this.facade._optimizedField);
-  }
-
-
-
-
-
-
-
-
-  _getFieldValue(row, field) {
-    if (Object.prototype.hasOwnProperty.call(row, field)) return row[field];
-    const prefixedField = `${this.facade.tableName}.${field}`;
-    if (Object.prototype.hasOwnProperty.call(row, prefixedField)) return row[prefixedField];
-    for (const key in row) {
-      if (key.endsWith(`.${field}`)) return row[key];
-    }
-    return undefined;
-  }
-
-
-
-
-
-
-
-
-  _applyConditionsFiltered(rows, conditions) {
-    const fuzzyMatches = this._compileFuzzyMatches(rows, conditions);
-    return rows.filter(row => {
-      let finalResult = true;
-      for (let conditionIndex = 0; conditionIndex < conditions.length; conditionIndex++) {
-        const cond = conditions[conditionIndex];
-        const rowValue = this._getFieldValue(row, cond.field);
-        const conditionResult = cond.kind === 'FUZZY' ? fuzzyMatches.get(conditionIndex).has(row) : AdvancedQueryCompiler_compareValues(rowValue, cond.operator, cond.value);
-        if (cond.type === 'AND') finalResult = finalResult && conditionResult;else finalResult = finalResult || conditionResult;
-      }
-      return finalResult;
-    });
-  }
-
-
-
-
-
-
-
-
-
-
-
-  _compileFuzzyMatches(rows, conditions) {
-    const matchesByCondition = new Map();
-    if (!conditions.some(condition => condition.kind === 'FUZZY')) return matchesByCondition;
-    const hasOrCondition = conditions.some(condition => condition.type === 'OR');
-    const ordinaryConditions = conditions.filter(condition => condition.kind !== 'FUZZY');
-    const candidateRows = hasOrCondition ? rows : rows.filter(row => ordinaryConditions.every(condition => AdvancedQueryCompiler_compareValues(this._getFieldValue(row, condition.field), condition.operator, condition.value)));
-    const table = this.facade.dbService.tables[this.facade.tableName];
-    for (let index = 0; index < conditions.length; index++) {
-      const condition = conditions[index];
-      if (condition.kind !== 'FUZZY') continue;
-      const candidates = candidateRows.map(row => ({
-        row,
-        value: this._getFieldValue(row, condition.field)
-      }));
-      const results = table.searchEngine.fuzzySearchRows(candidates, condition.query, ['value'], condition.options.threshold);
-      matchesByCondition.set(index, new Set(results.map(result => result.item.row)));
-    }
-    return matchesByCondition;
-  }
-
-
-
-
-
-
-
-  _applyConditions(rows) {
-    return this._applyConditionsFiltered(rows, this.facade.conditions);
-  }
-
-
-
-
-
-
-
-  _applyGroupBy(rows) {
-    if (!rows || rows.length === 0) return [];
-    const groups = {};
-    for (const row of rows) {
-      const key = this.facade.groupByFields.map(f => {
-        const val = this._getFieldValue(row, f);
-        return AdvancedQueryCompiler_isNullOrUndefined(val) ? 'NULL' : val.toString();
-      }).join('|');
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(row);
-    }
-    const results = [];
-    for (const key in groups) {
-      const group = groups[key];
-      const resultRow = {};
-      const firstRow = group[0];
-      for (const field of this.facade.groupByFields) resultRow[field] = this._getFieldValue(firstRow, field);
-      for (const agg of this.facade.aggregations) resultRow[agg.alias] = agg.calculate(group);
-      results.push(resultRow);
-    }
-    return results;
-  }
-}
-;
-
-
-
-
-
-class AdvancedQueryPagination {
-  constructor(facade) {
-    this.facade = facade;
-  }
-  _partialSort(rows, k) {
-    if (k >= rows.length) {
-      rows.sort(this._createComparator());
-      return rows;
-    }
-    const comparator = this._createComparator();
-    const working = rows.slice(0);
-    this._quickSelect(working, 0, working.length - 1, k, comparator);
-    const topK = working.slice(0, k);
-    topK.sort(comparator);
-    return topK;
-  }
-  _createComparator() {
-    return (a, b) => {
-      for (const sorting of this.facade.orderByFields) {
-        const valueA = this.facade._getFieldValue(a, sorting.field);
-        const valueB = this.facade._getFieldValue(b, sorting.field);
-        if (valueA === valueB) continue;
-        if (valueA === null || valueA === undefined) return sorting.direction === 'ASC' ? -1 : 1;
-        if (valueB === null || valueB === undefined) return sorting.direction === 'ASC' ? 1 : -1;
-        const comparison = valueA < valueB ? -1 : 1;
-        return sorting.direction === 'ASC' ? comparison : -comparison;
-      }
-      return 0;
-    };
-  }
-  _quickSelect(arr, left, right, k, comparator) {
-    if (left >= right) return;
-    const pivotIndex = this._medianOfThree(arr, left, right, comparator);
-    const newPivotIndex = this._partition(arr, left, right, pivotIndex, comparator);
-    if (k - 1 === newPivotIndex) return;else if (k - 1 < newPivotIndex) this._quickSelect(arr, left, newPivotIndex - 1, k, comparator);else this._quickSelect(arr, newPivotIndex + 1, right, k, comparator);
-  }
-  _medianOfThree(arr, left, right, comparator) {
-    const mid = Math.floor((left + right) / 2);
-    if (comparator(arr[left], arr[mid]) > 0) [arr[left], arr[mid]] = [arr[mid], arr[left]];
-    if (comparator(arr[left], arr[right]) > 0) [arr[left], arr[right]] = [arr[right], arr[left]];
-    if (comparator(arr[mid], arr[right]) > 0) [arr[mid], arr[right]] = [arr[right], arr[mid]];
-    return mid;
-  }
-  _partition(arr, left, right, pivotIndex, comparator) {
-    const pivotValue = arr[pivotIndex];
-    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comparator(arr[i], pivotValue) < 0) {
-        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
-        storeIndex++;
-      }
-    }
-    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
-    return storeIndex;
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-function createFuzzyCondition(field, query, options = {}, type) {
-  return Object.freeze({
-    kind: 'FUZZY',
-    field,
-    query,
-    options: Object.freeze({
-      threshold: 0.4,
-      ...options
-    }),
-    type
-  });
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
 class AdvancedQueryBuilder {
   constructor(dbService, columns = ['*']) {
     this.dbService = dbService;
@@ -44741,21 +44033,8 @@ class AdvancedQueryBuilder {
     this.aggregations = [];
     this._optimizedField = null;
     this.joins = [];
-
-
     this._validator = new AdvancedQueryValidator();
-    this._compiler = new AdvancedQueryCompiler(this);
-    this._pagination = new AdvancedQueryPagination(this);
     this._cache = dbService._cache ? new QueryCache(dbService._cache) : null;
-
-
-    Delegation.delegateMethods(this, [{
-      manager: this._compiler,
-      methods: ['_extractFieldValue', '_performJoin', '_tryIndexOptimization', '_getRemainingConditions', '_getFieldValue', '_applyConditionsFiltered', '_applyConditions', '_applyGroupBy']
-    }, {
-      manager: this._pagination,
-      methods: ['_partialSort', '_createComparator', '_quickSelect', '_medianOfThree', '_partition']
-    }]);
   }
   select(columns) {
     if (Array.isArray(columns)) {
@@ -44875,12 +44154,12 @@ class AdvancedQueryBuilder {
   }
   whereFuzzy(field, query, options = {}) {
     this._validator.validateFuzzyCondition(field, query, options);
-    this.conditions.push(createFuzzyCondition(field, query, options, 'AND'));
+    this.conditions.push(_createFuzzyCondition(field, query, options, 'AND'));
     return this;
   }
   orWhereFuzzy(field, query, options = {}) {
     this._validator.validateFuzzyCondition(field, query, options);
-    this.conditions.push(createFuzzyCondition(field, query, options, 'OR'));
+    this.conditions.push(_createFuzzyCondition(field, query, options, 'OR'));
     return this;
   }
   whereIn(field, values) {
@@ -44947,12 +44226,448 @@ class AdvancedQueryBuilder {
     this._offset = (pageNum - 1) * size;
     return this;
   }
+
+
+
+
+
+
+
+
+
+
+  _extractFieldValue(row, fieldSpec) {
+    if (Object.prototype.hasOwnProperty.call(row, fieldSpec)) {
+      return row[fieldSpec];
+    }
+    if (fieldSpec.includes('.')) {
+      const parts = fieldSpec.split('.');
+      const fieldName = parts[parts.length - 1];
+      if (Object.prototype.hasOwnProperty.call(row, fieldName)) {
+        return row[fieldName];
+      }
+    }
+    const suffix = fieldSpec.includes('.') ? fieldSpec.split('.').pop() : fieldSpec;
+    for (const key in row) {
+      if (key === suffix || key.endsWith(`.${suffix}`)) {
+        return row[key];
+      }
+    }
+    return undefined;
+  }
+
+
+
+
+
+
+
+
+
+
+  _performJoin(leftRows, joinConfig) {
+    const {
+      type,
+      table: tableName,
+      localField,
+      operator,
+      foreignField
+    } = joinConfig;
+    const rightTable = this.dbService.tables[tableName];
+    if (!rightTable) {
+      throw new Error(`Join table ${tableName} not found.`);
+    }
+    const rightRows = rightTable.getRows();
+    const prefixRow = (row, tableName) => {
+      const prefixed = {};
+      for (const key in row) {
+        prefixed[`${tableName}.${key}`] = row[key];
+      }
+      return prefixed;
+    };
+    const result = [];
+    const matchedRightIndices = new Set();
+    const useHashJoin = operator === '=' || operator === '==';
+    let rightHashMap = null;
+    if (useHashJoin) {
+      rightHashMap = new Map();
+      for (let i = 0; i < rightRows.length; i++) {
+        const rightRow = rightRows[i];
+        const foreignValue = rightRow[foreignField.includes('.') ? foreignField.split('.').pop() : foreignField];
+        if (!rightHashMap.has(foreignValue)) {
+          rightHashMap.set(foreignValue, []);
+        }
+        rightHashMap.get(foreignValue).push({
+          row: rightRow,
+          index: i
+        });
+      }
+    }
+    for (const leftRow of leftRows) {
+      const localValue = this._extractFieldValue(leftRow, localField);
+      let hasMatch = false;
+      if (useHashJoin) {
+        const matchingRightRows = rightHashMap.get(localValue) || [];
+        for (const {
+          row: rightRow,
+          index: rightIndex
+        } of matchingRightRows) {
+          if (AdvancedQueryBuilder_compareValues(localValue, operator, rightRow[foreignField.includes('.') ? foreignField.split('.').pop() : foreignField])) {
+            hasMatch = true;
+            const mergedRow = {
+              ...leftRow,
+              ...prefixRow(rightRow, tableName)
+            };
+            result.push(mergedRow);
+            matchedRightIndices.add(rightIndex);
+          }
+        }
+      } else {
+        for (let i = 0; i < rightRows.length; i++) {
+          const rightRow = rightRows[i];
+          const foreignValue = rightRow[foreignField.includes('.') ? foreignField.split('.').pop() : foreignField];
+          if (AdvancedQueryBuilder_compareValues(localValue, operator, foreignValue)) {
+            hasMatch = true;
+            const mergedRow = {
+              ...leftRow,
+              ...prefixRow(rightRow, tableName)
+            };
+            result.push(mergedRow);
+            matchedRightIndices.add(i);
+          }
+        }
+      }
+      if (!hasMatch && (type === 'LEFT' || type === 'FULL')) {
+        const mergedRow = {
+          ...leftRow
+        };
+        if (rightRows.length > 0) {
+          const firstRightRow = rightRows[0];
+          for (const key in firstRightRow) {
+            const prefixedKey = `${tableName}.${key}`;
+            if (!Object.prototype.hasOwnProperty.call(mergedRow, prefixedKey)) {
+              mergedRow[prefixedKey] = null;
+            }
+          }
+        }
+        result.push(mergedRow);
+      }
+    }
+    if (type === 'RIGHT' || type === 'FULL') {
+      for (let i = 0; i < rightRows.length; i++) {
+        if (!matchedRightIndices.has(i)) {
+          const rightRow = rightRows[i];
+          const prefixedRight = prefixRow(rightRow, tableName);
+          const mergedRow = {
+            ...prefixedRight
+          };
+          if (leftRows.length > 0) {
+            for (const key in leftRows[0]) {
+              if (!Object.prototype.hasOwnProperty.call(mergedRow, key)) {
+                mergedRow[key] = null;
+              }
+            }
+          }
+          result.push(mergedRow);
+        }
+      }
+    }
+    return result;
+  }
+
+
+
+
+
+
+
+
+  _tryIndexOptimization(table, conditions = this.conditions) {
+    if (conditions.length === 0) {
+      return null;
+    }
+    const allAndEquality = conditions.every(cond => cond.type === 'AND' && (cond.operator === '=' || cond.operator === '=='));
+    if (!allAndEquality) {
+      if (conditions.length !== 1) {
+        return null;
+      }
+      const condition = conditions[0];
+      if ((condition.operator === '=' || condition.operator === '==') && condition.field === table._keyField) {
+        const row = table.getRowById(condition.value);
+        this._optimizedField = condition.field;
+        return row ? [row] : [];
+      }
+      if (table._indices[condition.field] && (condition.operator === '=' || condition.operator === '==')) {
+        const index = table._indices[condition.field];
+        const rowIndices = index.get(condition.value) || [];
+        this._optimizedField = condition.field;
+        table._ensureDataLoaded();
+        return rowIndices.map(idx => ({
+          ...table._rowsCache[idx]
+        }));
+      }
+      return null;
+    }
+    let bestCondition = null;
+    let bestIndex = null;
+    let smallestCardinality = Infinity;
+    for (const condition of conditions) {
+      if (condition.field === table._keyField) {
+        const row = table.getRowById(condition.value);
+        this._optimizedField = condition.field;
+        return row ? [row] : [];
+      }
+      if (table._indices[condition.field]) {
+        const index = table._indices[condition.field];
+        const rowIndices = index.get(condition.value);
+        const cardinality = rowIndices ? rowIndices.length : 0;
+        if (cardinality < smallestCardinality) {
+          smallestCardinality = cardinality;
+          bestCondition = condition;
+          bestIndex = rowIndices;
+        }
+      }
+    }
+    if (bestCondition && bestIndex) {
+      table._ensureDataLoaded();
+      this._optimizedField = bestCondition.field;
+      const candidateRows = bestIndex.map(idx => ({
+        ...table._rowsCache[idx]
+      }));
+      const remainingConditions = conditions.filter(c => c.field !== bestCondition.field);
+      if (remainingConditions.length === 0) {
+        return candidateRows;
+      }
+      return this._applyConditionsFiltered(candidateRows, remainingConditions);
+    }
+    return null;
+  }
+
+
+
+
+
+
+  _getRemainingConditions(conditions = this.conditions) {
+    if (!this._optimizedField) {
+      return conditions;
+    }
+    return conditions.filter(cond => cond.field !== this._optimizedField);
+  }
+
+
+
+
+
+
+
+
+  _getFieldValue(row, field) {
+    if (Object.prototype.hasOwnProperty.call(row, field)) {
+      return row[field];
+    }
+    const prefixedField = `${this.tableName}.${field}`;
+    if (Object.prototype.hasOwnProperty.call(row, prefixedField)) {
+      return row[prefixedField];
+    }
+    for (const key in row) {
+      if (key.endsWith(`.${field}`)) {
+        return row[key];
+      }
+    }
+    return undefined;
+  }
+
+
+
+
+
+
+
+
+  _applyConditionsFiltered(rows, conditions) {
+    const fuzzyMatches = this._compileFuzzyMatches(rows, conditions);
+    return rows.filter(row => {
+      let finalResult = true;
+      for (let conditionIndex = 0; conditionIndex < conditions.length; conditionIndex++) {
+        const cond = conditions[conditionIndex];
+        const rowValue = this._getFieldValue(row, cond.field);
+        const conditionResult = cond.kind === 'FUZZY' ? fuzzyMatches.get(conditionIndex).has(row) : AdvancedQueryBuilder_compareValues(rowValue, cond.operator, cond.value);
+        if (cond.type === 'AND') {
+          finalResult = finalResult && conditionResult;
+        } else {
+          finalResult = finalResult || conditionResult;
+        }
+      }
+      return finalResult;
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
+  _compileFuzzyMatches(rows, conditions) {
+    const matchesByCondition = new Map();
+    if (!conditions.some(condition => condition.kind === 'FUZZY')) {
+      return matchesByCondition;
+    }
+    const hasOrCondition = conditions.some(condition => condition.type === 'OR');
+    const ordinaryConditions = conditions.filter(condition => condition.kind !== 'FUZZY');
+    const candidateRows = hasOrCondition ? rows : rows.filter(row => ordinaryConditions.every(condition => AdvancedQueryBuilder_compareValues(this._getFieldValue(row, condition.field), condition.operator, condition.value)));
+    const table = this.dbService.tables[this.tableName];
+    for (let index = 0; index < conditions.length; index++) {
+      const condition = conditions[index];
+      if (condition.kind !== 'FUZZY') {
+        continue;
+      }
+      const candidates = candidateRows.map(row => ({
+        row,
+        value: this._getFieldValue(row, condition.field)
+      }));
+      const results = table.fuzzySearchRows(candidates, condition.query, ['value'], condition.options.threshold);
+      matchesByCondition.set(index, new Set(results.map(result => result.item.row)));
+    }
+    return matchesByCondition;
+  }
+
+
+
+
+
+
+
+  _applyConditions(rows) {
+    return this._applyConditionsFiltered(rows, this.conditions);
+  }
+
+
+
+
+
+
+
+  _applyGroupBy(rows) {
+    if (!rows || rows.length === 0) {
+      return [];
+    }
+    const groups = {};
+    for (const row of rows) {
+      const key = this.groupByFields.map(f => {
+        const val = this._getFieldValue(row, f);
+        return AdvancedQueryBuilder_isNullOrUndefined(val) ? 'NULL' : val.toString();
+      }).join('|');
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(row);
+    }
+    const results = [];
+    for (const key in groups) {
+      const group = groups[key];
+      const resultRow = {};
+      const firstRow = group[0];
+      for (const field of this.groupByFields) {
+        resultRow[field] = this._getFieldValue(firstRow, field);
+      }
+      for (const agg of this.aggregations) {
+        resultRow[agg.alias] = agg.calculate(group);
+      }
+      results.push(resultRow);
+    }
+    return results;
+  }
+
+
+
+  _partialSort(rows, k) {
+    if (k >= rows.length) {
+      rows.sort(this._createComparator());
+      return rows;
+    }
+    const comparator = this._createComparator();
+    const working = rows.slice(0);
+    this._quickSelect(working, 0, working.length - 1, k, comparator);
+    const topK = working.slice(0, k);
+    topK.sort(comparator);
+    return topK;
+  }
+  _createComparator() {
+    return (a, b) => {
+      for (const sorting of this.orderByFields) {
+        const valueA = this._getFieldValue(a, sorting.field);
+        const valueB = this._getFieldValue(b, sorting.field);
+        if (valueA === valueB) {
+          continue;
+        }
+        if (valueA === null || valueA === undefined) {
+          return sorting.direction === 'ASC' ? -1 : 1;
+        }
+        if (valueB === null || valueB === undefined) {
+          return sorting.direction === 'ASC' ? 1 : -1;
+        }
+        const comparison = valueA < valueB ? -1 : 1;
+        return sorting.direction === 'ASC' ? comparison : -comparison;
+      }
+      return 0;
+    };
+  }
+  _quickSelect(arr, left, right, k, comparator) {
+    if (left >= right) {
+      return;
+    }
+    const pivotIndex = this._medianOfThree(arr, left, right, comparator);
+    const newPivotIndex = this._partition(arr, left, right, pivotIndex, comparator);
+    if (k - 1 === newPivotIndex) {
+      return;
+    } else if (k - 1 < newPivotIndex) {
+      this._quickSelect(arr, left, newPivotIndex - 1, k, comparator);
+    } else {
+      this._quickSelect(arr, newPivotIndex + 1, right, k, comparator);
+    }
+  }
+  _medianOfThree(arr, left, right, comparator) {
+    const mid = Math.floor((left + right) / 2);
+    if (comparator(arr[left], arr[mid]) > 0) {
+      [arr[left], arr[mid]] = [arr[mid], arr[left]];
+    }
+    if (comparator(arr[left], arr[right]) > 0) {
+      [arr[left], arr[right]] = [arr[right], arr[left]];
+    }
+    if (comparator(arr[mid], arr[right]) > 0) {
+      [arr[mid], arr[right]] = [arr[right], arr[mid]];
+    }
+    return mid;
+  }
+  _partition(arr, left, right, pivotIndex, comparator) {
+    const pivotValue = arr[pivotIndex];
+    [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (comparator(arr[i], pivotValue) < 0) {
+        [arr[i], arr[storeIndex]] = [arr[storeIndex], arr[i]];
+        storeIndex++;
+      }
+    }
+    [arr[storeIndex], arr[right]] = [arr[right], arr[storeIndex]];
+    return storeIndex;
+  }
   execute() {
-    if (!this.tableName) throw new Error('A table must be specified with from().');
+    if (!this.tableName) {
+      throw new Error('A table must be specified with from().');
+    }
     this._optimizedField = null;
     if (this.useCache && this._cache) {
       const cachedResults = this._cache.get(this);
-      if (cachedResults !== null) return cachedResults;
+      if (cachedResults !== null) {
+        return cachedResults;
+      }
     }
     const table = this.dbService.tables[this.tableName];
     let resultRows;
@@ -44967,7 +44682,9 @@ class AdvancedQueryBuilder {
     }
     const prefixFn = (row, prefix) => {
       const newRow = {};
-      for (const key in row) newRow[`${prefix}.${key}`] = row[key];
+      for (const key in row) {
+        newRow[`${prefix}.${key}`] = row[key];
+      }
       return newRow;
     };
     resultRows = resultRows.map(row => prefixFn(row, this.tableName));
@@ -45054,21 +44771,46 @@ class AdvancedQueryBuilder {
 
 
 
-class DatabaseConnectionManager {
-  constructor(facade) {
-    this.facade = facade;
-    this._logger = facade._logger;
-    this._spreadsheetService = facade._spreadsheetService;
+
+
+
+
+class DatabaseService {
+  constructor(spreadsheetId, logger, utils, cache, exceptionService = null, options = {}) {
+    this._spreadsheetId = spreadsheetId;
+    this._logger = logger;
+    this._utils = utils;
+    this._cache = cache;
+    this._exceptionService = exceptionService;
+    const effectiveExceptionService = exceptionService || {
+      executeWithRetry: fn => fn(),
+      executeWithBypass: fn => fn()
+    };
+    this._spreadsheetService = new SpreadsheetService(logger, cache, utils, effectiveExceptionService);
+    this.tables = {};
+    this._loaded = false;
+    this._transaction = null;
+    this._inTransaction = false;
+    this._dryRun = options.dryRun || false;
+    this._schemaValidator = options.schemaValidator || null;
+    this._verifyTables = options.verifyTables || null;
+    if (this._dryRun) {
+      this._logger.debug('[DRY-RUN] DatabaseService initialized in dry-run mode.');
+    }
+    this._initialize();
   }
+
+
+
   save(options = {}) {
     try {
-      if (this.facade._inTransaction) {
+      if (this._inTransaction) {
         throw new Error('Cannot call save() during a transaction. Use commit() to apply changes.');
       }
-      if (this.facade._isDryRun(options)) {
+      if (this._isDryRun(options)) {
         const pendingChanges = [];
-        Object.keys(this.facade.tables).forEach(tableName => {
-          const table = this.facade.tables[tableName];
+        Object.keys(this.tables).forEach(tableName => {
+          const table = this.tables[tableName];
           const dirtyRows = table._updateQueue ? table._updateQueue.size : 0;
           const newRows = table._insertQueue ? table._insertQueue.length : 0;
           const deletedRows = table._deleteQueue ? table._deleteQueue.size : 0;
@@ -45096,52 +44838,52 @@ class DatabaseConnectionManager {
         };
       }
       let totalOperations = 0;
-      Object.keys(this.facade.tables).forEach(tableName => {
-        const table = this.facade.tables[tableName];
+      Object.keys(this.tables).forEach(tableName => {
+        const table = this.tables[tableName];
         totalOperations += table.flush(options);
       });
       this._logger.debug(`Database saved successfully. Executed operations across ${totalOperations} tables.`);
-      return this.facade;
+      return this;
     } catch (e) {
       this._logger.error(`Error saving database: ${e.message}`);
       throw new Error(`Failed to save database: ${e.message}`);
     }
   }
   beginTransaction() {
-    if (this.facade._inTransaction) {
+    if (this._inTransaction) {
       throw new Error('Transaction already in progress. Commit or rollback current transaction first.');
     }
-    this.facade._transaction = {
+    this._transaction = {
       startTime: Date.now(),
       savedStates: {},
       operations: []
     };
-    for (const tableName in this.facade.tables) {
-      const table = this.facade.tables[tableName];
-      this.facade._transaction.savedStates[tableName] = cloneDeep_cloneDeep(table._rowsCache);
+    for (const tableName in this.tables) {
+      const table = this.tables[tableName];
+      this._transaction.savedStates[tableName] = cloneDeep_cloneDeep(table._rowsCache);
     }
-    this.facade._inTransaction = true;
+    this._inTransaction = true;
     this._logger.debug('Transaction started');
-    return this.facade;
+    return this;
   }
   commit() {
-    if (!this.facade._inTransaction) {
+    if (!this._inTransaction) {
       throw new Error('No transaction in progress. Call beginTransaction() first.');
     }
     try {
-      Object.keys(this.facade.tables).forEach(tableName => {
-        this.facade.tables[tableName].flush();
+      Object.keys(this.tables).forEach(tableName => {
+        this.tables[tableName].flush();
       });
       this._spreadsheetService.flushBatch();
-      const duration = Date.now() - this.facade._transaction.startTime;
+      const duration = Date.now() - this._transaction.startTime;
       this._logger.debug(`Transaction committed successfully (${duration}ms)`);
-      this.facade._transaction = null;
-      this.facade._inTransaction = false;
-      return this.facade;
+      this._transaction = null;
+      this._inTransaction = false;
+      return this;
     } catch (e) {
       this._logger.error(`Transaction commit failed: ${e.message}`);
       try {
-        this.facade._performRollback();
+        this._performRollback();
       } catch (rollbackError) {
         this._logger.error(`Rollback after commit failure also failed: ${rollbackError.message}`);
       }
@@ -45149,31 +44891,31 @@ class DatabaseConnectionManager {
     }
   }
   rollback() {
-    if (!this.facade._inTransaction) {
+    if (!this._inTransaction) {
       throw new Error('No transaction in progress. Call beginTransaction() first.');
     }
     try {
-      this.facade._performRollback();
-      const duration = Date.now() - this.facade._transaction.startTime;
+      this._performRollback();
+      const duration = Date.now() - this._transaction.startTime;
       this._logger.info(`Transaction rolled back (${duration}ms)`);
-      this.facade._transaction = null;
-      this.facade._inTransaction = false;
-      return this.facade;
+      this._transaction = null;
+      this._inTransaction = false;
+      return this;
     } catch (e) {
       this._logger.error(`Rollback failed: ${e.message}`);
-      this.facade._transaction = null;
-      this.facade._inTransaction = false;
+      this._transaction = null;
+      this._inTransaction = false;
       throw new Error(`Rollback failed: ${e.message}`);
     }
   }
   _performRollback() {
-    if (!this.facade._transaction || !this.facade._transaction.savedStates) {
+    if (!this._transaction || !this._transaction.savedStates) {
       throw new Error('No saved state to rollback to');
     }
-    for (const tableName in this.facade._transaction.savedStates) {
-      if (this.facade.tables[tableName]) {
-        this.facade.tables[tableName]._rowsCache = JSON.parse(JSON.stringify(this.facade._transaction.savedStates[tableName]));
-        this.facade.tables[tableName]._invalidateInternalCache();
+    for (const tableName in this._transaction.savedStates) {
+      if (this.tables[tableName]) {
+        this.tables[tableName]._rowsCache = JSON.parse(JSON.stringify(this._transaction.savedStates[tableName]));
+        this.tables[tableName]._invalidateInternalCache();
       }
     }
     if (this._spreadsheetService._batchUpdates) {
@@ -45181,24 +44923,10 @@ class DatabaseConnectionManager {
     }
   }
   inTransaction() {
-    return this.facade._inTransaction;
+    return this._inTransaction;
   }
-}
-;
 
 
-
-
-
-
-class DatabaseSchemaExplorer {
-  constructor(facade) {
-    this.facade = facade;
-    this._logger = facade._logger;
-    this._spreadsheetService = facade._spreadsheetService;
-    this._spreadsheetId = facade._spreadsheetId;
-    this._utils = facade._utils;
-  }
 
 
 
@@ -45210,7 +44938,7 @@ class DatabaseSchemaExplorer {
 
 
   _readVerifiedSheetInfo() {
-    const expected = this.facade._verifyTables;
+    const expected = this._verifyTables;
     let sheets = this._spreadsheetService.getSheetInfo(this._spreadsheetId, {
       includeHidden: false
     });
@@ -45243,7 +44971,7 @@ class DatabaseSchemaExplorer {
       const sheets = this._readVerifiedSheetInfo();
       if (sheets.length === 0) {
         this._logger.warn(`No visible sheets (tables) found in database ID ${this._spreadsheetId}.`);
-        this.facade._loaded = true;
+        this._loaded = true;
         return;
       }
       const ranges = sheets.map(sheet => {
@@ -45264,122 +44992,45 @@ class DatabaseSchemaExplorer {
       });
       sheets.forEach(sheet => {
         const tableData = dataBySheetName.get(sheet.name) || [];
-        const table = new TableService(sheet.name, this._spreadsheetId, this._spreadsheetService, this._logger, this._utils, tableData, this.facade._schemaValidator);
-        this.facade.tables[sheet.name] = table;
+        const table = new TableService(sheet.name, this._spreadsheetId, this._spreadsheetService, this._logger, this._utils, tableData, this._schemaValidator);
+        this.tables[sheet.name] = table;
       });
-      this.facade._loaded = true;
-      this._logger.debug(`Database initialized with ${Object.keys(this.facade.tables).length} tables loaded in batch.`);
+      this._loaded = true;
+      this._logger.debug(`Database initialized with ${Object.keys(this.tables).length} tables loaded in batch.`);
     } catch (e) {
       this._logger.error(`Error initializing database: ${e.message}`);
       throw e;
     }
   }
-}
-;
 
 
 
-
-
-class DatabaseTableRegistry {
-  constructor(facade) {
-    this.facade = facade;
-  }
   getTable(tableName) {
-    return this.facade.tables[tableName] || null;
+    return this.tables[tableName] || null;
   }
   hasTable(tableName) {
-    return !!this.facade.tables[tableName];
+    return !!this.tables[tableName];
   }
   listTables() {
-    return Object.keys(this.facade.tables);
+    return Object.keys(this.tables);
   }
-}
-;
 
 
 
-
-
-class DatabaseMetaDataHandler {
-  constructor(facade) {
-    this.facade = facade;
-  }
   _isDryRun(options = {}) {
     if (typeof options.dryRun === 'boolean') {
       return options.dryRun;
     }
-    return this.facade._dryRun;
+    return this._dryRun;
   }
   getMetadata() {
     return {
-      spreadsheetId: this.facade._spreadsheetId,
-      loaded: this.facade._loaded,
-      inTransaction: this.facade._inTransaction,
-      dryRun: this.facade._dryRun,
-      tableCount: Object.keys(this.facade.tables).length
+      spreadsheetId: this._spreadsheetId,
+      loaded: this._loaded,
+      inTransaction: this._inTransaction,
+      dryRun: this._dryRun,
+      tableCount: Object.keys(this.tables).length
     };
-  }
-}
-;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class DatabaseService {
-  constructor(spreadsheetId, logger, utils, cache, exceptionService = null, options = {}) {
-    this._spreadsheetId = spreadsheetId;
-    this._logger = logger;
-    this._utils = utils;
-    this._cache = cache;
-    this._exceptionService = exceptionService;
-    const effectiveExceptionService = exceptionService || {
-      executeWithRetry: fn => fn(),
-      executeWithBypass: fn => fn()
-    };
-    this._spreadsheetService = new SpreadsheetService(logger, cache, utils, effectiveExceptionService);
-    this.tables = {};
-    this._loaded = false;
-    this._transaction = null;
-    this._inTransaction = false;
-    this._dryRun = options.dryRun || false;
-    this._schemaValidator = options.schemaValidator || null;
-    this._verifyTables = options.verifyTables || null;
-
-
-    this._connectionManager = new DatabaseConnectionManager(this);
-    this._schemaExplorer = new DatabaseSchemaExplorer(this);
-    this._tableRegistry = new DatabaseTableRegistry(this);
-    this._metaDataHandler = new DatabaseMetaDataHandler(this);
-
-
-    Delegation.delegateMethods(this, [{
-      manager: this._connectionManager,
-      methods: ['save', 'beginTransaction', 'commit', 'rollback', '_performRollback', 'inTransaction']
-    }, {
-      manager: this._schemaExplorer,
-      methods: ['_initialize']
-    }, {
-      manager: this._tableRegistry,
-      methods: ['getTable', 'hasTable', 'listTables']
-    }, {
-      manager: this._metaDataHandler,
-      methods: ['_isDryRun', 'getMetadata']
-    }]);
-    if (this._dryRun) {
-      this._logger.debug('[DRY-RUN] DatabaseService initialized in dry-run mode.');
-    }
-    this._initialize();
   }
   select(fields = ['*']) {
     return new AdvancedQueryBuilder(this, fields);
@@ -45389,352 +45040,6 @@ class DatabaseService {
 
 
 ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

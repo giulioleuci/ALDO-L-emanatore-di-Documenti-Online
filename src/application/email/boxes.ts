@@ -504,7 +504,7 @@ function aggregaDati(
       storicoRef: undefined
     },
     pianiPersDaInviare: {
-      items: pianiItems.filter((i) => !i.isNotificato),
+      items: pianiItems.filter((i) => i.hasId && !i.isNotificato),
       storicoRef: pianiStoricoRef,
       defaultTemplate: DEFAULT_PIANI_PERS_TEMPLATE
     },

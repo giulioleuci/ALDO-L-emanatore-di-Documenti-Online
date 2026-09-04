@@ -185,6 +185,7 @@ test('renderBoxes returns the IDs of document and personalized-plan links render
     elenco: [
       {
         id: 'personal-plan-1',
+        hasId: true,
         nome: 'PDP Anna',
         link: 'https://drive/personal-plan-1',
         sottotipo: 'PDP_BES',
@@ -635,7 +636,7 @@ function pianiPersCduRecord(elenco: unknown[], storico?: unknown): Record<string
       classe: {
         nome: '5A',
         pianiPersonalizzati: {
-          elenco,
+          elenco: elenco.map((item) => ({ hasId: true, ...(item as object) })),
           hasElenco: elenco.length > 0,
           numero: elenco.length,
           ...(storico !== undefined ? { storico } : {})

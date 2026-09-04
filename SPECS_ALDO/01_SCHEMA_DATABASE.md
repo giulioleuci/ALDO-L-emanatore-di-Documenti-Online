@@ -115,6 +115,7 @@ Configurazione strutturale delle classi. Funge da **matrice di assegnazione catt
 | `ATTIVA`                  | Boolean      | —   | —             | —                                | Classe attiva nell'anno corrente                                                                                                                                                                                                                  |
 | `ARTICOLAZIONE`           | JSON         | —   | —             | —                                | Configurazione classi articolate (struttura `ArticolazioneConfig`, `03_VALUE_OBJECTS_ED_ENUM.md`); una classe articolata ha tre righe nel DB: la classe completa e le due "sottoclassi" componenti.                                                                   |
 | `STORICO`                 | String (CSV) | —   | —             | —                                | Nomi che la classe ha avuto negli anni precedenti (es. `4ALC` per l'attuale `5ALC`)                                                                                                                                                               |
+| `ASL`                     | Boolean      | —   | —             | —                                | Indica se la classe è abilitata all'Alternanza Scuola Lavoro (PCTO)                                                                                                                                                                              |
 | `*[MATERIA]*`             | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonne dinamiche: una per materia, contiene email docenti titolari. Rappresenta Priority 3.                                                                                                                                                      |
 | `*[MATERIA.itp]*`         | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonne dinamiche: docenti ITP per la materia                                                                                                                                                                                                     |
 | `*[MATERIA.[SPECIFICA]]*` | String (CSV) | —   | DOCENTI.EMAIL | Email valide                     | Colonne dinamiche: docenti per la specifica della materia (es. `Esecuzione e interpretazione` nel liceo musicale può avere `Chitarra`, `Pianoforte`, eccetera, e ogni studente può seguirne solo un sottoinsieme differente dagli altri studenti) |
@@ -167,7 +168,7 @@ Lookup table dei percorsi di studio. Stabile, cachata completamente in memoria.
 | `ID`             | String | ✅  | —                   | Codice (es. `LC`, `LS`, `LSSA`)                                        |
 | `NOME`           | String | —   | —                   | Descrizione estesa (es. `Liceo scientifico opzione scienze applicate`) |
 | `NOME_SINTETICO` | String | —   | —                   | Descrizione estesa (es. `Scientifico scienze applicate`)               |
-| `TIPO`           | String | —   | Enum (TipoIstituto) | Tipo di istituto (es. LICEO, ITS, IEFP, PROFESSIONALE, TECNICO)        |
+| `TIPO`           | String | —   | —                   | Tipo di istituto (testo libero, es. Liceo, Tecnico, Professionale)      |
 
 ---
 
@@ -388,6 +389,14 @@ Motore di configurazione per la generazione documentale. Ogni record definisce c
 | `INSERISCI_TIMESTAMP` | Scrive data/ora corrente in `tab.col` dove i criteri corrispondono |
 | `AGGIORNA_CAMPO`      | Imposta `tab.col = val` dove i criteri corrispondono               |
 | `AGGIORNA_STATO_DOC`  | Cambia `LOG_DOCS.STATO` di un documento già registrato             |
+| `AGGIORNA_PERMESSI_STORICI` | Aggiorna i permessi dei documenti storici in `LOG_DOCS` per il target indicato |
+
+`AGGIORNA_PERMESSI_STORICI` usa implicitamente `ID_GEN=target`; `target` è un
+`ID` di `CONF_DOC`. I criteri supportati sono opzionali e includono `UTENTI` e
+`SOTTOTIPO`; i valori CSV usano corrispondenza esatta per elemento (non
+substring). `profondita` è obbligatoria e deve essere un intero positivo. Un
+errore nell'aggiornamento è non critico: viene registrato e non interrompe la
+generazione del documento.
 
 ---
 

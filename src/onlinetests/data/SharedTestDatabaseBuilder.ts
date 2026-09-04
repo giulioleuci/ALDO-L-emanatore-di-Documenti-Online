@@ -1286,7 +1286,19 @@ export class SharedTestDatabaseBuilder {
         [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/DOCUMENTI PERS',
         [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
         [COL_CONF_DOC.PERMESSI]: '',
-        [COL_CONF_DOC.POST_PROCESSO]: null,
+        [COL_CONF_DOC.POST_PROCESSO]: JSON.stringify([
+          {
+            tipo: 'AGGIORNA_PERMESSI_STORICI',
+            target: 'PIANI_PERSONALIZZATI',
+            ruolo: 'COORDINATORI',
+            permesso: 'LETTURA',
+            profondita: 1,
+            criteri: {
+              UTENTI: '{{focus.alunno.email}}',
+              SOTTOTIPO: '{{focus.piano.tipo}}'
+            }
+          }
+        ]),
         [COL_CONF_DOC.PARAMETRI]: '',
         [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
         [COL_CONF_DOC.FORMATO]: 'GDOC',

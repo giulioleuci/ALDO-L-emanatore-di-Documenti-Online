@@ -86,6 +86,23 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   ).build(TEMPLATE_IDS, master);
 
   const sample = sheets.get('_ALDO_E2E_SAMPLE')!;
+  const pianiPersonali = sample.rows[TABLE.CONF_DOC].find(
+    (row) => row[COL_CONF_DOC.ID] === CONF_DOC_PIANI
+  )!;
+  const action = JSON.parse(String(pianiPersonali[COL_CONF_DOC.POST_PROCESSO]))[0];
+  expect(action).toEqual(
+    expect.objectContaining({
+      tipo: 'AGGIORNA_PERMESSI_STORICI',
+      target: 'PIANI_PERSONALIZZATI',
+      ruolo: 'COORDINATORI',
+      permesso: 'LETTURA',
+      profondita: 1,
+      criteri: {
+        UTENTI: '{{focus.alunno.email}}',
+        SOTTOTIPO: '{{focus.piano.tipo}}'
+      }
+    })
+  );
   expect(sample.rows[TABLE.CLASSI].map((row) => row[COL_CLASSI.ID])).toEqual(ALL_CLASSI);
   expect(sample.rows[TABLE.ALUNNI]).toHaveLength(STUDENT_TOTALE);
 

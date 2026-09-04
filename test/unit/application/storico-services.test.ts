@@ -413,10 +413,7 @@ test('StoricoDocumentiService.idsMatching applies LOG_DOCS criteria with histori
     'pdp-bes-3d'
   ]);
   expect(
-    service.idsMatching(
-      { ID_GEN: 'PIANI_PERSONALIZZATI', TIPO: 'PIANO_PERS', CLASSI: '3D', MATERIE: '' },
-      1
-    )
+    service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', TIPO: 'PIANO_PERS', CLASSI: '3D' }, 1)
   ).toEqual(['pdp-bes-3d']);
   expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI' }, 1)).toEqual([
     'pdp-bes-3d',
@@ -428,6 +425,40 @@ test('StoricoDocumentiService.idsMatching applies LOG_DOCS criteria with histori
     'pei-3d',
     'pdp-bes-2d'
   ]);
+});
+
+test('StoricoDocumentiService.idsMatching fails closed on an empty resolved CSV criterion (matches nothing, not everything)', () => {
+  const firstYear = annoPrecedente();
+  firstYear.LOG_DOCS = [
+    {
+      ID: 'pdp-bes-3d',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PDP_BES',
+      UTENTI: 'a1@school.it',
+      CLASSI: '3D',
+      MATERIE: ''
+    },
+    {
+      ID: 'pei-3d',
+      ID_GEN: 'PIANI_PERSONALIZZATI',
+      TIPO: 'PIANO_PERS',
+      SOTTOTIPO: 'PEI',
+      UTENTI: '',
+      CLASSI: '2D',
+      MATERIE: ''
+    }
+  ];
+  const service = new StoricoDocumentiService(
+    fakeProvider([annoStorico('2025-2026', firstYear)])
+  );
+
+  // An empty resolved UTENTI (e.g. a {{focus.alunno...}} placeholder that
+  // resolved to '') must match no document, not silently evaporate.
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', UTENTI: '' }, 1)).toEqual([]);
+  // Same for CLASSI and MATERIE.
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', CLASSI: '' }, 1)).toEqual([]);
+  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', MATERIE: '' }, 1)).toEqual([]);
 });
 
 test('StoricoDocumentiService.idsMatching rejects unsupported LOG_DOCS criteria', () => {

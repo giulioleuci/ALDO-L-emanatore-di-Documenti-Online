@@ -36,11 +36,11 @@ function matchesLogDocsCriterion(
 ): boolean {
   switch (column) {
     case 'UTENTI':
-      return value === '' || doc.containsUtente(value);
+      return doc.containsUtente(value);
     case 'CLASSI':
-      return value === '' || doc.containsClasse(value);
+      return doc.containsClasse(value);
     case 'MATERIE':
-      return value === '' || doc.containsMateria(value);
+      return doc.containsMateria(value);
     case 'ID_GEN':
       return doc.idGen === value;
     case 'TIPO':

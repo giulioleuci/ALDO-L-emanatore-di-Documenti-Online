@@ -494,6 +494,19 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       REGISTRA_DOC: null,
       REGISTRA_FOLD: null
     });
+    tables.ALUNNI!.push({
+      EMAIL: 'studente@school.test',
+      COGNOMENOME: 'STUDENTE TEST',
+      CLASSE: '1F-LSO',
+      RELIGIONE: 'NO',
+      ATTIVO: true,
+      RIPETENTE: false,
+      RAPPR_STUD: false,
+      TUTOR_1: '',
+      TUTOR_2: '',
+      CURRICULUM: null
+    });
+    tables.PIANI!.push({ STUDENTE: 'studente@school.test', TIPO: 'PDP_DSA', PARAMETRI: null });
     tables.LOG_DOCS!.push({
       ID: 'LD1',
       ID_GEN: 'CD_CLASSE_COMPLETA',

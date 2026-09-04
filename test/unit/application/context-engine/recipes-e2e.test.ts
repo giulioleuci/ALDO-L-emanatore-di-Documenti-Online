@@ -54,8 +54,10 @@ test('CLASSE_COMPLETA on an ordinary class (5A) assembles every class-axis node 
   expect(c.esame).toBeDefined();
   expect(c.progetti?.hasElenco).toBe(true);
   expect(c.movimenti).toBeDefined();
-  expect(c.pianiPersonalizzati?.elenco).toEqual([]);
-  expect(c.pianiPersonalizzati?.hasElenco).toBe(false);
+  // a1 (ATTIVO, PIANI.TIPO=PEI) surfaces as a placeholder — no LOG_DOCS row backs it in this fixture.
+  expect(c.pianiPersonalizzati?.elenco).toHaveLength(1);
+  expect(c.pianiPersonalizzati?.elenco[0]?.hasId).toBe(false);
+  expect(c.pianiPersonalizzati?.hasElenco).toBe(true);
   // disabled providers (not in this recipe's token list) leave their node absent:
   expect(c.storico).toBeUndefined();
   expect(c.documenti).toBeUndefined();
@@ -218,7 +220,7 @@ test('DOCENTE_COMPLETO (document) populates classe-scoped document nodes without
   expect(c.documenti).toBeDefined();
   expect(c.documenti!.hasElenco).toBe(false);
   expect(c.pianiPersonalizzati).toBeDefined();
-  expect(c.pianiPersonalizzati!.hasElenco).toBe(false);
+  expect(c.pianiPersonalizzati!.hasElenco).toBe(true);
   expect(c.consiglio).toBeDefined();
   expect(c.studenti).toBeUndefined();
 });

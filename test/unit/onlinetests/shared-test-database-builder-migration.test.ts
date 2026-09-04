@@ -89,7 +89,7 @@ test('builds the shared extended dataset through every migrated seeder', () => {
   const pianiPersonali = sample.rows[TABLE.CONF_DOC].find(
     (row) => row[COL_CONF_DOC.ID] === CONF_DOC_PIANI
   )!;
-  const action = JSON.parse(String(pianiPersonali[COL_CONF_DOC.POST_PROCESSO]))[0];
+  const action = (JSON.parse(String(pianiPersonali[COL_CONF_DOC.POST_PROCESSO])) as unknown[])[0];
   expect(action).toEqual(
     expect.objectContaining({
       tipo: 'AGGIORNA_PERMESSI_STORICI',

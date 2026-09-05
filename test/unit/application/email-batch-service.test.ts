@@ -13,14 +13,35 @@ import { FakePropertiesFacade } from '../../../test/fakes/FakePropertiesFacade';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import type { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
+import type {
+  ILogJobRepository,
+  LogJobEntryInput
+} from '../../../src/domain/repositories/ILogJobRepository';
+import { StatoJob } from '../../../src/domain/value-objects/enums';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
+
+/** Collects every LOG_JOB row appended during a test, in order. */
+function fakeLogJob(): { logJob: ILogJobRepository; entries: LogJobEntryInput[] } {
+  const entries: LogJobEntryInput[] = [];
+  const logJob: ILogJobRepository = {
+    append: (entry) => {
+      entries.push(entry);
+      return entry as unknown as ReturnType<ILogJobRepository['append']>;
+    },
+    listByType: () => [],
+    getById: () => [],
+    getFailuresSince: () => []
+  };
+  return { logJob, entries };
+}
 
 function wire(
   monitor?: FakeProcessMonitor,
   properties?: IPropertiesFacade,
   logger?: LoggerService,
-  db: FakeDatabase = new FakeDatabase(fixtureTables())
+  db: FakeDatabase = new FakeDatabase(fixtureTables()),
+  logJob?: ILogJobRepository
 ) {
   const gmail = new FakeGmailFacade();
   const notification = composeEmailNotificationService(
@@ -31,7 +52,7 @@ function wire(
     new FakeDriveFacade(),
     new AldoTeachingAssignmentResolver(db)
   );
-  const service = new EmailBatchService(notification, monitor, properties, logger);
+  const service = new EmailBatchService(notification, monitor, properties, logger, logJob);
   return { db, gmail, notification, service };
 }
 
@@ -85,8 +106,79 @@ test('emits a content-first timed summary using the per-target email result', ()
   drain(service.batchSendHandler({ patternId: 'RESULT', chunkSize: 1, resumeState: null }));
 
   expect(lines.join('\n')).toContain(
-    'Email sent: Convocazione consiglio -> docente@example.edu (COMPLETED in 230ms)'
+    '✅ Email sent: Convocazione consiglio -> docente@example.edu (COMPLETED in 230ms)'
   );
+});
+
+test('prints an end-of-job summary with total/succeeded/failed counts and the failed target list', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const target = {
+    tipo: 'docente' as const,
+    tipoTarget: 'classe' as const,
+    target: '5A',
+    emails: ['docente@example.edu'],
+    classiCompetenza: []
+  };
+  const notification = {
+    enumerateTargets: () => [target],
+    getConfigurazione: () => ({}),
+    getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
+    sendToTarget: () => ({
+      sent: 0,
+      errors: ['SMTP rifiutato'],
+      skipped: false,
+      recipients: ['docente@example.edu'],
+      subject: 'Convocazione consiglio',
+      durationMs: 10
+    })
+  };
+  const service = new EmailBatchService(
+    notification as unknown as EmailNotificationService,
+    undefined,
+    undefined,
+    new LoggerService()
+  );
+
+  drain(service.batchSendHandler({ patternId: 'FAILING', jobId: 'job_1', chunkSize: 1 }));
+
+  const output = lines.join('\n');
+  expect(output).toContain('📊❌ [RIEPILOGO JOB] INVIO EMAIL');
+  expect(output).toContain('  Task totali: 1');
+  expect(output).toContain('  Eseguiti con successo: 0');
+  expect(output).toContain('  Falliti: 1');
+  expect(output).toContain('    - 5A');
+});
+
+test('resumed email batch carries forward failed targets from a prior timeout-resume into the final summary', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { service } = wire(undefined, undefined, new LoggerService());
+
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      jobId: 'job_1',
+      chunkSize: 1,
+      resumeState: {
+        nextIndex: 1,
+        processed: ['5A'],
+        sent: 0,
+        errors: [],
+        failedTargets: ['5A']
+      }
+    })
+  );
+
+  // '5A' failed in a prior run (before this resumed generator instance even
+  // started); the second target ('1F') succeeds in this run. The summary must
+  // still report the total across BOTH, not just this instance's own work.
+  const output = lines.join('\n');
+  expect(output).toContain('📊❌ [RIEPILOGO JOB] INVIO EMAIL');
+  expect(output).toContain('  Task totali: 2');
+  expect(output).toContain('  Eseguiti con successo: 1');
+  expect(output).toContain('  Falliti: 1');
+  expect(output).toContain('    - 5A');
 });
 
 test('resumed email batch logs persisted item index without resending earlier targets', () => {
@@ -98,7 +190,7 @@ test('resumed email batch logs persisted item index without resending earlier ta
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 1,
-      resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
     })
   );
 
@@ -160,18 +252,53 @@ test('yields one checkpoint per chunk with progress percentage (11 §14)', () =>
   expect(gmail.sent).toHaveLength(2);
 });
 
-test('resume restarts from resumeState.nextIndex without resending (JobRunnerLib contract)', () => {
+test('resume restarts from the processed logical ids without resending (JobRunnerLib contract)', () => {
   const { gmail, service } = wire();
   const { result } = drain(
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 1,
-      resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
     })
   );
   expect(gmail.sent).toHaveLength(1); // only the second target
   expect(result.processed).toEqual(['5A', '1F']);
   expect(result.sent).toBe(2); // cumulative
+});
+
+test('resume skips targets already processed even when enumeration shifts (audit §2)', () => {
+  const { gmail, service } = wire();
+  // Il primo run ha già inviato al target '5A'; alla ripresa l'enumerazione
+  // restituisce solo '1F' in prima posizione (5A ritirata dal giro): riprendere
+  // per indice invierebbe a nessuno o al target sbagliato.
+  const { result } = drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 1,
+      resumeState: {
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: [],
+        failedTargets: []
+      }
+    })
+  );
+
+  expect(gmail.sent).toHaveLength(1);
+  expect(result.processed).toEqual(['5A', '1F']);
+  expect(result.sent).toBe(2);
+});
+
+test('a quota checkpoint carries the logical ids of every processed target', () => {
+  const { service, gmail } = wire();
+  gmail.remainingQuota = 1;
+  const { checkpoints } = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1, resumeState: null })
+  );
+
+  expect(checkpoints[0]!.processedIds).toEqual(['cdc:5A']);
 });
 
 test('a JobRunner resume state recovers pattern and safe recipient in a fresh container without handler injections', () => {
@@ -350,6 +477,106 @@ test('zero remaining quota suspends cleanly without sending (no resume-trigger c
   expect(result.errors[0]).toContain('quota Gmail esaurita');
 });
 
+test('LOG_JOB (NEW_TABLE_LOG_JOB.md): quota suspension appends a SOSPESO_QUOTA row directly (not backfilled)', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { gmail, service } = wire(undefined, undefined, undefined, undefined, logJob);
+  gmail.remainingQuota = 1;
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 2,
+      jobId: 'job_1',
+      resumeState: null
+    })
+  );
+
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({
+    idJob: 'job_1',
+    esecuzione: 0,
+    tipo: JOB_TYPE_INVIO_EMAIL,
+    idConfig: 'CDC_OTTOBRE',
+    stato: StatoJob.SOSPESO_QUOTA,
+    totaleTask: 2,
+    completatiOk: 1,
+    falliti: 0
+  });
+});
+
+test('LOG_JOB: resuming a quota-suspended checkpoint completes without re-logging or backfilling SOSPESO_TEMPO', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { gmail, service } = wire(undefined, undefined, undefined, undefined, logJob);
+  gmail.remainingQuota = 1;
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 2,
+      jobId: 'job_1',
+      resumeState: null
+    })
+  );
+  expect(entries).toHaveLength(1); // the SOSPESO_QUOTA row from the first run above
+
+  gmail.remainingQuota = 10;
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 2,
+      jobId: 'job_1',
+      resumeState: {
+        viaQuotaSuspend: true,
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: [],
+        failedTargets: [],
+        runCount: 1,
+        esecuzioneIniziata: entries[0]!.inizio
+      }
+    })
+  );
+
+  expect(entries).toHaveLength(2); // no SOSPESO_TEMPO backfill inserted between them
+  expect(entries[1]).toMatchObject({ esecuzione: 1, stato: StatoJob.COMPLETATO });
+});
+
+test('LOG_JOB: resuming a raw JobRunnerLib timeout checkpoint (no viaQuotaSuspend) backfills SOSPESO_TEMPO for the cut-off execution', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { service } = wire(undefined, undefined, undefined, undefined, logJob);
+  drain(
+    service.batchSendHandler({
+      patternId: 'CDC_OTTOBRE',
+      chunkSize: 2,
+      jobId: 'job_1',
+      resumeState: {
+        patternId: 'CDC_OTTOBRE',
+        jobId: 'job_1',
+        chunkSize: 2,
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: [],
+        failedTargets: [],
+        runCount: 1,
+        totalDurationMs: 4000,
+        eseguitoDa: 'prof@school.it',
+        esecuzioneIniziata: '2026-01-01T00:00:00.000Z'
+      }
+    })
+  );
+
+  expect(entries).toHaveLength(2);
+  expect(entries[0]).toMatchObject({
+    esecuzione: 0,
+    stato: StatoJob.SOSPESO_TEMPO,
+    inizio: '2026-01-01T00:00:00.000Z',
+    eseguitoDa: 'prof@school.it'
+  });
+  expect(entries[1]).toMatchObject({ esecuzione: 1, stato: StatoJob.COMPLETATO });
+});
+
 test('Finding 1: quota suspend persists a resume checkpoint that start() seeds on the next call, so restart does not resend', () => {
   const properties = new FakePropertiesFacade();
   const { gmail, service } = wire(undefined, properties);
@@ -378,7 +605,7 @@ test('Finding 1: quota suspend persists a resume checkpoint that start() seeds o
   service.start(runner, 'mail_CDC_OTTOBRE', 'CDC_OTTOBRE');
   expect(calls[0]!.params).toMatchObject({
     patternId: 'CDC_OTTOBRE',
-    resumeState: { nextIndex: 1, processed: ['5A'], sent: 1 }
+    resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1 }
   });
 });
 
@@ -405,7 +632,7 @@ test('Finding 1: a run that reaches the end of the target list clears the persis
       patternId: 'CDC_OTTOBRE',
       chunkSize: 2,
       jobId: 'mail_CDC_OTTOBRE',
-      resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
     })
   );
 
@@ -413,7 +640,8 @@ test('Finding 1: a run that reaches the end of the target list clears the persis
   service.start(runner, 'mail_CDC_OTTOBRE', 'CDC_OTTOBRE');
   expect(calls[0]!.params).toEqual({
     patternId: 'CDC_OTTOBRE',
-    jobId: 'mail_CDC_OTTOBRE'
+    jobId: 'mail_CDC_OTTOBRE',
+    eseguitoDa: ''
   });
   expect(calls[0]!.params).not.toHaveProperty('resumeState');
 });
@@ -435,7 +663,8 @@ test('Finding 1: forceRestart discards the persisted checkpoint instead of seedi
   service.start(runner, 'mail_CDC_OTTOBRE', 'CDC_OTTOBRE', true);
   expect(calls[0]!.params).toEqual({
     patternId: 'CDC_OTTOBRE',
-    jobId: 'mail_CDC_OTTOBRE'
+    jobId: 'mail_CDC_OTTOBRE',
+    eseguitoDa: ''
   });
   expect(calls[0]!.params).not.toHaveProperty('resumeState');
 });
@@ -448,7 +677,7 @@ test('resume does not re-register/re-start the job', () => {
       patternId: 'CDC_OTTOBRE',
       chunkSize: 1,
       jobId: 'job_mail_1',
-      resumeState: { nextIndex: 1, processed: ['5A'], sent: 1, errors: [] }
+      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
     })
   );
   expect(monitor.registered).toEqual([]);

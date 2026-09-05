@@ -81,6 +81,7 @@ function wire(
   } = {}
 ) {
   const db = new FakeDatabase(fixtureTables());
+  const classi = new ClasseRepository(db);
   const generated: string[] = [];
   const documenti = {
     generateForClasse: (target: ClasseId, confDocId: string) => {
@@ -97,7 +98,7 @@ function wire(
     }
   } as unknown as DocumentGenerationService;
   const service = new DocumentBatchService(
-    new ClasseRepository(db),
+    classi,
     new AlunnoRepository(db),
     new ConfigurazioneDocumentoRepository(db),
     documenti,
@@ -109,7 +110,7 @@ function wire(
     options.logJob,
     options.activeUser
   );
-  return { service, generated };
+  return { service, generated, classi };
 }
 
 function wirePiani(
@@ -486,6 +487,25 @@ test('generateClassi persists its class targets and consumes them on resume (aud
   const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
 
   expect(generated).toEqual(['5A:CD1', '1F:CD1']);
+  expect(result).toMatchObject({ totale: 2, processed: ['5A', '1F'] });
+});
+
+test('generateClassi keeps frozen positions when a processed class disappears before resume', () => {
+  const { service, generated, classi } = wire();
+  const first = service
+    .batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_classi' })
+    .next().value as BatchCheckpoint;
+  const findById = classi.findById.bind(classi);
+  jest
+    .spyOn(classi, 'findById')
+    .mockImplementation((id) => (id.value === '5A' ? null : findById(id)));
+
+  const { checkpoints, result } = drain(
+    service.batchGenerateHandler({ resumeState: first })
+  );
+
+  expect(generated).toEqual(['5A:CD1', '1F:CD1']);
+  expect(checkpoints[0]).toMatchObject({ nextIndex: 2, classeTargets: ['5A', '1F'] });
   expect(result).toMatchObject({ totale: 2, processed: ['5A', '1F'] });
 });
 

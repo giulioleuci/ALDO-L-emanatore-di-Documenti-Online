@@ -4,7 +4,7 @@ import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoReposit
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { GeneratoreAxis, StatoJob, type TipoPiano } from '../../domain/value-objects/enums';
-import { ConfigurationError } from '../../domain/errors/DomainError';
+import { ConfigurationError, EntityNotFoundError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from './DocumentGenerationService';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -1044,71 +1044,70 @@ export class DocumentBatchService {
     processed: string[],
     errori: string[]
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    let attive: Classe[];
+    let attive: Array<Classe | null>;
+    let classeTargets: string[];
     if (resume === null) {
-      attive = this.classi.filterPerGestioneArticolazione(
+      const classi = this.classi.filterPerGestioneArticolazione(
         this.classi.findAttive(),
         config.gestioneArticolazione
       );
+      attive = classi;
+      classeTargets = classi.map((classe) => classe.id ?? '');
     } else {
       if (resume.classeTargets === undefined) {
         throw new ConfigurationError(
           `Stato di ripresa ${confDocId} privo dei target classe persistiti`
         );
       }
-      // Una classe sparita fra due run non deve uccidere il job: la si registra
-      // come errore e si prosegue (audit 2026-09-05 §3).
-      attive = resume.classeTargets.flatMap((id) => {
-        const classe = this.classi.findById(ClasseId.of(id));
-        if (classe === null) {
-          errori.push(`${id}: classe non più presente in CLASSI — saltata`);
-          return [];
-        }
-        return [classe];
-      });
+      classeTargets = resume.classeTargets.slice();
+      attive = classeTargets.map((id) => this.classi.findById(ClasseId.of(id)));
     }
 
     return yield* this.runBatchJob(
       jobId,
       confDocId,
       resume,
-      attive.length,
+      classeTargets.length,
       processed,
       errori,
       'classi elaborate',
       function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < attive.length; i++) {
-          const classe = attive[i]!;
-          this.logger?.logItemStart(i + 1, attive.length, 'Target', classe.id ?? '?', 'DOCUMENT');
-          let message = `Generazione documento classe ${classe.id ?? '?'}`;
+        for (let i = resume?.nextIndex ?? 0; i < classeTargets.length; i++) {
+          const classe = attive[i];
+          const id = classeTargets[i]!;
+          this.logger?.logItemStart(i + 1, classeTargets.length, 'Target', id, 'DOCUMENT');
+          let message = `Generazione documento classe ${id}`;
           const itemStartedAt = Date.now();
           try {
+            if (classe === null || classe === undefined) {
+              throw new EntityNotFoundError('classe non più presente in CLASSI — saltata');
+            }
             const result = this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
-            const name = result.fileName ?? classe.id ?? '?';
+            const name = result.fileName ?? id;
             const outcome = DocumentBatchService.documentOutcome(result.status);
             this.logger?.logSummary(outcome, result.durationMs, name, {
               depth: 1,
               isLast: true,
-              ancestorHasNext: [i + 1 < attive.length]
+              ancestorHasNext: [i + 1 < classeTargets.length]
             });
             message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
           } catch (e) {
             const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${classe.id ?? '?'}: ${reason}`);
+            errori.push(`${id}: ${reason}`);
             this.logger?.logSummary(
               '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
-              `${classe.id ?? '?'}: ${reason}`,
+              `${id}: ${reason}`,
               {
                 depth: 1,
                 isLast: true,
-                ancestorHasNext: [i + 1 < attive.length]
+                ancestorHasNext: [i + 1 < classeTargets.length]
               }
             );
-            message = `Errore: ${reason} (classe ${classe.id ?? '?'})`;
+            message = `Errore: ${reason} (classe ${id})`;
           }
-          processed.push(classe.id ?? '');
-          const percentage = ((i + 1) / attive.length) * 100;
+          processed.push(id);
+          const percentage = ((i + 1) / classeTargets.length) * 100;
           this.monitor?.updateProgress(jobId, percentage, message);
           yield {
             confDocId,
@@ -1121,7 +1120,7 @@ export class DocumentBatchService {
             totalDurationMs: this.elapsedTotalMs(),
             eseguitoDa: this.eseguitoDa,
             esecuzioneIniziata: this.esecuzioneIniziata,
-            classeTargets: attive.map((classe) => classe.id ?? '')
+            classeTargets
           };
         }
       }

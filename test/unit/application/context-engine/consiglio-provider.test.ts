@@ -41,7 +41,7 @@ function cdc(
   const result = b.build(params, recipe).focus.classe!.consiglio!.elenco;
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.objectContaining({ id: target }),
-    new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000Z`),
+    now,
     expect.objectContaining({ includeReligioneAlt: true })
   );
   return result;
@@ -56,7 +56,7 @@ test('CDC of a standard class: one VM per subject teacher, sorted by surname (02
   expect(list.map((d) => d.email)).toEqual(['bianchi@school.it']);
 });
 
-test('ConsiglioClasseProvider resolves the target calendar day, not the timestamp time', () => {
+test('ConsiglioClasseProvider passes timestamp to resolver; normalization happens in resolver', () => {
   const db = new FakeDatabase(fixtureTables());
   const classi = new ClasseRepository(db);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
@@ -67,18 +67,19 @@ test('ConsiglioClasseProvider resolves the target calendar day, not the timestam
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
+  const now = new Date('2026-07-01T23:59:59.999Z');
   b.build(
     {
       target: '5A',
       tipoTarget: 'classe',
-      now: new Date('2026-07-01T23:59:59.999Z')
+      now
     } as BuildParams,
     { providers: ['class', 'consiglio'], options: makeOptions() }
   );
 
   expect(resolveConsiglio).toHaveBeenCalledWith(
     expect.objectContaining({ id: '5A' }),
-    new Date('2026-07-01T00:00:00.000Z'),
+    now,
     expect.any(Object)
   );
 });

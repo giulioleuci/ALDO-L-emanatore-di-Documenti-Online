@@ -41,6 +41,6 @@ describe('online-test shared fixture dataset', () => {
     expect(ANNI_PRECEDENTI).toEqual(['2025-2026', '2024-2025']);
     expect(ASSIGNMENT_DATE.toISOString()).toBe('2026-07-15T09:00:00.000Z');
     expect(SUPPLENZA_INIZIO.toISOString()).toBe('2026-09-01T00:00:00.000Z');
-    expect(SUPPLENZA_FINE.toISOString()).toBe('2026-10-15T23:59:59.000Z');
+    expect(SUPPLENZA_FINE.toISOString()).toBe('2026-10-15T00:00:00.000Z');
   });
 });

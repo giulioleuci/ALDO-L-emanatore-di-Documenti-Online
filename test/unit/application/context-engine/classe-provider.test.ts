@@ -110,6 +110,26 @@ test('RappresentantiProvider: student reps with email, no parent reps in fixture
   expect(c.rappresentanti?.genitori.elenco).toEqual([]);
 });
 
+test('RappresentantiProvider: a withdrawn student is not listed as representative (audit §4)', () => {
+  const tables = fixtureTables();
+  (tables.ALUNNI as Row[]).push({
+    EMAIL: 'ritirato@school.it',
+    COGNOMENOME: 'RITIRATO RENZO',
+    CLASSE: '5A',
+    RELIGIONE: 'IRC',
+    ATTIVO: false,
+    RIPETENTE: false,
+    RAPPR_STUD: true,
+    RAPPR_GEN: 'Genitore Ritirato',
+    CURRICULUM: null
+  });
+
+  const c = build('5A', tables).focus.classe!;
+
+  expect(c.rappresentanti?.studenti.elenco.map((r) => r.studente.email)).toEqual(['a1@school.it']);
+  expect(c.rappresentanti?.genitori.elenco).toEqual([]);
+});
+
 test('RappresentantiProvider: attaches studente.nomeCompleto to each genitore for ordinary classes', () => {
   const tables = fixtureTables();
   (tables['ALUNNI'] as Row[]) = [

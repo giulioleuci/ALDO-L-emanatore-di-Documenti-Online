@@ -102,7 +102,7 @@ test('storico / indirizzo / studenti', () => {
   const c5a = classe('5A');
   expect(r.getStorico(c5a).map((c) => c.value)).toEqual(['4A', '3A']);
   expect(r.getIndirizzo(c5a).id).toBe('SCIENTIFICO');
-  expect(r.getStudenti(c5a).map((a) => a.id)).toEqual([
+  expect(r.getStudenti(c5a, false).map((a) => a.id)).toEqual([
     'a3@school.it',
     'a2@school.it',
     'a1@school.it'

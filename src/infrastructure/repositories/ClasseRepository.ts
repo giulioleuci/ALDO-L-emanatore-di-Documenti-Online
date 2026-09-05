@@ -228,7 +228,7 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     return ind;
   }
 
-  getStudenti(classe: Classe, soloAttivi = false): Alunno[] {
+  getStudenti(classe: Classe, soloAttivi = true): Alunno[] {
     const studenti = this.alunni.findByClasse(classe.classeId);
     return soloAttivi ? studenti.filter((a) => a.isAttivo()) : studenti;
   }

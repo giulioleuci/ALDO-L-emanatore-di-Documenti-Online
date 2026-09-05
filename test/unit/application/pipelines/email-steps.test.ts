@@ -558,6 +558,68 @@ test('BuildCDUStep marks a non-coordinatore false even on a PER_COORDINATORE sen
   expect(d.isTutorAsl).toBe(true); // ma è tutor ASL
 });
 
+test.each([
+  ['SOS', true],
+  ['SOS.PEI', true],
+  ['SOSIA', false]
+] as const)('BuildCDUStep derives support status from subject %s (audit §6 coverage)', (materiaId, expected) => {
+  const tables = fixtureTables();
+  (tables['MATERIE'] as Row[]).push(
+    { ID: 'SOS', NOME: 'Sostegno', SINTESI: 'Sostegno', ESAME_CFG: null },
+    { ID: 'SOS.PEI', NOME: 'Sostegno PEI', SINTESI: 'Sostegno PEI', ESAME_CFG: null },
+    { ID: 'SOSIA', NOME: 'Sosia', SINTESI: 'Sosia', ESAME_CFG: null }
+  );
+  (tables['CLASSI'] as Row[]).push({
+    ID: '2S',
+    ANNO: 2,
+    INDIRIZZO: 'SCIENTIFICO',
+    ARTICOLAZIONE: null,
+    RUOLI: null,
+    ATTIVA: true,
+    COORD: '',
+    [materiaId]: 'rossi@school.it'
+  });
+  const target = { ...docenteTarget(), target: '2S', classiCompetenza: ['2S'] };
+
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, target, tables);
+  buildStep(w).execute(w.ctx);
+
+  expect(w.ctx.get<Cdu>('cdu')!.destinatario!.isDocenteSostegno).toBe(expected);
+});
+
+test('BuildCDUStep finds orientation-only tutoring in a later competence class (audit §6 coverage)', () => {
+  const tables = fixtureTables();
+  const later = (tables['CLASSI'] as Row[]).find((row) => row['ID'] === '1F-LSS')!;
+  later['RUOLI'] = '{"TUTOR_ORIENT":"verdi@school.it"}';
+  const target = {
+    ...docenteTarget(),
+    docenteEmail: 'verdi@school.it',
+    emails: ['verdi@school.it'],
+    classiCompetenza: ['5A', '1F-LSS']
+  };
+
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, target, tables);
+  buildStep(w).execute(w.ctx);
+
+  const d = w.ctx.get<Cdu>('cdu')!.destinatario!;
+  expect(d.isTutor).toBe(true);
+  expect(d.isTutorAsl).toBe(false);
+  expect(d.ruoliAttivi).toEqual(['Tutor Orientamento', 'Docente']);
+});
+
+test('BuildCDUStep keeps non-teacher recipient roles empty and flags false (audit §6 coverage)', () => {
+  const w = wire();
+  buildStep(w).execute(w.ctx);
+
+  const d = w.ctx.get<Cdu>('cdu')!.destinatario!;
+  expect(d.ruoliAttivi).toEqual([]);
+  expect(d.hasRuoliAttivi).toBe(false);
+  expect(d.isCoordinatore).toBe(false);
+  expect(d.isTutor).toBe(false);
+  expect(d.isTutorAsl).toBe(false);
+  expect(d.isDocenteSostegno).toBe(false);
+});
+
 test('BuildCDUStep destinatario.anagrafica is a full PersonVM (Task 9)', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
   buildStep(w).execute(w.ctx);

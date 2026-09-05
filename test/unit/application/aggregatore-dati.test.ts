@@ -63,6 +63,96 @@ test('getDocumentiPerUtente scopes UTENTI before applying document filters (14 �
   ).toEqual(['d1']);
 });
 
+test('getDocumentiPerUtente hides class documents of a class the user no longer holds (audit §5)', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'd-classe',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      UTENTI: 'exdocente@school.it',
+      CLASSI: '5A',
+      MATERIE: 'MATE'
+    },
+    {
+      ID: 'd-personale',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      UTENTI: 'exdocente@school.it',
+      CLASSI: '',
+      MATERIE: ''
+    }
+  ];
+  const agg = aggregatore(tables);
+
+  // Oggi il docente non ha più 5A fra le competenze: resta solo il documento personale.
+  expect(
+    agg.getDocumentiPerUtente('exdocente@school.it', undefined, ['1F']).map((d) => d.id)
+  ).toEqual(['d-personale']);
+});
+
+test('getDocumentiPerUtente shows class documents to a teacher who arrived mid-year (audit §5)', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'd-classe',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      UTENTI: 'exdocente@school.it',
+      CLASSI: '5A',
+      MATERIE: 'MATE'
+    }
+  ];
+  const agg = aggregatore(tables);
+
+  expect(
+    agg.getDocumentiPerUtente('nuovo@school.it', undefined, ['5A']).map((d) => d.id)
+  ).toEqual(['d-classe']);
+});
+
+test('getDocumentiPerUtente treats an explicit empty live scope as zero current classes, not a fallback (audit §5)', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'd-classe',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      UTENTI: 'exdocente@school.it',
+      CLASSI: '5A',
+      MATERIE: 'MATE'
+    }
+  ];
+  const agg = aggregatore(tables);
+
+  // classiCompetenza === [] means "we know the user's live scope, and it is empty" —
+  // this must NOT fall back to the stale UTENTI CSV.
+  expect(agg.getDocumentiPerUtente('exdocente@school.it', undefined, [])).toEqual([]);
+});
+
+test('getCartellePerUtente without a live scope still falls back to the registered UTENTI (audit §5)', () => {
+  const tables = fixtureTables();
+  tables.LOG_FOLD = [
+    {
+      ID: 'f1',
+      ID_GEN: 'CD1',
+      TIPO: 'CARTELLA',
+      NOME: 'Verbali',
+      PATH: 'Verbali',
+      LINK: 'https://drive.google.com/drive/folders/f1',
+      UTENTI: 'exdocente@school.it',
+      CLASSI: '5A',
+      MATERIE: ''
+    }
+  ];
+  const agg = aggregatore(tables);
+
+  expect(agg.getCartellePerUtente('exdocente@school.it').map((c) => c.id)).toEqual(['f1']);
+});
+
 test('perMetodo scopes every document and folder accessor before applying its specification', () => {
   const tables = fixtureTables();
   tables.LOG_DOCS = [

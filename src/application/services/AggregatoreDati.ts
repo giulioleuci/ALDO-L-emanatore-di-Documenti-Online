@@ -25,6 +25,29 @@ import {
 import { MateriePerDipartimentoSpec } from '../../domain/specifications/MateriePerDipartimentoSpec';
 
 /**
+ * Visibilità live (audit 2026-09-05 §5): il CSV UTENTI registrato in LOG_DOCS /
+ * LOG_FOLD è un audit trail di chi era interessato alla generazione, non
+ * l'appartenenza corrente — è append-only e non viene mai potato. Una riga con
+ * CLASSI valorizzato è quindi visibile a chi ha oggi almeno una di quelle classi
+ * fra le competenze; le righe senza CLASSI (documenti personali) restano sul CSV.
+ * Senza scope live (chiamate batch, prerequisiti) si torna al comportamento
+ * storico, che è il massimo che si può sapere in quel contesto. Uno scope live
+ * esplicitamente vuoto (`[]`) significa invece "nessuna classe oggi": le righe
+ * con CLASSI vengono nascoste, non si torna al CSV.
+ */
+function visibileAUtente(
+  riga: { getClassi(): string[]; containsUtente(email: string): boolean },
+  utenteEmail: string,
+  classiCompetenza: string[] | undefined
+): boolean {
+  const classi = riga.getClassi();
+  if (classi.length === 0 || classiCompetenza === undefined) {
+    return riga.containsUtente(utenteEmail);
+  }
+  return classi.some((classeId) => classiCompetenza.includes(classeId));
+}
+
+/**
  * AggregatoreDati (14 §2): the read-optimized query surface used by the email
  * box renderers and pipeline steps via `DATI_SORGENTE.metodo`. Its purpose is
  * N+1 prevention: each underlying table is loaded ONCE per instance and then
@@ -60,10 +83,16 @@ export class AggregatoreDati {
       .sort((a, b) => b.data.localeCompare(a.data));
   }
 
-  /** LOG_DOCS whose UTENTI contains the requested user (14 §2). */
-  getDocumentiPerUtente(utenteEmail: string, filtri?: FiltriSorgente): LogDocumento[] {
+  /** LOG_DOCS visibili all'utente: scope live sulle classi di competenza, CSV UTENTI per le righe personali (14 §2, audit §5). */
+  getDocumentiPerUtente(
+    utenteEmail: string,
+    filtri?: FiltriSorgente,
+    classiCompetenza?: string[]
+  ): LogDocumento[] {
     return this.filterDocumenti(
-      this.allDocumenti().filter((documento) => documento.containsUtente(utenteEmail)),
+      this.allDocumenti().filter((documento) =>
+        visibileAUtente(documento, utenteEmail, classiCompetenza)
+      ),
       filtri
     );
   }
@@ -91,10 +120,16 @@ export class AggregatoreDati {
     );
   }
 
-  /** LOG_FOLD whose UTENTI contains the requested user (14 §2). */
-  getCartellePerUtente(utenteEmail: string, filtri?: FiltriSorgente): LogCartella[] {
+  /** LOG_FOLD visibili all'utente: stessa regola di getDocumentiPerUtente (14 §2, audit §5). */
+  getCartellePerUtente(
+    utenteEmail: string,
+    filtri?: FiltriSorgente,
+    classiCompetenza?: string[]
+  ): LogCartella[] {
     return this.filterCartelle(
-      this.allCartelle().filter((cartella) => cartella.containsUtente(utenteEmail)),
+      this.allCartelle().filter((cartella) =>
+        visibileAUtente(cartella, utenteEmail, classiCompetenza)
+      ),
       filtri
     );
   }
@@ -134,6 +169,7 @@ export class AggregatoreDati {
       utenteEmail?: string;
       classeId?: string;
       dipartimentoId?: string;
+      classiCompetenza?: string[];
       filtri?: unknown;
     },
     logger?: LoggerService
@@ -176,14 +212,14 @@ export class AggregatoreDati {
   }
 
   private documentiPerUtente(
-    params: { utenteEmail?: string; filtri?: unknown },
+    params: { utenteEmail?: string; classiCompetenza?: string[]; filtri?: unknown },
     logger: LoggerService
   ): LogDocumento[] | null {
     const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerUtente', logger);
     if (filtri === null) return null;
     if (!this.isNonEmpty(params.utenteEmail))
       return this.warnScope('documentiPerUtente', 'utenteEmail mancante', logger);
-    return this.getDocumentiPerUtente(params.utenteEmail, filtri);
+    return this.getDocumentiPerUtente(params.utenteEmail, filtri, params.classiCompetenza);
   }
 
   private documentiPerDipartimento(
@@ -213,14 +249,14 @@ export class AggregatoreDati {
   }
 
   private cartellePerUtente(
-    params: { utenteEmail?: string; filtri?: unknown },
+    params: { utenteEmail?: string; classiCompetenza?: string[]; filtri?: unknown },
     logger: LoggerService
   ): LogCartella[] | null {
     const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerUtente', logger);
     if (filtri === null) return null;
     if (!this.isNonEmpty(params.utenteEmail))
       return this.warnScope('cartellePerUtente', 'utenteEmail mancante', logger);
-    return this.getCartellePerUtente(params.utenteEmail, filtri);
+    return this.getCartellePerUtente(params.utenteEmail, filtri, params.classiCompetenza);
   }
 
   private cartellePerDipartimento(

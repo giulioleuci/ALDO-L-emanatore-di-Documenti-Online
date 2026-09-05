@@ -615,6 +615,9 @@ function resolveSourceItems(
     : [
         aggregatoreDati.perMetodo(metodo, {
           ...(scope?.utenteEmail === undefined ? {} : { utenteEmail: scope.utenteEmail }),
+          ...(scope?.classiCompetenza === undefined
+            ? {}
+            : { classiCompetenza: scope.classiCompetenza }),
           ...(scope?.dipartimentoId === undefined
             ? {}
             : { dipartimentoId: scope.dipartimentoId }),

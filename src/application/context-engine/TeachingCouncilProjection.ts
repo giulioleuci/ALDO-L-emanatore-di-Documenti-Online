@@ -183,7 +183,7 @@ function specificityPattern(curriculum: CurriculumVM[], materiaId: string): stri
   return `^(?:${specifiche.map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`;
 }
 
-function descrizione(
+export function descrizione(
   isCoordinatore: boolean,
   isTutorAsl: boolean,
   isTutorOrientamento: boolean

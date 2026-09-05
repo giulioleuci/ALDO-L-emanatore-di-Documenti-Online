@@ -14,6 +14,7 @@ import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoReposit
 import type { IMateriaRepository } from '../../domain/repositories/IMateriaRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { Classe } from '../../domain/entities/Classe';
+import type { Docente } from '../../domain/entities/Docente';
 import type {
   ITeachingAssignmentResolver,
   TeachingAssignment
@@ -34,12 +35,13 @@ import {
   type SourceScope
 } from '../email/boxes';
 import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
-import { COL_CONF_MAIL } from '../../config/schema';
+import { COL_CONF_MAIL, MATERIA_SOSTEGNO } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
 import {
   dedupeSubjectsMainOverItp,
+  descrizione as descrizioneRuoli,
   resolveEffectiveDocenti,
   materieDocenteInClasse
 } from '../context-engine/TeachingCouncilProjection';
@@ -184,7 +186,7 @@ export class BuildCDUStep extends Step {
         ...storicoOptionsFor(conf)
       })
     );
-    built.destinatario = this.buildDestinatario(conf, t, now(ctx));
+    built.destinatario = this.buildDestinatario(t, now(ctx));
     this.setResult(ctx, 'cdu', built);
   }
 
@@ -204,7 +206,7 @@ export class BuildCDUStep extends Step {
     };
   }
 
-  private buildDestinatario(conf: ConfigurazioneEmail, t: EmailTarget, when: Date): DestinatarioVM {
+  private buildDestinatario(t: EmailTarget, when: Date): DestinatarioVM {
     const docente = t.docenteEmail !== undefined ? this.docenti.findById(t.docenteEmail) : null;
     const titolare = t.titolareEmail !== undefined ? this.docenti.findById(t.titolareEmail) : null;
     const alunno = t.tipoTarget === 'alunno' ? this.alunni.findById(t.target) : null;
@@ -227,16 +229,21 @@ export class BuildCDUStep extends Step {
           ? [t.target]
           : [];
     const { cattedre, materieCompetenza } = this.buildCattedre(t, classiCompetenza, when);
+    const ruoli = this.ruoliDestinatario(docente, classiCompetenza);
+    const isDocenteSostegno = materieCompetenza.some(
+      (materia) =>
+        materia.sigla === MATERIA_SOSTEGNO || materia.sigla.startsWith(`${MATERIA_SOSTEGNO}.`)
+    );
 
     const classi = classiCompetenza.map((nome): ClasseSintesiVM => ({ nome, anno: 0, sezione: '' }));
     return {
       ...persona,
-      ruoliAttivi: [],
-      hasRuoliAttivi: false,
-      isCoordinatore: conf.processo === ProcessoInvio.PER_COORDINATORE,
-      isTutor: false,
-      isTutorAsl: false,
-      isDocenteSostegno: false,
+      ruoliAttivi: ruoli.elenco,
+      hasRuoliAttivi: ruoli.elenco.length > 0,
+      isCoordinatore: ruoli.isCoordinatore,
+      isTutor: ruoli.isTutorAsl || ruoli.isTutorOrientamento,
+      isTutorAsl: ruoli.isTutorAsl,
+      isDocenteSostegno,
       isSupplente: titolare !== null,
       sostituisce: titolare === null ? null : buildPersonaVm({ nome: titolare.nome, cognome: titolare.cognome, email: titolare.id, genere: titolare.genere }),
       hasSostituisce: titolare !== null,
@@ -248,6 +255,39 @@ export class BuildCDUStep extends Step {
         oggetto: '',
         testoContenutoPuro: ''
       }
+    };
+  }
+
+  /** Role flags resolved live from CLASSI.COORD / CLASSI.RUOLI for the recipient's classes. */
+  private ruoliDestinatario(
+    docente: Docente | null,
+    classiCompetenza: string[]
+  ): {
+    elenco: string[];
+    isCoordinatore: boolean;
+    isTutorAsl: boolean;
+    isTutorOrientamento: boolean;
+  } {
+    const email = docente?.id ?? '';
+    if (email === '') {
+      return { elenco: [], isCoordinatore: false, isTutorAsl: false, isTutorOrientamento: false };
+    }
+    const classi = classiCompetenza
+      .map((id) => this.classi.findById(ClasseId.of(id)))
+      .filter((classe): classe is Classe => classe !== null);
+    const contiene = (docenti: Docente[]): boolean => docenti.some((d) => d.id === email);
+    const isCoordinatore = classi.some((classe) => contiene(this.classi.getCoordinatori(classe)));
+    const isTutorAsl = classi.some((classe) =>
+      contiene(this.classi.getDocentiRuoloArticolato(classe, 'TUTOR_ASL'))
+    );
+    const isTutorOrientamento = classi.some((classe) =>
+      contiene(this.classi.getDocentiRuoloArticolato(classe, 'TUTOR_ORIENT'))
+    );
+    return {
+      elenco: descrizioneRuoli(isCoordinatore, isTutorAsl, isTutorOrientamento),
+      isCoordinatore,
+      isTutorAsl,
+      isTutorOrientamento
     };
   }
 

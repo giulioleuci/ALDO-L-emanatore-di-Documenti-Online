@@ -531,6 +531,33 @@ test('BuildCDUStep PER_DOCENTE builds DOCENTE_COMPLETO CDU with docente anagrafi
   expect(d.comunicazione.salutoIniziale).toBe('Gentile Prof. ROSSI MARIO');
 });
 
+test('BuildCDUStep resolves destinatario role flags from CLASSI, not from the PROCESSO (audit §6)', () => {
+  // Fixture 5A: COORD=rossi, RUOLI.TUTOR_ASL=rossi,bianchi.
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
+  buildStep(w).execute(w.ctx);
+
+  const d = w.ctx.get<Cdu>('cdu')!.destinatario!;
+  expect(d.isCoordinatore).toBe(true);
+  expect(d.isTutorAsl).toBe(true);
+  expect(d.isTutor).toBe(true);
+  expect(d.ruoliAttivi).toEqual(['Coordinatore', 'Tutor ASL', 'Docente']);
+  expect(d.hasRuoliAttivi).toBe(true);
+});
+
+test('BuildCDUStep marks a non-coordinatore false even on a PER_COORDINATORE send (audit §6)', () => {
+  const target = {
+    ...docenteTarget(),
+    docenteEmail: 'bianchi@school.it',
+    emails: ['bianchi@school.it']
+  };
+  const w = wire({ PROCESSO: 'PER_COORDINATORE' }, target);
+  buildStep(w).execute(w.ctx);
+
+  const d = w.ctx.get<Cdu>('cdu')!.destinatario!;
+  expect(d.isCoordinatore).toBe(false); // bianchi non coordina 5A
+  expect(d.isTutorAsl).toBe(true); // ma è tutor ASL
+});
+
 test('BuildCDUStep destinatario.anagrafica is a full PersonVM (Task 9)', () => {
   const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
   buildStep(w).execute(w.ctx);

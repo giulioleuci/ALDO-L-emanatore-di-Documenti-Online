@@ -168,6 +168,13 @@ export const COL_MATERIE = {
   SPECIFICITA: 'SPECIFICITA'
 } as const;
 
+/**
+ * ID della riga MATERIE che rappresenta il sostegno: nella matrice CLASSI il
+ * sostegno è una colonna materia come le altre. Allineare al valore reale del
+ * foglio MATERIE (audit 2026-09-05 §6).
+ */
+export const MATERIA_SOSTEGNO = 'SOS';
+
 export const COL_ALUNNI = {
   EMAIL: 'EMAIL',
   COGNOMENOME: 'COGNOMENOME',

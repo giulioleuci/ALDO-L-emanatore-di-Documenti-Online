@@ -503,3 +503,33 @@ test('retains each partner owner for wildcard articulated changes and delegation
     expect(assignment.docenteEffettivo.id).toBe('articulated-common-sub@school.test');
   }
 });
+
+test('the last day of a SUPPLENZE window still resolves to the supplente at any time of day', () => {
+  const tables = freshTables();
+  tables.DOCENTI!.push(docente('sup@school.test'));
+  tables.SUPPLENZE = [
+    {
+      TITOLARE: 'main@school.test',
+      SUPPLENTE: 'sup@school.test',
+      DAL: '2026-10-01',
+      AL: '2026-10-15',
+      CLASSI: '5A',
+      MATERIE: 'MAT'
+    }
+  ];
+  const { resolver, classe5A } = resolverFor(tables);
+
+  const ultimoGiorno = resolver.resolveMateria(
+    classe5A,
+    MateriaId.of('MAT'),
+    new Date('2026-10-15T09:30:00Z')
+  );
+  const giornoDopo = resolver.resolveMateria(
+    classe5A,
+    MateriaId.of('MAT'),
+    new Date('2026-10-16T09:30:00Z')
+  );
+
+  expect(byColumn(ultimoGiorno, 'MAT').docenteEffettivo.id).toBe('sup@school.test');
+  expect(byColumn(giornoDopo, 'MAT').docenteEffettivo.id).toBe('main@school.test');
+});

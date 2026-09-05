@@ -12,6 +12,20 @@ import { DocenteRepository } from '../repositories/DocenteRepository';
 import { AldoTeachingResolutionConfig } from './AldoTeachingResolutionConfig';
 import { AmbiguousVariazioneCattedraError } from '../../domain/errors/DomainError';
 
+/**
+ * `SUPPLENZE.DAL`/`AL` e `VARIAZIONI_CATTEDRA.DAL` sono date di calendario
+ * (`YYYY-MM-DD`) che RoleResolutionLib parsa a mezzanotte UTC e confronta come
+ * istanti (`asOf <= validTo`, `AssignmentCandidate.isValidAt`). Un `asOf` con
+ * l'ora escluderebbe l'ultimo giorno della supplenza. Questo è l'unico punto di
+ * normalizzazione: ogni risoluzione ALDO passa da `resolveMateria`.
+ * ponytail: la giornata è quella UTC — un job lanciato fra mezzanotte e le 02:00
+ * italiane ricade nel giorno UTC precedente. Se emerge, normalizzare qui su
+ * Europe/Rome.
+ */
+function giornoDiCalendario(data: Date): Date {
+  return new Date(`${data.toISOString().slice(0, 10)}T00:00:00.000Z`);
+}
+
 export class AldoTeachingAssignmentResolver implements ITeachingAssignmentResolver {
   private readonly config: AldoTeachingResolutionConfig;
   private readonly docenti: DocenteRepository;
@@ -30,7 +44,7 @@ export class AldoTeachingAssignmentResolver implements ITeachingAssignmentResolv
     const configuration = this.config.create(classe, materia);
     try {
       return configuration
-        .resolve(data, routingPolicy ?? null)
+        .resolve(giornoDiCalendario(data), routingPolicy ?? null)
         .map((result) => this.toTeachingAssignment(result));
     } catch (error) {
       // The library never leaks past ALDO's own facade (ref CLAUDE.md

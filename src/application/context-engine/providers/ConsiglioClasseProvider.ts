@@ -31,7 +31,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
     const focus = cdu.focus.classe;
     if (focus === undefined) return;
     const classe = getClasseEntity(cdu);
-    const data = new Date(`${cdu.meta.timestamp.slice(0, 10)}T00:00:00.000Z`);
+    const data = new Date(cdu.meta.timestamp);
     const effettivi = resolveEffectiveCouncil(this.teachingAssignments, classe, data);
     const titolari = resolveTitolareCouncil(this.teachingAssignments, classe, data);
     focus.consiglio = this.emptyConsiglio(

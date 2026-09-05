@@ -180,4 +180,4 @@ export function e2eAlunnoEmail(i: number): string {
 /** date deterministiche (MISSING_TESTS: niente valori dipendenti da clock) */
 export const ASSIGNMENT_DATE = new Date('2026-07-15T09:00:00Z');
 export const SUPPLENZA_INIZIO = new Date('2026-09-01T00:00:00Z');
-export const SUPPLENZA_FINE = new Date('2026-10-15T23:59:59Z');
+export const SUPPLENZA_FINE = new Date('2026-10-15T00:00:00Z');

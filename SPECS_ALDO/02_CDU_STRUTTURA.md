@@ -157,6 +157,8 @@ RuoloStaffVM:
   ruoloNome: string # Denominazione leggibile del ruolo; es. "Coordinatore di classe"
   persona: PersonaVM | null # Primo titolare risolto; null se non assegnato
   hasPersona: boolean # true se persona è valorizzata
+  persone: PersonaVM[] # Tutti i titolari del ruolo, nell'ordine configurato
+  hasPersone: boolean # true se il ruolo ha almeno un titolare
 ```
 
 L'ordine di `staff.elenco` coincide con l'ordine della configurazione dei ruoli.

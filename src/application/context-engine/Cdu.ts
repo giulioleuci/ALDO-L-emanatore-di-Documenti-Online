@@ -464,8 +464,12 @@ export interface DocenteEsameVM extends PersonaVM {
 export interface RuoloStaffVM {
   ruoloId: string;
   ruoloNome: string;
+  /** Primo titolare risolto; null se il ruolo non è assegnato. Mantenuto per i template esistenti. */
   persona: PersonaVM | null;
   hasPersona: boolean;
+  /** Tutti i titolari del ruolo, nell'ordine configurato (audit 2026-09-05 §7). */
+  persone: PersonaVM[];
+  hasPersone: boolean;
 }
 
 export interface IstitutoVM {

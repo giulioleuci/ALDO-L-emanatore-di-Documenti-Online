@@ -16,12 +16,18 @@ export class SchoolProvider implements ContextProvider {
   provide(cdu: Cdu): void {
     const config = this.master.findConfigAnnoCorrente();
     const elenco = this.ruoli.findAllCached().map((ruolo) => {
-      const persona = this.persona(ruolo.getEmails()[0]?.value);
+      const persone = ruolo
+        .getEmails()
+        .map((email) => this.persona(email.value))
+        .filter((persona): persona is PersonaVM => persona !== null);
+      const persona = persone[0] ?? null;
       return {
         ruoloId: ruolo.id ?? '',
         ruoloNome: ruolo.nome,
         persona,
-        hasPersona: persona !== null
+        hasPersona: persona !== null,
+        persone,
+        hasPersone: persone.length > 0
       };
     });
     cdu.istituto = {

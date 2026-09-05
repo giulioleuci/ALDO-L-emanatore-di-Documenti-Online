@@ -89,7 +89,7 @@ test('getDocumentiPerUtente hides class documents of a class the user no longer 
 
   // Oggi il docente non ha più 5A fra le competenze: resta solo il documento personale.
   expect(
-    agg.getDocumentiPerUtente('exdocente@school.it', undefined, ['1F']).map((d) => d.id)
+    agg.getDocumentiPerUtente('exdocente@school.it', undefined, ['1F'], true).map((d) => d.id)
   ).toEqual(['d-personale']);
 });
 
@@ -109,7 +109,7 @@ test('getDocumentiPerUtente shows class documents to a teacher who arrived mid-y
   const agg = aggregatore(tables);
 
   expect(
-    agg.getDocumentiPerUtente('nuovo@school.it', undefined, ['5A']).map((d) => d.id)
+    agg.getDocumentiPerUtente('nuovo@school.it', undefined, ['5A'], true).map((d) => d.id)
   ).toEqual(['d-classe']);
 });
 
@@ -130,7 +130,39 @@ test('getDocumentiPerUtente treats an explicit empty live scope as zero current 
 
   // classiCompetenza === [] means "we know the user's live scope, and it is empty" —
   // this must NOT fall back to the stale UTENTI CSV.
-  expect(agg.getDocumentiPerUtente('exdocente@school.it', undefined, [])).toEqual([]);
+  expect(agg.getDocumentiPerUtente('exdocente@school.it', undefined, [], true)).toEqual([]);
+});
+
+test("getDocumentiPerUtente does not leak a classmate's personal document via shared class scope (final review fix)", () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'd-a1',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      STATO: 'GENERATO',
+      UTENTI: 'a1@school.it',
+      CLASSI: '5A',
+      MATERIE: ''
+    },
+    {
+      ID: 'd-a2',
+      ID_GEN: 'CD1',
+      TIPO: 'PDP',
+      STATO: 'GENERATO',
+      UTENTI: 'a2@school.it',
+      CLASSI: '5A',
+      MATERIE: ''
+    }
+  ];
+  const agg = aggregatore(tables);
+
+  // a1's family box: live scope is a1's own class (5A), isDocente is absent
+  // (this is a student/family recipient) — a2's personal PDP must stay hidden
+  // even though it carries the same class tag.
+  expect(
+    agg.getDocumentiPerUtente('a1@school.it', undefined, ['5A']).map((d) => d.id)
+  ).toEqual(['d-a1']);
 });
 
 test('getCartellePerUtente without a live scope still falls back to the registered UTENTI (audit §5)', () => {

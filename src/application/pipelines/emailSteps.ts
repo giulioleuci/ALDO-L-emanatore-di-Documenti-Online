@@ -129,11 +129,18 @@ function sourceScopeFor(built: Cdu, emailTarget: EmailTarget): SourceScope {
       : focusClasseId === undefined
         ? undefined
         : [focusClasseId];
-  const utenteEmail = built.focus.alunno?.email ?? built.focus.docente?.email;
+  // `built.focus.docente` is never populated by DOCENTE_COMPLETO (or any
+  // recipe reachable from a *PerUtente box), so `emailTarget.docenteEmail`
+  // — already carried by every single-actor docente-shaped target — is the
+  // fallback that actually reaches this scope (final review fix, audit §5).
+  const utenteEmail =
+    built.focus.alunno?.email ?? built.focus.docente?.email ?? emailTarget.docenteEmail;
+  const isDocente = emailTarget.tipo === 'docente' || emailTarget.tipo === 'capo_dipartimento';
   return {
     ...(classeIds === undefined ? {} : { classiCompetenza: classeIds }),
     ...(focusClasseId === undefined ? {} : { classeId: focusClasseId }),
     ...(utenteEmail === undefined || utenteEmail === null ? {} : { utenteEmail }),
+    ...(isDocente ? { isDocente: true } : {}),
     ...(built.focus.dipartimento === undefined
       ? {}
       : { dipartimentoId: built.focus.dipartimento.id })

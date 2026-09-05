@@ -369,7 +369,7 @@ describe('email pipeline operational log details', () => {
     const ordered = runThroughRender(w);
 
     expect(ordered).toHaveLength(1);
-    expect(ordered[0]).toContain('VERDI ANNA - PEI');
+    expect(ordered[0]).toContain('VERDI ANNA - 5A - PEI');
     expect(w.ctx.get('shouldSend')).toBe(false);
   });
 
@@ -1048,6 +1048,32 @@ test('BuildCDUStep leaves includiStorico false when no box wants historical data
   expect(cdu.meta.opzioni.includiStorico).toBe(false);
 });
 
+test('BuildCDUStep enables includiStorico for piani_pers_inviati when explicitly configured (unlike piani_pers_da_inviare, it is opt-in)', () => {
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_inviati', ARRICCHISCI_CON_STORICO: true }])
+    },
+    docenteTarget()
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.meta.opzioni.includiStorico).toBe(true);
+});
+
+test('BuildCDUStep leaves includiStorico false for piani_pers_inviati with no explicit key (opt-in, unlike piani_pers_da_inviare)', () => {
+  const w = wire(
+    {
+      PROCESSO: 'PER_COORDINATORE',
+      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_inviati' }])
+    },
+    docenteTarget()
+  );
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.meta.opzioni.includiStorico).toBe(false);
+});
+
 test('BuildCDUStep always enables history for piani_pers_da_inviare despite an explicit false configuration', () => {
   const w = wire(
     {
@@ -1232,6 +1258,42 @@ test('RenderBoxesStep includes cartellePerClasse folders for every competent tar
   expect(w.ctx.get<string[]>('cartelleFolderIds')!.sort()).toEqual(['folder1', 'folder2']);
   expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 5A');
   expect(w.ctx.get<string[]>('boxHtmlOrdered')!.join('')).toContain('Verbali 3B');
+});
+
+test('RenderBoxesStep resolves documentiPerUtente for a docente target via docenteEmail, not the stale UTENTI CSV (final review fix, audit §5)', () => {
+  const tables = fixtureTables();
+  (tables['LOG_DOCS'] as Row[]) = [
+    {
+      ID: 'd1',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      STATO: 'GENERATO',
+      UTENTI: 'altrodocente@school.it',
+      CLASSI: '5A',
+      MATERIE: ''
+    }
+  ];
+  const w = wire(
+    {
+      PROCESSO: 'PER_DOCENTE',
+      BOX_CFG: '[{"TIPO_BOX":"documenti","DATI_SORGENTE":{"metodo":"documentiPerUtente"}}]'
+    },
+    { ...docenteTarget(), classiCompetenza: ['5A'] },
+    tables
+  );
+  buildStep(w).execute(w.ctx);
+  new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
+  new RenderBoxesStep(
+    logger,
+    new MateriaRepository(w.db),
+    w.templates,
+    new AggregatoreDati(w.db)
+  ).execute(w.ctx);
+
+  // rossi@school.it (docenteTarget's docenteEmail) is nowhere in d1's UTENTI
+  // CSV, yet the document must appear: docente visibility is live-class-scoped,
+  // not CSV-membership-scoped.
+  expect(w.ctx.get<string[]>('documentIds')).toEqual(['d1']);
 });
 
 test('RenderBoxesStep sets cartelleFolderIds to [] when no cartellePerClasse opt-in is configured', () => {

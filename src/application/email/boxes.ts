@@ -75,6 +75,8 @@ export interface SourceScope {
   classiCompetenza?: string[];
   classeId?: string;
   utenteEmail?: string;
+  /** True for a docente-shaped recipient (final review fix, audit §5) — see AggregatoreDati.visibileAUtente. */
+  isDocente?: boolean;
   dipartimentoId?: string;
 }
 
@@ -615,6 +617,7 @@ function resolveSourceItems(
     : [
         aggregatoreDati.perMetodo(metodo, {
           ...(scope?.utenteEmail === undefined ? {} : { utenteEmail: scope.utenteEmail }),
+          ...(scope?.isDocente === undefined ? {} : { isDocente: scope.isDocente }),
           ...(scope?.classiCompetenza === undefined
             ? {}
             : { classiCompetenza: scope.classiCompetenza }),

@@ -25,26 +25,37 @@ import {
 import { MateriePerDipartimentoSpec } from '../../domain/specifications/MateriePerDipartimentoSpec';
 
 /**
- * Visibilità live (audit 2026-09-05 §5): il CSV UTENTI registrato in LOG_DOCS /
- * LOG_FOLD è un audit trail di chi era interessato alla generazione, non
- * l'appartenenza corrente — è append-only e non viene mai potato. Una riga con
- * CLASSI valorizzato è quindi visibile a chi ha oggi almeno una di quelle classi
- * fra le competenze; le righe senza CLASSI (documenti personali) restano sul CSV.
- * Senza scope live (chiamate batch, prerequisiti) si torna al comportamento
- * storico, che è il massimo che si può sapere in quel contesto. Uno scope live
- * esplicitamente vuoto (`[]`) significa invece "nessuna classe oggi": le righe
- * con CLASSI vengono nascoste, non si torna al CSV.
+ * Visibilità live (audit 2026-09-05 §5; corretta nella final review dello
+ * stesso piano): il CSV UTENTI registrato in LOG_DOCS / LOG_FOLD è un audit
+ * trail di chi era interessato alla generazione, non l'appartenenza corrente
+ * — è append-only e non viene mai potato.
+ *
+ * Un docente (isDocente) vede una riga di classe se una delle sue classi di
+ * competenza ATTUALI corrisponde — l'iscrizione storica in UTENTI non conta:
+ * altrimenti un docente arrivato in corso d'anno non vedrebbe mai nulla.
+ *
+ * Un alunno/genitore vede una riga di classe solo se il proprio indirizzo è
+ * ANCORA registrato in UTENTI *e* la classe è nel proprio scope live: la sola
+ * appartenenza di classe non basta a concedere visibilità, altrimenti due
+ * studenti della stessa classe vedrebbero i documenti personali (PDP, ecc.)
+ * l'uno dell'altro — leak di dati personali trovato nella final review.
+ *
+ * Le righe senza CLASSI (documenti personali) restano sempre sul CSV, per
+ * chiunque. Senza scope live (chiamate batch, prerequisiti) si torna al
+ * comportamento storico, il massimo che si può sapere in quel contesto.
  */
 function visibileAUtente(
   riga: { getClassi(): string[]; containsUtente(email: string): boolean },
   utenteEmail: string,
-  classiCompetenza: string[] | undefined
+  classiCompetenza: string[] | undefined,
+  isDocente: boolean | undefined
 ): boolean {
   const classi = riga.getClassi();
   if (classi.length === 0 || classiCompetenza === undefined) {
     return riga.containsUtente(utenteEmail);
   }
-  return classi.some((classeId) => classiCompetenza.includes(classeId));
+  const inScope = classi.some((classeId) => classiCompetenza.includes(classeId));
+  return isDocente === true ? inScope : riga.containsUtente(utenteEmail) && inScope;
 }
 
 /**
@@ -87,11 +98,12 @@ export class AggregatoreDati {
   getDocumentiPerUtente(
     utenteEmail: string,
     filtri?: FiltriSorgente,
-    classiCompetenza?: string[]
+    classiCompetenza?: string[],
+    isDocente?: boolean
   ): LogDocumento[] {
     return this.filterDocumenti(
       this.allDocumenti().filter((documento) =>
-        visibileAUtente(documento, utenteEmail, classiCompetenza)
+        visibileAUtente(documento, utenteEmail, classiCompetenza, isDocente)
       ),
       filtri
     );
@@ -124,11 +136,12 @@ export class AggregatoreDati {
   getCartellePerUtente(
     utenteEmail: string,
     filtri?: FiltriSorgente,
-    classiCompetenza?: string[]
+    classiCompetenza?: string[],
+    isDocente?: boolean
   ): LogCartella[] {
     return this.filterCartelle(
       this.allCartelle().filter((cartella) =>
-        visibileAUtente(cartella, utenteEmail, classiCompetenza)
+        visibileAUtente(cartella, utenteEmail, classiCompetenza, isDocente)
       ),
       filtri
     );
@@ -170,6 +183,7 @@ export class AggregatoreDati {
       classeId?: string;
       dipartimentoId?: string;
       classiCompetenza?: string[];
+      isDocente?: boolean;
       filtri?: unknown;
     },
     logger?: LoggerService
@@ -212,14 +226,24 @@ export class AggregatoreDati {
   }
 
   private documentiPerUtente(
-    params: { utenteEmail?: string; classiCompetenza?: string[]; filtri?: unknown },
+    params: {
+      utenteEmail?: string;
+      classiCompetenza?: string[];
+      isDocente?: boolean;
+      filtri?: unknown;
+    },
     logger: LoggerService
   ): LogDocumento[] | null {
     const filtri = this.parseFiltri(params.filtri, 'documenti', 'documentiPerUtente', logger);
     if (filtri === null) return null;
     if (!this.isNonEmpty(params.utenteEmail))
       return this.warnScope('documentiPerUtente', 'utenteEmail mancante', logger);
-    return this.getDocumentiPerUtente(params.utenteEmail, filtri, params.classiCompetenza);
+    return this.getDocumentiPerUtente(
+      params.utenteEmail,
+      filtri,
+      params.classiCompetenza,
+      params.isDocente
+    );
   }
 
   private documentiPerDipartimento(
@@ -249,14 +273,24 @@ export class AggregatoreDati {
   }
 
   private cartellePerUtente(
-    params: { utenteEmail?: string; classiCompetenza?: string[]; filtri?: unknown },
+    params: {
+      utenteEmail?: string;
+      classiCompetenza?: string[];
+      isDocente?: boolean;
+      filtri?: unknown;
+    },
     logger: LoggerService
   ): LogCartella[] | null {
     const filtri = this.parseFiltri(params.filtri, 'cartelle', 'cartellePerUtente', logger);
     if (filtri === null) return null;
     if (!this.isNonEmpty(params.utenteEmail))
       return this.warnScope('cartellePerUtente', 'utenteEmail mancante', logger);
-    return this.getCartellePerUtente(params.utenteEmail, filtri, params.classiCompetenza);
+    return this.getCartellePerUtente(
+      params.utenteEmail,
+      filtri,
+      params.classiCompetenza,
+      params.isDocente
+    );
   }
 
   private cartellePerDipartimento(

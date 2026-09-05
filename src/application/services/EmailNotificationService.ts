@@ -632,6 +632,9 @@ export class EmailNotificationService {
         );
         continue;
       }
+      // Coerente con PER_ALUNNO e PER_GENITORI_ALUNNO, che partono da
+      // findAttivi(): un ritiro non è un'anomalia di dati, nessun warn.
+      if (!alunno.isAttivo()) continue;
       const { tipo, emails, cc } = buildRecipients(alunno);
       targets.push({
         tipo,

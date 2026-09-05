@@ -544,18 +544,22 @@ test('PER_GENITORI_ALUNNO: one target per family (tutors multi-TO)', () => {
 test('PER_CARENZA_GENITORI: one target per non-notified CARENZE row; tutors first, alunno fallback (11 §3)', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI'));
-  expect(targets).toHaveLength(2); // a1 prog 1 + a2 prog 1 (prog 2 already notified)
+  expect(targets).toHaveLength(1); // a1 prog 1 (a1 prog 2 già notificata; a2 è ritirato)
   const a1 = targets.find((t) => t.target === 'a1@school.it')!;
   expect(a1.carenzaProgressivo).toBe(1);
   expect(a1.emails).toEqual(['genitore1@x.it']);
-  const a2 = targets.find((t) => t.target === 'a2@school.it')!;
-  expect(a2.emails.sort()).toEqual(['genitore2@x.it', 'genitore3@x.it']);
+});
+
+test('PER_CARENZA_GENITORI: a withdrawn student never triggers the family email (audit §9)', () => {
+  const { service } = wire();
+  const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI'));
+  expect(targets.map((t) => t.target)).toEqual(['a1@school.it']); // a2 è ATTIVO=false
 });
 
 test('PER_CARENZA_GENITORI_E_ALUNNO: one shared target per non-notified CARENZE row, tutors + alunno', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI_E_ALUNNO'));
-  expect(targets).toHaveLength(2);
+  expect(targets).toHaveLength(1);
   const a1 = targets.find((t) => t.target === 'a1@school.it')!;
   expect(a1.tipo).toBe('genitori_alunno');
   expect(a1.emails.sort()).toEqual(['a1@school.it', 'genitore1@x.it']);
@@ -565,7 +569,7 @@ test('PER_CARENZA_GENITORI_E_ALUNNO: one shared target per non-notified CARENZE 
 test('PER_CARENZA_GENITORI_E_COORD: parents in To, class coordinatore in Cc', () => {
   const { service } = wire();
   const targets = service.enumerateTargets(conf('PER_CARENZA_GENITORI_E_COORD'));
-  expect(targets).toHaveLength(2);
+  expect(targets).toHaveLength(1);
   const a1 = targets.find((t) => t.target === 'a1@school.it')!;
   expect(a1.tipo).toBe('genitori');
   expect(a1.emails).toEqual(['genitore1@x.it']);
@@ -1148,6 +1152,7 @@ test('malformed static attachment configuration aborts before Gmail with a diagn
 
 test('sendPattern PER_CARENZA_GENITORI stamps NOTIFICATO so a second run sends nothing (11 §10)', () => {
   const { service, gmail, db } = wire();
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
   const first = service.sendPattern('CARENZE_NOTIFICA');
   expect(first.targets).toBe(2);
   expect(first.sent).toBe(2);
@@ -1171,7 +1176,8 @@ test('test mode redirects all sends and disableTestMode restores (11 §15)', () 
 });
 
 test('onlyRecipients filters the enumerated targets (retry seam)', () => {
-  const { service, gmail } = wire();
+  const { service, gmail, db } = wire();
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
   const result = service.sendPattern('CARENZE_NOTIFICA', { onlyRecipients: ['genitore2@x.it'] });
   expect(result.targets).toBe(1);
   expect(gmail.sent).toHaveLength(1);
@@ -1180,6 +1186,7 @@ test('onlyRecipients filters the enumerated targets (retry seam)', () => {
 
 test('send failures are aggregated and logged as ERROR without stopping the batch (11 §8/§9)', () => {
   const { service, gmail, db } = wire();
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
   gmail.failFor.add('genitore1@x.it');
   const result = service.sendPattern('CARENZE_NOTIFICA');
   expect(result.targets).toBe(2);

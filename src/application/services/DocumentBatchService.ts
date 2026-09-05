@@ -1,13 +1,16 @@
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
+import type { Classe } from '../../domain/entities/Classe';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import { GeneratoreAxis, type TipoPiano } from '../../domain/value-objects/enums';
+import { GeneratoreAxis, StatoJob, type TipoPiano } from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from './DocumentGenerationService';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
+import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
+import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
 
 /** Job type under which the batch handler is registered in JobRunnerLib. */
 export const JOB_TYPE_GENERAZIONE_DOCUMENTI = 'GENERAZIONE_DOCUMENTI_CLASSI';
@@ -46,6 +49,9 @@ export interface AlunnoBatchTarget {
   email: string;
 }
 
+/** Human-readable job type shown in the end-of-job report (see `logJobReport`). */
+export const JOB_LABEL_GENERAZIONE_DOCUMENTI = 'GENERAZIONE DOCUMENTI';
+
 /** Checkpoint state persisted by JobRunnerLib to ScriptProperties at suspension. */
 interface BatchResumeState {
   confDocId: string;
@@ -53,6 +59,14 @@ interface BatchResumeState {
   nextIndex: number;
   processed: string[];
   errori: string[];
+  /** Number of container executions (1 = no trigger resume yet) this job launch has run across — see `runCount` doc on `runBatchJob`. */
+  runCount?: number;
+  /** Cumulative real (busy) execution time in ms across every run of this job launch — see `runBatchJob`. */
+  totalDurationMs?: number;
+  /** Email of the user who launched the job originally, propagated across every resume (LOG_JOB.ESEGUITO_DA, ref NEW_TABLE_LOG_JOB.md). */
+  eseguitoDa?: string;
+  /** ISO start timestamp of the execution that yielded this checkpoint — used to backfill a SOSPESO_TEMPO LOG_JOB row on the next resume, since JobRunnerLib's timeout cuts the generator off before it can log anything itself (ref NEW_TABLE_LOG_JOB.md "Dove si scrive" §3). */
+  esecuzioneIniziata?: string;
   planTargets?: PianoBatchTarget[];
   docenteClasseMateriaTargets?: DocenteClasseMateriaBatchTarget[];
   /** Historical checkpoint key kept only to resume jobs suspended before Task 6. */
@@ -61,6 +75,10 @@ interface BatchResumeState {
   classeDocenteTargets?: ClasseDocenteBatchTarget[];
   docenteTargets?: DocenteBatchTarget[];
   alunnoTargets?: AlunnoBatchTarget[];
+  /** ID delle classi bersaglio, congelati alla prima run (audit 2026-09-05 §3). */
+  classeTargets?: string[];
+  /** ID dei dipartimenti bersaglio, congelati alla prima run (audit 2026-09-05 §3). */
+  dipartimentoTargets?: string[];
 }
 export interface BatchCheckpoint extends BatchResumeState {
   percentage: number;
@@ -104,14 +122,39 @@ export class DocumentBatchService {
     /** Enumerates DIPART rows for the DIPARTIMENTO batch axis (generateDipartimenti). */
     private readonly dipartimenti: IDipartimentoRepository,
     private readonly monitor?: IProcessMonitor,
-    private readonly logger?: LoggerService
+    private readonly logger?: LoggerService,
+    private readonly logJob?: ILogJobRepository,
+    private readonly activeUser?: IActiveUserFacade
   ) {}
+
+  /** Container-execution start time for the run currently in progress (see `runBatchJob` doc). */
+  private containerStartedAt = Date.now();
+  /** Number of container executions (including this one) this job launch has run across. */
+  private runCount = 1;
+  /** Cumulative real (busy) execution time in ms from every prior run of this job launch. */
+  private priorDurationMs = 0;
+  /** LOG_JOB.ESEGUITO_DA for the run currently in progress — set once at generator entry, see `batchGenerateHandler`. */
+  private eseguitoDa = '';
+  /** LOG_JOB.INIZIO for the run currently in progress (ISO) — set once at generator entry. */
+  private esecuzioneIniziata = '';
+  /** LOG_JOB.NOME_CONFIG for the run currently in progress (CONF_DOC.TIPO) — set once at generator entry. */
+  private nomeConfig = '';
+
+  /** Prior runs' busy time plus elapsed time in the run currently in progress. */
+  private elapsedTotalMs(): number {
+    return this.priorDurationMs + (Date.now() - this.containerStartedAt);
+  }
 
   /** JobRunnerLib handler: one checkpoint per class or personalized plan. */
   *batchGenerateHandler(
-    params: JobHandlerParams & { confDocId?: string; jobId?: string }
+    params: JobHandlerParams & { confDocId?: string; jobId?: string; eseguitoDa?: string }
   ): Generator<BatchCheckpoint, BatchResult, void> {
     const resume = (params.resumeState ?? null) as BatchResumeState | null;
+    this.containerStartedAt = Date.now();
+    this.runCount = (resume?.runCount ?? 0) + 1;
+    this.priorDurationMs = resume?.totalDurationMs ?? 0;
+    this.eseguitoDa = String(params.eseguitoDa ?? resume?.eseguitoDa ?? '');
+    this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
     const confDocId = String(params.confDocId ?? resume?.confDocId ?? '');
     const jobId = String(params.jobId ?? resume?.jobId ?? confDocId);
     if (resume !== null && !resume.confDocId) {
@@ -119,48 +162,85 @@ export class DocumentBatchService {
     }
     const processed = resume === null ? [] : resume.processed.slice();
     const errori = resume === null ? [] : resume.errori.slice();
-    const config = this.configs.findById(confDocId);
 
-    if (config === null) {
-      throw new ConfigurationError(`CONF_DOC ${confDocId} non trovato`);
-    }
-    if (
-      config.tipo === 'PIANO_PERS' &&
-      config.generatore !== GeneratoreAxis.PIANO_PERSONALIZZATO
-    ) {
-      throw new ConfigurationError(
-        `CONF_DOC ${confDocId} ha TIPO PIANO_PERS ma GENERATORE ${config.generatore} (atteso PIANO_PERSONALIZZATO)`
-      );
-    }
-    if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) {
-      if (config.tipo !== 'PIANO_PERS') {
-        throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
+    try {
+      const config = this.configs.findById(confDocId);
+
+      if (config === null) {
+        throw new ConfigurationError(`CONF_DOC ${confDocId} non trovato`);
       }
-      return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
-    }
-    switch (config.generatore) {
-      case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
-        return yield* this.generateDocentiClasseMateria(
-          config,
-          confDocId,
-          jobId,
-          resume,
-          processed,
-          errori
+      this.nomeConfig = config.tipo;
+      if (
+        config.tipo === 'PIANO_PERS' &&
+        config.generatore !== GeneratoreAxis.PIANO_PERSONALIZZATO
+      ) {
+        throw new ConfigurationError(
+          `CONF_DOC ${confDocId} ha TIPO PIANO_PERS ma GENERATORE ${config.generatore} (atteso PIANO_PERSONALIZZATO)`
         );
-      case GeneratoreAxis.CLASSE_MATERIA:
-        return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
-      case GeneratoreAxis.CLASSE_DOCENTE:
-        return yield* this.generateClasseDocente(config, confDocId, jobId, resume, processed, errori);
-      case GeneratoreAxis.DOCENTE:
-        return yield* this.generateDocenti(config, confDocId, jobId, resume, processed, errori);
-      case GeneratoreAxis.DIPARTIMENTO:
-        return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
-      case GeneratoreAxis.ALUNNO:
-        return yield* this.generateAlunni(confDocId, jobId, resume, processed, errori);
-      case GeneratoreAxis.CLASSE:
-      default:
-        return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+      }
+      if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) {
+        if (config.tipo !== 'PIANO_PERS') {
+          throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
+        }
+        return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
+      }
+      switch (config.generatore) {
+        case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
+          return yield* this.generateDocentiClasseMateria(
+            config,
+            confDocId,
+            jobId,
+            resume,
+            processed,
+            errori
+          );
+        case GeneratoreAxis.CLASSE_MATERIA:
+          return yield* this.generateClassiMateria(
+            config,
+            confDocId,
+            jobId,
+            resume,
+            processed,
+            errori
+          );
+        case GeneratoreAxis.CLASSE_DOCENTE:
+          return yield* this.generateClasseDocente(
+            config,
+            confDocId,
+            jobId,
+            resume,
+            processed,
+            errori
+          );
+        case GeneratoreAxis.DOCENTE:
+          return yield* this.generateDocenti(config, confDocId, jobId, resume, processed, errori);
+        case GeneratoreAxis.DIPARTIMENTO:
+          return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
+        case GeneratoreAxis.ALUNNO:
+          return yield* this.generateAlunni(confDocId, jobId, resume, processed, errori);
+        case GeneratoreAxis.CLASSE:
+        default:
+          return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logJob?.append({
+        idJob: jobId,
+        esecuzione: this.runCount - 1,
+        tipo: JOB_TYPE_GENERAZIONE_DOCUMENTI,
+        idConfig: confDocId,
+        nomeConfig: this.nomeConfig,
+        stato: StatoJob.FALLITO,
+        totaleTask: 0,
+        completatiOk: 0,
+        falliti: 0,
+        listaFallimenti: [reason],
+        durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),
+        inizio: this.esecuzioneIniziata,
+        fine: new Date().toISOString(),
+        eseguitoDa: this.eseguitoDa
+      });
+      throw error;
     }
   }
 
@@ -171,8 +251,40 @@ export class DocumentBatchService {
    * aggregate result. `body` runs with `this` bound to the service so it can still
    * call `this.documenti`/`this.logger`/`this.monitor` as before extraction.
    */
+  /** Backfills the SOSPESO_TEMPO row for the execution JobRunnerLib just cut off — the app generator never gets a chance to log at the actual timeout, so this runs once, at the start of the resume that picks the job back up (ref NEW_TABLE_LOG_JOB.md "Dove si scrive" §3). */
+  private backfillSospesoTempo(
+    jobId: string,
+    confDocId: string,
+    totale: number,
+    resume: BatchResumeState
+  ): void {
+    if (resume.esecuzioneIniziata === undefined) return;
+    const fine = new Date().toISOString();
+    const durataSec = Math.max(
+      0,
+      (Date.parse(fine) - Date.parse(resume.esecuzioneIniziata)) / 1000
+    );
+    this.logJob?.append({
+      idJob: jobId,
+      esecuzione: this.runCount - 2,
+      tipo: JOB_TYPE_GENERAZIONE_DOCUMENTI,
+      idConfig: confDocId,
+      nomeConfig: this.nomeConfig,
+      stato: StatoJob.SOSPESO_TEMPO,
+      totaleTask: totale,
+      completatiOk: Math.max(0, resume.processed.length - resume.errori.length),
+      falliti: resume.errori.length,
+      listaFallimenti: resume.errori,
+      durataSec,
+      inizio: resume.esecuzioneIniziata,
+      fine,
+      eseguitoDa: resume.eseguitoDa ?? ''
+    });
+  }
+
   private *runBatchJob(
     jobId: string,
+    confDocId: string,
     resume: BatchResumeState | null,
     totale: number,
     processed: string[],
@@ -183,6 +295,8 @@ export class DocumentBatchService {
     if (resume === null) {
       this.monitor?.registerJob(jobId);
       this.monitor?.startJob(jobId);
+    } else if (this.runCount >= 2) {
+      this.backfillSospesoTempo(jobId, confDocId, totale, resume);
     }
     this.logger?.logBatchStart(totale);
 
@@ -190,6 +304,34 @@ export class DocumentBatchService {
 
     const success = errori.length === 0;
     this.monitor?.completeJob(jobId, `${processed.length} ${entityLabel}, ${errori.length} errori`);
+    // Every `errori` entry is pushed as `${targetId}: ${reason}` (verified across
+    // all generator variants) — the targetId prefix up to the first ": " is the
+    // failed task identifier for the end-of-job summary.
+    const falliti = errori.map((e) => e.split(': ')[0]!);
+    this.logger?.logJobReport({
+      jobType: JOB_LABEL_GENERAZIONE_DOCUMENTI,
+      runCount: this.runCount,
+      totalDurationMs: this.elapsedTotalMs(),
+      totale,
+      falliti: falliti.length,
+      dettagliFalliti: errori
+    });
+    this.logJob?.append({
+      idJob: jobId,
+      esecuzione: this.runCount - 1,
+      tipo: JOB_TYPE_GENERAZIONE_DOCUMENTI,
+      idConfig: confDocId,
+      nomeConfig: this.nomeConfig,
+      stato: success ? StatoJob.COMPLETATO : StatoJob.COMPLETATO_CON_ERRORI,
+      totaleTask: totale,
+      completatiOk: processed.length - errori.length,
+      falliti: errori.length,
+      listaFallimenti: errori,
+      durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),
+      inizio: this.esecuzioneIniziata,
+      fine: new Date().toISOString(),
+      eseguitoDa: this.eseguitoDa
+    });
     return { success, totale, processed, errori };
   }
 
@@ -224,6 +366,7 @@ export class DocumentBatchService {
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       targets.length,
       processed,
@@ -233,13 +376,7 @@ export class DocumentBatchService {
         for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
           const target = targets[i]!;
           const targetId = `${target.studente}:${target.tipo}`;
-          this.logger?.logItemStart(
-            i + 1,
-            targets.length,
-            'Target',
-            targetId,
-            'DOCUMENT'
-          );
+          this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
           let message: string;
           const itemStartedAt = Date.now();
           try {
@@ -261,7 +398,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${targetId}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${targetId}: ${reason}`,
               {
@@ -282,6 +419,10 @@ export class DocumentBatchService {
             nextIndex: i + 1,
             processed: processed.slice(),
             errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
             planTargets: targets
           };
         }
@@ -352,8 +493,7 @@ export class DocumentBatchService {
         }
       }
     } else {
-      const persistedTargets =
-        resume.docenteClasseMateriaTargets ?? resume.docenteMateriaTargets;
+      const persistedTargets = resume.docenteClasseMateriaTargets ?? resume.docenteMateriaTargets;
       if (persistedTargets === undefined) {
         throw new ConfigurationError(
           `Stato di ripresa ${confDocId} privo dei target docente/materia persistiti`
@@ -364,6 +504,7 @@ export class DocumentBatchService {
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       targets.length,
       processed,
@@ -396,7 +537,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${targetId}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${targetId}: ${reason}`,
               {
@@ -417,6 +558,10 @@ export class DocumentBatchService {
             nextIndex: i + 1,
             processed: processed.slice(),
             errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
             docenteClasseMateriaTargets: targets
           };
         }
@@ -468,6 +613,7 @@ export class DocumentBatchService {
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       targets.length,
       processed,
@@ -499,7 +645,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${targetId}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${targetId}: ${reason}`,
               { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
@@ -516,6 +662,10 @@ export class DocumentBatchService {
             nextIndex: i + 1,
             processed: processed.slice(),
             errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
             classeMateriaTargets: targets
           };
         }
@@ -562,6 +712,7 @@ export class DocumentBatchService {
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       targets.length,
       processed,
@@ -593,7 +744,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${targetId}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${targetId}: ${reason}`,
               { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
@@ -610,6 +761,10 @@ export class DocumentBatchService {
             nextIndex: i + 1,
             processed: processed.slice(),
             errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
             classeDocenteTargets: targets
           };
         }
@@ -649,7 +804,9 @@ export class DocumentBatchService {
       }));
     } else {
       if (resume.docenteTargets === undefined) {
-        throw new ConfigurationError(`Stato di ripresa ${confDocId} privo dei target docente persistiti`);
+        throw new ConfigurationError(
+          `Stato di ripresa ${confDocId} privo dei target docente persistiti`
+        );
       }
       targets = resume.docenteTargets.map((target) => ({
         docenteEmail: target.docenteEmail,
@@ -659,6 +816,7 @@ export class DocumentBatchService {
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       targets.length,
       processed,
@@ -667,7 +825,13 @@ export class DocumentBatchService {
       function* (): Generator<BatchCheckpoint, void, void> {
         for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
           const target = targets[i]!;
-          this.logger?.logItemStart(i + 1, targets.length, 'Target', target.docenteEmail, 'DOCUMENT');
+          this.logger?.logItemStart(
+            i + 1,
+            targets.length,
+            'Target',
+            target.docenteEmail,
+            'DOCUMENT'
+          );
           let message: string;
           const itemStartedAt = Date.now();
           try {
@@ -689,7 +853,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${target.docenteEmail}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${target.docenteEmail}: ${reason}`,
               { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
@@ -706,6 +870,10 @@ export class DocumentBatchService {
             nextIndex: i + 1,
             processed: processed.slice(),
             errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
             docenteTargets: targets
           };
         }
@@ -725,13 +893,16 @@ export class DocumentBatchService {
       targets = this.alunni.findAttivi().map((alunno) => ({ email: alunno.email.value }));
     } else {
       if (resume.alunnoTargets === undefined) {
-        throw new ConfigurationError(`Stato di ripresa ${confDocId} privo dei target alunno persistiti`);
+        throw new ConfigurationError(
+          `Stato di ripresa ${confDocId} privo dei target alunno persistiti`
+        );
       }
       targets = resume.alunnoTargets.map((target) => ({ ...target }));
     }
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       targets.length,
       processed,
@@ -757,7 +928,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${email}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${email}: ${reason}`,
               { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
@@ -774,6 +945,10 @@ export class DocumentBatchService {
             nextIndex: i + 1,
             processed: processed.slice(),
             errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
             alunnoTargets: targets
           };
         }
@@ -789,10 +964,21 @@ export class DocumentBatchService {
     processed: string[],
     errori: string[]
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    const tutti = this.dipartimenti.findAll();
+    let tutti: string[];
+    if (resume === null) {
+      tutti = this.dipartimenti.findAll().map((dipartimento) => dipartimento.id ?? '?');
+    } else {
+      if (resume.dipartimentoTargets === undefined) {
+        throw new ConfigurationError(
+          `Stato di ripresa ${confDocId} privo dei target dipartimento persistiti`
+        );
+      }
+      tutti = resume.dipartimentoTargets.slice();
+    }
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       tutti.length,
       processed,
@@ -800,8 +986,7 @@ export class DocumentBatchService {
       'dipartimenti elaborati',
       function* (): Generator<BatchCheckpoint, void, void> {
         for (let i = resume?.nextIndex ?? 0; i < tutti.length; i++) {
-          const dipartimento = tutti[i]!;
-          const id = dipartimento.id ?? '?';
+          const id = tutti[i]!;
           this.logger?.logItemStart(i + 1, tutti.length, 'Target', id, 'DOCUMENT');
           let message = `Generazione documento dipartimento ${id}`;
           const itemStartedAt = Date.now();
@@ -818,11 +1003,16 @@ export class DocumentBatchService {
           } catch (e) {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${id}: ${reason}`);
-            this.logger?.logSummary('Document failed', Math.max(0, Date.now() - itemStartedAt), `${id}: ${reason}`, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < tutti.length]
-            });
+            this.logger?.logSummary(
+              '❌ Document failed',
+              Math.max(0, Date.now() - itemStartedAt),
+              `${id}: ${reason}`,
+              {
+                depth: 1,
+                isLast: true,
+                ancestorHasNext: [i + 1 < tutti.length]
+              }
+            );
             message = `Errore: ${reason} (dipartimento ${id})`;
           }
           processed.push(id);
@@ -834,7 +1024,12 @@ export class DocumentBatchService {
             percentage,
             nextIndex: i + 1,
             processed: processed.slice(),
-            errori: errori.slice()
+            errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
+            dipartimentoTargets: tutti
           };
         }
       }
@@ -849,13 +1044,33 @@ export class DocumentBatchService {
     processed: string[],
     errori: string[]
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    const attive = this.classi.filterPerGestioneArticolazione(
-      this.classi.findAttive(),
-      config.gestioneArticolazione
-    );
+    let attive: Classe[];
+    if (resume === null) {
+      attive = this.classi.filterPerGestioneArticolazione(
+        this.classi.findAttive(),
+        config.gestioneArticolazione
+      );
+    } else {
+      if (resume.classeTargets === undefined) {
+        throw new ConfigurationError(
+          `Stato di ripresa ${confDocId} privo dei target classe persistiti`
+        );
+      }
+      // Una classe sparita fra due run non deve uccidere il job: la si registra
+      // come errore e si prosegue (audit 2026-09-05 §3).
+      attive = resume.classeTargets.flatMap((id) => {
+        const classe = this.classi.findById(ClasseId.of(id));
+        if (classe === null) {
+          errori.push(`${id}: classe non più presente in CLASSI — saltata`);
+          return [];
+        }
+        return [classe];
+      });
+    }
 
     return yield* this.runBatchJob(
       jobId,
+      confDocId,
       resume,
       attive.length,
       processed,
@@ -864,13 +1079,7 @@ export class DocumentBatchService {
       function* (): Generator<BatchCheckpoint, void, void> {
         for (let i = resume?.nextIndex ?? 0; i < attive.length; i++) {
           const classe = attive[i]!;
-          this.logger?.logItemStart(
-            i + 1,
-            attive.length,
-            'Target',
-            classe.id ?? '?',
-            'DOCUMENT'
-          );
+          this.logger?.logItemStart(i + 1, attive.length, 'Target', classe.id ?? '?', 'DOCUMENT');
           let message = `Generazione documento classe ${classe.id ?? '?'}`;
           const itemStartedAt = Date.now();
           try {
@@ -887,7 +1096,7 @@ export class DocumentBatchService {
             const reason = e instanceof Error ? e.message : String(e);
             errori.push(`${classe.id ?? '?'}: ${reason}`);
             this.logger?.logSummary(
-              'Document failed',
+              '❌ Document failed',
               Math.max(0, Date.now() - itemStartedAt),
               `${classe.id ?? '?'}: ${reason}`,
               {
@@ -907,7 +1116,12 @@ export class DocumentBatchService {
             percentage,
             nextIndex: i + 1,
             processed: processed.slice(),
-            errori: errori.slice()
+            errori: errori.slice(),
+            runCount: this.runCount,
+            totalDurationMs: this.elapsedTotalMs(),
+            eseguitoDa: this.eseguitoDa,
+            esecuzioneIniziata: this.esecuzioneIniziata,
+            classeTargets: attive.map((classe) => classe.id ?? '')
           };
         }
       }
@@ -916,10 +1130,10 @@ export class DocumentBatchService {
 
   private static documentOutcome(status: string): string {
     return status === 'GENERATO'
-      ? 'Document generated'
+      ? '✅ Document generated'
       : status === 'SKIPPED'
-        ? 'Document skipped'
-        : 'Document failed';
+        ? '✔️ Document skipped'
+        : '❌ Document failed';
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */
@@ -940,7 +1154,7 @@ export class DocumentBatchService {
     return runner.run(
       jobName,
       JOB_TYPE_GENERAZIONE_DOCUMENTI,
-      { confDocId, jobId: jobName },
+      { confDocId, jobId: jobName, eseguitoDa: this.activeUser?.getEmail() ?? '' },
       (queue) => this.registerJobHandlers(queue),
       forceRestart,
       maxDurationMs

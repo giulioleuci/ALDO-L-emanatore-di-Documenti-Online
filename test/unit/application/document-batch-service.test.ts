@@ -27,6 +27,27 @@ import type {
 import type { Classe } from '../../../src/domain/entities/Classe';
 import { Docente } from '../../../src/domain/entities/Docente';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
+import type {
+  ILogJobRepository,
+  LogJobEntryInput
+} from '../../../src/domain/repositories/ILogJobRepository';
+import type { IActiveUserFacade } from '../../../src/infrastructure/facades/ActiveUserFacade';
+import { StatoJob } from '../../../src/domain/value-objects/enums';
+
+/** Collects every LOG_JOB row appended during a test, in order. */
+function fakeLogJob(): { logJob: ILogJobRepository; entries: LogJobEntryInput[] } {
+  const entries: LogJobEntryInput[] = [];
+  const logJob: ILogJobRepository = {
+    append: (entry) => {
+      entries.push(entry);
+      return entry as unknown as ReturnType<ILogJobRepository['append']>;
+    },
+    listByType: () => [],
+    getById: () => [],
+    getFailuresSince: () => []
+  };
+  return { logJob, entries };
+}
 
 // The generator contract is what JobRunnerLib executes: it yields a resumable
 // checkpoint per class and fast-forwards from params.resumeState after a
@@ -55,6 +76,8 @@ function wire(
     logger?: LoggerService;
     resultStatus?: 'GENERATO' | 'SKIPPED';
     resultDurationMs?: number;
+    logJob?: ILogJobRepository;
+    activeUser?: IActiveUserFacade;
   } = {}
 ) {
   const db = new FakeDatabase(fixtureTables());
@@ -82,7 +105,9 @@ function wire(
     FIXED_NOW,
     noopDipartimenti,
     options.monitor,
-    options.logger
+    options.logger,
+    options.logJob,
+    options.activeUser
   );
   return { service, generated };
 }
@@ -149,7 +174,9 @@ function wirePiani(
       return {
         fileId: skipped ? null : `file_${studente}_${tipo}`,
         fileName: skipped ? null : `Piano_${tipo}_${studente}`,
-        fileLink: skipped ? null : `https://docs.google.com/document/d/file_${studente}_${tipo}/edit`,
+        fileLink: skipped
+          ? null
+          : `https://docs.google.com/document/d/file_${studente}_${tipo}/edit`,
         status: options.resultStatus ?? 'GENERATO',
         durationMs: options.resultDurationMs ?? 8572
       };
@@ -189,7 +216,7 @@ test('emits unredacted document target headers and content-first timed item summ
   expect(output).toContain('con-piani@school.it:PEI');
   expect(output).not.toContain('[EMAIL_REDACTED]');
   expect(output).toContain(
-    'Document generated: Piano_PEI_con-piani@school.it (COMPLETED in 8572ms)'
+    '✅ Document generated: Piano_PEI_con-piani@school.it (COMPLETED in 8572ms)'
   );
 });
 
@@ -207,7 +234,7 @@ test('uses a skipped document summary when the PIANI pipeline returns SKIPPED', 
   while (!step.done) step = generator.next();
 
   expect(lines.join('\n')).toContain(
-    'Document skipped: con-piani@school.it:PEI (COMPLETED in 321ms)'
+    '✔️ Document skipped: con-piani@school.it:PEI (COMPLETED in 321ms)'
   );
 });
 
@@ -274,8 +301,8 @@ test('PIANI batch yields one persisted checkpoint and one progress update per ac
   });
   expect(monitor.progress.map(({ percentage }) => percentage)).toEqual([50, 100]);
   expect(monitor.progress.map(({ message }) => message)).toEqual([
-    'Document generated: Piano_PEI_con-piani@school.it (GENERATO in 8572ms)',
-    'Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
+    '✅ Document generated: Piano_PEI_con-piani@school.it (GENERATO in 8572ms)',
+    '✅ Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
   ]);
   expect(step.value).toEqual({
     success: true,
@@ -327,7 +354,9 @@ test('PIANI resume consumes its persisted target order without querying current 
 test('registered handler resumes a raw PIANI checkpoint without top-level IDs or duplicate plans', () => {
   const { service, generated } = wirePiani();
   const registered = new Map<string, unknown>();
-  service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
+  service.registerJobHandlers({
+    registerJobHandler: (type, handler) => registered.set(type, handler)
+  });
   const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
     resumeState?: BatchCheckpoint;
   }) => Generator<BatchCheckpoint, unknown, void>;
@@ -363,7 +392,7 @@ test('PIANI isolates one plan error with the email:TIPO prefix and continues rem
   });
   expect(monitor.progress.map(({ message }) => message)).toEqual([
     'Errore piano 1/2 con-piani@school.it:PEI: template non trovato',
-    'Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
+    '✅ Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
   ]);
 });
 
@@ -447,6 +476,36 @@ test('generateClassi honors CONF_DOC.GESTIONE_ARTICOLAZIONE=ARTICOLATA: the pare
   });
 });
 
+test('generateClassi persists its class targets and consumes them on resume (audit §3)', () => {
+  const { service, generated } = wire();
+  const initial = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_classi' });
+  const first = initial.next();
+  expect(first.done).toBe(false);
+  expect(first.value).toMatchObject({ classeTargets: ['5A', '1F'] });
+
+  const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
+
+  expect(generated).toEqual(['5A:CD1', '1F:CD1']);
+  expect(result).toMatchObject({ totale: 2, processed: ['5A', '1F'] });
+});
+
+test('generateClassi resume without persisted classeTargets fails loud (audit §3)', () => {
+  const { service } = wire();
+  expect(() =>
+    service
+      .batchGenerateHandler({
+        resumeState: {
+          confDocId: 'CD1',
+          jobId: 'job_classi',
+          nextIndex: 1,
+          processed: ['5A'],
+          errori: []
+        }
+      })
+      .next()
+  ).toThrow(ConfigurationError);
+});
+
 test('PIANO_PERS TIPO constraint is still enforced independently of GENERATORE', () => {
   const { service } = wirePiani({ configTipo: 'VERBALE' });
 
@@ -459,7 +518,14 @@ test('handler resumes from params.resumeState without reprocessing completed cla
   const { service, generated } = wire();
   const gen = service.batchGenerateHandler({
     confDocId: 'CD1',
-    resumeState: { confDocId: 'CD1', jobId: 'CD1', nextIndex: 1, processed: ['5A'], errori: [] }
+    resumeState: {
+      confDocId: 'CD1',
+      jobId: 'CD1',
+      nextIndex: 1,
+      processed: ['5A'],
+      errori: [],
+      classeTargets: ['5A', '1F']
+    }
   });
   let step = gen.next();
   while (!step.done) step = gen.next();
@@ -502,7 +568,8 @@ test('top-level document IDs override conflicting resume IDs', () => {
         jobId: 'job_resume',
         nextIndex: 0,
         processed: [],
-        errori: []
+        errori: [],
+        classeTargets: ['5A', '1F']
       }
     })
     .next();
@@ -548,15 +615,33 @@ test('a single class failure is isolated: logged in errori, the batch continues 
   expect(result.success).toBe(false);
 });
 
+test('prints an end-of-job summary with total/succeeded/failed counts and the failed target list', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { service } = wire({ failFor: '5A', logger: new LoggerService() });
+
+  const gen = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_1' });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  const output = lines.join('\n');
+  expect(output).toContain('📊❌ [RIEPILOGO JOB] GENERAZIONE DOCUMENTI');
+  expect(output).toContain('  Task totali: 2');
+  expect(output).toContain('  Eseguiti con successo: 1');
+  expect(output).toContain('  Falliti: 1');
+  expect(output).toContain('    - 5A: template non trovato');
+});
+
 test('uses the elapsed duration in a failed class summary', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { service } = wire({ failFor: '5A', logger: new LoggerService() });
   const now = jest
     .spyOn(Date, 'now')
+    .mockReturnValueOnce(1_000) // containerStartedAt (run-tracking)
     .mockReturnValueOnce(1_000)
     .mockReturnValueOnce(1_250)
     .mockReturnValue(1_250);
-  const { service } = wire({ failFor: '5A', logger: new LoggerService() });
 
   try {
     const generator = service.batchGenerateHandler({ confDocId: 'CD1' });
@@ -567,7 +652,7 @@ test('uses the elapsed duration in a failed class summary', () => {
   }
 
   expect(lines.join('\n')).toContain(
-    'Document failed: 5A: template non trovato (COMPLETED in 250ms)'
+    '❌ Document failed: 5A: template non trovato (COMPLETED in 250ms)'
   );
 });
 
@@ -603,7 +688,14 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   const gen = service.batchGenerateHandler({
     confDocId: 'CD1',
     jobId: 'job_1',
-    resumeState: { confDocId: 'CD1', jobId: 'job_1', nextIndex: 1, processed: ['5A'], errori: [] }
+    resumeState: {
+      confDocId: 'CD1',
+      jobId: 'job_1',
+      nextIndex: 1,
+      processed: ['5A'],
+      errori: [],
+      classeTargets: ['5A', '1F']
+    }
   });
   let step = gen.next();
   while (!step.done) step = gen.next();
@@ -612,11 +704,106 @@ test('resume does not re-register/re-start the job (only the initial invocation 
   expect(monitor.completed).toHaveLength(1);
 });
 
+test('LOG_JOB (NEW_TABLE_LOG_JOB.md): a fresh completed run appends one ESECUZIONE=0 COMPLETATO row', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { service } = wire({ logJob });
+  const gen = service.batchGenerateHandler({
+    confDocId: 'CD1',
+    jobId: 'job_1',
+    eseguitoDa: 'prof@school.it'
+  });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({
+    idJob: 'job_1',
+    esecuzione: 0,
+    tipo: JOB_TYPE_GENERAZIONE_DOCUMENTI,
+    idConfig: 'CD1',
+    stato: StatoJob.COMPLETATO,
+    totaleTask: 2,
+    completatiOk: 2,
+    falliti: 0,
+    eseguitoDa: 'prof@school.it'
+  });
+});
+
+test('LOG_JOB: a run with per-class failures appends COMPLETATO_CON_ERRORI', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { service } = wire({ logJob, failFor: '5A' });
+  const gen = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_1' });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({
+    stato: StatoJob.COMPLETATO_CON_ERRORI,
+    totaleTask: 2,
+    completatiOk: 1,
+    falliti: 1,
+    listaFallimenti: ['5A: template non trovato']
+  });
+});
+
+test('LOG_JOB: a resumed run backfills a SOSPESO_TEMPO row for the execution JobRunnerLib cut off', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { service } = wire({ logJob });
+  const gen = service.batchGenerateHandler({
+    confDocId: 'CD1',
+    jobId: 'job_1',
+    resumeState: {
+      confDocId: 'CD1',
+      jobId: 'job_1',
+      nextIndex: 1,
+      processed: ['5A'],
+      errori: [],
+      runCount: 1,
+      totalDurationMs: 4000,
+      eseguitoDa: 'prof@school.it',
+      esecuzioneIniziata: '2026-01-01T00:00:00.000Z',
+      classeTargets: ['5A', '1F']
+    }
+  });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(2);
+  expect(entries[0]).toMatchObject({
+    idJob: 'job_1',
+    esecuzione: 0,
+    stato: StatoJob.SOSPESO_TEMPO,
+    inizio: '2026-01-01T00:00:00.000Z',
+    eseguitoDa: 'prof@school.it'
+  });
+  expect(entries[1]).toMatchObject({ esecuzione: 1, stato: StatoJob.COMPLETATO });
+});
+
+test('LOG_JOB: CONF_DOC not found appends a FALLITO row before rethrowing', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { service } = wire({ logJob });
+  const gen = service.batchGenerateHandler({ confDocId: 'MISSING', jobId: 'job_1' });
+  expect(() => gen.next()).toThrow(ConfigurationError);
+
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({
+    idJob: 'job_1',
+    esecuzione: 0,
+    stato: StatoJob.FALLITO,
+    totaleTask: 0
+  });
+});
+
 /** Minimal fake TeachingAssignment — DocumentBatchService.generateDocentiClasseMateria only reads slot.materia/docenteEffettivo.email. */
 function fakeAssignment(materiaId: string, docenteEmail: string): TeachingAssignment {
   return {
     slot: { materia: MateriaId.of(materiaId), kind: 'STANDARD', specifica: null },
-    docenteEffettivo: new Docente({ EMAIL: docenteEmail, COGNOME: docenteEmail, NOME: '', GENERE: 'M' })
+    docenteEffettivo: new Docente({
+      EMAIL: docenteEmail,
+      COGNOME: docenteEmail,
+      NOME: '',
+      GENERE: 'M'
+    })
   } as unknown as TeachingAssignment;
 }
 
@@ -631,7 +818,12 @@ function fakeAssignmentWithSlot(
 ): TeachingAssignment {
   return {
     slot: { materia: MateriaId.of(materiaId), kind, specifica },
-    docenteEffettivo: new Docente({ EMAIL: docenteEmail, COGNOME: docenteEmail, NOME: '', GENERE: 'M' })
+    docenteEffettivo: new Docente({
+      EMAIL: docenteEmail,
+      COGNOME: docenteEmail,
+      NOME: '',
+      GENERE: 'M'
+    })
   } as unknown as TeachingAssignment;
 }
 
@@ -663,7 +855,13 @@ function wireDocentiClasseMateria(
     ) => {
       const key = `${target.value}:${materiaId}:${docenteEmail}`;
       if (key === options.failFor) throw new Error('template non trovato');
-      generated.push({ classe: target.value, docente: docenteEmail, materia: materiaId, confDocId, jobId });
+      generated.push({
+        classe: target.value,
+        docente: docenteEmail,
+        materia: materiaId,
+        confDocId,
+        jobId
+      });
       return {
         fileId: `file_${target.value}_${materiaId}`,
         fileName: `Doc_${target.value}_${materiaId}`,
@@ -702,7 +900,10 @@ function wireDocentiClasseMateria(
       fakeAssignment('FISI', 'bianchi@school.it'),
       ...(options.extraCouncilByClasse?.['5A'] ?? [])
     ],
-    '1F': [fakeAssignment('MATE', 'rossi@school.it'), ...(options.extraCouncilByClasse?.['1F'] ?? [])]
+    '1F': [
+      fakeAssignment('MATE', 'rossi@school.it'),
+      ...(options.extraCouncilByClasse?.['1F'] ?? [])
+    ]
   };
   // Separate, options-gated bucket: models a docente who teaches ONLY a
   // religione-alt materia (IRC's IS_RELIGIONE_ALT=true in fixtureTables()).
@@ -747,7 +948,9 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
   test('registered handler resumes a raw docente/materia checkpoint without top-level IDs or duplicate targets', () => {
     const { service, generated, configIds } = wireDocentiClasseMateria();
     const registered = new Map<string, unknown>();
-    service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
+    service.registerJobHandlers({
+      registerJobHandler: (type, handler) => registered.set(type, handler)
+    });
     const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
       resumeState?: BatchCheckpoint;
     }) => Generator<BatchCheckpoint, unknown, void>;
@@ -758,7 +961,9 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
     expect(first.value).toMatchObject({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job_docenti' });
 
     const { result } = drain(handler({ resumeState: first.value }));
-    const targetIds = generated.map(({ classe, materia, docente }) => `${classe}:${materia}:${docente}`);
+    const targetIds = generated.map(
+      ({ classe, materia, docente }) => `${classe}:${materia}:${docente}`
+    );
 
     expect(configIds).toEqual(['PROGRAMMA_SVOLTO', 'PROGRAMMA_SVOLTO']);
     expect(
@@ -789,10 +994,34 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
     // IRC->verdi (only present because resolveConsiglio is called with
     // includeReligioneAlt: true, fix round 2); 1F is only MATE->rossi.
     expect(generated).toEqual([
-      { classe: '5A', docente: 'bianchi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
-      { classe: '5A', docente: 'bianchi@school.it', materia: 'FISI', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
-      { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' },
-      { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' }
+      {
+        classe: '5A',
+        docente: 'bianchi@school.it',
+        materia: 'MATE',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'job1'
+      },
+      {
+        classe: '5A',
+        docente: 'bianchi@school.it',
+        materia: 'FISI',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'job1'
+      },
+      {
+        classe: '5A',
+        docente: 'verdi@school.it',
+        materia: 'IRC',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'job1'
+      },
+      {
+        classe: '1F',
+        docente: 'rossi@school.it',
+        materia: 'MATE',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'job1'
+      }
     ]);
     expect(checkpoints).toHaveLength(4);
     expect(result).toEqual({
@@ -854,8 +1083,20 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
     // persisted docenteClasseMateriaTargets snapshot is consumed as-is rather than
     // re-derived from teachingAssignments.resolveConsiglio on resume.
     expect(generated).toEqual([
-      { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
-      { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
+      {
+        classe: '5A',
+        docente: 'verdi@school.it',
+        materia: 'IRC',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO'
+      },
+      {
+        classe: '1F',
+        docente: 'rossi@school.it',
+        materia: 'MATE',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO'
+      }
     ]);
     expect(step.value.processed).toEqual([
       '5A:MATE:bianchi@school.it',
@@ -875,7 +1116,9 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
         nextIndex: 0,
         processed: [],
         errori: [],
-        docenteMateriaTargets: [{ classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' }]
+        docenteMateriaTargets: [
+          { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' }
+        ]
       }
     });
 
@@ -883,22 +1126,46 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
 
     expect(step).toMatchObject({
       done: false,
-      value: { docenteClasseMateriaTargets: [{ classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' }] }
+      value: {
+        docenteClasseMateriaTargets: [
+          { classe: '5A', docenteEmail: 'bianchi@school.it', materiaId: 'MATE' }
+        ]
+      }
     });
     expect(step.value).not.toHaveProperty('docenteMateriaTargets');
   });
 
   test('a single cattedra failure is isolated: logged in errori, the batch continues (15 §8)', () => {
-    const { service, generated } = wireDocentiClasseMateria({ failFor: '5A:FISI:bianchi@school.it' });
+    const { service, generated } = wireDocentiClasseMateria({
+      failFor: '5A:FISI:bianchi@school.it'
+    });
     const gen = service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO' });
     let step = gen.next();
     while (!step.done) step = gen.next();
     const result = step.value;
 
     expect(generated).toEqual([
-      { classe: '5A', docente: 'bianchi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
-      { classe: '5A', docente: 'verdi@school.it', materia: 'IRC', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' },
-      { classe: '1F', docente: 'rossi@school.it', materia: 'MATE', confDocId: 'PROGRAMMA_SVOLTO', jobId: 'PROGRAMMA_SVOLTO' }
+      {
+        classe: '5A',
+        docente: 'bianchi@school.it',
+        materia: 'MATE',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO'
+      },
+      {
+        classe: '5A',
+        docente: 'verdi@school.it',
+        materia: 'IRC',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO'
+      },
+      {
+        classe: '1F',
+        docente: 'rossi@school.it',
+        materia: 'MATE',
+        confDocId: 'PROGRAMMA_SVOLTO',
+        jobId: 'PROGRAMMA_SVOLTO'
+      }
     ]);
     expect(result.errori).toEqual(['5A:FISI:bianchi@school.it: template non trovato']);
     expect(result.success).toBe(false);
@@ -976,9 +1243,15 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
 
 function wireClassiMateria(options: { failFor?: string; tipoLabel?: string } = {}) {
   const db = new FakeDatabase(fixtureTables());
-  const generated: Array<{ classe: string; materia: string; confDocId: string; jobId?: string }> = [];
+  const generated: Array<{ classe: string; materia: string; confDocId: string; jobId?: string }> =
+    [];
   const documenti = {
-    generateForClasseMateria: (target: ClasseId, materiaId: string, confDocId: string, jobId?: string) => {
+    generateForClasseMateria: (
+      target: ClasseId,
+      materiaId: string,
+      confDocId: string,
+      jobId?: string
+    ) => {
       const key = `${target.value}:${materiaId}`;
       if (key === options.failFor) throw new Error('template non trovato');
       generated.push({ classe: target.value, materia: materiaId, confDocId, jobId });
@@ -1114,7 +1387,13 @@ function wireClasseDocente() {
   const documenti = {
     generateForClasseDocente: (target: ClasseId, docenteEmail: string) => {
       generated.push({ classe: target.value, docente: docenteEmail });
-      return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
+      return {
+        fileId: 'file',
+        fileName: 'Doc',
+        fileLink: 'link',
+        status: 'GENERATO',
+        durationMs: 1
+      };
     }
   } as unknown as DocumentGenerationService;
   const teachingAssignments = {
@@ -1134,7 +1413,12 @@ function wireClasseDocente() {
     {
       findById: (id: string) =>
         id === 'CLASSE_DOCENTE'
-          ? new ConfigurazioneDocumento({ ID: id, TIPO: 'LIBERO', GENERATORE: GeneratoreAxis.CLASSE_DOCENTE, FORMATO: 'GDOC' })
+          ? new ConfigurazioneDocumento({
+              ID: id,
+              TIPO: 'LIBERO',
+              GENERATORE: GeneratoreAxis.CLASSE_DOCENTE,
+              FORMATO: 'GDOC'
+            })
           : null
     },
     documenti,
@@ -1197,11 +1481,20 @@ function wireDocenti() {
   const documenti = {
     generateForDocente: (docenteEmail: string, classiCompetenza: string[]) => {
       generated.push({ docente: docenteEmail, classiCompetenza });
-      return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
+      return {
+        fileId: 'file',
+        fileName: 'Doc',
+        fileLink: 'link',
+        status: 'GENERATO',
+        durationMs: 1
+      };
     }
   } as unknown as DocumentGenerationService;
   const assignmentsByClasse: Record<string, TeachingAssignment[]> = {
-    '5A': [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'bianchi@school.it')],
+    '5A': [
+      fakeAssignment('MATE', 'bianchi@school.it'),
+      fakeAssignment('FISI', 'bianchi@school.it')
+    ],
     '1F': [fakeAssignment('MATE', 'bianchi@school.it'), fakeAssignment('FISI', 'rossi@school.it')]
   };
   const teachingAssignments = {
@@ -1214,7 +1507,12 @@ function wireDocenti() {
     {
       findById: (id: string) =>
         id === 'DOCENTE'
-          ? new ConfigurazioneDocumento({ ID: id, TIPO: 'LIBERO', GENERATORE: GeneratoreAxis.DOCENTE, FORMATO: 'GDOC' })
+          ? new ConfigurazioneDocumento({
+              ID: id,
+              TIPO: 'LIBERO',
+              GENERATORE: GeneratoreAxis.DOCENTE,
+              FORMATO: 'GDOC'
+            })
           : null
     },
     documenti,
@@ -1229,7 +1527,9 @@ describe('DocumentBatchService.generateDocenti', () => {
   test('emits one target per unique docente email across ALL active classes, with classiCompetenza aggregated', () => {
     const { service, generated } = wireDocenti();
 
-    const { checkpoints } = drain(service.batchGenerateHandler({ confDocId: 'DOCENTE', jobId: 'job_d' }));
+    const { checkpoints } = drain(
+      service.batchGenerateHandler({ confDocId: 'DOCENTE', jobId: 'job_d' })
+    );
 
     expect(generated).toEqual([
       { docente: 'bianchi@school.it', classiCompetenza: ['5A', '1F'] },
@@ -1251,9 +1551,7 @@ describe('DocumentBatchService.generateDocenti', () => {
     assignmentsByClasse['5A'] = [];
     assignmentsByClasse['1F'] = [fakeAssignment('MATE', 'mutato@school.it')];
 
-    const { result } = drain(
-      service.batchGenerateHandler({ resumeState: first.value })
-    );
+    const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
 
     expect(generated).toEqual([
       { docente: 'bianchi@school.it', classiCompetenza: ['5A', '1F'] },
@@ -1266,8 +1564,20 @@ describe('DocumentBatchService.generateDocenti', () => {
 function wireAlunni() {
   const generated: string[] = [];
   const activeStudents = [
-    new Alunno({ EMAIL: 'alfa@school.it', COGNOMENOME: 'ALFA', CLASSE: '5A', RELIGIONE: 'IRC', ATTIVO: true }),
-    new Alunno({ EMAIL: 'beta@school.it', COGNOMENOME: 'BETA', CLASSE: '1F', RELIGIONE: 'IRC', ATTIVO: true })
+    new Alunno({
+      EMAIL: 'alfa@school.it',
+      COGNOMENOME: 'ALFA',
+      CLASSE: '5A',
+      RELIGIONE: 'IRC',
+      ATTIVO: true
+    }),
+    new Alunno({
+      EMAIL: 'beta@school.it',
+      COGNOMENOME: 'BETA',
+      CLASSE: '1F',
+      RELIGIONE: 'IRC',
+      ATTIVO: true
+    })
   ];
   const alunni = {
     findAttivi: () => activeStudents,
@@ -1276,16 +1586,30 @@ function wireAlunni() {
   const documenti = {
     generateForAlunno: (email: string) => {
       generated.push(email);
-      return { fileId: 'file', fileName: 'Doc', fileLink: 'link', status: 'GENERATO', durationMs: 1 };
+      return {
+        fileId: 'file',
+        fileName: 'Doc',
+        fileLink: 'link',
+        status: 'GENERATO',
+        durationMs: 1
+      };
     }
   } as unknown as DocumentGenerationService;
   const service = new DocumentBatchService(
-    { findAttive: () => [], filterPerGestioneArticolazione: () => [] } as unknown as IClasseRepository,
+    {
+      findAttive: () => [],
+      filterPerGestioneArticolazione: () => []
+    } as unknown as IClasseRepository,
     alunni,
     {
       findById: (id: string) =>
         id === 'ALUNNO'
-          ? new ConfigurazioneDocumento({ ID: id, TIPO: 'LIBERO', GENERATORE: GeneratoreAxis.ALUNNO, FORMATO: 'GDOC' })
+          ? new ConfigurazioneDocumento({
+              ID: id,
+              TIPO: 'LIBERO',
+              GENERATORE: GeneratoreAxis.ALUNNO,
+              FORMATO: 'GDOC'
+            })
           : null
     },
     documenti,
@@ -1328,9 +1652,7 @@ describe('DocumentBatchService.generateAlunni', () => {
       })
     );
 
-    const { result } = drain(
-      service.batchGenerateHandler({ resumeState: first.value })
-    );
+    const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
 
     expect(generated).toEqual(['alfa@school.it', 'beta@school.it']);
     expect(result).toMatchObject({ processed: ['alfa@school.it', 'beta@school.it'] });
@@ -1382,7 +1704,12 @@ function wireDipartimenti(
     findById: (id: string) => {
       configIds.push(id);
       return id === 'VERBALE_DIPARTIMENTO'
-        ? new ConfigurazioneDocumento({ ID: id, TIPO: 'DIPARTIMENTO', GENERATORE: GeneratoreAxis.DIPARTIMENTO, FORMATO: 'GDOC' })
+        ? new ConfigurazioneDocumento({
+            ID: id,
+            TIPO: 'DIPARTIMENTO',
+            GENERATORE: GeneratoreAxis.DIPARTIMENTO,
+            FORMATO: 'GDOC'
+          })
         : null;
     }
   };
@@ -1448,13 +1775,18 @@ describe('DocumentBatchService.generateDipartimenti', () => {
           jobId: 'VERBALE_DIPARTIMENTO',
           nextIndex: 1,
           processed: ['LETTERE'],
-          errori: []
+          errori: [],
+          dipartimentoTargets: ['LETTERE', 'SCIENZE']
         }
       })
     );
 
     expect(generated).toEqual([
-      { dipartimentoId: 'SCIENZE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'VERBALE_DIPARTIMENTO' }
+      {
+        dipartimentoId: 'SCIENZE',
+        confDocId: 'VERBALE_DIPARTIMENTO',
+        jobId: 'VERBALE_DIPARTIMENTO'
+      }
     ]);
     expect(result.processed).toEqual(['LETTERE', 'SCIENZE']);
   });
@@ -1462,7 +1794,9 @@ describe('DocumentBatchService.generateDipartimenti', () => {
   test('registered handler resumes a raw department checkpoint without top-level IDs or duplicate departments', () => {
     const { service, generated, configIds } = wireDipartimenti();
     const registered = new Map<string, unknown>();
-    service.registerJobHandlers({ registerJobHandler: (type, handler) => registered.set(type, handler) });
+    service.registerJobHandlers({
+      registerJobHandler: (type, handler) => registered.set(type, handler)
+    });
     const handler = registered.get(JOB_TYPE_GENERAZIONE_DOCUMENTI) as (params: {
       resumeState?: BatchCheckpoint;
     }) => Generator<BatchCheckpoint, unknown, void>;
@@ -1486,6 +1820,39 @@ describe('DocumentBatchService.generateDipartimenti', () => {
       )
     ).toBe(true);
     expect(result).toMatchObject({ success: true, processed: ['LETTERE', 'SCIENZE'] });
+  });
+
+  test('resume consumes persisted dipartimentoTargets after the department source changes', () => {
+    const { service, generated } = wireDipartimenti();
+    const initial = service.batchGenerateHandler({
+      confDocId: 'VERBALE_DIPARTIMENTO',
+      jobId: 'job_dip'
+    });
+    const first = initial.next();
+    expect(first.done).toBe(false);
+    expect(first.value).toMatchObject({ dipartimentoTargets: ['LETTERE', 'SCIENZE'] });
+
+    const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
+
+    expect(generated.map((g) => g.dipartimentoId)).toEqual(['LETTERE', 'SCIENZE']);
+    expect(result).toMatchObject({ totale: 2, processed: ['LETTERE', 'SCIENZE'] });
+  });
+
+  test('a resume without persisted dipartimentoTargets fails loud', () => {
+    const { service } = wireDipartimenti();
+    expect(() =>
+      service
+        .batchGenerateHandler({
+          resumeState: {
+            confDocId: 'VERBALE_DIPARTIMENTO',
+            jobId: 'job_dip',
+            nextIndex: 1,
+            processed: ['LETTERE'],
+            errori: []
+          }
+        })
+        .next()
+    ).toThrow(ConfigurationError);
   });
 });
 

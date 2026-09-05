@@ -153,7 +153,7 @@ test('prints an end-of-job summary with total/succeeded/failed counts and the fa
 test('resumed email batch carries forward failed targets from a prior timeout-resume into the final summary', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { service } = wire(undefined, undefined, new LoggerService());
+  const { gmail, service } = wire(undefined, undefined, new LoggerService());
 
   drain(
     service.batchSendHandler({
@@ -162,6 +162,7 @@ test('resumed email batch carries forward failed targets from a prior timeout-re
       chunkSize: 1,
       resumeState: {
         nextIndex: 1,
+        processedIds: ['cdc:5A'],
         processed: ['5A'],
         sent: 0,
         errors: [],
@@ -173,6 +174,9 @@ test('resumed email batch carries forward failed targets from a prior timeout-re
   // '5A' failed in a prior run (before this resumed generator instance even
   // started); the second target ('1F') succeeds in this run. The summary must
   // still report the total across BOTH, not just this instance's own work.
+  // '5A' must NOT be re-dispatched this run — it is excluded by processedIds,
+  // not re-attempted just because it previously failed.
+  expect(gmail.sent).toHaveLength(1);
   const output = lines.join('\n');
   expect(output).toContain('📊❌ [RIEPILOGO JOB] INVIO EMAIL');
   expect(output).toContain('  Task totali: 2');

@@ -2353,9 +2353,9 @@ const ITEM_ICONS = {
   GENERIC: '📦'
 };
 const STEP_ICONS = {
-  EXECUTED: '✅',
-  SKIPPED: '⚠️',
-  ERROR: '❌'
+  EXECUTED: '▪️',
+  SKIPPED: '▫️',
+  ERROR: '🔺'
 };
 
 
@@ -2501,6 +2501,24 @@ class StructuredLogFormatter {
       message += ` COMPLETED in ${this._count(durationMs)}ms`;
     }
     return this._treeLines(message, position);
+  }
+
+
+  jobReport(details) {
+    const d = details || {};
+    const totale = this._count(d.totale);
+    const falliti = this._count(d.falliti);
+    const riusciti = Math.max(0, totale - falliti);
+    const icon = falliti > 0 ? '📊❌' : '📊✅';
+    const lines = [MAJOR_BORDER, `${icon} [RIEPILOGO JOB] ${this._text(d.jobType)}`, `  Esecuzioni (run): ${d.runCount === undefined ? 1 : this._count(d.runCount)}`, `  Tempo totale esecuzione: ${this._count(d.totalDurationMs)}ms`, `  Task totali: ${totale}`, `  Eseguiti con successo: ${riusciti}`, `  Falliti: ${falliti}`];
+    if (falliti > 0 && Array.isArray(d.dettagliFalliti) && d.dettagliFalliti.length > 0) {
+      lines.push('  Dettaglio fallimenti:');
+      for (const item of d.dettagliFalliti) {
+        lines.push(`    - ${this._text(item)}`);
+      }
+    }
+    lines.push(MAJOR_BORDER);
+    return lines;
   }
   _isDetailEnvelope(details) {
     return Boolean(details && typeof details === 'object' && !Array.isArray(details) && (Object.prototype.hasOwnProperty.call(details, 'content') || Object.prototype.hasOwnProperty.call(details, 'durationMs') || Object.prototype.hasOwnProperty.call(details, 'reason')));
@@ -2749,7 +2767,8 @@ class LoggerService {
 
 
   _formatMessage(level, message, context = null) {
-    let formattedMessage = `[${level}]`;
+    const emoji = level === 'ERROR' ? '🔺 ' : level === 'WARN' ? '🔸 ' : '';
+    let formattedMessage = `${emoji}[${level}]`;
     if (typeof message === 'object') {
       formattedMessage += ' ' + this._safeStringify(message);
     } else {
@@ -2929,6 +2948,17 @@ class LoggerService {
 
 
 
+
+  logJobReport(details) {
+    const failed = Number.isFinite(details === null || details === void 0 ? void 0 : details.falliti) ? details.falliti : 0;
+    return this._writeStructured(failed > 0 ? 'ERROR' : 'INFO', this._structured.jobReport(details));
+  }
+
+
+
+
+
+
   child(prefix) {
     const parentLogger = this;
     const prefixed = label => `[${prefix}] ${label}`;
@@ -2973,6 +3003,7 @@ class LoggerService {
       logPipelineStart: (pipelineName, totalSteps, position) => parentLogger.logPipelineStart(prefixed(pipelineName), totalSteps, position),
       logPipelineStep: (stepName, status, details, position) => parentLogger.logPipelineStep(prefixed(stepName), status, details, position),
       logSummary: (label, durationMs, itemDetails, position) => parentLogger.logSummary(prefixed(label), durationMs, itemDetails, position),
+      logJobReport: details => parentLogger.logJobReport(details),
       withPosition: (position, callback) => parentLogger.withPosition(position, callback)
     };
   }
@@ -15058,7 +15089,7 @@ class DocumentBatchUpdateHandler {
         title: name
       });
       const documentId = doc.documentId;
-      this._logger.info(`Created document: ${documentId} (${name})`);
+      this._logger.debug(`Created document: ${documentId} (${name})`);
       if (options.destinationFolder) {
         Drive.Files.update({}, documentId, null, {
           addParents: options.destinationFolder
@@ -15150,7 +15181,7 @@ class DocumentBatchUpdateHandler {
         fileMetadata.parents = [op.destinationFolderId];
       }
       const file = Drive.Files.create(fileMetadata, blob);
-      this._logger.info(`Exported document ${documentId} to PDF: ${file.id}`);
+      this._logger.debug(`Exported document ${documentId} to PDF: ${file.id}`);
       return file;
     } catch (error) {
       this._logger.error(`PDF export failed: ${error.message}`);
@@ -16333,7 +16364,7 @@ class MailService {
       } else {
         sendFn();
       }
-      this._logger.info(`Email sent successfully to ${recipient}`);
+      this._logger.debug(`Email sent successfully to ${recipient}`);
       return {
         success: true
       };
@@ -44737,7 +44768,7 @@ class DatabaseService {
     try {
       this._performRollback();
       const duration = Date.now() - this._transaction.startTime;
-      this._logger.info(`Transaction rolled back (${duration}ms)`);
+      this._logger.debug(`Transaction rolled back (${duration}ms)`);
       this._transaction = null;
       this._inTransaction = false;
       return this;
@@ -45104,7 +45135,18 @@ class QueueStateManager {
       version: this.getStateVersion()
     };
   }
-  tryAcquireRunning() {
+
+
+
+
+
+
+
+
+
+
+
+  tryAcquireRunning(blockIfSuspended = false) {
     const stateKey = this._key('job');
     const lock = this._lockService.getScriptLock();
     if (!lock.tryLock(30000)) {
@@ -45122,6 +45164,8 @@ class QueueStateManager {
             return false;
           }
         }
+      } else if (blockIfSuspended && currentState === 'to_resume') {
+        return false;
       }
       this._propertiesService.setProperty(stateKey, QueueStateManager.STATE_RUNNING);
       this._propertiesService.setProperty(this._key('lock_timestamp'), String(Date.now()));
@@ -45968,7 +46012,11 @@ class JobQueue {
 
 
 
-  execute(jobName, jobType, parameters = {}, forceRestart = false) {
+
+
+
+
+  execute(jobName, jobType, parameters = {}, forceRestart = false, blockIfSuspended = false) {
     const stateManager = new JobStateManager(jobName, this._propertiesService, this._utils, this._lockService);
 
     const triggerManager = new JobTriggerManager(jobName, this._propertiesService, this._triggerService, this._triggerDelayMs);
@@ -45987,8 +46035,8 @@ class JobQueue {
       const jobState = stateManager.getState();
 
 
-      if (!stateManager.tryAcquireRunning()) {
-        this._logger.warn(`Job ${jobName} already running or lock acquisition failed.`);
+      if (!stateManager.tryAcquireRunning(blockIfSuspended)) {
+        this._logger.warn(`Job ${jobName} already running, suspended awaiting automatic resume, or lock acquisition failed.`);
         return null;
       }
 
@@ -46614,7 +46662,10 @@ class JobRunnerExecutionController {
       error = null,
       jobCompleted = false;
     try {
-      result = queue.execute(jobName, jobType, parameters, forceRestart);
+
+
+
+      result = queue.execute(jobName, jobType, parameters, forceRestart, true);
       const status = this._status(queue, jobName, result);
       this._logTerminal(effectiveLogger, jobName, result, status, Date.now() - startedAt);
       jobCompleted = result !== null || status.state === 'cancelled' || status.state === 'failed' || status.state === 'error';
@@ -47196,10 +47247,11 @@ class Pipeline {
     if (summary.stopRequested) {
       details += `; stopped: ${summary.stopReason}`;
     }
+    const icon = summary.failedSteps > 0 ? '❌' : '✅';
     if (typeof this._logger.logSummary === 'function') {
-      this._logger.logSummary('⏹️ Pipeline completed', context.getTotalDuration(), details, this._summaryLogPosition());
+      this._logger.logSummary(`${icon} Pipeline completed`, context.getTotalDuration(), details, this._summaryLogPosition());
     } else {
-      this._logger.info(`[${this._name}] Pipeline completed in ${context.getTotalDuration()}ms (${details})`);
+      this._logger.info(`${icon} [${this._name}] Pipeline completed in ${context.getTotalDuration()}ms (${details})`);
     }
   }
 
@@ -52146,7 +52198,7 @@ class Loader {
 
       this.logger.debug('[Loader] Saving changes to database...');
       this._db.save();
-      this.logger.info(`[Loader] Load complete: ${JSON.stringify(result)}`);
+      this.logger.debug(`[Loader] Load complete: ${JSON.stringify(result)}`);
       return result;
     } catch (error) {
       if (error instanceof LoadError) {

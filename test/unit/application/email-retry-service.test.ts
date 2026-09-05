@@ -1,4 +1,7 @@
-import { EmailRetryService, JOB_TYPE_RETRY_EMAIL } from '../../../src/application/services/EmailRetryService';
+import {
+  EmailRetryService,
+  JOB_TYPE_RETRY_EMAIL
+} from '../../../src/application/services/EmailRetryService';
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
@@ -9,8 +12,28 @@ import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { composeEmailNotificationService } from '../../../src/config/ApplicationComposition';
+import type {
+  ILogJobRepository,
+  LogJobEntryInput
+} from '../../../src/domain/repositories/ILogJobRepository';
+import { StatoJob } from '../../../src/domain/value-objects/enums';
 
 const NOW = new Date('2026-07-01T09:00:00Z');
+
+/** Collects every LOG_JOB row appended during a test, in order. */
+function fakeLogJob(): { logJob: ILogJobRepository; entries: LogJobEntryInput[] } {
+  const entries: LogJobEntryInput[] = [];
+  const logJob: ILogJobRepository = {
+    append: (entry) => {
+      entries.push(entry);
+      return entry as unknown as ReturnType<ILogJobRepository['append']>;
+    },
+    listByType: () => [],
+    getById: () => [],
+    getFailuresSince: () => []
+  };
+  return { logJob, entries };
+}
 
 function failedRow(data: string, destinatari = 'genitore1@x.it'): Row {
   return {
@@ -23,7 +46,7 @@ function failedRow(data: string, destinatari = 'genitore1@x.it'): Row {
   };
 }
 
-function wire(logMailRows: Row[], logger?: LoggerService) {
+function wire(logMailRows: Row[], logger?: LoggerService, logJob?: ILogJobRepository) {
   const tables = fixtureTables();
   tables['LOG_MAIL'] = logMailRows;
   const db = new FakeDatabase(tables);
@@ -41,7 +64,7 @@ function wire(logMailRows: Row[], logger?: LoggerService) {
     emailService,
     gmail,
     new MasterSheetRepository(db),
-    logger ? { logger } : {}
+    { ...(logger ? { logger } : {}), ...(logJob ? { logJob } : {}) }
   );
   return { db, gmail, retry };
 }
@@ -63,10 +86,7 @@ test('retries a failed send below maxTentativi and marks the original record SUC
 test('retryFailed emits synchronous lifecycle and structured retry items', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { retry } = wire(
-    [failedRow('2026-06-30T10:00:00.000Z')],
-    new LoggerService()
-  );
+  const { retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], new LoggerService());
 
   expect(retry.retryFailed()).toEqual({ retried: 1, permanent: 0 });
 
@@ -79,10 +99,7 @@ test('retryFailed emits synchronous lifecycle and structured retry items', () =>
 test('retryHandler emits batch/items without duplicating JobRunner lifecycle', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { retry } = wire(
-    [failedRow('2026-06-30T10:00:00.000Z')],
-    new LoggerService()
-  );
+  const { retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], new LoggerService());
 
   const handler = retry.retryHandler({ jobId: 'retry_email', resumeState: null });
   let step = handler.next();
@@ -235,10 +252,11 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
 test('retryHandler yields one checkpoint per failed-group batch and resumes from checkpoint', () => {
   // Two distinct destinatari -> two distinct groups (grouped by pattern::logicalTargetId/destinatariRaw),
   // so the generator must yield twice, once per group, before completing.
-  const { retry } = wire([
+  const { db, retry } = wire([
     failedRow('2026-06-30T10:00:00.000Z', 'genitore1@x.it'),
     failedRow('2026-06-29T10:00:00.000Z', 'genitore2@x.it')
   ]);
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
   const gen = retry.retryHandler({ resumeState: null, jobId: 'job_retry_1' });
   const first = gen.next();
   expect(first.done).toBe(false);
@@ -269,6 +287,7 @@ test('retryHandler resume is correct across two separate generator instances (do
     failedRow('2026-06-30T10:00:00.000Z', 'genitore1@x.it'),
     failedRow('2026-06-29T10:00:00.000Z', 'genitore2@x.it')
   ]);
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
 
   // First execution: simulate a mid-run suspend by draining only the first yield,
   // never letting this generator instance run to completion.
@@ -300,6 +319,96 @@ test('retryHandler resume is correct across two separate generator instances (do
   expect(step.value.permanent).toBe(0);
   expect(step.value.retried + step.value.permanent).toBe(2);
   expect(db.tables['LOG_MAIL']!.getAllRows().filter((r) => r['STATO'] === 'ERROR')).toHaveLength(0);
+});
+
+test('retryHandler prints an end-of-job summary with total/succeeded/failed groups', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { db, retry } = wire(
+    [
+      // Same pattern+destinatari repeated maxTentativi (default 3) times: one
+      // group whose retry is permanently failed, not merely retried-and-pending.
+      failedRow('2026-06-28T10:00:00.000Z'),
+      failedRow('2026-06-29T10:00:00.000Z'),
+      failedRow('2026-06-30T10:00:00.000Z'),
+      // A second, distinct group that succeeds against the fake Gmail facade.
+      failedRow('2026-06-30T10:00:00.000Z', 'genitore2@x.it')
+    ],
+    new LoggerService()
+  );
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
+
+  const gen = retry.retryHandler({ resumeState: null, jobId: 'job_retry_1' });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  // failedKeys stores the PII-redacted key (same redaction as logItemStart's
+  // safeKey), never the raw recipient email.
+  const output = lines.join('\n');
+  expect(output).toContain('📊❌ [RIEPILOGO JOB] INVIO EMAIL');
+  expect(output).toContain('  Task totali: 2');
+  expect(output).toContain('  Eseguiti con successo: 1');
+  expect(output).toContain('  Falliti: 1');
+  expect(output).toContain('    - CARENZE_NOTIFICA::[EMAIL_REDACTED]');
+});
+
+test('LOG_JOB (NEW_TABLE_LOG_JOB.md): a completed retry run appends one ESECUZIONE=0 row', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { db, retry } = wire(
+    [
+      failedRow('2026-06-30T10:00:00.000Z'),
+      failedRow('2026-06-30T10:00:00.000Z', 'genitore2@x.it')
+    ],
+    undefined,
+    logJob
+  );
+  db.tables['ALUNNI']!.getAllRows().find((r) => r['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
+
+  const gen = retry.retryHandler({ resumeState: null, jobId: 'job_retry_1' });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({
+    idJob: 'job_retry_1',
+    esecuzione: 0,
+    tipo: JOB_TYPE_RETRY_EMAIL,
+    idConfig: '',
+    stato: StatoJob.COMPLETATO,
+    totaleTask: 2,
+    completatiOk: 2,
+    falliti: 0
+  });
+});
+
+test('LOG_JOB: a resumed retry run backfills a SOSPESO_TEMPO row for the execution JobRunnerLib cut off', () => {
+  const { logJob, entries } = fakeLogJob();
+  const { retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], undefined, logJob);
+
+  const gen = retry.retryHandler({
+    jobId: 'job_retry_1',
+    resumeState: {
+      retried: 0,
+      permanent: 0,
+      processedKeys: [],
+      failedKeys: [],
+      runCount: 1,
+      totalDurationMs: 4000,
+      eseguitoDa: 'prof@school.it',
+      esecuzioneIniziata: '2026-01-01T00:00:00.000Z'
+    }
+  });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(2);
+  expect(entries[0]).toMatchObject({
+    esecuzione: 0,
+    stato: StatoJob.SOSPESO_TEMPO,
+    inizio: '2026-01-01T00:00:00.000Z',
+    eseguitoDa: 'prof@school.it'
+  });
+  expect(entries[1]).toMatchObject({ esecuzione: 1, stato: StatoJob.COMPLETATO });
 });
 
 /**

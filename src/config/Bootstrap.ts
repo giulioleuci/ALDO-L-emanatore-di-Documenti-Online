@@ -43,6 +43,11 @@ import { AlunnoRepository } from '../infrastructure/repositories/AlunnoRepositor
 import { LogCartellaRepository } from '../infrastructure/repositories/LogCartellaRepository';
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
+import { LogJobRepository } from '../infrastructure/repositories/LogJobRepository';
+import {
+  SessionActiveUserFacade,
+  type IActiveUserFacade
+} from '../infrastructure/facades/ActiveUserFacade';
 import { MasterSheetRepository } from '../infrastructure/repositories/MasterSheetRepository';
 import { TABLE } from './schema';
 import {
@@ -66,7 +71,10 @@ import {
   SpreadsheetReportFacade,
   type ISpreadsheetReportFacade
 } from '../infrastructure/facades/SpreadsheetReportFacade';
-import { LockDocumentsService, type LockOutcome } from '../application/services/LockDocumentsService';
+import {
+  LockDocumentsService,
+  type LockOutcome
+} from '../application/services/LockDocumentsService';
 import {
   MasterStoricoDatabaseProvider,
   type StoricoDatabaseProvider
@@ -120,6 +128,8 @@ interface BootstrapDeps {
    * `spreadsheets`: building the real one needs a live SpreadsheetService.
    */
   report?: ISpreadsheetReportFacade;
+  /** Running-user identity (NEW_TABLE_LOG_JOB.md ESEGUITO_DA) — defaults to the real GAS session user. */
+  activeUser?: IActiveUserFacade;
 }
 
 /**
@@ -129,8 +139,10 @@ interface BootstrapDeps {
 export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   const c = new ServiceContainer();
   const logger = deps.logger ?? new LoggerService();
+  const activeUser = deps.activeUser ?? new SessionActiveUserFacade();
 
   c.register('logger', () => logger);
+  c.register('activeUser', () => activeUser);
   c.register('db', () => deps.db);
   c.register('drive', () => deps.drive);
   c.register('storicoDb', () => new MasterStoricoDatabaseProvider(deps.master, logger));
@@ -157,6 +169,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   );
   c.register('progetti', () => new ProgettoRepository(deps.db));
   c.register('logEmail', () => new LogEmailRepository(deps.db));
+  c.register('logJob', () => new LogJobRepository(deps.db));
   c.register('configurazioniEmail', () => new ConfigurazioneEmailRepository(deps.db));
   c.register('teachingAssignmentResolver', () => new AldoTeachingAssignmentResolver(deps.db));
   c.register(
@@ -271,7 +284,9 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         deps.now,
         container.get<DipartimentoRepository>('dipartimenti'),
         deps.monitor,
-        logger
+        logger,
+        container.get<LogJobRepository>('logJob'),
+        activeUser
       )
   );
   c.register(
@@ -310,7 +325,9 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         container.get<EmailNotificationService>('emailNotificationService'),
         deps.monitor,
         deps.properties,
-        logger
+        logger,
+        container.get<LogJobRepository>('logJob'),
+        activeUser
       )
   );
   c.register(
@@ -321,14 +338,21 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         container.get<EmailNotificationService>('emailNotificationService'),
         deps.gmail,
         deps.master,
-        { logger }
+        { logger, logJob: container.get<LogJobRepository>('logJob'), activeUser }
       )
   );
   if (deps.importEngine !== undefined) {
     const engine = deps.importEngine;
     c.register(
       'importService',
-      () => new ImportService(engine, new ConfigurazioneImportRepository(deps.db), logger)
+      (container) =>
+        new ImportService(
+          engine,
+          new ConfigurazioneImportRepository(deps.db),
+          logger,
+          container.get<LogJobRepository>('logJob'),
+          activeUser
+        )
     );
   }
   c.register('reportService', () => new ReportService(deps.db));
@@ -336,8 +360,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     const report = deps.report;
     c.register(
       'databaseValidationService',
-      () =>
-        new DatabaseValidationService({ db: deps.db, master: deps.master, report, logger })
+      () => new DatabaseValidationService({ db: deps.db, master: deps.master, report, logger })
     );
   }
   c.register('aggregatoreDati', () => new AggregatoreDati(deps.db));

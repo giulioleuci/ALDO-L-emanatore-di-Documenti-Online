@@ -21,6 +21,7 @@ import {
   COL_LOG_DOCS,
   COL_LOG_FOLD,
   COL_LOG_MAIL,
+  COL_LOG_JOB,
   COL_MASTER
 } from '../config/schema';
 import { ReligioneScelta } from '../domain/value-objects/enums';
@@ -96,7 +97,8 @@ const HEADERS: Record<string, string[]> = {
   [TABLE.CONF_IMP]: Object.values(COL_CONF_IMP),
   [TABLE.LOG_DOCS]: Object.values(COL_LOG_DOCS),
   [TABLE.LOG_FOLD]: Object.values(COL_LOG_FOLD),
-  [TABLE.LOG_MAIL]: Object.values(COL_LOG_MAIL)
+  [TABLE.LOG_MAIL]: Object.values(COL_LOG_MAIL),
+  [TABLE.LOG_JOB]: Object.values(COL_LOG_JOB)
 };
 
 /**

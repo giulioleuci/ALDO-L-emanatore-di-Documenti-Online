@@ -1,8 +1,59 @@
-import { ImportService, JOB_TYPE_IMPORT_CHUNKED } from '../../../src/application/services/ImportService';
+import {
+  ImportService,
+  JOB_TYPE_IMPORT_CHUNKED
+} from '../../../src/application/services/ImportService';
 import { ConfigurazioneImportRepository } from '../../../src/infrastructure/repositories/ConfigurazioneImportRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
+import type {
+  ILogJobRepository,
+  LogJobEntryInput
+} from '../../../src/domain/repositories/ILogJobRepository';
+import { StatoJob } from '../../../src/domain/value-objects/enums';
+
+/** Collects every LOG_JOB row appended during a test, in order. */
+function fakeLogJob(): { logJob: ILogJobRepository; entries: LogJobEntryInput[] } {
+  const entries: LogJobEntryInput[] = [];
+  const logJob: ILogJobRepository = {
+    append: (entry) => {
+      entries.push(entry);
+      return entry as unknown as ReturnType<ILogJobRepository['append']>;
+    },
+    listByType: () => [],
+    getById: () => [],
+    getFailuresSince: () => []
+  };
+  return { logJob, entries };
+}
+
+/** Engine double for the chunked import path: two chunks (EXTRACT -> LOAD -> DONE), one row inserted. */
+function fakeChunkedEngine(): ImportEngine {
+  return {
+    startImport: (recipe: ImportRecipe) => ({
+      recipeName: recipe.name,
+      stage: 'EXTRACT',
+      sourceCursor: null,
+      rowOffset: 0,
+      loadOffset: 0,
+      counters: { extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 },
+      buffer: null,
+      done: false
+    }),
+    runImportChunk: (_recipe: ImportRecipe, checkpoint: ImportCheckpoint) =>
+      checkpoint.stage === 'EXTRACT'
+        ? { checkpoint: { ...checkpoint, stage: 'LOAD' }, done: false }
+        : {
+            checkpoint: {
+              ...checkpoint,
+              stage: 'DONE',
+              done: true,
+              counters: { ...checkpoint.counters, inserted: 1 }
+            },
+            done: true
+          }
+  } as unknown as ImportEngine;
+}
 
 /**
  * A minimal ImportEngine double implementing the public `runImport(recipe, options)`
@@ -157,7 +208,15 @@ test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)',
         durationMs: 0,
         extract: { rowsExtracted: 0, rowCount: 0 },
         transform: { rowsTransformed: 0, recordsProcessed: 0 },
-        load: { inserted: 0, updated: 0, skipped: 0, deleted: 0, total: 0, recordsProcessed: 0, failed: 0 }
+        load: {
+          inserted: 0,
+          updated: 0,
+          skipped: 0,
+          deleted: 0,
+          total: 0,
+          recordsProcessed: 0,
+          failed: 0
+        }
       };
     }
   } as unknown as ImportEngine;
@@ -321,7 +380,10 @@ test('registered import handler resumes a raw wrapper checkpoint without top-lev
   const firstGenerator = handler({ configId: 'IMPORT_ALUNNI' });
   const first = firstGenerator.next();
   expect(first.done).toBe(false);
-  expect(first.value).toMatchObject({ configId: 'IMPORT_ALUNNI', importCheckpoint: { stage: 'LOAD' } });
+  expect(first.value).toMatchObject({
+    configId: 'IMPORT_ALUNNI',
+    importCheckpoint: { stage: 'LOAD' }
+  });
 
   const resumedGenerator = handler({ resumeState: first.value });
   let resumed = resumedGenerator.next();
@@ -329,6 +391,76 @@ test('registered import handler resumes a raw wrapper checkpoint without top-lev
 
   expect(checkpoints.map((checkpoint) => checkpoint.stage)).toEqual(['EXTRACT', 'LOAD']);
   expect(resumed.value).toMatchObject({ inseriti: 1 });
+});
+
+test('LOG_JOB (NEW_TABLE_LOG_JOB.md): a completed chunked import appends one ESECUZIONE=0 row', () => {
+  const database = db([confImpRow()]);
+  const { logJob, entries } = fakeLogJob();
+  const service = new ImportService(
+    fakeChunkedEngine(),
+    new ConfigurazioneImportRepository(database),
+    new LoggerService(),
+    logJob
+  );
+
+  const gen = service.importJobHandler({ configId: 'IMPORT_ALUNNI', jobId: 'imp_1' });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({
+    idJob: 'imp_1',
+    esecuzione: 0,
+    tipo: JOB_TYPE_IMPORT_CHUNKED,
+    idConfig: 'IMPORT_ALUNNI',
+    stato: StatoJob.COMPLETATO,
+    totaleTask: 1,
+    completatiOk: 1,
+    falliti: 0
+  });
+});
+
+test('LOG_JOB: a resumed chunked import backfills a SOSPESO_TEMPO row for the execution JobRunnerLib cut off', () => {
+  const database = db([confImpRow()]);
+  const { logJob, entries } = fakeLogJob();
+  const service = new ImportService(
+    fakeChunkedEngine(),
+    new ConfigurazioneImportRepository(database),
+    new LoggerService(),
+    logJob
+  );
+
+  const gen = service.importJobHandler({
+    jobId: 'imp_1',
+    resumeState: {
+      configId: 'IMPORT_ALUNNI',
+      importCheckpoint: {
+        recipeName: 'IMPORT_ALUNNI',
+        stage: 'LOAD',
+        sourceCursor: null,
+        rowOffset: 0,
+        loadOffset: 0,
+        counters: { extracted: 1, transformed: 1, inserted: 0, updated: 0, skipped: 0, deleted: 0 },
+        buffer: null,
+        done: false
+      },
+      runCount: 1,
+      totalDurationMs: 4000,
+      eseguitoDa: 'prof@school.it',
+      esecuzioneIniziata: '2026-01-01T00:00:00.000Z'
+    }
+  });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(entries).toHaveLength(2);
+  expect(entries[0]).toMatchObject({
+    esecuzione: 0,
+    stato: StatoJob.SOSPESO_TEMPO,
+    inizio: '2026-01-01T00:00:00.000Z',
+    eseguitoDa: 'prof@school.it'
+  });
+  expect(entries[1]).toMatchObject({ esecuzione: 1, stato: StatoJob.COMPLETATO });
 });
 
 test('registered import handler rejects a resume wrapper without configId before engine invocation', () => {
@@ -425,4 +557,69 @@ test('executeAllActiveImports runs each active job independently; one failure do
   expect(results.map((r) => r.configId)).toEqual(['OK', 'BAD']); // only ATTIVO=true jobs
   expect(results[0]!.result.inseriti).toBe(1);
   expect(results[1]!.result.errori[0]).toContain('CERCA_DOCUMENTI');
+});
+
+test('executeImport prints an end-of-job report with jobType IMPORTAZIONE DATI and no failures', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const database = db([confImpRow()]);
+  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI ANNA', C: 'nota' }], (data) => ({
+    success: true,
+    inserted: data.length,
+    updated: 0,
+    skipped: 0,
+    deleted: 0,
+    total: data.length
+  }));
+  const service = new ImportService(
+    engine,
+    new ConfigurazioneImportRepository(database),
+    new LoggerService()
+  );
+
+  service.executeImport('IMPORT_ALUNNI');
+
+  const output = lines.join('\n');
+  expect(output).toContain('📊✅ [RIEPILOGO JOB] IMPORTAZIONE DATI');
+  expect(output).toContain('  Esecuzioni (run): 1');
+  expect(output).toContain('  Falliti: 0');
+});
+
+test('executeAllActiveImports prints an end-of-job report totalling every active CONF_IMP with failure detail', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const database = db([
+    confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),
+    confImpRow({
+      ID: 'BAD',
+      TARGET: 'ALUNNI',
+      CONFIG: JSON.stringify({
+        searchStrategy: 'CERCA_DOCUMENTI',
+        key: 'ID',
+        conflictResolution: 'IGNORE'
+      })
+    })
+  ]);
+  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI', C: '' }], (data) => ({
+    success: true,
+    inserted: data.length,
+    updated: 0,
+    skipped: 0,
+    deleted: 0,
+    total: data.length
+  }));
+  const service = new ImportService(
+    engine,
+    new ConfigurazioneImportRepository(database),
+    new LoggerService()
+  );
+
+  service.executeAllActiveImports();
+
+  const output = lines.join('\n');
+  expect(output).toContain('📊❌ [RIEPILOGO JOB] IMPORTAZIONE DATI');
+  expect(output).toContain('  Task totali: 2');
+  expect(output).toContain('  Falliti: 1');
+  expect(output).toContain('    - BAD: ');
+  expect(output).toContain('CERCA_DOCUMENTI');
 });

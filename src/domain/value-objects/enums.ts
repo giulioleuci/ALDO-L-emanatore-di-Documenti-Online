@@ -82,6 +82,13 @@ export enum StatoEmail {
   ERROR = 'ERROR',
   PENDING = 'PENDING'
 }
+export enum StatoJob {
+  COMPLETATO = 'COMPLETATO',
+  COMPLETATO_CON_ERRORI = 'COMPLETATO_CON_ERRORI',
+  FALLITO = 'FALLITO',
+  SOSPESO_QUOTA = 'SOSPESO_QUOTA',
+  SOSPESO_TEMPO = 'SOSPESO_TEMPO'
+}
 
 export function appellativo(g: Genere): string {
   return g === Genere.M ? 'Prof.' : 'Prof.ssa';

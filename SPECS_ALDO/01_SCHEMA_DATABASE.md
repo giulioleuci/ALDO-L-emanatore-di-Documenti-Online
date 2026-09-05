@@ -45,6 +45,7 @@ Lo script orchestratore SGSA è associato a un unico foglio di calcolo **Master 
 | **LOG_DOCS**            | Audit trail dei documenti generati                       |
 | **LOG_FOLD**            | Audit trail delle cartelle create su Drive               |
 | **LOG_MAIL**            | Audit trail delle email inviate                          |
+| **LOG_JOB**             | Storico delle run dei job batch (riepilogo per esecuzione) |
 
 ---
 
@@ -513,6 +514,31 @@ Audit trail di ogni email inviata dal sistema.
 | `ALLEGATI`    | JSON         | —          | —            | Riferimenti della mail reale: `{"docs":["DriveFileId"],"folders":["DriveFolderId"],"attach":["DriveFileUrl"],"logicalTargetId":"..."}`; `docs`/`folders` sono gli asset collegati nel corpo HTML, `attach` conserva i link ai file inviati come allegati reali. `logicalTargetId` è sempre presente; `testMode` è un marker opzionale, assente per gli invii reali. Le preview registrano la stessa forma con `"testMode":true` e sono escluse dal duplicate-history lookup |
 | `ERRORE`      | String       | —          | —            | Dettaglio dell'errore (se STATO = ERROR)         |
 | `TESTO`       | String       | —          | —            | Corpo email in chiaro (HTML→testo, troncato)     |
+
+---
+
+### LOG_JOB
+
+Storico append-only delle run dei job batch (`DocumentBatchService`, `EmailBatchService`, `EmailRetryService`, `ImportService`): una riga per esecuzione (dettagli e motivazione in `SPECS_ALDO/NEW_TABLE_LOG_JOB.md`).
+
+| Colonna            | Tipo   | PK (parte) | FK          | Descrizione                                                                                                                        |
+| ------------------ | ------ | ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `ID_JOB`           | String | ✅         | —           | UUID del job (stabile attraverso tutti i resume)                                                                                    |
+| `ESECUZIONE`       | Number | ✅         | —           | 0 = prima esecuzione; N = N-esimo resume (trigger di timeout o, per EmailBatchService, un riavvio dopo sospensione quota)           |
+| `TIPO`             | String | —          | —           | Tipo del job registrato nel JobDefinitionRegistry: `GENERAZIONE_DOCUMENTI_CLASSI` / `INVIO_EMAIL_BATCH` / `RETRY_EMAIL_BATCH` / `IMPORT_CHUNKED` |
+| `ID_CONFIG`        | String | —          | —           | ID della configurazione (CONF_DOC.ID o CONF_MAIL.ID) su cui opera il job; vuoto per RETRY_EMAIL_BATCH (nessuno scope di config)      |
+| `NOME_CONFIG`      | String | —          | —           | Nome leggibile della configurazione (CONF_DOC.TIPO / CONF_MAIL.OGGETTO)                                                             |
+| `STATO`            | String | —          | —           | Enum: `COMPLETATO` / `COMPLETATO_CON_ERRORI` / `FALLITO` / `SOSPESO_QUOTA` / `SOSPESO_TEMPO`                                        |
+| `TOTALE_TASK`      | Number | —          | —           | Numero totale di target da processare in questa esecuzione                                                                          |
+| `COMPLETATI_OK`    | Number | —          | —           | Task processati con successo in questa esecuzione                                                                                   |
+| `FALLITI`          | Number | —          | —           | Task che hanno generato errore in questa esecuzione                                                                                 |
+| `LISTA_FALLIMENTI` | JSON   | —          | —           | Array di stringhe `"target: motivo"`; troncato se supera il cap di cella Sheets                                                     |
+| `DURATA_SEC`       | Number | —          | —           | Secondi di esecuzione effettiva di questa esecuzione (`FINE` − `INIZIO`)                                                            |
+| `INIZIO`           | String | —          | —           | Timestamp di inizio di questa esecuzione                                                                                            |
+| `FINE`             | String | —          | —           | Timestamp di fine di questa esecuzione                                                                                              |
+| `ESEGUITO_DA`      | String | —          | —           | Email dell'utente che ha lanciato il job originale, propagata attraverso ogni resume                                                |
+
+**Nota `SOSPESO_TEMPO`:** JobRunnerLib interrompe il generator al timeout senza dargli la possibilità di scrivere; la riga viene quindi ricostruita a posteriori dal resume successivo (se avviene). Un job sospeso per timeout il cui trigger non riparte mai non produce questa riga (limite noto, accettato).
 
 ---
 

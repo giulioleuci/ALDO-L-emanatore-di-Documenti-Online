@@ -19,7 +19,8 @@ import {
   COL_CONF_IMP,
   COL_LOG_DOCS,
   COL_LOG_FOLD,
-  COL_LOG_MAIL
+  COL_LOG_MAIL,
+  COL_LOG_JOB
 } from '../../config/schema';
 import { INDIRIZZI, MATERIE_PER_INDIRIZZO, MATERIE_PUNTATE } from './fixtures';
 
@@ -55,5 +56,6 @@ export const HEADERS: Record<string, string[]> = {
   [TABLE.CONF_IMP]: Object.values(COL_CONF_IMP),
   [TABLE.LOG_DOCS]: Object.values(COL_LOG_DOCS),
   [TABLE.LOG_FOLD]: Object.values(COL_LOG_FOLD),
-  [TABLE.LOG_MAIL]: Object.values(COL_LOG_MAIL)
+  [TABLE.LOG_MAIL]: Object.values(COL_LOG_MAIL),
+  [TABLE.LOG_JOB]: Object.values(COL_LOG_JOB)
 };

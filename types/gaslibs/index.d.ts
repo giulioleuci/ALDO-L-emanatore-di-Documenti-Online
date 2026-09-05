@@ -28,6 +28,16 @@ declare global {
     reason?: string;
   }
 
+  /** End-of-job multi-line report (job type, run count, cumulative real duration, task totals, failure detail). */
+  interface JobReportDetails {
+    jobType: string;
+    runCount?: number;
+    totalDurationMs?: number;
+    totale?: number;
+    falliti?: number;
+    dettagliFalliti?: string[];
+  }
+
   class LoggerService {
     trace(msg: string, ...args: unknown[]): void;
     debug(msg: string, ...args: unknown[]): void;
@@ -60,6 +70,7 @@ declare global {
       itemDetails?: LogDetails,
       position?: TreePosition
     ): this;
+    logJobReport(details: JobReportDetails): this;
     withPosition<T>(position: TreePosition, callback: () => T): T;
   }
 

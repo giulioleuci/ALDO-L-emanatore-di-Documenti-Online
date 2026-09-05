@@ -55,6 +55,8 @@ import { StoricoDocumentiService } from '../../../src/application/storico/Storic
 const NOW = new Date('2026-07-01T09:00:00Z');
 const fakeLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
+const fakeActiveUser = { getEmail: () => 'test@example.com' };
+
 function container() {
   const db = new FakeDatabase(fixtureTables());
   return buildAldoContainer({
@@ -64,7 +66,8 @@ function container() {
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),
     expressionEngine: new ExpressionEngineFacade(),
-    now: NOW
+    now: NOW,
+    activeUser: fakeActiveUser
   });
 }
 
@@ -348,7 +351,8 @@ describe('buildAldoContainer — optional generator strategies', () => {
       gmail: new FakeGmailFacade(),
       templates: new FakeTemplateEngine(),
       expressionEngine: new ExpressionEngineFacade(),
-      now: NOW
+      now: NOW,
+      activeUser: fakeActiveUser
     };
   }
 
@@ -372,7 +376,9 @@ describe('buildAldoContainer — optional generator strategies', () => {
       )
     ).toThrow('SHEET_CON_MATERIE_E_PERMESSI');
     expect(() =>
-      factory.resolve(strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).toThrow('DOCUMENTO_CON_TABELLE_IMPORTATE');
   });
 
@@ -396,7 +402,9 @@ describe('buildAldoContainer — optional generator strategies', () => {
       )
     ).not.toThrow();
     expect(() =>
-      factory.resolve(strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).toThrow('DOCUMENTO_CON_TABELLE_IMPORTATE');
   });
 
@@ -408,7 +416,9 @@ describe('buildAldoContainer — optional generator strategies', () => {
     });
     const factory = c.get<DocumentStrategyFactory>('strategyFactory');
     expect(() =>
-      factory.resolve(strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        strategyConfig({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).not.toThrow();
   });
 
@@ -784,8 +794,8 @@ test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicat
   monitor.progress = [];
   expect(drain('job_piani_2')).toMatchObject({ success: true, totale: 2 });
   expect(monitor.progress.map(({ message }) => message)).toEqual([
-    expect.stringMatching(/^Document skipped: a1@school\.it:PEI \(SKIPPED in \d+ms\)$/),
-    expect.stringMatching(/^Document skipped: a1@school\.it:PDP_BES \(SKIPPED in \d+ms\)$/)
+    expect.stringMatching(/^✔️ Document skipped: a1@school\.it:PEI \(SKIPPED in \d+ms\)$/),
+    expect.stringMatching(/^✔️ Document skipped: a1@school\.it:PDP_BES \(SKIPPED in \d+ms\)$/)
   ]);
   expect(drive.copies).toHaveLength(2);
 });

@@ -3,12 +3,18 @@ import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSh
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
 import type { LogEmail } from '../../domain/entities/LogEmail';
 import type { EmailNotificationService } from './EmailNotificationService';
+import { JOB_LABEL_INVIO_EMAIL } from './EmailBatchService';
 import { escapeHtml } from '../email/boxes';
+import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
+import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
+import { StatoJob } from '../../domain/value-objects/enums';
 
 interface EmailRetryOptions {
   /** Give up after this many failed attempts for the same pattern/logical target (default 3, 11 §16). */
   maxTentativi?: number;
   logger?: LoggerService;
+  logJob?: ILogJobRepository;
+  activeUser?: IActiveUserFacade;
 }
 
 interface RetryResult {
@@ -32,6 +38,17 @@ export const JOB_TYPE_RETRY_EMAIL = 'RETRY_EMAIL_BATCH';
  */
 interface RetryResumeState extends RetryResult {
   processedKeys: string[];
+  /** Groups that did not succeed this run (permanent or still failing) — cumulative across timeout-resumes, for the end-of-job summary. */
+  failedKeys: string[];
+  /** Number of container executions (1 = no trigger resume yet) this job launch has run across — see `retryHandler` doc. */
+  runCount?: number;
+  /** Cumulative real (busy) execution time in ms across every run of this job launch — see `retryHandler` doc. */
+  totalDurationMs?: number;
+  jobId?: string;
+  /** Email of the user who launched the job originally, propagated across every resume (LOG_JOB.ESEGUITO_DA, ref NEW_TABLE_LOG_JOB.md). */
+  eseguitoDa?: string;
+  /** ISO start timestamp of the execution that yielded this checkpoint — used to backfill a SOSPESO_TEMPO LOG_JOB row on the next resume (ref NEW_TABLE_LOG_JOB.md "Dove si scrive" §3). */
+  esecuzioneIniziata?: string;
 }
 
 /** Checkpoint yielded by `retryHandler` once per failed-group batch. */
@@ -58,6 +75,8 @@ export interface RetryCheckpoint extends RetryResumeState {
 export class EmailRetryService {
   private readonly maxTentativi: number;
   private readonly logger: LoggerService;
+  private readonly logJob: ILogJobRepository | undefined;
+  private readonly activeUser: IActiveUserFacade | undefined;
 
   constructor(
     private readonly logMail: ILogEmailRepository,
@@ -68,6 +87,24 @@ export class EmailRetryService {
   ) {
     this.maxTentativi = options.maxTentativi ?? 3;
     this.logger = options.logger ?? new LoggerService();
+    this.logJob = options.logJob;
+    this.activeUser = options.activeUser;
+  }
+
+  /** Container-execution start time for the run currently in progress (see `retryHandler` doc). */
+  private containerStartedAt = Date.now();
+  /** Number of container executions (including this one) this job launch has run across. */
+  private runCount = 1;
+  /** Cumulative real (busy) execution time in ms from every prior run of this job launch. */
+  private priorDurationMs = 0;
+  /** LOG_JOB.ESEGUITO_DA for the run currently in progress — set once at generator entry. */
+  private eseguitoDa = '';
+  /** LOG_JOB.INIZIO for the run currently in progress (ISO) — set once at generator entry. */
+  private esecuzioneIniziata = '';
+
+  /** Prior runs' busy time plus elapsed time in the run currently in progress. */
+  private elapsedTotalMs(): number {
+    return this.priorDurationMs + (Date.now() - this.containerStartedAt);
   }
 
   private semantic(
@@ -140,13 +177,24 @@ export class EmailRetryService {
    * STATO=ERROR).
    */
   *retryHandler(
-    params: JobHandlerParams & { jobId?: string }
+    params: JobHandlerParams & { jobId?: string; eseguitoDa?: string }
   ): Generator<RetryCheckpoint, RetryResult, void> {
     const resume = (params.resumeState ?? null) as RetryResumeState | null;
+    this.containerStartedAt = Date.now();
+    this.runCount = (resume?.runCount ?? 0) + 1;
+    this.priorDurationMs = resume?.totalDurationMs ?? 0;
+    this.eseguitoDa = String(params.eseguitoDa ?? resume?.eseguitoDa ?? '');
+    this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
+    const jobId = String(params.jobId ?? resume?.jobId ?? 'retry_email');
     const groups = this.groupFailed();
     this.semantic('logBatchStart', [groups.length], `EmailRetry: ${groups.length} groups`);
 
+    if (resume !== null && this.runCount >= 2) {
+      this.backfillSospesoTempo(jobId, groups.length, resume);
+    }
+
     const processedKeys = resume ? resume.processedKeys.slice() : [];
+    const failedKeys = resume?.failedKeys?.slice() ?? [];
     const alreadyProcessed = new Set(processedKeys);
     const pending = groups.filter(([key]) => !alreadyProcessed.has(key));
 
@@ -154,24 +202,108 @@ export class EmailRetryService {
       retried: resume?.retried ?? 0,
       permanent: resume?.permanent ?? 0
     };
-    for (const [key, group] of pending) {
-      const safeKey = PiiRedactor.redact(key);
-      this.semantic(
-        'logItemStart',
-        [processedKeys.length + 1, groups.length, 'Gruppo', safeKey, 'RETRY'],
-        `EmailRetry: group ${processedKeys.length + 1}/${groups.length} ${safeKey}`
-      );
-      result = this.mergeResult(result, this.processGroup(group));
-      processedKeys.push(key);
-      yield {
-        ...result,
-        processedKeys: processedKeys.slice(),
-        groupIndex: processedKeys.length,
-        totalGroups: groups.length,
-        percentage: groups.length === 0 ? 0 : (processedKeys.length / groups.length) * 100
-      };
+    try {
+      for (const [key, group] of pending) {
+        const safeKey = PiiRedactor.redact(key);
+        this.semantic(
+          'logItemStart',
+          [processedKeys.length + 1, groups.length, 'Gruppo', safeKey, 'RETRY'],
+          `EmailRetry: group ${processedKeys.length + 1}/${groups.length} ${safeKey}`
+        );
+        const retriedBefore = result.retried;
+        result = this.mergeResult(result, this.processGroup(group));
+        if (result.retried === retriedBefore) failedKeys.push(safeKey);
+        processedKeys.push(key);
+        yield {
+          ...result,
+          processedKeys: processedKeys.slice(),
+          failedKeys: failedKeys.slice(),
+          groupIndex: processedKeys.length,
+          totalGroups: groups.length,
+          percentage: groups.length === 0 ? 0 : (processedKeys.length / groups.length) * 100,
+          runCount: this.runCount,
+          totalDurationMs: this.elapsedTotalMs(),
+          jobId,
+          eseguitoDa: this.eseguitoDa,
+          esecuzioneIniziata: this.esecuzioneIniziata
+        };
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logJob?.append({
+        idJob: jobId,
+        esecuzione: this.runCount - 1,
+        tipo: JOB_TYPE_RETRY_EMAIL,
+        idConfig: '',
+        nomeConfig: '',
+        stato: StatoJob.FALLITO,
+        totaleTask: groups.length,
+        completatiOk: Math.max(0, processedKeys.length - failedKeys.length),
+        falliti: failedKeys.length,
+        listaFallimenti: [...failedKeys, reason],
+        durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),
+        inizio: this.esecuzioneIniziata,
+        fine: new Date().toISOString(),
+        eseguitoDa: this.eseguitoDa
+      });
+      throw error;
     }
+    // Terminal return (generator done): print the summary for this job launch,
+    // cumulative across every timeout-resume — total is groups actually attempted,
+    // not `groups.length`, since that count can shrink between separate launches
+    // as groups succeed (see RetryResumeState doc comment).
+    const total = processedKeys.length;
+    this.logger.logJobReport({
+      jobType: JOB_LABEL_INVIO_EMAIL,
+      runCount: this.runCount,
+      totalDurationMs: this.elapsedTotalMs(),
+      totale: total,
+      falliti: failedKeys.length,
+      dettagliFalliti: failedKeys
+    });
+    this.logJob?.append({
+      idJob: jobId,
+      esecuzione: this.runCount - 1,
+      tipo: JOB_TYPE_RETRY_EMAIL,
+      idConfig: '',
+      nomeConfig: '',
+      stato: failedKeys.length === 0 ? StatoJob.COMPLETATO : StatoJob.COMPLETATO_CON_ERRORI,
+      totaleTask: total,
+      completatiOk: Math.max(0, total - failedKeys.length),
+      falliti: failedKeys.length,
+      listaFallimenti: failedKeys,
+      durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),
+      inizio: this.esecuzioneIniziata,
+      fine: new Date().toISOString(),
+      eseguitoDa: this.eseguitoDa
+    });
     return result;
+  }
+
+  /** Backfills the SOSPESO_TEMPO row for the execution JobRunnerLib just cut off — the app generator never gets a chance to log at the actual timeout (ref NEW_TABLE_LOG_JOB.md "Dove si scrive" §3). */
+  private backfillSospesoTempo(jobId: string, totale: number, resume: RetryResumeState): void {
+    if (resume.esecuzioneIniziata === undefined) return;
+    const fine = new Date().toISOString();
+    const durataSec = Math.max(
+      0,
+      (Date.parse(fine) - Date.parse(resume.esecuzioneIniziata)) / 1000
+    );
+    this.logJob?.append({
+      idJob: jobId,
+      esecuzione: this.runCount - 2,
+      tipo: JOB_TYPE_RETRY_EMAIL,
+      idConfig: '',
+      nomeConfig: '',
+      stato: StatoJob.SOSPESO_TEMPO,
+      totaleTask: totale,
+      completatiOk: Math.max(0, resume.processedKeys.length - resume.failedKeys.length),
+      falliti: resume.failedKeys.length,
+      listaFallimenti: resume.failedKeys,
+      durataSec,
+      inizio: resume.esecuzioneIniziata,
+      fine,
+      eseguitoDa: resume.eseguitoDa ?? ''
+    });
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */
@@ -189,7 +321,7 @@ export class EmailRetryService {
     return runner.run(
       jobName,
       JOB_TYPE_RETRY_EMAIL,
-      { jobId: jobName },
+      { jobId: jobName, eseguitoDa: this.activeUser?.getEmail() ?? '' },
       (queue) => this.registerJobHandlers(queue),
       forceRestart,
       maxDurationMs

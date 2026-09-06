@@ -14,7 +14,6 @@ import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvi
 import { StoricoClassiService, type CattedraStorica } from '../../storico/StoricoClassiService';
 import { getClasseEntity } from '../techEntities';
 import { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
-import { MateriaId } from '../../../domain/value-objects/MateriaId';
 
 interface RuoliCorrente {
   titolare: string | null;
@@ -122,26 +121,36 @@ export class MaterieClasseProvider implements ContextProvider {
               slot.specifica === null
                 ? slot.materia.value
                 : `${slot.materia.value}.${slot.specifica}`;
-            const materiaId = MateriaId.of(materia);
-            const variazioni = variazioniCorrenti
-              .filter((x) => x.applicaAMateria(materiaId))
-              .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime())
-              .map((x) => ({ nuovoTitolare: x.nuovoTitolare, dal: x.getDecorrenza() }));
-            const supplenze = supplenzeCorrenti
-              .filter((x) => x.applicaAContesto(classe.classeId, materiaId))
-              .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime())
-              .map((x) => ({
-                supplente: x.supplente,
-                dal: x.getPeriodo().dal,
-                al: x.getPeriodo().al
-              }));
-            return slot.actorEmails.map((titolareOriginario) => ({
-              materia,
-              isItp: slot.kind === 'ITP',
-              titolareOriginario,
-              variazioni,
-              supplenze
-            }));
+            const variazioniApplicabili = variazioniCorrenti
+              .filter((x) => x.applicaAMateria(slot.materia))
+              .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime());
+            const supplenzeApplicabili = supplenzeCorrenti
+              .filter((x) => x.applicaAContesto(classe.classeId, slot.materia))
+              .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime());
+            return slot.actorEmails.map((titolareOriginario) => {
+              const titolari = new Set([titolareOriginario]);
+              const variazioni = variazioniApplicabili
+                .filter((x) => {
+                  if (!titolari.has(x.titolare)) return false;
+                  titolari.add(x.nuovoTitolare);
+                  return true;
+                })
+                .map((x) => ({ nuovoTitolare: x.nuovoTitolare, dal: x.getDecorrenza() }));
+              const supplenze = supplenzeApplicabili
+                .filter((x) => titolari.has(x.titolare))
+                .map((x) => ({
+                  supplente: x.supplente,
+                  dal: x.getPeriodo().dal,
+                  al: x.getPeriodo().al
+                }));
+              return {
+                materia,
+                isItp: slot.kind === 'ITP',
+                titolareOriginario,
+                variazioni,
+                supplenze
+              };
+            });
           });
     for (const materiaVm of materie) {
       const materia = this.materie.findById(materiaVm.sigla);

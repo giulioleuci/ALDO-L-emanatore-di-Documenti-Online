@@ -235,9 +235,56 @@ describe('MaterieClasseProvider', () => {
           ]
         },
         itpTimeline: {
-          titolareOriginario: expect.objectContaining({ email: 'itp@scuola.it' })
+          titolareOriginario: expect.objectContaining({ email: 'itp@scuola.it' }),
+          variazioni: [],
+          supplenze: []
         }
       });
+    });
+
+    it('preserves current dotted specifica and ITP slot identity', () => {
+      const persone = ['guitar@scuola.it', 'guitar-itp@scuola.it'].map((email) =>
+        Docente.fromData({ EMAIL: email, COGNOME: 'Rossi', NOME: 'Mario', GENERE: 'M' })
+      );
+      const classiCorrenti: IClasseRepository = {
+        getStorico: () => [],
+        getTeachingSlots: () => [
+          {
+            column: 'INTERPRET.CHITARRA',
+            materia: MateriaId.of('INTERPRET'),
+            kind: 'SPECIFICA',
+            specifica: 'CHITARRA',
+            actorEmails: ['guitar@scuola.it']
+          },
+          {
+            column: 'INTERPRET.CHITARRA.itp',
+            materia: MateriaId.of('INTERPRET'),
+            kind: 'ITP',
+            specifica: 'CHITARRA',
+            actorEmails: ['guitar-itp@scuola.it']
+          }
+        ]
+      } as unknown as IClasseRepository;
+      const provider = new MaterieClasseProvider(
+        materie,
+        {
+          findById: (email: string) => persone.find((docente) => docente.id === email) ?? null
+        } as unknown as IDocenteRepository,
+        storicoDb,
+        classiCorrenti,
+        { findByClasse: () => [] } as unknown as IVariazioneCattedraRepository,
+        { findAll: () => [] } as unknown as ISupplenzaRepository
+      );
+      const cdu = cduConClasse([
+        docenteCdc('Mario Rossi', 'guitar@scuola.it', 'INTERPRET.CHITARRA'),
+        docenteCdc('Mario Rossi', 'guitar-itp@scuola.it', 'INTERPRET.CHITARRA', true)
+      ]);
+
+      provider.provide(cdu, params, makeOptions({ includiStorico: true }));
+
+      const continuita = cdu.focus.classe!.materie!.elenco[0]!.continuita;
+      expect(continuita?.titolareTimeline?.titolareOriginario?.email).toBe('guitar@scuola.it');
+      expect(continuita?.itpTimeline?.titolareOriginario?.email).toBe('guitar-itp@scuola.it');
     });
 
     it('does not attach continuita when a required dependency is missing, even with includiStorico true', () => {

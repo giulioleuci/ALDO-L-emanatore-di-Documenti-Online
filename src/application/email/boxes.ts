@@ -50,12 +50,12 @@ interface PianoPersonalizzatoRow {
   generatoreId: string;
   isNotificato: boolean;
   studente?: { nomeCompleto: string; email: string };
+  classe?: { nome: string };
 }
 
 const DEFAULT_PIANI_PERS_TEMPLATE =
-  '<li><a href="{{corrente.link}}" target="_blank">{{corrente.studente.nomeCompleto}} - {{corrente.sottotipoLabel}}</a>' +
-  '{{#storico}} — Si invia anche il link al piano dell\'anno precedente: ' +
-  '<a href="{{link}}" target="_blank">{{nome}}</a> ({{anno}}){{/storico}}</li>';
+  '<li><a href="{{corrente.link}}" target="_blank">{{corrente.studente.nomeCompleto}} - {{corrente.classe.nome}} - {{corrente.sottotipoLabel}}</a>' +
+  '{{#storico}} - <a href="{{link}}" target="_blank">piano dell\'anno precedente</a>{{/storico}}</li>';
 
 /**
  * One rendered box exposed at `cdu.render.boxes[TIPO_BOX]` and, for every
@@ -257,7 +257,8 @@ function renderPianiPersBox(
       .map((d) => {
         const href = escapeHtml(safeUrl(d.link));
         const alunno = d.studente !== undefined ? escapeHtml(d.studente.nomeCompleto) : '';
-        const testo = `${alunno} - ${escapeHtml(d.sottotipoLabel)}`;
+        const classeNome = d.classe !== undefined ? escapeHtml(d.classe.nome) : '';
+        const testo = `${alunno} - ${classeNome} - ${escapeHtml(d.sottotipoLabel)}`;
         return `<li><a href="${href}" target="_blank">${testo}</a></li>`;
       })
       .join('');
@@ -297,6 +298,9 @@ function renderPianiPersBox(
                   email: escapeHtml(corrente.studente.email)
                 }
               }
+            : {}),
+          ...(corrente.classe !== undefined
+            ? { classe: { ...corrente.classe, nome: escapeHtml(corrente.classe.nome) } }
             : {})
         },
         storico: storicoCorrente

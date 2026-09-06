@@ -185,6 +185,10 @@ test('PianiPersClasseProvider: aggregates active students across every class in 
   const cdu = build(t, { anniStorici: () => [] }, ['5A', '3B']);
   const elenco = cdu.focus.classe!.pianiPersonalizzati!.elenco;
   expect(elenco.map((i) => i.studente?.email).sort()).toEqual(['a1@school.it', 'b1@school.it']);
+  const a1Item = elenco.find((i) => i.studente?.email === 'a1@school.it');
+  const b1Item = elenco.find((i) => i.studente?.email === 'b1@school.it');
+  expect(a1Item?.classe).toEqual({ nome: '5A' });
+  expect(b1Item?.classe).toEqual({ nome: '3B' });
 });
 
 test('PianiPersClasseProvider: storico LazyRef resolves empty (no DB opened) when includiStorico is false', () => {

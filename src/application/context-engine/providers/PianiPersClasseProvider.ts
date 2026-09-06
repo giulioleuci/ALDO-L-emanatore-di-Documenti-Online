@@ -1,5 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu, PianoPersonalizzatoVM } from '../Cdu';
+import type { Cdu, ClasseRiferimentoVM, PianoPersonalizzatoVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
@@ -48,12 +48,13 @@ export class PianiPersClasseProvider implements ContextProvider {
     const elenco: PianoPersonalizzatoVM[] = classIds.flatMap((id) => {
       const classe = this.classi.findById(ClasseId.of(id));
       if (classe === null) return [];
+      const classeRef: ClasseRiferimentoVM = { nome: classe.nome };
       return this.classi.getStudenti(classe, true).flatMap((alunno) => {
         const piani = this.alunni.getPiani(alunno);
         if (piani.length === 0) return [];
         emails.add(alunno.email.value);
         const studente: StudenteRef = { nomeCompleto: alunno.cognomeNome, email: alunno.email.value };
-        return piani.flatMap((piano) => this.itemsPerPiano(alunno, piano, studente));
+        return piani.flatMap((piano) => this.itemsPerPiano(alunno, piano, studente, classeRef));
       });
     });
     const nonVerbalizzati = elenco.filter((item) => !item.isVerbalizzato);
@@ -76,20 +77,30 @@ export class PianiPersClasseProvider implements ContextProvider {
     };
   }
 
-  private itemsPerPiano(alunno: Alunno, piano: Piano, studente: StudenteRef): PianoPersonalizzatoVM[] {
+  private itemsPerPiano(
+    alunno: Alunno,
+    piano: Piano,
+    studente: StudenteRef,
+    classe: ClasseRiferimentoVM
+  ): PianoPersonalizzatoVM[] {
     const matches = this.logDocs
       .findByUtente(alunno.email)
       .filter((l) => l.tipo === TIPO_PIANO_PERS && l.getSottotipo() === String(piano.tipo));
-    if (matches.length === 0) return [this.placeholder(piano, studente)];
+    if (matches.length === 0) return [this.placeholder(piano, studente, classe)];
     return matches.map((l) => ({
       ...buildDocumentoLogVm(l),
       isVerbalizzato: l.getStato() === StatoDocumento.VERBALIZZATO,
       studente,
-      hasStudente: true
+      hasStudente: true,
+      classe
     }));
   }
 
-  private placeholder(piano: Piano, studente: StudenteRef): PianoPersonalizzatoVM {
+  private placeholder(
+    piano: Piano,
+    studente: StudenteRef,
+    classe: ClasseRiferimentoVM
+  ): PianoPersonalizzatoVM {
     return {
       id: null,
       hasId: false,
@@ -108,7 +119,8 @@ export class PianiPersClasseProvider implements ContextProvider {
       dataCreazioneBreve: '',
       isVerbalizzato: false,
       studente,
-      hasStudente: true
+      hasStudente: true,
+      classe
     };
   }
 }

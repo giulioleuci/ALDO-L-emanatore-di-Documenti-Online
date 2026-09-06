@@ -1274,6 +1274,7 @@ PianoPersonalizzatoVM:
   isVerbalizzato: boolean # true se stato = VERBALIZZATO
   studente: PersonaRiferimentoVM | null # Proprietario nella vista aggregata di classe
   hasStudente: boolean # true se studente è valorizzato
+  classe: ClasseRiferimentoVM # Classe dello studente; distingue le righe quando il box aggrega più classi (classiCompetenza)
 ```
 
 `studente` è valorizzato nelle collezioni di classe e vale `null` nelle collezioni già focalizzate su un singolo alunno.

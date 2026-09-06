@@ -654,17 +654,17 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
       {
         nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
         generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
       },
       {
         nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
         generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', isNotificato: true,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
       },
       {
         nome: 'PDP a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
         generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', isNotificato: false,
-        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
+        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }, classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => [
@@ -688,10 +688,10 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   const html = out.boxes.perId['piani_pers_da_inviare_0']!.html;
   expect((html.match(/Piani personalizzati da notificare/g) ?? [])).toHaveLength(1);
   const [peiRow, pdpRow] = html.split('</li>');
-  expect(html).toContain('VERDI ANNA - PEI');
-  expect(html).toContain('NERI PAOLO - PDP (BES)');
-  expect(html).not.toContain('VERDI ANNA - PDP (BES)'); // NOTIFICATO, excluded
-  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('Si invia anche il link al piano dell\'anno precedente');
+  expect(html).toContain('VERDI ANNA - 5A - PEI');
+  expect(html).toContain('NERI PAOLO - 5A - PDP (BES)');
+  expect(html).not.toContain('VERDI ANNA - 5A - PDP (BES)'); // NOTIFICATO, excluded
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('piano dell\'anno precedente');
   expect(peiRow).toContain('http://d/old-pei');
   expect(peiRow).not.toContain('http://d/old-pdp'); // same ID_GEN, wrong subtype
   expect(pdpRow).not.toContain('http://d/old-pdp'); // same subtype, different student
@@ -705,7 +705,7 @@ test('piani_pers_da_inviare: always uses its built-in row and dark-red border, i
       {
         nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
         sottotipoLabel: 'PDP (BES)', generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => [
@@ -733,10 +733,11 @@ test('piani_pers_da_inviare: always uses its built-in row and dark-red border, i
     templates
   );
   const html = out.boxes.perId['piani_pers_da_inviare_0']!.html;
-  expect(html).toContain('VERDI ANNA - PDP (BES)');
+  expect(html).toContain('VERDI ANNA - 5A - PDP (BES)');
   expect(html).toContain('href="http://d/1"');
-  expect(html).toContain('PDP a1 anno scorso');
-  expect(html).not.toContain('PEI a1 anno scorso');
+  expect(html).toContain('href="http://d/old-pdp"');
+  expect(html).toContain('piano dell\'anno precedente');
+  expect(html).not.toContain('http://d/old-pei');
   expect(html).toContain('border-left:4px solid #C62828');
 });
 
@@ -749,7 +750,7 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
       {
         nome: 'PDP corrente', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
         sottotipoLabel: 'PDP (BES)', generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => {
@@ -765,7 +766,7 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
     templates
   );
 
-  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('VERDI ANNA - PDP (BES)');
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('VERDI ANNA - 5A - PDP (BES)');
   expect(warn).toHaveBeenCalledWith(
     expect.stringContaining('Piani personalizzati: storico non disponibile')
   );
@@ -807,17 +808,17 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
       {
         nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
         generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
       },
       {
         nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
         generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', isNotificato: true,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
       },
       {
         nome: 'PEI a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
         generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', isNotificato: true,
-        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }
+        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }, classe: { nome: '5A' }
       }
     ]
   );
@@ -829,9 +830,9 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
     templates
   );
   const html = out.boxes.perId['piani_pers_inviati_0']!.html;
-  expect(html).toContain('VERDI ANNA - PDP (BES)');
-  expect(html).toContain('NERI PAOLO - PEI');
-  expect(html).not.toContain('VERDI ANNA - PEI'); // NOTIFICATO absent, excluded
+  expect(html).toContain('VERDI ANNA - 5A - PDP (BES)');
+  expect(html).toContain('NERI PAOLO - 5A - PEI');
+  expect(html).not.toContain('VERDI ANNA - 5A - PEI'); // NOTIFICATO absent, excluded
   expect(html).not.toContain('Si invia anche');
 });
 

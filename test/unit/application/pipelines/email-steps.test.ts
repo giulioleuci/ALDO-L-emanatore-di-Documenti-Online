@@ -369,7 +369,7 @@ describe('email pipeline operational log details', () => {
     const ordered = runThroughRender(w);
 
     expect(ordered).toHaveLength(1);
-    expect(ordered[0]).toContain('VERDI ANNA - PEI');
+    expect(ordered[0]).toContain('VERDI ANNA - 5A - PEI');
     expect(w.ctx.get('shouldSend')).toBe(false);
   });
 

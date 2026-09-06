@@ -399,6 +399,8 @@ export interface PianoPersonalizzatoVM extends DocumentoLogVM {
   isVerbalizzato: boolean;
   studente: PersonaRiferimentoVM | null;
   hasStudente: boolean;
+  /** Classe di appartenenza dello studente: necessaria a distinguere le righe quando il box aggrega più classi (classiCompetenza). */
+  classe: ClasseRiferimentoVM;
 }
 
 export interface SupplenzaAggregataVM {

@@ -138,6 +138,7 @@ test('a trashed logged folder is replaced by a fresh one, updating the same LOG_
   expect(rows[0]).toMatchObject({
     ID: res.folderId,
     PATH: 'Verbali/5',
+    LINK: `https://drive.google.com/drive/folders/${res.folderId}`,
     TIPO: 'CONF_VERBALE',
     CLASSI: '5A'
   });

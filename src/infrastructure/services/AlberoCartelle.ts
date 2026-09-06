@@ -73,10 +73,13 @@ export class AlberoCartelle {
         folderName(path)
       ),
       [COL_LOG_FOLD.PATH]: firstNonBlank(current?.[COL_LOG_FOLD.PATH], path),
-      [COL_LOG_FOLD.LINK]: firstNonBlank(
-        current?.[COL_LOG_FOLD.LINK],
-        `https://drive.google.com/drive/folders/${folderId}`
-      ),
+      [COL_LOG_FOLD.LINK]:
+        current !== null && String(current[COL_LOG_FOLD.ID]) !== folderId
+          ? `https://drive.google.com/drive/folders/${folderId}`
+          : firstNonBlank(
+              current?.[COL_LOG_FOLD.LINK],
+              `https://drive.google.com/drive/folders/${folderId}`
+            ),
       [COL_LOG_FOLD.CLASSI]: mergeCsv(current?.[COL_LOG_FOLD.CLASSI], options.classi),
       [COL_LOG_FOLD.UTENTI]: mergeCsv(current?.[COL_LOG_FOLD.UTENTI], options.utenti),
       [COL_LOG_FOLD.MATERIE]: mergeCsv(current?.[COL_LOG_FOLD.MATERIE], options.materie)

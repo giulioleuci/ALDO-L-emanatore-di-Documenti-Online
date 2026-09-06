@@ -1,4 +1,6 @@
 import { DriveServiceFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
+import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
+import { FakeDatabase } from '../../fakes/FakeDatabase';
 
 /**
  * A DriveService/PermissionService-shaped double matching the REAL vendored
@@ -86,6 +88,66 @@ function fakeDrive() {
 }
 
 const ROOT = 'root_folder_id';
+
+describe('folder status through the real vendored DriveService', () => {
+  const globals = globalThis as unknown as { Drive?: unknown };
+  const originalDrive = globals.Drive;
+
+  afterEach(() => {
+    if (originalDrive === undefined) delete globals.Drive;
+    else globals.Drive = originalDrive;
+  });
+
+  function realFacade(get: () => unknown) {
+    globals.Drive = {
+      Files: { get, list: () => ({ files: [] }), create: () => ({ id: 'replacement_folder' }) }
+    };
+    const values = new Map<string, string>();
+    const cache = {
+      get: (key: string) => values.get(key) ?? null,
+      put: (key: string, value: string) => values.set(key, value),
+      remove: (key: string) => values.delete(key)
+    };
+    const drive = Reflect.construct(DriveService, [
+      new LoggerService(), cache, new UtilsService(),
+      { executeWithRetry: (operation: () => unknown) => operation() }
+    ]) as DriveService;
+    return { drive, facade: new DriveServiceFacade(drive, {} as PermissionService, ROOT) };
+  }
+
+  test.each([false, true])('refetches incomplete cached metadata before returning trashed=%s', (trashed) => {
+    let metadata: Record<string, unknown> = { id: 'folder_1', name: 'Verbali' };
+    const get = jest.fn(() => metadata);
+    const { drive, facade } = realFacade(get);
+    drive.getFiles('folder_1', { fields: 'id,name' });
+    metadata = { id: 'folder_1', trashed };
+
+    expect(facade.isFolderTrashed('folder_1')).toBe(trashed);
+    expect(get).toHaveBeenLastCalledWith('folder_1', { fields: 'id,trashed' });
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  test('a confirmed 404 marks a logged folder as missing', () => {
+    const { facade } = realFacade(() => { throw Object.assign(new Error('Not found'), { code: 404 }); });
+    expect(facade.isFolderTrashed('folder_1')).toBe(true);
+  });
+
+  test.each([403, 429, 503])('propagates lookup error %s and preserves LOG_FOLD', (code) => {
+    const failure = Object.assign(new Error('Drive lookup failed'), { code });
+    const { facade } = realFacade(() => { throw failure; });
+    const logged = { ID: 'folder_1', PATH: 'Verbali', LINK: 'existing-link', CLASSI: '5A' };
+    const db = new FakeDatabase({ LOG_FOLD: [logged] });
+    const albero = new AlberoCartelle(facade, db);
+
+    expect(() => albero.findOrCreate('Verbali', { classi: '3B' })).toThrow(failure);
+    expect(db.table('LOG_FOLD').findAll()).toEqual([logged]);
+  });
+
+  test.each([null, { id: 'folder_1' }])('rejects an unconfirmed folder status: %j', (metadata) => {
+    const { facade } = realFacade(() => metadata);
+    expect(() => facade.isFolderTrashed('folder_1')).toThrow(/metadati.*folder_1/i);
+  });
+});
 
 test('createFolder creates nested path segments under the SGSA root and returns the leaf id', () => {
   const { drive, perms } = fakeDrive();

@@ -763,6 +763,7 @@ DestinatarioVM:
     hasElenco: boolean           # true se esiste almeno una cattedra
     numero: number               # Numero delle cattedre
     elencoDescrizione: string    # Classi e materie in forma stampabile; es. "3A — Matematica, Fisica"
+    orePot: number               # Ore settimanali di potenziamento da DOCENTI.ORE_POT; default 0
 
   comunicazione:
     salutoIniziale: string       # Formula completa di apertura dell'email; es. "Gentile prof.ssa BIANCHI,"

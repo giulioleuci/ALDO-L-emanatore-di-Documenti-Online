@@ -46,8 +46,8 @@ describe('GasUiFacade', () => {
     facade.mostraMessaggio('Importazioni', 'Operazione annullata: nessun ID fornito.');
     facade.mostraMessaggio('Importazioni', 'Errore: configurazione non trovata.');
 
-    expect(lines).toContain('[WARN] Operazione annullata: nessun ID fornito.');
-    expect(lines).toContain('[ERROR] Errore: configurazione non trovata.');
+    expect(lines).toContain('🔸 [WARN] Operazione annullata: nessun ID fornito.');
+    expect(lines).toContain('🔺 [ERROR] Errore: configurazione non trovata.');
     logSpy.mockRestore();
   });
 
@@ -75,7 +75,7 @@ describe('GasUiFacade', () => {
     logger.warn('UI warning');
     logger.error('UI error');
 
-    expect(lines).toContain('[WARN] UI warning');
-    expect(lines).toContain('[ERROR] UI error');
+    expect(lines).toContain('🔸 [WARN] UI warning');
+    expect(lines).toContain('🔺 [ERROR] UI error');
   });
 });

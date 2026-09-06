@@ -26096,8 +26096,14 @@ class DatasetValidator {
         }
         return;
       }
-      const nonEmptyRows = rows.filter(r => !rowIsEmpty(r));
-      violations.push(...this._applyRule(rule, nonEmptyRows, datasets, context));
+
+      const indexedRows = rows.map((row, rowIndex) => ({
+        row,
+        rowIndex
+      })).filter(({
+        row
+      }) => !rowIsEmpty(row));
+      violations.push(...this._applyRule(rule, indexedRows, datasets, context));
     });
     return {
       violations
@@ -26148,9 +26154,12 @@ class DatasetValidator {
     this._indexes.set(key, set);
     return set;
   }
-  _required(rule, rows) {
+  _required(rule, indexedRows) {
     const out = [];
-    rows.forEach((row, rowIndex) => {
+    indexedRows.forEach(({
+      row,
+      rowIndex
+    }) => {
       rule.columns.forEach(column => {
         if (cellToString(row[column]) === '') {
           out.push(this._violation(rule, rowIndex, column, ''));
@@ -26159,11 +26168,14 @@ class DatasetValidator {
     });
     return out;
   }
-  _enum(rule, rows) {
+  _enum(rule, indexedRows) {
     const allowEmpty = rule.allowEmpty !== false;
     const allowed = new Set(rule.values);
     const out = [];
-    rows.forEach((row, rowIndex) => {
+    indexedRows.forEach(({
+      row,
+      rowIndex
+    }) => {
       const value = cellToString(row[rule.column]);
       if (value === '' && allowEmpty) {
         return;
@@ -26177,9 +26189,12 @@ class DatasetValidator {
     });
     return out;
   }
-  _json(rule, rows) {
+  _json(rule, indexedRows) {
     const out = [];
-    rows.forEach((row, rowIndex) => {
+    indexedRows.forEach(({
+      row,
+      rowIndex
+    }) => {
       const raw = row[rule.column];
       if (raw === null || raw === undefined) {
         return;
@@ -26201,7 +26216,7 @@ class DatasetValidator {
     });
     return out;
   }
-  _foreignKey(rule, rows, datasets) {
+  _foreignKey(rule, indexedRows, datasets) {
     const target = this._index(datasets, rule.targetTable, rule.targetColumn);
     const allowEmpty = rule.allowEmpty !== false;
     const details = {
@@ -26209,7 +26224,10 @@ class DatasetValidator {
       targetColumn: rule.targetColumn
     };
     const out = [];
-    rows.forEach((row, rowIndex) => {
+    indexedRows.forEach(({
+      row,
+      rowIndex
+    }) => {
       const raw = cellToString(row[rule.column]);
       if (raw === '') {
         if (!allowEmpty) {
@@ -26230,7 +26248,7 @@ class DatasetValidator {
     });
     return out;
   }
-  _columnName(rule, rows, datasets) {
+  _columnName(rule, indexedRows, datasets) {
     const target = this._index(datasets, rule.targetTable, rule.targetColumn);
     const known = new Set(rule.knownColumns || []);
     const ignore = new Set(rule.ignore || []);
@@ -26241,7 +26259,9 @@ class DatasetValidator {
     };
     const seen = new Set();
     const out = [];
-    rows.forEach(row => {
+    indexedRows.forEach(({
+      row
+    }) => {
       Object.keys(row).forEach(column => {
         if (known.has(column) || ignore.has(column) || seen.has(column)) {
           return;
@@ -26255,9 +26275,12 @@ class DatasetValidator {
     });
     return out;
   }
-  _rowPredicate(rule, rows, context) {
+  _rowPredicate(rule, indexedRows, context) {
     const out = [];
-    rows.forEach((row, rowIndex) => {
+    indexedRows.forEach(({
+      row,
+      rowIndex
+    }) => {
       const hit = rule.check(row, context);
       if (!hit) {
         return;

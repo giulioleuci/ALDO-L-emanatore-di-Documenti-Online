@@ -323,8 +323,8 @@ function renderAssenzeBox(): string {
 }
 
 function renderCattedreBox(data: unknown): string {
-  const cattedre = data as CattedraVM[];
-  const righe = cattedre
+  const { elenco, orePot } = data as { elenco: CattedraVM[]; orePot?: unknown };
+  const righe = elenco
     .map((c) => {
       const materie = c.materie
         .map(
@@ -335,7 +335,11 @@ function renderCattedreBox(data: unknown): string {
       return `<li><strong>${escapeHtml(c.classe.nome)}</strong> — ${materie}</li>`;
     })
     .join('');
-  return wrapUl(righe);
+  if (!(typeof orePot === 'number' && Number.isFinite(orePot) && orePot > 0)) {
+    return wrapUl(righe);
+  }
+  const unita = new PluralizeFilter().execute(orePot, 'ora', 'ore');
+  return wrapUl(`${righe}<li>Ore di potenziamento: ${orePot} ${unita}</li>`);
 }
 
 /**
@@ -420,8 +424,8 @@ export function createBoxComposer(
   simple(
     'cattedre',
     'Cattedre',
-    (ctx) => ctx.get('destinatario.cattedre.elenco', []),
-    (d) => (d as unknown[]).length === 0
+    (ctx) => ctx.get('destinatario.cattedre', { elenco: [], orePot: 0 }),
+    (d) => (d as { elenco: unknown[] }).elenco.length === 0
   );
   // testo_dinamico: sempre visibile (MOSTRA_SE_VUOTO implicito, 11 §11); data = whole CDU.
   blocks.register({

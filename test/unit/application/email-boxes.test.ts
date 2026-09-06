@@ -314,6 +314,30 @@ function cattedraVm(overrides: Partial<{ nome: string; sigla: string; isITP: boo
   };
 }
 
+function cattedreCdu(orePot?: unknown): Record<string, unknown> {
+  const cdu = cduRecord();
+  cdu['destinatario'] = {
+    cattedre: {
+      elenco: [
+        {
+          classe: { nome: '5A', anno: 5, sezione: 'A' },
+          sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: 'Matematica' })],
+          hasMaterie: true,
+          numeroMaterie: 1,
+          materieDescrizione: 'Matematica',
+          materieSigle: 'MATE'
+        }
+      ],
+      hasElenco: true,
+      numero: 1,
+      elencoDescrizione: '5A',
+      ...(orePot === undefined ? {} : { orePot })
+    }
+  };
+  return cdu;
+}
+
 test('cattedre box renders one row per classe with its materie (design 2026-08-22)', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
@@ -355,6 +379,45 @@ test('cattedre box HTML-escapes a hostile materia nome (design 2026-08-22)', () 
   expect(out.boxes.perId['cattedre_0']!.html).not.toContain('<script>');
   expect(out.boxes.perId['cattedre_0']!.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
+
+test('cattedre box appends plural Ore di potenziamento as the last item', () => {
+  const templates = new FakeTemplateEngine();
+  const out = renderBoxes(
+    createBoxComposer(logger, templates),
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cattedreCdu(3),
+    materie(),
+    templates
+  );
+  expect(out.boxes.perId['cattedre_0']!.html).toContain('Ore di potenziamento: 3 ore');
+});
+
+test('cattedre box uses singular ora for one Ore di potenziamento', () => {
+  const templates = new FakeTemplateEngine();
+  const out = renderBoxes(
+    createBoxComposer(logger, templates),
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cattedreCdu(1),
+    materie(),
+    templates
+  );
+  expect(out.boxes.perId['cattedre_0']!.html).toContain('Ore di potenziamento: 1 ora');
+});
+
+test.each([undefined, 0, -1, NaN, Infinity])(
+  'cattedre box omits Ore di potenziamento for invalid value %p',
+  (orePot) => {
+    const templates = new FakeTemplateEngine();
+    const out = renderBoxes(
+      createBoxComposer(logger, templates),
+      confMail([{ TIPO_BOX: 'cattedre' }]),
+      cattedreCdu(orePot),
+      materie(),
+      templates
+    );
+    expect(out.boxes.perId['cattedre_0']!.html).not.toContain('Ore di potenziamento');
+  }
+);
 
 test('testo_dinamico always visible, resolves CONTENUTO placeholders', () => {
   const out = render([

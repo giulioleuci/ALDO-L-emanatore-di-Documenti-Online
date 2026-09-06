@@ -483,6 +483,10 @@ declare global {
     render(template: string, context?: Record<string, unknown> | null): string;
     registerFilter(filter: unknown): void;
   }
+  /** Conditional string selector: returns the singular or plural form based on a numeric count. */
+  class PluralizeFilter {
+    execute(count: number, singular: string, plural: string): string;
+  }
   /** One resolved `{{dynamic_columns[...]}}` column (data column or, from the 2nd
    * group onward, a structural label column — `isLabel: true`, never ACL'd). */
   interface SheetColumnLayout {

@@ -532,6 +532,143 @@ describe('StoricoClassiService (13 §5)', () => {
     );
   });
 
+  const variazione1: Row = {
+    TITOLARE: 'originario@scuola.it',
+    NUOVO_TITOLARE: 'nuovo@scuola.it',
+    DAL: '2025-10-01',
+    CLASSI: '4A',
+    MATERIE: 'MATE'
+  };
+  const variazione2: Row = {
+    TITOLARE: 'nuovo@scuola.it',
+    NUOVO_TITOLARE: 'secondo@scuola.it',
+    DAL: '2025-12-01',
+    CLASSI: '4A',
+    MATERIE: 'MATE'
+  };
+  const supplenza1: Row = {
+    TITOLARE: 'originario@scuola.it',
+    SUPPLENTE: 'supplente-1@scuola.it',
+    DAL: '2025-11-01',
+    AL: '2025-11-15',
+    CLASSI: '4A',
+    MATERIE: 'MATE'
+  };
+  const supplenza2: Row = {
+    TITOLARE: 'originario@scuola.it',
+    SUPPLENTE: 'supplente-2@scuola.it',
+    DAL: '2025-12-15',
+    AL: '',
+    CLASSI: '4A',
+    MATERIE: 'MATE'
+  };
+
+  test.each([
+    ['nessuna variazione e nessuna supplenza', [], [], 'originario@scuola.it'],
+    ['nessuna variazione e due supplenze', [], [supplenza2, supplenza1], 'originario@scuola.it'],
+    ['una variazione e due supplenze', [variazione1], [supplenza2, supplenza1], 'nuovo@scuola.it'],
+    ['due variazioni e nessuna supplenza', [variazione2, variazione1], [], 'secondo@scuola.it']
+  ])('%s', (_nome, variazioniInput, supplenzeInput, titolareFinale) => {
+    const tables = annoPrecedente();
+    tables.CLASSI![0]!.MATE = 'originario@scuola.it';
+    tables.DOCENTI!.push({
+      EMAIL: 'originario@scuola.it',
+      COGNOME: 'ORIGINARIO',
+      NOME: 'TITOLARE',
+      GENERE: 'M',
+      DIPART: 'SCIENTIFICO_DIP',
+      ITP: false
+    });
+    tables.VARIAZIONI_CATTEDRA = variazioniInput;
+    tables.SUPPLENZE = supplenzeInput;
+
+    const timeline = new StoricoClassiService(fakeProvider([annoStorico('2025-2026', tables)]))
+      .perClasse([ClasseId.of('4A')], 1)[0]!
+      .cattedre.find((cattedra) => cattedra.materia === 'MATE' && !cattedra.isItp)!;
+    const ultimoTitolare =
+      timeline.variazioni[timeline.variazioni.length - 1]?.nuovoTitolare ??
+      timeline.titolareOriginario;
+
+    expect(timeline.variazioni).toHaveLength(variazioniInput.length);
+    expect(timeline.supplenze).toHaveLength(supplenzeInput.length);
+    expect(timeline.variazioni.map((evento) => evento.dal)).toEqual(
+      [...timeline.variazioni.map((evento) => evento.dal)].sort((a, b) => a.getTime() - b.getTime())
+    );
+    expect(timeline.supplenze.map((evento) => evento.dal)).toEqual(
+      [...timeline.supplenze.map((evento) => evento.dal)].sort((a, b) => a.getTime() - b.getTime())
+    );
+    expect(timeline.supplenze[timeline.supplenze.length - 1]?.al ?? null).toBeNull();
+    expect(ultimoTitolare).toBe(titolareFinale);
+  });
+
+  test('preserves a dotted specifica identity while scoping main and ITP events by base materia', () => {
+    const tables = annoPrecedente();
+    tables.CLASSI![0]!['INTERPRET.CHITARRA'] = 'originario@scuola.it';
+    tables.CLASSI![0]!['INTERPRET.CHITARRA.itp'] = 'itp-originario@scuola.it';
+    tables.DOCENTI!.push(
+      {
+        EMAIL: 'originario@scuola.it',
+        COGNOME: 'ORIGINARIO',
+        NOME: 'TITOLARE',
+        GENERE: 'M',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: false
+      },
+      {
+        EMAIL: 'itp-originario@scuola.it',
+        COGNOME: 'ORIGINARIO',
+        NOME: 'ITP',
+        GENERE: 'M',
+        DIPART: 'SCIENTIFICO_DIP',
+        ITP: true
+      }
+    );
+    tables.VARIAZIONI_CATTEDRA = [
+      {
+        TITOLARE: 'originario@scuola.it',
+        NUOVO_TITOLARE: 'nuovo@scuola.it',
+        DAL: '2025-10-01',
+        CLASSI: '4A',
+        MATERIE: 'INTERPRET'
+      }
+    ];
+    tables.SUPPLENZE = [
+      {
+        TITOLARE: 'nuovo@scuola.it',
+        SUPPLENTE: 'supplente@scuola.it',
+        DAL: '2025-11-01',
+        AL: '',
+        CLASSI: '4A',
+        MATERIE: 'INTERPRET'
+      }
+    ];
+
+    const timelines = new StoricoClassiService(fakeProvider([annoStorico('2025-2026', tables)]))
+      .perClasse([ClasseId.of('4A')], 1)[0]!
+      .cattedre.filter((cattedra) => cattedra.materia === 'INTERPRET.CHITARRA');
+
+    expect(timelines).toEqual([
+      expect.objectContaining({
+        isItp: false,
+        titolareOriginario: 'originario@scuola.it',
+        variazioni: [{ nuovoTitolare: 'nuovo@scuola.it', dal: new Date('2025-10-01') }],
+        supplenze: [
+          {
+            supplente: 'supplente@scuola.it',
+            dal: new Date('2025-11-01'),
+            al: null
+          }
+        ]
+      }),
+      expect.objectContaining({
+        isItp: true,
+        titolareOriginario: 'itp-originario@scuola.it',
+        variazioni: [],
+        supplenze: []
+      })
+    ]);
+  });
+
   test('a year with no STORICO entry yields an empty record (class did not exist under a known name)', () => {
     const anni = [
       annoStorico('2025-2026', annoPrecedente()),

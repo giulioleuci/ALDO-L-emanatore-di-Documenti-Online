@@ -133,7 +133,9 @@ describe('buildContinuita', () => {
       'storico@scuola.it',
       'nuovo@scuola.it',
       'supplente@scuola.it',
-      'itp@scuola.it'
+      'itp-nuovo@scuola.it',
+      'itp-originario@scuola.it',
+      'itp-supplente@scuola.it'
     );
     const input = {
       siglaCorrente: 'MAT',
@@ -147,7 +149,7 @@ describe('buildContinuita', () => {
           nomeStorico: '2A',
           docenti: [
             { docenteEmail: 'nuovo@scuola.it', materia: 'MAT', isItp: false },
-            { docenteEmail: 'itp@scuola.it', materia: 'MAT', isItp: true }
+            { docenteEmail: 'itp-nuovo@scuola.it', materia: 'MAT', isItp: true }
           ],
           cattedre: [
             {
@@ -166,9 +168,15 @@ describe('buildContinuita', () => {
             {
               materia: 'MAT',
               isItp: true,
-              titolareOriginario: 'itp@scuola.it',
-              variazioni: [],
-              supplenze: []
+              titolareOriginario: 'itp-originario@scuola.it',
+              variazioni: [{ nuovoTitolare: 'itp-nuovo@scuola.it', dal: new Date('2025-09-15') }],
+              supplenze: [
+                {
+                  supplente: 'itp-supplente@scuola.it',
+                  dal: new Date('2025-10-15'),
+                  al: null
+                }
+              ]
             }
           ]
         }
@@ -203,7 +211,11 @@ describe('buildContinuita', () => {
         hasSupplenze: false
       },
       itpTimeline: {
-        titolareOriginario: expect.objectContaining({ email: 'itp-corrente@scuola.it' })
+        titolareOriginario: expect.objectContaining({ email: 'itp-corrente@scuola.it' }),
+        variazioni: [],
+        supplenze: [],
+        hasVariazioni: false,
+        hasSupplenze: false
       }
     });
     expect(continuita.anniPrecedenti[0]).toMatchObject({
@@ -226,7 +238,22 @@ describe('buildContinuita', () => {
         hasSupplenze: true
       },
       itpTimeline: {
-        titolareOriginario: expect.objectContaining({ email: 'itp@scuola.it' })
+        titolareOriginario: expect.objectContaining({ email: 'itp-originario@scuola.it' }),
+        variazioni: [
+          {
+            nuovoTitolare: expect.objectContaining({ email: 'itp-nuovo@scuola.it' }),
+            dal: new Date('2025-09-15')
+          }
+        ],
+        supplenze: [
+          {
+            supplente: expect.objectContaining({ email: 'itp-supplente@scuola.it' }),
+            dal: new Date('2025-10-15'),
+            al: null
+          }
+        ],
+        hasVariazioni: true,
+        hasSupplenze: true
       }
     });
   });

@@ -11,6 +11,7 @@ export type DocenteData = {
   [COL_DOCENTI.GENERE]?: string;
   [COL_DOCENTI.DIPART]?: string;
   [COL_DOCENTI.ITP]?: boolean;
+  [COL_DOCENTI.ORE_POT]?: number;
 };
 
 /**
@@ -23,6 +24,7 @@ export class Docente extends AldoEntity {
   public genere: Genere;
   public readonly dipart: string;
   private readonly itp: boolean;
+  private readonly orePot: number;
 
   constructor(data: DocenteData = {}) {
     super(data);
@@ -33,6 +35,7 @@ export class Docente extends AldoEntity {
     this.dipart =
       typeof data[COL_DOCENTI.DIPART] === 'string' ? (data[COL_DOCENTI.DIPART] as string) : '';
     this.itp = data[COL_DOCENTI.ITP] === true;
+    this.orePot = Number(data[COL_DOCENTI.ORE_POT]) || 0;
   }
 
   get email(): Email {
@@ -64,6 +67,11 @@ export class Docente extends AldoEntity {
     return this.itp;
   }
 
+  /** Weekly tutoring/strengthening hours (0 when absent). */
+  getOrePot(): number {
+    return this.orePot;
+  }
+
   override toData(): EntityData {
     return {
       [COL_DOCENTI.EMAIL]: this.id,
@@ -71,7 +79,8 @@ export class Docente extends AldoEntity {
       [COL_DOCENTI.NOME]: this.nome,
       [COL_DOCENTI.GENERE]: this.genere,
       [COL_DOCENTI.DIPART]: this.dipart,
-      [COL_DOCENTI.ITP]: this.itp
+      [COL_DOCENTI.ITP]: this.itp,
+      [COL_DOCENTI.ORE_POT]: this.orePot
     };
   }
 

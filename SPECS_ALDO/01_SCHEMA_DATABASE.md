@@ -97,6 +97,7 @@ Anagrafica del corpo docente. La colonna `EMAIL` è la chiave primaria.
 | `GENERE`  | String  | —   | —         | Enum                       | Determina l'appellativo (Prof./Prof.ssa) |
 | `DIPART`  | String  | —   | DIPART.ID | Deve esistere in DIPART.ID | Dipartimento disciplinare                |
 | `ITP`     | Boolean | —   | —         | —                          | Insegnante Tecnico Pratico (laboratorio) |
+| `ORE_POT` | Integer | —   | —         | Intero >= 0, default 0     | Ore settimanali di potenziamento/rinforzo |
 
 ---
 

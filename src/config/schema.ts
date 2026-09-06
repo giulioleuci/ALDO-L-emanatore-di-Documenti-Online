@@ -152,7 +152,8 @@ export const COL_DOCENTI = {
   NOME: 'NOME',
   GENERE: 'GENERE',
   DIPART: 'DIPART',
-  ITP: 'ITP'
+  ITP: 'ITP',
+  ORE_POT: 'ORE_POT'
 } as const;
 
 export const COL_MATERIE = {

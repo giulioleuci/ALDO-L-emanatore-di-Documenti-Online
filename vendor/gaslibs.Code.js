@@ -787,6 +787,7 @@ __webpack_require__.d(WorkspaceTemplateEngine_namespaceObject_0, {
   Mustache: () => (MyMustache),
   MustacheRenderError: () => (MustacheRenderError),
   PlaceholderService: () => (PlaceholderService),
+  PluralizeFilter: () => (PluralizeFilter),
   SheetProcessor: () => (_SheetProcessor)
 });
 
@@ -799,6 +800,7 @@ __webpack_require__.d(WorkspaceTemplateEngine_namespaceObject, {
   Mustache: () => (MyMustache),
   MustacheRenderError: () => (MustacheRenderError),
   PlaceholderService: () => (PlaceholderService),
+  PluralizeFilter: () => (PluralizeFilter),
   SheetProcessor: () => (_SheetProcessor)
 });
 
@@ -23096,6 +23098,7 @@ class PlaceholderService {
 
 
 ;
+
 
 
 

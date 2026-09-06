@@ -836,6 +836,45 @@ test('piani_pers_inviati: lists only NOTIFICATO items across students and subtyp
   expect(html).not.toContain('Si invia anche');
 });
 
+test('piani_pers_inviati: never shows historical plans, even when the box config explicitly asks for enrichment (11 §11: historical plans belong only to the not-yet-notified box)', () => {
+  const templates = new FakeTemplateEngine();
+  const composer = createBoxComposer(logger, templates);
+  const cdu = pianiPersCduRecord(
+    [
+      {
+        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: true,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
+      }
+    ],
+    new LazyRef(() => [
+      {
+        anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old-pdp',
+        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+      }
+    ])
+  );
+  const out = renderBoxes(
+    composer,
+    confMail([
+      {
+        TIPO_BOX: 'piani_pers_inviati',
+        ARRICCHISCI_CON_STORICO: true,
+        CONFIG_ARRICCHIMENTO: {
+          TEMPLATE_RIGA:
+            '<li>{{corrente.studente.nomeCompleto}} - {{corrente.sottotipoLabel}}{{#storico}} - {{nome}}{{/storico}}</li>'
+        }
+      }
+    ]),
+    cdu,
+    materie(),
+    templates
+  );
+  const html = out.boxes.perId['piani_pers_inviati_0']!.html;
+  expect(html).toContain('VERDI ANNA - PDP (BES)');
+  expect(html).not.toContain('PDP a1 anno scorso');
+});
+
 test('piani_pers_da_inviare: empty when items list is empty', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);

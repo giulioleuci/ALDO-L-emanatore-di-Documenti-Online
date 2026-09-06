@@ -82,7 +82,8 @@ const RECIPE_PER_PROCESSO: Record<ProcessoInvio, string> = {
 const HISTORICAL_BOX_TYPES: ReadonlySet<string> = new Set([
   'documenti',
   'cartelle',
-  'piani_pers_da_inviare'
+  'piani_pers_da_inviare',
+  'piani_pers_inviati'
 ]);
 /** piani_pers_da_inviare always requires historical enrichment; the others opt in through BOX_CFG. */
 const ALWAYS_HISTORICAL_BOX_TYPES: ReadonlySet<string> = new Set(['piani_pers_da_inviare']);

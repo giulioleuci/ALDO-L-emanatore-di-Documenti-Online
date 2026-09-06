@@ -515,8 +515,12 @@ function aggregaDati(
       defaultTemplate: DEFAULT_PIANI_PERS_TEMPLATE
     },
     pianiPersInviati: {
+      // Historical plans (11 §11 new) belong only in the not-yet-notified box —
+      // they help the recipient re-check what was sent last year before drafting
+      // this year's. Omitting storicoRef here (not a config flag) makes the
+      // omission unconditional, regardless of any BOX_CFG for this TIPO_BOX.
       items: pianiItems.filter((i) => i.isNotificato),
-      storicoRef: pianiStoricoRef,
+      storicoRef: undefined,
       defaultTemplate: ''
     }
   };

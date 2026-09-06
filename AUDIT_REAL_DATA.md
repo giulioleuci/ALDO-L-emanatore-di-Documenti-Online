@@ -15,7 +15,7 @@ clock a ogni esecuzione, trigger di resume inclusi.
 
 ---
 
-## 1. `SUPPLENZE.AL` — ultimo giorno di supplenza escluso silenziosamente — **HIGH — TODO: to fix**
+## 1. `SUPPLENZE.AL` — ultimo giorno di supplenza escluso silenziosamente — **HIGH — FIXED (task 1)**
 
 - `AldoTeachingResolutionConfig.ts:205` mappa `validTo ← COL_SUPPLENZE.AL`.
 - La libreria confronta `asOf <= this.validTo` come istanti
@@ -34,7 +34,7 @@ fixture codificano il fine giornata (`src/onlinetests/data/fixtures.ts:183` →
 Fix: normalizzare `AL` a fine giornata nella mappatura (un solo punto), non per singolo
 chiamante.
 
-## 2. Batch email: target ri-enumerati al resume, ripresa per indice — **HIGH — TODO: to fix**
+## 2. Batch email: target ri-enumerati al resume, ripresa per indice — **HIGH — FIXED (task 2)**
 
 `EmailBatchService.ts:309` ri-esegue `enumerateTargets` a ogni run; `:315` riprende da
 `resume.nextIndex`; `:325` cicla. Il docstring a `:59` dichiara l'assunzione
@@ -49,7 +49,7 @@ saltato in modo permanente per ogni shift. I re-invii sono già bloccati dal
 fix pigro è riprendere dal set `processed` invece che da `nextIndex`: l'indice non
 aggiunge nulla che la deduplica non copra già.
 
-## 3. Due assi documentali ricalcolano la lista target a ogni resume — **HIGH — TODO: to fix**
+## 3. Due assi documentali ricalcolano la lista target a ogni resume — **HIGH — FIXED (task 3)**
 
 Ogni asse persiste lo snapshot dei target nel checkpoint (`planTargets`,
 `docenteClasseMateriaTargets`, `classeMateriaTargets`, `classeDocenteTargets`,
@@ -62,7 +62,7 @@ Ogni asse persiste lo snapshot dei target nel checkpoint (`planTargets`,
 Stesso rischio di salto/duplicazione del punto 2, e incoerente con gli altri sei assi
 dello stesso file.
 
-## 4. I rappresentanti includono studenti ritirati — **MEDIUM — TODO: to fix**
+## 4. I rappresentanti includono studenti ritirati — **MEDIUM — FIXED (task 5)**
 
 `RappresentantiProvider.ts:22`: `this.classi.getStudenti(sorgente)` — `soloAttivi` vale
 `false` per default (`ClasseRepository.ts:231`). Tutti i call site fratelli filtrano:
@@ -76,7 +76,7 @@ lo contraddice all'interno dello stesso CDU. La risoluzione dei destinatari
 (`RAPPRESENTANTI_STUDENTI`) è corretta — questo riguarda solo la visualizzazione, ma
 finisce nei verbali.
 
-## 5. `LOG_FOLD`/`LOG_DOCS.UTENTI`: lista di appartenenza stantia e append-only usata per decidere cosa riceve un utente — **MEDIUM — TODO: to fix**
+## 5. `LOG_FOLD`/`LOG_DOCS.UTENTI`: lista di appartenenza stantia e append-only usata per decidere cosa riceve un utente — **MEDIUM — FIXED (task 7)**
 
 - `AlberoCartelle.ts:76`: `mergeCsv(current?.UTENTI, options.utenti)` — solo unione,
   **mai potatura**.
@@ -95,7 +95,10 @@ Da notare che l'ACL Drive ha la stessa proprietà unidirezionale: `ApplyPermissi
 `POST_PROCESSO.AGGIORNA_PERMESSI_STORICI` (`documentSteps.ts:575`) rinfresca i permessi
 sul pregresso, e solo dove è configurato.
 
-## 6. I flag di ruolo del destinatario sono costanti hardcoded — **MEDIUM — TODO: to fix**
+**Debito noto, non risolto qui:** la revoca ACL è fuori scope di questo piano — è una
+decisione di prodotto (chi deve perdere l'accesso e quando), da chiedere a parte.
+
+## 6. I flag di ruolo del destinatario sono costanti hardcoded — **MEDIUM — FIXED (task 6)**
 
 `emailSteps.ts:235-241`:
 
@@ -111,14 +114,14 @@ che invece **sono** risolti live (`TeachingCouncilProjection.ts:467-497`).
 `PER_DOCENTE` a un coordinatore reale riporta `false`. Non è un dato stantio, è un dato
 inventato.
 
-## 7. Solo il primo titolare di un ruolo `RUOLI` arriva nel CDU — **LOW — TODO: to fix**
+## 7. Solo il primo titolare di un ruolo `RUOLI` arriva nel CDU — **LOW — FIXED (task 8)**
 
 `SchoolProvider.ts:19`: `ruolo.getEmails()[0]`. `RuoloSpeciale` modella esplicitamente
 "one or more teachers" (`RuoloSpeciale.ts:13`) e `RisolutoreRuoliService.referente`
 (`:331-334`) li restituisce **tutti**. Quindi `cdu.istituto.staff` mostra un solo
 titolare mentre l'ACL per lo stesso ruolo li abilita tutti.
 
-## 8. Due granularità diverse di `asOf` per la stessa risoluzione — **LOW — TODO: to fix**
+## 8. Due granularità diverse di `asOf` per la stessa risoluzione — **LOW — FIXED (task 1)**
 
 `ConsiglioClasseProvider.ts:34` costruisce `asOf` come mezzanotte UTC del giorno;
 `RisolutoreRuoliService.ts:135` usa il timestamp completo. Nei casi di confine sulla
@@ -126,7 +129,7 @@ stessa giornata il consiglio nel CDU e i destinatari email/ACL possono divergere
 risolvere insieme al punto 1: scegliere una normalizzazione e applicarla al confine del
 resolver.
 
-## 9. Le email carenza non filtrano lo stato dello studente — **LOW — TODO: to fix**
+## 9. Le email carenza non filtrano lo stato dello studente — **LOW — FIXED (task 4)**
 
 `EmailNotificationService.ts:627-645`: `targetsPerCarenza` itera
 `carenze.findNonNotificate()` e risolve lo studente senza alcun controllo `isAttivo()`,

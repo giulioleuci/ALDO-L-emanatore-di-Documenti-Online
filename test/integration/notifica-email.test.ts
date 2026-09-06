@@ -25,8 +25,10 @@ function wire() {
 test('PER_CARENZA_GENITORI end-to-end: boxes, genitori TO, BCC, LOG_MAIL, NOTIFICATO stamp, dedup on rerun (ref 11)', () => {
   const { db, gmail, service } = wire();
 
+  // a2 is ATTIVO=false in the shared fixture: withdrawn students are excluded
+  // from carenza targets (audit 2026-09-05 §9), so only a1 remains.
   const first = service.sendPattern('CARENZE_NOTIFICA');
-  expect(first).toMatchObject({ targets: 2, sent: 2, skipped: 0, errors: [] });
+  expect(first).toMatchObject({ targets: 1, sent: 1, skipped: 0, errors: [] });
 
   // a1's email: family TO, supervisore BCC, resolved subject, rendered boxes.
   const perA1 = gmail.sent.find((s) => s.to.includes('genitore1@x.it'))!;
@@ -43,19 +45,15 @@ test('PER_CARENZA_GENITORI end-to-end: boxes, genitori TO, BCC, LOG_MAIL, NOTIFI
   expect(html).toContain('assenze'); // assenze box (ASSENZE=true on a1 prog 1)
   expect(html).toContain('non sarà monitorata'); // NOREPLY footer
 
-  // a2's email goes to both tutors in one message.
-  const perA2 = gmail.sent.find((s) => s.to.includes('genitore2@x.it'))!;
-  expect(perA2.to.sort()).toEqual(['genitore2@x.it', 'genitore3@x.it']);
-
   // Audit: one LOG_MAIL SUCCESS row per send.
   const logRows = db.tables['LOG_MAIL']!.getAllRows();
-  expect(logRows).toHaveLength(2);
+  expect(logRows).toHaveLength(1);
   expect(logRows.every((r) => r['STATO'] === 'SUCCESS')).toBe(true);
 
-  // POST_PROCESSO stamped both carenze → rerun enumerates nothing (11 §10).
+  // POST_PROCESSO stamped the carenza → rerun enumerates nothing (11 §10).
   const second = service.sendPattern('CARENZE_NOTIFICA');
   expect(second.targets).toBe(0);
-  expect(gmail.sent).toHaveLength(2);
+  expect(gmail.sent).toHaveLength(1);
 });
 
 test('PER_CDC end-to-end: one multi-TO email per entry class, articulated parent aggregated (ref 11 §12, 05 §5)', () => {
@@ -84,19 +82,18 @@ test('send failure ⇒ LOG_MAIL ERROR, post-process skipped, batch continues (re
   const { db, gmail, service } = wire();
   gmail.failFor.add('genitore1@x.it');
   const result = service.sendPattern('CARENZE_NOTIFICA');
-  expect(result.sent).toBe(1);
+  // a2 is ATTIVO=false: a1 is the only target, and it fails.
+  expect(result.sent).toBe(0);
   expect(result.errors).toHaveLength(1);
 
   const states = db.tables['LOG_MAIL']!.getAllRows()
     .map((r) => r['STATO'])
     .sort();
-  expect(states).toEqual(['ERROR', 'SUCCESS']);
-  // a1's carenza still non-notified; a2's stamped.
+  expect(states).toEqual(['ERROR']);
+  // a1's carenza still non-notified; a2 is never enumerated (withdrawn).
   const carenze = db.tables['CARENZE']!.getAllRows();
   expect(
     carenze.find((r) => r['STUDENTE'] === 'a1@school.it' && r['PROGRESSIVO'] === 1)!['NOTIFICATO']
   ).toBe('');
-  expect(String(carenze.find((r) => r['STUDENTE'] === 'a2@school.it')!['NOTIFICATO'])).toBe(
-    NOW.toISOString()
-  );
+  expect(String(carenze.find((r) => r['STUDENTE'] === 'a2@school.it')!['NOTIFICATO'])).toBe('');
 });

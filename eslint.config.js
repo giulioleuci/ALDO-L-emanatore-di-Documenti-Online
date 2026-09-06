@@ -57,7 +57,14 @@ export default tseslint.config(
   // dev tool (regenerates HTML_EXAMPLE/*.html) that intentionally isn't part of
   // tsconfig.eslint.json's src/**+test/** scope.
   {
-    files: ['*.config.js', '*.config.cjs', 'scripts/**/*.cjs', 'test/**/*.cjs', 'scripts/email-examples/**/*.ts'],
+    files: [
+      '*.config.js',
+      '*.config.cjs',
+      'scripts/**/*.cjs',
+      'scripts/**/*.mjs',
+      'test/**/*.cjs',
+      'scripts/email-examples/**/*.ts'
+    ],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: { globals: { ...globals.node } }
   },

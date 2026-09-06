@@ -73,7 +73,7 @@
 - Consumes: niente da task precedenti.
 - Produces: `AldoTeachingAssignmentResolver.resolveMateria(classe, materia, data, routingPolicy?)` e `resolveConsiglio(classe, data, options?)` mantengono la firma; cambia solo la semantica del terzo parametro, che ora conta come **giorno di calendario UTC** e non come istante.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 Aggiungere in fondo a `test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts` (gli helper `freshTables`, `docente`, `resolverFor`, `byColumn` sono già in cima al file):
 
@@ -109,12 +109,12 @@ test('the last day of a SUPPLENZE window still resolves to the supplente at any 
 });
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `npx jest --config jest.config.cjs test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts -t "last day of a SUPPLENZE window"`
 Expected: FAIL — `expect(received).toBe(expected)` con `received: "main@school.test"` sulla prima assert (l'ultimo giorno viene già risolto sul titolare).
 
-- [ ] **Step 3: Implementare la normalizzazione**
+- [x] **Step 3: Implementare la normalizzazione**
 
 In `src/infrastructure/role-resolution/AldoTeachingAssignmentResolver.ts`, aggiungere la funzione subito sopra `export class AldoTeachingAssignmentResolver`:
 
@@ -142,12 +142,12 @@ e usarla nella `resolve`:
         .map((result) => this.toTeachingAssignment(result));
 ```
 
-- [ ] **Step 4: Eseguire il test e verificare che passi**
+- [x] **Step 4: Eseguire il test e verificare che passi**
 
 Run: `npx jest --config jest.config.cjs test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts -t "last day of a SUPPLENZE window"`
 Expected: PASS
 
-- [ ] **Step 5: Togliere la normalizzazione duplicata a monte**
+- [x] **Step 5: Togliere la normalizzazione duplicata a monte**
 
 In `src/application/context-engine/providers/ConsiglioClasseProvider.ts` sostituire la riga 34:
 
@@ -157,7 +157,7 @@ In `src/application/context-engine/providers/ConsiglioClasseProvider.ts` sostitu
 
 (la normalizzazione a giorno ora avviene a valle, nel resolver; tenerne due significa tenere due convenzioni.)
 
-- [ ] **Step 6: Allineare la fixture online alla forma reale del dato**
+- [x] **Step 6: Allineare la fixture online alla forma reale del dato**
 
 In `src/onlinetests/data/fixtures.ts` la costante mascherava il difetto codificando il fine giornata. `SupplenzaRepository.ts:86` scrive `YYYY-MM-DD`:
 
@@ -167,12 +167,12 @@ export const SUPPLENZA_FINE = new Date('2026-10-15T00:00:00Z');
 
 `src/onlinetests/checks/supplenzeRuoliChecks.ts:269` ("AL inclusivo") e `:276` (FINE + 24h) restano validi: il primo ora verifica la mezzanotte del giorno finale, il secondo il giorno successivo.
 
-- [ ] **Step 7: Eseguire l'intera suite**
+- [x] **Step 7: Eseguire l'intera suite**
 
 Run: `npm run typecheck && npm run lint && npm test`
 Expected: PASS. Se `test/unit/application/context-engine/consiglio-provider.test.ts` o `swap-supplenti.test.ts` falliscono su un caso di confine, l'atteso corretto è quello nuovo (ultimo giorno incluso): aggiornare l'assert, non il codice.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/infrastructure/role-resolution/AldoTeachingAssignmentResolver.ts src/application/context-engine/providers/ConsiglioClasseProvider.ts src/onlinetests/data/fixtures.ts test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts
@@ -193,7 +193,7 @@ git commit -m "fix(role-resolution): normalize asOf to the calendar day at the r
 - Consumes: `emailTargetId(target: EmailTarget): string` da `src/application/email/saluto.ts`.
 - Produces: `EmailBatchCheckpoint` guadagna `processedIds: string[]` (cumulativo su tutti i run del job). `nextIndex` resta nel checkpoint come **contatore di avanzamento** (target completati in totale), non è più il punto di ripresa.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 In `test/unit/application/email-batch-service.test.ts`, accanto al test `resume restarts from resumeState.nextIndex...`:
 
@@ -234,12 +234,12 @@ test('a quota checkpoint carries the logical ids of every processed target', () 
 });
 ```
 
-- [ ] **Step 2: Eseguire i test e verificare che falliscano**
+- [x] **Step 2: Eseguire i test e verificare che falliscano**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/email-batch-service.test.ts -t "audit §2"`
 Expected: FAIL — TypeScript rifiuta `processedIds` (proprietà inesistente su `EmailBatchResumeState`).
 
-- [ ] **Step 3: Estendere lo stato di ripresa**
+- [x] **Step 3: Estendere lo stato di ripresa**
 
 In `src/application/services/EmailBatchService.ts`, dentro `interface EmailBatchResumeState`, sotto `processed: string[];`:
 
@@ -260,7 +260,7 @@ e cambiare il commento di `nextIndex` in:
   nextIndex: number;
 ```
 
-- [ ] **Step 4: Riprendere dal set invece che dall'indice**
+- [x] **Step 4: Riprendere dal set invece che dall'indice**
 
 Sempre in `batchSendHandler`, sostituire il blocco `:309-316`:
 
@@ -285,7 +285,7 @@ Aggiungere l'import in cima al file, se assente:
 import { emailTargetId } from '../email/saluto';
 ```
 
-- [ ] **Step 5: Sostituire `targets.length` con `totale` dove indica il totale del job**
+- [x] **Step 5: Sostituire `targets.length` con `totale` dove indica il totale del job**
 
 Nel corpo del `while`/`for` e nelle chiamate di logging, `targets.length` continua a indicare *quanti ne restano in questo run*, mentre il totale del job è `totale`. Sostituzioni puntuali:
 
@@ -321,7 +321,7 @@ Nel checkpoint yieldato (`:401-416`) sostituire `nextIndex: i` con:
 
 Nel blocco finale (`:419-440`) e nella `backfillSospesoTempo` (`:322`) sostituire `targets.length` con `totale`, e nel `return` finale `totale: targets.length` con `totale`.
 
-- [ ] **Step 6: Propagare gli id anche al checkpoint di sospensione per quota**
+- [x] **Step 6: Propagare gli id anche al checkpoint di sospensione per quota**
 
 In `suspendForQuota`, aggiungere il parametro dopo `processed: string[],`:
 
@@ -337,7 +337,7 @@ e nel `resumeState` costruito, sotto `processed: processed.slice(),`:
 
 Aggiornare le due chiamate (`:328` e `:380`) passando `processedIds` subito dopo `processed`, e sostituendo `targets.length` con `totale` nell'argomento `total`.
 
-- [ ] **Step 7: Aggiornare il docstring dell'assunzione rimossa**
+- [x] **Step 7: Aggiornare il docstring dell'assunzione rimossa**
 
 In `src/application/services/EmailBatchService.ts:59-61` sostituire la frase sull'enumerazione stabile:
 
@@ -348,7 +348,7 @@ In `src/application/services/EmailBatchService.ts:59-61` sostituire la frase sul
  * l'altro — ritiri e nuove iscrizioni sono normali (audit 2026-09-05 §2).
 ```
 
-- [ ] **Step 8: Aggiornare i resumeState dei test esistenti**
+- [x] **Step 8: Aggiornare i resumeState dei test esistenti**
 
 Nei test che costruiscono a mano un `resumeState` (`test/unit/application/email-batch-service.test.ts:193, 261, 493, 520, 571, 598, 643`) aggiungere `processedIds` coerente con `processed`. Per i target `PER_CDC` della fixture l'id è `cdc:<classe>`, quindi `processed: ['5A']` diventa:
 
@@ -358,12 +358,12 @@ Nei test che costruiscono a mano un `resumeState` (`test/unit/application/email-
 
 Rinominare il test `resume restarts from resumeState.nextIndex without resending (JobRunnerLib contract)` in `resume restarts from the processed logical ids without resending (JobRunnerLib contract)`.
 
-- [ ] **Step 9: Eseguire i test e verificare che passino**
+- [x] **Step 9: Eseguire i test e verificare che passino**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/email-batch-service.test.ts`
 Expected: PASS (tutto il file)
 
-- [ ] **Step 10: Suite completa e commit**
+- [x] **Step 10: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -388,7 +388,7 @@ Sei assi su otto congelano la lista dei target nel checkpoint (`planTargets`, `d
 - Consumes: `IClasseRepository.findById(id: ClasseId): Classe | null`, già usato altrove nel file.
 - Produces: `BatchResumeState` guadagna `classeTargets?: string[]` e `dipartimentoTargets?: string[]` (ID di classe / di dipartimento). Il pattern è identico a `alunnoTargets` (`:886-896`).
 
-- [ ] **Step 1: Scrivere i test che falliscono**
+- [x] **Step 1: Scrivere i test che falliscono**
 
 In `test/unit/application/document-batch-service.test.ts`, dentro il `describe('DocumentBatchService.generateDipartimenti', ...)`:
 
@@ -461,12 +461,12 @@ test('generateClassi resume without persisted classeTargets fails loud (audit §
 });
 ```
 
-- [ ] **Step 2: Eseguire i test e verificare che falliscano**
+- [x] **Step 2: Eseguire i test e verificare che falliscano**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/document-batch-service.test.ts -t "audit §3"`
 Expected: FAIL — `classeTargets` non compare nel checkpoint (`toMatchObject` fallisce) e il resume senza target non lancia.
 
-- [ ] **Step 3: Estendere lo stato di ripresa**
+- [x] **Step 3: Estendere lo stato di ripresa**
 
 In `interface BatchResumeState`, sotto `alunnoTargets?: AlunnoBatchTarget[];`:
 
@@ -477,7 +477,7 @@ In `interface BatchResumeState`, sotto `alunnoTargets?: AlunnoBatchTarget[];`:
   dipartimentoTargets?: string[];
 ```
 
-- [ ] **Step 4: Congelare i target dei dipartimenti**
+- [x] **Step 4: Congelare i target dei dipartimenti**
 
 In `generateDipartimenti`, sostituire la riga `const tutti = this.dipartimenti.findAll();` con:
 
@@ -507,7 +507,7 @@ e nel checkpoint yieldato aggiungere, sotto `esecuzioneIniziata: this.esecuzione
             dipartimentoTargets: tutti
 ```
 
-- [ ] **Step 5: Congelare i target delle classi**
+- [x] **Step 5: Congelare i target delle classi**
 
 In `generateClassi`, sostituire il blocco `const attive = ...`:
 
@@ -545,12 +545,12 @@ e nel checkpoint yieldato aggiungere, sotto `esecuzioneIniziata: this.esecuzione
 
 Verificare che `ClasseId` e il tipo `Classe` siano importati nel file (lo sono: `ClasseId` è usato in `generateForClasse`, `Classe` nei tipi degli assi docente/classe). Se un import manca, aggiungerlo.
 
-- [ ] **Step 6: Eseguire i test e verificare che passino**
+- [x] **Step 6: Eseguire i test e verificare che passino**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/document-batch-service.test.ts`
 Expected: PASS (tutto il file, inclusi i test preesistenti su `nextIndex` e sulle percentuali, che non cambiano)
 
-- [ ] **Step 7: Suite completa e commit**
+- [x] **Step 7: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -575,7 +575,7 @@ git commit -m "fix(documents): freeze class and department batch targets in the 
 
 **Attenzione:** nella fixture condivisa `a2@school.it` ha `ATTIVO: false` (`test/fixtures/tables.ts:178`) ed è uno dei due target carenza attesi dai test attuali. I tre test esistenti codificano il bug e vanno corretti in questo stesso task — è il difetto in produzione, non una regressione.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 In `test/unit/application/email-notification-service.test.ts`, accanto agli altri test `PER_CARENZA_*`:
 
@@ -587,12 +587,12 @@ test('PER_CARENZA_GENITORI: a withdrawn student never triggers the family email 
 });
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/email-notification-service.test.ts -t "audit §9"`
 Expected: FAIL — `Received: ["a1@school.it", "a2@school.it"]`
 
-- [ ] **Step 3: Implementare il filtro**
+- [x] **Step 3: Implementare il filtro**
 
 In `src/application/services/EmailNotificationService.ts`, in `targetsPerCarenza`, subito dopo il blocco che gestisce `alunno === null`:
 
@@ -602,12 +602,12 @@ In `src/application/services/EmailNotificationService.ts`, in `targetsPerCarenza
       if (!alunno.isAttivo()) continue;
 ```
 
-- [ ] **Step 4: Eseguire il test e verificare che passi**
+- [x] **Step 4: Eseguire il test e verificare che passi**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/email-notification-service.test.ts -t "audit §9"`
 Expected: PASS
 
-- [ ] **Step 5: Correggere i tre test che codificavano il bug**
+- [x] **Step 5: Correggere i tre test che codificavano il bug**
 
 In `test/unit/application/email-notification-service.test.ts`:
 
@@ -642,12 +642,12 @@ test('PER_CARENZA_GENITORI_E_COORD: parents in To, class coordinatore in Cc', ()
 });
 ```
 
-- [ ] **Step 6: Eseguire i test e verificare che passino**
+- [x] **Step 6: Eseguire i test e verificare che passino**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/email-notification-service.test.ts`
 Expected: PASS (tutto il file)
 
-- [ ] **Step 7: Suite completa e commit**
+- [x] **Step 7: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -680,7 +680,7 @@ Verifica dei call site (già fatta, non ripeterla):
 **Interfaces:**
 - Produces: `IClasseRepository.getStudenti(classe: Classe, soloAttivi?: boolean): Alunno[]` — il default diventa `true`.
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 In `test/unit/application/context-engine/classe-provider.test.ts`, accanto al test `RappresentantiProvider: student reps with email...` (l'helper `build(target, tables?)` è già in cima al file):
 
@@ -706,12 +706,12 @@ test('RappresentantiProvider: a withdrawn student is not listed as representativ
 });
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/context-engine/classe-provider.test.ts -t "audit §4"`
 Expected: FAIL — l'elenco contiene anche `ritirato@school.it` e il rappresentante genitore corrispondente.
 
-- [ ] **Step 3: Invertire il default**
+- [x] **Step 3: Invertire il default**
 
 In `src/infrastructure/repositories/ClasseRepository.ts:231`:
 
@@ -726,17 +726,17 @@ In `src/domain/repositories/IClasseRepository.ts:44`:
   getStudenti(classe: Classe, soloAttivi?: boolean): Alunno[];
 ```
 
-- [ ] **Step 4: Eseguire il test e verificare che passi**
+- [x] **Step 4: Eseguire il test e verificare che passi**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/context-engine/classe-provider.test.ts -t "audit §4"`
 Expected: PASS
 
-- [ ] **Step 5: Verificare i test che si appoggiavano al vecchio default**
+- [x] **Step 5: Verificare i test che si appoggiavano al vecchio default**
 
 Run: `npx jest --config jest.config.cjs test/unit/infrastructure/classe-cattedre.test.ts test/unit/infrastructure/piano-repository.test.ts test/unit/application/context-engine/studenti.test.ts test/unit/application/report-service.test.ts`
 Expected: PASS. Se un test falliva perché contava sui ritirati inclusi *per default*, rendere il parametro esplicito nel test (`getStudenti(classe, false)`) invece di rimettere il default insicuro.
 
-- [ ] **Step 6: Suite completa e commit**
+- [x] **Step 6: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -763,7 +763,7 @@ git commit -m "fix(classi): default getStudenti to active students only"
 - Consumes: `IClasseRepository.getCoordinatori(classe)`, `IClasseRepository.getDocentiRuoloArticolato(classe, nomeRuolo)`, `ClasseId.of(id)`, `MateriaVM.sigla` (che è l'ID della materia, `subjectVmMapper.ts:34`).
 - Produces: `export function descrizione(isCoordinatore: boolean, isTutorAsl: boolean, isTutorOrientamento: boolean): string[]` da `TeachingCouncilProjection.ts`; `export const MATERIA_SOSTEGNO: string` da `schema.ts`.
 
-- [ ] **Step 1: Scrivere i test che falliscono**
+- [x] **Step 1: Scrivere i test che falliscono**
 
 In `test/unit/application/pipelines/email-steps.test.ts` (helper `wire`, `buildStep`, `docenteTarget` già presenti in cima al file):
 
@@ -792,12 +792,12 @@ test('BuildCDUStep marks a non-coordinatore false even on a PER_COORDINATORE sen
 });
 ```
 
-- [ ] **Step 2: Eseguire i test e verificare che falliscano**
+- [x] **Step 2: Eseguire i test e verificare che falliscano**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/pipelines/email-steps.test.ts -t "audit §6"`
 Expected: FAIL — `isCoordinatore` è `false` nel primo test (deriva dal processo `PER_DOCENTE`) e `true` nel secondo.
 
-- [ ] **Step 3: Aggiungere la costante del sostegno**
+- [x] **Step 3: Aggiungere la costante del sostegno**
 
 In `src/config/schema.ts`, dopo `COL_MATERIE`:
 
@@ -810,7 +810,7 @@ In `src/config/schema.ts`, dopo `COL_MATERIE`:
 export const MATERIA_SOSTEGNO = 'SOS';
 ```
 
-- [ ] **Step 4: Esportare la descrizione dei ruoli**
+- [x] **Step 4: Esportare la descrizione dei ruoli**
 
 In `src/application/context-engine/TeachingCouncilProjection.ts:186`, aggiungere `export`:
 
@@ -818,7 +818,7 @@ In `src/application/context-engine/TeachingCouncilProjection.ts:186`, aggiungere
 export function descrizione(
 ```
 
-- [ ] **Step 5: Risolvere i flag live**
+- [x] **Step 5: Risolvere i flag live**
 
 In `src/application/pipelines/emailSteps.ts` aggiungere agli import esistenti:
 
@@ -892,12 +892,12 @@ Aggiungere il metodo privato subito dopo `buildDestinatario`:
 
 `Docente` e `Classe` sono già importati come tipi nel file; se il typecheck segnala il contrario, aggiungere gli import mancanti.
 
-- [ ] **Step 6: Eseguire i test e verificare che passino**
+- [x] **Step 6: Eseguire i test e verificare che passino**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/pipelines/email-steps.test.ts`
 Expected: PASS (tutto il file)
 
-- [ ] **Step 7: Suite completa e commit**
+- [x] **Step 7: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -924,7 +924,7 @@ git commit -m "fix(email): resolve destinatario role flags from CLASSI instead o
   - `AggregatoreDati.getCartellePerUtente(utenteEmail: string, filtri?: FiltriSorgente, classiCompetenza?: string[]): LogCartella[]`
   - `perMetodo` accetta `classiCompetenza?: string[]` fra i `params`.
 
-- [ ] **Step 1: Scrivere i test che falliscono**
+- [x] **Step 1: Scrivere i test che falliscono**
 
 In `test/unit/application/aggregatore-dati.test.ts`:
 
@@ -1000,12 +1000,12 @@ test('getCartellePerUtente without a live scope still falls back to the register
 });
 ```
 
-- [ ] **Step 2: Eseguire i test e verificare che falliscano**
+- [x] **Step 2: Eseguire i test e verificare che falliscano**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/aggregatore-dati.test.ts -t "audit §5"`
 Expected: FAIL — il terzo argomento non esiste ancora (errore TypeScript sui primi due test).
 
-- [ ] **Step 3: Implementare il predicato di visibilità**
+- [x] **Step 3: Implementare il predicato di visibilità**
 
 In `src/application/services/AggregatoreDati.ts`, come funzione di modulo (fuori dalla classe, accanto alle altre helper del file):
 
@@ -1066,7 +1066,7 @@ Sostituire i due accessor:
   }
 ```
 
-- [ ] **Step 4: Propagare lo scope attraverso `perMetodo`**
+- [x] **Step 4: Propagare lo scope attraverso `perMetodo`**
 
 In `perMetodo`, aggiungere al tipo inline dei `params`, dopo `utenteEmail?: string;`:
 
@@ -1084,7 +1084,7 @@ Nei due wrapper privati, passare il terzo argomento:
     return this.getCartellePerUtente(params.utenteEmail, filtri, params.classiCompetenza);
 ```
 
-- [ ] **Step 5: Passare le classi di competenza dal box**
+- [x] **Step 5: Passare le classi di competenza dal box**
 
 In `src/application/email/boxes.ts`, nel ramo non-`PerClasse` di `resolveSourceItems`:
 
@@ -1103,12 +1103,12 @@ In `src/application/email/boxes.ts`, nel ramo non-`PerClasse` di `resolveSourceI
       ];
 ```
 
-- [ ] **Step 6: Eseguire i test e verificare che passino**
+- [x] **Step 6: Eseguire i test e verificare che passino**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/aggregatore-dati.test.ts test/unit/application/email-boxes.test.ts`
 Expected: PASS. Il test preesistente `getDocumentiPerUtente scopes UTENTI before applying document filters (14 §2)` chiama senza scope e continua a passare per il ramo di fallback.
 
-- [ ] **Step 7: Suite completa e commit**
+- [x] **Step 7: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -1133,7 +1133,7 @@ git commit -m "fix(boxes): resolve per-user document and folder visibility from 
 - Consumes: `RuoloSpeciale.getEmails(): Email[]`.
 - Produces: `RuoloStaffVM` guadagna `persone: PersonaVM[]` e `hasPersone: boolean`; `persona`/`hasPersona` restano invariati (primo titolare).
 
-- [ ] **Step 1: Scrivere il test che fallisce**
+- [x] **Step 1: Scrivere il test che fallisce**
 
 In `test/unit/application/context-engine/providers/school-provider.test.ts`, dentro il `describe('SchoolProvider', ...)`:
 
@@ -1179,12 +1179,12 @@ In `test/unit/application/context-engine/providers/school-provider.test.ts`, den
   });
 ```
 
-- [ ] **Step 2: Eseguire il test e verificare che fallisca**
+- [x] **Step 2: Eseguire il test e verificare che fallisca**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/context-engine/providers/school-provider.test.ts -t "audit §7"`
 Expected: FAIL — `persone` non esiste su `RuoloStaffVM` (errore TypeScript).
 
-- [ ] **Step 3: Estendere il view-model**
+- [x] **Step 3: Estendere il view-model**
 
 In `src/application/context-engine/Cdu.ts`:
 
@@ -1201,7 +1201,7 @@ export interface RuoloStaffVM {
 }
 ```
 
-- [ ] **Step 4: Risolvere tutti i titolari**
+- [x] **Step 4: Risolvere tutti i titolari**
 
 In `src/application/context-engine/providers/SchoolProvider.ts`, sostituire il corpo del `map`:
 
@@ -1223,12 +1223,12 @@ In `src/application/context-engine/providers/SchoolProvider.ts`, sostituire il c
     });
 ```
 
-- [ ] **Step 5: Eseguire il test e verificare che passi**
+- [x] **Step 5: Eseguire il test e verificare che passi**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/context-engine/providers/school-provider.test.ts`
 Expected: PASS (tutto il file: il test preesistente su `persona`/`perId` non cambia)
 
-- [ ] **Step 6: Aggiornare il contratto CDU**
+- [x] **Step 6: Aggiornare il contratto CDU**
 
 In `SPECS_ALDO/02_CDU_STRUTTURA.md`, nel blocco `RuoloStaffVM`:
 
@@ -1242,7 +1242,7 @@ RuoloStaffVM:
   hasPersone: boolean # true se il ruolo ha almeno un titolare
 ```
 
-- [ ] **Step 7: Suite completa e commit**
+- [x] **Step 7: Suite completa e commit**
 
 Run: `npm run typecheck && npm run lint && npm test`
 
@@ -1255,6 +1255,6 @@ git commit -m "feat(cdu): expose every holder of a RUOLI role in istituto.staff"
 
 ## Chiusura
 
-- [ ] **Aggiornare `AUDIT_REAL_DATA.md`**: sostituire ogni `TODO: to fix` con `FIXED (task N)`, e aggiungere in coda al §5 la nota sull'ACL Drive unidirezionale come debito noto e non risolto.
-- [ ] **Verifica finale**: `npm run typecheck && npm run lint && npm test && npm run test:integration && npm run test:build`
-- [ ] **Build online** (i Task 1 e 2 toccano comportamenti coperti dagli online test): `npm run build:testing` — non fare `clasp push` senza conferma dell'utente.
+- [x] **Aggiornare `AUDIT_REAL_DATA.md`**: sostituire ogni `TODO: to fix` con `FIXED (task N)`, e aggiungere in coda al §5 la nota sull'ACL Drive unidirezionale come debito noto e non risolto.
+- [x] **Verifica finale**: `npm run typecheck && npm run lint && npm test && npm run test:integration && npm run test:build`
+- [x] **Build online** (i Task 1 e 2 toccano comportamenti coperti dagli online test): `npm run build:testing` — non fare `clasp push` senza conferma dell'utente.

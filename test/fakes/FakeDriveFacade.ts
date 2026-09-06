@@ -12,6 +12,8 @@ export class FakeDriveFacade implements IDriveFacade {
   public setPermissionsCallCount = 0;
   public deleted: string[] = [];
   public ownerEmail: string | null = 'owner@school.it';
+  /** Folder ids a test has marked as trashed/deleted on Drive. */
+  public trashedIds = new Set<string>();
   /** fileId -> permissions, seeded by tests. */
   public permissionsPerFile = new Map<string, DrivePermission[]>();
   public roleChanges: Array<{ fileId: string; permissionId: string; role: string }> = [];
@@ -49,6 +51,9 @@ export class FakeDriveFacade implements IDriveFacade {
   }
   getFileOwnerEmail(): string | null {
     return this.ownerEmail;
+  }
+  isFolderTrashed(folderId: string): boolean {
+    return this.trashedIds.has(folderId);
   }
   getFileText(fileId: string): string {
     return `text:${fileId}`;

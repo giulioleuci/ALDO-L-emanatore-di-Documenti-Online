@@ -29,9 +29,14 @@ export class AlberoCartelle {
     const table = this.db.table(TABLE.LOG_FOLD);
     const logged = table.find((r) => String(r[COL_LOG_FOLD.PATH]) === path);
     if (logged !== null) {
-      const folderId = String(logged[COL_LOG_FOLD.ID]);
-      this.upsertLog(table, folderId, path, options, logged);
-      return { folderId, created: false };
+      const loggedId = String(logged[COL_LOG_FOLD.ID]);
+      if (this.drive.isFolderTrashed(loggedId)) {
+        const folderId = this.drive.createFolder(path);
+        this.upsertLog(table, folderId, path, options, logged);
+        return { folderId, created: true };
+      }
+      this.upsertLog(table, loggedId, path, options, logged);
+      return { folderId: loggedId, created: false };
     }
     const existing = this.drive.findFolderByPath(path);
     if (existing !== null) {
@@ -77,7 +82,7 @@ export class AlberoCartelle {
       [COL_LOG_FOLD.MATERIE]: mergeCsv(current?.[COL_LOG_FOLD.MATERIE], options.materie)
     };
     if (current === null) table.insert(row);
-    else table.updateRowWhere({ [COL_LOG_FOLD.ID]: folderId }, row);
+    else table.updateRowWhere({ [COL_LOG_FOLD.ID]: String(current[COL_LOG_FOLD.ID]) }, row);
   }
 
 }

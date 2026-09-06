@@ -116,3 +116,29 @@ test('a LOG_FOLD row for the same path is reused and receives the additional cla
   expect(res).toEqual({ folderId: 'other', created: false });
   expect(db.table('LOG_FOLD').findAll()[0]).toMatchObject({ CLASSI: '3B,5A' });
 });
+
+test('a trashed logged folder is replaced by a fresh one, updating the same LOG_FOLD row (14 §4 trash-aware reconciliation)', () => {
+  const { drive, db, albero } = wire();
+  const staleId = drive.createFolder('Verbali/5');
+  db.table('LOG_FOLD').insert({
+    ID: staleId,
+    PATH: 'Verbali/5',
+    LINK: `https://drive.google.com/drive/folders/${staleId}`,
+    CLASSI: '5A',
+    UTENTI: ''
+  });
+  drive.trashedIds.add(staleId);
+
+  const res = albero.findOrCreate('Verbali/5', { classi: '5A', tipo: 'CONF_VERBALE' });
+
+  expect(res.created).toBe(true);
+  expect(res.folderId).not.toBe(staleId);
+  const rows = db.table('LOG_FOLD').findAll();
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    ID: res.folderId,
+    PATH: 'Verbali/5',
+    TIPO: 'CONF_VERBALE',
+    CLASSI: '5A'
+  });
+});

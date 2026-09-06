@@ -1,3 +1,5 @@
+import type { DocumentoStoricoConTipo } from '../storico/StoricoDocumentiService';
+
 export interface ElencoVM<T> {
   elenco: T[];
   hasElenco: boolean;
@@ -393,11 +395,6 @@ export interface DocumentoLogVM {
   dataCreazioneBreve: string;
 }
 
-export interface DocumentoStoricoVM {
-  annoScolastico: string;
-  documento: DocumentoLogVM;
-}
-
 export interface PianoPersonalizzatoVM extends DocumentoLogVM {
   isVerbalizzato: boolean;
   studente: PersonaRiferimentoVM | null;
@@ -637,11 +634,11 @@ export interface MovimentiClasseVM extends ElencoVM<MovimentoClasseVM> {
 
 export interface PianiPersonalizzatiClasseVM extends ElencoVM<PianoPersonalizzatoVM> {
   nonVerbalizzati: ElencoVM<PianoPersonalizzatoVM>;
-  storico: LazyRef<DocumentoStoricoVM[]>;
+  storico: LazyRef<DocumentoStoricoConTipo[]>;
 }
 
 export interface ElencoDocumentiVM extends ElencoVM<DocumentoLogVM> {
-  storico: LazyRef<DocumentoStoricoVM[]>;
+  storico: LazyRef<DocumentoStoricoConTipo[]>;
 }
 
 export interface ColonnaMateriaVM {

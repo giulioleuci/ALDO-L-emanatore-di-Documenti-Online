@@ -6,7 +6,7 @@ import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogD
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
-import { buildDocumentoLogVm, buildDocumentoStoricoVm } from '../mappers/documentoVmMapper';
+import { buildDocumentoLogVm } from '../mappers/documentoVmMapper';
 import { elencoVm } from '../mappers/elencoVm';
 
 /**
@@ -47,9 +47,7 @@ export class DocumentiClasseProvider implements ContextProvider {
       ...elencoVm(elenco),
       storico: new LazyRef(() =>
         includiStorico
-          ? [...emails].flatMap((email) =>
-              service.perAlunnoConTipo(email, profondita).map(buildDocumentoStoricoVm)
-            )
+          ? [...emails].flatMap((email) => service.perAlunnoConTipo(email, profondita))
           : []
       )
     };

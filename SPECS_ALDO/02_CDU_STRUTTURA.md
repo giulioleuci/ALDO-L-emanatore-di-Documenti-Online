@@ -532,7 +532,7 @@ PianiPersonalizzatiClasseVM:
     hasElenco: boolean # true se esiste almeno un piano non verbalizzato
     numero: number # Numero dei piani non verbalizzati
 
-  storico: LazyRef<DocumentoStoricoVM[]> # Documenti degli anni precedenti, caricati su richiesta
+  storico: LazyRef<DocumentoStoricoConTipo[]> # Documenti degli anni precedenti, caricati su richiesta
 ```
 
 ```yaml
@@ -540,7 +540,7 @@ ElencoDocumentiVM:
   elenco: DocumentoLogVM[] # Documenti correnti nello scope del nodo proprietario
   hasElenco: boolean # true se elenco non è vuoto
   numero: number # Numero dei documenti correnti
-  storico: LazyRef<DocumentoStoricoVM[]> # Documenti storici caricati su richiesta
+  storico: LazyRef<DocumentoStoricoConTipo[]> # Documenti storici caricati su richiesta
 ```
 
 #### Proiezioni Sheets
@@ -1233,7 +1233,7 @@ ProiezioneClasseVM:
   movimenti: MovimentiClasseVM # Mobilità relativa alla partner
 ```
 
-### 8.17 `DocumentoLogVM` e `DocumentoStoricoVM`
+### 8.17 `DocumentoLogVM` e `DocumentoStoricoConTipo`
 
 ```yaml
 DocumentoLogVM:
@@ -1255,9 +1255,14 @@ DocumentoLogVM:
 ```
 
 ```yaml
-DocumentoStoricoVM:
-  annoScolastico: string # Anno scolastico di provenienza del log; es. "2025-2026"
-  documento: DocumentoLogVM # Documento ricostruito con forma canonica
+DocumentoStoricoConTipo:
+  anno: string # Anno scolastico di provenienza del log; es. "2025-2026"
+  nome: string # Nome del documento storico
+  link: string # URL del documento storico
+  tipo: string # LOG_DOCS.TIPO, la famiglia del documento
+  sottotipo: string # LOG_DOCS.SOTTOTIPO; usato per separare lo storico PEI/PDP
+  idGen: string # LOG_DOCS.ID_GEN, usato per l'abbinamento storico dei documenti generici
+  studenteEmail: string? # Valorizzato dall'aggregazione di classe per mantenere l'identità dello studente sorgente
 ```
 
 ### 8.18 `PianoPersonalizzatoVM`

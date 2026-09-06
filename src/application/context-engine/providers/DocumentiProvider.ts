@@ -4,7 +4,7 @@ import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { ILogDocumentoRepository } from '../../../domain/repositories/ILogDocumentoRepository';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
-import { buildDocumentoLogVm, buildDocumentoStoricoVm } from '../mappers/documentoVmMapper';
+import { buildDocumentoLogVm } from '../mappers/documentoVmMapper';
 import { elencoVm } from '../mappers/elencoVm';
 import { getAlunnoEntity, withFocusAlunno } from '../techEntities';
 
@@ -37,9 +37,7 @@ export class DocumentiProvider implements ContextProvider {
       focusAlunno.documenti = {
         ...elencoVm(elenco),
         storico: new LazyRef(() =>
-          includiStorico
-            ? service.perAlunnoConTipo(alunno.email.value, profondita).map(buildDocumentoStoricoVm)
-            : []
+          includiStorico ? service.perAlunnoConTipo(alunno.email.value, profondita) : []
         )
       };
     });

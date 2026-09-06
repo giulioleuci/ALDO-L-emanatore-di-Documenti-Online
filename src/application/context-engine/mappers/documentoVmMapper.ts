@@ -1,6 +1,5 @@
 import type { LogDocumento } from '../../../domain/entities/LogDocumento';
-import type { DocumentoLogVM, DocumentoStoricoVM } from '../Cdu';
-import type { DocumentoStoricoConTipo } from '../../storico/StoricoDocumentiService';
+import type { DocumentoLogVM } from '../Cdu';
 import { statoDocumentoLabel } from './labels';
 import { formatOggi } from '../dates';
 
@@ -24,29 +23,5 @@ export function buildDocumentoLogVm(l: LogDocumento): DocumentoLogVM {
     isNotificato: l.isNotificato(),
     dataCreazione,
     dataCreazioneBreve: dataCreazione === '' ? '' : formatOggi(new Date(dataCreazione)).breve
-  };
-}
-
-/** Canonical historical LOG_DOCS row -> DocumentoStoricoVM mapping (prior-year metadata only, no live id/stato). */
-export function buildDocumentoStoricoVm(item: DocumentoStoricoConTipo): DocumentoStoricoVM {
-  return {
-    annoScolastico: item.anno,
-    documento: {
-      id: null,
-      hasId: false,
-      nome: item.nome,
-      link: item.link,
-      tipo: item.tipo,
-      tipoLabel: item.tipo,
-      sottotipo: item.sottotipo,
-      sottotipoLabel: item.sottotipo,
-      hasSottotipo: item.sottotipo !== '',
-      generatoreId: item.idGen,
-      stato: '',
-      statoLabel: '',
-      isNotificato: false,
-      dataCreazione: '',
-      dataCreazioneBreve: ''
-    }
   };
 }

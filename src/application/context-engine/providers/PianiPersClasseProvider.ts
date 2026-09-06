@@ -10,7 +10,7 @@ import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvi
 import { ClasseId } from '../../../domain/value-objects/ClasseId';
 import { StatoDocumento } from '../../../domain/value-objects/enums';
 import { StoricoDocumentiService } from '../../storico/StoricoDocumentiService';
-import { buildDocumentoLogVm, buildDocumentoStoricoVm } from '../mappers/documentoVmMapper';
+import { buildDocumentoLogVm } from '../mappers/documentoVmMapper';
 import { tipoPianoLabel } from '../mappers/labels';
 import { elencoVm } from '../mappers/elencoVm';
 
@@ -69,7 +69,7 @@ export class PianiPersClasseProvider implements ContextProvider {
               service
                 .perAlunnoConTipo(email, profondita)
                 .filter((documento) => documento.tipo === TIPO_PIANO_PERS)
-                .map(buildDocumentoStoricoVm)
+                .map((documento) => ({ ...documento, studenteEmail: email }))
             )
           : []
       )

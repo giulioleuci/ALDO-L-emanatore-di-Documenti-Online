@@ -230,14 +230,13 @@ test('PianiPersClasseProvider: storico resolves prior-year docs for a student ev
   );
   const storico = cdu.focus.classe!.pianiPersonalizzati!.storico.get();
   expect(storico).toEqual([
-    {
-      annoScolastico: '2025-2026',
-      documento: expect.objectContaining({
-        nome: 'PEI a1 anno scorso',
-        link: 'http://d/old',
-        tipo: 'PIANO_PERS'
-      })
-    }
+    expect.objectContaining({
+      anno: '2025-2026',
+      nome: 'PEI a1 anno scorso',
+      link: 'http://d/old',
+      tipo: 'PIANO_PERS',
+      studenteEmail: 'a1@school.it'
+    })
   ]);
 });
 

@@ -161,10 +161,7 @@ test('DocumentiProvider: storico LazyRef resolves prior-year documents when incl
   );
   const storico = cdu.focus.alunno!.documenti!.storico.get();
   expect(storico).toEqual([
-    {
-      annoScolastico: '2025-2026',
-      documento: expect.objectContaining({ nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'PDP' })
-    }
+    expect.objectContaining({ anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old', tipo: 'PDP' })
   ]);
 });
 

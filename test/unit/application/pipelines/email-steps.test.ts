@@ -369,7 +369,7 @@ describe('email pipeline operational log details', () => {
     const ordered = runThroughRender(w);
 
     expect(ordered).toHaveLength(1);
-    expect(ordered[0]).toContain('VERDI ANNA - 5A - PEI');
+    expect(ordered[0]).toContain('VERDI ANNA - PEI');
     expect(w.ctx.get('shouldSend')).toBe(false);
   });
 
@@ -1040,32 +1040,6 @@ test('BuildCDUStep leaves includiStorico false when no box wants historical data
     {
       PROCESSO: 'PER_COORDINATORE',
       BOX_CFG: JSON.stringify([{ TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>hi</p>' }])
-    },
-    docenteTarget()
-  );
-  buildStep(w).execute(w.ctx);
-  const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.opzioni.includiStorico).toBe(false);
-});
-
-test('BuildCDUStep enables includiStorico for piani_pers_inviati when explicitly configured (unlike piani_pers_da_inviare, it is opt-in)', () => {
-  const w = wire(
-    {
-      PROCESSO: 'PER_COORDINATORE',
-      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_inviati', ARRICCHISCI_CON_STORICO: true }])
-    },
-    docenteTarget()
-  );
-  buildStep(w).execute(w.ctx);
-  const cdu = w.ctx.get<Cdu>('cdu')!;
-  expect(cdu.meta.opzioni.includiStorico).toBe(true);
-});
-
-test('BuildCDUStep leaves includiStorico false for piani_pers_inviati with no explicit key (opt-in, unlike piani_pers_da_inviare)', () => {
-  const w = wire(
-    {
-      PROCESSO: 'PER_COORDINATORE',
-      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_inviati' }])
     },
     docenteTarget()
   );

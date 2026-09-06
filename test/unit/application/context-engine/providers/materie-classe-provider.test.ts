@@ -17,6 +17,10 @@ import { MateriaId } from '../../../../../src/domain/value-objects/MateriaId';
 import { Docente } from '../../../../../src/domain/entities/Docente';
 import { Supplenza } from '../../../../../src/domain/entities/Supplenza';
 import { VariazioneCattedra } from '../../../../../src/domain/entities/VariazioneCattedra';
+import { VariazioneCattedraRepository } from '../../../../../src/infrastructure/repositories/VariazioneCattedraRepository';
+import { SupplenzaRepository } from '../../../../../src/infrastructure/repositories/SupplenzaRepository';
+import { MateriaRepository } from '../../../../../src/infrastructure/repositories/MateriaRepository';
+import { AldoTeachingAssignmentResolver } from '../../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import type { ISupplenzaRepository } from '../../../../../src/domain/repositories/ISupplenzaRepository';
 import type { IVariazioneCattedraRepository } from '../../../../../src/domain/repositories/IVariazioneCattedraRepository';
 import type { Row } from '../../../../../src/infrastructure/db/Database';
@@ -117,6 +121,196 @@ describe('MaterieClasseProvider', () => {
   });
 
   describe('continuita attachment (includiStorico)', () => {
+    test.each([
+      ['main', 'INF', 'INF', '3A', 'INF', false],
+      ['ITP qualifier', 'INF.itp', 'INF', '3A', 'INF.itp', true],
+      [
+        'specifica qualifier',
+        'INTERPRET.CHITARRA',
+        'INTERPRET.CHITARRA',
+        '3A',
+        'INTERPRET.CHITARRA',
+        false
+      ],
+      ['omitted class', 'INF.itp', 'INF', '', 'INF.itp', true],
+      ['omitted materia', 'INF', 'INF', '3A', '', false],
+      ['omitted class with wildcard materia', 'INF', 'INF', '', '*', false],
+      ['omitted substitution scopes', 'INF', 'INF', '3A', 'INF', false]
+    ])(
+      'preserves permanent holders and chained events in current and historical %s slots',
+      (_name, column, sigla, classiScope, materieScope, isItp) => {
+        const emails = ['originario', 'nuovo', 's1', 's2', 'altro'].map(
+          (name) => `${name}@scuola.it`
+        );
+        const [originario, nuovo, s1, s2, altro] = emails as [
+          string,
+          string,
+          string,
+          string,
+          string
+        ];
+        const secondStart = _name === 'main' ? '2025-11-01' : '2025-11-10';
+        const permanentHolder = _name === 'omitted substitution scopes' ? originario : nuovo;
+        const tables: Record<string, Row[]> = {
+          CLASSI: [
+            {
+              ID: '3A',
+              ANNO: 3,
+              INDIRIZZO: 'SCIENTIFICO',
+              STORICO: '3A',
+              INF: altro,
+              'INF.itp': altro,
+              'INTERPRET.CHITARRA': altro,
+              'INTERPRET.PIANO': altro,
+              [column]: originario
+            }
+          ],
+          MATERIE: ['INF', 'INTERPRET', 'INTERPRET.CHITARRA', 'INTERPRET.PIANO'].map((ID) => ({
+            ID,
+            NOME: ID
+          })),
+          DOCENTI: emails.map((EMAIL) => ({ EMAIL, COGNOME: EMAIL, NOME: 'Mario', GENERE: 'M' })),
+          VARIAZIONI_CATTEDRA: [
+            {
+              TITOLARE: originario,
+              NUOVO_TITOLARE: nuovo,
+              DAL: '2025-10-01',
+              CLASSI: classiScope,
+              MATERIE: materieScope
+            }
+          ],
+          SUPPLENZE: [
+            {
+              TITOLARE: s1,
+              SUPPLENTE: s2,
+              DAL: secondStart,
+              AL: '',
+              CLASSI: '3A',
+              MATERIE: column
+            },
+            {
+              TITOLARE: nuovo,
+              SUPPLENTE: s1,
+              DAL: '2025-11-01',
+              AL: '',
+              CLASSI: '3A',
+              MATERIE: column
+            }
+          ]
+        };
+        if (materieScope === 'INF.itp') tables.CLASSI![0]!.INF = originario;
+        if (materieScope === 'INTERPRET.CHITARRA')
+          tables.CLASSI![0]!['INTERPRET.PIANO'] = originario;
+        if (_name === 'omitted substitution scopes') {
+          tables.VARIAZIONI_CATTEDRA = [];
+          Object.assign(tables.SUPPLENZE![1]!, { TITOLARE: originario, CLASSI: '', MATERIE: '' });
+        }
+        const db = new FakeDatabase(tables);
+        const classiRepo = new ClasseRepository(db);
+        const docentiRepo = new DocenteRepository(db);
+        const classe = classiRepo.findById('3A')!;
+        const assignments = new AldoTeachingAssignmentResolver(db).resolveMateria(
+          classe,
+          MateriaId.of(sigla.split('.')[0]!),
+          new Date('2026-02-01')
+        );
+        const target = assignments.find(
+          (assignment) =>
+            (assignment.slot.kind === 'ITP') === isItp &&
+            assignment.slot.specifica === (sigla.split('.')[1] ?? null)
+        )!;
+        expect(target.titolare.id).toBe(permanentHolder);
+        expect(target.docenteEffettivo.id).toBe(s2);
+        const provider = new MaterieClasseProvider(
+          new MateriaRepository(db),
+          docentiRepo,
+          {
+            anniStorici: () => [
+              {
+                anno: '2025-2026',
+                db,
+                logDocs: new LogDocumentoRepository(db, new LazyRef(() => classiRepo))
+              }
+            ]
+          },
+          classiRepo,
+          new VariazioneCattedraRepository(db),
+          new SupplenzaRepository(db)
+        );
+        const council = (permanent: boolean): DocenteCdcVM[] =>
+          assignments.map((assignment) =>
+            docenteCdc(
+              'Docente',
+              (permanent ? assignment.titolare : assignment.docenteEffettivo).id!,
+              assignment.slot.specifica === null
+                ? assignment.slot.materia.value
+                : `${assignment.slot.materia.value}.${assignment.slot.specifica}`,
+              assignment.slot.kind === 'ITP'
+            )
+          );
+        const cdu = cduConClasse(council(false));
+        cdu.focus.classe!.consiglio!.titolari = council(true);
+        cdu.tech.entita.classe = classe;
+
+        provider.provide(cdu, params, makeOptions({ includiStorico: true }));
+
+        const catalogo = cdu.focus.classe!.materie!.elenco;
+        const continuita = catalogo.find((materia) => materia.sigla === sigla)!.continuita!;
+        const key = isItp ? 'itpTimeline' : 'titolareTimeline';
+        const expected = {
+          titolareOriginario: expect.objectContaining({ email: originario }),
+          variazioni:
+            permanentHolder === originario
+              ? []
+              : [
+                  {
+                    nuovoTitolare: expect.objectContaining({ email: nuovo }),
+                    dal: new Date('2025-10-01')
+                  }
+                ],
+          supplenze: expect.arrayContaining([
+            {
+              supplente: expect.objectContaining({ email: s1 }),
+              dal: new Date('2025-11-01'),
+              al: null
+            },
+            {
+              supplente: expect.objectContaining({ email: s2 }),
+              dal: new Date(secondStart),
+              al: null
+            }
+          ]),
+          hasVariazioni: permanentHolder !== originario,
+          hasSupplenze: true
+        };
+        expect(continuita[key]).toEqual(expected);
+        expect(continuita.anniPrecedenti[0]![key]).toEqual(expected);
+        expect(continuita[key]!.supplenze).toHaveLength(2);
+        expect(continuita.anniPrecedenti[0]![key]!.supplenze).toHaveLength(2);
+        expect(continuita.anniPrecedenti[0]![isItp ? 'itp' : 'titolare']?.email).toBe(
+          permanentHolder
+        );
+        expect(
+          continuita[isItp ? 'isContinuitaItpUltimiDueAnni' : 'isContinuitaUltimiDueAnni']
+        ).toBe(true);
+        if (isItp) {
+          expect(continuita.titolareTimeline?.variazioni).toEqual([]);
+          expect(continuita.titolareTimeline?.supplenze).toEqual([]);
+          expect(continuita.anniPrecedenti[0]!.titolareTimeline?.variazioni).toEqual([]);
+          expect(continuita.anniPrecedenti[0]!.titolareTimeline?.supplenze).toEqual([]);
+        }
+        if (sigla === 'INTERPRET.CHITARRA') {
+          const piano = catalogo.find(
+            (materia) => materia.sigla === 'INTERPRET.PIANO'
+          )!.continuita!;
+          expect(piano.titolareTimeline?.variazioni).toEqual([]);
+          expect(piano.titolareTimeline?.supplenze).toEqual([]);
+          expect(piano.anniPrecedenti[0]!.titolareTimeline?.variazioni).toEqual([]);
+          expect(piano.anniPrecedenti[0]!.titolareTimeline?.supplenze).toEqual([]);
+        }
+      }
+    );
+
     const docenti: IDocenteRepository = { findById: () => null } as unknown as IDocenteRepository;
     const classi: IClasseRepository = { getStorico: () => [] } as unknown as IClasseRepository;
     const storicoDb: StoricoDatabaseProvider = { anniStorici: () => [] };
@@ -180,7 +374,7 @@ describe('MaterieClasseProvider', () => {
         ]
       } as unknown as IClasseRepository;
       const variazioni: IVariazioneCattedraRepository = {
-        findByClasse: () => [
+        findAll: () => [
           VariazioneCattedra.fromData({
             TITOLARE: 'originario@scuola.it',
             NUOVO_TITOLARE: 'nuovo@scuola.it',
@@ -272,7 +466,7 @@ describe('MaterieClasseProvider', () => {
         } as unknown as IDocenteRepository,
         storicoDb,
         classiCorrenti,
-        { findByClasse: () => [] } as unknown as IVariazioneCattedraRepository,
+        { findAll: () => [] } as unknown as IVariazioneCattedraRepository,
         { findAll: () => [] } as unknown as ISupplenzaRepository
       );
       const cdu = cduConClasse([

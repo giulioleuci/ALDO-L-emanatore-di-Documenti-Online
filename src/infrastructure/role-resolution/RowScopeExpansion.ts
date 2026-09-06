@@ -1,4 +1,7 @@
-import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
+import type {
+  IClasseRepository,
+  TeachingSlotDescriptor
+} from '../../domain/repositories/IClasseRepository';
 
 /** Sentinel meaning "unrestricted"/"unqualified" for a scope dimension (ref RoleResolutionLib AssignmentSlot.matches/matchesContextDimensions). */
 export const ANY = '*';
@@ -122,6 +125,26 @@ export function expandRowScope(
       kind: group.kind,
       specifica: group.specifica
     }))
+  );
+}
+
+/** Uses the resolver's omission and slot-qualifier rules when exporting dated events. */
+export function rowAppliesToTeachingSlot(
+  classi: IClasseRepository,
+  classeId: string,
+  slot: TeachingSlotDescriptor,
+  row: Record<string, unknown>
+): boolean {
+  return expandRowScope(
+    classi,
+    typeof row.TITOLARE === 'string' ? row.TITOLARE : '',
+    typeof row.CLASSI === 'string' ? row.CLASSI : '',
+    typeof row.MATERIE === 'string' ? row.MATERIE : ''
+  ).some(
+    (scope) =>
+      callSplitCsvList(scope.classi).some((id) => id === ANY || id === classeId) &&
+      callSplitCsvList(scope.materie).some((id) => id === ANY || id === slot.materia.value) &&
+      callSlotCompatible(scope, { kind: slot.kind, specifica: slot.specifica ?? ANY })
   );
 }
 

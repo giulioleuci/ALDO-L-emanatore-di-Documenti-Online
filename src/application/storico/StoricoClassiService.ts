@@ -4,6 +4,12 @@ import { SupplenzaRepository } from '../../infrastructure/repositories/Supplenza
 import { VariazioneCattedraRepository } from '../../infrastructure/repositories/VariazioneCattedraRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
+import { AnnoScolastico } from '../../domain/value-objects/AnnoScolastico';
+import type { Classe } from '../../domain/entities/Classe';
+import type { VariazioneCattedra } from '../../domain/entities/VariazioneCattedra';
+import type { Supplenza } from '../../domain/entities/Supplenza';
+import { AldoTeachingAssignmentResolver } from '../../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
+import { rowAppliesToTeachingSlot } from '../../infrastructure/role-resolution/RowScopeExpansion';
 
 export interface DocenteMateriaStorico {
   docenteEmail: string;
@@ -24,6 +30,73 @@ export interface AnnoClasseStorico {
   nomeStorico: string | null;
   docenti: DocenteMateriaStorico[];
   cattedre: CattedraStorica[];
+}
+
+/** Shared event export for current and archived CLASSI slots; does not resolve the annual holder. */
+export function buildCattedreTimeline(
+  classe: Classe,
+  classi: IClasseRepository,
+  variazioni: VariazioneCattedra[],
+  supplenze: Supplenza[]
+): CattedraStorica[] {
+  return classi.getTeachingSlots(classe).flatMap((slot) => {
+    const applica = (evento: VariazioneCattedra | Supplenza): boolean =>
+      rowAppliesToTeachingSlot(classi, classe.classeId.value, slot, evento.toData());
+    const variazioniApplicabili = variazioni
+      .filter(applica)
+      .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime());
+    const supplenzeApplicabili = supplenze
+      .filter((evento) => evento.titolare !== evento.supplente && applica(evento))
+      .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime());
+    const delegationSource = new InMemoryDelegationSource({
+      delegations: supplenzeApplicabili.map(
+        (evento, index) =>
+          new Delegation({
+            id: String(index),
+            principalId: evento.titolare,
+            delegateId: evento.supplente,
+            validFrom: evento.getPeriodo().dal,
+            validTo: evento.getPeriodo().al,
+            scope: Scope.global()
+          })
+      )
+    });
+    return slot.actorEmails.map((titolareOriginario) => {
+      const titolari = new Set([titolareOriginario]);
+      const variazioniTimeline = variazioniApplicabili
+        .filter((evento) => {
+          if (!titolari.has(evento.titolare)) return false;
+          titolari.add(evento.nuovoTitolare);
+          return true;
+        })
+        .map((evento) => ({ nuovoTitolare: evento.nuovoTitolare, dal: evento.getDecorrenza() }));
+      // Ask the existing traversal at each start date, including chains whose rows share DAL.
+      const delegationIds = new Set(
+        supplenzeApplicabili.flatMap((evento) =>
+          [...titolari].flatMap((titolare) =>
+            delegationSource
+              .getDelegationChain(titolare, 'DOCENTE', Scope.global(), evento.getPeriodo().dal)
+              .map((delegation) => delegation.id)
+          )
+        )
+      );
+      const supplenzeTimeline = supplenzeApplicabili
+        .filter((_evento, index) => delegationIds.has(String(index)))
+        .map((evento) => ({
+          supplente: evento.supplente,
+          dal: evento.getPeriodo().dal,
+          al: evento.getPeriodo().al
+        }));
+      return {
+        materia:
+          slot.specifica === null ? slot.materia.value : `${slot.materia.value}.${slot.specifica}`,
+        isItp: slot.kind === 'ITP',
+        titolareOriginario,
+        variazioni: variazioniTimeline,
+        supplenze: supplenzeTimeline
+      };
+    });
+  });
 }
 
 /**
@@ -52,50 +125,25 @@ export class StoricoClassiService {
       const supplenze = new SupplenzaRepository(db);
       const classe = classi.findById(nomeStorico);
       const docenti: DocenteMateriaStorico[] = [];
-      const cattedre: CattedraStorica[] = [];
+      let cattedre: CattedraStorica[] = [];
       if (classe !== null) {
-        for (const d of classi.getAllDocentiCDC(classe)) {
-          for (const m of classi.getMaterieDelDocente(classe, d.id ?? '')) {
-            docenti.push({ docenteEmail: d.id ?? '', materia: m.sigla, isItp: m.isItp });
-          }
+        const fineAnno = new Date(`${AnnoScolastico.of(anno).getAnnoFine()}-08-31T00:00:00.000Z`);
+        for (const assignment of new AldoTeachingAssignmentResolver(db).resolveConsiglio(
+          classe,
+          fineAnno,
+          { includeReligioneAlt: true }
+        )) {
+          const { slot } = assignment;
+          docenti.push({
+            docenteEmail: assignment.titolare.id!,
+            materia:
+              slot.specifica === null
+                ? slot.materia.value
+                : `${slot.materia.value}.${slot.specifica}`,
+            isItp: slot.kind === 'ITP'
+          });
         }
-        const variazioniClasse = variazioni.findByClasse(classe.classeId);
-        const supplenzeAnno = supplenze.findAll();
-        for (const slot of classi.getTeachingSlots(classe)) {
-          const materia =
-            slot.specifica === null
-              ? slot.materia.value
-              : `${slot.materia.value}.${slot.specifica}`;
-          const variazioniApplicabili = variazioniClasse
-            .filter((x) => x.applicaAMateria(slot.materia))
-            .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime());
-          const supplenzeApplicabili = supplenzeAnno
-            .filter((x) => x.applicaAContesto(classe.classeId, slot.materia))
-            .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime());
-          for (const titolareOriginario of slot.actorEmails) {
-            const titolari = new Set([titolareOriginario]);
-            const variazioniTimeline = variazioniApplicabili
-              .filter((x) => {
-                if (!titolari.has(x.titolare)) return false;
-                titolari.add(x.nuovoTitolare);
-                return true;
-              })
-              .map((x) => ({ nuovoTitolare: x.nuovoTitolare, dal: x.getDecorrenza() }));
-            cattedre.push({
-              materia,
-              isItp: slot.kind === 'ITP',
-              titolareOriginario,
-              variazioni: variazioniTimeline,
-              supplenze: supplenzeApplicabili
-                .filter((x) => titolari.has(x.titolare))
-                .map((x) => ({
-                  supplente: x.supplente,
-                  dal: x.getPeriodo().dal,
-                  al: x.getPeriodo().al
-                }))
-            });
-          }
-        }
+        cattedre = buildCattedreTimeline(classe, classi, variazioni.findAll(), supplenze.findAll());
       }
       out.push({ anno, nomeStorico: nomeStorico.value, docenti, cattedre });
     }

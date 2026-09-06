@@ -490,6 +490,12 @@ describe('StoricoClassiService (13 §5)', () => {
 
   test('loads each historical cattedra with its variazioni and supplenze', () => {
     const tables = annoPrecedente();
+    tables.DOCENTI!.push({
+      EMAIL: 'nuovo@scuola.it',
+      COGNOME: 'NUOVO',
+      NOME: 'Mario',
+      GENERE: 'M'
+    });
     tables.VARIAZIONI_CATTEDRA = [
       {
         TITOLARE: 'rossi@school.it',
@@ -509,9 +515,7 @@ describe('StoricoClassiService (13 §5)', () => {
         MATERIE: 'MATE'
       }
     ];
-    const storico = new StoricoClassiService(
-      fakeProvider([annoStorico('2025-2026', tables)])
-    );
+    const storico = new StoricoClassiService(fakeProvider([annoStorico('2025-2026', tables)]));
 
     expect(storico.perClasse([ClasseId.of('4A')], 1)[0]!.cattedre).toEqual(
       expect.arrayContaining([
@@ -581,10 +585,21 @@ describe('StoricoClassiService (13 §5)', () => {
     });
     tables.VARIAZIONI_CATTEDRA = variazioniInput;
     tables.SUPPLENZE = supplenzeInput;
+    tables.DOCENTI!.push(
+      ...['nuovo', 'secondo', 'supplente-1', 'supplente-2'].map((nome) => ({
+        EMAIL: `${nome}@scuola.it`,
+        COGNOME: nome,
+        NOME: 'Mario',
+        GENERE: 'M'
+      }))
+    );
 
-    const timeline = new StoricoClassiService(fakeProvider([annoStorico('2025-2026', tables)]))
-      .perClasse([ClasseId.of('4A')], 1)[0]!
-      .cattedre.find((cattedra) => cattedra.materia === 'MATE' && !cattedra.isItp)!;
+    const anno = new StoricoClassiService(
+      fakeProvider([annoStorico('2025-2026', tables)])
+    ).perClasse([ClasseId.of('4A')], 1)[0]!;
+    const timeline = anno.cattedre.find(
+      (cattedra) => cattedra.materia === 'MATE' && !cattedra.isItp
+    )!;
     const ultimoTitolare =
       timeline.variazioni[timeline.variazioni.length - 1]?.nuovoTitolare ??
       timeline.titolareOriginario;
@@ -599,10 +614,21 @@ describe('StoricoClassiService (13 §5)', () => {
     );
     expect(timeline.supplenze[timeline.supplenze.length - 1]?.al ?? null).toBeNull();
     expect(ultimoTitolare).toBe(titolareFinale);
+    expect(
+      anno.docenti.find((docente) => docente.materia === 'MATE' && !docente.isItp)?.docenteEmail
+    ).toBe(titolareFinale);
   });
 
   test('preserves a dotted specifica identity while scoping main and ITP events by base materia', () => {
     const tables = annoPrecedente();
+    tables.DOCENTI!.push(
+      ...['nuovo', 'supplente'].map((nome) => ({
+        EMAIL: `${nome}@scuola.it`,
+        COGNOME: nome,
+        NOME: 'Mario',
+        GENERE: 'M'
+      }))
+    );
     tables.CLASSI![0]!['INTERPRET.CHITARRA'] = 'originario@scuola.it';
     tables.CLASSI![0]!['INTERPRET.CHITARRA.itp'] = 'itp-originario@scuola.it';
     tables.DOCENTI!.push(

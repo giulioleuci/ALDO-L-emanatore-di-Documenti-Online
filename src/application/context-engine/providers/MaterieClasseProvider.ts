@@ -11,7 +11,7 @@ import type { IClasseRepository } from '../../../domain/repositories/IClasseRepo
 import type { ISupplenzaRepository } from '../../../domain/repositories/ISupplenzaRepository';
 import type { IVariazioneCattedraRepository } from '../../../domain/repositories/IVariazioneCattedraRepository';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
-import { StoricoClassiService, type CattedraStorica } from '../../storico/StoricoClassiService';
+import { StoricoClassiService, buildCattedreTimeline } from '../../storico/StoricoClassiService';
 import { getClasseEntity } from '../techEntities';
 import { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
 
@@ -33,7 +33,8 @@ export class MaterieClasseProvider implements ContextProvider {
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
     const focus = cdu.focus.classe;
     if (focus?.consiglio === undefined) return;
-    const { elenco, ruoli } = this.catalogo(focus.consiglio.elenco);
+    const { elenco } = this.catalogo(focus.consiglio.elenco);
+    const { ruoli } = this.catalogo(focus.consiglio.titolari ?? focus.consiglio.elenco);
     focus.materie = {
       ...elencoVm(elenco),
       elencoDescrizione: elenco.map((materia) => materia.nome).join(', '),
@@ -111,47 +112,15 @@ export class MaterieClasseProvider implements ContextProvider {
       .map(({ db }) => new DocenteRepository(db));
     const variazioniRepository = this.variazioni;
     const supplenzeRepository = this.supplenze;
-    const variazioniCorrenti = variazioniRepository?.findByClasse(classe.classeId) ?? [];
-    const supplenzeCorrenti = supplenzeRepository?.findAll() ?? [];
-    const cattedreCorrenti: CattedraStorica[] =
+    const cattedreCorrenti =
       variazioniRepository === undefined || supplenzeRepository === undefined
         ? []
-        : this.classi.getTeachingSlots(classe).flatMap((slot) => {
-            const materia =
-              slot.specifica === null
-                ? slot.materia.value
-                : `${slot.materia.value}.${slot.specifica}`;
-            const variazioniApplicabili = variazioniCorrenti
-              .filter((x) => x.applicaAMateria(slot.materia))
-              .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime());
-            const supplenzeApplicabili = supplenzeCorrenti
-              .filter((x) => x.applicaAContesto(classe.classeId, slot.materia))
-              .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime());
-            return slot.actorEmails.map((titolareOriginario) => {
-              const titolari = new Set([titolareOriginario]);
-              const variazioni = variazioniApplicabili
-                .filter((x) => {
-                  if (!titolari.has(x.titolare)) return false;
-                  titolari.add(x.nuovoTitolare);
-                  return true;
-                })
-                .map((x) => ({ nuovoTitolare: x.nuovoTitolare, dal: x.getDecorrenza() }));
-              const supplenze = supplenzeApplicabili
-                .filter((x) => titolari.has(x.titolare))
-                .map((x) => ({
-                  supplente: x.supplente,
-                  dal: x.getPeriodo().dal,
-                  al: x.getPeriodo().al
-                }));
-              return {
-                materia,
-                isItp: slot.kind === 'ITP',
-                titolareOriginario,
-                variazioni,
-                supplenze
-              };
-            });
-          });
+        : buildCattedreTimeline(
+            classe,
+            this.classi,
+            variazioniRepository.findAll(),
+            supplenzeRepository.findAll()
+          );
     for (const materiaVm of materie) {
       const materia = this.materie.findById(materiaVm.sigla);
       if (materia === null) continue;

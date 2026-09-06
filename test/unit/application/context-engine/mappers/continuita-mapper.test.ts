@@ -16,7 +16,8 @@ describe('buildContinuita', () => {
       {
         anno: '2024-2025',
         nomeStorico: '4A-LC',
-        docenti: [{ docenteEmail: 'mario.rossi@scuola.edu.it', materia: 'GST', isItp: false }]
+        docenti: [{ docenteEmail: 'mario.rossi@scuola.edu.it', materia: 'GST', isItp: false }],
+        cattedre: []
       }
     ];
     const docenti: IDocenteRepository = {
@@ -33,7 +34,9 @@ describe('buildContinuita', () => {
       annoCorsoCorrente: 3,
       anniStorici,
       materiaCorrente,
-      docenti
+      docenti,
+      docentiStorici: [docenti],
+      cattedreCorrenti: []
     });
     expect(vm.anniPrecedenti).toHaveLength(1);
     const entry = vm.anniPrecedenti[0]!;
@@ -61,7 +64,8 @@ describe('buildContinuita', () => {
         docenti: [
           { docenteEmail: 'mario.rossi@scuola.edu.it', materia: 'GST', isItp: false },
           { docenteEmail: 'laura.gialli@scuola.edu.it', materia: 'GST', isItp: true }
-        ]
+        ],
+        cattedre: []
       },
       {
         anno: '2023-2024',
@@ -69,7 +73,8 @@ describe('buildContinuita', () => {
         docenti: [
           { docenteEmail: 'mario.rossi@scuola.edu.it', materia: 'GST', isItp: false },
           { docenteEmail: 'laura.gialli@scuola.edu.it', materia: 'GST', isItp: true }
-        ]
+        ],
+        cattedre: []
       }
     ];
     const docenti: IDocenteRepository = {
@@ -91,7 +96,9 @@ describe('buildContinuita', () => {
       annoCorsoCorrente: 3,
       anniStorici,
       materiaCorrente,
-      docenti
+      docenti,
+      docentiStorici: [docenti, docenti],
+      cattedreCorrenti: []
     });
     expect(vm.anniPrecedenti).toHaveLength(2);
     expect(vm.hasAnniPrecedenti).toBe(true);
@@ -104,5 +111,123 @@ describe('buildContinuita', () => {
     expect(vm.isContinuitaUltimiTreAnni).toBe(true);
     expect(vm.isContinuitaItpUltimiDueAnni).toBe(true);
     expect(vm.isContinuitaItpUltimiTreAnni).toBe(true);
+  });
+
+  it('maps current and historical main/ITP cattedra timelines with annual teachers', () => {
+    const materiaCorrente = Materia.fromData({
+      [COL_MATERIE.ID]: 'MAT',
+      [COL_MATERIE.NOME]: 'Matematica'
+    });
+    const docente = (email: string): Docente =>
+      ({
+        nome: email.split('@')[0],
+        cognome: 'Docente',
+        genere: 'M',
+        id: email
+      }) as unknown as Docente;
+    const repository = (...emails: string[]): IDocenteRepository =>
+      ({
+        findById: (email: string) => (emails.includes(email) ? docente(email) : null)
+      }) as unknown as IDocenteRepository;
+    const storico = repository(
+      'storico@scuola.it',
+      'nuovo@scuola.it',
+      'supplente@scuola.it',
+      'itp@scuola.it'
+    );
+    const input = {
+      siglaCorrente: 'MAT',
+      hasItp: true,
+      titolareCorrenteEmail: 'corrente@scuola.it',
+      itpCorrenteEmail: 'itp-corrente@scuola.it',
+      annoCorsoCorrente: 3,
+      anniStorici: [
+        {
+          anno: '2025-2026',
+          nomeStorico: '2A',
+          docenti: [
+            { docenteEmail: 'nuovo@scuola.it', materia: 'MAT', isItp: false },
+            { docenteEmail: 'itp@scuola.it', materia: 'MAT', isItp: true }
+          ],
+          cattedre: [
+            {
+              materia: 'MAT',
+              isItp: false,
+              titolareOriginario: 'storico@scuola.it',
+              variazioni: [{ nuovoTitolare: 'nuovo@scuola.it', dal: new Date('2025-10-01') }],
+              supplenze: [
+                {
+                  supplente: 'supplente@scuola.it',
+                  dal: new Date('2025-11-01'),
+                  al: new Date('2025-11-15')
+                }
+              ]
+            },
+            {
+              materia: 'MAT',
+              isItp: true,
+              titolareOriginario: 'itp@scuola.it',
+              variazioni: [],
+              supplenze: []
+            }
+          ]
+        }
+      ],
+      materiaCorrente,
+      docenti: repository('corrente@scuola.it', 'itp-corrente@scuola.it'),
+      docentiStorici: [storico],
+      cattedreCorrenti: [
+        {
+          materia: 'MAT',
+          isItp: false,
+          titolareOriginario: 'corrente@scuola.it',
+          variazioni: [],
+          supplenze: []
+        },
+        {
+          materia: 'MAT',
+          isItp: true,
+          titolareOriginario: 'itp-corrente@scuola.it',
+          variazioni: [],
+          supplenze: []
+        }
+      ]
+    };
+
+    const continuita = buildContinuita(input);
+
+    expect(continuita).toMatchObject({
+      titolareTimeline: {
+        titolareOriginario: expect.objectContaining({ email: 'corrente@scuola.it' }),
+        hasVariazioni: false,
+        hasSupplenze: false
+      },
+      itpTimeline: {
+        titolareOriginario: expect.objectContaining({ email: 'itp-corrente@scuola.it' })
+      }
+    });
+    expect(continuita.anniPrecedenti[0]).toMatchObject({
+      titolareTimeline: {
+        titolareOriginario: expect.objectContaining({ email: 'storico@scuola.it' }),
+        variazioni: [
+          {
+            nuovoTitolare: expect.objectContaining({ email: 'nuovo@scuola.it' }),
+            dal: new Date('2025-10-01')
+          }
+        ],
+        supplenze: [
+          {
+            supplente: expect.objectContaining({ email: 'supplente@scuola.it' }),
+            dal: new Date('2025-11-01'),
+            al: new Date('2025-11-15')
+          }
+        ],
+        hasVariazioni: true,
+        hasSupplenze: true
+      },
+      itpTimeline: {
+        titolareOriginario: expect.objectContaining({ email: 'itp@scuola.it' })
+      }
+    });
   });
 });

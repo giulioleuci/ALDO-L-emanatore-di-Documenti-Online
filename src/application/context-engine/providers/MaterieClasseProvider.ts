@@ -8,18 +8,27 @@ import { elencoVm } from '../mappers/elencoVm';
 import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';
 import type { IDocenteRepository } from '../../../domain/repositories/IDocenteRepository';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
+import type { ISupplenzaRepository } from '../../../domain/repositories/ISupplenzaRepository';
+import type { IVariazioneCattedraRepository } from '../../../domain/repositories/IVariazioneCattedraRepository';
 import type { StoricoDatabaseProvider } from '../../storico/StoricoDatabaseProvider';
-import { StoricoClassiService } from '../../storico/StoricoClassiService';
+import { StoricoClassiService, type CattedraStorica } from '../../storico/StoricoClassiService';
 import { getClasseEntity } from '../techEntities';
+import { DocenteRepository } from '../../../infrastructure/repositories/DocenteRepository';
+import { MateriaId } from '../../../domain/value-objects/MateriaId';
 
-interface RuoliCorrente { titolare: string | null; itp: string | null; }
+interface RuoliCorrente {
+  titolare: string | null;
+  itp: string | null;
+}
 
 export class MaterieClasseProvider implements ContextProvider {
   constructor(
     private readonly materie?: IMateriaRepository,
     private readonly docenti?: IDocenteRepository,
     private readonly storicoDb?: StoricoDatabaseProvider,
-    private readonly classi?: IClasseRepository
+    private readonly classi?: IClasseRepository,
+    private readonly variazioni?: IVariazioneCattedraRepository,
+    private readonly supplenze?: ISupplenzaRepository
   ) {}
 
   provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
@@ -36,7 +45,10 @@ export class MaterieClasseProvider implements ContextProvider {
     this.continuita(cdu, elenco, ruoli, options);
   }
 
-  private catalogo(consiglio: DocenteCdcVM[]): { elenco: MateriaVM[]; ruoli: Map<string, RuoliCorrente> } {
+  private catalogo(consiglio: DocenteCdcVM[]): {
+    elenco: MateriaVM[];
+    ruoli: Map<string, RuoliCorrente>;
+  } {
     const byKey = new Map<string, MateriaVM>();
     const ruoli = new Map<string, RuoliCorrente>();
     for (const docente of consiglio) {
@@ -49,7 +61,10 @@ export class MaterieClasseProvider implements ContextProvider {
         const key = `${materia.sigla}::${materia.specificita ?? ''}`;
         const existing = byKey.get(key);
         const docenti = [...(existing?.docenti ?? []), docente]
-          .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
+          .filter(
+            (persona, index, persone) =>
+              persone.findIndex((x) => x.email === persona.email) === index
+          )
           .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
         byKey.set(key, {
           ...materia,
@@ -66,19 +81,75 @@ export class MaterieClasseProvider implements ContextProvider {
       }
     }
     return {
-      elenco: [...byKey.values()].sort((a, b) => a.nome.localeCompare(b.nome) || a.sigla.localeCompare(b.sigla)),
+      elenco: [...byKey.values()].sort(
+        (a, b) => a.nome.localeCompare(b.nome) || a.sigla.localeCompare(b.sigla)
+      ),
       ruoli
     };
   }
 
-  private continuita(cdu: Cdu, materie: MateriaVM[], ruoli: Map<string, RuoliCorrente>, options: RecipeOptions): void {
-    if (!options.includiStorico || this.docenti === undefined || this.storicoDb === undefined || this.classi === undefined || this.materie === undefined) return;
+  private continuita(
+    cdu: Cdu,
+    materie: MateriaVM[],
+    ruoli: Map<string, RuoliCorrente>,
+    options: RecipeOptions
+  ): void {
+    if (
+      !options.includiStorico ||
+      this.docenti === undefined ||
+      this.storicoDb === undefined ||
+      this.classi === undefined ||
+      this.materie === undefined
+    )
+      return;
     const classe = getClasseEntity(cdu);
-    const anniStorici = new StoricoClassiService(this.storicoDb).perClasse(this.classi.getStorico(classe), options.profonditaAnniStorico);
+    const anniStorici = new StoricoClassiService(this.storicoDb).perClasse(
+      this.classi.getStorico(classe),
+      options.profonditaAnniStorico
+    );
+    const docentiStorici = this.storicoDb
+      .anniStorici(options.profonditaAnniStorico)
+      .map(({ db }) => new DocenteRepository(db));
+    const variazioniRepository = this.variazioni;
+    const supplenzeRepository = this.supplenze;
+    const variazioniCorrenti = variazioniRepository?.findByClasse(classe.classeId) ?? [];
+    const supplenzeCorrenti = supplenzeRepository?.findAll() ?? [];
+    const cattedreCorrenti: CattedraStorica[] =
+      variazioniRepository === undefined || supplenzeRepository === undefined
+        ? []
+        : this.classi.getTeachingSlots(classe).flatMap((slot) => {
+            const materia =
+              slot.specifica === null
+                ? slot.materia.value
+                : `${slot.materia.value}.${slot.specifica}`;
+            const materiaId = MateriaId.of(materia);
+            const variazioni = variazioniCorrenti
+              .filter((x) => x.applicaAMateria(materiaId))
+              .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime())
+              .map((x) => ({ nuovoTitolare: x.nuovoTitolare, dal: x.getDecorrenza() }));
+            const supplenze = supplenzeCorrenti
+              .filter((x) => x.applicaAContesto(classe.classeId, materiaId))
+              .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime())
+              .map((x) => ({
+                supplente: x.supplente,
+                dal: x.getPeriodo().dal,
+                al: x.getPeriodo().al
+              }));
+            return slot.actorEmails.map((titolareOriginario) => ({
+              materia,
+              isItp: slot.kind === 'ITP',
+              titolareOriginario,
+              variazioni,
+              supplenze
+            }));
+          });
     for (const materiaVm of materie) {
       const materia = this.materie.findById(materiaVm.sigla);
       if (materia === null) continue;
-      const ruoliCorrenti = ruoli.get(`${materiaVm.sigla}::${materiaVm.specificita ?? ''}`) ?? { titolare: null, itp: null };
+      const ruoliCorrenti = ruoli.get(`${materiaVm.sigla}::${materiaVm.specificita ?? ''}`) ?? {
+        titolare: null,
+        itp: null
+      };
       materiaVm.continuita = buildContinuita({
         siglaCorrente: materiaVm.sigla,
         hasItp: materiaVm.hasCattedraItp ?? false,
@@ -87,7 +158,9 @@ export class MaterieClasseProvider implements ContextProvider {
         annoCorsoCorrente: classe.anno.value,
         anniStorici,
         materiaCorrente: materia,
-        docenti: this.docenti
+        docenti: this.docenti,
+        docentiStorici,
+        cattedreCorrenti
       });
     }
   }

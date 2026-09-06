@@ -44,6 +44,8 @@ import { LogCartellaRepository } from '../infrastructure/repositories/LogCartell
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { LogJobRepository } from '../infrastructure/repositories/LogJobRepository';
+import { SupplenzaRepository } from '../infrastructure/repositories/SupplenzaRepository';
+import { VariazioneCattedraRepository } from '../infrastructure/repositories/VariazioneCattedraRepository';
 import {
   SessionActiveUserFacade,
   type IActiveUserFacade
@@ -154,6 +156,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('docenti', () => new DocenteRepository(deps.db));
   c.register('alunni', () => new AlunnoRepository(deps.db));
   c.register('materie', () => new MateriaRepository(deps.db));
+  c.register('variazioni', () => new VariazioneCattedraRepository(deps.db));
+  c.register('supplenze', () => new SupplenzaRepository(deps.db));
   c.register('ruoliSpeciali', () => new RuoloSpecialeRepository(deps.db));
   c.register('dipartimenti', () => new DipartimentoRepository(deps.db));
   c.register('oreAsl', () => new OreASLRepository(deps.db));
@@ -201,6 +205,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
       logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
       progetti: container.get<ProgettoRepository>('progetti'),
       dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
+      variazioni: container.get<VariazioneCattedraRepository>('variazioni'),
+      supplenze: container.get<SupplenzaRepository>('supplenze'),
       storicoDb: container.get<StoricoDatabaseProvider>('storicoDb')
     })
   );

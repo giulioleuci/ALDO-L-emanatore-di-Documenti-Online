@@ -18,6 +18,8 @@ import { MovimentoAlunnoRepository } from '../infrastructure/repositories/Movime
 import { OreASLRepository } from '../infrastructure/repositories/OreASLRepository';
 import { ProgettoRepository } from '../infrastructure/repositories/ProgettoRepository';
 import { RuoloSpecialeRepository } from '../infrastructure/repositories/RuoloSpecialeRepository';
+import { SupplenzaRepository } from '../infrastructure/repositories/SupplenzaRepository';
+import { VariazioneCattedraRepository } from '../infrastructure/repositories/VariazioneCattedraRepository';
 import { AldoTeachingAssignmentResolver } from '../infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import {
   ContextEngineFactory,
@@ -57,6 +59,8 @@ function contextDependencies(
     logDocs: new LogDocumentoRepository(db, new LazyRef(() => classi)),
     progetti: new ProgettoRepository(db),
     dipartimenti: new DipartimentoRepository(db),
+    variazioni: new VariazioneCattedraRepository(db),
+    supplenze: new SupplenzaRepository(db),
     // exactOptionalPropertyTypes: only include the key when an override was
     // actually given — an explicit `storicoDb: undefined` is a type error
     // against ContextEngineDependencies's `storicoDb?: StoricoDatabaseProvider`.
@@ -106,9 +110,7 @@ export function composeRisolutoreRuoli(
   db: RepositoryDatabase,
   teachingAssignments: ITeachingAssignmentResolver = new AldoTeachingAssignmentResolver(db)
 ): RisolutoreRuoliService {
-  return new RisolutoreRuoliService(
-    composeRisolutoreRuoliDependencies(db, teachingAssignments)
-  );
+  return new RisolutoreRuoliService(composeRisolutoreRuoliDependencies(db, teachingAssignments));
 }
 
 export function composeEmailNotificationService(

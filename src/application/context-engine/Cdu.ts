@@ -42,14 +42,7 @@ export interface MetadatiVM {
   tipoOperazioneLabel: 'Generazione documento' | 'Invio notifica';
   oggi: DataStampabileVM;
   target: string;
-  tipoTarget:
-    | 'classe'
-    | 'alunno'
-    | 'docente'
-    | 'piano'
-    | 'carenza'
-    | 'materia'
-    | 'dipartimento';
+  tipoTarget: 'classe' | 'alunno' | 'docente' | 'piano' | 'carenza' | 'materia' | 'dipartimento';
   materiaCorrente: string | null;
   opzioni: OpzioniCduVM;
   progressivo?: number;
@@ -140,12 +133,24 @@ export interface ContinuitaVM {
     hasTitolare: boolean;
     itp: PersonaVM | null;
     hasItp: boolean;
+    titolareTimeline: CattedraTimelineVM | null;
+    itpTimeline: CattedraTimelineVM | null;
   }>;
+  titolareTimeline: CattedraTimelineVM | null;
+  itpTimeline: CattedraTimelineVM | null;
   hasAnniPrecedenti: boolean;
   isContinuitaUltimiDueAnni: boolean;
   isContinuitaUltimiTreAnni: boolean;
   isContinuitaItpUltimiDueAnni: boolean;
   isContinuitaItpUltimiTreAnni: boolean;
+}
+
+export interface CattedraTimelineVM {
+  titolareOriginario: PersonaVM | null;
+  variazioni: Array<{ nuovoTitolare: PersonaVM | null; dal: Date }>;
+  supplenze: Array<{ supplente: PersonaVM | null; dal: Date; al: Date | null }>;
+  hasVariazioni: boolean;
+  hasSupplenze: boolean;
 }
 
 export interface CurriculumVM {

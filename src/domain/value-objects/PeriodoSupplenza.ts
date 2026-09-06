@@ -12,8 +12,8 @@ export class PeriodoSupplenza {
   get dal(): Date {
     return this.range.start;
   }
-  get al(): Date {
-    return this.range.end;
+  get al(): Date | null {
+    return this.range.isOpenEnded() ? null : this.range.end;
   }
 
   static of(dal: Date, al: Date | null): PeriodoSupplenza {

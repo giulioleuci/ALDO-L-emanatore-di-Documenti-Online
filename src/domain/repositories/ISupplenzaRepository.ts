@@ -2,6 +2,7 @@ import type { Supplenza } from '../entities/Supplenza';
 import type { Docente } from '../entities/Docente';
 
 export interface ISupplenzaRepository {
+  findAll(): Supplenza[];
   findByTitolare(docente: Docente): Supplenza[];
   findBySupplente(docente: Docente): Supplenza[];
   findAttive(data: Date): Supplenza[];

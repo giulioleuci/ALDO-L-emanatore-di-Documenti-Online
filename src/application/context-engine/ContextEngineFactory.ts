@@ -40,6 +40,8 @@ import type { IMovimentoAlunnoRepository } from '../../domain/repositories/IMovi
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ProgettoRepository } from '../../infrastructure/repositories/ProgettoRepository';
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
+import type { ISupplenzaRepository } from '../../domain/repositories/ISupplenzaRepository';
+import type { IVariazioneCattedraRepository } from '../../domain/repositories/IVariazioneCattedraRepository';
 
 export interface ContextEngineDependencies {
   master: IMasterSheetRepository;
@@ -54,6 +56,8 @@ export interface ContextEngineDependencies {
   logDocs: ILogDocumentoRepository;
   progetti: ProgettoRepository;
   dipartimenti: IDipartimentoRepository;
+  variazioni: IVariazioneCattedraRepository;
+  supplenze: ISupplenzaRepository;
   /**
    * Override for the real `MasterStoricoDatabaseProvider` this factory builds
    * from `master` by default. Production callers (Bootstrap.ts) must never
@@ -88,6 +92,8 @@ export class ContextEngineFactory {
     logDocs,
     progetti,
     dipartimenti,
+    variazioni,
+    supplenze,
     storicoDb: storicoDbOverride
   }: ContextEngineDependencies): ContextBuilder {
     const storicoDb =
@@ -121,7 +127,10 @@ export class ContextEngineFactory {
       .registerProvider('movimenti', movimentiProvider)
       .registerProvider('tutor', tutorProvider)
       .registerProvider('consiglio', consiglioProvider)
-      .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
+      .registerProvider(
+        'materie',
+        new MaterieClasseProvider(materie, docenti, storicoDb, classi, variazioni, supplenze)
+      )
       .registerProvider('docenteClasseMateriaFocus', new DocenteClasseMateriaFocusProvider())
       .registerProvider('docenteClasseFocus', new DocenteClasseFocusProvider())
       .registerProvider('classeMateriaFocus', new ClasseMateriaFocusProvider())
@@ -129,7 +138,12 @@ export class ContextEngineFactory {
       .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
       .registerProvider(
         'partner',
-        new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, movimentiProvider)
+        new PartnerProjectionProvider(
+          classeProvider,
+          studentiProvider,
+          tutorProvider,
+          movimentiProvider
+        )
       )
       .registerProvider('carenze', new CarenzeProvider(alunni, materie))
       .registerProvider('piani', new PianiProvider(alunni))
@@ -140,9 +154,15 @@ export class ContextEngineFactory {
       .registerProvider('statistiche', new StatisticheProvider(classi, docenti, alunni))
       .registerProvider('storicoClasse', new StoricoClasseProvider(storicoDb, classi))
       .registerProvider('storico', new StoricoProvider(storicoDb))
-      .registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni, storicoDb))
+      .registerProvider(
+        'pianiPersClasse',
+        new PianiPersClasseProvider(classi, logDocs, alunni, storicoDb)
+      )
       .registerProvider('documentiClasse', new DocumentiClasseProvider(classi, logDocs, storicoDb))
-      .registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, materie, logDocs))
+      .registerProvider(
+        'dipartimentoFocus',
+        new DipartimentoProvider(dipartimenti, docenti, materie, logDocs)
+      )
       .registerProvider(
         'docenteAggregatoFocus',
         new DocenteAggregatoFocusProvider(classi, materie, teachingAssignments)

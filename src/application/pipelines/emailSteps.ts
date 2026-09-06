@@ -257,7 +257,7 @@ export class BuildCDUStep extends Step {
       hasSostituisce: titolare !== null,
       classi: { elenco: classi, hasElenco: classi.length > 0, numero: classi.length, elencoDescrizione: classi.map((classe) => classe.nome).join(', ') },
       materie: { elenco: materieCompetenza, hasElenco: materieCompetenza.length > 0, numero: materieCompetenza.length, elencoDescrizione: materieCompetenza.map((materia) => materia.nome).join(', '), sigle: materieCompetenza.map((materia) => materia.sigla).join(', ') },
-      cattedre: { elenco: cattedre, hasElenco: cattedre.length > 0, numero: cattedre.length, elencoDescrizione: cattedre.map((cattedra) => cattedra.sezioneEstesa).join(', ') },
+      cattedre: { elenco: cattedre, hasElenco: cattedre.length > 0, numero: cattedre.length, elencoDescrizione: cattedre.map((cattedra) => cattedra.sezioneEstesa).join(', '), orePot: docente?.getOrePot() ?? 0 },
       comunicazione: {
         salutoIniziale: salutoPerTarget(t, docente, alunno),
         oggetto: '',

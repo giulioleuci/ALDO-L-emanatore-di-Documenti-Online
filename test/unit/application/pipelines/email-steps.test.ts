@@ -750,6 +750,22 @@ test('BuildCDUStep computes cattedre + materieCompetenza across multiple classes
   expect(destinatario.materie.elenco.map((m) => m.sigla)).toEqual(['MATE']);
 });
 
+test('BuildCDUStep exposes DOCENTI.ORE_POT on destinatario.cattedre.orePot', () => {
+  const tables = fixtureTables();
+  (tables['DOCENTI'] as Row[]).find((r) => r.EMAIL === 'rossi@school.it')!.ORE_POT = 3;
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget(), tables);
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.destinatario!.cattedre.orePot).toBe(3);
+});
+
+test('BuildCDUStep defaults destinatario.cattedre.orePot to 0 when DOCENTI.ORE_POT is absent', () => {
+  const w = wire({ PROCESSO: 'PER_DOCENTE' }, docenteTarget());
+  buildStep(w).execute(w.ctx);
+  const cdu = w.ctx.get<Cdu>('cdu')!;
+  expect(cdu.destinatario!.cattedre.orePot).toBe(0);
+});
+
 test('BuildCDUStep collapses all three classes of an articolazione group (parent + both partners) into a single cattedra row (design 2026-08-22 articolata dedupe)', () => {
   const w = wire(
     { PROCESSO: 'PER_DOCENTE' },

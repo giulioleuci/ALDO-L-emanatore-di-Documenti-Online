@@ -811,7 +811,7 @@ export interface DestinatarioVM extends PersonaVM {
   hasSostituisce: boolean;
   classi: ElencoVM<ClasseSintesiVM> & { elencoDescrizione: string };
   materie: ElencoVM<MateriaVM> & { elencoDescrizione: string; sigle: string };
-  cattedre: ElencoVM<CattedraVM> & { elencoDescrizione: string };
+  cattedre: ElencoVM<CattedraVM> & { elencoDescrizione: string; orePot: number };
   comunicazione: {
     salutoIniziale: string;
     oggetto: string;

@@ -1,7 +1,10 @@
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { ClasseRepository } from '../../infrastructure/repositories/ClasseRepository';
+import { SupplenzaRepository } from '../../infrastructure/repositories/SupplenzaRepository';
+import { VariazioneCattedraRepository } from '../../infrastructure/repositories/VariazioneCattedraRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
+import { MateriaId } from '../../domain/value-objects/MateriaId';
 
 export interface DocenteMateriaStorico {
   docenteEmail: string;
@@ -9,10 +12,19 @@ export interface DocenteMateriaStorico {
   isItp: boolean;
 }
 
+export interface CattedraStorica {
+  materia: string;
+  isItp: boolean;
+  titolareOriginario: string;
+  variazioni: { nuovoTitolare: string; dal: Date }[];
+  supplenze: { supplente: string; dal: Date; al: Date | null }[];
+}
+
 export interface AnnoClasseStorico {
   anno: string;
   nomeStorico: string | null;
   docenti: DocenteMateriaStorico[];
+  cattedre: CattedraStorica[];
 }
 
 /**
@@ -33,20 +45,43 @@ export class StoricoClassiService {
       const { anno, db } = anni[i]!;
       const nomeStorico = storico[i] ?? null;
       if (nomeStorico === null) {
-        out.push({ anno, nomeStorico: null, docenti: [] });
+        out.push({ anno, nomeStorico: null, docenti: [], cattedre: [] });
         continue;
       }
       const classi: IClasseRepository = new ClasseRepository(db);
+      const variazioni = new VariazioneCattedraRepository(db);
+      const supplenze = new SupplenzaRepository(db);
       const classe = classi.findById(nomeStorico);
       const docenti: DocenteMateriaStorico[] = [];
+      const cattedre: CattedraStorica[] = [];
       if (classe !== null) {
         for (const d of classi.getAllDocentiCDC(classe)) {
           for (const m of classi.getMaterieDelDocente(classe, d.id ?? '')) {
             docenti.push({ docenteEmail: d.id ?? '', materia: m.sigla, isItp: m.isItp });
+            const materia = MateriaId.of(m.sigla);
+            cattedre.push({
+              materia: m.sigla,
+              isItp: m.isItp,
+              titolareOriginario: d.id ?? '',
+              variazioni: variazioni
+                .findByClasse(classe.classeId)
+                .filter((x) => x.applicaAMateria(materia))
+                .sort((a, b) => a.getDecorrenza().getTime() - b.getDecorrenza().getTime())
+                .map((x) => ({ nuovoTitolare: x.nuovoTitolare, dal: x.getDecorrenza() })),
+              supplenze: supplenze
+                .findAll()
+                .filter((x) => x.applicaAContesto(classe.classeId, materia))
+                .sort((a, b) => a.getPeriodo().dal.getTime() - b.getPeriodo().dal.getTime())
+                .map((x) => ({
+                  supplente: x.supplente,
+                  dal: x.getPeriodo().dal,
+                  al: x.getPeriodo().al
+                }))
+            });
           }
         }
       }
-      out.push({ anno, nomeStorico: nomeStorico.value, docenti });
+      out.push({ anno, nomeStorico: nomeStorico.value, docenti, cattedre });
     }
     return out;
   }

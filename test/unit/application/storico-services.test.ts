@@ -488,6 +488,50 @@ describe('StoricoClassiService (13 §5)', () => {
     ]);
   });
 
+  test('loads each historical cattedra with its variazioni and supplenze', () => {
+    const tables = annoPrecedente();
+    tables.VARIAZIONI_CATTEDRA = [
+      {
+        TITOLARE: 'rossi@school.it',
+        NUOVO_TITOLARE: 'nuovo@scuola.it',
+        DAL: '2025-10-01',
+        CLASSI: '4A',
+        MATERIE: 'MATE'
+      }
+    ];
+    tables.SUPPLENZE = [
+      {
+        TITOLARE: 'rossi@school.it',
+        SUPPLENTE: 'supplente@scuola.it',
+        DAL: '2025-11-01',
+        AL: '2025-11-15',
+        CLASSI: '4A',
+        MATERIE: 'MATE'
+      }
+    ];
+    const storico = new StoricoClassiService(
+      fakeProvider([annoStorico('2025-2026', tables)])
+    );
+
+    expect(storico.perClasse([ClasseId.of('4A')], 1)[0]!.cattedre).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          materia: 'MATE',
+          isItp: false,
+          titolareOriginario: 'rossi@school.it',
+          variazioni: [{ nuovoTitolare: 'nuovo@scuola.it', dal: new Date('2025-10-01') }],
+          supplenze: [
+            {
+              supplente: 'supplente@scuola.it',
+              dal: new Date('2025-11-01'),
+              al: new Date('2025-11-15')
+            }
+          ]
+        })
+      ])
+    );
+  });
+
   test('a year with no STORICO entry yields an empty record (class did not exist under a known name)', () => {
     const anni = [
       annoStorico('2025-2026', annoPrecedente()),
@@ -495,7 +539,12 @@ describe('StoricoClassiService (13 §5)', () => {
     ];
     const service = new StoricoClassiService(fakeProvider(anni));
     const records = service.perClasse([ClasseId.of('4A')], 2); // only one STORICO name for two years
-    expect(records[1]).toEqual({ anno: '2024-2025', nomeStorico: null, docenti: [] });
+    expect(records[1]).toEqual({
+      anno: '2024-2025',
+      nomeStorico: null,
+      docenti: [],
+      cattedre: []
+    });
   });
 });
 
@@ -606,7 +655,15 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
         expect.anything(),
         expect.anything(),
         exceptionService,
-        { verifyTables: [TABLE.CLASSI, TABLE.LOG_DOCS] }
+        {
+          verifyTables: [
+            TABLE.CLASSI,
+            TABLE.DOCENTI,
+            TABLE.VARIAZIONI_CATTEDRA,
+            TABLE.SUPPLENZE,
+            TABLE.LOG_DOCS
+          ]
+        }
       );
     } finally {
       exceptionSpy.mockRestore();

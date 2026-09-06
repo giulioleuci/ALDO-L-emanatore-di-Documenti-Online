@@ -69,8 +69,12 @@ export class VariazioneCattedra extends AldoEntity {
 
   /** True if the change has taken effect by the given date (DAL ≤ data, ref 01 §4). */
   isDecorsaA(data: Date): boolean {
-    const dal = new Date(this.dalRaw);
+    const dal = this.getDecorrenza();
     return !Number.isNaN(dal.getTime()) && dal.getTime() <= data.getTime();
+  }
+
+  getDecorrenza(): Date {
+    return new Date(this.dalRaw);
   }
 
   getClassiScope(): CsvScope {

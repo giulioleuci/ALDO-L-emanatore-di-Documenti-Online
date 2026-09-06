@@ -55,7 +55,15 @@ export class MasterStoricoDatabaseProvider implements StoricoDatabaseProvider {
           ServiceFactory.getUtils(),
           ServiceFactory.getCacheService().getScriptCache(),
           ServiceFactory.getExceptionService(),
-          { verifyTables: [TABLE.CLASSI, TABLE.LOG_DOCS] }
+          {
+            verifyTables: [
+              TABLE.CLASSI,
+              TABLE.DOCENTI,
+              TABLE.VARIAZIONI_CATTEDRA,
+              TABLE.SUPPLENZE,
+              TABLE.LOG_DOCS
+            ]
+          }
         )
       );
       const anno: AnnoStorico = {

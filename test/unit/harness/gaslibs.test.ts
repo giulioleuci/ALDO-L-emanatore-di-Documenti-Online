@@ -325,7 +325,7 @@ test('custom SourceStrategy registered via ImportEngine.registerCustomSource wor
 test('vendored bundle exposes DatasetValidator (Feature 2)', () => {
   const validator = new DatasetValidator();
   const { violations } = validator.validate(
-    { T: [{ A: '' }] },
+    { T: [{ A: '', B: 'data' }] },
     [{ id: 'R', type: 'required', table: 'T', columns: ['A'] }]
   );
   expect(violations).toHaveLength(1);

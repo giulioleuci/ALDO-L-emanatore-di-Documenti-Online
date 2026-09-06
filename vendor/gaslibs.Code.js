@@ -26062,6 +26062,11 @@ function cellToString(value) {
 function splitCsv(value) {
   return value.split(',').map(part => part.trim()).filter(part => part.length > 0);
 }
+function rowIsEmpty(row) {
+  const values = Object.values(row);
+  if (values.length === 0) return true;
+  return values.every(v => cellToString(v) === '');
+}
 class DatasetValidator {
 
 
@@ -26091,7 +26096,8 @@ class DatasetValidator {
         }
         return;
       }
-      violations.push(...this._applyRule(rule, rows, datasets, context));
+      const nonEmptyRows = rows.filter(r => !rowIsEmpty(r));
+      violations.push(...this._applyRule(rule, nonEmptyRows, datasets, context));
     });
     return {
       violations
@@ -43364,7 +43370,7 @@ class TableService {
     const rows = [];
     for (let i = 1; i < data.length; i++) {
 
-      if (!data[i] || data[i].every(cell => cell === '' || cell === null || cell === undefined)) {
+      if (!data[i] || data[i].every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
         continue;
       }
       const rowObject = {};

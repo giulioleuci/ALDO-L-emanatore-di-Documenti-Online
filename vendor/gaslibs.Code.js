@@ -43088,7 +43088,15 @@ class TableService {
 
 
 
-  getRows() {
+
+
+
+
+  getRows(options = {}) {
+    if (options.preserveEmptyRows === true) {
+      const data = this.spreadsheetService.getRanges(this.spreadsheetId, `'${this.sheetName}'!A:ZZ`);
+      return this._processRawData(data, options).rows;
+    }
     this._ensureDataLoaded();
 
 
@@ -43327,8 +43335,9 @@ class TableService {
 
 
 
-  getAllRows() {
-    return this.getRows();
+
+  getAllRows(options = {}) {
+    return this.getRows(options);
   }
 
 
@@ -43384,7 +43393,8 @@ class TableService {
 
 
 
-  _processRawData(data) {
+
+  _processRawData(data, options = {}) {
     if (!data || data.length === 0) {
       this._logger.warn(`No data (not even header) provided or found for sheet ${this.sheetName}`);
       return {
@@ -43397,6 +43407,7 @@ class TableService {
     for (let i = 1; i < data.length; i++) {
 
       if (!data[i] || data[i].every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
+        if (options.preserveEmptyRows === true) rows.push({});
         continue;
       }
       const rowObject = {};

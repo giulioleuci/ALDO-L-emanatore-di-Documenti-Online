@@ -54,8 +54,8 @@ export class DatabaseValidationService {
     const violazioni = violations
       .map((v) => ({
         tabella: v.table,
-        // DatasetValidator row indexes are 0-based within the data array; the
-        // sheet has a header row, so the physical row is index + 2.
+        // The persisted snapshot retains blank-row positions; the header
+        // offsets DatasetValidator's 0-based data index by two sheet rows.
         riga: v.rowIndex + 2,
         campo: v.column,
         valore: v.value,
@@ -78,7 +78,7 @@ export class DatabaseValidationService {
   private leggiTabelle(): Record<string, Array<Record<string, unknown>>> {
     const datasets: Record<string, Array<Record<string, unknown>>> = {};
     for (const table of VALIDATION_TABLES) {
-      datasets[table] = this.deps.db.table(table).findAll();
+      datasets[table] = this.deps.db.table(table).findAll({ preserveEmptyRows: true });
     }
     return datasets;
   }

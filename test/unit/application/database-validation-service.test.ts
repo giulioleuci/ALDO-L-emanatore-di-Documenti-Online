@@ -1,4 +1,5 @@
 import { DatabaseValidationService } from '../../../src/application/services/DatabaseValidationService';
+import { SheetDbAdapter } from '../../../src/infrastructure/db/SheetDbAdapter';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeSpreadsheetReportFacade } from '../../fakes/FakeSpreadsheetReportFacade';
 import { MasterConfig } from '../../../src/domain/entities/MasterConfig';
@@ -68,6 +69,34 @@ test('a broken FK is reported with the sheet row number (index + 2)', () => {
   expect(report.reports[0]!.righe).toContainEqual([
     'ALUNNI', '3', 'CLASSE', '99X', 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
   ]);
+});
+
+test('real table reads report physical row 3 after whitespace-only row 2', () => {
+  const records = tabelleValide();
+  records['ALUNNI'] = [{ EMAIL: ' ', CLASSE: '\t' }, { EMAIL: 'b@x.it', CLASSE: '99X' }];
+  const tables: Record<string, TableService> = {};
+  for (const [name, rows] of Object.entries(records)) {
+    const header = Object.keys(rows[0]!);
+    const raw = [header, ...rows.map((row) => header.map((column) => row[column]))];
+    tables[name] = new TableService(
+      name, 'ss1', { getRanges: () => raw }, new LoggerService(), new UtilsService(), raw
+    );
+  }
+  const db = new SheetDbAdapter({
+    tables, save() {}, beginTransaction() {}, commit() {}, rollback() {}
+  });
+  const report = new FakeSpreadsheetReportFacade();
+  const service = new DatabaseValidationService({ db, master: master(), report });
+
+  expect(db.table('ALUNNI').findAll()).toEqual([{ EMAIL: 'b@x.it', CLASSE: '99X' }]);
+  expect(service.esegui().violazioni).toEqual([{
+    tabella: 'ALUNNI', riga: 3, campo: 'CLASSE', valore: '99X',
+    errore: 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
+  }]);
+  expect(report.reports[0]!.righe).toContainEqual([
+    'ALUNNI', '3', 'CLASSE', '99X', 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
+  ]);
+  expect(db.table('ALUNNI').findAll()).toEqual([{ EMAIL: 'b@x.it', CLASSE: '99X' }]);
 });
 
 test('an ITP column assigned to a non-ITP docente is reported', () => {

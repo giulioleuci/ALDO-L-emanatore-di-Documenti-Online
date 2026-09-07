@@ -319,8 +319,9 @@ declare global {
 
   // --- SheetDBLib (L2): ORM entry point (tables, save, ACID-like transactions) ---
   interface SheetTableService {
-    getRows(): Record<string, unknown>[];
-    getAllRows(): Record<string, unknown>[];
+    /** Opt-in: fresh persisted rows, blanks retained; excludes virtual columns and pending writes. */
+    getRows(options?: { preserveEmptyRows?: boolean }): Record<string, unknown>[];
+    getAllRows(options?: { preserveEmptyRows?: boolean }): Record<string, unknown>[];
     getByPK(pkValue: string): Record<string, unknown> | null;
     insertRow(data: Record<string, unknown>): Record<string, unknown>;
     updateRowById(id: string, data: Record<string, unknown>): void;
@@ -363,8 +364,9 @@ declare global {
       preloadedData?: unknown[][] | null,
       schemaValidator?: unknown
     );
-    getRows(): Record<string, unknown>[];
-    getAllRows(): Record<string, unknown>[];
+    /** Opt-in: fresh persisted rows, blanks retained; excludes virtual columns and pending writes. */
+    getRows(options?: { preserveEmptyRows?: boolean }): Record<string, unknown>[];
+    getAllRows(options?: { preserveEmptyRows?: boolean }): Record<string, unknown>[];
     getByPK(pkValue: string): Record<string, unknown> | null;
     insertRow(data: Record<string, unknown>): Record<string, unknown>;
     updateRowById(id: string, data: Record<string, unknown>): Record<string, unknown>;

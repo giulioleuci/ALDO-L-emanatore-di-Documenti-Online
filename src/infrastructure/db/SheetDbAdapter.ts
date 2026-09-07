@@ -86,8 +86,8 @@ class SheetTableAdapter implements IReadableTable {
   }
 
   // --- IReadableTable (pipeline port) ---
-  findAll(): Row[] {
-    return this.table === undefined ? [] : this.table.getAllRows().map(stripVirtual);
+  findAll(options?: { preserveEmptyRows?: boolean }): Row[] {
+    return this.table === undefined ? [] : this.table.getAllRows(options).map(stripVirtual);
   }
   find(predicate: (row: Row) => boolean): Row | null {
     return this.findAll().find(predicate) ?? null;

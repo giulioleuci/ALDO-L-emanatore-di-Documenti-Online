@@ -1,7 +1,8 @@
 export type Row = Record<string, string | number | boolean | null>;
 
 export interface IReadableTable {
-  findAll(): Row[];
+  /** Opt-in physical snapshot for validation; excludes queued writes and retains blank rows. */
+  findAll(options?: { preserveEmptyRows?: boolean }): Row[];
   find(predicate: (row: Row) => boolean): Row | null;
   insert(row: Row): void;
   updateRowWhere(match: Row, row: Row): void;

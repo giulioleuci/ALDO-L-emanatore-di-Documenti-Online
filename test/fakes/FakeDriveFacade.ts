@@ -16,6 +16,8 @@ export class FakeDriveFacade implements IDriveFacade {
   public trashedIds = new Set<string>();
   /** fileId -> permissions, seeded by tests. */
   public permissionsPerFile = new Map<string, DrivePermission[]>();
+  /** fileIds that must throw when listPermissions is called (simulates a trashed/deleted/inaccessible Drive file). */
+  public throwOnListPermissions = new Set<string>();
   public roleChanges: Array<{ fileId: string; permissionId: string; role: string }> = [];
   /** permissionIds that must fail on change (error message as value). */
   public permissionFailures = new Map<string, string>();
@@ -63,6 +65,9 @@ export class FakeDriveFacade implements IDriveFacade {
   }
 
   listPermissions(fileId: string): DrivePermission[] {
+    if (this.throwOnListPermissions.has(fileId)) {
+      throw new Error(`Drive: file non accessibile (${fileId})`);
+    }
     return this.permissionsPerFile.get(fileId) ?? [];
   }
 

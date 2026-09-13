@@ -159,6 +159,18 @@ test('an unknown ASSE fails the job with a ConfigurationError and a FALLITO row'
   expect(entries[0]).toMatchObject({ stato: StatoJob.FALLITO });
 });
 
+test('malformed AZIONI JSON fails fast with a single FALLITO row, not one COMPLETATO_CON_ERRORI per target', () => {
+  const { service, entries } = wire([{ ...SANIFICA, ID: 'PER_CLASSE', ASSE: 'CLASSE', AZIONI: '{ non valido' }]);
+  expect(() => drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }))).toThrow(
+    ConfigurationError
+  );
+  // One FALLITO row for the whole action, logged before any of the (multiple,
+  // per the ASSE=CLASSE test above) targets were touched — not N
+  // COMPLETATO_CON_ERRORI-with-listaFallimenti rows, one per class.
+  expect(entries).toHaveLength(1);
+  expect(entries[0]).toMatchObject({ stato: StatoJob.FALLITO, idConfig: 'PER_CLASSE', totaleTask: 0 });
+});
+
 test('a missing CONF_AZIONI id fails the job', () => {
   const { service } = wire([SANIFICA]);
   expect(() => drain(service.batchAzioniHandler({ azioneIds: ['NON_ESISTE'], jobId: 'job' }))).toThrow(
@@ -205,6 +217,17 @@ test('running several actions in one job writes one LOG_JOB row per action', () 
   drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM', 'SANIFICA_UPPER'], jobId: 'azioni_TUTTE' }));
   expect(entries.map((e) => e.idConfig)).toEqual(['SANIFICA_TRIM', 'SANIFICA_UPPER']);
   expect(db.tables['DOCENTI']!.getAllRows()[0]!['NOME']).toBe('MARIO');
+});
+
+test('a malformed CONF_AZIONI row is skipped without breaking elencoAttive/findAzione for other rows', () => {
+  // Invalid ASSE ('' is not in the ASSI_AZIONE dictionary) — the constructor
+  // throws ConfigurationError, e.g. an in-progress edit where ID was typed
+  // before ASSE was filled in.
+  const rotta = { ...SANIFICA, ID: 'ROTTA', ASSE: '' };
+  const { service } = wire([SANIFICA, rotta]);
+  expect(service.elencoAttive()).toEqual([{ id: 'SANIFICA_TRIM', tipo: 'MANUTENZIONE' }]);
+  expect(service.findAzione('SANIFICA_TRIM')).not.toBeNull();
+  expect(service.findAzione('ROTTA')).toBeNull();
 });
 
 test('elencoAttive lists only the enabled actions', () => {

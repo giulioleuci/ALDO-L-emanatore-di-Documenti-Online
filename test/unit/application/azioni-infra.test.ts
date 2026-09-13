@@ -127,6 +127,36 @@ test('RIDUCI_PERMESSI reports a failed downgrade without counting it', () => {
   ).toBe(0);
 });
 
+test('AGGIORNA_PERMESSI isolates a Drive failure on one target and keeps grants already computed for others', () => {
+  const drive = new FakeDriveFacade();
+  drive.throwOnListPermissions.add('file_1');
+  const warn = jest.spyOn(LoggerService.prototype, 'warn').mockImplementation(() => {});
+  const handlers = creaHandlersInfra({ db: db(), drive, roles, cdu, logger });
+  // No criteri: matches every LOG_DOCS row (file_1 and file_2) — file_1's
+  // listPermissions throws, file_2 must still get its grant.
+  const n = handlers['AGGIORNA_PERMESSI']!(
+    { tipo: 'AGGIORNA_PERMESSI', su: 'LOG_DOCS', emails: ['x@school.it'], permesso: 'LETTURA' },
+    {}
+  );
+  expect(n).toBe(1);
+  expect(drive.permissions).toEqual([{ fileId: 'file_2', email: 'x@school.it', permesso: 'LETTURA' }]);
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('file_1'));
+  warn.mockRestore();
+});
+
+test('RIDUCI_PERMESSI isolates a Drive failure on one target and keeps declassifying the others', () => {
+  const drive = new FakeDriveFacade();
+  drive.permissionsPerFile.set('file_2', [{ id: 'p9', email: 'z@school.it', role: 'writer', tipo: 'user' }]);
+  drive.throwOnListPermissions.add('file_1');
+  const warn = jest.spyOn(LoggerService.prototype, 'warn').mockImplementation(() => {});
+  const handlers = creaHandlersInfra({ db: db(), drive, roles, cdu, logger });
+  const n = handlers['RIDUCI_PERMESSI']!({ tipo: 'RIDUCI_PERMESSI', su: 'LOG_DOCS' }, {});
+  expect(n).toBe(1);
+  expect(drive.roleChanges).toEqual([{ fileId: 'file_2', permissionId: 'p9', role: 'reader' }]);
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('file_1'));
+  warn.mockRestore();
+});
+
 test('VALIDA_DB delegates to the validator with the requested table subset', () => {
   const drive = new FakeDriveFacade();
   const calls: Array<string[] | undefined> = [];

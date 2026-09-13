@@ -111,27 +111,37 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
       const grants: PermissionGrant[] = [];
       let cambiati = 0;
       for (const targetId of targetIds(azione, criteri)) {
-        const attuali = new Map(
-          drive
-            .listPermissions(targetId)
-            .filter((p) => p.email !== null)
-            .map((p) => [p.email!, p])
-        );
-        const changes: Array<{ permissionId: string; role: string }> = [];
-        for (const email of emails) {
-          const attuale = attuali.get(email);
-          if (attuale === undefined) {
-            grants.push({ targetId, email, permesso });
-            continue;
+        // Per-target isolation (mirrors LockDocumentsService.bloccaTutti): a
+        // Drive failure on one target (trashed/deleted/inaccessible file) must
+        // never abort the remaining targets, and must never discard grants
+        // already computed for earlier targets — those stay in `grants` and
+        // are flushed in the single batched setPermissions call below.
+        try {
+          const attuali = new Map(
+            drive
+              .listPermissions(targetId)
+              .filter((p) => p.email !== null)
+              .map((p) => [p.email!, p])
+          );
+          const changes: Array<{ permissionId: string; role: string }> = [];
+          for (const email of emails) {
+            const attuale = attuali.get(email);
+            if (attuale === undefined) {
+              grants.push({ targetId, email, permesso });
+              continue;
+            }
+            if (attuale.role === role || RANK[attuale.role] === undefined) continue;
+            changes.push({ permissionId: attuale.id, role });
           }
-          if (attuale.role === role || RANK[attuale.role] === undefined) continue;
-          changes.push({ permissionId: attuale.id, role });
-        }
-        if (changes.length === 0) continue;
-        const falliti = drive.changePermissionRoles(targetId, changes);
-        cambiati += changes.length - falliti.length;
-        for (const fallito of falliti) {
-          logger.warn(`AGGIORNA_PERMESSI: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+          if (changes.length === 0) continue;
+          const falliti = drive.changePermissionRoles(targetId, changes);
+          cambiati += changes.length - falliti.length;
+          for (const fallito of falliti) {
+            logger.warn(`AGGIORNA_PERMESSI: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+          }
+        } catch (error) {
+          const messaggio = error instanceof Error ? error.message : String(error);
+          logger.warn(`AGGIORNA_PERMESSI: ${targetId} non elaborato — ${messaggio}`);
         }
       }
       // One shareWithUsers call per targetId+permesso pair, batched by the facade.
@@ -146,15 +156,22 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
       const max = RANK[roleSoglia] ?? 1;
       let declassati = 0;
       for (const targetId of targetIds(azione, criteri)) {
-        const changes = drive
-          .listPermissions(targetId)
-          .filter((p) => (RANK[p.role] ?? 0) > max)
-          .map((p) => ({ permissionId: p.id, role: roleSoglia }));
-        if (changes.length === 0) continue;
-        const falliti = drive.changePermissionRoles(targetId, changes);
-        declassati += changes.length - falliti.length;
-        for (const fallito of falliti) {
-          logger.warn(`RIDUCI_PERMESSI: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+        // Per-target isolation (mirrors LockDocumentsService.bloccaTutti): a
+        // Drive failure on one target never aborts the remaining targets.
+        try {
+          const changes = drive
+            .listPermissions(targetId)
+            .filter((p) => (RANK[p.role] ?? 0) > max)
+            .map((p) => ({ permissionId: p.id, role: roleSoglia }));
+          if (changes.length === 0) continue;
+          const falliti = drive.changePermissionRoles(targetId, changes);
+          declassati += changes.length - falliti.length;
+          for (const fallito of falliti) {
+            logger.warn(`RIDUCI_PERMESSI: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+          }
+        } catch (error) {
+          const messaggio = error instanceof Error ? error.message : String(error);
+          logger.warn(`RIDUCI_PERMESSI: ${targetId} non elaborato — ${messaggio}`);
         }
       }
       return declassati;

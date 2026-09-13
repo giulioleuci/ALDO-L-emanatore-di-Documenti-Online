@@ -12,7 +12,7 @@ import { recipe } from '../context-engine/Recipe';
 import type { Cdu } from '../context-engine/Cdu';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 import { ConfigurazioneAzione } from '../../domain/entities/ConfigurazioneAzione';
-import { TABLE } from '../../config/schema';
+import { TABLE, COL_CONF_AZIONI } from '../../config/schema';
 import { ASSE_SINGOLA, GeneratoreAxis, GestioneArticolazione, StatoJob } from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
@@ -119,12 +119,28 @@ export class ActionBatchService {
     return this.priorDurationMs + (Date.now() - this.containerStartedAt);
   }
 
-  /** Every CONF_AZIONI row, typed. */
+  /**
+   * Every CONF_AZIONI row, typed. A row that fails `ConfigurazioneAzione`'s own
+   * validation (e.g. a half-configured ASSE while someone is still editing the
+   * row) is logged and skipped rather than failing the whole table — one bad
+   * row must never take down the menu list, `avviaTutteAzioni()`, or launching
+   * every OTHER individually-valid action via `avviaAzione(id)`.
+   */
   private tutte(): ConfigurazioneAzione[] {
-    return this.deps.db
+    const righe: ConfigurazioneAzione[] = [];
+    this.deps.db
       .table(TABLE.CONF_AZIONI)
       .findAll()
-      .map((row) => ConfigurazioneAzione.fromData(row));
+      .forEach((row, indice) => {
+        try {
+          righe.push(ConfigurazioneAzione.fromData(row));
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : String(error);
+          const rawId = typeof row[COL_CONF_AZIONI.ID] === 'string' ? row[COL_CONF_AZIONI.ID] : `riga #${indice}`;
+          this.deps.logger?.warn(`CONF_AZIONI ${String(rawId)} scartata: ${reason}`);
+        }
+      });
+    return righe;
   }
 
   /** Enabled actions, for the menu dialog. */
@@ -190,6 +206,17 @@ export class ActionBatchService {
       if (azioniRaw === null) {
         logger?.info(`Azione ${azioneId}: nessuna azione elementare configurata`);
         return true;
+      }
+      // Broken-configuration check, same as the unknown-ASSE/missing-id cases
+      // above: parse AZIONI once, before any target is touched, so a malformed
+      // JSON cell fails fast with a single FALLITO row instead of throwing once
+      // per target inside eseguiAzioni (which parses it again, per target, when
+      // actually run — this call's result is discarded on purpose).
+      try {
+        JSON.parse(azioniRaw);
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        throw new ConfigurationError(`CONF_AZIONI ${azioneId}: AZIONI non è JSON valido: ${reason}`);
       }
 
       const targets = resume === null ? this.targetsPerAsse(config) : resume.targets;

@@ -38,8 +38,8 @@ export interface MetadatiVM {
   timestamp: string;
   configurazioneId: string;
   esecuzioneId: string;
-  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA';
-  tipoOperazioneLabel: 'Generazione documento' | 'Invio notifica';
+  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA' | 'ESECUZIONE_AZIONE';
+  tipoOperazioneLabel: 'Generazione documento' | 'Invio notifica' | 'Esecuzione azione';
   oggi: DataStampabileVM;
   target: string;
   tipoTarget: 'classe' | 'alunno' | 'docente' | 'piano' | 'carenza' | 'materia' | 'dipartimento';

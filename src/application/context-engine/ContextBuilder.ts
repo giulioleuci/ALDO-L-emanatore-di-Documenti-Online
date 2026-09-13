@@ -3,6 +3,12 @@ import type { ContextProvider } from './ContextProvider';
 import type { BuildParams, Recipe } from './Recipe';
 import { formatOggi } from './dates';
 
+const OPERAZIONE_LABEL = {
+  GENERAZIONE_DOCUMENTO: 'Generazione documento',
+  INVIO_NOTIFICA: 'Invio notifica',
+  ESECUZIONE_AZIONE: 'Esecuzione azione'
+} as const;
+
 /**
  * Assembles the CDU (spec 09 §2), built ON the ContextEngine library's
  * reusable components: the `ProviderRegistry` (Registry Pattern) stores/
@@ -82,10 +88,7 @@ export class ContextBuilder {
         configurazioneId: params.configurazioneId,
         esecuzioneId: params.esecuzioneId,
         tipoOperazione: params.tipoOperazione,
-        tipoOperazioneLabel:
-          params.tipoOperazione === 'GENERAZIONE_DOCUMENTO'
-            ? 'Generazione documento'
-            : 'Invio notifica',
+        tipoOperazioneLabel: OPERAZIONE_LABEL[params.tipoOperazione],
         oggi: formatOggi(params.now),
         target: params.target,
         tipoTarget: params.tipoTarget,

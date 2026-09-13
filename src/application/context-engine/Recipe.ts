@@ -26,7 +26,7 @@ export interface BuildParams {
   now: Date;
   configurazioneId: string;
   esecuzioneId: string;
-  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA';
+  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA' | 'ESECUZIONE_AZIONE';
   materiaCorrente?: string | null;
   /** For the PER_CARENZA_GENITORI* pipelines: which CARENZE progressivo of the student is in focus (02 §4.3). */
   carenzaProgressivo?: number;
@@ -218,7 +218,9 @@ export const RECIPES: Record<string, string[]> = {
   /** Department-scoped recipe (11 §11 new) — a dipartimento has no class dimension, so this activates only 'school' + 'dipartimentoFocus'. */
   DIPARTIMENTO_COMPLETO: ['school', 'dipartimentoFocus'],
   /** DOCENTE axis (spec §4.1.2) — one aggregate document per teacher, spanning every class in `params.classiCompetenza`. No single class in focus, so this activates only 'school' + 'docenteAggregatoFocus'. */
-  DOCENTE_AGGREGATO: ['school', 'docenteAggregatoFocus']
+  DOCENTE_AGGREGATO: ['school', 'docenteAggregatoFocus'],
+  /** CONF_AZIONI ASSE=SINGOLA (and the CONDIZIONE gate of every axis): institute-level CDU only, no focus. */
+  AZIONE_SINGOLA: ['school']
 };
 
 /**

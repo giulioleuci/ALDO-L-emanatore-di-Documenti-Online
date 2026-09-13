@@ -1304,8 +1304,9 @@ test('ComposeEmailStep assembles header/saluto/testo/boxes/footer (11 §6)', () 
   expect(html).toContain('Gentili Genitori');
   expect(html).toContain('per la classe 5A.'); // TESTO with placeholders resolved
   expect(html.indexOf('Carenze')).toBeGreaterThan(-1);
-  expect(html).toContain('comunicazione automatica');
-  expect(html).toContain('non sarà monitorata'); // NOREPLY warning block
+  expect(html).toContain(
+    "Non rispondere a questo indirizzo email: è utilizzato solo per l'invio di questa comunicazione"
+  );
   expect(w.ctx.get('allegati')).toEqual([]);
 });
 
@@ -1315,7 +1316,7 @@ test('ComposeEmailStep appends TESTO_END after the boxes and before the footer',
   const html = w.ctx.get<string>('corpoHtml')!;
   const boxesIdx = html.indexOf('Carenze');
   const endIdx = html.indexOf('Cordiali saluti, la segreteria.');
-  const footerIdx = html.indexOf('comunicazione automatica');
+  const footerIdx = html.indexOf('Non rispondere a questo indirizzo');
   expect(boxesIdx).toBeGreaterThan(-1);
   expect(endIdx).toBeGreaterThan(boxesIdx);
   expect(footerIdx).toBeGreaterThan(endIdx);
@@ -1965,12 +1966,14 @@ test('two-box parity preserves distinct per-instance filters for rendered and at
   expect(w.ctx.get('allegati')).toEqual(['blob:doc-verbale', 'blob:doc-pdp']);
 });
 
-test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and omits noReply block when false', () => {
+test('ComposeEmailStep honours CONF_MAIL.COLORE_HEADER and always appends the noreply footer', () => {
   const w = wire({ COLORE_HEADER: '#112233', NOREPLY: false });
   runThroughCompose(w);
   const html = w.ctx.get<string>('corpoHtml')!;
   expect(html).toContain('background-color:#112233');
-  expect(html).not.toContain('non sarà monitorata');
+  expect(html).toContain(
+    "Non rispondere a questo indirizzo email: è utilizzato solo per l'invio di questa comunicazione"
+  );
 });
 
 // --- Step 5: ResolveRecipientsStep ---

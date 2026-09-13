@@ -461,6 +461,7 @@ StudentiClasseVM:
     dsa: AlunnoVM[]               # Studenti con piano o stato DSA
     pfp: AlunnoVM[]               # Studenti con Piano Formativo Personalizzato
     pei: AlunnoVM[]               # Studenti con Piano Educativo Individualizzato
+    stranieri: AlunnoVM[]         # Studenti con almeno un piano PDP_STRANIERI
     ripetenti: AlunnoVM[]         # Studenti marcati ripetenti
     rappresentanti: AlunnoVM[]    # Rappresentanti degli studenti
     conPiani: AlunnoVM[]          # Studenti con almeno un piano
@@ -469,9 +470,19 @@ StudentiClasseVM:
     hasDsa: boolean              # true se dsa non è vuoto
     hasPfp: boolean              # true se pfp non è vuoto
     hasPei: boolean              # true se pei non è vuoto
+    hasStranieri: boolean        # true se stranieri non è vuoto
     hasRipetenti: boolean        # true se ripetenti non è vuoto
     hasRappresentanti: boolean   # true se rappresentanti non è vuoto
     hasConPiani: boolean         # true se conPiani non è vuoto
+
+    numeroBes: number            # Conteggio studenti BES
+    numeroDsa: number            # Conteggio studenti DSA
+    numeroPfp: number            # Conteggio studenti PFP
+    numeroPei: number            # Conteggio studenti PEI
+    numeroStranieri: number      # Conteggio studenti stranieri
+    numeroRipetenti: number      # Conteggio studenti ripetenti
+    numeroRappresentanti: number # Conteggio rappresentanti
+    numeroConPiani: number       # Conteggio studenti con almeno un piano
 
   perReligione:
     irc: AlunnoVM[]               # Studenti che si avvalgono dell'IRC
@@ -481,6 +492,10 @@ StudentiClasseVM:
     hasIrc: boolean              # true se irc non è vuoto
     hasAlt: boolean              # true se alt non è vuoto
     hasNo: boolean               # true se no non è vuoto
+
+    numeroIrc: number            # Conteggio studenti IRC
+    numeroAlt: number            # Conteggio studenti ALT
+    numeroNo: number             # Conteggio studenti NO
 
     ircDescrizione: string       # Nomi degli studenti IRC separati da virgola; es. "ROSSI MARIO, BIANCHI ANNA"
     altDescrizione: string       # Nomi degli studenti ALT separati da virgola; es. "VERDI LUCA"
@@ -588,6 +603,7 @@ AlunnoFocusVM:
   isDsa: boolean                 # true se lo studente rientra nello scope DSA
   isPei: boolean                 # true se lo studente ha almeno un PEI associato
   isPfp: boolean                 # true se lo studente ha almeno un PFP associato
+  isStranieri: boolean           # true se lo studente ha almeno un PDP_STRANIERI associato
   isRipetente: boolean           # Stato di ripetenza nell'anno corrente
   isRappresentante: boolean      # true se rappresentante degli studenti
 
@@ -1092,6 +1108,7 @@ AlunnoVM:
   isDsa: boolean                 # Stato DSA
   isPei: boolean                 # true se l'alunno ha almeno un PEI associato
   isPfp: boolean                 # true se l'alunno ha almeno un PFP associato
+  isStranieri: boolean           # true se l'alunno ha almeno un PDP_STRANIERI associato
   isRipetente: boolean           # Stato di ripetenza nell'anno
   isRappresentante: boolean      # Rappresentante degli studenti
 

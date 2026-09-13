@@ -558,13 +558,9 @@ export class ComposeEmailStep extends Step {
     const testo = this.templates.processStringEscaped(conf.getTestoStart(), cduRecord(ctx));
     const testoEnd = this.templates.processStringEscaped(conf.getTestoEnd(), cduRecord(ctx));
     const boxes = ctx.get<string[]>('boxHtmlOrdered') ?? [];
-    const noReplyBlock = conf.isNoreply()
-      ? '<p><strong>⚠️ La risposta a questa email non sarà monitorata.</strong></p>'
-      : '';
     const footer =
       '<div style="margin-top:30px; font-size:12px; color:#888;">' +
-      '<p>Questa è una comunicazione automatica.</p>' +
-      noReplyBlock +
+      '<p>‼️ Non rispondere a questo indirizzo email: è utilizzato solo per l\'invio di questa comunicazione e, non essendo monitorato, non riceveresti risposta.</p>' +
       '</div>';
 
     // Saluto/oggetto embed sheet-sourced names; the header colour lands in a

@@ -43,7 +43,9 @@ test('PER_CARENZA_GENITORI end-to-end: boxes, genitori TO, BCC, LOG_MAIL, NOTIFI
   expect(html).toContain('Voto 4.5');
   expect(html).toContain('🔭 Fisica'); // free-text carenza cell
   expect(html).toContain('assenze'); // assenze box (ASSENZE=true on a1 prog 1)
-  expect(html).toContain('non sarà monitorata'); // NOREPLY footer
+  expect(html).toContain(
+    "Non rispondere a questo indirizzo email: è utilizzato solo per l'invio di questa comunicazione"
+  ); // noreply footer
 
   // Audit: one LOG_MAIL SUCCESS row per send.
   const logRows = db.tables['LOG_MAIL']!.getAllRows();

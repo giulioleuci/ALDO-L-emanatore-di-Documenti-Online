@@ -272,6 +272,7 @@ export interface AlunnoVM extends PersonaRiferimentoVM {
   isDsa: boolean;
   isPei: boolean;
   isPfp: boolean;
+  isStranieri: boolean;
   isRipetente: boolean;
   isRappresentante: boolean;
   presenza: PresenzaAlunnoVM;
@@ -594,6 +595,7 @@ export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
     dsa: AlunnoVM[];
     pfp: AlunnoVM[];
     pei: AlunnoVM[];
+    stranieri: AlunnoVM[];
     ripetenti: AlunnoVM[];
     rappresentanti: AlunnoVM[];
     conPiani: AlunnoVM[];
@@ -601,9 +603,18 @@ export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
     hasDsa: boolean;
     hasPfp: boolean;
     hasPei: boolean;
+    hasStranieri: boolean;
     hasRipetenti: boolean;
     hasRappresentanti: boolean;
     hasConPiani: boolean;
+    numeroBes: number;
+    numeroDsa: number;
+    numeroPfp: number;
+    numeroPei: number;
+    numeroStranieri: number;
+    numeroRipetenti: number;
+    numeroRappresentanti: number;
+    numeroConPiani: number;
   };
   perReligione: {
     irc: AlunnoVM[];
@@ -612,6 +623,9 @@ export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
     hasIrc: boolean;
     hasAlt: boolean;
     hasNo: boolean;
+    numeroIrc: number;
+    numeroAlt: number;
+    numeroNo: number;
     ircDescrizione: string;
     altDescrizione: string;
     noDescrizione: string;

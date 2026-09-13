@@ -67,6 +67,7 @@ export class AlunnoProvider implements ContextProvider {
       isDsa: false,
       isPei: false,
       isPfp: false,
+      isStranieri: false,
       isRipetente: alunno.isRipetente(),
       isRappresentante: alunno.isRappresentante(),
       presenza: {

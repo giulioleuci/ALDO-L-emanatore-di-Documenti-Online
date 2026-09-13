@@ -42,6 +42,7 @@ Lo script orchestratore SGSA è associato a un unico foglio di calcolo **Master 
 | **CONF_DOC**            | Configurazione motore di generazione documenti           |
 | **CONF_MAIL**           | Configurazione motore di notifiche email                 |
 | **CONF_IMP**            | Configurazione importazioni ETL                          |
+| **CONF_AZIONI**         | Configurazione azioni standalone data-driven (permessi, validazione, sanificazione) |
 | **LOG_DOCS**            | Audit trail dei documenti generati                       |
 | **LOG_FOLD**            | Audit trail delle cartelle create su Drive               |
 | **LOG_MAIL**            | Audit trail delle email inviate                          |
@@ -459,6 +460,39 @@ Configurazione job ETL per importazioni dati da fonti esterne.
 
 ---
 
+### CONF_AZIONI
+
+Configurazione di azioni standalone data-driven: operazioni di sistema che non generano documenti, non inviano email e non importano dati (riallineamento permessi Drive, validazione del database, sanificazione/trasformazione di colonne). Come le altre tabelle `CONF_*`, aggiungere una nuova azione significa inserire un record, non scrivere codice. Ogni riga è un'orchestrazione completa: un asse di iterazione, una condizione di gate e un array di azioni elementari. V1: esecuzione solo manuale, da menu (Sheets) o da entrypoint_user (piattaforma GAS); non esiste ancora uno scheduler automatico.
+
+| Colonna       | Tipo    | PK  | Descrizione                                                                                                                                                                                                                                                                                     |
+| ------------- | ------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ID`          | String  | ✅  | Codice identificativo (es. `ALLINEA_PERMESSI_CATTEDRE`, `SANIFICA_TRIM`)                                                                                                                                                                                                                        |
+| `TIPO`        | String  | —   | Etichetta libera di categoria, scritta in `LOG_JOB.NOME_CONFIG`                                                                                                                                                                                                                                 |
+| `ASSE`        | String  | —   | Asse di iterazione del batch e driver della recipe CDU: stesso dizionario di `CONF_DOC.GENERATORE` (`CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`) più il valore riservato `SINGOLA` per esecuzione unica (un solo iter con CDU base). Il costruttore valida il valore e solleva `ConfigurationError` altrimenti |
+| `CONDIZIONE`  | String  | —   | Espressione logica che decide l'esecuzione dell'azione **nel suo insieme** (stesso motore GasExpressionEngineLib di `CONF_DOC.CONDIZIONE`). Se falsa o vuota, l'azione è saltata e non produce alcuna riga `LOG_JOB`                                                                          |
+| `ATTIVO`      | Boolean | —   | Abilita/disabilita l'azione; default `true`. In v1 decide solo se l'azione compare nel menu/elenco lanciabile                                                                                                                                                                                   |
+| `AZIONI`      | JSON    | —   | Array di azioni elementari nella grammatica condivisa (§ Catalogo dei tipi di azione sotto)                                                                                                                                                                                                     |
+| `PERIODICITA` | String  | —   | Riservata per lo scheduling futuro (es. `DAILY`, `WEEKLY`); colonna presente fin da subito, **ignorata in v1**                                                                                                                                                                                  |
+
+**Catalogo dei tipi di azione (elementi dell'array `AZIONI`).** La grammatica è condivisa con `CONF_DOC.POST_PROCESSO` / `CONF_MAIL.POST_PROCESSO`: la colonna fisica `POST_PROCESSO` non cambia nome, ma è la stessa "azione" invocata sia inline (post-generazione/post-invio) sia standalone da `CONF_AZIONI`.
+
+| Tipo                        | Effetto                                                                                                                                                                                                                                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `INSERISCI_TIMESTAMP`       | Scrive `now` in `tab.col` dove i criteri corrispondono, solo se la cella è vuota                                                                                                                                                                                                              |
+| `AGGIORNA_CAMPO`             | Imposta `tab.col = val` dove i criteri corrispondono (`val` con placeholder `{{...}}` risolti sul CDU)                                                                                                                                                                                        |
+| `AGGIORNA_STATO_DOC`         | Cambia `LOG_DOCS.STATO` dove i criteri corrispondono                                                                                                                                                                                                                                          |
+| `AGGIORNA_PERMESSI_STORICI`  | Alias di compatibilità dell'azione storica (v. `CONF_DOC` sopra): target implicito `ID_GEN=CONF_DOC.ID` su `LOG_DOCS`                                                                                                                                                                          |
+| `TRASFORMA_CAMPO`            | Sanificazione/case-transform su `tab.col`: `operazione` ∈ `TRIM` \| `UPPER` \| `LOWER` \| `CAPITALIZE` \| `UNCAPITALIZE`, con `criteri` opzionali                                                                                                                                              |
+| `AGGIORNA_PERMESSI`          | Applica ACL a file e cartelle selezionati da `LOG_DOCS`/`LOG_FOLD` (criteri: `UTENTI`/`CLASSI`/`MATERIE` per contenimento CSV, `TIPO`/`SOTTOTIPO` per uguaglianza esatta, prefisso `PATH` opzionale). Destinatari: `ruolo` (risolto via `RisolutoreRuoliService`, es. `COORDINATORI`) o email dirette; livello `LETTURA`/`SCRITTURA`/`COMMENTO`; `profondita` per lo storico. Calcola il delta tra ACL attese e reali e applica solo i grant mancanti/il role-change (idempotente) |
+| `RIDUCI_PERMESSI`            | Downgrade: porta a una soglia massima (default `LETTURA`) ogni ACL sopra soglia sui target selezionati (stessi criteri log-driven di `AGGIORNA_PERMESSI`); scrive solo il delta, idempotente                                                                                                 |
+| `VALIDA_DB`                  | Esegue `DatabaseValidationService` (accetta un sottoinsieme opzionale di `tabelle`); read-only, esito registrato nel log                                                                                                                                                                       |
+
+`INSERISCI_TIMESTAMP`, `AGGIORNA_CAMPO`, `AGGIORNA_STATO_DOC` e `TRASFORMA_CAMPO` sono i tipi "solo-DB": sempre disponibili, sia inline (`POST_PROCESSO`) sia standalone. `AGGIORNA_PERMESSI_STORICI`, `AGGIORNA_PERMESSI`, `RIDUCI_PERMESSI` e `VALIDA_DB` sono i tipi "infra": disponibili solo dove il chiamante li registra (la pipeline documento/email registra solo `AGGIORNA_PERMESSI_STORICI` per compatibilità; `CONF_AZIONI` li registra tutti). Un'azione di tipo sconosciuto o con JSON malformato viene loggata con warning e saltata.
+
+**Logging.** Nessuna tabella dedicata: una riga `LOG_JOB` per esecuzione, come gli altri batch — `TIPO='ESECUZIONE_AZIONI'`, `ID_CONFIG=CONF_AZIONI.ID`, `NOME_CONFIG=CONF_AZIONI.TIPO`.
+
+---
+
 ### LOG_DOCS
 
 Audit trail immutabile (append-only) di ogni documento generato. Lega l'ID fisico Drive alla configurazione che lo ha generato.
@@ -520,15 +554,15 @@ Audit trail di ogni email inviata dal sistema.
 
 ### LOG_JOB
 
-Storico append-only delle run dei job batch (`DocumentBatchService`, `EmailBatchService`, `EmailRetryService`, `ImportService`): una riga per esecuzione (dettagli e motivazione in `SPECS_ALDO/NEW_TABLE_LOG_JOB.md`).
+Storico append-only delle run dei job batch (`DocumentBatchService`, `EmailBatchService`, `EmailRetryService`, `ImportService`, `ActionBatchService`): una riga per esecuzione (dettagli e motivazione in `SPECS_ALDO/NEW_TABLE_LOG_JOB.md`).
 
 | Colonna            | Tipo   | PK (parte) | FK          | Descrizione                                                                                                                        |
 | ------------------ | ------ | ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `ID_JOB`           | String | ✅         | —           | UUID del job (stabile attraverso tutti i resume)                                                                                    |
 | `ESECUZIONE`       | Number | ✅         | —           | 0 = prima esecuzione; N = N-esimo resume (trigger di timeout o, per EmailBatchService, un riavvio dopo sospensione quota)           |
-| `TIPO`             | String | —          | —           | Tipo del job registrato nel JobDefinitionRegistry: `GENERAZIONE_DOCUMENTI_CLASSI` / `INVIO_EMAIL_BATCH` / `RETRY_EMAIL_BATCH` / `IMPORT_CHUNKED` |
-| `ID_CONFIG`        | String | —          | —           | ID della configurazione (CONF_DOC.ID o CONF_MAIL.ID) su cui opera il job; vuoto per RETRY_EMAIL_BATCH (nessuno scope di config)      |
-| `NOME_CONFIG`      | String | —          | —           | Nome leggibile della configurazione (CONF_DOC.TIPO / CONF_MAIL.OGGETTO)                                                             |
+| `TIPO`             | String | —          | —           | Tipo del job registrato nel JobDefinitionRegistry: `GENERAZIONE_DOCUMENTI_CLASSI` / `INVIO_EMAIL_BATCH` / `RETRY_EMAIL_BATCH` / `IMPORT_CHUNKED` / `ESECUZIONE_AZIONI` |
+| `ID_CONFIG`        | String | —          | —           | ID della configurazione (CONF_DOC.ID, CONF_MAIL.ID o CONF_AZIONI.ID) su cui opera il job; vuoto per RETRY_EMAIL_BATCH (nessuno scope di config) |
+| `NOME_CONFIG`      | String | —          | —           | Nome leggibile della configurazione (CONF_DOC.TIPO / CONF_MAIL.OGGETTO / CONF_AZIONI.TIPO)                                          |
 | `STATO`            | String | —          | —           | Enum: `COMPLETATO` / `COMPLETATO_CON_ERRORI` / `FALLITO` / `SOSPESO_QUOTA` / `SOSPESO_TEMPO`                                        |
 | `TOTALE_TASK`      | Number | —          | —           | Numero totale di target da processare in questa esecuzione                                                                          |
 | `COMPLETATI_OK`    | Number | —          | —           | Task processati con successo in questa esecuzione                                                                                   |

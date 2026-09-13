@@ -102,7 +102,7 @@ GAS ha un limite di esecuzione di 6 o 30 minuti. Per operazioni batch (generare 
 
 ### Data-Driven
 
-Nessun comportamento del sistema è hard-coded. Tipo di documento, template Drive da usare, cartella di destinazione, permessi ACL, destinatari email, azioni post-processo: tutto è configurato nelle tabelle `CONF_DOC` e `CONF_MAIL` del database. Aggiungere un nuovo tipo di documento o un pattern email significa inserire un record nel database, non modificare il codice.
+Nessun comportamento del sistema è hard-coded. Tipo di documento, template Drive da usare, cartella di destinazione, permessi ACL, destinatari email, azioni post-processo: tutto è configurato nelle tabelle `CONF_DOC` e `CONF_MAIL` del database. Aggiungere un nuovo tipo di documento o un pattern email significa inserire un record nel database, non modificare il codice. Anche le importazioni dati seguono la stessa logica, configurate riga per riga in `CONF_IMP`. `CONF_AZIONI` estende lo stesso principio alle azioni standalone (riallineamento permessi, validazione, sanificazione): configurate come righe, vengono lanciate manualmente dal menu o da `avviaAzione`/`avviaTutteAzioni`.
 
 ---
 

@@ -6,11 +6,13 @@ import {
   avvioConConferma,
   menuValidazioneDatabase,
   vociMenu,
-  menuBloccaDocumenti
+  menuBloccaDocumenti,
+  menuEsecuzioneAzioni,
+  PAROLA_TUTTE
 } from '../../../src/presentation/Menu';
 import { FakeUiFacade } from '../../../test/fakes/FakeUiFacade';
 
-test('costruisciMenu builds AVVIA PROCESSI with the five launchers (15 §3)', () => {
+test('costruisciMenu builds AVVIA PROCESSI with the six launchers (15 §3)', () => {
   const ui = new FakeUiFacade();
   costruisciMenu(ui);
   expect(ui.menus).toHaveLength(1);
@@ -20,7 +22,8 @@ test('costruisciMenu builds AVVIA PROCESSI with the five launchers (15 §3)', ()
     'menu_avvioComunicazioniEmail',
     'menu_avvioImportazioni',
     'menu_validazioneDatabase',
-    'menu_bloccaDocumenti'
+    'menu_bloccaDocumenti',
+    'menu_esecuzioneAzioni'
   ]);
 });
 
@@ -54,13 +57,14 @@ test('wrapper: launcher errors surface as msgBox, not as an uncaught throw (15 �
   expect(ui.messaggi[0]!.messaggio).toContain('CONF_MAIL X1 non trovato');
 });
 
-test('vociMenu exposes the five launchers', () => {
+test('vociMenu exposes the six launchers', () => {
   expect(vociMenu().map((v) => v.funzione)).toEqual([
     'menu_avvioGenerazioneDocumenti',
     'menu_avvioComunicazioniEmail',
     'menu_avvioImportazioni',
     'menu_validazioneDatabase',
-    'menu_bloccaDocumenti'
+    'menu_bloccaDocumenti',
+    'menu_esecuzioneAzioni'
   ]);
 });
 
@@ -130,4 +134,47 @@ test('menuBloccaDocumenti does nothing without confirmation', () => {
     return '';
   });
   expect(chiamate).toBe(0);
+});
+
+test('menuEsecuzioneAzioni lists the active actions and delegates the chosen id', () => {
+  const ui = new FakeUiFacade();
+  ui.risposteInput.push('SANIFICA_TRIM');
+  const avviati: string[][] = [];
+  menuEsecuzioneAzioni(ui, [{ id: 'SANIFICA_TRIM', tipo: 'MANUTENZIONE' }], (ids) => avviati.push(ids));
+  expect(avviati).toEqual([['SANIFICA_TRIM']]);
+  expect(ui.sidebars).toEqual([
+    { jobId: 'azioni_SANIFICA_TRIM', titolo: 'Monitoraggio — ESEGUI AZIONI' }
+  ]);
+});
+
+test('menuEsecuzioneAzioni runs every active action when TUTTE is typed', () => {
+  const ui = new FakeUiFacade();
+  ui.risposteInput.push(PAROLA_TUTTE);
+  const avviati: string[][] = [];
+  menuEsecuzioneAzioni(
+    ui,
+    [
+      { id: 'A', tipo: 'T' },
+      { id: 'B', tipo: 'T' }
+    ],
+    (ids) => avviati.push(ids)
+  );
+  expect(avviati).toEqual([['A', 'B']]);
+});
+
+test('menuEsecuzioneAzioni refuses an unknown id without delegating', () => {
+  const ui = new FakeUiFacade();
+  ui.risposteInput.push('NON_ESISTE');
+  const avviati: string[][] = [];
+  menuEsecuzioneAzioni(ui, [{ id: 'A', tipo: 'T' }], (ids) => avviati.push(ids));
+  expect(avviati).toEqual([]);
+  expect(ui.messaggi[0]!.messaggio).toContain('NON_ESISTE');
+});
+
+test('menuEsecuzioneAzioni reports when there is nothing to run', () => {
+  const ui = new FakeUiFacade();
+  const avviati: string[][] = [];
+  menuEsecuzioneAzioni(ui, [], (ids) => avviati.push(ids));
+  expect(avviati).toEqual([]);
+  expect(ui.messaggi[0]!.messaggio).toContain('nessuna azione');
 });

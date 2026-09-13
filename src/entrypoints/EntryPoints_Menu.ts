@@ -33,6 +33,18 @@ declare function avviaBloccoDocumenti(container: unknown): {
   permessiDeclassati: number;
   falliti: unknown[];
 };
+declare function menuEsecuzioneAzioni(
+  ui: unknown,
+  attive: Array<{ id: string; tipo: string }>,
+  avvia: (azioneIds: string[]) => void
+): void;
+declare function elencoAzioniAttive(container: unknown): Array<{ id: string; tipo: string }>;
+declare function avviaAzioniDataDriven(
+  container: unknown,
+  azioneIds: string[],
+  runner: JobRunnerService,
+  maxDurationMs?: number
+): unknown;
 declare const GasUiFacade: new () => unknown;
 
 /** Builds the MASTER spreadsheet's custom menu; no container is initialized here. */
@@ -93,6 +105,19 @@ function menu_bloccaDocumenti(): void {
   });
 }
 
+/** Lists the active CONF_AZIONI rows and runs the chosen one (or all of them). */
+function menu_esecuzioneAzioni(): void {
+  const container = initAldo();
+  menuEsecuzioneAzioni(new GasUiFacade(), elencoAzioniAttive(container), (azioneIds) =>
+    avviaAzioniDataDriven(
+      container,
+      azioneIds,
+      creaJobRunner(),
+      (globalThis as { MAX_JOB_EXECUTION_TIME_MS?: number }).MAX_JOB_EXECUTION_TIME_MS
+    )
+  );
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).onOpen = onOpen;
 (globalThis as any).menu_avvioGenerazioneDocumenti = menu_avvioGenerazioneDocumenti;
@@ -100,4 +125,5 @@ function menu_bloccaDocumenti(): void {
 (globalThis as any).menu_avvioImportazioni = menu_avvioImportazioni;
 (globalThis as any).menu_validazioneDatabase = menu_validazioneDatabase;
 (globalThis as any).menu_bloccaDocumenti = menu_bloccaDocumenti;
+(globalThis as any).menu_esecuzioneAzioni = menu_esecuzioneAzioni;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

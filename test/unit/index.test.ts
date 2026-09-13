@@ -5,14 +5,17 @@ jest.mock('../../src/config/Bootstrap', () => ({
   avviaInvioNotificheDataDriven: jest.fn(),
   avviaImportazioneDataDriven: jest.fn(),
   avviaValidazioneDatabase: jest.fn(),
-  riprendiJobSospeso: jest.fn()
+  riprendiJobSospeso: jest.fn(),
+  avviaAzioniDataDriven: jest.fn(),
+  elencoAzioniAttive: jest.fn()
 }));
 jest.mock('../../src/presentation/Menu', () => ({
   costruisciMenu: jest.fn(),
   menuGenerazioneDocumenti: jest.fn(),
   menuComunicazioniEmail: jest.fn(),
   menuImportazioni: jest.fn(),
-  menuValidazioneDatabase: jest.fn()
+  menuValidazioneDatabase: jest.fn(),
+  menuEsecuzioneAzioni: jest.fn()
 }));
 jest.mock('../../src/infrastructure/facades/UiFacade', () => ({ GasUiFacade: jest.fn() }));
 import '../../src/index';
@@ -64,4 +67,11 @@ test('menu_validazioneDatabase and its launcher are exposed as globals', () => {
   expect(typeof (globalThis as Record<string, unknown>)['avviaValidazioneDatabase']).toBe(
     'function'
   );
+});
+
+test('exposes the azioni launchers and menu wrapper as GAS globals', () => {
+  const g = globalThis as Record<string, unknown>;
+  expect(typeof g['avviaAzioniDataDriven']).toBe('function');
+  expect(typeof g['elencoAzioniAttive']).toBe('function');
+  expect(typeof g['menuEsecuzioneAzioni']).toBe('function');
 });

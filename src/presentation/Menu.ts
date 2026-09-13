@@ -9,14 +9,15 @@ import type { IUiFacade, MenuVoce } from '../infrastructure/facades/UiFacade';
 
 export const MENU_TITOLO = 'AVVIA PROCESSI';
 
-/** The five data-driven launchers (15 §3). */
+/** The six data-driven launchers (15 §3). */
 export function vociMenu(): MenuVoce[] {
   return [
     { etichetta: 'GENERAZIONE DOCUMENTI', funzione: 'menu_avvioGenerazioneDocumenti' },
     { etichetta: 'COMUNICAZIONI EMAIL', funzione: 'menu_avvioComunicazioniEmail' },
     { etichetta: 'IMPORTAZIONI', funzione: 'menu_avvioImportazioni' },
     { etichetta: 'VALIDAZIONE DATABASE', funzione: 'menu_validazioneDatabase' },
-    { etichetta: 'BLOCCA DOCUMENTI', funzione: 'menu_bloccaDocumenti' }
+    { etichetta: 'BLOCCA DOCUMENTI', funzione: 'menu_bloccaDocumenti' },
+    { etichetta: 'ESEGUI AZIONI', funzione: 'menu_esecuzioneAzioni' }
   ];
 }
 
@@ -123,4 +124,44 @@ export function menuBloccaDocumenti(ui: IUiFacade, esegui: () => string): void {
     "Tutti i permessi di scrittura sui documenti dell'anno corrente saranno declassati a sola lettura. L'operazione NON è reversibile dal sistema. Se l'operazione supera il tempo massimo di esecuzione, è possibile rilanciarla: i documenti già elaborati verranno saltati automaticamente.",
     esegui
   );
+}
+
+export const PAROLA_TUTTE = 'TUTTE';
+
+/**
+ * Wrapper for the CONF_AZIONI launcher (15 §4 variant): the prompt lists the
+ * enabled actions and accepts either one ID or TUTTE. Still logic-free — the
+ * list and the launcher closure are both supplied by the caller.
+ */
+export function menuEsecuzioneAzioni(
+  ui: IUiFacade,
+  attive: Array<{ id: string; tipo: string }>,
+  avvia: (azioneIds: string[]) => void
+): void {
+  const titolo = 'ESEGUI AZIONI';
+  if (attive.length === 0) {
+    ui.mostraMessaggio(titolo, 'Operazione annullata: nessuna azione attiva in CONF_AZIONI.');
+    return;
+  }
+  const elenco = attive.map((a) => `• ${a.id} (${a.tipo})`).join('\n');
+  const scelta = ui.chiediInput(
+    titolo,
+    `Azioni attive:\n${elenco}\n\nScrivi un ID, oppure ${PAROLA_TUTTE} per eseguirle tutte.`
+  );
+  if (scelta === '') {
+    ui.mostraMessaggio(titolo, 'Operazione annullata: nessuna azione selezionata.');
+    return;
+  }
+  const tutte = scelta.toUpperCase() === PAROLA_TUTTE;
+  if (!tutte && !attive.some((a) => a.id === scelta)) {
+    ui.mostraMessaggio(titolo, `Azione "${scelta}" non trovata tra quelle attive.`);
+    return;
+  }
+  const ids = tutte ? attive.map((a) => a.id) : [scelta];
+  ui.mostraSidebarMonitoraggio(`azioni_${tutte ? PAROLA_TUTTE : scelta}`, `Monitoraggio — ${titolo}`);
+  try {
+    avvia(ids);
+  } catch (e) {
+    ui.mostraMessaggio(titolo, `Errore: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }

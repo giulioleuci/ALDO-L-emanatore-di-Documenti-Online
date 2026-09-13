@@ -82,6 +82,7 @@ import {
   type StoricoDatabaseProvider
 } from '../application/storico/StoricoDatabaseProvider';
 import { StoricoDocumentiService } from '../application/storico/StoricoDocumentiService';
+import { ActionBatchService } from '../application/services/ActionBatchService';
 
 /** Every seam the container wiring needs; tests inject fakes, initAldo() injects the real ones. */
 interface BootstrapDeps {
@@ -380,6 +381,32 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         logger
       })
   );
+  c.register(
+    'actionBatchService',
+    (container) =>
+      new ActionBatchService({
+        db: deps.db,
+        contextBuilder: container.get<ContextBuilder>('contextBuilder'),
+        expressionEngine: deps.expressionEngine,
+        templates: deps.templates,
+        drive: deps.drive,
+        roles: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
+        classi: container.get<ClasseRepository>('classi'),
+        alunni: container.get<AlunnoRepository>('alunni'),
+        dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
+        teachingAssignments: container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
+        now: deps.now,
+        storico: container.get<StoricoDocumentiService>('storicoDocumenti'),
+        // VALIDA_DB is unavailable off-GAS for the same reason as the menu
+        // validation launcher: no SpreadsheetService, no report sheet.
+        ...(c.has('databaseValidationService')
+          ? { validator: container.get<DatabaseValidationService>('databaseValidationService') }
+          : {}),
+        logger,
+        logJob: container.get<LogJobRepository>('logJob'),
+        activeUser
+      })
+  );
   return c;
 }
 
@@ -474,6 +501,28 @@ export function avviaBloccoDocumenti(c: ServiceContainer): LockOutcome {
   return c.get<LockDocumentsService>('lockDocumentsService').bloccaTutti();
 }
 
+/** Data-driven launcher (15 §4): standalone azioni for one or more CONF_AZIONI ids. */
+export function avviaAzioniDataDriven(
+  c: ServiceContainer,
+  azioneIds: string[],
+  runner: JobRunnerService,
+  maxDurationMs?: number
+): unknown {
+  const service = c.get<ActionBatchService>('actionBatchService');
+  for (const id of azioneIds) {
+    const azione = service.findAzione(id);
+    if (azione === null) throw new ConfigurationError(`CONF_AZIONI ${id} non trovata`);
+    if (!azione.isAttivo()) throw new ConfigurationError(`CONF_AZIONI ${id} non è attiva`);
+  }
+  const jobName = azioneIds.length === 1 ? `azioni_${azioneIds[0]!}` : 'azioni_TUTTE';
+  return service.start(runner, jobName, azioneIds, false, maxDurationMs);
+}
+
+/** The enabled CONF_AZIONI rows, for the menu dialog and the user entrypoints. */
+export function elencoAzioniAttive(c: ServiceContainer): Array<{ id: string; tipo: string }> {
+  return c.get<ActionBatchService>('actionBatchService').elencoAttive();
+}
+
 /**
  * Resume entry (15 §5): JobRunnerLib's timed trigger invokes the global
  * `resumeJob`; jobName '' lets the library resolve it from the trigger context
@@ -493,6 +542,7 @@ export function riprendiJobSospeso(
   const email = c.get<EmailBatchService>('emailBatchService');
   const retry = c.get<EmailRetryService>('emailRetryService');
   const importazione = c.has('importService') ? c.get<ImportService>('importService') : null;
+  const azioni = c.get<ActionBatchService>('actionBatchService');
   return runner.resume(
     jobName,
     (queue) => {
@@ -500,6 +550,7 @@ export function riprendiJobSospeso(
       email.registerJobHandlers(queue);
       retry.registerJobHandlers(queue);
       importazione?.registerJobHandlers(queue);
+      azioni.registerJobHandlers(queue);
     },
     maxDurationMs
   );

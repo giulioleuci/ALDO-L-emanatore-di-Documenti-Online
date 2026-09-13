@@ -6,11 +6,14 @@ import {
   avviaImportazioneDataDriven,
   avviaValidazioneDatabase,
   avviaBloccoDocumenti,
+  avviaAzioniDataDriven,
+  elencoAzioniAttive,
   riprendiJobSospeso,
   initAldo,
   resetAldo,
   creaJobRunner
 } from '../../../src/config/Bootstrap';
+import { JOB_TYPE_ESECUZIONE_AZIONI } from '../../../src/application/services/ActionBatchService';
 import { FakeSpreadsheetReportFacade } from '../../fakes/FakeSpreadsheetReportFacade';
 import { DocumentGenerationService } from '../../../src/application/services/DocumentGenerationService';
 import { EmailNotificationService } from '../../../src/application/services/EmailNotificationService';
@@ -332,13 +335,49 @@ test('avviaImportazioneDataDriven runs the real ImportService when an ImportEngi
   expect(result).toEqual({ inseriti: 1, aggiornati: 0, saltati: 0, ghost: 0, errori: [] });
 });
 
-test('riprendiJobSospeso re-registers ALL THREE job registries so the library can pick by job type (15 §5)', () => {
+test('riprendiJobSospeso re-registers ALL FOUR job registries so the library can pick by job type (15 §5)', () => {
   const { runner, calls } = fakeRunner();
   riprendiJobSospeso(container(), runner);
   expect(calls[0]!.jobName).toBe('');
   expect(calls[0]!.registered.sort()).toEqual(
-    [JOB_TYPE_GENERAZIONE_DOCUMENTI, JOB_TYPE_INVIO_EMAIL, JOB_TYPE_RETRY_EMAIL].sort()
+    [
+      JOB_TYPE_GENERAZIONE_DOCUMENTI,
+      JOB_TYPE_INVIO_EMAIL,
+      JOB_TYPE_RETRY_EMAIL,
+      JOB_TYPE_ESECUZIONE_AZIONI
+    ].sort()
   );
+});
+
+test('registers actionBatchService and resolves it', () => {
+  const c = container();
+  expect(c.has('actionBatchService')).toBe(true);
+  expect(c.get('actionBatchService')).toBeDefined();
+});
+
+test('avviaAzioniDataDriven refuses an unknown or disabled CONF_AZIONI id', () => {
+  const c = container();
+  const run = jest.fn();
+  const runner = { run } as unknown as JobRunnerService;
+  expect(() => avviaAzioniDataDriven(c, ['NON_ESISTE'], runner)).toThrow(ConfigurationError);
+  expect(run).not.toHaveBeenCalled();
+});
+
+test('riprendiJobSospeso registers the ESECUZIONE_AZIONI handler', () => {
+  const c = container();
+  const registered: string[] = [];
+  const runner = {
+    resume: (_name: string, register: (queue: { registerJobHandler: (t: string) => void }) => void) => {
+      register({ registerJobHandler: (t: string) => registered.push(t) });
+    }
+  } as unknown as JobRunnerService;
+  riprendiJobSospeso(c, runner);
+  expect(registered).toContain(JOB_TYPE_ESECUZIONE_AZIONI);
+});
+
+test('elencoAzioniAttive returns the enabled CONF_AZIONI rows', () => {
+  const c = container();
+  expect(elencoAzioniAttive(c)).toEqual([]);
 });
 
 describe('buildAldoContainer — optional generator strategies', () => {

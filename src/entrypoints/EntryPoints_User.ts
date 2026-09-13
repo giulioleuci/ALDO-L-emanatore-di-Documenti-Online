@@ -10,6 +10,14 @@ declare function avviaValidazioneDatabase(container: unknown): {
   spreadsheetId: string;
   nome: string;
 };
+declare function elencoAzioniAttive(container: unknown): Array<{ id: string; tipo: string }>;
+declare function avviaAzioniDataDriven(
+  container: unknown,
+  azioneIds: string[],
+  runner: unknown,
+  maxDurationMs?: number
+): unknown;
+declare function creaJobRunner(): JobRunnerService;
 
 // ── GENERAZIONE DOCUMENTI ────────────────────────────────────────────
 
@@ -204,6 +212,24 @@ function validazioneDatabase(): void {
   );
 }
 
+// ── AZIONI ───────────────────────────────────────────────────────────
+
+/** UI-free launch of one CONF_AZIONI action by id. Future scheduled triggers point here. */
+function avviaAzione(id: string): void {
+  avviaAzioniDataDriven(initAldo(), [id], creaJobRunner());
+}
+
+/** UI-free launch of every enabled CONF_AZIONI action. */
+function avviaTutteAzioni(): void {
+  const container = initAldo();
+  const ids = elencoAzioniAttive(container).map((azione) => azione.id);
+  if (ids.length === 0) {
+    Logger.log('Esecuzione azioni: nessuna azione attiva in CONF_AZIONI.');
+    return;
+  }
+  avviaAzioniDataDriven(container, ids, creaJobRunner());
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 // ── GENERAZIONE DOCUMENTI
 (globalThis as any).generaPianiPersonalizzati = generaPianiPersonalizzati;
@@ -245,4 +271,7 @@ function validazioneDatabase(): void {
 (globalThis as any).importaFslFineAnnoChunked = importaFslFineAnnoChunked;
 // ── VALIDAZIONE DATABASE
 (globalThis as any).validazioneDatabase = validazioneDatabase;
+// ── AZIONI
+(globalThis as any).avviaAzione = avviaAzione;
+(globalThis as any).avviaTutteAzioni = avviaTutteAzioni;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

@@ -3,7 +3,7 @@ import type { Classe } from '../../domain/entities/Classe';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
 import type { IDipartimentoRepository } from '../../domain/repositories/IDipartimentoRepository';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
-import { GeneratoreAxis, StatoJob, type TipoPiano } from '../../domain/value-objects/enums';
+import { GeneratoreAxis, StatoJob } from '../../domain/value-objects/enums';
 import { ConfigurationError, EntityNotFoundError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from './DocumentGenerationService';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
@@ -11,42 +11,37 @@ import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
+import {
+  targetsAlunni,
+  targetsClasse,
+  targetsClasseDocente,
+  targetsClasseDocenteMateria,
+  targetsClasseMateria,
+  targetsDipartimenti,
+  targetsDocenti,
+  targetsPiani,
+  type AlunnoBatchTarget,
+  type ClasseDocenteBatchTarget,
+  type ClasseMateriaBatchTarget,
+  type DocenteBatchTarget,
+  type DocenteClasseMateriaBatchTarget,
+  type PianoBatchTarget
+} from './axisTargets';
+
+export type {
+  AlunnoBatchTarget,
+  ClasseDocenteBatchTarget,
+  ClasseMateriaBatchTarget,
+  DocenteBatchTarget,
+  DocenteClasseMateriaBatchTarget,
+  PianoBatchTarget
+};
 
 /** Job type under which the batch handler is registered in JobRunnerLib. */
 export const JOB_TYPE_GENERAZIONE_DOCUMENTI = 'GENERAZIONE_DOCUMENTI_CLASSI';
 
 interface DocumentConfigLookup {
   findById(id: string): ConfigurazioneDocumento | null;
-}
-
-export interface PianoBatchTarget {
-  studente: string;
-  tipo: TipoPiano;
-}
-
-export interface DocenteClasseMateriaBatchTarget {
-  classe: string;
-  docenteEmail: string;
-  materiaId: string;
-}
-
-export interface ClasseMateriaBatchTarget {
-  classe: string;
-  materiaId: string;
-}
-
-export interface ClasseDocenteBatchTarget {
-  classe: string;
-  docenteEmail: string;
-}
-
-export interface DocenteBatchTarget {
-  docenteEmail: string;
-  classiCompetenza: string[];
-}
-
-export interface AlunnoBatchTarget {
-  email: string;
 }
 
 /** Human-readable job type shown in the end-of-job report (see `logJobReport`). */
@@ -349,12 +344,7 @@ export class DocumentBatchService {
 
     let targets: PianoBatchTarget[];
     if (resume === null) {
-      targets = [];
-      for (const alunno of this.alunni.findAttivi()) {
-        for (const piano of this.alunni.getPiani(alunno)) {
-          targets.push({ studente: alunno.email.value, tipo: piano.tipo });
-        }
-      }
+      targets = targetsPiani(this.alunni);
     } else {
       if (resume.planTargets === undefined) {
         throw new ConfigurationError(
@@ -441,57 +431,12 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let targets: DocenteClasseMateriaBatchTarget[];
     if (resume === null) {
-      targets = [];
-      // DocenteClasseMateriaBatchTarget is (classe, docenteEmail, materiaId), where
-      // materiaId is specifica-qualified (BASE.SPECIFICA) when the slot has a
-      // specifica — mirroring SheetMaterieGeneratorStrategy.catalogId(). A
-      // docente teaching two specifics of the same family (e.g. INTERPRET.CHITARRA
-      // and INTERPRET.FLAUTO) now gets two separate targets, one per composite id.
-      // Slots differing only by *kind* (STANDARD vs ITP on the same materiaId)
-      // still collapse to one target here by design — extending the batch axis
-      // to carry kind is out of scope; dedup keeps the first match, mirroring
-      // DocenteClasseMateriaFocusProvider's own first-match `materie.find` semantics.
-      const seen = new Set<string>();
-      const attive = this.classi.filterPerGestioneArticolazione(
-        this.classi.findAttive(),
+      targets = targetsClasseDocenteMateria(
+        this.classi,
+        this.teachingAssignments,
+        this.now,
         config.gestioneArticolazione
       );
-      for (const classe of attive) {
-        // Role-resolved (SUPPLENZE/VARIAZIONI_CATTEDRA/CLASSI), not the raw
-        // IClasseRepository.getConsiglioDiClasse nominal cattedre — an active
-        // substitution/variation must enumerate the current teacher, same
-        // council data DocenteClasseMateriaFocusProvider matches against downstream
-        // (fix round 1: the two previously diverged). includeReligioneAlt:
-        // true mirrors resolveCouncilForProjection's call
-        // (TeachingCouncilProjection.ts) — without it, AldoTeachingAssignmentResolver
-        // silently skips IS_RELIGIONE_ALT materie (IRC/attività alternativa)
-        // entirely, so a docente teaching only one of those would never be
-        // enumerated as a batch target at all (fix round 2). routingPolicy is
-        // intentionally NOT passed: it only affects TeachingAssignment.routing
-        // .{primary,cc,bcc} (communication-channel categorization of the SAME
-        // delegation chain — RoleResolutionLib's RoutingResolver/RoutingPolicy,
-        // see GasLibraryFactory/DOCS_LIBS/RoleResolutionLib.md), never
-        // `docenteEffettivo`/`slot`, the only two fields this enumeration
-        // reads — so it has no bearing on which (docente, materia) targets
-        // get generated here.
-        const assignments = this.teachingAssignments.resolveConsiglio(classe, this.now, {
-          includeReligioneAlt: true
-        });
-        for (const assignment of assignments) {
-          const classeId = classe.id ?? '';
-          const docenteEmail = assignment.docenteEffettivo.email.value;
-          const materiaId =
-            assignment.slot.specifica === null
-              ? assignment.slot.materia.value
-              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
-          const key = `${classeId}:${materiaId}:${docenteEmail}`;
-          if (seen.has(key)) {
-            continue;
-          }
-          seen.add(key);
-          targets.push({ classe: classeId, docenteEmail, materiaId });
-        }
-      }
     } else {
       const persistedTargets = resume.docenteClasseMateriaTargets ?? resume.docenteMateriaTargets;
       if (persistedTargets === undefined) {
@@ -580,28 +525,12 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let targets: ClasseMateriaBatchTarget[];
     if (resume === null) {
-      targets = [];
-      const seen = new Set<string>();
-      const attive = this.classi.filterPerGestioneArticolazione(
-        this.classi.findAttive(),
+      targets = targetsClasseMateria(
+        this.classi,
+        this.teachingAssignments,
+        this.now,
         config.gestioneArticolazione
       );
-      for (const classe of attive) {
-        const assignments = this.teachingAssignments.resolveConsiglio(classe, this.now, {
-          includeReligioneAlt: true
-        });
-        for (const assignment of assignments) {
-          const classeId = classe.id ?? '';
-          const materiaId =
-            assignment.slot.specifica === null
-              ? assignment.slot.materia.value
-              : `${assignment.slot.materia.value}.${assignment.slot.specifica}`;
-          const key = `${classeId}:${materiaId}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          targets.push({ classe: classeId, materiaId });
-        }
-      }
     } else {
       if (resume.classeMateriaTargets === undefined) {
         throw new ConfigurationError(
@@ -683,24 +612,12 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let targets: ClasseDocenteBatchTarget[];
     if (resume === null) {
-      targets = [];
-      const seen = new Set<string>();
-      const attive = this.classi.filterPerGestioneArticolazione(
-        this.classi.findAttive(),
+      targets = targetsClasseDocente(
+        this.classi,
+        this.teachingAssignments,
+        this.now,
         config.gestioneArticolazione
       );
-      for (const classe of attive) {
-        for (const assignment of this.teachingAssignments.resolveConsiglio(classe, this.now, {
-          includeReligioneAlt: true
-        })) {
-          const classeId = classe.id ?? '';
-          const docenteEmail = assignment.docenteEffettivo.email.value;
-          const key = `${classeId}:${docenteEmail}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          targets.push({ classe: classeId, docenteEmail });
-        }
-      }
     } else {
       if (resume.classeDocenteTargets === undefined) {
         throw new ConfigurationError(
@@ -782,26 +699,7 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let targets: DocenteBatchTarget[];
     if (resume === null) {
-      const classiPerDocente = new Map<string, Set<string>>();
-      const attive = this.classi.filterPerGestioneArticolazione(
-        this.classi.findAttive(),
-        config.gestioneArticolazione
-      );
-      for (const classe of attive) {
-        const classeId = classe.id ?? '';
-        for (const assignment of this.teachingAssignments.resolveConsiglio(classe, this.now, {
-          includeReligioneAlt: true
-        })) {
-          const docenteEmail = assignment.docenteEffettivo.email.value;
-          const classi = classiPerDocente.get(docenteEmail) ?? new Set<string>();
-          classi.add(classeId);
-          classiPerDocente.set(docenteEmail, classi);
-        }
-      }
-      targets = [...classiPerDocente.entries()].map(([docenteEmail, classi]) => ({
-        docenteEmail,
-        classiCompetenza: [...classi]
-      }));
+      targets = targetsDocenti(this.classi, this.teachingAssignments, this.now, config.gestioneArticolazione);
     } else {
       if (resume.docenteTargets === undefined) {
         throw new ConfigurationError(
@@ -890,7 +788,7 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let targets: AlunnoBatchTarget[];
     if (resume === null) {
-      targets = this.alunni.findAttivi().map((alunno) => ({ email: alunno.email.value }));
+      targets = targetsAlunni(this.alunni);
     } else {
       if (resume.alunnoTargets === undefined) {
         throw new ConfigurationError(
@@ -966,7 +864,7 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let tutti: string[];
     if (resume === null) {
-      tutti = this.dipartimenti.findAll().map((dipartimento) => dipartimento.id ?? '?');
+      tutti = targetsDipartimenti(this.dipartimenti);
     } else {
       if (resume.dipartimentoTargets === undefined) {
         throw new ConfigurationError(
@@ -1047,10 +945,7 @@ export class DocumentBatchService {
     let attive: Array<Classe | null>;
     let classeTargets: string[];
     if (resume === null) {
-      const classi = this.classi.filterPerGestioneArticolazione(
-        this.classi.findAttive(),
-        config.gestioneArticolazione
-      );
+      const classi = targetsClasse(this.classi, config.gestioneArticolazione);
       attive = classi;
       classeTargets = classi.map((classe) => classe.id ?? '');
     } else {

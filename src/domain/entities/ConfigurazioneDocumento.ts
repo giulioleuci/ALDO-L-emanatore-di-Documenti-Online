@@ -108,7 +108,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
     // comes back as `''` — so a bare `=== null` check lets that empty string
     // through into `JSON.parse('')`, which throws (same class of bug fixed
     // for CURRICULUM in `Alunno.getCurriculum` and for POST_PROCESSO/PERMESSI
-    // via `hasJsonValue` in `postProcessActions.ts`).
+    // via `hasJsonValue` in `standaloneActions.ts`).
     return this.parametriRaw === null || this.parametriRaw.trim() === ''
       ? {}
       : (JSON.parse(this.parametriRaw) as Record<string, unknown>);

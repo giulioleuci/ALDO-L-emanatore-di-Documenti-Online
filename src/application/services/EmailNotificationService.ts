@@ -4,7 +4,7 @@ import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFaca
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
-import type { PostProcessDb } from '../pipelines/postProcessActions';
+import type { PostProcessDb } from '../pipelines/standaloneActions';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import { emailTargetId, type EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';

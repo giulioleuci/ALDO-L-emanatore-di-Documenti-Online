@@ -34,7 +34,7 @@ import {
   safeColor,
   type SourceScope
 } from '../email/boxes';
-import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
+import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
 import { COL_CONF_MAIL, MATERIA_SOSTEGNO } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -834,14 +834,14 @@ export class PostProcessEmailStep extends Step {
     const actions = JSON.parse(String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO])) as Array<{
       tipo?: unknown;
     }>;
-    const updated = executePostProcess(
-      String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO]),
-      cduRecord(ctx),
-      this.db,
-      this.templates,
-      now(ctx),
-      this.logger
-    );
+    const updated = eseguiAzioni({
+      azioni: String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO]),
+      cdu: cduRecord(ctx),
+      db: this.db,
+      templates: this.templates,
+      now: now(ctx),
+      logger: this.logger
+    });
     // These mutations land after LogEmailStep's save — persist explicitly (11 §10).
     this.db.save();
     this.setResult(ctx, 'postProcessUpdated', updated);

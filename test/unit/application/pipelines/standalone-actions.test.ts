@@ -1,7 +1,7 @@
 import {
-  executePostProcess,
+  eseguiAzioni,
   type PostProcessDb
-} from '../../../../src/application/pipelines/postProcessActions';
+} from '../../../../src/application/pipelines/standaloneActions';
 import { FakeDatabase } from '../../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../../test/fakes/FakeTemplateEngine';
@@ -28,7 +28,14 @@ test('INSERISCI_TIMESTAMP stamps matching rows via template criteri (11 §10)', 
       criteri: { STUDENTE: '{{focus.alunno.email}}', DATA: '{{focus.carenza.data}}' }
     }
   ]);
-  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  const n = eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  });
   expect(n).toBe(1);
   const rows = db.tables['CARENZE']!.getAllRows();
   const hit = rows.find((r) => r['STUDENTE'] === 'a1@school.it' && r['DATA'] === '2026-02-15')!;
@@ -53,7 +60,14 @@ test('INSERISCI_TIMESTAMP does not overwrite an already-stamped row (first send 
       criteri: { STUDENTE: '{{focus.alunno.email}}', DATA: '{{focus.carenza.data}}' }
     }
   ]);
-  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  const n = eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  });
   expect(n).toBe(0);
   const hit = db.tables['CARENZE']!
     .getAllRows()
@@ -72,7 +86,14 @@ test('AGGIORNA_CAMPO writes a resolved value', () => {
       criteri: { EMAIL: '{{focus.alunno.email}}' }
     }
   ]);
-  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  const n = eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  });
   expect(n).toBe(1);
   expect(db.tables['ALUNNI']!.getByPK('a1@school.it')!['NOTE']).toBe('Notificato il 2026-02-15');
 });
@@ -84,7 +105,14 @@ test('AGGIORNA_STATO_DOC updates LOG_DOCS.STATO', () => {
   const actions = JSON.stringify([
     { tipo: 'AGGIORNA_STATO_DOC', stato: 'NOTIFICATO', criteri: { ID: 'file_1' } }
   ]);
-  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  const n = eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  });
   expect(n).toBe(1);
   expect(db.tables['LOG_DOCS']!.getByPK('file_1')!['STATO']).toBe('NOTIFICATO');
 });
@@ -100,7 +128,14 @@ test('no matching rows ⇒ 0 updates and no phantom insert', () => {
       criteri: { STUDENTE: 'nessuno@x.it' }
     }
   ]);
-  expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(0);
+  expect(eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  })).toBe(0);
   expect(db.tables['CARENZE']!.getAllRows()).toHaveLength(before);
 });
 
@@ -120,7 +155,14 @@ test('single-column criteri build an index on first use and reuse it for later a
     { tipo: 'AGGIORNA_STATO_DOC', stato: 'NOTIFICATO', criteri: { ID: 'file_1' } },
     { tipo: 'AGGIORNA_STATO_DOC', stato: 'NOTIFICATO', criteri: { ID: 'file_2' } }
   ]);
-  const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  const n = eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  });
 
   expect(n).toBe(2);
   expect(db.tables['LOG_DOCS']!.getByPK('file_1')!['STATO']).toBe('NOTIFICATO');
@@ -144,7 +186,14 @@ test('multi-column criteri still fall back to a full scan', () => {
       criteri: { STUDENTE: '{{focus.alunno.email}}', DATA: '{{focus.carenza.data}}' }
     }
   ]);
-  executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+  eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  });
   expect(getAllRowsSpy).toHaveBeenCalled();
 });
 
@@ -159,7 +208,14 @@ test('unknown action type is skipped with a warning, others still run', () => {
       criteri: { STUDENTE: 'a2@school.it' }
     }
   ]);
-  expect(executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger)).toBe(1);
+  expect(eseguiAzioni({
+    azioni: actions,
+    cdu: cdu(),
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger
+  })).toBe(1);
 });
 
 test('AGGIORNA_PERMESSI_STORICI resolves criteri and delegates to the document handler', () => {
@@ -180,15 +236,15 @@ test('AGGIORNA_PERMESSI_STORICI resolves criteri and delegates to the document h
   ]);
 
   expect(
-    executePostProcess(
-      actions,
-      { focus: { alunno: { email: 'a1@school.it' }, piano: { tipo: 'PDP_BES' } } },
+    eseguiAzioni({
+      azioni: actions,
+      cdu: { focus: { alunno: { email: 'a1@school.it' }, piano: { tipo: 'PDP_BES' } } },
       db,
-      new FakeTemplateEngine(),
-      NOW,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
       logger,
-      handler
-    )
+      handlers: { AGGIORNA_PERMESSI_STORICI: handler }
+    })
   ).toBe(1);
   expect(handler).toHaveBeenCalledWith(
     expect.objectContaining({ target: 'PIANI_PERSONALIZZATI' }),
@@ -198,7 +254,7 @@ test('AGGIORNA_PERMESSI_STORICI resolves criteri and delegates to the document h
 
 // --- CSV containment matching (multi-class POST_PROCESSO criteria, e.g. PER_COORDINATORE piani) ---
 
-describe('postProcessActions — CSV containment matching', () => {
+describe('standaloneActions — CSV containment matching', () => {
   test('single-valued criterion still matches by strict equality (unchanged behavior)', () => {
     const tables = fixtureTables();
     tables['LOG_DOCS'] = [
@@ -214,7 +270,14 @@ describe('postProcessActions — CSV containment matching', () => {
         criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{classe}}' }
       }
     ]);
-    const n = executePostProcess(actions, { classe: '1A' }, db, new FakeTemplateEngine(), NOW, logger);
+    const n = eseguiAzioni({
+      azioni: actions,
+      cdu: { classe: '1A' },
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    });
     expect(n).toBe(1);
     expect(db.tables['LOG_DOCS']!.getByPK('1')!['NOTIFICATO']).not.toBe('');
     expect(db.tables['LOG_DOCS']!.getByPK('2')!['NOTIFICATO']).toBe('');
@@ -236,14 +299,14 @@ describe('postProcessActions — CSV containment matching', () => {
         criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{destinatario.contesto.classiCompetenza | join}}' }
       }
     ]);
-    const n = executePostProcess(
-      actions,
-      { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
+    const n = eseguiAzioni({
+      azioni: actions,
+      cdu: { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
       db,
-      new FakeTemplateEngine(), // real WorkspaceTemplateEngine string/filter processing (offline-safe)
-      NOW,
+      templates: new FakeTemplateEngine(), // real WorkspaceTemplateEngine string/filter processing (offline-safe)
+      now: NOW,
       logger
-    );
+    });
     expect(n).toBe(2);
     expect(db.tables['LOG_DOCS']!.getByPK('1')!['NOTIFICATO']).not.toBe('');
     expect(db.tables['LOG_DOCS']!.getByPK('2')!['NOTIFICATO']).not.toBe('');
@@ -279,7 +342,14 @@ describe('postProcessActions — CSV containment matching', () => {
       }
     };
 
-    expect(executePostProcess(actions, parentCdu, db, new FakeTemplateEngine(), NOW, logger)).toBe(2);
+    expect(eseguiAzioni({
+      azioni: actions,
+      cdu: parentCdu,
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    })).toBe(2);
     const rowsFor = (...classi: string[]) =>
       db.tables['LOG_DOCS']!.getAllRows().filter((row) => classi.includes(String(row['CLASSI'])));
     expect(rowsFor('3C', '3C-LC').every((row) => row['STATO'] === 'VERBALIZZATO')).toBe(true);
@@ -309,7 +379,14 @@ describe('postProcessActions — CSV containment matching', () => {
       }
     };
 
-    expect(executePostProcess(actions, normalClassCdu, db, new FakeTemplateEngine(), NOW, logger)).toBe(0);
+    expect(eseguiAzioni({
+      azioni: actions,
+      cdu: normalClassCdu,
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    })).toBe(0);
     expect(db.tables['LOG_DOCS']!.getAllRows().every((row) => row['STATO'] === 'GENERATO')).toBe(true);
   });
 
@@ -327,21 +404,21 @@ describe('postProcessActions — CSV containment matching', () => {
         criteri: { CLASSI: '{{destinatario.contesto.classiCompetenza | join}}' }
       }
     ]);
-    executePostProcess(
-      actions,
-      { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
+    eseguiAzioni({
+      azioni: actions,
+      cdu: { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
       db,
-      new FakeTemplateEngine(),
-      NOW,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
       logger
-    );
+    });
     expect(getAllRowsSpy).toHaveBeenCalled();
   });
 });
 
 // --- A20: action-type switch and updateMatching column-scan fallback ---
 
-describe('postProcessActions — updateMatching guard and findMatchingRows fallback (A20)', () => {
+describe('standaloneActions — updateMatching guard and findMatchingRows fallback (A20)', () => {
   test('updateMatching returns 0 without scanning when the target table does not exist in db.tables', () => {
     // A plain-object PostProcessDb (unlike FakeDatabase's Proxy-backed `tables`,
     // which auto-vivifies any table name) so `db.tables[tab]` really is
@@ -355,7 +432,14 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
         criteri: { ID: 'x' }
       }
     ]);
-    const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+    const n = eseguiAzioni({
+      azioni: actions,
+      cdu: cdu(),
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    });
     expect(n).toBe(0);
   });
 
@@ -389,7 +473,14 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
     const actions = JSON.stringify([
       { tipo: 'INSERISCI_TIMESTAMP', tab: 'CUSTOM', col: 'STAMP', criteri: { ID: 'r1' } }
     ]);
-    const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+    const n = eseguiAzioni({
+      azioni: actions,
+      cdu: cdu(),
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    });
     expect(n).toBe(1);
     expect(createIndexSpy).toHaveBeenCalledWith('ID');
     expect(getAllRowsSpy).toHaveBeenCalled();
@@ -412,7 +503,14 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
         criteri: { EMAIL: '{{focus.alunno.email}}' }
       }
     ]);
-    const n = executePostProcess(actions, cdu(), db, templates, NOW, logger);
+    const n = eseguiAzioni({
+      azioni: actions,
+      cdu: cdu(),
+      db,
+      templates,
+      now: NOW,
+      logger
+    });
     expect(n).toBe(1);
     expect(processStringSpy).toHaveBeenCalledWith('Notificato il {{focus.carenza.data}}', cdu());
     expect(db.tables['ALUNNI']!.getByPK('a1@school.it')!['NOTE']).toBe('Notificato il 2026-02-15');
@@ -424,7 +522,14 @@ describe('postProcessActions — updateMatching guard and findMatchingRows fallb
     const db = new FakeDatabase(tables);
     // No `tab` and no `stato` in the action ⇒ defaults to TABLE.LOG_DOCS and ''.
     const actions = JSON.stringify([{ tipo: 'AGGIORNA_STATO_DOC', criteri: { ID: 'file_1' } }]);
-    const n = executePostProcess(actions, cdu(), db, new FakeTemplateEngine(), NOW, logger);
+    const n = eseguiAzioni({
+      azioni: actions,
+      cdu: cdu(),
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    });
     expect(n).toBe(1);
     expect(db.tables['LOG_DOCS']!.getByPK('file_1')!['STATO']).toBe('');
   });

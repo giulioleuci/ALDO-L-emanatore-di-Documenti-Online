@@ -16,8 +16,8 @@ import {
   GeneratoreAxis
 } from '../../domain/value-objects/enums';
 import { ConfigurationError, PipelineError } from '../../domain/errors/DomainError';
-import { executePostProcess, hasJsonValue, type PostProcessDb } from './postProcessActions';
-import type { PostProcessAction } from './postProcessActions';
+import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
+import type { Azione } from './standaloneActions';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 import { resolveLogRegistration } from './logRegistration';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
@@ -555,15 +555,18 @@ export class PostProcessStep extends Step {
     const actions = JSON.parse(String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO])) as Array<{
       tipo?: unknown;
     }>;
-    const updated = executePostProcess(
-      String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO]),
-      cduRecord(ctx),
-      this.db,
-      this.templates,
-      this.now,
-      this.logger,
-      (action, criteri) => this.aggiornaPermessiStorici(ctx, action, criteri)
-    );
+    const updated = eseguiAzioni({
+      azioni: String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO]),
+      cdu: cduRecord(ctx),
+      db: this.db,
+      templates: this.templates,
+      now: this.now,
+      logger: this.logger,
+      handlers: {
+        AGGIORNA_PERMESSI_STORICI: (azione, criteri) =>
+          this.aggiornaPermessiStorici(ctx, azione, criteri)
+      }
+    });
     this.setResult(ctx, 'postProcessUpdated', updated);
     this.setResult(
       ctx,
@@ -574,10 +577,10 @@ export class PostProcessStep extends Step {
 
   private aggiornaPermessiStorici(
     ctx: PipelineContext,
-    action: PostProcessAction,
+    azione: Azione,
     criteri: Record<string, string>
   ): number {
-    const { target, ruolo, permesso, profondita } = action;
+    const { target, ruolo, permesso, profondita } = azione;
     if (target === undefined || target.trim() === '') {
       throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.target obbligatorio');
     }

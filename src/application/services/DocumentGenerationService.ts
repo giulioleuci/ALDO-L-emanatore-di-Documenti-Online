@@ -24,7 +24,7 @@ import {
   CRITICAL_STEPS,
   type IRoleResolver
 } from '../pipelines/documentSteps';
-import type { PostProcessDb } from '../pipelines/postProcessActions';
+import type { PostProcessDb } from '../pipelines/standaloneActions';
 import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
 import { TABLE, COL_CONF_DOC } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';

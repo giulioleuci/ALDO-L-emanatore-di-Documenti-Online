@@ -2,16 +2,24 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 import { TABLE, COL_LOG_DOCS } from '../../config/schema';
 
 /**
- * Shared POST_PROCESSO action executor (10 §12, 11 §10): the same JSON action
- * grammar is used by CONF_DOC and CONF_MAIL. Criteria values are `{{path}}`
- * templates resolved by WorkspaceTemplateEngine against the CDU; matching rows
- * are rewritten through the RepositoryDatabase `updateRowWhere` seam (the full
- * previous row is the match key, so exactly that row is replaced and a missing
- * match can never append phantom rows). Persistence is the caller's concern:
- * inside the document pipeline the service transaction commits; the email
- * pipeline calls `save()` right after (11 §10).
+ * Shared "azioni" grammar (10 §12, 11 §10, CONF_AZIONI design doc): one JSON
+ * action vocabulary used in two places — inline, as the physical
+ * CONF_DOC/CONF_MAIL `POST_PROCESSO` column (the column name is spec and does
+ * NOT change), and standalone, as CONF_AZIONI.AZIONI orchestrated by
+ * ActionBatchService. Criteria values are `{{path}}` templates resolved by
+ * WorkspaceTemplateEngine against the CDU; matching rows are rewritten through
+ * the RepositoryDatabase `updateRowWhere` seam (the full previous row is the
+ * match key, so exactly that row is replaced and a missing match can never
+ * append phantom rows). Persistence is the caller's concern: inside the
+ * document pipeline the service transaction commits; the email pipeline calls
+ * `save()` right after (11 §10); ActionBatchService saves per target.
+ *
+ * DB-only action types are built in here. Infrastructure action types (Drive
+ * permissions, DB validation) arrive as `handlers`, supplied by the caller —
+ * the document pipeline registers only AGGIORNA_PERMESSI_STORICI, while
+ * ActionBatchService registers the full set (see azioniInfra.ts).
  */
-export interface PostProcessAction {
+export interface Azione {
   tipo: string;
   tab?: string;
   col?: string;
@@ -22,12 +30,19 @@ export interface PostProcessAction {
   ruolo?: string;
   permesso?: string;
   profondita?: number;
+  /** Log table an infra action selects its targets from: 'LOG_DOCS' | 'LOG_FOLD'. */
+  su?: string;
+  /** Direct recipient addresses, alternative to `ruolo`. */
+  emails?: string[];
+  /** TRASFORMA_CAMPO: TRIM | UPPER | LOWER | CAPITALIZE | UNCAPITALIZE. */
+  operazione?: string;
+  /** RIDUCI_PERMESSI: maximum permission left in place (default LETTURA). */
+  soglia?: string;
+  /** VALIDA_DB: subset of tables to validate (default: all). */
+  tabelle?: string[];
 }
 
-export type PostProcessActionHandler = (
-  action: PostProcessAction,
-  criteri: Record<string, string>
-) => number;
+export type AzioneHandler = (azione: Azione, criteri: Record<string, string>) => number;
 
 /** The slice of the database the executor needs (satisfied by FakeDatabase and the SheetDB adapter). */
 export type PostProcessDb = Pick<RepositoryDatabase, 'tables'>;
@@ -58,7 +73,7 @@ function resolveCriteri(
 }
 
 /** Splits a CSV cell/criterion value on commas, trimming and dropping empties (ref 01 CLASSI/UTENTI CONTAINS rule). */
-function csvValues(raw: unknown): string[] {
+export function csvValues(raw: unknown): string[] {
   return typeof raw === 'string'
     ? raw
         .split(',')
@@ -133,33 +148,39 @@ function isBlank(value: unknown): boolean {
   return typeof value === 'string' && value.trim() === '';
 }
 
-/** Runs every action in the POST_PROCESSO JSON array; returns the number of updated rows. */
-export function executePostProcess(
-  rawJson: string,
-  cdu: Record<string, unknown>,
-  db: PostProcessDb,
-  templates: ITemplateEngine,
-  now: Date,
-  logger: LoggerService,
-  handler?: PostProcessActionHandler
-): number {
-  const actions = JSON.parse(rawJson) as PostProcessAction[];
-  // Mixes two different units: rows updated by DB actions (INSERISCI_TIMESTAMP,
-  // AGGIORNA_CAMPO, AGGIORNA_STATO_DOC) and files granted by AGGIORNA_PERMESSI_STORICI's
-  // handler, summed into one counter — see documentSteps.ts's `Updated` log-detail field.
+export interface EseguiAzioniOptions {
+  /** Raw JSON array: CONF_AZIONI.AZIONI or CONF_DOC/CONF_MAIL.POST_PROCESSO. */
+  azioni: string;
+  cdu: Record<string, unknown>;
+  db: PostProcessDb;
+  templates: ITemplateEngine;
+  now: Date;
+  logger: LoggerService;
+  /** Infra action types the caller can service; an unregistered type is warned and skipped. */
+  handlers?: Record<string, AzioneHandler>;
+}
+
+/** Runs every action in the JSON array; returns the number of updated rows/targets. */
+export function eseguiAzioni(opts: EseguiAzioniOptions): number {
+  const { cdu, db, templates, now, logger } = opts;
+  const azioni = JSON.parse(opts.azioni) as Azione[];
+  const handlers = opts.handlers ?? {};
+  // Mixes two different units: rows updated by DB actions and files touched by
+  // the infra handlers, summed into one counter — see documentSteps.ts's
+  // `Updated` log-detail field.
   let updated = 0;
-  for (const action of actions) {
-    const criteri = resolveCriteri(action.criteri ?? {}, cdu, templates);
-    switch (action.tipo) {
+  for (const azione of azioni) {
+    const criteri = resolveCriteri(azione.criteri ?? {}, cdu, templates);
+    switch (azione.tipo) {
       case 'INSERISCI_TIMESTAMP': {
         // Insert, not overwrite: only the first send stamps the column (e.g.
         // LOG_DOCS.NOTIFICATO), so a later PIANI_PERSONALIZZATI email that
         // also re-matches already-notified rows leaves their original
         // timestamp untouched. AGGIORNA_CAMPO remains for unconditional writes.
-        const col = action.col ?? '';
+        const col = azione.col ?? '';
         updated += updateMatching(
           db,
-          action.tab ?? '',
+          azione.tab ?? '',
           criteri,
           { [col]: now.toISOString() },
           (row) => isBlank(row[col])
@@ -167,27 +188,26 @@ export function executePostProcess(
         break;
       }
       case 'AGGIORNA_CAMPO':
-        updated += updateMatching(db, action.tab ?? '', criteri, {
-          [action.col ?? '']: templates.processString(
-            typeof action.valore === 'string' ? action.valore : '',
+        updated += updateMatching(db, azione.tab ?? '', criteri, {
+          [azione.col ?? '']: templates.processString(
+            typeof azione.valore === 'string' ? azione.valore : '',
             cdu
           )
         });
         break;
       case 'AGGIORNA_STATO_DOC':
-        updated += updateMatching(db, action.tab ?? TABLE.LOG_DOCS, criteri, {
-          [COL_LOG_DOCS.STATO]: action.stato ?? ''
+        updated += updateMatching(db, azione.tab ?? TABLE.LOG_DOCS, criteri, {
+          [COL_LOG_DOCS.STATO]: azione.stato ?? ''
         });
         break;
-      case 'AGGIORNA_PERMESSI_STORICI':
+      default: {
+        const handler = handlers[azione.tipo];
         if (handler === undefined) {
-          logger.warn('POST_PROCESSO: AGGIORNA_PERMESSI_STORICI non disponibile — saltata');
+          logger.warn(`AZIONE: tipo "${azione.tipo}" non disponibile — saltata`);
           break;
         }
-        updated += handler(action, criteri);
-        break;
-      default:
-        logger.warn(`POST_PROCESSO: azione sconosciuta "${action.tipo}" — saltata`);
+        updated += handler(azione, criteri);
+      }
     }
   }
   return updated;

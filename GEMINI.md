@@ -28,14 +28,15 @@ You have access to the `codebase-memory-mcp` tool, which maintains a compiled Kn
 
 There are these indexed project graphs you can query:
 
-- `"home-giulio-Desktop-ALDO-implementing-GasLibraryFactory"`: Contains only the library code. Use this to discover reusable functions and extension points.
-- `"home-giulio-Desktop-ALDO-implementing"`: Contains both ALDO and GasLibraryFactory. Use this to map how ALDO consumes the library.
-- `"aldo-onlinetests-debug"`: Contains both ALDO and GasLibraryFactory, and test online for ALDO.
-- `"aldo-full-coverage"`: Contains ALDO application code and all test tiers (unit, integration, build, online) in one graph. GasLibraryFactory is not part of this graph (nested-repo auto-exclusion) — query the separate `"home-giulio-Desktop-ALDO-implementing-GasLibraryFactory"` index alongside it for library-side lookups. Use this for cross-cutting coverage and dead-code analysis spanning ALDO's whole test surface.
+- `"aldo"`: ALDO application code only — `src/` (including the `src/onlinetests/` online-test tier), no `test/` tree, no GasLibraryFactory. File paths are relative to `src/` (no `src/` prefix). Use for pure-application discovery and dead-code analysis of the app package.
+- `"glf"`: GasLibraryFactory only, without its test suites (`__tests__`/integration tiers filtered). Use this to discover reusable functions and extension points.
+- `"aldo-glf"`: the combined working graph — ALDO workspace root (application + config/build files + test-support helpers like `test/fakes`, `test/setup`, `test/types`, `test/unit/onlinetests`; excludes `docs/`, `scripts/`, `coverage/`, and the heavy test suites). GasLibraryFactory is NOT merged in: the tool auto-excludes nested git repos, so query `"aldo-glf"` for the ALDO side and `"glf"` for the library side of any cross-the-boundary trace. ALDO↔GLF link via GAS library namespaces, not HTTP routes, so there are no automatic cross-repo edges between them.
+- `"aldo-with-test"`: ALDO application code plus ALL test tiers (unit, integration, build, online) in one graph — the full ALDO test surface. GasLibraryFactory excluded (nested-repo auto-exclusion); pair with `"glf"`/`"glf-with-test"` for library-side lookups. Use this for cross-cutting coverage and dead-code analysis spanning ALDO's whole test surface.
+- `"glf-with-test"`: GasLibraryFactory including all its test suites (`__tests__`, offline/online infrastructure). Use when verifying library behavior itself.
 
 **When working on this codebase, strictly use the MCP tools for the following tasks:**
 
-1. **Bypass Detection:** Use `query_graph` on `home-giulio-Desktop-ALDO-implementing` to ensure no ALDO module directly calls native Google Apps Script globals (e.g., `SpreadsheetApp`, `DriveApp`, `MailApp` and the advanced API). All such calls MUST route through `GasLibraryFactory`.
+1. **Bypass Detection:** Use `search_code` on `aldo-glf` (regex `(DriveApp|SpreadsheetApp|DocumentApp|MailApp|UrlFetchApp|ScriptApp|PropertiesService|CacheService|Utilities|Session|LockService)\.`, `path_filter='^src/'`) to ensure no ALDO module directly calls native Google Apps Script globals. All such calls MUST route through `GasLibraryFactory` (verify library side on `glf`). Note native GAS accesses are greppable text (e.g. `global.PropertiesService`) but not graph nodes, so `query_graph` cannot detect them — use `search_code`.
 2. **Dead Code Analysis:** Use the MCP's built-in tools (or graph queries) to find functions/methods within ALDO that have 0 incoming `[:CALLS]` edges and are not standard GAS triggers (like `doGet`, `onOpen`).
 3. **Linkage & Error Checking:** Use `search_graph` and `trace_path` to verify that ALDO's calls to `GasLibraryFactory` match existing functions and exact parameter signatures.
 4. **Architecture Review:** Use `get_architecture` to detect circular dependencies between ALDO modules, evaluate module cohesion, and trace long execution chains.

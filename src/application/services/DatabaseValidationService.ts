@@ -45,13 +45,21 @@ export class DatabaseValidationService {
     this.logger = deps.logger ?? new LoggerService();
   }
 
-  esegui(): ValidationReport {
+  /**
+   * Validates the current year's database. `tabelle` narrows only the REPORTED
+   * tables: the whole DB is still read and validated, because foreign-key rules
+   * resolve their targets across tables and a partial read would report false
+   * violations. Used both by the menu (no argument) and by the VALIDA_DB action.
+   */
+  esegui(tabelle?: string[]): ValidationReport {
+    const richieste = tabelle === undefined ? null : tabelle.filter((t) => VALIDATION_TABLES.includes(t));
     const datasets = this.leggiTabelle();
     const { violations } = new DatasetValidator({ logger: this.logger }).validate(
       datasets,
       regoleValidazione()
     );
     const violazioni = violations
+      .filter((v) => richieste === null || richieste.includes(v.table))
       .map((v) => ({
         tabella: v.table,
         // The persisted snapshot retains blank-row positions; the header
@@ -64,7 +72,10 @@ export class DatabaseValidationService {
       .sort((a, b) => a.tabella.localeCompare(b.tabella) || a.riga - b.riga);
 
     const anno = this.deps.master.findConfigAnnoCorrente();
-    const nome = `Validazione DB - ${anno.annoScolasticoRaw}`;
+    const nome =
+      richieste === null
+        ? `Validazione DB - ${anno.annoScolasticoRaw}`
+        : `Validazione DB - ${anno.annoScolasticoRaw} - ${richieste.join(', ')}`;
     const righe =
       violazioni.length === 0
         ? [HEADER, [NESSUN_ERRORE, '', '', '', '']]

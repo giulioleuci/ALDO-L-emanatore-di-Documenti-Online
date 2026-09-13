@@ -129,3 +129,17 @@ test('violations are ordered by table then row', () => {
   expect(righe.map((v) => v.riga)).toEqual([2, 2]);
   expect(righe.map((v) => v.campo).sort()).toEqual(['CLASSE', 'EMAIL']);
 });
+
+test('esegui(tabelle) reports only the requested tables, still validating FKs against the whole DB', () => {
+  // Two deliberate violations in two different tables; only one is requested.
+  const tabelle = tabelleValide();
+  tabelle['CLASSI'] = [{ ID: '', ANNO: '5', INDIRIZZO: 'INF' }];
+  tabelle['DOCENTI'] = [{ EMAIL: 'd@school.it', COGNOME: '', NOME: 'X', ITP: false }];
+  const { service } = servizio(tabelle);
+
+  const esito = service.esegui(['CLASSI']);
+
+  expect(esito.violazioni.every((v) => v.tabella === 'CLASSI')).toBe(true);
+  expect(esito.violazioni.length).toBeGreaterThan(0);
+  expect(esito.nome).toContain('CLASSI');
+});

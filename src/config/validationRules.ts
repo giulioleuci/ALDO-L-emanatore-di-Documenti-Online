@@ -17,6 +17,7 @@ import {
   COL_CONF_DOC,
   COL_CONF_MAIL,
   COL_CONF_IMP,
+  COL_CONF_AZIONI,
   COL_LOG_DOCS,
   COL_LOG_FOLD,
   COL_LOG_MAIL
@@ -33,7 +34,8 @@ import {
   StatoEmail,
   TipoPiano,
   TipoProgetto,
-  TipoMovimento
+  TipoMovimento,
+  ASSI_AZIONE
 } from '../domain/value-objects/enums';
 
 /** Tables the validator reads (every table except MASTER, which lives in another spreadsheet). */
@@ -152,6 +154,7 @@ export function regoleValidazione(): DatasetValidationRule[] {
     json(TABLE.CONF_MAIL, COL_CONF_MAIL.POST_PROCESSO),
     json(TABLE.CONF_MAIL, COL_CONF_MAIL.ALLEGATI_STATICI),
     json(TABLE.CONF_IMP, COL_CONF_IMP.CONFIG),
+    json(TABLE.CONF_AZIONI, COL_CONF_AZIONI.AZIONI),
     json(TABLE.LOG_MAIL, COL_LOG_MAIL.ALLEGATI),
 
     // --- 3. Required fields ---
@@ -169,6 +172,7 @@ export function regoleValidazione(): DatasetValidationRule[] {
     required(TABLE.CONF_DOC, [COL_CONF_DOC.ID, COL_CONF_DOC.GENERATORE]),
     required(TABLE.CONF_MAIL, [COL_CONF_MAIL.ID, COL_CONF_MAIL.PROCESSO]),
     required(TABLE.CONF_IMP, [COL_CONF_IMP.ID, COL_CONF_IMP.TARGET]),
+    required(TABLE.CONF_AZIONI, [COL_CONF_AZIONI.ID, COL_CONF_AZIONI.TIPO, COL_CONF_AZIONI.ASSE, COL_CONF_AZIONI.ATTIVO]),
     required(TABLE.LOG_DOCS, [COL_LOG_DOCS.ID]),
 
     // --- 4. ENUM values ---
@@ -186,6 +190,7 @@ export function regoleValidazione(): DatasetValidationRule[] {
     enumRule('ENUM_PIANI_TIPO', TABLE.PIANI, COL_PIANI.TIPO, Object.values(TipoPiano)),
     enumRule('ENUM_PROGETTI_TIPO', TABLE.PROGETTI, COL_PROGETTI.TIPO, Object.values(TipoProgetto)),
     enumRule('ENUM_MOV_ALUNNI_TIPO', TABLE.MOV_ALUNNI, COL_MOV_ALUNNI.TIPO, Object.values(TipoMovimento)),
+    enumRule('ENUM_CONF_AZIONI_ASSE', TABLE.CONF_AZIONI, COL_CONF_AZIONI.ASSE, ASSI_AZIONE),
 
     // --- 5. Dynamic column integrity ---
     {

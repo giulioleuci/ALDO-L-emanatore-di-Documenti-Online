@@ -16,6 +16,7 @@ export const TABLE = {
   CONF_DOC: 'CONF_DOC',
   CONF_MAIL: 'CONF_MAIL',
   CONF_IMP: 'CONF_IMP',
+  CONF_AZIONI: 'CONF_AZIONI',
   LOG_DOCS: 'LOG_DOCS',
   LOG_FOLD: 'LOG_FOLD',
   LOG_MAIL: 'LOG_MAIL',
@@ -55,6 +56,17 @@ export const COL_CONF_IMP = {
   TARGET: 'TARGET',
   CONFIG: 'CONFIG',
   ATTIVO: 'ATTIVO'
+} as const;
+
+export const COL_CONF_AZIONI = {
+  ID: 'ID',
+  TIPO: 'TIPO',
+  ASSE: 'ASSE',
+  CONDIZIONE: 'CONDIZIONE',
+  ATTIVO: 'ATTIVO',
+  AZIONI: 'AZIONI',
+  /** Reserved for future scheduling (DAILY/WEEKLY/...) — present in the structure, ignored in v1. */
+  PERIODICITA: 'PERIODICITA'
 } as const;
 
 export const COL_SUPPLENZE = {

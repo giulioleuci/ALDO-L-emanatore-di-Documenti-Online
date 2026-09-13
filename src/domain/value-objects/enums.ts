@@ -31,6 +31,13 @@ export enum GeneratoreAxis {
   DIPARTIMENTO = 'DIPARTIMENTO',
   ALUNNO = 'ALUNNO'
 }
+
+/** CONF_AZIONI.ASSE reserved value: the action runs exactly once, with a base CDU and no iteration. */
+export const ASSE_SINGOLA = 'SINGOLA';
+
+/** Valid CONF_AZIONI.ASSE values: the CONF_DOC.GENERATORE dictionary plus SINGOLA. */
+export const ASSI_AZIONE: string[] = [...Object.values(GeneratoreAxis), ASSE_SINGOLA];
+
 export enum FormatoOutput {
   GDOC = 'GDOC',
   GSHEET = 'GSHEET',

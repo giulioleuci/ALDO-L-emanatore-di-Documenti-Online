@@ -534,3 +534,64 @@ describe('standaloneActions — updateMatching guard and findMatchingRows fallba
     expect(db.tables['LOG_DOCS']!.getByPK('file_1')!['STATO']).toBe('');
   });
 });
+
+describe('standaloneActions — TRASFORMA_CAMPO', () => {
+  function run(operazione: string, criteri?: Record<string, string>): { db: FakeDatabase; n: number } {
+    const tables = fixtureTables();
+    tables['DOCENTI'] = [
+      { EMAIL: 'd1@school.it', COGNOME: '  rossi  ', NOME: 'mario', ITP: false },
+      { EMAIL: 'd2@school.it', COGNOME: 'BIANCHI', NOME: 'Lucia', ITP: false }
+    ];
+    const db = new FakeDatabase(tables);
+    const n = eseguiAzioni({
+      azioni: JSON.stringify([
+        { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione, ...(criteri === undefined ? {} : { criteri }) }
+      ]),
+      cdu: cdu(),
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    });
+    return { db, n };
+  }
+
+  const cognomi = (db: FakeDatabase): string[] =>
+    db.tables['DOCENTI']!.getAllRows().map((r) => String(r['COGNOME']));
+
+  test('TRIM strips surrounding whitespace and counts only changed rows', () => {
+    const { db, n } = run('TRIM');
+    expect(cognomi(db)).toEqual(['rossi', 'BIANCHI']);
+    expect(n).toBe(1); // 'BIANCHI' was already trimmed
+  });
+
+  test('UPPER uppercases', () => {
+    expect(cognomi(run('UPPER').db)).toEqual(['  ROSSI  ', 'BIANCHI']);
+  });
+
+  test('LOWER lowercases', () => {
+    expect(cognomi(run('LOWER').db)).toEqual(['  rossi  ', 'bianchi']);
+  });
+
+  test('CAPITALIZE uppercases the first letter of each word and lowercases the rest', () => {
+    expect(cognomi(run('CAPITALIZE').db)).toEqual(['  Rossi  ', 'Bianchi']);
+  });
+
+  test('UNCAPITALIZE lowercases the first letter only', () => {
+    expect(cognomi(run('UNCAPITALIZE').db)).toEqual(['  rossi  ', 'bIANCHI']);
+  });
+
+  test('criteri restrict the transform to matching rows', () => {
+    const { db } = run('UPPER', { EMAIL: 'd2@school.it' });
+    expect(cognomi(db)).toEqual(['  rossi  ', 'BIANCHI']);
+  });
+
+  test('an unknown operazione is warned and changes nothing', () => {
+    const warn = jest.spyOn(LoggerService.prototype, 'warn').mockImplementation(() => {});
+    const { db, n } = run('REVERSE');
+    expect(n).toBe(0);
+    expect(cognomi(db)).toEqual(['  rossi  ', 'BIANCHI']);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('REVERSE'));
+    warn.mockRestore();
+  });
+});

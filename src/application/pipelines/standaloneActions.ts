@@ -148,6 +148,41 @@ function isBlank(value: unknown): boolean {
   return typeof value === 'string' && value.trim() === '';
 }
 
+const TRASFORMAZIONI: Record<string, (value: string) => string> = {
+  TRIM: (v) => v.trim(),
+  UPPER: (v) => v.toUpperCase(),
+  LOWER: (v) => v.toLowerCase(),
+  CAPITALIZE: (v) => v.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()),
+  UNCAPITALIZE: (v) => v.charAt(0).toLowerCase() + v.slice(1)
+};
+
+/**
+ * Applies `trasforma` to `tab.col` on every row matching `match`, writing only
+ * the rows whose value actually changes (idempotent re-runs cost no writes).
+ * Non-string cells are left alone: a coerced number/boolean written back as a
+ * string would silently change the column's type.
+ */
+function transformMatching(
+  db: PostProcessDb,
+  tab: string,
+  col: string,
+  match: Record<string, string>,
+  trasforma: (value: string) => string
+): number {
+  const table = db.tables[tab];
+  if (table === undefined || col === '') return 0;
+  let changed = 0;
+  for (const row of findMatchingRows(table, Object.keys(match), match)) {
+    const current = row[col];
+    if (typeof current !== 'string') continue;
+    const next = trasforma(current);
+    if (next === current) continue;
+    table.updateRowWhere({ ...row }, { ...row, [col]: next });
+    changed += 1;
+  }
+  return changed;
+}
+
 export interface EseguiAzioniOptions {
   /** Raw JSON array: CONF_AZIONI.AZIONI or CONF_DOC/CONF_MAIL.POST_PROCESSO. */
   azioni: string;
@@ -200,6 +235,15 @@ export function eseguiAzioni(opts: EseguiAzioniOptions): number {
           [COL_LOG_DOCS.STATO]: azione.stato ?? ''
         });
         break;
+      case 'TRASFORMA_CAMPO': {
+        const trasforma = TRASFORMAZIONI[azione.operazione ?? ''];
+        if (trasforma === undefined) {
+          logger.warn(`AZIONE TRASFORMA_CAMPO: operazione "${String(azione.operazione)}" sconosciuta — saltata`);
+          break;
+        }
+        updated += transformMatching(db, azione.tab ?? '', azione.col ?? '', criteri, trasforma);
+        break;
+      }
       default: {
         const handler = handlers[azione.tipo];
         if (handler === undefined) {

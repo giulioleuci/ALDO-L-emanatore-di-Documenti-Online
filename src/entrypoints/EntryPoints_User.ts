@@ -46,9 +46,9 @@ function generaVerbaleCdcFebbraio(): void {
   menu_avvioGenerazioneChunked('VERBALE_CDC_FEBBRAIO');
 }
 
-/** Example: start resumable CONF_DOC recipe "VERBALE_CDC_APRILE". */
-function generaVerbaleCdcAprile(): void {
-  menu_avvioGenerazioneChunked('VERBALE_CDC_APRILE');
+/** Example: start resumable CONF_DOC recipe "VERBALE_CDC_MARZO". */
+function generaVerbaleCdcMarzo(): void {
+  menu_avvioGenerazioneChunked('VERBALE_CDC_MARZO');
 }
 
 /** Example: start resumable CONF_DOC recipe "VERBALE_CDC_MAGGIO". */
@@ -104,6 +104,11 @@ function generaProgrammaRelazioneQuinte(): void {
 /** Example: start resumable CONF_DOC recipe "DOC15MAGGIO". */
 function generaDoc15Maggio(): void {
   menu_avvioGenerazioneChunked('DOC15MAGGIO');
+}
+
+/** Example: start resumable CONF_DOC recipe "RIEPILOGO_CLASSE_INIZIO_ANNO". */
+function generaRiepilogoClasseInizioAnno(): void {
+  menu_avvioGenerazioneChunked('RIEPILOGO_CLASSE_INIZIO_ANNO');
 }
 
 // ── INVIO EMAIL ──────────────────────────────────────────────────────
@@ -237,7 +242,7 @@ function avviaTutteAzioni(): void {
 (globalThis as any).generaVerbaleCdcOttobre = generaVerbaleCdcOttobre;
 (globalThis as any).generaVerbaleCdcNovembre = generaVerbaleCdcNovembre;
 (globalThis as any).generaVerbaleCdcFebbraio = generaVerbaleCdcFebbraio;
-(globalThis as any).generaVerbaleCdcAprile = generaVerbaleCdcAprile;
+(globalThis as any).generaVerbaleCdcMarzo = generaVerbaleCdcMarzo;
 (globalThis as any).generaVerbaleCdcMaggio = generaVerbaleCdcMaggio;
 (globalThis as any).generaFsl = generaFsl;
 (globalThis as any).generaCondotta = generaCondotta;
@@ -249,6 +254,7 @@ function avviaTutteAzioni(): void {
 (globalThis as any).generaProgramma = generaProgramma;
 (globalThis as any).generaProgrammaRelazioneQuinte = generaProgrammaRelazioneQuinte;
 (globalThis as any).generaDoc15Maggio = generaDoc15Maggio;
+(globalThis as any).generaRiepilogoClasseInizioAnno = generaRiepilogoClasseInizioAnno;
 // ── INVIO EMAIL
 (globalThis as any).inviaCdcOttobreCoordinatori = inviaCdcOttobreCoordinatori;
 (globalThis as any).inviaCdcNovembreCoordinatori = inviaCdcNovembreCoordinatori;

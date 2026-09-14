@@ -9,7 +9,7 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { Cdu } from '../context-engine/Cdu';
 import type { DocumentStrategyFactory } from '../factories/DocumentStrategyFactory';
-import { recipe, type BuildParams } from '../context-engine/Recipe';
+import { recipe, type BuildParams, type RecipeOptions } from '../context-engine/Recipe';
 import {
   AnalyzeContextStep,
   CheckDuplicatesStep,
@@ -53,6 +53,26 @@ export interface DocumentGenerationDeps {
   /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
   monitor?: IProcessMonitor | undefined;
   logger?: LoggerService;
+}
+
+/**
+ * CONF_DOC.PARAMETRI carries the same storico flags CONF_MAIL.BOX_CFG derives
+ * via `storicoOptionsFor` (emailSteps.ts) — without this, `recipe()` always ran
+ * with `includiStorico: false` here regardless of PARAMETRI, silently dropping
+ * every storico-gated provider (storico/storicoClasse/documenti/pianiPersClasse)
+ * from document generation.
+ */
+function recipeOptionsFromParametri(config: ConfigurazioneDocumento): Partial<RecipeOptions> {
+  const parametri = config.getParametri();
+  const overrides: Partial<RecipeOptions> = {};
+  if (typeof parametri.includiStorico === 'boolean') overrides.includiStorico = parametri.includiStorico;
+  if (typeof parametri.profonditaAnniStorico === 'number') {
+    overrides.profonditaAnniStorico = parametri.profonditaAnniStorico;
+  }
+  if (typeof parametri.profonditaAnniDocumenti === 'number') {
+    overrides.profonditaAnniDocumenti = parametri.profonditaAnniDocumenti;
+  }
+  return overrides;
 }
 
 interface DocumentGenerationResult {
@@ -188,7 +208,7 @@ export class DocumentGenerationService {
         classiCompetenza,
         ...extraParams
       },
-      recipe(cduRecipe)
+      recipe(cduRecipe, recipeOptionsFromParametri(config))
     );
 
     // SheetDBLib transaction boundary (10 §11): every sheet mutation performed
@@ -223,7 +243,7 @@ export class DocumentGenerationService {
         esecuzioneId: '',
         tipoOperazione: 'GENERAZIONE_DOCUMENTO'
       },
-      recipe('DIPARTIMENTO_COMPLETO')
+      recipe('DIPARTIMENTO_COMPLETO', recipeOptionsFromParametri(config))
     );
 
     return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
@@ -256,7 +276,7 @@ export class DocumentGenerationService {
         classiCompetenza,
         docenteCorrente: docenteEmail
       },
-      recipe('DOCENTE_AGGREGATO')
+      recipe('DOCENTE_AGGREGATO', recipeOptionsFromParametri(config))
     );
 
     return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
@@ -314,7 +334,7 @@ export class DocumentGenerationService {
         tipoOperazione: 'GENERAZIONE_DOCUMENTO',
         ...(pianoTipo === undefined ? {} : { pianoTipo })
       },
-      recipe(cduRecipe)
+      recipe(cduRecipe, recipeOptionsFromParametri(config))
     );
 
     return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);

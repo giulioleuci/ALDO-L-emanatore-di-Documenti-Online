@@ -56,6 +56,7 @@ function wire(
     now?: Date;
     monitor?: FakeProcessMonitor;
     storicoDocumenti?: StoricoDocumentiService;
+    storicoDb?: { anniStorici: (profondita: number) => Array<{ anno: string; db: FakeDatabase; logDocs: unknown }> };
   } = {}
 ) {
   const db = options.db ?? new FakeDatabase(tables);
@@ -66,7 +67,7 @@ function wire(
   const deps = {
     db,
     drive,
-    contextBuilder: composeContextBuilder(db),
+    contextBuilder: composeContextBuilder(db, undefined, undefined, options.storicoDb as never),
     strategyFactory,
     templates,
     expressionEngine: new ExpressionEngineFacade(),
@@ -200,6 +201,68 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     const result = service.generateForClasse(ClasseId.of('5A'), 'CD1');
     expect(result.fileId).not.toBeNull();
     expect(result.status).toBe('GENERATO');
+  });
+});
+
+describe('DocumentGenerationService — CONF_DOC.PARAMETRI.includiStorico wiring', () => {
+  class CapturingStrategy implements GeneratorStrategy {
+    cdu: Cdu | undefined;
+    render(_fileId: string, cdu: Cdu): void {
+      this.cdu = cdu;
+    }
+  }
+
+  // Regression: recipe() calls used to ignore CONF_DOC.PARAMETRI entirely, so
+  // includiStorico stayed permanently false and focus.alunno.presenza.annoPrecedente
+  // was always {isCalcolato:false, isPresente:false} even when the student really
+  // was enrolled the previous year.
+  test('presenza.annoPrecedente reflects the previous-year database when PARAMETRI.includiStorico is set', () => {
+    const tables = fixtureTables();
+    tables.CONF_DOC!.push({
+      ID: 'CD_ALUNNO_STORICO',
+      TIPO: 'GENERICO',
+      GENERATORE: 'ALUNNO',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"tmpl_generico"}',
+      FILE_NAME: 'Doc_{{focus.alunno.nomeCompleto}}',
+      PATH_OUT: 'Docs',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: JSON.stringify({ includiStorico: true }),
+      GESTIONE_ARTICOLAZIONE: '',
+      FORMATO: 'GDOC',
+      REGISTRA_DOC: null,
+      REGISTRA_FOLD: null
+    });
+    const historicalDb = new FakeDatabase({
+      ALUNNI: [
+        {
+          EMAIL: 'a1@school.it',
+          COGNOMENOME: 'ROSSI ANNA',
+          CLASSE: '4A',
+          RELIGIONE: 'NO',
+          ATTIVO: true,
+          RIPETENTE: false,
+          RAPPR_STUD: false,
+          TUTOR_1: '',
+          TUTOR_2: '',
+          CURRICULUM: null
+        }
+      ]
+    });
+    const strategy = new CapturingStrategy();
+    const { service } = wire(tables, {
+      strategy,
+      storicoDb: { anniStorici: () => [{ anno: '2025-2026', db: historicalDb, logDocs: {} }] }
+    });
+
+    service.generateForAlunno('a1@school.it', 'CD_ALUNNO_STORICO');
+
+    expect(strategy.cdu?.focus.alunno?.presenza.annoPrecedente).toEqual({
+      isCalcolato: true,
+      isPresente: true
+    });
   });
 });
 

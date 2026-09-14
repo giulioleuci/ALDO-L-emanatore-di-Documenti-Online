@@ -80,6 +80,7 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
     isBes: true,
     isPei: true,
     isPfp: false,
+    isAltroBes: false,
     isRipetente: false,
     isRappresentante: true,
     religione: 'IRC',
@@ -109,6 +110,15 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
     })
   ]);
   expect(a1.asl.oreCumulate).toBe(100);
+});
+
+test('StudentiProvider: perStato.altroBes tracks students with a PDP_BES plan', () => {
+  const tables = fixtureTables();
+  (tables['PIANI'] as Row[]).push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: null });
+  const perStato = build('5A', tables).focus.classe!.studenti!.perStato;
+  expect(perStato.altroBes.map((a) => a.email)).toEqual(['a1@school.it']);
+  expect(perStato.hasAltroBes).toBe(true);
+  expect(perStato.numeroAltroBes).toBe(1);
 });
 
 test('StatisticheProvider: class stats over active students (09 §11, 02 §4.1)', () => {

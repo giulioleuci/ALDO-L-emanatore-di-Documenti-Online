@@ -457,8 +457,9 @@ StudentiClasseVM:
   statistiche: StatisticheAlunniVM # Conteggi calcolati sullo stesso elenco
 
   perStato:
-    bes: AlunnoVM[]               # Studenti con almeno un piano che implica BES
-    dsa: AlunnoVM[]               # Studenti con piano o stato DSA
+    bes: AlunnoVM[]               # Studenti con almeno un piano diverso da PFP nella tabella PIANI
+    dsa: AlunnoVM[]               # Studenti con almeno un PDP_DSA nella tabella PIANI
+    altroBes: AlunnoVM[]          # Studenti con almeno un PDP_BES nella tabella PIANI
     pfp: AlunnoVM[]               # Studenti con Piano Formativo Personalizzato
     pei: AlunnoVM[]               # Studenti con Piano Educativo Individualizzato
     stranieri: AlunnoVM[]         # Studenti con almeno un piano PDP_STRANIERI
@@ -468,6 +469,7 @@ StudentiClasseVM:
 
     hasBes: boolean              # true se bes non è vuoto
     hasDsa: boolean              # true se dsa non è vuoto
+    hasAltroBes: boolean         # true se altroBes non è vuoto
     hasPfp: boolean              # true se pfp non è vuoto
     hasPei: boolean              # true se pei non è vuoto
     hasStranieri: boolean        # true se stranieri non è vuoto
@@ -477,6 +479,7 @@ StudentiClasseVM:
 
     numeroBes: number            # Conteggio studenti BES
     numeroDsa: number            # Conteggio studenti DSA
+    numeroAltroBes: number       # Conteggio studenti con PDP_BES
     numeroPfp: number            # Conteggio studenti PFP
     numeroPei: number            # Conteggio studenti PEI
     numeroStranieri: number      # Conteggio studenti stranieri
@@ -599,11 +602,12 @@ AlunnoFocusVM:
   isAlt: boolean                 # true se religione = ALT
   isSenzaReligione: boolean      # true se religione = NO
 
-  isBes: boolean                 # true se almeno una condizione o piano implica BES
-  isDsa: boolean                 # true se lo studente rientra nello scope DSA
-  isPei: boolean                 # true se lo studente ha almeno un PEI associato
-  isPfp: boolean                 # true se lo studente ha almeno un PFP associato
-  isStranieri: boolean           # true se lo studente ha almeno un PDP_STRANIERI associato
+  isBes: boolean                 # true se l'alunno ha almeno un piano diverso da PFP associato nella tabella PIANI
+  isDsa: boolean                 # true se l'alunno ha almeno un PDP_DSA associato nella tabella PIANI
+  isAltroBes: boolean            # true se l'alunno ha almeno un PDP_BES associato nella tabella PIANI
+  isPei: boolean                 # true se l'alunno ha almeno un PEI associato nella tabella PIANI
+  isPfp: boolean                 # true se l'alunno ha almeno un PFP associato nella tabella PIANI
+  isStranieri: boolean           # true se l'alunno ha almeno un PDP_STRANIERI associato nella tabella PIANI
   isRipetente: boolean           # Stato di ripetenza nell'anno corrente
   isRappresentante: boolean      # true se rappresentante degli studenti
 
@@ -1104,11 +1108,12 @@ AlunnoVM:
   isAlt: boolean                 # true se religione = ALT
   isSenzaReligione: boolean      # true se religione = NO
 
-  isBes: boolean                 # Stato BES calcolato dai piani e dal profilo
-  isDsa: boolean                 # Stato DSA
-  isPei: boolean                 # true se l'alunno ha almeno un PEI associato
-  isPfp: boolean                 # true se l'alunno ha almeno un PFP associato
-  isStranieri: boolean           # true se l'alunno ha almeno un PDP_STRANIERI associato
+  isBes: boolean                 # true se l'alunno ha almeno un piano diverso da PFP associato nella tabella PIANI
+  isDsa: boolean                 # true se l'alunno ha almeno un PDP_DSA associato nella tabella PIANI
+  isAltroBes: boolean            # true se l'alunno ha almeno un PDP_BES associato nella tabella PIANI
+  isPei: boolean                 # true se l'alunno ha almeno un PEI associato nella tabella PIANI
+  isPfp: boolean                 # true se l'alunno ha almeno un PFP associato nella tabella PIANI
+  isStranieri: boolean           # true se l'alunno ha almeno un PDP_STRANIERI associato nella tabella PIANI
   isRipetente: boolean           # Stato di ripetenza nell'anno
   isRappresentante: boolean      # Rappresentante degli studenti
 

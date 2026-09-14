@@ -137,17 +137,30 @@ test('PianiProvider: elenco + isBes update of the placeholder AlunnoProvider set
   ]);
   expect(a.piani.hasBes).toBe(true);
   expect(a.isBes).toBe(true);
-  expect(a).toMatchObject({ isPei: true, isPfp: false });
+  expect(a).toMatchObject({ isPei: true, isPfp: false, isAltroBes: false });
 });
 
 test('a non-BES student (PFP): isBes stays false, class resolved for alunno target', () => {
   const a = build('a3@school.it').focus.alunno!;
   expect(a.isBes).toBe(false);
-  expect(a).toMatchObject({ isPei: false, isPfp: true });
+  expect(a).toMatchObject({ isPei: false, isPfp: true, isAltroBes: false });
   expect(a.piani.elenco).toEqual([
     { tipo: 'PFP', tipoLabel: 'PFP', isBes: false, link: null, hasLink: false, parametriGenerazione: {}, hasParametriGenerazione: true }
   ]);
   expect(a.classe.nome).toBe('5A');
+});
+
+test('a PDP_BES student: isAltroBes and isBes are true, isDsa/isPei/isPfp/isStranieri stay false', () => {
+  const tables = fixtureTables();
+  (tables['PIANI'] as Row[]).push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: null });
+  const a = build('a1@school.it', tables).focus.alunno!;
+  expect(a).toMatchObject({
+    isBes: true,
+    isAltroBes: true,
+    isDsa: false,
+    isPfp: false,
+    isStranieri: false
+  });
 });
 
 test('AlunnoProvider: presenza.annoPrecedente.isPresente is true when a previous-year ALUNNI record exists (ANALYSIS_HISTORIC_ENRICH_EXTENSION §4)', () => {

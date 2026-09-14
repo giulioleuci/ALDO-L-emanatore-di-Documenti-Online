@@ -65,6 +65,7 @@ export class AlunnoProvider implements ContextProvider {
       isSenzaReligione: String(alunno.religione) === 'NO',
       isBes: false,
       isDsa: false,
+      isAltroBes: false,
       isPei: false,
       isPfp: false,
       isStranieri: false,

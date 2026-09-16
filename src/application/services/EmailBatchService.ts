@@ -251,7 +251,7 @@ export class EmailBatchService {
     errors.push(
       'quota Gmail esaurita — sospeso: il riavvio (stesso pattern) riprende automaticamente da dove interrotto, senza reinviare ai destinatari già processati'
     );
-    const resumeState: EmailBatchResumeState = {
+    const resumeStateWithFlag: EmailBatchResumeState = {
       patternId,
       jobId,
       chunkSize,
@@ -263,10 +263,7 @@ export class EmailBatchService {
       errors: errors.slice(),
       failedTargets: failedTargets.slice(),
       runCount: this.runCount,
-      totalDurationMs: this.elapsedTotalMs()
-    };
-    const resumeStateWithFlag: EmailBatchResumeState = {
-      ...resumeState,
+      totalDurationMs: this.elapsedTotalMs(),
       eseguitoDa: this.eseguitoDa,
       esecuzioneIniziata: this.esecuzioneIniziata,
       viaQuotaSuspend: true

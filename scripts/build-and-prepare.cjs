@@ -797,33 +797,26 @@ gas-source-map.json
     }
   }
 
-  let offlineTestsPassed = false;
+  let offlineTestsPassed = true;
 
   if (mode === 'testoffline' || mode === 'online') {
     step(8, TOTAL_STEPS, 'Running offline tests (unit + integration)...');
 
-    let unitPassed = false;
-    let integrationPassed = false;
-
-    info('Running unit tests...');
-    try {
-      execSync('npx jest --config jest.config.cjs', { stdio: 'inherit', cwd: rootDir });
-      unitPassed = true;
-      ok('Unit tests passed');
-    } catch (_) {
-      fail('Unit tests failed (see above for details)');
+    const testSuites = [
+      { label: 'Unit', config: 'jest.config.cjs' },
+      { label: 'Integration', config: 'jest.integration.config.cjs' }
+    ];
+    for (const { label, config } of testSuites) {
+      info(`Running ${label.toLowerCase()} tests...`);
+      try {
+        execSync(`npx jest --config ${config}`, { stdio: 'inherit', cwd: rootDir });
+        ok(`${label} tests passed`);
+      } catch (_) {
+        offlineTestsPassed = false;
+        fail(`${label} tests failed (see above for details)`);
+      }
     }
 
-    info('Running integration tests...');
-    try {
-      execSync('npx jest --config jest.integration.config.cjs', { stdio: 'inherit', cwd: rootDir });
-      integrationPassed = true;
-      ok('Integration tests passed');
-    } catch (_) {
-      fail('Integration tests failed (see above for details)');
-    }
-
-    offlineTestsPassed = unitPassed && integrationPassed;
     if (offlineTestsPassed) {
       ok('All offline tests passed');
     } else {

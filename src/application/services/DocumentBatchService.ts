@@ -85,6 +85,13 @@ interface BatchResult {
   errori: string[];
 }
 
+/** Minimal contract the shared batch loop needs from each axis's generation call. */
+interface GeneratedDocument {
+  fileName: string | null;
+  status: string;
+  durationMs: number;
+}
+
 /**
  * Batch document generation over all active classes, or over every plan owned
  * by an active student for the dedicated PIANI config (ref 10, 12). GAS caps
@@ -299,16 +306,12 @@ export class DocumentBatchService {
 
     const success = errori.length === 0;
     this.monitor?.completeJob(jobId, `${processed.length} ${entityLabel}, ${errori.length} errori`);
-    // Every `errori` entry is pushed as `${targetId}: ${reason}` (verified across
-    // all generator variants) — the targetId prefix up to the first ": " is the
-    // failed task identifier for the end-of-job summary.
-    const falliti = errori.map((e) => e.split(': ')[0]!);
     this.logger?.logJobReport({
       jobType: JOB_LABEL_GENERAZIONE_DOCUMENTI,
       runCount: this.runCount,
       totalDurationMs: this.elapsedTotalMs(),
       totale,
-      falliti: falliti.length,
+      falliti: errori.length,
       dettagliFalliti: errori
     });
     this.logJob?.append({
@@ -328,6 +331,71 @@ export class DocumentBatchService {
       eseguitoDa: this.eseguitoDa
     });
     return { success, totale, processed, errori };
+  }
+
+  /**
+   * Shared per-target loop for every document-batch axis: item logging, the
+   * generate try/catch with per-element error isolation (15 §8), progress
+   * update and the resumable checkpoint. Axis-specific parts are injected —
+   * the target snapshot (`targets`), its persistent checkpoint field (`extra`),
+   * the target id, the generation call and the progress error message.
+   */
+  private *iterateTargets<T>(
+    jobId: string,
+    confDocId: string,
+    resume: BatchResumeState | null,
+    processed: string[],
+    errori: string[],
+    targets: readonly T[],
+    targetId: (target: T) => string,
+    generate: (target: T, confDocId: string, jobId: string) => GeneratedDocument,
+    onError: (targetId: string, reason: string, index: number, total: number) => string,
+    extra: Partial<BatchResumeState>
+  ): Generator<BatchCheckpoint, void, void> {
+    for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
+      const target = targets[i]!;
+      const id = targetId(target);
+      this.logger?.logItemStart(i + 1, targets.length, 'Target', id, 'DOCUMENT');
+      let message: string;
+      const itemStartedAt = Date.now();
+      try {
+        const result = generate(target, confDocId, jobId);
+        const name = result.fileName ?? id;
+        const outcome = DocumentBatchService.documentOutcome(result.status);
+        this.logger?.logSummary(outcome, result.durationMs, name, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errori.push(`${id}: ${reason}`);
+        this.logger?.logSummary(
+          '❌ Document failed',
+          Math.max(0, Date.now() - itemStartedAt),
+          `${id}: ${reason}`,
+          { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+        );
+        message = onError(id, reason, i, targets.length);
+      }
+      processed.push(id);
+      const percentage = ((i + 1) / targets.length) * 100;
+      this.monitor?.updateProgress(jobId, percentage, message);
+      yield {
+        confDocId,
+        jobId,
+        percentage,
+        nextIndex: i + 1,
+        processed: processed.slice(),
+        errori: errori.slice(),
+        runCount: this.runCount,
+        totalDurationMs: this.elapsedTotalMs(),
+        eseguitoDa: this.eseguitoDa,
+        esecuzioneIniziata: this.esecuzioneIniziata,
+        ...extra
+      };
+    }
   }
 
   private *generatePiani(
@@ -362,61 +430,21 @@ export class DocumentBatchService {
       processed,
       errori,
       'piani elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
-          const target = targets[i]!;
-          const targetId = `${target.studente}:${target.tipo}`;
-          this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
-          let message: string;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForPiano(
-              target.studente,
-              target.tipo,
-              confDocId,
-              jobId
-            );
-            const name = result.fileName ?? targetId;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < targets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${targetId}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${targetId}: ${reason}`,
-              {
-                depth: 1,
-                isLast: true,
-                ancestorHasNext: [i + 1 < targets.length]
-              }
-            );
-            message = `Errore piano ${i + 1}/${targets.length} ${targetId}: ${reason}`;
-          }
-          processed.push(targetId);
-          const percentage = ((i + 1) / targets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            planTargets: targets
-          };
-        }
-      }
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          targets,
+          (target) => `${target.studente}:${target.tipo}`,
+          (target) =>
+            this.documenti.generateForPiano(target.studente, target.tipo, confDocId, jobId),
+          (targetId, reason, index, total) =>
+            `Errore piano ${index + 1}/${total} ${targetId}: ${reason}`,
+          { planTargets: targets }
+        )
     );
   }
 
@@ -455,62 +483,27 @@ export class DocumentBatchService {
       processed,
       errori,
       'documenti docente/materia elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
-          const target = targets[i]!;
-          const targetId = `${target.classe}:${target.materiaId}:${target.docenteEmail}`;
-          this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
-          let message: string;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForDocenteClasseMateria(
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          targets,
+          (target) => `${target.classe}:${target.materiaId}:${target.docenteEmail}`,
+          (target) =>
+            this.documenti.generateForDocenteClasseMateria(
               ClasseId.of(target.classe),
               target.docenteEmail,
               target.materiaId,
               confDocId,
               jobId
-            );
-            const name = result.fileName ?? targetId;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < targets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${targetId}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${targetId}: ${reason}`,
-              {
-                depth: 1,
-                isLast: true,
-                ancestorHasNext: [i + 1 < targets.length]
-              }
-            );
-            message = `Errore ${i + 1}/${targets.length} ${targetId}: ${reason}`;
-          }
-          processed.push(targetId);
-          const percentage = ((i + 1) / targets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            docenteClasseMateriaTargets: targets
-          };
-        }
-      }
+            ),
+          (targetId, reason, index, total) =>
+            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          { docenteClasseMateriaTargets: targets }
+        )
     );
   }
 
@@ -548,57 +541,26 @@ export class DocumentBatchService {
       processed,
       errori,
       'documenti classe/materia elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
-          const target = targets[i]!;
-          const targetId = `${target.classe}:${target.materiaId}`;
-          this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
-          let message: string;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForClasseMateria(
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          targets,
+          (target) => `${target.classe}:${target.materiaId}`,
+          (target) =>
+            this.documenti.generateForClasseMateria(
               ClasseId.of(target.classe),
               target.materiaId,
               confDocId,
               jobId
-            );
-            const name = result.fileName ?? targetId;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < targets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${targetId}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${targetId}: ${reason}`,
-              { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
-            );
-            message = `Errore ${i + 1}/${targets.length} ${targetId}: ${reason}`;
-          }
-          processed.push(targetId);
-          const percentage = ((i + 1) / targets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            classeMateriaTargets: targets
-          };
-        }
-      }
+            ),
+          (targetId, reason, index, total) =>
+            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          { classeMateriaTargets: targets }
+        )
     );
   }
 
@@ -635,57 +597,26 @@ export class DocumentBatchService {
       processed,
       errori,
       'documenti classe/docente elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
-          const target = targets[i]!;
-          const targetId = `${target.classe}:${target.docenteEmail}`;
-          this.logger?.logItemStart(i + 1, targets.length, 'Target', targetId, 'DOCUMENT');
-          let message: string;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForClasseDocente(
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          targets,
+          (target) => `${target.classe}:${target.docenteEmail}`,
+          (target) =>
+            this.documenti.generateForClasseDocente(
               ClasseId.of(target.classe),
               target.docenteEmail,
               confDocId,
               jobId
-            );
-            const name = result.fileName ?? targetId;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < targets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${targetId}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${targetId}: ${reason}`,
-              { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
-            );
-            message = `Errore ${i + 1}/${targets.length} ${targetId}: ${reason}`;
-          }
-          processed.push(targetId);
-          const percentage = ((i + 1) / targets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            classeDocenteTargets: targets
-          };
-        }
-      }
+            ),
+          (targetId, reason, index, total) =>
+            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          { classeDocenteTargets: targets }
+        )
     );
   }
 
@@ -720,62 +651,26 @@ export class DocumentBatchService {
       processed,
       errori,
       'docenti elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
-          const target = targets[i]!;
-          this.logger?.logItemStart(
-            i + 1,
-            targets.length,
-            'Target',
-            target.docenteEmail,
-            'DOCUMENT'
-          );
-          let message: string;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForDocente(
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          targets,
+          (target) => target.docenteEmail,
+          (target) =>
+            this.documenti.generateForDocente(
               target.docenteEmail,
               target.classiCompetenza,
               confDocId,
               jobId
-            );
-            const name = result.fileName ?? target.docenteEmail;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < targets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${target.docenteEmail}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${target.docenteEmail}: ${reason}`,
-              { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
-            );
-            message = `Errore ${i + 1}/${targets.length} ${target.docenteEmail}: ${reason}`;
-          }
-          processed.push(target.docenteEmail);
-          const percentage = ((i + 1) / targets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            docenteTargets: targets
-          };
-        }
-      }
+            ),
+          (targetId, reason, index, total) =>
+            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          { docenteTargets: targets }
+        )
     );
   }
 
@@ -806,51 +701,20 @@ export class DocumentBatchService {
       processed,
       errori,
       'alunni elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
-          const email = targets[i]!.email;
-          this.logger?.logItemStart(i + 1, targets.length, 'Target', email, 'DOCUMENT');
-          let message = `Generazione documento alunno ${email}`;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForAlunno(email, confDocId, jobId);
-            const name = result.fileName ?? email;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < targets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${email}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${email}: ${reason}`,
-              { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
-            );
-            message = `Errore: ${reason} (alunno ${email})`;
-          }
-          processed.push(email);
-          const percentage = ((i + 1) / targets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            alunnoTargets: targets
-          };
-        }
-      }
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          targets,
+          (target) => target.email,
+          (target) =>
+            this.documenti.generateForAlunno(target.email, confDocId, jobId),
+          (targetId, reason) => `Errore: ${reason} (alunno ${targetId})`,
+          { alunnoTargets: targets }
+        )
     );
   }
 
@@ -882,55 +746,19 @@ export class DocumentBatchService {
       processed,
       errori,
       'dipartimenti elaborati',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < tutti.length; i++) {
-          const id = tutti[i]!;
-          this.logger?.logItemStart(i + 1, tutti.length, 'Target', id, 'DOCUMENT');
-          let message = `Generazione documento dipartimento ${id}`;
-          const itemStartedAt = Date.now();
-          try {
-            const result = this.documenti.generateForDipartimento(id, confDocId, jobId);
-            const name = result.fileName ?? id;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < tutti.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${id}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${id}: ${reason}`,
-              {
-                depth: 1,
-                isLast: true,
-                ancestorHasNext: [i + 1 < tutti.length]
-              }
-            );
-            message = `Errore: ${reason} (dipartimento ${id})`;
-          }
-          processed.push(id);
-          const percentage = ((i + 1) / tutti.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            dipartimentoTargets: tutti
-          };
-        }
-      }
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          tutti,
+          (id) => id,
+          (id) => this.documenti.generateForDipartimento(id, confDocId, jobId),
+          (targetId, reason) => `Errore: ${reason} (dipartimento ${targetId})`,
+          { dipartimentoTargets: tutti }
+        )
     );
   }
 
@@ -957,6 +785,7 @@ export class DocumentBatchService {
       classeTargets = resume.classeTargets.slice();
       attive = classeTargets.map((id) => this.classi.findById(ClasseId.of(id)));
     }
+    const classeById = new Map<string, Classe | null>(classeTargets.map((id, i) => [id, attive[i]!]));
 
     return yield* this.runBatchJob(
       jobId,
@@ -966,59 +795,25 @@ export class DocumentBatchService {
       processed,
       errori,
       'classi elaborate',
-      function* (): Generator<BatchCheckpoint, void, void> {
-        for (let i = resume?.nextIndex ?? 0; i < classeTargets.length; i++) {
-          const classe = attive[i];
-          const id = classeTargets[i]!;
-          this.logger?.logItemStart(i + 1, classeTargets.length, 'Target', id, 'DOCUMENT');
-          let message = `Generazione documento classe ${id}`;
-          const itemStartedAt = Date.now();
-          try {
-            if (classe === null || classe === undefined) {
+      () =>
+        this.iterateTargets(
+          jobId,
+          confDocId,
+          resume,
+          processed,
+          errori,
+          classeTargets,
+          (id) => id,
+          (id) => {
+            const classe = classeById.get(id) ?? null;
+            if (classe === null) {
               throw new EntityNotFoundError('classe non più presente in CLASSI — saltata');
             }
-            const result = this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
-            const name = result.fileName ?? id;
-            const outcome = DocumentBatchService.documentOutcome(result.status);
-            this.logger?.logSummary(outcome, result.durationMs, name, {
-              depth: 1,
-              isLast: true,
-              ancestorHasNext: [i + 1 < classeTargets.length]
-            });
-            message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
-          } catch (e) {
-            const reason = e instanceof Error ? e.message : String(e);
-            errori.push(`${id}: ${reason}`);
-            this.logger?.logSummary(
-              '❌ Document failed',
-              Math.max(0, Date.now() - itemStartedAt),
-              `${id}: ${reason}`,
-              {
-                depth: 1,
-                isLast: true,
-                ancestorHasNext: [i + 1 < classeTargets.length]
-              }
-            );
-            message = `Errore: ${reason} (classe ${id})`;
-          }
-          processed.push(id);
-          const percentage = ((i + 1) / classeTargets.length) * 100;
-          this.monitor?.updateProgress(jobId, percentage, message);
-          yield {
-            confDocId,
-            jobId,
-            percentage,
-            nextIndex: i + 1,
-            processed: processed.slice(),
-            errori: errori.slice(),
-            runCount: this.runCount,
-            totalDurationMs: this.elapsedTotalMs(),
-            eseguitoDa: this.eseguitoDa,
-            esecuzioneIniziata: this.esecuzioneIniziata,
-            classeTargets
-          };
-        }
-      }
+            return this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
+          },
+          (targetId, reason) => `Errore: ${reason} (classe ${targetId})`,
+          { classeTargets }
+        )
     );
   }
 

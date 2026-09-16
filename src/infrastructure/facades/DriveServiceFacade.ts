@@ -45,6 +45,11 @@ export interface IDriveFacade {
     fileId: string,
     changes: Array<{ permissionId: string; role: string }>
   ): Array<{ permissionId: string; errore: string }>;
+  /** Revokes the given permission ids on the file; returns one entry per FAILED removal. */
+  removePermissions(
+    fileId: string,
+    permissionIds: string[]
+  ): Array<{ permissionId: string; errore: string }>;
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -218,6 +223,18 @@ export class DriveServiceFacade implements IDriveFacade {
       fileId,
       changes.map((c) => ({ permissionId: c.permissionId, newRole: c.role }))
     );
+    return result.failed.map((f) => ({
+      permissionId: f.permissionId,
+      errore: f.error instanceof Error ? f.error.message : String(f.error)
+    }));
+  }
+
+  removePermissions(
+    fileId: string,
+    permissionIds: string[]
+  ): Array<{ permissionId: string; errore: string }> {
+    if (permissionIds.length === 0) return [];
+    const result = this.permissions.removeAccess(fileId, permissionIds);
     return result.failed.map((f) => ({
       permissionId: f.permissionId,
       errore: f.error instanceof Error ? f.error.message : String(f.error)

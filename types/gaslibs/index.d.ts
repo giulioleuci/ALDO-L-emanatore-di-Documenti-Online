@@ -450,10 +450,19 @@ declare global {
       permissions: Array<{ type?: string; role: string; email: string; sendEmail?: boolean }>,
       options?: { sendNotificationEmail?: boolean }
     ): DriveBatchOutcome<unknown>;
+    /**
+     * Revokes access by email or permission id (auto-resolves emails via
+     * getPermissions()). `DriveBatchOutcome`'s `{id,status,data}` shape doesn't
+     * match this method's actual `{fileId,permissionId,...}` results (same
+     * mismatch as changeRolesByPermissionId below), so declared inline.
+     */
     removeAccess(
       fileIds: string | string[],
       emailsOrPermissionIds: string | string[]
-    ): DriveBatchOutcome<unknown>;
+    ): {
+      successful: Array<{ fileId: string; permissionId: string; statusCode: number }>;
+      failed: Array<{ fileId: string; permissionId: string; error: Error; statusCode: number }>;
+    };
     /** Uncached-by-ALDO (5-minute library-side cache) Drive permission evidence for one file. */
     getPermissions(
       fileId: string

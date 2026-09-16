@@ -85,7 +85,22 @@ async function main() {
       js: path.join(distDir, 'EntryPoints_Menu.js'),
       gs: path.join(distDir, 'EntryPoints_Menu.gs')
     },
-    { js: path.join(distDir, 'EntryPoints_User.js'), gs: path.join(distDir, 'EntryPoints_User.gs') }
+    {
+      js: path.join(distDir, 'EntryPoints_User_1_Doc.js'),
+      gs: path.join(distDir, 'EntryPoints_User_1_Doc.gs')
+    },
+    {
+      js: path.join(distDir, 'EntryPoints_User_2_Email.js'),
+      gs: path.join(distDir, 'EntryPoints_User_2_Email.gs')
+    },
+    {
+      js: path.join(distDir, 'EntryPoints_User_3_Azioni.js'),
+      gs: path.join(distDir, 'EntryPoints_User_3_Azioni.gs')
+    },
+    {
+      js: path.join(distDir, 'EntryPoints_User_4_Import.js'),
+      gs: path.join(distDir, 'EntryPoints_User_4_Import.gs')
+    }
   ];
 
   const webpackCmd =
@@ -118,7 +133,7 @@ async function main() {
     info(`Offline tests: Will run after build (unit + integration)`);
   } else if (mode === 'production') {
     info(`Code.js:      Vendor + ALDO core — minified (Terser), no comments`);
-    info(`EntryPoints_Base/Menu/User.gs: readable ALDO entry points, with comments`);
+    info(`EntryPoints_Base/Menu/User_*.gs: readable ALDO entry points, with comments`);
   } else {
     info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
   }
@@ -227,7 +242,7 @@ async function main() {
         fs.renameSync(js, gs);
         fs.rmSync(js + '.map', { force: true });
       }
-      ok('Kept dist/EntryPoints_Base/Menu/User.gs separate (readable, with comments)');
+      ok('Kept dist/EntryPoints_Base/Menu/User_*.gs separate (readable, with comments)');
       fs.rmSync(aldoCoreBundle, { force: true });
       fs.rmSync(aldoCoreBundle + '.map', { force: true });
     } else if (mode === 'online') {
@@ -660,7 +675,7 @@ async function main() {
       }
     }
     if (entryWarnings === 0) {
-      ok('EntryPoints_Base/Menu/User.gs: no GAS V8 compatibility issues detected (scan-only)');
+      ok('EntryPoints_Base/Menu/User_*.gs: no GAS V8 compatibility issues detected (scan-only)');
     }
     warningCount += entryWarnings;
   }
@@ -706,7 +721,10 @@ gas-source-map.json
           'menu_bloccaDocumenti'
         ]
       ],
-      ['EntryPoints_User.gs', []]
+      ['EntryPoints_User_1_Doc.gs', []],
+      ['EntryPoints_User_2_Email.gs', []],
+      ['EntryPoints_User_3_Azioni.gs', []],
+      ['EntryPoints_User_4_Import.gs', []]
     ];
     if (codeJsContent.includes('/**')) {
       fail(

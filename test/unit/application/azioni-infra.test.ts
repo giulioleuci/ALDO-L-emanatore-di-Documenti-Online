@@ -157,6 +157,82 @@ test('RIDUCI_PERMESSI isolates a Drive failure on one target and keeps declassif
   warn.mockRestore();
 });
 
+test('REVOCA_PERMESSI removes ACLs for emails no longer in the resolved ruolo, leaving expected ones untouched', () => {
+  const drive = new FakeDriveFacade();
+  drive.permissionsPerFile.set('file_1', [
+    { id: 'p1', email: 'coord@school.it', role: 'reader', tipo: 'user' },
+    { id: 'p2', email: 'ex-supplente@school.it', role: 'writer', tipo: 'user' }
+  ]);
+  const handlers = creaHandlersInfra({ db: db(), drive, roles, cdu, logger });
+  const n = handlers['REVOCA_PERMESSI']!(
+    { tipo: 'REVOCA_PERMESSI', su: 'LOG_DOCS', ruolo: 'COORDINATORI' },
+    { ID: 'file_1' }
+  );
+  expect(n).toBe(1);
+  expect(drive.removed).toEqual([{ fileId: 'file_1', permissionId: 'p2' }]);
+});
+
+test('REVOCA_PERMESSI never touches owner/organizer permissions', () => {
+  const drive = new FakeDriveFacade();
+  drive.permissionsPerFile.set('file_1', [
+    { id: 'p1', email: 'ds@school.it', role: 'owner', tipo: 'user' }
+  ]);
+  const handlers = creaHandlersInfra({ db: db(), drive, roles, cdu, logger });
+  const n = handlers['REVOCA_PERMESSI']!(
+    { tipo: 'REVOCA_PERMESSI', su: 'LOG_DOCS', ruolo: 'COORDINATORI' },
+    { ID: 'file_1' }
+  );
+  expect(n).toBe(0);
+  expect(drive.removed).toEqual([]);
+});
+
+test('REVOCA_PERMESSI is a safe no-op when the resolved roster is empty, never wiping every grant', () => {
+  const drive = new FakeDriveFacade();
+  drive.permissionsPerFile.set('file_1', [
+    { id: 'p1', email: 'a@school.it', role: 'reader', tipo: 'user' }
+  ]);
+  const noRoles = { risolvi: () => [] };
+  const handlers = creaHandlersInfra({ db: db(), drive, roles: noRoles, cdu, logger });
+  const n = handlers['REVOCA_PERMESSI']!(
+    { tipo: 'REVOCA_PERMESSI', su: 'LOG_DOCS', ruolo: 'COORDINATORI' },
+    { ID: 'file_1' }
+  );
+  expect(n).toBe(0);
+  expect(drive.removed).toEqual([]);
+});
+
+test('REVOCA_PERMESSI isolates a Drive failure on one target and keeps revoking the others', () => {
+  const drive = new FakeDriveFacade();
+  drive.permissionsPerFile.set('file_2', [
+    { id: 'p9', email: 'ex@school.it', role: 'reader', tipo: 'user' }
+  ]);
+  drive.throwOnListPermissions.add('file_1');
+  const warn = jest.spyOn(LoggerService.prototype, 'warn').mockImplementation(() => {});
+  const handlers = creaHandlersInfra({ db: db(), drive, roles, cdu, logger });
+  const n = handlers['REVOCA_PERMESSI']!(
+    { tipo: 'REVOCA_PERMESSI', su: 'LOG_DOCS', ruolo: 'COORDINATORI' },
+    {}
+  );
+  expect(n).toBe(1);
+  expect(drive.removed).toEqual([{ fileId: 'file_2', permissionId: 'p9' }]);
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('file_1'));
+  warn.mockRestore();
+});
+
+test('REVOCA_PERMESSI reports a failed removal without counting it', () => {
+  const drive = new FakeDriveFacade();
+  drive.permissionsPerFile.set('file_1', [
+    { id: 'p1', email: 'ex@school.it', role: 'reader', tipo: 'user' }
+  ]);
+  drive.permissionFailures.set('p1', 'Drive rifiuta');
+  const handlers = creaHandlersInfra({ db: db(), drive, roles, cdu, logger });
+  const n = handlers['REVOCA_PERMESSI']!(
+    { tipo: 'REVOCA_PERMESSI', su: 'LOG_DOCS', ruolo: 'COORDINATORI' },
+    { ID: 'file_1' }
+  );
+  expect(n).toBe(0);
+});
+
 test('VALIDA_DB delegates to the validator with the requested table subset', () => {
   const drive = new FakeDriveFacade();
   const calls: Array<string[] | undefined> = [];

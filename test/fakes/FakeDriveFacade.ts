@@ -19,7 +19,8 @@ export class FakeDriveFacade implements IDriveFacade {
   /** fileIds that must throw when listPermissions is called (simulates a trashed/deleted/inaccessible Drive file). */
   public throwOnListPermissions = new Set<string>();
   public roleChanges: Array<{ fileId: string; permissionId: string; role: string }> = [];
-  /** permissionIds that must fail on change (error message as value). */
+  public removed: Array<{ fileId: string; permissionId: string }> = [];
+  /** permissionIds that must fail on change/removal (error message as value). */
   public permissionFailures = new Map<string, string>();
   private seq = 0;
 
@@ -86,6 +87,27 @@ export class FakeDriveFacade implements IDriveFacade {
       const perms = this.permissionsPerFile.get(fileId) ?? [];
       const hit = perms.find((p) => p.id === change.permissionId);
       if (hit !== undefined) hit.role = change.role;
+    }
+    return failures;
+  }
+
+  removePermissions(
+    fileId: string,
+    permissionIds: string[]
+  ): Array<{ permissionId: string; errore: string }> {
+    const failures: Array<{ permissionId: string; errore: string }> = [];
+    for (const permissionId of permissionIds) {
+      const errore = this.permissionFailures.get(permissionId);
+      if (errore !== undefined) {
+        failures.push({ permissionId, errore });
+        continue;
+      }
+      this.removed.push({ fileId, permissionId });
+      const perms = this.permissionsPerFile.get(fileId);
+      if (perms !== undefined) {
+        const index = perms.findIndex((p) => p.id === permissionId);
+        if (index !== -1) perms.splice(index, 1);
+      }
     }
     return failures;
   }

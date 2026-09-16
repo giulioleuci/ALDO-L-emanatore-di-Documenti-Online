@@ -103,9 +103,24 @@ module.exports = (env) => {
           'EntryPoints_Menu.js'
         ),
         makeEntrypointsConfig(
-          'entrypoints-user',
-          './src/entrypoints/EntryPoints_User.ts',
-          'EntryPoints_User.js'
+          'entrypoints-user-doc',
+          './src/entrypoints/EntryPoints_User_1_Doc.ts',
+          'EntryPoints_User_1_Doc.js'
+        ),
+        makeEntrypointsConfig(
+          'entrypoints-user-email',
+          './src/entrypoints/EntryPoints_User_2_Email.ts',
+          'EntryPoints_User_2_Email.js'
+        ),
+        makeEntrypointsConfig(
+          'entrypoints-user-azioni',
+          './src/entrypoints/EntryPoints_User_3_Azioni.ts',
+          'EntryPoints_User_3_Azioni.js'
+        ),
+        makeEntrypointsConfig(
+          'entrypoints-user-import',
+          './src/entrypoints/EntryPoints_User_4_Import.ts',
+          'EntryPoints_User_4_Import.js'
         )
       ]
     : [makeEntrypointsConfig('entrypoints', './src/entrypoints/EntryPoints.ts', 'EntryPoints.js')];

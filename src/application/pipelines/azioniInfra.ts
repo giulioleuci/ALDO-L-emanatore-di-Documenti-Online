@@ -149,6 +149,40 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
       return grants.length + cambiati;
     },
 
+    /**
+     * The inverse of AGGIORNA_PERMESSI: removes every non-owner/organizer ACL
+     * on the selected targets whose holder is NOT in the resolved
+     * ruolo/emails set — closes a cattedra realignment (e.g. supplente
+     * uscito) that AGGIORNA_PERMESSI alone only grows, never shrinks. Safety
+     * guard mirrors AGGIORNA_PERMESSI's own empty-destinatari no-op: an
+     * empty resolved roster must never be read as "revoke everyone".
+     */
+    REVOCA_PERMESSI: (azione, criteri) => {
+      const attesi = new Set(destinatari(azione));
+      if (attesi.size === 0) return 0;
+      let rimossi = 0;
+      for (const targetId of targetIds(azione, criteri)) {
+        // Per-target isolation (mirrors LockDocumentsService.bloccaTutti): a
+        // Drive failure on one target never aborts the remaining targets.
+        try {
+          const daRimuovere = drive
+            .listPermissions(targetId)
+            .filter((p) => p.email !== null && !attesi.has(p.email) && RANK[p.role] !== undefined)
+            .map((p) => p.id);
+          if (daRimuovere.length === 0) continue;
+          const falliti = drive.removePermissions(targetId, daRimuovere);
+          rimossi += daRimuovere.length - falliti.length;
+          for (const fallito of falliti) {
+            logger.warn(`REVOCA_PERMESSI: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+          }
+        } catch (error) {
+          const messaggio = error instanceof Error ? error.message : String(error);
+          logger.warn(`REVOCA_PERMESSI: ${targetId} non elaborato — ${messaggio}`);
+        }
+      }
+      return rimossi;
+    },
+
     /** Caps every ACL at `soglia` (default LETTURA) on the selected targets — writer/commenter -> reader. */
     RIDUCI_PERMESSI: (azione, criteri) => {
       const soglia = azione.soglia ?? 'LETTURA';

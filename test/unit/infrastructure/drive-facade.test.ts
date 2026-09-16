@@ -402,4 +402,29 @@ describe('DriveServiceFacade — permission listing and role changes', () => {
     expect(facade.changePermissionRoles('f1', [])).toEqual([]);
     expect(permissions.changeRolesByPermissionId).not.toHaveBeenCalled();
   });
+
+  test('removePermissions delegates to removeAccess by permission id and returns only the failures', () => {
+    const { drive } = fakeDrive();
+    const permissions = {
+      getPermissions: jest.fn(() => []),
+      removeAccess: jest.fn(() => ({
+        successful: [{ fileId: 'f1', permissionId: 'p1', statusCode: 204 }],
+        failed: [{ fileId: 'f1', permissionId: 'p2', error: new Error('nope'), statusCode: 500 }]
+      }))
+    };
+    const facade = new DriveServiceFacade(drive as never, permissions as never, ROOT);
+
+    const failures = facade.removePermissions('f1', ['p1', 'p2']);
+
+    expect(permissions.removeAccess).toHaveBeenCalledWith('f1', ['p1', 'p2']);
+    expect(failures).toEqual([{ permissionId: 'p2', errore: 'nope' }]);
+  });
+
+  test('removePermissions with no permission ids performs no API call', () => {
+    const { drive } = fakeDrive();
+    const permissions = { getPermissions: jest.fn(() => []), removeAccess: jest.fn() };
+    const facade = new DriveServiceFacade(drive as never, permissions as never, ROOT);
+    expect(facade.removePermissions('f1', [])).toEqual([]);
+    expect(permissions.removeAccess).not.toHaveBeenCalled();
+  });
 });

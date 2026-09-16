@@ -46,7 +46,12 @@ function failedRow(data: string, destinatari = 'genitore1@x.it'): Row {
   };
 }
 
-function wire(logMailRows: Row[], logger?: LoggerService, logJob?: ILogJobRepository) {
+function wire(
+  logMailRows: Row[],
+  logger?: LoggerService,
+  logJob?: ILogJobRepository,
+  maxTentativi?: number
+) {
   const tables = fixtureTables();
   tables['LOG_MAIL'] = logMailRows;
   const db = new FakeDatabase(tables);
@@ -64,7 +69,11 @@ function wire(logMailRows: Row[], logger?: LoggerService, logJob?: ILogJobReposi
     emailService,
     gmail,
     new MasterSheetRepository(db),
-    { ...(logger ? { logger } : {}), ...(logJob ? { logJob } : {}) }
+    {
+      ...(logger ? { logger } : {}),
+      ...(logJob ? { logJob } : {}),
+      ...(maxTentativi !== undefined ? { maxTentativi } : {})
+    }
   );
   return { db, gmail, retry };
 }
@@ -128,6 +137,21 @@ test('after maxTentativi failures the error is permanent and the admin is notifi
   expect(gmail.sent[0]!.subject).toContain('permanente');
   // Original records untouched (still ERROR).
   expect(db.tables['LOG_MAIL']!.getAllRows().filter((r) => r['STATO'] === 'ERROR')).toHaveLength(3);
+});
+
+test('retry policy uses the configured attempt limit before sending again', () => {
+  const { db, gmail, retry } = wire(
+    [failedRow('2026-06-29T10:00:00.000Z'), failedRow('2026-06-30T10:00:00.000Z')],
+    undefined,
+    undefined,
+    2
+  );
+
+  expect(retry.retryFailed()).toEqual({ retried: 0, permanent: 1 });
+  expect(gmail.sent[0]!.to).toEqual(['super@school.it']);
+  expect(
+    db.tables['LOG_MAIL']!.getAllRows().filter((row) => row['STATO'] === 'ERROR')
+  ).toHaveLength(2);
 });
 
 test('successful records are ignored', () => {

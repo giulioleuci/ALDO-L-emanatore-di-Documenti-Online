@@ -210,11 +210,19 @@ describe('source filter specifications', () => {
     expect(matchingDocuments({ csv: 'all', classi: ['5A', '4A'] })).toEqual([]);
   });
 
+  it('treats duplicate CSV values as one selection under all mode', () => {
+    expect(matchingDocuments({ csv: 'all', classi: ['5A', '5A'] })).toEqual(['doc-1']);
+  });
+
   it('ANDs positives and lets not exclusions prevail', () => {
     expect(matchingDocuments({ tipo: 'VERBALE', classi: ['5A'], materie: ['MATE'] })).toEqual([
       'doc-1'
     ]);
     expect(matchingDocuments({ classi: ['5A'], not: { tipo: 'VERBALE' } })).toEqual([]);
+  });
+
+  it('returns no source for contradictory inclusion and exclusion filters', () => {
+    expect(matchingDocuments({ classi: ['5A'], not: { classi: ['5A'] } })).toEqual([]);
   });
 
   it('rejects a document when any one of multiple scalar not criteria matches', () => {

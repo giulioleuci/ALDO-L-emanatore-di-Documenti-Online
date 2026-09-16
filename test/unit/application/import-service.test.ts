@@ -196,6 +196,34 @@ test('unknown CONF_IMP id throws', () => {
   expect(() => service.executeImport('NOPE')).toThrow();
 });
 
+test('rejects an invalid import configuration before the loader can write rows', () => {
+  const database = db([
+    confImpRow({
+      CONFIG: JSON.stringify({
+        searchStrategy: 'CERCA_DOCUMENTI',
+        key: 'ID',
+        conflictResolution: 'IGNORE'
+      })
+    })
+  ]);
+  const written: Record<string, unknown>[][] = [];
+  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI', C: '' }], (rows) => {
+    written.push(rows);
+    return {
+      success: true,
+      inserted: rows.length,
+      updated: 0,
+      skipped: 0,
+      deleted: 0,
+      total: rows.length
+    };
+  });
+  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
+
+  expect(() => service.executeImport('IMPORT_ALUNNI')).toThrow('CERCA_DOCUMENTI');
+  expect(written).toEqual([]);
+});
+
 test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)', () => {
   const database = db([confImpRow()]);
   let capturedOptions: { jobId?: string } | undefined;
@@ -463,13 +491,18 @@ test('LOG_JOB: a resumed chunked import backfills a SOSPESO_TEMPO row for the ex
   expect(entries[1]).toMatchObject({ esecuzione: 1, stato: StatoJob.COMPLETATO });
 });
 
-test('registered import handler rejects a resume wrapper without configId before engine invocation', () => {
+test('registered import handler rejects a resume wrapper without configId before it can write a chunk', () => {
   const database = db([confImpRow()]);
-  const startImport = jest.fn();
-  const runImportChunk = jest.fn();
+  const writes: string[] = [];
   const engine = {
-    startImport,
-    runImportChunk
+    startImport: () => {
+      writes.push('start');
+      throw new Error('unexpected start');
+    },
+    runImportChunk: () => {
+      writes.push('chunk');
+      throw new Error('unexpected chunk');
+    }
   } as unknown as ImportEngine;
   const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
   const registered = new Map<string, unknown>();
@@ -486,8 +519,7 @@ test('registered import handler rejects a resume wrapper without configId before
       resumeState: { importCheckpoint: { stage: 'EXTRACT' } }
     }).next()
   ).toThrow('Stato di ripresa import privo di configId');
-  expect(startImport).not.toHaveBeenCalled();
-  expect(runImportChunk).not.toHaveBeenCalled();
+  expect(writes).toEqual([]);
 });
 
 test('top-level import configId overrides a conflicting resume configId', () => {

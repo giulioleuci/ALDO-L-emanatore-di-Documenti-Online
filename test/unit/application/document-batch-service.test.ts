@@ -555,7 +555,8 @@ test('handler resumes from params.resumeState without reprocessing completed cla
 });
 
 test('registered handler resumes a raw class checkpoint without top-level IDs or duplicate generation', () => {
-  const { service, generated } = wire();
+  const { logJob, entries } = fakeLogJob();
+  const { service, generated } = wire({ logJob });
   const registered = new Map<string, unknown>();
   service.registerJobHandlers({
     registerJobHandler: (type, handler) => registered.set(type, handler)
@@ -575,6 +576,11 @@ test('registered handler resumes a raw class checkpoint without top-level IDs or
 
   expect(generated).toEqual(['5A:CD1', '1F:CD1']);
   expect(resumed.value).toMatchObject({ success: true, processed: ['5A', '1F'] });
+  expect(entries.map((entry) => entry.stato)).toEqual([
+    StatoJob.SOSPESO_TEMPO,
+    StatoJob.COMPLETATO
+  ]);
+  expect(entries[1]).toMatchObject({ totaleTask: 2, completatiOk: 2, falliti: 0 });
 });
 
 test('top-level document IDs override conflicting resume IDs', () => {

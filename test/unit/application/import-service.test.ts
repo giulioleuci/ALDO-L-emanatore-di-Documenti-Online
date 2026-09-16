@@ -197,18 +197,20 @@ test('unknown CONF_IMP id throws', () => {
 });
 
 test('rejects an invalid import configuration before the loader can write rows', () => {
-  const database = db([
-    confImpRow({
-      CONFIG: JSON.stringify({
-        searchStrategy: 'CERCA_DOCUMENTI',
-        key: 'ID',
-        conflictResolution: 'IGNORE'
+  const database = new FakeDatabase({
+    CONF_IMP: [
+      confImpRow({
+        CONFIG: JSON.stringify({
+          searchStrategy: 'CERCA_DOCUMENTI',
+          key: 'ID',
+          conflictResolution: 'IGNORE'
+        })
       })
-    })
-  ]);
-  const written: Record<string, unknown>[][] = [];
-  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI', C: '' }], (rows) => {
-    written.push(rows);
+    ],
+    ALUNNI: []
+  });
+  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI', C: '' }], (rows, targetTable) => {
+    rows.forEach((row) => database.tables[targetTable].insert(row));
     return {
       success: true,
       inserted: rows.length,
@@ -221,7 +223,7 @@ test('rejects an invalid import configuration before the loader can write rows',
   const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
 
   expect(() => service.executeImport('IMPORT_ALUNNI')).toThrow('CERCA_DOCUMENTI');
-  expect(written).toEqual([]);
+  expect(database.table('ALUNNI').findAll()).toEqual([]);
 });
 
 test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)', () => {

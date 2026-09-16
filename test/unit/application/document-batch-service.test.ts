@@ -492,17 +492,14 @@ test('generateClassi persists its class targets and consumes them on resume (aud
 
 test('generateClassi keeps frozen positions when a processed class disappears before resume', () => {
   const { service, generated, classi } = wire();
-  const first = service
-    .batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_classi' })
-    .next().value as BatchCheckpoint;
+  const first = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_classi' }).next()
+    .value as BatchCheckpoint;
   const findById = classi.findById.bind(classi);
   jest
     .spyOn(classi, 'findById')
     .mockImplementation((id) => (id.value === '5A' ? null : findById(id)));
 
-  const { checkpoints, result } = drain(
-    service.batchGenerateHandler({ resumeState: first })
-  );
+  const { checkpoints, result } = drain(service.batchGenerateHandler({ resumeState: first }));
 
   expect(generated).toEqual(['5A:CD1', '1F:CD1']);
   expect(checkpoints[0]).toMatchObject({ nextIndex: 2, classeTargets: ['5A', '1F'] });
@@ -986,7 +983,7 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
       .next();
     expect(first.value).toMatchObject({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job_docenti' });
 
-    const { result } = drain(handler({ resumeState: first.value }));
+    const { result } = drain(handler({ resumeState: JSON.parse(JSON.stringify(first.value)) }));
     const targetIds = generated.map(
       ({ classe, materia, docente }) => `${classe}:${materia}:${docente}`
     );

@@ -268,6 +268,18 @@ Rendering fittizio:
 Nella tabella precedente i dati BES, DSA, piani e presenza sono sensibili:
 usarla soltanto in documenti con destinatari autorizzati.
 
+Per aggiungere ad ogni riga i piani posseduti dallo studente nell'anno
+scolastico precedente (richiede `includiStorico: true` nella recipe, come per
+`presenza.annoPrecedente`):
+
+```
+{{pianiAnnoPrecedente.elencoDescrizione | default:'Nessun piano'}}
+```
+
+Se `includiStorico` è disattivo, o lo studente non è presente nella base
+storica dell'anno precedente, il placeholder restituisce l'elenco vuoto
+(`hasElenco: false`), non un errore.
+
 ### Stringa sullo stato di un singolo alunno
 
 Questo è adatto a una recipe con focus.alunno:

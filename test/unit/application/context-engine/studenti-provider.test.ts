@@ -236,6 +236,27 @@ test('StudentiProvider: presenza.annoPrecedente.isPresente is computed per roste
   expect(a1.presenza.annoPrecedente).toEqual({ isCalcolato: true, isPresente: true }); // exists in priorDb's fixtureTables() too
 });
 
+test('StudentiProvider: pianiAnnoPrecedente lists the student\'s plans from the prior-year database when includiStorico is true', () => {
+  const priorDb = new FakeDatabase(fixtureTables());
+  const storicoDb: StoricoDatabaseProvider = {
+    anniStorici: (profondita: number) =>
+      profondita > 0 ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }] : []
+  };
+  const tables = fixtureTables();
+  const cdu = build('5A', tables, { includiStorico: true }, storicoDb);
+  const a1 = cdu.focus.classe!.studenti!.elenco.find((a) => a.email === 'a1@school.it')!;
+  // priorDb's fixtureTables() PIANI carries a1 -> PEI, same as the current year's fixture.
+  expect(a1.pianiAnnoPrecedente.elenco).toEqual([{ tipo: 'PEI', tipoLabel: 'PEI' }]);
+  expect(a1.pianiAnnoPrecedente.hasElenco).toBe(true);
+  expect(a1.pianiAnnoPrecedente.elencoDescrizione).toBe('PEI');
+});
+
+test('StudentiProvider: pianiAnnoPrecedente is gated behind includiStorico — empty elenco when false', () => {
+  const cdu = build('5A', fixtureTables(), {}, noHistory());
+  const a1 = cdu.focus.classe!.studenti!.elenco.find((a) => a.email === 'a1@school.it')!;
+  expect(a1.pianiAnnoPrecedente).toEqual({ elenco: [], hasElenco: false, numero: 0, elencoDescrizione: '' });
+});
+
 test('StudentiProvider: presenza.annoPrecedente is gated behind includiStorico — storicoDb is never touched when false', () => {
   let opened = false;
   const storicoDb: StoricoDatabaseProvider = {

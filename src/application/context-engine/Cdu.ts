@@ -261,6 +261,10 @@ export interface ElencoPianiVM extends ElencoVM<PianoVM> {
   hasBes: boolean;
 }
 
+export interface ElencoPianiStoriciVM extends ElencoVM<PianoStoricoVM> {
+  elencoDescrizione: string;
+}
+
 export interface AlunnoVM extends PersonaRiferimentoVM {
   classe: ClasseContestoVM;
   religione: 'IRC' | 'ALT' | 'NO';
@@ -283,6 +287,7 @@ export interface AlunnoVM extends PersonaRiferimentoVM {
   curriculumDescrizione: string;
   carenze: ElencoCarenzeVM;
   piani: ElencoPianiVM;
+  pianiAnnoPrecedente: ElencoPianiStoriciVM;
   asl: AslAlunnoVM;
 }
 

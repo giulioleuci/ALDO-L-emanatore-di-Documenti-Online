@@ -1,5 +1,5 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { AlunnoVM, Cdu, PianoVM, StudentiClasseVM } from '../Cdu';
+import type { AlunnoVM, Cdu, PianoStoricoVM, PianoVM, StudentiClasseVM } from '../Cdu';
 import type { BuildParams, RecipeOptions } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
@@ -156,6 +156,9 @@ export class StudentiProvider implements ContextProvider {
         hasParametriGenerazione: false
       }))
       .sort((a, b) => a.tipo.localeCompare(b.tipo));
+    const pianiAnnoPrecedente: PianoStoricoVM[] = (storico?.getPiani(alunno) ?? [])
+      .map((piano) => ({ tipo: piano.tipo, tipoLabel: tipoPianoLabel(piano.tipo) }))
+      .sort((a, b) => a.tipo.localeCompare(b.tipo));
     const anno = cdu.istituto?.annoScolastico;
     return {
       nomeCompleto: alunno.cognomeNome,
@@ -211,6 +214,10 @@ export class StudentiProvider implements ContextProvider {
         ...elencoVm(piani),
         elencoDescrizione: piani.map((piano) => piano.tipoLabel).join(', '),
         hasBes: piani.some((piano) => piano.isBes)
+      },
+      pianiAnnoPrecedente: {
+        ...elencoVm(pianiAnnoPrecedente),
+        elencoDescrizione: pianiAnnoPrecedente.map((piano) => piano.tipoLabel).join(', ')
       },
       asl: {
         oreCumulate: this.oreAsl.getTotaleOre(alunno),

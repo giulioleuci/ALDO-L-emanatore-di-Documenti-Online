@@ -92,7 +92,11 @@ export class AlunnoProvider implements ContextProvider {
         oreCumulate: this.oreAsl.getTotaleOre(alunno),
         oreAnnoCorrente: this.oreAnnoCorrente(cdu, alunno)
       },
-      piani: { ...elencoVm([]), elencoDescrizione: '', hasBes: false }
+      piani: { ...elencoVm([]), elencoDescrizione: '', hasBes: false },
+      // For focus.alunno the equivalent data lives in the richer, lazily-loaded
+      // storico.anni[0].piani (multi-year); this field exists on AlunnoVM for
+      // the class-roster case (StudentiProvider) and is left empty here.
+      pianiAnnoPrecedente: { ...elencoVm([]), elencoDescrizione: '' }
     };
     cdu.focus.alunno = focus;
     const assignments = resolveCouncilForProjection(

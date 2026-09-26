@@ -1126,6 +1126,7 @@ AlunnoVM:
 
   carenze: ElencoCarenzeVM       # Carenze nello scope temporale della proiezione
   piani: ElencoPianiVM           # Piani personalizzati nello stesso scope
+  pianiAnnoPrecedente: ElencoPianiStoriciVM # Piani posseduti nell'anno scolastico precedente (8.22); richiede includiStorico
   asl: AslAlunnoVM               # Ore ASL/FSL cumulate e annuali
 ```
 
@@ -1374,6 +1375,16 @@ ElencoPianiVM:
   elencoDescrizione: string # Etichette dei piani separate da virgola; es. "PDP, PEI"
   hasBes: boolean # true se almeno un piano implica BES
 ```
+
+```yaml
+ElencoPianiStoriciVM:
+  elenco: PianoStoricoVM[] # Piani posseduti nell'anno scolastico precedente, ordinati per tipo (8.15)
+  hasElenco: boolean # true se elenco non è vuoto
+  numero: number # Cardinalità di elenco
+  elencoDescrizione: string # Etichette dei piani separate da virgola; es. "PDP, PEI"
+```
+
+`AlunnoVM.pianiAnnoPrecedente` è valorizzato solo quando `includiStorico` è attivo e nella base storica dell'anno immediatamente precedente esiste una riga per lo studente; altrimenti resta un elenco vuoto (`hasElenco: false`), coerentemente con `presenza.annoPrecedente`.
 
 I campi non disponibili in una proiezione compatta valgono `null` e sono accompagnati dal relativo booleano di disponibilità.
 

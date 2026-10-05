@@ -92,21 +92,24 @@ describe('BounceReconciliationService', () => {
       row({ PATTERN: 'A', DESTINATARI: 'a@x.it' }),
       row({ PATTERN: 'B', DESTINATARI: 'b@x.it' }),
       row({ PATTERN: 'A', DESTINATARI: 'old@x.it', DATA: '2026-10-01T07:00:00.000Z' }),
-      row({ PATTERN: 'A', DESTINATARI: 'late@x.it', DATA: '2026-10-05T08:30:00.000Z' })
+      row({ PATTERN: 'A', DESTINATARI: 'late@x.it', DATA: '2026-10-05T08:30:00.000Z' }),
+      // before the NDR (08:00) but after `a` (07:30): excluded ONLY by the upper bound
+      row({ PATTERN: 'A', DESTINATARI: 'after@x.it', DATA: '2026-10-05T07:50:00.000Z' })
     ];
     const { gmail, marcaRimbalzo, run } = wire(rows);
     gmail.bounces = [
       ndr('a@x.it', 'n1'),
       ndr('b@x.it', 'n2'),
       ndr('old@x.it', 'n3'),
-      ndr('late@x.it', 'n4')
+      ndr('late@x.it', 'n4'),
+      ndr('after@x.it', 'n5')
     ];
     const s = run({
       patterns: ['A'],
       da: new Date('2026-10-04T00:00:00.000Z'),
-      a: new Date('2026-10-05T08:45:00.000Z')
+      a: new Date('2026-10-05T07:30:00.000Z')
     });
-    expect(s).toMatchObject({ ispezionati: 4, riconciliati: 1, anomalie: 3 });
+    expect(s).toMatchObject({ ispezionati: 5, riconciliati: 1, anomalie: 4 });
     expect(marcaRimbalzo).toHaveBeenCalledTimes(1);
     expect(marcaRimbalzo.mock.calls[0][0].destinatariRaw).toBe('a@x.it');
     expect(marcaRimbalzo.mock.calls[0][2].bounceMessageId).toBe('n1');

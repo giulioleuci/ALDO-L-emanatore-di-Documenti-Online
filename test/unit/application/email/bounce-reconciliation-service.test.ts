@@ -92,7 +92,8 @@ describe('BounceReconciliationService', () => {
       row({ PATTERN: 'A', DESTINATARI: 'a@x.it' }),
       row({ PATTERN: 'B', DESTINATARI: 'b@x.it' }),
       row({ PATTERN: 'A', DESTINATARI: 'old@x.it', DATA: '2026-10-01T07:00:00.000Z' }),
-      row({ PATTERN: 'A', DESTINATARI: 'late@x.it', DATA: '2026-10-05T08:30:00.000Z' }),
+      // inside da/a but dated after its NDR (07:00): excluded ONLY by the NDR-date rule
+      row({ PATTERN: 'A', DESTINATARI: 'late@x.it', DATA: '2026-10-05T07:20:00.000Z' }),
       // before the NDR (08:00) but after `a` (07:30): excluded ONLY by the upper bound
       row({ PATTERN: 'A', DESTINATARI: 'after@x.it', DATA: '2026-10-05T07:50:00.000Z' })
     ];
@@ -101,7 +102,7 @@ describe('BounceReconciliationService', () => {
       ndr('a@x.it', 'n1'),
       ndr('b@x.it', 'n2'),
       ndr('old@x.it', 'n3'),
-      ndr('late@x.it', 'n4'),
+      ndr('late@x.it', 'n4', new Date('2026-10-05T07:00:00.000Z')),
       ndr('after@x.it', 'n5')
     ];
     const s = run({

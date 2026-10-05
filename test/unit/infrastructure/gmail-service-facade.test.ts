@@ -45,3 +45,14 @@ test('GmailServiceFacade.sendEmail omits replyTo when not provided', () => {
   facade.sendEmail({ to: ['a@x.it'], subject: 'S', htmlBody: '<p>B</p>' });
   expect((mail.lastOpts as { replyTo?: string }).replyTo).toBeUndefined();
 });
+
+test('GmailServiceFacade.searchBounceMessages queries mailer-daemon and maps plainBody to body', () => {
+  const searchMessages = jest.fn(() => [
+    { id: 'm', threadId: 't', subject: 's', from: 'f', date: new Date(0), plainBody: 'b' }
+  ]);
+  const facade = new GmailServiceFacade({ searchMessages } as unknown as MailService);
+  expect(facade.searchBounceMessages(1.2)).toEqual([
+    { id: 'm', date: new Date(0), subject: 's', body: 'b' }
+  ]);
+  expect(searchMessages).toHaveBeenCalledWith('from:mailer-daemon newer_than:2d', 100);
+});

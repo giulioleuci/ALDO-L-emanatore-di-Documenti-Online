@@ -9588,7 +9588,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
 
 
 
-;
+
 class ErrorReporter {
 
 
@@ -16332,6 +16332,37 @@ class MailService {
 
 
 
+  searchMessages(query, maxResults = 50) {
+    try {
+      const out = [];
+      for (const thread of GmailApp.search(query, 0, maxResults)) {
+        for (const m of thread.getMessages()) {
+          if (out.length >= maxResults) {
+            return out;
+          }
+          out.push({
+            id: m.getId(),
+            threadId: thread.getId(),
+            subject: m.getSubject(),
+            from: m.getFrom(),
+            date: m.getDate(),
+            plainBody: m.getPlainBody()
+          });
+        }
+      }
+      return out;
+    } catch (error) {
+      this._logger.error(`Error searching messages: ${error.message}`);
+      return [];
+    }
+  }
+
+
+
+
+
+
+
 
 
 
@@ -18519,7 +18550,7 @@ function ServiceFactory_toPrimitive(t, r) { if ("object" != typeof t || !t) retu
 
 
 
-;
+
 
 
 
@@ -50696,7 +50727,7 @@ function ImportConfiguration_toPrimitive(t, r) { if ("object" != typeof t || !t)
 
 
 
-;
+
 
 
 
@@ -52156,7 +52187,7 @@ function Loader_toPrimitive(t, r) { if ("object" != typeof t || !t) return t; va
 
 
 
-;
+
 
 
 
@@ -52218,25 +52249,7 @@ class Loader {
       const table = this._db.tables[targetTable];
 
 
-      let result;
-      switch (conflictResolution) {
-        case 'INSERT_ONLY':
-          result = this._insertOnly(table, data, conflictKey);
-          break;
-        case 'UPDATE_ONLY':
-          result = this._updateOnly(table, data, conflictKey, updateIfNewer);
-          break;
-        case 'UPSERT':
-          result = this._upsert(table, data, conflictKey, updateIfNewer);
-          break;
-        case 'OVERWRITE':
-          result = this._overwrite(table, data, conflictKey);
-          break;
-        default:
-          throw new LoadError(`Unknown conflict resolution strategy: ${conflictResolution}`, 'UNKNOWN_STRATEGY', {
-            conflictResolution
-          });
-      }
+      const result = this._executeStrategy(table, data, conflictResolution, conflictKey, updateIfNewer, this._overwrite);
 
 
       this.logger.debug('[Loader] Saving changes to database...');
@@ -52299,44 +52312,10 @@ class Loader {
         });
       }
       const table = this._db.tables[targetTable];
-      let result;
-      if (data.length === 0) {
-        result = {
-          success: true,
-          inserted: 0,
-          updated: 0,
-          skipped: 0,
-          deleted: 0,
-          total: 0
-        };
-      } else {
-        switch (conflictResolution) {
-          case 'INSERT_ONLY':
-            result = this._insertOnly(table, data, conflictKey);
-            break;
-          case 'UPDATE_ONLY':
-            result = this._updateOnly(table, data, conflictKey, updateIfNewer);
-            break;
-          case 'UPSERT':
-            result = this._upsert(table, data, conflictKey, updateIfNewer);
-            break;
-          case 'OVERWRITE':
 
 
 
-
-
-
-
-
-            result = isFirstChunk ? this._overwrite(table, data, conflictKey) : this._appendAll(table, data);
-            break;
-          default:
-            throw new LoadError(`Unknown conflict resolution strategy: ${conflictResolution}`, 'UNKNOWN_STRATEGY', {
-              conflictResolution
-            });
-        }
-      }
+      const result = this._executeStrategy(table, data, conflictResolution, conflictKey, updateIfNewer, isFirstChunk ? this._overwrite : this._appendAll);
 
 
 
@@ -52354,6 +52333,48 @@ class Loader {
         conflictResolution,
         originalError: error.message
       });
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _executeStrategy(table, data, strategy, conflictKey, updateIfNewer, overwriteHandler) {
+    if (data.length === 0) {
+      return {
+        success: true,
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        deleted: 0,
+        total: 0
+      };
+    }
+    switch (strategy) {
+      case 'INSERT_ONLY':
+        return this._insertOnly(table, data, conflictKey);
+      case 'UPDATE_ONLY':
+        return this._updateOnly(table, data, conflictKey, updateIfNewer);
+      case 'UPSERT':
+        return this._upsert(table, data, conflictKey, updateIfNewer);
+      case 'OVERWRITE':
+        return overwriteHandler.call(this, table, data, conflictKey);
+      default:
+        throw new LoadError(`Unknown conflict resolution strategy: ${strategy}`, 'UNKNOWN_STRATEGY', {
+          conflictResolution: strategy
+        });
     }
   }
 
@@ -55621,28 +55642,9 @@ class CompositeSpecification extends Specification {
       spec.toQuery(tempBuilder);
 
 
+      const method = this.operator === 'AND' ? 'andWhere' : 'orWhere';
       for (const clause of tempBuilder._whereClauses) {
-        if (clause.operator === 'IN') {
-          if (this.operator === 'AND') {
-
-            builder = builder.andWhere(clause.field, 'IN', clause.value);
-          } else {
-            builder = builder.orWhere(clause.field, 'IN', clause.value);
-          }
-        } else if (clause.operator === 'LIKE') {
-
-          if (this.operator === 'AND') {
-            builder = builder.andWhere(clause.field, 'LIKE', clause.value);
-          } else {
-            builder = builder.orWhere(clause.field, 'LIKE', clause.value);
-          }
-        } else {
-          if (this.operator === 'AND') {
-            builder = builder.andWhere(clause.field, clause.operator, clause.value);
-          } else {
-            builder = builder.orWhere(clause.field, clause.operator, clause.value);
-          }
-        }
+        builder = builder[method](clause.field, clause.operator, clause.value);
       }
     }
     return builder;

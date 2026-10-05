@@ -477,8 +477,7 @@ declare global {
     changeRolesByPermissionId(
       fileIds: string | string[],
       roleChanges:
-        | { permissionId: string; newRole: string }
-        | Array<{ permissionId: string; newRole: string }>
+        { permissionId: string; newRole: string } | Array<{ permissionId: string; newRole: string }>
     ): {
       successful: Array<{ fileId: string; permissionId: string; newRole: string }>;
       failed: Array<{ fileId: string; permissionId: string; error: Error }>;
@@ -1211,6 +1210,17 @@ declare global {
       failed: Array<{ email: MailSendOptions; error: string }>;
     };
     getQuotaUsage(): number;
+    searchMessages(
+      query: string,
+      maxResults?: number
+    ): Array<{
+      id: string;
+      threadId: string;
+      subject: string;
+      from: string;
+      date: Date;
+      plainBody: string;
+    }>;
   }
 
   // --- GoogleApiWrapper (L2): ServiceFactory DI container + UI/Properties wrappers ---
@@ -1480,7 +1490,14 @@ declare global {
 
   type DatasetValidationRule =
     | { id: string; type: 'required'; table: string; columns: string[] }
-    | { id: string; type: 'enum'; table: string; column: string; values: string[]; allowEmpty?: boolean }
+    | {
+        id: string;
+        type: 'enum';
+        table: string;
+        column: string;
+        values: string[];
+        allowEmpty?: boolean;
+      }
     | { id: string; type: 'json'; table: string; column: string }
     | {
         id: string;

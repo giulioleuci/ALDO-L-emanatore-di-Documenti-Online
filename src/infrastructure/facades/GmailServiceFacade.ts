@@ -21,9 +21,17 @@ export interface EmailSendResult {
   error?: string;
 }
 
+export interface BounceMessage {
+  id: string;
+  date: Date;
+  subject: string;
+  body: string;
+}
+
 export interface IGmailFacade {
   sendEmail(opts: EmailSendOptions): EmailSendResult;
   getRemainingQuota(): number;
+  searchBounceMessages(lookbackDays: number): BounceMessage[];
 }
 
 export class GmailServiceFacade implements IGmailFacade {
@@ -49,5 +57,11 @@ export class GmailServiceFacade implements IGmailFacade {
     return result.error === undefined
       ? { success: result.success }
       : { success: result.success, error: result.error };
+  }
+
+  searchBounceMessages(lookbackDays: number): BounceMessage[] {
+    return this.mail
+      .searchMessages(`from:mailer-daemon newer_than:${Math.max(1, Math.ceil(lookbackDays))}d`, 100)
+      .map((m) => ({ id: m.id, date: m.date, subject: m.subject, body: m.plainBody }));
   }
 }

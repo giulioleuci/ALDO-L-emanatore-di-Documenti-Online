@@ -64,7 +64,7 @@ describe('BounceReconciliationService', () => {
     expect(marcaRimbalzo).toHaveBeenCalledWith(
       expect.objectContaining({ destinatariRaw: 'a@x.it' }),
       `${REASON} (a@x.it)`,
-      { bouncedAt: NOW.toISOString(), bounceMessageId: 'm1' }
+      { bouncedAt: NOW.toISOString(), bounceMessageId: 'm1', bounceType: 'PERMANENT_550' }
     );
   });
 
@@ -85,6 +85,28 @@ describe('BounceReconciliationService', () => {
     expect(run()).toMatchObject({ riconciliati: 0, anomalie: 1 });
     expect(marcaRimbalzo).not.toHaveBeenCalled();
     expect(gmail.sent).toHaveLength(0);
+  });
+
+  it('re-scanning an already handled NDR is a no-op: older SUCCESS row of same recipient stays untouched', () => {
+    const handled = row({
+      STATO: 'BOUNCED',
+      DATA: '2026-10-05T07:30:00.000Z',
+      ALLEGATI: JSON.stringify({ bounceMessageId: 'm1' })
+    });
+    const older = row({ DATA: '2026-10-05T06:00:00.000Z' });
+    const { gmail, marcaRimbalzo, run } = wire([handled, older]);
+    gmail.bounces = [ndr('a@x.it', 'm1')];
+    expect(run()).toMatchObject({ ispezionati: 1, riconciliati: 0, anomalie: 0 });
+    expect(marcaRimbalzo).not.toHaveBeenCalled();
+    expect(gmail.sent).toHaveLength(0);
+  });
+
+  it('throws when the summary mail cannot be sent (rows are already marked)', () => {
+    const { gmail, marcaRimbalzo, run } = wire([row()]);
+    gmail.failFor.add('admin@scuola.it');
+    gmail.bounces = [ndr('a@x.it')];
+    expect(() => run()).toThrow(/invio riepilogo fallito.*simulated failure/);
+    expect(marcaRimbalzo).toHaveBeenCalledTimes(1);
   });
 
   it('filters by pattern, da/a window and NDR date', () => {

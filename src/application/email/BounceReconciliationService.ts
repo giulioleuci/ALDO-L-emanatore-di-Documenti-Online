@@ -3,6 +3,7 @@ import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSh
 import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFacade';
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
 import { StatoEmail } from '../../domain/value-objects/enums';
+import { PipelineError } from '../../domain/errors/DomainError';
 import { escapeHtml } from './boxes';
 import { parseNdr } from './NdrParser';
 
@@ -69,7 +70,11 @@ export class BounceReconciliationService {
           new Date(l.data) >= da &&
           (f.a === undefined || new Date(l.data) <= f.a)
       );
+    const giaGestiti = new Set(
+      logMail.findByStato(StatoEmail.BOUNCED).map((l) => l.getAllegati()['bounceMessageId'])
+    );
     for (const ndr of ndrs) {
+      if (giaGestiti.has(ndr.id)) continue; // idempotent re-run
       const p = parseNdr(ndr.body);
       const hit =
         p === null
@@ -87,7 +92,8 @@ export class BounceReconciliationService {
       }
       logMail.marcaRimbalzo(hit, `${p.reason} (${p.recipient})`, {
         bouncedAt: t.toISOString(),
-        bounceMessageId: ndr.id
+        bounceMessageId: ndr.id,
+        bounceType: `PERMANENT_${p.code}`
       });
       candidati.splice(candidati.indexOf(hit), 1); // one NDR → one row
       summary.riconciliati++;
@@ -123,10 +129,15 @@ export class BounceReconciliationService {
           `<li>${escapeHtml(d.pattern)} → ${escapeHtml(d.rejected)}: ${escapeHtml(d.diagnostica)}</li>`
       )
       .join('');
-    this.deps.gmail.sendEmail({
+    const r = this.deps.gmail.sendEmail({
       to,
       subject: `[SGSA] ${s.riconciliati} email non recapitate (rimbalzi)`,
       htmlBody: `<p>NDR ispezionati: ${s.ispezionati}, rimbalzi correlati: ${s.riconciliati}, anomalie: ${s.anomalie}.</p><ul>${righe}</ul><p>Correggere gli indirizzi nel database.</p>`
     });
+    if (!r.success) {
+      throw new PipelineError(
+        `VERIFICA_EMAIL_INVIATE: righe marcate BOUNCED ma invio riepilogo fallito: ${r.error ?? 'errore sconosciuto'}`
+      );
+    }
   }
 }

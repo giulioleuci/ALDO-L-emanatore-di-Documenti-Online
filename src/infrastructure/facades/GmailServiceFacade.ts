@@ -62,6 +62,7 @@ export class GmailServiceFacade implements IGmailFacade {
   searchBounceMessages(lookbackDays: number): BounceMessage[] {
     return this.mail
       .searchMessages(`from:mailer-daemon newer_than:${Math.max(1, Math.ceil(lookbackDays))}d`, 100)
+      .filter((m) => /mailer-daemon|postmaster/i.test(m.from)) // threads also hold the original message
       .map((m) => ({ id: m.id, date: m.date, subject: m.subject, body: m.plainBody }));
   }
 }

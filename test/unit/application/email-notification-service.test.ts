@@ -314,8 +314,7 @@ test('PER_DOCENTE + ENTRAMBI splits a titolare cattedra into one target per acti
     resolveConsiglio.mock.calls.map(([classe, date, options]) => ({
       nome: classe.nome,
       date,
-      routingPolicy: (options as { routingPolicy?: RoutingPolicyValue } | undefined)
-        ?.routingPolicy
+      routingPolicy: (options as { routingPolicy?: RoutingPolicyValue } | undefined)?.routingPolicy
     }))
   ).toEqual([
     { nome: '5A', date: NOW, routingPolicy: RoutingPolicy.PRINCIPAL_ONLY },
@@ -397,8 +396,7 @@ test('PER_CDC applies CONF_MAIL.SUPPLENTI through the shared resolver', () => {
     resolveConsiglio.mock.calls.map(([classe, date, options]) => ({
       nome: classe.nome,
       date,
-      routingPolicy: (options as { routingPolicy?: RoutingPolicyValue } | undefined)
-        ?.routingPolicy
+      routingPolicy: (options as { routingPolicy?: RoutingPolicyValue } | undefined)?.routingPolicy
     }))
   ).toEqual([
     { nome: '5A', date: NOW, routingPolicy: RoutingPolicy.DELEGATE_OR_PRINCIPAL },
@@ -652,6 +650,23 @@ test('sendPattern skips a target already SUCCESS-logged for this pattern, and st
 
   expect(result.skipped).toBeGreaterThanOrEqual(1);
   expect(result.targets).toBe(targets.length);
+  expect(gmail.sent).toHaveLength(targets.length - 1);
+});
+
+test('sendPattern under NEGATA treats a BOUNCED row like SUCCESS and does not resend that target', () => {
+  const { db, gmail, service } = wire([mailRow('BOUNCED_TEST', { PROCESSO: 'PER_CDC' })]);
+  const targets = service.enumerateTargets(conf('PER_CDC'));
+  new LogEmailRepository(db).registraInvio(
+    'BOUNCED_TEST',
+    targets[0]!.emails.map((e) => Email.of(e)),
+    StatoEmail.BOUNCED,
+    '<p>x</p>',
+    { logicalTargetId: emailTargetId(targets[0]!) }
+  );
+
+  const result = service.sendPattern('BOUNCED_TEST');
+
+  expect(result.skipped).toBeGreaterThanOrEqual(1);
   expect(gmail.sent).toHaveLength(targets.length - 1);
 });
 

@@ -46,9 +46,18 @@ test('GmailServiceFacade.sendEmail omits replyTo when not provided', () => {
   expect((mail.lastOpts as { replyTo?: string }).replyTo).toBeUndefined();
 });
 
-test('GmailServiceFacade.searchBounceMessages queries mailer-daemon and maps plainBody to body', () => {
+test('GmailServiceFacade.searchBounceMessages queries mailer-daemon, keeps only NDR senders and maps plainBody to body', () => {
+  const msg = (id: string, from: string) => ({
+    id,
+    threadId: 't',
+    subject: 's',
+    from,
+    date: new Date(0),
+    plainBody: 'b'
+  });
   const searchMessages = jest.fn(() => [
-    { id: 'm', threadId: 't', subject: 's', from: 'f', date: new Date(0), plainBody: 'b' }
+    msg('m', 'Mail Delivery Subsystem <mailer-daemon@googlemail.com>'),
+    msg('orig', 'Segreteria <segreteria@scuola.it>')
   ]);
   const facade = new GmailServiceFacade({ searchMessages } as unknown as MailService);
   expect(facade.searchBounceMessages(1.2)).toEqual([

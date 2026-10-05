@@ -248,7 +248,7 @@ export class EmailNotificationService {
     try {
       const ids = new Set<string>();
       for (const log of this.deps.logMail.findByPattern(patternId)) {
-        if (log.stato !== StatoEmail.SUCCESS) continue;
+        if (log.stato !== StatoEmail.SUCCESS && log.stato !== StatoEmail.BOUNCED) continue;
         const allegati = log.getAllegati();
         if (allegati['testMode'] === true) continue;
         const logicalTargetId = allegati['logicalTargetId'];
@@ -309,7 +309,15 @@ export class EmailNotificationService {
       logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
     })
       .addStep(
-        new BuildCDUStep(this.logger, d.contextBuilder, d.docenti, d.alunni, d.classi, d.materie, d.teachingAssignments)
+        new BuildCDUStep(
+          this.logger,
+          d.contextBuilder,
+          d.docenti,
+          d.alunni,
+          d.classi,
+          d.materie,
+          d.teachingAssignments
+        )
       )
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
       .addStep(new CheckAlreadySentStep(this.logger))

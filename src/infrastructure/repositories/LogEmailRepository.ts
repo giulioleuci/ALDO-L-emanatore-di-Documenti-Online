@@ -48,6 +48,23 @@ export class LogEmailRepository extends Repository<LogEmail> implements ILogEmai
     this.database.save();
   }
 
+  marcaRimbalzo(log: LogEmail, diagnostica: string, meta: Record<string, unknown>): void {
+    this.database.tables[TABLE.LOG_MAIL]!.updateRowWhere(
+      {
+        [COL_LOG_MAIL.PATTERN]: log.pattern,
+        [COL_LOG_MAIL.DESTINATARI]: log.destinatariRaw,
+        [COL_LOG_MAIL.DATA]: log.data
+      },
+      {
+        ...log.toData(),
+        [COL_LOG_MAIL.STATO]: StatoEmail.BOUNCED,
+        [COL_LOG_MAIL.ERRORE]: `Bounce: ${diagnostica}`,
+        [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({ ...log.getAllegati(), ...meta })
+      }
+    );
+    this.database.save();
+  }
+
   /** Appends a send record with DESTINATARI as CSV and DATA = now (ref 06 §19). TESTO is
    * HtmlSanitizer.stripToPlainText(corpoHtml) — plain text, ≤2000 chars, single-cell-safe (item 5). */
   registraInvio(

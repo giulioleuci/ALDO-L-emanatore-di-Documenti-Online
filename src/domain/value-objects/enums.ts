@@ -87,7 +87,8 @@ export enum GestioneSupplenti {
 export enum StatoEmail {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
-  PENDING = 'PENDING'
+  PENDING = 'PENDING',
+  BOUNCED = 'BOUNCED'
 }
 export enum StatoJob {
   COMPLETATO = 'COMPLETATO',

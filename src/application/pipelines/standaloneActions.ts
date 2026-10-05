@@ -40,6 +40,11 @@ export interface Azione {
   soglia?: string;
   /** VALIDA_DB: subset of tables to validate (default: all). */
   tabelle?: string[];
+  /** VERIFICA_EMAIL_INVIATE: "GG-MM-AAAA HH:MM:SS" bounds, relative lookback (default 2) and CONF_MAIL id filter. */
+  daTimestamp?: string;
+  aTimestamp?: string;
+  lookbackGiorni?: number;
+  pattern?: string | string[];
 }
 
 export type AzioneHandler = (azione: Azione, criteri: Record<string, string>) => number;

@@ -6,6 +6,7 @@ import type { IRoleResolver } from './documentSteps';
 import type { Cdu } from '../context-engine/Cdu';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 import { TABLE } from '../../config/schema';
+import type { BounceFilters, BounceSummary } from '../email/BounceReconciliationService';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 
 /** Drive roles ordered by privilege; owner/organizer are absent on purpose —
@@ -37,7 +38,21 @@ export interface AzioniInfraDeps {
   storico?: StoricoDocumentiService;
   /** Needed only by VALIDA_DB; absent off-GAS (no SpreadsheetService). */
   validator?: ValidatoreDb;
+  /** Needed only by VERIFICA_EMAIL_INVIATE. */
+  bounces?: { riconcilia(f: BounceFilters): BounceSummary };
   logger: LoggerService;
+}
+
+const TS_IT = /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/;
+/** "GG-MM-AAAA HH:MM:SS" -> Date in the script timezone (Rome on GAS). */
+function parseTimestampIt(campo: string, raw: string): Date {
+  const m = TS_IT.exec(raw.trim());
+  if (m === null) {
+    throw new ConfigurationError(
+      `AZIONE VERIFICA_EMAIL_INVIATE: ${campo} "${raw}" non è nel formato GG-MM-AAAA HH:MM:SS`
+    );
+  }
+  return new Date(+m[3]!, +m[2]! - 1, +m[1]!, +m[4]!, +m[5]!, +m[6]!);
 }
 
 /**
@@ -48,7 +63,7 @@ export interface AzioniInfraDeps {
  * so a resumed or re-run job repeats no work.
  */
 export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneHandler> {
-  const { db, drive, roles, cdu, storico, validator, logger } = deps;
+  const { db, drive, roles, cdu, storico, validator, bounces, logger } = deps;
 
   /** Rows of LOG_DOCS/LOG_FOLD matching `criteri`: CSV columns by containment, PATH by prefix, everything else by equality. */
   function selezionaId(azione: Azione, criteri: Record<string, string>): string[] {
@@ -220,6 +235,21 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
       const esito = validator.esegui(azione.tabelle);
       logger.info(`VALIDA_DB: ${esito.violazioni.length} violazioni — report ${esito.nome}`);
       return esito.violazioni.length;
+    },
+
+    VERIFICA_EMAIL_INVIATE: (azione) => {
+      if (bounces === undefined) {
+        logger.warn('AZIONE VERIFICA_EMAIL_INVIATE: servizio non disponibile — saltata');
+        return 0;
+      }
+      const f: BounceFilters = {};
+      if (azione.daTimestamp !== undefined) f.da = parseTimestampIt('daTimestamp', azione.daTimestamp);
+      if (azione.aTimestamp !== undefined) f.a = parseTimestampIt('aTimestamp', azione.aTimestamp);
+      if (azione.lookbackGiorni !== undefined) f.lookbackGiorni = azione.lookbackGiorni;
+      if (azione.pattern !== undefined) {
+        f.patterns = Array.isArray(azione.pattern) ? azione.pattern : [azione.pattern];
+      }
+      return bounces.riconcilia(f).riconciliati;
     }
   };
 }

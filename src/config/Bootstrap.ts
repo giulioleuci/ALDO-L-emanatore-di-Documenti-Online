@@ -42,6 +42,7 @@ import { ClasseRepository } from '../infrastructure/repositories/ClasseRepositor
 import { AlunnoRepository } from '../infrastructure/repositories/AlunnoRepository';
 import { LogCartellaRepository } from '../infrastructure/repositories/LogCartellaRepository';
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
+import { BounceReconciliationService } from '../application/email/BounceReconciliationService';
 import { LogEmailRepository } from '../infrastructure/repositories/LogEmailRepository';
 import { LogJobRepository } from '../infrastructure/repositories/LogJobRepository';
 import { SupplenzaRepository } from '../infrastructure/repositories/SupplenzaRepository';
@@ -348,6 +349,18 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         { logger, logJob: container.get<LogJobRepository>('logJob'), activeUser }
       )
   );
+  c.register(
+    'bounceReconciliationService',
+    () =>
+      new BounceReconciliationService({
+        gmail: deps.gmail,
+        logMail: new LogEmailRepository(deps.db),
+        master: deps.master,
+        activeUser,
+        logger,
+        now: () => deps.now
+      })
+  );
   if (deps.importEngine !== undefined) {
     const engine = deps.importEngine;
     c.register(
@@ -397,6 +410,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         teachingAssignments: container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
         now: deps.now,
         storico: container.get<StoricoDocumentiService>('storicoDocumenti'),
+        bounces: container.get<BounceReconciliationService>('bounceReconciliationService'),
         // VALIDA_DB is unavailable off-GAS for the same reason as the menu
         // validation launcher: no SpreadsheetService, no report sheet.
         ...(c.has('databaseValidationService')

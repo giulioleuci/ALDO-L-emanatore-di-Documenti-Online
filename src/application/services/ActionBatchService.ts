@@ -1,6 +1,7 @@
 import type { IDatabase } from '../../infrastructure/db/Database';
 import type { PostProcessDb } from '../pipelines/standaloneActions';
 import { eseguiAzioni } from '../pipelines/standaloneActions';
+import type { BounceFilters, BounceSummary } from '../email/BounceReconciliationService';
 import { creaHandlersInfra, type ValidatoreDb } from '../pipelines/azioniInfra';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
@@ -82,6 +83,7 @@ export interface ActionBatchDeps {
   now: Date;
   storico?: StoricoDocumentiService;
   validator?: ValidatoreDb;
+  bounces?: { riconcilia(f: BounceFilters): BounceSummary };
   logger?: LoggerService;
   logJob?: ILogJobRepository;
   activeUser?: IActiveUserFacade;
@@ -254,10 +256,11 @@ export class ActionBatchService {
               roles: this.deps.roles,
               cdu,
               logger: logger ?? new LoggerService(),
-              // exactOptionalPropertyTypes: AzioniInfraDeps.storico/validator are
+              // exactOptionalPropertyTypes: AzioniInfraDeps.storico/validator/bounces are
               // optional without `| undefined` — only include the key when set.
               ...(this.deps.storico !== undefined ? { storico: this.deps.storico } : {}),
-              ...(this.deps.validator !== undefined ? { validator: this.deps.validator } : {})
+              ...(this.deps.validator !== undefined ? { validator: this.deps.validator } : {}),
+              ...(this.deps.bounces !== undefined ? { bounces: this.deps.bounces } : {})
             })
           });
           // Actions write through the same IDatabase seam the pipelines use;

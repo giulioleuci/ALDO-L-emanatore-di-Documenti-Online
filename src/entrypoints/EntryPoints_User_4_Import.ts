@@ -19,8 +19,14 @@ function importaFslFineAnnoChunked(): void {
   menu_avvioImportazioneChunked('IMPORT_FSL_FINEANNO');
 }
 
+/** Example: start resumable CONF_IMP recipe "DATI_FSL_ANNO_PRECEDENTE". */
+function importaDatiFslAnnoPrecedenteChunked(): void {
+  menu_avvioImportazioneChunked('DATI_FSL_ANNO_PRECEDENTE');
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).importaCarenzeFebbraioChunked = importaCarenzeFebbraioChunked;
 (globalThis as any).importaCarenzeMarzoChunked = importaCarenzeMarzoChunked;
 (globalThis as any).importaFslFineAnnoChunked = importaFslFineAnnoChunked;
+(globalThis as any).importaDatiFslAnnoPrecedenteChunked = importaDatiFslAnnoPrecedenteChunked;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

@@ -19,6 +19,11 @@ function inviaCdcFebbraioCoordinatori(): void {
   menu_avvioComunicazioniChunked('CDC_FEBBRAIO_COORDINATORI');
 }
 
+/** Example: start resumable CONF_MAIL recipe "CDC_MARZO_COORDINATORI". */
+function inviaCdcMarzoCoordinatori(): void {
+  menu_avvioComunicazioniChunked('CDC_MARZO_COORDINATORI');
+}
+
 /** Example: start resumable CONF_MAIL recipe "CDC_APRILE_COORDINATORI". */
 function inviaCdcAprileCoordinatori(): void {
   menu_avvioComunicazioniChunked('CDC_APRILE_COORDINATORI');
@@ -54,6 +59,21 @@ function inviaCarenzeFebbraio(): void {
   menu_avvioComunicazioniChunked('INVIO_CARENZE_FEBBRAIO');
 }
 
+/** Example: start resumable CONF_MAIL recipe "INVIO_CARENZE_SEGNALATORE_NOVEMBRE". */
+function inviaCarenzeSegnalatoreNovembre(): void {
+  menu_avvioComunicazioniChunked('INVIO_CARENZE_SEGNALATORE_NOVEMBRE');
+}
+
+/** Example: start resumable CONF_MAIL recipe "INVIO_CARENZE_SEGNALATORE_FEBBRAIO". */
+function inviaCarenzeSegnalatoreFebbraio(): void {
+  menu_avvioComunicazioniChunked('INVIO_CARENZE_SEGNALATORE_FEBBRAIO');
+}
+
+/** Example: start resumable CONF_MAIL recipe "INVIO_CARENZE_SEGNALATORE_APRILE". */
+function inviaCarenzeSegnalatoreAprile(): void {
+  menu_avvioComunicazioniChunked('INVIO_CARENZE_SEGNALATORE_APRILE');
+}
+
 /** Example: start resumable CONF_MAIL recipe "NOTIFICA_CARENZE_FAMIGLIE_FEBBRAIO". */
 function notificaCarenzeFamiglieFebbraio(): void {
   menu_avvioComunicazioniChunked('NOTIFICA_CARENZE_FAMIGLIE_FEBBRAIO');
@@ -62,6 +82,11 @@ function notificaCarenzeFamiglieFebbraio(): void {
 /** Example: start resumable CONF_MAIL recipe "NOTIFICA_CARENZE_FAMIGLIE_MARZO". */
 function notificaCarenzeFamiglieMarzo(): void {
   menu_avvioComunicazioniChunked('NOTIFICA_CARENZE_FAMIGLIE_MARZO');
+}
+
+/** Example: start resumable CONF_MAIL recipe "NOTIFICA_CARENZE_FAMIGLIE_APRILE". */
+function notificaCarenzeFamiglieAprile(): void {
+  menu_avvioComunicazioniChunked('NOTIFICA_CARENZE_FAMIGLIE_APRILE');
 }
 
 /** Example: start resumable CONF_MAIL recipe "INVIO_CARTELLE_15_MAG". */
@@ -79,10 +104,16 @@ function inviaComposizioneCattedreDocenti(): void {
   menu_avvioComunicazioniChunked('COMPOSIZIONE_CATTEDRE_DOCENTI');
 }
 
+/** Example: start resumable CONF_MAIL recipe "DATI_INIZIO_ANNO". */
+function inviaDatiInizioAnno(): void {
+  menu_avvioComunicazioniChunked('DATI_INIZIO_ANNO');
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 (globalThis as any).inviaCdcOttobreCoordinatori = inviaCdcOttobreCoordinatori;
 (globalThis as any).inviaCdcNovembreCoordinatori = inviaCdcNovembreCoordinatori;
 (globalThis as any).inviaCdcFebbraioCoordinatori = inviaCdcFebbraioCoordinatori;
+(globalThis as any).inviaCdcMarzoCoordinatori = inviaCdcMarzoCoordinatori;
 (globalThis as any).inviaCdcAprileCoordinatori = inviaCdcAprileCoordinatori;
 (globalThis as any).inviaCdcMaggioCoordinatori = inviaCdcMaggioCoordinatori;
 (globalThis as any).inviaDocPersonalizzatiCoordinatori = inviaDocPersonalizzatiCoordinatori;
@@ -90,9 +121,14 @@ function inviaComposizioneCattedreDocenti(): void {
 (globalThis as any).inviaRiepilogoFslAlunno = inviaRiepilogoFslAlunno;
 (globalThis as any).inviaCarenzeNovembre = inviaCarenzeNovembre;
 (globalThis as any).inviaCarenzeFebbraio = inviaCarenzeFebbraio;
+(globalThis as any).inviaCarenzeSegnalatoreNovembre = inviaCarenzeSegnalatoreNovembre;
+(globalThis as any).inviaCarenzeSegnalatoreFebbraio = inviaCarenzeSegnalatoreFebbraio;
+(globalThis as any).inviaCarenzeSegnalatoreAprile = inviaCarenzeSegnalatoreAprile;
 (globalThis as any).notificaCarenzeFamiglieFebbraio = notificaCarenzeFamiglieFebbraio;
 (globalThis as any).notificaCarenzeFamiglieMarzo = notificaCarenzeFamiglieMarzo;
+(globalThis as any).notificaCarenzeFamiglieAprile = notificaCarenzeFamiglieAprile;
 (globalThis as any).inviaCartelle15Mag = inviaCartelle15Mag;
 (globalThis as any).inviaDocsFineAnno = inviaDocsFineAnno;
 (globalThis as any).inviaComposizioneCattedreDocenti = inviaComposizioneCattedreDocenti;
+(globalThis as any).inviaDatiInizioAnno = inviaDatiInizioAnno;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

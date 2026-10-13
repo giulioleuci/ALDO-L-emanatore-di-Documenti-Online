@@ -21037,6 +21037,7 @@ class MyMustache {
 
 
 
+const ROW_LOOP_MARKER = /^{{#(tablerow_loop):([^}]+)}}/;
 class DocumentProcessorTagScanner {
   constructor(facade) {
     this.facade = facade;
@@ -21104,9 +21105,9 @@ class DocumentProcessorTagScanner {
       if (row.cells.length === 0) {
         continue;
       }
-      const firstCell = row.cells[0];
-      const cellText = firstCell.text;
-      const match = cellText.match(/^{{#(tablerow_loop):([^}]+)}}/);
+
+      const markerCell = row.cells.findIndex(c => ROW_LOOP_MARKER.test(c.text || ''));
+      const match = markerCell >= 0 ? row.cells[markerCell].text.match(ROW_LOOP_MARKER) : null;
       if (match) {
         const fullExpression = match[2].trim();
         const {
@@ -21136,6 +21137,7 @@ class DocumentProcessorTagScanner {
           rowIndex: rowIndex,
           dataArray: dataArray,
           controlText: match[0],
+          markerCell: markerCell,
           sourceRuns: row.cells.map(c => c.runs || [])
         });
       }
@@ -21343,7 +21345,12 @@ class DocumentProcessorTagScanner {
       }
       seenIndices.add(textMatch.elementIndex);
       const originalText = textMatch.text;
-      if (!originalText.includes('{{#tablerow_loop:') && !originalText.includes('{{#tablecol_loop:') && !originalText.includes('{{#bullet_list:') && !originalText.includes('{{#number_list:') && !originalText.includes('{{table[')) {
+      const directive = ['{{#tablerow_loop:', '{{#tablecol_loop:', '{{#bullet_list:', '{{#number_list:', '{{table['].find(d => originalText.includes(d));
+      if (directive) {
+
+        const escaped = originalText.replace(/[^\x20-\x7e]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+        this.facade.logger.warn(`Unexpanded '${directive}' directive left verbatim (${textMatch.type} @${textMatch.elementIndex}, tableIndex=${textMatch.tableIndex}): "${escaped}"`);
+      } else {
         if (originalText.includes('{{')) {
           const newText = this.facade.mustache.render(originalText, context);
           if (originalText !== newText) {
@@ -21521,6 +21528,7 @@ class DocumentProcessorTagScanner {
 
 
 
+
 class DocumentProcessorValueResolver {
   constructor(facade) {
     this.facade = facade;
@@ -21575,6 +21583,12 @@ class DocumentProcessorValueResolver {
               }
               this.facade.logger.warn(`Filter 'filter' requires two arguments, filter ignored.`);
             }
+            break;
+          case 'exclude':
+            if (filter.args.length < 2) {
+              throw new Error("Filter 'exclude' requires two arguments (property and value)");
+            }
+            result = new ExcludeFilter().execute(result, ...filter.args);
             break;
           default:
             if (this.facade.strictFilters) {
@@ -21709,12 +21723,13 @@ class DocumentProcessorInjector {
         this.facade.logger.warn(`Could not get template row data for table ${op.tableIndex}, row ${op.rowIndex}`);
         return;
       }
-      let firstCellMarkerLength = 0;
+      const markerCell = op.markerCell || 0;
+      let markerLength = 0;
       const cellTemplates = templateRow.cells.map((cellText, index) => {
-        if (index === 0) {
+        if (index === markerCell) {
           const markerMatch = cellText.match(/^{{#tablerow_loop:[^}]+}}/);
           if (markerMatch) {
-            firstCellMarkerLength = markerMatch[0].length;
+            markerLength = markerMatch[0].length;
             return cellText.substring(markerMatch[0].length);
           }
           return cellText;
@@ -21725,7 +21740,7 @@ class DocumentProcessorInjector {
 
 
 
-      const sourceRuns = (op.sourceRuns || []).map((runs, index) => index === 0 ? this._rebaseSourceRuns(runs, firstCellMarkerLength) : runs);
+      const sourceRuns = (op.sourceRuns || []).map((runs, index) => index === markerCell ? this._rebaseSourceRuns(runs, markerLength) : runs);
       for (let i = op.dataArray.length - 1; i >= 0; i--) {
         const dataItem = op.dataArray[i];
         const targetRowIndex = op.rowIndex + 1;
@@ -43308,6 +43323,15 @@ class TableService {
 
 
 
+  getKeyField() {
+    return this._keyField;
+  }
+
+
+
+
+
+
 
   getRowById(id) {
     this._ensureDataLoaded();
@@ -45496,7 +45520,7 @@ class QueuePersistenceHandler {
   loadType() {
     return this._propertiesService.getProperty(this._key('type'));
   }
-  reset() {
+  clearResumeState() {
     try {
       const stateFileId = this._propertiesService.getProperty(this._key('state_file_id'));
       const driveApp = stateFileId ? this._driveApp() : null;
@@ -45511,7 +45535,12 @@ class QueuePersistenceHandler {
     } catch (_e) {
 
     }
-    const keys = ['state', 'type', 'parameters', 'config', 'trigger', 'state_size', 'state_file_id'];
+    const keys = ['state', 'state_size', 'state_file_id'];
+    keys.forEach(suffix => this._propertiesService.deleteProperty(this._key(suffix)));
+  }
+  reset() {
+    this.clearResumeState();
+    const keys = ['type', 'parameters', 'config', 'trigger'];
     keys.forEach(suffix => this._propertiesService.deleteProperty(this._key(suffix)));
   }
 }
@@ -45666,7 +45695,7 @@ class JobStateManager {
     stateMethods.forEach(m => {
       this[m] = this.stateManager[m].bind(this.stateManager);
     });
-    const persistenceMethods = ['batchSave', 'saveResumeState', 'loadResumeState', '_saveLargeStateToDrive', '_loadLargeStateFromDrive', '_getOrCreateJobStateFolder', 'saveConfiguration', 'loadConfiguration', 'saveType', 'loadType'];
+    const persistenceMethods = ['batchSave', 'saveResumeState', 'loadResumeState', 'clearResumeState', '_saveLargeStateToDrive', '_loadLargeStateFromDrive', '_getOrCreateJobStateFolder', 'saveConfiguration', 'loadConfiguration', 'saveType', 'loadType'];
     persistenceMethods.forEach(m => {
       this[m] = this.persistenceHandler[m].bind(this.persistenceHandler);
     });
@@ -45861,6 +45890,8 @@ class JobExecutor {
 
 
       result = next.value !== undefined ? next.value : progress;
+      this._triggerManager.deleteExistingTriggers();
+      this._stateManager.clearResumeState();
 
       this._stateManager.releaseLock(); 
       this._stateManager.batchSave({
@@ -46119,7 +46150,7 @@ class JobQueue {
         stateManager.saveType(jobType);
         stateManager.saveConfiguration(this._config);
       }
-      const savedState = stateManager.loadResumeState();
+      const savedState = jobState === JobStateManager.STATE_COMPLETED ? null : stateManager.loadResumeState();
       if (savedState && !forceRestart) {
         parameters.resumeState = savedState;
       }
@@ -54938,6 +54969,25 @@ class Repository {
 
 
 
+
+  _withKey(rows) {
+    var _this$_table$getKeyFi, _this$_table;
+    const key = (_this$_table$getKeyFi = (_this$_table = this._table).getKeyField) === null || _this$_table$getKeyFi === void 0 ? void 0 : _this$_table$getKeyFi.call(_this$_table);
+    if (!key) {
+      return rows;
+    }
+    return rows.filter(row => {
+      const value = row[key];
+      return value !== null && value !== undefined && String(value).trim() !== '';
+    });
+  }
+
+
+
+
+
+
+
   find(specification) {
     return this._executeWithRetry(() => {
       if (!specification) {
@@ -54951,10 +55001,10 @@ class Repository {
 
         const query = this.database.select(['*']).from(this.tableName);
         this.queryTranslator.translate(specification, query, validation);
-        rows = query.execute();
+        rows = this._withKey(query.execute());
       } else {
 
-        rows = this._table.getAllRows();
+        rows = this._withKey(this._table.getAllRows());
         const entities = this.hydrationService.hydrateMany(rows, this.EntityClass);
         return entities.filter(entity => specification.isSatisfiedBy(entity));
       }
@@ -55026,7 +55076,7 @@ class Repository {
 
   findAll() {
     return this._executeWithRetry(() => {
-      const rows = this._table.getAllRows();
+      const rows = this._withKey(this._table.getAllRows());
       return this.hydrationService.hydrateMany(rows, this.EntityClass);
     });
   }

@@ -81,10 +81,10 @@ interface EmailBatchResult {
  * `batchSendHandler` instead `yield`s a final checkpoint and then `return`s —
  * and a generator `return` makes JobRunnerLib write `STATE_COMPLETED` and
  * **discard** `resumeState` (confirmed against `vendor/gaslibs.Code.js`:
- * `JobExecutor.execute`'s success path calls
- * `batchSave({ state: STATE_COMPLETED, progress: {...} })` with no
- * `resumeState` key, so the next `run()` call's `loadResumeState()` finds
- * nothing). A naive restart would therefore re-enter at `nextIndex = 0` and
+ * `JobExecutor.execute`'s success path clears the persisted resume state
+ * before saving `STATE_COMPLETED`, so the next `run()` call's
+ * `loadResumeState()` finds nothing). A naive restart would therefore
+ * re-enter at `nextIndex = 0` and
  * re-send to every already-processed recipient. To make "restart after a
  * quota suspend" actually safe, `suspendForQuota` persists
  * `{ nextIndex, processed, sent, errors }` to a pattern-scoped

@@ -89,6 +89,7 @@ export class PianiPersClasseProvider implements ContextProvider {
     if (matches.length === 0) return [this.placeholder(piano, studente, classe)];
     return matches.map((l) => ({
       ...buildDocumentoLogVm(l),
+      sottotipoLabel: tipoPianoLabel(piano.tipo),
       isVerbalizzato: l.getStato() === StatoDocumento.VERBALIZZATO,
       studente,
       hasStudente: true,

@@ -259,6 +259,24 @@ test('setPermissions never lets a file-only grantee leak onto the folder (or vic
   ]);
 });
 
+test('setPermissions reports a Drive rejection (e.g. on a folder) after still attempting every other target', () => {
+  const { drive, perms } = fakeDrive();
+  perms.shareWithUsers.mockImplementation((fileIds: string | string[]) => {
+    const id = Array.isArray(fileIds) ? fileIds[0] : fileIds;
+    return id === 'folder_1'
+      ? { successful: [], failed: [{ fileId: id, error: new Error('ruolo non valido'), statusCode: 400 }] }
+      : { successful: [{ fileId: id, permission: {}, statusCode: 200 }], failed: [] };
+  });
+  const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
+  expect(() =>
+    facade.setPermissions([
+      { targetId: 'folder_1', email: 'a@school.it', permesso: 'COMMENTO' },
+      { targetId: 'file_1', email: 'a@school.it', permesso: 'LETTURA' }
+    ])
+  ).toThrow(/folder_1 \(commenter\): ruolo non valido/);
+  expect(perms.shareWithUsers).toHaveBeenCalledTimes(2);
+});
+
 test('setPermissions is a no-op when there is nothing to grant', () => {
   const { drive, perms } = fakeDrive();
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);

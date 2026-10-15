@@ -150,13 +150,23 @@ export class DriveServiceFacade implements IDriveFacade {
       group.emails.add(email);
       byTargetAndPermesso.set(key, group);
     }
+    // shareWithUsers never throws on a Drive rejection: it returns it in `failed`.
+    // Surface every rejection (after all groups ran, so one bad target never
+    // blocks the others) instead of reporting a silent success.
+    const failures: string[] = [];
     for (const { targetId, permesso, emails } of byTargetAndPermesso.values()) {
       const role = DRIVE_ROLE_BY_PERMESSO[permesso] ?? 'reader';
-      this.permissions.shareWithUsers(
+      const result = this.permissions.shareWithUsers(
         [targetId],
         [...emails].map((email) => ({ type: 'user', role, email })),
         { sendNotificationEmail: this.notifyOnShare }
       );
+      for (const { fileId, error } of result.failed) {
+        failures.push(`${fileId} (${role}): ${error.message}`);
+      }
+    }
+    if (failures.length > 0) {
+      throw new Error(`Assegnazione permessi Drive fallita — ${failures.join('; ')}`);
     }
   }
 

@@ -36,6 +36,8 @@ export interface Azione {
   emails?: string[];
   /** TRASFORMA_CAMPO: TRIM | UPPER | LOWER | CAPITALIZE | UNCAPITALIZE. */
   operazione?: string;
+  /** RIALLINEA_PERMESSI_DA_CONF: also remove non-owner ACLs outside the CONF_DOC.PERMESSI set (default false). */
+  revoca?: boolean;
   /** RIDUCI_PERMESSI: maximum permission left in place (default LETTURA). */
   soglia?: string;
   /** VALIDA_DB: subset of tables to validate (default: all). */

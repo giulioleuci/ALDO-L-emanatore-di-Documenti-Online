@@ -213,9 +213,10 @@ export class ActionBatchService {
       // above: parse AZIONI once, before any target is touched, so a malformed
       // JSON cell fails fast with a single FALLITO row instead of throwing once
       // per target inside eseguiAzioni (which parses it again, per target, when
-      // actually run — this call's result is discarded on purpose).
+      // actually run). Keep the action names for the per-target log summary.
+      let actions: Array<{ tipo?: unknown }>;
       try {
-        JSON.parse(azioniRaw);
+        actions = JSON.parse(azioniRaw) as Array<{ tipo?: unknown }>;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         throw new ConfigurationError(`CONF_AZIONI ${azioneId}: AZIONI non è JSON valido: ${reason}`);
@@ -232,6 +233,7 @@ export class ActionBatchService {
       for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
         const target = targets[i]!;
         logger?.logItemStart(i + 1, targets.length, 'Target', target.id, 'DOCUMENT');
+        const itemStartedAt = Date.now();
         try {
           const cdu = this.deps.contextBuilder.build(
             {
@@ -243,7 +245,7 @@ export class ActionBatchService {
             },
             recipe(target.recipe)
           );
-          eseguiAzioni({
+          const updated = eseguiAzioni({
             azioni: azioniRaw,
             cdu: cdu as unknown as Record<string, unknown>,
             db: this.deps.db,
@@ -267,10 +269,24 @@ export class ActionBatchService {
           // Actions write through the same IDatabase seam the pipelines use;
           // outside a pipeline transaction nothing commits them, so persist per target.
           this.deps.db.save();
+          logger?.logSummary(
+            '✅ Actions completed',
+            Math.max(0, Date.now() - itemStartedAt),
+            {
+              Actions: actions.flatMap((action) => (typeof action.tipo === 'string' ? [action.tipo] : [])),
+              Updated: updated
+            },
+            { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+          );
         } catch (e) {
           const reason = e instanceof Error ? e.message : String(e);
           errori.push(`${target.id}: ${reason}`);
-          logger?.warn(`Azione ${azioneId} — target ${target.id} fallito: ${reason}`);
+          logger?.logSummary(
+            '❌ Actions failed',
+            Math.max(0, Date.now() - itemStartedAt),
+            `Azione ${azioneId} — target ${target.id} fallito: ${reason}`,
+            { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
+          );
         }
         processed.push(target.id);
         yield {

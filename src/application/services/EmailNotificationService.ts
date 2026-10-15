@@ -160,7 +160,7 @@ export class EmailNotificationService {
     }
 
     const result: SendPatternResult = { targets: targets.length, sent: 0, skipped: 0, errors: [] };
-    const successfulLogicalTargetIds = this.loadSuccessfulLogicalTargetIds(patternId, row);
+    const successfulLogicalTargetIds = this.readSuccessfulLogicalTargetIds(patternId, row);
     for (const target of targets) {
       const ctx = this.getPipeline().execute({
         config: row,
@@ -197,12 +197,12 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     conf.getAllegati();
-    const successfulLogicalTargetIds = this.getSuccessfulLogicalTargetIdsForJob(
-      patternId,
-      row,
-      jobId
-    );
     const activeTestRecipient = testRecipient ?? this.testEmail;
+    const successfulLogicalTargetIds = this.loadSuccessfulLogicalTargetIds(
+      patternId,
+      jobId,
+      activeTestRecipient
+    );
     const ctx = this.getPipeline(jobId).execute({
       config: row,
       confMail: conf,
@@ -240,7 +240,7 @@ export class EmailNotificationService {
   }
 
   /** Materializes the durable SUCCESS identities once, before any delivery can start. */
-  private loadSuccessfulLogicalTargetIds(patternId: string, row: Row): Set<string> {
+  private readSuccessfulLogicalTargetIds(patternId: string, row: Row): Set<string> {
     if (String(row[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA) === 'PERMESSA') {
       return new Set<string>();
     }
@@ -264,19 +264,23 @@ export class EmailNotificationService {
   }
 
   /** A batch job reuses one history snapshot; calls without a job id get a fresh preflight. */
-  private getSuccessfulLogicalTargetIdsForJob(
+  loadSuccessfulLogicalTargetIds(
     patternId: string,
-    row: Row,
-    jobId?: string
+    jobId?: string,
+    testRecipient: string | null = this.testEmail
   ): Set<string> {
-    if (jobId === undefined) return this.loadSuccessfulLogicalTargetIds(patternId, row);
+    if (testRecipient !== null) return new Set<string>();
     const cached = this.cachedSuccessfulLogicalTargetIds;
-    if (cached === undefined || cached.patternId !== patternId || cached.jobId !== jobId) {
-      const ids = this.loadSuccessfulLogicalTargetIds(patternId, row);
-      this.cachedSuccessfulLogicalTargetIds = { patternId, jobId, ids };
-      return ids;
+    if (jobId !== undefined && cached?.patternId === patternId && cached.jobId === jobId) {
+      return cached.ids;
     }
-    return cached.ids;
+    const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);
+    if (row === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
+    const ids = this.readSuccessfulLogicalTargetIds(patternId, row);
+    if (jobId !== undefined && String(row[COL_CONF_MAIL.DUPLICAZIONE]) !== 'PERMESSA') {
+      this.cachedSuccessfulLogicalTargetIds = { patternId, jobId, ids };
+    }
+    return ids;
   }
 
   /** Keeps same-job duplicate targets blocked only after a real, durably SUCCESS-logged send. */

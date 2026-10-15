@@ -775,10 +775,12 @@ test('sendToTarget reuses one history snapshot within a job and remembers its re
     classiCompetenza: ['5A']
   };
 
+  const successfulIds = service.loadSuccessfulLogicalTargetIds('GUARD_JOB_REUSE', 'job-reuse');
   const first = service.sendToTarget('GUARD_JOB_REUSE', target, 'job-reuse');
   const second = service.sendToTarget('GUARD_JOB_REUSE', target, 'job-reuse');
 
   expect(first.sent).toBe(1);
+  expect(successfulIds.has('cdc:5A')).toBe(true);
   expect(second.skipped).toBe(true);
   expect(gmail.sent).toHaveLength(1);
   expect(findByPattern).toHaveBeenCalledTimes(1);

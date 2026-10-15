@@ -316,8 +316,16 @@ export class EmailBatchService {
       const config = this.email.getConfigurazione(patternId);
       this.nomeConfig = config.oggetto;
       const doneIds = new Set(resume?.processedIds ?? []);
+      const successfulIds = this.email.loadSuccessfulLogicalTargetIds(
+        patternId,
+        jobId,
+        testRecipient
+      );
       const enumerati = this.email.enumerateTargets(config);
-      const targets = enumerati.filter((target) => !doneIds.has(emailTargetId(target)));
+      const targets = enumerati.filter((target) => {
+        const id = emailTargetId(target);
+        return !doneIds.has(id) && !successfulIds.has(id);
+      });
       const totale = doneIds.size + targets.length;
 
       const processed = resume === null ? [] : resume.processed.slice();

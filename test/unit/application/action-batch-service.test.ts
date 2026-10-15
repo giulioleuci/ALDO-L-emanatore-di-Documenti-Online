@@ -48,7 +48,7 @@ const noopTeachingAssignments = {
   resolveMateria: () => null
 } as unknown as ITeachingAssignmentResolver;
 
-function wire(azioni: Array<Record<string, unknown>>, options: { condizione?: boolean } = {}) {
+function wire(azioni: Array<Record<string, unknown>>, options: { condizione?: boolean; logger?: LoggerService } = {}) {
   const tables = fixtureTables();
   tables['CONF_AZIONI'] = azioni;
   // Deviation from the brief: patch the fixture's own rossi@school.it row in
@@ -87,6 +87,7 @@ function wire(azioni: Array<Record<string, unknown>>, options: { condizione?: bo
     dipartimenti: new DipartimentoRepository(db),
     teachingAssignments: noopTeachingAssignments,
     now: NOW,
+    ...(options.logger !== undefined ? { logger: options.logger } : {}),
     logJob,
     activeUser: { getEmail: () => 'admin@school.it' }
   });
@@ -112,6 +113,50 @@ const SANIFICA = {
   AZIONI: JSON.stringify([{ tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione: 'TRIM' }]),
   PERIODICITA: ''
 };
+
+test.each([
+  ['rossi@school.it', 1],
+  ['assente@school.it', 0]
+])('logs action names, affected count and duration for target %s', (email, updated) => {
+  const logger = new LoggerService();
+  const summary = jest.spyOn(logger, 'logSummary').mockReturnThis();
+  const { service } = wire([
+    {
+      ...SANIFICA,
+      AZIONI: JSON.stringify([
+        { tipo: 'AGGIORNA_CAMPO', tab: 'DOCENTI', col: 'NOME', valore: 'MARIO', criteri: { EMAIL: email } }
+      ])
+    }
+  ], { logger });
+
+  drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }));
+
+  expect(summary).toHaveBeenCalledTimes(1);
+  expect(summary).toHaveBeenCalledWith(
+    '✅ Actions completed',
+    expect.any(Number),
+    { Actions: ['AGGIORNA_CAMPO'], Updated: updated },
+    { depth: 1, isLast: true, ancestorHasNext: [false] }
+  );
+});
+
+test('logs a failed target with its reason and keeps the failure in LOG_JOB', () => {
+  const logger = new LoggerService();
+  const summary = jest.spyOn(logger, 'logSummary').mockReturnThis();
+  const { service, db, entries } = wire([SANIFICA], { logger });
+  jest.spyOn(db, 'save').mockImplementation(() => { throw new Error('Salvataggio fallito'); });
+
+  drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }));
+
+  expect(summary).toHaveBeenCalledTimes(1);
+  expect(summary).toHaveBeenCalledWith(
+    '❌ Actions failed',
+    expect.any(Number),
+    expect.stringContaining('Salvataggio fallito'),
+    { depth: 1, isLast: true, ancestorHasNext: [false] }
+  );
+  expect(entries[0]).toMatchObject({ stato: StatoJob.COMPLETATO_CON_ERRORI, falliti: 1 });
+});
 
 test('ASSE=SINGOLA runs the action exactly once and applies it', () => {
   const { service, db, entries } = wire([SANIFICA]);

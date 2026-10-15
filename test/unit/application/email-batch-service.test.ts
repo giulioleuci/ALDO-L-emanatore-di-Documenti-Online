@@ -84,6 +84,7 @@ test('emits a content-first timed summary using the per-target email result', ()
     classiCompetenza: []
   };
   const notification = {
+    loadSuccessfulLogicalTargetIds: () => new Set<string>(),
     enumerateTargets: () => [target],
     getConfigurazione: () => ({}),
     getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
@@ -121,6 +122,7 @@ test('prints an end-of-job summary with total/succeeded/failed counts and the fa
     classiCompetenza: []
   };
   const notification = {
+    loadSuccessfulLogicalTargetIds: () => new Set<string>(),
     enumerateTargets: () => [target],
     getConfigurazione: () => ({}),
     getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
@@ -194,7 +196,13 @@ test('resumed email batch logs persisted item index without resending earlier ta
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 1,
-      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
+      resumeState: {
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: []
+      }
     })
   );
 
@@ -243,6 +251,105 @@ function drain<T, R>(gen: Generator<T, R, void>): { checkpoints: T[]; result: R 
   return { checkpoints, result: step.value };
 }
 
+test.each([
+  ['SUCCESS', false, 'NEGATA', 1],
+  ['BOUNCED', false, 'NEGATA', 1],
+  ['ERROR', false, 'NEGATA', 2],
+  ['SUCCESS', true, 'NEGATA', 2],
+  ['SUCCESS', false, 'PERMESSA', 2]
+])(
+  'batch prefilters %s history (testMode=%s, DUPLICAZIONE=%s)',
+  (stato, testMode, duplicazione, expected) => {
+    const tables = fixtureTables();
+    tables['CONF_MAIL']![0]!['DUPLICAZIONE'] = duplicazione;
+    tables['LOG_MAIL']!.push({
+      PATTERN: 'CDC_OTTOBRE',
+      DESTINATARI: 'rossi@school.it',
+      DATA: NOW.toISOString(),
+      STATO: stato,
+      ALLEGATI: JSON.stringify({ logicalTargetId: 'cdc:5A', testMode }),
+      ERRORE: '',
+      TESTO: 'prior send'
+    });
+    const { service, notification, gmail } = wire(
+      undefined,
+      undefined,
+      undefined,
+      new FakeDatabase(tables)
+    );
+    const sendToTarget = jest.spyOn(notification, 'sendToTarget');
+
+    const { result } = drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE' }));
+
+    expect(result.totale).toBe(expected);
+    expect(result.processed).toEqual(expected === 1 ? ['1F'] : ['5A', '1F']);
+    expect(sendToTarget).toHaveBeenCalledTimes(expected);
+    expect(gmail.sent).toHaveLength(expected);
+  }
+);
+
+test.each(['service', 'checkpoint'])(
+  'test mode via %s bypasses successful production history',
+  (mode) => {
+    const first = wire();
+    drain(first.service.batchSendHandler({ patternId: 'CDC_OTTOBRE' }));
+    const { service, notification, gmail } = wire(undefined, undefined, undefined, first.db);
+    if (mode === 'service') notification.enableTestMode(ONLINE_TEST_SAFE_EMAIL);
+
+    const { result } = drain(
+      service.batchSendHandler({
+        patternId: 'CDC_OTTOBRE',
+        resumeState:
+          mode === 'checkpoint'
+            ? {
+                testRecipient: ONLINE_TEST_SAFE_EMAIL,
+                nextIndex: 0,
+                processed: [],
+                processedIds: [],
+                sent: 0,
+                errors: [],
+                failedTargets: []
+              }
+            : null
+      })
+    );
+
+    expect(result.totale).toBe(2);
+    expect(result.sent).toBe(2);
+    expect(gmail.sent.map((sent) => sent.to)).toEqual([
+      [ONLINE_TEST_SAFE_EMAIL],
+      [ONLINE_TEST_SAFE_EMAIL]
+    ]);
+  }
+);
+
+test('same-job duplicates still reach the pipeline guard and send only once', () => {
+  const { service, notification, gmail } = wire();
+  const targets = notification.enumerateTargets(notification.getConfigurazione('CDC_OTTOBRE'));
+  jest.spyOn(notification, 'enumerateTargets').mockReturnValue([targets[0]!, targets[0]!]);
+
+  const { result } = drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1 }));
+
+  expect(result.processed).toEqual(['5A', '5A']);
+  expect(result.sent).toBe(1);
+  expect(gmail.sent).toHaveLength(1);
+});
+
+test('PERMESSA keeps all targets eligible when reusing the same job cache', () => {
+  const tables = fixtureTables();
+  tables['CONF_MAIL']![0]!['DUPLICAZIONE'] = 'PERMESSA';
+  const { service, gmail } = wire(undefined, undefined, undefined, new FakeDatabase(tables));
+
+  drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', jobId: 'same-job' }));
+  const { result } = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', jobId: 'same-job' })
+  );
+
+  expect(result.totale).toBe(2);
+  expect(result.sent).toBe(2);
+  expect(gmail.sent).toHaveLength(4);
+});
+
 test('yields one checkpoint per chunk with progress percentage (11 §14)', () => {
   const { gmail, service } = wire();
   // CDC_OTTOBRE enumerates 2 targets (5A + 1F); chunkSize 1 → 2 chunks.
@@ -262,7 +369,13 @@ test('resume restarts from the processed logical ids without resending (JobRunne
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
       chunkSize: 1,
-      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
+      resumeState: {
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: []
+      }
     })
   );
   expect(gmail.sent).toHaveLength(1); // only the second target
@@ -414,12 +527,17 @@ test('a completed non-test batch is rerunnable without resending durable SUCCESS
     first.service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
   );
   const fresh = wire(undefined, undefined, undefined, first.db);
+  fresh.gmail.remainingQuota = 0;
+  const sendToTarget = jest.spyOn(fresh.notification, 'sendToTarget');
   const secondRun = drain(
     fresh.service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
   );
 
   expect(firstRun.result.sent).toBe(2);
   expect(secondRun.result.sent).toBe(0);
+  expect(secondRun.result.totale).toBe(0);
+  expect(secondRun.result.success).toBe(true);
+  expect(sendToTarget).not.toHaveBeenCalled();
   expect(first.gmail.sent).toHaveLength(2);
   expect(fresh.gmail.sent).toHaveLength(0);
 });
@@ -636,7 +754,13 @@ test('Finding 1: a run that reaches the end of the target list clears the persis
       patternId: 'CDC_OTTOBRE',
       chunkSize: 2,
       jobId: 'mail_CDC_OTTOBRE',
-      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
+      resumeState: {
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: []
+      }
     })
   );
 
@@ -681,7 +805,13 @@ test('resume does not re-register/re-start the job', () => {
       patternId: 'CDC_OTTOBRE',
       chunkSize: 1,
       jobId: 'job_mail_1',
-      resumeState: { nextIndex: 1, processedIds: ['cdc:5A'], processed: ['5A'], sent: 1, errors: [] }
+      resumeState: {
+        nextIndex: 1,
+        processedIds: ['cdc:5A'],
+        processed: ['5A'],
+        sent: 1,
+        errors: []
+      }
     })
   );
   expect(monitor.registered).toEqual([]);

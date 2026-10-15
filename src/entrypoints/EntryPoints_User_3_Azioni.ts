@@ -63,6 +63,10 @@ function azioneAggiornaPermessiVerbali(): void {
   avviaAzione('ALLINEA_PERMESSI_VERBALI');
 }
 
+function RIALLINEA_PERMESSI_VERBALI(): void {
+  avviaAzione('RIALLINEA_PERMESSI_VERBALI');
+}
+
 /** Example: caps every document ACL at LETTURA, across the whole archive — CONF_AZIONI "RIDUCI_LETTURA_TUTTI_DOCUMENTI". */
 function azioneRiduciASolaLetturaTuttiDocumenti(): void {
   avviaAzione('RIDUCI_LETTURA_TUTTI_DOCUMENTI');
@@ -75,5 +79,6 @@ function azioneRiduciASolaLetturaTuttiDocumenti(): void {
 (globalThis as any).azioneAggiornaPermessiDocPers = azioneAggiornaPermessiDocPers;
 (globalThis as any).azioneAggiornaPermessiPianoLavoro = azioneAggiornaPermessiPianoLavoro;
 (globalThis as any).azioneAggiornaPermessiVerbali = azioneAggiornaPermessiVerbali;
+(globalThis as any).RIALLINEA_PERMESSI_VERBALI = RIALLINEA_PERMESSI_VERBALI;
 (globalThis as any).azioneRiduciASolaLetturaTuttiDocumenti = azioneRiduciASolaLetturaTuttiDocumenti;
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */

@@ -65,41 +65,61 @@ function parseTimestampIt(campo: string, raw: string): Date {
 export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneHandler> {
   const { db, drive, roles, cdu, storico, validator, bounces, logger } = deps;
 
-  /** Rows of LOG_DOCS/LOG_FOLD matching `criteri`: CSV columns by containment, PATH by prefix, everything else by equality. */
+  /** Rows of `tab` matching `criteri`: CSV columns by containment, PATH by prefix, everything else by equality. */
+  function righeCorrispondenti(tab: string, criteri: Record<string, string>): Array<Record<string, unknown>> {
+    const table = db.tables[tab];
+    if (table === undefined) return [];
+    const entries = Object.entries(criteri);
+    return table.getAllRows().filter((row) =>
+      entries.every(([col, value]) => {
+        if (col === 'PATH') return cellString(row[col]).startsWith(value);
+        if (CSV_COLUMNS.has(col)) {
+          const attesi = csvValues(value);
+          return attesi.length === 0
+            ? cellString(row[col]) === value
+            : csvValues(row[col]).some((v) => attesi.includes(v));
+        }
+        return cellString(row[col]) === value;
+      })
+    );
+  }
+
+  const idsDi = (rows: Array<Record<string, unknown>>): string[] =>
+    [...new Set(rows.map((row) => cellString(row['ID'])).filter((id) => id !== ''))];
+
+  /**
+   * Targets of an infra action. Without `target`, `criteri` filter the chosen log
+   * table directly. With `target` (a CONF_DOC.ID) only what that CONF_DOC generated
+   * is selected: on LOG_DOCS the rows with `ID_GEN=target`; on LOG_FOLD the folders
+   * whose PATH is the folder of a `target` document (`criteri` then narrow those
+   * documents, whose CLASSI/UTENTI/MATERIE are always filled by REGISTRA_DOC).
+   * LOG_FOLD.ID_GEN is not used: it keeps only the first CONF_DOC that created a
+   * folder, so it misses folders shared by several CONF_DOC.
+   */
   function selezionaId(azione: Azione, criteri: Record<string, string>): string[] {
     const tab = azione.su ?? TABLE.LOG_DOCS;
     if (tab !== TABLE.LOG_DOCS && tab !== TABLE.LOG_FOLD) {
       throw new ConfigurationError(`AZIONE ${azione.tipo}: "su" deve essere LOG_DOCS o LOG_FOLD, non ${tab}`);
     }
-    const table = db.tables[tab];
-    if (table === undefined) return [];
-    const entries = Object.entries(criteri);
-    return table
-      .getAllRows()
-      .filter((row) =>
-        entries.every(([col, value]) => {
-          if (col === 'PATH') return cellString(row[col]).startsWith(value);
-          if (CSV_COLUMNS.has(col)) {
-            const attesi = csvValues(value);
-            return attesi.length === 0
-              ? cellString(row[col]) === value
-              : csvValues(row[col]).some((v) => attesi.includes(v));
-          }
-          return cellString(row[col]) === value;
-        })
-      )
-      .map((row) => cellString(row['ID']))
-      .filter((id) => id !== '');
+    const target = azione.target?.trim() ?? '';
+    if (target === '') return idsDi(righeCorrispondenti(tab, criteri));
+    const documenti = righeCorrispondenti(TABLE.LOG_DOCS, { ...criteri, ID_GEN: target });
+    if (tab === TABLE.LOG_DOCS) return idsDi(documenti);
+    const percorsi = new Set(documenti.map((doc) => cellString(doc['PATH'])).filter((p) => p !== ''));
+    return idsDi((db.tables[TABLE.LOG_FOLD]?.getAllRows() ?? []).filter((row) => percorsi.has(cellString(row['PATH']))));
   }
 
-  /** Current-year targets plus, when `profondita` > 0, the matching historical LOG_DOCS ids. */
+  /** Current-year targets plus, when `profondita` > 0, the matching historical LOG_DOCS ids (documents only: a folder selection never gets document ids). */
   function targetIds(azione: Azione, criteri: Record<string, string>): string[] {
     const correnti = selezionaId(azione, criteri);
     const profondita = azione.profondita ?? 0;
-    if (profondita <= 0 || storico === undefined) return correnti;
+    if (profondita <= 0 || storico === undefined || (azione.su ?? TABLE.LOG_DOCS) !== TABLE.LOG_DOCS) {
+      return correnti;
+    }
     // StoricoDocumentiService only understands LOG_DOCS metadata criteria; PATH
     // is a current-year folder-tree concept and is dropped for the history scan.
     const storiciCriteri = Object.fromEntries(Object.entries(criteri).filter(([col]) => col !== 'PATH'));
+    if (azione.target !== undefined && azione.target.trim() !== '') storiciCriteri['ID_GEN'] = azione.target.trim();
     return [...new Set([...correnti, ...storico.idsMatching(storiciCriteri, profondita)])];
   }
 

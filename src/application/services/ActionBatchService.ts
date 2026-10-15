@@ -254,6 +254,7 @@ export class ActionBatchService {
               db: this.deps.db,
               drive: this.deps.drive,
               roles: this.deps.roles,
+              engine: this.deps.expressionEngine,
               cdu,
               logger: logger ?? new LoggerService(),
               // exactOptionalPropertyTypes: AzioniInfraDeps.storico/validator/bounces are

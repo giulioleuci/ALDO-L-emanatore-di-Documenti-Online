@@ -18,6 +18,7 @@ import {
 import { ConfigurationError, PipelineError } from '../../domain/errors/DomainError';
 import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
 import type { Azione } from './standaloneActions';
+import { parseRegola, risolviAcl, type AclEntry, type PermessiConfig } from './permessiAcl';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 import { resolveLogRegistration } from './logRegistration';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
@@ -29,35 +30,6 @@ import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService
  */
 export interface IRoleResolver {
   risolvi(ruolo: string, cdu: Cdu, options?: { regolaSupplente?: GestioneSupplenti }): Email[];
-}
-
-/** One CONF_DOC.PERMESSI ACL entry (10 §10). `condizione` (optional, evaluated
- * by GasExpressionEngineLib like CONDIZIONE/MODELLI) lets a single CONF_DOC
- * record grant a role only for some CDU states, e.g. excluding a role from a
- * PIANO_PERSONALIZZATO subtype without splitting the record. */
-interface AclEntry {
-  ruolo: string;
-  permesso: string;
-  condizione?: string;
-}
-interface PermessiConfig {
-  file?: AclEntry[];
-  folder?: AclEntry[];
-  regolaSupplente?: { file?: string; folder?: string };
-}
-
-function parseRegola(raw: string | undefined): GestioneSupplenti {
-  if (raw === undefined || raw === '') return GestioneSupplenti.SOLO_TITOLARI;
-  switch (raw) {
-    case 'SOLO_TITOLARI':
-      return GestioneSupplenti.SOLO_TITOLARI;
-    case 'SOLO_SUPPLENTI':
-      return GestioneSupplenti.SOLO_SUPPLENTI;
-    case 'ENTRAMBI':
-      return GestioneSupplenti.ENTRAMBI;
-    default:
-      throw new ConfigurationError(`CONF_DOC.PERMESSI.regolaSupplente non valida: ${raw}`);
-  }
 }
 
 /**
@@ -465,21 +437,12 @@ export class ApplyPermissionsStep extends Step {
     regola: GestioneSupplenti,
     grants: PermissionGrant[]
   ): void {
-    for (const { ruolo, permesso, condizione } of acl) {
-      if (
-        condizione !== undefined &&
-        condizione !== 'true' &&
-        !this.engine.evaluateBoolean(condizione, cduObj as unknown as Record<string, unknown>)
-      ) {
-        continue;
-      }
-      for (const email of this.roles.risolvi(ruolo, cduObj, { regolaSupplente: regola })) {
-        grants.push({ targetId, email: email.value, permesso });
-        const key = permesso === 'SCRITTURA' ? 'permissionEditors' : 'permissionViewers';
-        const collected = ctx.get<string[]>(key) ?? [];
-        if (!collected.includes(email.value)) {
-          this.setResult(ctx, key, [...collected, email.value]);
-        }
+    for (const { email, permesso } of risolviAcl(acl, cduObj, regola, this.roles, this.engine)) {
+      grants.push({ targetId, email, permesso });
+      const key = permesso === 'SCRITTURA' ? 'permissionEditors' : 'permissionViewers';
+      const collected = ctx.get<string[]>(key) ?? [];
+      if (!collected.includes(email)) {
+        this.setResult(ctx, key, [...collected, email]);
       }
     }
   }

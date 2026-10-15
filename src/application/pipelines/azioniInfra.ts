@@ -3,11 +3,14 @@ import { csvValues } from './standaloneActions';
 import type { IDriveFacade, PermissionGrant } from '../../infrastructure/facades/DriveServiceFacade';
 import { DRIVE_ROLE_BY_PERMESSO } from '../../infrastructure/facades/DriveServiceFacade';
 import type { IRoleResolver } from './documentSteps';
+import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
+import { parseRegola, risolviAcl, type PermessiConfig } from './permessiAcl';
 import type { Cdu } from '../context-engine/Cdu';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
-import { TABLE } from '../../config/schema';
+import { TABLE, COL_CONF_DOC, COL_LOG_DOCS, COL_LOG_FOLD } from '../../config/schema';
 import type { BounceFilters, BounceSummary } from '../email/BounceReconciliationService';
 import { ConfigurationError } from '../../domain/errors/DomainError';
+import { hasJsonValue } from './standaloneActions';
 
 /** Drive roles ordered by privilege; owner/organizer are absent on purpose —
  * Drive rejects downgrading them and they keep full access regardless
@@ -40,6 +43,8 @@ export interface AzioniInfraDeps {
   validator?: ValidatoreDb;
   /** Needed only by VERIFICA_EMAIL_INVIATE. */
   bounces?: { riconcilia(f: BounceFilters): BounceSummary };
+  /** Needed only by RIALLINEA_PERMESSI_DA_CONF (evaluates CONF_DOC.PERMESSI `condizione`). */
+  engine?: IExpressionEngine;
   logger: LoggerService;
 }
 
@@ -63,7 +68,7 @@ function parseTimestampIt(campo: string, raw: string): Date {
  * so a resumed or re-run job repeats no work.
  */
 export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneHandler> {
-  const { db, drive, roles, cdu, storico, validator, bounces, logger } = deps;
+  const { db, drive, roles, cdu, storico, validator, bounces, engine, logger } = deps;
 
   /** Rows of `tab` matching `criteri`: CSV columns by containment, PATH by prefix, everything else by equality. */
   function righeCorrispondenti(tab: string, criteri: Record<string, string>): Array<Record<string, unknown>> {
@@ -130,6 +135,65 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
     return (azione.emails ?? []).filter((email) => email.trim() !== '');
   }
 
+  /**
+   * Aligns one target's live ACL to `desiderati` (email -> permesso): a missing
+   * address becomes a batched grant (pushed on `grants`), an address holding a
+   * different role becomes a role change, and with `revoca` every non-owner
+   * address outside `desiderati` is removed (never when `desiderati` is empty).
+   * Per-target isolation: a Drive failure is warned and never aborts the others.
+   */
+  function allineaTarget(
+    tag: string,
+    targetId: string,
+    desiderati: Map<string, string>,
+    grants: PermissionGrant[],
+    revoca: boolean
+  ): number {
+    let applicati = 0;
+    try {
+      const attuali = new Map(
+        drive
+          .listPermissions(targetId)
+          .filter((p) => p.email !== null)
+          .map((p) => [p.email!, p])
+      );
+      const changes: Array<{ permissionId: string; role: string }> = [];
+      for (const [email, permesso] of desiderati) {
+        const role = DRIVE_ROLE_BY_PERMESSO[permesso] ?? 'reader';
+        const attuale = attuali.get(email);
+        if (attuale === undefined) {
+          grants.push({ targetId, email, permesso });
+          continue;
+        }
+        if (attuale.role === role || RANK[attuale.role] === undefined) continue;
+        changes.push({ permissionId: attuale.id, role });
+      }
+      if (changes.length > 0) {
+        const falliti = drive.changePermissionRoles(targetId, changes);
+        applicati += changes.length - falliti.length;
+        for (const fallito of falliti) {
+          logger.warn(`${tag}: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+        }
+      }
+      if (revoca && desiderati.size > 0) {
+        const daRimuovere = [...attuali.values()]
+          .filter((p) => !desiderati.has(p.email!) && RANK[p.role] !== undefined)
+          .map((p) => p.id);
+        if (daRimuovere.length > 0) {
+          const falliti = drive.removePermissions(targetId, daRimuovere);
+          applicati += daRimuovere.length - falliti.length;
+          for (const fallito of falliti) {
+            logger.warn(`${tag}: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+          }
+        }
+      }
+    } catch (error) {
+      const messaggio = error instanceof Error ? error.message : String(error);
+      logger.warn(`${tag}: ${targetId} non elaborato — ${messaggio}`);
+    }
+    return applicati;
+  }
+
   return {
     /**
      * Applies the configured ACL to every selected file/folder, writing only the
@@ -140,46 +204,88 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
      */
     AGGIORNA_PERMESSI: (azione, criteri) => {
       const permesso = azione.permesso ?? 'LETTURA';
-      const role = DRIVE_ROLE_BY_PERMESSO[permesso] ?? 'reader';
       const emails = destinatari(azione);
       if (emails.length === 0) return 0;
+      const desiderati = new Map(emails.map((email) => [email, permesso]));
       const grants: PermissionGrant[] = [];
       let cambiati = 0;
+      // Per-target isolation lives in allineaTarget: grants already computed for
+      // earlier targets stay in `grants` and are flushed in the single batched
+      // setPermissions call below.
       for (const targetId of targetIds(azione, criteri)) {
-        // Per-target isolation (mirrors LockDocumentsService.bloccaTutti): a
-        // Drive failure on one target (trashed/deleted/inaccessible file) must
-        // never abort the remaining targets, and must never discard grants
-        // already computed for earlier targets — those stay in `grants` and
-        // are flushed in the single batched setPermissions call below.
+        cambiati += allineaTarget('AGGIORNA_PERMESSI', targetId, desiderati, grants, false);
+      }
+      // One shareWithUsers call per targetId+permesso pair, batched by the facade.
+      if (grants.length > 0) drive.setPermissions(grants);
+      return grants.length + cambiati;
+    },
+
+    /**
+     * Realigns the files selected from LOG_DOCS (`criteri`, optional `target` =
+     * CONF_DOC.ID) AND the folders that hold them (LOG_FOLD.PATH = LOG_DOCS.PATH)
+     * to the ACL their generating CONF_DOC.PERMESSI prescribes (sections
+     * `file`/`folder`, `condizione`, `regolaSupplente`), resolved over the current
+     * iteration CDU. A folder shared by several documents gets the union of their
+     * ACLs (highest permesso wins). With `revoca: true` it also removes every
+     * non-owner ACL outside the prescribed set (never on an empty set).
+     */
+    RIALLINEA_PERMESSI_DA_CONF: (azione, criteri) => {
+      if (engine === undefined) {
+        logger.warn('AZIONE RIALLINEA_PERMESSI_DA_CONF: motore espressioni non disponibile — saltata');
+        return 0;
+      }
+      const target = azione.target?.trim() ?? '';
+      const documenti = righeCorrispondenti(
+        TABLE.LOG_DOCS,
+        target === '' ? criteri : { ...criteri, ID_GEN: target }
+      );
+      const confRows = db.tables[TABLE.CONF_DOC]?.getAllRows() ?? [];
+      const cartellePerPercorso = new Map<string, string>();
+      for (const row of db.tables[TABLE.LOG_FOLD]?.getAllRows() ?? []) {
+        const percorso = cellString(row[COL_LOG_FOLD.PATH]);
+        const id = cellString(row['ID']);
+        if (percorso !== '' && id !== '' && !cartellePerPercorso.has(percorso)) {
+          cartellePerPercorso.set(percorso, id);
+        }
+      }
+      const rango = (permesso: string): number => RANK[DRIVE_ROLE_BY_PERMESSO[permesso] ?? 'reader'] ?? 1;
+      const desiderati = new Map<string, Map<string, string>>();
+      const accumula = (targetId: string, acl: Array<{ email: string; permesso: string }>): void => {
+        const perTarget = desiderati.get(targetId) ?? new Map<string, string>();
+        for (const { email, permesso } of acl) {
+          const attuale = perTarget.get(email);
+          if (attuale === undefined || rango(permesso) > rango(attuale)) perTarget.set(email, permesso);
+        }
+        desiderati.set(targetId, perTarget);
+      };
+      for (const doc of documenti) {
+        const idGen = cellString(doc[COL_LOG_DOCS.ID_GEN]);
+        const conf = confRows.find((row) => cellString(row[COL_CONF_DOC.ID]) === idGen);
+        const raw = conf?.[COL_CONF_DOC.PERMESSI];
+        if (conf === undefined || !hasJsonValue(raw)) {
+          logger.warn(`RIALLINEA_PERMESSI_DA_CONF: ${cellString(doc['ID'])} — CONF_DOC "${idGen}" assente o senza PERMESSI, saltato`);
+          continue;
+        }
         try {
-          const attuali = new Map(
-            drive
-              .listPermissions(targetId)
-              .filter((p) => p.email !== null)
-              .map((p) => [p.email!, p])
-          );
-          const changes: Array<{ permissionId: string; role: string }> = [];
-          for (const email of emails) {
-            const attuale = attuali.get(email);
-            if (attuale === undefined) {
-              grants.push({ targetId, email, permesso });
-              continue;
-            }
-            if (attuale.role === role || RANK[attuale.role] === undefined) continue;
-            changes.push({ permissionId: attuale.id, role });
+          const perms = JSON.parse(String(raw)) as PermessiConfig;
+          const fileId = cellString(doc['ID']);
+          if (fileId !== '') {
+            accumula(fileId, risolviAcl(perms.file ?? [], cdu, parseRegola(perms.regolaSupplente?.file), roles, engine));
           }
-          if (changes.length === 0) continue;
-          const falliti = drive.changePermissionRoles(targetId, changes);
-          cambiati += changes.length - falliti.length;
-          for (const fallito of falliti) {
-            logger.warn(`AGGIORNA_PERMESSI: ${targetId}/${fallito.permissionId} — ${fallito.errore}`);
+          const folderId = cartellePerPercorso.get(cellString(doc[COL_LOG_DOCS.PATH]));
+          if (folderId !== undefined) {
+            accumula(folderId, risolviAcl(perms.folder ?? [], cdu, parseRegola(perms.regolaSupplente?.folder), roles, engine));
           }
         } catch (error) {
           const messaggio = error instanceof Error ? error.message : String(error);
-          logger.warn(`AGGIORNA_PERMESSI: ${targetId} non elaborato — ${messaggio}`);
+          logger.warn(`RIALLINEA_PERMESSI_DA_CONF: ${cellString(doc['ID'])} non elaborato — ${messaggio}`);
         }
       }
-      // One shareWithUsers call per targetId+permesso pair, batched by the facade.
+      const grants: PermissionGrant[] = [];
+      let cambiati = 0;
+      for (const [targetId, attesi] of desiderati) {
+        cambiati += allineaTarget('RIALLINEA_PERMESSI_DA_CONF', targetId, attesi, grants, azione.revoca === true);
+      }
       if (grants.length > 0) drive.setPermissions(grants);
       return grants.length + cambiati;
     },

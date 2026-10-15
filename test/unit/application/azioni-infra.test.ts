@@ -324,3 +324,121 @@ describe('AGGIORNA_PERMESSI su cartelle selezionate per CONF_DOC generatore (tar
     expect(drive.permissions.map((p) => p.fileId)).not.toContain('old_file');
   });
 });
+
+describe('RIALLINEA_PERMESSI_DA_CONF (file e cartelle secondo CONF_DOC.PERMESSI)', () => {
+  const engine = { evaluateBoolean: (expr: string) => expr !== 'false' } as never;
+  const rolesByName = {
+    risolvi: (ruolo: string) =>
+      (ruolo === 'COORD' ? ['coord@school.it'] : ruolo === 'CDC' ? ['cdc1@school.it', 'cdc2@school.it'] : []).map((e) =>
+        Email.of(e)
+      )
+  };
+
+  function dbConf(permessi: unknown): FakeDatabase {
+    const tables = fixtureTables();
+    tables['CONF_DOC'] = [
+      { ID: 'VERBALI', PERMESSI: permessi === null ? '' : JSON.stringify(permessi) },
+      { ID: 'ALTRO', PERMESSI: JSON.stringify({ folder: [{ ruolo: 'COORD', permesso: 'SCRITTURA' }] }) }
+    ];
+    tables['LOG_DOCS'] = [
+      { ID: 'v5A', ID_GEN: 'VERBALI', CLASSI: '5A', PATH: 'Verbali/5A' },
+      { ID: 'a5A', ID_GEN: 'ALTRO', CLASSI: '5A', PATH: 'Verbali/5A' },
+      { ID: 'v5B', ID_GEN: 'VERBALI', CLASSI: '5B', PATH: 'Verbali/5B' }
+    ];
+    tables['LOG_FOLD'] = [
+      { ID: 'fold5A', ID_GEN: 'VERBALI', PATH: 'Verbali/5A' },
+      { ID: 'fold5B', ID_GEN: 'VERBALI', PATH: 'Verbali/5B' }
+    ];
+    return new FakeDatabase(tables);
+  }
+  const permessi = {
+    file: [{ ruolo: 'COORD', permesso: 'SCRITTURA' }],
+    folder: [{ ruolo: 'CDC', permesso: 'LETTURA' }]
+  };
+  const azione = { tipo: 'RIALLINEA_PERMESSI_DA_CONF', target: 'VERBALI' };
+
+  test('grants file ACL on the document and folder ACL on its folder', () => {
+    const drive = new FakeDriveFacade();
+    const h = creaHandlersInfra({ db: dbConf(permessi), drive, roles: rolesByName, cdu, engine, logger });
+    const n = h['RIALLINEA_PERMESSI_DA_CONF']!(azione, { CLASSI: '5A' });
+    expect(n).toBe(3);
+    expect(drive.permissions).toEqual(
+      expect.arrayContaining([
+        { fileId: 'v5A', email: 'coord@school.it', permesso: 'SCRITTURA' },
+        { fileId: 'fold5A', email: 'cdc1@school.it', permesso: 'LETTURA' },
+        { fileId: 'fold5A', email: 'cdc2@school.it', permesso: 'LETTURA' }
+      ])
+    );
+    expect(drive.permissions.some((p) => p.fileId === 'v5B' || p.fileId === 'fold5B')).toBe(false);
+  });
+
+  test('is idempotent: already aligned ACLs cause no writes; a mismatched role is changed', () => {
+    const drive = new FakeDriveFacade();
+    drive.permissionsPerFile.set('v5A', [{ id: 'p1', email: 'coord@school.it', role: 'reader', tipo: 'user' }]);
+    drive.permissionsPerFile.set('fold5A', [
+      { id: 'p2', email: 'cdc1@school.it', role: 'reader', tipo: 'user' },
+      { id: 'p3', email: 'cdc2@school.it', role: 'reader', tipo: 'user' }
+    ]);
+    const h = creaHandlersInfra({ db: dbConf(permessi), drive, roles: rolesByName, cdu, engine, logger });
+    const n = h['RIALLINEA_PERMESSI_DA_CONF']!(azione, { CLASSI: '5A' });
+    expect(n).toBe(1);
+    expect(drive.roleChanges).toEqual([{ fileId: 'v5A', permissionId: 'p1', role: 'writer' }]);
+    expect(drive.permissions).toEqual([]);
+  });
+
+  test('skips an entry whose condizione is false', () => {
+    const drive = new FakeDriveFacade();
+    const conf = { file: [], folder: [{ ruolo: 'CDC', permesso: 'LETTURA', condizione: 'false' }] };
+    const h = creaHandlersInfra({ db: dbConf(conf), drive, roles: rolesByName, cdu, engine, logger });
+    expect(h['RIALLINEA_PERMESSI_DA_CONF']!(azione, { CLASSI: '5A' })).toBe(0);
+    expect(drive.permissions).toEqual([]);
+  });
+
+  test('a folder shared by documents of two CONF_DOC gets the union, highest permesso wins', () => {
+    const drive = new FakeDriveFacade();
+    const h = creaHandlersInfra({ db: dbConf(permessi), drive, roles: rolesByName, cdu, engine, logger });
+    h['RIALLINEA_PERMESSI_DA_CONF']!({ tipo: 'RIALLINEA_PERMESSI_DA_CONF' }, { CLASSI: '5A' });
+    const fold = drive.permissions.filter((p) => p.fileId === 'fold5A');
+    expect(fold).toEqual(
+      expect.arrayContaining([
+        { fileId: 'fold5A', email: 'cdc1@school.it', permesso: 'LETTURA' },
+        { fileId: 'fold5A', email: 'coord@school.it', permesso: 'SCRITTURA' }
+      ])
+    );
+    expect(fold).toHaveLength(3);
+  });
+
+  test('revoca removes non-owner ACLs outside the prescribed set, never owners', () => {
+    const drive = new FakeDriveFacade();
+    drive.permissionsPerFile.set('fold5A', [
+      { id: 'p1', email: 'cdc1@school.it', role: 'reader', tipo: 'user' },
+      { id: 'p2', email: 'cdc2@school.it', role: 'reader', tipo: 'user' },
+      { id: 'p3', email: 'uscito@school.it', role: 'reader', tipo: 'user' },
+      { id: 'p4', email: 'owner@school.it', role: 'owner', tipo: 'user' }
+    ]);
+    const h = creaHandlersInfra({ db: dbConf(permessi), drive, roles: rolesByName, cdu, engine, logger });
+    h['RIALLINEA_PERMESSI_DA_CONF']!({ ...azione, revoca: true }, { CLASSI: '5A' });
+    expect(drive.removed).toEqual([{ fileId: 'fold5A', permissionId: 'p3' }]);
+  });
+
+  test('revoca never revokes everyone when the prescribed set resolves empty', () => {
+    const drive = new FakeDriveFacade();
+    drive.permissionsPerFile.set('fold5A', [{ id: 'p1', email: 'x@school.it', role: 'reader', tipo: 'user' }]);
+    const conf = { folder: [{ ruolo: 'NESSUNO', permesso: 'LETTURA' }] };
+    const h = creaHandlersInfra({ db: dbConf(conf), drive, roles: rolesByName, cdu, engine, logger });
+    h['RIALLINEA_PERMESSI_DA_CONF']!({ ...azione, revoca: true }, { CLASSI: '5A' });
+    expect(drive.removed).toEqual([]);
+  });
+
+  test('a document whose CONF_DOC has no PERMESSI is skipped without failing the others', () => {
+    const drive = new FakeDriveFacade();
+    const h = creaHandlersInfra({ db: dbConf(null), drive, roles: rolesByName, cdu, engine, logger });
+    expect(h['RIALLINEA_PERMESSI_DA_CONF']!(azione, {})).toBe(0);
+  });
+
+  test('without an expression engine the action is skipped', () => {
+    const drive = new FakeDriveFacade();
+    const h = creaHandlersInfra({ db: dbConf(permessi), drive, roles: rolesByName, cdu, logger });
+    expect(h['RIALLINEA_PERMESSI_DA_CONF']!(azione, {})).toBe(0);
+  });
+});

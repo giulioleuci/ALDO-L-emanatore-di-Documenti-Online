@@ -444,12 +444,19 @@ declare global {
     getFileOwnerEmail(fileId: string): string | null;
   }
   class PermissionService {
-    /** `role` is a Drive API v3 role: 'writer' | 'reader' | 'commenter'. */
+    /**
+     * `role` is a Drive API v3 role: 'writer' | 'reader' | 'commenter'. A Drive
+     * rejection does NOT throw: it is returned in `failed` (actual shape
+     * `{fileId,error,statusCode}`, not `DriveBatchOutcome`'s `{id,status,error}`).
+     */
     shareWithUsers(
       fileIds: string | string[],
       permissions: Array<{ type?: string; role: string; email: string; sendEmail?: boolean }>,
       options?: { sendNotificationEmail?: boolean }
-    ): DriveBatchOutcome<unknown>;
+    ): {
+      successful: Array<{ fileId: string; permission: unknown; statusCode: number }>;
+      failed: Array<{ fileId: string; error: Error; statusCode: number }>;
+    };
     /**
      * Revokes access by email or permission id (auto-resolves emails via
      * getPermissions()). `DriveBatchOutcome`'s `{id,status,data}` shape doesn't

@@ -36,6 +36,9 @@ declare global {
     totale?: number;
     falliti?: number;
     dettagliFalliti?: string[];
+    /** Skipped tasks, excluded from "Eseguiti con successo"; line printed only when passed. */
+    saltati?: number;
+    dettagliSaltati?: string[];
   }
 
   class LoggerService {
@@ -620,6 +623,8 @@ declare global {
         stopOnError?: boolean;
         maxRetries?: number;
         logPosition?: TreePosition;
+        /** Log consecutive skipped steps with the same reason as one line. */
+        collapseSkippedSteps?: boolean;
       }
     );
     getName(): string;

@@ -152,7 +152,8 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
         fileName: null,
         fileLink: null,
         status: 'SKIPPED',
-        durationMs: 0
+        durationMs: 0,
+        skipReason: 'Duplicato'
       });
     } finally {
       nowSpy.mockRestore();

@@ -97,6 +97,8 @@ interface EmailTargetResult {
   sent: number;
   errors: string[];
   skipped: boolean;
+  /** Set only when skipped: "Già inviato" (CheckAlreadySent) or "CONDIZIONE non soddisfatta". */
+  skipReason?: string;
   recipients: string[];
   subject: string;
   durationMs: number;
@@ -217,6 +219,7 @@ export class EmailNotificationService {
         sent: 0,
         errors: [],
         skipped: true,
+        skipReason: ctx.get('skipReason') === null ? 'CONDIZIONE non soddisfatta' : 'Già inviato',
         recipients: [],
         subject: '',
         durationMs: Math.max(0, Date.now() - startedAt)
@@ -310,6 +313,7 @@ export class EmailNotificationService {
     const pipeline = new Pipeline(this.logger, null, {
       name: 'NotificaPipeline',
       stopOnError: false,
+      collapseSkippedSteps: true,
       logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
     })
       .addStep(

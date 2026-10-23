@@ -2510,9 +2510,21 @@ class StructuredLogFormatter {
     const d = details || {};
     const totale = this._count(d.totale);
     const falliti = this._count(d.falliti);
-    const riusciti = Math.max(0, totale - falliti);
+    const saltati = this._count(d.saltati);
+    const riusciti = Math.max(0, totale - falliti - saltati);
     const icon = falliti > 0 ? '📊❌' : '📊✅';
-    const lines = [MAJOR_BORDER, `${icon} [RIEPILOGO JOB] ${this._text(d.jobType)}`, `  Esecuzioni (run): ${d.runCount === undefined ? 1 : this._count(d.runCount)}`, `  Tempo totale esecuzione: ${this._count(d.totalDurationMs)}ms`, `  Task totali: ${totale}`, `  Eseguiti con successo: ${riusciti}`, `  Falliti: ${falliti}`];
+    const lines = [MAJOR_BORDER, `${icon} [RIEPILOGO JOB] ${this._text(d.jobType)}`, `  Esecuzioni (run): ${d.runCount === undefined ? 1 : this._count(d.runCount)}`, `  Tempo totale esecuzione: ${this._count(d.totalDurationMs)}ms`, `  Task totali: ${totale}`, `  Eseguiti con successo: ${riusciti}`];
+
+    if (d.saltati !== undefined) {
+      lines.push(`  Saltati: ${saltati}`);
+    }
+    lines.push(`  Falliti: ${falliti}`);
+    if (saltati > 0 && Array.isArray(d.dettagliSaltati) && d.dettagliSaltati.length > 0) {
+      lines.push('  Dettaglio saltati:');
+      for (const item of d.dettagliSaltati) {
+        lines.push(`    - ${this._text(item)}`);
+      }
+    }
     if (falliti > 0 && Array.isArray(d.dettagliFalliti) && d.dettagliFalliti.length > 0) {
       lines.push('  Dettaglio fallimenti:');
       for (const item of d.dettagliFalliti) {
@@ -2944,6 +2956,8 @@ class LoggerService {
   logSummary(label, durationMs, itemDetails, position) {
     return this._writeStructured('INFO', this._structured.summary(label, durationMs, itemDetails, this._resolvePosition(position)));
   }
+
+
 
 
 
@@ -47239,6 +47253,7 @@ class Pipeline {
 
 
 
+
   constructor(logger, exceptionService = null, options = {}) {
     if (!logger || typeof logger !== 'object') {
       throw new Error('Pipeline: logger is required and must be an object');
@@ -47260,6 +47275,8 @@ class Pipeline {
     this._stopOnError = options.stopOnError !== undefined ? options.stopOnError : true;
     this._maxRetries = options.maxRetries !== undefined ? options.maxRetries : 3;
     this._logPosition = this._normalizeLogPosition(options.logPosition);
+
+    this._collapseSkippedSteps = options.collapseSkippedSteps === true;
     this._steps = [];
     this._hooks = {
       beforeStep: [],
@@ -47486,10 +47503,22 @@ class Pipeline {
     const context = new PipelineContext(initialData);
     let pipelineSuccess = true;
     this._logPipelineStart();
+    const skippedRun = [];
+    const flushSkipped = () => {
+      if (skippedRun.length === 0) {
+        return;
+      }
+      const last = skippedRun[skippedRun.length - 1];
+      this._logPipelineStep(skippedRun.map(s => s.name).join(', '), 'SKIPPED', {
+        reason: last.reason
+      }, this._stepLogPosition(last.index));
+      skippedRun.length = 0;
+    };
     for (let stepIndex = 0; stepIndex < this._steps.length; stepIndex++) {
       var _result$error;
       const step = this._steps[stepIndex];
       if (context.shouldStop()) {
+        flushSkipped();
         if (typeof this._logger.logStep === 'function') {
           this._logger.logStep(`⏹️ Stop requested: ${context.getStopReason()}`, this._stepLogPosition(stepIndex));
         } else {
@@ -47509,6 +47538,7 @@ class Pipeline {
         context.recordStepExecution(stepName, 'failed', 0, {
           error: error.message
         });
+        flushSkipped();
         this._logPipelineStep(stepName, 'ERROR', {
           reason: error.message || 'step failed',
           durationMs: 0
@@ -47532,7 +47562,19 @@ class Pipeline {
         content: result.logDetails,
         durationMs: result.durationMs || 0
       };
-      this._logPipelineStep(stepName, semanticStatus, details, this._stepLogPosition(stepIndex));
+      if (status === 'skipped' && this._collapseSkippedSteps) {
+        if (skippedRun.length > 0 && skippedRun[0].reason !== details.reason) {
+          flushSkipped();
+        }
+        skippedRun.push({
+          name: stepName,
+          reason: details.reason,
+          index: stepIndex
+        });
+      } else {
+        flushSkipped();
+        this._logPipelineStep(stepName, semanticStatus, details, this._stepLogPosition(stepIndex));
+      }
       if (status === 'failed') {
         pipelineSuccess = false;
         this._invokeHooks(this._hooks.onError, step, context, result.error);
@@ -47542,6 +47584,7 @@ class Pipeline {
       }
       this._invokeHooks(this._hooks.afterStep, step, context, result);
     }
+    flushSkipped();
     context.markCompleted();
     this._invokeHooks(this._hooks.onComplete, context, pipelineSuccess);
     this._logPipelineSummary(context);

@@ -27,6 +27,7 @@ import {
   type DocenteClasseMateriaBatchTarget,
   type PianoBatchTarget
 } from './axisTargets';
+import { dettagliSaltati, totaleSaltati, type Saltati } from './saltati';
 
 export type {
   AlunnoBatchTarget,
@@ -62,6 +63,8 @@ interface BatchResumeState {
   eseguitoDa?: string;
   /** ISO start timestamp of the execution that yielded this checkpoint — used to backfill a SOSPESO_TEMPO LOG_JOB row on the next resume, since JobRunnerLib's timeout cuts the generator off before it can log anything itself (ref NEW_TABLE_LOG_JOB.md "Dove si scrive" §3). */
   esecuzioneIniziata?: string;
+  /** Cumulative SKIPPED targets per reason across every run — counted in `processed`, excluded from LOG_JOB.COMPLETATI_OK. */
+  saltati?: Saltati;
   planTargets?: PianoBatchTarget[];
   docenteClasseMateriaTargets?: DocenteClasseMateriaBatchTarget[];
   /** Historical checkpoint key kept only to resume jobs suspended before Task 6. */
@@ -90,6 +93,7 @@ interface GeneratedDocument {
   fileName: string | null;
   status: string;
   durationMs: number;
+  skipReason?: string;
 }
 
 /**
@@ -141,6 +145,8 @@ export class DocumentBatchService {
   private esecuzioneIniziata = '';
   /** LOG_JOB.NOME_CONFIG for the run currently in progress (CONF_DOC.TIPO) — set once at generator entry. */
   private nomeConfig = '';
+  /** Cumulative skipped targets per reason — seeded from the checkpoint at generator entry. */
+  private saltati: Saltati = {};
 
   /** Prior runs' busy time plus elapsed time in the run currently in progress. */
   private elapsedTotalMs(): number {
@@ -157,6 +163,7 @@ export class DocumentBatchService {
     this.priorDurationMs = resume?.totalDurationMs ?? 0;
     this.eseguitoDa = String(params.eseguitoDa ?? resume?.eseguitoDa ?? '');
     this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
+    this.saltati = { ...(resume?.saltati ?? {}) };
     const confDocId = String(params.confDocId ?? resume?.confDocId ?? '');
     const jobId = String(params.jobId ?? resume?.jobId ?? confDocId);
     if (resume !== null && !resume.confDocId) {
@@ -274,7 +281,10 @@ export class DocumentBatchService {
       nomeConfig: this.nomeConfig,
       stato: StatoJob.SOSPESO_TEMPO,
       totaleTask: totale,
-      completatiOk: Math.max(0, resume.processed.length - resume.errori.length),
+      completatiOk: Math.max(
+        0,
+        resume.processed.length - resume.errori.length - totaleSaltati(resume.saltati)
+      ),
       falliti: resume.errori.length,
       listaFallimenti: resume.errori,
       durataSec,
@@ -312,7 +322,9 @@ export class DocumentBatchService {
       totalDurationMs: this.elapsedTotalMs(),
       totale,
       falliti: errori.length,
-      dettagliFalliti: errori
+      dettagliFalliti: errori,
+      saltati: totaleSaltati(this.saltati),
+      dettagliSaltati: dettagliSaltati(this.saltati)
     });
     this.logJob?.append({
       idJob: jobId,
@@ -322,7 +334,7 @@ export class DocumentBatchService {
       nomeConfig: this.nomeConfig,
       stato: success ? StatoJob.COMPLETATO : StatoJob.COMPLETATO_CON_ERRORI,
       totaleTask: totale,
-      completatiOk: processed.length - errori.length,
+      completatiOk: processed.length - errori.length - totaleSaltati(this.saltati),
       falliti: errori.length,
       listaFallimenti: errori,
       durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),
@@ -362,12 +374,16 @@ export class DocumentBatchService {
         const result = generate(target, confDocId, jobId);
         const name = result.fileName ?? id;
         const outcome = DocumentBatchService.documentOutcome(result.status);
-        this.logger?.logSummary(outcome, result.durationMs, name, {
+        if (result.skipReason !== undefined) {
+          this.saltati[result.skipReason] = (this.saltati[result.skipReason] ?? 0) + 1;
+        }
+        const detail = result.skipReason === undefined ? name : `${name} — ${result.skipReason}`;
+        this.logger?.logSummary(outcome, result.durationMs, detail, {
           depth: 1,
           isLast: true,
           ancestorHasNext: [i + 1 < targets.length]
         });
-        message = `${outcome}: ${name} (${result.status} in ${result.durationMs}ms)`;
+        message = `${outcome}: ${detail} (${result.status} in ${result.durationMs}ms)`;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${id}: ${reason}`);
@@ -393,6 +409,7 @@ export class DocumentBatchService {
         totalDurationMs: this.elapsedTotalMs(),
         eseguitoDa: this.eseguitoDa,
         esecuzioneIniziata: this.esecuzioneIniziata,
+        saltati: { ...this.saltati },
         ...extra
       };
     }

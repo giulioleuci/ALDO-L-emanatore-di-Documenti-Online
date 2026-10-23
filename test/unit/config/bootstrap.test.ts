@@ -833,8 +833,12 @@ test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicat
   monitor.progress = [];
   expect(drain('job_piani_2')).toMatchObject({ success: true, totale: 2 });
   expect(monitor.progress.map(({ message }) => message)).toEqual([
-    expect.stringMatching(/^✔️ Document skipped: a1@school\.it:PEI \(SKIPPED in \d+ms\)$/),
-    expect.stringMatching(/^✔️ Document skipped: a1@school\.it:PDP_BES \(SKIPPED in \d+ms\)$/)
+    expect.stringMatching(
+      /^✔️ Document skipped: a1@school\.it:PEI — Duplicato \(SKIPPED in \d+ms\)$/
+    ),
+    expect.stringMatching(
+      /^✔️ Document skipped: a1@school\.it:PDP_BES — Duplicato \(SKIPPED in \d+ms\)$/
+    )
   ]);
   expect(drive.copies).toHaveLength(2);
 });

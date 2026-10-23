@@ -81,6 +81,8 @@ interface DocumentGenerationResult {
   fileLink: string | null;
   status: string;
   durationMs: number;
+  /** Set only when status is SKIPPED: "Duplicato" (CheckDuplicates) or "CONDIZIONE non soddisfatta". */
+  skipReason?: string;
 }
 
 /**
@@ -374,12 +376,18 @@ export class DocumentGenerationService {
 
   private resultFromContext(ctx: PipelineContext, startedAt: number): DocumentGenerationResult {
     const fileId = ctx.get<string>('newFileId');
+    const status = ctx.get<string>('documentStatus') ?? (fileId === null ? 'SKIPPED' : 'GENERATO');
     return {
       fileId,
       fileName: ctx.get<string>('nomeFile'),
       fileLink: ctx.get<string>('newFileLink'),
-      status: ctx.get<string>('documentStatus') ?? (fileId === null ? 'SKIPPED' : 'GENERATO'),
-      durationMs: Math.max(0, Date.now() - startedAt)
+      status,
+      durationMs: Math.max(0, Date.now() - startedAt),
+      ...(status === 'SKIPPED'
+        ? {
+            skipReason: ctx.get('skipReason') === null ? 'CONDIZIONE non soddisfatta' : 'Duplicato'
+          }
+        : {})
     };
   }
 
@@ -402,6 +410,7 @@ export class DocumentGenerationService {
     const pipeline = new Pipeline(this.logger, null, {
       name: 'DocumentoPipeline',
       stopOnError: false,
+      collapseSkippedSteps: true,
       logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }
     });
     pipeline

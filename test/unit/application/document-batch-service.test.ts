@@ -93,7 +93,8 @@ function wire(
         fileName: skipped ? null : `Documento_${target.value}`,
         fileLink: skipped ? null : `https://docs.google.com/document/d/file_${target.value}/edit`,
         status: options.resultStatus ?? 'GENERATO',
-        durationMs: options.resultDurationMs ?? 8572
+        durationMs: options.resultDurationMs ?? 8572,
+        ...(skipped ? { skipReason: 'CONDIZIONE non soddisfatta' } : {})
       };
     }
   } as unknown as DocumentGenerationService;
@@ -750,6 +751,29 @@ test('LOG_JOB (NEW_TABLE_LOG_JOB.md): a fresh completed run appends one ESECUZIO
     falliti: 0,
     eseguitoDa: 'prof@school.it'
   });
+});
+
+test('SKIPPED targets are tallied per reason across a resume and excluded from COMPLETATI_OK', () => {
+  const { logJob, entries } = fakeLogJob();
+  const logger = new LoggerService();
+  const report = jest.spyOn(logger, 'logJobReport');
+  const { service } = wire({ logJob, logger, resultStatus: 'SKIPPED' });
+  const first = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_1' }).next();
+  expect(first.value).toMatchObject({ saltati: { 'CONDIZIONE non soddisfatta': 1 } });
+
+  // Timeout after the first target: JobRunnerLib re-enters with the yielded checkpoint.
+  const gen = service.batchGenerateHandler({ resumeState: first.value });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+
+  expect(report).toHaveBeenCalledWith(
+    expect.objectContaining({
+      totale: 2,
+      saltati: 2,
+      dettagliSaltati: ['CONDIZIONE non soddisfatta ×2']
+    })
+  );
+  expect(entries[entries.length - 1]).toMatchObject({ totaleTask: 2, completatiOk: 0, falliti: 0 });
 });
 
 test('LOG_JOB: a run with per-class failures appends COMPLETATO_CON_ERRORI', () => {

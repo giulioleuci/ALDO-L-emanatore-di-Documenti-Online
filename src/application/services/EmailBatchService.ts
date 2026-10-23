@@ -5,6 +5,7 @@ import type { ILogJobRepository } from '../../domain/repositories/ILogJobReposit
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
 import { StatoJob } from '../../domain/value-objects/enums';
 import { emailTargetId } from '../email/saluto';
+import { dettagliSaltati, totaleSaltati, type Saltati } from './saltati';
 
 /** Job type under which the batch send handler is registered in JobRunnerLib. */
 export const JOB_TYPE_INVIO_EMAIL = 'INVIO_EMAIL_BATCH';
@@ -47,6 +48,8 @@ interface EmailBatchResumeState {
   esecuzioneIniziata?: string;
   /** True only on the checkpoint `suspendForQuota` returns — tells the next `start()` this launch's SOSPESO_QUOTA row was already logged there, so the resume must NOT also backfill a SOSPESO_TEMPO row for the same execution. */
   viaQuotaSuspend?: boolean;
+  /** Cumulative skipped targets per reason across every run — counted in `processed`, excluded from LOG_JOB.COMPLETATI_OK. */
+  saltati?: Saltati;
 }
 export interface EmailBatchCheckpoint extends EmailBatchResumeState {
   percentage: number;
@@ -125,6 +128,8 @@ export class EmailBatchService {
   private esecuzioneIniziata = '';
   /** LOG_JOB.NOME_CONFIG for the run currently in progress (CONF_MAIL.OGGETTO) — set once at generator entry. */
   private nomeConfig = '';
+  /** Cumulative skipped targets per reason — seeded from the checkpoint at generator entry. */
+  private saltati: Saltati = {};
 
   /** Prior runs' busy time plus elapsed time in the run currently in progress. */
   private elapsedTotalMs(): number {
@@ -193,7 +198,9 @@ export class EmailBatchService {
       totalDurationMs: this.elapsedTotalMs(),
       totale: total,
       falliti: failedTargets.length,
-      dettagliFalliti: failedTargets
+      dettagliFalliti: failedTargets,
+      saltati: totaleSaltati(this.saltati),
+      dettagliSaltati: dettagliSaltati(this.saltati)
     });
   }
 
@@ -218,7 +225,10 @@ export class EmailBatchService {
       nomeConfig: this.nomeConfig,
       stato: StatoJob.SOSPESO_TEMPO,
       totaleTask: totale,
-      completatiOk: Math.max(0, resume.processed.length - resume.errors.length),
+      completatiOk: Math.max(
+        0,
+        resume.processed.length - resume.errors.length - totaleSaltati(resume.saltati)
+      ),
       falliti: resume.errors.length,
       listaFallimenti: resume.errors,
       durataSec,
@@ -266,7 +276,8 @@ export class EmailBatchService {
       totalDurationMs: this.elapsedTotalMs(),
       eseguitoDa: this.eseguitoDa,
       esecuzioneIniziata: this.esecuzioneIniziata,
-      viaQuotaSuspend: true
+      viaQuotaSuspend: true,
+      saltati: { ...this.saltati }
     };
     this.savePersistedResume(patternId, resumeStateWithFlag);
     this.monitor?.completeJob(jobId, `${sent} email inviate, sospeso per quota esaurita`);
@@ -281,7 +292,10 @@ export class EmailBatchService {
       nomeConfig: this.nomeConfig,
       stato: StatoJob.SOSPESO_QUOTA,
       totaleTask: total,
-      completatiOk: Math.max(0, processed.length - failedTargets.length),
+      completatiOk: Math.max(
+        0,
+        processed.length - failedTargets.length - totaleSaltati(this.saltati)
+      ),
       falliti: failedTargets.length,
       listaFallimenti: failedTargets,
       durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),
@@ -307,6 +321,7 @@ export class EmailBatchService {
     this.priorDurationMs = resume?.totalDurationMs ?? 0;
     this.eseguitoDa = String(params.eseguitoDa ?? resume?.eseguitoDa ?? '');
     this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
+    this.saltati = { ...(resume?.saltati ?? {}) };
     const patternId = String(params.patternId ?? resume?.patternId ?? '');
     const jobId = String(params.jobId ?? resume?.jobId ?? patternId);
 
@@ -387,7 +402,12 @@ export class EmailBatchService {
                 ? '✔️ Email skipped'
                 : '❌ Email failed';
           if (esito.sent === 0 && !esito.skipped) failedTargets.push(target.target);
-          const detail = `${subject} -> ${recipients.join(',')}`;
+          if (esito.skipReason !== undefined) {
+            this.saltati[esito.skipReason] = (this.saltati[esito.skipReason] ?? 0) + 1;
+          }
+          const detail =
+            `${subject} -> ${recipients.join(',')}` +
+            (esito.skipReason === undefined ? '' : ` — ${esito.skipReason}`);
           progressDetail = detail;
           this.logger?.logSummary(outcome, esito.durationMs, detail, {
             depth: 1,
@@ -437,7 +457,8 @@ export class EmailBatchService {
           runCount: this.runCount,
           totalDurationMs: this.elapsedTotalMs(),
           eseguitoDa: this.eseguitoDa,
-          esecuzioneIniziata: this.esecuzioneIniziata
+          esecuzioneIniziata: this.esecuzioneIniziata,
+          saltati: { ...this.saltati }
         };
       }
 
@@ -454,7 +475,10 @@ export class EmailBatchService {
         nomeConfig: this.nomeConfig,
         stato: success ? StatoJob.COMPLETATO : StatoJob.COMPLETATO_CON_ERRORI,
         totaleTask: totale,
-        completatiOk: Math.max(0, processed.length - failedTargets.length),
+        completatiOk: Math.max(
+          0,
+          processed.length - failedTargets.length - totaleSaltati(this.saltati)
+        ),
         falliti: failedTargets.length,
         listaFallimenti: failedTargets,
         durataSec: Math.max(0, (Date.now() - this.containerStartedAt) / 1000),

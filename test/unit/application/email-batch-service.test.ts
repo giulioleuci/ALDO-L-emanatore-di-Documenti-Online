@@ -152,6 +152,51 @@ test('prints an end-of-job summary with total/succeeded/failed counts and the fa
   expect(output).toContain('    - 5A');
 });
 
+test('skipped targets are reported per reason and excluded from successes and COMPLETATI_OK', () => {
+  const lines: string[] = [];
+  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
+  const { logJob, entries } = fakeLogJob();
+  const notification = {
+    loadSuccessfulLogicalTargetIds: () => new Set<string>(),
+    enumerateTargets: () => [
+      {
+        tipo: 'docente' as const,
+        tipoTarget: 'classe' as const,
+        target: '5A',
+        emails: ['d@example.edu'],
+        classiCompetenza: []
+      }
+    ],
+    getConfigurazione: () => ({}),
+    getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
+    sendToTarget: () => ({
+      sent: 0,
+      errors: [],
+      skipped: true,
+      skipReason: 'CONDIZIONE non soddisfatta',
+      recipients: [],
+      subject: '',
+      durationMs: 5
+    })
+  };
+  const service = new EmailBatchService(
+    notification as unknown as EmailNotificationService,
+    undefined,
+    undefined,
+    new LoggerService(),
+    logJob
+  );
+
+  drain(service.batchSendHandler({ patternId: 'SKIP', jobId: 'job_1', chunkSize: 1 }));
+
+  const output = lines.join('\n');
+  expect(output).toContain('✔️ Email skipped: SKIP -> d@example.edu — CONDIZIONE non soddisfatta');
+  expect(output).toContain('  Eseguiti con successo: 0');
+  expect(output).toContain('  Saltati: 1');
+  expect(output).toContain('    - CONDIZIONE non soddisfatta ×1');
+  expect(entries[0]).toMatchObject({ totaleTask: 1, completatiOk: 0, falliti: 0 });
+});
+
 test('resumed email batch carries forward failed targets from a prior timeout-resume into the final summary', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));

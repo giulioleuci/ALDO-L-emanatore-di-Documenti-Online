@@ -570,7 +570,7 @@ Storico append-only delle run dei job batch (`DocumentBatchService`, `EmailBatch
 | `NOME_CONFIG`      | String | —          | —           | Nome leggibile della configurazione (CONF_DOC.TIPO / CONF_MAIL.OGGETTO / CONF_AZIONI.TIPO)                                          |
 | `STATO`            | String | —          | —           | Enum: `COMPLETATO` / `COMPLETATO_CON_ERRORI` / `FALLITO` / `SOSPESO_QUOTA` / `SOSPESO_TEMPO`                                        |
 | `TOTALE_TASK`      | Number | —          | —           | Numero totale di target da processare in questa esecuzione                                                                          |
-| `COMPLETATI_OK`    | Number | —          | —           | Task processati con successo in questa esecuzione                                                                                   |
+| `COMPLETATI_OK`    | Number | —          | —           | Task processati con successo in questa esecuzione, esclusi i saltati (CONDIZIONE non soddisfatta, duplicato/già inviato): saltati = `TOTALE_TASK` − `COMPLETATI_OK` − `FALLITI` |
 | `FALLITI`          | Number | —          | —           | Task che hanno generato errore in questa esecuzione                                                                                 |
 | `LISTA_FALLIMENTI` | JSON   | —          | —           | Array di stringhe `"target: motivo"`; troncato se supera il cap di cella Sheets                                                     |
 | `DURATA_SEC`       | Number | —          | —           | Secondi di esecuzione effettiva di questa esecuzione (`FINE` − `INIZIO`)                                                            |

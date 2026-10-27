@@ -351,10 +351,12 @@ export class EmailBatchService {
       let i = 0;
       this.logger?.logBatchStart(targets.length);
 
-      if (resume === null) {
+      // A quota suspend completes the monitor job (which drops its PM_ property), so a restart re-registers it.
+      if (resume === null || resume.viaQuotaSuspend === true) {
         this.monitor?.registerJob(jobId);
         this.monitor?.startJob(jobId);
-      } else if (this.runCount >= 2) {
+      }
+      if (resume !== null && this.runCount >= 2) {
         this.backfillSospesoTempo(patternId, jobId, totale, resume);
       }
 

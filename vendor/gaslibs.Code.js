@@ -64830,6 +64830,7 @@ class ProcessMonitorService {
 
 
 
+
   completeJob(jobId, message = 'Completed successfully') {
     const state = this._readState(jobId);
     if (!state) {
@@ -64842,7 +64843,13 @@ class ProcessMonitorService {
     state.endTime = Date.now();
 
 
-    this._writeState(jobId, state, true);
+
+    this._writeState(jobId, state);
+    try {
+      this._propertiesService.deleteProperty(this._getPropsKey(jobId));
+    } catch (error) {
+      this._logger.warn(`[ProcessMonitorService] Failed to clear properties: ${error.message}`);
+    }
     this._logger.info(`[ProcessMonitorService] Job completed: ${jobId}`);
     return this;
   }

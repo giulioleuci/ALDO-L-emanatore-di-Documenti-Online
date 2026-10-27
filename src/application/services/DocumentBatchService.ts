@@ -844,6 +844,7 @@ export class DocumentBatchService {
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
+    queue.setPurgeOnComplete?.(true);
     queue.registerJobHandler(JOB_TYPE_GENERAZIONE_DOCUMENTI, (params) =>
       this.batchGenerateHandler(params)
     );

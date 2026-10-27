@@ -5,6 +5,8 @@ import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_SUPPLENZE } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
+const utils = new UtilsService();
+
 export type SupplenzaData = {
   [COL_SUPPLENZE.TITOLARE]?: string;
   [COL_SUPPLENZE.SUPPLENTE]?: string;
@@ -59,8 +61,8 @@ export class Supplenza extends AldoEntity {
 
   getPeriodo(): PeriodoSupplenza {
     return PeriodoSupplenza.of(
-      new Date(this.dalRaw),
-      this.alRaw.trim() === '' ? null : new Date(this.alRaw)
+      utils.parseDate(this.dalRaw) ?? new Date(NaN),
+      this.alRaw.trim() === '' ? null : (utils.parseDate(this.alRaw) ?? new Date(NaN))
     );
   }
 

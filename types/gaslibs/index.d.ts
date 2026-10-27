@@ -1006,12 +1006,16 @@ declare global {
   type JobHandler = (params: JobHandlerParams) => Generator<unknown, unknown, unknown>;
   interface JobQueueLike {
     registerJobHandler(jobType: string, handler: JobHandler): void;
+    /** Delete every ScriptProperties key of the job on successful completion (persisted in the job config, so trigger resumes honor it). */
+    setPurgeOnComplete?(purge: boolean): unknown;
   }
   class UtilsService {
     constructor(sleeperOrLogger?: unknown);
     /** Token-based date formatting (YYYY, MM, DD, HH, mm, ss, SSS); `utc:true` derives tokens from UTC components. */
     formatDate(date: Date, format?: string, options?: { utc?: boolean }): string | null;
     formatISODate(date: Date): string | null;
+    /** Date | ISO | GG/MM/AA | GG/MM/AAAA | Sheets serial -> Date (UTC midnight for day-first strings), null if invalid. */
+    parseDate(input: Date | string | number | null | undefined): Date | null;
     /** Basic `user@domain.tld` format validation (not a deliverability check). */
     isValidEmail(email: string): boolean;
     /** Custom-alphabet random ID (ref CoreUtilsLib/src/utils/IdGenerator.js); GAS-aware entropy, rejection sampling, no modulo bias. */

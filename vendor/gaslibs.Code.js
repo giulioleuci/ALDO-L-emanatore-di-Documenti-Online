@@ -3044,9 +3044,8 @@ class IdGenerator {
     }
 
 
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
+    if (false) 
+{}
 
 
     const bytes = IdGenerator._getSecureRandomBytes(16);
@@ -3146,9 +3145,8 @@ class IdGenerator {
     }
 
 
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-      return crypto.getRandomValues(new Uint8Array(size));
-    }
+    if (false) 
+{}
 
 
 
@@ -3176,6 +3174,10 @@ const _FORMAT_REGEXES = Object.fromEntries(['YYYY', 'yyyy', 'YY', 'yy', 'MM', 'D
 const _parseGoogleSheetsDate = serialNumber => new Date(new Date(1899, 11, 30).getTime() + serialNumber * 24 * 60 * 60 * 1000);
 
 
+const _DMY = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/;
+
+
+
 
 
 
@@ -3189,6 +3191,14 @@ function parseDate(input) {
     return isNaN(copy.getTime()) ? null : copy;
   }
   if (typeof input === 'string') {
+    const it = _DMY.exec(input.trim());
+    if (it !== null) {
+      const [d, m] = [+it[1], +it[2]];
+      const y = it[3].length === 2 ? 2000 + +it[3] : +it[3];
+      const date = new Date(Date.UTC(y, m - 1, d));
+
+      return date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? date : null;
+    }
     const date = new Date(input);
     return isNaN(date.getTime()) ? null : date;
   }
@@ -26127,7 +26137,9 @@ function splitCsv(value) {
 }
 function rowIsEmpty(row) {
   const values = Object.values(row);
-  if (values.length === 0) return true;
+  if (values.length === 0) {
+    return true;
+  }
   return values.every(v => cellToString(v) === '');
 }
 class DatasetValidator {
@@ -43476,7 +43488,9 @@ class TableService {
     for (let i = 1; i < data.length; i++) {
 
       if (!data[i] || data[i].every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
-        if (options.preserveEmptyRows === true) rows.push({});
+        if (options.preserveEmptyRows === true) {
+          rows.push({});
+        }
         continue;
       }
       const rowObject = {};
@@ -46066,6 +46080,21 @@ class JobQueue {
 
 
 
+
+
+  setPurgeOnComplete(purge) {
+    if (typeof purge !== 'boolean') {
+      throw new Error('JobQueue.setPurgeOnComplete: purge must be a boolean');
+    }
+    this._config.purgeOnComplete = purge;
+    return this;
+  }
+
+
+
+
+
+
   setOnFailure(callback) {
     if (callback !== null && typeof callback !== 'function') {
       throw new Error('JobQueue.setOnFailure: callback must be a function or null');
@@ -46179,6 +46208,12 @@ class JobQueue {
 
 
         stateManager.resetRetryCount();
+
+
+
+        if (this._config.purgeOnComplete && !executionResult.cancelled) {
+          this.resetJobState(jobName);
+        }
 
 
         return executionResult.value;

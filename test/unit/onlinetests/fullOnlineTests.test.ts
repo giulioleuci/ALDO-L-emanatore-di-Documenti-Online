@@ -206,6 +206,9 @@ it('migrates the persisted fixture before the final registration container snaps
     set: (key, value) => {
       calls.push(`set:${key}:${value}`);
       propertiesValues.set(key, value);
+    },
+    delete: (key) => {
+      propertiesValues.delete(key);
     }
   };
   const register = (name: string) =>

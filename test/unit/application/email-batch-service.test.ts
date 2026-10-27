@@ -505,6 +505,9 @@ test('a JobRunner resume state recovers pattern and safe recipient in a fresh co
     })
   );
   expect(resumed.gmail.sent.map((sent) => sent.to)).toEqual([[ONLINE_TEST_SAFE_EMAIL]]);
+  // Completion removes the keys outright instead of leaving empty entries.
+  expect(properties.get('EMAIL_BATCH_TEST_RECIPIENT_CDC_OTTOBRE')).toBeNull();
+  expect(properties.get('EMAIL_BATCH_RESUME_CDC_OTTOBRE')).toBeNull();
 
   // The per-job override must not clear or replace the container's preexisting
   // MASTER.TEST_MODE setting after the batch returns.

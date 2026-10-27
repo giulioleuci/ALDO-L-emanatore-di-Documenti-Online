@@ -308,6 +308,7 @@ export class EmailRetryService {
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
+    queue.setPurgeOnComplete?.(true);
     queue.registerJobHandler(JOB_TYPE_RETRY_EMAIL, (params) => this.retryHandler(params));
   }
 

@@ -404,6 +404,7 @@ export class ImportService {
 
   /** JobRunnerLib registry callback (passed to run/resume) for the chunked import handler. */
   registerJobHandlers(queue: JobQueueLike): void {
+    queue.setPurgeOnComplete?.(true);
     queue.registerJobHandler(JOB_TYPE_IMPORT_CHUNKED, (params) => this.importJobHandler(params));
   }
 

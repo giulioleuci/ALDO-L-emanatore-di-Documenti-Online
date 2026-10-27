@@ -6,6 +6,8 @@
 export interface IPropertiesFacade {
   get(key: string): string | null;
   set(key: string, value: string): void;
+  /** Removes the key entirely (idempotent) — `set(key, '')` would leave an empty entry behind. */
+  delete(key: string): void;
 }
 
 export class ScriptPropertiesFacade implements IPropertiesFacade {
@@ -21,5 +23,9 @@ export class ScriptPropertiesFacade implements IPropertiesFacade {
 
   set(key: string, value: string): void {
     this.props.setProperty(key, value);
+  }
+
+  delete(key: string): void {
+    this.props.deleteProperty(key);
   }
 }

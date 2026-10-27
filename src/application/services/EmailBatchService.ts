@@ -168,7 +168,7 @@ export class EmailBatchService {
 
   /** Clears the pattern-scoped quota-suspend checkpoint once a run reaches the end of the target list. */
   private clearPersistedResume(patternId: string): void {
-    this.properties?.set(EmailBatchService.resumeKey(patternId), '');
+    this.properties?.delete(EmailBatchService.resumeKey(patternId));
   }
 
   private loadPersistedTestRecipient(patternId: string): string | undefined {
@@ -181,7 +181,7 @@ export class EmailBatchService {
   }
 
   private clearPersistedTestRecipient(patternId: string): void {
-    this.properties?.set(EmailBatchService.testRecipientKey(patternId), '');
+    this.properties?.delete(EmailBatchService.testRecipientKey(patternId));
   }
 
   /**
@@ -511,6 +511,7 @@ export class EmailBatchService {
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
+    queue.setPurgeOnComplete?.(true);
     queue.registerJobHandler(JOB_TYPE_INVIO_EMAIL, (params) => this.batchSendHandler(params));
   }
 

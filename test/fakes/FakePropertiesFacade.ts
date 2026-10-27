@@ -14,4 +14,8 @@ export class FakePropertiesFacade implements IPropertiesFacade {
   set(key: string, value: string): void {
     this.store.set(key, value);
   }
+
+  delete(key: string): void {
+    this.store.delete(key);
+  }
 }

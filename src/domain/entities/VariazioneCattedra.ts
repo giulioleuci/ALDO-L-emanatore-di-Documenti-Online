@@ -4,6 +4,8 @@ import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_VARIAZIONI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
+const utils = new UtilsService();
+
 export type VariazioneCattedraData = {
   [COL_VARIAZIONI.TITOLARE]?: string;
   [COL_VARIAZIONI.NUOVO_TITOLARE]?: string;
@@ -74,7 +76,7 @@ export class VariazioneCattedra extends AldoEntity {
   }
 
   getDecorrenza(): Date {
-    return new Date(this.dalRaw);
+    return utils.parseDate(this.dalRaw) ?? new Date(NaN);
   }
 
   getClassiScope(): CsvScope {

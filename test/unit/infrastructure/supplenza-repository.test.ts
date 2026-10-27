@@ -1,5 +1,6 @@
 import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { Supplenza } from '../../../src/domain/entities/Supplenza';
+import { VariazioneCattedra } from '../../../src/domain/entities/VariazioneCattedra';
 import { Docente } from '../../../src/domain/entities/Docente';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
@@ -166,4 +167,20 @@ describe('SupplenzaRepository — indexed-lookup fallback, overlap, and hydratio
       )
     ).toThrow(ValidationError);
   });
+});
+
+test('Supplenza/VariazioneCattedra: accept GG/MM/AA day-first strings', () => {
+  const s = Supplenza.fromData({
+    TITOLARE: 'rossi@school.it',
+    SUPPLENTE: 'bianchi@school.it',
+    DAL: '10/10/26',
+    AL: '15/10/26',
+    CLASSI: '*',
+    MATERIE: '*'
+  });
+  expect(s.isAttivaData(new Date('2026-10-12'))).toBe(true);
+  expect(s.isAttivaData(new Date('2026-10-16'))).toBe(false);
+  const v = VariazioneCattedra.fromData({ TITOLARE: 'rossi@school.it', DAL: '15/10/26' });
+  expect(v.isDecorsaA(new Date('2026-10-20'))).toBe(true);
+  expect(v.isDecorsaA(new Date('2026-10-14'))).toBe(false);
 });

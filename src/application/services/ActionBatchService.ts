@@ -481,6 +481,7 @@ export class ActionBatchService {
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
+    queue.setPurgeOnComplete?.(true);
     queue.registerJobHandler(JOB_TYPE_ESECUZIONE_AZIONI, (params) => this.batchAzioniHandler(params));
   }
 

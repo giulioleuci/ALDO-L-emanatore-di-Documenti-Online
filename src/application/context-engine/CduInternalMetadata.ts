@@ -9,7 +9,6 @@ export interface CduMateriaAssignmentIdentity {
 }
 
 const materiaAssignmentIdentity = new WeakMap<object, CduMateriaAssignmentIdentity>();
-const articolazionePartners = new WeakMap<object, string[]>();
 
 export function attachCduMateriaAssignmentIdentity<T extends object>(
   materia: T,
@@ -23,16 +22,4 @@ export function getCduMateriaAssignmentIdentity(
   materia: object
 ): CduMateriaAssignmentIdentity | undefined {
   return materiaAssignmentIdentity.get(materia);
-}
-
-export function attachCduArticolazionePartners<T extends object>(
-  articolazione: T,
-  partners: string[]
-): T {
-  articolazionePartners.set(articolazione, partners);
-  return articolazione;
-}
-
-export function getCduArticolazionePartners(articolazione: object): string[] | undefined {
-  return articolazionePartners.get(articolazione);
 }

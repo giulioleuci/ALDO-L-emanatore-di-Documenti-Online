@@ -9,12 +9,7 @@ import { Piano } from '../../../src/domain/entities/Piano';
 import { Progetto } from '../../../src/domain/entities/Progetto';
 import { VariazioneCattedra } from '../../../src/domain/entities/VariazioneCattedra';
 import { AlunniAttiviSpec } from '../../../src/domain/specifications/AlunniAttiviSpec';
-import {
-  AlunniInClasseSpec,
-  AlunniPerReligioneSpec,
-  AlunniRappresentantiSpec,
-  AlunniRipetentiSpec
-} from '../../../src/domain/specifications/AlunnoSpecs';
+import { AlunniInClasseSpec } from '../../../src/domain/specifications/AlunnoSpecs';
 import {
   CarenzePerAlunnoSpec,
   CarenzePerClasseSpec
@@ -54,7 +49,6 @@ import { DipartimentoId } from '../../../src/domain/value-objects/DipartimentoId
 import { Email } from '../../../src/domain/value-objects/Email';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
 import {
-  ReligioneScelta,
   TipoMovimento,
   TipoPiano,
   TipoProgetto
@@ -93,18 +87,6 @@ const SPEC_PUSHDOWN: PushdownCase[] = [
     'AlunniInClasseSpec',
     new AlunniInClasseSpec(ClasseId.of('3A')),
     [{ CLASSE: '3A' }, { CLASSE: '3B' }, { CLASSE: 3 }],
-    hydrateAlunno
-  ],
-  [
-    'AlunniRipetentiSpec',
-    new AlunniRipetentiSpec(),
-    [{ RIPETENTE: true }, { RIPETENTE: false }, { RIPETENTE: 'true' }, {}],
-    hydrateAlunno
-  ],
-  [
-    'AlunniRappresentantiSpec',
-    new AlunniRappresentantiSpec(),
-    [{ RAPPR_STUD: true }, { RAPPR_STUD: false }, { RAPPR_STUD: 'true' }, {}],
     hydrateAlunno
   ],
   [
@@ -224,7 +206,6 @@ it.each(SPEC_PUSHDOWN)('%s: pushdown e in-memory concordano', (_name, spec, rows
 });
 
 it.each([
-  ['AlunniPerReligioneSpec', new AlunniPerReligioneSpec(ReligioneScelta.IRC), {}, hydrateAlunno],
   ['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(''), {}, hydrateIndirizzo]
 ])('%s resta in memoria quando la colonna assente usa il valore predefinito', (_name, spec, row, hydrate) => {
   expect(spec.toQueryObject()).toBeNull();

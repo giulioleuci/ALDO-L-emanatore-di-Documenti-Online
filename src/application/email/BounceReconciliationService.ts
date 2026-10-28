@@ -4,7 +4,6 @@ import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFaca
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
 import { StatoEmail } from '../../domain/value-objects/enums';
 import { PipelineError } from '../../domain/errors/DomainError';
-import { escapeHtml } from './boxes';
 import { parseNdr } from './NdrParser';
 
 const DAY_MS = 86_400_000;
@@ -126,7 +125,7 @@ export class BounceReconciliationService {
     const righe = s.dettagli
       .map(
         (d) =>
-          `<li>${escapeHtml(d.pattern)} → ${escapeHtml(d.rejected)}: ${escapeHtml(d.diagnostica)}</li>`
+          `<li>${HtmlSanitizer.escapeHtml(d.pattern)} → ${HtmlSanitizer.escapeHtml(d.rejected)}: ${HtmlSanitizer.escapeHtml(d.diagnostica)}</li>`
       )
       .join('');
     const r = this.deps.gmail.sendEmail({

@@ -85,29 +85,11 @@ const PIANI_PERS_DA_INVIARE_BORDER = '#C62828';
 const INSTANCE_SOURCE_DATA_PATH = '__ALDO_SOURCE_DATA_PATH';
 const folderProjector = new CollectionProjector({ logger: new LoggerService() });
 
-/**
- * HTML-context escaping (XSS prevention) delegated to CoreUtilsLib's
- * `HtmlSanitizer` (Task C2 of the delegation audit) — thin re-exports so
- * existing import sites (`emailSteps.ts`, this module's own renderers) keep
- * working unchanged.
- */
-export function escapeHtml(raw: string): string {
-  return HtmlSanitizer.escapeHtml(raw);
-}
-
-export function safeColor(raw: string, fallback: string): string {
-  return HtmlSanitizer.safeColor(raw, fallback);
-}
-
-export function safeUrl(raw: string): string {
-  return HtmlSanitizer.safeUrl(raw);
-}
-
 /** FormattatoreDatiEmail standard container (11 §11). */
 export function wrapBox(titolo: string, coloreBordo: string, contenutoInterno: string): string {
   return (
-    `<div style="margin:20px 0; padding:15px; border-left:4px solid ${safeColor(coloreBordo, DEFAULT_BORDER)}; background-color:#f9f9f9;">` +
-    `<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">${escapeHtml(titolo)}</h3>` +
+    `<div style="margin:20px 0; padding:15px; border-left:4px solid ${HtmlSanitizer.safeColor(coloreBordo, DEFAULT_BORDER)}; background-color:#f9f9f9;">` +
+    `<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">${HtmlSanitizer.escapeHtml(titolo)}</h3>` +
     `${contenutoInterno}</div>`
   );
 }
@@ -137,9 +119,9 @@ function renderCarenzeBox(data: unknown): string {
     .map((r) => {
       const titolo = r.simbolo !== '' ? `${r.simbolo} ${r.nome}` : r.nome;
       return (
-        `<div style="border-left:4px solid ${safeColor(r.colore, DEFAULT_BORDER)}; padding:12px 12px 12px 16px; margin-bottom:10px;">` +
-        `<h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">${escapeHtml(titolo)}</h3>` +
-        `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(r.descrizione)}</div></div>`
+        `<div style="border-left:4px solid ${HtmlSanitizer.safeColor(r.colore, DEFAULT_BORDER)}; padding:12px 12px 12px 16px; margin-bottom:10px;">` +
+        `<h3 style="margin:0 0 8px 0; font-size:16px; color:#333;">${HtmlSanitizer.escapeHtml(titolo)}</h3>` +
+        `<div style="font-size:14px; color:#555; line-height:1.5;">${HtmlSanitizer.escapeHtml(r.descrizione)}</div></div>`
       );
     })
     .join('');
@@ -152,16 +134,16 @@ function wrapUl(righe: string): string {
 function renderRigaStandard(items: DocumentoItem[], displayMode: string): string {
   const righe = items
     .map((d) => {
-      const href = escapeHtml(safeUrl(d.link));
+      const href = HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(d.link));
       switch (displayMode) {
         case 'link':
           return `<li><a href="${href}" target="_blank">${href}</a></li>`;
         case 'nome+link':
-          return `<li>${escapeHtml(d.nome)} — <a href="${href}" target="_blank">${href}</a></li>`;
+          return `<li>${HtmlSanitizer.escapeHtml(d.nome)} — <a href="${href}" target="_blank">${href}</a></li>`;
         case 'sololink':
           return `<li><a href="${href}" target="_blank">Apri</a></li>`;
         default:
-          return `<li><a href="${href}" target="_blank">${escapeHtml(d.nome)}</a></li>`;
+          return `<li><a href="${href}" target="_blank">${HtmlSanitizer.escapeHtml(d.nome)}</a></li>`;
       }
     })
     .join('');
@@ -181,7 +163,7 @@ function renderRigaStandard(items: DocumentoItem[], displayMode: string): string
  * non-nome/link fields.
  */
 function escapeNomeLink<T extends { nome: string; link: string }>(d: T): T {
-  return { ...d, nome: escapeHtml(d.nome), link: escapeHtml(safeUrl(d.link)) };
+  return { ...d, nome: HtmlSanitizer.escapeHtml(d.nome), link: HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(d.link)) };
 }
 
 function renderDocumentiBox(
@@ -255,10 +237,10 @@ function renderPianiPersBox(
   if (templateRiga === '') {
     const righe = items
       .map((d) => {
-        const href = escapeHtml(safeUrl(d.link));
-        const alunno = d.studente !== undefined ? escapeHtml(d.studente.nomeCompleto) : '';
-        const classeNome = d.classe !== undefined ? escapeHtml(d.classe.nome) : '';
-        const testo = `${alunno} - ${classeNome} - ${escapeHtml(d.sottotipoLabel)}`;
+        const href = HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(d.link));
+        const alunno = d.studente !== undefined ? HtmlSanitizer.escapeHtml(d.studente.nomeCompleto) : '';
+        const classeNome = d.classe !== undefined ? HtmlSanitizer.escapeHtml(d.classe.nome) : '';
+        const testo = `${alunno} - ${classeNome} - ${HtmlSanitizer.escapeHtml(d.sottotipoLabel)}`;
         return `<li><a href="${href}" target="_blank">${testo}</a></li>`;
       })
       .join('');
@@ -286,21 +268,21 @@ function renderPianiPersBox(
       return templates.processString(templateRiga, {
         corrente: {
           ...corrente,
-          nome: escapeHtml(corrente.nome),
-          link: escapeHtml(safeUrl(corrente.link)),
-          sottotipo: escapeHtml(corrente.sottotipo),
-          sottotipoLabel: escapeHtml(corrente.sottotipoLabel),
+          nome: HtmlSanitizer.escapeHtml(corrente.nome),
+          link: HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(corrente.link)),
+          sottotipo: HtmlSanitizer.escapeHtml(corrente.sottotipo),
+          sottotipoLabel: HtmlSanitizer.escapeHtml(corrente.sottotipoLabel),
           ...(corrente.studente !== undefined
             ? {
                 studente: {
                   ...corrente.studente,
-                  nomeCompleto: escapeHtml(corrente.studente.nomeCompleto),
-                  email: escapeHtml(corrente.studente.email)
+                  nomeCompleto: HtmlSanitizer.escapeHtml(corrente.studente.nomeCompleto),
+                  email: HtmlSanitizer.escapeHtml(corrente.studente.email)
                 }
               }
             : {}),
           ...(corrente.classe !== undefined
-            ? { classe: { ...corrente.classe, nome: escapeHtml(corrente.classe.nome) } }
+            ? { classe: { ...corrente.classe, nome: HtmlSanitizer.escapeHtml(corrente.classe.nome) } }
             : {})
         },
         storico: storicoCorrente
@@ -312,7 +294,7 @@ function renderPianiPersBox(
 
 function renderNoteBox(data: unknown): string {
   // CARENZE.NOTE is free text (11 §11) — escaped before interpolation.
-  return `<div style="font-size:14px; color:#555; line-height:1.5;">${escapeHtml(String(data))}</div>`;
+  return `<div style="font-size:14px; color:#555; line-height:1.5;">${HtmlSanitizer.escapeHtml(String(data))}</div>`;
 }
 
 function renderAssenzeBox(): string {
@@ -329,10 +311,10 @@ function renderCattedreBox(data: unknown): string {
       const materie = c.materie
         .map(
           (m) =>
-            `${escapeHtml(m.nome)}${m.isItp ? ' <span style="font-size:11px;color:#888;">(ITP)</span>' : ''}`
+            `${HtmlSanitizer.escapeHtml(m.nome)}${m.isItp ? ' <span style="font-size:11px;color:#888;">(ITP)</span>' : ''}`
         )
         .join(', ');
-      return `<li><strong>${escapeHtml(c.classe.nome)}</strong> — ${materie}</li>`;
+      return `<li><strong>${HtmlSanitizer.escapeHtml(c.classe.nome)}</strong> — ${materie}</li>`;
     })
     .join('');
   if (!(typeof orePot === 'number' && Number.isFinite(orePot) && orePot > 0)) {

@@ -57,7 +57,12 @@ export interface MaterieGroups {
   group3Label?: string;
 }
 
-function toPrintableGroups(groups: MaterieGroups) {
+/**
+ * Printable copy for `classe.sheet.materieColonne` (02 §4.1): drops the ACL-only
+ * `classeId`/`specificita`/`kind` fields of `MateriaColumn` — a narrower TS type
+ * alone would not strip them at runtime/`JSON.stringify`.
+ */
+export function toPrintableGroups(groups: MaterieGroups) {
   const rows = [
     { label: '', colonne: groups.group1 },
     { label: groups.group2Label ?? '', colonne: groups.group2 },

@@ -1,8 +1,10 @@
 import {
   SheetMaterieGeneratorStrategy,
-  columnIndexToLetters
+  columnIndexToLetters,
+  toPrintableGroups,
+  type MateriaColumn,
+  type MaterieGroups
 } from './SheetMaterieGeneratorStrategy';
-import type { MateriaColumn, MaterieGroups } from './SheetMaterieGeneratorStrategy';
 import type { Cdu, ClasseFocusVM } from '../context-engine/Cdu';
 import { buildElencoMaterieConPermessi } from '../context-engine/ElencoMaterieConPermessi';
 import type { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDocumento';
@@ -31,39 +33,6 @@ export function protectionGestioneSupplenti(config: ConfigurazioneDocumento): Ge
   throw new ConfigurationError(
     `SHEET_CON_MATERIE_E_PERMESSI: PERMESSI.regolaSupplente.file non valido: ${JSON.stringify(raw)}`
   );
-}
-
-/**
- * Printable projection of one `MateriaColumn` for `classe.sheet.materieColonne`
- * (02 §4.1) — drops the ACL-only `classeId`/`specificita`/`kind` fields that
- * `resolveMateriaColumns` (`SheetMaterieGeneratorStrategy`) still carries as
- * ordinary enumerable properties (only `.kind` is hidden via
- * `Object.defineProperty`). A narrower TS type on `CduClasse['sheet']` alone
- * doesn't strip these at runtime/`JSON.stringify` — an object literal copy is
- * required. `buildGroups()`'s own return value (used for `dynamic_columns`
- * template rendering) is intentionally left untouched; only what's attached
- * to `classe.sheet` is narrowed.
- */
-function toPrintableColumn(column: MateriaColumn): NonNullable<ClasseFocusVM['sheet']>['materieConPermessi']['elenco'][number] {
-  const printable: NonNullable<ClasseFocusVM['sheet']>['materieConPermessi']['elenco'][number] = {
-    sigla: column.sigla,
-    header: column.header,
-    isSpeciale: column.isSpecial ?? false,
-    ruoli: column.roles ?? []
-  };
-  return printable;
-}
-
-function toPrintableGroups(groups: MaterieGroups): NonNullable<ClasseFocusVM['sheet']>['materieColonne'] {
-  return {
-    gruppi: [groups.group1, groups.group2, groups.group3].map((colonne, index) => ({
-      indice: index + 1,
-      label: index === 1 ? groups.group2Label ?? '' : index === 2 ? groups.group3Label ?? '' : '',
-      colonne: colonne.map(toPrintableColumn),
-      hasColonne: colonne.length > 0,
-      numero: colonne.length
-    }))
-  };
 }
 
 /**

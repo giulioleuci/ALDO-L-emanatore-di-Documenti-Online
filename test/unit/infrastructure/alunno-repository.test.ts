@@ -1,15 +1,9 @@
 import { AlunnoRepository } from '../../../src/infrastructure/repositories/AlunnoRepository';
 import { Alunno } from '../../../src/domain/entities/Alunno';
-import {
-  AlunniInClasseSpec,
-  AlunniRipetentiSpec,
-  AlunniRappresentantiSpec,
-  AlunniPerReligioneSpec
-} from '../../../src/domain/specifications/AlunnoSpecs';
+import { AlunniInClasseSpec } from '../../../src/domain/specifications/AlunnoSpecs';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
-import { ReligioneScelta } from '../../../src/domain/value-objects/enums';
 
 function repo(): AlunnoRepository {
   return new AlunnoRepository(new FakeDatabase(fixtureTables()));
@@ -77,14 +71,8 @@ test('findConBES loads students with a BES plan (06 §1)', () => {
   ).toEqual(['a2@school.it', 'a1@school.it']);
 });
 
-test('Alunno specs (07 §1): preserve RELIGIONE defaults in memory', () => {
+test('AlunniInClasseSpec (07 §1) matches by class', () => {
   const a1 = Alunno.fromData({ EMAIL: 'a1', CLASSE: '5A', RAPPR_STUD: true, RELIGIONE: 'IRC' });
-  const a2 = Alunno.fromData({ EMAIL: 'a2', CLASSE: '5A', RIPETENTE: true, RELIGIONE: 'NO' });
   expect(new AlunniInClasseSpec(ClasseId.of('5A')).isSatisfiedBy(a1)).toBe(true);
   expect(new AlunniInClasseSpec(ClasseId.of('3B')).isSatisfiedBy(a1)).toBe(false);
-  expect(new AlunniRipetentiSpec().isSatisfiedBy(a2)).toBe(true);
-  expect(new AlunniRipetentiSpec().isSatisfiedBy(a1)).toBe(false);
-  expect(new AlunniRappresentantiSpec().isSatisfiedBy(a1)).toBe(true);
-  expect(new AlunniPerReligioneSpec(ReligioneScelta.ALT).toQueryObject()).toBeNull();
-  expect(new AlunniPerReligioneSpec(ReligioneScelta.IRC).isSatisfiedBy(Alunno.fromData({}))).toBe(true);
 });

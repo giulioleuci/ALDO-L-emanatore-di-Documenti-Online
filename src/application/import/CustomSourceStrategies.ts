@@ -1,7 +1,6 @@
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ILogDocumentoRepository } from '../../domain/repositories/ILogDocumentoRepository';
 import type { ILogCartellaRepository } from '../../domain/repositories/ILogCartellaRepository';
-import { ConfigurationError } from '../../domain/errors/DomainError';
 
 const SPREADSHEET_MIME = 'application/vnd.google-apps.spreadsheet';
 
@@ -129,9 +128,3 @@ export function createCercaDocumentiStrategy(
   };
 }
 
-/** Thrown when a CONF_IMP job references a custom source that was never registered. */
-export function requireRegistered(searchStrategy: string): never {
-  throw new ConfigurationError(
-    `Source strategy "${searchStrategy}" richiede registrazione tramite registerCustomSource (12 §3)`
-  );
-}

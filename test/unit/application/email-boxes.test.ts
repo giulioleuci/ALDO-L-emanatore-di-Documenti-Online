@@ -1,8 +1,5 @@
 import {
   mapCarenzeFormatoB,
-  escapeHtml,
-  safeColor,
-  safeUrl,
   createBoxComposer,
   renderBoxes,
   wrapBox
@@ -506,23 +503,6 @@ test('wrapBox produces the standard container (11 §11)', () => {
   expect(html).toContain('border-left:4px solid #123456');
   expect(html).toContain('<h3 style="margin:0 0 10px 0; color:#333; font-size:16px;">Titolo</h3>');
   expect(html).toContain('<p>x</p>');
-});
-
-// Detailed escapeHtml/safeColor/safeUrl case-by-case coverage now lives in
-// GasLibraryFactory/CoreUtilsLib/src/__tests__/HtmlSanitizer.test.js (Task C2:
-// boxes.ts delegates to the library's HtmlSanitizer). Cases faithfully ported
-// there: the <img onerror> markup case, the full &<>"' character set, the
-// <script> tag case, hex/keyword safeColor acceptance, the malicious-colour
-// rejection case, http(s) safeUrl acceptance, and the javascript: rejection
-// case. Kept here: thin delegation assertions proving boxes.ts's exported
-// functions produce the same output as the library, plus the box-level
-// integration tests below (unchanged) which exercise real template rendering.
-test('escapeHtml/safeColor/safeUrl delegate to the library HtmlSanitizer', () => {
-  expect(escapeHtml('<img src=x onerror=alert(1)>')).toBe('&lt;img src=x onerror=alert(1)&gt;');
-  expect(safeColor('#c0392b', '#ddd')).toBe('#c0392b');
-  expect(safeColor('red;"><script>', '#ddd')).toBe('#ddd');
-  expect(safeUrl('https://drive.google.com/x')).toBe('https://drive.google.com/x');
-  expect(safeUrl('javascript:alert(1)')).toBe('#');
 });
 
 test('note box escapes free-text HTML from CARENZE.NOTE', () => {

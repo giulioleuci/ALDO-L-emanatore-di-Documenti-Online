@@ -30,8 +30,6 @@ import { salutoPerTarget } from '../email/saluto';
 import {
   createBoxComposer,
   renderBoxes,
-  escapeHtml,
-  safeColor,
   type SourceScope
 } from '../email/boxes';
 import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
@@ -565,13 +563,13 @@ export class ComposeEmailStep extends Step {
 
     // Saluto/oggetto embed sheet-sourced names; the header colour lands in a
     // style attribute — all pass the same escaping/whitelisting as the boxes.
-    const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}${testoEnd}`;
+    const htmlSoloContenuto = `<p>${HtmlSanitizer.escapeHtml(saluto)},</p>${testo}${boxes.join('')}${testoEnd}`;
     const htmlCompleto =
       '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="margin:0; padding:0; background-color:#f4f4f4;">' +
       '<div style="max-width:600px; margin:0 auto; background-color:#ffffff; box-shadow:0 0 10px rgba(0,0,0,0.1);">' +
-      `<div style="background-color:${safeColor(conf.getColoreHeader(), '#007bff')}; color:#ffffff; padding:20px; font-size:20px; font-weight:bold;">` +
-      `${escapeHtml(ctx.get<string>('oggettoRisolto') ?? '')}</div>` +
+      `<div style="background-color:${HtmlSanitizer.safeColor(conf.getColoreHeader(), '#007bff')}; color:#ffffff; padding:20px; font-size:20px; font-weight:bold;">` +
+      `${HtmlSanitizer.escapeHtml(ctx.get<string>('oggettoRisolto') ?? '')}</div>` +
       `<div style="padding:20px;">${htmlSoloContenuto}${footer}</div>` +
       '</div></body></html>';
 

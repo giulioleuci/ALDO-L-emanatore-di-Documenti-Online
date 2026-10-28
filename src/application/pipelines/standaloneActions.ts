@@ -81,12 +81,7 @@ function resolveCriteri(
 
 /** Splits a CSV cell/criterion value on commas, trimming and dropping empties (ref 01 CLASSI/UTENTI CONTAINS rule). */
 export function csvValues(raw: unknown): string[] {
-  return typeof raw === 'string'
-    ? raw
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-    : [];
+  return typeof raw === 'string' ? splitCsvList(raw) : [];
 }
 
 /**

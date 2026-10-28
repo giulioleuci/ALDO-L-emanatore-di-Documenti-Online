@@ -4,7 +4,6 @@ import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFaca
 import type { LogEmail } from '../../domain/entities/LogEmail';
 import type { EmailNotificationService } from './EmailNotificationService';
 import { JOB_LABEL_INVIO_EMAIL } from './EmailBatchService';
-import { escapeHtml } from '../email/boxes';
 import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
 import { StatoJob } from '../../domain/value-objects/enums';
@@ -395,7 +394,7 @@ export class EmailRetryService {
       to: [config.supervisoreEmail],
       subject: `[SGSA] Errore permanente invio email — pattern ${record.pattern}`,
       // msg embeds LOG_MAIL free text (ERRORE) — escaped before HTML interpolation.
-      htmlBody: `<p>${escapeHtml(msg)}</p>`
+      htmlBody: `<p>${HtmlSanitizer.escapeHtml(msg)}</p>`
     });
   }
 }

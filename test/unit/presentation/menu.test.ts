@@ -33,7 +33,7 @@ test('wrapper: input → delegate (15 §4)', () => {
   const avviati: string[] = [];
   menuGenerazioneDocumenti(ui, (id) => avviati.push(id));
   expect(avviati).toEqual(['CD1']);
-  expect(ui.messaggi).toHaveLength(0);
+  expect(ui.messaggi.map((m) => m.messaggio)).toEqual(['Job avviato.']);
 });
 
 test('wrapper: cancelled/empty input aborts with a message and never delegates (15 §4)', () => {
@@ -50,7 +50,7 @@ test('wrapper: launcher errors surface as msgBox, not as an uncaught throw (15 �
   menuComunicazioniEmail(ui, () => {
     throw new Error('CONF_MAIL X1 non trovato');
   });
-  expect(ui.messaggi[0]!.messaggio).toContain('CONF_MAIL X1 non trovato');
+  expect(ui.messaggi[ui.messaggi.length - 1]!.messaggio).toContain('CONF_MAIL X1 non trovato');
 });
 
 test('vociMenu exposes the six launchers', () => {
@@ -140,6 +140,7 @@ test('menuEsecuzioneAzioni lists the active actions and delegates the chosen id'
     avviati.push(ids)
   );
   expect(avviati).toEqual([['SANIFICA_TRIM']]);
+  expect(ui.messaggi.map((m) => m.messaggio)).toEqual(['Job avviato.']);
 });
 
 test('menuEsecuzioneAzioni runs every active action when TUTTE is typed', () => {

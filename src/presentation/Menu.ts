@@ -42,6 +42,7 @@ export function avvioPersonalizzato(
     ui.mostraMessaggio(titolo, 'Operazione annullata: nessun ID di configurazione fornito.');
     return;
   }
+  ui.mostraMessaggio(titolo, 'Job avviato.');
   try {
     avvia(configId);
   } catch (e) {
@@ -148,6 +149,7 @@ export function menuEsecuzioneAzioni(
     return;
   }
   const ids = tutte ? attive.map((a) => a.id) : [scelta];
+  ui.mostraMessaggio(titolo, 'Job avviato.');
   try {
     avvia(ids);
   } catch (e) {
